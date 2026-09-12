@@ -2,7 +2,7 @@
  * انواع داده دامنه (Domain Types) — قرارداد مشترک کل سامانه
  * ------------------------------------------------------
  * این انواع «قرارداد داده» بین UI، هسته کاشی‌ها، ایجنت‌ها و
- * لایه اتصال به سامانه ملک تبریز هستند.
+ * لایه اتصال به سامانه‌های واقعی ملک تبریز هستند.
  * هر تغییر در ساختار پاسخ واقعی CRM فقط باید در Adapter لایه
  * melk-api اعمال شود، نه در بقیه سامانه.
  */
@@ -19,17 +19,28 @@ export interface AuthUserInfo {
 
 export interface OtpIssueResult {
   ok: true;
-  /** عمر کد پیامکی به ثانیه */
+  /** عمر کد پیامکی به ثانیه (سامانه ARM: ۱۸۰ ثانیه) */
   expiresInSeconds: number;
-  /** فقط در حالت Mock برای دموی محلی برمی‌گردد */
-  demoOtp?: string;
+}
+
+/** توکن‌های صادرشده از سامانه واقعی ARM (برای فراخوانی داده‌ها) */
+export interface ArmTokens {
+  accessToken: string;
+  refreshToken: string;
+  /** نوع کاربر در سامانه ARM — مثلاً realtor (کارشناس املاک) */
+  userType?: string;
+  armUserId?: string;
+  displayName?: string;
 }
 
 export interface OtpVerifyResult {
   ok: true;
+  /** توکن نشست سامانه ARM */
   token: string;
   expiresInHours: number;
   user: AuthUserInfo;
+  /** توکن‌های ARM برای فراخوانی داده‌های واقعی */
+  armTokens: ArmTokens;
 }
 
 // ===================== معاملات =====================
@@ -121,10 +132,24 @@ export interface ExpertFilter {
 
 export interface ConnectionStatus {
   ok: boolean;
-  mode: ApiMode;
+  /** حالت اتصال — همیشه «real» (اتصال واقعی) */
+  mode: "real";
   latencyMs: number;
   checkedAt: string;
   detail: string;
+  /** جزئیات هر سامانه (در حالت واقعی) */
+  services?: ArmServiceStatus[];
+}
+
+export interface ArmServiceStatus {
+  service: "ARM_API" | "ARM_PUBLIC" | "PM_API";
+  label: string;
+  reachable: boolean;
+  /** پایگاه داده سامانه پشتیبان در دسترس است؟ */
+  databaseUp: boolean;
+  httpStatus?: number;
+  latencyMs: number;
+  detail?: string;
 }
 
 // ===================== خطاهای نرمال‌شده =====================
@@ -134,11 +159,13 @@ export type MelkErrorCode =
   | "OTP_EXPIRED"
   | "OTP_INVALID"
   | "OTP_LOCKED"
+  | "PRECONDITION_FAILED"
   | "RATE_LIMITED"
   | "NETWORK_ERROR"
   | "TIMEOUT"
   | "UNAUTHORIZED"
   | "SERVER_ERROR"
+  | "DB_DOWN"
   | "NOT_FOUND"
   | "CONNECTION_RESET"
   | "UNKNOWN";
@@ -155,4 +182,19 @@ export class MelkApiError extends Error {
     this.httpStatus = httpStatus;
     this.retryable = retryable;
   }
+}
+
+// ===================== پوشه پاسخ NestJS سامانه‌های ملک تبریز =====================
+
+/**
+ * فرمت واقعی پاسخ هر دو سامانه (کشف‌شده با تست زنده):
+ *  موفق:  { statusCode, status: true,  data, message? }
+ *  خطا:   { statusCode, status: false, data: { error, stack }, message }
+ */
+export interface NestEnvelope<T = unknown> {
+  statusCode?: number;
+  status?: boolean;
+  data?: T;
+  message?: string;
+  error?: unknown;
 }

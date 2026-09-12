@@ -79,7 +79,7 @@
 
 `src/lib/melk-api/` — تنها نقطه وابسته به سامانه خارجی:
 
-- `config.ts`: همه متغیرهای محیطی (MELK_API_MODE، آدرس‌ها، Timeout، کد مدیر...)
+- `config.ts`: همه متغیرهای محیطی (آدرس‌های API واقعی arus-api/pm-api، Timeout، کد مدیر، فاصله همگام‌سازی...)
 - `endpoints.ts`: رجیستری Endpoint (فرض مستند — ببینید API-INTEGRATION.md)
 - `client.ts`: HTTP با AbortController timeout، retry نمایی، نرمال‌سازی خطا
 - `mock-data.ts`: داده واقع‌نمای تبریز با RNG دانه‌دار (deterministic برای تست)

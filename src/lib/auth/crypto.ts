@@ -6,9 +6,11 @@
  * 2) کد ورود مدیر (Master Code) با مقایسه زمان-ثابت بررسی می‌شود تا
  *    حملات Timing Attack ممکن نباشد.
  * 3) تولید همه مقادیر تصادفی با crypto ایمن (نه Math.random).
+ * 4) توکن‌های سامانه ARM (دریافت‌شده از arus-api.melketabriz.ir) با
+ *    AES-256-GCM رمزنگاری می‌شوند — کلید از متغیر محیطی MELK_TOKEN_KEY.
  */
 
-import { createHash, randomBytes, timingSafeEqual } from "crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from "crypto";
 
 /** تولید توکن نشست با ۳۲ بایت آنتروپی */
 export function generateSessionToken(): string {
@@ -27,14 +29,58 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ha, hb);
 }
 
+// ==========================================================================
+// رمزنگاری توکن‌های ARM (AES-256-GCM)
+// ==========================================================================
+
+function armKey(): Buffer {
+  const secret = process.env.MELK_TOKEN_KEY ?? process.env.MASTER_ACCESS_CODE ?? "melk-tabriz-fallback-key";
+  // کلید ۳۲ بایتی پایدار از راز (بدون ذخیره راز خام)
+  return createHash("sha256").update(`arm-token-enc:${secret}`, "utf8").digest();
+}
+
+/** رمزنگاری متن با AES-256-GCM — خروجی: base64(iv + tag + ciphertext) */
+export function encryptSecret(plain: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", armKey(), iv);
+  const enc = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, enc]).toString("base64");
+}
+
+/** رمزگشایی خروجی encryptSecret — در صورت نامعتبربودن null برمی‌گرداند */
+export function decryptSecret(payload: string | null | undefined): string | null {
+  if (!payload) return null;
+  try {
+    const buf = Buffer.from(payload, "base64");
+    if (buf.length < 29) return null; // 12 iv + 16 tag + حداقل 1 بایت
+    const iv = buf.subarray(0, 12);
+    const tag = buf.subarray(12, 28);
+    const data = buf.subarray(28);
+    const decipher = createDecipheriv("aes-256-gcm", armKey(), iv);
+    decipher.setAuthTag(tag);
+    const dec = Buffer.concat([decipher.update(data), decipher.final()]);
+    return dec.toString("utf8");
+  } catch {
+    return null;
+  }
+}
+
+// ==========================================================================
+// اعتبارسنجی ساختارها
+// ==========================================================================
+
 /** اعتبارسنجی ساختار کد پرسنلی: رقمی بین ۶ تا ۱۲ رقم */
 export function isValidPersonnelCodeFormat(code: string): boolean {
   return /^\d{6,12}$/.test(code.trim());
 }
 
-/** اعتبارسنجی ساختار کد پیامکی: ۶ رقم */
+/**
+ * اعتبارسنجی ساختار کد پیامکی سامانه ARM: ۴ رقم
+ * (کشف واقعی: فیلد ورود کد تأیید در arm.melketabriz.ir با numInputs:4 است)
+ */
 export function isValidOtpFormat(otp: string): boolean {
-  return /^\d{6}$/.test(otp.trim());
+  return /^\d{4}$/.test(otp.trim());
 }
 
 /** اعتبارسنجی ساختار کد ورود مدیر: ۸ رقم */

@@ -13,19 +13,26 @@ datasource db {
 // ===================== امنیت و احراز هویت =====================
 
 /// نشست‌های کاربری — توکن به‌صورت هش‌شده ذخیره می‌شود (هرگز متن ساده)
+/// توکن‌های ARM (دریافت‌شده از سامانه واقعی ملک تبریز) رمزنگاری‌شده AES-256-GCM نگهداری می‌شوند
 model Session {
-  id            String   @id @default(cuid())
-  tokenHash     String   @unique
-  personnelCode String
-  displayName   String
-  role          String   @default("CONSULTANT") // OWNER | CONSULTANT
-  createdAt     DateTime @default(now())
-  expiresAt     DateTime
-  lastSeenAt    DateTime @default(now())
-  revoked       Boolean  @default(false)
-  revokedReason String?
-  userAgent     String?
-  ip            String?
+  id                 String   @id @default(cuid())
+  tokenHash          String   @unique
+  personnelCode      String
+  displayName        String
+  role               String   @default("CONSULTANT") // OWNER | CONSULTANT
+  /// توکن دسترسی ARM — رمزنگاری‌شده (اختیاری؛ ورود مدیر محلی ندارد)
+  armTokenEnc        String?
+  /// توکن تمدید ARM — رمزنگاری‌شده
+  armRefreshTokenEnc String?
+  /// نوع کاربر در سامانه ARM (مثلاً realtor)
+  armUserType        String?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+  lastSeenAt         DateTime @default(now())
+  revoked            Boolean  @default(false)
+  revokedReason      String?
+  userAgent          String?
+  ip                 String?
 }
 
 /// ثبت تلاش‌های احراز هویت برای محدودسازی نرخ (Rate Limiting)
@@ -53,7 +60,20 @@ model AuditLog {
 
 // ===================== داده‌های CRM (کش/همگام‌سازی) =====================
 
-/// معاملات — از سامانه ملک تبریز استخراج و کش می‌شود
+/// وضعیت همگام‌سازی با سامانه‌های واقعی ملک تبریز (تک‌رکورد)
+model SyncState {
+  id             String    @id // "singleton"
+  lastSyncedAt   DateTime?
+  lastSuccessAt  DateTime?
+  lastError      String?
+  lastErrorCode  String?
+  attempts       Int       @default(0)
+  /// توکن ARM رمزنگاری‌شده آخرین همگام‌سازی موفق (برای تلاش مجدد پس‌زمینه)
+  armTokenEnc    String?
+  updatedAt      DateTime  @updatedAt
+}
+
+/// معاملات — از سامانه واقعی ملک تبریز استخراج و کش می‌شود
 model TransactionRecord {
   id           String   @id
   dealDate     DateTime

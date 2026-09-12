@@ -1,11 +1,16 @@
 /**
  * GET /api/connection/status
- * وضعیت اتصال به سامانه ملک تبریز (تست زنده + پیکربندی جاری)
+ * وضعیت زنده اتصال واقعی به سامانه‌های ملک تبریز:
+ *   ARM_API  — arus-api.melketabriz.ir/api/apm (احراز هویت و داده)
+ *   ARM_PUB  — arus-api.melketabriz.ir/api/public
+ *   PM_API   — pm-api.melketabriz.ir/api (سامانه پرسنلی)
+ * به‌همراه وضعیت آخرین همگام‌سازی داده واقعی.
  */
 
 import { NextRequest } from "next/server";
 import { getMelkProvider } from "@/lib/melk-api/provider";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
+import { getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 
@@ -15,17 +20,20 @@ export async function GET(request: NextRequest) {
 
   try {
     const provider = getMelkProvider();
-    const status = await provider.testConnection();
+    const [status, syncState] = await Promise.all([provider.testConnection(), getSyncState()]);
     const cfg = getMelkApiConfig();
     return Response.json({
       ok: true,
       status,
+      sync: syncState,
       config: {
         mode: cfg.mode,
-        armBaseUrl: cfg.armBaseUrl,
-        pmBaseUrl: cfg.pmBaseUrl,
+        armApiBase: cfg.armApiBase,
+        armPublicApiBase: cfg.armPublicApiBase,
+        pmApiBase: cfg.pmApiBase,
         timeoutMs: cfg.timeoutMs,
         maxRetries: cfg.maxRetries,
+        syncIntervalMinutes: cfg.syncIntervalMinutes,
       },
     });
   } catch (err) {

@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
   try {
-    await ensureSeeded();
+    // کش فقط با داده واقعی سامانه ملک تبریز پر می‌شود
+    await ensureSeeded(guard.armTokens?.accessToken);
     const [districts, branches] = await Promise.all([
       db.transactionRecord.findMany({ distinct: ["district"], select: { district: true } }),
       db.expertRecord.findMany({ distinct: ["branch"], select: { branch: true } }),

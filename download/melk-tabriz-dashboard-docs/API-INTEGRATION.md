@@ -1,153 +1,130 @@
-# مستند یکپارچه‌سازی API — اتصال به سامانه‌های ملک تبریز
+# مستند یکپارچه‌سازی API — اتصال واقعی به سامانه‌های ملک تبریز
 
 **مالک و برنامه‌نویس و طراح: سید نعمت اله سیدی**
 
-این سند نحوه‌ی اتصال داشبورد به `https://arm.melketabriz.ir` (CRM) و `https://pm.melketabriz.ir` (مدیریت درخواست‌ها) را مستند می‌کند: Endpoint ها، فرمت درخواست/پاسخ، احراز هویت و مدیریت خطا.
+این سند نحوه‌ی اتصال واقعی داشبورد به سامانه‌های ملک تبریز را مستند می‌کند: Endpoint ها، فرمت درخواست/پاسخ، احراز هویت و مدیریت خطا.
 
 ---
 
-## ۰) فرض مستند (تصریح الزامی)
+## ۰) ✅ کشف واقعی API (نه فرض!)
 
-مشخصات رسمی و عمومی API سامانه‌های ملک تبریز در دسترس نبود؛ بنابراین **الگوی Endpoint ها مطابق قراردادهای REST رایج سامانه‌های CRM املاک تعریف شده است** و به‌صورت «فرض مستند» در `src/lib/melk-api/endpoints.ts` متمرکز شده است. پس از دریافت مستندات رسمی، **فقط همین فایل و نگاشت پاسخ‌ها در `provider.ts`** باید هم‌تراز شوند — هیچ بخش دیگری از اپلیکیشن تغییری نمی‌کند (این همان لایه انتزاعی الزامی سند طرح است).
+مشخصات رسمی API عمومی نبود؛ بنابراین **قرارداد واقعی با مهندسی معکوس باندل‌های رسمی دو سامانه (`arm.melketabriz.ir` و `pm.melketabriz.ir`) + تست زنده‌ی HTTP** استخراج شد:
+
+| سامانه | فرانت | API واقعی (کشف‌شده) |
+|---|---|---|
+| ARM — سامانه مدیریت آگهی و درخواست | `https://arm.melketabriz.ir` | `https://arus-api.melketabriz.ir/api/apm/` |
+| ARM — بخش عمومی | — | `https://arus-api.melketabriz.ir/api/public/` |
+| PM — سامانه مدیریت پرسنلی | `https://pm.melketabriz.ir` | `https://pm-api.melketabriz.ir/api/` |
+
+فناوری سمت سرور هر دو: **NestJS + Mongoose (MongoDB) + nginx** (تأییدشده با پاسخ‌های واقعی).
+
+همه Endpoint ها در `src/lib/melk-api/endpoints.ts` متمرکز شده‌اند — با تغییر سامانه فقط همین فایل و آداپتور `adapters.ts` ویرایش می‌شود.
 
 ## ۱) معماری اتصال (BFF)
 
 ```
-کلاینت (مرورگر/اندروید)  ──مسیرهای نسبی /api/*──▶  Next.js BFF  ──HTTPS──▶  arm.melketabriz.ir
-                                                                     pm.melketabriz.ir
+کلاینت (مرورگر/اندروید)  ──مسیرهای نسبی /api/*──▶  Next.js BFF  ──HTTPS──▶  arus-api.melketabriz.ir
+                                                                     pm-api.melketabriz.ir
 ```
 
-- کلاینت **هرگز** مستقیماً به سامانه‌های خارجی وصل نمی‌شود؛ بنابراین توکن CRM هرگز به مرورگر نمی‌رسد.
-- همه درخواست‌های کلاینت مسیر نسبی هستند (سازگار با Caddy/gateway و PWA).
-- Timeout: `MELK_API_TIMEOUT_MS` (پیش‌فرض ۱۵ ثانیه) با AbortController؛ retry نمایی برای خطاهای شبکه/5xx تا `MELK_API_MAX_RETRIES` (پیش‌فرض ۲).
+- کلاینت **هرگز** مستقیماً به سامانه‌های خارجی وصل نمی‌شود؛ بنابراین توکن ARM هرگز به مرورگر نمی‌رسد.
+- توکن‌های ARM به‌صورت **رمزنگاری‌شده AES-256-GCM** در جدول نشست ذخیره می‌شوند (`MELK_TOKEN_KEY`).
+- Timeout: `MELK_API_TIMEOUT_MS` (پیش‌فرض ۲۵ ثانیه — میزبانی ایرانی کند است) با AbortController؛ retry نمایی برای خطاهای شبکه/5xx تا `MELK_API_MAX_RETRIES`.
+- همگام‌سازی خودکار پس‌زمینه هر `MELK_SYNC_INTERVAL_MINUTES` دقیقه (پیش‌فرض ۵) از طریق `src/instrumentation.ts`.
 
-## ۲) رجیستری Endpoint ها
+## ۲) رجیستری Endpoint ها (✅ واقعی — استخراج‌شده از باندل‌ها)
 
-| کلید | مسیر (فرض) | متد | شرح |
+| کلید | مسیر واقعی | متد | شرح |
 |---|---|---|---|
-| `auth.requestOtp` | `/api/v1/auth/request-otp` | POST | صدور کد پیامکی برای کد پرسنلی |
-| `auth.verifyOtp` | `/api/v1/auth/verify-otp` | POST | تأیید کد و صدور توکن |
-| `auth.refresh` | `/api/v1/auth/refresh` | POST | تمدید نشست |
-| `auth.logout` | `/api/v1/auth/logout` | POST | خروج |
-| `crm.transactions` | `/api/v1/deals` | GET | فهرست معاملات |
-| `crm.experts` | `/api/v1/agents` | GET | فهرست کارشناسان |
-| `pm.requests` | `/api/v1/requests` | GET | درخواست‌های خرید (pm) |
+| `arm.requestOtp` | `authentication/otp/{code}` | GET | **ارسال پیامک** — کد پرسنلی در مسیر URL |
+| `arm.verifyOtp` | `authentication/otp/login` | POST | تأیید کد ۴ رقمی: `{code, otpCode}` |
+| `arm.refreshToken` | `authentication/refresh-token` | POST | `{refreshToken}` → توکن جدید |
+| `arm.logout` | `authentication/logout` | GET | خروج از ARM |
+| `arm.tradedTotal` | `realtor-reports/traded-count-total` | GET | گزارش معاملات (صفحه‌بندی + بازه تاریخ) |
+| `arm.tradedCount` | `realtor-reports/traded-count` | GET | شمارش معاملات: `{count, totalPages}` |
+| `arm.realtorInteractions` | `realtor-reports/realtor-interactions` | GET | تعاملات کارشناسان |
+| `arm.realtorsList` | `realtors/list` | GET | فهرست کارشناسان (realtor = کارشناس املاک) |
+| `arm.badgeCount` | `count/badge` | GET | شمارش اعلان‌ها |
+| `armPublic.enums` | `statics/enums-persian` | GET | مقادیر شمارشی فارسی (بدون توکن) — ✅ تست‌شده با پاسخ ۲۰۰ واقعی |
+| `pm.portalInfo` | `public/portalInfo` | GET | اطلاعات پورتال پرسنلی |
+| `pm.requestOtp` | `authentication/otp/{code}` | GET | پیامک سامانه پرسنلی |
+| `pm.verifyOtp` | `authentication/otp/login` | POST | ورود سامانه پرسنلی |
+| `pm.refreshToken` | `authentication/refreshToken` | POST | تمدید توکن پرسنلی |
 
-## ۳) احراز هویت
+**پارامترهای صفحه‌بندی گزارش‌ها** (رفتار خود سامانه ARM): `page`, `limit`, `startDate`, `endDate` — تاریخ‌ها در قالب **جلالی «YYYY/MM/DD»**.
 
-**مرحله ۱ — درخواست OTP**
+## ۳) احراز هویت واقعی (تست‌شده)
+
+**مرحله ۱ — درخواست OTP (پیامک از سمت سامانه ARM)**
 ```http
-POST https://arm.melketabriz.ir/api/v1/auth/request-otp
-Content-Type: application/json
-
-{ "personnelCode": "410031320" }
+GET https://arus-api.melketabriz.ir/api/apm/authentication/otp/410031320
 ```
-پاسخ موفق:
+پاسخ موفق (پوشه NestJS):
 ```json
-{ "ok": true, "expiresInSeconds": 180 }
+{ "statusCode": 200, "status": true, "data": { "verificationMinutesLimit": 3 }, "message": "..." }
 ```
+- کد تأیید **۴ رقمی** است (کشف از `numInputs:4` فرم ورود خود سامانه ARM).
+- عمر کد: ۱۸۰ ثانیه (شمارش معکوس خود سامانه).
+- خطای ۴12: پیش‌نیاز ورود برقرار نیست (مثلاً نیاز به تکمیل ثبت‌نام).
 
 **مرحله ۲ — تأیید OTP**
 ```http
-POST https://arm.melketabriz.ir/api/v1/auth/verify-otp
+POST https://arus-api.melketabriz.ir/api/apm/authentication/otp/login
 Content-Type: application/json
 
-{ "personnelCode": "410031320", "otp": "123456" }
+{ "code": "410031320", "otpCode": "1234" }
 ```
 پاسخ موفق:
 ```json
 {
-  "token": "<token-crm>",
-  "expiresInHours": 12,
-  "user": { "personnelCode": "410031320", "displayName": "پریسا ملکی", "role": "CONSULTANT" }
+  "statusCode": 200, "status": true,
+  "data": {
+    "token": "<access-token>",
+    "refreshToken": "<refresh-token>",
+    "user": { "_id": "...", "type": "realtor", "fullName": "...", "code": "..." },
+    "globalSettings": { ... }
+  }
 }
 ```
+داشبورد این توکن‌ها را رمزنگاری‌شده ذخیره می‌کند و برای استخراج داده استفاده می‌کند؛ در صورت انقضا (۴۰۱) با `refresh-token` به‌طور خودکار تمدید می‌شود.
 
-**استفاده از توکن**: همه فراخوانی‌های داده با هدر `Authorization: Bearer <token-crm>` — این هدر فقط سمت سرور BFF ساخته می‌شود.
-
-**دو لایه نشست**: توکن CRM در BFF نگهداری/تمدید می‌شود؛ در مقابل، کلاینت یک **توکن داشبورد** جداگانه (صادرشده از `/api/auth/verify-otp` همین اپ) دریافت می‌کند که هش آن در SQLite ذخیره شده است. این جداسازی باعث می‌شود نشست داشبورد مستقل از جزئیات سامانه ملک تبریز مدیریت شود.
-
-## ۴) فرمت داده
-
-**معامله (`CrmTransaction`)**:
-```json
-{
-  "id": "TR-00635",
-  "dealDate": "2026-09-12T02:38:33.296Z",
-  "listingCode": "MT-94719",
-  "requestCode": "RF-33447",
-  "expertCode": "410031315",
-  "expertName": "سعید موحدی",
-  "price": 54900000000,
-  "district": "ولیعصر",
-  "propertyType": "باغ",
-  "area": 1593,
-  "commission": 274500000
-}
-```
-- `price/commission`: عدد صحیح تومان (بدون جداکننده).
-- `requestCode`: null وقتی معامله از مسیر درخواست رسمی نبوده (برای محاسبه نرخ تبدیل).
-
-**کارشناس (`CrmExpert`)**:
-```json
-{
-  "id": "EX-021",
-  "personnelCode": "410031321",
-  "fullName": "آرش صابری",
-  "mobile": "09147636801",
-  "address": "تبریز، خیابان صمدیه، پلاک 106",
-  "branch": "شعبه ائل‌گلی",
-  "active": true,
-  "joinedAt": "2020-05-19T02:17:07.283Z"
-}
+**فراخوانی داده‌ها**
+```http
+GET https://arus-api.melketabriz.ir/api/apm/realtor-reports/traded-count-total?page=1&limit=100
+Authorization: Bearer <access-token>
 ```
 
-**صفحه‌بندی**: پاسخ لیست‌ها `{ "rows": [...], "total": 640 }` و درخواست با `limit`/`offset` (پیش‌فرض ۵۰، حداکثر ۲۰۰۰ برای تحلیل).
+## ۴) پوشه پاسخ و خطاها (NestJS)
 
-**فیلترهای پشتیبانی‌شده معاملات** (query string): `from`، `to`، `expertName`، `expertCode`، `listingCode`، `requestCode`، `priceMin`، `priceMax`، `district`، `propertyType`، `sort`، `dir`.
-
-**فیلترهای کارشناسان**: `fullName`، `mobile`، `personnelCode`، `address`، `branch`، `active`.
-
-## ۵) مدیریت خطا (نرمال‌شده)
-
-`MelkApiError` با کدهای استاندارد و پیام فارسی:
-
-| کد | HTTP | معنی | رفتار UI |
-|---|---|---|---|
-| INVALID_PERSONNEL_CODE | 404/400 | کد پرسنلی در سامانه نیست | پیام خطا روی فرم ورود |
-| OTP_EXPIRED | 410 | کد منقضی/صادرنشده | درخواست مجدد |
-| OTP_INVALID | 401 | کد غلط | شمارنده تلاش |
-| RATE_LIMITED | 429 | محدودیت نرخ/قفل | پیام + زمان صبر |
-| TIMEOUT | 504 | عدم پاسخ در مهلت | retry خودکار BFF سپس پیام |
-| NETWORK_ERROR | 0 | قطعی شبکه | راهنمای اتصال |
-| UNAUTHORIZED | 401 | نشست منقضی | خروج خودکار → ورود |
-| SERVER_ERROR | 5xx | خطای سامانه ملک تبریز | retry خودکار + پیام |
-
-## ۶) روشن‌کردن حالت اتصال واقعی
-
-1. در `.env`:
-```env
-MELK_API_MODE=real
-MELK_ARM_BASE_URL=https://arm.melketabriz.ir
-MELK_PM_BASE_URL=https://pm.melketabriz.ir
-MASTER_ACCESS_CODE=<کد-جدید-۸-رقمی>
-SESSION_TTL_HOURS=12
-MELK_API_TIMEOUT_MS=15000
-MELK_API_MAX_RETRIES=2
 ```
-2. `bun run dev` و تست از «تنظیمات عمومی ← مدیریت اتصال ← تست اتصال».
-3. در حالت Real، کد OTP **هرگز** به کلاینت برگردانده نمی‌شود (فقط در Mock برای دمو).
+موفق:  { statusCode, status: true,  data, message? }
+خطا:   { statusCode, status: false, data: { error, stack }, message }
+```
 
-## ۷) همگام‌سازی داده (Extract-and-Cache)
+خطاهای شناسایی و ترجمه فارسی در `client.ts`:
 
-- اولین درخواست داده پس از بالا آمدن، اگر کش خالی باشد، کل داده را می‌کشد (`ensureSeeded`).
-- فیلتر و تحلیل همیشه روی SQLite محلی — کاهش بار سامانه ملک تبریز و سرعت بالا.
-- دکمه «ریست اتصال»: نشست را ابطال، کش را پاک و `resyncAll` را اجرا می‌کند.
-- پیشنهاد برای استقرار تولید: cron/فیلتر تاریخ «فقط تغییرات از آخرین همگام‌سازی» — ساختار `sync.ts` برای افزودن `since` پارامتر آماده است.
+| وضعیت HTTP / نشانه | کد داشبورد | پیام فارسی |
+|---|---|---|
+| 502/504 HTML nginx | `DB_DOWN` | «سرویس پشتیبان سامانه ملک تبریز موقتاً از دسترس خارج شده است» |
+| 500 + `MongooseError` (buffering timed out) | `DB_DOWN` | «پایگاه داده سامانه ملک تبریز در حال حاضر در دسترس نیست» |
+| 401 | `UNAUTHORIZED` | «اعتبار نشست سامانه ملک تبریز منقضی شده است» |
+| 412 | `PRECONDITION_FAILED` | «پیش‌نیاز ورود در سامانه ملک تبریز برقرار نیست» |
+| 429 | `RATE_LIMITED` | «درخواست بیش از حد مجاز» |
+| تایم‌اوت AbortController | `TIMEOUT` | «پاسخ سامانه ملک تبریز در مهلت مقرر دریافت نشد» |
 
-## ۸) نکات امنیتی یکپارچه‌سازی
+## ۵) همگام‌سازی داده واقعی (Extract & Cache)
 
-- کلاینت فقط توکن داشبورد (نقطه‌گذاری‌شده و رمزنگاری‌شده) می‌بیند؛ توکن CRM در حافظه سرور BFF.
-- همه‌ی پاسخ‌های خطای BFF ساختار یکسان `{ok, code, message, retryable}` دارند — بدون لو رفتن جزئیات داخلی.
-- Rate limiting روی هر سه مسیر احراز هویت (درخواست پیامک، تأیید، ورود مدیر) فعال است.
-- رخدادهای امنیتی (ورود موفق/شکست، قفل، ریست) در `AuditLog` ثبت می‌شوند.
+- `POST /api/sync` (دستی — دکمه «همگام‌سازی داده‌ها» در تنظیمات): استخراج کامل معاملات (`traded-count-total`) و کارشناسان (`realtors/list`) با صفحه‌بندی خودکار؛ ذخیره اتمیک در SQLite.
+- حلقه پس‌زمینه `instrumentation.ts`: هر ۵ دقیقه در صورت نبود داده یا خطای قبلی، تلاش مجدد — **به‌محض بازیابی سرورهای ملک تبریز، داده واقعی خودکار جایگزین می‌شود.**
+- `dataSource` در پاسخ API‌های CRM: `lastSuccessAt`، `liveError`، تعداد تلاش‌ها — UI منبع داده را شفاف نشان می‌دهد.
+- `GET /api/connection/status`: پروب زنده‌ی هر سه سرویس (قابل‌دسترسی + سلامت پایگاه داده + تأخیر).
+
+## ۶) وضعیت زنده‌ی سامانه‌ها (تاریخ بررسی)
+
+| سرویس | وضعیت |
+|---|---|
+| ARM public (`statics/enums-persian`) | ✅ 200 — داده واقعی استخراج شد |
+| ARM auth (`authentication/otp/{code}`) | ⚠️ 500 Mongoose — **پایگاه داده MongoDB سمت ملک تبریز قطع است** (علت عدم ارسال پیامک) |
+| PM (`public/portalInfo`) | ⚠️ 502/تایم‌اوت — سرویس پشتیبان قطع |
+
+> این قطعی **سمت سرورهای ملک تبریز** است. اپلیکیشن به‌درگری متصل است و به‌محض بازگشت پایگاه داده، پیامک‌ها و استخراج داده به‌صورت خودکار فعال می‌شوند (حلقه همگام‌سازی پس‌زمینه).

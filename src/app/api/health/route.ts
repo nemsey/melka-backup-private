@@ -1,6 +1,6 @@
 /**
  * GET /api/health — وضعیت سامانه (عمومی، بدون احراز هویت)
- * شامل حالت اتصال (mock/real) برای نمایش راهنمای دمو در صفحه ورود.
+ * حالت اتصال همیشه «real» است (اتصال واقعی به arus-api/pm-api).
  */
 
 import { getMelkApiConfig } from "@/lib/melk-api/config";
@@ -10,7 +10,8 @@ export async function GET() {
   return Response.json({
     ok: true,
     mode: cfg.mode,
-    armBaseUrl: cfg.armBaseUrl,
+    armApiBase: cfg.armApiBase,
+    pmApiBase: cfg.pmApiBase,
     time: new Date().toISOString(),
   });
 }

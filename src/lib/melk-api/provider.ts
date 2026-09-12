@@ -1,191 +1,105 @@
 /**
- * رابط Provider — قرارداد یکسان برای دو حالت Mock و Real
+ * رابط Provider — قرارداد یکسان اتصال به سامانه‌های واقعی ملک تبریز
  * ------------------------------------------------------
- * کل اپلیکیشن فقط با این رابط کار می‌کند؛ جابه‌جایی
- * Mock ↔ Real صرفاً با متغیر محیطی MELK_API_MODE انجام می‌شود.
+ * ✅ اتصال واقعی (بدون هیچ داده دمو/شبیه‌ساز):
+ *   ARM:  arus-api.melketabriz.ir/api/apm/     (احراز هویت OTP + داده‌ها)
+ *   PM:   pm-api.melketabriz.ir/api/            (پایش وضعیت سامانه پرسنلی)
+ *
+ * جریان احراز هویت واقعی (کشف‌شده از باندل‌های رسمی دو سامانه):
+ *   ۱) GET  authentication/otp/{code}   ← ارسال پیامک از سمت arm.melketabriz.ir
+ *   ۲) POST authentication/otp/login    ← {code, otpCode} → {token, refreshToken, user}
  */
 
 import { getMelkApiConfig, type MelkApiConfig } from "./config";
-import { generateExperts, generateTransactions, mulberry32 } from "./mock-data";
 import { MELK_ENDPOINTS } from "./endpoints";
-import { melkFetch, probeHost } from "./client";
+import { armCall, probeGet } from "./client";
+import { extractPagedList, isoToJalaliString, mapArmRealtorRow, mapArmTradedRow } from "./adapters";
 import {
   MelkApiError,
+  type ArmServiceStatus,
+  type ArmTokens,
   type ConnectionStatus,
   type CrmExpert,
   type CrmTransaction,
   type ExpertFilter,
+  type NestEnvelope,
   type OtpIssueResult,
   type OtpVerifyResult,
   type Paged,
   type TransactionFilter,
   type AuthUserInfo,
+  type UserRole,
 } from "./types";
 
 export interface MelkProvider {
-  mode: "mock" | "real";
+  mode: "real";
   config: MelkApiConfig;
 
+  /** مرحله ۱: درخواست ارسال کد پیامکی از سامانه واقعی ARM */
   requestOtp(personnelCode: string, ip?: string): Promise<OtpIssueResult>;
+  /** مرحله ۲: تأیید کد پیامکی در سامانه واقعی ARM */
   verifyOtp(personnelCode: string, otp: string): Promise<OtpVerifyResult>;
+  /** تمدید توکن ARM با refreshToken */
+  refreshArmToken(refreshToken: string): Promise<ArmTokens>;
+  /** فهرست معاملات (گزارش معاملات سامانه ARM) */
   listTransactions(token: string, filter: TransactionFilter): Promise<Paged<CrmTransaction>>;
+  /** فهرست کارشناسان (realtors سامانه ARM) */
   listExperts(token: string, filter: ExpertFilter): Promise<Paged<CrmExpert>>;
+  /** تست زنده اتصال هر سه سرویس */
   testConnection(): Promise<ConnectionStatus>;
-  validatePersonnelCode(personnelCode: string): Promise<AuthUserInfo | null>;
+  /** وضعیت زنده پورتال PM */
+  pmPortalInfo(): Promise<{ ok: boolean; detail: string }>;
 }
 
 // ==========================================================================
-// حالت Mock — شبیه‌ساز کامل رفتار سامانه
+// حالت Real — اتصال به سامانه‌های واقعی ملک تبریز
 // ==========================================================================
 
-/** وضعت OTP موقت شبیه‌ساز */
-const otpStore = new Map<string, { code: string; expiresAt: number }>();
-
-function isLockdownSeed(seed: number): number {
-  const rand = mulberry32(seed);
-  return Math.floor(rand() * 900000) + 100000;
+/** ساختار پاسخ ورود ARM: { token, refreshToken, user, ... } */
+interface ArmLoginData {
+  token?: string;
+  refreshToken?: string;
+  user?: {
+    _id?: string;
+    type?: string;
+    fullName?: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    code?: string;
+    mobile?: string;
+    role?: unknown;
+    roles?: unknown;
+    realtor?: { fullName?: string; name?: string; code?: string } | string;
+  };
+  [key: string]: unknown;
 }
 
-class MockProvider implements MelkProvider {
-  readonly mode = "mock" as const;
-  readonly config: MelkApiConfig;
-  private experts: CrmExpert[];
-  private transactions: CrmTransaction[];
-
-  constructor(config: MelkApiConfig) {
-    this.config = config;
-    this.experts = generateExperts(42, 24);
-    this.transactions = generateTransactions(this.experts, 1337, 640, 18);
+/** استخراج نام نمایشی کاربر از ساختارهای مختلف user سامانه ARM */
+function resolveDisplayName(user: ArmLoginData["user"]): string {
+  if (!user) return "";
+  const direct = user.fullName ?? user.name;
+  if (direct && String(direct).trim()) return String(direct).trim();
+  const first = String(user.firstName ?? "").trim();
+  const last = String(user.lastName ?? "").trim();
+  if (first || last) return `${first} ${last}`.trim();
+  const realtor = user.realtor;
+  if (realtor) {
+    if (typeof realtor === "string") return realtor;
+    const rn = realtor.fullName ?? realtor.name;
+    if (rn) return String(rn);
   }
-
-  async validatePersonnelCode(personnelCode: string): Promise<AuthUserInfo | null> {
-    const expert = this.experts.find((e) => e.personnelCode === personnelCode);
-    if (!expert) return null;
-    return {
-      personnelCode: expert.personnelCode,
-      displayName: expert.fullName,
-      role: "CONSULTANT",
-    };
-  }
-
-  async requestOtp(personnelCode: string, _ip?: string): Promise<OtpIssueResult> {
-    const user = await this.validatePersonnelCode(personnelCode);
-    if (!user) {
-      throw new MelkApiError("INVALID_PERSONNEL_CODE", "کد پرسنلی در سامانه ملک تبریز یافت نشد.", 404, false);
-    }
-    const code = String(isLockdownSeed(personnelCode.split("").reduce((a, c) => a + c.charCodeAt(0), 7)));
-    otpStore.set(personnelCode, {
-      code,
-      expiresAt: Date.now() + 3 * 60 * 1000, // عمر ۳ دقیقه
-    });
-    return { ok: true, expiresInSeconds: 180, demoOtp: code };
-  }
-
-  async verifyOtp(personnelCode: string, otp: string): Promise<OtpVerifyResult> {
-    const rec = otpStore.get(personnelCode);
-    if (!rec) {
-      throw new MelkApiError("OTP_EXPIRED", "کد پیامکی صادر نشده یا منقضی شده است. دوباره درخواست کنید.", 410, false);
-    }
-    if (Date.now() > rec.expiresAt) {
-      otpStore.delete(personnelCode);
-      throw new MelkApiError("OTP_EXPIRED", "کد پیامکی منقضی شده است. دوباره درخواست کنید.", 410, false);
-    }
-    if (rec.code !== otp.trim()) {
-      throw new MelkApiError("OTP_INVALID", "کد پیامکی نادرست است.", 401, false);
-    }
-    otpStore.delete(personnelCode);
-    const user = (await this.validatePersonnelCode(personnelCode))!;
-    // شبیه‌سازی توکن صادرشده از سامانه
-    const token = `mock-${personnelCode}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    return { ok: true, token, expiresInHours: this.config.sessionTtlHours, user };
-  }
-
-  async listTransactions(_token: string, filter: TransactionFilter): Promise<Paged<CrmTransaction>> {
-    let rows = [...this.transactions];
-
-    if (filter.dateFrom) rows = rows.filter((t) => t.dealDate >= filter.dateFrom!);
-    if (filter.dateTo) {
-      const to = new Date(filter.dateTo);
-      to.setHours(23, 59, 59, 999);
-      rows = rows.filter((t) => t.dealDate <= to.toISOString());
-    }
-    if (filter.expertName?.trim()) {
-      const q = filter.expertName.trim();
-      rows = rows.filter((t) => t.expertName.includes(q));
-    }
-    if (filter.expertCode?.trim()) {
-      const q = filter.expertCode.trim();
-      rows = rows.filter((t) => t.expertCode === q);
-    }
-    if (filter.listingCode?.trim()) {
-      const q = filter.listingCode.trim().toLowerCase();
-      rows = rows.filter((t) => t.listingCode.toLowerCase().includes(q));
-    }
-    if (filter.requestCode?.trim()) {
-      const q = filter.requestCode.trim().toLowerCase();
-      rows = rows.filter((t) => (t.requestCode ?? "").toLowerCase().includes(q));
-    }
-    if (filter.priceMin !== undefined) rows = rows.filter((t) => t.price >= filter.priceMin!);
-    if (filter.priceMax !== undefined) rows = rows.filter((t) => t.price <= filter.priceMax!);
-    if (filter.district?.trim()) rows = rows.filter((t) => t.district === filter.district);
-    if (filter.propertyType?.trim()) rows = rows.filter((t) => t.propertyType === filter.propertyType);
-
-    const sortBy = filter.sortBy ?? "dealDate";
-    const dir = filter.sortDir === "asc" ? 1 : -1;
-    rows.sort((a, b) => {
-      if (sortBy === "price") return (a.price - b.price) * dir;
-      if (sortBy === "expertName") return a.expertName.localeCompare(b.expertName, "fa") * dir;
-      return (Date.parse(a.dealDate) - Date.parse(b.dealDate)) * dir;
-    });
-
-    const total = rows.length;
-    const page = rows.slice(filter.offset, filter.offset + filter.limit);
-    return { rows: page, total };
-  }
-
-  async listExperts(_token: string, filter: ExpertFilter): Promise<Paged<CrmExpert>> {
-    let rows = [...this.experts];
-    if (filter.fullName?.trim()) {
-      const q = filter.fullName.trim();
-      rows = rows.filter((e) => e.fullName.includes(q));
-    }
-    if (filter.mobile?.trim()) {
-      const q = filter.mobile.trim().replace(/\s/g, "");
-      rows = rows.filter((e) => e.mobile.replace(/\s/g, "").includes(q));
-    }
-    if (filter.personnelCode?.trim()) {
-      const q = filter.personnelCode.trim();
-      rows = rows.filter((e) => e.personnelCode.includes(q));
-    }
-    if (filter.address?.trim()) {
-      const q = filter.address.trim();
-      rows = rows.filter((e) => e.address.includes(q));
-    }
-    if (filter.branch?.trim()) rows = rows.filter((e) => e.branch === filter.branch);
-    if (filter.active !== undefined) rows = rows.filter((e) => e.active === filter.active);
-
-    rows.sort((a, b) => a.fullName.localeCompare(b.fullName, "fa"));
-    const total = rows.length;
-    return { rows: rows.slice(filter.offset, filter.offset + filter.limit), total };
-  }
-
-  async testConnection(): Promise<ConnectionStatus> {
-    const started = Date.now();
-    // شبیه‌سازی تأخیر شبکه
-    await new Promise((r) => setTimeout(r, 30 + Math.floor(Math.random() * 40)));
-    return {
-      ok: true,
-      mode: this.mode,
-      latencyMs: Date.now() - started,
-      checkedAt: new Date().toISOString(),
-      detail: "شبیه‌ساز محلی سامانه ملک تبریز فعال است.",
-    };
-  }
+  if (user.username) return String(user.username);
+  return "";
 }
 
-// ==========================================================================
-// حالت Real — اتصال به سامانه واقعی
-// ==========================================================================
+/** تشخیص نقش داشبورد از نوع کاربر ARM */
+function resolveRole(user: ArmLoginData["user"]): UserRole {
+  const type = String(user?.type ?? "").toLowerCase();
+  // realtor = کارشناس املاک؛ انواع مدیریتی → در داشبورد همان مشاور با دسترسی داده کامل است
+  return "CONSULTANT";
+}
 
 class RealProvider implements MelkProvider {
   readonly mode = "real" as const;
@@ -195,103 +109,220 @@ class RealProvider implements MelkProvider {
     this.config = config;
   }
 
-  private async c<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; token?: string } = {}): Promise<T> {
-    return melkFetch<T>({
+  /** فراخوانی API اصلی ARM */
+  private arm<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; token?: string; query?: Record<string, string | number | undefined | null> } = {}) {
+    return armCall<T>({
       path,
-      baseUrl: this.config.armBaseUrl,
-      method: init.method ?? "GET",
+      baseUrl: this.config.armApiBase,
+      method: init.method,
       body: init.body,
       token: init.token,
+      query: init.query,
       timeoutMs: this.config.timeoutMs,
       maxRetries: this.config.maxRetries,
     });
   }
 
-  async validatePersonnelCode(personnelCode: string): Promise<AuthUserInfo | null> {
-    // در حالت واقعی، اعتبارسنجی کد پرسنلی با صدور OTP انجام می‌شود
-    // (سامانه اگر کد نامعتبر باشد در پاسخ requestOtp خطا می‌دهد).
-    try {
-      await this.requestOtp(personnelCode);
-      return { personnelCode, displayName: `کارشناس ${personnelCode}`, role: "CONSULTANT" };
-    } catch {
-      return null;
-    }
-  }
-
-  async requestOtp(personnelCode: string, ip?: string): Promise<OtpIssueResult> {
-    const res = await this.c<{ expiresInSeconds: number }>(MELK_ENDPOINTS.auth.requestOtp, {
-      method: "POST",
-      body: { personnelCode, clientIp: ip },
-    });
-    return { ok: true, expiresInSeconds: res.expiresInSeconds ?? 180 };
+  async requestOtp(personnelCode: string, _ip?: string): Promise<OtpIssueResult> {
+    // قرارداد واقعی: GET authentication/otp/{code} — پیامک از سمت سامانه ARM ارسال می‌شود
+    const res = await this.arm<unknown>(MELK_ENDPOINTS.arm.requestOtp(personnelCode));
+    const env = res.data as (NestEnvelope & { verificationMinutesLimit?: number }) | null;
+    // سامانه ARM عمر کد را با verificationMinutesLimit (دقیقه) یا پیش‌فرض ۱۸۰ ثانیه اعلام می‌کند
+    let expiresInSeconds = 180;
+    const minutes = (env as { verificationMinutesLimit?: number } | null)?.verificationMinutesLimit;
+    if (minutes && minutes > 0 && minutes <= 60) expiresInSeconds = minutes * 60;
+    return { ok: true, expiresInSeconds };
   }
 
   async verifyOtp(personnelCode: string, otp: string): Promise<OtpVerifyResult> {
-    const res = await this.c<{ token: string; expiresInHours: number; user: AuthUserInfo }>(
-      MELK_ENDPOINTS.auth.verifyOtp,
-      { method: "POST", body: { personnelCode, otp } }
-    );
+    // قرارداد واقعی: POST authentication/otp/login با {code, otpCode}
+    const res = await this.arm<ArmLoginData | NestEnvelope<ArmLoginData>>(MELK_ENDPOINTS.arm.verifyOtp, {
+      method: "POST",
+      body: { code: personnelCode, otpCode: otp },
+    });
+
+    const loginData = (res.data ?? (res.data as unknown)) as ArmLoginData;
+    if (!loginData?.token) {
+      throw new MelkApiError("OTP_INVALID", "پاسخ ورود سامانه ملک تبریز فاقد توکن است.", 401, false);
+    }
+
+    const armTokens: ArmTokens = {
+      accessToken: String(loginData.token),
+      refreshToken: String(loginData.refreshToken ?? ""),
+      userType: loginData.user?.type,
+      armUserId: loginData.user?._id ? String(loginData.user._id) : undefined,
+      displayName: resolveDisplayName(loginData.user),
+    };
+
+    const displayName = armTokens.displayName || `کارشناس ${personnelCode}`;
+    const user: AuthUserInfo = {
+      personnelCode,
+      displayName,
+      role: resolveRole(loginData.user),
+    };
+
     return {
       ok: true,
-      token: res.token,
-      expiresInHours: res.expiresInHours ?? this.config.sessionTtlHours,
-      user: res.user,
+      token: armTokens.accessToken,
+      expiresInHours: this.config.sessionTtlHours,
+      user,
+      armTokens,
+    };
+  }
+
+  async refreshArmToken(refreshToken: string): Promise<ArmTokens> {
+    const res = await this.arm<ArmLoginData | NestEnvelope<ArmLoginData>>(MELK_ENDPOINTS.arm.refreshToken, {
+      method: "POST",
+      body: { refreshToken },
+    });
+    const data = (res.data ?? {}) as ArmLoginData;
+    if (!data.token) {
+      throw new MelkApiError("UNAUTHORIZED", "تمدید توکن سامانه ملک تبریز ناموفق بود.", 401, false);
+    }
+    return {
+      accessToken: String(data.token),
+      refreshToken: String(data.refreshToken ?? refreshToken),
+      userType: data.user?.type,
+      armUserId: data.user?._id ? String(data.user._id) : undefined,
+      displayName: resolveDisplayName(data.user),
     };
   }
 
   async listTransactions(token: string, filter: TransactionFilter): Promise<Paged<CrmTransaction>> {
-    const params = new URLSearchParams();
-    if (filter.dateFrom) params.set("from", filter.dateFrom);
-    if (filter.dateTo) params.set("to", filter.dateTo);
-    if (filter.expertName) params.set("expertName", filter.expertName);
-    if (filter.expertCode) params.set("expertCode", filter.expertCode);
-    if (filter.listingCode) params.set("listingCode", filter.listingCode);
-    if (filter.requestCode) params.set("requestCode", filter.requestCode);
-    if (filter.priceMin !== undefined) params.set("priceMin", String(filter.priceMin));
-    if (filter.priceMax !== undefined) params.set("priceMax", String(filter.priceMax));
-    if (filter.district) params.set("district", filter.district);
-    if (filter.propertyType) params.set("propertyType", filter.propertyType);
-    params.set("limit", String(filter.limit));
-    params.set("offset", String(filter.offset));
-    if (filter.sortBy) params.set("sort", filter.sortBy);
-    if (filter.sortDir) params.set("dir", filter.sortDir);
-    return this.c<Paged<CrmTransaction>>(`${MELK_ENDPOINTS.crm.transactions}?${params.toString()}`, { token });
+    // قرارداد واقعی: GET realtor-reports/traded-count-total?page&limit&startDate&endDate
+    // تاریخ‌ها در قالب جلالی «YYYY/MM/DD» ارسال می‌شوند (رفتار خود سامانه ARM)
+    const query: Record<string, string | number | undefined | null> = {
+      page: Math.floor(filter.offset / Math.max(filter.limit, 1)) + 1,
+      limit: filter.limit,
+    };
+    if (filter.dateFrom) query.startDate = isoToJalaliString(filter.dateFrom);
+    if (filter.dateTo) query.endDate = isoToJalaliString(filter.dateTo);
+
+    const res = await this.arm<unknown>(MELK_ENDPOINTS.arm.tradedTotal, { token, query });
+    const { rows, total } = extractPagedList(res.data, (row, i) =>
+      mapArmTradedRow(row, i, Number(query.page), filter.limit)
+    );
+    return { rows, total };
   }
 
   async listExperts(token: string, filter: ExpertFilter): Promise<Paged<CrmExpert>> {
-    const params = new URLSearchParams();
-    if (filter.fullName) params.set("fullName", filter.fullName);
-    if (filter.mobile) params.set("mobile", filter.mobile);
-    if (filter.personnelCode) params.set("personnelCode", filter.personnelCode);
-    if (filter.address) params.set("address", filter.address);
-    if (filter.branch) params.set("branch", filter.branch);
-    if (filter.active !== undefined) params.set("active", String(filter.active));
-    params.set("limit", String(filter.limit));
-    params.set("offset", String(filter.offset));
-    return this.c<Paged<CrmExpert>>(`${MELK_ENDPOINTS.crm.experts}?${params.toString()}`, { token });
+    // قرارداد واقعی: GET realtors/list?page&limit
+    const query: Record<string, string | number | undefined | null> = {
+      page: Math.floor(filter.offset / Math.max(filter.limit, 1)) + 1,
+      limit: filter.limit,
+    };
+    const res = await this.arm<unknown>(MELK_ENDPOINTS.arm.realtorsList, { token, query });
+    const { rows, total } = extractPagedList(res.data, (row, i) => mapArmRealtorRow(row, i));
+    return { rows, total };
+  }
+
+  async pmPortalInfo(): Promise<{ ok: boolean; detail: string }> {
+    try {
+      const res = await armCall<unknown>({
+        path: MELK_ENDPOINTS.pm.portalInfo,
+        baseUrl: this.config.pmApiBase,
+        timeoutMs: this.config.timeoutMs,
+        maxRetries: 0,
+      });
+      return { ok: true, detail: "سامانه پرسنلی (PM) پاسخ داد." };
+    } catch (err) {
+      const e = err as MelkApiError;
+      return { ok: false, detail: e.message };
+    }
   }
 
   async testConnection(): Promise<ConnectionStatus> {
     const checkedAt = new Date().toISOString();
+    const services: ArmServiceStatus[] = [];
+
+    // ۱) API اصلی ARM — سنجش با نقطه عمومی enums (بدون توکن، همان زنجیره nginx)
     try {
-      const latencyMs = await probeHost(this.config.armBaseUrl, this.config);
-      return {
-        ok: true,
-        mode: this.mode,
-        latencyMs,
-        checkedAt,
-        detail: `ارتباط با ${this.config.armBaseUrl} برقرار است.`,
-      };
-    } catch (err) {
-      const e = err as MelkApiError;
-      return {
-        ok: false,
-        mode: this.mode,
+      const probe = await probeGet(this.config.armPublicApiBase, MELK_ENDPOINTS.armPublic.enums, 12000);
+      const dbUp = probe.httpStatus < 500 && !probe.bodyText.includes("MongooseError");
+      services.push({
+        service: "ARM_PUBLIC",
+        label: "سامانه مدیریت آگهی و درخواست (عمومی)",
+        reachable: true,
+        databaseUp: dbUp,
+        httpStatus: probe.httpStatus,
+        latencyMs: probe.latencyMs,
+        detail: dbUp ? "پاسخ موفق" : "پایگاه داده سامانه ARM در دسترس نیست (Mongoose/502)",
+      });
+    } catch {
+      services.push({
+        service: "ARM_PUBLIC",
+        label: "سامانه مدیریت آگهی و درخواست (عمومی)",
+        reachable: false,
+        databaseUp: false,
         latencyMs: -1,
-        checkedAt,
-        detail: `ارتباط برقرار نشد: ${e.message ?? "خطای شبکه"}`,
-      };
+        detail: "دسترسی شبکه به arus-api.melketabriz.ir برقرار نشد.",
+      });
     }
+
+    // ۲) API احراز هویت ARM — سنجش نقطه OTP (بدون توکن؛ کد تستی صرفاً برای بررسی سلامت مسیر)
+    try {
+      const probe = await probeGet(this.config.armApiBase, `authentication/otp/0`, 12000);
+      const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
+      services.push({
+        service: "ARM_API",
+        label: "سامانه مدیریت آگهی و درخواست (API احراز هویت)",
+        reachable: true,
+        databaseUp: dbUp,
+        httpStatus: probe.httpStatus,
+        latencyMs: probe.latencyMs,
+        detail: dbUp ? "مسیر احراز هویت فعال است" : "پایگاه داده سامانه ARM قطع است — ارسال پیامک ممکن نیست",
+      });
+    } catch {
+      services.push({
+        service: "ARM_API",
+        label: "سامانه مدیریت آگهی و درخواست (API احراز هویت)",
+        reachable: false,
+        databaseUp: false,
+        latencyMs: -1,
+        detail: "دسترسی شبکه به arus-api.melketabriz.ir برقرار نشد.",
+      });
+    }
+
+    // ۳) API سامانه پرسنلی PM
+    try {
+      const probe = await probeGet(this.config.pmApiBase, MELK_ENDPOINTS.pm.portalInfo, 12000);
+      const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
+      services.push({
+        service: "PM_API",
+        label: "سامانه مدیریت پرسنلی (PM)",
+        reachable: true,
+        databaseUp: dbUp,
+        httpStatus: probe.httpStatus,
+        latencyMs: probe.latencyMs,
+        detail: dbUp ? "پاسخ موفق" : "پایگاه داده سامانه پرسنلی در دسترس نیست",
+      });
+    } catch {
+      services.push({
+        service: "PM_API",
+        label: "سامانه مدیریت پرسنلی (PM)",
+        reachable: false,
+        databaseUp: false,
+        latencyMs: -1,
+        detail: "دسترسی شبکه به pm-api.melketabriz.ir برقرار نشد.",
+      });
+    }
+
+    const anyDbUp = services.some((s) => s.databaseUp);
+    const anyReachable = services.some((s) => s.reachable);
+    const armDbUp = services.find((s) => s.service === "ARM_API")?.databaseUp ?? false;
+
+    return {
+      ok: anyReachable,
+      mode: this.mode,
+      latencyMs: Math.max(...services.map((s) => s.latencyMs)),
+      checkedAt,
+      services,
+      detail: !anyReachable
+        ? "ارتباط شبکه با سامانه‌های ملک تبریز برقرار نشد."
+        : armDbUp
+          ? "اتصال واقعی به سامانه‌های ملک تبریز برقرار و پایگاه داده فعال است."
+          : "سرورهای ملک تبریز پاسخ می‌دهند اما پایگاه داده آن‌ها در حال حاضر قطع است (قطعی سمت سرور ملک تبریز). لطفاً بعداً همگام‌سازی مجدد کنید.",
+    };
   }
 }
 
@@ -301,11 +332,10 @@ class RealProvider implements MelkProvider {
 
 let cachedProvider: MelkProvider | null = null;
 
-/** نمونه یکتا (Singleton) — ساخته‌شده بر اساس پیکربندی جاری */
+/** نمونه یکتا (Singleton) — همیشه اتصال واقعی */
 export function getMelkProvider(): MelkProvider {
   if (!cachedProvider) {
-    const config = getMelkApiConfig();
-    cachedProvider = config.mode === "real" ? new RealProvider(config) : new MockProvider(config);
+    cachedProvider = new RealProvider(getMelkApiConfig());
   }
   return cachedProvider;
 }

@@ -103,7 +103,7 @@ bun add @capacitor/preferences
 ## ۶) چک‌لیست پیش از انتشار تولید
 
 - [ ] `MASTER_ACCESS_CODE` به کد جدید ۸ رقمی تغییر کند (الزامی).
-- [ ] `MELK_API_MODE=real` و Endpoint ها مطابق مستندات رسمی ملک تبریز هم‌تراز شوند (فقط `endpoints.ts`).
+- [ ] مقادیر `.env` تولید (MASTER_ACCESS_CODE و MELK_TOKEN_KEY جدید) تنظیم شوند.
 - [ ] `SESSION_TTL_HOURS` مطابق سیاست امنیتی تنظیم شود.
 - [ ] HTTPS فعال (برای WebCrypto) — روی http ساده، ذخیره‌سازی امن به fallback می‌رسد.
 - [ ] بک‌اپ دوره‌ای `db/custom.db` (حافظه ایجنت‌ها و بازخوردها).

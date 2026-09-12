@@ -1,6 +1,7 @@
 /**
  * POST /api/auth/request-otp
- * مرحله ۱ ورود: دریافت کد پرسنلی، صدور کد پیامکی از سامانه ملک تبریز.
+ * مرحله ۱ ورود: دریافت کد پرسنلی → درخواست ارسال پیامک از سامانه واقعی
+ * arm.melketabriz.ir (GET arus-api.melketabriz.ir/api/apm/authentication/otp/{code})
  * محدودسازی نرخ: حداکثر ۳ درخواست در ۱۰ دقیقه برای هر کد پرسنلی.
  */
 
@@ -28,23 +29,27 @@ export async function POST(request: NextRequest) {
       throw new MelkApiError("RATE_LIMITED", rate.reason ?? "درخواست بیش از حد مجاز.", 429, false);
     }
 
+    // ✅ فراخوانی واقعی سامانه ARM — پیامک از سمت ملک تبریز ارسال می‌شود
     const provider = getMelkProvider();
     const result = await provider.requestOtp(personnelCode, ip);
 
     await recordAttempt(personnelCode, "REQUEST_OTP", true, ip);
-    await audit("OTP_REQUESTED", personnelCode);
+    await audit("OTP_REQUESTED", personnelCode, "arm.melketabriz.ir SMS dispatched");
 
     return Response.json({
       ok: true,
       expiresInSeconds: result.expiresInSeconds,
-      // در حالت Mock کد برای دمو برگردانده می‌شود؛ در حالت Real هرگز
-      demoOtp: result.demoOtp,
+      source: "arm.melketabriz.ir",
     });
   } catch (err) {
     if (personnelCode) {
       await recordAttempt(personnelCode, "REQUEST_OTP", false).catch(() => {});
     }
     if (err instanceof MelkApiError) return errorResponse(err);
-    return errorResponse(new MelkApiError("UNKNOWN", "خطای غیرمنتظره در صدور کد پیامکی.", 500, false));
+    // خطای خام fetch به سامانه واقعی — پیام شفاف برای کاربر
+    const msg = (err as Error)?.message?.includes("fetch")
+      ? "ارتباط با سامانه ملک تبریز برقرار نشد. لطفاً اتصال شبکه و وضعیت سرورهای ملک تبریز را بررسی کنید."
+      : "خطای غیرمنتظره در صدور کد پیامکی.";
+    return errorResponse(new MelkApiError("UNKNOWN", msg, 500, false));
   }
 }

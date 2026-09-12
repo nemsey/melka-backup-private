@@ -17,7 +17,6 @@ import {
   concentrationIndex,
   droppedExperts,
 } from "@/core/agent/analyzers";
-import { mulberry32, generateExperts, generateTransactions } from "@/lib/melk-api/mock-data";
 
 // ساخت رکوردهای شبیه Prisma (شکل یکسان با TransactionRecordGetPayload)
 type Tx = Parameters<typeof monthlySeries>[0][number];
@@ -175,30 +174,59 @@ describe("عملکرد و ریسک کارشناسان", () => {
   });
 });
 
-describe("داده شبیه‌ساز (Mock)", () => {
-  test("قطعی بودن با seed یکسان", () => {
-    const e1 = generateExperts(7, 5);
-    const e2 = generateExperts(7, 5);
-    expect(e1.map((x) => x.fullName)).toEqual(e2.map((x) => x.fullName));
-    const t1 = generateTransactions(e1, 9, 50);
-    const t2 = generateTransactions(e2, 9, 50);
-    expect(t1.map((x) => x.id)).toEqual(t2.map((x) => x.id));
-    expect(t1.map((x) => x.price)).toEqual(t2.map((x) => x.price));
-  });
-  test("تولید داده واقع‌نما: کد پرسنلی، قیمت رُند، کمیسیون", () => {
-    const experts = generateExperts(42, 24);
-    const txs = generateTransactions(experts, 1337, 100);
-    expect(txs.length).toBe(100);
-    for (const t of txs) {
-      expect(t.price % 50_000_000).toBe(0); // رُند ۵۰ میلیونی
-      expect(t.commission).toBe(Math.round(t.price * 0.005));
-      expect(t.expertCode).toMatch(/^410031\d{3}$/);
-      expect(t.listingCode).toMatch(/^MT-\d+$/);
-    }
-  });
-  test("mulberry32: بازتولیدپذیری", () => {
-    const a = mulberry32(123);
-    const b = mulberry32(123);
-    expect([a(), a(), a()]).toEqual([b(), b(), b()]);
+describe("آداپتور نگاشت داده واقعی سامانه ملک تبریز", () => {
+  test(" نگاشت ردیف گزارش معاملات با نام فیلدهای رایج", async () => {
+    const { mapArmTradedRow, mapArmRealtorRow, anyDateStringToIso, isoToJalaliString, gregorianToJalali, jalaliToGregorian, extractPagedList } = await import("@/lib/melk-api/adapters");
+    const t = mapArmTradedRow(
+      {
+        _id: "665f1a2b3c4d5e6f70819203",
+        realtor: { fullName: "سید نعمت اله سیدی", code: "410031320" },
+        propertyCode: "AD-1001",
+        requestCode: "RQ-88",
+        tradedAt: "1403/05/21",
+        price: 5_000_000_000,
+        district: "ولیعصر",
+        propertyType: "آپارتمان",
+        area: 105,
+        commission: 25_000_000,
+      },
+      0, 1, 100
+    );
+    expect(t).not.toBeNull();
+    expect(t!.expertName).toBe("سید نعمت اله سیدی");
+    expect(t!.expertCode).toBe("410031320");
+    expect(t!.listingCode).toBe("AD-1001");
+    expect(t!.requestCode).toBe("RQ-88");
+    expect(t!.price).toBe(5_000_000_000);
+    expect(t!.district).toBe("ولیعصر");
+    expect(t!.propertyType).toBe("آپارتمان");
+
+    // تاریخ جلالی → ISO و بازگشت
+    const iso = anyDateStringToIso("1403/05/21");
+    expect(iso).toContain("2024-08");
+    expect(isoToJalaliString(iso!)).toBe("1403/05/21");
+
+    // اعداد فارسی در تاریخ
+    expect(anyDateStringToIso("۱۴۰۳/۰۵/۲۱")).toBe(iso);
+
+    // تبدیل رفت‌وبرگشت جلالی
+    const [jy, jm, jd] = gregorianToJalali(2024, 8, 11);
+    expect([jy, jm, jd]).toEqual([1403, 5, 21]);
+    expect(jalaliToGregorian(jy, jm, jd)).toEqual([2024, 8, 11]);
+
+    // نگاشت کارشناس
+    const e = mapArmRealtorRow({ _id: "r1", fullName: "کارشناس الف", code: "12345678", mobile: "09141234567", address: "تبریز", active: true, createdAt: "1402/01/15" }, 0);
+    expect(e!.fullName).toBe("کارشناس الف");
+    expect(e!.personnelCode).toBe("12345678");
+    expect(e!.mobile).toBe("09141234567");
+    expect(e!.active).toBe(true);
+
+    // استخراج صفحه‌بندی از پوشه‌های مختلف
+    const p1 = extractPagedList({ data: { docs: [{ _id: "1" }, { _id: "2" }], totalDocs: 2, totalPages: 1 } }, (r) => ({ id: String(r._id) }));
+    expect(p1.rows.map((r) => r.id)).toEqual(["1", "2"]);
+    expect(p1.total).toBe(2);
+    const p2 = extractPagedList({ data: [{ _id: "3" }] }, (r) => ({ id: String(r._id) }));
+    expect(p2.rows).toHaveLength(1);
+    expect(p2.total).toBe(1);
   });
 });

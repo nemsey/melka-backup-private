@@ -26,9 +26,28 @@ import { api, ApiClientError } from "@/lib/client/api";
 import { useAppStore } from "@/lib/client/store";
 import { faDateTime } from "@/lib/format";
 
+interface ServiceStatus {
+  service: string;
+  label: string;
+  reachable: boolean;
+  databaseUp: boolean;
+  httpStatus?: number;
+  latencyMs: number;
+  detail?: string;
+}
+
 interface ConnectionInfo {
-  status: { ok: boolean; mode: string; latencyMs: number; detail: string; checkedAt: string };
-  config: { mode: string; armBaseUrl: string; pmBaseUrl: string; timeoutMs: number; maxRetries: number };
+  status: { ok: boolean; mode: string; latencyMs: number; detail: string; checkedAt: string; services?: ServiceStatus[] };
+  sync: {
+    lastSyncedAt: string | null;
+    lastSuccessAt: string | null;
+    lastError: string | null;
+    lastErrorCode: string | null;
+    transactionCount: number;
+    expertCount: number;
+    attempts: number;
+  };
+  config: { mode: string; armApiBase: string; armPublicApiBase: string; pmApiBase: string; timeoutMs: number; maxRetries: number; syncIntervalMinutes: number };
 }
 
 export function SettingsPage({ onBack }: TilePageProps) {
@@ -41,16 +60,45 @@ export function SettingsPage({ onBack }: TilePageProps) {
   const [conn, setConn] = useState<ConnectionInfo | null>(null);
   const [testing, setTesting] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const syncNow = async () => {
+    setSyncing(true);
+    try {
+      const res = await api<{ ok: boolean; sync: { ok: boolean; transactions: number; experts: number; error?: string } }>("/api/sync", {
+        method: "POST",
+      });
+      if (res.sync.ok) {
+        toast({
+          title: "همگام‌سازی موفق",
+          description: `${res.sync.transactions} معامله و ${res.sync.experts} کارشناس از سامانه واقعی ملک تبریز استخراج شد.`,
+        });
+      } else {
+        toast({
+          title: "همگام‌سازی ناموفق",
+          description: res.sync.error ?? "خطای نامشخص در استخراج داده از سامانه ملک تبریز.",
+          variant: "destructive",
+        });
+      }
+      void testConnection();
+    } catch (err) {
+      const e = err as ApiClientError;
+      toast({ title: "همگام‌سازی ناموفق", description: e.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const testConnection = async () => {
     setTesting(true);
     try {
       const res = await api<ConnectionInfo>("/api/connection/status");
       setConn(res);
+      const armDbUp = res.status.services?.find((s) => s.service === "ARM_API")?.databaseUp;
       toast({
-        title: res.status.ok ? "اتصال برقرار است" : "اتصال برقرار نیست",
+        title: res.status.ok ? (armDbUp ? "اتصال واقعی برقرار است" : "سرور پاسخ می‌دهد؛ پایگاه داده قطع است") : "اتصال برقرار نیست",
         description: res.status.detail,
-        variant: res.status.ok ? "default" : "destructive",
+        variant: res.status.ok && armDbUp ? "default" : "destructive",
       });
     } catch (err) {
       const e = err as ApiClientError;
@@ -63,7 +111,10 @@ export function SettingsPage({ onBack }: TilePageProps) {
   const resetConnection = async () => {
     setResetting(true);
     try {
-      await api("/api/connection/reset", { method: "POST", body: { withData: true } });
+      const res = await api<{ ok: boolean; resync?: { ok: boolean; error?: string } }>("/api/connection/reset", {
+        method: "POST",
+        body: { withData: true },
+      });
       // پاک‌سازی کش سمت کلاینت (Service Worker + حافظه مرورگر)
       if ("caches" in window) {
         const keys = await caches.keys();
@@ -73,7 +124,9 @@ export function SettingsPage({ onBack }: TilePageProps) {
       localStorage.removeItem("melk-app-state");
       toast({
         title: "اتصال بازنشانی شد",
-        description: "نشست ابطال، کش پاک و داده‌ها مجدداً همگام‌سازی شدند. اکنون دوباره وارد شوید.",
+        description: res.resync?.ok
+          ? "نشست ابطال، کش پاک و داده‌های واقعی مجدداً استخراج شدند. اکنون دوباره وارد شوید."
+          : `نشست ابطال و کش پاک شد. استخراج مجدد داده در دسترس نبود: ${res.resync?.error ?? "نامشخص"}. پس از ورود با کد پرسنلی، دکمه «همگام‌سازی داده‌ها» را بزنید.`,
       });
       setStage("auth");
     } catch (err) {
@@ -187,35 +240,100 @@ export function SettingsPage({ onBack }: TilePageProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           {conn && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-lg border bg-card p-3 flex items-center gap-2">
-                {conn.status.ok ? (
-                  <Wifi className="w-4 h-4 text-emerald-600" aria-hidden />
-                ) : (
-                  <WifiOff className="w-4 h-4 text-rose-600" aria-hidden />
-                )}
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">وضعیت</p>
-                  <p className="text-sm font-bold">{conn.status.ok ? "متصل" : "قطع"}</p>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-lg border bg-card p-3 flex items-center gap-2">
+                  {conn.status.services?.some((s) => s.databaseUp) ? (
+                    <Wifi className="w-4 h-4 text-emerald-600" aria-hidden />
+                  ) : (
+                    <WifiOff className="w-4 h-4 text-amber-600" aria-hidden />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">وضعیت سرورها</p>
+                    <p className="text-sm font-bold">
+                      {conn.status.services?.some((s) => s.databaseUp)
+                        ? "فعال"
+                        : conn.status.ok
+                          ? "پاسخ‌گو / پایگاه داده قطع"
+                          : "قطع"}
+                    </p>
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">حالت اتصال</p>
+                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">اتصال واقعی</p>
+                </div>
+                <div className="rounded-lg border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">زمان پاسخ</p>
+                  <p className="text-sm font-bold" dir="ltr">
+                    {conn.status.latencyMs >= 0 ? `${conn.status.latencyMs}ms` : "—"}
+                  </p>
                 </div>
               </div>
-              <div className="rounded-lg border bg-card p-3">
-                <p className="text-xs text-muted-foreground">حالت اتصال</p>
-                <p className="text-sm font-bold">{conn.config.mode === "mock" ? "شبیه‌ساز (دمو)" : "اتصال واقعی"}</p>
-              </div>
-              <div className="rounded-lg border bg-card p-3">
-                <p className="text-xs text-muted-foreground">زمان پاسخ</p>
-                <p className="text-sm font-bold" dir="ltr">{conn.status.latencyMs >= 0 ? `${conn.status.latencyMs}ms` : "—"}</p>
-              </div>
-            </div>
+
+              {/* وضعیت تفصیلی هر سرویس */}
+              {conn.status.services && (
+                <div className="rounded-lg border divide-y">
+                  {conn.status.services.map((s) => (
+                    <div key={s.service} className="flex items-center justify-between gap-2 p-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{s.label}</p>
+                        <p className="text-xs text-muted-foreground truncate">{s.detail}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {s.databaseUp ? (
+                          <Badge className="bg-emerald-600 gap-1">
+                            <Wifi className="w-3 h-3" aria-hidden /> سالم
+                          </Badge>
+                        ) : s.reachable ? (
+                          <Badge className="bg-amber-500 text-amber-950 gap-1">
+                            <WifiOff className="w-3 h-3" aria-hidden /> پایگاه داده قطع
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="gap-1">
+                            <WifiOff className="w-3 h-3" aria-hidden /> در دسترس نیست
+                          </Badge>
+                        )}
+                        {s.httpStatus ? (
+                          <span className="text-[10px] font-mono text-muted-foreground" dir="ltr">
+                            {s.httpStatus}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* وضعیت آخرین همگام‌سازی داده واقعی */}
+              {conn.sync && (
+                <div className="rounded-lg border bg-muted/40 p-3 space-y-1 text-xs leading-relaxed">
+                  <p>
+                    آخرین استخراج موفق داده واقعی:{" "}
+                    <b>{conn.sync.lastSuccessAt ? faDateTime(conn.sync.lastSuccessAt) : "هنوز انجام نشده"}</b>
+                  </p>
+                  <p>
+                    داده‌های کش‌شده: <b>{conn.sync.transactionCount.toLocaleString("fa-IR")}</b> معامله،{" "}
+                    <b>{conn.sync.expertCount.toLocaleString("fa-IR")}</b> کارشناس
+                    {conn.sync.attempts > 0 && conn.sync.lastError ? ` — آخرین خطا: ${conn.sync.lastError}` : ""}
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           <div className="text-xs text-muted-foreground space-y-1">
             <p>
-              سامانه CRM: <span dir="ltr" className="font-mono">{conn?.config.armBaseUrl ?? "https://arm.melketabriz.ir"}</span>
+              API سامانه آگهی و درخواست (ARM):{" "}
+              <span dir="ltr" className="font-mono">
+                {conn?.config.armApiBase ?? "https://arus-api.melketabriz.ir/api/apm/"}
+              </span>
             </p>
             <p>
-              سامانه PM: <span dir="ltr" className="font-mono">{conn?.config.pmBaseUrl ?? "https://pm.melketabriz.ir"}</span>
+              API سامانه پرسنلی (PM):{" "}
+              <span dir="ltr" className="font-mono">
+                {conn?.config.pmApiBase ?? "https://pm-api.melketabriz.ir/api/"}
+              </span>
             </p>
           </div>
 
@@ -223,6 +341,11 @@ export function SettingsPage({ onBack }: TilePageProps) {
             <Button variant="outline" className="gap-2" onClick={() => void testConnection()} disabled={testing}>
               {testing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCcw className="w-4 h-4" aria-hidden />}
               تست اتصال
+            </Button>
+
+            <Button variant="secondary" className="gap-2" onClick={() => void syncNow()} disabled={syncing}>
+              {syncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Server className="w-4 h-4" aria-hidden />}
+              همگام‌سازی داده‌ها
             </Button>
 
             {/* ⬇︎ دکمه ریست اتصال (الزامی سند طرح) */}

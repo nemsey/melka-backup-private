@@ -1,147 +1,124 @@
 /**
- * تست لایه انتزاعی API — Provider شبیه‌ساز (Mock)
+ * تست لایه اتصال واقعی به سامانه‌های ملک تبریز
+ * - پوشه پاسخ NestJS و تشخیص خطاها
+ * - رمزنگاری توکن ARM (AES-256-GCM)
+ * - اعتبارسنجی فرمت OTP ۴ رقمی و کد مدیر ۸ رقمی
+ * - کوئری‌سازی بدون مقادیر خالی
  * اجرا: bun test tests/melk-api.test.ts
  */
 
-import { describe, expect, test, beforeAll } from "bun:test";
-import { getMelkProvider } from "@/lib/melk-api/provider";
-import { MelkApiError } from "@/lib/melk-api/types";
+import { describe, expect, test } from "bun:test";
 
-const provider = getMelkProvider();
+// ==========================================================================
+// ابزارهای خالص client
+// ==========================================================================
 
-describe("فلوی احراز هویت شبیه‌ساز", () => {
-  const validCode = "410031320";
-  let issuedOtp = "";
-
-  beforeAll(async () => {
-    const res = await provider.requestOtp(validCode);
-    issuedOtp = res.demoOtp ?? "";
+describe("ساخت کوئری (buildQuery)", () => {
+  test("مقادیر خالی حذف می‌شوند", async () => {
+    const { buildQuery } = await import("@/lib/melk-api/client");
+    const qs = buildQuery({ page: 1, limit: 100, startDate: undefined, endDate: "", token: null });
+    expect(qs).toBe("?page=1&limit=100");
   });
-
-  test("صدور OTP برای کد پرسنلی معتبر", async () => {
-    const res = await provider.requestOtp("410031321");
-    expect(res.ok).toBe(true);
-    expect(res.expiresInSeconds).toBe(180);
-    expect(res.demoOtp).toMatch(/^\d{6}$/);
+  test("بدون مقدار → رشته خالی", async () => {
+    const { buildQuery } = await import("@/lib/melk-api/client");
+    expect(buildQuery(undefined)).toBe("");
   });
-
-  test("کد پرسنلی ناموجود → خطای INVALID_PERSONNEL_CODE", async () => {
-    try {
-      await provider.requestOtp("999999999");
-      expect.unreachable();
-    } catch (err) {
-      expect(err).toBeInstanceOf(MelkApiError);
-      expect((err as MelkApiError).code).toBe("INVALID_PERSONNEL_CODE");
-    }
-  });
-
-  test("تأیید OTP صحیح → توکن و اطلاعات کاربر", async () => {
-    const res = await provider.verifyOtp(validCode, issuedOtp);
-    expect(res.ok).toBe(true);
-    expect(res.token).toContain(validCode);
-    expect(res.user.personnelCode).toBe(validCode);
-    expect(res.user.role).toBe("CONSULTANT");
-    expect(res.user.displayName.length).toBeGreaterThan(1);
-  });
-
-  test("کد پیامکی غلط → خطای OTP_INVALID", async () => {
-    await provider.requestOtp("410031322"); // صدور مجدد
-    try {
-      await provider.verifyOtp("410031322", "000000");
-      expect.unreachable();
-    } catch (err) {
-      expect((err as MelkApiError).code).toBe("OTP_INVALID");
-    }
-  });
-
-  test("OTP مصرف‌شده دوباره قابل استفاده نیست (Single-use)", async () => {
-    const res = await provider.requestOtp("410031323");
-    const code = res.demoOtp!;
-    await provider.verifyOtp("410031323", code);
-    try {
-      await provider.verifyOtp("410031323", code);
-      expect.unreachable();
-    } catch (err) {
-      expect((err as MelkApiError).code).toBe("OTP_EXPIRED");
-    }
+  test("مقدار فارسی کدگذاری می‌شود", async () => {
+    const { buildQuery } = await import("@/lib/melk-api/client");
+    expect(buildQuery({ name: "تبریز" })).toContain(encodeURIComponent("تبریز"));
   });
 });
 
-describe("فیلترهای معاملات", () => {
-  test("فیلتر نام کارشناس", async () => {
-    const all = await provider.listTransactions("t", { limit: 2000, offset: 0 });
-    expect(all.total).toBeGreaterThan(100);
-    const name = all.rows[0].expertName;
-    const filtered = await provider.listTransactions("t", { limit: 100, offset: 0, expertName: name });
-    expect(filtered.total).toBeGreaterThan(0);
-    for (const r of filtered.rows) expect(r.expertName).toBe(name);
-  });
+// ==========================================================================
+// فرمت‌های اعتبارسنجی
+// ==========================================================================
 
-  test("فیلتر کد آگهی و کد درخواست", async () => {
-    const all = await provider.listTransactions("t", { limit: 500, offset: 0 });
-    const withReq = all.rows.find((r) => r.requestCode);
-    const f1 = await provider.listTransactions("t", { limit: 10, offset: 0, listingCode: withReq!.listingCode });
-    expect(f1.rows.every((r) => r.listingCode === withReq!.listingCode)).toBe(true);
-    const f2 = await provider.listTransactions("t", { limit: 10, offset: 0, requestCode: withReq!.requestCode! });
-    expect(f2.rows.every((r) => r.requestCode === withReq!.requestCode)).toBe(true);
+describe("فرمت OTP و کدها (مطابق سامانه واقعی)", () => {
+  test("OTP سامانه ARM ۴ رقمی است", async () => {
+    const { isValidOtpFormat } = await import("@/lib/auth/crypto");
+    expect(isValidOtpFormat("1234")).toBe(true);
+    expect(isValidOtpFormat("123456")).toBe(false); // ۶ رقم = نامعتبر (سامانه واقعی ۴ رقم است)
+    expect(isValidOtpFormat("12a4")).toBe(false);
+    expect(isValidOtpFormat("")).toBe(false);
   });
-
-  test("فیلتر بازه مبلغ", async () => {
-    const res = await provider.listTransactions("t", {
-      limit: 100,
-      offset: 0,
-      priceMin: 5_000_000_000,
-      priceMax: 10_000_000_000,
-    });
-    for (const r of res.rows) {
-      expect(r.price).toBeGreaterThanOrEqual(5_000_000_000);
-      expect(r.price).toBeLessThanOrEqual(10_000_000_000);
-    }
+  test("کد مدیر ۸ رقمی است", async () => {
+    const { isValidMasterCodeFormat } = await import("@/lib/auth/crypto");
+    expect(isValidMasterCodeFormat("41372895")).toBe(true);
+    expect(isValidMasterCodeFormat("1372")).toBe(false);
   });
-
-  test("صفحه‌بندی: total ≥ مجموع صفحات", async () => {
-    const p1 = await provider.listTransactions("t", { limit: 10, offset: 0 });
-    const p2 = await provider.listTransactions("t", { limit: 10, offset: 10 });
-    expect(p1.total).toBe(p2.total);
-    expect(p1.rows[0].id).not.toBe(p2.rows[0].id);
-  });
-
-  test("مرتب‌سازی نزولی تاریخ", async () => {
-    const res = await provider.listTransactions("t", { limit: 50, offset: 0, sortBy: "dealDate", sortDir: "desc" });
-    for (let i = 1; i < res.rows.length; i++) {
-      expect(Date.parse(res.rows[i - 1].dealDate)).toBeGreaterThanOrEqual(Date.parse(res.rows[i].dealDate));
-    }
+  test("کد پرسنلی ۶ تا ۱۲ رقم", async () => {
+    const { isValidPersonnelCodeFormat } = await import("@/lib/auth/crypto");
+    expect(isValidPersonnelCodeFormat("410031320")).toBe(true);
+    expect(isValidPersonnelCodeFormat("12345")).toBe(false);
+    expect(isValidPersonnelCodeFormat("1234567890123")).toBe(false);
   });
 });
 
-describe("فیلترهای کارشناسان", () => {
-  test("فیلتر نام و کد پرسنلی", async () => {
-    const all = await provider.listExperts("t", { limit: 100, offset: 0 });
-    const expert = all.rows[0];
-    const byName = await provider.listExperts("t", { limit: 10, offset: 0, fullName: expert.fullName });
-    expect(byName.rows.some((e) => e.personnelCode === expert.personnelCode)).toBe(true);
-    const byCode = await provider.listExperts("t", { limit: 10, offset: 0, personnelCode: expert.personnelCode });
-    expect(byCode.rows).toHaveLength(1);
-  });
+// ==========================================================================
+// رمزنگاری توکن ARM
+// ==========================================================================
 
-  test("فیلتر موبایل و وضعیت", async () => {
-    const byMobile = await provider.listExperts("t", { limit: 10, offset: 0, mobile: "0914" });
-    expect(byMobile.total).toBe(allExpertCount());
-    const inactive = await provider.listExperts("t", { limit: 100, offset: 0, active: false });
-    for (const e of inactive.rows) expect(e.active).toBe(false);
+describe("رمزنگاری توکن ARM (AES-256-GCM)", () => {
+  test("رمزگذاری و رمزگشایی رفت‌وبرگشت", async () => {
+    const { encryptSecret, decryptSecret } = await import("@/lib/auth/crypto");
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.arm-token-test";
+    const enc = encryptSecret(token);
+    expect(enc).not.toContain(token);
+    expect(enc).not.toBe(token);
+    expect(decryptSecret(enc)).toBe(token);
   });
-
-  function allExpertCount(): number {
-    // helper — همه شماره‌های موبایل شبیه‌ساز با 0914 شروع می‌شوند
-    return 24;
-  }
+  test("بدنه دستکاری‌شده → null (مقاومت در برابر Tamper)", async () => {
+    const { encryptSecret, decryptSecret } = await import("@/lib/auth/crypto");
+    const enc = encryptSecret("secret-arm-token");
+    const tampered = enc.slice(0, -4) + (enc.endsWith("AAAA") ? "BBBB" : "AAAA");
+    expect(decryptSecret(tampered)).toBeNull();
+  });
+  test("ورودی نامعتبر → null", async () => {
+    const { decryptSecret } = await import("@/lib/auth/crypto");
+    expect(decryptSecret(null)).toBeNull();
+    expect(decryptSecret("")).toBeNull();
+    expect(decryptSecret("not-base64!!!")).toBeNull();
+  });
 });
 
-describe("تست اتصال", () => {
-  test("وضعیت اتصال شبیه‌ساز همیشه ok", async () => {
-    const status = await provider.testConnection();
-    expect(status.ok).toBe(true);
-    expect(status.mode).toBe("mock");
-    expect(status.latencyMs).toBeGreaterThan(0);
+// ==========================================================================
+// پیکربندی واقعی
+// ==========================================================================
+
+describe("پیکربندی اتصال واقعی", () => {
+  test("آدرس‌های API کشف‌شده سامانه‌های ملک تبریز", async () => {
+    const { getMelkApiConfig } = await import("@/lib/melk-api/config");
+    const cfg = getMelkApiConfig();
+    expect(cfg.mode).toBe("real");
+    expect(cfg.armApiBase).toBe("https://arus-api.melketabriz.ir/api/apm/");
+    expect(cfg.armPublicApiBase).toBe("https://arus-api.melketabriz.ir/api/public/");
+    expect(cfg.pmApiBase).toBe("https://pm-api.melketabriz.ir/api/");
+  });
+  test("نقاط اتصال واقعی", async () => {
+    const { MELK_ENDPOINTS } = await import("@/lib/melk-api/endpoints");
+    expect(MELK_ENDPOINTS.arm.requestOtp("410031320")).toBe("authentication/otp/410031320");
+    expect(MELK_ENDPOINTS.arm.verifyOtp).toBe("authentication/otp/login");
+    expect(MELK_ENDPOINTS.arm.tradedTotal).toBe("realtor-reports/traded-count-total");
+    expect(MELK_ENDPOINTS.arm.realtorsList).toBe("realtors/list");
+    expect(MELK_ENDPOINTS.pm.portalInfo).toBe("public/portalInfo");
+  });
+});
+
+// ==========================================================================
+// Provider واقعی (بدون فراخوانی شبکه — فقط نوع/رابط)
+// ==========================================================================
+
+describe("Provider واقعی", () => {
+  test("همیشه real است و اینترفیس کامل دارد", async () => {
+    const { getMelkProvider } = await import("@/lib/melk-api/provider");
+    const provider = getMelkProvider();
+    expect(provider.mode).toBe("real");
+    expect(typeof provider.requestOtp).toBe("function");
+    expect(typeof provider.verifyOtp).toBe("function");
+    expect(typeof provider.refreshArmToken).toBe("function");
+    expect(typeof provider.listTransactions).toBe("function");
+    expect(typeof provider.listExperts).toBe("function");
+    expect(typeof provider.testConnection).toBe("function");
+    expect(typeof provider.pmPortalInfo).toBe("function");
   });
 });

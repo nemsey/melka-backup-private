@@ -1,13 +1,15 @@
 /**
  * GET /api/crm/transactions
- * فهرست معاملات با فیلترهای کامل — خوانده‌شده از کش محلی (همگام با سامانه ملک تبریز)
+ * فهرست معاملات با فیلترهای کامل — خوانده‌شده از کش محلی که «فقط» با
+ * داده واقعی استخراج‌شده از arus-api.melketabriz.ir پر می‌شود.
+ * اگر کش خالی باشد و نشست دارای توکن ARM باشد، همگام‌سازی زنده انجام می‌شود.
  * فیلترها: بازه تاریخ، نام کارشناس، کد آگهی، کد درخواست، بازه مبلغ، محله، نوع ملک
  */
 
 import { NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { ensureSeeded } from "@/lib/melk-api/sync";
+import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 
@@ -22,7 +24,9 @@ export async function GET(request: NextRequest) {
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
   try {
-    await ensureSeeded();
+    // تلاش برای استخراج زنده در صورت خالی‌بودن کش (فقط داده واقعی)
+    const seed = await ensureSeeded(guard.armTokens?.accessToken);
+    const syncState = await getSyncState();
     const sp = request.nextUrl.searchParams;
 
     const where: Prisma.TransactionRecordWhereInput = {};
@@ -70,7 +74,22 @@ export async function GET(request: NextRequest) {
       db.transactionRecord.count({ where }),
     ]);
 
-    return Response.json({ ok: true, rows, total, limit, offset });
+    return Response.json({
+      ok: true,
+      rows,
+      total,
+      limit,
+      offset,
+      // شفافیت منبع داده برای UI
+      dataSource: {
+        real: true,
+        cached: syncState.lastSuccessAt !== null,
+        lastSuccessAt: syncState.lastSuccessAt,
+        lastSyncedAt: syncState.lastSyncedAt,
+        liveError: seed.liveError ?? syncState.lastError,
+        syncAttempts: syncState.attempts,
+      },
+    });
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);
     return errorResponse(new MelkApiError("UNKNOWN", "خطا در استخراج معاملات.", 500, false));

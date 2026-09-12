@@ -7,7 +7,7 @@
  * ورودی‌ها ارقام فارسی/عربی را به لاتین تبدیل می‌کنند.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, KeyRound, ShieldCheck, Smartphone, Building2, AlertCircle } from "lucide-react";
+import { Loader2, KeyRound, ShieldCheck, Smartphone, Building2 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { useAppStore } from "@/lib/client/store";
 import { enDigits } from "@/lib/format";
@@ -29,14 +29,7 @@ export function AuthScreen() {
   const [personnelCode, setPersonnelCode] = useState("");
   const [masterCode, setMasterCode] = useState("");
   const [mode, setMode] = useState<"CONSULTANT" | "MASTER">("CONSULTANT");
-  const [apiMode, setApiMode] = useState<string>("mock");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    api<{ mode: string }>("/api/health", { auth: false })
-      .then((r) => setApiMode(r.mode))
-      .catch(() => setApiMode("mock"));
-  }, []);
 
   const submitPersonnel = useCallback(async () => {
     const code = enDigits(personnelCode).trim();
@@ -46,7 +39,7 @@ export function AuthScreen() {
     }
     setLoading(true);
     try {
-      const res = await api<{ ok: boolean; expiresInSeconds: number; demoOtp?: string }>(
+      const res = await api<{ ok: boolean; expiresInSeconds: number; source?: string }>(
         "/api/auth/request-otp",
         { method: "POST", body: { personnelCode: code }, auth: false }
       );
@@ -54,10 +47,7 @@ export function AuthScreen() {
       setStage("otp");
       toast({
         title: "کد پیامکی ارسال شد",
-        description:
-          res.demoOtp && apiMode === "mock"
-            ? `حالت دمو — کد پیامکی: ${res.demoOtp}`
-            : "کد تأیید به شماره موبایل ثبت‌شده در سامانه ملک تبریز پیامک شد.",
+        description: "کد تأیید ۴ رقمی به شماره موبایل ثبت‌شده در سامانه ملک تبریز پیامک شد.",
       });
     } catch (err) {
       const e = err as ApiClientError;
@@ -65,7 +55,7 @@ export function AuthScreen() {
     } finally {
       setLoading(false);
     }
-  }, [personnelCode, setPendingPersonnelCode, setStage, toast, apiMode]);
+  }, [personnelCode, setPendingPersonnelCode, setStage, toast]);
 
   const submitMaster = useCallback(async () => {
     const code = enDigits(masterCode).trim();
@@ -212,16 +202,6 @@ export function AuthScreen() {
             >
               {mode === "CONSULTANT" ? "ورود با کد مدیر (مالک سامانه)" : "بازگشت به ورود با کد پرسنلی"}
             </button>
-
-            {apiMode === "mock" && (
-              <div className="rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/50 p-3 text-xs leading-relaxed flex gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" aria-hidden />
-                <div className="text-amber-800 dark:text-amber-300">
-                  <b>حالت دمو (شبیه‌ساز):</b> برای ورود کارشناس، کد پرسنلی <span dir="ltr" className="font-mono">410031320</span> را
-                  امتحان کنید؛ کد پیامکی روی صفحه نمایش داده می‌شود.
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 

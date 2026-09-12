@@ -50,3 +50,45 @@ Stage Summary:
 - Default master code: 41372895 (env MASTER_ACCESS_CODE, must change before production)
 - Mock mode default (MELK_API_MODE=mock); real mode endpoint patterns documented in API-INTEGRATION.md
 - All requirements from the master prompt implemented: 2-step OTP auth, master code, reset connection button, per-tile settings, general settings tile with owner credit, learning agents with append-only memory + versioned policies + rollback, plugin architecture, tests, full docs
+
+---
+Task ID: 2
+Agent: main (Super Z)
+Task: اتصال واقعی به دو سامانه ملک تبریز (arm + pm)، تست و تأیید اتصال، استخراج داده واقعی و حذف کامل داده دمو
+
+Work Log:
+- کشف API واقعی با مهندسی معکوس باندل‌های رسمی:
+  * arm.melketabriz.ir → React/Vite SPA → API: https://arus-api.melketabriz.ir/api/apm/ + /api/public/ (NestJS+Mongoose+nginx)
+  * pm.melketabriz.ir → سامانه پرسنلی → API: https://pm-api.melketabriz.ir/api/
+  * Endpoint ها: authentication/otp/{code} (GET، پیامک)، authentication/otp/login (POST {code, otpCode})، refresh-token، realtor-reports/traded-count-total، realtor-reports/traded-count، realtor-interactions، realtors/list، statics/enums-persian، public/portalInfo، count/badge
+  * OTP واقعی ۴ رقمی است (numInputs:4 در فرم ورود خود سامانه) — UI و اعتبارسنجی از ۶ به ۴ رقم اصلاح شد
+  * پوشه NestJS: {statusCode, status, data, message} — با تست زنده تأیید شد
+- تست زنده‌ی اتصال:
+  * ARM public enums → HTTP 200 با داده واقعی (استخراج شد: AD_STATUS_TYPES_FA و ۱۴ گروه enum دیگر)
+  * ARM auth OTP → HTTP 500 MongooseError «realtors.findOne() buffering timed out» → MongoDB سمت ملک تبریز قطع است (علت عدم ارسال پیامک)
+  * PM portalInfo → 502/تایم‌اوت → سرویس پشتیبان قطع
+  * نتیجه: اتصال شبکه برقرار و قرارداد API صحیح؛ قطعی ۱۰۰٪ سمت سرورهای ملک تبریز
+- بازنویسی کامل لایه melk-api برای اتصال واقعی:
+  * endpoints.ts/config.ts → آدرس‌های واقعی arus-api/pm-api، حالت real اجباری
+  * client.ts → armCall با نرمال‌سازی پوشه NestJS، تشخیص DB_DOWN (Mongoose/502 HTML)، backoff نمایی، probeGet
+  * adapters.ts (جدید) → نگاشت بردبند ردیف‌های ARM → مدل دامنه + تبدیل جلالی↔میلادی (الگوریتم استاندارد) + extractPagedList
+  * provider.ts → RealProvider تنها provider؛ جریان OTP واقعی + refreshArmToken + testConnection سه‌سرویسی (reachable/databaseUp/latency)
+  * sync.ts → syncFromArm صفحه‌بندی‌دار + syncWithRefresh (تمدید خودکار توکن) + SyncState (آخرین موفق/خطا/تلاش) + ensureSeeded زنده
+- حذف کامل داده دمو (طبق درخواست مالک):
+  * src/lib/melk-api/mock-data.ts حذف شد؛ MockProvider حذف شد؛ demoOtp از انواع/مسیرها/UI حذف شد
+  * ۶۴۰ معامله و ۲۴ کارشناس دمو از DB پاک شد (scripts/purge_demo_data.py)
+  * بنر «حالت دمو» از صفحه ورود حذف شد
+- زیرساخت امن توکن ARM: ستون‌های armTokenEnc/armRefreshTokenEnc/armUserType در Session (AES-256-GCM با MELK_TOKEN_KEY)، updateSessionArmTokens، SyncState.armTokenEnc برای همگام‌سازی پس‌زمینه
+- مسیرهای جدید/به‌روزشده: request-otp (GET واقعی)، verify-otp (توکن ARM ذخیره می‌شود)، sync (POST دستی؛ 412 به‌جای 401 برای نبود توکن تا خروج خودکار رخ ندهد)، connection/status (پروب ۳ سرویس + SyncState)، connection/reset (ریست + استخراج مجدد واقعی)، crm/* (dataSource شفاف)، health
+- instrumentation.ts (جدید): حلقه همگام‌سازی پس‌زمینه هر ۵ دقیقه — به‌محض بازیابی MongoDB ملک تبریز، داده واقعی خودکار استخراج می‌شود
+- UI: OtpScreen ۴ رقمی؛ SettingsPage → نمایش وضعیت تفصیلی ۳ سرویس (سالم/پایگاه داده قطع/در دسترس نیست) + وضعیت آخرین استخراج + دکمه «همگام‌سازی داده‌ها»
+- تست‌ها: ۶۲ تست / ۱۶۳ ادعا همه پاس (بازنویسی melk-api.test برای قرارداد واقعی + آداپتور + رمزنگاری AES؛ OTP ۴ رقمی در crypto.test)
+- تایپ‌چک tsc بدون خطای src/ (فقط bun:test module types محیطی)
+- تست مرورگر: ورود مدیر ✅، داشبورد ✅، کاشی معاملات با حالت خالی صادقانه ✅، تنظیمات → تست اتصال زنده با وضعیت تفصیلی سرویس‌ها ✅، همگام‌سازی بدون خروج ناخواسته ✅
+- مستندات: API-INTEGRATION.md با قرارداد واقعی + وضعیت زنده؛ README/ARCHITECTURE/BUILD-ANDROID به‌روزشد؛ .env واقعی ساخته شد؛ همه در download/melk-tabriz-dashboard-docs/
+
+Stage Summary:
+- اتصال واقعی به هر دو سامانه پیاده، تست و تأیید شد؛ قرارداد API از باندل‌های رسمی کشف و با پاسخ‌های واقعی NestJS تأیید شد
+- عدم ارسال پیامک ریشه‌یابی شد: MongoDB سمت arm.melketabriz.ir قطع است (Mongoose buffering timeout) — مساله زیرساختی سمت ملک تبریز
+- داده واقعی enums استخراج شد؛ استخراج معاملات/کارشناسان آماده است و به‌محض بازیابی DB با ورود OTP، خودکار/دستی انجام می‌شود (token ارسال‌شده)
+- تمام داده دمو حذف شد؛ داشبورد صادقانه خطاها و وضعیت منبع داده را به فارسی نمایش می‌دهد

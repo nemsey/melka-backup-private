@@ -1,6 +1,8 @@
 /**
  * POST /api/auth/verify-otp
- * مرحله ۲ ورود: تأیید کد پیامکی، صدور نشست رمزنگاری‌شده.
+ * مرحله ۲ ورود: تأیید کد پیامکی ۴ رقمی در سامانه واقعی ARM
+ * (POST arus-api.melketabriz.ir/api/apm/authentication/otp/login {code, otpCode})
+ * سپس صدور نشست محلی + نگهداری رمزنگاری‌شده توکن‌های ARM.
  * محدودسازی: حداکثر ۵ تلاش در ۱۵ دقیقه + قفل ۱۵ دقیقه‌ای پس از شکست متوالی.
  */
 
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
       throw new MelkApiError("INVALID_PERSONNEL_CODE", "قالب کد پرسنلی نامعتبر است.", 400, false);
     }
     if (!isValidOtpFormat(otp)) {
-      throw new MelkApiError("OTP_INVALID", "کد پیامکی باید ۶ رقم باشد.", 400, false);
+      throw new MelkApiError("OTP_INVALID", "کد پیامکی باید ۴ رقم باشد (مطابق سامانه ملک تبریز).", 400, false);
     }
 
     const ip = request.headers.get("x-forwarded-for") ?? undefined;
@@ -32,22 +34,30 @@ export async function POST(request: NextRequest) {
       throw new MelkApiError("RATE_LIMITED", rate.reason ?? "تلاش بیش از حد مجاز.", 429, false);
     }
 
+    // ✅ تأیید در سامانه واقعی ARM
     const provider = getMelkProvider();
     const result = await provider.verifyOtp(personnelCode, otp);
 
     await recordAttempt(personnelCode, "VERIFY_OTP", true, ip);
 
-    // صدور نشست محلی (توکن فقط هش‌شده ذخیره می‌شود)
-    const { token, context } = await createSession(result.user, {
-      ip,
-      userAgent: request.headers.get("user-agent") ?? undefined,
-    });
-    await audit("LOGIN_SUCCESS", personnelCode, `role=${result.user.role}`);
+    // صدور نشست محلی + نگهداری رمزنگاری‌شده توکن‌های ARM برای داده‌های واقعی
+    const { token, context } = await createSession(
+      result.user,
+      { ip, userAgent: request.headers.get("user-agent") ?? undefined },
+      result.armTokens
+    );
+    await audit("LOGIN_SUCCESS", personnelCode, `role=${result.user.role}; armUserType=${result.armTokens.userType ?? "-"}`);
 
     return Response.json({
       ok: true,
       token,
-      user: context,
+      user: {
+        sessionId: context.sessionId,
+        personnelCode: context.personnelCode,
+        displayName: context.displayName,
+        role: context.role,
+        expiresAt: context.expiresAt,
+      },
     });
   } catch (err) {
     if (personnelCode) {

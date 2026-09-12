@@ -80,7 +80,7 @@ export function OtpScreen() {
     if (!pendingCode) return;
     setResending(true);
     try {
-      const res = await api<{ ok: boolean; demoOtp?: string }>("/api/auth/request-otp", {
+      await api<{ ok: boolean }>("/api/auth/request-otp", {
         method: "POST",
         body: { personnelCode: pendingCode },
         auth: false,
@@ -89,7 +89,7 @@ export function OtpScreen() {
       setOtp("");
       toast({
         title: "کد جدید ارسال شد",
-        description: res.demoOtp ? `حالت دمو — کد: ${res.demoOtp}` : "کد تأیید جدید پیامک شد.",
+        description: "کد تأیید جدید از سامانه ملک تبریز پیامک شد.",
       });
     } catch (err) {
       const e = err as ApiClientError;
@@ -112,7 +112,7 @@ export function OtpScreen() {
             </div>
             <CardTitle className="text-lg">کد تأیید پیامکی</CardTitle>
             <CardDescription className="leading-relaxed">
-              کد ۶ رقمی ارسال‌شده به شماره موبایل ثبت‌شده در سامانه ملک تبریز را وارد کنید.
+              کد ۴ رقمی ارسال‌شده به شماره موبایل ثبت‌شده در سامانه ملک تبریز را وارد کنید.
               <br />
               کد پرسنلی:{" "}
               <span dir="ltr" className="font-mono font-semibold">
@@ -123,25 +123,23 @@ export function OtpScreen() {
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center gap-3">
               <InputOTP
-                maxLength={6}
+                maxLength={4}
                 value={otp}
                 onChange={(v) => {
                   setOtp(v);
-                  if (v.length === 6) void submit(v);
+                  if (v.length === 4) void submit(v);
                 }}
                 disabled={loading}
-                aria-label="کد پیامکی ۶ رقمی"
+                aria-label="کد پیامکی ۴ رقمی"
               >
                 <InputOTPGroup dir="ltr">
                   <InputOTPSlot index={0} />
                   <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
                 </InputOTPGroup>
                 <InputOTPSeparator />
                 <InputOTPGroup dir="ltr">
+                  <InputOTPSlot index={2} />
                   <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
                 </InputOTPGroup>
               </InputOTP>
 

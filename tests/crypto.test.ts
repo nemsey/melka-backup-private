@@ -51,11 +51,12 @@ describe("اعتبارسنجی فرمت ورودی‌ها", () => {
     expect(isValidPersonnelCodeFormat("041-0031320")).toBe(false); // خط تیره
     expect(isValidPersonnelCodeFormat("")).toBe(false);
   });
-  test("کد پیامکی: دقیقاً ۶ رقم", () => {
-    expect(isValidOtpFormat("123456")).toBe(true);
+  test("کد پیامکی: دقیقاً ۴ رقم (مطابق سامانه واقعی ملک تبریز)", () => {
+    expect(isValidOtpFormat("1234")).toBe(true);
+    expect(isValidOtpFormat("123")).toBe(false);
     expect(isValidOtpFormat("12345")).toBe(false);
-    expect(isValidOtpFormat("1234567")).toBe(false);
-    expect(isValidOtpFormat("abc123")).toBe(false);
+    expect(isValidOtpFormat("123456")).toBe(false); // سامانه واقعی ARM کد ۴ رقمی ارسال می‌کند
+    expect(isValidOtpFormat("abc1")).toBe(false);
   });
   test("کد مدیر: دقیقاً ۸ رقم", () => {
     expect(isValidMasterCodeFormat("41372895")).toBe(true);
