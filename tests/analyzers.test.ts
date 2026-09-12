@@ -1,5 +1,6 @@
 /**
  * تست تحلیل‌گرهای آماری ایجنت — منطق هسته تحلیل (خالص)
+ * بازنویسی بر پایه داده واقعی سامانه ملک تبریز (گزارش تطابق، users-list، تعاملات).
  * اجرا: bun test tests/analyzers.test.ts
  */
 
@@ -8,225 +9,227 @@ import {
   monthlySeries,
   growthRate,
   detectAnomalies,
-  expertStats,
-  topByCount,
-  topByValue,
-  groupBy,
-  conversionRate,
-  expertPerformance,
-  concentrationIndex,
-  droppedExperts,
+  matchComposition,
+  topMonths,
+  roleDistribution,
+  businessDistribution,
+  joinerSeries,
+  realtorDegrees,
+  topPairs,
+  interactionConcentration,
+  expertBaseStats,
+  isolatedRealtors,
 } from "@/core/agent/analyzers";
 
-// ساخت رکوردهای شبیه Prisma (شکل یکسان با TransactionRecordGetPayload)
+// ساخت رکوردهای شبیه Prisma — عین ساختار گزارش تطابق معاملات سامانه ARM
 type Tx = Parameters<typeof monthlySeries>[0][number];
-type Ex = Parameters<typeof expertPerformance>[1][number];
+type Ex = Parameters<typeof roleDistribution>[0][number];
+type In = Parameters<typeof realtorDegrees>[0][number];
 
-function tx(partial: Partial<Tx> & { dealDate: Date; price: number; expertCode: string }): Tx {
+function tx(partial: Partial<Tx> & { contractDate: Date }): Tx {
   return {
     id: "t" + Math.random().toString(36).slice(2),
-    dealDate: partial.dealDate,
-    listingCode: partial.listingCode ?? "MT-1",
+    contractDate: partial.contractDate,
+    propertyCode: partial.propertyCode ?? "P-100",
+    propertyCustomer: partial.propertyCustomer ?? "مالک تست",
     requestCode: partial.requestCode ?? null,
-    expertCode: partial.expertCode,
-    expertName: partial.expertName ?? "کارشناس تست",
-    price: partial.price,
-    district: partial.district ?? "ولیعصر",
-    propertyType: partial.propertyType ?? "آپارتمان",
-    area: partial.area ?? 100,
-    commission: partial.commission ?? partial.price * 0.005,
+    requestCustomer: partial.requestCustomer ?? null,
+    contractHolo: partial.contractHolo ?? null,
+    suggestedPropertyCount: partial.suggestedPropertyCount ?? 0,
+    eventsCount: partial.eventsCount ?? 0,
     syncedAt: new Date(),
   } as Tx;
 }
 
-function ex(partial: Partial<Ex> & { personnelCode: string; fullName: string }): Ex {
+function ex(partial: Partial<Ex> & { fullName: string }): Ex {
   return {
     id: "e" + Math.random().toString(36).slice(2),
-    personnelCode: partial.personnelCode,
+    personnelCode: partial.personnelCode ?? "410031320",
     fullName: partial.fullName,
     mobile: partial.mobile ?? "09140000000",
-    address: partial.address ?? "تبریز",
-    branch: partial.branch ?? "شعبه مرکزی",
+    role: partial.role ?? "کارشناس و مشاور فروش",
+    businessTitle: partial.businessTitle ?? "ملک تبریز — مرکزی",
+    creator: partial.creator ?? "سید نعمت اله سیدی",
     active: partial.active ?? true,
-    joinedAt: partial.joinedAt ?? new Date(Date.now() - 3 * 365 * 86400000),
+    createdAt: partial.createdAt ?? new Date("2025-06-15T12:00:00Z"),
     syncedAt: new Date(),
   } as Ex;
 }
 
+function inter(requestRealtorName: string, propertyRealtorName: string, count: number): In {
+  return {
+    id: `i-${requestRealtorName}-${propertyRealtorName}`,
+    requestRealtorName,
+    propertyRealtorName,
+    count,
+    syncedAt: new Date(),
+  } as In;
+}
+
 const d = (daysAgo: number) => new Date(Date.now() - daysAgo * 86400000);
 
-describe("سری ماهانه و روند", () => {
-  test("تجمیع صحیح تعداد و ارزش در هر ماه", () => {
-    const rows = [
-      tx({ dealDate: d(5), price: 1_000_000_000, expertCode: "A" }),
-      tx({ dealDate: d(7), price: 2_000_000_000, expertCode: "A" }),
-      tx({ dealDate: d(40), price: 500_000_000, expertCode: "B" }),
-    ];
+describe("سری ماهانه (ماه‌های هجری شمسی)", () => {
+  test("تجمیع صحیح تعداد در هر ماه جلالی", () => {
+    // ۲۰ روز پیش و ۵۰ روز پیش — معمولاً دو ماه شمسی متفاوت
+    const rows = [tx({ contractDate: d(2) }), tx({ contractDate: d(3) }), tx({ contractDate: d(50) }), tx({ contractDate: d(51) }), tx({ contractDate: d(52) })];
     const series = monthlySeries(rows);
     expect(series.length).toBeGreaterThanOrEqual(2);
-    const thisMonth = series[series.length - 1];
-    expect(thisMonth.count).toBe(2);
-    expect(thisMonth.totalValue).toBe(3_000_000_000);
-    expect(thisMonth.avgPrice).toBe(1_500_000_000);
+    expect(series.reduce((a, p) => a + p.count, 0)).toBe(5);
+    // ترتیب کلیدهای ماه صعودی است
+    for (let i = 1; i < series.length; i++) expect(series[i].key > series[i - 1].key).toBe(true);
   });
-
-  test("growthRate: مثبت با رشد، null با داده ناکافی", () => {
-    expect(growthRate([])).toBeNull();
-    expect(growthRate([monthlySeries([])[0] ?? { key: "2026-01", count: 1, totalValue: 1, avgPrice: 1 }])).toBeNull();
-    const series = [
-      { key: "2026-01", count: 1, totalValue: 100, avgPrice: 100 },
-      { key: "2026-02", count: 1, totalValue: 200, avgPrice: 200 },
-    ];
-    expect(growthRate(series)).toBe(100);
+  test("کلید ماه جلالی درست ساخته می‌شود", () => {
+    // ۲۰۲۶-۰۹-۱۲ = ۱۴۰۵/۰۶
+    const series = monthlySeries([tx({ contractDate: new Date("2026-09-12T12:00:00Z") })]);
+    expect(series[0].key).toBe("1405-06");
   });
 });
 
-describe("تشخیص ناهنجاری z-score", () => {
-  test("ماه جهش‌یافته شناسایی می‌شود", () => {
-    const series = Array.from({ length: 6 }, (_, i) => ({
-      key: `2026-0${i + 1}`,
-      count: 5,
-      totalValue: 1_000_000_000 + i * 100_000_000,
-      avgPrice: 0,
-    }));
-    series[5].totalValue = 5_000_000_000; // جهش شدید
+describe("نرخ رشد ماهانه", () => {
+  test("رشد مثبت", () => {
+    expect(growthRate([{ key: "1405-05", count: 10 }, { key: "1405-06", count: 15 }])).toBe(50);
+  });
+  test("رشد منفی", () => {
+    expect(growthRate([{ key: "1405-05", count: 20 }, { key: "1405-06", count: 10 }])).toBe(-50);
+  });
+  test("داده ناکافی → null", () => {
+    expect(growthRate([{ key: "1405-05", count: 10 }])).toBeNull();
+  });
+});
+
+describe("ترکیب گزارش تطابق (چهارگانه خود سامانه)", () => {
+  test("شمارش رویداد/آگهی پیشنهادی/هر دو", () => {
+    const rows = [
+      tx({ contractDate: d(1), eventsCount: 2, suggestedPropertyCount: 3 }), // هر دو
+      tx({ contractDate: d(2), eventsCount: 1, suggestedPropertyCount: 0 }), // فقط رویداد
+      tx({ contractDate: d(3), eventsCount: 0, suggestedPropertyCount: 2 }), // فقط آگهی
+      tx({ contractDate: d(4), eventsCount: 0, suggestedPropertyCount: 0 }), // هیچ
+      tx({ contractDate: d(5), eventsCount: 5, suggestedPropertyCount: 0, requestCode: "R-9", contractHolo: "H-77" }), // رویداد + درخواست + هولوگرام
+    ];
+    const comp = matchComposition(rows);
+    expect(comp.totalCount).toBe(5);
+    expect(comp.hasRequestEvent).toBe(3);
+    expect(comp.hasSuggestedProperty).toBe(2);
+    expect(comp.hasBoth).toBe(1);
+    expect(comp.neither).toBe(1);
+    expect(comp.requestShare).toBe(20);
+    expect(comp.holoShare).toBe(20);
+  });
+  test("مجموعه خالی", () => {
+    const comp = matchComposition([]);
+    expect(comp.totalCount).toBe(0);
+    expect(comp.requestShare).toBe(0);
+  });
+});
+
+describe("ماه‌های اوج", () => {
+  test("پرشمارترین ماه اول است", () => {
+    const top = topMonths(
+      [
+        { key: "1405-01", count: 3 },
+        { key: "1405-02", count: 9 },
+        { key: "1405-03", count: 5 },
+      ],
+      2
+    );
+    expect(top[0].key).toBe("1405-02");
+    expect(top.length).toBe(2);
+  });
+});
+
+describe("ناهنجاری آماری", () => {
+  test("جهش ناهنجار شناسایی می‌شود", () => {
+    const series = Array.from({ length: 8 }, (_, i) => ({ key: `1405-0${i + 1}`, count: 5 }));
+    series[5].count = 40; // جهش
     const anomalies = detectAnomalies(series);
-    expect(anomalies.length).toBeGreaterThan(0);
+    expect(anomalies.length).toBeGreaterThanOrEqual(1);
     expect(anomalies[0].direction).toBe("spike");
   });
-  test("داده کم → بدون ناهنجاری", () => {
-    expect(detectAnomalies([{ key: "1", count: 1, totalValue: 1, avgPrice: 1 }])).toHaveLength(0);
+  test("سری کوتاه → بدون ناهنجاری", () => {
+    expect(detectAnomalies([{ key: "1405-01", count: 1 }])).toEqual([]);
   });
 });
 
-describe("آمار کارشناسان", () => {
-  test("expertStats: شمارش، ارزش، آخرین معامله", () => {
-    const rows = [
-      tx({ dealDate: d(10), price: 1_000_000_000, expertCode: "A", expertName: "علی" }),
-      tx({ dealDate: d(1), price: 3_000_000_000, expertCode: "A", expertName: "علی" }),
-      tx({ dealDate: d(50), price: 2_000_000_000, expertCode: "B", expertName: "رضا" }),
+describe("توزیع نقش و کسب‌وکار (users-list)", () => {
+  test("گروه‌بندی نقش‌ها", () => {
+    const experts = [
+      ex({ fullName: "الف", role: "کارشناس و مشاور فروش" }),
+      ex({ fullName: "ب", role: "کارشناس و مشاور فروش" }),
+      ex({ fullName: "ج", role: "کارشناس دفتری" }),
     ];
-    const stats = expertStats(rows);
-    const a = stats.find((s) => s.expertCode === "A")!;
-    expect(a.dealCount).toBe(2);
-    expect(a.totalValue).toBe(4_000_000_000);
-    expect(a.avgPrice).toBe(2_000_000_000);
-    expect(a.lastDealAt?.getTime()).toBe(d(1).getTime());
+    const roles = roleDistribution(experts);
+    expect(roles[0]).toEqual({ name: "کارشناس و مشاور فروش", count: 2 });
+    expect(roles.length).toBe(2);
   });
-  test("topByCount / topByValue", () => {
-    const rows = [
-      tx({ dealDate: d(1), price: 100, expertCode: "A" }),
-      tx({ dealDate: d(2), price: 100, expertCode: "A" }),
-      tx({ dealDate: d(3), price: 100, expertCode: "A" }),
-      tx({ dealDate: d(4), price: 999, expertCode: "B" }),
+  test("گروه‌بندی کسب‌وکارها", () => {
+    const experts = [
+      ex({ fullName: "الف", businessTitle: "شعبه یک" }),
+      ex({ fullName: "ب", businessTitle: "شعبه دو" }),
+      ex({ fullName: "ج", businessTitle: "شعبه یک" }),
     ];
-    const stats = expertStats(rows);
-    expect(topByCount(stats, 1)[0].expertCode).toBe("A");
-    expect(topByValue(stats, 1)[0].expertCode).toBe("B");
+    expect(businessDistribution(experts)[0].count).toBe(2);
   });
 });
 
-describe("گروه‌بندی و نرخ تبدیل", () => {
-  test("groupBy بر اساس محله با مرتب‌سازی ارزش", () => {
-    const rows = [
-      tx({ dealDate: d(1), price: 100, expertCode: "A", district: "X" }),
-      tx({ dealDate: d(2), price: 900, expertCode: "A", district: "Y" }),
+describe("سری عضویت ماهانه", () => {
+  test("کاربران با تاریخ نامعتبر نادیده گرفته می‌شوند", () => {
+    const experts = [
+      ex({ fullName: "الف", createdAt: new Date("2026-07-10T12:00:00Z") }),
+      ex({ fullName: "ب", createdAt: new Date(0) }), // نامعتبر
     ];
-    const g = groupBy(rows, (t) => t.district);
-    expect(g[0].name).toBe("Y");
-    expect(g[0].totalValue).toBe(900);
-  });
-  test("conversionRate: نسبت معاملات دارای کد درخواست", () => {
-    const rows = [
-      tx({ dealDate: d(1), price: 1, expertCode: "A", requestCode: "RF-1" }),
-      tx({ dealDate: d(2), price: 1, expertCode: "A", requestCode: "RF-2" }),
-      tx({ dealDate: d(3), price: 1, expertCode: "A", requestCode: null }),
-      tx({ dealDate: d(4), price: 1, expertCode: "A", requestCode: null }),
-    ];
-    expect(conversionRate(rows)).toBe(50);
+    const series = joinerSeries(experts);
+    expect(series.length).toBe(1);
   });
 });
 
-describe("عملکرد و ریسک کارشناسان", () => {
-  test("segment=inactive برای بدون معامله ۹۰ روزه", () => {
-    const experts = [ex({ personnelCode: "A", fullName: "علی" })];
-    const txs = [tx({ dealDate: d(200), price: 1e9, expertCode: "A" })];
-    const perfs = expertPerformance(txs, experts);
-    expect(perfs[0].segment).toBe("inactive");
-  });
-  test("droppedExperts: افت شدید نسبت به روند شخصی", () => {
-    const experts = [ex({ personnelCode: "A", fullName: "علی" })];
-    // ۱۰ معامله در گذشته دور، هیچ‌چیز در ۹۰ روز اخیر
-    const txs = Array.from({ length: 10 }, (_, i) =>
-      tx({ dealDate: d(150 + i * 15), price: 1e9, expertCode: "A" })
-    );
-    const perfs = expertPerformance(txs, experts);
-    expect(perfs[0].dealCount).toBe(10);
-    expect(droppedExperts(perfs)).toHaveLength(1);
-  });
-  test("concentrationIndex: سهم ۵ نفر برتر", () => {
-    const stats = [
-      { expertCode: "1", expertName: "a", dealCount: 1, totalValue: 80, avgPrice: 80, lastDealAt: null },
-      { expertCode: "2", expertName: "b", dealCount: 1, totalValue: 10, avgPrice: 10, lastDealAt: null },
-      { expertCode: "3", expertName: "c", dealCount: 1, totalValue: 10, avgPrice: 10, lastDealAt: null },
+describe("تعاملات مشاوران (realtor-interactions)", () => {
+  test("درجه همکاری دوطرفه تجمیع می‌شود", () => {
+    const rows = [
+      inter("علی", "رضا", 5),
+      inter("علی", "سارا", 3),
+      inter("رضا", "علی", 2),
     ];
-    expect(concentrationIndex(stats, 1)).toBe(80);
+    const degrees = realtorDegrees(rows);
+    const ali = degrees.find((x) => x.name === "علی")!;
+    expect(ali.total).toBe(10); // ۵+۳ طرف درخواست + ۲ طرف آگهی
+    expect(ali.asRequester).toBe(8);
+    expect(ali.asPropertyRealtor).toBe(2);
+    expect(ali.partners).toBe(2); // رضا و سارا
+  });
+  test("جفت برتر", () => {
+    const rows = [inter("الف", "ب", 1), inter("ج", "د", 9)];
+    expect(topPairs(rows, 1)[0].count).toBe(9);
+  });
+  test("شاخص تمرکز شبکه", () => {
+    const rows = [inter("الف", "ب", 8), inter("ج", "د", 1), inter("ه", "و", 1)];
+    // ۵ جفت برتر = همه → ۱۰۰٪
+    expect(interactionConcentration(rows, 5)).toBe(100);
   });
 });
 
-describe("آداپتور نگاشت داده واقعی سامانه ملک تبریز", () => {
-  test(" نگاشت ردیف گزارش معاملات با نام فیلدهای رایج", async () => {
-    const { mapArmTradedRow, mapArmRealtorRow, anyDateStringToIso, isoToJalaliString, gregorianToJalali, jalaliToGregorian, extractPagedList } = await import("@/lib/melk-api/adapters");
-    const t = mapArmTradedRow(
-      {
-        _id: "665f1a2b3c4d5e6f70819203",
-        realtor: { fullName: "سید نعمت اله سیدی", code: "410031320" },
-        propertyCode: "AD-1001",
-        requestCode: "RQ-88",
-        tradedAt: "1403/05/21",
-        price: 5_000_000_000,
-        district: "ولیعصر",
-        propertyType: "آپارتمان",
-        area: 105,
-        commission: 25_000_000,
-      },
-      0, 1, 100
-    );
-    expect(t).not.toBeNull();
-    expect(t!.expertName).toBe("سید نعمت اله سیدی");
-    expect(t!.expertCode).toBe("410031320");
-    expect(t!.listingCode).toBe("AD-1001");
-    expect(t!.requestCode).toBe("RQ-88");
-    expect(t!.price).toBe(5_000_000_000);
-    expect(t!.district).toBe("ولیعصر");
-    expect(t!.propertyType).toBe("آپارتمان");
+describe("آمار پایه کاربران", () => {
+  test("نرخ فعال بودن", () => {
+    const experts = [
+      ex({ fullName: "الف", active: true }),
+      ex({ fullName: "ب", active: true }),
+      ex({ fullName: "ج", active: false }),
+    ];
+    const stats = expertBaseStats(experts);
+    expect(stats.total).toBe(3);
+    expect(stats.active).toBe(2);
+    expect(stats.activeRate).toBe(66.7);
+  });
+});
 
-    // تاریخ جلالی → ISO و بازگشت
-    const iso = anyDateStringToIso("1403/05/21");
-    expect(iso).toContain("2024-08");
-    expect(isoToJalaliString(iso!)).toBe("1403/05/21");
-
-    // اعداد فارسی در تاریخ
-    expect(anyDateStringToIso("۱۴۰۳/۰۵/۲۱")).toBe(iso);
-
-    // تبدیل رفت‌وبرگشت جلالی
-    const [jy, jm, jd] = gregorianToJalali(2024, 8, 11);
-    expect([jy, jm, jd]).toEqual([1403, 5, 21]);
-    expect(jalaliToGregorian(jy, jm, jd)).toEqual([2024, 8, 11]);
-
-    // نگاشت کارشناس
-    const e = mapArmRealtorRow({ _id: "r1", fullName: "کارشناس الف", code: "12345678", mobile: "09141234567", address: "تبریز", active: true, createdAt: "1402/01/15" }, 0);
-    expect(e!.fullName).toBe("کارشناس الف");
-    expect(e!.personnelCode).toBe("12345678");
-    expect(e!.mobile).toBe("09141234567");
-    expect(e!.active).toBe(true);
-
-    // استخراج صفحه‌بندی از پوشه‌های مختلف
-    const p1 = extractPagedList({ data: { docs: [{ _id: "1" }, { _id: "2" }], totalDocs: 2, totalPages: 1 } }, (r) => ({ id: String(r._id) }));
-    expect(p1.rows.map((r) => r.id)).toEqual(["1", "2"]);
-    expect(p1.total).toBe(2);
-    const p2 = extractPagedList({ data: [{ _id: "3" }] }, (r) => ({ id: String(r._id) }));
-    expect(p2.rows).toHaveLength(1);
-    expect(p2.total).toBe(1);
+describe("مشاوران منزوی", () => {
+  test("فعالِ بدون تعامل شناسایی می‌شود", () => {
+    const experts = [
+      ex({ fullName: "علی", active: true }), // در شبکه است
+      ex({ fullName: "بهرام", active: true }), // منزوی
+      ex({ fullName: "چهرزاد", active: false }), // غیرفعال → نمی‌شماریم
+    ];
+    const rows = [inter("علی", "رضا", 3)];
+    const isolated = isolatedRealtors(experts, rows);
+    expect(isolated.map((i) => i.fullName)).toEqual(["بهرام"]);
   });
 });

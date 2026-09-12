@@ -30,11 +30,12 @@ export async function POST(request: NextRequest) {
     resetMelkProvider();
 
     // ۳) پاک‌سازی کامل کش داده و تلاش برای همگام‌سازی مجدد داده واقعی
-    let resync: { ok: boolean; transactions: number; experts: number; syncedAt?: string; error?: string; errorCode?: string } | null = null;
+    let resync: { ok: boolean; transactions: number; experts: number; interactions: number; syncedAt?: string; error?: string; errorCode?: string } | null = null;
     if (withData) {
       // پاک‌سازی کامل داده‌های کش‌شده
       await db.transactionRecord.deleteMany({});
       await db.expertRecord.deleteMany({});
+      await db.interactionRecord.deleteMany({});
 
       // توکن ARM: از نشست (قبل از ابطال اطلاعات رمزگشایی شده توسط guard) یا آخرین موفق
       let armToken = guard.armTokens?.accessToken ?? "";
@@ -63,7 +64,8 @@ export async function POST(request: NextRequest) {
           ok: false,
           transactions: 0,
           experts: 0,
-          error: "توکن سامانه ARM موجود نیست. برای استخراج داده واقعی، با کد پرسنلی و کد پیامکی وارد شوید.",
+          interactions: 0,
+          error: "توکن سامانه آگهی و درخواست موجود نیست. برای استخراج داده واقعی، با کد پرسنلی و کد پیامکی وارد شوید.",
           errorCode: "UNAUTHORIZED",
         };
       }

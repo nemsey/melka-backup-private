@@ -1,111 +1,138 @@
 /**
  * ایجنت هوشمند کاشی «کارشناسان»
  * ------------------------------------------------------
- * تخصص: رتبه‌بندی عملکرد کارشناسان، تشخیص افت فعالیت،
- * بخش‌بندی (top/mid/low) و شاخص تمرکز تیم — با یادگیری از بازخورد.
+ * تخصص: تحلیل «فهرست کاربران/مشاوران» و «تعاملات مشاوران با یکدیگر»
+ * سامانه ملک تبریز — توزیع نقش‌ها، وضعیت فعال/غیرفعال، رشد عضویت
+ * (هجری شمسی)، شبکه همکاری و مشاوران منزوی — با یادگیری از بازخورد.
  */
 
 import { db } from "@/lib/db";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import {
-  concentrationIndex,
-  droppedExperts,
-  expertPerformance,
-  expertStats,
-  topByCount,
+  businessDistribution,
+  expertBaseStats,
+  growthRate,
+  interactionConcentration,
+  isolatedRealtors,
+  joinerSeries,
+  realtorDegrees,
+  roleDistribution,
+  topPairs,
 } from "./analyzers";
-import { toman } from "./transaction-agent";
+import { faNumber, faMonthLabel } from "@/lib/format";
 
 export class ExpertAgent extends BaseLearningAgent {
   readonly tileId = "experts";
   readonly name = "ایجنت تحلیل کارشناسان";
-  readonly insightDomains = ["RANKING", "ACTIVITY", "SEGMENT", "RISK", "CAPACITY"] as const;
+  readonly insightDomains = ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK"] as const;
 
   protected async computeRawInsights(): Promise<InsightCard[]> {
-    const [experts, txs] = await Promise.all([db.expertRecord.findMany(), db.transactionRecord.findMany()]);
+    const [experts, interactions] = await Promise.all([
+      db.expertRecord.findMany(),
+      db.interactionRecord.findMany(),
+    ]);
     const cards: InsightCard[] = [];
     if (experts.length === 0) return cards;
 
-    const perfs = expertPerformance(txs, experts);
-    const stats = expertStats(txs);
-    const activeExperts = experts.filter((e) => e.active);
+    const base = expertBaseStats(experts);
+    const degrees = realtorDegrees(interactions);
 
-    // ---- RANKING: رتبه‌بندی ----
-    const top5 = topByCount(stats, 5);
-    if (top5.length > 0) {
+    // ---- COMPOSITION: ترکیب تیم (نقش‌ها) ----
+    const roles = roleDistribution(experts);
+    if (roles.length > 0) {
       cards.push({
-        key: "ex-ranking",
-        domain: "RANKING",
-        title: "رتبه‌بندی عملکرد کارشناسان",
-        body: `بر اساس تعداد معاملات، «${top5[0].expertName}» با ${top5[0].dealCount.toLocaleString("fa-IR")} معامله صدرنشین است. رتبه‌بندی کامل در جدول پایین همین کاشی قابل مشاهده است.`,
+        key: "ex-composition",
+        domain: "COMPOSITION",
+        title: "ترکیب نقش‌های تیم",
+        body: `تیم از ${faNumber(experts.length)} کاربر تشکیل شده است؛ پرشمارترین نقش «${roles[0].name}» با ${faNumber(roles[0].count)} نفر است. ${roles.length > 3 ? "تنوع نقش‌ها بالا است — هماهنگی نقش‌ها و شرح وظایف شفاف اهمیت دارد." : "ترکیب نقش‌ها متمرکز و شفاف است."}`,
         severity: "info",
-        metrics: top5.map((s, i) => ({
-          label: `رتبه ${(i + 1).toLocaleString("fa-IR")}`,
-          value: `${s.expertName} — ${s.dealCount.toLocaleString("fa-IR")} معامله (${toman(s.totalValue)})`,
-        })),
+        metrics: roles.slice(0, 4).map((r) => ({ label: r.name, value: `${faNumber(r.count)} نفر` })),
       });
     }
 
-    // ---- ACTIVITY: راکدها ----
-    const inactiveWithHistory = perfs.filter((p) => p.dealCount > 0 && p.recentDeals === 0);
-    const neverDealt = perfs.filter((p) => p.dealCount === 0);
-    if (inactiveWithHistory.length > 0 || neverDealt.length > 0) {
+    // ---- ACTIVITY: وضعیت فعال/غیرفعال ----
+    cards.push({
+      key: "ex-activity",
+      domain: "ACTIVITY",
+      title: "وضعیت فعال بودن کاربران",
+      body: `${faNumber(base.active)} کاربر فعال (${faNumber(base.activeRate)}٪) و ${faNumber(base.inactive)} کاربر غیرفعال دارید. ${base.activeRate < 85 ? "حساب‌های غیرفعال طولانی‌مدت باید بازبینی شوند — یا فعال‌سازی مجدد یا آرشیو حساب." : "تیم به‌صورت سالم فعال است."}`,
+      severity: base.activeRate < 70 ? "warning" : "positive",
+      metrics: [
+        { label: "فعال", value: `${faNumber(base.active)} نفر` },
+        { label: "غیرفعال", value: `${faNumber(base.inactive)} نفر` },
+        { label: "نرخ فعال بودن", value: `${faNumber(base.activeRate)}٪` },
+      ],
+    });
+
+    // ---- GROWTH: رشد عضویت ماهانه ----
+    const joiners = joinerSeries(experts);
+    const jGrowth = growthRate(joiners);
+    if (joiners.length >= 2) {
+      const last = joiners[joiners.length - 1];
+      const prev = joiners[joiners.length - 2];
       cards.push({
-        key: "ex-activity",
-        domain: "ACTIVITY",
-        title: "کارشناسان بدون معامله در ۹۰ روز گذشته",
-        body: `${inactiveWithHistory.length.toLocaleString("fa-IR")} کارشناس با سابقه‌ی معامله و ${neverDealt.length.toLocaleString("fa-IR")} کارشناس بدون هیچ معامله‌ای در ۹۰ روز اخیر شناسایی شدند. پیشنهاد: جلسه‌ی بازخورد فردی و تعیین هدف هفتگی برای بازگشت به چرخه فروش.`,
-        severity: inactiveWithHistory.length > 0 ? "warning" : "info",
+        key: "ex-growth",
+        domain: "GROWTH",
+        title: "روند عضویت کاربران جدید",
+        body:
+          jGrowth === null
+            ? "داده کافی برای محاسبه روند عضویت وجود ندارد."
+            : jGrowth >= 0
+              ? `در ${faMonthLabel(last.key)}، ${faNumber(last.count)} کاربر جدید ثبت شده است — ${faNumber(jGrowth)}٪ بیشتر از ${faMonthLabel(prev.key)}. رشد جذب نیرو در جریان است و زیرساخت آموزش باید متناسب توسعه یابد.`
+              : `در ${faMonthLabel(last.key)}، ${faNumber(last.count)} کاربر جدید ثبت شده است — ${faNumber(Math.abs(jGrowth))}٪ کمتر از ${faMonthLabel(prev.key)}. افت جذب می‌تواند ناشی از فصلی‌بودن استخدام یا رضایت پایین باشد.`,
+        severity: jGrowth === null ? "info" : jGrowth <= -30 ? "warning" : "info",
         metrics: [
-          { label: "دارای سابقه، بدون فعالیت اخیر", value: inactiveWithHistory.length.toLocaleString("fa-IR") },
-          { label: "بدون هیچ معامله", value: neverDealt.length.toLocaleString("fa-IR") },
+          { label: "عضویت ماه اخیر", value: faNumber(last.count) },
+          { label: "رشد ماهانه", value: jGrowth === null ? "—" : `${faNumber(jGrowth)}٪` },
         ],
       });
     }
 
-    // ---- SEGMENT: بخش‌بندی ----
-    const segCount = { top: 0, mid: 0, low: 0, inactive: 0 };
-    for (const p of perfs) segCount[p.segment] += 1;
-    cards.push({
-      key: "ex-segment",
-      domain: "SEGMENT",
-      title: "بخش‌بندی تیم فروش",
-      body: `تیم از ${segCount.top.toLocaleString("fa-IR")} کارشناس «پیشتاز»، ${segCount.mid.toLocaleString("fa-IR")} «پایدار»، ${segCount.low.toLocaleString("fa-IR")} «کم‌فعالیت» و ${segCount.inactive.toLocaleString("fa-IR")} «راکد» تشکیل شده است. تمرکز آموزش و انگیزش باید متفاوت برای هر بخش باشد.`,
-      severity: "info",
-      metrics: [
-        { label: "پیشتاز", value: segCount.top.toLocaleString("fa-IR") },
-        { label: "پایدار", value: segCount.mid.toLocaleString("fa-IR") },
-        { label: "کم‌فعالیت", value: segCount.low.toLocaleString("fa-IR") },
-        { label: "راکد", value: segCount.inactive.toLocaleString("fa-IR") },
-      ],
-    });
-
-    // ---- RISK: افت شدید ----
-    const dropped = droppedExperts(perfs);
-    if (dropped.length > 0) {
+    // ---- NETWORK: شبکه همکاری مشاوران ----
+    if (degrees.length > 0) {
+      const top = degrees.slice(0, 3);
+      const conc = interactionConcentration(interactions, 5);
       cards.push({
-        key: "ex-risk",
-        domain: "RISK",
-        title: "هشدار افت عملکرد",
-        body: `${dropped.length.toLocaleString("fa-IR")} کارشناس که پیش‌تر فعال بودند، فعالیت ۹۰ روزه‌شان به کمتر از یک‌سوم روند شخصی‌شان رسیده است: ${dropped.slice(0, 3).map((d) => d.fullName).join("، ")}${dropped.length > 3 ? " و…" : ""}. احتمال خروج یا فرسودگی شغلی — گفتگوی فردی توصیه می‌شود.`,
-        severity: "critical",
-        metrics: dropped.slice(0, 3).map((d) => ({ label: d.fullName, value: `آخرین معامله: ${d.lastDealAt ? new Date(d.lastDealAt).toLocaleDateString("fa-IR") : "—"}‎` })),
+        key: "ex-network",
+        domain: "NETWORK",
+        title: "شبکه همکاری مشاوران",
+        body: `«${top[0].name}» با ${faNumber(top[0].total)} تعامل، محور اصلی همکاری‌های منجر به معامله است. ${conc > 50 ? `پنج جفتِ برتر ${faNumber(conc)}٪ از کل تعاملات را در اختیار دارند — شبکه همکاری متمرکز است و وابستگی به افراد محدود ریسک محسوب می‌شود.` : "شبکه همکاری به‌صورت متوازن توزیع شده است."} پرتعامل‌ترین جفت: «${topPairs(interactions, 1)[0]?.requestRealtorName ?? "—"}» و «${topPairs(interactions, 1)[0]?.propertyRealtorName ?? "—"}».`,
+        severity: conc > 50 ? "warning" : "positive",
+        metrics: top.map((d, i) => ({
+          label: `رتبه ${faNumber(i + 1)}`,
+          value: `${d.name} — ${faNumber(d.total)} تعامل (${faNumber(d.partners)} همکار)`,
+        })),
       });
     }
 
-    // ---- CAPACITY: تمرکز ----
-    const conc = concentrationIndex(stats, 5);
-    cards.push({
-      key: "ex-capacity",
-      domain: "CAPACITY",
-      title: "شاخص تمرکز درآمد",
-      body: `۵ نفر برتر، ${conc.toLocaleString("fa-IR")}٪ از کل ارزش معاملات را ایجاد کرده‌اند. ${conc > 40 ? "وابستگی بالای درآمد به افراد محدود ریسک سازمانی است — توسعه‌ی تیم دوم توصیه می‌شود." : "توزیع درآمد در تیم متوازن است."}`,
-      severity: conc > 40 ? "warning" : "positive",
-      metrics: [
-        { label: "سهم ۵ نفر برتر", value: `${conc.toLocaleString("fa-IR")}٪` },
-        { label: "کارشناسان فعال", value: activeExperts.length.toLocaleString("fa-IR") },
-      ],
-    });
+    // ---- RISK: مشاوران منزوی (بدون هیچ تعاملی) ----
+    const isolated = isolatedRealtors(experts, interactions);
+    if (isolated.length > 0) {
+      cards.push({
+        key: "ex-risk",
+        domain: "RISK",
+        title: "مشاوران فعالِ بدون تعامل",
+        body: `${faNumber(isolated.length)} کاربر فعال در هیچ همکاریِ منجر به معامله‌ای نقش نداشته‌اند: ${isolated.slice(0, 3).map((i) => i.fullName).join("، ")}${isolated.length > 3 ? " و…" : ""}. این وضعیت نشانه‌ی انزوا یا ناآشنایی با چرخه همکاری است — جلسه‌ی معرفی جریان کار و معرفی به مشاوران پیشتاز توصیه می‌شود.`,
+        severity: "warning",
+        metrics: [
+          { label: "بدون تعامل", value: `${faNumber(isolated.length)} نفر` },
+          { label: "درگیر در شبکه", value: `${faNumber(experts.length - isolated.length)} نفر` },
+        ],
+      });
+    }
+
+    // ---- کسب‌وکارهای بزرگ (تکمیل تصویر ساختار) ----
+    const businesses = businessDistribution(experts);
+    if (businesses.length > 1) {
+      cards.push({
+        key: "ex-businesses",
+        domain: "COMPOSITION",
+        title: "بزرگ‌ترین کسب‌وکارها (شعبه‌ها)",
+        body: `«${businesses[0].name}» با ${faNumber(businesses[0].count)} کاربر بزرگ‌ترین شعبه است. مقایسه نسبت کاربر هر شعبه به تعاملاتش می‌تواند شاخص بهره‌وری شعبه‌ها را آشکار کند.`,
+        severity: "info",
+        metrics: businesses.slice(0, 3).map((b) => ({ label: b.name, value: `${faNumber(b.count)} کاربر` })),
+      });
+    }
 
     return cards;
   }

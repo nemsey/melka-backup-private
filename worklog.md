@@ -92,3 +92,42 @@ Stage Summary:
 - عدم ارسال پیامک ریشه‌یابی شد: MongoDB سمت arm.melketabriz.ir قطع است (Mongoose buffering timeout) — مساله زیرساختی سمت ملک تبریز
 - داده واقعی enums استخراج شد؛ استخراج معاملات/کارشناسان آماده است و به‌محض بازیابی DB با ورود OTP، خودکار/دستی انجام می‌شود (token ارسال‌شده)
 - تمام داده دمو حذف شد؛ داشبورد صادقانه خطاها و وضعیت منبع داده را به فارسی نمایش می‌دهد
+
+---
+Task ID: 3
+Agent: main (Super Z)
+Task: فارسی‌سازی کامل محیط، تجهیز کامل به تقویم هجری شمسی، بازنویسی حرفه‌ای دو کاشی معاملات و کارشناسان بر اساس داده واقعی، و پیشنهاد کاشی‌های جدید (فقط پیشنهاد)
+
+Work Log:
+- کشف عمیق‌تر داده واقعی: تحلیل باندل‌های رسمی صفحات ARM (TradedStatisticsPage، users-list-page، realtor-interactions-page، trade-over-view-page، suggested-usage، visits، calculate-commission، current-prices، price-evaluations):
+  * گزارش تطابق معاملات: propertyCode/propertyCustomer، requestCode/requestCustomer، contractDate، contractHolo، suggestedPropertyCount، eventsCount + خلاصه totalCount/hasRequestEvent/hasSuggestedProperty/hasBoth
+  * users-list: fullName، mobile، role.name، businessId.title، creator.fullName، createdAt، active
+  * تعاملات: requestRealtorName × propertyRealtorName × count
+- زیرساخت تقویم هجری شمسی (تک‌منبع حقیقت):
+  * src/lib/jalali.ts: تبدیل دوجهته جلالی↔میلادی، کبیسه ۳۳ ساله، طول ماه، ماه‌ها/روزهای هفته فارسی، dateToJalali/jalaliToDate/todayJalali، isoToJalaliString، anyDateStringToDate، buildJalaliMonthGrid (۴۲ سلول شنبه‌محور)، قالب‌های خوانا/کوتاه
+  * format.ts بازنویسی: faDate «۲۱ شهریور ۱۴۰۵»، faJalaliShort «۱۴۰۵/۰۶/۲۱»، faDateTime «… — ساعت ۱۴:۳۰»، faMonthLabel از کلید ماه جلالی
+  * کامپوننت جدید JalaliDatePicker: تقویم ماهانه راست‌به‌چپ، سربرگ ش-ی-د-س-چ-پ-ج، ناوبری ماه/سال، دکمه «امروز»، پاک‌سازی، مقدار ISO خروجی — جایگزین ورودی میلادی بومی
+- فارسی‌سازی کامل:
+  * «API» → «رابط برنامه‌نویسی»، «(ARM)/(PM)» → «(آرم)/(پی‌ام)»، «ms» → «میلی‌ثانیه» با ارقام فارسی، «Rollback ممکن است» → «با قابلیت بازگردانی»، «Z-Score» → «انحراف معیار»، نسخه کاشی با ارقام فارسی
+  * همه placeholderها فارسی («نمونه: ۱۲۳۴۵»، «۰۹۱۴۱۲۳۴۵۶۷»، «۴۱۰۰۳۱۳۲۰»)، راهنمای OTP ۴ رقمی اصلاح شد، برچسب سرویس‌های provider فارسی کامل
+- بازنویسی مدل داده عین سامانه واقعی:
+  * types.ts: CrmTransaction (قرارداد/هولوگرام/شمارش‌ها)، TradedSummary، CrmExpert (نقش/کسب‌وکار/ثبت‌کننده)، CrmInteraction
+  * adapters.ts: mapArmTradedRow با contractDate/contractHolo/propertyCustomer/requestCustomer، mapArmTradedSummary، mapArmRealtorRow با role.name/businessId.title/creator.fullName، mapArmInteractionRow — همه بردبند
+  * prisma schema: TransactionRecord/ExpertRecord جدید + InteractionRecord جدید + SyncState.summaryJson — db push انجام شد (دو پایگاه: اصلی و تست)
+- همگام‌سازی سه‌گانه: sync.ts استخراج معاملات + کاربران + تعاملات (تعاملات غیربحرانی — شکستش کل همگام‌سازی را نمی‌شکند) + خلاصه چهارگانه در SyncState
+- APIها: crm/transactions (فیلتر تاریخ/کد ملک/درخواست/هولوگرام/نوع تطبیق + خلاصه بازه)، crm/experts (فیلتر نقش/کسب‌وکار/ثبت‌کننده/وضعیت + مجموع تعامل)، crm/interactions جدید (درجه همکاری + ۱۰ برتر)، crm/meta (نقش‌ها/کسب‌وکارها/ثبت‌کنندگان)
+- ایجنت‌ها و تحلیل‌گرها بازنویسی بر داده واقعی:
+  * analyzers: سری ماهانه جلالی، ترکیب چهارگانه، سهم درخواست/هولوگرام، توزیع نقش/کسب‌وکار، سری عضویت، درجه همکاری دوطرفه، جفت برتر، تمرکز شبکه، راکدها
+  * TransactionAgent: VOLUME/TREND/COMPOSITION/CONVERSION/DOCUMENT/ANOMALY (+ماه اوج)
+  * ExpertAgent: COMPOSITION/ACTIVITY/GROWTH/NETWORK/RISK
+- کاشی معاملات بازنویسی کامل: شاخص‌های چهارگانه عین خود سامانه + دو سهم کلیدی، فیلتر تاریخ با JalaliDatePicker + نوع تطبیق، جدول عین ستون‌های خود سامانه با تاریخ جلالی، نمودار روند ماهانه شمسی + ترکیب تطبیق، بنر شفافیت منبع داده، تنظیمات کاشی جدید (نسخه ۲.۰.۰)
+- کاشی کارشناسان بازنویسی کامل: دو تب «کاربران و مشاوران» (۷ فیلتر شامل نقش/کسب‌وکار/ثبت‌کننده + کارت با تاریخ جلالی/درجه همکاری) و «تعاملات مشاوران» (رتبه‌بندی درجه همکاری + جدول عین خود سامانه) (نسخه ۲.۰.۰)
+- تست‌ها: بازنویسی کامل ۳ فایل (jalali/format، analyzers، melk-api آداپتورها) — ۹۵ تست / ۲۳۰ ادعا همه پاس؛ tsc بدون خطای src
+- تست زنده: ARM MongoDB بازیابی شد! OTP واقعی: HTTP 200 «کد تایید ارسال شد»؛ PM همچنان ۵۰۲
+- تست مرورگر (agent-browser): ورود مدیر ✓، تقویم جلالی (شهریور ۱۴۰۵، دکمه امروز → «۲۱ شهریور ۱۴۰۵») ✓، کاشی‌ها با داده آزمایشی موقت (اسکرین‌شات: KPI، جدول جلالی، ۲ نمودار، تب تعاملات با ۳۰ ردیف) ✓، سپس پاک‌سازی کامل داده آزمایشی (۰ رکورد — وضعیت خالی صادقانه) ✓، تنظیمات: «۳۴۷۷ میلی‌ثانیه» + «نشانی رابط برنامه‌نویسی…» ✓، بدون خطای کنسول
+- مستندات: API-INTEGRATION بخش‌های ۷-۹ (ساختار واقعی گزارش‌ها + APIهای داشبورد + وضعیت زنده جدید)، README بازنگری ۲؛ اسکرین‌شات‌ها و مستندات در download/melk-tabriz-dashboard-docs
+
+Stage Summary:
+- تمام چهار خواسته اجرا شد: (۱) فارسی‌سازی کامل با حفظ اسلوب فارسی در جملات مخلوط؛ (۲) تقویم هجری شمسی کامل (هسته مشترک + انتخاب‌گر تاریخ + همه نمایش‌ها و سری‌های ماهانه)؛ (۳) دو کاشی بر اساس ساختار واقعی داده سامانه‌ها بازنویسی حرفه‌ای شدند؛ (۴) پیشنهاد کاشی‌های جدید صرفاً در پیام نهایی ارائه شد (بدون کد)
+- پایگاه داده MongoDB ملک تبریز بازیابی شد و ارسال پیامک OTP واقعی تأیید شد؛ با ورود مالک از مسیر OTP، استخراج سه‌گانه داده واقعی خودکار انجام می‌شود
+- پایگاه داده محلی کاملاً پاک است (۰ دمو/تست) — فقط داده واقعی پس از همگام‌سازی ذخیره می‌شود

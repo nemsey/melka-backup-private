@@ -1,27 +1,28 @@
 /**
  * ماژول کاشی «معاملات» — تعریف کامل و ثبت در رجیستری
+ * بازنویسی بر پایه «گزارش تطابق معاملات» واقعی سامانه ملک تبریز.
  * افزودن این کاشی به هر پروژه‌ای = فقط همین فایل + import در bootstrap.
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
 import { tileRegistry } from "@/core/tiles/tile-registry";
-import { Banknote } from "lucide-react";
+import { FileCheck2 } from "lucide-react";
 import { TransactionsPage } from "./TransactionsPage";
 
 export const transactionsTile = defineTile({
   id: "transactions",
-  version: "1.0.0",
+  version: "2.0.0",
   title: "معاملات",
-  tagline: "تحلیل کامل معاملات ملک تبریز با فیلتر پیشرفته و روند بازار",
+  tagline: "گزارش تطابق معاملات سامانه ملک تبریز با تحلیل هوشمند روند و ترکیب",
   description:
-    "اطلاعات کامل معاملات انجام‌شده در ملک تبریز با امکان فیلتر بر اساس تاریخ، کارشناس، کد آگهی، کد درخواست، مبلغ، محله و نوع ملک.",
-  icon: Banknote,
+    "عین «گزارش تطابق معاملات» خود سامانه: هر معامله = تطبیق آگهی ملک با درخواست خرید + قرارداد (تاریخ، هولوگرام) + رویداد و آگهی پیشنهادی — همراه با شاخص‌های چهارگانه، فیلتر تاریخ هجری شمسی و نمودارهای روند.",
+  icon: FileCheck2,
   accent: "emerald",
   component: TransactionsPage,
   order: 1,
   agent: {
     tileId: "transactions",
-    insightDomains: ["TREND", "VOLUME", "TOP_EXPERTS", "DISTRICT", "ANOMALY", "CONVERSION"],
+    insightDomains: ["VOLUME", "TREND", "COMPOSITION", "CONVERSION", "DOCUMENT", "ANOMALY"],
     capabilities: ["memory", "feedback", "policy-versions", "rollback"],
   },
   settings: [
@@ -29,11 +30,11 @@ export const transactionsTile = defineTile({
       key: "sortBy",
       label: "مرتب‌سازی پیش‌فرض جدول",
       type: "select",
-      defaultValue: "dealDate",
+      defaultValue: "contractDate",
       options: [
-        { value: "dealDate", label: "تاریخ معامله" },
-        { value: "price", label: "مبلغ معامله" },
-        { value: "expertName", label: "نام کارشناس" },
+        { value: "contractDate", label: "تاریخ معامله" },
+        { value: "eventsCount", label: "تعداد رویداد" },
+        { value: "suggestedPropertyCount", label: "تعداد آگهی پیشنهادی" },
       ],
       hint: "ترتیب پیش‌فرض نمایش ردیف‌های جدول معاملات",
     },
@@ -51,14 +52,7 @@ export const transactionsTile = defineTile({
       label: "نمایش نمودارها",
       type: "switch",
       defaultValue: true,
-      hint: "نمودار روند ماهانه و توزیع محله‌ای",
-    },
-    {
-      key: "showCommission",
-      label: "نمایش ستون کمیسیون",
-      type: "switch",
-      defaultValue: true,
-      hint: "ستون کمیسیون در جدول و شاخص مجموع کمیسیون",
+      hint: "نمودار روند ماهانه (هجری شمسی) و ترکیب تطبیق",
     },
   ],
 });

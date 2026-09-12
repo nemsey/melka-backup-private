@@ -24,7 +24,12 @@ import {
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { useAppStore } from "@/lib/client/store";
-import { faDateTime } from "@/lib/format";
+import { faDateTime, faNumber } from "@/lib/format";
+
+/** ارقام فارسی محلی برای این صفحه */
+function faDigitsLocal(n: string | number): string {
+  return String(n).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
+}
 
 interface ServiceStatus {
   service: string;
@@ -45,6 +50,7 @@ interface ConnectionInfo {
     lastErrorCode: string | null;
     transactionCount: number;
     expertCount: number;
+    interactionCount: number;
     attempts: number;
   };
   config: { mode: string; armApiBase: string; armPublicApiBase: string; pmApiBase: string; timeoutMs: number; maxRetries: number; syncIntervalMinutes: number };
@@ -65,13 +71,13 @@ export function SettingsPage({ onBack }: TilePageProps) {
   const syncNow = async () => {
     setSyncing(true);
     try {
-      const res = await api<{ ok: boolean; sync: { ok: boolean; transactions: number; experts: number; error?: string } }>("/api/sync", {
+      const res = await api<{ ok: boolean; sync: { ok: boolean; transactions: number; experts: number; interactions: number; error?: string } }>("/api/sync", {
         method: "POST",
       });
       if (res.sync.ok) {
         toast({
           title: "همگام‌سازی موفق",
-          description: `${res.sync.transactions} معامله و ${res.sync.experts} کارشناس از سامانه واقعی ملک تبریز استخراج شد.`,
+          description: `${faNumber(res.sync.transactions)} معامله، ${faNumber(res.sync.experts)} کاربر و ${faNumber(res.sync.interactions)} تعامل از سامانه واقعی ملک تبریز استخراج شد.`,
         });
       } else {
         toast({
@@ -265,8 +271,8 @@ export function SettingsPage({ onBack }: TilePageProps) {
                 </div>
                 <div className="rounded-lg border bg-card p-3">
                   <p className="text-xs text-muted-foreground">زمان پاسخ</p>
-                  <p className="text-sm font-bold" dir="ltr">
-                    {conn.status.latencyMs >= 0 ? `${conn.status.latencyMs}ms` : "—"}
+                  <p className="text-sm font-bold" dir="rtl">
+                    {conn.status.latencyMs >= 0 ? `${faDigitsLocal(conn.status.latencyMs)} میلی‌ثانیه` : "—"}
                   </p>
                 </div>
               </div>
@@ -313,8 +319,8 @@ export function SettingsPage({ onBack }: TilePageProps) {
                     <b>{conn.sync.lastSuccessAt ? faDateTime(conn.sync.lastSuccessAt) : "هنوز انجام نشده"}</b>
                   </p>
                   <p>
-                    داده‌های کش‌شده: <b>{conn.sync.transactionCount.toLocaleString("fa-IR")}</b> معامله،{" "}
-                    <b>{conn.sync.expertCount.toLocaleString("fa-IR")}</b> کارشناس
+                    داده‌های کش‌شده: <b>{faNumber(conn.sync.transactionCount)}</b> معامله،{" "}
+                    <b>{faNumber(conn.sync.expertCount)}</b> کاربر و <b>{faNumber(conn.sync.interactionCount)}</b> تعامل
                     {conn.sync.attempts > 0 && conn.sync.lastError ? ` — آخرین خطا: ${conn.sync.lastError}` : ""}
                   </p>
                 </div>
@@ -324,13 +330,13 @@ export function SettingsPage({ onBack }: TilePageProps) {
 
           <div className="text-xs text-muted-foreground space-y-1">
             <p>
-              API سامانه آگهی و درخواست (ARM):{" "}
+              نشانی رابط برنامه‌نویسی سامانه آگهی و درخواست (آرم):{" "}
               <span dir="ltr" className="font-mono">
                 {conn?.config.armApiBase ?? "https://arus-api.melketabriz.ir/api/apm/"}
               </span>
             </p>
             <p>
-              API سامانه پرسنلی (PM):{" "}
+              نشانی رابط برنامه‌نویسی سامانه پرسنلی (پی‌ام):{" "}
               <span dir="ltr" className="font-mono">
                 {conn?.config.pmApiBase ?? "https://pm-api.melketabriz.ir/api/"}
               </span>
@@ -388,7 +394,7 @@ export function SettingsPage({ onBack }: TilePageProps) {
               <AccordionTrigger>ورود به اپلیکیشن</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground leading-relaxed space-y-2">
                 <p>۱. کد پرسنلی خود (مطابق ثبت در سامانه ملک تبریز) را وارد کنید؛ کد تأیید پیامکی صادر می‌شود.</p>
-                <p>۲. کد ۶ رقمی پیامک‌شده را در مهلت ۳ دقیقه وارد کنید. پس از تأیید، نشست شما تا ۱۲ ساعت معتبر است.</p>
+                <p>۲. کد ۴ رقمی پیامک‌شده را در مهلت ۳ دقیقه وارد کنید. پس از تأیید، نشست شما تا ۱۲ ساعت معتبر است.</p>
                 <p>۳. مالک سامانه می‌تواند از مسیر «ورود با کد مدیر» بدون پیامک و با دسترسی کامل وارد شود.</p>
               </AccordionContent>
             </AccordionItem>

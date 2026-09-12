@@ -70,6 +70,10 @@ const DOMAIN_FA: Record<string, string> = {
   SEGMENT: "بخش‌بندی",
   RISK: "ریسک",
   CAPACITY: "تمرکز درآمد",
+  COMPOSITION: "ترکیب",
+  DOCUMENT: "اسناد و مدارک",
+  GROWTH: "رشد",
+  NETWORK: "شبکه همکاری",
 };
 
 export function AgentPanel({ tileId }: { tileId: string }) {
@@ -200,7 +204,7 @@ export function AgentPanel({ tileId }: { tileId: string }) {
       {showHistory && policyVersions && (
         <Card className="mb-4">
           <CardHeader className="py-4">
-            <CardTitle className="text-sm">نسخه‌های سیاست ایجنت (Rollback ممکن است)</CardTitle>
+            <CardTitle className="text-sm">نسخه‌های سیاست ایجنت (با قابلیت بازگردانی)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {policyVersions.map((v) => (

@@ -1,53 +1,83 @@
 "use client";
 
 /**
- * کاشی «کارشناسان» — صفحه داخلی
- * اطلاعات کامل کارشناسان ملک تبریز با فیلتر (نام، موبایل، کد پرسنلی، آدرس، شعبه، وضعیت)
- * + شاخص‌های عملکرد هر کارشناس + بینش‌های ایجنت.
+ * کاشی «کارشناسان» — صفحه داخلی (بازنویسی بر پایه ساختار واقعی سامانه ARM)
+ * ------------------------------------------------------
+ * عین «users-list» و «realtor-interactions» خود سامانه ملک تبریز:
+ *   • شاخص‌ها: کل کاربران، فعال، پرتعامل‌ترین مشاور، جفت برتر همکاری
+ *   • فیلترها: نام، موبایل، کد پرسنلی، نقش، کسب‌وکار (شعبه)، ثبت‌کننده، وضعیت
+ *   • کارت/جدول: نام، موبایل، نقش، کسب‌وکار، ثبت‌کننده،
+ *     تاریخ ثبت (هجری شمسی)، وضعیت، مجموع تعامل‌ها
+ *   • بخش «تعاملات مشاوران با یکدیگر»: جدول مشاور درخواست × مشاور آگهی × تعداد
+ *     + رتبه‌بندی درجه همکاری
+ *   • شفافیت منبع داده
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Filter, RotateCcw, Search, Users, UserCheck, UserX, Phone, MapPin, Building, Hash, Trophy } from "lucide-react";
+import {
+  Loader2, Filter, RotateCcw, Search, Users, UserCheck, UserX, Phone, Building, Hash, Trophy, Network, ArrowLeftRight, ShieldCheck, Database, AlertTriangle,
+} from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
-import { faToman, faNumber, faDate, faDigits, enDigits } from "@/lib/format";
+import { faNumber, faJalaliShort } from "@/lib/format";
+import { faDigits } from "@/lib/jalali";
 
 interface ExRow {
   id: string;
   personnelCode: string;
   fullName: string;
   mobile: string;
-  address: string;
-  branch: string;
+  role: string;
+  businessTitle: string;
+  creator: string | null;
   active: boolean;
-  joinedAt: string;
-  dealCount: number;
-  totalVolume: number;
+  createdAt: string;
+  /** مجموع تعامل‌ها (نقش درخواست‌دهنده + نقش آگهی‌گذار) */
+  interactionTotal: number;
+}
+
+interface InRow {
+  id: string;
+  requestRealtorName: string;
+  propertyRealtorName: string;
+  count: number;
 }
 
 interface Meta {
-  branches: string[];
+  roles: string[];
+  businesses: string[];
+  creators: string[];
 }
 
-const EMPTY = { fullName: "", mobile: "", personnelCode: "", address: "", branch: "all", active: "all" };
+interface DataSourceInfo {
+  real: boolean;
+  cached: boolean;
+  lastSuccessAt: string | null;
+  liveError: string | null;
+}
+
+const EMPTY = { fullName: "", mobile: "", personnelCode: "", role: "all", businessTitle: "all", creator: "all", active: "all" };
 type Filters = typeof EMPTY;
 
-const SEGMENT_STYLE: Record<string, string> = {
-  top: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  mid: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  low: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
-  inactive: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300",
-};
+/** رتبه همکاری بر اساس مجموع تعامل‌ها */
+function cooperationLevel(total: number): { label: string; style: string } {
+  if (total >= 20) return { label: "محور همکاری", style: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" };
+  if (total >= 5) return { label: "همکار پرتکرار", style: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" };
+  if (total > 0) return { label: "کم‌تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
+  return { label: "بدون تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
+}
 
 export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
   const { toast } = useToast();
@@ -56,13 +86,16 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   const [meta, setMeta] = useState<Meta | null>(null);
   const [rows, setRows] = useState<ExRow[] | null>(null);
   const [total, setTotal] = useState(0);
+  const [source, setSource] = useState<DataSourceInfo | null>(null);
+  const [interactions, setInteractions] = useState<InRow[] | null>(null);
+  const [topRealtors, setTopRealtors] = useState<{ name: string; total: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const viewMode = String(settings.viewMode ?? "cards");
 
   useEffect(() => {
-    api<{ branches: string[] }>("/api/crm/meta")
+    api<Meta>("/api/crm/meta")
       .then(setMeta)
-      .catch(() => setMeta({ branches: [] }));
+      .catch(() => setMeta({ roles: [], businesses: [], creators: [] }));
   }, []);
 
   const load = useCallback(async () => {
@@ -70,20 +103,28 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
     try {
       const params = new URLSearchParams();
       if (applied.fullName) params.set("fullName", applied.fullName);
-      if (applied.mobile) params.set("mobile", enDigits(applied.mobile));
-      if (applied.personnelCode) params.set("personnelCode", enDigits(applied.personnelCode));
-      if (applied.address) params.set("address", applied.address);
-      if (applied.branch !== "all") params.set("branch", applied.branch);
+      if (applied.mobile) params.set("mobile", applied.mobile.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
+      if (applied.personnelCode) params.set("personnelCode", applied.personnelCode.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
+      if (applied.role !== "all") params.set("role", applied.role);
+      if (applied.businessTitle !== "all") params.set("businessTitle", applied.businessTitle);
+      if (applied.creator !== "all") params.set("creator", applied.creator);
       if (applied.active !== "all") params.set("active", applied.active);
-      params.set("limit", "500");
+      params.set("limit", "1000");
 
-      const res = await api<{ rows: ExRow[]; total: number }>(`/api/crm/experts?${params.toString()}`);
-      setRows(res.rows);
-      setTotal(res.total);
+      const [exRes, inRes] = await Promise.all([
+        api<{ rows: ExRow[]; total: number; dataSource: DataSourceInfo }>(`/api/crm/experts?${params.toString()}`),
+        api<{ rows: InRow[]; total: number; topRealtors: { name: string; total: number }[] }>("/api/crm/interactions"),
+      ]);
+      setRows(exRes.rows);
+      setTotal(exRes.total);
+      setSource(exRes.dataSource);
+      setInteractions(inRes.rows);
+      setTopRealtors(inRes.topRealtors);
     } catch (err) {
       const e = err as ApiClientError;
       toast({ title: "خطا در دریافت کارشناسان", description: e.message, variant: "destructive" });
       setRows([]);
+      setInteractions([]);
     } finally {
       setLoading(false);
     }
@@ -96,17 +137,19 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   const kpis = useMemo(() => {
     if (!rows) return null;
     const active = rows.filter((r) => r.active).length;
-    const withDeals = rows.filter((r) => r.dealCount > 0);
-    const best = [...rows].sort((a, b) => b.totalVolume - a.totalVolume)[0];
-    return { count: rows.length, active, withDeals: withDeals.length, best };
-  }, [rows]);
+    const best = [...rows].sort((a, b) => b.interactionTotal - a.interactionTotal)[0];
+    const bestPair = interactions && interactions.length > 0 ? interactions[0] : null;
+    return { count: rows.length, active, best, bestPair };
+  }, [rows, interactions]);
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
 
   return (
     <div className="space-y-6">
+      {/* ایجنت هوشمند */}
       <AgentPanel tileId="experts" />
 
+      {/* شاخص‌ها */}
       {kpis && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card>
@@ -114,8 +157,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <Users className="w-5 h-5 text-primary" aria-hidden />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">کل کارشناسان</p>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">کل کاربران</p>
                 <p className="text-lg font-extrabold">{faNumber(kpis.count)}</p>
               </div>
             </CardContent>
@@ -125,20 +168,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shrink-0">
                 <UserCheck className="w-5 h-5 text-emerald-600" aria-hidden />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">کارشناسان فعال</p>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">کاربران فعال</p>
                 <p className="text-lg font-extrabold">{faNumber(kpis.active)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950 flex items-center justify-center shrink-0">
-                <UserX className="w-5 h-5 text-rose-600" aria-hidden />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">غیرفعال</p>
-                <p className="text-lg font-extrabold">{faNumber(kpis.count - kpis.active)}</p>
               </div>
             </CardContent>
           </Card>
@@ -148,201 +180,371 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                 <Trophy className="w-5 h-5 text-amber-600" aria-hidden />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground truncate">صدرنشین ارزش معاملات</p>
-                <p className="text-sm font-extrabold truncate">{kpis.best?.fullName ?? "—"}</p>
+                <p className="text-xs text-muted-foreground truncate">پرتعامل‌ترین مشاور</p>
+                <p className="text-sm font-extrabold truncate">{kpis.best && kpis.best.interactionTotal > 0 ? kpis.best.fullName : "—"}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
+                <ArrowLeftRight className="w-5 h-5 text-teal-600" aria-hidden />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">جفت همکاری برتر</p>
+                <p className="text-[11px] font-bold truncate leading-tight">
+                  {kpis.bestPair ? `${kpis.bestPair.requestRealtorName} ↔ ${kpis.bestPair.propertyRealtorName}` : "—"}
+                </p>
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* فیلترها */}
-      <Card>
-        <CardContent className="pt-6">
-          <form
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setApplied({ ...filters });
-            }}
-          >
-            <div className="space-y-1.5">
-              <Label htmlFor="f-name">نام و نام خانوادگی</Label>
-              <Input id="f-name" placeholder="مثال: علی اکبری" value={filters.fullName} onChange={(e) => setF("fullName", e.target.value)} />
+      {/* شفافیت منبع داده */}
+      {source && source.liveError && (
+        <Card className="border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/30">
+          <CardContent className="p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden />
+            <div className="text-xs leading-relaxed space-y-1">
+              <p className="font-bold">استخراج زنده از سامانه ملک تبریز در دسترس نیست</p>
+              <p className="text-muted-foreground">
+                {source.cached
+                  ? "در حال حاضر داده‌های کش‌شده از آخرین استخراج موفق نمایش داده می‌شود."
+                  : "هنوز هیچ داده‌ای از سامانه استخراج نشده است."}{" "}
+                {source.liveError}
+              </p>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="f-mobile">شماره موبایل</Label>
-              <Input id="f-mobile" inputMode="numeric" dir="ltr" className="text-left" placeholder="0914xxxxxxx" value={filters.mobile} onChange={(e) => setF("mobile", e.target.value.replace(/[^\d۰-۹]/g, ""))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="f-code">کد پرسنلی</Label>
-              <Input id="f-code" inputMode="numeric" dir="ltr" className="text-left" placeholder="4100313xx" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value.replace(/[^\d۰-۹]/g, ""))} />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="f-address">آدرس</Label>
-              <Input id="f-address" placeholder="خیابان، محله…" value={filters.address} onChange={(e) => setF("address", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="f-branch">شعبه</Label>
-              <Select value={filters.branch} onValueChange={(v) => setF("branch", v)}>
-                <SelectTrigger id="f-branch">
-                  <SelectValue placeholder="همه شعبه‌ها" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همه شعبه‌ها</SelectItem>
-                  {meta?.branches.map((b) => (
-                    <SelectItem key={b} value={b}>
-                      {b}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="f-active">وضعیت</Label>
-              <Select value={filters.active} onValueChange={(v) => setF("active", v)}>
-                <SelectTrigger id="f-active">
-                  <SelectValue placeholder="همه" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همه وضعیت‌ها</SelectItem>
-                  <SelectItem value="true">فعال</SelectItem>
-                  <SelectItem value="false">غیرفعال</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end gap-2 lg:col-span-3">
-              <Button type="submit" className="gap-2" disabled={loading}>
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Search className="w-4 h-4" aria-hidden />}
-                اعمال فیلتر
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2"
-                onClick={() => {
-                  setFilters(EMPTY);
-                  setApplied(EMPTY);
-                }}
-              >
-                <RotateCcw className="w-4 h-4" aria-hidden /> پاک‌سازی
-              </Button>
-              {total > 0 && (
-                <Badge variant="secondary" className="mb-1">
-                  {faNumber(total)} کارشناس
-                </Badge>
-              )}
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* فهرست کارشناسان */}
-      {rows === null ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-36 rounded-xl" />
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground text-sm">
-            هیچ کارشناسی با این فیلترها یافت نشد.
-          </CardContent>
-        </Card>
-      ) : viewMode === "cards" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {rows.map((e, i) => {
-            const segment = e.dealCount === 0 ? "inactive" : e.totalVolume > 8e9 ? "top" : e.totalVolume > 2e9 ? "mid" : "low";
-            return (
-              <Card key={e.id} className="tile-pop" style={{ animationDelay: `${i * 0.03}s` }}>
-                <CardContent className="p-4 sm:p-5">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="w-14 h-14 shrink-0">
-                      <AvatarFallback className="bg-primary/15 text-primary font-bold text-base">
-                        {e.fullName.split(" ").map((w) => w[0]).slice(0, 2).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="font-bold text-sm sm:text-base">{e.fullName}</h4>
-                        <Badge className={`${SEGMENT_STYLE[segment]} text-[11px]`}>
-                          {segment === "top" ? "پیشتاز" : segment === "mid" ? "پایدار" : segment === "low" ? "کم‌فعالیت" : "بدون معامله"}
-                        </Badge>
-                        {!e.active && <Badge variant="destructive" className="text-[11px]">غیرفعال</Badge>}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                          <Hash className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                          <span dir="ltr" className="font-mono">{faDigits(e.personnelCode)}</span>
-                        </span>
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                          <Phone className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                          <span dir="ltr" className="font-mono">{faDigits(e.mobile)}</span>
-                        </span>
-                        <span className="flex items-center gap-1.5 text-muted-foreground col-span-1 sm:col-span-2 truncate" title={e.address}>
-                          <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                          {e.address}
-                        </span>
-                        <span className="flex items-center gap-1.5 text-muted-foreground col-span-1 sm:col-span-2">
-                          <Building className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                          {e.branch}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 pt-1 border-t">
-                        <Badge variant="secondary" className="text-[11px]">
-                          {faNumber(e.dealCount)} معامله
-                        </Badge>
-                        <Badge variant="secondary" className="text-[11px]">
-                          {faToman(e.totalVolume)} حجم
-                        </Badge>
-                        <span className="text-[11px] text-muted-foreground mr-auto self-center">
-                          عضویت: {faDate(e.joinedAt)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="p-0 overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="border-b bg-muted/40">
-                <tr className="text-right">
-                  <th className="p-3">نام</th>
-                  <th className="p-3">کد پرسنلی</th>
-                  <th className="p-3">موبایل</th>
-                  <th className="p-3 hidden md:table-cell">آدرس</th>
-                  <th className="p-3">شعبه</th>
-                  <th className="p-3">وضعیت</th>
-                  <th className="p-3">معاملات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((e) => (
-                  <tr key={e.id} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="p-3 font-medium whitespace-nowrap">{e.fullName}</td>
-                    <td dir="ltr" className="p-3 font-mono text-left">{faDigits(e.personnelCode)}</td>
-                    <td dir="ltr" className="p-3 font-mono text-left">{faDigits(e.mobile)}</td>
-                    <td className="p-3 hidden md:table-cell text-muted-foreground">{e.address}</td>
-                    <td className="p-3">{e.branch}</td>
-                    <td className="p-3">
-                      {e.active ? <Badge className="bg-emerald-600">فعال</Badge> : <Badge variant="destructive">غیرفعال</Badge>}
-                    </td>
-                    <td className="p-3">{faNumber(e.dealCount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </CardContent>
         </Card>
       )}
+      {source && source.cached && !source.liveError && (
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <Database className="w-3.5 h-3.5" aria-hidden />
+          آخرین استخراج موفق از سامانه ملک تبریز: {source.lastSuccessAt ? faJalaliShort(source.lastSuccessAt) : "—"}
+        </div>
+      )}
+
+      {/* دو تب: کاربران / تعاملات */}
+      <Tabs defaultValue="experts" dir="rtl">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="experts" className="gap-1.5">
+            <Users className="w-4 h-4" aria-hidden /> کاربران و مشاوران
+          </TabsTrigger>
+          <TabsTrigger value="interactions" className="gap-1.5">
+            <Network className="w-4 h-4" aria-hidden /> تعاملات مشاوران
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ================== تب کاربران ================== */}
+        <TabsContent value="experts" className="space-y-6 mt-4">
+          {/* فیلترها */}
+          <Card>
+            <CardHeader className="py-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Filter className="w-4 h-4 text-primary" aria-hidden /> فیلترهای کاربران
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setApplied({ ...filters });
+                }}
+              >
+                <div className="space-y-1.5">
+                  <Label htmlFor="f-name">نام و نام خانوادگی</Label>
+                  <Input id="f-name" placeholder="نمونه: سید نعمت اله" value={filters.fullName} onChange={(e) => setF("fullName", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="f-mobile">شماره موبایل</Label>
+                  <Input id="f-mobile" inputMode="numeric" placeholder="نمونه: ۰۹۱۴۱۲۳۴۵۶۷" value={filters.mobile} onChange={(e) => setF("mobile", e.target.value.replace(/[^\d۰-۹]/g, ""))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="f-code">کد پرسنلی</Label>
+                  <Input id="f-code" inputMode="numeric" placeholder="نمونه: ۴۱۰۰۳۱۳۲۰" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value.replace(/[^\d۰-۹]/g, ""))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>نقش</Label>
+                  <Select value={filters.role} onValueChange={(v) => setF("role", v)}>
+                    <SelectTrigger aria-label="نقش">
+                      <SelectValue placeholder="همه نقش‌ها" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">همه نقش‌ها</SelectItem>
+                      {meta?.roles.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>کسب‌وکار (شعبه)</Label>
+                  <Select value={filters.businessTitle} onValueChange={(v) => setF("businessTitle", v)}>
+                    <SelectTrigger aria-label="کسب‌وکار">
+                      <SelectValue placeholder="همه کسب‌وکارها" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">همه کسب‌وکارها</SelectItem>
+                      {meta?.businesses.map((b) => (
+                        <SelectItem key={b} value={b}>
+                          {b}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>ثبت‌کننده</Label>
+                  <Select value={filters.creator} onValueChange={(v) => setF("creator", v)}>
+                    <SelectTrigger aria-label="ثبت‌کننده">
+                      <SelectValue placeholder="همه ثبت‌کنندگان" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">همه ثبت‌کنندگان</SelectItem>
+                      {meta?.creators.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>وضعیت</Label>
+                  <Select value={filters.active} onValueChange={(v) => setF("active", v)}>
+                    <SelectTrigger aria-label="وضعیت">
+                      <SelectValue placeholder="همه وضعیت‌ها" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">همه وضعیت‌ها</SelectItem>
+                      <SelectItem value="true">فعال</SelectItem>
+                      <SelectItem value="false">غیرفعال</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end gap-2 lg:col-span-4">
+                  <Button type="submit" className="gap-2" disabled={loading}>
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Search className="w-4 h-4" aria-hidden />}
+                    اعمال فیلتر
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => {
+                      setFilters(EMPTY);
+                      setApplied(EMPTY);
+                    }}
+                  >
+                    <RotateCcw className="w-4 h-4" aria-hidden /> پاک‌سازی
+                  </Button>
+                  {total > 0 && (
+                    <Badge variant="secondary" className="mb-1">
+                      {faNumber(total)} کاربر
+                    </Badge>
+                  )}
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* فهرست کاربران */}
+          {rows === null ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-36 rounded-xl" />
+              ))}
+            </div>
+          ) : rows.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
+                {loading
+                  ? "در حال دریافت…"
+                  : rows.length === 0 && source?.cached === false
+                    ? "هنوز کاربری از سامانه ملک تبریز استخراج نشده است. با بازیابی پایگاه داده سامانه، داده‌ها به‌صورت خودکار همگام می‌شوند یا از تنظیمات، «همگام‌سازی داده‌ها» را بزنید."
+                    : "هیچ کاربری با این فیلترها یافت نشد."}
+              </CardContent>
+            </Card>
+          ) : viewMode === "cards" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {rows.map((e, i) => {
+                const coop = cooperationLevel(e.interactionTotal);
+                return (
+                  <Card key={e.id} className="tile-pop" style={{ animationDelay: `${i * 0.03}s` }}>
+                    <CardContent className="p-4 sm:p-5">
+                      <div className="flex items-start gap-4">
+                        <Avatar className="w-14 h-14 shrink-0">
+                          <AvatarFallback className="bg-primary/15 text-primary font-bold text-base">
+                            {e.fullName.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-bold text-sm sm:text-base">{e.fullName}</h4>
+                            <Badge className={`${coop.style} text-[11px]`}>{coop.label}</Badge>
+                            {!e.active && <Badge variant="destructive" className="text-[11px]">غیرفعال</Badge>}
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <Hash className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                              <span className="font-mono">{faDigits(e.personnelCode)}</span>
+                            </span>
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <Phone className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                              <span className="font-mono">{faDigits(e.mobile)}</span>
+                            </span>
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <ShieldCheck className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                              {e.role}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <Building className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                              {e.businessTitle}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 pt-1 border-t items-center">
+                            <Badge variant="secondary" className="text-[11px]">
+                              {faNumber(e.interactionTotal)} تعامل
+                            </Badge>
+                            <span className="text-[11px] text-muted-foreground">
+                              ثبت: {faJalaliShort(e.createdAt)}
+                            </span>
+                            {e.creator && (
+                              <span className="text-[11px] text-muted-foreground mr-auto" title="ثبت‌کننده">
+                                توسط: {e.creator}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead className="text-right">نام</TableHead>
+                      <TableHead className="text-right">کد پرسنلی</TableHead>
+                      <TableHead className="text-right">موبایل</TableHead>
+                      <TableHead className="text-right hidden md:table-cell">نقش</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">کسب‌وکار</TableHead>
+                      <TableHead className="text-right hidden lg:table-cell">ثبت</TableHead>
+                      <TableHead className="text-right">وضعیت</TableHead>
+                      <TableHead className="text-right">تعامل</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((e) => (
+                      <TableRow key={e.id} className="hover:bg-muted/30">
+                        <TableCell className="text-xs font-medium whitespace-nowrap">{e.fullName}</TableCell>
+                        <TableCell className="text-xs font-mono">{faDigits(e.personnelCode)}</TableCell>
+                        <TableCell className="text-xs font-mono">{faDigits(e.mobile)}</TableCell>
+                        <TableCell className="hidden md:table-cell text-xs">{e.role}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-xs">{e.businessTitle}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-xs whitespace-nowrap">{faJalaliShort(e.createdAt)}</TableCell>
+                        <TableCell className="text-xs">
+                          {e.active ? <Badge className="bg-emerald-600">فعال</Badge> : <Badge variant="destructive">غیرفعال</Badge>}
+                        </TableCell>
+                        <TableCell className="text-xs font-bold">{faNumber(e.interactionTotal)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ================== تب تعاملات ================== */}
+        <TabsContent value="interactions" className="space-y-4 mt-4">
+          {interactions === null ? (
+            <Skeleton className="h-48 rounded-xl" />
+          ) : interactions.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
+                هنوز تعاملی از «گزارش تعاملات مشاوران» سامانه ملک تبریز استخراج نشده است. این گزارش پس از
+                همگام‌سازی موفق در دسترس قرار می‌گیرد.
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* رتبه‌بندی درجه همکاری */}
+              {topRealtors.length > 0 && (
+                <Card>
+                  <CardHeader className="py-4">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-amber-600" aria-hidden /> درجه همکاری مشاوران (مجموع طرف درخواست + طرف آگهی)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                    {topRealtors.map((r, i) => (
+                      <div key={r.name} className="rounded-lg border bg-card p-2.5 text-center min-w-0">
+                        <div className="text-[10px] text-muted-foreground">رتبه {faNumber(i + 1)}</div>
+                        <div className="text-xs font-bold truncate" title={r.name}>{r.name}</div>
+                        <div className="text-xs text-primary font-extrabold mt-0.5">{faNumber(r.total)} تعامل</div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* جدول تعاملات — عین ستون‌های خود سامانه */}
+              <Card>
+                <CardHeader className="py-4">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Network className="w-4 h-4 text-primary" aria-hidden /> تعاملات مشاوران با یکدیگر
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto max-h-[26rem]">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-card z-10">
+                        <TableRow>
+                          <TableHead className="text-right">مشاور درخواست</TableHead>
+                          <TableHead className="text-right">مشاور آگهی</TableHead>
+                          <TableHead className="text-right">تعداد همکاری</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {interactions.slice(0, 100).map((r) => (
+                          <TableRow key={r.id} className="hover:bg-muted/30">
+                            <TableCell className="text-xs font-medium">{r.requestRealtorName}</TableCell>
+                            <TableCell className="text-xs font-medium">{r.propertyRealtorName}</TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="secondary" className="font-bold">{faNumber(r.count)}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {interactions.length > 100 && (
+                    <p className="p-3 text-[11px] text-muted-foreground text-center">
+                      نمایش ۱۰۰ تعامل برتر از {faNumber(interactions.length)} رکورد
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        داده‌ها عین «فهرست کاربران» و «گزارش تعاملات مشاوران» سامانه ملک تبریز استخراج می‌شوند. تاریخ‌های عضویت
+        و ثبت با تقویم هجری شمسی نمایش داده می‌شوند.
+      </p>
     </div>
   );
 }

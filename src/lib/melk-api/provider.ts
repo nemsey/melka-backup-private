@@ -224,7 +224,7 @@ class RealProvider implements MelkProvider {
         timeoutMs: this.config.timeoutMs,
         maxRetries: 0,
       });
-      return { ok: true, detail: "سامانه پرسنلی (PM) پاسخ داد." };
+      return { ok: true, detail: "سامانه پرسنلی پاسخ داد." };
     } catch (err) {
       const e = err as MelkApiError;
       return { ok: false, detail: e.message };
@@ -241,17 +241,17 @@ class RealProvider implements MelkProvider {
       const dbUp = probe.httpStatus < 500 && !probe.bodyText.includes("MongooseError");
       services.push({
         service: "ARM_PUBLIC",
-        label: "سامانه مدیریت آگهی و درخواست (عمومی)",
+        label: "سامانه مدیریت آگهی و درخواست — بخش عمومی",
         reachable: true,
         databaseUp: dbUp,
         httpStatus: probe.httpStatus,
         latencyMs: probe.latencyMs,
-        detail: dbUp ? "پاسخ موفق" : "پایگاه داده سامانه ARM در دسترس نیست (Mongoose/502)",
+        detail: dbUp ? "پاسخ موفق" : "پایگاه داده سامانه آگهی و درخواست در دسترس نیست (خطای پایگاه داده/پنج‌صد و دو)",
       });
     } catch {
       services.push({
         service: "ARM_PUBLIC",
-        label: "سامانه مدیریت آگهی و درخواست (عمومی)",
+        label: "سامانه مدیریت آگهی و درخواست — بخش عمومی",
         reachable: false,
         databaseUp: false,
         latencyMs: -1,
@@ -265,17 +265,17 @@ class RealProvider implements MelkProvider {
       const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
       services.push({
         service: "ARM_API",
-        label: "سامانه مدیریت آگهی و درخواست (API احراز هویت)",
+        label: "سامانه مدیریت آگهی و درخواست — احراز هویت",
         reachable: true,
         databaseUp: dbUp,
         httpStatus: probe.httpStatus,
         latencyMs: probe.latencyMs,
-        detail: dbUp ? "مسیر احراز هویت فعال است" : "پایگاه داده سامانه ARM قطع است — ارسال پیامک ممکن نیست",
+        detail: dbUp ? "مسیر احراز هویت فعال است" : "پایگاه داده سامانه آگهی و درخواست قطع است — ارسال پیامک ممکن نیست",
       });
     } catch {
       services.push({
         service: "ARM_API",
-        label: "سامانه مدیریت آگهی و درخواست (API احراز هویت)",
+        label: "سامانه مدیریت آگهی و درخواست — احراز هویت",
         reachable: false,
         databaseUp: false,
         latencyMs: -1,
@@ -289,7 +289,7 @@ class RealProvider implements MelkProvider {
       const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
       services.push({
         service: "PM_API",
-        label: "سامانه مدیریت پرسنلی (PM)",
+        label: "سامانه مدیریت پرسنلی",
         reachable: true,
         databaseUp: dbUp,
         httpStatus: probe.httpStatus,
@@ -299,7 +299,7 @@ class RealProvider implements MelkProvider {
     } catch {
       services.push({
         service: "PM_API",
-        label: "سامانه مدیریت پرسنلی (PM)",
+        label: "سامانه مدیریت پرسنلی",
         reachable: false,
         databaseUp: false,
         latencyMs: -1,

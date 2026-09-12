@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await audit("DATA_SYNC", guard.personnelCode, sync.ok ? `tx=${sync.transactions}; ex=${sync.experts}` : `error=${sync.errorCode}`);
+    await audit("DATA_SYNC", guard.personnelCode, sync.ok ? `tx=${sync.transactions}; ex=${sync.experts}; in=${sync.interactions}` : `error=${sync.errorCode}`);
     return Response.json({ ok: sync.ok, sync, state: await getSyncState() });
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);

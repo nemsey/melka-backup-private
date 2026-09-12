@@ -1,12 +1,13 @@
 /**
  * GET /api/crm/meta
- * گزینه‌های فیلتر (محله‌ها، انواع ملک، شعبه‌ها) برای پرکردن دراپ‌داون کاشی‌ها
+ * گزینه‌های فیلتر برای پرکردن دراپ‌داون کاشی‌ها:
+ *   نقش‌های کاربران، کسب‌وکارها (شعبه‌ها)، ثبت‌کنندگان —
+ *   همگی از داده واقعی استخراج‌شده کش می‌شوند.
  */
 
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ensureSeeded } from "@/lib/melk-api/sync";
-import { PROPERTY_TYPES } from "@/lib/melk-api/types";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 
@@ -17,16 +18,17 @@ export async function GET(request: NextRequest) {
   try {
     // کش فقط با داده واقعی سامانه ملک تبریز پر می‌شود
     await ensureSeeded(guard.armTokens?.accessToken);
-    const [districts, branches] = await Promise.all([
-      db.transactionRecord.findMany({ distinct: ["district"], select: { district: true } }),
-      db.expertRecord.findMany({ distinct: ["branch"], select: { branch: true } }),
+    const [roles, businesses, creators] = await Promise.all([
+      db.expertRecord.findMany({ distinct: ["role"], select: { role: true } }),
+      db.expertRecord.findMany({ distinct: ["businessTitle"], select: { businessTitle: true } }),
+      db.expertRecord.findMany({ distinct: ["creator"], select: { creator: true } }),
     ]);
 
     return Response.json({
       ok: true,
-      districts: districts.map((d) => d.district).sort((a, b) => a.localeCompare(b, "fa")),
-      propertyTypes: [...PROPERTY_TYPES],
-      branches: branches.map((b) => b.branch).sort((a, b) => a.localeCompare(b, "fa")),
+      roles: roles.map((r) => r.role).filter(Boolean).sort((a, b) => a.localeCompare(b, "fa")),
+      businesses: businesses.map((b) => b.businessTitle).filter(Boolean).sort((a, b) => a.localeCompare(b, "fa")),
+      creators: creators.map((c) => c.creator).filter((c): c is string => Boolean(c)).sort((a, b) => a.localeCompare(b, "fa")),
     });
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);

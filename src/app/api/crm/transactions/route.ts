@@ -1,9 +1,11 @@
 /**
  * GET /api/crm/transactions
- * فهرست معاملات با فیلترهای کامل — خوانده‌شده از کش محلی که «فقط» با
- * داده واقعی استخراج‌شده از arus-api.melketabriz.ir پر می‌شود.
+ * فهرست معاملات (گزارش تطابق) با فیلترهای واقعی — خوانده‌شده از کش محلی
+ * که «فقط» با داده واقعی استخراج‌شده از arus-api.melketabriz.ir پر می‌شود.
  * اگر کش خالی باشد و نشست دارای توکن ARM باشد، همگام‌سازی زنده انجام می‌شود.
- * فیلترها: بازه تاریخ، نام کارشناس، کد آگهی، کد درخواست، بازه مبلغ، محله، نوع ملک
+ * فیلترها (عین خود سامانه + توسعه داشبورد):
+ *   بازه تاریخ (جلالی در UI → ISO)، کد ملک، کد درخواست، شماره هولوگرام،
+ *   نوع تطبیق (رویداد / آگهی پیشنهادی / هر دو)
  */
 
 import { NextRequest } from "next/server";
@@ -33,45 +35,56 @@ export async function GET(request: NextRequest) {
     const dateFrom = sp.get("dateFrom");
     const dateTo = sp.get("dateTo");
     if (dateFrom || dateTo) {
-      where.dealDate = {
-        ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
-        ...(dateTo ? { lte: new Date(`${dateTo}T23:59:59.999Z`) } : {}),
+      where.contractDate = {
+        ...(dateFrom ? { gte: new Date(`${dateFrom}T00:00:00`) } : {}),
+        ...(dateTo ? { lte: new Date(`${dateTo}T23:59:59.999`) } : {}),
       };
     }
-    const expertName = sp.get("expertName");
-    if (expertName) where.expertName = { contains: expertName };
-    const expertCode = sp.get("expertCode");
-    if (expertCode) where.expertCode = { contains: expertCode };
-    const listingCode = sp.get("listingCode");
-    if (listingCode) where.listingCode = { contains: listingCode };
+    const propertyCode = sp.get("propertyCode");
+    if (propertyCode) where.propertyCode = { contains: propertyCode };
     const requestCode = sp.get("requestCode");
     if (requestCode) where.requestCode = { contains: requestCode };
-    const priceMin = num(sp.get("priceMin"));
-    const priceMax = num(sp.get("priceMax"));
-    if (priceMin !== undefined || priceMax !== undefined) {
-      where.price = {
-        ...(priceMin !== undefined ? { gte: priceMin } : {}),
-        ...(priceMax !== undefined ? { lte: priceMax } : {}),
-      };
-    }
-    const district = sp.get("district");
-    if (district) where.district = { contains: district };
-    const propertyType = sp.get("propertyType");
-    if (propertyType) where.propertyType = { contains: propertyType };
+    const contractHolo = sp.get("contractHolo");
+    if (contractHolo) where.contractHolo = { contains: contractHolo };
 
-    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 50, 1), 2000);
+    // نوع تطبیق — ترکیب رویداد/آگهی پیشنهادی (نقاط قوت داشبورد نسبت به سامانه اصلی)
+    const matchKind = sp.get("matchKind");
+    const baseAnd: Prisma.TransactionRecordWhereInput[] = Array.isArray(where.AND) ? where.AND : [];
+    if (matchKind === "event") {
+      where.eventsCount = { gt: 0 };
+    } else if (matchKind === "suggested") {
+      where.suggestedPropertyCount = { gt: 0 };
+    } else if (matchKind === "both") {
+      where.AND = [...baseAnd, { eventsCount: { gt: 0 } }, { suggestedPropertyCount: { gt: 0 } }];
+    }
+
+    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 50, 1), 5000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
-    const sortBy = (sp.get("sortBy") ?? "dealDate") as "dealDate" | "price" | "expertName";
+    const sortBy = (sp.get("sortBy") ?? "contractDate") as "contractDate" | "eventsCount" | "suggestedPropertyCount";
     const sortDir: Prisma.SortOrder = sp.get("sortDir") === "asc" ? "asc" : "desc";
 
     const [rows, total] = await Promise.all([
       db.transactionRecord.findMany({
         where,
-        orderBy: sortBy === "expertName" ? { expertName: sortDir } : { [sortBy]: sortDir },
+        orderBy: { [sortBy]: sortDir },
         take: limit,
         skip: offset,
       }),
       db.transactionRecord.count({ where }),
+    ]);
+
+    // خلاصه چهارگانه همان بازه (عین شاخص‌های بالای گزارش خود سامانه)
+    const bothWhere: Prisma.TransactionRecordWhereInput = {
+      ...where,
+      AND: [...(Array.isArray(where.AND) ? where.AND : []), { eventsCount: { gt: 0 } }, { suggestedPropertyCount: { gt: 0 } }],
+    };
+    const [totalCount, hasRequestEvent, hasSuggestedProperty, hasBoth, withHolo, withRequest] = await Promise.all([
+      db.transactionRecord.count({ where }),
+      db.transactionRecord.count({ where: { ...where, eventsCount: { gt: 0 } } }),
+      db.transactionRecord.count({ where: { ...where, suggestedPropertyCount: { gt: 0 } } }),
+      db.transactionRecord.count({ where: bothWhere }),
+      db.transactionRecord.count({ where: { ...where, contractHolo: { not: null } } }),
+      db.transactionRecord.count({ where: { ...where, requestCode: { not: null } } }),
     ]);
 
     return Response.json({
@@ -80,6 +93,7 @@ export async function GET(request: NextRequest) {
       total,
       limit,
       offset,
+      summary: { totalCount, hasRequestEvent, hasSuggestedProperty, hasBoth, withHolo, withRequest },
       // شفافیت منبع داده برای UI
       dataSource: {
         real: true,

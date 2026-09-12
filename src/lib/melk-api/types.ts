@@ -3,6 +3,14 @@
  * ------------------------------------------------------
  * این انواع «قرارداد داده» بین UI، هسته کاشی‌ها، ایجنت‌ها و
  * لایه اتصال به سامانه‌های واقعی ملک تبریز هستند.
+ *
+ * ✅ ساختار ردیف‌ها «عیناً از صفحات رسمی سامانه ARM» استخراج شده
+ * (تحلیل باندل TradedStatisticsPage / users-list-page / realtor-interactions-page):
+ *   گزارش تطابق معاملات: propertyCode، propertyCustomer، requestCode،
+ *   requestCustomer، contractDate، contractHolo، suggestedPropertyCount، eventsCount
+ *   خلاصه گزارش: totalCount، hasRequestEvent، hasSuggestedProperty، hasBoth
+ *   کارشناسان (realtors/list): fullName، mobile، role، business، creator، createdAt، active
+ *   تعاملات مشاوران: requestRealtorName، propertyRealtorName، count
  * هر تغییر در ساختار پاسخ واقعی CRM فقط باید در Adapter لایه
  * melk-api اعمال شود، نه در بقیه سامانه.
  */
@@ -43,57 +51,56 @@ export interface OtpVerifyResult {
   armTokens: ArmTokens;
 }
 
-// ===================== معاملات =====================
+// ===================== معاملات (گزارش تطابق معاملات سامانه ARM) =====================
 
-export const PROPERTY_TYPES = [
-  "آپارتمان",
-  "کلنگی",
-  "مغازه",
-  "خانه ویلایی",
-  "دفتر اداری",
-  "باغ",
-] as const;
-
-export type PropertyType = (typeof PROPERTY_TYPES)[number];
-
+/**
+ * یک ردیف «گزارش تطابق معاملات» — عین ساختار خود سامانه ملک تبریز:
+ * هر معامله = تطبیق یک آگهی ملک (property) با یک درخواست خرید (request)
+ * + اطلاعات قرارداد (تاریخ قرارداد، شماره هولوگرام) + شمارش رویداد و آگهی پیشنهادی.
+ */
 export interface CrmTransaction {
+  /** شناسه رکورد (MongoDB _id یا کلید ترکیبی) */
   id: string;
-  /** تاریخ معامله (ISO 8601) */
-  dealDate: string;
-  /** کد آگهی مورد معامله */
-  listingCode: string;
-  /** کد درخواست خرید که به معامله منجر شده */
+  /** تاریخ معامله/قرارداد (ISO) — از contractDate سامانه ARM */
+  contractDate: string;
+  /** کد ملک (آگهی فروشنده) */
+  propertyCode: string;
+  /** نام مالک/مشتریِ طرف ملک */
+  propertyCustomer: string | null;
+  /** کد درخواست خرید (اگر معامله از مسیر درخواست رسیده باشد) */
   requestCode: string | null;
-  /** کد پرسنلی کارشناس معامله‌کننده */
-  expertCode: string;
-  /** نام و نام خانوادگی کارشناس */
-  expertName: string;
-  /** مبلغ معامله (تومان) */
-  price: number;
-  /** محله */
-  district: string;
-  /** نوع ملک */
-  propertyType: PropertyType;
-  /** متراژ (متر مربع) */
-  area: number;
-  /** کمیسیون دریافتی (تومان) */
-  commission: number;
+  /** نام درخواست‌دهنده طرف درخواست */
+  requestCustomer: string | null;
+  /** شماره هولوگرام قرارداد (شناسه رسمی سند در سامانه) */
+  contractHolo: string | null;
+  /** تعداد آگهی‌های پیشنهادی سیستم برای این تطبیق */
+  suggestedPropertyCount: number;
+  /** تعداد رویدادهای ثبت‌شده (تعامل کارشناس با درخواست) */
+  eventsCount: number;
+}
+
+/**
+ * خلاصه گزارش تطابق — همان چهار عددی که خود سامانه ARM
+ * بالای گزارشش نمایش می‌دهد.
+ */
+export interface TradedSummary {
+  totalCount: number;
+  hasRequestEvent: number;
+  hasSuggestedProperty: number;
+  hasBoth: number;
 }
 
 export interface TransactionFilter {
   dateFrom?: string;
   dateTo?: string;
-  expertName?: string;
-  expertCode?: string;
-  listingCode?: string;
+  propertyCode?: string;
   requestCode?: string;
-  priceMin?: number;
-  priceMax?: number;
-  district?: string;
-  propertyType?: string;
+  contractHolo?: string;
+  /** فیلتر ترکیب: همه | رویداد | آگهی پیشنهادی | هر دو */
+  matchKind?: "all" | "event" | "suggested" | "both";
   limit: number;
   offset: number;
-  sortBy?: "dealDate" | "price" | "expertName";
+  sortBy?: "contractDate" | "eventsCount" | "suggestedPropertyCount";
   sortDir?: "asc" | "desc";
 }
 
@@ -102,30 +109,55 @@ export interface Paged<T> {
   total: number;
 }
 
-// ===================== کارشناسان =====================
+// ===================== کارشناسان (realtors/list سامانه ARM) =====================
 
+/**
+ * یک ردیف «فهرست کاربران/مشاوران» — عین ساختار users-list سامانه ARM:
+ * نقش مشتری (realtor و…)، کسب‌وکار (شعبه)، ثبت‌کننده و زمان ثبت.
+ */
 export interface CrmExpert {
   id: string;
+  /** کد پرسنلی/شناسه کاربر در سامانه */
   personnelCode: string;
   fullName: string;
   mobile: string;
-  address: string;
-  /** شعبه/دورهدیفی */
-  branch: string;
+  /** نقش کاربر (مثلاً «کارشناس و مشاور فروش») */
+  role: string;
+  /** عنوان کسب‌وکار/شعبه */
+  businessTitle: string;
+  /** نام ثبت‌کننده (مدیری که کاربر را ایجاد کرده) */
+  creator: string | null;
   active: boolean;
-  /** تاریخ عضویت (ISO) */
-  joinedAt: string;
+  /** تاریخ ثبت/عضویت (ISO) */
+  createdAt: string;
 }
 
 export interface ExpertFilter {
   fullName?: string;
   mobile?: string;
   personnelCode?: string;
-  address?: string;
-  branch?: string;
+  role?: string;
+  businessTitle?: string;
   active?: boolean;
   limit: number;
   offset: number;
+}
+
+// ===================== تعاملات مشاوران (realtor-interactions سامانه ARM) =====================
+
+/**
+ * یک ردیف «تعاملات مشاوران با یکدیگر» — عین ساختار خود سامانه:
+ * مشاور درخواست × مشاور آگهی × تعداد همکاری‌های منجر به تطبیق.
+ */
+export interface CrmInteraction {
+  /** کلید طبیعی: requestRealtor|propertyRealtor */
+  id: string;
+  /** نام مشاورِ طرف درخواست خرید */
+  requestRealtorName: string;
+  /** نام مشاورِ طرف آگهی ملک */
+  propertyRealtorName: string;
+  /** تعداد تعامل/همکاری */
+  count: number;
 }
 
 // ===================== وضعیت اتصال =====================

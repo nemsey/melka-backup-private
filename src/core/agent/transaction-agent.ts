@@ -1,34 +1,27 @@
 /**
  * ایجنت هوشمند کاشی «معاملات»
  * ------------------------------------------------------
- * تخصص: تحلیل معاملات، روند بازار، عملکرد کارشناسان معامله‌گر،
- * توزیع محله‌ای و تشخیص ناهنجاری — با یادگیری از بازخورد مدیر.
+ * تخصص: تحلیل «گزارش تطابق معاملات» سامانه ملک تبریز —
+ * روند ماهانه (هجری شمسی)، ترکیب چهارگانه (رویداد/آگهی پیشنهادی/
+ * هر دو)، نرخ رساندن درخواست به معامله، قراردادهای دارای هولوگرام
+ * و تشخیص ناهنجاری — با یادگیری از بازخورد مدیر.
  */
 
 import { db } from "@/lib/db";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import {
-  concentrationIndex,
-  conversionRate,
   detectAnomalies,
   growthRate,
-  groupBy,
+  matchComposition,
   monthlySeries,
-  topByValue,
-  expertStats,
+  topMonths,
 } from "./analyzers";
-import { faToman, faMonthLabel } from "@/lib/format";
-
-/** قالب‌بندی مبالغ تومانی خوانا با ارقام فارسی */
-export const toman = faToman;
-
-/** برچسب ماه شمسی */
-const monthLabel = faMonthLabel;
+import { faNumber, faMonthLabel } from "@/lib/format";
 
 export class TransactionAgent extends BaseLearningAgent {
   readonly tileId = "transactions";
   readonly name = "ایجنت تحلیل معاملات";
-  readonly insightDomains = ["TREND", "VOLUME", "TOP_EXPERTS", "DISTRICT", "ANOMALY", "CONVERSION"] as const;
+  readonly insightDomains = ["VOLUME", "TREND", "COMPOSITION", "CONVERSION", "DOCUMENT", "ANOMALY"] as const;
 
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const txs = await db.transactionRecord.findMany();
@@ -36,20 +29,19 @@ export class TransactionAgent extends BaseLearningAgent {
     if (txs.length === 0) return cards;
 
     const series = monthlySeries(txs);
-    const totalValue = txs.reduce((a, t) => a + t.price, 0);
-    const totalCommission = txs.reduce((a, t) => a + t.commission, 0);
+    const comp = matchComposition(txs);
 
     // ---- VOLUME: حجم کل ----
     cards.push({
       key: "tx-volume",
       domain: "VOLUME",
-      title: "حجم کل معاملات",
-      body: `در بازه‌ی بررسی، ${txs.length.toLocaleString("fa-IR")} معامله به ارزش کل ${toman(totalValue)} ثبت شده است. مجموع کمیسیون دریافتی ${toman(totalCommission)} است.`,
+      title: "حجم کل معاملات ثبت‌شده",
+      body: `در بازه‌ی بررسی، ${faNumber(txs.length)} معامله در «گزارش تطابق معاملات» سامانه ملک تبریز ثبت شده است. هر رکورد نشان‌دهنده‌ی تطبیق یک آگهی ملک با یک درخواست خرید و ثبت قرارداد مربوطه است.`,
       severity: "info",
       metrics: [
-        { label: "تعداد", value: txs.length.toLocaleString("fa-IR") },
-        { label: "ارزش کل", value: toman(totalValue) },
-        { label: "میانگین هر معامله", value: toman(Math.round(totalValue / txs.length)) },
+        { label: "تعداد کل", value: faNumber(comp.totalCount) },
+        { label: "از مسیر درخواست", value: faNumber(txs.filter((t) => t.requestCode).length) },
+        { label: "دارای هولوگرام", value: faNumber(txs.filter((t) => t.contractHolo).length) },
       ],
     });
 
@@ -61,46 +53,58 @@ export class TransactionAgent extends BaseLearningAgent {
       cards.push({
         key: "tx-trend",
         domain: "TREND",
-        title: "روند ماهانه بازار",
+        title: "روند ماهانه معاملات",
         body:
           growth === null
             ? "داده کافی برای محاسبه روند وجود ندارد."
             : growth >= 0
-              ? `ارزش معاملات ${monthLabel(last.key)} نسبت به ${monthLabel(prev.key)} حدود ${Math.abs(growth).toLocaleString("fa-IR")}٪ رشد داشته است. اگر این روند ادامه یابد، تمرکز عرضه در ماه‌های آینده منطقی است.`
-              : `ارزش معاملات ${monthLabel(last.key)} نسبت به ${monthLabel(prev.key)} حدود ${Math.abs(growth).toLocaleString("fa-IR")}٪ کاهش داشته است. پیشنهاد: بررسی علت افت (فصلی‌بودن یا رقیب) و برنامه‌ریزی کمپین فعال‌سازی مشتریان.`,
+              ? `تعداد معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ رشد داشته است. اگر این روند ادامه یابد، تمرکز عرضه در ماه‌های آینده منطقی است.`
+              : `تعداد معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ کاهش داشته است. پیشنهاد: بررسی علت افت (فصلی‌بودن یا رقیب) و برنامه‌ریزی کمپین فعال‌سازی مشتریان.`,
         severity: growth === null ? "info" : growth >= 10 ? "positive" : growth <= -10 ? "warning" : "info",
         metrics: [
-          { label: "رشد ماهانه", value: growth === null ? "—" : `${growth.toLocaleString("fa-IR")}٪` },
-          { label: "معاملات ماه اخیر", value: last.count.toLocaleString("fa-IR") },
+          { label: "رشد ماهانه", value: growth === null ? "—" : `${faNumber(growth)}٪` },
+          { label: "معاملات ماه اخیر", value: faNumber(last.count) },
         ],
       });
     }
 
-    // ---- TOP_EXPERTS: برترین کارشناسان ----
-    const stats = expertStats(txs);
-    const top3 = topByValue(stats, 3);
-    if (top3.length > 0) {
-      cards.push({
-        key: "tx-top-experts",
-        domain: "TOP_EXPERTS",
-        title: "کارشناسان برتر از نظر ارزش معاملات",
-        body: `سه کارشناس اول ${toman(top3.reduce((a, s) => a + s.totalValue, 0))} از کل ${toman(totalValue)} (سهم ${concentrationIndex(stats, 3).toLocaleString("fa-IR")}٪) را رقم زده‌اند. الگوی فروش این کارشناسان قابل الگوبرداری برای آموزش سایرین است.`,
-        severity: "info",
-        metrics: top3.map((s, i) => ({ label: `رتبه ${(i + 1).toLocaleString("fa-IR")}`, value: `${s.expertName} — ${s.dealCount.toLocaleString("fa-IR")} معامله` })),
-      });
-    }
+    // ---- COMPOSITION: ترکیب چهارگانه (عین شاخص‌های خود سامانه) ----
+    cards.push({
+      key: "tx-composition",
+      domain: "COMPOSITION",
+      title: "ترکیب رویداد و آگهی پیشنهادی",
+      body: `از کل ${faNumber(comp.totalCount)} معامله، ${faNumber(comp.hasRequestEvent)} مورد دارای رویداد (تعامل کارشناس با درخواست)، ${faNumber(comp.hasSuggestedProperty)} مورد دارای آگهی پیشنهادی سیستم و ${faNumber(comp.hasBoth)} مورد هر دو را دارند. ${comp.hasSuggestedProperty / Math.max(1, comp.totalCount) < 0.3 ? "سهم پایین آگهی پیشنهادی نشان می‌دهد موتور تطبیق سیستم کمتر استفاده می‌شود — ارزش بررسی دارد." : "موتور تطبیق سیستم نقش مؤثری در معاملات ایفا می‌کند."}`,
+      severity: comp.hasSuggestedProperty / Math.max(1, comp.totalCount) < 0.3 ? "warning" : "positive",
+      metrics: [
+        { label: "دارای رویداد", value: faNumber(comp.hasRequestEvent) },
+        { label: "دارای آگهی پیشنهادی", value: faNumber(comp.hasSuggestedProperty) },
+        { label: "دارای هر دو", value: faNumber(comp.hasBoth) },
+        { label: "بدون هیچ‌کدام", value: faNumber(comp.neither) },
+      ],
+    });
 
-    // ---- DISTRICT: محله‌های پربار ----
-    const districts = groupBy(txs, (t) => t.district);
-    const topDistricts = districts.slice(0, 3);
-    if (topDistricts.length > 0) {
+    // ---- CONVERSION: نرخ رساندن درخواست به معامله ----
+    cards.push({
+      key: "tx-conversion",
+      domain: "CONVERSION",
+      title: "نرخ رساندن درخواست به معامله",
+      body: `${faNumber(comp.requestShare)}٪ از معاملات از مسیر «درخواست خرید ثبت‌شده» نهایی شده‌اند؛ ${comp.requestShare < 50 ? "این عدد نشان می‌دهد نیمی از معاملات خارج از چرخه رسمی درخواست‌ها انجام می‌شود — پیگیری درخواست‌های باز توصیه می‌شود." : "چرخه درخواست‌ها تا معامله به‌خوبی عمل می‌کند."}`,
+      severity: comp.requestShare < 50 ? "warning" : "positive",
+      metrics: [{ label: "سهم معاملات درخواست‌محور", value: `${faNumber(comp.requestShare)}٪` }],
+    });
+
+    // ---- DOCUMENT: قراردادهای دارای هولوگرام ----
+    if (comp.holoShare < 95 && comp.totalCount >= 10) {
       cards.push({
-        key: "tx-district",
-        domain: "DISTRICT",
-        title: "محله‌های پیشتاز در ارزش معاملات",
-        body: `${topDistricts.map((d) => d.name).join("، ")} بالاترین ارزش معاملاتی را دارند. محله «${topDistricts[0].name}» با میانگین ${toman(topDistricts[0].avgPrice)} در هر معامله صدرنشین است.`,
-        severity: "info",
-        metrics: topDistricts.map((d) => ({ label: d.name, value: `${d.count.toLocaleString("fa-IR")} معامله — ${toman(d.totalValue)}` })),
+        key: "tx-document",
+        domain: "DOCUMENT",
+        title: "قراردادهای بدون هولوگرام",
+        body: `${faNumber(comp.totalCount - txs.filter((t) => t.contractHolo).length)} معامله بدون شماره هولوگرام ثبت شده‌اند (${faNumber(100 - comp.holoShare)}٪ از کل). شماره هولوگرام شناسه رسمی سند است؛ نبودش می‌تواند به معنای ثبت ناقص قرارداد در سامانه باشد — بررسی و تکمیل پرونده توصیه می‌شود.`,
+        severity: comp.holoShare < 80 ? "warning" : "info",
+        metrics: [
+          { label: "دارای هولوگرام", value: `${faNumber(comp.holoShare)}٪` },
+          { label: "بدون هولوگرام", value: `${faNumber(100 - comp.holoShare)}٪` },
+        ],
       });
     }
 
@@ -112,22 +116,24 @@ export class TransactionAgent extends BaseLearningAgent {
         key: "tx-anomaly",
         domain: "ANOMALY",
         title: "ناهنجاری آماری در روند معاملات",
-        body: `ماه ${monthLabel(a.key)} با انحراف معیار ${Math.abs(a.z).toLocaleString("fa-IR")} ${a.direction === "spike" ? "بالاتر" : "پایین‌تر"} از نرمال عمل کرده است (${toman(a.totalValue)}). چنین انحرافی معمولاً نشانه‌ی معاملات کلان، تغییر قیمت بازار یا رویداد فصلی است و ارزش بررسی دارد.`,
+        body: `ماه ${faMonthLabel(a.key)} با انحراف معیار ${faNumber(Math.abs(a.z))} ${a.direction === "spike" ? "بالاتر" : "پایین‌تر"} از نرمال عمل کرده است (${faNumber(a.count)} معامله). چنین انحرافی معمولاً نشانه‌ی موج معاملاتی، تغییر سیاست سامانه یا رویداد فصلی است و ارزش بررسی دارد.`,
         severity: "critical",
-        metrics: [{ label: "Z-Score", value: a.z.toLocaleString("fa-IR") }],
+        metrics: [{ label: "انحراف معیار", value: faNumber(a.z) }],
       });
     }
 
-    // ---- CONVERSION: نرخ تبدیل ----
-    const conv = conversionRate(txs);
-    cards.push({
-      key: "tx-conversion",
-      domain: "CONVERSION",
-      title: "نرخ تبدیل درخواست به معامله",
-      body: `${conv.toLocaleString("fa-IR")}٪ از معاملات از مسیر «درخواست خرید ثبت‌شده» نهایی شده‌اند؛ ${conv < 50 ? "این عدد نشان می‌دهد نیمی از معاملات خارج از چرخه رسمی درخواست‌ها انجام می‌شود — پیگیری درخواست‌های باز توصیه می‌شود." : "چرخه درخواست‌ها تا معامله به‌خوبی عمل می‌کند."}`,
-      severity: conv < 50 ? "warning" : "positive",
-      metrics: [{ label: "نرخ تبدیل", value: `${conv.toLocaleString("fa-IR")}٪` }],
-    });
+    // ---- ماه‌های اوق (تکمیل تصویر روند) ----
+    const peak = topMonths(series, 1);
+    if (peak.length > 0 && series.length >= 3) {
+      cards.push({
+        key: "tx-peak",
+        domain: "TREND",
+        title: "ماه اوج معاملات",
+        body: `پرشمارترین ماهِ ثبت معامله، ${faMonthLabel(peak[0].key)} با ${faNumber(peak[0].count)} معامله بوده است. الگوی فصلی این ماه می‌تواند مبنای برنامه‌ریزی نیروی انسانی و کمپین‌های فروش سال آینده قرار گیرد.`,
+        severity: "positive",
+        metrics: [{ label: faMonthLabel(peak[0].key), value: `${faNumber(peak[0].count)} معامله` }],
+      });
+    }
 
     return cards;
   }

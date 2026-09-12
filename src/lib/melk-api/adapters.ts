@@ -1,136 +1,28 @@
 /**
  * آداپتورهای نگاشت داده واقعی سامانه ملک تبریز → مدل دامنه داشبورد
  * ------------------------------------------------------
- * ساختار ردیف‌های گزارش سامانه ARM (NestJS/Mongo) عمومی مستند نیست؛
+ * ✅ ساختار ردیف‌ها عیناً از صفحات رسمی سامانه ARM مهندسی معکوس شده:
+ *   • TradedStatisticsPage (گزارش تطابق معاملات):
+ *       propertyCode, propertyCustomer, requestCode, requestCustomer,
+ *       contractDate, contractHolo, suggestedPropertyCount, eventsCount
+ *       + خلاصه: totalCount, hasRequestEvent, hasSuggestedProperty, hasBoth
+ *   • users-list-page (realtors/list):
+ *       fullName, mobile, role.name, businessId.title, creator.fullName, createdAt, active
+ *   • realtor-interactions-page:
+ *       requestRealtorName, propertyRealtorName, count
  * آداپتور «بردبند» است: چند نام فیلد رایج را امتحان می‌کند و چیزی که
  * موجود است را نگاشت می‌کند. با تغییر نام فیلدها فقط همین فایل ویرایش
  * می‌شود.
  *
  * تاریخ‌ها: سامانه ARM با تقویم جلالی و قالب «YYYY/MM/DD» کار می‌کند
- * (کشف‌شده از باندل). تبدیل دوجهته جلالی↔میلادی پیاده‌سازی شده است.
+ * (کشف‌شده از باندل). تبدیل دوجهته جلالی↔میلادی در «src/lib/jalali.ts».
  */
 
-import type { CrmExpert, CrmTransaction, PropertyType } from "./types";
-import { PROPERTY_TYPES } from "./types";
+import type { CrmExpert, CrmInteraction, CrmTransaction, TradedSummary } from "./types";
+import { anyDateStringToDate, gregorianToJalali, isoToJalaliString, jalaliToGregorian } from "@/lib/jalali";
 
-// ==========================================================================
-// تبدیل تاریخ جلالی ↔ میلادی (الگوریتم استاندارد)
-// ==========================================================================
-
-export function gregorianToJalali(gy: number, gm: number, gd: number): [number, number, number] {
-  const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-  let jy = gy <= 1600 ? 0 : 979;
-  gy -= gy <= 1600 ? 621 : 1600;
-  const gy2 = gm > 2 ? gy + 1 : gy;
-  let days =
-    365 * gy +
-    Math.floor((gy2 + 3) / 4) -
-    Math.floor((gy2 + 99) / 100) +
-    Math.floor((gy2 + 399) / 400) -
-    80 +
-    gd +
-    g_d_m[gm - 1];
-  jy += 33 * Math.floor(days / 12053);
-  days %= 12053;
-  jy += 4 * Math.floor(days / 1461);
-  days %= 1461;
-  if (days > 365) {
-    jy += Math.floor((days - 1) / 365);
-    days = (days - 1) % 365;
-  }
-  const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
-  const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
-  return [jy, jm, jd];
-}
-
-export function jalaliToGregorian(jy: number, jm: number, jd: number): [number, number, number] {
-  let gy = jy <= 979 ? 621 : 1600;
-  jy -= jy <= 979 ? 0 : 979;
-  let days =
-    365 * jy +
-    Math.floor(jy / 33) * 8 +
-    Math.floor(((jy % 33) + 3) / 4) +
-    78 +
-    jd +
-    (jm < 7 ? (jm - 1) * 31 : (jm - 7) * 30 + 186);
-  gy += 400 * Math.floor(days / 146097);
-  days %= 146097;
-  if (days > 36524) {
-    gy += 100 * Math.floor(--days / 36524);
-    days %= 36524;
-    if (days >= 365) days++;
-  }
-  gy += 4 * Math.floor(days / 1461);
-  days %= 1461;
-  if (days > 365) {
-    gy += Math.floor((days - 1) / 365);
-    days = (days - 1) % 365;
-  }
-  let gd = days + 1;
-  const sal_a = [
-    0,
-    31,
-    (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0 ? 29 : 28,
-    31,
-    30,
-    31,
-    30,
-    31,
-    31,
-    30,
-    31,
-    30,
-    31,
-  ];
-  let gm = 0;
-  while (gm < 13 && gd > sal_a[gm]) {
-    gd -= sal_a[gm];
-    gm++;
-  }
-  return [gy, gm, gd];
-}
-
-/** ISO (میلادی) → رشته جلالی «YYYY/MM/DD» برای پارامترهای API سامانه ARM */
-export function isoToJalaliString(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const [jy, jm, jd] = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
-  return `${jy}/${String(jm).padStart(2, "0")}/${String(jd).padStart(2, "0")}`;
-}
-
-/**
- * تاریخ ورودی سامانه (جلالی «YYYY/MM/DD» یا ISO) → ISO میلادی
- * اعداد فارسی هم پذیرفته می‌شوند.
- */
-export function anyDateStringToIso(input: unknown): string | null {
-  if (input === null || input === undefined) return null;
-  let s = String(input).trim();
-  if (!s) return null;
-  // تبدیل ارقام فارسی/عربی به لاتین
-  s = s
-    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-  s = s.replace(/[-.]/g, "/");
-
-  // ISO میلادی (شامل زمان)
-  if (/\d{4}-\d{2}-\d{2}T/.test(String(input))) {
-    const d = new Date(String(input));
-    return Number.isNaN(d.getTime()) ? null : d.toISOString();
-  }
-
-  const parts = s.split("/").map((p) => Number(p));
-  if (parts.length < 3 || parts.some((p) => !Number.isFinite(p))) {
-    const d = new Date(s);
-    return Number.isNaN(d.getTime()) ? null : d.toISOString();
-  }
-  const [y, m, dd] = parts;
-  // سال > 1300 → جلالی
-  if (y > 1300 && y < 1600) {
-    const [gy, gm, gd] = jalaliToGregorian(y, m, dd);
-    return new Date(Date.UTC(gy, gm - 1, gd, 8, 30)).toISOString();
-  }
-  return new Date(Date.UTC(y, m - 1, dd, 8, 30)).toISOString();
-}
+// بازصدور برای استفاده سایر ماژول‌ها (تک‌منبع: lib/jalali)
+export { gregorianToJalali, jalaliToGregorian, isoToJalaliString, anyDateStringToDate };
 
 // ==========================================================================
 // خواندن بردبند فیلدها
@@ -170,113 +62,113 @@ function pickId(row: Row, fallback: string): string {
   return String(v);
 }
 
-function normalizePropertyType(raw: string): PropertyType {
-  const s = raw.trim();
-  const direct = PROPERTY_TYPES.find((p) => p === s);
-  if (direct) return direct;
-  const contains = PROPERTY_TYPES.find((p) => s.includes(p));
-  if (contains) return contains;
-  // معادل‌های رایج
-  if (/اپارتمان|آپارتمان|apartment|apartment/i.test(s)) return "آپارتمان";
-  if (/کلنگ|تخریب/i.test(s)) return "کلنگی";
-  if (/مغازه|تجار|shop|store/i.test(s)) return "مغازه";
-  if (/ویلا|خانه|خانه ویلایی|house|villa/i.test(s)) return "خانه ویلایی";
-  if (/اداری|دفتر|office/i.test(s)) return "دفتر اداری";
-  if (/باغ|زمین|land|garden/i.test(s)) return "باغ";
-  return "آپارتمان";
+/** خواندن نام از شیء تو در تو: businessId.title، role.name، creator.fullName و… */
+function pickNestedStr(row: Row, paths: string[]): string {
+  for (const path of paths) {
+    const segs = path.split(".");
+    let cur: unknown = row;
+    for (const s of segs) {
+      if (cur === null || cur === undefined || typeof cur !== "object") {
+        cur = undefined;
+        break;
+      }
+      cur = (cur as Row)[s];
+    }
+    if (cur !== null && cur !== undefined && cur !== "" && typeof cur !== "object") {
+      return String(cur).trim();
+    }
+  }
+  return "";
 }
 
 // ==========================================================================
-// نگاشت ردیف گزارش معاملات → CrmTransaction
+// نگاشت ردیف گزارش تطابق معاملات → CrmTransaction
 // ==========================================================================
 
 /**
  * ردیف‌های گزارش «realtor-reports/traded-count-total» را به مدل معامله
- * داشبورد نگاشت می‌کند. نام فیلدها بردبند انتخاب می‌شوند تا با
- * تغییر ساختار پاسخ، فقط این تابع ویرایش شود.
+ * داشبورد نگاشت می‌کند — عین ستون‌های جدول خود سامانه:
+ * «کد ملک/مالک»، «کد درخواست/درخواست‌دهنده»، «تاریخ معامله»،
+ * «شماره هولوگرام»، «آگهی پیشنهادی»، «رویداد».
  */
 export function mapArmTradedRow(row: Row, index: number, page: number, limit: number): CrmTransaction | null {
   if (!row || typeof row !== "object") return null;
 
-  const expertName =
-    pickStr(row, ["realtorName", "realtor", "expertName", "fullName", "agentName", "name"]) ||
-    pickStr((row.realtor ?? {}) as Row, ["fullName", "name"]) ||
-    pickStr((row.expert ?? {}) as Row, ["fullName", "name"]) ||
-    "نامشخص";
+  const propertyCode =
+    pickStr(row, ["propertyCode", "property", "listingCode", "adCode"]) ||
+    pickNestedStr(row, ["property.code", "advertisement.code"]);
 
-  const expertCode =
-    pickStr(row, ["realtorCode", "expertCode", "personnelCode", "agentCode"]) ||
-    pickStr((row.realtor ?? {}) as Row, ["code", "personalCode", "username"]) ||
-    pickStr((row.expert ?? {}) as Row, ["code", "personalCode", "username"]) ||
-    "";
-
-  const listingCode =
-    pickStr(row, ["propertyCode", "listingCode", "adCode", "advertisementCode", "property"]) ||
-    pickStr((row.property ?? {}) as Row, ["code", "adCode"]) ||
-    "";
-
-  const requestCode =
-    pickStr(row, ["requestCode", "requestCode", "demandCode", "request"]) ||
-    pickStr((row.request ?? {}) as Row, ["code"]) ||
+  const propertyCustomer =
+    pickStr(row, ["propertyCustomer", "propertyCustomerName", "propertyOwner", "ownerName"]) ||
+    pickNestedStr(row, ["property.customer.fullName", "property.customer"]) ||
     null;
 
-  const dealDateIso =
-    anyDateStringToIso(
-      pick(row, [
-        "tradedAt",
-        "dealDate",
-        "createdAt",
-        "date",
-        "matchedAt",
-        "updatedAt",
-        "tradedDate",
-      ])
-    ) ?? new Date().toISOString();
+  const requestCode =
+    pickStr(row, ["requestCode", "request", "demandCode"]) ||
+    pickNestedStr(row, ["request.code"]) ||
+    null;
 
-  const price = pickNum(row, [
-    "price",
-    "finalPrice",
-    "dealPrice",
-    "totalPrice",
-    "tradedPrice",
-    "amount",
-    "value",
-  ]);
+  const requestCustomer =
+    pickStr(row, ["requestCustomer", "requestCustomerName", "requesterName", "demanderName"]) ||
+    pickNestedStr(row, ["request.customer.fullName", "request.customer"]) ||
+    null;
 
-  const district =
-    pickStr(row, ["district", "region", "zone", "area", "neighborhood", "address", "city"]) ||
-    pickStr((row.property ?? {}) as Row, ["district", "region", "address"]) ||
-    "نامشخص";
+  // تاریخ معامله — ستون contractDate خود سامانه (جلالی یا ISO)
+  const contractDateDate =
+    anyDateStringToDate(pick(row, ["contractDate", "tradedAt", "dealDate", "createdAt", "date"])) ??
+    new Date();
 
-  const propertyTypeRaw =
-    pickStr(row, ["propertyType", "type", "kind", "category"]) ||
-    pickStr((row.property ?? {}) as Row, ["type", "propertyType", "category"]) ||
-    "";
+  const contractHolo =
+    pickStr(row, ["contractHolo", "holo", "hologram", "holoCode"]) || null;
 
-  const area = pickNum(row, ["area", "metraj", "squareMeters", "size", "areaSize"]);
-
-  const commission = pickNum(row, ["commission", "fee", "reward", "commissionPrice"]);
+  const suggestedPropertyCount = pickNum(row, ["suggestedPropertyCount", "suggestedCount"]);
+  const eventsCount = pickNum(row, ["eventsCount", "eventCount"]);
 
   return {
     id: pickId(row, `arm-traded-${page}-${limit}-${index}-${Date.now()}`),
-    dealDate: dealDateIso,
-    listingCode: listingCode || "—",
+    contractDate: contractDateDate.toISOString(),
+    propertyCode: propertyCode || "—",
+    propertyCustomer: propertyCustomer || null,
     requestCode: requestCode || null,
-    expertCode: expertCode || "—",
-    expertName,
-    price,
-    district,
-    propertyType: normalizePropertyType(propertyTypeRaw),
-    area,
-    commission,
+    requestCustomer: requestCustomer || null,
+    contractHolo: contractHolo || null,
+    suggestedPropertyCount,
+    eventsCount,
   };
 }
 
 // ==========================================================================
-// نگاشت ردیف کارشناس → CrmExpert
+// خلاصه گزارش تطابق (چهار شاخص بالای گزارش خود سامانه)
 // ==========================================================================
 
-/** ردیف‌های «realtors/list» را به مدل کارشناس داشبورد نگاشت می‌کند. */
+/**
+ * شیء data پاسخ «traded-count-total» شامل خلاصه گزارش است:
+ * totalCount، hasRequestEvent، hasSuggestedProperty، hasBoth.
+ */
+export function mapArmTradedSummary(payload: unknown): TradedSummary | null {
+  if (!payload || typeof payload !== "object") return null;
+  const p = payload as Row;
+  const s = {
+    totalCount: pickNum(p, ["totalCount", "count", "total"]),
+    hasRequestEvent: pickNum(p, ["hasRequestEvent", "requestEvent"]),
+    hasSuggestedProperty: pickNum(p, ["hasSuggestedProperty", "suggestedProperty"]),
+    hasBoth: pickNum(p, ["hasBoth", "both"]),
+  };
+  if (s.totalCount === 0 && s.hasRequestEvent === 0 && s.hasSuggestedProperty === 0 && s.hasBoth === 0) {
+    return null;
+  }
+  return s;
+}
+
+// ==========================================================================
+// نگاشت ردیف کارشناس (users-list / realtors) → CrmExpert
+// ==========================================================================
+
+/**
+ * ردیف‌های «realtors/list» را به مدل کارشناس داشبورد نگاشت می‌کند —
+ * عین ستون‌های users-list خود سامانه: نام و نام خانوادگی، شماره موبایل،
+ * نقش مشتری، کسب و کار، ثبت کننده، زمان ثبت، فعال.
+ */
 export function mapArmRealtorRow(row: Row, index: number): CrmExpert | null {
   if (!row || typeof row !== "object") return null;
 
@@ -284,16 +176,29 @@ export function mapArmRealtorRow(row: Row, index: number): CrmExpert | null {
     pickStr(row, ["fullName", "name", "realtorName", "displayName", "title"]) || "نامشخص";
 
   const personnelCode =
-    pickStr(row, ["code", "personalCode", "personnelCode", "username", "mobile", "phone"]) || "";
+    pickStr(row, ["code", "personalCode", "personnelCode", "username"]) ||
+    pickNestedStr(row, ["realtor.code", "user.code"]) ||
+    "";
 
-  const mobile =
-    pickStr(row, ["mobile", "phone", "phoneNumber", "cellphone", "tel"]) || "";
+  const mobile = pickStr(row, ["mobile", "phone", "phoneNumber", "cellphone", "tel"]) || "";
 
-  const address =
-    pickStr(row, ["address", "workAddress", "officeAddress", "location", "city"]) || "نامشخص";
+  // نقش مشتری — مثل «کارشناس و مشاور فروش»
+  const role =
+    pickNestedStr(row, ["role.name", "role.label", "role"]) ||
+    pickStr(row, ["roleName", "userType", "type"]) ||
+    "نامشخص";
 
-  const branch =
-    pickStr(row, ["branch", "office", "businessName", "teamName", "agency"]) || "شعبه مرکزی";
+  // کسب و کار / شعبه
+  const businessTitle =
+    pickNestedStr(row, ["businessId.title", "business.title", "business", "businessName"]) ||
+    pickStr(row, ["branch", "office", "teamName", "agency"]) ||
+    "شعبه مرکزی";
+
+  // ثبت‌کننده — مدیری که کاربر را ایجاد کرده
+  const creator =
+    pickNestedStr(row, ["creator.fullName", "creator.name", "creator"]) ||
+    pickStr(row, ["creatorName"]) ||
+    null;
 
   const activeRaw = pick(row, ["active", "isActive", "status", "enabled"]);
   let active = true;
@@ -301,19 +206,51 @@ export function mapArmRealtorRow(row: Row, index: number): CrmExpert | null {
   else if (typeof activeRaw === "string") active = !/غیر|inactive|false|blocked|0/i.test(activeRaw);
   else if (typeof activeRaw === "number") active = activeRaw !== 0;
 
-  const joinedAtIso =
-    anyDateStringToIso(pick(row, ["createdAt", "joinedAt", "registerDate", "startDate"])) ??
-    new Date(0).toISOString();
+  const createdAtDate =
+    anyDateStringToDate(pick(row, ["createdAt", "joinedAt", "registerDate", "startDate"])) ??
+    new Date(0);
 
   return {
     id: pickId(row, `arm-realtor-${index}-${personnelCode}`),
     personnelCode: personnelCode || `بدون-کد-${index}`,
     fullName,
     mobile: mobile || "—",
-    address,
-    branch,
+    role,
+    businessTitle,
+    creator,
     active,
-    joinedAt: joinedAtIso,
+    createdAt: createdAtDate.toISOString(),
+  };
+}
+
+// ==========================================================================
+// نگاشت ردیف تعاملات مشاوران → CrmInteraction
+// ==========================================================================
+
+/**
+ * ردیف‌های «realtor-reports/realtor-interactions» را نگاشت می‌کند —
+ * عین ستون‌های خود سامانه: «مشاور درخواست»، «مشاور آگهی»، «تعداد».
+ */
+export function mapArmInteractionRow(row: Row, index: number): CrmInteraction | null {
+  if (!row || typeof row !== "object") return null;
+
+  const requestRealtorName =
+    pickStr(row, ["requestRealtorName", "requestRealtor", "demandRealtorName"]) ||
+    pickNestedStr(row, ["requestRealtor.fullName", "requestRealtor"]) ||
+    "";
+  const propertyRealtorName =
+    pickStr(row, ["propertyRealtorName", "propertyRealtor", "adRealtorName"]) ||
+    pickNestedStr(row, ["propertyRealtor.fullName", "propertyRealtor"]) ||
+    "";
+  const count = pickNum(row, ["count", "interactionCount", "total"]);
+
+  if (!requestRealtorName && !propertyRealtorName) return null;
+
+  return {
+    id: pickId(row, `arm-interaction-${index}-${requestRealtorName}-${propertyRealtorName}`),
+    requestRealtorName: requestRealtorName || "نامشخص",
+    propertyRealtorName: propertyRealtorName || "نامشخص",
+    count: count || 0,
   };
 }
 
@@ -323,8 +260,8 @@ export function mapArmRealtorRow(row: Row, index: number): CrmExpert | null {
 
 /**
  * پاسخ‌های صفحه‌بندی سامانه در قالب‌های مختلفی برمی‌گردند:
- *  {data: [...]} | {data: {docs|rows|list|items|data: [...], count, totalPages}}
- * این تابع همه را به {rows, total} نرمال می‌کند.
+ * {data: [...]} | {data: {docs|rows|list|items|data: [...], count, totalPages}}
+ * این تابع همه را به {rows, total, totalPages} نرمال می‌کند.
  */
 export function extractPagedList<T>(payload: unknown, mapRow: (row: Row, index: number) => T | null): { rows: T[]; total: number; totalPages?: number } {
   let list: unknown = payload;

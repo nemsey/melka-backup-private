@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, Settings2, Info } from "lucide-react";
 import type { TileDefinition, TileSettingDefinition, TilePageProps } from "@/core/tiles/tile-contract";
 import { useAppStore } from "@/lib/client/store";
-import { faNumber } from "@/lib/format";
+import { faNumber, faDigits } from "@/lib/format";
 
 function SettingControl({ def, value, onChange }: { def: TileSettingDefinition; value: string | number | boolean; onChange: (v: string | number | boolean) => void }) {
   switch (def.type) {
@@ -143,7 +143,7 @@ export function TileShell({ tile }: { tile: TileDefinition }) {
               <div className="px-4 pb-6 space-y-3">
                 <div className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground flex gap-2">
                   <Info className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
-                  <span>نسخه کاشی: {tile.version}</span>
+                  <span>نسخه کاشی: {faDigits(tile.version)}</span>
                 </div>
                 {tile.settings.map((def) => (
                   <SettingControl

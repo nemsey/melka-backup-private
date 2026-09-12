@@ -70,42 +70,71 @@ model SyncState {
   attempts       Int       @default(0)
   /// توکن ARM رمزنگاری‌شده آخرین همگام‌سازی موفق (برای تلاش مجدد پس‌زمینه)
   armTokenEnc    String?
+  /// خلاصه چهارگانه گزارش تطابق سامانه ARM (JSON)
+  summaryJson    String?
   updatedAt      DateTime  @updatedAt
 }
 
-/// معاملات — از سامانه واقعی ملک تبریز استخراج و کش می‌شود
+/// معاملات (گزارش تطابق معاملات) — عین ساختار خود سامانه ARM:
+/// هر معامله = تطبیق آگهی ملک با درخواست خرید + اطلاعات قرارداد
 model TransactionRecord {
-  id           String   @id
-  dealDate     DateTime
-  listingCode  String // کد آگهی
-  requestCode  String? // کد درخواست خرید
-  expertCode   String // کد پرسنلی کارشناس معامله‌گر
-  expertName   String
-  price        Float // مبلغ معامله (تومان)
-  district     String // محله
-  propertyType String // نوع ملک
-  area         Float // متراژ
-  commission   Float // کمیسیون (تومان)
-  syncedAt     DateTime @default(now())
+  id                    String   @id
+  /// تاریخ معامله/قرارداد — از contractDate سامانه (ISO داخلی)
+  contractDate          DateTime
+  /// کد ملک (آگهی فروشنده)
+  propertyCode          String
+  /// نام مالک/مشتریِ طرف ملک
+  propertyCustomer      String?
+  /// کد درخواست خرید (اگر از مسیر درخواست رسیده باشد)
+  requestCode           String?
+  /// نام درخواست‌دهنده طرف درخواست
+  requestCustomer       String?
+  /// شماره هولوگرام قرارداد (شناسه رسمی سند)
+  contractHolo          String?
+  /// تعداد آگهی‌های پیشنهادی سیستم برای این تطبیق
+  suggestedPropertyCount Int     @default(0)
+  /// تعداد رویدادهای ثبت‌شده (تعامل کارشناس با درخواست)
+  eventsCount           Int      @default(0)
+  syncedAt              DateTime @default(now())
 
-  @@index([dealDate])
-  @@index([expertCode])
-  @@index([listingCode])
+  @@index([contractDate])
+  @@index([propertyCode])
+  @@index([requestCode])
 }
 
-/// کارشناسان — از سامانه ملک تبریز استخراج و کش می‌شود
+/// کارشناسان (realtors/list) — عین ساختار users-list خود سامانه ARM
 model ExpertRecord {
   id            String   @id
   personnelCode String   @unique
   fullName      String
   mobile        String
-  address       String
-  branch        String
+  /// نقش کاربر (مثلاً «کارشناس و مشاور فروش»)
+  role          String
+  /// عنوان کسب‌وکار/شعبه
+  businessTitle String
+  /// نام ثبت‌کننده (مدیری که کاربر را ایجاد کرده)
+  creator       String?
   active        Boolean  @default(true)
-  joinedAt      DateTime
+  /// تاریخ ثبت/عضویت
+  createdAt     DateTime
   syncedAt      DateTime @default(now())
 
   @@index([fullName])
+  @@index([role])
+  @@index([businessTitle])
+}
+
+/// تعاملات مشاوران با یکدیگر — عین ساختار realtor-interactions سامانه ARM:
+/// مشاور درخواست × مشاور آگهی × تعداد همکاری‌های منجر به تطبیق
+model InteractionRecord {
+  id                 String   @id
+  requestRealtorName String
+  propertyRealtorName String
+  count              Int      @default(0)
+  syncedAt           DateTime @default(now())
+
+  @@index([requestRealtorName])
+  @@index([propertyRealtorName])
 }
 
 // ===================== لایه ایجنت هوشمند (فقط افزودنی / Append-only) =====================

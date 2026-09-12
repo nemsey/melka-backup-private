@@ -1,9 +1,16 @@
 "use client";
 
 /**
- * کاشی «معاملات» — صفحه داخلی
- * فیلترهای کامل (تاریخ، کارشناس، کد آگهی، کد درخواست، مبلغ، محله، نوع ملک)
- * + شاخص‌ها + نمودارها + جدول صفحه‌بندی‌شده + بینش‌های ایجنت.
+ * کاشی «معاملات» — صفحه داخلی (بازنویسی بر پایه ساختار واقعی سامانه ARM)
+ * ------------------------------------------------------
+ * عین «گزارش تطابق معاملات» خود سامانه ملک تبریز + تحلیل داشبورد:
+ *   • شاخص‌های چهارگانه: تعداد کل، دارای رویداد، دارای آگهی پیشنهادی، هر دو
+ *   • فیلتر تاریخ با «تقویم هجری شمسی» (مثل خود سامانه — startDate/endDate)
+ *   • فیلترهای کد ملک، کد درخواست، شماره هولوگرام و نوع تطبیق
+ *   • جدول: کد ملک/مالک، کد درخواست/درخواست‌دهنده، تاریخ معامله (جلالی)،
+ *     شماره هولوگرام، آگهی پیشنهادی، رویداد
+ *   • نمودار روند ماهانه (هجری شمسی) + نمودار ترکیب تطبیق
+ *   • شفافیت منبع داده (آخرین استخراج موفق/خطای زنده)
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -15,10 +22,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Filter, RotateCcw, TrendingUp, Banknote, Calculator, Percent, Search, ChevronRight, ChevronLeft, BarChart3, MapPinned,
+  Loader2, Filter, RotateCcw, TrendingUp, Calculator, Percent, Search, ChevronRight, ChevronLeft, BarChart3, PieChart, Hash, FileCheck2, Sparkles, Database, AlertTriangle,
 } from "lucide-react";
 import {
   ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend,
@@ -26,61 +32,72 @@ import {
 import { AgentPanel } from "@/components/app/AgentPanel";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
-import { faToman, faNumber, faDate, faDigits, faMonthLabel } from "@/lib/format";
+import { faNumber, faJalaliShort, faMonthLabel } from "@/lib/format";
+import { faDigits, dateToJalali } from "@/lib/jalali";
+import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 
 interface TxRow {
   id: string;
-  dealDate: string;
-  listingCode: string;
+  contractDate: string;
+  propertyCode: string;
+  propertyCustomer: string | null;
   requestCode: string | null;
-  expertCode: string;
-  expertName: string;
-  price: number;
-  district: string;
-  propertyType: string;
-  area: number;
-  commission: number;
+  requestCustomer: string | null;
+  contractHolo: string | null;
+  suggestedPropertyCount: number;
+  eventsCount: number;
 }
 
-interface Meta {
-  districts: string[];
-  propertyTypes: string[];
+interface Summary {
+  totalCount: number;
+  hasRequestEvent: number;
+  hasSuggestedProperty: number;
+  hasBoth: number;
+  withHolo: number;
+  withRequest: number;
+}
+
+interface DataSourceInfo {
+  real: boolean;
+  cached: boolean;
+  lastSuccessAt: string | null;
+  lastSyncedAt: string | null;
+  liveError: string | null;
+  syncAttempts: number;
 }
 
 const EMPTY_FILTERS = {
   dateFrom: "",
   dateTo: "",
-  expertName: "",
-  listingCode: "",
+  propertyCode: "",
   requestCode: "",
-  priceMinM: "",
-  priceMaxM: "",
-  district: "all",
-  propertyType: "all",
+  contractHolo: "",
+  matchKind: "all",
 };
 
 type Filters = typeof EMPTY_FILTERS;
 
-export function TransactionsPage({ settings, onSettingsChange, userRole: _userRole, onBack: _onBack }: TilePageProps) {
+const MATCH_KIND_FA: Record<string, string> = {
+  all: "همه معاملات",
+  event: "فقط دارای رویداد",
+  suggested: "فقط دارای آگهی پیشنهادی",
+  both: "دارای هر دو",
+};
+
+export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _userRole, onBack: _onBack }: TilePageProps) {
   const { toast } = useToast();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
-  const [meta, setMeta] = useState<Meta | null>(null);
   const [rows, setRows] = useState<TxRow[] | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [source, setSource] = useState<DataSourceInfo | null>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
 
   const pageSize = Number(settings.pageSize ?? 10);
-  const sortBy = String(settings.sortBy ?? "dealDate");
+  const sortBy = String(settings.sortBy ?? "contractDate");
   const showCharts = settings.showCharts !== false;
-  const showCommission = settings.showCommission !== false;
-
-  useEffect(() => {
-    api<{ districts: string[]; propertyTypes: string[] }>("/api/crm/meta")
-      .then(setMeta)
-      .catch(() => setMeta({ districts: [], propertyTypes: [] }));
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,21 +105,22 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
       const params = new URLSearchParams();
       if (applied.dateFrom) params.set("dateFrom", applied.dateFrom);
       if (applied.dateTo) params.set("dateTo", applied.dateTo);
-      if (applied.expertName) params.set("expertName", applied.expertName);
-      if (applied.listingCode) params.set("listingCode", applied.listingCode);
+      if (applied.propertyCode) params.set("propertyCode", applied.propertyCode);
       if (applied.requestCode) params.set("requestCode", applied.requestCode);
-      if (applied.priceMinM) params.set("priceMin", String(Number(applied.priceMinM) * 1_000_000));
-      if (applied.priceMaxM) params.set("priceMax", String(Number(applied.priceMaxM) * 1_000_000));
-      if (applied.district !== "all") params.set("district", applied.district);
-      if (applied.propertyType !== "all") params.set("propertyType", applied.propertyType);
-      params.set("limit", "2000");
+      if (applied.contractHolo) params.set("contractHolo", applied.contractHolo);
+      if (applied.matchKind !== "all") params.set("matchKind", applied.matchKind);
+      params.set("limit", "5000");
       params.set("offset", "0");
       params.set("sortBy", sortBy);
-      params.set("sortDir", sortBy === "price" || sortBy === "dealDate" ? "desc" : "asc");
+      params.set("sortDir", sortBy === "contractDate" ? "desc" : "desc");
 
-      const res = await api<{ rows: TxRow[]; total: number }>(`/api/crm/transactions?${params.toString()}`);
+      const res = await api<{ rows: TxRow[]; total: number; summary: Summary; dataSource: DataSourceInfo }>(
+        `/api/crm/transactions?${params.toString()}`
+      );
       setRows(res.rows);
       setTotal(res.total);
+      setSummary(res.summary);
+      setSource(res.dataSource);
       setPage(0);
     } catch (err) {
       const e = err as ApiClientError;
@@ -117,47 +135,30 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
     void load();
   }, [load]);
 
-  const kpis = useMemo(() => {
-    if (!rows) return null;
-    const totalValue = rows.reduce((a, t) => a + t.price, 0);
-    const totalCommission = rows.reduce((a, t) => a + t.commission, 0);
-    return {
-      count: rows.length,
-      totalValue,
-      avg: rows.length ? totalValue / rows.length : 0,
-      commission: totalCommission,
-    };
-  }, [rows]);
-
+  // سری ماهانه — ماه‌های هجری شمسی
   const monthly = useMemo(() => {
     if (!rows) return [];
-    const map = new Map<string, { count: number; value: number }>();
+    const map = new Map<string, number>();
     for (const t of rows) {
-      const d = new Date(t.dealDate);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const cur = map.get(key) ?? { count: 0, value: 0 };
-      cur.count += 1;
-      cur.value += t.price;
-      map.set(key, cur);
+      const j = dateToJalali(new Date(t.contractDate));
+      const key = `${j.jy}-${String(j.jm).padStart(2, "0")}`;
+      map.set(key, (map.get(key) ?? 0) + 1);
     }
     return [...map.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([k, v]) => ({
-        month: faMonthLabel(k),
-        count: v.count,
-        valueB: Math.round(v.value / 1e9 * 10) / 10,
-      }));
+      .map(([k, v]) => ({ month: faMonthLabel(k), count: v }));
   }, [rows]);
 
-  const byDistrict = useMemo(() => {
-    if (!rows) return [];
-    const map = new Map<string, number>();
-    for (const t of rows) map.set(t.district, (map.get(t.district) ?? 0) + t.price);
-    return [...map.entries()]
-      .map(([name, v]) => ({ name, valueB: Math.round(v / 1e9 * 10) / 10 }))
-      .sort((a, b) => b.valueB - a.valueB)
-      .slice(0, 8);
-  }, [rows]);
+  // ترکیب تطبیق برای نمودار
+  const composition = useMemo(() => {
+    if (!summary) return [];
+    return [
+      { name: "دارای هر دو", value: summary.hasBoth, fill: "var(--chart-1)" },
+      { name: "فقط رویداد", value: Math.max(0, summary.hasRequestEvent - summary.hasBoth), fill: "var(--chart-2)" },
+      { name: "فقط آگهی پیشنهادی", value: Math.max(0, summary.hasSuggestedProperty - summary.hasBoth), fill: "var(--chart-3)" },
+      { name: "بدون هیچ‌کدام", value: Math.max(0, summary.totalCount - summary.hasRequestEvent - summary.hasSuggestedProperty + summary.hasBoth), fill: "var(--chart-4)" },
+    ];
+  }, [summary]);
 
   const pageRows = useMemo(() => {
     if (!rows) return [];
@@ -173,8 +174,8 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
       {/* ایجنت هوشمند */}
       <AgentPanel tileId="transactions" />
 
-      {/* شاخص‌ها */}
-      {kpis && (
+      {/* شاخص‌های چهارگانه — عین گزارش خود سامانه + دو سهم کلیدی */}
+      {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
@@ -182,125 +183,123 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
                 <Calculator className="w-5 h-5 text-primary" aria-hidden />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">تعداد معاملات</p>
-                <p className="text-lg font-extrabold">{faNumber(kpis.count)}</p>
+                <p className="text-xs text-muted-foreground">تعداد کل معاملات</p>
+                <p className="text-lg font-extrabold">{faNumber(summary.totalCount)}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shrink-0">
-                <Banknote className="w-5 h-5 text-emerald-600" aria-hidden />
+                <TrendingUp className="w-5 h-5 text-emerald-600" aria-hidden />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">ارزش کل</p>
-                <p className="text-lg font-extrabold">{faToman(kpis.totalValue)}</p>
+                <p className="text-xs text-muted-foreground">دارای رویداد</p>
+                <p className="text-lg font-extrabold">{faNumber(summary.hasRequestEvent)}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-amber-600" aria-hidden />
+                <Sparkles className="w-5 h-5 text-amber-600" aria-hidden />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">میانگین هر معامله</p>
-                <p className="text-lg font-extrabold">{faToman(kpis.avg)}</p>
+                <p className="text-xs text-muted-foreground">دارای آگهی پیشنهادی</p>
+                <p className="text-lg font-extrabold">{faNumber(summary.hasSuggestedProperty)}</p>
               </div>
             </CardContent>
           </Card>
-          {showCommission && (
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
-                  <Percent className="w-5 h-5 text-teal-600" aria-hidden />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">مجموع کمیسیون</p>
-                  <p className="text-lg font-extrabold">{faToman(kpis.commission)}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
+                <Percent className="w-5 h-5 text-teal-600" aria-hidden />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">دارای هر دو</p>
+                <p className="text-lg font-extrabold">{faNumber(summary.hasBoth)}</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      {/* فیلترها */}
+      {/* فیلترها — با تقویم هجری شمسی مثل خود سامانه */}
       <Card>
         <CardHeader className="py-4">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Filter className="w-4 h-4 text-primary" aria-hidden /> فیلترهای معاملات
+            <Filter className="w-4 h-4 text-primary" aria-hidden /> فیلترهای گزارش تطابق
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
             onSubmit={(e) => {
               e.preventDefault();
               setApplied({ ...filters });
             }}
           >
             <div className="space-y-1.5">
-              <Label htmlFor="f-dateFrom">از تاریخ</Label>
-              <Input id="f-dateFrom" type="date" dir="ltr" value={filters.dateFrom} onChange={(e) => setF("dateFrom", e.target.value)} />
+              <JalaliDatePicker
+                id="f-dateFrom"
+                label="از تاریخ"
+                placeholder="از تاریخ"
+                value={filters.dateFrom}
+                onChange={(v) => setF("dateFrom", v)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="f-dateTo">تا تاریخ</Label>
-              <Input id="f-dateTo" type="date" dir="ltr" value={filters.dateTo} onChange={(e) => setF("dateTo", e.target.value)} />
+              <JalaliDatePicker
+                id="f-dateTo"
+                label="تا تاریخ"
+                placeholder="تا تاریخ"
+                value={filters.dateTo}
+                onChange={(v) => setF("dateTo", v)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="f-expertName">کارشناس معامله‌کننده</Label>
-              <Input id="f-expertName" placeholder="نام و نام خانوادگی" value={filters.expertName} onChange={(e) => setF("expertName", e.target.value)} />
+              <Label htmlFor="f-propertyCode">کد ملک</Label>
+              <Input
+                id="f-propertyCode"
+                placeholder="نمونه: ۱۲۳۴۵"
+                value={filters.propertyCode}
+                onChange={(e) => setF("propertyCode", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="f-listingCode">کد آگهی</Label>
-              <Input id="f-listingCode" placeholder="MT-94xxx" dir="ltr" className="text-left" value={filters.listingCode} onChange={(e) => setF("listingCode", e.target.value)} />
+              <Label htmlFor="f-requestCode">کد درخواست</Label>
+              <Input
+                id="f-requestCode"
+                placeholder="نمونه: ۶۷۸۹"
+                value={filters.requestCode}
+                onChange={(e) => setF("requestCode", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="f-requestCode">کد درخواست خرید</Label>
-              <Input id="f-requestCode" placeholder="RF-31xxx" dir="ltr" className="text-left" value={filters.requestCode} onChange={(e) => setF("requestCode", e.target.value)} />
+              <Label htmlFor="f-contractHolo">شماره هولوگرام</Label>
+              <Input
+                id="f-contractHolo"
+                placeholder="نمونه: ۹۸۷۶۵"
+                value={filters.contractHolo}
+                onChange={(e) => setF("contractHolo", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="f-priceMin">حداقل مبلغ (میلیون تومان)</Label>
-              <Input id="f-priceMin" inputMode="numeric" dir="ltr" className="text-left" placeholder="مثال: ۲۰۰۰" value={filters.priceMinM} onChange={(e) => setF("priceMinM", e.target.value.replace(/[^\d]/g, ""))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="f-priceMax">حداکثر مبلغ (میلیون تومان)</Label>
-              <Input id="f-priceMax" inputMode="numeric" dir="ltr" className="text-left" placeholder="مثال: ۱۵۰۰۰" value={filters.priceMaxM} onChange={(e) => setF("priceMaxM", e.target.value.replace(/[^\d]/g, ""))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="f-district">محله</Label>
-              <Select value={filters.district} onValueChange={(v) => setF("district", v)}>
-                <SelectTrigger id="f-district">
-                  <SelectValue placeholder="همه محله‌ها" />
+              <Label>نوع تطبیق</Label>
+              <Select value={filters.matchKind} onValueChange={(v) => setF("matchKind", v)}>
+                <SelectTrigger aria-label="نوع تطبیق">
+                  <SelectValue placeholder="همه معاملات" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">همه محله‌ها</SelectItem>
-                  {meta?.districts.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {d}
+                  {Object.entries(MATCH_KIND_FA).map(([v, l]) => (
+                    <SelectItem key={v} value={v}>
+                      {l}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="f-propertyType">نوع ملک</Label>
-              <Select value={filters.propertyType} onValueChange={(v) => setF("propertyType", v)}>
-                <SelectTrigger id="f-propertyType">
-                  <SelectValue placeholder="همه انواع" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همه انواع</SelectItem>
-                  {meta?.propertyTypes.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-4">
+            <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-3">
               <Button type="submit" className="gap-2" disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Search className="w-4 h-4" aria-hidden />}
                 اعمال فیلتر
@@ -326,13 +325,37 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
         </CardContent>
       </Card>
 
+      {/* شفافیت منبع داده */}
+      {source && source.liveError && (
+        <Card className="border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/30">
+          <CardContent className="p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden />
+            <div className="text-xs leading-relaxed space-y-1">
+              <p className="font-bold">استخراج زنده از سامانه ملک تبریز در دسترس نیست</p>
+              <p className="text-muted-foreground">
+                {source.cached
+                  ? "در حال حاضر داده‌های کش‌شده از آخرین استخراج موفق نمایش داده می‌شود."
+                  : "هنوز هیچ داده‌ای از سامانه استخراج نشده است."}{" "}
+                {source.liveError}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {source && source.cached && !source.liveError && (
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <Database className="w-3.5 h-3.5" aria-hidden />
+          آخرین استخراج موفق از سامانه ملک تبریز: {source.lastSuccessAt ? faJalaliShort(source.lastSuccessAt) : "—"}
+        </div>
+      )}
+
       {/* نمودارها */}
       {showCharts && rows && rows.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="py-4">
               <CardTitle className="text-sm flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-primary" aria-hidden /> روند ماهانه (تعداد و ارزش)
+                <BarChart3 className="w-4 h-4 text-primary" aria-hidden /> روند ماهانه معاملات (هجری شمسی)
               </CardTitle>
             </CardHeader>
             <CardContent className="chart-ltr h-72">
@@ -340,18 +363,12 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
                 <ComposedChart data={monthly} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} interval="preserveStartEnd" angle={-20} textAnchor="end" height={48} />
-                  <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={32} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={40} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={32} />
                   <RTooltip
-                    formatter={(value: number, name: string) => [
-                      name === "valueB" ? `${faNumber(value)} میلیارد تومان` : faNumber(value),
-                      name === "valueB" ? "ارزش" : "تعداد",
-                    ]}
+                    formatter={(value: number) => [faNumber(value), "تعداد معاملات"]}
                     contentStyle={{ direction: "rtl", borderRadius: 12, fontSize: 12 }}
                   />
-                  <Legend formatter={(v) => (v === "valueB" ? "ارزش (میلیارد)" : "تعداد")} wrapperStyle={{ fontSize: 11 }} />
-                  <Bar yAxisId="left" dataKey="count" fill="var(--chart-1)" radius={[6, 6, 0, 0]} maxBarSize={28} />
-                  <Line yAxisId="right" type="monotone" dataKey="valueB" stroke="var(--chart-2)" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="count" stroke="var(--chart-1)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--chart-1)" }} activeDot={{ r: 5 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </CardContent>
@@ -359,17 +376,17 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
           <Card>
             <CardHeader className="py-4">
               <CardTitle className="text-sm flex items-center gap-2">
-                <MapPinned className="w-4 h-4 text-primary" aria-hidden /> ارزش معاملات به تفکیک محله (میلیارد تومان)
+                <PieChart className="w-4 h-4 text-primary" aria-hidden /> ترکیب رویداد و آگهی پیشنهادی
               </CardTitle>
             </CardHeader>
             <CardContent className="chart-ltr h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={byDistrict} layout="vertical" margin={{ top: 8, right: 16, bottom: 0, left: 16 }}>
+                <ComposedChart data={composition} layout="vertical" margin={{ top: 8, right: 16, bottom: 0, left: 16 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "var(--foreground)" }} width={90} />
-                  <RTooltip formatter={(v: number) => [`${faNumber(v)} میلیارد تومان`, "ارزش"]} contentStyle={{ direction: "rtl", borderRadius: 12, fontSize: 12 }} />
-                  <Bar dataKey="valueB" fill="var(--chart-3)" radius={[0, 6, 6, 0]} maxBarSize={20} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "var(--foreground)" }} width={110} />
+                  <RTooltip formatter={(v: number) => [faNumber(v), "تعداد"]} contentStyle={{ direction: "rtl", borderRadius: 12, fontSize: 12 }} />
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={22} />
                 </ComposedChart>
               </ResponsiveContainer>
             </CardContent>
@@ -377,7 +394,7 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
         </div>
       )}
 
-      {/* جدول */}
+      {/* جدول — عین ستون‌های گزارش خود سامانه */}
       <Card>
         <CardHeader className="py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -406,45 +423,77 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
             </div>
           ) : pageRows.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
-              هیچ معامله‌ای با این فیلترها یافت نشد.
+              {loading
+                ? "در حال دریافت…"
+                : rows.length === 0
+                  ? "هنوز معامله‌ای از سامانه ملک تبریز استخراج نشده است. با بازیابی پایگاه داده سامانه، داده‌ها به‌صورت خودکار همگام می‌شوند یا از تنظیمات، «همگام‌سازی داده‌ها» را بزنید."
+                  : "هیچ معامله‌ای با این فیلترها یافت نشد."}
             </div>
           ) : (
             <div className="overflow-x-auto max-h-[28rem]">
               <Table>
                 <TableHeader className="sticky top-0 bg-card z-10">
                   <TableRow>
-                    <TableHead className="text-right">تاریخ</TableHead>
-                    <TableHead className="text-right">کد آگهی</TableHead>
-                    <TableHead className="text-right">کد درخواست</TableHead>
-                    <TableHead className="text-right">کارشناس</TableHead>
-                    <TableHead className="text-right hidden md:table-cell">محله</TableHead>
-                    <TableHead className="text-right hidden sm:table-cell">نوع ملک</TableHead>
-                    <TableHead className="text-right hidden lg:table-cell">متراژ</TableHead>
-                    <TableHead className="text-right">مبلغ</TableHead>
-                    {showCommission && <TableHead className="text-right hidden md:table-cell">کمیسیون</TableHead>}
+                    <TableHead className="text-right">تاریخ معامله</TableHead>
+                    <TableHead className="text-right">کد ملک / مالک</TableHead>
+                    <TableHead className="text-right">کد درخواست / درخواست‌دهنده</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">شماره هولوگرام</TableHead>
+                    <TableHead className="text-right">آگهی پیشنهادی</TableHead>
+                    <TableHead className="text-right">رویداد</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pageRows.map((t) => (
                     <TableRow key={t.id} className="hover:bg-muted/40">
-                      <TableCell className="whitespace-nowrap text-xs">{faDate(t.dealDate)}</TableCell>
-                      <TableCell dir="ltr" className="font-mono text-xs text-left">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="cursor-help">{t.listingCode}</span>
-                          </TooltipTrigger>
-                          <TooltipContent>کد پرسنلی کارشناس: {t.expertCode}</TooltipContent>
-                        </Tooltip>
+                      <TableCell className="whitespace-nowrap text-xs font-medium">{faJalaliShort(t.contractDate)}</TableCell>
+                      <TableCell className="text-xs">
+                        <div className="flex flex-col">
+                          <span className="font-mono">{faDigits(t.propertyCode)}</span>
+                          {t.propertyCustomer && (
+                            <span className="text-muted-foreground text-[11px] mt-0.5">{t.propertyCustomer}</span>
+                          )}
+                        </div>
                       </TableCell>
-                      <TableCell dir="ltr" className="font-mono text-xs text-left text-muted-foreground">
-                        {t.requestCode ?? "—"}
+                      <TableCell className="text-xs">
+                        {t.requestCode ? (
+                          <div className="flex flex-col">
+                            <span className="font-mono">{faDigits(t.requestCode)}</span>
+                            {t.requestCustomer && (
+                              <span className="text-muted-foreground text-[11px] mt-0.5">{t.requestCustomer}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">— بدون درخواست</span>
+                        )}
                       </TableCell>
-                      <TableCell className="text-xs font-medium whitespace-nowrap">{t.expertName}</TableCell>
-                      <TableCell className="hidden md:table-cell text-xs">{t.district}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-xs">{t.propertyType}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-xs">{faDigits(t.area.toLocaleString("en-US"))} م²</TableCell>
-                      <TableCell className="text-xs font-bold whitespace-nowrap">{faToman(t.price)}</TableCell>
-                      {showCommission && <TableCell className="hidden md:table-cell text-xs text-muted-foreground whitespace-nowrap">{faToman(t.commission)}</TableCell>}
+                      <TableCell className="hidden md:table-cell text-xs font-mono" dir="rtl">
+                        {t.contractHolo ? (
+                          <span className="flex items-center gap-1.5">
+                            <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" aria-hidden />
+                            {faDigits(t.contractHolo)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {t.suggestedPropertyCount > 0 ? (
+                          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[11px] gap-1">
+                            <Hash className="w-3 h-3" aria-hidden /> {faNumber(t.suggestedPropertyCount)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {t.eventsCount > 0 ? (
+                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[11px] gap-1">
+                            <TrendingUp className="w-3 h-3" aria-hidden /> {faNumber(t.eventsCount)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -455,8 +504,8 @@ export function TransactionsPage({ settings, onSettingsChange, userRole: _userRo
       </Card>
 
       <p className="text-[11px] text-muted-foreground leading-relaxed">
-        داده‌ها از سامانه ملک تبریز (arm.melketabriz.ir) استخراج و به‌صورت محلی کش می‌شوند. تاریخ‌ها میلادی ثبت و شمسی
-        نمایش داده می‌شوند.
+        داده‌ها عین «گزارش تطابق معاملات» سامانه ملک تبریز (arm.melketabriz.ir) استخراج و به‌صورت محلی کش
+        می‌شوند. تاریخ‌ها با تقویم هجری شمسی نمایش داده می‌شوند و فیلتر تاریخ نیز با همین تقویم اعمال می‌شود.
       </p>
     </div>
   );

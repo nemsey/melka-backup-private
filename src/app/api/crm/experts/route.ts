@@ -1,7 +1,8 @@
 /**
  * GET /api/crm/experts
- * فهرست کارشناسان با فیلتر — خوانده‌شده از کش محلی
- * فیلترها: نام و نام خانوادگی، موبایل، کد پرسنلی، آدرس، شعبه، وضعیت
+ * فهرست کارشناسان/کاربران با فیلتر — خوانده‌شده از کش محلی
+ * فیلترها (عین users-list خود سامانه + توسعه داشبورد):
+ *   نام و نام خانوادگی، موبایل، کد پرسنلی، نقش، کسب‌وکار (شعبه)، وضعیت
  */
 
 import { NextRequest } from "next/server";
@@ -34,14 +35,16 @@ export async function GET(request: NextRequest) {
     if (mobile) where.mobile = { contains: mobile };
     const personnelCode = sp.get("personnelCode");
     if (personnelCode) where.personnelCode = { contains: personnelCode };
-    const address = sp.get("address");
-    if (address) where.address = { contains: address };
-    const branch = sp.get("branch");
-    if (branch) where.branch = { contains: branch };
+    const role = sp.get("role");
+    if (role) where.role = { contains: role };
+    const businessTitle = sp.get("businessTitle");
+    if (businessTitle) where.businessTitle = { contains: businessTitle };
+    const creator = sp.get("creator");
+    if (creator) where.creator = { contains: creator };
     const active = sp.get("active");
     if (active === "true" || active === "false") where.active = active === "true";
 
-    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 50, 1), 500);
+    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 50, 1), 1000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
 
     const [rows, total] = await Promise.all([
@@ -54,22 +57,30 @@ export async function GET(request: NextRequest) {
       db.expertRecord.count({ where }),
     ]);
 
-    // آمار معاملاتی هر کارشناس برای نمایش عملکرد
-    const codes = rows.map((r) => r.personnelCode);
-    const grouped = await db.transactionRecord.groupBy({
-      by: ["expertCode"],
-      where: { expertCode: { in: codes } },
-      _count: { id: true },
-      _sum: { price: true },
-    });
-    const perfMap = new Map(grouped.map((g) => [g.expertCode, g]));
+    // مجموع تعاملات هر مشاور (مجموع همکاری‌های منجر به تطبیق — از گزارش تعاملات سامانه)
+    const names = rows.map((r) => r.fullName);
+    const [reqGrouped, propGrouped] = await Promise.all([
+      db.interactionRecord.groupBy({
+        by: ["requestRealtorName"],
+        where: { requestRealtorName: { in: names } },
+        _sum: { count: true },
+      }),
+      db.interactionRecord.groupBy({
+        by: ["propertyRealtorName"],
+        where: { propertyRealtorName: { in: names } },
+        _sum: { count: true },
+      }),
+    ]);
+    const reqMap = new Map(reqGrouped.map((g) => [g.requestRealtorName, g._sum.count ?? 0]));
+    const propMap = new Map(propGrouped.map((g) => [g.propertyRealtorName, g._sum.count ?? 0]));
 
     const enriched = rows.map((r) => {
-      const g = perfMap.get(r.personnelCode);
+      const asRequester = reqMap.get(r.fullName) ?? 0;
+      const asPropertyRealtor = propMap.get(r.fullName) ?? 0;
       return {
         ...r,
-        dealCount: g?._count.id ?? 0,
-        totalVolume: g?._sum.price ?? 0,
+        /** مجموع تعامل‌ها (نقش درخواست‌دهنده + نقش آگهی‌گذار) */
+        interactionTotal: asRequester + asPropertyRealtor,
       };
     });
 

@@ -36,7 +36,7 @@ export async function register(): Promise<void> {
 
         const result = await syncFromArm(armToken);
         if (result.ok) {
-          console.log(`[sync] استخراج موفق از سامانه واقعی ملک تبریز: ${result.transactions} معامله، ${result.experts} کارشناس`);
+          console.log(`[sync] استخراج موفق از سامانه واقعی ملک تبریز: ${result.transactions} معامله، ${result.experts} کاربر، ${result.interactions} تعامل`);
         }
       } finally {
         await prisma.$disconnect();

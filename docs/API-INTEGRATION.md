@@ -128,3 +128,75 @@ Authorization: Bearer <access-token>
 | PM (`public/portalInfo`) | ⚠️ 502/تایم‌اوت — سرویس پشتیبان قطع |
 
 > این قطعی **سمت سرورهای ملک تبریز** است. اپلیکیشن به‌درگری متصل است و به‌محض بازگشت پایگاه داده، پیامک‌ها و استخراج داده به‌صورت خودکار فعال می‌شوند (حلقه همگام‌سازی پس‌زمینه).
+
+---
+
+## ۷) ساختار داده واقعی گزارش‌ها (کشف کامل از صفحات رسمی — بازنگری ۲)
+
+ستون‌ها و فیلدهای هر گزارش، **عین تجزیه باندل صفحات رسمی سامانه ARM** استخراج و در آداپتورها پیاده شد:
+
+### گزارش تطابق معاملات (TradedStatisticsPage — «گزارش تطابق معاملات»)
+
+| ستون خود سامانه | فیلد API | مدل داشبورد |
+|---|---|---|
+| کد ملک/مالک | `propertyCode` + `propertyCustomer` | `propertyCode`, `propertyCustomer` |
+| کد درخواست/درخواست‌دهنده | `requestCode` + `requestCustomer` | `requestCode`, `requestCustomer` |
+| تاریخ معامله | `contractDate` (جلالی `YYYY/MM/DD`) | `contractDate` (ISO) |
+| شماره هولوگرام | `contractHolo` | `contractHolo` |
+| آگهی پیشنهادی | `suggestedPropertyCount` | `suggestedPropertyCount` |
+| رویداد | `eventsCount` | `eventsCount` |
+
+خلاصه چهارگانه بالای گزارش خود سامانه (`data`): `totalCount`, `hasRequestEvent`, `hasSuggestedProperty`, `hasBoth` — در داشبورد به‌علاوه `withHolo` و `withRequest` محاسبه می‌شود.
+
+### فهرست کاربران (users-list-page — realtors/list)
+
+| ستون خود سامانه | فیلد API | مدل داشبورد |
+|---|---|---|
+| نام و نام خانوادگی | `fullName` | `fullName` |
+| شماره موبایل | `mobile` | `mobile` |
+| نقش مشتری | `role.name` | `role` |
+| کسب و کار | `businessId.title` | `businessTitle` |
+| ثبت کننده | `creator.fullName` | `creator` |
+| زمان ثبت | `createdAt` | `createdAt` |
+| فعال | `active` | `active` |
+
+### تعاملات مشاوران (realtor-interactions-page)
+
+| ستون خود سامانه | فیلد API | مدل داشبورد |
+|---|---|---|
+| مشاور درخواست | `requestRealtorName` | `requestRealtorName` |
+| مشاور آگهی | `propertyRealtorName` | `propertyRealtorName` |
+| تعداد | `count` | `count` |
+
+فیلترهای خود سامانه: `page`, `limit`, `startDate`, `endDate`, `realtor`, `hasMatch`.
+
+### سایر گزارش‌های کشف‌شده (آماده کاشی‌های آینده)
+
+- `trade-overviews` (+ `add-realtor`, `authenticate-realtor`, `confirm`, `contribution`) — چرخه قرارداد: پیش‌نویس → در انتظار افزودن مشاور → در انتظار تایید مشاوران → تایید حق السهم → در انتظار تایید مالی → تایید شده مالی → در انتظار تنظیم سند؛ با حق‌السهم/درصد مشاوران قرارداد، تاریخ سند/قرارداد/تحویل و خریداران.
+- `realtor-reports/suggested-usage` (+ `-total`, `/request`) — گزارش تعامل مشاور با سیستم (آگهی پیشنهادی سیستم در برابر رویداد مشاور).
+- `realtor-reports/property-statistics` / `request-statistics` — ماتریس وضعیت×مشاور (statusData) با فیلترهای عکس/فیلم/بیعانه/کارگزاری، اینستاگرام/دیوار (realtorAddToInsta/realtorAddToDivar)، tradeType/propertyType/buildingType و جستجوی آدرس regex.
+- `configs/current-prices` — شاخص قیمت روز (جزئیات مشخصات و مناطق).
+- `visits` — بازدیدها (کد آگهی، نام و شماره درخواست‌دهنده، زمان درخواست/تأیید، وضعیت).
+- `api/apu/statistics/total` + `businesses/info/own` — محاسبه کمیسیون (تعرفه خرید و فروش، اجاره، شماره هولوگرام، صدور قبض).
+- `price-evaluations` — لیست دلایل فروش، قیمت فایل، مطلوبیت فایل.
+- SupplyDemandRanges — رنج عرضه و تقاضا.
+
+## ۸) APIهای داشبورد (BFF)
+
+| مسیر | شرح |
+|---|---|
+| `GET /api/crm/transactions` | گزارش تطابق با فیلتر تاریخ (جلالی در UI → ISO)، کد ملک/درخواست، هولوگرام، نوع تطبیق + خلاصه چهارگانه بازه |
+| `GET /api/crm/experts` | فهرست کاربران با فیلتر نام/موبایل/کد/نقش/کسب‌وکار/ثبت‌کننده/وضعیت + مجموع تعامل هر کاربر |
+| `GET /api/crm/interactions` | تعاملات مشاوران + درجه همکاری هر مشاور + ۱۰ نفر برتر |
+| `GET /api/crm/meta` | نقش‌ها، کسب‌وکارها، ثبت‌کنندگان (از داده واقعی کش‌شده) |
+| `POST /api/sync` | همگام‌سازی سه‌گانه: معاملات + کاربران + تعاملات + خلاصه چهارگانه |
+
+## ۹) وضعیت زنده‌ی سامانه‌ها (بازنگری ۲ — پس از بازیابی)
+
+| سرویس | وضعیت |
+|---|---|
+| ARM public (`statics/enums-persian`) | ✅ ۲۰۰ — داده واقعی |
+| ARM auth (`authentication/otp/{code}`) | ✅ ۲۰۰ — **«کد تایید ارسال شد»** — ارسال پیامک واقعی تأیید شد؛ پایگاه داده MongoDB بازیابی شد |
+| PM (`public/portalInfo`) | ⚠️ ۵۰۲ — سرویس پشتیبان پرسنلی همچنان قطع |
+
+> ✅ جریان OTP واقعی اکنون کامل و فعال است: با ورود کد پرسنلی در اپلیکیشن، پیامک واقعی از سامانه ملک تبریز ارسال می‌شود و پس از تأیید، توکن ARM ذخیره و استخراج سه‌گانه داده واقعی (معاملات + کاربران + تعاملات) به‌صورت خودکار/دستی انجام می‌شود.

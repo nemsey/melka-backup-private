@@ -10,6 +10,11 @@
  * نباشد، خطای شفاف فارسی برگردانده می‌شود و کش قبلی (انقضادار) حفظ
  * می‌شود و وضعیت SyncState ثبت می‌گردد.
  *
+ * سه گزارش عین خود سامانه ARM استخراج می‌شود:
+ *   ۱) گزارش تطابق معاملات (traded-count-total) + خلاصه چهارگانه
+ *   ۲) فهرست کاربران/مشاوران (realtors/list)
+ *   ۳) تعاملات مشاوران با یکدیگر (realtor-interactions)
+ *
  * نکته مهم: توکن ARM از نشست کاربر واردشده استفاده می‌شود (جریان
  * OTP واقعی)؛ اگر توکن منقضی شده باشد، با refreshToken تمدید می‌شود.
  */
@@ -17,9 +22,9 @@
 import { db } from "@/lib/db";
 import { getMelkProvider } from "./provider";
 import { MELK_ENDPOINTS } from "./endpoints";
-import type { CrmExpert, CrmTransaction } from "./types";
+import type { CrmExpert, CrmInteraction, CrmTransaction, TradedSummary } from "./types";
 import { MelkApiError } from "./types";
-import { mapArmRealtorRow, mapArmTradedRow, extractPagedList } from "./adapters";
+import { mapArmInteractionRow, mapArmRealtorRow, mapArmTradedRow, mapArmTradedSummary, extractPagedList } from "./adapters";
 import { armCall } from "./client";
 import { getMelkApiConfig } from "./config";
 
@@ -28,6 +33,7 @@ export interface SyncResult {
   ok: boolean;
   transactions: number;
   experts: number;
+  interactions: number;
   syncedAt: string;
   error?: string;
   errorCode?: string;
@@ -41,6 +47,9 @@ export interface SyncStateInfo {
   lastErrorCode: string | null;
   transactionCount: number;
   expertCount: number;
+  interactionCount: number;
+  /** خلاصه چهارگانه گزارش تطابق (از خود سامانه ARM) */
+  summary: TradedSummary | null;
   attempts: number;
 }
 
@@ -54,12 +63,24 @@ async function readSyncState() {
   return state;
 }
 
+function parseSummary(json: string | null | undefined): TradedSummary | null {
+  if (!json) return null;
+  try {
+    const s = JSON.parse(json) as TradedSummary;
+    if (typeof s.totalCount === "number") return s;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** خواندن وضعیت همگام‌سازی برای نمایش (بدون خطا پرتاب نمی‌شود) */
 export async function getSyncState(): Promise<SyncStateInfo> {
   const state = await readSyncState();
-  const [txCount, exCount] = await Promise.all([
+  const [txCount, exCount, inCount] = await Promise.all([
     db.transactionRecord.count(),
     db.expertRecord.count(),
+    db.interactionRecord.count(),
   ]);
   return {
     lastSyncedAt: state.lastSyncedAt?.toISOString() ?? null,
@@ -68,6 +89,8 @@ export async function getSyncState(): Promise<SyncStateInfo> {
     lastErrorCode: state.lastErrorCode,
     transactionCount: txCount,
     expertCount: exCount,
+    interactionCount: inCount,
+    summary: parseSummary(state.summaryJson),
     attempts: state.attempts,
   };
 }
@@ -78,6 +101,7 @@ async function writeSyncState(patch: {
   lastError?: string | null;
   lastErrorCode?: string | null;
   attempts?: number;
+  summaryJson?: string | null;
 }): Promise<void> {
   await db.syncState.upsert({
     where: { id: SYNC_STATE_ID },
@@ -90,61 +114,81 @@ async function writeSyncState(patch: {
 // استخراج داده واقعی
 // ==========================================================================
 
+/** خواندن یک گزارش صفحه‌بندی‌شده تا انتها (با سقف ایمن صفحات) */
+async function fetchAllPages<T>(
+  path: string,
+  armToken: string,
+  maxPages: number,
+  pageLimit: number,
+  mapRow: (row: Record<string, unknown>, index: number, page: number, limit: number) => T | null
+): Promise<{ rows: T[]; rawSummary: unknown }> {
+  const cfg = getMelkApiConfig();
+  const rows: T[] = [];
+  let rawSummary: unknown = null;
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await armCall<unknown>({
+      path,
+      baseUrl: cfg.armApiBase,
+      token: armToken,
+      query: { page, limit: pageLimit },
+      timeoutMs: cfg.timeoutMs,
+      maxRetries: 0, // در حلقه صفحه‌بندی تلاش مجدد نمی‌کنیم (صفحه بعدی خودش تازه می‌شود)
+    });
+    // خلاصه چهارگانه گزارش تطابق — خود پاسخ «data» است
+    if (path === MELK_ENDPOINTS.arm.tradedTotal && res.data && typeof res.data === "object") {
+      const d = res.data as Record<string, unknown>;
+      if (typeof d.totalCount === "number" || typeof d.hasBoth === "number") {
+        rawSummary = d;
+      }
+    }
+    const { rows: pageRows, total, totalPages } = extractPagedList(res.data, (row, i) => mapRow(row, i, page, pageLimit));
+    rows.push(...pageRows);
+    const pages = totalPages ?? (total > 0 ? Math.ceil(total / pageLimit) : 1);
+    if (page >= pages || pageRows.length === 0) break;
+  }
+  return { rows, rawSummary };
+}
+
 /**
- * استخراج کامل معاملات و کارشناسان از سامانه ARM با توکن ARM.
- * صفحه‌بندی به‌طور خودکار طی می‌شود (تا سقف ایمن ۵۰ صفحه).
+ * استخراج کامل معاملات، کارشناسان و تعاملات از سامانه ARM با توکن ARM.
+ * صفحه‌بندی به‌طور خودکار طی می‌شود (تا سقف ایمن صفحات).
  */
 export async function syncFromArm(armToken: string): Promise<SyncResult> {
-  const provider = getMelkProvider();
-  const cfg = getMelkApiConfig();
   const now = new Date();
   await writeSyncState({ lastSyncedAt: now });
 
   try {
-    // ---------------- معاملات (گزارش تطابق معاملات) ----------------
-    const transactions: CrmTransaction[] = [];
-    const TX_PAGE = 100;
-    for (let page = 1; page <= 50; page++) {
-      const res = await armCall<unknown>({
-        path: MELK_ENDPOINTS.arm.tradedTotal,
-        baseUrl: cfg.armApiBase,
-        token: armToken,
-        query: { page, limit: TX_PAGE },
-        timeoutMs: cfg.timeoutMs,
-        maxRetries: 0, // در حلقه صفحه‌بندی تلاش مجدد نمی‌کنیم (صفحه بعدی خودش تازه می‌شود)
-      });
-      const { rows, total, totalPages } = extractPagedList(res.data, (row, i) =>
-        mapArmTradedRow(row, i, page, TX_PAGE)
-      );
-      transactions.push(...rows);
-      const pages = totalPages ?? (total > 0 ? Math.ceil(total / TX_PAGE) : 1);
-      if (page >= pages || rows.length === 0) break;
-    }
+    // ---------------- ۱) گزارش تطابق معاملات + خلاصه ----------------
+    const { rows: transactions, rawSummary } = await fetchAllPages(
+      MELK_ENDPOINTS.arm.tradedTotal,
+      armToken,
+      50,
+      100,
+      mapArmTradedRow
+    );
+    const summary = mapArmTradedSummary(rawSummary) ?? computeSummaryFromRows(transactions);
 
-    // ---------------- کارشناسان (realtors) ----------------
-    const experts: CrmExpert[] = [];
-    const EX_PAGE = 100;
-    for (let page = 1; page <= 30; page++) {
-      const res = await armCall<unknown>({
-        path: MELK_ENDPOINTS.arm.realtorsList,
-        baseUrl: cfg.armApiBase,
-        token: armToken,
-        query: { page, limit: EX_PAGE },
-        timeoutMs: cfg.timeoutMs,
-        maxRetries: 0,
-      });
-      const { rows, total, totalPages } = extractPagedList(res.data, (row, i) => mapArmRealtorRow(row, i));
-      experts.push(...rows);
-      const pages = totalPages ?? (total > 0 ? Math.ceil(total / EX_PAGE) : 1);
-      if (page >= pages || rows.length === 0) break;
+    // ---------------- ۲) فهرست کاربران/مشاوران ----------------
+    const { rows: experts } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorsList, armToken, 30, 100, mapArmRealtorRow);
+
+    // ---------------- ۳) تعاملات مشاوران با یکدیگر ----------------
+    let interactions: CrmInteraction[] = [];
+    try {
+      const { rows: inRows } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorInteractions, armToken, 20, 200, mapArmInteractionRow);
+      interactions = inRows;
+    } catch {
+      // تعاملات گزارش مکمل است — نبودش نباید کل همگام‌سازی را شکست بدهد
+      interactions = [];
     }
 
     // ---------------- ذخیره اتمیک در پایگاه محلی ----------------
     await db.$transaction([
       db.transactionRecord.deleteMany({}),
       db.expertRecord.deleteMany({}),
+      db.interactionRecord.deleteMany({}),
       ...toTxCreates(transactions),
       ...toExCreates(experts),
+      ...toInCreates(interactions),
     ]);
 
     const successAt = new Date();
@@ -153,12 +197,14 @@ export async function syncFromArm(armToken: string): Promise<SyncResult> {
       lastError: null,
       lastErrorCode: null,
       attempts: 0,
+      summaryJson: summary ? JSON.stringify(summary) : null,
     });
 
     return {
       ok: true,
       transactions: transactions.length,
       experts: experts.length,
+      interactions: interactions.length,
       syncedAt: successAt.toISOString(),
     };
   } catch (err) {
@@ -173,11 +219,22 @@ export async function syncFromArm(armToken: string): Promise<SyncResult> {
       ok: false,
       transactions: 0,
       experts: 0,
+      interactions: 0,
       syncedAt: now.toISOString(),
       error: e.message,
       errorCode: e.code,
     };
   }
+}
+
+/** اگر سامانه خلاصه چهارگانه را نفرستاد، از ردیف‌ها محاسبه می‌شود */
+function computeSummaryFromRows(rows: CrmTransaction[]): TradedSummary {
+  return {
+    totalCount: rows.length,
+    hasRequestEvent: rows.filter((r) => r.eventsCount > 0).length,
+    hasSuggestedProperty: rows.filter((r) => r.suggestedPropertyCount > 0).length,
+    hasBoth: rows.filter((r) => r.eventsCount > 0 && r.suggestedPropertyCount > 0).length,
+  };
 }
 
 /**
@@ -202,31 +259,33 @@ export async function syncWithRefresh(
       sync = await syncFromArm(token);
     } catch (refreshErr) {
       const e = refreshErr instanceof MelkApiError ? refreshErr : new MelkApiError("UNKNOWN", "تمدید توکن ناموفق", 401, false);
-      sync = { ok: false, transactions: 0, experts: 0, syncedAt: new Date().toISOString(), error: e.message, errorCode: e.code };
+      sync = { ok: false, transactions: 0, experts: 0, interactions: 0, syncedAt: new Date().toISOString(), error: e.message, errorCode: e.code };
     }
   }
   return { sync, newArmToken };
 }
 
 /** در صورت خالی‌بودن کش، داده‌های واقعی را با توکن ARM بارگذاری می‌کند */
-export async function ensureSeeded(armToken?: string): Promise<{ transactions: number; experts: number; liveError?: string }> {
-  const [txCount, exCount] = await Promise.all([
+export async function ensureSeeded(armToken?: string): Promise<{ transactions: number; experts: number; interactions: number; liveError?: string }> {
+  const [txCount, exCount, inCount] = await Promise.all([
     db.transactionRecord.count(),
     db.expertRecord.count(),
+    db.interactionRecord.count(),
   ]);
 
   if ((txCount === 0 || exCount === 0) && armToken) {
     const { sync } = await syncWithRefresh(armToken, "");
-    if (sync.ok) return { transactions: sync.transactions, experts: sync.experts };
-    return { transactions: txCount, experts: exCount, liveError: sync.error };
+    if (sync.ok) return { transactions: sync.transactions, experts: sync.experts, interactions: sync.interactions };
+    return { transactions: txCount, experts: exCount, interactions: inCount, liveError: sync.error };
   }
-  return { transactions: txCount, experts: exCount };
+  return { transactions: txCount, experts: exCount, interactions: inCount };
 }
 
 /** پاک‌سازی کامل کش و استخراج مجدد از سامانه واقعی (دکمه ریست اتصال) */
 export async function resetCrmCache(armToken: string): Promise<SyncResult> {
   await db.transactionRecord.deleteMany({});
   await db.expertRecord.deleteMany({});
+  await db.interactionRecord.deleteMany({});
   return syncFromArm(armToken);
 }
 
@@ -235,16 +294,14 @@ function toTxCreates(rows: CrmTransaction[]) {
     db.transactionRecord.create({
       data: {
         id: t.id,
-        dealDate: new Date(t.dealDate),
-        listingCode: t.listingCode,
+        contractDate: new Date(t.contractDate),
+        propertyCode: t.propertyCode,
+        propertyCustomer: t.propertyCustomer,
         requestCode: t.requestCode,
-        expertCode: t.expertCode,
-        expertName: t.expertName,
-        price: t.price,
-        district: t.district,
-        propertyType: t.propertyType,
-        area: t.area,
-        commission: t.commission,
+        requestCustomer: t.requestCustomer,
+        contractHolo: t.contractHolo,
+        suggestedPropertyCount: t.suggestedPropertyCount,
+        eventsCount: t.eventsCount,
       },
     })
   );
@@ -258,10 +315,24 @@ function toExCreates(rows: CrmExpert[]) {
         personnelCode: e.personnelCode,
         fullName: e.fullName,
         mobile: e.mobile,
-        address: e.address,
-        branch: e.branch,
+        role: e.role,
+        businessTitle: e.businessTitle,
+        creator: e.creator,
         active: e.active,
-        joinedAt: new Date(e.joinedAt),
+        createdAt: new Date(e.createdAt),
+      },
+    })
+  );
+}
+
+function toInCreates(rows: CrmInteraction[]) {
+  return rows.map((i) =>
+    db.interactionRecord.create({
+      data: {
+        id: i.id,
+        requestRealtorName: i.requestRealtorName,
+        propertyRealtorName: i.propertyRealtorName,
+        count: i.count,
       },
     })
   );
