@@ -48,10 +48,40 @@ export const MELK_ENDPOINTS = {
     realtorsList: "realtors/list",
     /** شمارش اعلان‌ها */
     badgeCount: "count/badge",
+
+    // ============ آگهی (ثبت‌شده توسط کارشناس) — کشف از باندل رسمی ============
+    /** جست‌وجوی آگهی با کدآگهی — پاسخ: {_id, title, relatedRealtor, ...} */
+    propertiesByCode: (code: string) => `properties/info/by-code/${encodeURIComponent(code)}`,
+    /** جزئیات کامل آگهی — پاسخ: {details: [{label, value, unit}], address, ...} */
+    propertyDetails: (id: string) => `properties/details/${encodeURIComponent(id)}`,
+    /** اطلاعات مالک آگهی — پاسخ: ساختار کاربر (mobileNumber, extraUserInfo, ...) */
+    propertyOwner: (id: string) => `properties/owner/${encodeURIComponent(id)}`,
+    /** فهرست آگهی‌ها (فیلتر کد، وضعیت، صفحه‌بندی) — عین خود سامانه */
+    propertiesList: "properties",
+
+    // ============ درخواست (ثبت‌شده توسط کارشناس) — کشف از باندل رسمی ============
+    /** فهرست درخواست‌ها (فیلتر کد، وضعیت، صفحه‌بندی) — عین خود سامانه */
+    requestsList: "requests",
+    /** جزئیات کامل درخواست */
+    requestDetails: (id: string) => `requests/details/${encodeURIComponent(id)}`,
+    /** اطلاعات درخواست‌دهنده (مشتری) درخواست — ساختار کاربر */
+    requestApplicant: (id: string) => `requests/applicant/${encodeURIComponent(id)}`,
+
+    // ============ بازدیدها و پیگیری‌ها ============
+    /** فهرست بازدیدها (بررسی‌کننده × درخواست‌دهنده × کدآگهی) */
+    visitsList: "visits",
+
+    // ============ بازیابی کاربر با شماره موبایل ============
+    /** استعلام کاربر/مشتری با شماره موبایل */
+    userByMobile: (mobile: string) => `users/info/mobile-number/${encodeURIComponent(mobile)}`,
   },
   armPublic: {
     /** مقادیر شمارشی فارسی (بدون توکن) */
     enums: "statics/enums-persian",
+  },
+  armReports: {
+    /** گزارش عرضه و تقاضا (بازه × تعداد آگهی × درصد درخواست × وضعیت) */
+    supplyDemand: "realtor-reports/supply-demand",
   },
   pm: {
     /** اطلاعات پورتال (عمومی) */

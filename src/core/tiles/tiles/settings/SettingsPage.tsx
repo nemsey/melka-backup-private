@@ -51,6 +51,8 @@ interface ConnectionInfo {
     transactionCount: number;
     expertCount: number;
     interactionCount: number;
+    visitCount: number;
+    supplyDemandCount: number;
     attempts: number;
   };
   config: { mode: string; armApiBase: string; armPublicApiBase: string; pmApiBase: string; timeoutMs: number; maxRetries: number; syncIntervalMinutes: number };
@@ -320,7 +322,10 @@ export function SettingsPage({ onBack }: TilePageProps) {
                   </p>
                   <p>
                     داده‌های کش‌شده: <b>{faNumber(conn.sync.transactionCount)}</b> معامله،{" "}
-                    <b>{faNumber(conn.sync.expertCount)}</b> کاربر و <b>{faNumber(conn.sync.interactionCount)}</b> تعامل
+                    <b>{faNumber(conn.sync.expertCount)}</b> کاربر،{" "}
+                    <b>{faNumber(conn.sync.interactionCount)}</b> تعامل،{" "}
+                    <b>{faNumber(conn.sync.visitCount)}</b> بازدید و{" "}
+                    <b>{faNumber(conn.sync.supplyDemandCount)}</b> بازه عرضه/تقاضا
                     {conn.sync.attempts > 0 && conn.sync.lastError ? ` — آخرین خطا: ${conn.sync.lastError}` : ""}
                   </p>
                 </div>

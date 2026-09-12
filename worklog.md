@@ -131,3 +131,40 @@ Stage Summary:
 - تمام چهار خواسته اجرا شد: (۱) فارسی‌سازی کامل با حفظ اسلوب فارسی در جملات مخلوط؛ (۲) تقویم هجری شمسی کامل (هسته مشترک + انتخاب‌گر تاریخ + همه نمایش‌ها و سری‌های ماهانه)؛ (۳) دو کاشی بر اساس ساختار واقعی داده سامانه‌ها بازنویسی حرفه‌ای شدند؛ (۴) پیشنهاد کاشی‌های جدید صرفاً در پیام نهایی ارائه شد (بدون کد)
 - پایگاه داده MongoDB ملک تبریز بازیابی شد و ارسال پیامک OTP واقعی تأیید شد؛ با ورود مالک از مسیر OTP، استخراج سه‌گانه داده واقعی خودکار انجام می‌شود
 - پایگاه داده محلی کاملاً پاک است (۰ دمو/تست) — فقط داده واقعی پس از همگام‌سازی ذخیره می‌شود
+
+---
+Task ID: 4
+Agent: main (Super Z)
+Task: ساخت کاشی‌های پیشنهادی با ایجنت اختصاصی + کاشی استخراج اطلاعات با داده واقعی + تست جامع (رابعا)
+
+Plan (from reverse-engineering of ARM official bundles — live-verified endpoints):
+- ARM endpoints discovered this stage (all return 401 unauth = route exists):
+  * properties/info/by-code/{code} — جست‌وجوی آگهی با کد (ردیف: _id, title, relatedRealtor)
+  * properties/details/{_id} — جزئیات آگهی (details[] + address)
+  * properties/owner/{_id} — اطلاعات مالک آگهی (mobileNumber, phoneNumber, extraUserInfo[].infos[0].{firstName,lastName,mobileNumber})
+  * properties/list (params: code[], status, address, customer, realtor, page, limit, sort)
+  * requests/list (params: code[], status, page, limit, sort) — ردیف: code, title, businessId.title
+  * requests/details/{_id}, requests/applicant/{_id} — درخواست‌دهنده (همان ساختار user)
+  * visits/list (params: status, page, limit) — بررسی کننده/درخواست‌دهنده/کد آگهی/زمان‌ها
+  * realtor-reports/supply-demand (params: page, limit, startDate, endDate, realtor) — بازه/تعداد آگهی/درصد درخواست/وضعیت
+  * users/info/mobile-number/{mobile} — بازیابی مشتری با شماره موبایل
+
+Work Log:
+- کشف عمیق ثبت آگهی/ثبت درخواست از باندل رسمی ARM: فرم چندمرحله‌ای آگهی (اطلاعات مالک → توضیحات کارشناس → فرم‌های پویا) و درخواست (موقعیت → جزییات → اطلاعات تکمیلی → اطلاعات مشتری)؛ فیلتر جست‌وجوی کد هر دو (code[])
+- Prisma: مدل‌های جدید VisitRecord + SupplyDemandRecord + LookupLog (فقط افزودنی) — db push (اصلی + تست)
+- melk-api: endpoints (۱۰ مسیر جدید)، types (CrmVisit/CrmSupplyDemand/PersonInfo/PropertyLookupResult/RequestLookupResult)، adapters (mapArmVisitRow/mapArmSupplyDemandRow/extractPersonInfo/normalizeMobile/extractDetailItems/extractAddress)، provider (lookupPropertyByCode/lookupRequestByCode/listVisits/listSupplyDemand)، sync (پنج‌گانه: معاملات+کاربران+تعاملات+بازدیدها+عرضه/تقاضا)
+- API: POST/GET /api/crm/lookup (استعلام زنده + تمدید خودکار توکن + حسابرسی)، /api/crm/visits، /api/crm/supply-demand
+- ایجنت‌ها: ExtractionAgent (LOOKUP/COVERAGE/QUALITY/SECURITY) + VisitsAgent (VOLUME/TREND/STATUS/LEADERSHIP/ATTENTION) + SupplyDemandAgent (BALANCE/PRESSURE/STRATEGY) + تحلیل‌گرهای خالص + ثبت در رجیستری
+- کاشی‌ها: استخراج اطلاعات (دو تب کدآگهی/کددرخواست + کارت تماس با کپی/لینک + جزئیات + تاریخچه) + بازدیدها (۴ شاخص + ۶ فیلتر + تقویم جلالی + نمودار ماهانه + جدول عین سامانه) + عرضه و تقاضا (۴ شاخص + هدایت راهبردی + نمودار مقایسه + جدول عین سامانه) — bootstrap ثبت شد
+- ریشه‌یابی «اپلیکیشن بالا نیامد»: سرور dev با Prisma client قدیمی (قبل از prisma generate) اجرا می‌شد → db.lookupLog/db.visitRecord undefined → خطای «reading 'count'» در همه ایجنت‌ها → ریستارت سرور dev = رفع کامل
+- رفع نقص HTML: Skeleton (div) داخل p → span (VisitsPage/SupplyDemandPage)
+- SettingsPage: نمایش شمارش‌های جدید همگام‌سازی (بازدید/عرضه‌تقاضا)
+- تست‌ها: ۲۵ تست جدید (آداپتورها + استخراج شخص + نرمال‌سازی موبایل + تحلیل‌گرها + زنجیره استعلام با fetch شبیه‌سازی‌شده) — مجموع ۱۲۰ تست / ۳۲۳ ادعا همه پاس
+- لینت ۰ خطا؛ tsc بدون خطای src/؛ تست مرورگر: ۶ کاشی ✓، استخراج اطلاعات (تب‌ها، هشدار شفاف ۴۱۲ بدون توکن ARM) ✓، بازدیدها ✓، عرضه/تقاضا ✓، ۰ خطای کنسول ✓، موبایل ۳۹۰px تک‌ستونه ✓
+- تست زنده: ARM public 200 + ARM auth فعال (DB بالا) + PM ۵۰۲ (قطعی سمت سرور)؛ سنجش همه Endpoint های جدید ۴۰۱ (موجود)؛ مستندات API-INTEGRATION بخش ۱۰-۱۱
+
+Stage Summary:
+- چهار خواسته اجرا شد: (اولا) سه کاشی جدید با ایجنت اختصاصی و داده واقعی ساخته شد؛ (ثانیا) کاشی استخراج اطلاعات با دو مسیر کدآگهی/کددرخواست و زنجیره عین خود سامانه ARM کدنویسی شد؛ (ثالثا) پیشنهاد کامل کاشی داشبورد مدیریتی صرفاً در پیام نهایی ارائه شد (بدون کد)؛ (رابعا) تست جامع انجام شد و مشکل «اپلیکیشن بالا نیامد» (Prisma client کهنه) ریشه‌یابی و رفع شد
+- داشبورد اکنون ۶ کاشی دارد: معاملات، کارشناسان، استخراج اطلاعات، بازدیدها و پیگیری‌ها، عرضه و تقاضا، تنظیمات عمومی
+- استخراج زنده اطلاعات فقط با ورود OTP (توکن ARM) فعال است؛ ورود مدیر محلی پیام شفاف دریافت می‌کند
+- همه استعلام‌ها در LookupLog (فقط افزودنی) ثبت و مبنای ایجنت استخراج اطلاعات و حسابرسی امنیتی‌اند

@@ -22,9 +22,9 @@
 import { db } from "@/lib/db";
 import { getMelkProvider } from "./provider";
 import { MELK_ENDPOINTS } from "./endpoints";
-import type { CrmExpert, CrmInteraction, CrmTransaction, TradedSummary } from "./types";
+import type { CrmExpert, CrmInteraction, CrmSupplyDemand, CrmTransaction, CrmVisit, TradedSummary } from "./types";
 import { MelkApiError } from "./types";
-import { mapArmInteractionRow, mapArmRealtorRow, mapArmTradedRow, mapArmTradedSummary, extractPagedList } from "./adapters";
+import { mapArmInteractionRow, mapArmRealtorRow, mapArmTradedRow, mapArmTradedSummary, mapArmSupplyDemandRow, mapArmVisitRow, extractPagedList } from "./adapters";
 import { armCall } from "./client";
 import { getMelkApiConfig } from "./config";
 
@@ -34,6 +34,8 @@ export interface SyncResult {
   transactions: number;
   experts: number;
   interactions: number;
+  visits: number;
+  supplyDemand: number;
   syncedAt: string;
   error?: string;
   errorCode?: string;
@@ -48,6 +50,8 @@ export interface SyncStateInfo {
   transactionCount: number;
   expertCount: number;
   interactionCount: number;
+  visitCount: number;
+  supplyDemandCount: number;
   /** خلاصه چهارگانه گزارش تطابق (از خود سامانه ARM) */
   summary: TradedSummary | null;
   attempts: number;
@@ -77,10 +81,12 @@ function parseSummary(json: string | null | undefined): TradedSummary | null {
 /** خواندن وضعیت همگام‌سازی برای نمایش (بدون خطا پرتاب نمی‌شود) */
 export async function getSyncState(): Promise<SyncStateInfo> {
   const state = await readSyncState();
-  const [txCount, exCount, inCount] = await Promise.all([
+  const [txCount, exCount, inCount, viCount, sdCount] = await Promise.all([
     db.transactionRecord.count(),
     db.expertRecord.count(),
     db.interactionRecord.count(),
+    db.visitRecord.count(),
+    db.supplyDemandRecord.count(),
   ]);
   return {
     lastSyncedAt: state.lastSyncedAt?.toISOString() ?? null,
@@ -90,6 +96,8 @@ export async function getSyncState(): Promise<SyncStateInfo> {
     transactionCount: txCount,
     expertCount: exCount,
     interactionCount: inCount,
+    visitCount: viCount,
+    supplyDemandCount: sdCount,
     summary: parseSummary(state.summaryJson),
     attempts: state.attempts,
   };
@@ -150,8 +158,8 @@ async function fetchAllPages<T>(
 }
 
 /**
- * استخراج کامل معاملات، کارشناسان و تعاملات از سامانه ARM با توکن ARM.
- * صفحه‌بندی به‌طور خودکار طی می‌شود (تا سقف ایمن صفحات).
+ * استخراج کامل معاملات، کارشناسان، تعاملات، بازدیدها و عرضه/تقاضا از سامانه ARM
+ * با توکن ARM. صفحه‌بندی به‌طور خودکار طی می‌شود (تا سقف ایمن صفحات).
  */
 export async function syncFromArm(armToken: string): Promise<SyncResult> {
   const now = new Date();
@@ -181,14 +189,36 @@ export async function syncFromArm(armToken: string): Promise<SyncResult> {
       interactions = [];
     }
 
+    // ---------------- ۴) بازدیدها و پیگیری‌ها (غیربحرانی) ----------------
+    let visits: CrmVisit[] = [];
+    try {
+      const { rows: viRows } = await fetchAllPages(MELK_ENDPOINTS.arm.visitsList, armToken, 20, 100, mapArmVisitRow);
+      visits = viRows;
+    } catch {
+      visits = [];
+    }
+
+    // ---------------- ۵) گزارش عرضه و تقاضا (غیربحرانی) ----------------
+    let supplyDemand: CrmSupplyDemand[] = [];
+    try {
+      const { rows: sdRows } = await fetchAllPages(MELK_ENDPOINTS.armReports.supplyDemand, armToken, 10, 100, mapArmSupplyDemandRow);
+      supplyDemand = sdRows;
+    } catch {
+      supplyDemand = [];
+    }
+
     // ---------------- ذخیره اتمیک در پایگاه محلی ----------------
     await db.$transaction([
       db.transactionRecord.deleteMany({}),
       db.expertRecord.deleteMany({}),
       db.interactionRecord.deleteMany({}),
+      db.visitRecord.deleteMany({}),
+      db.supplyDemandRecord.deleteMany({}),
       ...toTxCreates(transactions),
       ...toExCreates(experts),
       ...toInCreates(interactions),
+      ...toViCreates(visits),
+      ...toSdCreates(supplyDemand),
     ]);
 
     const successAt = new Date();
@@ -205,6 +235,8 @@ export async function syncFromArm(armToken: string): Promise<SyncResult> {
       transactions: transactions.length,
       experts: experts.length,
       interactions: interactions.length,
+      visits: visits.length,
+      supplyDemand: supplyDemand.length,
       syncedAt: successAt.toISOString(),
     };
   } catch (err) {
@@ -220,6 +252,8 @@ export async function syncFromArm(armToken: string): Promise<SyncResult> {
       transactions: 0,
       experts: 0,
       interactions: 0,
+      visits: 0,
+      supplyDemand: 0,
       syncedAt: now.toISOString(),
       error: e.message,
       errorCode: e.code,
@@ -259,26 +293,28 @@ export async function syncWithRefresh(
       sync = await syncFromArm(token);
     } catch (refreshErr) {
       const e = refreshErr instanceof MelkApiError ? refreshErr : new MelkApiError("UNKNOWN", "تمدید توکن ناموفق", 401, false);
-      sync = { ok: false, transactions: 0, experts: 0, interactions: 0, syncedAt: new Date().toISOString(), error: e.message, errorCode: e.code };
+      sync = { ok: false, transactions: 0, experts: 0, interactions: 0, visits: 0, supplyDemand: 0, syncedAt: new Date().toISOString(), error: e.message, errorCode: e.code };
     }
   }
   return { sync, newArmToken };
 }
 
 /** در صورت خالی‌بودن کش، داده‌های واقعی را با توکن ARM بارگذاری می‌کند */
-export async function ensureSeeded(armToken?: string): Promise<{ transactions: number; experts: number; interactions: number; liveError?: string }> {
-  const [txCount, exCount, inCount] = await Promise.all([
+export async function ensureSeeded(armToken?: string): Promise<{ transactions: number; experts: number; interactions: number; visits: number; supplyDemand: number; liveError?: string }> {
+  const [txCount, exCount, inCount, viCount, sdCount] = await Promise.all([
     db.transactionRecord.count(),
     db.expertRecord.count(),
     db.interactionRecord.count(),
+    db.visitRecord.count(),
+    db.supplyDemandRecord.count(),
   ]);
 
   if ((txCount === 0 || exCount === 0) && armToken) {
     const { sync } = await syncWithRefresh(armToken, "");
-    if (sync.ok) return { transactions: sync.transactions, experts: sync.experts, interactions: sync.interactions };
-    return { transactions: txCount, experts: exCount, interactions: inCount, liveError: sync.error };
+    if (sync.ok) return { transactions: sync.transactions, experts: sync.experts, interactions: sync.interactions, visits: sync.visits, supplyDemand: sync.supplyDemand };
+    return { transactions: txCount, experts: exCount, interactions: inCount, visits: viCount, supplyDemand: sdCount, liveError: sync.error };
   }
-  return { transactions: txCount, experts: exCount, interactions: inCount };
+  return { transactions: txCount, experts: exCount, interactions: inCount, visits: viCount, supplyDemand: sdCount };
 }
 
 /** پاک‌سازی کامل کش و استخراج مجدد از سامانه واقعی (دکمه ریست اتصال) */
@@ -286,6 +322,8 @@ export async function resetCrmCache(armToken: string): Promise<SyncResult> {
   await db.transactionRecord.deleteMany({});
   await db.expertRecord.deleteMany({});
   await db.interactionRecord.deleteMany({});
+  await db.visitRecord.deleteMany({});
+  await db.supplyDemandRecord.deleteMany({});
   return syncFromArm(armToken);
 }
 
@@ -333,6 +371,37 @@ function toInCreates(rows: CrmInteraction[]) {
         requestRealtorName: i.requestRealtorName,
         propertyRealtorName: i.propertyRealtorName,
         count: i.count,
+      },
+    })
+  );
+}
+
+function toViCreates(rows: CrmVisit[]) {
+  return rows.map((v) =>
+    db.visitRecord.create({
+      data: {
+        id: v.id,
+        propertyCode: v.propertyCode,
+        requesterName: v.requesterName,
+        checkerName: v.checkerName,
+        propertyRealtorName: v.propertyRealtorName,
+        checkTime: v.checkTime ? new Date(v.checkTime) : null,
+        createdAt: new Date(v.createdAt),
+        status: v.status,
+      },
+    })
+  );
+}
+
+function toSdCreates(rows: CrmSupplyDemand[]) {
+  return rows.map((s) =>
+    db.supplyDemandRecord.create({
+      data: {
+        id: s.id,
+        rangeTitle: s.rangeTitle,
+        propertyCount: s.propertyCount,
+        requestPercent: s.requestPercent,
+        status: s.status,
       },
     })
   );

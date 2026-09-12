@@ -160,6 +160,96 @@ export interface CrmInteraction {
   count: number;
 }
 
+// ===================== بازدیدها و پیگیری‌ها (visits/list سامانه ARM) =====================
+
+/**
+ * یک ردیف «بازدید» — عین ساختار visits خود سامانه:
+ * بررسی‌کننده × درخواست‌دهنده × کد آگهی × زمان ثبت/بررسی × وضعیت.
+ */
+export interface CrmVisit {
+  id: string;
+  /** کد آگهی مرتبط */
+  propertyCode: string;
+  /** نام درخواست‌دهنده (مشتری) */
+  requesterName: string;
+  /** نام بررسی‌کننده (کارشناس/مدیر) */
+  checkerName: string;
+  /** نام مشاور آگهی */
+  propertyRealtorName: string;
+  /** زمان بررسی (ISO یا رشته جلالی سامانه — نرمال‌شده به ISO) */
+  checkTime: string | null;
+  /** زمان ثبت بازدید (ISO) */
+  createdAt: string;
+  /** وضعیت بازدید (رشته فارسی سامانه) */
+  status: string;
+}
+
+// ===================== عرضه و تقاضا (realtor-reports/supply-demand سامانه ARM) =====================
+
+/**
+ * یک ردیف «عرضه و تقاضا» — عین ستون‌های گزارش خود سامانه:
+ * بازه × تعداد آگهی × درصد درخواست × وضعیت.
+ */
+export interface CrmSupplyDemand {
+  id: string;
+  /** عنوان بازه (مثلاً «۰ تا ۵۰ میلیون تومان») */
+  rangeTitle: string;
+  /** تعداد آگهی در بازه */
+  propertyCount: number;
+  /** درصد درخواست نسبت به عرضه */
+  requestPercent: number;
+  /** وضعیت بازه (رشته فارسی سامانه) */
+  status: string;
+}
+
+// ===================== استخراج اطلاعات (کاشی استعلام زنده) =====================
+
+/** اطلاعات تماس یک نفر (مالک آگهی یا درخواست‌دهنده) — از ساختار user سامانه ARM */
+export interface PersonInfo {
+  /** نام و نام خانوادگی */
+  fullName: string;
+  /** شماره موبایل */
+  mobile: string;
+  /** شماره تلفن ثابت (در صورت وجود) */
+  phone: string;
+  /** آیا کاربر در سامانه ثبت شده است؟ */
+  isRegisteredUser: boolean;
+}
+
+/** نتیجه استخراج اطلاعات کدآگهی — از properties/info/by-code + details + owner */
+export interface PropertyLookupResult {
+  /** کدآگهی استعلام‌شده */
+  code: string;
+  /** شناسه آگهی در سامانه ARM */
+  armId: string;
+  /** عنوان آگهی (عنوان و محل آگهی) */
+  title: string;
+  /** مالک آگهی (آگهی‌دهنده) — نام/نام‌خانوادگی و شماره تماس */
+  owner: PersonInfo | null;
+  /** آدرس ملک (ترکیب آدرس و جزئیات مکانی آگهی) */
+  address: string;
+  /** مشاور مسؤول آگهی */
+  relatedRealtor: string;
+  /** جزئیات ساختاری آگهی (عین «جزئیات» خود سامانه: برچسب + مقدار + واحد) */
+  details: { label: string; value: string; unit: string }[];
+}
+
+/** نتیجه استخراج اطلاعات کددرخواست — از requests/list + details + applicant */
+export interface RequestLookupResult {
+  /** کددرخواست استعلام‌شده */
+  code: string;
+  /** شناسه درخواست در سامانه ARM */
+  armId: string;
+  /** عنوان درخواست */
+  title: string;
+  /** درخواست‌دهنده (مشتری ملک) — نام/نام‌خانوادگی و شماره تماس */
+  applicant: PersonInfo | null;
+  /** کسب‌وکار/شعبه ثبت‌کننده درخواست */
+  businessTitle: string;
+  /** جزئیات ساختاری درخواست */
+  details: { label: string; value: string; unit: string }[];
+}
+
 // ===================== وضعیت اتصال =====================
 
 export interface ConnectionStatus {

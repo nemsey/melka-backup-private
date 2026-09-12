@@ -200,3 +200,46 @@ Authorization: Bearer <access-token>
 | PM (`public/portalInfo`) | ⚠️ ۵۰۲ — سرویس پشتیبان پرسنلی همچنان قطع |
 
 > ✅ جریان OTP واقعی اکنون کامل و فعال است: با ورود کد پرسنلی در اپلیکیشن، پیامک واقعی از سامانه ملک تبریز ارسال می‌شود و پس از تأیید، توکن ARM ذخیره و استخراج سه‌گانه داده واقعی (معاملات + کاربران + تعاملات) به‌صورت خودکار/دستی انجام می‌شود.
+
+## ۱۰) Endpoint های کشف‌شده مرحله ۴ (استخراج اطلاعات + بازدیدها + عرضه و تقاضا)
+
+✅ همه مسیرها با تست زنده تأیید شده‌اند (پاسخ ۴۰۱ بدون توکن = مسیر موجود و نیازمند احراز هویت):
+
+| کلید | مسیر واقعی | متد | شرح |
+|---|---|---|---|
+| `arm.propertiesByCode` | `properties/info/by-code/{code}` | GET | جست‌وجوی آگهی با کدآگهی → `{_id, title, relatedRealtor}` |
+| `arm.propertyDetails` | `properties/details/{_id}` | GET | جزئیات کامل آگهی → `{details: [{label, value, unit}], address, ...}` |
+| `arm.propertyOwner` | `properties/owner/{_id}` | GET | اطلاعات مالک آگهی (آگهی‌دهنده) — ساختار user |
+| `arm.propertiesList` | `properties/list` | GET | فهرست آگهی‌ها (فیلتر `code[]`، وضعیت، صفحه‌بندی) |
+| `arm.requestsList` | `requests/list` | GET | فهرست درخواست‌ها (فیلتر `code[]` عین خود سامانه) → ردیف: `{code, title, businessId.title}` |
+| `arm.requestDetails` | `requests/details/{_id}` | GET | جزئیات کامل درخواست |
+| `arm.requestApplicant` | `requests/applicant/{_id}` | GET | اطلاعات درخواست‌دهنده (مشتری) — ساختار user |
+| `arm.visitsList` | `visits/list` | GET | بازدیدها: بررسی‌کننده × درخواست‌دهنده × کد آگهی × زمان‌ها |
+| `armReports.supplyDemand` | `realtor-reports/supply-demand` | GET | عرضه و تقاضا: بازه × تعداد آگهی × درصد درخواست × وضعیت |
+| `arm.userByMobile` | `users/info/mobile-number/{mobile}` | GET | بازیابی کاربر/مشتری با شماره موبایل |
+
+**ساختار user مشترک** (در پاسخ‌های `properties/owner` و `requests/applicant`):
+```
+{ _id, firstName?, lastName?, fullName?, mobileNumber, phoneNumber?,
+  birthDate?, extraUserInfo: [{ infos: [{ firstName, lastName, mobileNumber, userId }] }] }
+```
+
+**مراحل ثبت آگهی و ثبت درخواست (کشف از باندل رسمی):**
+- فرم آگهی چندمرحله‌ای است: «اطلاعات مالک» (owner-info-step) → «توضیحات کارشناس» → «فرم‌های پویا» (فرم‌ساز دسته‌بندی‌شده) → جدیت/ارزیابی قیمت
+- فرم درخواست: «موقعیت» (استان/شهر) → «جزییات درخواست» (نوع معامله/کاربری) → «اطلاعات تکمیلی» (پول/جدیت مشتری) → «اطلاعات مشتری» (نام/نام‌خانوادگی/موبایل)
+- جست‌وجوی کد در هر دو فهرست با TagsInput «کد آگهی» / «کد درخواست» انجام می‌شود (پارامتر `code[]`)
+
+## ۱۱) کاشی استخراج اطلاعات (استعلام زنده)
+
+| مسیر BFF | شرح |
+|---|---|
+| `POST /api/crm/lookup` | استعلام زنده `{kind: "property"\|"request", code}` — بدون کش، با تمدید خودکار توکن ARM؛ نتیجه در LookupLog (فقط افزودنی) ثبت می‌شود |
+| `GET /api/crm/lookup` | تاریخچه استعلام‌ها (برای ایجنت و شفافیت) |
+| `GET /api/crm/visits` | بازدیدهای کش‌شده + شاخص‌های تحلیلی + فیلترها |
+| `GET /api/crm/supply-demand` | گزارش عرضه و تقاضا + شاخص‌های تعادل بازار |
+
+**زنجیره استعلام کدآگهی**: `properties/info/by-code/{code}` → `properties/details/{_id}` (جزئیات + آدرس) → `properties/owner/{_id}` (نام و نام‌خانوادگی مالک + شماره تماس)
+
+**زنجیره استعلام کددرخواست**: `requests/list?code={code}` → تطبیق دقیق کد → `requests/details/{_id}` → `requests/applicant/{_id}` (نام و نام‌خانوادگی درخواست‌دهنده + شماره تماس)
+
+> ⚠️ استعلام زنده فقط با نشست ورود «کد پرسنلی + پیامک» ممکن است (توکن ARM)؛ ورود مدیر محلی پیام شفاف ۴۱۲ دریافت می‌کند.

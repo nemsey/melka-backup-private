@@ -248,3 +248,164 @@ export function isolatedRealtors(experts: ExRow[], interactions: InRow[]): ExRow
   }
   return experts.filter((e) => !involved.has(e.fullName) && e.active);
 }
+
+// ===================== تحلیل بازدیدها (visits/list خود سامانه) =====================
+
+type ViRow = Prisma.VisitRecordGetPayload<Record<string, never>>;
+
+export interface VisitStats {
+  total: number;
+  /** بازدیدهای بررسی‌شده (بررسی‌کننده مشخص) */
+  checked: number;
+  /** نرخ بررسی (درصد) */
+  checkedRate: number;
+  /** تعداد آگهی متمایز بازدیدشده */
+  distinctProperties: number;
+  /** تعداد درخواست‌دهنده متمایز */
+  distinctRequesters: number;
+  /** بازدیدهای بدون بررسی */
+  pending: number;
+}
+
+/** آمار پایه بازدیدها — عین ستون‌های «بررسی کننده» و «زمان بررسی» */
+export function visitStats(visits: ViRow[]): VisitStats {
+  const total = visits.length;
+  const checked = visits.filter((v) => v.checkTime !== null).length;
+  const properties = new Set(visits.map((v) => v.propertyCode));
+  const requesters = new Set(visits.map((v) => v.requesterName));
+  return {
+    total,
+    checked,
+    checkedRate: total > 0 ? Math.round((checked / total) * 1000) / 10 : 0,
+    distinctProperties: properties.size,
+    distinctRequesters: requesters.size,
+    pending: total - checked,
+  };
+}
+
+/** سری ماهانه ثبت بازدید (ماه‌های هجری شمسی) */
+export function visitMonthlySeries(visits: ViRow[]): MonthlyPoint[] {
+  const map = new Map<string, number>();
+  for (const v of visits) {
+    const key = jalaliMonthKey(new Date(v.createdAt));
+    map.set(key, (map.get(key) ?? 0) + 1);
+  }
+  return [...map.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, count]) => ({ key, count }));
+}
+
+/** توزیع وضعیت بازدیدها — عین ستون «وضعیت» */
+export function visitStatusDistribution(visits: ViRow[]): GroupStat[] {
+  const map = new Map<string, number>();
+  for (const v of visits) map.set(v.status || "نامشخص", (map.get(v.status || "نامشخص") ?? 0) + 1);
+  return [...map.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/** رتبه‌بندی بررسی‌کنندگان (بر اساس تعداد بررسی انجام‌شده) */
+export function checkerLeaderboard(visits: ViRow[], n = 5): { name: string; count: number }[] {
+  const map = new Map<string, number>();
+  for (const v of visits) {
+    if (v.checkTime === null) continue;
+    map.set(v.checkerName, (map.get(v.checkerName) ?? 0) + 1);
+  }
+  return [...map.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, n);
+}
+
+/** آگهی‌های با بیشترین بازدید مشتری */
+export function mostVisitedProperties(visits: ViRow[], n = 5): { code: string; count: number }[] {
+  const map = new Map<string, number>();
+  for (const v of visits) map.set(v.propertyCode, (map.get(v.propertyCode) ?? 0) + 1);
+  return [...map.entries()]
+    .map(([code, count]) => ({ code, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, n);
+}
+
+// ===================== تحلیل عرضه و تقاضا (realtor-reports/supply-demand خود سامانه) =====================
+
+type SdRow = Prisma.SupplyDemandRecordGetPayload<Record<string, never>>;
+
+export interface SupplyDemandStats {
+  rangeCount: number;
+  totalAds: number;
+  /** میانگین درصد درخواست */
+  avgRequestPercent: number;
+  /** بازه‌های با فشار تقاضای بالا (درصد >= ۶۰) */
+  highDemand: SdRow[];
+  /** بازه‌های با فشار تقاضای پایین (۰ < درصد <= ۲۵) */
+  lowDemand: SdRow[];
+  /** بازه با بیشترین فشار تقاضا */
+  topDemand: SdRow | null;
+  /** بازه با بیشترین عرضه (تعداد آگهی) */
+  topSupply: SdRow | null;
+  /** شاخص تعادل کلی بازار: ۵۰ = تعادل کامل */
+  balanceIndex: number;
+}
+
+/** شاخص‌های تعادل بازار — از گزارش عرضه و تقاضای خود سامانه */
+export function supplyDemandStats(rows: SdRow[]): SupplyDemandStats {
+  const rangeCount = rows.length;
+  const totalAds = rows.reduce((a, r) => a + r.propertyCount, 0);
+  const avgRequestPercent = rangeCount > 0 ? Math.round((rows.reduce((a, r) => a + r.requestPercent, 0) / rangeCount) * 10) / 10 : 0;
+  const highDemand = rows.filter((r) => r.requestPercent >= 60).sort((a, b) => b.requestPercent - a.requestPercent);
+  const lowDemand = rows.filter((r) => r.requestPercent > 0 && r.requestPercent <= 25);
+  const topDemand = [...rows].sort((a, b) => b.requestPercent - a.requestPercent)[0] ?? null;
+  const topSupply = [...rows].sort((a, b) => b.propertyCount - a.propertyCount)[0] ?? null;
+  // شاخص تعادل: میانگین درصد درخواست — هرچه به ۵۰ نزدیک‌تر، بازار متعادل‌تر
+  const balanceIndex = Math.round(avgRequestPercent * 10) / 10;
+  return { rangeCount, totalAds, avgRequestPercent, highDemand, lowDemand, topDemand, topSupply, balanceIndex };
+}
+
+// ===================== تحلیل استعلام‌های استخراج اطلاعات (LookupLog) =====================
+
+type LkRow = Prisma.LookupLogGetPayload<Record<string, never>>;
+
+export interface LookupStats {
+  total: number;
+  found: number;
+  notFound: number;
+  /** نرخ موفقیت (درصد) */
+  successRate: number;
+  propertyLookups: number;
+  requestLookups: number;
+  /** پرتکرارترین کدهای استعلام‌شده */
+  topCodes: { code: string; kind: string; count: number }[];
+  /** استعلام‌های نزدیک به هم (امروز) */
+  recentToday: number;
+  /** استعلام‌های موفق بدون شماره تماس (کیفیت داده) */
+  missingMobile: number;
+}
+
+/** آمار استعلام‌های کاشی استخراج اطلاعات — از LookupLog (فقط داده واقعی) */
+export function lookupStats(logs: LkRow[]): LookupStats {
+  const total = logs.length;
+  const found = logs.filter((l) => l.found).length;
+  const propertyLookups = logs.filter((l) => l.kind === "PROPERTY").length;
+  const requestLookups = logs.filter((l) => l.kind === "REQUEST").length;
+  const codeMap = new Map<string, { code: string; kind: string; count: number }>();
+  for (const l of logs) {
+    const key = `${l.kind}:${l.code}`;
+    const cur = codeMap.get(key) ?? { code: l.code, kind: l.kind, count: 0 };
+    cur.count += 1;
+    codeMap.set(key, cur);
+  }
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  return {
+    total,
+    found,
+    notFound: total - found,
+    successRate: total > 0 ? Math.round((found / total) * 1000) / 10 : 0,
+    propertyLookups,
+    requestLookups,
+    topCodes: [...codeMap.values()].sort((a, b) => b.count - a.count).slice(0, 5),
+    recentToday: logs.filter((l) => l.createdAt >= startOfDay).length,
+    missingMobile: logs.filter((l) => l.found && !l.personMobile).length,
+  };
+}

@@ -54,13 +54,13 @@ src/
 │   ├── layout.tsx              # RTL فارسی + تم + PWA متا
 │   └── api/                    # BFF — تمام ارتباط با CRM از این‌جا
 │       ├── auth/               # request-otp, verify-otp, master-login, session
-│       ├── crm/                # transactions, experts, meta
+│       ├── crm/                # transactions, experts, meta, interactions, lookup, visits, supply-demand
 │       ├── agent/[tileId]/     # insight, feedback, stats, policy
 │       ├── connection/         # status, reset
 │       └── health/
 ├── core/                       # هسته مستقل از UI
 │   ├── tiles/                  # قرارداد کاشی + رجیستری پلاگین
-│   │   └── tiles/              # ماژول‌های کاشی (معاملات، کارشناسان، تنظیمات)
+│   │   └── tiles/              # ماژول‌های کاشی (معاملات، کارشناسان، استخراج اطلاعات، بازدیدها، عرضه و تقاضا، تنظیمات)
 │   └── agent/                  # ایجنت پایه + تحلیل‌گرها + ایجنت‌های تخصصی
 ├── lib/
 │   ├── melk-api/               # لایه انتزاعی اتصال به ملک تبریز (تنها نقطه تغییر)

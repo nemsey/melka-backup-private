@@ -137,6 +137,75 @@ model InteractionRecord {
   @@index([propertyRealtorName])
 }
 
+/// بازدیدها و پیگیری‌ها — عین ساختار visits/list سامانه ARM:
+/// بررسی‌کننده × درخواست‌دهنده × کد آگهی × زمان ثبت/بررسی
+model VisitRecord {
+  id                  String    @id
+  /// کد آگهی مرتبط
+  propertyCode        String
+  /// نام درخواست‌دهنده (مشتری)
+  requesterName       String
+  /// نام بررسی‌کننده (کارشناس/مدیر)
+  checkerName         String
+  /// نام مشاور آگهی
+  propertyRealtorName String
+  /// زمان بررسی (ISO — خالی اگر بررسی نشده باشد)
+  checkTime           DateTime?
+  /// زمان ثبت بازدید
+  createdAt           DateTime
+  /// وضعیت بازدید (رشته فارسی سامانه)
+  status              String    @default("")
+  syncedAt            DateTime  @default(now())
+
+  @@index([propertyCode])
+  @@index([createdAt])
+  @@index([status])
+}
+
+/// عرضه و تقاضا — عین گزارش realtor-reports/supply-demand سامانه ARM:
+/// بازه × تعداد آگهی × درصد درخواست × وضعیت
+model SupplyDemandRecord {
+  id             String   @id
+  /// عنوان بازه (مثلاً «۰ تا ۵۰ میلیون تومان»)
+  rangeTitle     String
+  /// تعداد آگهی در این بازه
+  propertyCount  Int      @default(0)
+  /// درصد درخواست نسبت به عرضه
+  requestPercent Float    @default(0)
+  /// وضعیت بازه (رشته فارسی سامانه)
+  status         String   @default("")
+  syncedAt       DateTime @default(now())
+
+  @@index([rangeTitle])
+}
+
+/// گزارش استخراج اطلاعات — فقط افزودنی (Append-only):
+/// هر استعلام کدآگهی/کددرخواست با نتیجه واقعی از سامانه ARM ثبت می‌شود؛
+/// منبع حافظه و بینش ایجنت استخراج اطلاعات + رد حسابرسی امنیتی.
+model LookupLog {
+  id          String   @id @default(cuid())
+  /// نوع استعلام: PROPERTY (کدآگهی) | REQUEST (کددرخواست)
+  kind        String
+  /// کد واردشده توسط کاربر
+  code        String
+  /// آیا رکورد در سامانه پیدا شد؟
+  found       Boolean  @default(false)
+  /// نام و نام خانوادگی مالک/درخواست‌دهنده
+  personName  String?
+  /// شماره تماس مالک/درخواست‌دهنده
+  personMobile String?
+  /// آدرس ملک (فقط برای کدآگهی)
+  address     String?
+  /// کد پرسنلی استعلام‌کننده
+  actorCode   String
+  /// پیام خطا (در صورت عدم موفقیت)
+  errorNote   String?
+  createdAt   DateTime @default(now())
+
+  @@index([kind, code])
+  @@index([createdAt])
+}
+
 // ===================== لایه ایجنت هوشمند (فقط افزودنی / Append-only) =====================
 
 /// حافظه ساخت‌یافته هر کاشی — هرگز Overwrite نمی‌شود

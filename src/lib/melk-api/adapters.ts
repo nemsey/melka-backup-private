@@ -18,7 +18,7 @@
  * (کشف‌شده از باندل). تبدیل دوجهته جلالی↔میلادی در «src/lib/jalali.ts».
  */
 
-import type { CrmExpert, CrmInteraction, CrmTransaction, TradedSummary } from "./types";
+import type { CrmExpert, CrmInteraction, CrmSupplyDemand, CrmTransaction, CrmVisit, PersonInfo, TradedSummary } from "./types";
 import { anyDateStringToDate, gregorianToJalali, isoToJalaliString, jalaliToGregorian } from "@/lib/jalali";
 
 // بازصدور برای استفاده سایر ماژول‌ها (تک‌منبع: lib/jalali)
@@ -252,6 +252,224 @@ export function mapArmInteractionRow(row: Row, index: number): CrmInteraction | 
     propertyRealtorName: propertyRealtorName || "نامشخص",
     count: count || 0,
   };
+}
+
+// ==========================================================================
+// نگاشت ردیف بازدید → CrmVisit (عین ستون‌های visits خود سامانه)
+// ==========================================================================
+
+/**
+ * ردیف‌های «visits/list» را نگاشت می‌کند — عین ستون‌های خود سامانه:
+ * «کد آگهی»، «درخواست دهنده»، «بررسی کننده»، «مشاور آگهی»،
+ * «زمان بررسی»، «زمان ثبت»، «وضعیت».
+ */
+export function mapArmVisitRow(row: Row, index: number): CrmVisit | null {
+  if (!row || typeof row !== "object") return null;
+
+  const propertyCode =
+    pickStr(row, ["propertyCode", "code", "property"]) ||
+    pickNestedStr(row, ["property.code", "propertyId.code"]) ||
+    "";
+  const requesterName =
+    pickStr(row, ["requesterName", "requester", "customerName", "requestCustomer"]) ||
+    pickNestedStr(row, ["requester.fullName", "customer.fullName", "request.customer.fullName", "request.customer"]) ||
+    "";
+  const checkerName =
+    pickStr(row, ["checkerName", "checker", "reviewerName", "reviewer"]) ||
+    pickNestedStr(row, ["checker.fullName", "reviewer.fullName"]) ||
+    "";
+  const propertyRealtorName =
+    pickStr(row, ["propertyRealtorName", "realtorName", "propertyRealtor"]) ||
+    pickNestedStr(row, ["propertyRealtor.fullName", "realtor.fullName"]) ||
+    "";
+
+  if (!propertyCode && !requesterName && !checkerName) return null;
+
+  const checkTimeDate = anyDateStringToDate(pick(row, ["checkTime", "checkedAt", "reviewTime", "reviewedAt"]));
+  const createdAtDate = anyDateStringToDate(pick(row, ["createdAt", "registeredAt", "created_at"])) ?? new Date();
+  const status = pickStr(row, ["status", "statusTitle", "state"]) ||
+    pickNestedStr(row, ["status.name", "status.title"]) ||
+    "";
+
+  return {
+    id: pickId(row, `arm-visit-${index}-${propertyCode}-${createdAtDate.getTime()}`),
+    propertyCode: propertyCode || "—",
+    requesterName: requesterName || "نامشخص",
+    checkerName: checkerName || "نامشخص",
+    propertyRealtorName: propertyRealtorName || "نامشخص",
+    checkTime: checkTimeDate ? checkTimeDate.toISOString() : null,
+    createdAt: createdAtDate.toISOString(),
+    status: status || "ثبت‌شده",
+  };
+}
+
+// ==========================================================================
+// نگاشت ردیف عرضه و تقاضا → CrmSupplyDemand (عین گزارش خود سامانه)
+// ==========================================================================
+
+/**
+ * ردیف‌های «realtor-reports/supply-demand» را نگاشت می‌کند —
+ * عین ستون‌های خود سامانه: «بازه»، «تعداد آگهی»، «درصد درخواست»، «وضعیت».
+ */
+export function mapArmSupplyDemandRow(row: Row, index: number): CrmSupplyDemand | null {
+  if (!row || typeof row !== "object") return null;
+
+  const rangeTitle =
+    pickStr(row, ["range", "rangeTitle", "title", "label", "priceRange"]) ||
+    pickNestedStr(row, ["range.title", "range.name"]) ||
+    "";
+  if (!rangeTitle) return null;
+
+  const propertyCount = pickNum(row, ["propertyCount", "advertisementsCount", "adCount", "count", "total"]);
+  // درصد ممکن است ۰ تا ۱۰۰ یا ۰ تا ۱ باشد — نرمال‌سازی به درصد
+  let requestPercent = pickNum(row, ["requestPercent", "requestPercentage", "percent", "requestRatio"]);
+  if (requestPercent > 0 && requestPercent <= 1) requestPercent = requestPercent * 100;
+  requestPercent = Math.round(requestPercent * 10) / 10;
+
+  const status = pickStr(row, ["status", "statusTitle", "state"]) ||
+    pickNestedStr(row, ["status.name", "status.title"]) ||
+    "";
+
+  return {
+    id: pickId(row, `arm-supply-demand-${index}-${rangeTitle}`),
+    rangeTitle,
+    propertyCount,
+    requestPercent,
+    status: status || "—",
+  };
+}
+
+// ==========================================================================
+// استخراج اطلاعات تماس یک نفر از ساختار user سامانه ARM
+// ==========================================================================
+
+/**
+ * استخراج «نام و نام خانوادگی + شماره تماس» از ساختار کاربر سامانه ARM —
+ * این ساختار در پاسخ‌های properties/owner و requests/applicant مشترک است:
+ *   { _id, firstName?, lastName?, fullName?, mobileNumber, phoneNumber?,
+ *     extraUserInfo: [{ infos: [{ firstName, lastName, mobileNumber, userId }] }] }
+ */
+export function extractPersonInfo(payload: unknown): PersonInfo | null {
+  if (!payload || typeof payload !== "object") return null;
+  const p = payload as Row;
+
+  // ۱) نام — مسیرهای مستقیم
+  let firstName = pickStr(p, ["firstName", "first_name"]);
+  let lastName = pickStr(p, ["lastName", "last_name"]);
+  let fullName = pickStr(p, ["fullName", "full_name", "name"]);
+
+  // ۲) نام — مسیر تو در تو extraUserInfo[].infos[0]
+  if (!fullName && !firstName && !lastName) {
+    const extra = Array.isArray(p.extraUserInfo) ? (p.extraUserInfo as unknown[]) : [];
+    for (const e of extra) {
+      if (!e || typeof e !== "object") continue;
+      const infos = (e as Row).infos;
+      if (!Array.isArray(infos) || infos.length === 0) continue;
+      const info = infos[0];
+      if (!info || typeof info !== "object") continue;
+      const infoRow = info as Row;
+      firstName = pickStr(infoRow, ["firstName", "first_name"]);
+      lastName = pickStr(infoRow, ["lastName", "last_name"]);
+      if (firstName || lastName) {
+        if (!fullName) fullName = pickStr(infoRow, ["fullName", "name"]);
+        break;
+      }
+    }
+  }
+
+  // ۳) شماره تماس — مستقیم یا از extraUserInfo
+  let mobile = pickStr(p, ["mobileNumber", "mobile", "phoneNumber", "phone"]);
+  if (!mobile) {
+    const extra = Array.isArray(p.extraUserInfo) ? (p.extraUserInfo as unknown[]) : [];
+    for (const e of extra) {
+      if (!e || typeof e !== "object") continue;
+      const infos = (e as Row).infos;
+      if (!Array.isArray(infos) || infos.length === 0) continue;
+      const infoRow = infos[0] as Row;
+      mobile = pickStr(infoRow, ["mobileNumber", "mobile"]);
+      if (mobile) break;
+    }
+  }
+
+  const phone = pickStr(p, ["phoneNumber", "phone", "tel"]);
+  const isRegisteredUser = Boolean(pick(p, ["_id", "id", "userId"]));
+
+  const resolvedName =
+    fullName ||
+    [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  if (!resolvedName && !mobile) return null;
+
+  // نرمال‌سازی شماره موبایل (ارقام فارسی/عربی → لاتین)
+  const normalizedMobile = normalizeMobile(mobile);
+  const normalizedPhone = phone ? String(phone).replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))) : "";
+
+  return {
+    fullName: resolvedName || "نامشخص",
+    mobile: normalizedMobile,
+    phone: normalizedPhone,
+    isRegisteredUser,
+  };
+}
+
+/** نرمال‌سازی شماره موبایل: ارقام فارسی→لاتین، حذف جداکننده‌ها، پیشوند ۰ */
+export function normalizeMobile(input: string): string {
+  if (!input) return "";
+  const latin = String(input).replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+  const digits = latin.replace(/[^0-9+]/g, "");
+  if (digits.startsWith("+98")) return `0${digits.slice(3)}`;
+  if (digits.startsWith("98") && digits.length === 12) return `0${digits.slice(2)}`;
+  return digits;
+}
+
+// ==========================================================================
+// نگاشت جزئیات ساختاری (details) از پاسخ properties/details یا requests/details
+// ==========================================================================
+
+/**
+ * جزئیات ساختاری آگهی/درخواست را از پاسخ details استخراج می‌کند:
+ * ساختار واقعی: { details: [{ label, value, unit }], address, ... }
+ */
+export function extractDetailItems(payload: unknown): { label: string; value: string; unit: string }[] {
+  if (!payload || typeof payload !== "object") return [];
+  const p = payload as Row;
+  const list = Array.isArray(p.details) ? (p.details as unknown[]) : [];
+  const items: { label: string; value: string; unit: string }[] = [];
+  for (const d of list) {
+    if (!d || typeof d !== "object") continue;
+    const dr = d as Row;
+    const label = pickStr(dr, ["label", "title", "name", "key"]);
+    const value = pickStr(dr, ["value", "val"]);
+    const unit = pickStr(dr, ["unit", "unitTitle"]);
+    if (label && value) items.push({ label, value, unit });
+  }
+  return items;
+}
+
+/** ساخت آدرس خوانا از پاسخ details + فیلدهای مکانی آگهی/درخواست */
+export function extractAddress(payload: unknown, rowFallback: Row | null): string {
+  const parts: string[] = [];
+  if (payload && typeof payload === "object") {
+    const p = payload as Row;
+    const direct = pickStr(p, ["address", "fullAddress"]);
+    if (direct) parts.push(direct);
+    // عناوین مکانی تو در تو: state.name، city.name، area.name، line.name
+    for (const key of ["state", "city", "area", "line"]) {
+      const nested = pickNestedStr(p, [`${key}.name`, `${key}.title`]);
+      if (nested) parts.push(nested);
+    }
+  }
+  if (rowFallback && parts.length === 0) {
+    const title = pickStr(rowFallback, ["title"]);
+    if (title) parts.push(title);
+    for (const key of ["state", "city", "area", "line"]) {
+      const nested = pickNestedStr(rowFallback, [`${key}.name`, `${key}.title`]);
+      if (nested) parts.push(nested);
+    }
+  }
+  // حذف تکراری‌ها با حفظ ترتیب
+  const unique = [...new Set(parts.map((s) => s.trim()).filter(Boolean))];
+  return unique.join("، ");
 }
 
 // ==========================================================================

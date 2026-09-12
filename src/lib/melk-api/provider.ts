@@ -13,19 +13,34 @@
 import { getMelkApiConfig, type MelkApiConfig } from "./config";
 import { MELK_ENDPOINTS } from "./endpoints";
 import { armCall, probeGet } from "./client";
-import { extractPagedList, isoToJalaliString, mapArmRealtorRow, mapArmTradedRow } from "./adapters";
+import {
+  extractAddress,
+  extractDetailItems,
+  extractPagedList,
+  extractPersonInfo,
+  isoToJalaliString,
+  mapArmRealtorRow,
+  mapArmSupplyDemandRow,
+  mapArmTradedRow,
+  mapArmVisitRow,
+} from "./adapters";
 import {
   MelkApiError,
   type ArmServiceStatus,
   type ArmTokens,
   type ConnectionStatus,
   type CrmExpert,
+  type CrmSupplyDemand,
   type CrmTransaction,
+  type CrmVisit,
   type ExpertFilter,
   type NestEnvelope,
   type OtpIssueResult,
   type OtpVerifyResult,
   type Paged,
+  type PersonInfo,
+  type PropertyLookupResult,
+  type RequestLookupResult,
   type TransactionFilter,
   type AuthUserInfo,
   type UserRole,
@@ -45,6 +60,14 @@ export interface MelkProvider {
   listTransactions(token: string, filter: TransactionFilter): Promise<Paged<CrmTransaction>>;
   /** فهرست کارشناسان (realtors سامانه ARM) */
   listExperts(token: string, filter: ExpertFilter): Promise<Paged<CrmExpert>>;
+  /** استخراج زنده اطلاعات کدآگهی: مالک (نام/تماس) + آدرس ملک + جزئیات */
+  lookupPropertyByCode(token: string, code: string): Promise<PropertyLookupResult>;
+  /** استخراج زنده اطلاعات کددرخواست: درخواست‌دهنده (نام/تماس) + جزئیات */
+  lookupRequestByCode(token: string, code: string): Promise<RequestLookupResult>;
+  /** فهرست بازدیدها (visits/list سامانه ARM) */
+  listVisits(token: string, page: number, limit: number): Promise<Paged<CrmVisit>>;
+  /** گزارش عرضه و تقاضا (realtor-reports/supply-demand سامانه ARM) */
+  listSupplyDemand(token: string, page: number, limit: number): Promise<Paged<CrmSupplyDemand>>;
   /** تست زنده اتصال هر سه سرویس */
   testConnection(): Promise<ConnectionStatus>;
   /** وضعیت زنده پورتال PM */
@@ -213,6 +236,185 @@ class RealProvider implements MelkProvider {
     };
     const res = await this.arm<unknown>(MELK_ENDPOINTS.arm.realtorsList, { token, query });
     const { rows, total } = extractPagedList(res.data, (row, i) => mapArmRealtorRow(row, i));
+    return { rows, total };
+  }
+
+  // ==========================================================================
+  // استخراج زنده اطلاعات (کاشی استخراج اطلاعات)
+  // ==========================================================================
+
+  /**
+   * استخراج اطلاعات کدآگهی — زنجیره عین خود سامانه ARM:
+   *   ۱) properties/info/by-code/{code} → شناسایی آگهی (_id، عنوان، مشاور)
+   *   ۲) properties/details/{_id} → جزئیات + آدرس ملک
+   *   ۳) properties/owner/{_id} → اطلاعات مالک (نام/نام‌خانوادگی + تماس)
+   * مراحل ۲ و ۳ غیربحرانی‌اند: نبودشان نتیجه را با اخطار شفاف برمی‌گرداند.
+   */
+  async lookupPropertyByCode(token: string, code: string): Promise<PropertyLookupResult> {
+    const cleanedCode = code.trim();
+    if (!cleanedCode) {
+      throw new MelkApiError("INVALID_PERSONNEL_CODE", "کدآگهی را وارد کنید.", 400, false);
+    }
+
+    // ---- مرحله ۱: شناسایی آگهی با کد ----
+    const byCode = await this.arm<Record<string, unknown>>(MELK_ENDPOINTS.arm.propertiesByCode(cleanedCode), { token });
+    const prop = (byCode.data ?? {}) as Record<string, unknown>;
+    const armId = String(prop._id ?? prop.id ?? "");
+    if (!armId) {
+      throw new MelkApiError(
+        "NOT_FOUND",
+        `آگهی با کد «${cleanedCode}» در سامانه ملک تبریز پیدا نشد. کد را بررسی کنید یا آگهی ممکن است حذف شده باشد.`,
+        404,
+        false
+      );
+    }
+
+    const title = String(prop.title ?? "");
+    const relatedRealtorRaw = prop.relatedRealtor;
+    const relatedRealtor =
+      typeof relatedRealtorRaw === "string"
+        ? relatedRealtorRaw
+        : relatedRealtorRaw && typeof relatedRealtorRaw === "object"
+          ? String((relatedRealtorRaw as Record<string, unknown>).fullName ?? "")
+          : "";
+
+    // ---- مرحله ۲: جزئیات و آدرس (غیربحرانی) ----
+    let details: { label: string; value: string; unit: string }[] = [];
+    let address = "";
+    try {
+      const det = await this.arm<Record<string, unknown>>(MELK_ENDPOINTS.arm.propertyDetails(armId), { token });
+      details = extractDetailItems(det.data);
+      address = extractAddress(det.data, prop);
+    } catch {
+      // جزئیات در دسترس نیست — نتیجه بدون آن برگردانده می‌شود
+    }
+
+    // ---- مرحله ۳: اطلاعات مالک (غیربحرانی — ممکن است نیازمند مجوز باشد) ----
+    let owner: PersonInfo | null = null;
+    try {
+      const own = await this.arm<unknown>(MELK_ENDPOINTS.arm.propertyOwner(armId), { token });
+      owner = extractPersonInfo(own.data);
+    } catch {
+      // دسترسی به اطلاعات مالک ممکن است نیازمند مجوز ویژه باشد
+    }
+
+    return {
+      code: cleanedCode,
+      armId,
+      title: title || "بدون عنوان",
+      owner,
+      address: address || "—",
+      relatedRealtor: relatedRealtor || "—",
+      details,
+    };
+  }
+
+  /**
+   * استخراج اطلاعات کددرخواست — زنجیره عین خود سامانه ARM:
+   *   ۱) requests/list?code={code} → شناسایی درخواست (فیلتر کد — همان فیلتر خود سامانه)
+   *   ۲) requests/details/{_id} → جزئیات درخواست
+   *   ۳) requests/applicant/{_id} → اطلاعات درخواست‌دهنده (نام/نام‌خانوادگی + تماس)
+   */
+  async lookupRequestByCode(token: string, code: string): Promise<RequestLookupResult> {
+    const cleanedCode = code.trim();
+    if (!cleanedCode) {
+      throw new MelkApiError("INVALID_PERSONNEL_CODE", "کددرخواست را وارد کنید.", 400, false);
+    }
+
+    // ---- مرحله ۱: فهرست درخواست‌ها با فیلتر کد (دو قالب پارامتر خود سامانه) ----
+    let rows: Record<string, unknown>[] = [];
+    const codeFilters: Record<string, string>[] = [{ code: cleanedCode }, { "code[]": cleanedCode }];
+    for (const filter of codeFilters) {
+      let res: { data: unknown } | null = null;
+      try {
+        res = await this.arm<unknown>(MELK_ENDPOINTS.arm.requestsList, {
+          token,
+          query: { page: 1, limit: 25, ...filter },
+        });
+      } catch {
+        res = null;
+      }
+      if (!res) continue;
+      const extracted = extractPagedList(res.data, (row) => row as Record<string, unknown>);
+      const pageRows = extracted.rows as unknown as Record<string, unknown>[];
+      // تطبیق دقیق کد درخواست (فیلتر سرور ممکن است غیرفعال باشد)
+      const exact = pageRows.find((r) => String(r.code ?? r.requestCode ?? "").trim() === cleanedCode);
+      if (exact) {
+        rows = [exact];
+        break;
+      }
+      rows = pageRows;
+      // اگر قالب اول (code=) نتیجه‌ای نداشت، قالب دوم (code[]=) امتحان می‌شود
+    }
+
+    if (rows.length === 0) {
+      throw new MelkApiError(
+        "NOT_FOUND",
+        `درخواستی با کد «${cleanedCode}» در سامانه ملک تبریز پیدا نشد. کد را بررسی کنید.`,
+        404,
+        false
+      );
+    }
+    const matched =
+      rows.find((r) => String(r.code ?? r.requestCode ?? "").trim() === cleanedCode) ?? rows[0];
+    const armId = String(matched._id ?? matched.id ?? "");
+    const title = String(matched.title ?? "");
+    const businessTitle =
+      String(
+        (matched.businessId as Record<string, unknown> | undefined)?.title ??
+        (matched.businessId as Record<string, unknown> | undefined)?.name ??
+        ""
+      ) || "—";
+
+    // ---- مرحله ۲: جزئیات (غیربحرانی) ----
+    let details: { label: string; value: string; unit: string }[] = [];
+    if (armId) {
+      try {
+        const det = await this.arm<Record<string, unknown>>(MELK_ENDPOINTS.arm.requestDetails(armId), { token });
+        details = extractDetailItems(det.data);
+      } catch {
+        // جزئیات در دسترس نیست
+      }
+    }
+
+    // ---- مرحله ۳: اطلاعات درخواست‌دهنده (غیربحرانی) ----
+    let applicant: PersonInfo | null = null;
+    if (armId) {
+      try {
+        const app = await this.arm<unknown>(MELK_ENDPOINTS.arm.requestApplicant(armId), { token });
+        applicant = extractPersonInfo(app.data);
+      } catch {
+        // دسترسی به اطلاعات درخواست‌دهنده ممکن است محدود باشد
+      }
+    }
+
+    return {
+      code: cleanedCode,
+      armId: armId || cleanedCode,
+      title: title || "بدون عنوان",
+      applicant,
+      businessTitle,
+      details,
+    };
+  }
+
+  async listVisits(token: string, page: number, limit: number): Promise<Paged<CrmVisit>> {
+    // قرارداد واقعی: GET visits/list?page&limit(&status)
+    const res = await this.arm<unknown>(MELK_ENDPOINTS.arm.visitsList, {
+      token,
+      query: { page, limit },
+    });
+    const { rows, total } = extractPagedList(res.data, (row, i) => mapArmVisitRow(row, i));
+    return { rows, total };
+  }
+
+  async listSupplyDemand(token: string, page: number, limit: number): Promise<Paged<CrmSupplyDemand>> {
+    // قرارداد واقعی: GET realtor-reports/supply-demand?page&limit
+    const res = await this.arm<unknown>(MELK_ENDPOINTS.armReports.supplyDemand, {
+      token,
+      query: { page, limit },
+    });
+    const { rows, total } = extractPagedList(res.data, (row, i) => mapArmSupplyDemandRow(row, i));
     return { rows, total };
   }
 
