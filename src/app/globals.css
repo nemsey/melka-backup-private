@@ -1,0 +1,237 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============ فونت فارسی وزیرمتن (محلی — بدون وابستگی به CDN) ============ */
+
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-arabic-400.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-200B, U+200F-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-arabic-500.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-latin-500.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-200B, U+200F-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-arabic-700.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-latin-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-200B, U+200F-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-arabic-800.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+  --font-mono: "Vazirmatn", ui-monospace, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ============ پالت: زمرد (اصلی) + کهربایی (تأکید) — بدون آبی/بنفش ============ */
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.975 0.006 85);
+  --foreground: oklch(0.245 0.02 60);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.245 0.02 60);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.245 0.02 60);
+  --primary: oklch(0.508 0.118 165.61);
+  --primary-foreground: oklch(0.985 0.005 85);
+  --secondary: oklch(0.952 0.012 85);
+  --secondary-foreground: oklch(0.35 0.03 70);
+  --muted: oklch(0.955 0.008 85);
+  --muted-foreground: oklch(0.5 0.02 60);
+  --accent: oklch(0.94 0.045 80);
+  --accent-foreground: oklch(0.38 0.07 70);
+  --destructive: oklch(0.577 0.245 27.32);
+  --border: oklch(0.905 0.012 80);
+  --input: oklch(0.905 0.012 80);
+  --ring: oklch(0.55 0.11 165.61);
+  --chart-1: oklch(0.596 0.145 163.22);
+  --chart-2: oklch(0.769 0.188 70.07);
+  --chart-3: oklch(0.6 0.118 184.7);
+  --chart-4: oklch(0.646 0.222 41.11);
+  --chart-5: oklch(0.552 0.016 285.93);
+  --sidebar: oklch(0.985 0.005 85);
+  --sidebar-foreground: oklch(0.245 0.02 60);
+  --sidebar-primary: oklch(0.508 0.118 165.61);
+  --sidebar-primary-foreground: oklch(0.985 0.005 85);
+  --sidebar-accent: oklch(0.94 0.045 80);
+  --sidebar-accent-foreground: oklch(0.38 0.07 70);
+  --sidebar-border: oklch(0.905 0.012 80);
+  --sidebar-ring: oklch(0.55 0.11 165.61);
+}
+
+.dark {
+  --background: oklch(0.235 0.015 70);
+  --foreground: oklch(0.94 0.008 85);
+  --card: oklch(0.28 0.018 70);
+  --card-foreground: oklch(0.94 0.008 85);
+  --popover: oklch(0.28 0.018 70);
+  --popover-foreground: oklch(0.94 0.008 85);
+  --primary: oklch(0.765 0.177 163.22);
+  --primary-foreground: oklch(0.235 0.03 160);
+  --secondary: oklch(0.34 0.02 70);
+  --secondary-foreground: oklch(0.94 0.008 85);
+  --muted: oklch(0.32 0.018 70);
+  --muted-foreground: oklch(0.68 0.015 80);
+  --accent: oklch(0.38 0.05 75);
+  --accent-foreground: oklch(0.9 0.06 80);
+  --destructive: oklch(0.704 0.191 22.22);
+  --border: oklch(0.38 0.02 70);
+  --input: oklch(0.38 0.02 70);
+  --ring: oklch(0.65 0.15 163.22);
+  --chart-1: oklch(0.696 0.17 162.48);
+  --chart-2: oklch(0.795 0.184 86.05);
+  --chart-3: oklch(0.6 0.118 184.7);
+  --chart-4: oklch(0.646 0.222 41.11);
+  --chart-5: oklch(0.75 0.05 285);
+  --sidebar: oklch(0.28 0.018 70);
+  --sidebar-foreground: oklch(0.94 0.008 85);
+  --sidebar-primary: oklch(0.765 0.177 163.22);
+  --sidebar-primary-foreground: oklch(0.235 0.03 160);
+  --sidebar-accent: oklch(0.38 0.05 75);
+  --sidebar-accent-foreground: oklch(0.9 0.06 80);
+  --sidebar-border: oklch(0.38 0.02 70);
+  --sidebar-ring: oklch(0.65 0.15 163.22);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    direction: rtl;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+    letter-spacing: 0;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* ============ اسکرول‌بار سفارشی ============ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--primary) 35%, transparent);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--primary) 55%, transparent);
+}
+
+/* ============ نویسه‌های عددی فارسی در همه‌جا ============ */
+.fa-nums {
+  font-variant-numeric: normal;
+}
+
+/* ============ پشتیبانی لمسی (اندروید/تبلت) ============ */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* جلوگیری از انتخاب متن هنگام لمس سریع کاشی‌ها */
+.tile-press {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ============ انیمیشن کاشی‌ها ============ */
+@keyframes tile-pop {
+  0% { transform: scale(0.96); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.tile-pop {
+  animation: tile-pop 0.25s ease-out both;
+}
+
+/* نمودارها: جهت چپ‌به‌راست برای محور زمان (استاندارد داشبوردهای فارسی) */
+.chart-ltr {
+  direction: ltr;
+}

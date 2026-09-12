@@ -1,0 +1,50 @@
+{
+  "name": "داشبورد هوشمند ملک تبریز",
+  "short_name": "ملک تبریز",
+  "description": "لایه هوش تحلیلی و مدیریتی چندعامله روی CRM ملک تبریز",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f5f0",
+  "theme_color": "#15946a",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "کاشی معاملات",
+      "short_name": "معاملات",
+      "url": "/?tile=transactions"
+    },
+    {
+      "name": "کاشی کارشناسان",
+      "short_name": "کارشناسان",
+      "url": "/?tile=experts"
+    }
+  ]
+}
