@@ -25,6 +25,7 @@ import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { useAppStore } from "@/lib/client/store";
 import { faDateTime, faNumber } from "@/lib/format";
+import { DivarConnectionSection } from "./DivarConnectionSection";
 
 /** ارقام فارسی محلی برای این صفحه */
 function faDigitsLocal(n: string | number): string {
@@ -384,6 +385,9 @@ export function SettingsPage({ onBack }: TilePageProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* اتصال به دیوار — دو روش با کلید ریست */}
+      <DivarConnectionSection />
 
       {/* راهنمای اپلیکیشن */}
       <Card>

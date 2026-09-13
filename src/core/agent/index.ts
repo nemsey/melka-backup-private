@@ -10,6 +10,7 @@ import { expertAgent } from "./expert-agent";
 import { extractionAgent } from "./extraction-agent";
 import { visitsAgent } from "./visits-agent";
 import { supplyDemandAgent } from "./supply-demand-agent";
+import { divarAgent } from "./divar-agent";
 import type { BaseLearningAgent as Agent } from "./base-agent";
 
 const agents = new Map<string, Agent>([
@@ -18,6 +19,7 @@ const agents = new Map<string, Agent>([
   [extractionAgent.tileId, extractionAgent],
   [visitsAgent.tileId, visitsAgent],
   [supplyDemandAgent.tileId, supplyDemandAgent],
+  [divarAgent.tileId, divarAgent],
 ]);
 
 /** دسترسی به ایجنت یک کاشی — null اگر کاشی ایجنت ندارد */

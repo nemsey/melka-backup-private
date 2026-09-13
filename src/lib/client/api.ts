@@ -26,7 +26,7 @@ export function bindAuth(getToken: () => string | null, handle401: () => void): 
 
 export async function api<T = unknown>(
   path: string,
-  init: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown; auth?: boolean } = {}
+  init: { method?: "GET" | "POST" | "PATCH" | "DELETE" | "PUT"; body?: unknown; auth?: boolean } = {}
 ): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   const useAuth = init.auth !== false;
