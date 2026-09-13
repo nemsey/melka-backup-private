@@ -105,8 +105,8 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
         ].map((kpi) => (
           <Card key={kpi.label} className="border-border/60">
             <CardContent className="p-4 flex items-center gap-3">
-              <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${kpi.tone}`}>
-                <kpi.icon className="w-5.5 h-5.5" aria-hidden />
+              <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${kpi.tone}`}>
+                <kpi.icon className="w-5 h-5" aria-hidden />
               </span>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">{kpi.label}</p>

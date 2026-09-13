@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Radar, RefreshCw, Settings2, Crosshair, History, Info, ListFilter, Sparkles, Gauge,
+  Loader2, RefreshCw, Settings2, Crosshair, History, Info, ListFilter, Sparkles, Gauge,
   MapPin, ChevronDown, ChevronLeft, Search,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
@@ -115,7 +115,7 @@ function normFa(s: string): string {
     .trim();
 }
 
-export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageProps) {
+export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   const { toast } = useToast();
   const [bucket, setBucket] = useState<string>("hunt");
   const [adsData, setAdsData] = useState<AdsResponse | null>(null);
@@ -305,11 +305,9 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
   const rows = useMemo(() => adsData?.rows ?? [], [adsData]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button variant="outline" size="sm" onClick={onBack} className="gap-1.5">
-          <Radar className="w-4 h-4" aria-hidden /> بازگشت به خانه داشبورد
-        </Button>
+    <div className="space-y-6">
+      {/* نوار ابزار عملیاتی — هدر اصلی از TileShell می‌آید (بدون تکرار) */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex items-center gap-2">
           {adsData?.locationFilter?.active && (
             <Badge variant="outline" className="gap-1 text-[10px] h-5 hidden sm:inline-flex">
@@ -318,7 +316,7 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
             </Badge>
           )}
           {lastScan && (
-            <span className="text-[10px] text-muted-foreground hidden sm:inline">
+            <span className="text-[11px] text-muted-foreground hidden sm:inline">
               آخرین اسکن: {faDateTime(lastScan.startedAt)}
               {lastScan.error ? " — با خطا" : ` — ${faNumber(lastScan.newAds)} فایل تازه`}
             </span>
@@ -328,15 +326,6 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
             اسکن دیوار
           </Button>
         </div>
-      </div>
-
-      <div>
-        <h2 className="text-lg font-extrabold flex items-center gap-2">
-          <Radar className="w-6 h-6 text-primary" aria-hidden /> فایل‌یابی از دیوار — تبریز
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          شکار هوشمند فایل‌های شخصی و زیرقیمت از آگهی‌های دیوار تبریز — حساس به «زمان واقعی انتشار» (نه نردبان دیوار)
-        </p>
       </div>
 
       {/* شاخص‌ها */}
@@ -386,7 +375,7 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-[10px] text-muted-foreground leading-4">
+                    <p className="text-[11px] text-muted-foreground leading-5">
                       فیلتر بر «انتشار آگهی» از جزئیات دیوار اعمال می‌شود — آگهی‌های نردبان‌شده قدیمی در بازه نمی‌آیند.
                     </p>
                   </div>
@@ -404,7 +393,7 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
                       className="text-xs"
                       aria-label="فاصله اسکن خودکار به دقیقه"
                     />
-                    <p className="text-[10px] text-muted-foreground leading-4">اسکن خودکار با بازدید شما از صفحه فعال می‌شود.</p>
+                    <p className="text-[11px] text-muted-foreground leading-5">اسکن خودکار با بازدید شما از صفحه فعال می‌شود.</p>
                   </div>
                 </div>
 
@@ -412,7 +401,7 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Label className="text-xs font-bold flex items-center gap-1.5">
                       <MapPin className="w-4 h-4 text-primary" aria-hidden /> فیلتر مکان — مناطق جست‌وجوی دیوار
-                      <Badge variant={locationFilterActive ? "default" : "secondary"} className="text-[9px] h-4 px-1.5">
+                      <Badge variant={locationFilterActive ? "default" : "secondary"} className="text-[10px] h-5 px-1.5">
                         {locationFilterActive
                           ? `${faNumber(selAreaIds.length)} منطقه${selLineIds.length > 0 ? ` + ${faNumber(selLineIds.length)} محله` : ""}`
                           : "همه تبریز"}
@@ -427,7 +416,7 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
                       </Button>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-4">
+                  <p className="text-[11px] text-muted-foreground leading-5">
                     {locationFilterActive
                       ? `اسکن فقط آگهی‌های مناطق انتخابی را نگه می‌دارد${coveredLineCount != null ? ` (${faNumber(coveredLineCount)} محله از ${faNumber(locData?.totalLines ?? 926)})` : ""}؛ آگهی بیرون از انتخاب یا بدون نشانه مکانی قابل اتکا، هرگز ذخیره نمی‌شود.`
                       : "فیلتر مکان خاموش است — کل تبریز اسکن و ذخیره می‌شود. با انتخاب مناطق، جست‌وجو دقیقاً محدود می‌شود."}
@@ -489,7 +478,7 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
                                   </span>
                                 </button>
                                 {!areaOn && areaSelectedLines > 0 && (
-                                  <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">{faNumber(areaSelectedLines)} محله</Badge>
+                                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5 shrink-0">{faNumber(areaSelectedLines)} محله</Badge>
                                 )}
                                 <button
                                   type="button"
@@ -666,7 +655,7 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
         </TabsList>
 
         {["hunt", "follow", "review"].map((b) => (
-          <TabsContent key={b} value={b} className="mt-3">
+          <TabsContent key={b} value={b} className="mt-4">
             {loadingAds ? (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -729,7 +718,7 @@ export function FileFinderPage({ settings, onSettingsChange, onBack }: TilePageP
                   {log.outOfArea > 0 && <span>خارج از محدوده {faNumber(log.outOfArea)}</span>}
                   <span>تازه {faNumber(log.newAds)}</span>
                   <span>{(log.durationMs / 1000).toFixed(1)} ثانیه</span>
-                  <Badge variant={log.error ? "destructive" : "secondary"} className="text-[9px] h-4">
+                  <Badge variant={log.error ? "destructive" : "secondary"} className="text-[10px] h-5">
                     {log.error ? "خطا" : log.source === "kenar" ? "کنار" : "وب"}
                   </Badge>
                 </span>

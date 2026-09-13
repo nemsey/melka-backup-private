@@ -138,8 +138,8 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
         ].map((kpi) => (
           <Card key={kpi.label} className="border-border/60">
             <CardContent className="p-4 flex items-center gap-3">
-              <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${kpi.tone}`}>
-                <kpi.icon className="w-5.5 h-5.5" aria-hidden />
+              <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${kpi.tone}`}>
+                <kpi.icon className="w-5 h-5" aria-hidden />
               </span>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">{kpi.label}</p>
@@ -293,7 +293,7 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
                       <TableCell className="max-w-[9rem] truncate">{r.requesterName}</TableCell>
                       <TableCell className="max-w-[9rem] truncate">
                         <span className="inline-flex items-center gap-1">
-                          <UserCheck className="w-3.5 h-3.5 text-emerald-600" aria-hidden />
+                          <UserCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
                           {r.checkerName}
                         </span>
                       </TableCell>
@@ -301,7 +301,7 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
                       <TableCell className="text-xs whitespace-nowrap">{faJalaliShortDateTime(r.createdAt)}</TableCell>
                       <TableCell className="text-xs whitespace-nowrap">
                         {r.checkTime ? (
-                          <span className="text-emerald-600 font-bold">{faJalaliShortDateTime(r.checkTime)}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{faJalaliShortDateTime(r.checkTime)}</span>
                         ) : (
                           <Badge variant="outline" className="gap-1 text-xs">
                             <Clock className="w-3 h-3" aria-hidden /> در انتظار

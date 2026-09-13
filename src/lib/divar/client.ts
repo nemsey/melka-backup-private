@@ -83,6 +83,8 @@ export interface DivarSearchRow {
   imageCount: number;
   imageUrl: string | null;
   topText: string | null;
+  /** متن زیرین کارت فهرست — نام کسب‌وکار املاک برای آگهی مشاور/دپارتمان («گروه مشاورین املاک طاهری») */
+  bottomText: string | null;
 }
 
 export interface DivarSearchPage {
@@ -161,6 +163,7 @@ export async function webSearchTabriz(input: {
       image_count?: number;
       image_url?: string;
       top_description_text?: string;
+      bottom_description_text?: string;
     };
     if (!d.token) continue;
     rows.push({
@@ -171,6 +174,7 @@ export async function webSearchTabriz(input: {
       imageCount: d.image_count ?? 0,
       imageUrl: d.image_url ?? null,
       topText: d.top_description_text ?? null,
+      bottomText: d.bottom_description_text ?? null,
     });
   }
   const pag = data.pagination;
@@ -185,6 +189,16 @@ export async function webSearchTabriz(input: {
 }
 
 // ===================== ۲) جزئیات آگهی (عمومی — بدون کلید) =====================
+
+/** نوع آگهی‌دهنده — برچسب دیوار زیر نقشه آگهی */
+export type PublisherKind = "personal" | "agent" | "department" | "business";
+
+/** درخواست lazy بخش کسب‌وکار (از BUSINESS_SECTION جزئیات آگهی) */
+interface BusinessLazyRequest {
+  post_token?: string;
+  hashed_post_owner_user_id?: string;
+  post_business_type?: string;
+}
 
 export interface DivarPostDetail {
   token: string;
@@ -206,11 +220,92 @@ export interface DivarPostDetail {
   chatEnabled: boolean;
   city: string;
   category: string | null;
+  /** نوع آگهی‌دهنده — از برچسب زیر نقشه دیوار (BUSINESS_SECTION) */
+  publisherType: PublisherKind | null;
+  /** نام کسب‌وکار املاک («گروه مشاورین املاک طاهری») — برای آگهی شخصی null */
+  publisherName: string | null;
+  /** «۸ آگهی فعال» — متن خام تعداد آگهی فعال کسب‌وکار */
+  publisherAdCountText: string | null;
+  /** پل به صفحه برند کسب‌وکار در دیوار (divar.ir/pro/…) */
+  publisherBrandUrl: string | null;
+  /** درخواست lazy کسب‌وکار — برای واکشی کارت زیر نقشه (داخلی) */
+  businessRequest?: BusinessLazyRequest | null;
 }
 
 interface PostSection {
   section_name?: string;
   widgets?: { widget_type?: string; data?: Record<string, unknown> }[];
+}
+
+// ===================== تشخیص آگهی‌دهنده — برچسب زیر نقشه دیوار =====================
+
+/** نشانه‌های نام دپارتمان/آژانس املاک (دفتر با چند مشاور) */
+const DEPARTMENT_MARKERS = [
+  "مشاورین", "گروه", "شعبه", "مجموعه", "دپارتمان", "دفتر", "مدیریت", "شرکت", "موسسه", "موسسه", "آژانس",
+];
+
+/**
+ * طبقه‌بندی نوع کسب‌وکار املاک از نام آن — عین برچسب دیوار «مشاور املاک/دپارتمان املاک»:
+ * «مشاور حسن رحمتی» → مشاور املاک؛ «گروه مشاورین املاک طاهری»، «ملک تبریز شعبه باغلارباغی» → دپارتمان املاک
+ */
+export function classifyPublisherKind(name: string | null | undefined): PublisherKind {
+  const n = (name ?? "").replace(/\u200c/g, " ").trim();
+  if (!n) return "business";
+  if (DEPARTMENT_MARKERS.some((m) => n.includes(m))) return "department";
+  if (n.includes("مشاور") || n.includes("وکیل")) return "agent";
+  // «املاک اطلس»، «ملک تبریز…»، «کوثر…» — کسب‌وکار ثبت‌شده بدون واژه مشاور → دپارتمان
+  return "department";
+}
+
+/** تجزیه «۸ آگهی فعال» → 8 */
+export function parseActiveAdCount(text: string | null | undefined): number | null {
+  if (!text) return null;
+  const latin = text.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  const m = latin.match(/(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * تجزیه پاسخ lazy کارت کسب‌وکار زیر نقشه — POST /v8/premium-user/post-page/business-data/{token}/lazy
+ * پاسخ واقعی: EVENT_ROW با title (نام)، subtitle («۸ آگهی فعال») و brand_token (صفحه پرو)
+ */
+export function parseBusinessLazyResponse(raw: unknown): { name: string | null; adCountText: string | null; brandUrl: string | null } | null {
+  const list = (raw as { widget_list?: { widget_type?: string; data?: Record<string, unknown> }[] })?.widget_list;
+  if (!Array.isArray(list)) return null;
+  for (const w of list) {
+    if (w.widget_type !== "EVENT_ROW" || !w.data) continue;
+    const d = w.data as {
+      title?: string;
+      subtitle?: string;
+      action?: { payload?: { brand_token?: string } };
+    };
+    const brandToken = d.action?.payload?.brand_token;
+    return {
+      name: d.title ?? null,
+      adCountText: d.subtitle ?? null,
+      brandUrl: brandToken ? `${DIVAR_CONFIG.webBase}/pro/${brandToken}` : null,
+    };
+  }
+  return null;
+}
+
+/** واکشی کارت کسب‌وکار زیر نقشه (نام/تعداد آگهی فعال/صفحه برند) — POST عمومی بدون لاگین */
+export async function fetchPostBusinessData(
+  token: string,
+  requestData: BusinessLazyRequest
+): Promise<{ name: string | null; adCountText: string | null; brandUrl: string | null } | null> {
+  try {
+    const raw = await fetchJson(`${DIVAR_CONFIG.webApiBase}/v8/premium-user/post-page/business-data/${encodeURIComponent(token)}/lazy`, {
+      method: "POST",
+      body: JSON.stringify(requestData),
+      headers: { Referer: `${DIVAR_CONFIG.webBase}/v/${token}` },
+      retries: 1,
+      timeoutMs: 12000,
+    });
+    return parseBusinessLazyResponse(raw);
+  } catch {
+    return null;
+  }
 }
 
 /** استخراج «۳ روز پیش در تبریز، خ …» از عنوان بخش EXPANDABLE */
@@ -246,7 +341,28 @@ function extractLocationAndTime(section: PostSection): { locationText: string | 
 export async function webGetPostDetail(token: string): Promise<DivarPostDetail> {
   const data = (await fetchJson(`${DIVAR_CONFIG.webApiBase}/v8/posts-v2/web/${encodeURIComponent(token)}`, {
     headers: { Referer: `${DIVAR_CONFIG.webBase}/v/${token}` },
-  })) as {
+  })) as Record<string, unknown>;
+  const detail = parsePostDetailResponse(data, token);
+
+  // واکشی کارت کسب‌وکار زیر نقشه (فقط برای آگهی‌های غیرشخصی) — بهترین تلاش
+  if (detail.businessRequest) {
+    const biz = await fetchPostBusinessData(token, detail.businessRequest);
+    const name = biz?.name ?? null;
+    detail.publisherName = name;
+    detail.publisherAdCountText = biz?.adCountText ?? null;
+    detail.publisherBrandUrl = biz?.brandUrl ?? null;
+    detail.publisherType = name ? classifyPublisherKind(name) : "business";
+  }
+  return detail;
+}
+
+/**
+ * تجزیه کامل پاسخ جزئیات آگهی (تابع خالص — جدا از شبکه برای تست‌پذیری).
+ * شامل کشف BUSINESS_SECTION: آگهی مشاور/دپارتمان املاک این بخش را دارد؛ آگهی شخصی هرگز.
+ * برچسب آگهی‌دهنده در دیوار زیر نقشه آگهی نمایش داده می‌شود.
+ */
+export function parsePostDetailResponse(data: Record<string, unknown>, token: string): DivarPostDetail {
+  const d = data as {
     city?: { name?: string; city_id?: string };
     contact?: { chat_enabled?: boolean };
     sections?: PostSection[];
@@ -269,12 +385,17 @@ export async function webGetPostDetail(token: string): Promise<DivarPostDetail> 
     images: [],
     latitude: null,
     longitude: null,
-    chatEnabled: Boolean(data.contact?.chat_enabled),
-    city: data.city?.name ?? "تبریز",
-    category: data.analytics?.cat3 ?? null,
+    chatEnabled: Boolean(d.contact?.chat_enabled),
+    city: d.city?.name ?? "تبریز",
+    category: d.analytics?.cat3 ?? null,
+    publisherType: null,
+    publisherName: null,
+    publisherAdCountText: null,
+    publisherBrandUrl: null,
+    businessRequest: null,
   };
 
-  for (const section of data.sections ?? []) {
+  for (const section of d.sections ?? []) {
     const name = section.section_name ?? "";
     if (name === "TITLE") {
       const lt = extractLocationAndTime(section);
@@ -304,18 +425,18 @@ export async function webGetPostDetail(token: string): Promise<DivarPostDetail> 
     } else if (name === "LIST_DATA") {
       for (const w of section.widgets ?? []) {
         const wt = w.widget_type;
-        const d = w.data ?? {};
+        const wd = w.data ?? {};
         if (wt === "GROUP_INFO_ROW") {
-          const items = (d as { items?: { title?: string; value?: string }[] }).items ?? [];
+          const items = (wd as { items?: { title?: string; value?: string }[] }).items ?? [];
           for (const it of items) {
             if (it.title && it.value != null) detail.specs.push({ title: it.title, value: String(it.value) });
           }
         } else if (wt === "UNEXPANDABLE_ROW") {
-          const title = (d as { title?: string }).title;
-          const value = (d as { value?: string }).value;
+          const title = (wd as { title?: string }).title;
+          const value = (wd as { value?: string }).value;
           if (title && value != null) detail.specs.push({ title, value: String(value) });
         } else if (wt === "GROUP_FEATURE_ROW" || wt === "GROUP_FEATURES_ROW") {
-          const items = (d as { items?: { title?: string }[] }).items ?? [];
+          const items = (wd as { items?: { title?: string }[] }).items ?? [];
           for (const it of items) if (it.title) detail.features.push(it.title);
         }
       }
@@ -330,6 +451,17 @@ export async function webGetPostDetail(token: string): Promise<DivarPostDetail> 
           }
         }
       }
+    } else if (name === "BUSINESS_SECTION") {
+      // برچسب رسمی دیوار: آگهی از طرف کسب‌وکار املاک است (مشاور/دپارتمان) — زیر نقشه آگهی
+      for (const w of section.widgets ?? []) {
+        if (w.widget_type === "LAZY_SECTION" && w.data) {
+          const rd = (w.data as { request_data?: Record<string, unknown> }).request_data;
+          if (rd) {
+            detail.businessRequest = rd as BusinessLazyRequest;
+            detail.publisherType = "business"; // نوع دقیق پس از واکشی نام مشخص می‌شود
+          }
+        }
+      }
     }
   }
 
@@ -337,7 +469,9 @@ export async function webGetPostDetail(token: string): Promise<DivarPostDetail> 
     if (s.title.includes("قیمت کل")) detail.priceTotalText = s.value;
     else if (s.title.includes("قیمت هر متر")) detail.pricePerMeterText = s.value;
   }
-  if (!detail.title && data.seo?.title) detail.title = data.seo.title.split(" در ")[0] ?? data.seo.title;
+  if (!detail.title && d.seo?.title) detail.title = d.seo.title.split(" در ")[0] ?? d.seo.title;
+  // بدون BUSINESS_SECTION → آگهی شخصی (فاقد کسب‌وکار املاک)
+  if (!detail.businessRequest) detail.publisherType = "personal";
   return detail;
 }
 

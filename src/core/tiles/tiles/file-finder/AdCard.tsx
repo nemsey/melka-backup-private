@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  ExternalLink, Info, XCircle, UploadCloud, MapPin, Ruler, BedDouble, Building2, TrendingDown, UserCheck, Loader2, Image as ImageIcon,
+  ExternalLink, Info, XCircle, UploadCloud, MapPin, Ruler, BedDouble, Building2, TrendingDown, UserCheck, Loader2, Image as ImageIcon, Briefcase, ShieldCheck,
 } from "lucide-react";
 import { faNumber, faDateTime } from "@/lib/format";
 import { formatToman } from "@/lib/divar/parse";
@@ -35,8 +35,19 @@ export interface DivarAdRow {
   locationScore: number;
   totalScore: number;
   bucket: string;
+  /** نوع آگهی‌دهنده — برچسب زیر نقشه دیوار (personal | agent | department | business | null=نامشخص) */
+  publisherType: string | null;
+  publisherName: string | null;
   images: string[];
 }
+
+/** برچسب/سبک نوع آگهی‌دهنده — هم‌خانواده پالت زمرد/کهربای پروژه */
+const PUBLISHER_CHIPS: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; cls: string }> = {
+  personal: { label: "شخصی (مالک)", icon: ShieldCheck, cls: "text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800" },
+  agent: { label: "مشاور املاک", icon: Briefcase, cls: "text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800" },
+  department: { label: "دپارتمان املاک", icon: Briefcase, cls: "text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800" },
+  business: { label: "کسب‌وکار املاک", icon: Briefcase, cls: "text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800" },
+};
 
 const CATEGORY_LABELS: Record<string, string> = {
   "apartment-sell": "فروش آپارتمان",
@@ -66,8 +77,8 @@ function ScoreBar({ label, value, icon: Icon, tone }: { label: string; value: nu
       <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden />
       <div className="grow space-y-1">
         <div className="flex items-center justify-between gap-1">
-          <span className="text-[10px] text-muted-foreground">{label}</span>
-          <span className={`text-[10px] font-bold ${tone}`}>{faNumber(Math.round(value))}٪</span>
+          <span className="text-xs text-muted-foreground">{label}</span>
+          <span className={`text-xs font-bold ${tone}`}>{faNumber(Math.round(value))}٪</span>
         </div>
         <Progress value={value} className="h-1.5" aria-label={`${label}: ${value} درصد`} />
       </div>
@@ -91,6 +102,8 @@ export function AdCard({
   onRegister: (ad: DivarAdRow) => void;
 }) {
   const bucketStyle = BUCKET_STYLES[ad.bucket] ?? BUCKET_STYLES.review;
+  const publisherChip = ad.publisherType ? PUBLISHER_CHIPS[ad.publisherType] ?? null : null;
+  const PublisherIcon = publisherChip?.icon;
   const busy = busyAction === ad.token;
   return (
     <article className={`rounded-xl border bg-card p-4 space-y-3 ${bucketStyle.ring}`} aria-label={`فایل ${ad.title}`}>
@@ -99,6 +112,16 @@ export function AdCard({
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={bucketStyle.badge}>{bucketStyle.label} — {faNumber(Math.round(ad.totalScore))} امتیاز</Badge>
             <Badge variant="outline" className="text-[10px]">{CATEGORY_LABELS[ad.category] ?? ad.category}</Badge>
+            {publisherChip && PublisherIcon && (
+              <Badge
+                variant="outline"
+                className={`text-[10px] gap-1 ${publisherChip.cls}`}
+                title={ad.publisherName ? `آگهی‌دهنده: ${ad.publisherName}` : "برچسب رسمی دیوار زیر نقشه آگهی"}
+              >
+                <PublisherIcon className="w-3 h-3" aria-hidden />
+                {publisherChip.label}
+              </Badge>
+            )}
             {ad.bumpedAt && (
               <span className="text-[10px] text-amber-600 dark:text-amber-400" title="این آگهی نردبان شده — زمان واقعی انتشار در جزئیات بررسی می‌شود">
                 نردبان‌شده
@@ -109,28 +132,28 @@ export function AdCard({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {ad.matchedLineName ? (
               <span className="inline-flex items-center gap-1">
-                <MapPin className="w-3 h-3" aria-hidden />
+                <MapPin className="w-3.5 h-3.5" aria-hidden />
                 {ad.matchedLineName}
                 {ad.matchedAreaName ? ` (${ad.matchedAreaName})` : ""}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-muted-foreground/70">
-                <MapPin className="w-3 h-3" aria-hidden /> مکان نامشخص
+                <MapPin className="w-3.5 h-3.5" aria-hidden /> مکان نامشخص
               </span>
             )}
             {ad.meterage != null && (
               <span className="inline-flex items-center gap-1">
-                <Ruler className="w-3 h-3" aria-hidden /> {faNumber(Math.round(ad.meterage))} متر
+                <Ruler className="w-3.5 h-3.5" aria-hidden /> {faNumber(Math.round(ad.meterage))} متر
               </span>
             )}
             {ad.rooms != null && (
               <span className="inline-flex items-center gap-1">
-                <BedDouble className="w-3 h-3" aria-hidden /> {faNumber(ad.rooms)} خواب
+                <BedDouble className="w-3.5 h-3.5" aria-hidden /> {faNumber(ad.rooms)} خواب
               </span>
             )}
             {ad.buildYear != null && (
               <span className="inline-flex items-center gap-1">
-                <Building2 className="w-3 h-3" aria-hidden /> ساخت {faNumber(ad.buildYear)}
+                <Building2 className="w-3.5 h-3.5" aria-hidden /> ساخت {faNumber(ad.buildYear)}
               </span>
             )}
           </div>

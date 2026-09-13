@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, MapPin, Ruler, BedDouble, Building2, TrendingDown, UserCheck, ShieldCheck, AlertTriangle, Sparkles, Copy, Navigation, Layers,
+  Loader2, MapPin, Ruler, BedDouble, Building2, TrendingDown, UserCheck, ShieldCheck, AlertTriangle, Sparkles, Copy, Navigation, Layers, Briefcase, ExternalLink, BadgeCheck,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faNumber, faDateTime } from "@/lib/format";
@@ -45,6 +45,16 @@ interface DetailsResponse {
     images: string[];
     postUrl: string;
     liveAvailable: boolean;
+    /** آگهی‌دهنده — عین برچسب زیر نقشه دیوار (مشاور املاک/دپارتمان املاک/شخصی) */
+    publisher: {
+      type: string;
+      typeLabel: string;
+      name: string | null;
+      adCountText: string | null;
+      adCount: number | null;
+      brandUrl: string | null;
+      source: "live" | "stored";
+    } | null;
   };
   analysis: {
     personal: { score: number; isBroker: boolean; confidence: string; signals: { key: string; label: string; weight: number; hit: boolean; evidence: string }[] };
@@ -180,6 +190,57 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
               </div>
             )}
 
+            {/* آگهی‌دهنده — عین برچسب زیر نقشه دیوار (پس از توضیحات، مطابق چیدمان دیوار) */}
+            <div>
+              <h4 className="text-sm font-bold mb-2 flex items-center gap-1.5"><BadgeCheck className="w-4 h-4 text-primary" aria-hidden /> آگهی‌دهنده</h4>
+              {data.ad.publisher ? (
+                <div className={`rounded-xl border p-3 space-y-2 ${
+                  data.ad.publisher.type === "personal"
+                    ? "border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20"
+                    : "border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20"
+                }`}>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {data.ad.publisher.type === "personal" ? (
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden />
+                      ) : (
+                        <Briefcase className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
+                      )}
+                      <span className="text-xs font-bold truncate">{data.ad.publisher.name ?? data.ad.publisher.typeLabel}</span>
+                    </div>
+                    <Badge variant={data.ad.publisher.type === "personal" ? "secondary" : "destructive"} className="text-[10px]">
+                      {data.ad.publisher.typeLabel}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    {data.ad.publisher.name && <span>آگهی‌دهنده: <b>{data.ad.publisher.name}</b></span>}
+                    {data.ad.publisher.adCountText && <span>{data.ad.publisher.adCountText}</span>}
+                    <span>{data.ad.publisher.source === "live" ? "برچسب زنده دیوار" : "از آخرین اسکن"}</span>
+                  </div>
+                  {data.ad.publisher.type === "personal" ? (
+                    <p className="text-[11px] text-muted-foreground leading-5">
+                      دیوار برای این آگهی کسب‌وکار املاک ثبت نکرده — برچسب رسمی زیر نقشه، آگهی‌دهنده را «شخصی» معرفی می‌کند و امتیاز شخصی‌بودن را تقویت می‌کند.
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground leading-5">
+                      برچسب رسمی دیوار زیر نقشه: این آگهی از طرف {data.ad.publisher.typeLabel} منتشر شده است — امتیاز شخصی‌بودن آن قطعاً نفی می‌شود.
+                    </p>
+                  )}
+                  {data.ad.publisher.brandUrl && (
+                    <Button variant="outline" size="sm" className="gap-1.5" asChild>
+                      <a href={data.ad.publisher.brandUrl} target="_blank" rel="noopener noreferrer" aria-label={`نمایش همه آگهی‌های ${data.ad.publisher.name ?? "کسب‌وکار"} در دیوار`}>
+                        <ExternalLink className="w-3.5 h-3.5" aria-hidden /> همه آگهی‌های این کسب‌وکار در دیوار
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-xl border p-3 text-xs text-muted-foreground">
+                  نوع آگهی‌دهنده (برچسب زیر نقشه دیوار) برای این فایل هنوز استخراج نشده — با نخستین اسکن پس از به‌روزرسانی تکمیل می‌شود.
+                </div>
+              )}
+            </div>
+
             {/* تحلیل امتیاز */}
             <div>
               <h4 className="text-sm font-bold mb-2 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-primary" aria-hidden /> تحلیل هوشمند امتیازدهی</h4>
@@ -188,7 +249,7 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold flex items-center gap-1.5"><UserCheck className="w-3.5 h-3.5" aria-hidden /> شخصی‌بودن: {faNumber(Math.round(data.analysis.personal.score))}٪</span>
                     {data.analysis.personal.isBroker ? (
-                      <Badge variant="destructive" className="text-[10px]">مشاور املاک</Badge>
+                      <Badge variant="destructive" className="text-[10px]">{data.ad.publisher && data.ad.publisher.type !== "personal" ? data.ad.publisher.typeLabel : "مشاور املاک"}</Badge>
                     ) : (
                       <Badge variant="secondary" className="text-[10px] gap-1"><ShieldCheck className="w-3 h-3" aria-hidden /> {data.analysis.personal.confidence === "high" ? "شخصی با اطمینان بالا" : "احتمالاً شخصی"}</Badge>
                     )}

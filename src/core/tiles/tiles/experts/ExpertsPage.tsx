@@ -159,18 +159,18 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">کل کاربران</p>
-                <p className="text-lg font-extrabold">{faNumber(kpis.count)}</p>
+                <p className="text-xl font-extrabold tabular-nums">{faNumber(kpis.count)}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shrink-0">
-                <UserCheck className="w-5 h-5 text-emerald-600" aria-hidden />
+                <UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" aria-hidden />
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">کاربران فعال</p>
-                <p className="text-lg font-extrabold">{faNumber(kpis.active)}</p>
+                <p className="text-xl font-extrabold tabular-nums">{faNumber(kpis.active)}</p>
               </div>
             </CardContent>
           </Card>
@@ -241,8 +241,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
           {/* فیلترها */}
           <Card>
             <CardHeader className="py-4">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Filter className="w-4 h-4 text-primary" aria-hidden /> فیلترهای کاربران
+              <CardTitle className="text-base flex items-center gap-2">
+                <Filter className="w-5 h-5 text-primary" aria-hidden /> فیلترهای کاربران
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -454,7 +454,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         <TableCell className="hidden sm:table-cell text-xs">{e.businessTitle}</TableCell>
                         <TableCell className="hidden lg:table-cell text-xs whitespace-nowrap">{faJalaliShort(e.createdAt)}</TableCell>
                         <TableCell className="text-xs">
-                          {e.active ? <Badge className="bg-emerald-600">فعال</Badge> : <Badge variant="destructive">غیرفعال</Badge>}
+                          {e.active ? <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">فعال</Badge> : <Badge variant="destructive">غیرفعال</Badge>}
                         </TableCell>
                         <TableCell className="text-xs font-bold">{faNumber(e.interactionTotal)}</TableCell>
                       </TableRow>
@@ -483,8 +483,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               {topRealtors.length > 0 && (
                 <Card>
                   <CardHeader className="py-4">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-amber-600" aria-hidden /> درجه همکاری مشاوران (مجموع طرف درخواست + طرف آگهی)
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-amber-600 dark:text-amber-400" aria-hidden /> درجه همکاری مشاوران (مجموع طرف درخواست + طرف آگهی)
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
@@ -502,8 +502,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               {/* جدول تعاملات — عین ستون‌های خود سامانه */}
               <Card>
                 <CardHeader className="py-4">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Network className="w-4 h-4 text-primary" aria-hidden /> تعاملات مشاوران با یکدیگر
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Network className="w-5 h-5 text-primary" aria-hidden /> تعاملات مشاوران با یکدیگر
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">

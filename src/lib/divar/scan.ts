@@ -12,7 +12,7 @@
  */
 
 import { db } from "@/lib/db";
-import { webSearchTabriz, webGetPostDetail, kenarSearch, type DivarPostDetail } from "./client";
+import { webSearchTabriz, webGetPostDetail, kenarSearch, classifyPublisherKind, parseActiveAdCount, type DivarPostDetail } from "./client";
 import { loadDivarSettings, readKenarKey, kenarPostToFields } from "./store";
 import { timeWindowHours, type DivarSettings } from "./config";
 import { locationAllowed } from "./tabriz-locations";
@@ -136,6 +136,9 @@ async function scoreAd(
   const personal = scorePersonalAd({
     title: detail.title,
     description: detail.description,
+    // برچسب رسمی دیوار زیر نقشه — قطعی‌ترین سیگنال شخصی‌بودن
+    publisherType: detail.publisherType,
+    publisherName: detail.publisherName,
   });
   const market = await marketRefFor(null, detail.category ?? "apartment-sell", settings.minMarketSample);
   const location =
@@ -190,7 +193,7 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
 
   try {
     // مرحله ۱ — جست‌وجو در دسته‌های فعال
-    const tokenQueue: { token: string; title: string; priceText: string | null; category: string }[] = [];
+    const tokenQueue: { token: string; title: string; priceText: string | null; category: string; bottomText: string | null }[] = [];
     for (const category of settings.categories) {
       let searchUid: string | null = null;
       let viewedTokens: string | null = null;
@@ -199,14 +202,14 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
         if (useKenar && kenarKey) {
           const res = await kenarSearch(kenarKey, { category, page });
           for (const p of res.posts) {
-            tokenQueue.push({ token: p.token, title: "", priceText: null, category });
+            tokenQueue.push({ token: p.token, title: "", priceText: null, category, bottomText: null });
           }
           scanned += res.posts.length;
           if (!res.hasMore) break;
         } else {
           const res = await webSearchTabriz({ category, page, searchUid, viewedTokens, lastPostDate });
           for (const r of res.rows) {
-            tokenQueue.push({ token: r.token, title: r.title, priceText: r.priceText, category });
+            tokenQueue.push({ token: r.token, title: r.title, priceText: r.priceText, category, bottomText: r.bottomText });
           }
           scanned += res.rows.length;
           searchUid = res.searchUid;
@@ -243,6 +246,11 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
       const detail = await webGetPostDetail(item.token).catch(() => null);
       if (!detail) continue;
       fetched += 1;
+      // پشتیبان نام کسب‌وکار: متن زیرین کارت فهرست جست‌وجو («گروه مشاورین املاک طاهری»)
+      if (detail.publisherType && detail.publisherType !== "personal" && !detail.publisherName && item.bottomText && !item.bottomText.includes("پیش")) {
+        detail.publisherName = item.bottomText;
+        if (detail.publisherType === "business") detail.publisherType = classifyPublisherKind(item.bottomText);
+      }
       const fields = extractAdFields(detail);
       const publishedAt = parseDivarJalaliDateTime(detail.publishedText);
       const bumpedAt = parseDivarJalaliDateTime(detail.lastBumpText);
@@ -314,6 +322,11 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
         analysisJson,
         imagesJson: JSON.stringify(detail.images.slice(0, 12)),
         specsJson: JSON.stringify(detail.specs),
+        // آگهی‌دهنده — برچسب زیر نقشه دیوار
+        publisherType: detail.publisherType ?? null,
+        publisherName: detail.publisherName ?? null,
+        publisherAdCount: detail.publisherAdCountText ? parseActiveAdCount(detail.publisherAdCountText) : null,
+        publisherBrandUrl: detail.publisherBrandUrl ?? null,
         changeKey,
         lastSeenAt: new Date(),
       };

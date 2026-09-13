@@ -23,7 +23,7 @@ export class DivarAgent extends BaseLearningAgent {
     const [ads, scans, rejects, marketStats, settingsRow] = await Promise.all([
       db.divarAd.findMany({
         where: { status: "active" },
-        select: { bucket: true, personalScore: true, totalScore: true, underpriceScore: true, locationScore: true, matchedLineName: true, matchedAreaName: true, category: true, publishedAt: true, pricePerMeter: true },
+        select: { bucket: true, personalScore: true, totalScore: true, underpriceScore: true, locationScore: true, matchedLineName: true, matchedAreaName: true, category: true, publishedAt: true, pricePerMeter: true, publisherType: true, publisherName: true },
         take: 3000,
       }).catch(() => []),
       db.divarScanLog.findMany({ orderBy: { startedAt: "desc" }, take: 5 }).catch(() => []),
@@ -78,19 +78,41 @@ export class DivarAgent extends BaseLearningAgent {
       const personalAds = ads.filter((a) => (a.personalScore ?? 0) >= 60).length;
       const brokerish = ads.filter((a) => (a.personalScore ?? 0) < 35).length;
       const rate = Math.round((personalAds / ads.length) * 100);
+      // برچسب رسمی دیوار زیر نقشه — قطعی‌ترین منبع تشخیص آگهی‌دهنده
+      const labeled = ads.filter((a) => a.publisherType);
+      const labeledPersonal = labeled.filter((a) => a.publisherType === "personal").length;
+      const labeledAgent = labeled.filter((a) => a.publisherType === "agent").length;
+      const labeledDept = labeled.filter((a) => a.publisherType === "department" || a.publisherType === "business").length;
+      const topBrokers = new Map<string, number>();
+      for (const a of labeled) {
+        if (a.publisherType !== "personal" && a.publisherName) {
+          topBrokers.set(a.publisherName, (topBrokers.get(a.publisherName) ?? 0) + 1);
+        }
+      }
+      const topBroker = [...topBrokers.entries()].sort((x, y) => y[1] - x[1])[0];
       cards.push({
         key: "personal-filter",
         domain: "PERSONAL",
         title: `فیلتر شخصی‌بودن: ${rate}٪ آگهی‌های فعال شخصی تشخیص داده شد`,
         body:
           `از ${ads.length} فایل فعال، ${personalAds} آگهی با نشانه‌های قوی «مالک/بدون واسطه» و ${brokerish} آگهی با نشانه‌های مشاور املاک شناسایی شد. ` +
+          (labeled.length > 0
+            ? `برچسب رسمی دیوار (زیر نقشه) برای ${labeled.length} فایل استخراج شده: ${labeledPersonal} شخصی، ${labeledAgent} مشاور املاک و ${labeledDept} دپارتمان املاک — این برچسب سیگنال قطعی امتیازدهی است.` +
+              (topBroker ? ` فعال‌ترین آگهی‌دهنده کسب‌وکاری: «${topBroker[0]}» با ${topBroker[1]} آگهی.` : "")
+            : "برچسب رسمی دیوار هنوز استخراج نشده — با نخستین اسکن پس از به‌روزرسانی، نوع آگهی‌دهنده هر فایل ثبت می‌شود.") +
           (brokerish > ads.length * 0.5
-            ? "بیش از نیمی از آگهی‌ها مشاور املاک‌اند — سیگنال خوبی برای تنظیم دقیق‌تر فیلترها یا افزودن واژگان جدید از طریق بازخورد."
-            : "تعادل مناسبی برقرار است؛ آگهی‌های مشاور املاک در پنجره بررسی با امتیاز پایین قرار می‌گیرند."),
+            ? " بیش از نیمی از آگهی‌ها مشاور املاک‌اند — سیگنال خوبی برای تنظیم دقیق‌تر فیلترها یا افزودن واژگان جدید از طریق بازخورد."
+            : " تعادل مناسبی برقرار است؛ آگهی‌های مشاور املاک در پنجره بررسی با امتیاز پایین قرار می‌گیرند."),
         severity: rate >= 40 ? "positive" : "info",
         metrics: [
           { label: "شخصی (۶۰+)", value: String(personalAds) },
           { label: "مشاورپذیر (<۳۵)", value: String(brokerish) },
+          ...(labeled.length > 0
+            ? [
+                { label: "برچسب دیوار: شخصی", value: String(labeledPersonal) },
+                { label: "برچسب دیوار: مشاور/دپارتمان", value: String(labeledAgent + labeledDept) },
+              ]
+            : []),
         ],
       });
     }

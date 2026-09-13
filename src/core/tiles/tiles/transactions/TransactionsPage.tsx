@@ -184,18 +184,18 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">تعداد کل معاملات</p>
-                <p className="text-lg font-extrabold">{faNumber(summary.totalCount)}</p>
+                <p className="text-xl font-extrabold tabular-nums">{faNumber(summary.totalCount)}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-emerald-600" aria-hidden />
+                <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" aria-hidden />
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">دارای رویداد</p>
-                <p className="text-lg font-extrabold">{faNumber(summary.hasRequestEvent)}</p>
+                <p className="text-xl font-extrabold tabular-nums">{faNumber(summary.hasRequestEvent)}</p>
               </div>
             </CardContent>
           </Card>
@@ -206,7 +206,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">دارای آگهی پیشنهادی</p>
-                <p className="text-lg font-extrabold">{faNumber(summary.hasSuggestedProperty)}</p>
+                <p className="text-xl font-extrabold tabular-nums">{faNumber(summary.hasSuggestedProperty)}</p>
               </div>
             </CardContent>
           </Card>
@@ -217,7 +217,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">دارای هر دو</p>
-                <p className="text-lg font-extrabold">{faNumber(summary.hasBoth)}</p>
+                <p className="text-xl font-extrabold tabular-nums">{faNumber(summary.hasBoth)}</p>
               </div>
             </CardContent>
           </Card>
@@ -227,8 +227,8 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
       {/* فیلترها — با تقویم هجری شمسی مثل خود سامانه */}
       <Card>
         <CardHeader className="py-4">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Filter className="w-4 h-4 text-primary" aria-hidden /> فیلترهای گزارش تطابق
+          <CardTitle className="text-base flex items-center gap-2">
+            <Filter className="w-5 h-5 text-primary" aria-hidden /> فیلترهای گزارش تطابق
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -354,8 +354,8 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="py-4">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-primary" aria-hidden /> روند ماهانه معاملات (هجری شمسی)
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" aria-hidden /> روند ماهانه معاملات (هجری شمسی)
               </CardTitle>
             </CardHeader>
             <CardContent className="chart-ltr h-72">
@@ -375,8 +375,8 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
           </Card>
           <Card>
             <CardHeader className="py-4">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <PieChart className="w-4 h-4 text-primary" aria-hidden /> ترکیب رویداد و آگهی پیشنهادی
+              <CardTitle className="text-base flex items-center gap-2">
+                <PieChart className="w-5 h-5 text-primary" aria-hidden /> ترکیب رویداد و آگهی پیشنهادی
               </CardTitle>
             </CardHeader>
             <CardContent className="chart-ltr h-72">
@@ -398,7 +398,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
       <Card>
         <CardHeader className="py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle className="text-sm">فهرست معاملات</CardTitle>
+            <CardTitle className="text-base">فهرست معاملات</CardTitle>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>
                 صفحه {faNumber(page + 1)} از {faNumber(totalPages)}
@@ -469,7 +469,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
                       <TableCell className="hidden md:table-cell text-xs font-mono" dir="rtl">
                         {t.contractHolo ? (
                           <span className="flex items-center gap-1.5">
-                            <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" aria-hidden />
+                            <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
                             {faDigits(t.contractHolo)}
                           </span>
                         ) : (

@@ -8,8 +8,8 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
-import { divarPostUrl, webGetPostDetail } from "@/lib/divar/client";
-import { predictRejectReasons, type PersonalScoreResult, type UnderpriceResult, type LocationMatchResult } from "@/lib/divar/scoring";
+import { divarPostUrl, webGetPostDetail, classifyPublisherKind, parseActiveAdCount } from "@/lib/divar/client";
+import { predictRejectReasons, PUBLISHER_KIND_LABELS, type PersonalScoreResult, type UnderpriceResult, type LocationMatchResult } from "@/lib/divar/scoring";
 import { formatToman } from "@/lib/divar/parse";
 
 interface AnalysisShape {
@@ -30,6 +30,37 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ token: 
 
   // جزئیات زنده تازه (بهترین تلاش — اگر شبکه اجازه دهد)
   const live = await webGetPostDetail(token).catch(() => null);
+  // آگهی‌دهنده — برچسب زیر نقشه دیوار (اولویت با داده زنده، سپس ذخیره)
+  const publisher = (() => {
+    const lt = live?.publisherType ?? null;
+    if (lt && lt !== "personal") {
+      const name = live?.publisherName ?? ad.publisherName;
+      return {
+        type: name && lt === "business" ? classifyPublisherKind(name) : lt,
+        name,
+        adCountText: live?.publisherAdCountText ?? null,
+        adCount: live?.publisherAdCountText ? parseActiveAdCount(live.publisherAdCountText) : ad.publisherAdCount,
+        brandUrl: live?.publisherBrandUrl ?? ad.publisherBrandUrl,
+        source: "live" as const,
+      };
+    }
+    if (lt === "personal") return { type: "personal", name: null, adCountText: null, adCount: null, brandUrl: null, source: "live" as const };
+    const stRaw = ad.publisherType ?? null;
+    const st = stRaw && (["personal", "agent", "department", "business"] as const).includes(stRaw as "personal") ? (stRaw as "personal" | "agent" | "department" | "business") : null;
+    if (st && st !== "personal") {
+      const name = ad.publisherName;
+      return {
+        type: name && st === "business" ? classifyPublisherKind(name) : st,
+        name,
+        adCountText: null,
+        adCount: ad.publisherAdCount,
+        brandUrl: ad.publisherBrandUrl,
+        source: "stored" as const,
+      };
+    }
+    if (st === "personal") return { type: "personal", name: null, adCountText: null, adCount: null, brandUrl: null, source: "stored" as const };
+    return null;
+  })();
 
   let analysis: AnalysisShape = {};
   try {
@@ -118,6 +149,18 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ token: 
       images,
       postUrl: divarPostUrl(ad.token, ad.title),
       liveAvailable: Boolean(live),
+      // آگهی‌دهنده — عین برچسب زیر نقشه دیوار (مشاور املاک/دپارتمان املاک/شخصی)
+      publisher: publisher
+        ? {
+            type: publisher.type,
+            typeLabel: PUBLISHER_KIND_LABELS[publisher.type] ?? "کسب‌وکار املاک",
+            name: publisher.name,
+            adCountText: publisher.adCountText,
+            adCount: publisher.adCount,
+            brandUrl: publisher.brandUrl,
+            source: publisher.source,
+          }
+        : null,
     },
     analysis: {
       personal,

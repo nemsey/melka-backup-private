@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
         meterage: true, rooms: true, floor: true, buildYear: true, publishedAt: true, bumpedAt: true,
         locationText: true, matchedAreaName: true, matchedLineName: true,
         personalScore: true, underpriceScore: true, locationScore: true, totalScore: true, bucket: true,
+        publisherType: true, publisherName: true,
         imagesJson: true,
       },
     }),

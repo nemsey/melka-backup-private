@@ -281,6 +281,8 @@ model DivarAd {
   personalScore  Float    @default(0)
   underpriceScore Float   @default(0)
   locationScore  Float    @default(0)
+  /// امتیاز «سایر فاکتورهای فایل بهینه» — شاهکار ایجنت (۰..۱۰۰)
+  otherScore     Float    @default(0)
   totalScore     Float    @default(0)
   /// hunt | follow | review
   bucket         String   @default("review")
@@ -294,6 +296,15 @@ model DivarAd {
   specsJson      String?
   /// کلید تغییر (token+price) برای تشخیص تغییر مهم در اسکن‌های بعدی
   changeKey      String?
+
+  /// نوع آگهی‌دهنده — برچسب زیر نقشه دیوار (personal | agent | department | business)
+  publisherType  String?
+  /// نام کسب‌وکار املاک («گروه مشاورین املاک طاهری») — شخصی: null
+  publisherName  String?
+  /// تعداد آگهی فعال کسب‌وکار («۸ آگهی فعال» → 8)
+  publisherAdCount Int?
+  /// پل به صفحه برند کسب‌وکار در دیوار (divar.ir/pro/…)
+  publisherBrandUrl String?
 
   @@index([bucket, totalScore])
   @@index([status, publishedAt])
@@ -352,6 +363,8 @@ model DivarScanLog {
   inWindow    Int      @default(0)
   /// آگهی‌های درون بازه که بیرون از مناطق انتخابی مالک بودند و ذخیره نشدند
   outOfArea   Int      @default(0)
+  /// آگهی‌های غیرشخصی (مشاور/دپارتمان املاک) که به‌موجب قانون مالک خودکار رد شدند
+  autoRejected Int     @default(0)
   newAds      Int      @default(0)
   updatedAds  Int      @default(0)
   /// منبع: web | kenar

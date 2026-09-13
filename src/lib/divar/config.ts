@@ -79,10 +79,12 @@ export const DIVAR_DEFAULT_SETTINGS = {
     "commercial-sell",
     "industry-agriculture-business-sell",
   ] as string[],
-  /** وزن سه معیار (جمع = ۱۰۰) */
+  /** وزن سه معیار امتیازدهی (جمع = ۱۰۰) — پیش‌فرض قوانین مالک:
+   *  ۵۰ = درصد تشخیص شخصی‌بودن  +  ۲۵ = درصد تشخیص زیرقیمت‌بودن  +  ۲۵ = سایر فاکتورهای فایل بهینه (شاهکار ایجنت)
+   *  هر سه از تنظیمات ایجنت قابل افزایش/کاهش‌اند. */
   weightPersonal: 50,
-  weightUnderprice: 30,
-  weightLocation: 20,
+  weightUnderprice: 25,
+  weightOther: 25,
   /** آستانه‌های دسته‌بندی */
   huntThreshold: 70,
   followThreshold: 40,
@@ -104,7 +106,7 @@ export type DivarSettings = {
   categories: string[];
   weightPersonal: number;
   weightUnderprice: number;
-  weightLocation: number;
+  weightOther: number;
   huntThreshold: number;
   followThreshold: number;
   autoScanMinutes: number;
@@ -113,6 +115,8 @@ export type DivarSettings = {
   maxScanPages: number;
   minMarketSample: number;
   armPriceWeight: number;
+  /** نشان مهاجرت یک‌باره به قوانین امتیازدهی نسخه ۲ (۵۰/۲۵/۲۵) */
+  scoringV2Init?: boolean;
 };
 
 /** کلید رمزنگاری اعتبارنامه دیوار (هم‌زنجیره کلید نشست‌های ARM) */

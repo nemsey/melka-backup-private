@@ -163,6 +163,23 @@ export async function loadDivarSettings(): Promise<DivarSettings> {
       .catch(() => undefined);
     parsed = merged;
   }
+  // مهاجرت یک‌بارة قوانین امتیازدهی نسخه ۲ مالک (۵۰/۲۵/۲۵ + رد کامل غیرشخصی‌ها):
+  // وزن «مکان» از امتیاز حذف شد (مکان = فیلتر است) و «سایر فاکتورهای فایل بهینه» جانشین شد.
+  if (!parsed.scoringV2Init) {
+    const merged = { ...DIVAR_DEFAULT_SETTINGS, ...parsed };
+    merged.weightPersonal = DIVAR_DEFAULT_SETTINGS.weightPersonal;
+    merged.weightUnderprice = DIVAR_DEFAULT_SETTINGS.weightUnderprice;
+    merged.weightOther = DIVAR_DEFAULT_SETTINGS.weightOther;
+    delete (merged as Partial<DivarSettings> & { weightLocation?: number }).weightLocation;
+    merged.scoringV2Init = true;
+    await db.divarSetting
+      .update({
+        where: { id: SETTINGS_ID },
+        data: { dataJson: JSON.stringify(merged) },
+      })
+      .catch(() => undefined);
+    parsed = merged;
+  }
   const result: DivarSettings = {
     ...DIVAR_DEFAULT_SETTINGS,
     ...parsed,
@@ -181,7 +198,8 @@ export async function saveDivarSettings(patch: Partial<DivarSettings>): Promise<
     lineIds: cleanIds(patch.lineIds ?? current.lineIds),
     weightPersonal: clamp(patch.weightPersonal ?? current.weightPersonal, 0, 100),
     weightUnderprice: clamp(patch.weightUnderprice ?? current.weightUnderprice, 0, 100),
-    weightLocation: clamp(patch.weightLocation ?? current.weightLocation, 0, 100),
+    weightOther: clamp(patch.weightOther ?? current.weightOther, 0, 100),
+    scoringV2Init: true,
     huntThreshold: clamp(patch.huntThreshold ?? current.huntThreshold, 2, 99),
     followThreshold: clamp(patch.followThreshold ?? current.followThreshold, 1, 98),
     autoScanMinutes: clamp(patch.autoScanMinutes ?? current.autoScanMinutes, 0, 240),

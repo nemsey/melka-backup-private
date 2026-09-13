@@ -81,7 +81,7 @@ function TileCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: order * 0.07, duration: 0.3 }}
       onClick={onOpen}
-      className="tile-press text-right focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl w-full"
+      className="tile-press text-right focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl w-full"
       aria-label={`باز کردن کاشی ${title}`}
     >
       <Card
@@ -157,7 +157,7 @@ export function DashboardHome() {
       {tiles.length === 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-56 rounded-2xl" />
+            <Skeleton key={i} className="h-56 rounded-xl" />
           ))}
         </div>
       )}

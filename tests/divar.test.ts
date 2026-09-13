@@ -117,6 +117,169 @@ describe("فیلتر هوشمند شخصی‌بودن", () => {
 });
 
 // ==========================================================================
+// ۲-ب) برچسب آگهی‌دهنده — عین بخش زیر نقشه دیوار (مشاور املاک/دپارتمان املاک/شخصی)
+// ساختارها از پاسخ‌های واقعی و زنده API دیوار استخراج شده‌اند.
+// ==========================================================================
+
+describe("تشخیص آگهی‌دهنده از برچسب زیر نقشه دیوار", () => {
+  test("طبقه‌بندی نوع کسب‌وکار از نام — نام‌های واقعی تبریز", async () => {
+    const { classifyPublisherKind } = await import("@/lib/divar/client");
+    // مشاور تکی
+    expect(classifyPublisherKind("مشاور حسن رحمتی")).toBe("agent");
+    expect(classifyPublisherKind("مشاور یونس شیرینی اتا")).toBe("agent");
+    // گروه/شعبه/آژانس → دپارتمان
+    expect(classifyPublisherKind("گروه مشاورین املاک طاهری")).toBe("department");
+    expect(classifyPublisherKind("ملک تبریز ۰۴۱۴۱۰۱ شعبه باغلارباغی")).toBe("department");
+    expect(classifyPublisherKind("املاک اطلس")).toBe("department");
+    expect(classifyPublisherKind("املاک ابهری")).toBe("department");
+    // نام نامشخص
+    expect(classifyPublisherKind(null)).toBe("business");
+    expect(classifyPublisherKind("")).toBe("business");
+  });
+
+  test("تجزیه تعداد آگهی فعال («۸ آگهی فعال» → 8)", async () => {
+    const { parseActiveAdCount } = await import("@/lib/divar/client");
+    expect(parseActiveAdCount("۸ آگهی فعال")).toBe(8);
+    expect(parseActiveAdCount("۵۱۲ آگهی فعال")).toBe(512);
+    expect(parseActiveAdCount(null)).toBeNull();
+    expect(parseActiveAdCount("بدون متن عددی")).toBeNull();
+  });
+
+  test("تجزیه پاسخ lazy کارت کسب‌وکار زیر نقشه — EVENT_ROW واقعی دیوار", async () => {
+    const { parseBusinessLazyResponse } = await import("@/lib/divar/client");
+    const raw = {
+      widget_list: [
+        { widget_type: "SECTION_DIVIDER_ROW", data: { "@type": "type.googleapis.com/widgets.SectionDividerRowData" } },
+        {
+          widget_type: "EVENT_ROW",
+          data: {
+            "@type": "type.googleapis.com/widgets.EventRowData",
+            title: "گروه مشاورین املاک طاهری",
+            subtitle: "۸ آگهی فعال",
+            image_url: "https://s100.divarcdn.com/static/imgs/widget-icons/light/icon_secondary/v1/business_real_estate_agency.png",
+            label: "همه آگهی‌ها",
+            action: { type: "PREMIUM_PANEL_BRAND_LANDING", payload: { "@type": "type.googleapis.com/widgets.PremiumPanelBrandLandingPayload", brand_token: "xDiClpnF", is_public: true } },
+            type: "NORMAL",
+          },
+        },
+      ],
+    };
+    const r = parseBusinessLazyResponse(raw);
+    expect(r).not.toBeNull();
+    expect(r!.name).toBe("گروه مشاورین املاک طاهری");
+    expect(r!.adCountText).toBe("۸ آگهی فعال");
+    expect(r!.brandUrl).toBe("https://divar.ir/pro/xDiClpnF");
+    expect(parseBusinessLazyResponse({ widget_list: [] })).toBeNull();
+    expect(parseBusinessLazyResponse(null)).toBeNull();
+  });
+
+  test("تجزیه جزئیات آگهی مشاور: BUSINESS_SECTION موجود است و درخواست lazy استخراج می‌شود", async () => {
+    const { parsePostDetailResponse } = await import("@/lib/divar/client");
+    const raw = {
+      city: { name: "تبریز" },
+      contact: { chat_enabled: true },
+      sections: [
+        { section_name: "TITLE", widgets: [{ widget_type: "LEGEND_TITLE_ROW", data: { title: "آپارتمان ۶۷متر شهرک اندیشه املاک طاهری فروش فوری" } }] },
+        { section_name: "MAP", widgets: [{ widget_type: "MAP_ROW", data: { location: { exact_data: { point: { latitude: 38.079, longitude: 46.376 } } } } }] },
+        {
+          section_name: "BUSINESS_SECTION",
+          widgets: [
+            {
+              widget_type: "LAZY_SECTION",
+              data: {
+                rest_request_path: "/v8/premium-user/post-page/business-data/gaFak0ZB/lazy",
+                request_data: {
+                  "@type": "type.googleapis.com/premium_panel.GetPostBusinessLazyWidgetsRequest.RequestData",
+                  post_token: "gaFak0ZB",
+                  hashed_post_owner_user_id: "1f6ce13d",
+                  post_business_type: "premium-panel",
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const d = parsePostDetailResponse(raw, "gaFak0ZB");
+    expect(d.title).toBe("آپارتمان ۶۷متر شهرک اندیشه املاک طاهری فروش فوری");
+    expect(d.publisherType).toBe("business"); // پیش از واکشی نام
+    expect(d.businessRequest).not.toBeNull();
+    expect(d.businessRequest!.post_token).toBe("gaFak0ZB");
+  });
+
+  test("تجزیه جزئیات آگهی شخصی: بدون BUSINESS_SECTION → شخصی (مالک)", async () => {
+    const { parsePostDetailResponse } = await import("@/lib/divar/client");
+    const raw = {
+      city: { name: "تبریز" },
+      sections: [
+        { section_name: "TITLE", widgets: [{ widget_type: "LEGEND_TITLE_ROW", data: { title: "آپارتمان نقلی با وام شنب غازان" } }] },
+        { section_name: "DESCRIPTION", widgets: [{ widget_type: "DESCRIPTION_ROW", data: { text: "آپارتمان دوطبقه" } }] },
+        { section_name: "MAP", widgets: [{ widget_type: "MAP_ROW", data: { location: { exact_data: { point: { latitude: 38.08, longitude: 46.23 } } } } }] },
+      ],
+    };
+    const d = parsePostDetailResponse(raw, "galQkF2u");
+    expect(d.publisherType).toBe("personal");
+    expect(d.businessRequest).toBeNull();
+    expect(d.publisherName).toBeNull();
+  });
+});
+
+describe("سیگنال رسمی برچسب دیوار در امتیاز شخصی‌بودن", () => {
+  test("آگهی با برچسب «مشاور املاک» زیر نقشه → قطعاً مشاور؛ حتی با متن «مالک هستم بدون واسطه»", async () => {
+    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+    const r = scorePersonalAd({
+      title: "فروش فوری آپارتمان ۱۵۰ متر بهار",
+      description: "مالک هستم، بدون واسطه، مستقیم از مالک، ضرورت مالی فوری — سند تکبرگ",
+      publisherType: "agent",
+      publisherName: "مشاور حسن رحمتی",
+    });
+    expect(r.score).toBeLessThanOrEqual(8); // سقف قطعی
+    expect(r.isBroker).toBe(true);
+    const sig = r.signals.find((s) => s.key === "divar:publisher");
+    expect(sig).toBeDefined();
+    expect(sig!.hit).toBe(true);
+    expect(sig!.label).toContain("مشاور املاک");
+    expect(sig!.label).toContain("مشاور حسن رحمتی");
+    expect(sig!.evidence).toContain("BUSINESS_SECTION");
+  });
+
+  test("آگهی با برچسب «دپارتمان املاک» (گروه/شعبه) → قطعاً مشاور", async () => {
+    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+    const r = scorePersonalAd({
+      title: "واحد ۲۱۰ متری در خاوران تبریز",
+      publisherType: "department",
+      publisherName: "ملک تبریز ۰۴۱۴۱۰۱ شعبه باغلارباغی",
+    });
+    expect(r.score).toBeLessThanOrEqual(8);
+    expect(r.isBroker).toBe(true);
+    expect(r.signals.find((s) => s.key === "divar:publisher")!.label).toContain("دپارتمان املاک");
+  });
+
+  test("آگهی کسب‌وکار بدون نام («business») → باز هم مشاور", async () => {
+    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+    const r = scorePersonalAd({ title: "پیش‌فروش", publisherType: "business" });
+    expect(r.isBroker).toBe(true);
+    expect(r.score).toBeLessThanOrEqual(8);
+  });
+
+  test("برچسب «شخصی» (فاقد کسب‌وکار املاک) → امتیاز تقویت‌شده", async () => {
+    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+    const r = scorePersonalAd({ title: "آپارتمان ۷۰ متری ولیعصر", publisherType: "personal" });
+    expect(r.score).toBe(80); // ۵۰ پایه + ۳۰ برچسب شخصی
+    expect(r.isBroker).toBe(false);
+    const sig = r.signals.find((s) => s.key === "divar:publisher");
+    expect(sig!.label).toContain("شخصی");
+  });
+
+  test("فقدان برچسب ( داده قدیمی/کنار ) → رفتار پیشین حفظ می‌شود (خنثی ۵۰)", async () => {
+    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+    const r = scorePersonalAd({ title: "آپارتمان ۷۰ متری ولیعصر" });
+    expect(r.score).toBe(50);
+    expect(r.signals.find((s) => s.key === "divar:publisher")).toBeUndefined();
+  });
+});
+
+// ==========================================================================
 // ۳) فیلتر هوشمند «زیر قیمت» — شاهکار مقایسه‌ای
 // ==========================================================================
 
