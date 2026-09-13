@@ -39,7 +39,7 @@ interface DetailsResponse {
     locationText: string | null;
     matchedAreaName: string | null;
     matchedLineName: string | null;
-    scores: { personal: number; underprice: number; location: number; total: number; bucket: string };
+    scores: { personal: number; underprice: number; other: number; location: number; total: number; bucket: string };
     specs: { title: string; value: string }[];
     features: string[];
     images: string[];
@@ -59,6 +59,7 @@ interface DetailsResponse {
   analysis: {
     personal: { score: number; isBroker: boolean; confidence: string; signals: { key: string; label: string; weight: number; hit: boolean; evidence: string }[] };
     underprice: { score: number; percentBelow: number | null; referencePerMeter: number | null; sampleCount: number; method: string; reason: string; referenceLabel: string };
+    other: { score: number; factors: { key: string; label: string; score: number; weight: number; evidence: string }[]; reason: string };
     location: { score: number; method: string; reason: string; areaName: string | null; lineName: string | null };
   };
   predictions: { key: string; title: string; likely: number; hint: string }[];
@@ -271,6 +272,24 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
                   </div>
                   <Progress value={data.analysis.underprice.score} className="h-1.5" aria-label="امتیاز زیر قیمت بودن" />
                   <p className="text-[11px] text-muted-foreground leading-5">{data.analysis.underprice.reason}</p>
+                </div>
+
+                <div className="rounded-xl border p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-primary" aria-hidden /> سایر فاکتورهای فایل بهینه (شاهکار ایجنت): {faNumber(Math.round(data.analysis.other.score))}٪</span>
+                    <Badge variant={data.analysis.other.score >= 70 ? "default" : "secondary"} className="text-[10px]">{faNumber(data.analysis.other.factors.length)} فاکتور</Badge>
+                  </div>
+                  <Progress value={data.analysis.other.score} className="h-1.5" aria-label="امتیاز سایر فاکتورهای بهینه" />
+                  <div className="space-y-1.5">
+                    {data.analysis.other.factors.map((f) => (
+                      <div key={f.key} className="flex items-center gap-2 text-[11px]" title={f.evidence}>
+                        <span className="text-muted-foreground w-36 shrink-0 truncate">{f.label}</span>
+                        <Progress value={f.score} className="h-1 grow" aria-label={`${f.label}: ${f.score} درصد`} />
+                        <span className={`font-bold w-9 text-center shrink-0 ${f.score >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>{faNumber(Math.round(f.score))}٪</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-5">{data.analysis.other.reason}</p>
                 </div>
 
                 <div className="rounded-xl border p-3 space-y-2">

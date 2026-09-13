@@ -74,6 +74,12 @@ const DOMAIN_FA: Record<string, string> = {
   DOCUMENT: "اسناد و مدارک",
   GROWTH: "رشد",
   NETWORK: "شبکه همکاری",
+  SCAN: "سلامت اسکن",
+  PERSONAL: "شخصی‌بودن",
+  PRICE: "زیرقیمت و بازار",
+  OTHER: "سایر فاکتورهای بهینه",
+  LOCATION: "مکان",
+  LEARNING: "یادگیری از ردها",
 };
 
 export function AgentPanel({ tileId }: { tileId: string }) {

@@ -72,7 +72,7 @@ export async function PUT(request: NextRequest) {
     if (Array.isArray(body.lineIds)) patch.lineIds = lineIds;
   }
 
-  for (const k of ["weightPersonal", "weightUnderprice", "weightLocation", "huntThreshold", "followThreshold", "autoScanMinutes", "maxScanPages", "minMarketSample", "armPriceWeight"]) {
+  for (const k of ["weightPersonal", "weightUnderprice", "weightOther", "weightLocation", "huntThreshold", "followThreshold", "autoScanMinutes", "maxScanPages", "minMarketSample", "armPriceWeight"]) {
     if (k in body) {
       const n = Number(body[k]);
       if (isFinite(n)) patch[k] = n;

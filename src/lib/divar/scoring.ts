@@ -1,11 +1,13 @@
 /**
- * سه فیلتر هوشمند ایجنت فایل‌یابی + امتیاز نهایی ۱ تا ۱۰۰
+ * چهار فیلتر هوشمند ایجنت فایل‌یابی + امتیاز نهایی ۱ تا ۱۰۰
  * ------------------------------------------------------
- * قوانین مالک (نسخه ۲):
+ * قوانین مالک (نسخه ۳):
  *  ۱) فایل غیرشخصی (مشاور/دپارتمان املاک) کاملاً رد می‌شود — هرگز ذخیره/دسته‌بندی نمی‌شود
  *  ۲) فقط فایل‌های شخصی امتیازدهی و دسته‌بندی می‌شوند
- *  ۳) امتیاز پیش‌فرض: ۵۰ «درصد شخصی‌بودن» + ۲۵ «درصد زیرقیمت‌بودن» + ۲۵ «سایر فاکتورهای فایل بهینه»
- *     (هر سه در تنظیمات ایجنت قابل افزایش/کاهش‌اند)
+ *  ۳) امتیاز پیش‌فرض (جمع = ۱۰۰):
+ *     ۵۰ «درصد شخصی‌بودن» + ۲۰ «درصد زیرقیمت‌بودن»
+ *     + ۲۰ «سایر فاکتورهای فایل بهینه» (شاهکار ایجنت) + ۱۰ «تطبیق مکان با تنظیمات مکان کاربر»
+ *     (هر چهار وزن در تنظیمات ایجنت قابل افزایش/کاهش‌اند)
  */
 
 import { matchTabrizLocation, type LocationMatchResult } from "./tabriz-locations";
@@ -494,7 +496,8 @@ export interface TotalScoreInput {
   personal: number;
   underprice: number;
   other: number;
-  settings: Pick<DivarSettings, "weightPersonal" | "weightUnderprice" | "weightOther" | "huntThreshold" | "followThreshold">;
+  location: number;
+  settings: Pick<DivarSettings, "weightPersonal" | "weightUnderprice" | "weightOther" | "weightLocation" | "huntThreshold" | "followThreshold">;
 }
 
 export type AdBucket = "hunt" | "follow" | "review";
@@ -502,21 +505,22 @@ export type AdBucket = "hunt" | "follow" | "review";
 export interface TotalScoreResult {
   total: number;
   bucket: AdBucket;
-  breakdown: { personal: number; underprice: number; other: number };
+  breakdown: { personal: number; underprice: number; other: number; location: number };
 }
 
 /**
  * امتیاز نهایی ۱ تا ۱۰۰ — فقط فایل‌های شخصی به اینجا می‌رسند (غیرشخصی‌ها کامل رد شده‌اند).
- * پیش‌فرض مالک: ۵۰ شخصی‌بودن + ۲۵ زیرقیمت + ۲۵ سایر فاکتورهای بهینه (قابل تنظیم).
+ * پیش‌فرض مالک (نسخه ۳): ۵۰ شخصی‌بودن + ۲۰ زیرقیمت + ۲۰ سایر فاکتورهای بهینه + ۱۰ مکان (قابل تنظیم).
  */
 export function computeTotalScore(input: TotalScoreInput): TotalScoreResult {
   const wp = Math.max(0, input.settings.weightPersonal);
   const wu = Math.max(0, input.settings.weightUnderprice);
   const wo = Math.max(0, input.settings.weightOther);
-  const sum = wp + wu + wo;
+  const wl = Math.max(0, input.settings.weightLocation);
+  const sum = wp + wu + wo + wl;
   const wsum = sum > 0 ? sum : 100;
   const total = Math.round(
-    (input.personal * wp + input.underprice * wu + input.other * wo) / wsum
+    (input.personal * wp + input.underprice * wu + input.other * wo + input.location * wl) / wsum
   );
   const hunt = Math.max(1, Math.min(99, input.settings.huntThreshold));
   const follow = Math.max(1, Math.min(hunt - 1, input.settings.followThreshold));
@@ -524,7 +528,7 @@ export function computeTotalScore(input: TotalScoreInput): TotalScoreResult {
   return {
     total: Math.max(1, Math.min(100, total)),
     bucket,
-    breakdown: { personal: input.personal, underprice: input.underprice, other: input.other },
+    breakdown: { personal: input.personal, underprice: input.underprice, other: input.other, location: input.location },
   };
 }
 

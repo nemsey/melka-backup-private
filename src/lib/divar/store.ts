@@ -137,7 +137,7 @@ export async function loadDivarSettings(): Promise<DivarSettings> {
   const row = await db.divarSetting.findUnique({ where: { id: SETTINGS_ID } });
   if (!row) {
     await db.divarSetting.create({
-      data: { id: SETTINGS_ID, dataJson: JSON.stringify(DIVAR_DEFAULT_SETTINGS), locFilterInit: true },
+      data: { id: SETTINGS_ID, dataJson: JSON.stringify({ ...DIVAR_DEFAULT_SETTINGS, scoringV3Init: true }), locFilterInit: true },
     });
     return { ...DIVAR_DEFAULT_SETTINGS, areaIds: [...DEFAULT_LOCATION_AREA_IDS], lineIds: [] };
   }
@@ -165,13 +165,32 @@ export async function loadDivarSettings(): Promise<DivarSettings> {
   }
   // مهاجرت یک‌بارة قوانین امتیازدهی نسخه ۲ مالک (۵۰/۲۵/۲۵ + رد کامل غیرشخصی‌ها):
   // وزن «مکان» از امتیاز حذف شد (مکان = فیلتر است) و «سایر فاکتورهای فایل بهینه» جانشین شد.
-  if (!parsed.scoringV2Init) {
+  if (!(parsed as { scoringV2Init?: boolean }).scoringV2Init && !parsed.scoringV3Init) {
+    const merged = { ...DIVAR_DEFAULT_SETTINGS, ...parsed };
+    merged.weightPersonal = 50;
+    merged.weightUnderprice = 25;
+    merged.weightOther = 25;
+    delete (merged as Partial<DivarSettings> & { weightLocation?: number }).weightLocation;
+    (merged as { scoringV2Init?: boolean }).scoringV2Init = true;
+    await db.divarSetting
+      .update({
+        where: { id: SETTINGS_ID },
+        data: { dataJson: JSON.stringify(merged) },
+      })
+      .catch(() => undefined);
+    parsed = merged;
+  }
+  // مهاجرت یک‌بارة قوانین امتیازدهی نسخه ۳ مالک (۵۰/۲۰/۲۰/۱۰):
+  // «سایر فاکتورهای فایل بهینه» (شاهکار ایجنت) و «تطبیق مکان با تنظیمات مکان کاربر» هر دو وزن مستقل گرفتند؛
+  // چهار وزن جمع = ۱۰۰ و هر چهار از تنظیمات ایجنت قابل تنظیم‌اند.
+  if (!parsed.scoringV3Init) {
     const merged = { ...DIVAR_DEFAULT_SETTINGS, ...parsed };
     merged.weightPersonal = DIVAR_DEFAULT_SETTINGS.weightPersonal;
     merged.weightUnderprice = DIVAR_DEFAULT_SETTINGS.weightUnderprice;
     merged.weightOther = DIVAR_DEFAULT_SETTINGS.weightOther;
-    delete (merged as Partial<DivarSettings> & { weightLocation?: number }).weightLocation;
-    merged.scoringV2Init = true;
+    merged.weightLocation = DIVAR_DEFAULT_SETTINGS.weightLocation;
+    delete (merged as Partial<DivarSettings> & { scoringV2Init?: boolean }).scoringV2Init;
+    merged.scoringV3Init = true;
     await db.divarSetting
       .update({
         where: { id: SETTINGS_ID },
@@ -199,7 +218,8 @@ export async function saveDivarSettings(patch: Partial<DivarSettings>): Promise<
     weightPersonal: clamp(patch.weightPersonal ?? current.weightPersonal, 0, 100),
     weightUnderprice: clamp(patch.weightUnderprice ?? current.weightUnderprice, 0, 100),
     weightOther: clamp(patch.weightOther ?? current.weightOther, 0, 100),
-    scoringV2Init: true,
+    weightLocation: clamp(patch.weightLocation ?? current.weightLocation, 0, 100),
+    scoringV3Init: true,
     huntThreshold: clamp(patch.huntThreshold ?? current.huntThreshold, 2, 99),
     followThreshold: clamp(patch.followThreshold ?? current.followThreshold, 1, 98),
     autoScanMinutes: clamp(patch.autoScanMinutes ?? current.autoScanMinutes, 0, 240),

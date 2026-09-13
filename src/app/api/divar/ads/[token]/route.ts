@@ -9,12 +9,13 @@ import { db } from "@/lib/db";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { divarPostUrl, webGetPostDetail, classifyPublisherKind, parseActiveAdCount } from "@/lib/divar/client";
-import { predictRejectReasons, PUBLISHER_KIND_LABELS, type PersonalScoreResult, type UnderpriceResult, type LocationMatchResult } from "@/lib/divar/scoring";
+import { predictRejectReasons, PUBLISHER_KIND_LABELS, type PersonalScoreResult, type UnderpriceResult, type LocationMatchResult, type OtherFactorsResult } from "@/lib/divar/scoring";
 import { formatToman } from "@/lib/divar/parse";
 
 interface AnalysisShape {
   personal?: { score: number; isBroker: boolean; confidence: string; signals: { key: string; label: string; weight: number; hit: boolean; evidence: string }[] };
   underprice?: { score: number; percentBelow: number | null; referencePerMeter: number | null; sampleCount: number; method: string; reason: string };
+  other?: { score: number; factors: { key: string; label: string; score: number; weight: number; evidence: string }[]; reason: string };
   location?: { score: number; method: string; reason: string; areaName: string | null; lineName: string | null };
 }
 
@@ -93,11 +94,18 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ token: 
     method: (analysis.location?.method as LocationMatchResult["method"]) ?? "none",
     reason: analysis.location?.reason ?? "تحلیل مکان در دسترس نیست.",
   };
+  // سایر فاکتورهای فایل بهینه — شاهکار ایجنت (قانون مالک نسخه ۳)
+  const other: OtherFactorsResult = {
+    score: ad.otherScore ?? 0,
+    factors: (analysis.other?.factors as OtherFactorsResult["factors"]) ?? [],
+    reason: analysis.other?.reason ?? "تحلیل سایر فاکتورهای بهینه در دسترس نیست — با اسکن تازه تکمیل می‌شود.",
+  };
 
   const predictions = predictRejectReasons({
     personal,
     underprice,
     location,
+    other,
     pricePerMeter: ad.pricePerMeter,
   });
 
@@ -139,6 +147,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ token: 
       scores: {
         personal: ad.personalScore,
         underprice: ad.underpriceScore,
+        other: ad.otherScore ?? 0,
         location: ad.locationScore,
         total: ad.totalScore,
         bucket: ad.bucket,
@@ -165,6 +174,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ token: 
     analysis: {
       personal,
       underprice: { ...underprice, referenceLabel: formatToman(underprice.referencePerMeter) },
+      other,
       location,
     },
     predictions,

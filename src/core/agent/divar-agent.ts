@@ -2,9 +2,10 @@
  * ایجنت هوشمند فایل‌یابی از دیوار — یادگیرنده اختصاصی این کاشی
  * ------------------------------------------------------
  * دامنه‌های بینش:
- *  SCAN      — پوشش و سلامت اسکن (زمان انتشار واقعی، منبع داده، نرخ فایل تازه)
- *  PERSONAL  — عملکرد فیلتر شخصی‌بودن (درصد آگهی‌های شخصی شناسایی‌شده)
+ *  SCAN      — پوشش و سلامت اسکن (زمان انتشار واقعی، منبع داده، نرخ فایل تازه، رد خودکار)
+ *  PERSONAL  — عملکرد قانون مالک: رد کامل غیرشخصی‌ها + کیفیت تشخیص شخصی‌بودن
  *  PRICE     — کیفیت تشخیص زیرقیمت و آمار بازار محله‌ها
+ *  OTHER     — سایر فاکتورهای فایل بهینه (شاهکار ایجنت)
  *  LOCATION  — دقت تطبیق مکان با منطقه‌بندی آرم
  *  LEARNING  — یادگیری از دلایل رد آگهی توسط کاربر (پیشگیری از تکرار اشتباه)
  */
@@ -15,7 +16,7 @@ import { BaseLearningAgent, type InsightCard } from "./base-agent";
 export class DivarAgent extends BaseLearningAgent {
   readonly tileId = "file-finder";
   readonly name = "ایجنت فایل‌یابی دیوار";
-  readonly insightDomains = ["SCAN", "PERSONAL", "PRICE", "LOCATION", "LEARNING"] as const;
+  readonly insightDomains = ["SCAN", "PERSONAL", "PRICE", "OTHER", "LOCATION", "LEARNING"] as const;
 
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const cards: InsightCard[] = [];
@@ -23,7 +24,7 @@ export class DivarAgent extends BaseLearningAgent {
     const [ads, scans, rejects, marketStats, settingsRow] = await Promise.all([
       db.divarAd.findMany({
         where: { status: "active" },
-        select: { bucket: true, personalScore: true, totalScore: true, underpriceScore: true, locationScore: true, matchedLineName: true, matchedAreaName: true, category: true, publishedAt: true, pricePerMeter: true, publisherType: true, publisherName: true },
+        select: { bucket: true, personalScore: true, totalScore: true, underpriceScore: true, otherScore: true, locationScore: true, matchedLineName: true, matchedAreaName: true, category: true, publishedAt: true, pricePerMeter: true, publisherType: true, publisherName: true },
         take: 3000,
       }).catch(() => []),
       db.divarScanLog.findMany({ orderBy: { startedAt: "desc" }, take: 5 }).catch(() => []),
@@ -49,17 +50,19 @@ export class DivarAgent extends BaseLearningAgent {
       const last = scans[0];
       const okRate = scans.filter((s) => !s.error).length / scans.length;
       const outOfArea = scans.reduce((s, x) => s + (x.outOfArea ?? 0), 0);
+      const autoRejected = scans.reduce((s, x) => s + (x.autoRejected ?? 0), 0);
       cards.push({
         key: "scan-health",
         domain: "SCAN",
         title: `سلامت اسکن دیوار — ${last.error ? "نیازمند توجه" : "پایدار"}`,
         body: last.error
           ? `آخرین اسکن با خطا روبه‌رو شد: «${last.error.slice(0, 160)}». اتصال شبکه یا منبع داده (وب/کنار) را بررسی کنید.`
-          : `آخرین اسکن موفق: ${last.scanned} آگهی بررسی، ${last.inWindow} درون بازه زمانی انتشار، ${last.newAds} فایل تازه در ${Math.round(last.durationMs / 100) / 10} ثانیه. نرخ موفقیت ۵ اسکن اخیر: ${Math.round(okRate * 100)}٪.`,
+          : `آخرین اسکن موفق: ${last.scanned} آگهی بررسی، ${last.inWindow} درون بازه زمانی انتشار، ${last.newAds} فایل شخصی تازه در ${Math.round(last.durationMs / 100) / 10} ثانیه. نرخ موفقیت ۵ اسکن اخیر: ${Math.round(okRate * 100)}٪.`,
         severity: last.error ? "warning" : okRate >= 0.8 ? "positive" : "info",
         metrics: [
           { label: "منبع", value: last.source === "kenar" ? "کنار (رسمی)" : "وب عمومی دیوار" },
-          { label: "فایل تازه", value: String(last.newAds) },
+          { label: "فایل شخصی تازه", value: String(last.newAds) },
+          ...(autoRejected > 0 ? [{ label: "رد خودکار غیرشخصی", value: String(autoRejected) }] : []),
           ...(locFilterActive ? [{ label: "ردِ خارج از محدوده", value: String(outOfArea) }] : []),
         ],
       });
@@ -73,16 +76,12 @@ export class DivarAgent extends BaseLearningAgent {
       });
     }
 
-    // ===== دامنه PERSONAL — عملکرد فیلتر شخصی =====
+    // ===== دامنه PERSONAL — قانون مالک: رد کامل غیرشخصی‌ها + کیفیت تشخیص =====
     if (ads.length > 0) {
       const personalAds = ads.filter((a) => (a.personalScore ?? 0) >= 60).length;
-      const brokerish = ads.filter((a) => (a.personalScore ?? 0) < 35).length;
-      const rate = Math.round((personalAds / ads.length) * 100);
-      // برچسب رسمی دیوار زیر نقشه — قطعی‌ترین منبع تشخیص آگهی‌دهنده
       const labeled = ads.filter((a) => a.publisherType);
       const labeledPersonal = labeled.filter((a) => a.publisherType === "personal").length;
-      const labeledAgent = labeled.filter((a) => a.publisherType === "agent").length;
-      const labeledDept = labeled.filter((a) => a.publisherType === "department" || a.publisherType === "business").length;
+      const autoRejectRecent = scans.reduce((s, x) => s + (x.autoRejected ?? 0), 0);
       const topBrokers = new Map<string, number>();
       for (const a of labeled) {
         if (a.publisherType !== "personal" && a.publisherName) {
@@ -93,26 +92,19 @@ export class DivarAgent extends BaseLearningAgent {
       cards.push({
         key: "personal-filter",
         domain: "PERSONAL",
-        title: `فیلتر شخصی‌بودن: ${rate}٪ آگهی‌های فعال شخصی تشخیص داده شد`,
+        title: `قانون مالک فعال: ${autoRejectRecent > 0 ? `${autoRejectRecent} فایل غیرشخصی در ۵ اسکن اخیر کامل رد شد` : "فایل‌های غیرشخصی هرگز ذخیره نمی‌شوند"}`,
         body:
-          `از ${ads.length} فایل فعال، ${personalAds} آگهی با نشانه‌های قوی «مالک/بدون واسطه» و ${brokerish} آگهی با نشانه‌های مشاور املاک شناسایی شد. ` +
+          `از ${ads.length} فایل فعال، ${personalAds} فایل با نشانه‌های قوی «مالک/بدون واسطه» نگه داشته شده‌اند — فایل غیرشخصی (مشاور/دپارتمان املاک) به‌موجب قانون مالک در اسکن کامل رد می‌شود و هرگز امتیاز/دسته‌بندی نمی‌گیرد. ` +
           (labeled.length > 0
-            ? `برچسب رسمی دیوار (زیر نقشه) برای ${labeled.length} فایل استخراج شده: ${labeledPersonal} شخصی، ${labeledAgent} مشاور املاک و ${labeledDept} دپارتمان املاک — این برچسب سیگنال قطعی امتیازدهی است.` +
-              (topBroker ? ` فعال‌ترین آگهی‌دهنده کسب‌وکاری: «${topBroker[0]}» با ${topBroker[1]} آگهی.` : "")
-            : "برچسب رسمی دیوار هنوز استخراج نشده — با نخستین اسکن پس از به‌روزرسانی، نوع آگهی‌دهنده هر فایل ثبت می‌شود.") +
-          (brokerish > ads.length * 0.5
-            ? " بیش از نیمی از آگهی‌ها مشاور املاک‌اند — سیگنال خوبی برای تنظیم دقیق‌تر فیلترها یا افزودن واژگان جدید از طریق بازخورد."
-            : " تعادل مناسبی برقرار است؛ آگهی‌های مشاور املاک در پنجره بررسی با امتیاز پایین قرار می‌گیرند."),
-        severity: rate >= 40 ? "positive" : "info",
+            ? `برچسب رسمی دیوار (زیر نقشه) برای ${labeled.length} فایل استخراج شده: ${labeledPersonal} شخصی — این برچسب قطعی‌ترین منبع تشخیص است. ` +
+              (topBroker ? ` فعال‌ترین آگهی‌دهنده کسب‌وکاری دیده‌شده: «${topBroker[0]}» (${topBroker[1]} فایل پیش از رد).` : "")
+            : "برچسب رسمی دیوار هنوز استخراج نشده — با نخستین اسکن پس از به‌روزرسانی، نوع آگهی‌دهنده هر فایل ثبت می‌شود."),
+        severity: "positive",
         metrics: [
-          { label: "شخصی (۶۰+)", value: String(personalAds) },
-          { label: "مشاورپذیر (<۳۵)", value: String(brokerish) },
-          ...(labeled.length > 0
-            ? [
-                { label: "برچسب دیوار: شخصی", value: String(labeledPersonal) },
-                { label: "برچسب دیوار: مشاور/دپارتمان", value: String(labeledAgent + labeledDept) },
-              ]
-            : []),
+          { label: "فایل شخصی فعال", value: String(ads.length) },
+          { label: "شخصی قوی (۶۰+)", value: String(personalAds) },
+          ...(autoRejectRecent > 0 ? [{ label: "رد خودکار (۵ اسکن)", value: String(autoRejectRecent) }] : []),
+          ...(labeled.length > 0 ? [{ label: "برچسب دیوار: شخصی", value: String(labeledPersonal) }] : []),
         ],
       });
     }
@@ -134,6 +126,31 @@ export class DivarAgent extends BaseLearningAgent {
         metrics: [
           { label: "زیرقیمت (۷۰+)", value: String(underpriced) },
           { label: "محله‌های آماردار", value: String(withLineStat) },
+        ],
+      });
+    }
+
+    // ===== دامنه OTHER — شاهکار ایجنت: سایر فاکتورهای فایل بهینه =====
+    if (ads.length > 0) {
+      const scored = ads.filter((a) => (a.otherScore ?? 0) > 0);
+      const avg = scored.length ? Math.round(scored.reduce((s, a) => s + (a.otherScore ?? 0), 0) / scored.length) : 0;
+      const strong = scored.filter((a) => (a.otherScore ?? 0) >= 70).length;
+      const freshAds = ads.filter((a) => a.publishedAt && Date.now() - a.publishedAt.getTime() <= 6 * 3600_000).length;
+      cards.push({
+        key: "other-factors",
+        domain: "OTHER",
+        title: `سایر فاکتورهای بهینه (شاهکار ایجنت): میانگین ${avg}٪ — ${strong} فایل بهینه قوی`,
+        body:
+          "ایجنت هر فایل شخصی را از شش فاکتور نکته‌سنج می‌سنجد: فوریت و انگیزه فروش‌نده، تازگی انتشار (ساعات نخست = فرصت شکار)، تکمیل و شفافیت داده‌ها، کیفیت و اصالت محتوا (صداقت در عیب‌ها)، آمادگی معامله (سند تک‌برگ/ملک خالی) و دقت مکان. " +
+          `${freshAds} فایل کمتر از ۶ ساعت از انتشارشان گذشته است — فرصت تماس پیش از رقبا. ` +
+          (avg < 45
+            ? "میانگین پایین نشان می‌دهد بیشتر فایل‌ها متعارف‌اند؛ آستانه شکار را با وزن این معیار هم‌وزن کنید."
+            : "کیفیت کلی فایل‌های بهینه مطلوب است — وزن ۲۰ پیش‌فرض این معیار، فایل‌های بهینه را در پنجره شکار بالا می‌آورد."),
+        severity: avg >= 60 ? "positive" : "info",
+        metrics: [
+          { label: "میانگین سایر فاکتورها", value: `${avg}٪` },
+          { label: "بهینه قوی (۷۰+)", value: String(strong) },
+          { label: "تازه (<۶ ساعت)", value: String(freshAds) },
         ],
       });
     }

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  ExternalLink, Info, XCircle, UploadCloud, MapPin, Ruler, BedDouble, Building2, TrendingDown, UserCheck, Loader2, Image as ImageIcon, Briefcase, ShieldCheck,
+  ExternalLink, Info, XCircle, UploadCloud, MapPin, Ruler, BedDouble, Building2, TrendingDown, UserCheck, Loader2, Image as ImageIcon, Briefcase, ShieldCheck, Sparkles,
 } from "lucide-react";
 import { faNumber, faDateTime } from "@/lib/format";
 import { formatToman } from "@/lib/divar/parse";
@@ -32,6 +32,7 @@ export interface DivarAdRow {
   matchedLineName: string | null;
   personalScore: number;
   underpriceScore: number;
+  otherScore: number;
   locationScore: number;
   totalScore: number;
   bucket: string;
@@ -182,9 +183,10 @@ export function AdCard({
       </div>
 
       {showScores && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 pt-1 border-t">
           <ScoreBar label="شخصی‌بودن" value={ad.personalScore} icon={UserCheck} tone={ad.personalScore >= 60 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
           <ScoreBar label="زیرقیمت" value={ad.underpriceScore} icon={TrendingDown} tone={ad.underpriceScore >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
+          <ScoreBar label="سایر فاکتورها" value={ad.otherScore} icon={Sparkles} tone={ad.otherScore >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
           <ScoreBar label="مکان" value={ad.locationScore} icon={MapPin} tone={ad.locationScore >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
         </div>
       )}

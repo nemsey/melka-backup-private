@@ -53,6 +53,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
       scoreSnapshotJson: JSON.stringify({
         personal: ad.personalScore,
         underprice: ad.underpriceScore,
+        other: ad.otherScore,
         location: ad.locationScore,
         total: ad.totalScore,
         bucket: ad.bucket,
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
         note,
         personal: ad.personalScore,
         underprice: ad.underpriceScore,
+        other: ad.otherScore,
         location: ad.locationScore,
         total: ad.totalScore,
         title: ad.title.slice(0, 120),

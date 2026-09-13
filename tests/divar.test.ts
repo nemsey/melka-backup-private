@@ -1,8 +1,9 @@
 /**
  * تست جامع کاشی «فایل‌یابی از دیوار»
  * - تجزیه داده واقعی دیوار (قیمت/تاریخ جلالی انتشار/مشخصات)
- * - سه فیلتر هوشمند: شخصی‌بودن، زیرقیمت، مکان (عین منطقه‌بندی آرم)
- * - امتیاز نهایی و دسته‌بندی شکار/پیگیری/بررسی (وزن ۵۰/۳۰/۲۰)
+ * - چهار فیلتر هوشمند: شخصی‌بودن، زیرقیمت، سایر فاکتورهای بهینه، مکان (عین منطقه‌بندی آرم)
+ * - امتیاز نهایی و دسته‌بندی شکار/پیگیری/بررسی (وزن ۵۰/۲۰/۲۰/۱۰ — قوانین مالک نسخه ۳)
+ * - قانون مالک: رد کامل فایل غیرشخصی (shouldAutoReject) — فقط فایل‌های شخصی امتیازدهی می‌شوند
  * - کلیدهای چهارگانه: پل به دیوار، جزییات (پیش‌بینی دلایل رد)، رد (بدون آرشیو + یادگیری)، ثبت
  * - منطق اسکن: حساسیت به «زمان انتشار واقعی» نه نردبان؛ تکراری‌ها فقط با تغییر مهم
  * اجرا: bun test tests/divar.test.ts
@@ -399,44 +400,142 @@ describe("فیلتر هوشمند مکان (منطبق با آرم)", () => {
 });
 
 // ==========================================================================
-// ۵) امتیاز نهایی ۱ تا ۱۰۰ + دسته‌بندی سه پنجره (وزن ۵۰/۳۰/۲۰)
+// ۵) امتیاز نهایی ۱ تا ۱۰۰ + دسته‌بندی سه پنجره (وزن ۵۰/۲۰/۲۰/۱۰ — چهار معیار مالک)
 // ==========================================================================
 
-describe("امتیاز نهایی و پنجره‌های شکار/پیگیری/بررسی", () => {
-  const settings = { weightPersonal: 50, weightUnderprice: 30, weightLocation: 20, huntThreshold: 70, followThreshold: 40 };
-  test("فایل قوی (شخصی ۹۰/زیرقیمت ۸۰/مکان ۱۰۰) → شکار", async () => {
+describe("امتیاز نهایی و پنجره‌های شکار/پیگیری/بررسی (چهار معیار مالک ۵۰/۲۰/۲۰/۱۰)", () => {
+  const settings = { weightPersonal: 50, weightUnderprice: 20, weightOther: 20, weightLocation: 10, huntThreshold: 70, followThreshold: 40 };
+  test("فایل قوی (شخصی ۹۰/زیرقیمت ۸۰/سایر ۷۰/مکان ۱۰۰) → شکار", async () => {
     const { computeTotalScore } = await import("@/lib/divar/scoring");
-    const r = computeTotalScore({ personal: 90, underprice: 80, location: 100, settings });
-    expect(r.total).toBe(89); // (۹۰×۵۰+۸۰×۳۰+۱۰۰×۲۰)/۱۰۰
+    const r = computeTotalScore({ personal: 90, underprice: 80, other: 70, location: 100, settings });
+    expect(r.total).toBe(85); // (۹۰×۵۰+۸۰×۲۰+۷۰×۲۰+۱۰۰×۱۰)/۱۰۰
     expect(r.bucket).toBe("hunt");
+    expect(r.breakdown.other).toBe(70);
   });
-  test("فایل میانه (۵۰/۵۰/۵۰) → پیگیری", async () => {
+  test("فایل میانه (۵۰/۵۰/۵۰/۵۰) → پیگیری", async () => {
     const { computeTotalScore } = await import("@/lib/divar/scoring");
-    const r = computeTotalScore({ personal: 50, underprice: 50, location: 50, settings });
+    const r = computeTotalScore({ personal: 50, underprice: 50, other: 50, location: 50, settings });
     expect(r.total).toBe(50);
     expect(r.bucket).toBe("follow");
   });
-  test("فایل ضعیف (مشاور) → بررسی", async () => {
+  test("فایل ضعیف (۱۰/۲۰/۳۰/۲۰) → بررسی", async () => {
     const { computeTotalScore } = await import("@/lib/divar/scoring");
-    const r = computeTotalScore({ personal: 10, underprice: 20, location: 30, settings });
+    const r = computeTotalScore({ personal: 10, underprice: 20, other: 30, location: 20, settings });
     expect(r.total).toBeLessThan(40);
     expect(r.bucket).toBe("review");
   });
-  test("وزن‌های دلخواه کاربر رعایت می‌شود (۳۰/۴۰/۳۰)", async () => {
+  test("وزن‌های دلخواه کاربر رعایت می‌شود (۳۰/۴۰/۲۰/۱۰)", async () => {
     const { computeTotalScore } = await import("@/lib/divar/scoring");
-    const r = computeTotalScore({ personal: 100, underprice: 50, location: 0, settings: { ...settings, weightPersonal: 30, weightUnderprice: 40, weightLocation: 30 } });
-    expect(r.total).toBe(50); // (۱۰۰×۳۰+۵۰×۴۰+۰×۳۰)/۱۰۰
+    const r = computeTotalScore({ personal: 100, underprice: 50, other: 0, location: 0, settings: { ...settings, weightPersonal: 30, weightUnderprice: 40, weightOther: 20, weightLocation: 10 } });
+    expect(r.total).toBe(50); // (۱۰۰×۳۰+۵۰×۴۰+۰×۲۰+۰×۱۰)/۱۰۰
+  });
+  test("وزن مکان فقط با سهم خودش (۱۰) اثر می‌گذارد — مکان ۱۰۰ بقیه ۵۰ → ۵۵", async () => {
+    const { computeTotalScore } = await import("@/lib/divar/scoring");
+    const r = computeTotalScore({ personal: 50, underprice: 50, other: 50, location: 100, settings });
+    expect(r.total).toBe(55); // ۵۰×۰٫۹ + ۱۰۰×۰٫۱
   });
   test("آستانه‌های قابل تنظیم: شکار بالای ۸۰", async () => {
     const { computeTotalScore } = await import("@/lib/divar/scoring");
-    const r = computeTotalScore({ personal: 90, underprice: 60, location: 60, settings: { ...settings, huntThreshold: 80 } });
+    const r = computeTotalScore({ personal: 90, underprice: 60, other: 60, location: 60, settings: { ...settings, huntThreshold: 80 } });
     expect(r.total).toBe(75);
     expect(r.bucket).toBe("follow");
   });
   test("آستانه غیرمنطقی خودکار اصلاح می‌شود (پیگیری < شکار)", async () => {
     const { computeTotalScore } = await import("@/lib/divar/scoring");
-    const r = computeTotalScore({ personal: 50, underprice: 50, location: 50, settings: { ...settings, huntThreshold: 40, followThreshold: 70 } });
+    const r = computeTotalScore({ personal: 50, underprice: 50, other: 50, location: 50, settings: { ...settings, huntThreshold: 40, followThreshold: 70 } });
     expect(r.bucket).toBe("hunt"); // ۵۰ > hunt(۴۰)
+  });
+});
+
+// ==========================================================================
+// ۵-ب) قانون مالک: رد کامل فایل‌های غیرشخصی — فقط شخصی‌ها امتیاز می‌گیرند
+// ==========================================================================
+
+describe("قانون مالک — رد کامل فایل غیرشخصی (shouldAutoReject)", () => {
+  test("برچسب رسمی دیوار «مشاور املاک» → کامل رد", async () => {
+    const { scorePersonalAd, shouldAutoReject } = await import("@/lib/divar/scoring");
+    const p = scorePersonalAd({ title: "اپارتمان ۸۵ متری ولیعصر", description: "بدون واسطه از مالک", publisherType: "agent" });
+    expect(shouldAutoReject(p, "agent")).toBe(true);
+  });
+  test("برچسب «دپارتمان املاک» و «کسب‌وکار املاک» → کامل رد", async () => {
+    const { scorePersonalAd, shouldAutoReject } = await import("@/lib/divar/scoring");
+    const pDept = scorePersonalAd({ title: "فایل دربست ولیعصر" });
+    expect(shouldAutoReject(pDept, "department")).toBe(true);
+    const pBiz = scorePersonalAd({ title: "موقعیت عالی سرمایه‌گذاری" });
+    expect(shouldAutoReject(pBiz, "business")).toBe(true);
+  });
+  test("برچسب «شخصی» + متن قوی شخصی → هرگز رد نمی‌شود", async () => {
+    const { scorePersonalAd, shouldAutoReject } = await import("@/lib/divar/scoring");
+    const p = scorePersonalAd({ title: "فروش فوری اپارتمان ولیعصر", description: "بدون واسطه مستقیم از مالک، ضرورت مالی", publisherType: "personal" });
+    expect(p.score).toBeGreaterThanOrEqual(65);
+    expect(shouldAutoReject(p, "personal")).toBe(false);
+  });
+  test("بدون برچسب + سیگنال متنی قوی مشاور (املاک/آژانس) → رد (isBroker)", async () => {
+    const { scorePersonalAd, shouldAutoReject } = await import("@/lib/divar/scoring");
+    const p = scorePersonalAd({ title: "املاک ثامن — چند فایل دربست", description: "مشاور املاک شما در تبریز، همکاران ما" });
+    expect(p.isBroker).toBe(true);
+    expect(shouldAutoReject(p, null)).toBe(true);
+  });
+  test("بدون برچسب + متن خنثی بدون سیگنال مشاور → رد نمی‌شود (مرزی — به امتیازدهی می‌رسد)", async () => {
+    const { scorePersonalAd, shouldAutoReject } = await import("@/lib/divar/scoring");
+    const p = scorePersonalAd({ title: "اپارتمان ۸۵ متری سالم", description: "طبقه دوم، نور خوب" });
+    expect(shouldAutoReject(p, null)).toBe(false);
+  });
+});
+
+// ==========================================================================
+// ۵-پ) شاهکار ایجنت — سایر فاکتورهای فایل بهینه
+// ==========================================================================
+
+describe("شاهکار ایجنت — سایر فاکتورهای فایل بهینه (scoreOtherFactors)", () => {
+  test("شش فاکتور با وزن‌های مجموع ۱۰۰ ارزیابی می‌شوند", async () => {
+    const { scoreOtherFactors } = await import("@/lib/divar/scoring");
+    const r = scoreOtherFactors({ title: "اپارتمان ولیعصر", description: "توضیحات", publishedAt: new Date() });
+    expect(r.factors.length).toBe(6);
+    expect(r.factors.reduce((s, f) => s + f.weight, 0)).toBe(100);
+    expect(r.score).toBeGreaterThanOrEqual(0);
+    expect(r.score).toBeLessThanOrEqual(100);
+  });
+  test("فایل بهینه کامل (فوریت + تازه + داده کامل + توضیحات مستند + سند) → امتیاز بالا", async () => {
+    const { scoreOtherFactors } = await import("@/lib/divar/scoring");
+    const r = scoreOtherFactors({
+      title: "فروش فوری اپارتمان ۸۵ متری",
+      description: "ملک خودم است، به دلیل ضرورت مالی و بدهی بانکی فوری می‌فروشم. سند تک‌برگ شش‌دانگ آماده انتقال، خالی قابل تحویل فوری. ساختمان ۱۴۰۲، واحد طبقه دوم با آسانسور. قیمت با توجه به نیاز مالی تخفیف داده شده و قابل مذاکره است. اطلاعات کامل: متراژ ۸۵، دو خواب، یک پارکینگ.",
+      priceTotal: 2_000_000_000,
+      pricePerMeter: 23_500_000,
+      meterage: 85,
+      rooms: 2,
+      floor: 2,
+      buildYear: 1402,
+      photoCount: 8,
+      publishedAt: new Date(Date.now() - 60 * 60 * 1000),
+      location: { score: 90, reason: "تطبیق قوی" },
+    });
+    expect(r.score).toBeGreaterThanOrEqual(65);
+    const byKey = new Map(r.factors.map((f) => [f.key, f]));
+    expect(byKey.get("urgency")!.score).toBeGreaterThanOrEqual(70);
+    expect(byKey.get("freshness")!.score).toBe(100);
+    expect(byKey.get("completeness")!.score).toBeGreaterThanOrEqual(85);
+  });
+  test("فایل کهنه و کم‌داده → امتیاز پایین", async () => {
+    const { scoreOtherFactors } = await import("@/lib/divar/scoring");
+    const r = scoreOtherFactors({
+      title: "اپارتمان",
+      description: "تماس بگیرید",
+      publishedAt: new Date(Date.now() - 10 * 24 * 3600 * 1000),
+    });
+    expect(r.score).toBeLessThan(45);
+    const byKey = new Map(r.factors.map((f) => [f.key, f]));
+    expect(byKey.get("freshness")!.score).toBe(10);
+    expect(byKey.get("completeness")!.score).toBeLessThanOrEqual(10);
+  });
+  test("صداقت در عیب‌ها امتیاز اصالت محتوا را بالا می‌برد؛ ادبیات تبلیغاتی پایین می‌آورد", async () => {
+    const { scoreOtherFactors } = await import("@/lib/divar/scoring");
+    const honest = scoreOtherFactors({ title: "کلنگی قدیمی", description: "ملک فرسوده است و نیاز به تعمیر دارد؛ اما موقعیت عالی دارد" });
+    const noisy = scoreOtherFactors({ title: "فرصت سرمایه‌گذاری دردنیافتنی", description: "موقعیت استثنایی، ارزان‌ترین قیمت بازار، فرصت سرمایه‌گذاری موقعیت عالی" });
+    const hKey = new Map(honest.factors.map((f) => [f.key, f])).get("content")!;
+    const nKey = new Map(noisy.factors.map((f) => [f.key, f])).get("content")!;
+    expect(hKey.score).toBeGreaterThan(nKey.score);
   });
 });
 
@@ -455,7 +554,8 @@ describe("کلید جزییات — پیش‌بینی دلایل احتمالی 
       pricePerMeter: null,
     });
     expect(preds.find((p) => p.key === "broker")).toBeTruthy();
-    expect(preds.find((p) => p.key === "broker")!.likely).toBeGreaterThanOrEqual(80);
+    // فایل‌های غیرشخصی قطعی در اسکن کامل رد می‌شوند؛ این پیش‌بینی برای فایل مرزی است (احتمال بالا = ۷۰)
+    expect(preds.find((p) => p.key === "broker")!.likely).toBeGreaterThanOrEqual(70);
     expect(preds.find((p) => p.key === "no-price")).toBeTruthy();
   });
   test("فایل گران → دلیل «overpriced» پیش‌بینی می‌شود", async () => {
@@ -607,11 +707,18 @@ describe("کلید پل به دیوار و ثبت آگهی", () => {
 // ==========================================================================
 
 describe("تنظیمات ایجنت فایل‌یابی", () => {
-  test("پیش‌فرض: وزن ۵۰/۳۰/۲۰، آستانه ۷۰/۴۰، اسکن ۱۵ دقیقه", async () => {
+  test("پیش‌فرض قوانین مالک نسخه ۳: وزن ۵۰/۲۰/۲۰/۱۰ (جمع ۱۰۰)، آستانه ۷۰/۴۰، اسکن ۱۵ دقیقه", async () => {
     const { DIVAR_DEFAULT_SETTINGS } = await import("@/lib/divar/config");
     expect(DIVAR_DEFAULT_SETTINGS.weightPersonal).toBe(50);
-    expect(DIVAR_DEFAULT_SETTINGS.weightUnderprice).toBe(30);
-    expect(DIVAR_DEFAULT_SETTINGS.weightLocation).toBe(20);
+    expect(DIVAR_DEFAULT_SETTINGS.weightUnderprice).toBe(20);
+    expect(DIVAR_DEFAULT_SETTINGS.weightOther).toBe(20);
+    expect(DIVAR_DEFAULT_SETTINGS.weightLocation).toBe(10);
+    expect(
+      DIVAR_DEFAULT_SETTINGS.weightPersonal +
+        DIVAR_DEFAULT_SETTINGS.weightUnderprice +
+        DIVAR_DEFAULT_SETTINGS.weightOther +
+        DIVAR_DEFAULT_SETTINGS.weightLocation
+    ).toBe(100);
     expect(DIVAR_DEFAULT_SETTINGS.huntThreshold).toBe(70);
     expect(DIVAR_DEFAULT_SETTINGS.followThreshold).toBe(40);
     expect(DIVAR_DEFAULT_SETTINGS.autoScanMinutes).toBe(15);
@@ -799,6 +906,78 @@ describe("فیلتر مکان — مهاجرت یک‌باره و ذخیره ا�
     // پرچم مهاجرت ثبت شد؟
     const row = await db.divarSetting.findUnique({ where: { id: "singleton" } });
     expect(row?.locFilterInit).toBe(true);
+  });
+
+  test("مهاجرت یک‌بارة قوانین نسخه ۳: نصب قدیمی (۵۰/۳۰/۲۰) → چهار وزن مالک ۵۰/۲۰/۲۰/۱۰", async () => {
+    const { db } = await import("@/lib/db");
+    const { loadDivarSettings } = await import("@/lib/divar/store");
+    const oldJson = JSON.stringify({
+      timeWindow: "24h",
+      categories: ["apartment-sell"],
+      weightPersonal: 50,
+      weightUnderprice: 30,
+      weightLocation: 20,
+      huntThreshold: 70,
+      followThreshold: 40,
+      autoScanMinutes: 15,
+      areaIds: [],
+      lineIds: [],
+      maxScanPages: 3,
+      minMarketSample: 4,
+      armPriceWeight: 0.35,
+    });
+    await db.divarSetting.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", dataJson: oldJson, locFilterInit: true },
+      update: { dataJson: oldJson, locFilterInit: true },
+    });
+    const settings = await loadDivarSettings();
+    expect(settings.weightPersonal).toBe(50);
+    expect(settings.weightUnderprice).toBe(20);
+    expect(settings.weightOther).toBe(20);
+    expect(settings.weightLocation).toBe(10);
+    expect(settings.scoringV3Init).toBe(true);
+  });
+
+  test("مهاجرت از نسخه ۲ (۵۰/۲۵/۲۵) → نسخه ۳ (۵۰/۲۰/۲۰/۱۰)", async () => {
+    const { db } = await import("@/lib/db");
+    const { loadDivarSettings } = await import("@/lib/divar/store");
+    const v2Json = JSON.stringify({
+      timeWindow: "24h",
+      categories: ["apartment-sell"],
+      weightPersonal: 50,
+      weightUnderprice: 25,
+      weightOther: 25,
+      scoringV2Init: true,
+      huntThreshold: 70,
+      followThreshold: 40,
+      autoScanMinutes: 15,
+      areaIds: [],
+      lineIds: [],
+    });
+    await db.divarSetting.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", dataJson: v2Json, locFilterInit: true },
+      update: { dataJson: v2Json, locFilterInit: true },
+    });
+    const settings = await loadDivarSettings();
+    expect(settings.weightPersonal).toBe(50);
+    expect(settings.weightUnderprice).toBe(20);
+    expect(settings.weightOther).toBe(20);
+    expect(settings.weightLocation).toBe(10);
+    expect(settings.scoringV3Init).toBe(true);
+  });
+
+  test("ذخیره چهار وزن دلخواه کاربر (قابل افزایش/کاهش) — پس از مهاجرت", async () => {
+    const { saveDivarSettings, loadDivarSettings } = await import("@/lib/divar/store");
+    await saveDivarSettings({ weightPersonal: 60, weightUnderprice: 25, weightOther: 15, weightLocation: 5 });
+    const s = await loadDivarSettings();
+    expect(s.weightPersonal).toBe(60);
+    expect(s.weightUnderprice).toBe(25);
+    expect(s.weightOther).toBe(15);
+    expect(s.weightLocation).toBe(5);
+    // بازگرداندن پیش‌فرض مالک برای تست‌های بعدی
+    await saveDivarSettings({ weightPersonal: 50, weightUnderprice: 20, weightOther: 20, weightLocation: 10 });
   });
 
   test("پس از مقداردهی، «همه تبریز» (خالی) انتخاب آگاهانه است و به پیش‌فرض برنمی‌گردد", async () => {

@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         token: true, category: true, title: true, price: true, priceText: true, pricePerMeter: true,
         meterage: true, rooms: true, floor: true, buildYear: true, publishedAt: true, bumpedAt: true,
         locationText: true, matchedAreaName: true, matchedLineName: true,
-        personalScore: true, underpriceScore: true, locationScore: true, totalScore: true, bucket: true,
+        personalScore: true, underpriceScore: true, otherScore: true, locationScore: true, totalScore: true, bucket: true,
         publisherType: true, publisherName: true,
         imagesJson: true,
       },
@@ -83,6 +83,6 @@ export async function GET(request: NextRequest) {
       lineCount: settings.lineIds.length,
     },
     thresholds: { hunt: settings.huntThreshold, follow: settings.followThreshold },
-    weights: { personal: settings.weightPersonal, underprice: settings.weightUnderprice, location: settings.weightLocation },
+    weights: { personal: settings.weightPersonal, underprice: settings.weightUnderprice, other: settings.weightOther, location: settings.weightLocation },
   });
 }

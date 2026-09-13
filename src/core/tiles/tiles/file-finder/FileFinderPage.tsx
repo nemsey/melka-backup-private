@@ -40,7 +40,7 @@ interface AdsResponse {
   rows: DivarAdRow[];
   bucketCounts: { hunt: number; follow: number; review: number };
   thresholds: { hunt: number; follow: number };
-  weights: { personal: number; underprice: number; location: number };
+  weights: { personal: number; underprice: number; other: number; location: number };
   locationFilter: { active: boolean; areaCount: number; lineCount: number };
 }
 
@@ -65,6 +65,7 @@ interface SettingsResponse {
     categories: string[];
     weightPersonal: number;
     weightUnderprice: number;
+    weightOther: number;
     weightLocation: number;
     huntThreshold: number;
     followThreshold: number;
@@ -92,6 +93,7 @@ interface ScanLogRow {
   fetched: number;
   inWindow: number;
   outOfArea: number;
+  autoRejected: number;
   newAds: number;
   updatedAds: number;
   source: string;
@@ -318,7 +320,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
           {lastScan && (
             <span className="text-[11px] text-muted-foreground hidden sm:inline">
               آخرین اسکن: {faDateTime(lastScan.startedAt)}
-              {lastScan.error ? " — با خطا" : ` — ${faNumber(lastScan.newAds)} فایل تازه`}
+              {lastScan.error ? " — با خطا" : ` — ${faNumber(lastScan.newAds)} فایل شخصی تازه${lastScan.autoRejected > 0 ? ` / ${faNumber(lastScan.autoRejected)} رد خودکار` : ""}`}
             </span>
           )}
           <Button size="sm" className="gap-1.5" onClick={runScan} disabled={scanning}>
@@ -528,18 +530,26 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold">وزن معیارها در امتیاز نهایی (جمع {faNumber(
-                      settingsData.settings.weightPersonal + settingsData.settings.weightUnderprice + settingsData.settings.weightLocation
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <Label className="text-xs font-bold">سایر معیارها در امتیاز نهایی (جمع {faNumber(
+                      settingsData.settings.weightPersonal + settingsData.settings.weightUnderprice + settingsData.settings.weightOther + settingsData.settings.weightLocation
                     )})</Label>
+                    <Badge variant={
+                      settingsData.settings.weightPersonal + settingsData.settings.weightUnderprice + settingsData.settings.weightOther + settingsData.settings.weightLocation === 100
+                        ? "default" : "secondary"
+                    } className="text-[10px] h-5 px-1.5">۴ معیار</Badge>
                   </div>
+                  <p className="text-[11px] text-muted-foreground leading-5">
+                    قانون مالک: فقط فایل‌های شخصی امتیازدهی می‌شوند (غیرشخصی‌ها کامل رد)؛ پیش‌فرض — شخصی ۵۰، زیرقیمت ۲۰، سایر فاکتورهای بهینه ۲۰، مکان ۱۰. هر معیار قابل افزایش/کاهش است.
+                  </p>
                   {[
-                    { key: "weightPersonal", label: "شخصی‌بودن (مهم‌ترین)", value: settingsData.settings.weightPersonal },
-                    { key: "weightUnderprice", label: "زیرقیمت‌بودن", value: settingsData.settings.weightUnderprice },
-                    { key: "weightLocation", label: "مکان", value: settingsData.settings.weightLocation },
+                    { key: "weightPersonal", label: "شخصی‌بودن (۵۰)", value: settingsData.settings.weightPersonal, hint: "درصد تشخیص شخصی‌بودن فایل" },
+                    { key: "weightUnderprice", label: "زیرقیمت (۲۰)", value: settingsData.settings.weightUnderprice, hint: "درصد تشخیص زیرقیمت‌بودن" },
+                    { key: "weightOther", label: "سایر فاکتورهای بهینه (۲۰)", value: settingsData.settings.weightOther, hint: "شاهکار ایجنت — فوریت/تازگی/تکمیل داده/اصالت/آمادگی" },
+                    { key: "weightLocation", label: "مکان (۱۰)", value: settingsData.settings.weightLocation, hint: "تطبیق مکان فایل با تنظیمات مکان شما" },
                   ].map((w) => (
                     <div key={w.key} className="flex items-center gap-3">
-                      <span className="text-xs w-32 shrink-0 text-muted-foreground">{w.label}</span>
+                      <span className="text-xs w-32 shrink-0 text-muted-foreground" title={w.hint}>{w.label}</span>
                       <Slider
                         value={[w.value]}
                         min={0}
@@ -716,7 +726,8 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
                   <span>بررسی {faNumber(log.scanned)}</span>
                   <span>درون بازه {faNumber(log.inWindow)}</span>
                   {log.outOfArea > 0 && <span>خارج از محدوده {faNumber(log.outOfArea)}</span>}
-                  <span>تازه {faNumber(log.newAds)}</span>
+                  {log.autoRejected > 0 && <span>رد خودکار (غیرشخصی) {faNumber(log.autoRejected)}</span>}
+                  <span>شخصیِ تازه {faNumber(log.newAds)}</span>
                   <span>{(log.durationMs / 1000).toFixed(1)} ثانیه</span>
                   <Badge variant={log.error ? "destructive" : "secondary"} className="text-[10px] h-5">
                     {log.error ? "خطا" : log.source === "kenar" ? "کنار" : "وب"}

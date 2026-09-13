@@ -5,10 +5,12 @@
  *  ۱) جست‌وجوی دسته‌های فعال در تبریز (وب عمومی یا کنار در صورت کلید)
  *  ۲) برای آگهی‌های تازه/تغییرکرده: دریافت جزئیات و خواندن «انتشار آگهی» —
  *     فیلتر زمان بر زمان واقعی ایجاد اعمال می‌شود، نه ترتیب نردبان دیوار
- *  ۳) امتیازدهی سه‌گانه (شخصی/زیرقیمت/مکان) و دسته‌بندی شکار/پیگیری/بررسی
- *  ۴) به‌روزرسانی آمار قیمت بازار برای مبنای زیرقیمت
- *  ۵) ثبت گزارش اسکن
- * آگهی‌های بیرون از بازه زمانی (رد سیستم) هرگز ذخیره نمی‌شوند.
+ *  ۳) قانون مالک: فایل غیرشخصی (مشاور/دپارتمان املاک) کاملاً رد می‌شود — هرگز ذخیره نمی‌شود
+ *  ۴) فقط فایل‌های شخصی با چهار معیار امتیازدهی می‌شوند:
+ *     شخصی‌بودن + زیرقیمت + سایر فاکتورهای بهینه + مکان → شکار/پیگیری/بررسی
+ *  ۵) به‌روزرسانی آمار قیمت بازار برای مبنای زیرقیمت
+ *  ۶) ثبت گزارش اسکن
+ * آگهی‌های بیرون از بازه زمانی یا مناطق انتخابی (رد سیستم) هرگز ذخیره نمی‌شوند.
  */
 
 import { db } from "@/lib/db";
@@ -25,7 +27,7 @@ import {
   parseRooms,
   parseDivarJalaliDateTime,
 } from "./parse";
-import { scorePersonalAd, scoreUnderprice, scoreLocation, computeTotalScore, type AdBucket, type LocationMatchResult } from "./scoring";
+import { scorePersonalAd, scoreUnderprice, scoreLocation, scoreOtherFactors, computeTotalScore, shouldAutoReject, type AdBucket, type LocationMatchResult, type OtherFactorsResult } from "./scoring";
 
 export interface ScanSummary {
   ok: boolean;
@@ -35,6 +37,8 @@ export interface ScanSummary {
   inWindow: number;
   /** آگهی‌های درون بازه که بیرون از مناطق انتخابی مالک بودند و ذخیره نشدند */
   outOfArea: number;
+  /** آگهی‌های غیرشخصی (مشاور/دپارتمان املاک) که به‌موجب قانون مالک کاملاً رد شدند */
+  autoRejected: number;
   newAds: number;
   updatedAds: number;
   durationMs: number;
@@ -44,6 +48,7 @@ export interface ScanSummary {
 interface AdAnalysis {
   personal: ReturnType<typeof scorePersonalAd>;
   underprice: ReturnType<typeof scoreUnderprice>;
+  other: OtherFactorsResult;
   location: ReturnType<typeof scoreLocation>;
 }
 
@@ -126,11 +131,12 @@ function extractAdFields(detail: DivarPostDetail) {
   return { meterage, rooms, buildYear, floor, priceTotal, pricePerMeter };
 }
 
-/** امتیازدهی کامل یک آگهی — مکان می‌تواند از قبل (برای فیلتر مکانی) محاسبه شده باشد */
+/** امتیازدهی کامل یک آگهی شخصی — مکان می‌تواند از قبل (برای فیلتر مکانی) محاسبه شده باشد */
 async function scoreAd(
   detail: DivarPostDetail,
   fields: ReturnType<typeof extractAdFields>,
   settings: DivarSettings,
+  publishedAt: Date | null,
   preLocation?: LocationMatchResult
 ): Promise<{ analysis: AdAnalysis; total: ReturnType<typeof computeTotalScore> }> {
   const personal = scorePersonalAd({
@@ -161,13 +167,28 @@ async function scoreAd(
     armWeight: settings.armPriceWeight,
     minSample: settings.minMarketSample,
   });
+  // شاهکار ایجنت — سایر فاکتورهای فایل بهینه (فوریت/تازگی/تکمیل داده/اصالت/آمادگی/دقت مکان)
+  const other = scoreOtherFactors({
+    title: detail.title,
+    description: detail.description,
+    priceTotal: fields.priceTotal,
+    pricePerMeter: fields.pricePerMeter,
+    meterage: fields.meterage,
+    rooms: fields.rooms,
+    floor: fields.floor,
+    buildYear: fields.buildYear,
+    photoCount: detail.images?.length ?? 0,
+    publishedAt,
+    location: { score: location.score, reason: location.reason },
+  });
   const total = computeTotalScore({
     personal: personal.score,
     underprice: underprice.score,
+    other: other.score,
     location: location.score,
     settings,
   });
-  return { analysis: { personal, underprice, location }, total };
+  return { analysis: { personal, underprice, other, location }, total };
 }
 
 /** اجرای کامل یک اسکن */
@@ -185,6 +206,7 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
   let fetched = 0;
   let inWindow = 0;
   let outOfArea = 0;
+  let autoRejected = 0;
   let newAds = 0;
   let updatedAds = 0;
   const locationFilterActive = settings.areaIds.length > 0 || settings.lineIds.length > 0;
@@ -278,7 +300,14 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
         continue;
       }
 
-      const { analysis, total } = await scoreAd(detail, fields, settings, location);
+      const { analysis, total } = await scoreAd(detail, fields, settings, publishedAt, location);
+
+      // قانون مالک ۱ و ۲: فایل غیرشخصی (مشاور/دپارتمان املاک) کاملاً رد می‌شود —
+      // هرگز ذخیره/امتیازدهی/دسته‌بندی نمی‌شود؛ فقط شمارنده رد خودکار ثبت می‌شود.
+      if (shouldAutoReject(analysis.personal, detail.publisherType)) {
+        autoRejected += 1;
+        continue;
+      }
 
       const analysisJson = JSON.stringify({
         personal: { score: analysis.personal.score, isBroker: analysis.personal.isBroker, confidence: analysis.personal.confidence, signals: analysis.personal.signals },
@@ -290,6 +319,7 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
           method: analysis.underprice.method,
           reason: analysis.underprice.reason,
         },
+        other: { score: analysis.other.score, factors: analysis.other.factors, reason: analysis.other.reason },
         location: { score: analysis.location.score, method: analysis.location.method, reason: analysis.location.reason, areaName: analysis.location.areaName, lineName: analysis.location.lineName },
       });
 
@@ -316,6 +346,7 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
         matchedLineName: analysis.location.lineName,
         personalScore: analysis.personal.score,
         underpriceScore: analysis.underprice.score,
+        otherScore: analysis.other.score,
         locationScore: analysis.location.score,
         totalScore: total.total,
         bucket: total.bucket,
@@ -364,7 +395,7 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
     const durationMs = Date.now() - started;
     await db.divarScanLog.update({
       where: { id: log.id },
-      data: { durationMs, scanned, fetched, inWindow, outOfArea, newAds, updatedAds },
+      data: { durationMs, scanned, fetched, inWindow, outOfArea, autoRejected, newAds, updatedAds },
     });
     return {
       ok: true,
@@ -373,29 +404,34 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
       fetched,
       inWindow,
       outOfArea,
+      autoRejected,
       newAds,
       updatedAds,
       durationMs,
-      message: locationFilterActive
-        ? `اسکن کامل شد — ${newAds} فایل تازه، ${updatedAds} به‌روزشده از ${inWindow} آگهی درون بازه؛ ${outOfArea} آگهی بیرون از مناطق انتخابی رد شد (فیلتر مکان فعال).`
-        : `اسکن کامل شد — ${newAds} فایل تازه، ${updatedAds} به‌روزشده از ${inWindow} آگهی درون بازه (فیلتر مکان: همه تبریز).`,
+      message: `اسکن کامل شد — ${newAds} فایل شخصی تازه، ${updatedAds} به‌روزشده از ${inWindow} آگهی درون بازه؛ ${autoRejected} فایل غیرشخصی (مشاور/دپارتمان املاک) به‌موجب قانون مالک کاملاً رد شد${locationFilterActive ? `؛ ${outOfArea} آگهی بیرون از مناطق انتخابی رد شد (فیلتر مکان فعال)` : " (فیلتر مکان: همه تبریز)"}.`,
     };
   } catch (err) {
     const message = (err as Error).message ?? "خطای نامشخص در اسکن";
     await db.divarScanLog.update({
       where: { id: log.id },
-      data: { error: message.slice(0, 300), durationMs: Date.now() - started, scanned, fetched, inWindow, outOfArea, newAds, updatedAds },
+      data: { error: message.slice(0, 300), durationMs: Date.now() - started, scanned, fetched, inWindow, outOfArea, autoRejected, newAds, updatedAds },
     });
-    return { ok: false, source: useKenar ? "kenar" : "web", scanned, fetched, inWindow, outOfArea, newAds, updatedAds, durationMs: Date.now() - started, message };
+    return { ok: false, source: useKenar ? "kenar" : "web", scanned, fetched, inWindow, outOfArea, autoRejected, newAds, updatedAds, durationMs: Date.now() - started, message };
   }
 }
 
-/** بازامتیازدهی آگهی‌های موجود پس از به‌روز شدن آمار بازار (فقط زیرقیمت و کل) */
+/** بازامتیازدهی آگهی‌های موجود پس از به‌روز شدن آمار بازار (زیرقیمت، سایر فاکتورها و کل)
+ * + پُرسازی یک‌باره «سایر فاکتورهای بهینه» برای فایل‌های ذخیره‌شده پیش از قوانین نسخه ۳ */
 async function rescoreAgainstMarket(settings: DivarSettings): Promise<void> {
   const ads = await db.divarAd.findMany({
     where: { status: "active" },
     take: 2000,
-    select: { token: true, pricePerMeter: true, category: true, personalScore: true, locationScore: true, totalScore: true, matchedLineId: true, analysisJson: true },
+    select: {
+      token: true, pricePerMeter: true, category: true, personalScore: true, otherScore: true, locationScore: true,
+      totalScore: true, matchedLineId: true, analysisJson: true,
+      title: true, description: true, price: true, meterage: true, rooms: true, floor: true, buildYear: true,
+      publishedAt: true, imagesJson: true,
+    },
   });
   for (const ad of ads) {
     const lineRef = await marketRefFor(ad.matchedLineId, ad.category, settings.minMarketSample);
@@ -408,21 +444,47 @@ async function rescoreAgainstMarket(settings: DivarSettings): Promise<void> {
       armWeight: settings.armPriceWeight,
       minSample: settings.minMarketSample,
     });
-    const total = computeTotalScore({
-      personal: ad.personalScore,
-      underprice: underprice.score,
-      location: ad.locationScore,
-      settings,
-    });
-    if (total.total === ad.totalScore && underprice.score === 0) continue;
-    if (total.total === ad.totalScore) continue;
-    // به‌روزرسانی تحلیل زیرقیمت در analysisJson
     let analysisObj: Record<string, unknown> = {};
     try {
       analysisObj = JSON.parse(ad.analysisJson ?? "{}") as Record<string, unknown>;
     } catch {
       analysisObj = {};
     }
+    // پُرسازی یک‌باره: فایل‌های پیش از نسخه ۳ «سایر فاکتور» ندارند → با شاهکار ایجنت تحلیل می‌شوند
+    let otherScore = ad.otherScore ?? 0;
+    let otherDirty = false;
+    if (!analysisObj.other) {
+      let photoCount = 0;
+      try {
+        photoCount = (JSON.parse(ad.imagesJson ?? "[]") as unknown[]).length;
+      } catch {
+        photoCount = 0;
+      }
+      const other = scoreOtherFactors({
+        title: ad.title,
+        description: ad.description,
+        priceTotal: ad.price,
+        pricePerMeter: ad.pricePerMeter,
+        meterage: ad.meterage,
+        rooms: ad.rooms,
+        floor: ad.floor,
+        buildYear: ad.buildYear,
+        photoCount,
+        publishedAt: ad.publishedAt,
+        location: { score: ad.locationScore ?? 0 },
+      });
+      otherScore = other.score;
+      otherDirty = true;
+      analysisObj.other = { score: other.score, factors: other.factors, reason: other.reason };
+    }
+    const total = computeTotalScore({
+      personal: ad.personalScore,
+      underprice: underprice.score,
+      other: otherScore,
+      location: ad.locationScore,
+      settings,
+    });
+    if (total.total === ad.totalScore && !otherDirty) continue;
     analysisObj.underprice = {
       score: underprice.score,
       percentBelow: underprice.percentBelow,
@@ -433,7 +495,13 @@ async function rescoreAgainstMarket(settings: DivarSettings): Promise<void> {
     };
     await db.divarAd.update({
       where: { token: ad.token },
-      data: { underpriceScore: underprice.score, totalScore: total.total, bucket: total.bucket, analysisJson: JSON.stringify(analysisObj) },
+      data: {
+        underpriceScore: underprice.score,
+        otherScore,
+        totalScore: total.total,
+        bucket: total.bucket,
+        analysisJson: JSON.stringify(analysisObj),
+      },
     });
   }
 }
