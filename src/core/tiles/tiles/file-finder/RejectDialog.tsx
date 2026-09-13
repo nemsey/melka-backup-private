@@ -114,8 +114,11 @@ export function RejectDialog({
         ) : (
           <div className="space-y-4">
             <div className="rounded-xl border divide-y">
-              {reasons.map((r) => (
+              {reasons.map((r, ri) => (
                 <div key={r.key} className="flex items-start gap-3 p-3">
+                  <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-[10px] font-bold tabular-nums mt-0.5 shrink-0" aria-label={`دلیل ${faNumber(ri + 1)}`} title={`ردیف ${faNumber(ri + 1)}`}>
+                    {faNumber(ri + 1)}
+                  </span>
                   <Checkbox
                     id={`reason-${r.key}`}
                     checked={selected.includes(r.key)}

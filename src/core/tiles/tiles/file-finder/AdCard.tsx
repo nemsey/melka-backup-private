@@ -3,6 +3,7 @@
 /**
  * کارت فایل (آگهی دیوار) — چهار کلید اختصاصی:
  * ۱. پل به دیوار  ۲. جزییات آگهی  ۳. رد آگهی  ۴. ثبت آگهی
+ * شمارة ردیف هر فایل در سربرگ کارت می‌آید (قانون مالک: هر فهرستی شماره‌دار است).
  */
 
 import { Badge } from "@/components/ui/badge";
@@ -66,22 +67,59 @@ const CATEGORY_LABELS: Record<string, string> = {
   "commercial-rent": "اجاره تجاری",
 };
 
-const BUCKET_STYLES: Record<string, { label: string; badge: "default" | "secondary" | "destructive" | "outline"; ring: string }> = {
-  hunt: { label: "شکار", badge: "default", ring: "ring-2 ring-emerald-500/60" },
-  follow: { label: "پیگیری", badge: "secondary", ring: "ring-2 ring-amber-500/40" },
-  review: { label: "بررسی", badge: "outline", ring: "" },
+const BUCKET_STYLES: Record<string, { label: string; chip: string; ring: string }> = {
+  hunt: {
+    label: "شکار",
+    chip: "bg-gradient-to-l from-emerald-600 to-emerald-500 text-white shadow-sm shadow-emerald-600/30",
+    ring: "ring-2 ring-emerald-500/60 border-emerald-200/70 dark:border-emerald-900/60",
+  },
+  follow: {
+    label: "پیگیری",
+    chip: "bg-gradient-to-l from-amber-600 to-amber-500 text-white shadow-sm shadow-amber-600/30",
+    ring: "ring-2 ring-amber-500/40 border-amber-200/70 dark:border-amber-900/60",
+  },
+  review: { label: "بررسی", chip: "bg-muted text-muted-foreground border", ring: "" },
+};
+
+/** رنگ اختصاصی چهار معیار — پالت زمرد/کهربا/رز/فیروزه (بدون آبی/بنفش) */
+const CRITERION_TONES: Record<string, { track: string; bar: string; text: string; icon: string }> = {
+  personal: {
+    track: "bg-emerald-500/15",
+    bar: "bg-gradient-to-l from-emerald-600 to-emerald-400",
+    text: "text-emerald-700 dark:text-emerald-400",
+    icon: "text-emerald-600 dark:text-emerald-400",
+  },
+  underprice: {
+    track: "bg-amber-500/15",
+    bar: "bg-gradient-to-l from-amber-600 to-amber-400",
+    text: "text-amber-700 dark:text-amber-400",
+    icon: "text-amber-600 dark:text-amber-400",
+  },
+  other: {
+    track: "bg-rose-500/15",
+    bar: "bg-gradient-to-l from-rose-600 to-rose-400",
+    text: "text-rose-700 dark:text-rose-400",
+    icon: "text-rose-600 dark:text-rose-400",
+  },
+  location: {
+    track: "bg-teal-500/15",
+    bar: "bg-gradient-to-l from-teal-600 to-teal-400",
+    text: "text-teal-700 dark:text-teal-400",
+    icon: "text-teal-600 dark:text-teal-400",
+  },
 };
 
 function ScoreBar({ label, value, icon: Icon, tone }: { label: string; value: number; icon: React.ComponentType<{ className?: string }>; tone: string }) {
+  const t = CRITERION_TONES[tone] ?? CRITERION_TONES.personal;
   return (
     <div className="flex items-center gap-2 min-w-[7.5rem] grow">
-      <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden />
+      <Icon className={`w-3.5 h-3.5 shrink-0 ${t.icon}`} aria-hidden />
       <div className="grow space-y-1">
         <div className="flex items-center justify-between gap-1">
           <span className="text-xs text-muted-foreground">{label}</span>
-          <span className={`text-xs font-bold ${tone}`}>{faNumber(Math.round(value))}٪</span>
+          <span className={`text-xs font-bold ${t.text}`}>{faNumber(Math.round(value))}٪</span>
         </div>
-        <Progress value={value} className="h-1.5" aria-label={`${label}: ${value} درصد`} />
+        <Progress value={value} className={`h-1.5 ${t.track}`} indicatorClassName={t.bar} aria-label={`${label}: ${value} درصد`} />
       </div>
     </div>
   );
@@ -89,6 +127,7 @@ function ScoreBar({ label, value, icon: Icon, tone }: { label: string; value: nu
 
 export function AdCard({
   ad,
+  index,
   showScores,
   busyAction,
   onDetails,
@@ -96,6 +135,8 @@ export function AdCard({
   onRegister,
 }: {
   ad: DivarAdRow;
+  /** شمارة ردیف فایل در فهرست — یک‌مبنا، با ارقام فارسی نمایش داده می‌شود */
+  index: number;
   showScores: boolean;
   busyAction: string | null;
   onDetails: (ad: DivarAdRow) => void;
@@ -107,11 +148,20 @@ export function AdCard({
   const PublisherIcon = publisherChip?.icon;
   const busy = busyAction === ad.token;
   return (
-    <article className={`rounded-xl border bg-card p-4 space-y-3 ${bucketStyle.ring}`} aria-label={`فایل ${ad.title}`}>
+    <article className={`rounded-xl border bg-card p-4 space-y-3 shadow-sm shadow-black/5 ${bucketStyle.ring}`} aria-label={`فایل شمارة ${faNumber(index)} — ${ad.title}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 grow space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant={bucketStyle.badge}>{bucketStyle.label} — {faNumber(Math.round(ad.totalScore))} امتیاز</Badge>
+            <span
+              className="inline-flex items-center justify-center min-w-7 h-7 px-1.5 rounded-lg bg-gradient-to-b from-primary/15 to-primary/5 border border-primary/20 text-xs font-extrabold text-primary tabular-nums"
+              title={`ردیف ${faNumber(index)}`}
+              aria-label={`ردیف ${faNumber(index)}`}
+            >
+              {faNumber(index)}
+            </span>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 h-6 text-[11px] font-bold ${bucketStyle.chip}`}>
+              {bucketStyle.label} — {faNumber(Math.round(ad.totalScore))} امتیاز
+            </span>
             <Badge variant="outline" className="text-[10px]">{CATEGORY_LABELS[ad.category] ?? ad.category}</Badge>
             {publisherChip && PublisherIcon && (
               <Badge
@@ -159,7 +209,9 @@ export function AdCard({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            <span className="font-bold text-primary">{ad.price != null ? formatToman(ad.price) : "توافقی/اجاره"}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/20 px-2 py-0.5 font-extrabold text-primary">
+              {ad.price != null ? formatToman(ad.price) : "توافقی/اجاره"}
+            </span>
             {ad.pricePerMeter != null && (
               <span className="text-muted-foreground">هر متر: {formatToman(ad.pricePerMeter)}</span>
             )}
@@ -183,16 +235,16 @@ export function AdCard({
       </div>
 
       {showScores && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 pt-1 border-t">
-          <ScoreBar label="شخصی‌بودن" value={ad.personalScore} icon={UserCheck} tone={ad.personalScore >= 60 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
-          <ScoreBar label="زیرقیمت" value={ad.underpriceScore} icon={TrendingDown} tone={ad.underpriceScore >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
-          <ScoreBar label="سایر فاکتورها" value={ad.otherScore} icon={Sparkles} tone={ad.otherScore >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
-          <ScoreBar label="مکان" value={ad.locationScore} icon={MapPin} tone={ad.locationScore >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 pt-1 border-t">
+          <ScoreBar label="شخصی‌بودن" value={ad.personalScore} icon={UserCheck} tone="personal" />
+          <ScoreBar label="زیرقیمت" value={ad.underpriceScore} icon={TrendingDown} tone="underprice" />
+          <ScoreBar label="سایر فاکتورها" value={ad.otherScore} icon={Sparkles} tone="other" />
+          <ScoreBar label="مکان" value={ad.locationScore} icon={MapPin} tone="location" />
         </div>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Button variant="outline" size="sm" className="gap-1.5" asChild>
+        <Button variant="outline" size="sm" className="gap-1.5 hover:border-primary/50 hover:text-primary" asChild>
           <a
             href={`https://divar.ir/v/${encodeURIComponent(ad.title.replace(/\s+/g, "-").slice(0, 50))}/${ad.token}`}
             target="_blank"
@@ -205,10 +257,10 @@ export function AdCard({
         <Button variant="secondary" size="sm" className="gap-1.5" onClick={() => onDetails(ad)} aria-label="جزییات آگهی با تحلیل امتیاز">
           <Info className="w-3.5 h-3.5" aria-hidden /> جزییات آگهی
         </Button>
-        <Button variant="outline" size="sm" className="gap-1.5 text-rose-600 hover:text-rose-700 border-rose-200 dark:border-rose-900" onClick={() => onReject(ad)} disabled={busy} aria-label="رد آگهی با چک‌لیست دلایل">
+        <Button variant="outline" size="sm" className="gap-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900" onClick={() => onReject(ad)} disabled={busy} aria-label="رد آگهی با چک‌لیست دلایل">
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <XCircle className="w-3.5 h-3.5" aria-hidden />} رد آگهی
         </Button>
-        <Button size="sm" className="gap-1.5" onClick={() => onRegister(ad)} disabled={busy} aria-label="ثبت آگهی در سامانه آرم">
+        <Button size="sm" className="gap-1.5 bg-gradient-to-l from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 shadow-sm shadow-emerald-600/25" onClick={() => onRegister(ad)} disabled={busy} aria-label="ثبت آگهی در سامانه آرم">
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <UploadCloud className="w-3.5 h-3.5" aria-hidden />} ثبت آگهی
         </Button>
       </div>

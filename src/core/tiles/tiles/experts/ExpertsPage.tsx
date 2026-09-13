@@ -384,6 +384,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         </Avatar>
                         <div className="min-w-0 flex-1 space-y-3">
                           <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-extrabold text-primary tabular-nums shrink-0" aria-label={`ردیف ${faNumber(i + 1)}`} title={`ردیف ${faNumber(i + 1)}`}>
+                              {faNumber(i + 1)}
+                            </span>
                             <h4 className="font-bold text-sm sm:text-base">{e.fullName}</h4>
                             <Badge className={`${coop.style} text-[11px]`}>{coop.label}</Badge>
                             {!e.active && <Badge variant="destructive" className="text-[11px]">غیرفعال</Badge>}

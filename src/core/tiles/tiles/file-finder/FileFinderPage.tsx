@@ -333,9 +333,9 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
       {/* شاخص‌ها */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { key: "hunt", label: "فایل‌های شکار", desc: `امتیاز بالای ${faNumber(thresholds.hunt)}`, tone: "border-emerald-500/50 bg-emerald-500/5" },
-          { key: "follow", label: "فایل‌های پیگیری", desc: `${faNumber(thresholds.follow)} تا ${faNumber(thresholds.hunt)}`, tone: "border-amber-500/50 bg-amber-500/5" },
-          { key: "review", label: "فایل‌های بررسی", desc: `زیر ${faNumber(thresholds.follow)}`, tone: "" },
+          { key: "hunt", label: "فایل‌های شکار", desc: `امتیاز بالای ${faNumber(thresholds.hunt)}`, icon: Sparkles, tone: "border-emerald-500/50 bg-gradient-to-b from-emerald-500/10 to-transparent", iconCls: "text-emerald-600 dark:text-emerald-400" },
+          { key: "follow", label: "فایل‌های پیگیری", desc: `${faNumber(thresholds.follow)} تا ${faNumber(thresholds.hunt)}`, icon: Gauge, tone: "border-amber-500/50 bg-gradient-to-b from-amber-500/10 to-transparent", iconCls: "text-amber-600 dark:text-amber-400" },
+          { key: "review", label: "فایل‌های بررسی", desc: `زیر ${faNumber(thresholds.follow)}`, icon: ListFilter, tone: "border-border bg-gradient-to-b from-muted/60 to-transparent", iconCls: "text-muted-foreground" },
         ].map((b) => (
           <button
             key={b.key}
@@ -343,7 +343,10 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
             className={`rounded-xl border p-3 text-right transition-shadow hover:shadow-md ${b.tone} ${bucket === b.key ? "ring-2 ring-primary/50" : ""}`}
             aria-pressed={bucket === b.key}
           >
-            <p className="text-xl font-extrabold">{faNumber(counts[b.key as keyof typeof counts] ?? 0)}</p>
+            <div className="flex items-center justify-between gap-1">
+              <p className="text-xl font-extrabold tabular-nums">{faNumber(counts[b.key as keyof typeof counts] ?? 0)}</p>
+              <b.icon className={`w-4 h-4 shrink-0 ${b.iconCls}`} aria-hidden />
+            </div>
             <p className="text-xs font-bold mt-0.5">{b.label}</p>
             <p className="text-[10px] text-muted-foreground">{b.desc}</p>
           </button>
@@ -543,10 +546,10 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
                     قانون مالک: فقط فایل‌های شخصی امتیازدهی می‌شوند (غیرشخصی‌ها کامل رد)؛ پیش‌فرض — شخصی ۵۰، زیرقیمت ۲۰، سایر فاکتورهای بهینه ۲۰، مکان ۱۰. هر معیار قابل افزایش/کاهش است.
                   </p>
                   {[
-                    { key: "weightPersonal", label: "شخصی‌بودن (۵۰)", value: settingsData.settings.weightPersonal, hint: "درصد تشخیص شخصی‌بودن فایل" },
-                    { key: "weightUnderprice", label: "زیرقیمت (۲۰)", value: settingsData.settings.weightUnderprice, hint: "درصد تشخیص زیرقیمت‌بودن" },
-                    { key: "weightOther", label: "سایر فاکتورهای بهینه (۲۰)", value: settingsData.settings.weightOther, hint: "شاهکار ایجنت — فوریت/تازگی/تکمیل داده/اصالت/آمادگی" },
-                    { key: "weightLocation", label: "مکان (۱۰)", value: settingsData.settings.weightLocation, hint: "تطبیق مکان فایل با تنظیمات مکان شما" },
+                    { key: "weightPersonal", label: "شخصی‌بودن (۵۰)", value: settingsData.settings.weightPersonal, hint: "درصد تشخیص شخصی‌بودن فایل", chip: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300", range: "bg-gradient-to-l from-emerald-600 to-emerald-400" },
+                    { key: "weightUnderprice", label: "زیرقیمت (۲۰)", value: settingsData.settings.weightUnderprice, hint: "درصد تشخیص زیرقیمت‌بودن", chip: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300", range: "bg-gradient-to-l from-amber-600 to-amber-400" },
+                    { key: "weightOther", label: "سایر فاکتورهای بهینه (۲۰)", value: settingsData.settings.weightOther, hint: "شاهکار ایجنت — فوریت/تازگی/تکمیل داده/اصالت/آمادگی", chip: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300", range: "bg-gradient-to-l from-rose-600 to-rose-400" },
+                    { key: "weightLocation", label: "مکان (۱۰)", value: settingsData.settings.weightLocation, hint: "تطبیق مکان فایل با تنظیمات مکان شما", chip: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300", range: "bg-gradient-to-l from-teal-600 to-teal-400" },
                   ].map((w) => (
                     <div key={w.key} className="flex items-center gap-3">
                       <span className="text-xs w-32 shrink-0 text-muted-foreground" title={w.hint}>{w.label}</span>
@@ -557,10 +560,11 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
                         step={5}
                         onValueCommit={(v) => saveSettingsPatch({ [w.key]: v[0] })}
                         onValueChange={() => undefined}
+                        rangeClassName={w.range}
                         className="grow"
                         aria-label={`وزن ${w.label}`}
                       />
-                      <span className="text-xs font-bold w-10 text-center">{faNumber(w.value)}</span>
+                      <span className={`inline-flex items-center justify-center min-w-10 h-6 px-1.5 rounded-lg text-xs font-extrabold tabular-nums ${w.chip}`}>{faNumber(w.value)}</span>
                     </div>
                   ))}
                 </div>
@@ -652,14 +656,14 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
 
       {/* پنجره‌های سه‌گانه */}
       <Tabs value={bucket} onValueChange={setBucket}>
-        <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="hunt" className="gap-1.5 text-xs">
+        <TabsList className="w-full grid grid-cols-3 h-auto p-1">
+          <TabsTrigger value="hunt" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-emerald-600 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <Sparkles className="w-3.5 h-3.5" aria-hidden /> شکار ({faNumber(counts.hunt)})
           </TabsTrigger>
-          <TabsTrigger value="follow" className="gap-1.5 text-xs">
+          <TabsTrigger value="follow" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-amber-600 data-[state=active]:to-amber-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <Gauge className="w-3.5 h-3.5" aria-hidden /> پیگیری ({faNumber(counts.follow)})
           </TabsTrigger>
-          <TabsTrigger value="review" className="gap-1.5 text-xs">
+          <TabsTrigger value="review" className="gap-1.5 text-xs py-1.5">
             <ListFilter className="w-3.5 h-3.5" aria-hidden /> بررسی ({faNumber(counts.review)})
           </TabsTrigger>
         </TabsList>
@@ -689,10 +693,11 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
               </Card>
             ) : (
               <div className="space-y-3">
-                {rows.map((ad) => (
+                {rows.map((ad, i) => (
                   <AdCard
                     key={ad.token}
                     ad={ad}
+                    index={i + 1}
                     showScores={showScores}
                     busyAction={busyAction}
                     onDetails={(a) => setDetailsAd(a)}
@@ -716,11 +721,12 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
             <CardTitle className="text-xs flex items-center gap-1.5"><History className="w-3.5 h-3.5" aria-hidden /> گزارش اسکن‌های اخیر</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5">
-            {scanLogs.slice(0, 5).map((log) => (
+            {scanLogs.slice(0, 5).map((log, i) => (
               <div key={log.id} className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground border-b last:border-0 pb-1.5 last:pb-0">
-                <span className="flex items-center gap-1.5">
-                  <Info className="w-3 h-3" aria-hidden />
-                  {faDateTime(log.startedAt)}
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="inline-flex items-center justify-center w-4.5 h-4.5 min-w-4.5 rounded-md bg-muted font-bold text-[9px] tabular-nums shrink-0" aria-label={`ردیف ${faNumber(i + 1)}`}>{faNumber(i + 1)}</span>
+                  <Info className="w-3 h-3 shrink-0" aria-hidden />
+                  <span className="truncate">{faDateTime(log.startedAt)}</span>
                 </span>
                 <span className="flex flex-wrap gap-x-2">
                   <span>بررسی {faNumber(log.scanned)}</span>

@@ -434,6 +434,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
               <Table>
                 <TableHeader className="sticky top-0 bg-card z-10">
                   <TableRow>
+                    <TableHead className="text-right w-12">ردیف</TableHead>
                     <TableHead className="text-right">تاریخ معامله</TableHead>
                     <TableHead className="text-right">کد ملک / مالک</TableHead>
                     <TableHead className="text-right">کد درخواست / درخواست‌دهنده</TableHead>
@@ -443,8 +444,13 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pageRows.map((t) => (
+                  {pageRows.map((t, i) => (
                     <TableRow key={t.id} className="hover:bg-muted/40">
+                      <TableCell className="whitespace-nowrap">
+                        <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(page * pageSize + i + 1)}`}>
+                          {faNumber(page * pageSize + i + 1)}
+                        </span>
+                      </TableCell>
                       <TableCell className="whitespace-nowrap text-xs font-medium">{faJalaliShort(t.contractDate)}</TableCell>
                       <TableCell className="text-xs">
                         <div className="flex flex-col">

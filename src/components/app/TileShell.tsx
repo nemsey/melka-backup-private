@@ -117,8 +117,8 @@ export function TileShell({ tile }: { tile: TileDefinition }) {
         <Button variant="outline" size="icon" onClick={goHome} aria-label="بازگشت به خانه داشبورد">
           <ArrowRight className="w-5 h-5" aria-hidden />
         </Button>
-        <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-md">
-          <TileIcon className="w-6 h-6 text-primary-foreground" aria-hidden />
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 dark:from-emerald-500 dark:to-emerald-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/25">
+          <TileIcon className="w-6 h-6 text-white" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg sm:text-xl font-extrabold truncate">{tile.title}</h2>

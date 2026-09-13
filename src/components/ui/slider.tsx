@@ -11,8 +11,12 @@ function Slider({
   value,
   min = 0,
   max = 100,
+  rangeClassName,
   ...props
-}: React.ComponentProps<typeof SliderPrimitive.Root>) {
+}: React.ComponentProps<typeof SliderPrimitive.Root> & {
+  /** رنگ اختصاصی پرشوندة اسلایدر — برای تمایز معیارها */
+  rangeClassName?: string
+}) {
   const _values = React.useMemo(
     () =>
       Array.isArray(value)
@@ -45,7 +49,8 @@ function Slider({
         <SliderPrimitive.Range
           data-slot="slider-range"
           className={cn(
-            "bg-primary absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
+            "bg-primary absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full",
+            rangeClassName
           )}
         />
       </SliderPrimitive.Track>

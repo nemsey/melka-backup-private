@@ -464,6 +464,7 @@ export function ExtractionPage({ settings, onSettingsChange: _osc, userRole: _ro
                 <Table>
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
+                      <TableHead className="w-12">ردیف</TableHead>
                       <TableHead>نوع</TableHead>
                       <TableHead>کد</TableHead>
                       <TableHead>شخص</TableHead>
@@ -472,8 +473,13 @@ export function ExtractionPage({ settings, onSettingsChange: _osc, userRole: _ro
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {history.map((h) => (
+                    {history.map((h, i) => (
                       <TableRow key={h.id}>
+                        <TableCell>
+                          <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
+                            {faNumber(i + 1)}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={h.kind === "PROPERTY" ? "secondary" : "outline"} className="gap-1">
                             {h.kind === "PROPERTY" ? <Home className="w-3 h-3" aria-hidden /> : <ClipboardList className="w-3 h-3" aria-hidden />}

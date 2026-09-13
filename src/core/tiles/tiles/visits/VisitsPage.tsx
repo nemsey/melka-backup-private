@@ -272,6 +272,7 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
+                    <TableHead className="w-12">ردیف</TableHead>
                     <TableHead>کد آگهی</TableHead>
                     <TableHead>درخواست‌دهنده</TableHead>
                     <TableHead>بررسی‌کننده</TableHead>
@@ -282,8 +283,13 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r) => (
+                  {rows.map((r, i) => (
                     <TableRow key={r.id}>
+                      <TableCell>
+                        <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
+                          {faNumber(i + 1)}
+                        </span>
+                      </TableCell>
                       <TableCell className="font-bold" dir="ltr">
                         <span className="inline-flex items-center gap-1">
                           <Home className="w-3.5 h-3.5 text-primary" aria-hidden />

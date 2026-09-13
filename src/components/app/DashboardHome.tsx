@@ -124,16 +124,24 @@ function TileCard({
 export function DashboardHome() {
   const userRole = useAppStore((s) => s.user?.role ?? "CONSULTANT");
   const openTile = useAppStore((s) => s.openTile);
+  const displayName = useAppStore((s) => s.user?.displayName);
   const tiles = tileRegistry.listAll(userRole);
 
   return (
     <main className="flex-1 mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 flex flex-col">
       {/* خوش‌آمد و خلاصه وضعیت */}
       <section className="mb-8">
-        <h2 className="text-xl sm:text-2xl font-extrabold">کاشی‌های داشبورد</h2>
-        <p className="text-muted-foreground mt-1.5 text-sm sm:text-base leading-relaxed max-w-2xl">
-          هر کاشی یک ماژول مستقل با ایجنت هوشمند اختصاصی است. برای ورود به تحلیل‌های هر حوزه، کاشی مربوط را انتخاب کنید.
-        </p>
+        <div className="rounded-2xl border border-primary/15 bg-gradient-to-l from-primary/10 via-emerald-500/5 to-transparent p-5 sm:p-6">
+          <p className="text-xs text-muted-foreground">
+            {displayName ? `خوش آمدید، ${displayName}` : "خوش آمدید"} — لایه هوش تحلیلی ملک تبریز
+          </p>
+          <h2 className="text-xl sm:text-2xl font-extrabold mt-1 bg-gradient-to-l from-emerald-700 via-emerald-600 to-amber-600 dark:from-emerald-400 dark:via-emerald-300 dark:to-amber-400 bg-clip-text text-transparent">
+            کاشی‌های داشبورد
+          </h2>
+          <p className="text-muted-foreground mt-1.5 text-sm sm:text-base leading-relaxed max-w-2xl">
+            هر کاشی یک ماژول مستقل با ایجنت هوشمند اختصاصی است. برای ورود به تحلیل‌های هر حوزه، کاشی مربوط را انتخاب کنید.
+          </p>
+        </div>
       </section>
 
       {/* شبکه کاشی‌ها — ریسپانسیو: ۱ ستون موبایل / ۲ تبلت / ۳ دسکتاپ */}
@@ -164,7 +172,7 @@ export function DashboardHome() {
 
       <footer className="mt-auto pt-6 border-t text-center text-xs text-muted-foreground">
         <p>مالک و برنامه‌نویس و طراح: سید نعمت اله سیدی</p>
-        <p className="mt-1">نسخه ۱٫۰٫۰ — داشبورد هوشمند چندعامله ملک تبریز</p>
+        <p className="mt-1">نسخه ۱٫۲٫۰ — داشبورد هوشمند چندعامله ملک تبریز</p>
       </footer>
     </main>
   );

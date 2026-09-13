@@ -237,7 +237,7 @@ export function AgentPanel({ tileId }: { tileId: string }) {
       {/* کارت‌های بینش */}
       {insights && insights.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {insights.map((ins) => {
+          {insights.map((ins, idx) => {
             const st = SEVERITY_STYLE[ins.severity] ?? SEVERITY_STYLE.info;
             return (
               <Card key={ins.key} className={`tile-pop ${st.border} shadow-sm hover:shadow-md transition-shadow`}>
@@ -246,6 +246,9 @@ export function AgentPanel({ tileId }: { tileId: string }) {
                     <div className="shrink-0 mt-0.5">{st.icon}</div>
                     <div className="min-w-0 flex-1 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-extrabold text-primary tabular-nums shrink-0" aria-label={`بینش ${faNumber(idx + 1)}`} title={`ردیف ${faNumber(idx + 1)}`}>
+                          {faNumber(idx + 1)}
+                        </span>
                         <h4 className="font-bold text-sm sm:text-base">{ins.title}</h4>
                         <Badge className={`${st.chip} text-[11px]`}>{DOMAIN_FA[ins.domain] ?? ins.domain}</Badge>
                         {ins.learned && (

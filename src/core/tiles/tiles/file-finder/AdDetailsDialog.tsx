@@ -246,60 +246,61 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
             <div>
               <h4 className="text-sm font-bold mb-2 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-primary" aria-hidden /> تحلیل هوشمند امتیازدهی</h4>
               <div className="space-y-3">
-                <div className="rounded-xl border p-3 space-y-2">
+                <div className="rounded-xl border p-3 space-y-2 border-emerald-200/70 dark:border-emerald-900/60 bg-emerald-50/30 dark:bg-emerald-950/10">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold flex items-center gap-1.5"><UserCheck className="w-3.5 h-3.5" aria-hidden /> شخصی‌بودن: {faNumber(Math.round(data.analysis.personal.score))}٪</span>
+                    <span className="text-xs font-bold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400"><UserCheck className="w-3.5 h-3.5" aria-hidden /> شخصی‌بودن: {faNumber(Math.round(data.analysis.personal.score))}٪</span>
                     {data.analysis.personal.isBroker ? (
                       <Badge variant="destructive" className="text-[10px]">{data.ad.publisher && data.ad.publisher.type !== "personal" ? data.ad.publisher.typeLabel : "مشاور املاک"}</Badge>
                     ) : (
                       <Badge variant="secondary" className="text-[10px] gap-1"><ShieldCheck className="w-3 h-3" aria-hidden /> {data.analysis.personal.confidence === "high" ? "شخصی با اطمینان بالا" : "احتمالاً شخصی"}</Badge>
                     )}
                   </div>
-                  <Progress value={data.analysis.personal.score} className="h-1.5" aria-label="امتیاز شخصی بودن" />
+                  <Progress value={data.analysis.personal.score} className="h-1.5 bg-emerald-500/15" indicatorClassName="bg-gradient-to-l from-emerald-600 to-emerald-400" aria-label="امتیاز شخصی بودن" />
                   <p className="text-[11px] text-muted-foreground leading-5">
                     {data.analysis.personal.signals.filter((s) => s.hit).map((s) => `«${s.label}» (${s.evidence})`).join("؛ ") || "هیچ سیگنال متنی قوی یافت نشد."}
                   </p>
                 </div>
 
-                <div className="rounded-xl border p-3 space-y-2">
+                <div className="rounded-xl border p-3 space-y-2 border-amber-200/70 dark:border-amber-900/60 bg-amber-50/30 dark:bg-amber-950/10">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold flex items-center gap-1.5"><TrendingDown className="w-3.5 h-3.5" aria-hidden /> زیرقیمت: {faNumber(Math.round(data.analysis.underprice.score))}٪</span>
+                    <span className="text-xs font-bold flex items-center gap-1.5 text-amber-700 dark:text-amber-400"><TrendingDown className="w-3.5 h-3.5" aria-hidden /> زیرقیمت: {faNumber(Math.round(data.analysis.underprice.score))}٪</span>
                     {data.analysis.underprice.percentBelow != null && (
                       <Badge variant={data.analysis.underprice.percentBelow > 0 ? "default" : "secondary"} className="text-[10px]">
                         {data.analysis.underprice.percentBelow > 0 ? `${faNumber(data.analysis.underprice.percentBelow)}٪ زیر بازار` : `${faNumber(-data.analysis.underprice.percentBelow)}٪ بالای بازار`}
                       </Badge>
                     )}
                   </div>
-                  <Progress value={data.analysis.underprice.score} className="h-1.5" aria-label="امتیاز زیر قیمت بودن" />
+                  <Progress value={data.analysis.underprice.score} className="h-1.5 bg-amber-500/15" indicatorClassName="bg-gradient-to-l from-amber-600 to-amber-400" aria-label="امتیاز زیر قیمت بودن" />
                   <p className="text-[11px] text-muted-foreground leading-5">{data.analysis.underprice.reason}</p>
                 </div>
 
-                <div className="rounded-xl border p-3 space-y-2">
+                <div className="rounded-xl border p-3 space-y-2 border-rose-200/70 dark:border-rose-900/60 bg-rose-50/30 dark:bg-rose-950/10">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-primary" aria-hidden /> سایر فاکتورهای فایل بهینه (شاهکار ایجنت): {faNumber(Math.round(data.analysis.other.score))}٪</span>
+                    <span className="text-xs font-bold flex items-center gap-1.5 text-rose-700 dark:text-rose-400"><Sparkles className="w-3.5 h-3.5" aria-hidden /> سایر فاکتورهای فایل بهینه (شاهکار ایجنت): {faNumber(Math.round(data.analysis.other.score))}٪</span>
                     <Badge variant={data.analysis.other.score >= 70 ? "default" : "secondary"} className="text-[10px]">{faNumber(data.analysis.other.factors.length)} فاکتور</Badge>
                   </div>
-                  <Progress value={data.analysis.other.score} className="h-1.5" aria-label="امتیاز سایر فاکتورهای بهینه" />
+                  <Progress value={data.analysis.other.score} className="h-1.5 bg-rose-500/15" indicatorClassName="bg-gradient-to-l from-rose-600 to-rose-400" aria-label="امتیاز سایر فاکتورهای بهینه" />
                   <div className="space-y-1.5">
-                    {data.analysis.other.factors.map((f) => (
+                    {data.analysis.other.factors.map((f, fi) => (
                       <div key={f.key} className="flex items-center gap-2 text-[11px]" title={f.evidence}>
-                        <span className="text-muted-foreground w-36 shrink-0 truncate">{f.label}</span>
-                        <Progress value={f.score} className="h-1 grow" aria-label={`${f.label}: ${f.score} درصد`} />
-                        <span className={`font-bold w-9 text-center shrink-0 ${f.score >= 70 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>{faNumber(Math.round(f.score))}٪</span>
+                        <span className="inline-flex items-center justify-center w-4.5 h-4.5 min-w-4.5 rounded-md bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold text-[9px] tabular-nums shrink-0" aria-label={`فاکتور ${faNumber(fi + 1)}`}>{faNumber(fi + 1)}</span>
+                        <span className="text-muted-foreground w-32 shrink-0 truncate">{f.label}</span>
+                        <Progress value={f.score} className="h-1 grow bg-muted" indicatorClassName="bg-rose-500/70" aria-label={`${f.label}: ${f.score} درصد`} />
+                        <span className={`font-bold w-9 text-center shrink-0 ${f.score >= 70 ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"}`}>{faNumber(Math.round(f.score))}٪</span>
                       </div>
                     ))}
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-5">{data.analysis.other.reason}</p>
                 </div>
 
-                <div className="rounded-xl border p-3 space-y-2">
+                <div className="rounded-xl border p-3 space-y-2 border-teal-200/70 dark:border-teal-900/60 bg-teal-50/30 dark:bg-teal-950/10">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" aria-hidden /> مکان: {faNumber(Math.round(data.analysis.location.score))}٪</span>
+                    <span className="text-xs font-bold flex items-center gap-1.5 text-teal-700 dark:text-teal-400"><MapPin className="w-3.5 h-3.5" aria-hidden /> مکان: {faNumber(Math.round(data.analysis.location.score))}٪</span>
                     {data.analysis.location.lineName && (
                       <Badge variant="secondary" className="text-[10px]">{data.analysis.location.lineName} — {data.analysis.location.areaName}</Badge>
                     )}
                   </div>
-                  <Progress value={data.analysis.location.score} className="h-1.5" aria-label="امتیاز مکان" />
+                  <Progress value={data.analysis.location.score} className="h-1.5 bg-teal-500/15" indicatorClassName="bg-gradient-to-l from-teal-600 to-teal-400" aria-label="امتیاز مکان" />
                   <p className="text-[11px] text-muted-foreground leading-5">{data.analysis.location.reason}</p>
                 </div>
               </div>
@@ -309,10 +310,13 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
             <div>
               <h4 className="text-sm font-bold mb-2 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-600" aria-hidden /> پیش‌بینی هوشمند دلایل احتمالی رد</h4>
               <div className="rounded-xl border divide-y text-xs">
-                {data.predictions.slice(0, 6).map((p) => (
+                {data.predictions.slice(0, 6).map((p, pi) => (
                   <div key={p.key} className="p-2.5 flex items-center justify-between gap-2">
-                    <span className="font-medium">{p.title}</span>
-                    <span className="text-muted-foreground text-[10px]">احتمال {faNumber(p.likely)}٪ — {p.hint}</span>
+                    <span className="font-medium flex items-center gap-2 min-w-0">
+                      <span className="inline-flex items-center justify-center w-4.5 h-4.5 min-w-4.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold text-[9px] tabular-nums shrink-0" aria-label={`ردیف ${faNumber(pi + 1)}`}>{faNumber(pi + 1)}</span>
+                      <span className="truncate">{p.title}</span>
+                    </span>
+                    <span className="text-muted-foreground text-[10px] shrink-0">احتمال {faNumber(p.likely)}٪ — {p.hint}</span>
                   </div>
                 ))}
               </div>

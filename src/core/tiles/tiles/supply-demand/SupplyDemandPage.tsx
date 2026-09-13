@@ -234,6 +234,7 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
+                    <TableHead className="w-12">ردیف</TableHead>
                     <TableHead>بازه</TableHead>
                     <TableHead>تعداد آگهی</TableHead>
                     <TableHead>درصد درخواست</TableHead>
@@ -241,10 +242,15 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r) => {
+                  {rows.map((r, i) => {
                     const badge = demandBadge(r.requestPercent);
                     return (
                       <TableRow key={r.id}>
+                        <TableCell>
+                          <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
+                            {faNumber(i + 1)}
+                          </span>
+                        </TableCell>
                         <TableCell className="font-bold">{r.rangeTitle}</TableCell>
                         <TableCell className="tabular-nums">{faNumber(r.propertyCount)}</TableCell>
                         <TableCell>
