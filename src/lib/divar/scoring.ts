@@ -218,7 +218,7 @@ export function scoreUnderprice(input: {
 
 export { matchTabrizLocation, type LocationMatchResult };
 
-/** امتیاز مکان با احتساب فیلتر انتخابی کاربر */
+/** امتیاز مکان با احتساب فیلتر انتخابی کاربر (اجتماع: منطقه یا محله — هم‌راستا با lineInSelection) */
 export function scoreLocation(input: {
   title: string;
   locationText?: string | null;
@@ -229,11 +229,13 @@ export function scoreLocation(input: {
   selectedLineIds: string[];
 }): LocationMatchResult {
   const match = matchTabrizLocation(input);
-  // اگر کاربر محدوده انتخاب کرده و آگهی بیرون آن است → امتیاز صفر
-  if ((input.selectedAreaIds.length > 0 || input.selectedLineIds.length > 0) && match.lineId) {
-    const inArea = !input.selectedAreaIds.length || input.selectedAreaIds.includes(match.areaId ?? "");
-    const inLine = !input.selectedLineIds.length || input.selectedLineIds.includes(match.lineId);
-    if (!inArea || !inLine) {
+  const a = input.selectedAreaIds ?? [];
+  const l = input.selectedLineIds ?? [];
+  // فیلتر فعال و آگهی بیرون از انتخاب (منطقه و محله) → امتیاز صفر
+  if (a.length || l.length) {
+    const inArea = a.length > 0 && a.includes(match.areaId ?? "");
+    const inLine = l.length > 0 && match.lineId != null && l.includes(match.lineId);
+    if (!inArea && !inLine) {
       return { ...match, score: 0, reason: `${match.reason} — بیرون از محدوده انتخابی شما.` };
     }
   }

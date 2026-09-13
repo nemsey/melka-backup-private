@@ -57,9 +57,12 @@ export function findLine(lineId: string): (TabrizLine & { areaId: string; areaNa
   return ALL_LINES.find((l) => l.id === lineId) ?? null;
 }
 
-/** نام‌های نرمال‌شده برای تطبیق متنی */
+/** نام‌های نرمال‌شده برای تطبیق متنی (ارقام فارسی/عربی → لاتین، آ/أ/إ → ا، حذف فاصله/ZWNJ و نشانه‌ها) */
 function normalizeText(s: string): string {
   return s
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[آأإ]/g, "ا")
     .replace(/[\u200c\u200f\u200e]/g, "")
     .replace(/[ي]/g, "ی")
     .replace(/[ك]/g, "ک")
@@ -259,12 +262,114 @@ export function matchTabrizLocation(input: {
   };
 }
 
-/** بررسی تعلق یک محله به مجموعه انتخابی کاربر (منطقه یا محله) */
+// ===================== فیلتر مکان ایجنت (منطبق با سامانه آرم) =====================
+
+/**
+ * ۱۷ منطقه پیش‌فرض مالک — عین فهرست دستور (شهریور ۱۴۰۵).
+ * نام‌ها با نام رسمی سامانه آرم نوشته شده‌اند؛ «فردوس ایل گلی» در آرم فقط «فردوس» نام دارد
+ * (همان خوشه‌ی شرق ایل گلی، هم‌جوار باغچه‌بان و یاغچیان).
+ */
+export const DEFAULT_LOCATION_AREA_NAMES: string[] = [
+  "ولیعصر",
+  "ولیعصر جنوبی",
+  "استانداری",
+  "سپهر صادرات",
+  "میرداماد",
+  "زعفرانیه",
+  "الهی پرست",
+  "رجایی شهر",
+  "ویلاشهر",
+  "دادگستری (ایل گلی)",
+  "سهند (ایل گلی)",
+  "فردوس",
+  "باغچه بان",
+  "یاغچیان",
+  "35 متری سینا",
+  "گلشهر",
+  "پرواز",
+];
+
+const AREA_LOOKUP = new Map<string, TabrizArea>();
+for (const a of data.areas) AREA_LOOKUP.set(normalizeText(a.n), a);
+
+const AREA_LOOKUP_BY_ID = new Map<string, TabrizArea>(data.areas.map((a) => [a.id, a] as const));
+const LINE_LOOKUP_BY_ID = new Set<string>(ALL_LINES.map((l) => l.id));
+
+/** حل نام‌های منطقه به شناسه‌های رسمی آرم (با نرمال‌سازی نویسه‌ها و ارقام) */
+export function resolveAreaIdsByNames(names: string[]): { ids: string[]; missing: string[] } {
+  const ids: string[] = [];
+  const missing: string[] = [];
+  for (const name of names) {
+    const area = AREA_LOOKUP.get(normalizeText(name));
+    if (area && !ids.includes(area.id)) ids.push(area.id);
+    else if (!area) missing.push(name);
+  }
+  return { ids, missing };
+}
+
+/** شناسه‌های ۱۷ منطقه پیش‌فرض مالک (حل‌شده روی رجیستری آرم) */
+export const DEFAULT_LOCATION_AREA_IDS: string[] = resolveAreaIdsByNames(DEFAULT_LOCATION_AREA_NAMES).ids;
+
+/** بررسی تعلق یک محله به مجموعه انتخابی کاربر (اجتماع منطقه یا محله — منطبق بر فیلتر مکان سامانه آرم) */
 export function lineInSelection(
   line: { areaId: string; id: string },
   selection: { areaIds?: string[]; lineIds?: string[] }
 ): boolean {
-  const areaOk = !selection.areaIds?.length || selection.areaIds.includes(line.areaId);
-  const lineOk = !selection.lineIds?.length || selection.lineIds.includes(line.id);
-  return areaOk && lineOk;
+  const a = selection.areaIds ?? [];
+  const l = selection.lineIds ?? [];
+  if (!a.length && !l.length) return true; // فیلتر خاموش → همه تبریز
+  if (a.length && a.includes(line.areaId)) return true; // کل منطقه انتخاب شده است
+  if (l.length && l.includes(line.id)) return true; // محله‌ی خاص انتخاب شده است
+  return false;
+}
+
+/**
+ * آیا آگهی با این تطبیق مکانی در محدوده انتخابی کاربر است؟
+ *  - فیلتر خاموش → همه مجاز
+ *  - فیلتر فعال → فقط تطبیق معتبرِ درون انتخاب (منطقه یا محله)؛ بدون تطبیق قابل اتکا → رد
+ * این تابع، قرارداد «فیلتر مکان» موتور اسکن و مسیر فهرست آگهی‌هاست.
+ */
+export function locationAllowed(
+  match: { areaId: string | null; lineId: string | null } | null,
+  selection: { areaIds?: string[]; lineIds?: string[] }
+): boolean {
+  const active = Boolean(selection.areaIds?.length || selection.lineIds?.length);
+  if (!active) return true;
+  if (!match || match.lineId == null) return false;
+  return lineInSelection({ areaId: match.areaId ?? "", id: match.lineId }, selection);
+}
+
+/**
+ * مجموعه شناسه محله‌های مجاز برای پرس‌وجوی پایگاه (اجتماع: همه محله‌های مناطق انتخابی + محله‌های خاص).
+ * null یعنی فیلتر خاموش (همه تبریز).
+ */
+export function allowedLineIdsForSelection(selection: { areaIds?: string[]; lineIds?: string[] }): string[] | null {
+  const a = selection.areaIds ?? [];
+  const l = selection.lineIds ?? [];
+  if (!a.length && !l.length) return null;
+  const ids = new Set<string>();
+  if (a.length) {
+    for (const line of ALL_LINES) if (a.includes(line.areaId)) ids.add(line.id);
+  }
+  if (l.length) for (const id of l) ids.add(id);
+  return [...ids];
+}
+
+/** اعتبارسنجی انتخاب مکان پیش از ذخیره — همه شناسه‌ها باید در رجیستری آرم موجود باشند */
+export function validateLocationSelection(
+  areaIds: string[],
+  lineIds: string[]
+): { ok: boolean; message: string | null } {
+  const badAreas = areaIds.filter((id) => !AREA_LOOKUP_BY_ID.has(id));
+  if (badAreas.length) {
+    return { ok: false, message: `شناسه منطقه نامعتبر است: ${badAreas.slice(0, 3).join("، ")}` };
+  }
+  const badLines = lineIds.filter((id) => !LINE_LOOKUP_BY_ID.has(id));
+  if (badLines.length) {
+    return { ok: false, message: `شناسه محله نامعتبر است: ${badLines.slice(0, 3).join("، ")}` };
+  }
+  if (areaIds.length > data.areas.length || lineIds.length > ALL_LINES.length) {
+    return { ok: false, message: "تعداد مناطق/محله‌های انتخابی بیش از حد مجاز رجیستری آرم است." };
+  }
+  return { ok: true, message: null };
 }

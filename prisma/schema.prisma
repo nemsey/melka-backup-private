@@ -232,8 +232,10 @@ model DivarConnection {
 /// تنظیمات ایجنت فایل‌یابی — تک‌رکورد (singleton)
 model DivarSetting {
   id        String   @id // "singleton"
-  /// JSON کامل تنظیمات (وزن‌ها، آستانه‌ها، بازه زمانی، دسته‌ها، محله‌ها)
+  /// JSON کامل تنظیمات (وزن‌ها، آستانه‌ها، بازه زمانی، دسته‌ها، مناطق/محله‌ها)
   dataJson  String
+  /// پرچم مهاجرت یک‌باره فیلتر مکان (اعمال ۱۷ منطقه پیش‌فرض مالک روی نصب‌های قدیمی)
+  locFilterInit Boolean @default(false)
   updatedAt DateTime @updatedAt
 }
 
@@ -348,6 +350,8 @@ model DivarScanLog {
   fetched     Int      @default(0)
   /// داخل بازه زمانی انتشار
   inWindow    Int      @default(0)
+  /// آگهی‌های درون بازه که بیرون از مناطق انتخابی مالک بودند و ذخیره نشدند
+  outOfArea   Int      @default(0)
   newAds      Int      @default(0)
   updatedAds  Int      @default(0)
   /// منبع: web | kenar

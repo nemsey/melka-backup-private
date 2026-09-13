@@ -3,6 +3,8 @@
  * همه نشانی‌ها با تست زنده واقعی تأیید شده‌اند.
  */
 
+import { DEFAULT_LOCATION_AREA_IDS } from "./tabriz-locations";
+
 function env(key: string, fallback: string): string {
   const v = process.env[key];
   return v && v.trim() ? v.trim() : fallback;
@@ -86,8 +88,8 @@ export const DIVAR_DEFAULT_SETTINGS = {
   followThreshold: 40,
   /** فاصله اسکن خودکار (دقیقه) — ۰ = خاموش */
   autoScanMinutes: 15,
-  /** مناطق/محله‌های انتخابی — خالی یعنی همه تبریز */
-  areaIds: [] as string[],
+  /** مناطق انتخابی فیلتر مکان (عین سامانه آرم) — پیش‌فرض: ۱۷ منطقه مالک؛ خالی = همه تبریز */
+  areaIds: DEFAULT_LOCATION_AREA_IDS as string[],
   lineIds: [] as string[],
   /** حداکثر صفحه‌های اسکن در هر اجرا برای هر دسته */
   maxScanPages: 3,

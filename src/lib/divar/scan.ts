@@ -15,6 +15,7 @@ import { db } from "@/lib/db";
 import { webSearchTabriz, webGetPostDetail, kenarSearch, type DivarPostDetail } from "./client";
 import { loadDivarSettings, readKenarKey, kenarPostToFields } from "./store";
 import { timeWindowHours, type DivarSettings } from "./config";
+import { locationAllowed } from "./tabriz-locations";
 import {
   parsePriceToman,
   parsePricePerMeterToman,
@@ -24,7 +25,7 @@ import {
   parseRooms,
   parseDivarJalaliDateTime,
 } from "./parse";
-import { scorePersonalAd, scoreUnderprice, scoreLocation, computeTotalScore, type AdBucket } from "./scoring";
+import { scorePersonalAd, scoreUnderprice, scoreLocation, computeTotalScore, type AdBucket, type LocationMatchResult } from "./scoring";
 
 export interface ScanSummary {
   ok: boolean;
@@ -32,6 +33,8 @@ export interface ScanSummary {
   scanned: number;
   fetched: number;
   inWindow: number;
+  /** آگهی‌های درون بازه که بیرون از مناطق انتخابی مالک بودند و ذخیره نشدند */
+  outOfArea: number;
   newAds: number;
   updatedAds: number;
   durationMs: number;
@@ -123,27 +126,29 @@ function extractAdFields(detail: DivarPostDetail) {
   return { meterage, rooms, buildYear, floor, priceTotal, pricePerMeter };
 }
 
-/** امتیازدهی کامل یک آگهی */
+/** امتیازدهی کامل یک آگهی — مکان می‌تواند از قبل (برای فیلتر مکانی) محاسبه شده باشد */
 async function scoreAd(
   detail: DivarPostDetail,
   fields: ReturnType<typeof extractAdFields>,
-  settings: DivarSettings
+  settings: DivarSettings,
+  preLocation?: LocationMatchResult
 ): Promise<{ analysis: AdAnalysis; total: ReturnType<typeof computeTotalScore> }> {
   const personal = scorePersonalAd({
     title: detail.title,
     description: detail.description,
   });
   const market = await marketRefFor(null, detail.category ?? "apartment-sell", settings.minMarketSample);
-  // دقت: مرجع خط در scoreAd نمی‌دانیم — پس از تطبیق مکان دوباره با خط محله محاسبه می‌شود
-  const location = scoreLocation({
-    title: detail.title,
-    locationText: detail.locationText,
-    description: detail.description,
-    latitude: detail.latitude,
-    longitude: detail.longitude,
-    selectedAreaIds: settings.areaIds,
-    selectedLineIds: settings.lineIds,
-  });
+  const location =
+    preLocation ??
+    scoreLocation({
+      title: detail.title,
+      locationText: detail.locationText,
+      description: detail.description,
+      latitude: detail.latitude,
+      longitude: detail.longitude,
+      selectedAreaIds: settings.areaIds,
+      selectedLineIds: settings.lineIds,
+    });
   const lineRef = await marketRefFor(location.lineId, detail.category ?? "apartment-sell", settings.minMarketSample);
   const ref = lineRef.median ? { median: lineRef.median, count: lineRef.count } : market;
   const underprice = scoreUnderprice({
@@ -176,8 +181,10 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
   let scanned = 0;
   let fetched = 0;
   let inWindow = 0;
+  let outOfArea = 0;
   let newAds = 0;
   let updatedAds = 0;
+  const locationFilterActive = settings.areaIds.length > 0 || settings.lineIds.length > 0;
 
   const log = await db.divarScanLog.create({ data: { source: useKenar ? "kenar" : "web" } });
 
@@ -247,7 +254,23 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
       }
       inWindow += 1;
 
-      const { analysis, total } = await scoreAd(detail, fields, settings);
+      // فیلتر مکان (منطبق با سامانه آرم): تطبیق مکانی پیش از امتیازدهی کامل محاسبه می‌شود؛
+      // آگهی بیرون از مناطق انتخابی یا بدون نشانه مکانی قابل اتکا، هرگز ذخیره نمی‌شود (رد سیستم).
+      const location = scoreLocation({
+        title: detail.title,
+        locationText: detail.locationText,
+        description: detail.description,
+        latitude: detail.latitude,
+        longitude: detail.longitude,
+        selectedAreaIds: settings.areaIds,
+        selectedLineIds: settings.lineIds,
+      });
+      if (!locationAllowed({ areaId: location.areaId, lineId: location.lineId }, settings)) {
+        outOfArea += 1;
+        continue;
+      }
+
+      const { analysis, total } = await scoreAd(detail, fields, settings, location);
 
       const analysisJson = JSON.stringify({
         personal: { score: analysis.personal.score, isBroker: analysis.personal.isBroker, confidence: analysis.personal.confidence, signals: analysis.personal.signals },
@@ -328,7 +351,7 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
     const durationMs = Date.now() - started;
     await db.divarScanLog.update({
       where: { id: log.id },
-      data: { durationMs, scanned, fetched, inWindow, newAds, updatedAds },
+      data: { durationMs, scanned, fetched, inWindow, outOfArea, newAds, updatedAds },
     });
     return {
       ok: true,
@@ -336,18 +359,21 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
       scanned,
       fetched,
       inWindow,
+      outOfArea,
       newAds,
       updatedAds,
       durationMs,
-      message: `اسکن کامل شد — ${newAds} فایل تازه، ${updatedAds} به‌روزشده از ${inWindow} آگهی درون بازه.`,
+      message: locationFilterActive
+        ? `اسکن کامل شد — ${newAds} فایل تازه، ${updatedAds} به‌روزشده از ${inWindow} آگهی درون بازه؛ ${outOfArea} آگهی بیرون از مناطق انتخابی رد شد (فیلتر مکان فعال).`
+        : `اسکن کامل شد — ${newAds} فایل تازه، ${updatedAds} به‌روزشده از ${inWindow} آگهی درون بازه (فیلتر مکان: همه تبریز).`,
     };
   } catch (err) {
     const message = (err as Error).message ?? "خطای نامشخص در اسکن";
     await db.divarScanLog.update({
       where: { id: log.id },
-      data: { error: message.slice(0, 300), durationMs: Date.now() - started, scanned, fetched, inWindow, newAds, updatedAds },
+      data: { error: message.slice(0, 300), durationMs: Date.now() - started, scanned, fetched, inWindow, outOfArea, newAds, updatedAds },
     });
-    return { ok: false, source: useKenar ? "kenar" : "web", scanned, fetched, inWindow, newAds, updatedAds, durationMs: Date.now() - started, message };
+    return { ok: false, source: useKenar ? "kenar" : "web", scanned, fetched, inWindow, outOfArea, newAds, updatedAds, durationMs: Date.now() - started, message };
   }
 }
 

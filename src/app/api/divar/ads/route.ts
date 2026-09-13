@@ -2,6 +2,8 @@
  * /api/divar/ads — فهرست فایل‌ها بر اساس پنجره (شکار/پیگیری/بررسی)
  * GET ?bucket=hunt|follow|review|all&category=&line=&limit=&offset=
  * اسکن خودکار فرصت‌طلبانه: اگر زمانش رسیده باشد در پس‌زمینه اجرا می‌شود.
+ * فیلتر مکان (مناطق/محله‌های انتخابی مالک — منطبق با آرم) روی هر دو خروجی
+ * ردیف‌ها و شمارنده‌ها اعمال می‌شود؛ آگهی‌های بیرون از انتخاب نمایش داده نمی‌شوند.
  */
 
 import { NextRequest } from "next/server";
@@ -10,6 +12,7 @@ import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { triggerBackgroundScan, autoScanDue } from "@/lib/divar/scan";
 import { loadDivarSettings } from "@/lib/divar/store";
+import { allowedLineIdsForSelection } from "@/lib/divar/tabriz-locations";
 
 export async function GET(request: NextRequest) {
   const guard = await requireSessionAsync(request);
@@ -29,12 +32,19 @@ export async function GET(request: NextRequest) {
 
   const bucket = ["hunt", "follow", "review", "all"].includes(bucketParam) ? bucketParam : "all";
 
-  const where: Record<string, unknown> = { status: "active" };
+  const settings = await loadDivarSettings();
+  const allowedLineIds = allowedLineIdsForSelection(settings);
+
+  const whereBase: Record<string, unknown> = { status: "active" };
+  // فیلتر مکان: اجتماع محله‌های مناطق انتخابی + محله‌های خاص (null = همه تبریز)
+  if (allowedLineIds) whereBase.matchedLineId = { in: allowedLineIds };
+
+  const where: Record<string, unknown> = { ...whereBase };
   if (bucket !== "all") where.bucket = bucket;
   if (category) where.category = category;
   if (lineId) where.matchedLineId = lineId;
 
-  const [rows, counts, settings] = await Promise.all([
+  const [rows, counts] = await Promise.all([
     db.divarAd.findMany({
       where,
       orderBy: { totalScore: "desc" },
@@ -48,8 +58,7 @@ export async function GET(request: NextRequest) {
         imagesJson: true,
       },
     }),
-    db.divarAd.groupBy({ by: ["bucket"], where: { status: "active" }, _count: { _all: true } }),
-    loadDivarSettings(),
+    db.divarAd.groupBy({ by: ["bucket"], where: whereBase, _count: { _all: true } }),
   ]);
 
   const bucketCounts = { hunt: 0, follow: 0, review: 0 };
@@ -67,6 +76,11 @@ export async function GET(request: NextRequest) {
       imagesJson: undefined,
     })),
     bucketCounts,
+    locationFilter: {
+      active: Boolean(allowedLineIds),
+      areaCount: settings.areaIds.length,
+      lineCount: settings.lineIds.length,
+    },
     thresholds: { hunt: settings.huntThreshold, follow: settings.followThreshold },
     weights: { personal: settings.weightPersonal, underprice: settings.weightUnderprice, location: settings.weightLocation },
   });

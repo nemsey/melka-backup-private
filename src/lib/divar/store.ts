@@ -5,6 +5,7 @@
 import { db } from "@/lib/db";
 import { encryptSecret, decryptSecret } from "@/lib/auth/crypto";
 import { DIVAR_DEFAULT_SETTINGS, type DivarSettings } from "./config";
+import { DEFAULT_LOCATION_AREA_IDS } from "./tabriz-locations";
 import { kenarTestKey, divarVerifyCode, type KenarPost } from "./client";
 
 // ===================== اتصال‌ها =====================
@@ -126,20 +127,49 @@ export async function readDivarPhoneToken(): Promise<string | null> {
 
 const SETTINGS_ID = "singleton";
 
+/** پاک‌سازی/حذف تکرار آرایه شناسه‌ها */
+function cleanIds(arr: unknown): string[] {
+  if (!Array.isArray(arr)) return [];
+  return [...new Set(arr.filter((x): x is string => typeof x === "string" && x.length > 0))].slice(0, 926);
+}
+
 export async function loadDivarSettings(): Promise<DivarSettings> {
   const row = await db.divarSetting.findUnique({ where: { id: SETTINGS_ID } });
   if (!row) {
     await db.divarSetting.create({
-      data: { id: SETTINGS_ID, dataJson: JSON.stringify(DIVAR_DEFAULT_SETTINGS) },
+      data: { id: SETTINGS_ID, dataJson: JSON.stringify(DIVAR_DEFAULT_SETTINGS), locFilterInit: true },
     });
-    return { ...DIVAR_DEFAULT_SETTINGS };
+    return { ...DIVAR_DEFAULT_SETTINGS, areaIds: [...DEFAULT_LOCATION_AREA_IDS], lineIds: [] };
   }
+  let parsed: Partial<DivarSettings> = {};
   try {
-    const parsed = JSON.parse(row.dataJson) as Partial<DivarSettings>;
-    return { ...DIVAR_DEFAULT_SETTINGS, ...parsed };
+    parsed = JSON.parse(row.dataJson) as Partial<DivarSettings>;
   } catch {
-    return { ...DIVAR_DEFAULT_SETTINGS };
+    parsed = {};
   }
+  // مهاجرت یک‌بارة فیلتر مکان: نصب‌های پیشین (بدون انتخاب مکانی) ۱۷ منطقة پیش‌فرض مالک را می‌گیرند.
+  // پس از آن، «خالی» همیشه یعنی انتخاب آگاهانه «همه تبریز» و دیگر بازنمی‌گردد.
+  if (!row.locFilterInit) {
+    const merged = { ...DIVAR_DEFAULT_SETTINGS, ...parsed };
+    if (!Array.isArray(parsed.areaIds) || parsed.areaIds.length === 0) {
+      merged.areaIds = [...DEFAULT_LOCATION_AREA_IDS];
+    }
+    if (!Array.isArray(parsed.lineIds)) merged.lineIds = [];
+    await db.divarSetting
+      .update({
+        where: { id: SETTINGS_ID },
+        data: { dataJson: JSON.stringify(merged), locFilterInit: true },
+      })
+      .catch(() => undefined);
+    parsed = merged;
+  }
+  const result: DivarSettings = {
+    ...DIVAR_DEFAULT_SETTINGS,
+    ...parsed,
+    areaIds: Array.isArray(parsed.areaIds) ? cleanIds(parsed.areaIds) : [...DEFAULT_LOCATION_AREA_IDS],
+    lineIds: Array.isArray(parsed.lineIds) ? cleanIds(parsed.lineIds) : [],
+  };
+  return result;
 }
 
 export async function saveDivarSettings(patch: Partial<DivarSettings>): Promise<DivarSettings> {
@@ -147,6 +177,8 @@ export async function saveDivarSettings(patch: Partial<DivarSettings>): Promise<
   const next: DivarSettings = {
     ...current,
     ...patch,
+    areaIds: cleanIds(patch.areaIds ?? current.areaIds),
+    lineIds: cleanIds(patch.lineIds ?? current.lineIds),
     weightPersonal: clamp(patch.weightPersonal ?? current.weightPersonal, 0, 100),
     weightUnderprice: clamp(patch.weightUnderprice ?? current.weightUnderprice, 0, 100),
     weightLocation: clamp(patch.weightLocation ?? current.weightLocation, 0, 100),

@@ -468,3 +468,194 @@ describe("تنظیمات ایجنت فایل‌یابی", () => {
     expect(values.length).toBeGreaterThanOrEqual(13);
   });
 });
+
+// ==========================================================================
+// ۱۱) فیلتر مکان ایجنت — ۱۷ منطقه پیش‌فرض مالک + قرارداد فیلتر اسکن/فهرست
+// ==========================================================================
+
+describe("فیلتر مکان — ۱۷ منطقه پیش‌فرض مالک (منطبق با رجیستری آرم)", () => {
+  test("هر ۱۷ نام منطقه به منطقه واقعی آرم حل می‌شود (هیچ نام گمشده نیست)", async () => {
+    const { DEFAULT_LOCATION_AREA_NAMES, DEFAULT_LOCATION_AREA_IDS, resolveAreaIdsByNames } = await import(
+      "@/lib/divar/tabriz-locations"
+    );
+    expect(DEFAULT_LOCATION_AREA_NAMES.length).toBe(17);
+    const r = resolveAreaIdsByNames(DEFAULT_LOCATION_AREA_NAMES);
+    expect(r.missing).toEqual([]); // دقت کامل: هیچ منطقه‌ای حل‌نشده نمی‌ماند
+    expect(r.ids.length).toBe(17); // بدون تکرار
+    expect(DEFAULT_LOCATION_AREA_IDS.length).toBe(17);
+  });
+
+  test("نام‌های محاوره‌ای مالک با نویسه‌های متفاوت هم حل می‌شوند (۳۵ فارسی/لاتین، پرانتز، ZWNJ)", async () => {
+    const { resolveAreaIdsByNames } = await import("@/lib/divar/tabriz-locations");
+    const r = resolveAreaIdsByNames([
+      "۳۵ متری سینا", // ارقام فارسی — نام آرم «35 متری سینا»
+      "دادگستری ایل گلی", // بدون پرانتز — نام آرم «دادگستری (ایل گلی)»
+      "الهی‌پرست", // نیم‌فاصله — نام آرم «الهی پرست»
+      "ولی عصر", // با فاصله — نام آرم «ولیعصر»
+    ]);
+    expect(r.missing).toEqual([]);
+    expect(r.ids.length).toBe(4);
+  });
+
+  test("پیش‌فرض تنظیمات: همان ۱۷ منطقه + پوشش محله‌ها ≥ ۱۵۰", async () => {
+    const { DIVAR_DEFAULT_SETTINGS } = await import("@/lib/divar/config");
+    const { DEFAULT_LOCATION_AREA_IDS, ALL_LINES, TABRIZ_AREAS } = await import("@/lib/divar/tabriz-locations");
+    expect(DIVAR_DEFAULT_SETTINGS.areaIds).toEqual(DEFAULT_LOCATION_AREA_IDS);
+    expect(DIVAR_DEFAULT_SETTINGS.lineIds).toEqual([]);
+    const covered = ALL_LINES.filter((l) => DEFAULT_LOCATION_AREA_IDS.includes(l.areaId)).length;
+    expect(covered).toBeGreaterThanOrEqual(150);
+    expect(covered).toBeLessThanOrEqual(ALL_LINES.length);
+    expect(TABRIZ_AREAS.find((a) => a.id === DIVAR_DEFAULT_SETTINGS.areaIds[0])?.n).toBe("ولیعصر");
+  });
+
+  test("قرارداد فیلتر اسکن (locationAllowed): درون/بیرون/بدون تطبیق/فیلتر خاموش", async () => {
+    const { locationAllowed, ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+    const inLine = ALL_LINES.find((l) => l.n === "ارگ")!; // منطقه 17 شهریور جدید
+    const outLine = ALL_LINES.find((l) => l.areaId !== inLine.areaId)!;
+    const sel = { areaIds: [inLine.areaId], lineIds: [] };
+    // آگهیِ هم‌منطقه → مجاز
+    expect(locationAllowed({ areaId: inLine.areaId, lineId: inLine.id }, sel)).toBe(true);
+    // آگهیِ منطقه دیگر → رد (هرگز ذخیره نمی‌شود)
+    expect(locationAllowed({ areaId: outLine.areaId, lineId: outLine.id }, sel)).toBe(false);
+    // بدون تطبیق قابل اتکا → رد
+    expect(locationAllowed(null, sel)).toBe(false);
+    expect(locationAllowed({ areaId: null, lineId: null }, sel)).toBe(false);
+    // فیلتر خاموش → همه مجاز (حتی بدون تطبیق)
+    expect(locationAllowed(null, { areaIds: [], lineIds: [] })).toBe(true);
+    expect(locationAllowed({ areaId: outLine.areaId, lineId: outLine.id }, { areaIds: [], lineIds: [] })).toBe(true);
+  });
+
+  test("اجتماع منطقه+محله در lineInSelection (منطبق با فیلتر مکان آرم)", async () => {
+    const { lineInSelection, ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+    const a = ALL_LINES[0];
+    const other = ALL_LINES.find((l) => l.areaId !== a.areaId)!;
+    // انتخاب منطقه → همه محله‌هایش مجاز، حتی بدون انتخاب محله
+    expect(lineInSelection(a, { areaIds: [a.areaId], lineIds: [] })).toBe(true);
+    expect(lineInSelection(other, { areaIds: [a.areaId], lineIds: [] })).toBe(false);
+    // انتخاب محله خاص از منطقه دیگر → همان مجاز (اجتماع، نه اشتراک)
+    expect(lineInSelection(other, { areaIds: [a.areaId], lineIds: [other.id] })).toBe(true);
+    expect(lineInSelection(a, { areaIds: [a.areaId], lineIds: [other.id] })).toBe(true);
+    // بدون هیچ انتخابی → همه
+    expect(lineInSelection(a, { areaIds: [], lineIds: [] })).toBe(true);
+  });
+
+  test("فهرست خواندن آگهی‌ها: allowedLineIdsForSelection اجتماع محله‌های مناطق انتخابی", async () => {
+    const { allowedLineIdsForSelection, ALL_LINES, DEFAULT_LOCATION_AREA_IDS } = await import(
+      "@/lib/divar/tabriz-locations"
+    );
+    // فیلتر خاموش → null (پرس‌وجوی بدون قید مکان)
+    expect(allowedLineIdsForSelection({ areaIds: [], lineIds: [] })).toBeNull();
+    // فیلتر ۱۷ منطقه → همه محله‌های همان مناطق
+    const ids = allowedLineIdsForSelection({ areaIds: DEFAULT_LOCATION_AREA_IDS, lineIds: [] })!;
+    const expected = ALL_LINES.filter((l) => DEFAULT_LOCATION_AREA_IDS.includes(l.areaId)).map((l) => l.id);
+    expect(ids.length).toBe(expected.length);
+    for (const id of expected) expect(ids).toContain(id);
+    // محله خاص از منطقه انتخاب‌نشده هم اضافه می‌شود (اجتماع)
+    const someOut = ALL_LINES.find((l) => !DEFAULT_LOCATION_AREA_IDS.includes(l.areaId))!;
+    const ids2 = allowedLineIdsForSelection({ areaIds: DEFAULT_LOCATION_AREA_IDS, lineIds: [someOut.id] })!;
+    expect(ids2).toContain(someOut.id);
+    expect(ids2.length).toBe(expected.length + 1);
+  });
+
+  test("اعتبارسنجی انتخاب مکان: شناسه نامعتبر رد، شناسه معتبر قبول", async () => {
+    const { validateLocationSelection, ALL_LINES, TABRIZ_AREAS } = await import("@/lib/divar/tabriz-locations");
+    const v1 = validateLocationSelection(["fake-area-id"], []);
+    expect(v1.ok).toBe(false);
+    expect(v1.message).toBeTruthy();
+    const v2 = validateLocationSelection([], ["fake-line-id"]);
+    expect(v2.ok).toBe(false);
+    const v3 = validateLocationSelection([TABRIZ_AREAS[0].id], [ALL_LINES[0].id]);
+    expect(v3.ok).toBe(true);
+    expect(v3.message).toBeNull();
+  });
+
+  test("امتیاز مکان با فیلتر فعال: آگهی منطقه انتخابی امتیاز می‌گیرد؛ محله خاص منطقه دیگر هم مجاز است (اجتماع)", async () => {
+    const { scoreLocation } = await import("@/lib/divar/scoring");
+    const { ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+    const inLine = ALL_LINES.find((l) => l.n === "ارگ")!;
+    const outLine = ALL_LINES.find((l) => l.areaId !== inLine.areaId && l.n.length >= 4)!;
+    // درون منطقه انتخابی → امتیاز کامل
+    const r1 = scoreLocation({
+      title: `اپارتمان ${inLine.n}`,
+      locationText: `در تبریز، ${inLine.n}`,
+      selectedAreaIds: [inLine.areaId],
+      selectedLineIds: [],
+    });
+    expect(r1.score).toBeGreaterThan(0);
+    expect(r1.reason).not.toContain("بیرون از محدوده");
+    // بیرون از انتخاب → صفر + دلیل
+    const r2 = scoreLocation({
+      title: `اپارتمان ${outLine.n}`,
+      locationText: `در تبریز، ${outLine.n}`,
+      selectedAreaIds: [inLine.areaId],
+      selectedLineIds: [],
+    });
+    expect(r2.score).toBe(0);
+    expect(r2.reason).toContain("بیرون از محدوده");
+    // محله خاص از منطقه دیگر در انتخاب محله‌ها → مجاز (اجتماع)
+    const r3 = scoreLocation({
+      title: `اپارتمان ${outLine.n}`,
+      locationText: `در تبریز، ${outLine.n}`,
+      selectedAreaIds: [inLine.areaId],
+      selectedLineIds: [outLine.id],
+    });
+    expect(r3.score).toBeGreaterThan(0);
+    expect(r3.reason).not.toContain("بیرون از محدوده");
+  });
+});
+
+describe("فیلتر مکان — مهاجرت یک‌باره و ذخیره انتخاب (پایگاه)", () => {
+  test("نصب قدیمی بدون انتخاب مکانی → پس از نخستین بارگذاری، ۱۷ منطقه پیش‌فرض مالک فعال می‌شود", async () => {
+    const { db } = await import("@/lib/db");
+    const { loadDivarSettings } = await import("@/lib/divar/store");
+    const { DEFAULT_LOCATION_AREA_IDS } = await import("@/lib/divar/tabriz-locations");
+    // شبیه‌سازی ردیف قدیمی: بدون انتخاب مکانی و بدون پرچم مهاجرت
+    const oldJson = JSON.stringify({
+      timeWindow: "24h",
+      categories: ["apartment-sell"],
+      weightPersonal: 50,
+      weightUnderprice: 30,
+      weightLocation: 20,
+      huntThreshold: 70,
+      followThreshold: 40,
+      autoScanMinutes: 15,
+      areaIds: [],
+      lineIds: [],
+      maxScanPages: 3,
+      minMarketSample: 4,
+      armPriceWeight: 0.35,
+    });
+    await db.divarSetting.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", dataJson: oldJson, locFilterInit: false },
+      update: { dataJson: oldJson, locFilterInit: false },
+    });
+    const settings = await loadDivarSettings();
+    expect(settings.areaIds).toEqual(DEFAULT_LOCATION_AREA_IDS);
+    expect(settings.lineIds).toEqual([]);
+    // پرچم مهاجرت ثبت شد؟
+    const row = await db.divarSetting.findUnique({ where: { id: "singleton" } });
+    expect(row?.locFilterInit).toBe(true);
+  });
+
+  test("پس از مقداردهی، «همه تبریز» (خالی) انتخاب آگاهانه است و به پیش‌فرض برنمی‌گردد", async () => {
+    const { db } = await import("@/lib/db");
+    const { loadDivarSettings, saveDivarSettings } = await import("@/lib/divar/store");
+    await saveDivarSettings({ areaIds: [], lineIds: [] });
+    const settings = await loadDivarSettings();
+    expect(settings.areaIds).toEqual([]);
+    expect(settings.lineIds).toEqual([]);
+  });
+
+  test("ذخیره انتخاب با حذف تکرار و پاک‌سازی مقادیر غیررشته‌ای", async () => {
+    const { saveDivarSettings, loadDivarSettings } = await import("@/lib/divar/store");
+    const { TABRIZ_AREAS } = await import("@/lib/divar/tabriz-locations");
+    const ids = [TABRIZ_AREAS[0].id, TABRIZ_AREAS[1].id, TABRIZ_AREAS[0].id];
+    await saveDivarSettings({ areaIds: ids });
+    const settings = await loadDivarSettings();
+    expect(settings.areaIds.length).toBe(2);
+    // بازگرداندن پیش‌فرض برای تست‌های بعدی
+    const { DEFAULT_LOCATION_AREA_IDS } = await import("@/lib/divar/tabriz-locations");
+    await saveDivarSettings({ areaIds: [...DEFAULT_LOCATION_AREA_IDS], lineIds: [] });
+  });
+});

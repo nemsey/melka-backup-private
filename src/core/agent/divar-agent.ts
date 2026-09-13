@@ -20,21 +20,35 @@ export class DivarAgent extends BaseLearningAgent {
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const cards: InsightCard[] = [];
 
-    const [ads, scans, rejects, marketStats] = await Promise.all([
+    const [ads, scans, rejects, marketStats, settingsRow] = await Promise.all([
       db.divarAd.findMany({
         where: { status: "active" },
-        select: { bucket: true, personalScore: true, totalScore: true, underpriceScore: true, locationScore: true, matchedLineName: true, category: true, publishedAt: true, pricePerMeter: true },
+        select: { bucket: true, personalScore: true, totalScore: true, underpriceScore: true, locationScore: true, matchedLineName: true, matchedAreaName: true, category: true, publishedAt: true, pricePerMeter: true },
         take: 3000,
       }).catch(() => []),
       db.divarScanLog.findMany({ orderBy: { startedAt: "desc" }, take: 5 }).catch(() => []),
       db.divarRejectLog.findMany({ orderBy: { createdAt: "desc" }, take: 120 }).catch(() => []),
       db.marketPriceStat.findMany({ take: 500 }).catch(() => []),
+      db.divarSetting.findUnique({ where: { id: "singleton" } }).catch(() => null),
     ]);
+
+    // وضعیت فیلتر مکان (۱۷ منطقة پیش‌فرض مالک یا انتخاب دلخواه)
+    let locAreas = 0;
+    let locLines = 0;
+    try {
+      const parsed = settingsRow ? (JSON.parse(settingsRow.dataJson) as { areaIds?: string[]; lineIds?: string[] }) : null;
+      locAreas = parsed?.areaIds?.length ?? 0;
+      locLines = parsed?.lineIds?.length ?? 0;
+    } catch {
+      // نادیده
+    }
+    const locFilterActive = locAreas > 0 || locLines > 0;
 
     // ===== دامنه SCAN — پوشش اسکن =====
     if (scans.length > 0) {
       const last = scans[0];
       const okRate = scans.filter((s) => !s.error).length / scans.length;
+      const outOfArea = scans.reduce((s, x) => s + (x.outOfArea ?? 0), 0);
       cards.push({
         key: "scan-health",
         domain: "SCAN",
@@ -46,6 +60,7 @@ export class DivarAgent extends BaseLearningAgent {
         metrics: [
           { label: "منبع", value: last.source === "kenar" ? "کنار (رسمی)" : "وب عمومی دیوار" },
           { label: "فایل تازه", value: String(last.newAds) },
+          ...(locFilterActive ? [{ label: "ردِ خارج از محدوده", value: String(outOfArea) }] : []),
         ],
       });
     } else {
@@ -101,7 +116,7 @@ export class DivarAgent extends BaseLearningAgent {
       });
     }
 
-    // ===== دامنه LOCATION — دقت مکان =====
+    // ===== دامنه LOCATION — دقت مکان + فیلتر مناطق انتخابی =====
     if (ads.length > 0) {
       const located = ads.filter((a) => (a as { matchedLineName?: string | null }).matchedLineName).length;
       const strongMatch = ads.filter((a) => (a.locationScore ?? 0) >= 85).length;
@@ -109,12 +124,20 @@ export class DivarAgent extends BaseLearningAgent {
       cards.push({
         key: "location-filter",
         domain: "LOCATION",
-        title: `تطبیق مکان: ${rate}٪ آگهی‌ها به محله‌های آرم نگاشت شد`,
-        body: `${located} از ${ads.length} فایل با منطقه/محله سامانه آرم تطبیق یافت (${strongMatch} مورد با تطبیق قوی متنی+مختصاتی). منطقه‌بندی عین سامانه آرم (۱۳۰ منطقه/۹۲۶ محله تبریز) مبنای این فیلتر است.`,
-        severity: rate >= 60 ? "positive" : rate >= 30 ? "info" : "warning",
+        title: locFilterActive
+          ? `فیلتر مکان فعال: ${locAreas} منطقه و ${locLines} محله — ${rate}٪ آگهی‌های ذخیره‌شده نگاشت دقیق دارند`
+          : `تطبیق مکان: ${rate}٪ آگهی‌ها به محله‌های آرم نگاشت شد`,
+        body:
+          `${located} از ${ads.length} فایل با منطقه/محله سامانه آرم تطبیق یافت (${strongMatch} مورد با تطبیق قوی متنی+مختصاتی). ` +
+          (locFilterActive
+            ? `فیلتر مکان بر اساس ${locAreas} منطقه انتخابی فعال است؛ آگهی‌های بیرون از انتخاب هرگز ذخیره نمی‌شوند و آمار بازار فقط روی مناطق هدف ساخته می‌شود. `
+            : "فیلتر مکان خاموش است و کل تبریز ذخیره می‌شود؛ با انتخاب مناطق، جست‌وجو دقیقاً محدود می‌شود. ") +
+          "منطقه‌بندی عین سامانه آرم (۱۳۰ منطقه/۹۲۶ محله تبریز) مبنای این فیلتر است.",
+        severity: locFilterActive ? (rate >= 60 ? "positive" : rate >= 30 ? "info" : "warning") : "info",
         metrics: [
           { label: "نگاشت‌شده", value: String(located) },
           { label: "تطبیق قوی", value: String(strongMatch) },
+          ...(locFilterActive ? [{ label: "مناطق انتخابی", value: String(locAreas) }] : []),
         ],
       });
     }
