@@ -17,6 +17,7 @@ import { api } from "@/lib/client/api";
 import { faNumber } from "@/lib/format";
 import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
+import { ConnectionIndicators } from "./ConnectionIndicators";
 
 interface AgentStatsLite {
   feedbackCount: number;
@@ -129,8 +130,11 @@ export function DashboardHome() {
 
   return (
     <main className="flex-1 mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 flex flex-col">
+      {/* نشانگرهای اتصال — هفت چراغ سبز/قرمز (الزام مالک) */}
+      <ConnectionIndicators />
+
       {/* خوش‌آمد و خلاصه وضعیت */}
-      <section className="mb-8">
+      <section className="mb-8 mt-5">
         <div className="rounded-2xl border border-primary/15 bg-gradient-to-l from-primary/10 via-emerald-500/5 to-transparent p-5 sm:p-6">
           <p className="text-xs text-muted-foreground">
             {displayName ? `خوش آمدید، ${displayName}` : "خوش آمدید"} — لایه هوش تحلیلی ملک تبریز
@@ -172,7 +176,7 @@ export function DashboardHome() {
 
       <footer className="mt-auto pt-6 border-t text-center text-xs text-muted-foreground">
         <p>مالک و برنامه‌نویس و طراح: سید نعمت اله سیدی</p>
-        <p className="mt-1">نسخه ۱٫۴٫۰ — داشبورد هوشمند چندعامله ملک تبریز</p>
+        <p className="mt-1">نسخه ۱٫۵٫۰ — داشبورد هوشمند چندعامله ملک تبریز</p>
       </footer>
     </main>
   );

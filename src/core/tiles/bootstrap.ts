@@ -14,6 +14,7 @@ import "@/core/tiles/tiles/contracts";
 import "@/core/tiles/tiles/customer-club";
 import "@/core/tiles/tiles/finance-commission";
 import "@/core/tiles/tiles/price-index";
+import "@/core/tiles/tiles/listing";
 import "@/core/tiles/tiles/settings";
 
 export { transactionsTile } from "@/core/tiles/tiles/transactions";
@@ -26,4 +27,5 @@ export { contractsTile } from "@/core/tiles/tiles/contracts";
 export { customerClubTile } from "@/core/tiles/tiles/customer-club";
 export { financeCommissionTile } from "@/core/tiles/tiles/finance-commission";
 export { priceIndexTile } from "@/core/tiles/tiles/price-index";
+export { listingTile } from "@/core/tiles/tiles/listing";
 export { settingsTile } from "@/core/tiles/tiles/settings";

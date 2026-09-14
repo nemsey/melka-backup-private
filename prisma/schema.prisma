@@ -484,6 +484,165 @@ model CommissionCalcLog {
   @@index([createdAt])
 }
 
+// ===================== کاشی آگهی (ثبت/انتقال فایل آگهی) =====================
+
+/// فایل آگهی — عین ساختار ۵ گامی فرم ثبت آگهی خود سامانه ARM (new-property-page):
+/// گام ۱ اطلاعات مالک ← گام ۲ اطلاعات مکانی ← گام ۳ اطلاعات معامله ← گام ۴ تصاویر و اسناد ← گام ۵ توضیحات مشاوران
+/// دو منبع ثبت: دستی (مالک حضوری) و خودکار (فایل‌های تأییدشده کاشی فایل‌یابی)
+/// دو مقصد انتقال: سامانه ARM (کلید انتقال به CRM) و اینستاگرام (کلید انتقال به اینستاگرام)
+model ListingRecord {
+  id          String   @id @default(cuid())
+  /// manual | divar — منبع ثبت فایل آگهی
+  source      String   @default("manual")
+  /// توکن آگهی دیوار (برای منبع divar — پیوند به DivarAd)
+  divarToken  String?
+
+  // ---------- گام ۱: اطلاعات مالک ----------
+  /// نام و نام‌خانوادگی مالک
+  customerName    String?
+  /// شماره موبایل مالک (۱۱ رقم با ۰۹)
+  customerMobile  String?
+  /// شناسه کاربر آرم (پس از جستجو/ایجاد در فرآیند انتقال به CRM)
+  armCustomerId   String?
+
+  // ---------- گام ۲: اطلاعات مکانی ملک ----------
+  areaId      String?
+  areaName    String?
+  lineId      String?
+  lineName    String?
+  postalCode  String?
+  address     String?
+  latitude    Float?
+  longitude   Float?
+
+  // ---------- گام ۳: اطلاعات معامله ----------
+  tradeTypeId      String?
+  tradeTypeName    String?
+  propertyTypeId   String?
+  propertyTypeName String?
+  buildingTypeId   String?
+  buildingTypeName String?
+  /// معاوضه — JSON آرایه مقادیر PROPERTY_CHANGEABLE_WITH (notChangeable/land/…)
+  changeWithJson   String?
+  /// فرم پویای دسته‌بندی — JSON {createName: value} (مساحت/اتاق/طبقه/سال ساخت…)
+  inputsJson       String?
+
+  // ---------- گام ۴: تصاویر و اسناد ----------
+  /// تصاویر — JSON آرایه URL (اولین = تصویر اصلی)
+  imagesJson     String?
+  /// ویدیوها — JSON آرایه URL
+  videosJson     String?
+  /// اسناد — JSON آرایه URL
+  documentsJson  String?
+
+  // ---------- گام ۵: توضیحات مشاوران ----------
+  /// قیمت فایل (تومان — رشته عددی)
+  priceEvaluation   String?
+  /// مطلوبیت فایل
+  desirabilityLevel String?
+  /// نحوه پیدا شدن فایل (دیوار/حضوری/معرفی/…)
+  fileFinding       String?
+  /// انواع فایل — JSON آرایه
+  fileTypeJson      String?
+  /// جدیت مشتری
+  userSeriousness   String?
+  /// دلیل فروش
+  sellReason        String?
+  /// توضیحات مشاوران
+  description       String?
+  /// برچسب‌های فایل (عین فرم آرم)
+  isLuxury     Boolean  @default(false)
+  isVacation   Boolean  @default(false)
+  isUrgent     Boolean  @default(false)
+  /// اطلاع‌رسانی با پیامک (عین فرم آرم)
+  notifyBySms  Boolean  @default(false)
+
+  /// چرخه عمر: draft (در تکمیل) | ready (آماده) | archived
+  status      String   @default("draft")
+
+  /// نتیجه انتقال به CRM — JSON {steps:[{key,title,status,detail}], armId, at}
+  crmTransferJson    String?
+  crmTransferredAt   DateTime?
+  /// شناسه آگهی ثبت‌شده در آرم
+  armPropertyId      String?
+
+  /// آخرین محتوای اینستاگرام — JSON {kind, caption, media, tone}
+  instagramPostJson    String?
+  instagramPublishedAt DateTime?
+  /// شناسه پست منتشرشده در اینستاگرام
+  instagramMediaId     String?
+
+  /// کد پرسنلی ثبت‌کننده
+  actorCode   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([source])
+  @@index([divarToken])
+  @@index([createdAt])
+  @@index([crmTransferredAt])
+  @@index([instagramPublishedAt])
+}
+
+/// اتصال حساب اینستاگرام کسب‌وکار (Instagram Graph API) — تک‌رکورد
+model InstagramConnection {
+  id            String    @id @default(cuid())
+  /// connected | disconnected | error
+  status        String    @default("disconnected")
+  /// شناسه حساب اینستاگرام کسب‌وکار (IG User ID)
+  igUserId      String?
+  username      String?
+  displayName   String?
+  /// توکن دسترسی Graph API — رمزنگاری‌شده AES-256-GCM
+  tokenEnc      String?
+  lastCheckedAt DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+/// گزارش محتوای اینستاگرام — فقط افزودنی (Append-only):
+/// هر تولید محتوا/انتشار پست یا رییلز ثبت می‌شود؛ حافظه ایجنت آگهی.
+model InstagramPostLog {
+  id          String    @id @default(cuid())
+  listingId   String
+  /// post | reel
+  kind        String
+  /// کپشن تولیدشده (متن کامل پست)
+  caption     String
+  /// رسانه — JSON آرایه URL
+  mediaJson   String
+  /// generated | approved | published | failed
+  status      String    @default("generated")
+  /// نتیجه انتشار Graph API — JSON
+  resultJson  String?
+  publishedAt DateTime?
+  actorCode   String
+  createdAt   DateTime  @default(now())
+
+  @@index([listingId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+/// اتصال حساب شخصی سامانه پرسنلی PM — تک‌رکورد (کد پرسنلی + پیامک، عین خود سامانه pm)
+model PmConnection {
+  id            String    @id @default(cuid())
+  /// connected | disconnected | pending | error
+  status        String    @default("disconnected")
+  personnelCode String?
+  displayName   String?
+  /// توکن دسترسی PM — رمزنگاری‌شده
+  tokenEnc      String?
+  /// توکن تمدید PM — رمزنگاری‌شده
+  refreshTokenEnc String?
+  lastCheckedAt DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
 // ===================== لایه ایجنت هوشمند (فقط افزودنی / Append-only) =====================
 
 /// حافظه ساخت‌یافته هر کاشی — هرگز Overwrite نمی‌شود

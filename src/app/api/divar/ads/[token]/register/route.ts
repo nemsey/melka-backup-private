@@ -250,11 +250,51 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
       where: { token: ad.token },
       data: { status: "registered" },
     });
+
+    // ---------- درون‌ریزی خودکار به کاشی «آگهی» (بخش «ب» قانون مالک) ----------
+    // فایل‌هایی که کاربر در کاشی فایل‌یابی تأیید (ثبت) می‌کند، خودکار در کاشی آگهی ثبت می‌شوند.
+    let listingId: string | null = null;
+    try {
+      const { importDivarAdAsListing } = await import("@/lib/listing/store");
+      const listing = await importDivarAdAsListing(ad.token, guard.personnelCode);
+      if (listing) {
+        // اتصال به ثبت موفق CRM: شناسه آگهی آرم + گزارش گام‌ها
+        const armId = (result.data as { _id?: string; id?: string } | null)?._id ?? (result.data as { _id?: string; id?: string } | null)?.id ?? null;
+        await db.listingRecord
+          .update({
+            where: { id: listing.id },
+            data: {
+              armCustomerId: null,
+              armPropertyId: armId ?? null,
+              crmTransferredAt: new Date(),
+              crmTransferJson: JSON.stringify({
+                via: "file-finder-register",
+                at: new Date().toISOString(),
+                armId: armId ?? null,
+                steps: [
+                  { key: "customer", title: "گام ۱ — اطلاعات مالک", status: "done", detail: "از فرم ثبت فایل‌یابی ارسال شد." },
+                  { key: "location", title: "گام ۲ — اطلاعات مکانی ملک", status: "done", detail: "منطقه/محله آرم از تطبیق دیوار." },
+                  { key: "transaction", title: "گام ۳ — اطلاعات معامله", status: "done", detail: "نگاشت دسته دیوار به نوع‌های آرم." },
+                  { key: "media", title: "گام ۴ — تصاویر و اسناد ملک", status: "done", detail: "تصاویر دیوار پیوست شد." },
+                  { key: "descriptions", title: "گام ۵ — توضیحات مشاوران", status: "done", detail: "قیمت و توضیحات آگهی دیوار." },
+                  { key: "submit", title: "ثبت نهایی در سامانه آرم", status: "done", detail: "از مسیر کاشی فایل‌یابی ثبت شد." },
+                ],
+              }),
+            },
+          })
+          .catch(() => undefined);
+        listingId = listing.id;
+      }
+    } catch {
+      // درون‌ریزی ناموفق نباید ثبت موفق را خراب کند — در بارگذاری بعدی کاشی آگهی دوباره تلاش می‌شود
+    }
+
     await audit("DIVAR_REGISTER", guard.personnelCode, `token=${ad.token} arm-ok`);
     return Response.json({
       ok: true,
-      message: `آگهی با موفقیت در سامانه آرم ثبت شد. ${result.message ? `پیام سامانه: ${result.message}` : ""}`,
+      message: `آگهی با موفقیت در سامانه آرم ثبت شد. ${result.message ? `پیام سامانه: ${result.message}` : ""}${listingId ? " فایل در کاشی «آگهی» نیز ثبت شد." : ""}`,
       armResult: result.data,
+      listingId,
     });
   } catch (err) {
     const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error)?.message ?? "خطای ثبت در آرم", 502, false);

@@ -5,7 +5,7 @@
    - به‌روزرسانی خودکار SW با skipWaiting + clients.claim
    - پاک‌سازی کامل کش‌های نسخه‌های قدیمی (v1/v2) هنگام فعال‌سازی */
 
-const VERSION = "melk-dash-v4";
+const VERSION = "melk-dash-v5";
 const STATIC_CACHE = `${VERSION}-static`;
 
 /* فقط دارایی‌های واقعاً تغییرناپذیر — بدون HTML و بدون چانک‌های Next */

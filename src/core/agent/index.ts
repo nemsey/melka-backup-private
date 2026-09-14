@@ -15,6 +15,7 @@ import { contractAgent } from "./contract-agent";
 import { customerClubAgent } from "./customer-club-agent";
 import { financeAgent } from "./finance-agent";
 import { priceIndexAgent } from "./price-index-agent";
+import { listingAgent } from "./listing-agent";
 import type { BaseLearningAgent as Agent } from "./base-agent";
 
 const agents = new Map<string, Agent>([
@@ -28,6 +29,7 @@ const agents = new Map<string, Agent>([
   [customerClubAgent.tileId, customerClubAgent],
   [financeAgent.tileId, financeAgent],
   [priceIndexAgent.tileId, priceIndexAgent],
+  [listingAgent.tileId, listingAgent],
 ]);
 
 /** دسترسی به ایجنت یک کاشی — null اگر کاشی ایجنت ندارد */

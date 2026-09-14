@@ -26,6 +26,8 @@ import { api, ApiClientError } from "@/lib/client/api";
 import { useAppStore } from "@/lib/client/store";
 import { faDateTime, faNumber } from "@/lib/format";
 import { DivarConnectionSection } from "./DivarConnectionSection";
+import { InstagramConnectionSection } from "./InstagramConnectionSection";
+import { PmConnectionSection } from "./PmConnectionSection";
 
 /** ارقام فارسی محلی برای این صفحه */
 function faDigitsLocal(n: string | number): string {
@@ -388,6 +390,12 @@ export function SettingsPage({ onBack }: TilePageProps) {
 
       {/* اتصال به دیوار — دو روش با کلید ریست */}
       <DivarConnectionSection />
+
+      {/* اتصال به حساب شخصی سامانه PM — برای چراغ نشانگر خانه */}
+      <PmConnectionSection />
+
+      {/* اتصال به اینستاگرام — کاشی آگهی */}
+      <InstagramConnectionSection />
 
       {/* راهنمای اپلیکیشن */}
       <Card>

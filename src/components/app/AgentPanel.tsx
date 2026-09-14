@@ -98,6 +98,11 @@ export const DOMAIN_FA: Record<string, string> = {
   REGION: "مقایسه مناطق",
   ALERT: "هشدار جهش",
   HEALTH: "سلامت قیمت‌گذاری",
+  REGISTRY: "دفتر آگهی",
+  CRM: "انتقال به آرم",
+  INSTAGRAM: "انتشار اینستاگرام",
+  COMPLETENESS: "کامل‌بودن ۵ گامی",
+  SOURCE: "منبع ثبت",
 };
 
 export function AgentPanel({ tileId }: { tileId: string }) {
