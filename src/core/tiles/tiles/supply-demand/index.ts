@@ -19,7 +19,7 @@ export const supplyDemandTile = defineTile({
   icon: Scale,
   accent: "rose",
   component: SupplyDemandPage,
-  order: 5,
+  order: 9,
   agent: {
     tileId: "supply-demand",
     insightDomains: ["BALANCE", "PRESSURE", "STRATEGY"],

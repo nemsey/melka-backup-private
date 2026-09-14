@@ -58,7 +58,7 @@ const SEVERITY_STYLE: Record<Insight["severity"], { border: string; icon: React.
   critical: { border: "border-s-4 border-rose-500/80", icon: <XCircle className="w-5 h-5 text-rose-600" aria-hidden />, chip: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" },
 };
 
-const DOMAIN_FA: Record<string, string> = {
+export const DOMAIN_FA: Record<string, string> = {
   TREND: "روند بازار",
   VOLUME: "حجم معاملات",
   TOP_EXPERTS: "کارشناسان برتر",
@@ -80,6 +80,24 @@ const DOMAIN_FA: Record<string, string> = {
   OTHER: "سایر فاکتورهای بهینه",
   LOCATION: "مکان",
   LEARNING: "یادگیری از ردها",
+  FUNNEL: "قیف چرخه عمر",
+  BOTTLENECK: "گلوگاه اداری",
+  STALLED: "قراردادهای راکد",
+  SHARE: "حق‌السهم",
+  REJECT: "رد و فسخ",
+  COMMUNITY: "جامعه مشتریان",
+  REPEAT: "مشتریان تکراری",
+  LOYALTY: "وفادارسازی",
+  CATALOG: "فهرست‌های مرجع",
+  TARIFF: "تعرفه اتحادیه",
+  REVENUE: "درآمد",
+  SETTLEMENT: "تسویه‌حساب",
+  BRANCH: "شعبه‌ها",
+  PIPELINE: "درآمد در جریان",
+  MARKET: "شاخص بازار",
+  REGION: "مقایسه مناطق",
+  ALERT: "هشدار جهش",
+  HEALTH: "سلامت قیمت‌گذاری",
 };
 
 export function AgentPanel({ tileId }: { tileId: string }) {

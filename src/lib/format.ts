@@ -87,3 +87,9 @@ export function faRelative(input: string | Date): string {
   if (months < 12) return `${faDigitsLocal(months)} ماه پیش`;
   return `${faDigitsLocal(Math.floor(months / 12))} سال پیش`;
 }
+
+/** مبلغ تومانی دقیق با جداکننده هزارگان: «۶٬۷۵۰٬۰۰۰ تومان» — مناسب قبض کمیسیون */
+export function faTomanExact(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  return `${faNumber(n)} تومان`;
+}

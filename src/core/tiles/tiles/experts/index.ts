@@ -18,7 +18,7 @@ export const expertsTile = defineTile({
   icon: Users,
   accent: "teal",
   component: ExpertsPage,
-  order: 2,
+  order: 6,
   agent: {
     tileId: "experts",
     insightDomains: ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK"],

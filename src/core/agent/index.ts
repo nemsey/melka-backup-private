@@ -11,6 +11,10 @@ import { extractionAgent } from "./extraction-agent";
 import { visitsAgent } from "./visits-agent";
 import { supplyDemandAgent } from "./supply-demand-agent";
 import { divarAgent } from "./divar-agent";
+import { contractAgent } from "./contract-agent";
+import { customerClubAgent } from "./customer-club-agent";
+import { financeAgent } from "./finance-agent";
+import { priceIndexAgent } from "./price-index-agent";
 import type { BaseLearningAgent as Agent } from "./base-agent";
 
 const agents = new Map<string, Agent>([
@@ -20,6 +24,10 @@ const agents = new Map<string, Agent>([
   [visitsAgent.tileId, visitsAgent],
   [supplyDemandAgent.tileId, supplyDemandAgent],
   [divarAgent.tileId, divarAgent],
+  [contractAgent.tileId, contractAgent],
+  [customerClubAgent.tileId, customerClubAgent],
+  [financeAgent.tileId, financeAgent],
+  [priceIndexAgent.tileId, priceIndexAgent],
 ]);
 
 /** دسترسی به ایجنت یک کاشی — null اگر کاشی ایجنت ندارد */

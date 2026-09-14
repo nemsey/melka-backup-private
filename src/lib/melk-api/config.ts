@@ -26,6 +26,8 @@ export interface MelkApiConfig {
   armPublicApiBase: string;
   /** پایه API سامانه PM — کشف واقعی */
   pmApiBase: string;
+  /** پایه API سامانه مالی (حسابداری fm) — کشف واقعی از platformsBaseUrl.acc */
+  accApiBase: string;
   /** مهلت پاسخ درخواست (میلی‌ثانیه) */
   timeoutMs: number;
   /** تعداد تلاش مجدد خودکار برای خطاهای شبکه/5xx */
@@ -59,6 +61,7 @@ export function getMelkApiConfig(): MelkApiConfig {
     armApiBase: env("MELK_ARM_API_BASE", "https://arus-api.melketabriz.ir/api/apm/"),
     armPublicApiBase: env("MELK_ARM_PUBLIC_API_BASE", "https://arus-api.melketabriz.ir/api/public/"),
     pmApiBase: env("MELK_PM_API_BASE", "https://pm-api.melketabriz.ir/api/"),
+    accApiBase: env("MELK_ACC_API_BASE", "https://fm-api.melketabriz.ir/"),
     timeoutMs: Number(env("MELK_API_TIMEOUT_MS", "25000")),
     maxRetries: Number(env("MELK_API_MAX_RETRIES", "2")),
     masterCode: env("MASTER_ACCESS_CODE", "41372895"),

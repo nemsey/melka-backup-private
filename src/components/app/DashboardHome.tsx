@@ -172,7 +172,7 @@ export function DashboardHome() {
 
       <footer className="mt-auto pt-6 border-t text-center text-xs text-muted-foreground">
         <p>مالک و برنامه‌نویس و طراح: سید نعمت اله سیدی</p>
-        <p className="mt-1">نسخه ۱٫۲٫۰ — داشبورد هوشمند چندعامله ملک تبریز</p>
+        <p className="mt-1">نسخه ۱٫۴٫۰ — داشبورد هوشمند چندعامله ملک تبریز</p>
       </footer>
     </main>
   );

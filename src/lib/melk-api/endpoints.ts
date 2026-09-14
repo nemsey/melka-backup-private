@@ -42,8 +42,8 @@ export const MELK_ENDPOINTS = {
     tradedTotal: "realtor-reports/traded-count-total",
     /** شمارش معاملات (خلاصه) */
     tradedCount: "realtor-reports/traded-count",
-    /** گزارش تعاملات کارشناسان */
-    realtorInteractions: "realtor-reports/realtor-interactions",
+    /** گزارش تعاملات کارشناسان (addToURL: list — کشف از باندل خود سامانه) */
+    realtorInteractions: "realtor-reports/realtor-interactions/list",
     /** فهرست کارشناسان (کارشناس املاک = realtor) */
     realtorsList: "realtors/list",
     /** شمارش اعلان‌ها */
@@ -68,8 +68,38 @@ export const MELK_ENDPOINTS = {
     requestApplicant: (id: string) => `requests/applicant/${encodeURIComponent(id)}`,
 
     // ============ بازدیدها و پیگیری‌ها ============
-    /** فهرست بازدیدها (بررسی‌کننده × درخواست‌دهنده × کدآگهی) */
-    visitsList: "visits",
+    /** فهرست بازدیدها (بررسی‌کننده × درخواست‌دهنده × کدآگهی — addToURL: list) */
+    visitsList: "visits/list",
+
+    // ============ قراردادها و اسناد (صورت وضعیت) — کشف از باندل رسمی ============
+    /** فهرست صورت وضعیت‌ها (وضعیت × صفحه‌بندی) — عین خود سامانه (addToURL: list) */
+    tradeOverviewsList: "trade-overviews/list",
+    /** جزئیات کامل قرارداد: تاریخ سند/قرارداد/تحویل، خریداران، فروشندگان، حق‌السهم مشاوران */
+    tradeOverviewInfo: (id: string) => `trade-overviews/info/${encodeURIComponent(id)}`,
+    /** تعرفه تقسیم حق‌السهم (contribution) */
+    tradeOverviewsContribution: "trade-overviews/contribution",
+
+    // ============ باشگاه مشتریان — فهرست‌های مرجع (عمومی، بدون توکن) ============
+    /** شخصیت مشتریان (اجتماعی، ایرادگیر، بله‌گو و ...) */
+    userCharacters: "user-characters/list",
+    /** شغل مشتریان (آزاد، اپراتور، استاد دانشگاه و ...) */
+    userJobs: "user-jobs/list",
+    /** نقش مشتریان (خریدار، فروشنده، خریدار و فروشنده سرمایه‌گذار و ...) */
+    userRoles: "user-roles/list",
+    /** جدیت مشتریان (خیلی زیاد، زیاد، متوسط، کم) */
+    userSeriousness: "user-seriousness/list",
+
+    // ============ شاخص قیمت روز مناطق (عمومی، بدون توکن) ============
+    /** فهرست شاخص‌های قیمت روز (نوع معامله × کاربری × نوع ملک × شهر) */
+    currentPricesList: "configs/current-prices/list",
+    /** جزئیات مشخصات فنی یک شاخص */
+    currentPriceDetails: (id: string) => `configs/current-prices/info/${encodeURIComponent(id)}/details`,
+    /** مناطق پوشش‌داده‌شده توسط یک شاخص */
+    currentPriceAreas: (id: string) => `configs/current-prices/info/${encodeURIComponent(id)}/areas`,
+
+    // ============ کسب‌وکار و شعبه (توکن‌دار) ============
+    /** اطلاعات کسب‌وکار/شعبه خود کاربر */
+    ownBusiness: "businesses/info/own",
 
     // ============ بازیابی کاربر با شماره موبایل ============
     /** استعلام کاربر/مشتری با شماره موبایل */
@@ -92,5 +122,13 @@ export const MELK_ENDPOINTS = {
     verifyOtp: "authentication/otp/login",
     /** تمدید توکن سامانه پرسنلی */
     refreshToken: "authentication/refreshToken",
+  },
+  /** سامانه مالی (حسابداری) ملک تبریز — کشف از globalSettings.platformsBaseUrl.acc */
+  acc: {
+    /** پیکربندی تعرفه کمیسیون (شهر × نوع قرارداد × ورودی‌ها + نرخ‌نامه اتحادیه) — عمومی */
+    commissionConfigList: "apm/commission/configList",
+    /** محاسبه کمیسیون: POST {cityId}/{contractType} */
+    commissionCalculate: (cityId: string, contractType: string) =>
+      `apm/commission/${encodeURIComponent(cityId)}/${encodeURIComponent(contractType)}`,
   },
 } as const;

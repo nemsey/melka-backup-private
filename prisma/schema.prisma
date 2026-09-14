@@ -374,6 +374,116 @@ model DivarScanLog {
   @@index([startedAt])
 }
 
+// ===================== قراردادها و اسناد (صورت وضعیت سامانه ARM) =====================
+
+/// قرارداد (صورت وضعیت) — عین ساختار trade-overviews خود سامانه ARM:
+/// چرخه کامل عمر از «پیش‌نویس» تا «در انتظار تنظیم سند» با وضعیت‌های واقعی سامانه.
+model ContractRecord {
+  id            String    @id
+  /// وضعیت واقعی سامانه: preDefined | waitingForAddRealtors | waitingForRealtors |
+  /// waitingForFinance | confirmedByFinance | rejectedByFinance | waitingForDocument |
+  /// rejected | finished | payed | rescission | deletedByFinance
+  status        String
+  /// شماره هولوگرام قرارداد (شناسه رسمی سند)
+  contractHolo  String?
+  /// کد آگهی ملک
+  propertyCode  String?
+  /// کد درخواست خرید
+  requestCode   String?
+  /// نوع قرارداد (مبایعه‌نامه / اجاره‌نامه / تمدید اجاره)
+  contractType  String?
+  /// ثبت‌کننده قرارداد
+  creatorName   String?
+  /// تاریخ ثبت
+  createdAt     DateTime?
+  /// تاریخ قرارداد
+  contractDate  DateTime?
+  /// تاریخ سند (تنظیم سند رسمی)
+  documentDate  DateTime?
+  /// تاریخ تحویل ملک
+  deliveryDate  DateTime?
+  /// عنوان ملک
+  propertyTitle String?
+  /// آدرس ملک
+  propertyAddress String?
+  /// خریداران — JSON [{fullName, mobileNumber}]
+  buyerListJson     String?
+  /// فروشندگان — JSON [{fullName, mobileNumber}]
+  sellerListJson    String?
+  /// مشاوران و حق‌السهم — JSON [{name, unitPercent, confirmation, description, role}]
+  realtorListJson   String?
+  /// آیا امکان افزودن مشاور دارد (مرحله در انتظار افزودن مشاور)
+  canAddRealtor  Boolean  @default(false)
+  syncedAt      DateTime @default(now())
+
+  @@index([status])
+  @@index([contractHolo])
+  @@index([createdAt])
+}
+
+// ===================== کش فهرست‌های مرجع عمومی سامانه ARM =====================
+
+/// کش فهرست‌های عمومی (بدون توکن) — شخصیت/شغل/نقش/جدیت مشتریان،
+/// پیکربندی شاخص قیمت روز، تعرفه کمیسیون اتحادیه. یک رکورد برای هر کلید.
+model RefListCache {
+  /// کلید یکتا: user-characters | user-jobs | user-roles | user-seriousness |
+  /// price-indices | commission-config
+  key        String   @id
+  /// JSON کامل فهرست (عین پاسخ سامانه)
+  dataJson   String
+  fetchedAt  DateTime @updatedAt
+}
+
+// ===================== شاخص قیمت روز مناطق =====================
+
+/// تاریخچه شاخص قیمت هر منطقه — فقط افزودنی (Append-only):
+/// هر اسکن/بازخوانی، میانگین قیمت هر متر منطقه را ثبت می‌کند؛
+/// مبنای «روند تغییر شاخص‌ها در زمان» و «هشدار تغییرات جهشی».
+model PriceIndexHistory {
+  id             String   @id @default(cuid())
+  /// نام منطقه (خط/محله تبریز)
+  areaName       String
+  /// دسته آگهی (apartment-sell و ...)
+  category       String
+  /// میانگین (میانه) قیمت هر متر — تومان
+  medianPerMeter Float
+  /// چارک ۲۵
+  p25PerMeter    Float
+  /// چارک ۷۵
+  p75PerMeter    Float
+  /// کمترین و بیشترین قیمت هر متر در نمونه
+  minPerMeter    Float
+  maxPerMeter    Float
+  sampleCount    Int
+  recordedAt     DateTime @default(now())
+
+  @@index([areaName, recordedAt])
+  @@index([category])
+}
+
+// ===================== مالی و کمیسیون =====================
+
+/// گزارش محاسبات کمیسیون — فقط افزودنی:
+/// هر محاسبه با تعرفه واقعی اتحادیه ثبت می‌شود؛ حافظه ایجنت مالی.
+model CommissionCalcLog {
+  id           String   @id @default(cuid())
+  /// نوع قرارداد: mobayeName | ejareName | rentalRenewal
+  contractType String
+  /// ورودی‌ها — JSON (ثمن معامله / ودیعه / اجاره)
+  inputsJson   String
+  /// نتیجه — JSON (کمیسیون خریدار/فروشنده، مالیات، قابل پرداخت)
+  resultJson   String
+  /// ثمن معامله معادل (برای تجمیع درآمد)
+  dealValue    Float    @default(0)
+  /// سهم مالیات ارزش افزوده اعمال‌شده (درصد)
+  vatPercent   Float    @default(10)
+  actorCode    String
+  createdAt    DateTime @default(now())
+
+  @@index([contractType])
+  @@index([createdAt])
+}
+
 // ===================== لایه ایجنت هوشمند (فقط افزودنی / Append-only) =====================
 
 /// حافظه ساخت‌یافته هر کاشی — هرگز Overwrite نمی‌شود

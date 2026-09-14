@@ -18,7 +18,20 @@
  * (کشف‌شده از باندل). تبدیل دوجهته جلالی↔میلادی در «src/lib/jalali.ts».
  */
 
-import type { CrmExpert, CrmInteraction, CrmSupplyDemand, CrmTransaction, CrmVisit, PersonInfo, TradedSummary } from "./types";
+import type {
+  CommissionCityConfig,
+  ContractRealtorShare,
+  CrmContract,
+  CrmExpert,
+  CrmInteraction,
+  CrmSupplyDemand,
+  CrmTransaction,
+  CrmVisit,
+  PersonInfo,
+  PriceIndexConfig,
+  RefListItem,
+  TradedSummary,
+} from "./types";
 import { anyDateStringToDate, gregorianToJalali, isoToJalaliString, jalaliToGregorian } from "@/lib/jalali";
 
 // بازصدور برای استفاده سایر ماژول‌ها (تک‌منبع: lib/jalali)
@@ -506,4 +519,184 @@ export function extractPagedList<T>(payload: unknown, mapRow: (row: Row, index: 
     .filter((r): r is T => r !== null);
   if (!total) total = rows.length;
   return { rows, total, totalPages };
+}
+
+// ==========================================================================
+// قراردادها و اسناد (trade-overviews) — نگاشت از ساختار رسمی سامانه ARM
+// ==========================================================================
+
+/** نگاشت اشتراک حق‌السهم مشاور — عین primaryRealtorList/secondaryRealtorList */
+function mapRealtorShare(entry: Row, role: "primary" | "secondary"): ContractRealtorShare | null {
+  const name = pickNestedStr(entry, ["realtor.fullName", "realtor.name", "fullName", "name"]);
+  if (!name) return null;
+  const unitPercent = pickNum(entry, ["realtorUnit", "realtorsPercentage", "unitPercent"]);
+  return {
+    name,
+    unitPercent,
+    confirmation: pickStr(entry, ["confirmation"]) || "wait",
+    description: pickStr(entry, ["description"]) || undefined,
+    role,
+  };
+}
+
+/**
+ * نگاشت ردیف لیست trade-overviews → CrmContract (بدون خریداران/فروشندگان).
+ * عین ستون‌های جدول خود سامانه: هولوگرام/کد درخواست/کد آگهی، نوع قرارداد،
+ * وضعیت، ثبت‌کننده، زمان ثبت.
+ */
+export function mapArmContractRow(row: Row): CrmContract | null {
+  const id = pickId(row, "");
+  if (!id) return null;
+  const createdAtRaw = anyDateStringToDate(pickStr(row, ["createdAt"]));
+  return {
+    id,
+    status: pickStr(row, ["status"]) || "preDefined",
+    contractHolo: pickStr(row, ["contractHolo"]) || null,
+    propertyCode: pickStr(row, ["propertyCode"]) || null,
+    requestCode: pickStr(row, ["requestCode"]) || null,
+    contractType: pickNestedStr(row, ["contractType.label", "contractType"]) || null,
+    creatorName: pickNestedStr(row, ["creator.identifier.fullName", "creator.fullName"]) || null,
+    createdAt: createdAtRaw ? createdAtRaw.toISOString() : null,
+    contractDate: null,
+    documentDate: null,
+    deliveryDate: null,
+    propertyTitle: null,
+    propertyAddress: null,
+    buyers: [],
+    sellers: [],
+    realtorShares: [],
+    canAddRealtor: pick(row, ["canAddRealtor"]) === true,
+  };
+}
+
+/**
+ * ادغام جزئیات «trade-overviews/info/{id}» در قرارداد —
+ * تاریخ سند/قرارداد/تحویل، عنوان و آدرس ملک، خریداران، فروشندگان و
+ * مشاوران با حق‌السهم (اصلی و فرعی).
+ */
+export function mergeArmContractInfo(contract: CrmContract, infoPayload: unknown): CrmContract {
+  const info = (infoPayload && typeof infoPayload === "object" ? (infoPayload as Row) : {}) as Row;
+  const toDate = (keys: string[]): string | null => {
+    const d = anyDateStringToDate(pickStr(info, keys));
+    return d ? d.toISOString() : null;
+  };
+
+  const buyersRaw = Array.isArray(info.buyerList) ? (info.buyerList as Row[]) : [];
+  const sellersRaw = Array.isArray(info.sellerList) ? (info.sellerList as Row[]) : [];
+  const primaryRaw = Array.isArray(info.primaryRealtorList) ? (info.primaryRealtorList as Row[]) : [];
+  const secondaryRaw = Array.isArray(info.secondaryRealtorList) ? (info.secondaryRealtorList as Row[]) : [];
+
+  return {
+    ...contract,
+    contractDate: toDate(["contractDate"]) ?? contract.createdAt,
+    documentDate: toDate(["documentDate"]),
+    deliveryDate: toDate(["contractPropertyDate"]),
+    propertyTitle: pickNestedStr(info, ["property.title", "propertyTitle"]) || null,
+    propertyAddress: pickNestedStr(info, ["property.address", "propertyAddress"]) || null,
+    contractType: pickNestedStr(info, ["contractType.label"]) || contract.contractType,
+    buyers: buyersRaw
+      .map((b) => ({ fullName: pickStr(b, ["fullName"]), mobileNumber: pickStr(b, ["mobileNumber"]) }))
+      .filter((b) => b.fullName),
+    sellers: sellersRaw
+      .map((s) => ({ fullName: pickStr(s, ["fullName"]), mobileNumber: pickStr(s, ["mobileNumber"]) }))
+      .filter((s) => s.fullName),
+    realtorShares: [
+      ...primaryRaw.map((r) => mapRealtorShare(r, "primary")).filter((r): r is ContractRealtorShare => r !== null),
+      ...secondaryRaw.map((r) => mapRealtorShare(r, "secondary")).filter((r): r is ContractRealtorShare => r !== null),
+    ],
+  };
+}
+
+// ==========================================================================
+// فهرست‌های مرجع عمومی (بدون توکن) — باشگاه مشتریان
+// ==========================================================================
+
+/** نگاشت فهرست مرجع عمومی (user-characters/jobs/roles/seriousness) */
+export function mapRefList(payload: unknown): RefListItem[] {
+  const { rows } = extractPagedList<Row>(payload, (row) => (pickId(row, "") ? row : null));
+  return rows
+    .map((r) => ({ id: pickId(r, ""), name: pickStr(r, ["name"]) }))
+    .filter((r) => r.name)
+    .map((r, i) => ({ ...r, id: r.id || `idx-${i}` }));
+}
+
+// ==========================================================================
+// مالی و کمیسیون — پیکربندی تعرفه سامانه مالی (fm)
+// ==========================================================================
+
+/** نگاشت پاسخ acc/apm/commission/configList → CommissionCityConfig[] */
+export function mapCommissionConfig(payload: unknown): CommissionCityConfig[] {
+  // پوشه سامانه مالی متفاوت است: { status: "success", configList: [...] }
+  const root = (payload && typeof payload === "object" ? (payload as Row) : {}) as Row;
+  const list = Array.isArray(root.configList) ? (root.configList as Row[]) : [];
+  const configs: CommissionCityConfig[] = [];
+  for (const c of list) {
+    const cityId = pickNestedStr(c, ["city._id"]) || pickId(c, "");
+    const cityName = pickNestedStr(c, ["city.name"]);
+    if (!cityId && !cityName) continue;
+    const detailRaw = Array.isArray(c.detail) ? (c.detail as Row[]) : [];
+    configs.push({
+      cityId: cityId || cityName,
+      cityName: cityName || "—",
+      valueAddedPercentage: pickNum(c, ["valueAddedPercentage"]) || 10,
+      realEstateTariff: pickStr(c, ["realEstateTariff"]),
+      image: pickStr(c, ["image"]) || null,
+      detail: detailRaw.map((d) => {
+        const inputsRaw = Array.isArray(d.inputs) ? (d.inputs as Row[]) : [];
+        return {
+          contractType: pickStr(d, ["contractType"]),
+          contractTypeFa: pickStr(d, ["contractTypeFa"]),
+          buyerLabel: pickStr(d, ["buyerLable", "buyerLabel"]) || "خریدار",
+          sellerLabel: pickStr(d, ["sellerLable", "sellerLabel"]) || "فروشنده",
+          inputs: inputsRaw
+            .map((inp) => ({ key: pickStr(inp, ["key"]), label: pickStr(inp, ["lable", "label"]) }))
+            .filter((inp) => inp.key),
+        };
+      }),
+    });
+  }
+  return configs;
+}
+
+// ==========================================================================
+// شاخص قیمت روز — configs/current-prices سامانه ARM
+// ==========================================================================
+
+/** نگاشت رکورد configs/current-prices → PriceIndexConfig */
+export function mapPriceIndexConfig(row: Row): PriceIndexConfig | null {
+  const id = pickId(row, "");
+  if (!id) return null;
+  const inputs = (row.inputs && typeof row.inputs === "object" ? (row.inputs as Row) : {}) as Row;
+  return {
+    id,
+    tradeType: pickNestedStr(row, ["tradeType.name"]) || "—",
+    buildingType: pickNestedStr(row, ["buildingType.name"]) || "—",
+    propertyType: pickNestedStr(row, ["propertyType.name"]) || "—",
+    city: pickNestedStr(row, ["city.name"]) || "—",
+    yearFrom: Number(pick(inputs, ["year_from"])) || null,
+    yearTo: Number(pick(inputs, ["year_to"])) || null,
+    isRental: pick(row, ["isRental"]) === true,
+    isActive: pick(row, ["isActive"]) === true,
+    areas: [],
+    details: [],
+  };
+}
+
+/** نگاشت پاسخ /areas شاخص → نام مناطق */
+export function mapPriceIndexAreas(payload: unknown): string[] {
+  const root = (payload && typeof payload === "object" ? (payload as Row) : {}) as Row;
+  const areas = root.areas;
+  if (Array.isArray(areas)) {
+    return areas.map((a) => (typeof a === "string" ? a : pickStr(a as Row, ["name"]))).filter(Boolean);
+  }
+  return [];
+}
+
+/** نگاشت پاسخ /details شاخص → مشخصات فنی */
+export function mapPriceIndexDetails(payload: unknown): { label: string; value: string }[] {
+  const root = (payload && typeof payload === "object" ? (payload as Row) : {}) as Row;
+  const details = Array.isArray(root.details) ? (root.details as Row[]) : [];
+  return details
+    .map((d) => ({ label: pickStr(d, ["label"]), value: pickStr(d, ["value"]) }))
+    .filter((d) => d.label || d.value);
 }

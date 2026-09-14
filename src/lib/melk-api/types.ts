@@ -250,6 +250,253 @@ export interface RequestLookupResult {
   details: { label: string; value: string; unit: string }[];
 }
 
+// ===================== قراردادها و اسناد (صورت وضعیت سامانه ARM) =====================
+
+/**
+ * وضعیت‌های واقعی چرخه عمر قرارداد — عین نقطه‌های وضعیت (status) خود سامانه ARM
+ * (کشف از باندل رسمی trade-over-view-page + نگاشت فارسی خود سامانه).
+ */
+export const CONTRACT_STATUSES = [
+  "preDefined",
+  "waitingForAddRealtors",
+  "waitingForRealtors",
+  "waitingForFinance",
+  "confirmedByFinance",
+  "rejectedByFinance",
+  "waitingForDocument",
+  "rejected",
+  "finished",
+  "payed",
+  "rescission",
+  "deletedByFinance",
+] as const;
+
+export type ContractStatus = (typeof CONTRACT_STATUSES)[number];
+
+/** نگاشت فارسی وضعیت‌ها — عین خود سامانه ARM */
+export const CONTRACT_STATUS_FA: Record<ContractStatus, string> = {
+  preDefined: "پیش‌نویس",
+  waitingForAddRealtors: "در انتظار افزودن مشاور",
+  waitingForRealtors: "در انتظار تایید مشاوران",
+  waitingForFinance: "در انتظار تایید مالی",
+  confirmedByFinance: "تایید شده مالی",
+  rejectedByFinance: "رد شده مالی",
+  waitingForDocument: "در انتظار تنظیم سند",
+  rejected: "رد شده",
+  finished: "تمام شده",
+  payed: "پرداخت شده",
+  rescission: "فسخ شده",
+  deletedByFinance: "حذف شده مالی",
+};
+
+/** ترتیب منطقی مراحل قیف چرخه عمر (مراحل مثبت تا تنظیم سند) */
+export const CONTRACT_FUNNEL_ORDER: ContractStatus[] = [
+  "preDefined",
+  "waitingForAddRealtors",
+  "waitingForRealtors",
+  "waitingForFinance",
+  "confirmedByFinance",
+  "waitingForDocument",
+  "finished",
+];
+
+/** وضعیت‌های پایانی منفی (رد/فسخ/حذف) */
+export const CONTRACT_REJECT_STATUSES: ContractStatus[] = [
+  "rejected",
+  "rejectedByFinance",
+  "rescission",
+  "deletedByFinance",
+];
+
+/** مشاور و حق‌السهم یک قرارداد — عین ساختار primaryRealtorList/secondaryRealtorList سامانه */
+export interface ContractRealtorShare {
+  /** نام مشاور */
+  name: string;
+  /** درصد حق‌السهم */
+  unitPercent: number;
+  /** وضعیت تأیید مشاور: wait | confirm | reject */
+  confirmation: string;
+  /** توضیحات (به‌ویژه هنگام رد) */
+  description?: string;
+  /** نقش: primary (اصلی/مبعع) | secondary (فرعی) */
+  role: "primary" | "secondary";
+}
+
+/** یک قرارداد (صورت وضعیت) — عین ساختار trade-overviews/info سامانه ARM */
+export interface CrmContract {
+  id: string;
+  status: ContractStatus | string;
+  contractHolo: string | null;
+  propertyCode: string | null;
+  requestCode: string | null;
+  contractType: string | null;
+  creatorName: string | null;
+  createdAt: string | null;
+  contractDate: string | null;
+  documentDate: string | null;
+  deliveryDate: string | null;
+  propertyTitle: string | null;
+  propertyAddress: string | null;
+  buyers: { fullName: string; mobileNumber: string }[];
+  sellers: { fullName: string; mobileNumber: string }[];
+  realtorShares: ContractRealtorShare[];
+  canAddRealtor: boolean;
+}
+
+/** یک مرحله از قیف چرخه عمر قرارداد */
+export interface ContractFunnelStage {
+  status: ContractStatus;
+  label: string;
+  count: number;
+  /** سهم از کل قراردادها */
+  sharePercent: number;
+}
+
+// ===================== باشگاه مشتریان =====================
+
+/** یک عضو جامعه مشتریان — تلفیق معاملات، قراردادها و مشاوران */
+export interface CustomerClubMember {
+  /** نام (کلید یکتا جامعه — نرمال‌شده) */
+  name: string;
+  /** نقش‌های دیده‌شده: BUYER | SELLER | EXPERT */
+  roles: ("BUYER" | "SELLER" | "EXPERT")[];
+  /** آیا هم خریدار و هم فروشنده بوده (مشتری تکراری/دوطرفه) */
+  repeat: boolean;
+  /** تعداد معاملات به‌عنوان خریدار */
+  buyerCount: number;
+  /** تعداد معاملات به‌عنوان فروشنده */
+  sellerCount: number;
+  /** اولین و آخرین حضور (ISO) */
+  firstSeen: string | null;
+  lastSeen: string | null;
+  /** شماره تماس (در صورت وجود در قرارداد) */
+  mobile: string | null;
+}
+
+/** توزیع یک ویژگی مرجع (شخصیت/شغل/نقش/جدیت) از فهرست‌های واقعی سامانه */
+export interface RefListItem {
+  id: string;
+  name: string;
+}
+
+/** خلاصه تحلیل جامعه مشتریان */
+export interface CustomerClubSummary {
+  totalMembers: number;
+  buyers: number;
+  sellers: number;
+  experts: number;
+  repeatCustomers: number;
+  growthSeries: { key: string; count: number }[];
+  topCustomers: CustomerClubMember[];
+  catalogs: {
+    characters: RefListItem[];
+    jobs: RefListItem[];
+    roles: RefListItem[];
+    seriousness: RefListItem[];
+  };
+}
+
+// ===================== مالی و کمیسیون =====================
+
+/** نوع قرارداد کمیسیون — عین contractType سامانه مالی (fm) */
+export type CommissionContractType = "mobayeName" | "ejareName" | "rentalRenewal";
+
+/** پیکربندی تعرفه یک شهر — عین پاسخ apm/commission/configList سامانه مالی */
+export interface CommissionCityConfig {
+  cityId: string;
+  cityName: string;
+  /** درصد مالیات ارزش افزوده (پیش‌فرض ۱۰) */
+  valueAddedPercentage: number;
+  /** نرخ‌نامه اتحادیه (HTML) */
+  realEstateTariff: string;
+  /** تصویر نرخ‌نامه (مسیر نسبی) */
+  image: string | null;
+  /** انواع معامله پشتیبانی‌شده */
+  detail: {
+    contractType: CommissionContractType | string;
+    contractTypeFa: string;
+    buyerLabel: string;
+    sellerLabel: string;
+    inputs: { key: string; label: string }[];
+  }[];
+}
+
+/** نتیجه محاسبه کمیسیون — عین commissionData سامانه مالی */
+export interface CommissionResult {
+  contractType: string;
+  /** کمیسیون پایه هر طرف (تومان) */
+  buyerCommission: number;
+  sellerCommission: number;
+  /** مالیات ارزش افزوده هر طرف */
+  buyerTax: number;
+  sellerTax: number;
+  /** مبلغ قابل پرداخت هر طرف (کمیسیون + مالیات) */
+  buyerPayable: number;
+  sellerPayable: number;
+  /** معادل ریالی ثمن/ودیعه برای تجمیع */
+  dealValue: number;
+  vatPercent: number;
+}
+
+// ===================== شاخص قیمت روز مناطق =====================
+
+/** یک شاخص قیمت روز — عین رکورد configs/current-prices سامانه ARM */
+export interface PriceIndexConfig {
+  id: string;
+  /** نوع معامله (فروش و ...) */
+  tradeType: string;
+  /** نوع کاربری (مسکونی و ...) */
+  buildingType: string;
+  /** نوع ملک (آپارتمان و ...) */
+  propertyType: string;
+  city: string;
+  /** سال‌های اعتبار شاخص */
+  yearFrom: number | null;
+  yearTo: number | null;
+  /** اجاره است؟ */
+  isRental: boolean;
+  /** فعال است؟ */
+  isActive: boolean;
+  areas: string[];
+  /** مشخصات فنی شاخص (label/value) */
+  details: { label: string; value: string }[];
+}
+
+/** آمار قیمت یک منطقه از داده واقعی بازار */
+export interface AreaPriceStat {
+  areaName: string;
+  category: string;
+  medianPerMeter: number;
+  p25PerMeter: number;
+  p75PerMeter: number;
+  minPerMeter: number;
+  maxPerMeter: number;
+  sampleCount: number;
+  /** تغییر نسبت به دوره قبل (٪) — null اگر تاریخچه نیست */
+  changePercent: number | null;
+}
+
+/** آگهی منحرف از شاخص منطقه (پایش سلامت قیمت‌گذاری) */
+export interface DeviatingAd {
+  token: string;
+  title: string;
+  areaName: string;
+  pricePerMeter: number;
+  medianPerMeter: number;
+  /** انحراف نسبی از میانه (٪) — مثبت = گران‌تر از شاخص */
+  deviationPercent: number;
+  totalScore: number;
+  publisherType: string | null;
+}
+
+/** روند شاخص کل/هر منطقه در زمان */
+export interface PriceTrendPoint {
+  areaName: string;
+  recordedAt: string;
+  medianPerMeter: number;
+  sampleCount: number;
+}
+
 // ===================== وضعیت اتصال =====================
 
 export interface ConnectionStatus {
