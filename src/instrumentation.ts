@@ -64,9 +64,10 @@ export async function register(): Promise<void> {
         if (txCount > 0 && exCount > 0 && !state?.lastError) return;
 
         const result = await syncFromArm(armTokens.accessToken);
-        await audit("DATA_SYNC_BACKGROUND", live.personnelCode, `ok=${result.ok}; tx=${result.transactions}; ex=${result.experts}`);
+        const actorCode = live?.personnelCode ?? "unknown";
+        await audit("DATA_SYNC_BACKGROUND", actorCode, `ok=${result.ok}; tx=${result.transactions}; ex=${result.experts}`);
         if (result.ok) {
-          console.log(`[sync:bg] استخراج پس‌زمینه با نشست ${live.personnelCode}: ${result.transactions} معامله، ${result.experts} کاربر`);
+          console.log(`[sync:bg] استخراج پس‌زمینه با نشست ${actorCode}: ${result.transactions} معامله، ${result.experts} کاربر`);
         }
       } catch {
         // خطای پس‌زمینه بی‌صدا — در تیک بعدی دوباره تلاش می‌شود
