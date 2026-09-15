@@ -28,13 +28,18 @@ interface AppState {
   token: string | null;
   pendingPersonnelCode: string | null;
   activeTileId: string | null;
+  /** کاشی ظرفی که کاشی فعلی از آن باز شده است (بازگشت هوشمند: فرزند ← ظرف ← خانه) */
+  tileReturnTo: string | null;
   /** تنظیمات اختصاصی کاشی‌ها: { [tileId]: { key: value } } */
   tileSettings: Record<string, Record<string, string | number | boolean>>;
 
   setStage: (s: AppStage) => void;
   setPendingPersonnelCode: (code: string | null) => void;
-  openTile: (tileId: string) => void;
+  openTile: (tileId: string, returnTo?: string | null) => void;
   goHome: () => void;
+  /** بازگشت هوشمند: اگر کاشی از داخل یک ظرف (مثل داشبورد مدیریتی) باز شده باشد،
+   *  به همان ظرف برمی‌گردد؛ وگرنه به صفحه خانه */
+  goBack: () => void;
   setTileSettings: (tileId: string, patch: Record<string, string | number | boolean>) => void;
   login: (token: string, user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
@@ -58,12 +63,21 @@ export const useAppStore = create<AppState>()(
         token: null,
         pendingPersonnelCode: null,
         activeTileId: null,
+        tileReturnTo: null,
         tileSettings: {},
 
         setStage: (s) => set({ stage: s }),
         setPendingPersonnelCode: (code) => set({ pendingPersonnelCode: code }),
-        openTile: (tileId) => set({ activeTileId: tileId, stage: "tile" }),
-        goHome: () => set({ activeTileId: null, stage: "home" }),
+        openTile: (tileId, returnTo = null) => set({ activeTileId: tileId, stage: "tile", tileReturnTo: returnTo }),
+        goHome: () => set({ activeTileId: null, stage: "home", tileReturnTo: null }),
+        goBack: () => {
+          const { tileReturnTo, activeTileId } = get();
+          if (tileReturnTo && tileReturnTo !== activeTileId) {
+            set({ activeTileId: tileReturnTo, stage: "tile", tileReturnTo: null });
+          } else {
+            set({ activeTileId: null, stage: "home", tileReturnTo: null });
+          }
+        },
 
         setTileSettings: (tileId, patch) =>
           set((state) => ({
@@ -80,7 +94,7 @@ export const useAppStore = create<AppState>()(
             expiresAt: user.expiresAt,
             savedAt: new Date().toISOString(),
           });
-          set({ token, user, stage: "home", pendingPersonnelCode: null, activeTileId: null });
+          set({ token, user, stage: "home", pendingPersonnelCode: null, activeTileId: null, tileReturnTo: null });
         },
 
         logout: async () => {
@@ -93,7 +107,7 @@ export const useAppStore = create<AppState>()(
             }
           }
           await secureClear();
-          set({ token: null, user: null, stage: "auth", activeTileId: null, pendingPersonnelCode: null });
+          set({ token: null, user: null, stage: "auth", activeTileId: null, tileReturnTo: null, pendingPersonnelCode: null });
         },
 
         boot: async () => {

@@ -19,7 +19,8 @@ export const extractionTile = defineTile({
   icon: FileSearch,
   accent: "teal",
   component: ExtractionPage,
-  order: 10,
+  order: 9,
+  container: "management-dashboard",
   agent: {
     tileId: "extraction",
     insightDomains: ["LOOKUP", "COVERAGE", "QUALITY", "SECURITY"],

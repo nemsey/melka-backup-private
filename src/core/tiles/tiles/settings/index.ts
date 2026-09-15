@@ -19,6 +19,7 @@ export const settingsTile = defineTile({
   accent: "stone",
   component: SettingsPage,
   order: 99,
+  container: "management-dashboard",
   agent: null,
   settings: [],
 });

@@ -392,8 +392,9 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     expect(tileRegistry.has("finance-commission")).toBe(true);
     expect(tileRegistry.has("price-index")).toBe(true);
 
-    const ids = tileRegistry.listAll("OWNER").map((t) => t.id);
-    // کاشی‌های مدیریتی جدید بلافاصله پس از معاملات
+    // کاشی‌های مدیریتی درون «داشبورد مدیریتی» — بلافاصله پس از معاملات
+    const ids = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
+    expect(ids.indexOf("transactions")).toBe(0);
     expect(ids.indexOf("contracts")).toBe(1);
     expect(ids.indexOf("customer-club")).toBe(2);
     expect(ids.indexOf("finance-commission")).toBe(3);

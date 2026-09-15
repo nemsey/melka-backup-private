@@ -3,7 +3,7 @@
  * اجرا: bun test tests/tile-registry.test.ts
  */
 
-import { describe, expect, test, beforeEach } from "bun:test";
+import { describe, expect, test, beforeEach, afterAll } from "bun:test";
 import { defineTile } from "@/core/tiles/tile-contract";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 
@@ -48,6 +48,13 @@ describe("قرارداد کاشی (defineTile)", () => {
 describe("رجیستری کاشی", () => {
   beforeEach(() => {
     // پاک‌سازی پویا برای ایزوله تست‌ها
+    for (const id of ["reg-a", "reg-b", "reg-owner"]) tileRegistry.unregister(id);
+  });
+
+  // پاک‌سازی پس از پایان — رجیستری نمونه یکتای سراسری است؛
+  // بدون این پاک‌سازی، کاشی‌های آزمایشی (reg-a/reg-b با order ۱و۲) به فایل‌های تست بعدی
+  // نشت می‌کنند و ترتیب کاشی‌های واقعی را می‌شکنند (آلودگی بین فایل‌ها).
+  afterAll(() => {
     for (const id of ["reg-a", "reg-b", "reg-owner"]) tileRegistry.unregister(id);
   });
 

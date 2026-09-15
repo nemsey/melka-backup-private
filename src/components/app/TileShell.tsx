@@ -88,7 +88,9 @@ function SettingControl({ def, value, onChange }: { def: TileSettingDefinition; 
 
 export function TileShell({ tile }: { tile: TileDefinition }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const goHome = useAppStore((s) => s.goHome);
+  // بازگشت هوشمند: فرزندِ کاشی ظرف (مثل داشبورد مدیریتی) به ظرف خود برمی‌گردد؛ کاشی ریشه به خانه
+  const goBack = useAppStore((s) => s.goBack);
+  const tileReturnTo = useAppStore((s) => s.tileReturnTo);
   const userRole = useAppStore((s) => s.user?.role ?? "CONSULTANT");
   // نکته: سلکتور باید مرجع پایدار برگرداند — مرج جدید هر رندر = حلقه بی‌نهایت
   const rawSettings = useAppStore((s) => s.tileSettings[tile.id]);
@@ -105,7 +107,7 @@ export function TileShell({ tile }: { tile: TileDefinition }) {
     settings: current,
     onSettingsChange: (patch) => setTileSettings(tile.id, patch),
     userRole,
-    onBack: goHome,
+    onBack: goBack,
   };
 
   const TileIcon = tile.icon;
@@ -114,7 +116,12 @@ export function TileShell({ tile }: { tile: TileDefinition }) {
     <div className="flex-1 mx-auto max-w-7xl w-full px-4 sm:px-6 py-6">
       {/* هدر کاشی */}
       <div className="flex items-center gap-3 sm:gap-4 mb-6">
-        <Button variant="outline" size="icon" onClick={goHome} aria-label="بازگشت به خانه داشبورد">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={goBack}
+          aria-label={tileReturnTo ? "بازگشت به داشبورد مدیریتی" : "بازگشت به خانه داشبورد"}
+        >
           <ArrowRight className="w-5 h-5" aria-hidden />
         </Button>
         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 dark:from-emerald-500 dark:to-emerald-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/25">

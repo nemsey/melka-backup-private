@@ -18,7 +18,7 @@ export const fileFinderTile = defineTile({
   icon: Radar,
   accent: "amber",
   component: FileFinderPage,
-  order: 7,
+  order: 1,
   agent: {
     tileId: "file-finder",
     insightDomains: ["SCAN", "PERSONAL", "PRICE", "LOCATION", "LEARNING"],

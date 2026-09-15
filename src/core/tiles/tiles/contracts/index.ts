@@ -20,6 +20,7 @@ export const contractsTile = defineTile({
   accent: "teal",
   component: ContractsPage,
   order: 2,
+  container: "management-dashboard",
   agent: {
     tileId: "contracts",
     insightDomains: ["FUNNEL", "BOTTLENECK", "STALLED", "SHARE", "DOCUMENT", "REJECT"],

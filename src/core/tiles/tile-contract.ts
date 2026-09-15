@@ -66,6 +66,9 @@ export interface TileDefinition {
   minRole?: "OWNER";
   /** ترتیب پیش‌فرض نمایش */
   order: number;
+  /** شناسه کاشی ظرف (در صورت تعیین، این کاشی در صفحه خانه مستقیم نمایش داده نمی‌شود
+   *  و درون کاشی ظرف — مانند «داشبورد مدیریتی» — قرار می‌گیرد) */
+  container?: string;
 }
 
 /** سازنده تعریف کاشی — اعتبارسنجی ساختاری انجام می‌دهد */
@@ -78,6 +81,9 @@ export function defineTile(def: TileDefinition): TileDefinition {
   }
   if (def.agent && def.agent.tileId !== def.id) {
     throw new Error(`اتصال ایجنت کاشی ${def.id} به کاشی دیگری (${def.agent.tileId}) اشاره می‌کند.`);
+  }
+  if (def.container === def.id) {
+    throw new Error(`کاشی ${def.id} نمی‌تواند ظرف خودش باشد.`);
   }
   return def;
 }

@@ -35,6 +35,16 @@ class TileRegistry {
       .sort((a, b) => a.order - b.order);
   }
 
+  /** کاشی‌های ریشه صفحه خانه — بدون ظرف (مستقیم روی هوم دیده می‌شوند) */
+  listRoot(role: "OWNER" | "CONSULTANT"): TileDefinition[] {
+    return this.listAll(role).filter((t) => !t.container);
+  }
+
+  /** کاشی‌های درون یک ظرف مشخص (مثلاً «داشبورد مدیریتی») — به ترتیب نمایش */
+  listChildren(containerId: string, role: "OWNER" | "CONSULTANT"): TileDefinition[] {
+    return this.listAll(role).filter((t) => t.container === containerId);
+  }
+
   has(id: string): boolean {
     return this.tiles.has(id);
   }

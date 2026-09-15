@@ -19,6 +19,7 @@ export const customerClubTile = defineTile({
   accent: "rose",
   component: CustomerClubPage,
   order: 3,
+  container: "management-dashboard",
   agent: {
     tileId: "customer-club",
     insightDomains: ["COMMUNITY", "REPEAT", "GROWTH", "LOYALTY", "CATALOG"],

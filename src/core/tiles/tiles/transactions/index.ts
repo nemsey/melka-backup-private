@@ -20,6 +20,7 @@ export const transactionsTile = defineTile({
   accent: "emerald",
   component: TransactionsPage,
   order: 1,
+  container: "management-dashboard",
   agent: {
     tileId: "transactions",
     insightDomains: ["VOLUME", "TREND", "COMPOSITION", "CONVERSION", "DOCUMENT", "ANOMALY"],

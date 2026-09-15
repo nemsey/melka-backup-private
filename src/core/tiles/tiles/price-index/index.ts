@@ -19,6 +19,7 @@ export const priceIndexTile = defineTile({
   accent: "amber",
   component: PriceIndexPage,
   order: 5,
+  container: "management-dashboard",
   agent: {
     tileId: "price-index",
     insightDomains: ["MARKET", "REGION", "TREND", "ALERT", "HEALTH"],

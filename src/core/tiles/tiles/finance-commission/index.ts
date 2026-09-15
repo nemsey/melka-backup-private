@@ -20,6 +20,7 @@ export const financeCommissionTile = defineTile({
   accent: "emerald",
   component: FinancePage,
   order: 4,
+  container: "management-dashboard",
   agent: {
     tileId: "finance-commission",
     insightDomains: ["TARIFF", "REVENUE", "SETTLEMENT", "BRANCH", "PIPELINE"],

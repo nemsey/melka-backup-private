@@ -21,7 +21,7 @@ export const listingTile = defineTile({
   icon: Megaphone,
   accent: "amber",
   component: ListingsPage,
-  order: 6,
+  order: 2,
   agent: {
     tileId: "listings",
     insightDomains: ["REGISTRY", "CRM", "INSTAGRAM", "COMPLETENESS", "SOURCE"],

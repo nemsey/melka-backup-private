@@ -19,7 +19,8 @@ export const visitsTile = defineTile({
   icon: Eye,
   accent: "amber",
   component: VisitsPage,
-  order: 8,
+  order: 7,
+  container: "management-dashboard",
   agent: {
     tileId: "visits",
     insightDomains: ["VOLUME", "TREND", "STATUS", "LEADERSHIP", "ATTENTION"],

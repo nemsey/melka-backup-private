@@ -21,7 +21,7 @@ export const requestTile = defineTile({
   icon: ClipboardList,
   accent: "teal",
   component: RequestsPage,
-  order: 6,
+  order: 3,
   agent: {
     tileId: "requests",
     insightDomains: ["COMMUNITY_MGMT", "CUST_HEALTH", "LIFECYCLE_MGMT", "NEXT_ACTION", "MATCH", "CHURN", "EVENT_MGMT", "ARM_SYNC"],
