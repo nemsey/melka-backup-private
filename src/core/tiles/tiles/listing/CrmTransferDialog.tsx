@@ -20,27 +20,21 @@ import { Loader2, UploadCloud, ShieldAlert, CheckCircle2, XCircle, UserSearch, F
 import { api, ApiClientError } from "@/lib/client/api";
 import { faDateTime } from "@/lib/format";
 import type { ListingRow } from "@/lib/listing/types";
+import { StepReportList, type StepReportItem } from "@/components/app/shared";
 
 interface TransferInfo {
   ok: boolean;
   listing: ListingRow;
   readiness: { steps: { step: number; label: string; done: boolean }[]; allDone: boolean };
   customerPreview: { found: boolean; name?: string; id?: string; error?: string } | null;
-  lastTransfer: { steps?: TransferStepUI[]; at?: string; failed?: boolean; error?: string; via?: string } | null;
+  lastTransfer: { steps?: StepReportItem[]; at?: string; failed?: boolean; error?: string; via?: string } | null;
   requirements: { armToken: boolean; message: string };
-}
-
-interface TransferStepUI {
-  key: string;
-  title: string;
-  status: "pending" | "done" | "failed" | "skipped";
-  detail: string;
 }
 
 interface TransferResponse {
   ok: boolean;
   mode: "create" | "draft";
-  steps: TransferStepUI[];
+  steps: StepReportItem[];
   armPropertyId: string | null;
   customerId: string | null;
   customerCreated: boolean;
@@ -99,14 +93,7 @@ export function CrmTransferDialog({
     }
   };
 
-  const stepIcon = (status: TransferStepUI["status"]) => {
-    if (status === "done") return <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden />;
-    if (status === "failed") return <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" aria-hidden />;
-    if (status === "skipped") return <XCircle className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden />;
-    return <Loader2 className="w-4 h-4 animate-spin text-amber-600 shrink-0" aria-hidden />;
-  };
-
-  const stepsToShow: TransferStepUI[] = result?.steps ?? [];
+  const stepsToShow: StepReportItem[] = result?.steps ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -191,18 +178,7 @@ export function CrmTransferDialog({
                 <h4 className="text-sm font-bold flex items-center gap-1.5">
                   <FileSignature className="w-4 h-4 text-primary" aria-hidden /> گزارش اجرای انتقال
                 </h4>
-                <ol className="space-y-2">
-                  {stepsToShow.map((s, i) => (
-                    <li key={s.key} className="flex gap-2 items-start">
-                      <span className="text-[10px] text-muted-foreground mt-0.5 shrink-0">{["۱", "۲", "۳", "۴", "۵", "۶", "۷"][i] ?? i + 1}.</span>
-                      {stepIcon(s.status)}
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold leading-5">{s.title}</p>
-                        <p className="text-[11px] text-muted-foreground leading-5 break-words">{s.detail}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+                <StepReportList steps={stepsToShow} />
                 {result?.armPropertyId && (
                   <p className="text-[11px] text-teal-700 dark:text-teal-400 font-bold">
                     شناسه آگهی در آرم: <span dir="ltr" className="font-mono">{result.armPropertyId}</span>

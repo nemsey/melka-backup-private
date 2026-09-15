@@ -18,26 +18,20 @@ import { Loader2, UploadCloud, FileSignature, Save, UserRound, CheckCircle2, XCi
 import { api, ApiClientError } from "@/lib/client/api";
 import { faNumber } from "@/lib/format";
 import type { RequestRow } from "@/lib/request/types";
-
-interface StepReport {
-  key: string;
-  title: string;
-  status: "pending" | "done" | "failed" | "skipped";
-  detail: string;
-}
+import { StepReportList, type StepReportItem } from "@/components/app/shared";
 
 interface PreviewResponse {
   ok: boolean;
   row: RequestRow;
   customerPreview: { found: boolean; name?: string; id?: string; error?: string } | null;
-  lastRegistration: { steps?: StepReport[]; failed?: boolean; at?: string } | null;
+  lastRegistration: { steps?: StepReportItem[]; failed?: boolean; at?: string } | null;
   requirements: { armToken: boolean; message: string };
 }
 
 interface ExecuteResponse {
   ok: boolean;
   mode: "create" | "draft" | "update";
-  steps: StepReport[];
+  steps: StepReportItem[];
   armRequestId: string | null;
   customerId: string | null;
   customerCreated: boolean;
@@ -175,19 +169,7 @@ export function ArmRegisterDialog({
                   <p className="text-xs font-bold">{report ? "گزارش اجرای زنده" : "آخرین گزارش ثبت"}</p>
                   <Badge variant="outline" className="text-[9px] tabular-nums">{faNumber(doneCount)} از {faNumber(steps.length)} گام</Badge>
                 </div>
-                <ol className="space-y-1.5">
-                  {steps.map((s, i) => (
-                    <li key={`${s.key}-${i}`} className="rounded-lg border p-2.5 text-[11px] leading-5 flex gap-2">
-                      <span className={`shrink-0 w-5 h-5 rounded-full grid place-content-center ${s.status === "done" ? "bg-teal-500 text-white" : s.status === "failed" ? "bg-rose-500 text-white" : "bg-muted text-muted-foreground"}`}>
-                        {s.status === "done" ? <CheckCircle2 className="w-3 h-3" aria-hidden /> : s.status === "failed" ? <XCircle className="w-3 h-3" aria-hidden /> : faNumber(i + 1)}
-                      </span>
-                      <div className="min-w-0">
-                        <b>{s.title}</b>
-                        <p className="text-muted-foreground">{s.detail}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+                <StepReportList steps={steps} variant="detailed" />
               </div>
             )}
 

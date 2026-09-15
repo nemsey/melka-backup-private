@@ -26,6 +26,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { StepReportList, type StepReportItem } from "@/components/app/shared";
+
+/** سازگاری عقب‌وار — نوع گزارش گام‌های آرم اکنون از ماژول مشترک می‌آید */
+export type ArmStepReport = StepReportItem;
 import {
   Loader2, ChevronRight, ChevronLeft, Save, Search, UserRound, MapPin, ClipboardList, ClipboardCheck,
   CheckCircle2, XCircle, FileEdit, Info, Sparkles,
@@ -81,13 +85,6 @@ interface FormMetaResponse {
   options: FormField[];
   fields: FormField[];
   message?: string;
-}
-
-export interface ArmStepReport {
-  key: string;
-  title: string;
-  status: "pending" | "done" | "failed" | "skipped";
-  detail: string;
 }
 
 export interface NewRequestDialogProps {
@@ -466,23 +463,7 @@ export function NewRequestDialog({ open, onOpenChange, mode, editRequest, meta, 
               {armReport.ok ? <CheckCircle2 className="w-4 h-4 text-teal-600" aria-hidden /> : <XCircle className="w-4 h-4 text-rose-600" aria-hidden />}
               گزارش ثبت گام‌به‌گام در سامانه آرم
             </p>
-            <ol className="space-y-1.5">
-              {armReport.steps.map((s, i) => (
-                <li key={s.key} className="text-[11px] leading-5 flex gap-2">
-                  <span className={`shrink-0 w-4 h-4 rounded-full grid place-content-center ${s.status === "done" ? "bg-teal-500 text-white" : s.status === "failed" ? "bg-rose-500 text-white" : "bg-muted text-muted-foreground"}`}>
-                    {faNumber(i + 1)}
-                  </span>
-                  <span>
-                    <b>{s.title}</b>
-                    <span className={`me-1 ms-1 ${s.status === "done" ? "text-teal-600" : s.status === "failed" ? "text-rose-600" : "text-muted-foreground"}`}>
-                      {s.status === "done" ? "انجام شد" : s.status === "failed" ? "ناموفق" : "در انتظار"}
-                    </span>
-                    <br />
-                    <span className="text-muted-foreground">{s.detail}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
+            <StepReportList steps={armReport.steps} variant="inline" />
             {armReport.error && <p className="text-[11px] text-rose-700 dark:text-rose-300">{armReport.error}</p>}
           </div>
         )}
