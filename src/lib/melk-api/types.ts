@@ -533,6 +533,7 @@ export type MelkErrorCode =
   | "NETWORK_ERROR"
   | "TIMEOUT"
   | "UNAUTHORIZED"
+  | "FORBIDDEN" // HOTFIX-03 (SEC-6): نقش ناکافی — 403 استاندارد
   | "SERVER_ERROR"
   | "DB_DOWN"
   | "NOT_FOUND"

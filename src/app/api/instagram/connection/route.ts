@@ -6,7 +6,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { errorResponse, requireRole } from "@/lib/auth/guard";
+import { errorResponse, requireRole, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
 import { getInstagramStatus, saveInstagramConnection, retestInstagramConnection, resetInstagramConnection, loadInstagramSettings, saveInstagramSettings } from "@/lib/instagram/store";
