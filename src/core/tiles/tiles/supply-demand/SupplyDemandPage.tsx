@@ -16,12 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Loader2, RotateCcw, Scale, Home, Flame, Snowflake, TrendingUp, Database, BarChart3,
-} from "lucide-react";
+import { Loader2, RotateCcw, Scale, Home, Flame, Snowflake, TrendingUp, BarChart3 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
 import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
@@ -43,13 +41,6 @@ interface SdSummary {
   lowDemandCount: number;
   topDemand: { rangeTitle: string; requestPercent: number; propertyCount: number } | null;
   topSupply: { rangeTitle: string; propertyCount: number; requestPercent: number } | null;
-}
-
-interface DataSourceInfo {
-  real: boolean;
-  cached: boolean;
-  lastSuccessAt: string | null;
-  liveError: string | null;
 }
 
 /** برچسب وضعیت بازه بر اساس درصد درخواست */
@@ -140,16 +131,13 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
       )}
 
       {/* شفافیت منبع داده */}
-      {source && !source.cached && (
-        <Alert>
-          <Database aria-hidden />
-          <AlertTitle>منبع داده</AlertTitle>
-          <AlertDescription>
-            گزارش واقعی از «سامانه مدیریت آگهی و درخواست» (آرم) استخراج می‌شود.
-            {source.liveError ? ` آخرین خطا: ${source.liveError}` : " پس از ورود با کد پرسنلی و پیامک، همگام‌سازی خودکار انجام می‌شود."}
-          </AlertDescription>
-        </Alert>
-      )}
+      <DataSourceAlert
+        show={Boolean(source && !source.cached)}
+        error={source?.liveError}
+        fallback="پس از ورود با کد پرسنلی و پیامک، همگام‌سازی خودکار انجام می‌شود."
+      >
+        گزارش واقعی از «سامانه مدیریت آگهی و درخواست» (آرم) استخراج می‌شود.
+      </DataSourceAlert>
 
       {/* نمودار مقایسه عرضه/تقاضا */}
       {showCharts && rows && rows.length > 0 && (

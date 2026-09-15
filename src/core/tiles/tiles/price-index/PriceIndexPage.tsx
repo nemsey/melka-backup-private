@@ -15,15 +15,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, RotateCcw, Gauge, MapPin, TrendingUp, Zap, HeartPulse, Database, ArrowUpRight, ArrowDownRight,
+  Loader2,
+  RotateCcw,
+  Gauge,
+  MapPin,
+  TrendingUp,
+  Zap,
+  HeartPulse,
+  Database,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { DataSourceAlert } from "@/components/app/shared";
 import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
@@ -127,19 +136,12 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
       </div>
 
       {/* شفافیت منبع داده */}
-      {data && (
-        <Alert>
-          <Database aria-hidden />
-          <AlertTitle>منبع داده</AlertTitle>
-          <AlertDescription>
-            {data.dataSource.liveIndices
-              ? "پیکربندی شاخص‌های رسمی زنده از سامانه ARM (مناطق تحت پوشش و مشخصات فنی) دریافت شده است."
-              : "پیکربندی شاخص رسمی در دسترس نیست؛ آمار بر پایه داده بازار محاسبه می‌شود."}
-            {" "}آمار منطقه‌ای از {faNumber(data.dataSource.marketSamples)} آگهی واقعی بازار (با منطقه تطبیق‌شده) محاسبه می‌شود.
-            {data.dataSource.liveError ? ` آخرین خطا: ${data.dataSource.liveError}` : ""}
-          </AlertDescription>
-        </Alert>
-      )}
+      <DataSourceAlert show={Boolean(data)} error={data?.dataSource.liveError}>
+        {data?.dataSource.liveIndices
+          ? "پیکربندی شاخص‌های رسمی زنده از سامانه ARM (مناطق تحت پوشش و مشخصات فنی) دریافت شده است."
+          : "پیکربندی شاخص رسمی در دسترس نیست؛ آمار بر پایه داده بازار محاسبه می‌شود."}
+        {" "}آمار منطقه‌ای از {faNumber(data?.dataSource.marketSamples ?? 0)} آگهی واقعی بازار (با منطقه تطبیق‌شده) محاسبه می‌شود.
+      </DataSourceAlert>
 
       {/* شاخص رسمی سامانه ARM */}
       {data && data.indices.length > 0 && (

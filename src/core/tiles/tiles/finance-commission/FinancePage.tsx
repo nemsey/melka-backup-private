@@ -17,13 +17,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Loader2, RotateCcw, Calculator, Receipt, Percent, Users, Building2, FileText, Database, TrendingUp,
-} from "lucide-react";
+import { Loader2, RotateCcw, Calculator, Receipt, Percent, Users, Building2, FileText, TrendingUp } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
 import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
@@ -63,7 +61,7 @@ interface FinanceResponse {
   }[];
   branchShares: { branch: string; contractCount: number; totalPercent: number }[];
   monthly: { key: string; count: number }[];
-  dataSource: { real: boolean; cached: boolean; lastSuccessAt: string | null; liveError: string | null; tariffLive: boolean };
+  dataSource: DataSourceInfo & { tariffLive: boolean };
 }
 
 interface CalcResponse {
@@ -170,21 +168,14 @@ export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role,
       </div>
 
       {/* شفافیت منبع داده */}
-      {data && (data.dataSource.tariffLive || !data.dataSource.cached) && (
-        <Alert>
-          <Database aria-hidden />
-          <AlertTitle>منبع داده</AlertTitle>
-          <AlertDescription>
-            {data.dataSource.tariffLive
-              ? "تعرفه و نرخ‌نامه زنده از سامانه مالی ملک تبریز (اتحادیه مشاورین املاک) دریافت شده است."
-              : "تعرفه زنده در دسترس نیست؛ محاسبه با قواعد رسمی نرخ‌نامه تبریز انجام می‌شود."}
-            {data.dataSource.cached
-              ? " تجمیع حق‌السهم از قراردادهای همگام‌شده محاسبه می‌شود."
-              : " پس از ورود با کد پرسنلی، تجمیع حق‌السهم مشاوران و شعبه‌ها فعال می‌شود."}
-            {data.dataSource.liveError ? ` آخرین خطا: ${data.dataSource.liveError}` : ""}
-          </AlertDescription>
-        </Alert>
-      )}
+      <DataSourceAlert show={Boolean(data && (data.dataSource.tariffLive || !data.dataSource.cached))} error={data?.dataSource.liveError}>
+        {data?.dataSource.tariffLive
+          ? "تعرفه و نرخ‌نامه زنده از سامانه مالی ملک تبریز (اتحادیه مشاورین املاک) دریافت شده است."
+          : "تعرفه زنده در دسترس نیست؛ محاسبه با قواعد رسمی نرخ‌نامه تبریز انجام می‌شود."}
+        {data?.dataSource.cached
+          ? " تجمیع حق‌السهم از قراردادهای همگام‌شده محاسبه می‌شود."
+          : " پس از ورود با کد پرسنلی، تجمیع حق‌السهم مشاوران و شعبه‌ها فعال می‌شود."}
+      </DataSourceAlert>
 
       <Tabs defaultValue="calculator" dir="rtl">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1">

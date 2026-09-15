@@ -15,14 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Loader2, RotateCcw, Users, Repeat, TrendingUp, Briefcase, Heart, Fingerprint, Building2, Database,
-} from "lucide-react";
+import { Loader2, RotateCcw, Users, Repeat, TrendingUp, Briefcase, Heart, Fingerprint, Building2 } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
 import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
@@ -34,7 +32,7 @@ interface ClubResponse {
   summary: CustomerClubSummary;
   repeatMembers: CustomerClubMember[];
   branches: { branch: string; consultantCount: number }[];
-  dataSource: { real: boolean; cached: boolean; lastSuccessAt: string | null; liveError: string | null; catalogsLive: boolean };
+  dataSource: DataSourceInfo & { catalogsLive: boolean };
 }
 
 function roleBadge(role: "BUYER" | "SELLER" | "EXPERT"): { label: string; style: string } {
@@ -102,21 +100,14 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
       </div>
 
       {/* شفافیت منبع داده */}
-      {data && (data.dataSource.catalogsLive || !data.dataSource.cached) && (
-        <Alert>
-          <Database aria-hidden />
-          <AlertTitle>منبع داده</AlertTitle>
-          <AlertDescription>
-            {data.dataSource.catalogsLive
-              ? "فهرست‌های مرجع (شخصیت/شغل/نقش/جدیت) زنده از سامانه ARM دریافت می‌شوند."
-              : "فهرست‌های مرجع در دسترس نیست؛ داده کش‌شده نمایش داده می‌شود."}
-            {data.dataSource.cached
-              ? " جامعه مشتریان از معاملات و قراردادهای همگام‌شده محاسبه می‌شود."
-              : " پس از ورود با کد پرسنلی و پیامک، جامعه مشتریان از معاملات واقعی ساخته می‌شود."}
-            {data.dataSource.liveError ? ` آخرین خطا: ${data.dataSource.liveError}` : ""}
-          </AlertDescription>
-        </Alert>
-      )}
+      <DataSourceAlert show={Boolean(data && (data.dataSource.catalogsLive || !data.dataSource.cached))} error={data?.dataSource.liveError}>
+        {data?.dataSource.catalogsLive
+          ? "فهرست‌های مرجع (شخصیت/شغل/نقش/جدیت) زنده از سامانه ARM دریافت می‌شوند."
+          : "فهرست‌های مرجع در دسترس نیست؛ داده کش‌شده نمایش داده می‌شود."}
+        {data?.dataSource.cached
+          ? " جامعه مشتریان از معاملات و قراردادهای همگام‌شده محاسبه می‌شود."
+          : " پس از ورود با کد پرسنلی و پیامک، جامعه مشتریان از معاملات واقعی ساخته می‌شود."}
+      </DataSourceAlert>
 
       {/* نمودار رشد جامعه */}
       {showCharts && growthData.length >= 2 && (

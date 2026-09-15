@@ -26,9 +26,22 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Filter, RotateCcw, Search, Users, UserCheck, UserX, Phone, Building, Hash, Trophy, Network, ArrowLeftRight, ShieldCheck, Database, AlertTriangle,
+  Loader2,
+  Filter,
+  RotateCcw,
+  Search,
+  Users,
+  UserCheck,
+  Phone,
+  Building,
+  Hash,
+  Trophy,
+  Network,
+  ArrowLeftRight,
+  ShieldCheck,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { DataSourceWarning, type DataSourceInfo } from "@/components/app/shared";
 import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
@@ -60,13 +73,6 @@ interface Meta {
   roles: string[];
   businesses: string[];
   creators: string[];
-}
-
-interface DataSourceInfo {
-  real: boolean;
-  cached: boolean;
-  lastSuccessAt: string | null;
-  liveError: string | null;
 }
 
 const EMPTY = { fullName: "", mobile: "", personnelCode: "", role: "all", businessTitle: "all", creator: "all", active: "all" };
@@ -193,28 +199,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
       )}
 
       {/* شفافیت منبع داده */}
-      {source && source.liveError && (
-        <Card className="border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/30">
-          <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden />
-            <div className="text-xs leading-relaxed space-y-1">
-              <p className="font-bold">استخراج زنده از سامانه ملک تبریز در دسترس نیست</p>
-              <p className="text-muted-foreground">
-                {source.cached
-                  ? "در حال حاضر داده‌های کش‌شده از آخرین استخراج موفق نمایش داده می‌شود."
-                  : "هنوز هیچ داده‌ای از سامانه استخراج نشده است."}{" "}
-                {source.liveError}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      {source && source.cached && !source.liveError && (
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <Database className="w-3.5 h-3.5" aria-hidden />
-          آخرین استخراج موفق از سامانه ملک تبریز: {source.lastSuccessAt ? faJalaliShort(source.lastSuccessAt) : "—"}
-        </div>
-      )}
+      <DataSourceWarning source={source} emptyText="هنوز هیچ داده‌ای از سامانه استخراج نشده است." />
 
       {/* دو تب: کاربران / تعاملات */}
       <Tabs defaultValue="experts" dir="rtl">

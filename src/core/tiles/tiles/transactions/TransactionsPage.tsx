@@ -24,12 +24,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Filter, RotateCcw, TrendingUp, Calculator, Percent, Search, ChevronRight, ChevronLeft, BarChart3, PieChart, Hash, FileCheck2, Sparkles, Database, AlertTriangle,
+  Loader2,
+  Filter,
+  RotateCcw,
+  TrendingUp,
+  Calculator,
+  Percent,
+  Search,
+  ChevronRight,
+  ChevronLeft,
+  BarChart3,
+  PieChart,
+  Hash,
+  FileCheck2,
+  Sparkles,
 } from "lucide-react";
 import {
-  ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend,
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RTooltip,
 } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { DataSourceWarning, type DataSourceInfo } from "@/components/app/shared";
 import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
@@ -56,15 +77,6 @@ interface Summary {
   hasBoth: number;
   withHolo: number;
   withRequest: number;
-}
-
-interface DataSourceInfo {
-  real: boolean;
-  cached: boolean;
-  lastSuccessAt: string | null;
-  lastSyncedAt: string | null;
-  liveError: string | null;
-  syncAttempts: number;
 }
 
 const EMPTY_FILTERS = {
@@ -315,28 +327,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
       </Card>
 
       {/* شفافیت منبع داده */}
-      {source && source.liveError && (
-        <Card className="border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/30">
-          <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden />
-            <div className="text-xs leading-relaxed space-y-1">
-              <p className="font-bold">استخراج زنده از سامانه ملک تبریز در دسترس نیست</p>
-              <p className="text-muted-foreground">
-                {source.cached
-                  ? "در حال حاضر داده‌های کش‌شده از آخرین استخراج موفق نمایش داده می‌شود."
-                  : "هنوز هیچ داده‌ای از سامانه استخراج نشده است."}{" "}
-                {source.liveError}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      {source && source.cached && !source.liveError && (
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <Database className="w-3.5 h-3.5" aria-hidden />
-          آخرین استخراج موفق از سامانه ملک تبریز: {source.lastSuccessAt ? faJalaliShort(source.lastSuccessAt) : "—"}
-        </div>
-      )}
+      <DataSourceWarning source={source} />
 
       {/* نمودارها */}
       {showCharts && rows && rows.length > 0 && (

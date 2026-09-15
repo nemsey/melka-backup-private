@@ -20,12 +20,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Filter, RotateCcw, Eye, CheckCircle2, Clock, Users, Hash, CalendarRange, Home, UserCheck, Database, AlertTriangle,
+  Loader2,
+  Filter,
+  RotateCcw,
+  Eye,
+  CheckCircle2,
+  Clock,
+  Users,
+  Hash,
+  CalendarRange,
+  Home,
+  UserCheck,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
 import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
@@ -49,13 +59,6 @@ interface Summary {
   checkedCount: number;
   distinctPropertyCodes: number;
   distinctRequesters: number;
-}
-
-interface DataSourceInfo {
-  real: boolean;
-  cached: boolean;
-  lastSuccessAt: string | null;
-  liveError: string | null;
 }
 
 const EMPTY = { propertyCode: "", requester: "", checker: "", status: "", dateFrom: "", dateTo: "" };
@@ -203,16 +206,13 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
       </Card>
 
       {/* شفافیت منبع داده */}
-      {source && !source.cached && (
-        <Alert>
-          <Database aria-hidden />
-          <AlertTitle>منبع داده</AlertTitle>
-          <AlertDescription>
-            داده واقعی از «سامانه مدیریت آگهی و درخواست» (آرم) استخراج می‌شود.
-            {source.liveError ? ` آخرین خطا: ${source.liveError}` : " پس از ورود با کد پرسنلی و پیامک، همگام‌سازی خودکار انجام می‌شود."}
-          </AlertDescription>
-        </Alert>
-      )}
+      <DataSourceAlert
+        show={Boolean(source && !source.cached)}
+        error={source?.liveError}
+        fallback="پس از ورود با کد پرسنلی و پیامک، همگام‌سازی خودکار انجام می‌شود."
+      >
+        داده واقعی از «سامانه مدیریت آگهی و درخواست» (آرم) استخراج می‌شود.
+      </DataSourceAlert>
 
       {/* نمودار روند ماهانه */}
       {showCharts && chartData.length > 0 && (

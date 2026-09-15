@@ -42,7 +42,7 @@ export interface DataSourceWarningProps {
 export function DataSourceWarning({
   source,
   cachedText = "در حال حاضر داده‌های کش‌شده از آخرین استخراج موفق نمایش داده می‌شود.",
-  emptyText = "هنوز هیچ داده‌ای از سامانه ملک تبریز استخراج نشده است.",
+  emptyText = "هنوز هیچ داده‌ای از سامانه استخراج نشده است.",
 }: DataSourceWarningProps) {
   if (!source) return null;
   return (

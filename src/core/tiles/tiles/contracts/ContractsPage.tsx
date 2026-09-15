@@ -17,14 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Loader2, RotateCcw, ScrollText, Filter, Database, Eye, Clock, TrendingDown, Users,
-} from "lucide-react";
+import { Loader2, RotateCcw, ScrollText, Filter, Eye, Clock, TrendingDown, Users } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
 import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
@@ -43,7 +41,7 @@ interface ContractsResponse {
     bottleneck: ContractFunnelStage | null;
     missingDocument: number;
   };
-  dataSource: { real: boolean; cached: boolean; lastSuccessAt: string | null; liveError: string | null };
+  dataSource: DataSourceInfo;
 }
 
 /** رنگ وضعیت — عین منطق خود سامانه ARM (زرد انتظار/سبز تایید/قرمز رد) */
@@ -153,16 +151,13 @@ export function ContractsPage({ settings, onSettingsChange, userRole: _role, onB
       )}
 
       {/* شفافیت منبع داده */}
-      {data && !data.dataSource.cached && (
-        <Alert>
-          <Database aria-hidden />
-          <AlertTitle>منبع داده</AlertTitle>
-          <AlertDescription>
-            صورت وضعیت‌ها (قراردادها) از «سامانه مدیریت آگهی و درخواست» (آرم) با توکن پرسنلی استخراج می‌شود.
-            {data.dataSource.liveError ? ` آخرین خطا: ${data.dataSource.liveError}` : " پس از ورود با کد پرسنلی و پیامک، همگام‌سازی خودکار انجام می‌شود."}
-          </AlertDescription>
-        </Alert>
-      )}
+      <DataSourceAlert
+        show={Boolean(data && !data.dataSource.cached)}
+        error={data?.dataSource.liveError}
+        fallback="پس از ورود با کد پرسنلی و پیامک، همگام‌سازی خودکار انجام می‌شود."
+      >
+        صورت وضعیت‌ها (قراردادها) از «سامانه مدیریت آگهی و درخواست» (آرم) با توکن پرسنلی استخراج می‌شود.
+      </DataSourceAlert>
 
       {/* نمودار قیفی چرخه عمر */}
       {showFunnel && data && data.summary.totalCount > 0 && (
