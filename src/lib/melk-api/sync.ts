@@ -86,6 +86,36 @@ export interface SyncStateInfo {
 
 const SYNC_STATE_ID = "singleton";
 
+// ==========================================================================
+// قفل همزمانی sync — HOTFIX-05 (B6)
+// ==========================================================================
+// الگوی __divarScanRunning (lib/divar/scan.ts) به لایه sync منتقل شد:
+// همگام‌سازی deleteMany+createMany هرگز نباید موازی اجرا شود. فراخوان‌های
+// موازی به همان اجرای در-جریان «می‌پیوندند» (نتیجه مشترک، بدون شروع مجدد).
+
+let __armSyncInFlight: Promise<SyncResult> | null = null;
+let __armSyncExecutionCount = 0;
+
+/** آیا همگام‌سازی ARM در جریان است؟ (برای مشاهده‌پذیری/تست) */
+export function isArmSyncInFlight(): boolean {
+  return __armSyncInFlight !== null;
+}
+
+/** تعداد اجرای واقعی sync از بالا آمدن فرایند — متریک ضد-همزمانی (HOTFIX-05) */
+export function getArmSyncExecutionCount(): number {
+  return __armSyncExecutionCount;
+}
+
+/** همگام‌سازی با توکن ARM — با قفل همزمانی: اجرای موازی = پیوستن به اجرای جاری */
+export function syncFromArm(armToken: string): Promise<SyncResult> {
+  if (__armSyncInFlight) return __armSyncInFlight; // در جریان است → صبر تا اتمام (نه شروع مجدد)
+  __armSyncExecutionCount += 1;
+  __armSyncInFlight = doSyncFromArm(armToken).finally(() => {
+    __armSyncInFlight = null;
+  });
+  return __armSyncInFlight;
+}
+
 async function readSyncState() {
   let state = await db.syncState.findUnique({ where: { id: SYNC_STATE_ID } });
   if (!state) {
@@ -187,8 +217,9 @@ async function fetchAllPages<T>(
 /**
  * استخراج کامل معاملات، کارشناسان، تعاملات، بازدیدها و عرضه/تقاضا از سامانه ARM
  * با توکن ARM. صفحه‌بندی به‌طور خودکار طی می‌شود (تا سقف ایمن صفحات).
+ * (پیاده‌سازی داخلی — همیشه از syncFromArm استفاده کنید تا قفل همزمانی اعمال شود)
  */
-export async function syncFromArm(armToken: string): Promise<SyncResult> {
+async function doSyncFromArm(armToken: string): Promise<SyncResult> {
   const now = new Date();
   await writeSyncState({ lastSyncedAt: now });
 
@@ -357,14 +388,23 @@ export async function ensureSeeded(armToken?: string): Promise<{ transactions: n
   return { transactions: txCount, experts: exCount, interactions: inCount, visits: viCount, supplyDemand: sdCount };
 }
 
-/** پاک‌سازی کامل کش و استخراج مجدد از سامانه واقعی (دکمه ریست اتصال) */
-export async function resetCrmCache(armToken: string): Promise<SyncResult> {
+/**
+ * پاک‌سازی کامل کش CRM — تابع واحد شش‌جدولی (HOTFIX-05)
+ * هم connection/reset و هم resetCrmCache از همین تابع استفاده می‌کنند تا
+ * «ریست» در کل سیستم فقط یک تعریف داشته باشد (قبلاً: ۳ جدول در روت vs ۶ جدول اینجا).
+ */
+export async function clearCrmCacheTables(): Promise<void> {
   await db.transactionRecord.deleteMany({});
   await db.expertRecord.deleteMany({});
   await db.interactionRecord.deleteMany({});
   await db.visitRecord.deleteMany({});
   await db.supplyDemandRecord.deleteMany({});
   await db.contractRecord.deleteMany({});
+}
+
+/** پاک‌سازی کامل کش و استخراج مجدد از سامانه واقعی (دکمه ریست اتصال) */
+export async function resetCrmCache(armToken: string): Promise<SyncResult> {
+  await clearCrmCacheTables();
   return syncFromArm(armToken);
 }
 

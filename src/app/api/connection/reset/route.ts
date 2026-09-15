@@ -10,7 +10,7 @@ import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { extractBearer, revokeSession, audit } from "@/lib/auth/session";
-import { db } from "@/lib/db";
+import { clearCrmCacheTables } from "@/lib/melk-api/sync";
 import { resetMelkProvider, getMelkProvider } from "@/lib/melk-api/provider";
 
 export async function POST(request: NextRequest) {
@@ -31,17 +31,11 @@ export async function POST(request: NextRequest) {
     resetMelkProvider();
 
     // ۳) پاک‌سازی کامل کش داده و تلاش برای همگام‌سازی مجدد داده واقعی
-    // HOTFIX-02 (SEC-3): توکن فقط از نشست خود کاربر — هیچ fallback به SyncState نیست؛
-    // توکن کاربران دیگر هرگز در ریست این کاربر استفاده نمی‌شود.
+    // HOTFIX-05 (B6): یکسان‌سازی — همان تابع واحد ۶جدولی resetCrmCache
+    // (قبلاً این روت فقط ۳ جدول را پاک می‌کرد و قراردادهای/بازدیدها/عرضه-تقاضا می‌ماندند)
     let resync: { ok: boolean; transactions: number; experts: number; interactions: number; syncedAt?: string; error?: string; errorCode?: string } | null = null;
     if (withData) {
-      // پاک‌سازی کامل داده‌های کش‌شده (یکسان با resetCrmCache — ۶ جدول)
-      await db.transactionRecord.deleteMany({});
-      await db.expertRecord.deleteMany({});
-      await db.interactionRecord.deleteMany({});
-      await db.visitRecord.deleteMany({});
-      await db.supplyDemandRecord.deleteMany({});
-      await db.contractRecord.deleteMany({});
+      await clearCrmCacheTables();
 
       const armToken = guard.armTokens?.accessToken ?? "";
       if (armToken) {
