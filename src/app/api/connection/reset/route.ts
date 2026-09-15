@@ -8,14 +8,16 @@
 
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
-import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { extractBearer, revokeSession, audit } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { resetMelkProvider, getMelkProvider } from "@/lib/melk-api/provider";
 
 export async function POST(request: NextRequest) {
-  const guard = await requireSessionAsync(request);
-  if (guard instanceof MelkApiError) return errorResponse(guard);
+  // HOTFIX-03 (SEC-6): ریست اتصال — فقط OWNER
+  const role = await requireRole(request, "OWNER", "POST /api/connection/reset");
+  if (role instanceof MelkApiError) return errorResponse(role);
+  const guard = role.ctx;
 
   try {
     const body = (await request.json().catch(() => null)) as { withData?: boolean } | null;

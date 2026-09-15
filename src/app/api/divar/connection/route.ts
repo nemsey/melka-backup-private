@@ -7,7 +7,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
 import { DIVAR_CONFIG } from "@/lib/divar/config";
@@ -49,15 +49,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const guard = await requireSessionAsync(request);
-  if (guard instanceof MelkApiError) return errorResponse(guard);
-
-  // مدیریت اتصال دیوار فقط برای مالک سامانه
-  if (guard.role !== "OWNER") {
-    return errorResponse(
-      new MelkApiError("UNAUTHORIZED", "مدیریت اتصال دیوار فقط برای مالک سامانه مجاز است.", 403, false)
-    );
-  }
+  // HOTFIX-03 (SEC-6): مدیریت اتصال دیوار — فقط OWNER (یکنواخت با ۵ روت حساس دیگر)
+  const role = await requireRole(request, "OWNER", "POST /api/divar/connection");
+  if (role instanceof MelkApiError) return errorResponse(role);
+  const guard = role.ctx;
 
   let body: { action?: string; apiKey?: string; phone?: string; code?: string; method?: string };
   try {

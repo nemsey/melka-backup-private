@@ -6,7 +6,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
 import { getInstagramStatus, saveInstagramConnection, retestInstagramConnection, resetInstagramConnection, loadInstagramSettings, saveInstagramSettings } from "@/lib/instagram/store";
@@ -32,8 +32,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const guard = await requireSessionAsync(request);
-  if (guard instanceof MelkApiError) return errorResponse(guard);
+  // HOTFIX-03 (SEC-6): اتصال اینستاگرام — فقط OWNER
+  const role = await requireRole(request, "OWNER", "POST /api/instagram/connection");
+  if (role instanceof MelkApiError) return errorResponse(role);
+  const guard = role.ctx;
 
   let body: {
     action?: "save" | "retest" | "reset" | "settings";

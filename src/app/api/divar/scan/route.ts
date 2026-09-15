@@ -6,14 +6,16 @@
 
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
 import { runDivarScan, triggerBackgroundScan, autoScanDue } from "@/lib/divar/scan";
 
 export async function POST(request: NextRequest) {
-  const guard = await requireSessionAsync(request);
-  if (guard instanceof MelkApiError) return errorResponse(guard);
+  // HOTFIX-03 (SEC-6): اجرای اسکن دستی دیوار — فقط OWNER
+  const role = await requireRole(request, "OWNER", "POST /api/divar/scan");
+  if (role instanceof MelkApiError) return errorResponse(role);
+  const guard = role.ctx;
 
   const summary = await runDivarScan();
   await audit("DIVAR_SCAN", guard.personnelCode, `new=${summary.newAds} inWindow=${summary.inWindow}`);

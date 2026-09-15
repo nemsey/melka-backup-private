@@ -9,7 +9,7 @@
 
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
 import { encryptSecret, decryptSecret } from "@/lib/auth/crypto";
@@ -37,8 +37,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const guard = await requireSessionAsync(request);
-  if (guard instanceof MelkApiError) return errorResponse(guard);
+  // HOTFIX-03 (SEC-6): اتصال حساب PM — فقط OWNER
+  const role = await requireRole(request, "OWNER", "POST /api/pm/connection");
+  if (role instanceof MelkApiError) return errorResponse(role);
+  const guard = role.ctx;
 
   let body: { action?: "start-otp" | "verify" | "reset"; personnelCode?: string; code?: string };
   try {

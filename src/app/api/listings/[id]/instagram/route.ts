@@ -7,7 +7,7 @@
 
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
 import { generateInstagramContent } from "@/lib/instagram/content";
@@ -105,8 +105,10 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
 }
 
 export async function POST(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const guard = await requireSessionAsync(request);
-  if (guard instanceof MelkApiError) return errorResponse(guard);
+  // HOTFIX-03 (SEC-6): انتشار اینستاگرام از فایل آگهی — فقط OWNER
+  const role = await requireRole(request, "OWNER", "POST /api/listings/[id]/instagram");
+  if (role instanceof MelkApiError) return errorResponse(role);
+  const guard = role.ctx;
 
   const { id } = await ctx.params;
   const rec = await db.listingRecord.findUnique({ where: { id } });
