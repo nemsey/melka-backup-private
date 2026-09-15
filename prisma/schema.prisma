@@ -60,7 +60,9 @@ model AuditLog {
 
 // ===================== داده‌های CRM (کش/همگام‌سازی) =====================
 
-/// وضعیت همگام‌سازی با سامانه‌های واقعی ملک تبریز (تک‌رکورد)
+/// وضعیت همگام‌سازی با سامانه‌های واقعی ملک تبریز (تک‌رکورد — فقط متادیتا)
+/// HOTFIX-02 (SEC-3): ستون armTokenEnc حذف شد — توکن ARM فقط per-user در Session
+/// نگهداری می‌شود؛ این جدول دیگر هیچ رازی ذخیره نمی‌کند.
 model SyncState {
   id             String    @id // "singleton"
   lastSyncedAt   DateTime?
@@ -68,8 +70,6 @@ model SyncState {
   lastError      String?
   lastErrorCode  String?
   attempts       Int       @default(0)
-  /// توکن ARM رمزنگاری‌شده آخرین همگام‌سازی موفق (برای تلاش مجدد پس‌زمینه)
-  armTokenEnc    String?
   /// خلاصه چهارگانه گزارش تطابق سامانه ARM (JSON)
   summaryJson    String?
   updatedAt      DateTime  @updatedAt

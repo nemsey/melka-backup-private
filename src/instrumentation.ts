@@ -32,42 +32,51 @@ export async function register(): Promise<void> {
     }
   }
 
-  const { getMelkApiConfig } = await import("@/lib/melk-api/config");
-  const cfg = getMelkApiConfig();
-  const intervalMs = Math.max(cfg.syncIntervalMinutes, 2) * 60 * 1000;
+  // ---------- ۳) حلقه همگام‌سازی پس‌زمینه — HOTFIX-02 (SEC-3) ----------
+  // توکن ARM مشترک (SyncState.armTokenEnc) حذف شد؛ تا معرفی «حساب سرویس»
+  // مجزا در PHASE 2، تایمر پس‌زمینه فقط با فعال‌سازی صریح (MELK_BACKGROUND_SYNC=enabled)
+  // کار می‌کند و در آن حالت نیز با آخرین نشستِ «زنده و دارای توکن» و ثبت AuditLog.
+  if (process.env.MELK_BACKGROUND_SYNC === "enabled") {
+    const { getMelkApiConfig } = await import("@/lib/melk-api/config");
+    const cfg = getMelkApiConfig();
+    const intervalMs = Math.max(cfg.syncIntervalMinutes, 2) * 60 * 1000;
 
-  const tick = async () => {
-    try {
-      const { PrismaClient } = await import("@prisma/client");
-      const { syncFromArm } = await import("@/lib/melk-api/sync");
-      const { decryptSecret } = await import("@/lib/auth/crypto");
-
-      const prisma = new PrismaClient();
+    const tick = async () => {
       try {
-        const state = await prisma.syncState.findUnique({ where: { id: "singleton" } });
-        const armToken = decryptSecret(state?.armTokenEnc);
-        if (!armToken) return; // هنوز ورود موفق ثبت نشده
+        const { syncFromArm } = await import("@/lib/melk-api/sync");
+        const { sessionToArmTokens, audit } = await import("@/lib/auth/session");
+        const { db } = await import("@/lib/db");
+
+        // فقط نشست‌های زنده‌ای که خودشان توکن ARM دارند (نه توکن مشترک)
+        const live = await db.session.findFirst({
+          where: { revoked: false, expiresAt: { gt: new Date() }, armTokenEnc: { not: null } },
+          orderBy: { lastSeenAt: "desc" },
+        });
+        const armTokens = live ? sessionToArmTokens(live) : null;
+        if (!armTokens?.accessToken) return; // هیچ نشست دارای توکن زنده نیست
 
         // فقط اگر داده‌ای در کش نیست یا آخرین تلاش ناموفق بوده (بازیابی پس از قطعی)
-        const [txCount, exCount] = await Promise.all([
-          prisma.transactionRecord.count(),
-          prisma.expertRecord.count(),
+        const [txCount, exCount, state] = await Promise.all([
+          db.transactionRecord.count(),
+          db.expertRecord.count(),
+          db.syncState.findUnique({ where: { id: "singleton" } }),
         ]);
         if (txCount > 0 && exCount > 0 && !state?.lastError) return;
 
-        const result = await syncFromArm(armToken);
+        const result = await syncFromArm(armTokens.accessToken);
+        await audit("DATA_SYNC_BACKGROUND", live.personnelCode, `ok=${result.ok}; tx=${result.transactions}; ex=${result.experts}`);
         if (result.ok) {
-          console.log(`[sync] استخراج موفق از سامانه واقعی ملک تبریز: ${result.transactions} معامله، ${result.experts} کاربر، ${result.interactions} تعامل`);
+          console.log(`[sync:bg] استخراج پس‌زمینه با نشست ${live.personnelCode}: ${result.transactions} معامله، ${result.experts} کاربر`);
         }
-      } finally {
-        await prisma.$disconnect();
+      } catch {
+        // خطای پس‌زمینه بی‌صدا — در تیک بعدی دوباره تلاش می‌شود
       }
-    } catch {
-      // خطای پس‌زمینه بی‌صدا — در تیک بعدی دوباره تلاش می‌شود
-    }
-  };
+    };
 
-  // اجرای اولیه پس از ۳۰ ثانیه (پس از آماده‌شدن سرور) و سپس دوره‌ای
-  setTimeout(() => void tick(), 30_000);
-  setInterval(() => void tick(), intervalMs);
+    // اجرای اولیه پس از ۳۰ ثانیه (پس از آماده‌شدن سرور) و سپس دوره‌ای
+    setTimeout(() => void tick(), 30_000);
+    setInterval(() => void tick(), intervalMs);
+  } else {
+    // حالت پیش‌فرض پس از HOTFIX-02: خاموش — همگام‌سازی فقط دستی/درخواستی با توکن خود کاربر
+  }
 }

@@ -110,22 +110,8 @@ export async function rotateEncryptionKeys(oldSecret: string, newSecret: string)
     }
   }
 
-  // ---------- ۲) SyncState.armTokenEnc (تا HOTFIX-02 که ستون حذف می‌شود) ----------
-  const state = await db.syncState.findUnique({ where: { id: "singleton" } });
-  if (state?.armTokenEnc) {
-    bump("SyncState", "scanned");
-    const plain = decryptWith(state.armTokenEnc, oldKey);
-    if (plain !== null) {
-      if (oldKey.equals(newKey)) bump("SyncState", "already");
-      else {
-        await db.syncState.update({ where: { id: "singleton" }, data: { armTokenEnc: encryptWith(plain, newKey) } });
-        bump("SyncState", "rotated");
-      }
-    } else if (decryptWith(state.armTokenEnc, newKey) !== null) bump("SyncState", "already");
-    else bump("SyncState", "unreadable");
-  }
-
-  // ---------- ۳) PmConnection ----------
+  // ---------- ۲) PmConnection ----------
+  // (HOTFIX-02: SyncState.armTokenEnc حذف شد — دیگر هیچ رازی در SyncState نیست)
   const pm = await db.pmConnection.findMany();
   for (const p of pm) {
     for (const col of ["tokenEnc", "refreshTokenEnc"] as const) {
