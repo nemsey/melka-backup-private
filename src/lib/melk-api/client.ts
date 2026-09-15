@@ -17,7 +17,7 @@
 import { MelkApiError, type NestEnvelope } from "./types";
 
 export interface HttpRequestOptions {
-  method?: "GET" | "POST" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   path: string;
   baseUrl: string;
   body?: unknown;

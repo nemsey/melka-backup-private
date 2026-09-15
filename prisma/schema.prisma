@@ -645,6 +645,119 @@ model PmConnection {
 
 // ===================== لایه ایجنت هوشمند (فقط افزودنی / Append-only) =====================
 
+/// رکورد درخواست ملک — عین ساختار ۴ گامی فرم ثبت درخواست سامانه ARM (new-request-page)
+/// گام‌ها: ۱. اطلاعات مشتری ۲. اطلاعات مکانی درخواست ۳. جزییات درخواست ۴. اطلاعات تکمیلی درخواست
+model RequestRecord {
+  id        String   @id @default(cuid())
+  /// manual — ثبت دستی (مالک حضوری) | auto — ثبت اتوماتیک (فرم پرشونده ← ثبت مستقیم در آرم)
+  source    String   @default("manual")
+
+  // ---------- گام ۱: اطلاعات مشتری (عین owner-info-step سامانه) ----------
+  /// نام و نام خانوادگی درخواست‌دهنده (مشتری)
+  customerName    String?
+  /// شماره موبایل مشتری (۱۱ رقم با ۰۹ — عین فرم آرم)
+  customerMobile  String?
+  /// شناسه کاربر آرم (پس از جستجو/ایجاد در فرآیند ثبت در سامانه)
+  armCustomerId   String?
+
+  // ---------- گام ۲: اطلاعات مکانی درخواست ----------
+  /// کشور/استان/شهر — پیش‌فرض ایران/آذربایجان شرقی/تبریز (عین خود سامانه)
+  countryId    String?
+  stateId      String?
+  cityId       String?
+  /// مناطق منتخب — JSON آرایه شناسه‌های منطقه آرم
+  areaIdsJson    String?
+  areaNamesJson  String?
+  /// محله‌های منتخب — JSON آرایه شناسه‌های محله آرم
+  lineIdsJson    String?
+  lineNamesJson  String?
+
+  // ---------- گام ۳: جزییات درخواست ----------
+  /// نوع معامله (برچسب درخواستی: خرید/پیش خرید/رهن و اجاره — nameRequest خود سامانه)
+  tradeTypeId      String?
+  tradeTypeName    String?
+  /// نوع کاربری
+  buildingTypeId      String?
+  buildingTypeName    String?
+  /// نوع ملک
+  propertyTypeId      String?
+  propertyTypeName    String?
+  /// فرم پویای دسته‌بندی — JSON {createName: value} (متراژ از/تا، قیمت کل از/تا، امکانات…)
+  inputsJson       String?
+  /// توضیحات مشتری (عین خود سامانه)
+  customerDescription  String?
+
+  // ---------- گام ۴: اطلاعات تکمیلی درخواست ----------
+  /// نحوه پرداخت مشتری (پول مشتری — user-payment-methods خود سامانه)
+  userPaymentMethod      String?
+  userPaymentMethodName  String?
+  /// جدیت مشتری (user-seriousness خود سامانه)
+  userSeriousity      String?
+  userSeriousityName  String?
+  /// توضیحات مشاور
+  realtorDescription  String?
+
+  /// چرخه عمر: draft (در تکمیل) | ready (کامل)
+  status      String   @default("draft")
+
+  /// نتیجه ثبت در سامانه ARM — JSON {steps:[{key,title,status,detail}], at}
+  armRegistrationJson    String?
+  armRegisteredAt        DateTime?
+  /// شناسه درخواست ثبت‌شده در آرم
+  armRequestId           String?
+
+  /// کد پرسنلی ثبت‌کننده
+  actorCode   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  /// رویدادهای درخواست (ثبت رویداد — عین request-events سامانه)
+  events  RequestEventRecord[]
+
+  @@index([status])
+  @@index([source])
+  @@index([customerMobile])
+  @@index([createdAt])
+  @@index([armRegisteredAt])
+}
+
+/// رویداد درخواست — «ثبت رویداد» عین خود سامانه (request-events/create):
+/// نوع رویداد + تاریخ + ساعت + آگهی مرتبط (کدآگهی) + پیام
+model RequestEventRecord {
+  id          String   @id @default(cuid())
+  requestId   String
+  request     RequestRecord @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  /// نوع رویداد — شناسه و نام (از request-event-types خود سامانه)
+  eventTypeId   String
+  eventTypeName String
+  /// پرچم‌های نوع رویداد — JSON {needTime,needHour,needMessage,needProperty}
+  eventTypeFlagsJson  String?
+
+  /// تاریخ رویداد (تاریخ شمسی به‌صورت رشته YYYY/MM/DD)
+  date    String?
+  /// ساعت رویداد (HH:mm)
+  hour    String?
+  /// آگهی مرتبط — کدآگهی واردشده و شناسه آرم کشفشده
+  propertyCode  String?
+  armPropertyId String?
+  /// پیام (اختیاری)
+  message   String?
+
+  /// نتیجه ثبت در سامانه ARM — JSON
+  armSyncJson  String?
+  armSyncedAt  DateTime?
+  /// شناسه رویداد ثبت‌شده در آرم
+  armEventId   String?
+
+  actorCode   String
+  createdAt   DateTime @default(now())
+
+  @@index([requestId])
+  @@index([createdAt])
+  @@index([eventTypeId])
+}
+
 /// حافظه ساخت‌یافته هر کاشی — هرگز Overwrite نمی‌شود
 model AgentMemory {
   id            String   @id @default(cuid())

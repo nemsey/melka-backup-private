@@ -13,9 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import {
-  BrainCircuit, ThumbsUp, ThumbsDown, Sparkles, History, Info, Loader2, TrendingUp, AlertTriangle, CheckCircle2, XCircle, Undo2,
+  BrainCircuit, ThumbsUp, ThumbsDown, Sparkles, History, Info, Loader2, TrendingUp, AlertTriangle, CheckCircle2, XCircle, Undo2, ChevronDown,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faNumber, faDateTime } from "@/lib/format";
@@ -103,6 +104,14 @@ export const DOMAIN_FA: Record<string, string> = {
   INSTAGRAM: "انتشار اینستاگرام",
   COMPLETENESS: "کامل‌بودن ۵ گامی",
   SOURCE: "منبع ثبت",
+  COMMUNITY_MGMT: "جامعه مشتریان",
+  CUST_HEALTH: "امتیاز سلامت مشتری",
+  LIFECYCLE_MGMT: "چرخه عمر مشتری",
+  NEXT_ACTION: "اقدام بعدی",
+  MATCH: "تطبیق درخواست و آگهی",
+  CHURN: "هشدار ریزش",
+  EVENT_MGMT: "رویدادهای پیگیری",
+  ARM_SYNC: "ثبت در سامانه آرم",
 };
 
 export function AgentPanel({ tileId }: { tileId: string }) {
@@ -118,6 +127,8 @@ export function AgentPanel({ tileId }: { tileId: string }) {
   const [commentRating, setCommentRating] = useState<1 | -1>(1);
   const [showHistory, setShowHistory] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  /** بینش‌های ایجنت — بازشونده (همانند تنظیمات اختصاصی ایجنت؛ پیش‌فرض بسته) */
+  const [insightsOpen, setInsightsOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -203,150 +214,172 @@ export function AgentPanel({ tileId }: { tileId: string }) {
 
   return (
     <section aria-label="بینش‌های ایجنت هوشمند" className="mb-6">
-      {/* هدر پنل */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        <h3 className="text-base font-extrabold flex items-center gap-2">
-          <BrainCircuit className="w-5 h-5 text-primary" aria-hidden /> بینش‌های ایجنت هوشمند
-        </h3>
-        {stats && (
-          <>
-            <Badge variant="secondary" className="gap-1">
-              <Sparkles className="w-3 h-3" aria-hidden /> سیاست نسخه {faNumber(stats.activePolicyVersion)}
-            </Badge>
-            <Badge variant="outline">{faNumber(stats.feedbackCount)} بازخورد</Badge>
-            <Badge variant="outline">{faNumber(stats.memoryCount)} خاطره</Badge>
-            {stats.feedbackCount > 0 && (
-              <Badge variant="outline">
-                {faNumber(stats.positiveRate)}٪ رضایت
-              </Badge>
-            )}
-          </>
-        )}
-        {userRole === "OWNER" && policyVersions && policyVersions.length > 0 && (
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setShowHistory((h) => !h)} aria-expanded={showHistory}>
-            <History className="w-4 h-4" aria-hidden /> تاریخچه سیاست ({faNumber(policyVersions.length)})
-          </Button>
-        )}
-      </div>
-
-      {/* تاریخچه سیاست — فقط مالک */}
-      {showHistory && policyVersions && (
-        <Card className="mb-4">
-          <CardHeader className="py-4">
-            <CardTitle className="text-sm">نسخه‌های سیاست ایجنت (با قابلیت بازگردانی)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {policyVersions.map((v) => (
-              <div key={v.id} className={`rounded-lg border p-3 text-sm flex flex-wrap items-center justify-between gap-2 ${v.active ? "border-primary/50 bg-primary/5" : ""}`}>
-                <div className="space-y-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <b>نسخه {faNumber(v.version)}</b>
-                    {v.active && <Badge className="bg-primary hover:bg-primary">فعال</Badge>}
-                    <span className="text-xs text-muted-foreground">{faDateTime(v.createdAt)}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{v.rationale}</p>
-                </div>
-                {!v.active && (
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void rollback(v.version)}>
-                    <Undo2 className="w-3.5 h-3.5" aria-hidden /> بازگشت به این نسخه
-                  </Button>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* کارت‌های بینش */}
-      {insights && insights.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {insights.map((ins, idx) => {
-            const st = SEVERITY_STYLE[ins.severity] ?? SEVERITY_STYLE.info;
-            return (
-              <Card key={ins.key} className={`tile-pop ${st.border} shadow-sm hover:shadow-md transition-shadow`}>
-                <CardContent className="p-4 sm:p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 mt-0.5">{st.icon}</div>
-                    <div className="min-w-0 flex-1 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-extrabold text-primary tabular-nums shrink-0" aria-label={`بینش ${faNumber(idx + 1)}`} title={`ردیف ${faNumber(idx + 1)}`}>
-                          {faNumber(idx + 1)}
-                        </span>
-                        <h4 className="font-bold text-sm sm:text-base">{ins.title}</h4>
-                        <Badge className={`${st.chip} text-[11px]`}>{DOMAIN_FA[ins.domain] ?? ins.domain}</Badge>
-                        {ins.learned && (
-                          <Badge variant="outline" className="gap-1 text-[11px] text-primary border-primary/40">
-                            <TrendingUp className="w-3 h-3" aria-hidden /> یادگیری‌شده
-                          </Badge>
+      {/* پنل بازشونده — همانند تنظیمات اختصاصی ایجنت (کاربر در صورت تمایل باز می‌کند) */}
+      <Collapsible open={insightsOpen} onOpenChange={setInsightsOpen}>
+        <Card className="overflow-hidden">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex flex-wrap items-center gap-2 p-3 sm:p-4 text-right hover:bg-muted/40 transition-colors cursor-pointer"
+              aria-expanded={insightsOpen}
+            >
+              <span className="flex items-center gap-2 text-base font-extrabold">
+                <BrainCircuit className="w-5 h-5 text-primary" aria-hidden /> بینش‌های ایجنت هوشمند
+              </span>
+              {stats && (
+                <>
+                  <Badge variant="secondary" className="gap-1">
+                    <Sparkles className="w-3 h-3" aria-hidden /> سیاست نسخه {faNumber(stats.activePolicyVersion)}
+                  </Badge>
+                  <Badge variant="outline">{faNumber(stats.feedbackCount)} بازخورد</Badge>
+                  <Badge variant="outline">{faNumber(stats.memoryCount)} خاطره</Badge>
+                  {stats.feedbackCount > 0 && (
+                    <Badge variant="outline">{faNumber(stats.positiveRate)}٪ رضایت</Badge>
+                  )}
+                  {insights && insights.length > 0 && (
+                    <Badge variant="outline">{faNumber(insights.length)} بینش</Badge>
+                  )}
+                </>
+              )}
+              <span className="ms-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+                {insightsOpen ? "بستن" : "نمایش بینش‌ها"}
+                <ChevronDown className={`w-4 h-4 transition-transform ${insightsOpen ? "" : "-rotate-90"}`} aria-hidden />
+              </span>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-3 sm:px-4 pb-4 space-y-4">
+              {/* تاریخچه سیاست — فقط مالک */}
+              {userRole === "OWNER" && showHistory && policyVersions && (
+                <Card className="mb-4">
+                  <CardHeader className="py-4">
+                    <CardTitle className="text-sm">نسخه‌های سیاست ایجنت (با قابلیت بازگردانی)</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {policyVersions.map((v) => (
+                      <div key={v.id} className={`rounded-lg border p-3 text-sm flex flex-wrap items-center justify-between gap-2 ${v.active ? "border-primary/50 bg-primary/5" : ""}`}>
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <b>نسخه {faNumber(v.version)}</b>
+                            {v.active && <Badge className="bg-primary hover:bg-primary">فعال</Badge>}
+                            <span className="text-xs text-muted-foreground">{faDateTime(v.createdAt)}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{v.rationale}</p>
+                        </div>
+                        {!v.active && (
+                          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void rollback(v.version)}>
+                            <Undo2 className="w-3.5 h-3.5" aria-hidden /> بازگشت به این نسخه
+                          </Button>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{ins.body}</p>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
 
-                      {ins.metrics && ins.metrics.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {ins.metrics.map((m) => (
-                            <div key={m.label} className="rounded-lg bg-muted/60 px-2.5 py-2 text-center min-w-0">
-                              <div className="text-[10px] text-muted-foreground truncate">{m.label}</div>
-                              <div className="text-xs font-bold truncate" title={m.value}>
-                                {m.value}
+              {/* کارت‌های بینش */}
+              {insights && insights.length > 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {insights.map((ins, idx) => {
+                    const st = SEVERITY_STYLE[ins.severity] ?? SEVERITY_STYLE.info;
+                    return (
+                      <Card key={ins.key} className={`tile-pop ${st.border} shadow-sm hover:shadow-md transition-shadow`}>
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex items-start gap-3">
+                            <div className="shrink-0 mt-0.5">{st.icon}</div>
+                            <div className="min-w-0 flex-1 space-y-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-extrabold text-primary tabular-nums shrink-0" aria-label={`بینش ${faNumber(idx + 1)}`} title={`ردیف ${faNumber(idx + 1)}`}>
+                                  {faNumber(idx + 1)}
+                                </span>
+                                <h4 className="font-bold text-sm sm:text-base">{ins.title}</h4>
+                                <Badge className={`${st.chip} text-[11px]`}>{DOMAIN_FA[ins.domain] ?? ins.domain}</Badge>
+                                {ins.learned && (
+                                  <Badge variant="outline" className="gap-1 text-[11px] text-primary border-primary/40">
+                                    <TrendingUp className="w-3 h-3" aria-hidden /> یادگیری‌شده
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground leading-relaxed">{ins.body}</p>
+
+                              {ins.metrics && ins.metrics.length > 0 && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                  {ins.metrics.map((m) => (
+                                    <div key={m.label} className="rounded-lg bg-muted/60 px-2.5 py-2 text-center min-w-0">
+                                      <div className="text-[10px] text-muted-foreground truncate">{m.label}</div>
+                                      <div className="text-xs font-bold truncate" title={m.value}>
+                                        {m.value}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                <div className="flex gap-1.5">
+                                  <Button
+                                    variant={voted[ins.key] === 1 ? "default" : "outline"}
+                                    size="sm"
+                                    className="gap-1.5 h-8"
+                                    disabled={busyKey === ins.key}
+                                    onClick={() => {
+                                      setCommentFor(ins);
+                                      setCommentRating(1);
+                                      setCommentText("");
+                                    }}
+                                    aria-label="این بینش مفید بود"
+                                  >
+                                    <ThumbsUp className="w-3.5 h-3.5" aria-hidden /> مفید
+                                  </Button>
+                                  <Button
+                                    variant={voted[ins.key] === -1 ? "destructive" : "outline"}
+                                    size="sm"
+                                    className="gap-1.5 h-8"
+                                    disabled={busyKey === ins.key}
+                                    onClick={() => {
+                                      setCommentFor(ins);
+                                      setCommentRating(-1);
+                                      setCommentText("");
+                                    }}
+                                    aria-label="این بینش مفید نبود"
+                                  >
+                                    <ThumbsDown className="w-3.5 h-3.5" aria-hidden /> غیرمفید
+                                  </Button>
+                                </div>
+                                <span
+                                  className="text-[10px] text-muted-foreground/70 max-w-52 truncate cursor-help"
+                                  title={ins.weightSource}
+                                >
+                                  اولویت {faNumber(ins.finalWeight)} — {ins.weightSource}
+                                </span>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-center text-muted-foreground text-sm leading-relaxed">
+                    ایجنت هنوز بینشی تولید نکرده — داده کافی پس از همگام‌سازی با سامانه ملک تبریز لازم است.
+                  </CardContent>
+                </Card>
+              )}
 
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                        <div className="flex gap-1.5">
-                          <Button
-                            variant={voted[ins.key] === 1 ? "default" : "outline"}
-                            size="sm"
-                            className="gap-1.5 h-8"
-                            disabled={busyKey === ins.key}
-                            onClick={() => {
-                              setCommentFor(ins);
-                              setCommentRating(1);
-                              setCommentText("");
-                            }}
-                            aria-label="این بینش مفید بود"
-                          >
-                            <ThumbsUp className="w-3.5 h-3.5" aria-hidden /> مفید
-                          </Button>
-                          <Button
-                            variant={voted[ins.key] === -1 ? "destructive" : "outline"}
-                            size="sm"
-                            className="gap-1.5 h-8"
-                            disabled={busyKey === ins.key}
-                            onClick={() => {
-                              setCommentFor(ins);
-                              setCommentRating(-1);
-                              setCommentText("");
-                            }}
-                            aria-label="این بینش مفید نبود"
-                          >
-                            <ThumbsDown className="w-3.5 h-3.5" aria-hidden /> غیرمفید
-                          </Button>
-                        </div>
-                        <span
-                          className="text-[10px] text-muted-foreground/70 max-w-52 truncate cursor-help"
-                          title={ins.weightSource}
-                        >
-                          اولویت {faNumber(ins.finalWeight)} — {ins.weightSource}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="p-6 text-center text-muted-foreground text-sm leading-relaxed">
-            ایجنت هنوز بینشی تولید نکرده — داده کافی پس از همگام‌سازی با سامانه ملک تبریز لازم است.
-          </CardContent>
+              {/* تاریخچه سیاست — دکمه فقط برای مالک */}
+              {userRole === "OWNER" && policyVersions && policyVersions.length > 0 && (
+                <div className="flex justify-center">
+                  <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setShowHistory((h) => !h)} aria-expanded={showHistory}>
+                    <History className="w-4 h-4" aria-hidden /> تاریخچه سیاست ({faNumber(policyVersions.length)})
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
         </Card>
-      )}
+      </Collapsible>
 
       {/* دیالوگ ثبت بازخورد با توضیح */}
       <Dialog open={Boolean(commentFor)} onOpenChange={(o) => !o && setCommentFor(null)}>

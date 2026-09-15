@@ -16,6 +16,7 @@ import { customerClubAgent } from "./customer-club-agent";
 import { financeAgent } from "./finance-agent";
 import { priceIndexAgent } from "./price-index-agent";
 import { listingAgent } from "./listing-agent";
+import { requestAgent } from "./request-agent";
 import type { BaseLearningAgent as Agent } from "./base-agent";
 
 const agents = new Map<string, Agent>([
@@ -30,6 +31,7 @@ const agents = new Map<string, Agent>([
   [financeAgent.tileId, financeAgent],
   [priceIndexAgent.tileId, priceIndexAgent],
   [listingAgent.tileId, listingAgent],
+  [requestAgent.tileId, requestAgent],
 ]);
 
 /** دسترسی به ایجنت یک کاشی — null اگر کاشی ایجنت ندارد */
