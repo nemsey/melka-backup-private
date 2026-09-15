@@ -67,10 +67,10 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: s
 
     // HOTFIX-04 (B3): JSON.parse های بدون حفاظ — رکورد دارای JSON خراب باید
     // پاسخ 422 شفاف بدهد، نه 500 (خطای سرور).
-    const parseOr422 = (raw: string | null | undefined, fieldFa: string): unknown => {
-      if (!raw) return raw === undefined ? undefined : null;
+    const parseOr422 = <T,>(raw: string | null | undefined, fieldFa: string, fallback: T): T => {
+      if (!raw) return fallback;
       try {
-        return JSON.parse(raw);
+        return JSON.parse(raw) as T;
       } catch {
         throw new MelkApiError(
           "UNPROCESSABLE",
@@ -91,11 +91,11 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: s
       tradeTypeId: updated.tradeTypeId,
       buildingTypeId: updated.buildingTypeId,
       propertyTypeId: updated.propertyTypeId,
-      changeWith: parseOr422(updated.changeWithJson, "امکان معاوضه"),
-      inputs: parseOr422(updated.inputsJson, "مشخصات فایل"),
+      changeWith: parseOr422(updated.changeWithJson, "امکان معاوضه", [] as string[]),
+      inputs: parseOr422(updated.inputsJson, "مشخصات فایل", {} as Record<string, string>),
       priceEvaluation: updated.priceEvaluation,
       fileFinding: updated.fileFinding,
-      fileType: parseOr422(updated.fileTypeJson, "نوع فایل"),
+      fileType: parseOr422(updated.fileTypeJson, "نوع فایل", [] as string[]),
       userSeriousness: updated.userSeriousness,
     };
     const v = validateListing(merged);
