@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import type { CustomerClubMember, CustomerClubSummary, RefListItem } from "@/lib/melk-api/types";
@@ -88,19 +89,15 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
           { label: "خریداران", value: s ? faNumber(s.buyers) : undefined, icon: TrendingUp, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
           { label: "فروشندگان", value: s ? faNumber(s.sellers) : undefined, icon: Building2, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
         ].map((kpi) => (
-          <Card key={kpi.label} className="border-border/60">
-            <CardContent className="p-4 flex items-center gap-3">
-              <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${kpi.tone}`}>
-                <kpi.icon className="w-5 h-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                <p className="text-lg font-extrabold tabular-nums truncate">
-                  {kpi.value === undefined ? <span className="inline-block h-6 w-14 animate-pulse rounded-md bg-accent align-middle" aria-hidden /> : kpi.value}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <KpiCard
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            icon={kpi.icon}
+            iconWrapperClassName={kpi.tone}
+            cardClassName="border-border/60"
+            valueClassName="text-lg font-extrabold tabular-nums truncate"
+          />
         ))}
       </div>
 

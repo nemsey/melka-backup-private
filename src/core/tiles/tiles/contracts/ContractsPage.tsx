@@ -25,6 +25,7 @@ import {
   Loader2, RotateCcw, ScrollText, Filter, Database, Eye, Clock, TrendingDown, Users,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { CONTRACT_STATUS_FA, CONTRACT_STATUSES, type ContractFunnelStage, type CrmContract } from "@/lib/melk-api/types";
@@ -123,19 +124,15 @@ export function ContractsPage({ settings, onSettingsChange, userRole: _role, onB
           { label: "رد / فسخ‌شده", value: data ? faNumber(data.summary.rejectedTotal) : undefined, icon: Filter, tone: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" },
           { label: "اسناد ناقص", value: data ? faNumber(data.summary.missingDocument) : undefined, icon: Clock, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
         ].map((kpi) => (
-          <Card key={kpi.label} className="border-border/60">
-            <CardContent className="p-4 flex items-center gap-3">
-              <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${kpi.tone}`}>
-                <kpi.icon className="w-5 h-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                <p className="text-lg font-extrabold tabular-nums truncate">
-                  {kpi.value === undefined ? <span className="inline-block h-6 w-14 animate-pulse rounded-md bg-accent align-middle" aria-hidden /> : kpi.value}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <KpiCard
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            icon={kpi.icon}
+            iconWrapperClassName={kpi.tone}
+            cardClassName="border-border/60"
+            valueClassName="text-lg font-extrabold tabular-nums truncate"
+          />
         ))}
       </div>
 

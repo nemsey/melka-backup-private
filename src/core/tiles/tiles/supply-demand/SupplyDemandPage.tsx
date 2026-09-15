@@ -22,6 +22,7 @@ import {
   Loader2, RotateCcw, Scale, Home, Flame, Snowflake, TrendingUp, Database, BarChart3,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faNumber, faPercent } from "@/lib/format";
@@ -103,23 +104,14 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
           { label: "بازه‌های گرم", value: summary?.highDemandCount, icon: Flame, tone: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" },
           { label: "بازه‌های سرد", value: summary?.lowDemandCount, icon: Snowflake, tone: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
         ].map((kpi) => (
-          <Card key={kpi.label} className="border-border/60">
-            <CardContent className="p-4 flex items-center gap-3">
-              <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${kpi.tone}`}>
-                <kpi.icon className="w-5 h-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                <p className="text-xl font-extrabold tabular-nums">
-                  {kpi.value === undefined ? (
-                    <span className="inline-block h-6 w-14 animate-pulse rounded-md bg-accent align-middle" aria-hidden />
-                  ) : (
-                    kpi.value
-                  )}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <KpiCard
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            icon={kpi.icon}
+            iconWrapperClassName={kpi.tone}
+            cardClassName="border-border/60"
+          />
         ))}
       </div>
 

@@ -30,6 +30,7 @@ import {
   ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend,
 } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faNumber, faJalaliShort, faMonthLabel } from "@/lib/format";
@@ -177,50 +178,38 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
       {/* شاخص‌های چهارگانه — عین گزارش خود سامانه + دو سهم کلیدی */}
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Calculator className="w-5 h-5 text-primary" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">تعداد کل معاملات</p>
-                <p className="text-xl font-extrabold tabular-nums">{faNumber(summary.totalCount)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">دارای رویداد</p>
-                <p className="text-xl font-extrabold tabular-nums">{faNumber(summary.hasRequestEvent)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5 text-amber-600" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">دارای آگهی پیشنهادی</p>
-                <p className="text-xl font-extrabold tabular-nums">{faNumber(summary.hasSuggestedProperty)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
-                <Percent className="w-5 h-5 text-teal-600" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">دارای هر دو</p>
-                <p className="text-xl font-extrabold tabular-nums">{faNumber(summary.hasBoth)}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <KpiCard
+            label="تعداد کل معاملات"
+            value={faNumber(summary.totalCount)}
+            icon={Calculator}
+            iconAs="div"
+            iconWrapperClassName="bg-primary/10"
+            iconColorClassName="text-primary"
+          />
+          <KpiCard
+            label="دارای رویداد"
+            value={faNumber(summary.hasRequestEvent)}
+            icon={TrendingUp}
+            iconAs="div"
+            iconWrapperClassName="bg-teal-100 dark:bg-teal-950"
+            iconColorClassName="text-teal-600 dark:text-teal-400"
+          />
+          <KpiCard
+            label="دارای آگهی پیشنهادی"
+            value={faNumber(summary.hasSuggestedProperty)}
+            icon={Sparkles}
+            iconAs="div"
+            iconWrapperClassName="bg-amber-100 dark:bg-amber-950"
+            iconColorClassName="text-amber-600"
+          />
+          <KpiCard
+            label="دارای هر دو"
+            value={faNumber(summary.hasBoth)}
+            icon={Percent}
+            iconAs="div"
+            iconWrapperClassName="bg-teal-100 dark:bg-teal-950"
+            iconColorClassName="text-teal-600"
+          />
         </div>
       )}
 

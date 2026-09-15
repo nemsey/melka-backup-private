@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import type { AreaPriceStat, DeviatingAd, PriceIndexConfig, PriceTrendPoint } from "@/lib/melk-api/types";
@@ -112,24 +113,16 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
           { label: "نمونه‌های بازار", value: data?.overall ? faNumber(data.overall.totalSamples) : undefined, icon: Database, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
           { label: "هشدار جهش", value: data ? faNumber(data.jumps.length) : undefined, icon: Zap, tone: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
         ].map((kpi) => (
-          <Card key={kpi.label} className="border-border/60">
-            <CardContent className="p-4 flex items-center gap-3">
-              <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${kpi.tone}`}>
-                <kpi.icon className="w-5 h-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                <p className="text-lg font-extrabold tabular-nums truncate">
-                  {kpi.value === undefined ? (
-                    <span className="inline-block h-6 w-14 animate-pulse rounded-md bg-accent align-middle" aria-hidden />
-                  ) : (
-                    kpi.value
-                  )}
-                </p>
-                {kpi.value !== undefined && kpi.sub && <p className="text-[10px] text-muted-foreground">{kpi.sub}</p>}
-              </div>
-            </CardContent>
-          </Card>
+          <KpiCard
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            icon={kpi.icon}
+            iconWrapperClassName={kpi.tone}
+            cardClassName="border-border/60"
+            valueClassName="text-lg font-extrabold tabular-nums truncate"
+            sub={kpi.sub}
+          />
         ))}
       </div>
 

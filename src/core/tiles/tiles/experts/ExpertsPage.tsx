@@ -29,6 +29,7 @@ import {
   Loader2, Filter, RotateCcw, Search, Users, UserCheck, UserX, Phone, Building, Hash, Trophy, Network, ArrowLeftRight, ShieldCheck, Database, AlertTriangle,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faNumber, faJalaliShort } from "@/lib/format";
@@ -152,52 +153,42 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
       {/* شاخص‌ها */}
       {kpis && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5 text-primary" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">کل کاربران</p>
-                <p className="text-xl font-extrabold tabular-nums">{faNumber(kpis.count)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
-                <UserCheck className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">کاربران فعال</p>
-                <p className="text-xl font-extrabold tabular-nums">{faNumber(kpis.active)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0">
-                <Trophy className="w-5 h-5 text-amber-600" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground truncate">پرتعامل‌ترین مشاور</p>
-                <p className="text-sm font-extrabold truncate">{kpis.best && kpis.best.interactionTotal > 0 ? kpis.best.fullName : "—"}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
-                <ArrowLeftRight className="w-5 h-5 text-teal-600" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground truncate">جفت همکاری برتر</p>
-                <p className="text-[11px] font-bold truncate leading-tight">
-                  {kpis.bestPair ? `${kpis.bestPair.requestRealtorName} ↔ ${kpis.bestPair.propertyRealtorName}` : "—"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <KpiCard
+            label="کل کاربران"
+            value={faNumber(kpis.count)}
+            icon={Users}
+            iconAs="div"
+            iconWrapperClassName="bg-primary/10"
+            iconColorClassName="text-primary"
+          />
+          <KpiCard
+            label="کاربران فعال"
+            value={faNumber(kpis.active)}
+            icon={UserCheck}
+            iconAs="div"
+            iconWrapperClassName="bg-teal-100 dark:bg-teal-950"
+            iconColorClassName="text-teal-600 dark:text-teal-400"
+          />
+          <KpiCard
+            label="پرتعامل‌ترین مشاور"
+            value={kpis.best && kpis.best.interactionTotal > 0 ? kpis.best.fullName : "—"}
+            icon={Trophy}
+            iconAs="div"
+            iconWrapperClassName="bg-amber-100 dark:bg-amber-950"
+            iconColorClassName="text-amber-600"
+            labelClassName="text-xs text-muted-foreground truncate"
+            valueClassName="text-sm font-extrabold truncate"
+          />
+          <KpiCard
+            label="جفت همکاری برتر"
+            value={kpis.bestPair ? `${kpis.bestPair.requestRealtorName} ↔ ${kpis.bestPair.propertyRealtorName}` : "—"}
+            icon={ArrowLeftRight}
+            iconAs="div"
+            iconWrapperClassName="bg-teal-100 dark:bg-teal-950"
+            iconColorClassName="text-teal-600"
+            labelClassName="text-xs text-muted-foreground truncate"
+            valueClassName="text-[11px] font-bold truncate leading-tight"
+          />
         </div>
       )}
 
