@@ -1005,6 +1005,125 @@ L9 Security/Governance/Observability (مقطعی — توسط همه استفا�
 
 ---
 
+# پیوست پ — بازنگری پنج‌گانه PHASE 0 (دستور شورای راهبری — بستر PHASE 0)
+
+> این پیوست به‌موجب بخش A دستور اجرایی شورای راهبری (اصلاح پنج‌گانه گزارش، فقط مستندات بدون کد) افزوده شد.
+> اسکریپت راستی‌آزمایی: `scripts/audit-phase0-revision.sh` — خروجی کامل: `tool-results/audit-revision-output.txt`
+
+## پ.۱ — شمارش دقیق فراخوانی `db.*` در ایجنت‌ها (اصلاح عدد ۴۶ → ۴۷)
+
+شمارش با regex دقیق `\bdb\.[a-zA-Z]+\.[a-zA-Z]+\(` روی `src/core/agent/*.ts` (فقط فراخوانی متد واقعی؛ تعریف و کامنت مستثنا):
+
+| فایل | تعداد | مدل‌های دسترسی‌شده |
+|---|---|---|
+| `base-agent.ts` | **۲۱** | agentPolicyVersion ×۱۰، agentMemory ×۳، agentFeedback ×۸ |
+| `divar-agent.ts` | ۵ | divarAd، divarScanLog، divarRejectLog، marketPriceStat، divarSetting |
+| `customer-club-agent.ts` | ۴ | refListCache، transactionRecord، contractRecord، expertRecord |
+| `finance-agent.ts` | ۳ | contractRecord، expertRecord، divarAd |
+| `listing-agent.ts` | ۳ | listingRecord، instagramPostLog، instagramConnection |
+| `expert-agent.ts` | ۲ | expertRecord، interactionRecord |
+| `price-index-agent.ts` | ۲ | divarAd، priceIndexHistory |
+| `request-agent.ts` | ۲ | requestRecord، requestEventRecord |
+| `contract-agent.ts` | ۱ | contractRecord |
+| `extraction-agent.ts` | ۱ | lookupLog |
+| `supply-demand-agent.ts` | ۱ | supplyDemandRecord |
+| `transaction-agent.ts` | ۱ | transactionRecord |
+| `visits-agent.ts` | ۱ | visitRecord |
+| **جمع** | **۴۷** | ۱۵ مدل |
+
+فهرست کامل file:line (خروجی اسکریپت، عیناً):
+
+```
+base-agent.ts:        L87 L91 L128 L137 L142 L143 L157 L164 L169 L210 L228 L243 L274 L280 L290 L291 L361 L362 L363 L364 L365
+contract-agent.ts:    L29
+customer-club-agent.ts: L33 L60 L65 L75
+divar-agent.ts:       L25 L30 L31 L32 L33
+expert-agent.ts:      L31 L32
+extraction-agent.ts:  L21
+finance-agent.ts:     L58 L119 L143
+listing-agent.ts:     L25 L26 L124
+price-index-agent.ts: L60 L125
+request-agent.ts:     L33 L168
+supply-demand-agent.ts: L20
+transaction-agent.ts: L27
+visits-agent.ts:      L27
+```
+
+**تفسیر:** ۲۱ فراخوانی از ۴۷ (٪۴۵) در `base-agent.ts` است — یعنی با انتقال این فایل به `AgentMemoryRepository` + `PolicyRepository` در PHASE 2، نیمی از بدهی فنی ایجنت‌ها یک‌جا بسته می‌شود. ۱۸ فراخوانی از ۲۶ باقیمانده از نوع `findMany` خواندنی ساده‌اند (کاندیدای طبیعی Repository_read سبک). عدد اصلاح‌شده گزارش اصلی: **۴۷ (نه ۴۶)**.
+
+## پ.۲ — بازبینی سراسری نقض UI→Prisma (تأیید: ۱ نقض زمان اجرا + ۲ نقض نرم سطح نوع)
+
+بازبینی با grep سراسری سه‌لایه (کامپوننت‌های «use client» → import ارزشی → زنجیره وابستگی تا `@/lib/db`):
+
+| # | نوع | فایل | توضیح | شدت |
+|---|---|---|---|---|
+| ۱ | **نقض زمان اجرا** | `core/tiles/tiles/request/CustomerManagementPanel.tsx:21` | `import { LIFECYCLE_FA, LIFECYCLE_COLOR } from "@/lib/request/customer-mgmt"` — import **ارزشی**؛ ماژول مقصد در خط ۱۵ خودش `import { db } from "@/lib/db"` و در خط ۱۷ `import type ... from "@prisma/client"` دارد → Prisma به باندل client کشیده می‌شود | 🔴 |
+| ۲ | نقض نرم (type-only) | `core/tiles/tiles/request/RequestsPage.tsx:22` | `import type { CustomerManagementSummary }` — در کامپایل حذف می‌شود، وارد باندل نمی‌شود؛ اما وابستگی لایه‌ای UI→Server-module را از نظر معماری برقرار می‌کند | 🟡 |
+| ۳ | نقض نرم (type-only) | `lib/listing/types.ts:14` | `import type { ListingRecord } from "@prisma/client"` — این فایل مشترک توسط ۶ کامپوننت client کاشی آگهی import می‌شود؛ type-only است اما «قرارداد نوعی» UI را به اسکیمای Prisma قفل می‌کند | 🟡 |
+
+نتیجه: عدد گزارش اصلی (**۱ نقض زمان اجرا**) تأیید شد؛ دو مورد نرم سطح-نوع نیز برای پاکسازی در P1-03 (استخراج `LIFECYCLE_FA/LIFECYCLE_COLOR/ACTION_FA` به ماژول خالص بدون وابستگی سرور + انتقال `ListingRecord` به DTO مستقل) فهرست شد.
+
+## پ.۳ — جدول صریح Singletonها (محل / scope فعلی / scope هدف / فاز رفع)
+
+| # | Singleton | محل | scope فعلی | scope هدف | فاز رفع |
+|---|---|---|---|---|---|
+| ۱ | `SyncState` رکورد `id="singleton"` (شامل `armTokenEnc`) | `prisma/schema.prisma:64-76` + `lib/melk-api/sync.ts:87-95` | **Global** (فرا-کاربر) | per-tenant + per-connection (متادیتای sync جدا از توکن) | توکن: **PHASE 0.5 / HOTFIX-02** · متادیتا: PHASE 12 |
+| ۲ | `PmConnection` رکورد `id="singleton"` (توکن PM مشترک) | `schema.prisma:630` + `api/pm/connection/route.ts:67-80` | **Global** | per-user (توکن هر کاربر در نشست خودش) | PHASE 2 (Repository) — انتقال ستون‌ها به Session |
+| ۳ | `DivarConnection` دو رکورد `method=kenar|phone` (کلید/توکن مشترک) | `schema.prisma:212` + `lib/divar/store.ts:23-27` | **Global** | per-user یا per-tenant + Service Account برای اسکن پس‌زمینه | PHASE 2/12 |
+| ۴ | `InstagramConnection` تک‌رکورد `findFirst` (توکن IG مشترک) | `schema.prisma:589` + `lib/instagram/store.ts:25,62` | **Global** | per-tenant (حساب کسب‌وکار واحد آژانس) + AuditLog نویسنده | PHASE 12 |
+| ۵ | `DivarSetting` رکورد `id="singleton"` (تنظیمات ایجنت فایل‌یابی) | `schema.prisma:233` + `lib/divar/store.ts:128` | **Global** | per-user (تنظیمات شخصی‌سازی هر مشاور) | PHASE 12 |
+| ۶ | `getMelkProvider()` — نمونه ماژول-سطح Provider | `lib/melk-api/provider.ts` | **Global-Process** (کل فرایند) | per-request factory (Stateless) — الگوی فعلی برای client HTTP بی‌حالت قابل قبول است اما باید تزریق‌پذیر شود | PHASE 2 (L7 Adapter) |
+| ۷ | `__divarScanRunning` — قفل ماژول-سطح روی globalThis | `lib/divar/scan.ts:520-531` | **Global-Process** | درست برای تک-کاربره؛ در multi-tenant باید قفل per-tenant شود | PHASE 12 |
+| ۸ | `db` (PrismaClient روی globalThis) | `lib/db.ts:3-13` | Global-Process | همین بماند (الگوی درست singleton اتصال) — فقط `log:['query']` اصلاح شود | **PHASE 0.5 / HOTFIX-06** |
+
+**نتیجه‌گیری:** ۵ singleton از ۸ (ردیف ۱-۵) راز یا تنظیمات **مشترک بین همه کاربران** نگه می‌دارند — سه تای اول رازِ دسترسی هستند (ریسک امنیتی فعال) و با HOTFIX-02/PHASE 2 بسته می‌شوند؛ ردیف ۶-۸ زیرساختی‌اند و الگوی درستی دارند.
+
+## پ.۴ — جدول metadata گمشده `policy.ts` (۹ فیلد + فاز افزودن)
+
+وضعیت فعلی `AgentPolicyRecord` (`src/core/agent/policy.ts:16-25`): `id, tileId, version, content, rationale, active, createdAt, activatedAt`.
+
+| فیلد لازم (دستور بخش ۲۰) | وضعیت فعلی | چرا لازم است | فاز افزودن |
+|---|---|---|---|
+| `policyVersion` | ✅ **موجود** — همان `version: number` (شماره صحیح صعودی) | — | — (تغییر نام در PHASE 3 برای هم‌ترازی واژگان، اختیاری) |
+| `modelVersion` | ❌ غایب | اگر مدل/الگوریتم تولید بینش عوض شود، وزن‌های نسخه‌های قدیمی قابل مقایسه با جدید نیستند | **PHASE 6** (Feature+Prediction) — با ورود PredictionResult |
+| `featureVersion` | ❌ غایب | تغییر تعریف ویژگی‌ها (مثلاً تغییر فرمول امتیاز شخصی‌بودن) باید نسخه بگیرد | **PHASE 6** |
+| `trainingWindow` | ❌ غایب | مشخص نکردن «بازخوردهای چه بازه‌ای» در این نسخه لحاظ شده‌اند → همان باگ اثر مرکب (پ.۵) | **PHASE 9** (Policy Lifecycle) — با Learning Window |
+| `evaluationWindow` | ❌ غایب | بازه‌ای که عملکرد سیاست روی آن سنجیده شده قبل از فعال‌سازی | **PHASE 9** |
+| `metrics` | ❌ غایب | بدون متریک (Precision/Recall/Lift/Conversion) فعال‌سازی سیاست = تصمیم کور | **PHASE 9** (با Golden Dataset + Shadow Evaluation) |
+| `createdBy` | ❌ غایب | سیاست توسط کدام ایجنت/کاربر/فرایند ساخته شده (Accountability) | **PHASE 3** (BaseIntelligentAgent) — فیلد رشته‌ای ساده |
+| `approvedBy` | ❌ غایب | فعال‌سازی سیاست حساس نیازمند تأیید انسانی | **PHASE 8/9** (Decision Engine + Governance) |
+| `status` | ❌ غایب (فقط بولین `active`) | چرخه عمر واقعی: `candidate → shadow → active → retired` | **PHASE 9** — بولین active به enum تبدیل شود |
+| `rollbackTarget` | ❌ غایب (ضمنی از طریق تاریخچه نسخه‌ها) | بازگشت اضطراری باید هدف صریح و تأییدشده داشته باشد | **PHASE 9** (در PHASE 3 به‌صورت فیلد اختیاری) |
+
+**قید سازگاری:** تا PHASE 9، `active: boolean` و تاریخچه نسخه‌ها حفظ می‌شود (سازگاری عقب‌وار با `BaseLearningAgent` و روت‌های `/api/agent/[tileId]/policy`). افزودن فیلدهای جدید به‌صورت **ستون اختیاری nullable** — بدون Migration مخرب.
+
+## پ.۵ — Learning Map با مثال عددی: چرا بازمحاسبه کل تاریخچه «اثر مرکب» می‌سازد
+
+کد مرجع: `base-agent.ts:242-300` (`reviewPolicyIfNeeded`). قاعده فعلی: `وزن جدید = وزن فعلی + ۰٫۱۵ × (مجموع تمام بازخوردهای تاریخچه از ابتدا)` — بدون پنجره زمانی، بدون علامت‌گذاری «مصرف‌شده».
+
+**سناریو: ۷ بازخورد در ۳ دسته (X، Y، Z) به این ترتیب:** f1=X⁺، f2=X⁺، f3=Y⁻، f4=X⁺، f5=Y⁻، f6=Z⁺، f7=X⁺
+
+| رویداد | تعداد کل بازخورد | بازبینی سیاست اجرا می‌شود؟ | score_X (از **کل** تاریخچه) | score_Y | وزن X | وزن Y | نسخه سیاست |
+|---|---|---|---|---|---|---|---|
+| f1..f4 | ۴ | خیر (<۵) | — | — | ۱٫۰۰ | ۱٫۰۰ | v1 |
+| f5 | ۵ | **بله ①** | **+۳** (f1,f2,f4) | −۲ (f3,f5) | ۱٫۰۰+۰٫۱۵×۳ = **۱٫۴۵** | ۱٫۰۰+۰٫۱۵×(−۲) = **۰٫۷۰** | v2 |
+| f6 | ۶ | **بله ②** | **+۳** (همان f1,f2,f4 — هیچ داده جدیدی برای X نیامده!) | −۲ (همان قبلی) | ۱٫۴۵+۰٫۴۵ = ۱٫۹۰ → **clamp ۱٫۸۰** | ۰٫۷۰−۰٫۳۰ = **۰٫۴۰** | v3 |
+| f7 | ۷ | **بله ③** | +۴ | −۲ (برای سومین بار) | ۱٫۸۰+۰٫۶۰ → **clamp ۱٫۸۰** (اشباع) | ۰٫۴۰−۰٫۳۰ = ۰٫۱۰ → **clamp ۰٫۳۰** | v4 |
+
+**سه اثر مرکب اثبات‌شده با اعداد:**
+
+1. **شمارش چندباره شواهد قدیمی:** سه بازخورد مثبت f1/f2/f4 دسته X در بازبینی‌های ①②③ سه بار اعمال شدند (وزن X: ۱٫۰۰→۱٫۴۵→۱٫۸۰ با تنها ۳ داده). تنها بازخورد جدید f6 (که اصلاً مربوط به X نبود) وزن X را ۰٫۳۵ واحد دیگر بالا برد. با ۱۰۰ بازخورد آینده، همان ۳ داده قدیمی **صد بار دیگر** اعمال می‌شوند.
+2. **اشباع روی ریل clamp:** طبقه‌بندی وزن فعلاً فقط بازه ۰٫۳ تا ۱٫۸ دارد؛ پس هر دسته‌ای که یک‌بار از آستانه |score|≥۲ عبور کند، در هر بازبینی بعدی دوباره حرکت می‌کند تا به ریل بچسبد. پس از چند بازبینی، سیاست «دوقطبی» می‌شود (همه چیز ۰٫۳ یا ۱٫۸) و **granularity انتخاب بینش از بین می‌رود**.
+3. **تورم نسخه:** چون آستانه معناداری (|score|≥۲) روی مجموع تجمعی سنجیده می‌شود نه روی شواهد جدید، پس از عبور یک‌باره، «هر بازخورد آینده» یک نسخه جدید می‌سازد: با ۱۰۰ بازخورد ≈ ۹۵ نسخه سیاست — رشد خطی جدول `AgentPolicyVersion` و بی‌معنایی rationale ها («به‌روزرسانی از N بازخورد» با N یکسان).
+
+**راه‌حل هدف (PHASE 9 — Policy Lifecycle):** هر بازخورد فقط یک‌بار مصرف شود (پنجره یادگیری + علامت appliedPolicyVersion)، وزن از «شواهد جدید در پنجره» محاسبه شود نه دلتای روی وزن قبلی، و فعال‌سازی نسخه جدید منوط به ارزیابی Shadow روی متریک واقعی (Conversion/Outcome) باشد. تا آن زمان، این جدول سند رسمی این است که چرا وضع فعلی «یادگیری» نامیده نمی‌شود.
+
+---
+
+> **بستن PHASE 0:** با درج این پیوست، هر پنج اصلاح بخش A (شمارش دقیق ۴۷ فراخوانی، بازبینی سراسری UI→Prisma، جدول ۸ Singleton، جدول فیلدهای metadata سیاست، و مثال عددی اثر مرکب یادگیری) اعمال شد. PHASE 0 رسماً بسته می‌شود و مسیر برای PHASE 0.5 (شش Hotfix) باز است.
+
+---
+
 ## جمع‌بندی نهایی
 
 کدبیس ملک تبریز **شالوده‌ای سالم و قابل‌دفاع** دارد: معماری پلاگین کاشی تمیز، جداسازی UI/Server قوی، زیرساخت یادگیری append-only، ۲۸۹ تست سبز، و موتورهای دامنه‌ای واقعی (امتیاز ۱۰۰ نقطه‌ای، تطبیق، NBA). آنچه کم است — و این گزارش نقشه دقیق آن را کشیده — سه چیز است: **(۱) مرزهای لایه‌ای و Repository** (PHASE 1-2)، **(۲) هسته هوش مشترک با Memory/RAG/Prediction/Outcome واقعی** (PHASE 3-7)، و **(۳) Governance/ارزیابی/ خودتشخیص** (PHASE 9-11). مسیر ارتقا «حفظ → بازآفرینی → استحکام → ارتقای هوش» است و هر گامش با GATE و مدرک بسته می‌شود.
