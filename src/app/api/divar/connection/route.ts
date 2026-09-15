@@ -65,7 +65,8 @@ export async function POST(request: NextRequest) {
     case "save-kenar": {
       const result = await saveKenarKey(String(body.apiKey ?? ""));
       await audit("DIVAR_KENAR_SAVE", guard.personnelCode, `ok=${result.ok}`);
-      return Response.json({ ok: result.ok, message: result.message });
+      // HOTFIX-04 (B7): کلید نامعتبر = 400 (خطای اعتبارسنجی ورودی کاربر)، نه 200 با ok:false
+      return Response.json({ ok: result.ok, message: result.message }, { status: result.ok ? 200 : 400 });
     }
 
     case "start-phone": {
@@ -74,7 +75,8 @@ export async function POST(request: NextRequest) {
       const normalized = local.replace(/\D/g, "");
       const start = await startPhoneAuth(normalized);
       if (!start.ok) {
-        return Response.json({ ok: false, message: start.message });
+        // HOTFIX-04 (B7): ok:false باید با statusCode معتبر برگردد (502 خطای بالادستی)، نه 200
+        return Response.json({ ok: false, message: start.message }, { status: 502 });
       }
       // درخواست زنده کد از خود دیوار
       try {
@@ -82,10 +84,11 @@ export async function POST(request: NextRequest) {
         await audit("DIVAR_PHONE_OTP", guard.personnelCode, `sent=${sent.sent}`);
         return Response.json({ ok: true, message: "کد پیامکی دیوار به شماره شما ارسال شد — کد را وارد کنید." });
       } catch (err) {
-        return Response.json({
-          ok: false,
-          message: (err as Error).message ?? "ارسال کد از سمت دیوار ناموفق بود.",
-        });
+        // HOTFIX-04 (B7): خطای ارسال پیامک دیوار = 502 (نه 200 با ok:false)
+        return Response.json(
+          { ok: false, message: (err as Error).message ?? "ارسال کد از سمت دیوار ناموفق بود." },
+          { status: 502 }
+        );
       }
     }
 

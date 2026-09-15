@@ -65,6 +65,22 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: s
     if (!updated) return errorResponse(new MelkApiError("NOT_FOUND", "این فایل آگهی یافت نشد.", 404, false));
     await audit("LISTING_UPDATE", guard.personnelCode, `id=${id}`);
 
+    // HOTFIX-04 (B3): JSON.parse های بدون حفاظ — رکورد دارای JSON خراب باید
+    // پاسخ 422 شفاف بدهد، نه 500 (خطای سرور).
+    const parseOr422 = (raw: string | null | undefined, fieldFa: string): unknown => {
+      if (!raw) return raw === undefined ? undefined : null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        throw new MelkApiError(
+          "UNPROCESSABLE",
+          `داده ذخیره‌شده «${fieldFa}» این فایل خراب است و قابل خواندن نیست — لطفاً فیلد را دوباره تکمیل و ذخیره کنید.`,
+          422,
+          false
+        );
+      }
+    };
+
     const merged = {
       customerName: updated.customerName,
       customerMobile: updated.customerMobile,
@@ -75,11 +91,11 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: s
       tradeTypeId: updated.tradeTypeId,
       buildingTypeId: updated.buildingTypeId,
       propertyTypeId: updated.propertyTypeId,
-      changeWith: JSON.parse(updated.changeWithJson ?? "[]"),
-      inputs: JSON.parse(updated.inputsJson ?? "{}"),
+      changeWith: parseOr422(updated.changeWithJson, "امکان معاوضه"),
+      inputs: parseOr422(updated.inputsJson, "مشخصات فایل"),
       priceEvaluation: updated.priceEvaluation,
       fileFinding: updated.fileFinding,
-      fileType: JSON.parse(updated.fileTypeJson ?? "[]"),
+      fileType: parseOr422(updated.fileTypeJson, "نوع فایل"),
       userSeriousness: updated.userSeriousness,
     };
     const v = validateListing(merged);

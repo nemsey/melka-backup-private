@@ -232,6 +232,16 @@ export async function createListing(input: ListingUpsertInput, actorCode: string
 }
 
 /** به‌روزرسانی فایل آگهی (تکمیل گام‌های ناقص/ویرایش) */
+/** parse امن — HOTFIX-04 (B3): JSON خراب رکورد نباید 500 تولید کند؛ مقدار خنثی برمی‌گردد تا اعتبارسنجی گام‌ها «ناقص» بدهد و کاربر فیلد را دوباره تکمیل کند */
+function safeParseOr<T>(raw: string | null | undefined, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function updateListing(id: string, input: ListingUpsertInput): Promise<ListingRecord | null> {
   enrichNames(input);
   const existing = await db.listingRecord.findUnique({ where: { id } });
@@ -246,11 +256,11 @@ export async function updateListing(id: string, input: ListingUpsertInput): Prom
     tradeTypeId: input.tradeTypeId !== undefined ? input.tradeTypeId : existing.tradeTypeId,
     buildingTypeId: input.buildingTypeId !== undefined ? input.buildingTypeId : existing.buildingTypeId,
     propertyTypeId: input.propertyTypeId !== undefined ? input.propertyTypeId : existing.propertyTypeId,
-    changeWith: input.changeWith !== undefined ? input.changeWith : JSON.parse(existing.changeWithJson ?? "[]"),
-    inputs: input.inputs !== undefined ? input.inputs : JSON.parse(existing.inputsJson ?? "{}"),
+    changeWith: input.changeWith !== undefined ? input.changeWith : safeParseOr(existing.changeWithJson, [] as string[]),
+    inputs: input.inputs !== undefined ? input.inputs : safeParseOr(existing.inputsJson, {} as Record<string, string>),
     priceEvaluation: input.priceEvaluation !== undefined ? input.priceEvaluation : existing.priceEvaluation,
     fileFinding: input.fileFinding !== undefined ? input.fileFinding : existing.fileFinding,
-    fileType: input.fileType !== undefined ? input.fileType : JSON.parse(existing.fileTypeJson ?? "[]"),
+    fileType: input.fileType !== undefined ? input.fileType : safeParseOr(existing.fileTypeJson, [] as string[]),
     userSeriousness: input.userSeriousness !== undefined ? input.userSeriousness : existing.userSeriousness,
   };
   const v = validateListing(merged);

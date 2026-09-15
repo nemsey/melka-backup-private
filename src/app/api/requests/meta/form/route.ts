@@ -120,6 +120,8 @@ export async function GET(request: NextRequest) {
       message: `فرم «${data?.name ?? "دسته‌بندی"}» با ${infos.length} مشخصه و ${options.length} امکان زنده دریافت شد (عین خود سامانه).`,
     });
   } catch (err) {
+    // HOTFIX-04 (B7): پاسخ خطا باید statusCode خطا بدهد (502 دروازه بالادستی)،
+    // نه 200 با ok:false — کلاینت‌های استاندارد retry/گزارش را از کد وضعیت می‌خوانند.
     const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error)?.message ?? "خطای دریافت فرم", 502, false);
     return Response.json(
       {
@@ -133,7 +135,7 @@ export async function GET(request: NextRequest) {
           "فرم دسته‌بندی از سامانه آرم دریافت نشد — می‌توانید بدون فرم پویا ادامه دهید و بعداً تکمیل کنید.",
         error: e.message,
       },
-      { status: 200 }
+      { status: 502 }
     );
   }
 }

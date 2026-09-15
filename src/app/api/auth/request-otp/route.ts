@@ -42,7 +42,10 @@ export async function POST(request: NextRequest) {
       source: "arm.melketabriz.ir",
     });
   } catch (err) {
-    if (personnelCode) {
+    // HOTFIX-04 (B2): اگر خطای فعلی خود RATE_LIMITED است، تلاش «ردشده» ثبت نمی‌شود —
+    // وگرنه هر تلاش در حالت قفل، یک رکورد شکست جدید می‌سازد و پنجره لغزان را
+    // بی‌پایان تمدید می‌کرد (قفل خود-تمدیدشونده).
+    if (personnelCode && !(err instanceof MelkApiError && err.code === "RATE_LIMITED")) {
       await recordAttempt(personnelCode, "REQUEST_OTP", false).catch(() => {});
     }
     if (err instanceof MelkApiError) return errorResponse(err);

@@ -534,6 +534,7 @@ export type MelkErrorCode =
   | "TIMEOUT"
   | "UNAUTHORIZED"
   | "FORBIDDEN" // HOTFIX-03 (SEC-6): نقش ناکافی — 403 استاندارد
+  | "UNPROCESSABLE" // HOTFIX-04 (B3): داده ذخیره‌شده خراب — 422
   | "SERVER_ERROR"
   | "DB_DOWN"
   | "NOT_FOUND"

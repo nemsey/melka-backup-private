@@ -39,66 +39,73 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
   }
   const note = typeof body.note === "string" ? body.note.slice(0, 1000) : null;
 
-  const ad = await db.divarAd.findUnique({ where: { token } });
-  if (!ad) {
-    return errorResponse(new MelkApiError("NOT_FOUND", "این فایل یافت نشد — ممکن است قبلاً رد شده باشد.", 404, false));
-  }
+  // HOTFIX-04 (B1): کل زنجیره DB با try/catch — خطای پایگاه هرگز 500 خام نمی‌شود
+  try {
+    const ad = await db.divarAd.findUnique({ where: { token } });
+    if (!ad) {
+      return errorResponse(new MelkApiError("NOT_FOUND", "این فایل یافت نشد — ممکن است قبلاً رد شده باشد.", 404, false));
+    }
 
-  // ۱) سیگنال یادگیری — فقط افزودنی (آگهی آرشیو نمی‌شود؛ فقط ویژگی‌های لازم برای یادگیری می‌ماند)
-  await db.divarRejectLog.create({
-    data: {
-      token,
-      reasons: JSON.stringify(reasons),
-      note,
-      scoreSnapshotJson: JSON.stringify({
-        personal: ad.personalScore,
-        underprice: ad.underpriceScore,
-        other: ad.otherScore,
-        location: ad.locationScore,
-        total: ad.totalScore,
-        bucket: ad.bucket,
-      }),
-      featureSnapshotJson: JSON.stringify({
-        title: ad.title,
-        category: ad.category,
-        description: (ad.description ?? "").slice(0, 600),
-        matchedLineName: ad.matchedLineName,
-        matchedAreaName: ad.matchedAreaName,
-        pricePerMeter: ad.pricePerMeter,
-      }),
-      actorCode: guard.personnelCode,
-    },
-  });
-
-  // ۲) حافظه ایجنت — یادگیری از دلایل رد
-  await db.agentMemory.create({
-    data: {
-      tileId: divarAgent.tileId,
-      kind: "REJECT",
-      payload: JSON.stringify({
-        at: new Date().toISOString(),
+    // ۱) سیگنال یادگیری — فقط افزودنی (آگهی آرشیو نمی‌شود؛ فقط ویژگی‌های لازم برای یادگیری می‌ماند)
+    await db.divarRejectLog.create({
+      data: {
         token,
-        reasons,
+        reasons: JSON.stringify(reasons),
         note,
-        personal: ad.personalScore,
-        underprice: ad.underpriceScore,
-        other: ad.otherScore,
-        location: ad.locationScore,
-        total: ad.totalScore,
-        title: ad.title.slice(0, 120),
-        line: ad.matchedLineName,
-      }),
-    },
-  });
+        scoreSnapshotJson: JSON.stringify({
+          personal: ad.personalScore,
+          underprice: ad.underpriceScore,
+          other: ad.otherScore,
+          location: ad.locationScore,
+          total: ad.totalScore,
+          bucket: ad.bucket,
+        }),
+        featureSnapshotJson: JSON.stringify({
+          title: ad.title,
+          category: ad.category,
+          description: (ad.description ?? "").slice(0, 600),
+          matchedLineName: ad.matchedLineName,
+          matchedAreaName: ad.matchedAreaName,
+          pricePerMeter: ad.pricePerMeter,
+        }),
+        actorCode: guard.personnelCode,
+      },
+    });
 
-  // ۳) آگهی هرگز آرشیو نمی‌شود — حذف کامل رکورد
-  await db.divarAd.delete({ where: { token } });
+    // ۲) حافظه ایجنت — یادگیری از دلایل رد
+    await db.agentMemory.create({
+      data: {
+        tileId: divarAgent.tileId,
+        kind: "REJECT",
+        payload: JSON.stringify({
+          at: new Date().toISOString(),
+          token,
+          reasons,
+          note,
+          personal: ad.personalScore,
+          underprice: ad.underpriceScore,
+          other: ad.otherScore,
+          location: ad.locationScore,
+          total: ad.totalScore,
+          title: ad.title.slice(0, 120),
+          line: ad.matchedLineName,
+        }),
+      },
+    });
 
-  await audit("DIVAR_REJECT", guard.personnelCode, `token=${token} reasons=${reasons.join(",")}`);
+    // ۳) آگهی هرگز آرشیو نمی‌شود — حذف کامل رکورد
+    await db.divarAd.delete({ where: { token } });
 
-  return Response.json({
-    ok: true,
-    message: "فایل رد شد — آگهی آرشیو نمی‌شود و فقط سیگنال یادگیری آن نگه داشته می‌شود تا ایجنت این اشتباه را تکرار نکند.",
-    learned: { reasons, note },
-  });
+    await audit("DIVAR_REJECT", guard.personnelCode, `token=${token} reasons=${reasons.join(",")}`);
+
+    return Response.json({
+      ok: true,
+      message: "فایل رد شد — آگهی آرشیو نمی‌شود و فقط سیگنال یادگیری آن نگه داشته می‌شود تا ایجنت این اشتباه را تکرار نکند.",
+      learned: { reasons, note },
+    });
+  } catch {
+    return errorResponse(
+      new MelkApiError("UNKNOWN", "رد فایل ناموفق بود — احتمالاً مشکل موقت پایگاه داده. چند لحظه بعد دوباره تلاش کنید.", 500, false)
+    );
+  }
 }

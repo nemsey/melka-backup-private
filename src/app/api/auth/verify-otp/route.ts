@@ -60,7 +60,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    if (personnelCode) {
+    // HOTFIX-04 (B2): خطای RATE_LIMITED خودش تلاش شکست محسوب نمی‌شود —
+    // ثبت آن پنجره قفل را تمدید می‌کرد (قفل خود-تمدیدشونده).
+    if (personnelCode && !(err instanceof MelkApiError && err.code === "RATE_LIMITED")) {
       await recordAttempt(personnelCode, "VERIFY_OTP", false).catch(() => {});
     }
     if (err instanceof MelkApiError) return errorResponse(err);

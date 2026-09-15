@@ -17,9 +17,16 @@ export async function POST(request: NextRequest) {
   if (role instanceof MelkApiError) return errorResponse(role);
   const guard = role.ctx;
 
-  const summary = await runDivarScan();
-  await audit("DIVAR_SCAN", guard.personnelCode, `new=${summary.newAds} inWindow=${summary.inWindow}`);
-  return Response.json({ ok: summary.ok, summary });
+  // HOTFIX-04 (B1): خطای اسکن هرگز به‌صورت 500 خام نمی‌رسد — پاکت فارسی استاندارد
+  try {
+    const summary = await runDivarScan();
+    await audit("DIVAR_SCAN", guard.personnelCode, `new=${summary.newAds} inWindow=${summary.inWindow}`);
+    return Response.json({ ok: summary.ok, summary });
+  } catch (err) {
+    return errorResponse(
+      new MelkApiError("UNKNOWN", `اجرای اسکن ناموفق بود: ${(err as Error)?.message ?? "خطای نامشخص"}. چند لحظه بعد دوباره تلاش کنید.`, 500, false)
+    );
+  }
 }
 
 export async function GET(request: NextRequest) {
