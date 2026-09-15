@@ -518,3 +518,27 @@ Stage Summary:
 - سه GATE نخست (A: ممیزی کامل، B: نقض‌های شناسایی‌شده، C: مرزهای ۹ لایه) مستند و آماده امضای مالک
 - ۶ اقدام فوری امنیتی/پایداری (پیوست ب) به‌عنوان پیش‌شرط PHASE 1 فهرست شد (SEC-1/2/3 + B1-B3 + B6 + D1)
 - گام بعدی پیشنهادی: تأیید مالک بر GATE-A/B/C → اجرای ۶ اقدام فوری → شروع PHASE 1 (Layer Refactor)
+
+---
+Task ID: phase0-close-and-0.5
+Agent: main (Super Z / GLM-5.3)
+Task: بستن PHASE 0 (بازنگری پنج‌گانه بخش A) + اجرای کامل PHASE 0.5 (شش Hotfix امنیتی/پایداری) + گزارش تکمیل
+
+Work Log:
+- بخش A (مستندات): اسکریپت scripts/audit-phase0-revision.sh → شمارش دقیق ۴۷ فراخوانی db.* در ایجنت‌ها (اصلاح ۴۶) + تأیید ۱ نقض runtime UI→Prisma + ۲ نرم type-only + جدول ۸ Singleton با scope هدف + جدول ۹ فیلد metadata گمشده policy.ts با فاز + مثال عددی اثر مرکب یادگیری (۷ بازخورد/۳ دسته، شمارش چندباره، اشباع clamp، تورم نسخه) → پیوست «پ» در AUDIT-AI-CORE-ARCHITECTURE.md + کامیت bdc7f68
+- HOTFIX-01 (SEC-1/2, کامیت 26850d4): حذف fallback کد مدیر و کلید رمزنگاری؛ assertProductionSecrets در بوت (prod بدون راز = عدم بالا آمدن)؛ کلید اجباری MELK_TOKEN_KEY مستقل؛ lib/auth/key-rotation.ts (چرخش idempotent با AuditLog) + CLI + startup با ROTATION_PENDING؛ .env.example + scripts/dev-secrets.ts (کلید dev، gitignored)؛ گارد 503 master-login؛ پاکسازی 41372895 از تست‌ها/fixture/مستندات؛ ۱۳ تست
+- HOTFIX-02 (SEC-3, کامیت f7678c3+1eb22e3): حذف ستون SyncState.armTokenEnc از اسکیما و هر دو DB (prisma db push)؛ /api/sync فقط توکن نشست خود کاربر (بدون توکن = 412)؛ تایمر پس‌زمینه پیش‌فرض خاموش (MELK_BACKGROUND_SYNC=enabled صریح + آخرین نشست زنده دارای توکن + AuditLog)؛ connection/reset بدون توکن دیگران؛ ۹ تست (شامل جداسازی per-user و logout)
+- HOTFIX-03 (SEC-6, کامیت 347e950+a7c812c): requireRole("OWNER", route) در guard.ts؛ اعمال روی ۵ روت حساس + یکسان‌سازی divar/connection؛ پاسخ 403 FORBIDDEN استاندارد؛ ACCESS_DENIED با personnelCode+route در AuditLog؛ FORBIDDEN به MelkErrorCode؛ ۱۳ تست
+- HOTFIX-04 (B1/B2/B3/B7, کامیت 64ce36e+53809bf): try/catch فارسی auth/session سه متد + divar/scan + ads reject؛ قفل خود-تمدید RATE_LIMITED رفع (خطای RATE_LIMITED دیگر recordAttempt نمی‌زند — تست: ۵ شکست → قفل، تلاش‌های بعدی بدون رکورد جدید)؛ JSON خراب رکورد → 422 UNPROCESSABLE (route parseOr422 + updateListing safeParseOr)؛ 200+ok:false → 502/400 در meta/form و divar start-phone/save-kenar؛ کلاینت‌ها سازگار (api.ts از res.ok پیروی می‌کند)؛ ۱۱ تست
+- HOTFIX-05 (B6, کامیت 938d168): قفل همزمانی sync با الگوی in-flight join (فراخوان موازی به اجرای جاری می‌پیوندد) + شمارنده اجرا؛ clearCrmCacheTables تابع واحد ۶جدولی (connection/reset قبلاً ۳ جدول بود)؛ تست همزمانی با fetch شبیه‌ساز: دو ensureSeeded موازی → دلتای اجرا = ۱؛ ۶ تست
+- HOTFIX-06 (D1/D2, کامیت 67ff995): resolvePrismaLogConfig (prod ['error'] / dev ['warn','error']) — حذف کامل 'query'؛ instrumentation از singleton db (بدون new PrismaClient در tick)؛ ۸ تست شامل اثبات معیار (پیکربندی قدیمی چاپ می‌کرد، جدید صفر)
+- گزارش تکمیل: download/PHASE-0.5-COMPLETION-REPORT.md (۷ بند مطابق دستور بخش C)
+- بکاپ: db/custom.backup-pre-phase05.db قبل از شروع کار
+
+Stage Summary:
+- PHASE 0 رسماً بسته (پیوست پ)؛ PHASE 0.5 کامل: هر ۶ Hotfix با کامیت مستقل + rollback مستند
+- تست: ۲۸۹ → ۳۴۹ (۶۰ تست جدید، همه سبز، ۱۲۸۳ ادعا)؛ tsc src صفر خطا؛ lint پاک
+- امنیت: کد مدیر/کلید fallback از سورس پاک، توکن ARM per-user، ۵ روت OWNER-gate، RATE_LIMITED بدون خود-تمدید، JSON خراب 422، کد وضعیت صحیح
+- GATEهای بسته: SEC-1, SEC-2, SEC-3, SEC-6, BUGS-CRITICAL, SYNC-LOCK, LOGS
+- diff: ۴۲ فایل، +۲٬۱۲۵/−۲۲۰
+- گام بعد: تأیید شورای راهبری بر گزارش تکمیل → شروع PHASE 1 (P1-01..P1-06 طبق بخش D)
