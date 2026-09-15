@@ -61,6 +61,14 @@
   src: url("/fonts/Vazirmatn-arabic-800.woff2") format("woff2");
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-latin-800.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-200B, U+200F-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -96,81 +104,95 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* ============ پالت: زمرد (اصلی) + کهربایی (تأکید) — بدون آبی/بنفش ============ */
+/* ================================================================
+   نظام طراحی «فیروزه تبریز» — نسخه ۱٫۷٫۰
+   ----------------------------------------------------------------
+   الهام: کاشی‌کاری فیروزه‌ای مسجد کبود تبریز + مس و برنز بازار تبریز
+   ساختار پالت:
+     • فیروزه عمیق (primary)  — رنگ برند، دکمه‌ها، پیوندها، حالت فعال
+     • مسِ گرم (accent)       — هاورها، برچسب مالک، تأکیدهای ثانویه
+     • شنیِ یخی (background)  — سطح‌ها با نفَس فیروزه‌ای بسیار ملایم
+     • شبِ نفتی (dark)        — پس‌زمینه تیره با ته‌رنگ سبزآبی
+   رنگ‌های معنایی ثابت: کهربایی = هشدار، رز = خطا، سبز = برقراری اتصال
+   ================================================================ */
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.975 0.006 85);
-  --foreground: oklch(0.245 0.02 60);
+  --radius: 1rem;
+  --background: oklch(0.978 0.005 190);
+  --foreground: oklch(0.25 0.028 200);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.245 0.02 60);
+  --card-foreground: oklch(0.25 0.028 200);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.245 0.02 60);
-  --primary: oklch(0.508 0.118 165.61);
-  --primary-foreground: oklch(0.985 0.005 85);
-  --secondary: oklch(0.952 0.012 85);
-  --secondary-foreground: oklch(0.35 0.03 70);
-  --muted: oklch(0.955 0.008 85);
-  --muted-foreground: oklch(0.5 0.02 60);
-  --accent: oklch(0.94 0.045 80);
-  --accent-foreground: oklch(0.38 0.07 70);
+  --popover-foreground: oklch(0.25 0.028 200);
+  /* فیروزه عمیق — h≈194 */
+  --primary: oklch(0.51 0.095 194);
+  --primary-foreground: oklch(0.985 0.01 190);
+  --secondary: oklch(0.955 0.012 190);
+  --secondary-foreground: oklch(0.36 0.045 195);
+  --muted: oklch(0.955 0.008 190);
+  --muted-foreground: oklch(0.5 0.025 200);
+  /* مسِ گرم — هاورها و تأکید ثانویه */
+  --accent: oklch(0.945 0.035 65);
+  --accent-foreground: oklch(0.4 0.075 55);
   --destructive: oklch(0.577 0.245 27.32);
-  --border: oklch(0.905 0.012 80);
-  --input: oklch(0.905 0.012 80);
-  --ring: oklch(0.55 0.11 165.61);
-  --chart-1: oklch(0.596 0.145 163.22);
-  --chart-2: oklch(0.769 0.188 70.07);
-  --chart-3: oklch(0.6 0.118 184.7);
-  --chart-4: oklch(0.646 0.222 41.11);
-  --chart-5: oklch(0.552 0.016 285.93);
-  --sidebar: oklch(0.985 0.005 85);
-  --sidebar-foreground: oklch(0.245 0.02 60);
-  --sidebar-primary: oklch(0.508 0.118 165.61);
-  --sidebar-primary-foreground: oklch(0.985 0.005 85);
-  --sidebar-accent: oklch(0.94 0.045 80);
-  --sidebar-accent-foreground: oklch(0.38 0.07 70);
-  --sidebar-border: oklch(0.905 0.012 80);
-  --sidebar-ring: oklch(0.55 0.11 165.61);
+  --border: oklch(0.905 0.012 190);
+  --input: oklch(0.905 0.012 190);
+  --ring: oklch(0.56 0.1 194);
+  /* نمودارها: فیروزه، مس، یشم، شنی، سفال */
+  --chart-1: oklch(0.6 0.105 185);
+  --chart-2: oklch(0.66 0.14 55);
+  --chart-3: oklch(0.62 0.09 160);
+  --chart-4: oklch(0.78 0.1 85);
+  --chart-5: oklch(0.64 0.15 30);
+  --sidebar: oklch(0.985 0.005 190);
+  --sidebar-foreground: oklch(0.25 0.028 200);
+  --sidebar-primary: oklch(0.51 0.095 194);
+  --sidebar-primary-foreground: oklch(0.985 0.01 190);
+  --sidebar-accent: oklch(0.945 0.035 65);
+  --sidebar-accent-foreground: oklch(0.4 0.075 55);
+  --sidebar-border: oklch(0.905 0.012 190);
+  --sidebar-ring: oklch(0.56 0.1 194);
 }
 
 .dark {
-  --background: oklch(0.235 0.015 70);
-  --foreground: oklch(0.94 0.008 85);
-  --card: oklch(0.28 0.018 70);
-  --card-foreground: oklch(0.94 0.008 85);
-  --popover: oklch(0.28 0.018 70);
-  --popover-foreground: oklch(0.94 0.008 85);
-  --primary: oklch(0.765 0.177 163.22);
-  --primary-foreground: oklch(0.235 0.03 160);
-  --secondary: oklch(0.34 0.02 70);
-  --secondary-foreground: oklch(0.94 0.008 85);
-  --muted: oklch(0.32 0.018 70);
-  --muted-foreground: oklch(0.68 0.015 80);
-  --accent: oklch(0.38 0.05 75);
-  --accent-foreground: oklch(0.9 0.06 80);
+  /* شب نفتی — عمق سبزآبی به‌جای خاکستری خالص */
+  --background: oklch(0.235 0.018 205);
+  --foreground: oklch(0.93 0.012 190);
+  --card: oklch(0.275 0.02 205);
+  --card-foreground: oklch(0.93 0.012 190);
+  --popover: oklch(0.275 0.02 205);
+  --popover-foreground: oklch(0.93 0.012 190);
+  --primary: oklch(0.77 0.115 188);
+  --primary-foreground: oklch(0.24 0.04 195);
+  --secondary: oklch(0.33 0.02 205);
+  --secondary-foreground: oklch(0.93 0.012 190);
+  --muted: oklch(0.315 0.018 205);
+  --muted-foreground: oklch(0.67 0.015 195);
+  --accent: oklch(0.36 0.045 60);
+  --accent-foreground: oklch(0.9 0.07 70);
   --destructive: oklch(0.704 0.191 22.22);
-  --border: oklch(0.38 0.02 70);
-  --input: oklch(0.38 0.02 70);
-  --ring: oklch(0.65 0.15 163.22);
-  --chart-1: oklch(0.696 0.17 162.48);
-  --chart-2: oklch(0.795 0.184 86.05);
-  --chart-3: oklch(0.6 0.118 184.7);
-  --chart-4: oklch(0.646 0.222 41.11);
-  --chart-5: oklch(0.75 0.05 285);
-  --sidebar: oklch(0.28 0.018 70);
-  --sidebar-foreground: oklch(0.94 0.008 85);
-  --sidebar-primary: oklch(0.765 0.177 163.22);
-  --sidebar-primary-foreground: oklch(0.235 0.03 160);
-  --sidebar-accent: oklch(0.38 0.05 75);
-  --sidebar-accent-foreground: oklch(0.9 0.06 80);
-  --sidebar-border: oklch(0.38 0.02 70);
-  --sidebar-ring: oklch(0.65 0.15 163.22);
+  --border: oklch(0.36 0.02 205);
+  --input: oklch(0.36 0.02 205);
+  --ring: oklch(0.68 0.115 188);
+  --chart-1: oklch(0.72 0.12 185);
+  --chart-2: oklch(0.75 0.12 60);
+  --chart-3: oklch(0.68 0.09 160);
+  --chart-4: oklch(0.8 0.09 85);
+  --chart-5: oklch(0.7 0.14 30);
+  --sidebar: oklch(0.275 0.02 205);
+  --sidebar-foreground: oklch(0.93 0.012 190);
+  --sidebar-primary: oklch(0.77 0.115 188);
+  --sidebar-primary-foreground: oklch(0.24 0.04 195);
+  --sidebar-accent: oklch(0.36 0.045 60);
+  --sidebar-accent-foreground: oklch(0.9 0.07 70);
+  --sidebar-border: oklch(0.36 0.02 205);
+  --sidebar-ring: oklch(0.68 0.115 188);
 }
 
 @layer base {
@@ -186,10 +208,20 @@
     font-family: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
     letter-spacing: 0;
     text-rendering: optimizeLegibility;
+    /* شفقاق فیروزه‌ای — دو هالهٔ بسیار ملایم ثابت در پس‌زمینه کل اپ */
+    background-image:
+      radial-gradient(1100px 520px at 88% -8%, color-mix(in oklch, var(--primary) 7%, transparent), transparent 62%),
+      radial-gradient(820px 420px at 4% -4%, color-mix(in oklch, var(--accent) 6%, transparent), transparent 58%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+  /* انتخاب متن با رنگ برند */
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 24%, transparent);
   }
 }
 
-/* ============ اسکرول‌بار سفارشی ============ */
+/* ============ اسکرول‌بار سفارشی (فیروزه) ============ */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -222,13 +254,39 @@ button, a, [role="button"] {
   user-select: none;
 }
 
-/* ============ انیمیشن کاشی‌ها ============ */
+/* ============ ابزارهای برند ============ */
+
+/* متن گرادیانی برند: فیروزه ← مس */
+.brand-gradient-text {
+  background-image: linear-gradient(to left, oklch(0.51 0.095 194), oklch(0.58 0.1 188), oklch(0.66 0.14 55));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .brand-gradient-text {
+  background-image: linear-gradient(to left, oklch(0.77 0.115 188), oklch(0.72 0.11 185), oklch(0.75 0.12 60));
+}
+
+/* سطح شیشه‌ای — هدر و نوارهای شناور */
+.glass {
+  background: color-mix(in oklch, var(--background) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* انیمیشن کاشی‌ها */
 @keyframes tile-pop {
   0% { transform: scale(0.96); opacity: 0.4; }
   100% { transform: scale(1); opacity: 1; }
 }
 .tile-pop {
   animation: tile-pop 0.25s ease-out both;
+}
+
+/* احترام به کاهش حرکت */
+@media (prefers-reduced-motion: reduce) {
+  .tile-pop { animation: none; }
+  html { scroll-behavior: auto; }
 }
 
 /* نمودارها: جهت چپ‌به‌راست برای محور زمان (استاندارد داشبوردهای فارسی) */

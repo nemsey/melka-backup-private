@@ -490,7 +490,7 @@ export function ExtractionPage({ settings, onSettingsChange: _osc, userRole: _ro
                         <TableCell className="max-w-[10rem] truncate">{h.personName ?? "—"}</TableCell>
                         <TableCell>
                           {h.found ? (
-                            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                            <span className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 text-xs font-bold">
                               <CheckCircle2 className="w-3.5 h-3.5" aria-hidden /> یافته
                             </span>
                           ) : (

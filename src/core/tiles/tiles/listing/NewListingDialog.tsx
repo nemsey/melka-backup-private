@@ -300,12 +300,12 @@ export function NewListingDialog({
                   type="button"
                   onClick={() => i <= step && setStep(i)}
                   className={`w-full rounded-lg px-2 py-1.5 text-right transition-colors ${
-                    active ? "bg-primary/10 border border-primary/30" : done ? "bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900" : "bg-muted/40 border border-transparent"
+                    active ? "bg-primary/10 border border-primary/30" : done ? "bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-900" : "bg-muted/40 border border-transparent"
                   } ${i <= step ? "cursor-pointer" : "opacity-50 cursor-default"}`}
                   aria-current={active ? "step" : undefined}
                 >
                   <span className="flex items-center gap-1.5">
-                    {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden /> : <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`} aria-hidden />}
+                    {done ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden /> : <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`} aria-hidden />}
                     <span className="text-[10px] font-bold leading-4 truncate">{s.title}</span>
                   </span>
                   <span className="block text-[9px] text-muted-foreground leading-3 truncate">{s.subTitle}</span>
@@ -338,7 +338,7 @@ export function NewListingDialog({
               </div>
             </div>
             {armLookup && (
-              <p className={`text-[11px] leading-5 flex items-center gap-1.5 ${armLookup.found ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+              <p className={`text-[11px] leading-5 flex items-center gap-1.5 ${armLookup.found ? "text-teal-700 dark:text-teal-400" : "text-amber-700 dark:text-amber-400"}`}>
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0" aria-hidden />
                 {armLookup.found ? `کاربر «${armLookup.name ?? customerName}» در سامانه آرم موجود است — هنگام انتقال به CRM مستقیم متصل می‌شود.` : "این شماره در آرم ثبت نشده — هنگام انتقال به CRM، کاربر جدید ایجاد می‌شود."}
               </p>

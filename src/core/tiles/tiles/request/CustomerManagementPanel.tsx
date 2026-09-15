@@ -55,11 +55,11 @@ export function CustomerManagementPanel({
       {/* KPIهای مدیریت مشتریان */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: "کل مشتریان", value: stats?.totalCustomers ?? 0, icon: Users, cls: "from-teal-600 to-teal-400" },
-          { label: "مشتریان فعال", value: stats?.activeCustomers ?? 0, icon: Flame, cls: "from-emerald-600 to-emerald-400" },
+          { label: "کل مشتریان", value: stats?.totalCustomers ?? 0, icon: Users, cls: "from-teal-600 to-cyan-500" },
+          { label: "مشتریان فعال", value: stats?.activeCustomers ?? 0, icon: Flame, cls: "from-teal-600 to-cyan-500" },
           { label: "میانگین سلامت", value: `${faNumber(stats?.avgHealth ?? 0)}٪`, icon: HeartPulse, cls: "from-rose-600 to-rose-400" },
           { label: "قهرمانان A", value: stats?.segmentA ?? 0, icon: Trophy, cls: "from-amber-600 to-amber-400" },
-          { label: "تطبیق‌های قوی", value: stats?.strongMatches ?? 0, icon: Link2, cls: "from-teal-700 to-teal-500" },
+          { label: "تطبیق‌های قوی", value: stats?.strongMatches ?? 0, icon: Link2, cls: "from-teal-700 to-cyan-500" },
           { label: "بی‌تماس +۱۴ روز", value: stats?.overdueContacts ?? 0, icon: PhoneCall, cls: "from-rose-700 to-rose-500" },
         ].map((kpi, i) => {
           const Icon = kpi.icon;
@@ -160,7 +160,7 @@ function CustomerCard({
               <Badge className={`text-[9px] ${c.segment === "A" ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" : c.segment === "B" ? "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" : "bg-muted text-muted-foreground"}`}>
                 بخش {c.segment}
               </Badge>
-              {c.convertedDeals > 0 && <Badge className="text-[9px] gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"><Trophy className="w-2.5 h-2.5" aria-hidden /> معامله‌شده</Badge>}
+              {c.convertedDeals > 0 && <Badge className="text-[9px] gap-1 bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300"><Trophy className="w-2.5 h-2.5" aria-hidden /> معامله‌شده</Badge>}
             </div>
             <p className="text-[10px] text-muted-foreground mt-1 leading-4">
               {faNumber(c.requestCount)} درخواست · {faNumber(c.eventCount)} رویداد
@@ -180,7 +180,7 @@ function CustomerCard({
           </div>
           <Progress
             value={c.healthScore}
-            indicatorClassName={c.healthScore >= 70 ? "bg-gradient-to-l from-emerald-600 to-emerald-400" : c.healthScore >= 40 ? "bg-gradient-to-l from-amber-600 to-amber-400" : "bg-gradient-to-l from-rose-600 to-rose-400"}
+            indicatorClassName={c.healthScore >= 70 ? "bg-gradient-to-l from-teal-600 to-cyan-500" : c.healthScore >= 40 ? "bg-gradient-to-l from-amber-600 to-amber-400" : "bg-gradient-to-l from-rose-600 to-rose-400"}
           />
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-muted-foreground">
             {c.healthBreakdown.map((b) => (
@@ -220,7 +220,7 @@ function CustomerCard({
                     <TrendingUp className="w-3 h-3 inline me-1 text-teal-600" aria-hidden />
                     {m.listingTitle}
                   </span>
-                  <Badge className={`text-[9px] shrink-0 ${m.band === "عالی" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : m.band === "خوب" ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" : "bg-muted"}`}>
+                  <Badge className={`text-[9px] shrink-0 ${m.band === "عالی" ? "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" : m.band === "خوب" ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" : "bg-muted"}`}>
                     {faNumber(m.score)}٪ {m.band}
                   </Badge>
                 </div>
@@ -250,7 +250,7 @@ function CustomerCard({
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold truncate">{r.title}</span>
                     <span className="flex items-center gap-1 shrink-0">
-                      {r.armRegistered && <Badge className="text-[8px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">آرم</Badge>}
+                      {r.armRegistered && <Badge className="text-[8px] bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">آرم</Badge>}
                       {r.topMatchScore != null && <Badge variant="outline" className="text-[8px]">تطبیق {faNumber(r.topMatchScore)}٪</Badge>}
                     </span>
                   </div>

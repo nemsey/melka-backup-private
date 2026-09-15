@@ -124,7 +124,7 @@ export function TileShell({ tile }: { tile: TileDefinition }) {
         >
           <ArrowRight className="w-5 h-5" aria-hidden />
         </Button>
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 dark:from-emerald-500 dark:to-emerald-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/25">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-lg shadow-teal-600/30 ring-4 ring-primary/10">
           <TileIcon className="w-6 h-6 text-white" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">

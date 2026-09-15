@@ -446,11 +446,11 @@ export function NewRequestDialog({ open, onOpenChange, mode, editRequest, meta, 
                 key={s.title}
                 type="button"
                 onClick={() => i <= step && setStep(i)}
-                className={`flex-1 rounded-xl border p-2 text-right transition-colors ${active ? "border-teal-500 bg-teal-50 dark:bg-teal-950" : done ? "border-emerald-300 bg-emerald-50 dark:bg-emerald-950" : "border-border bg-muted/30"} ${i > step ? "opacity-50" : ""}`}
+                className={`flex-1 rounded-xl border p-2 text-right transition-colors ${active ? "border-teal-500 bg-teal-50 dark:bg-teal-950" : done ? "border-teal-300 bg-teal-50 dark:bg-teal-950" : "border-border bg-muted/30"} ${i > step ? "opacity-50" : ""}`}
                 aria-current={active ? "step" : undefined}
               >
                 <div className="flex items-center gap-1.5">
-                  <Icon className={`w-4 h-4 shrink-0 ${active ? "text-teal-600" : done ? "text-emerald-600" : "text-muted-foreground"}`} aria-hidden />
+                  <Icon className={`w-4 h-4 shrink-0 ${active ? "text-teal-600" : done ? "text-teal-600" : "text-muted-foreground"}`} aria-hidden />
                   <span className="text-[10px] font-bold leading-3 truncate">{s.title}</span>
                 </div>
                 <span className="text-[9px] text-muted-foreground block truncate mt-0.5">{s.subTitle}</span>
@@ -461,20 +461,20 @@ export function NewRequestDialog({ open, onOpenChange, mode, editRequest, meta, 
 
         {/* گزارش ثبت گام‌به‌گام در آرم (حالت اتوماتیک) */}
         {armReport && (
-          <div className={`rounded-xl border p-3 space-y-2 ${armReport.ok ? "border-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/50" : "border-rose-300 bg-rose-50/70 dark:bg-rose-950/50"}`}>
+          <div className={`rounded-xl border p-3 space-y-2 ${armReport.ok ? "border-teal-300 bg-teal-50/70 dark:bg-teal-950/50" : "border-rose-300 bg-rose-50/70 dark:bg-rose-950/50"}`}>
             <p className="text-xs font-extrabold flex items-center gap-1.5">
-              {armReport.ok ? <CheckCircle2 className="w-4 h-4 text-emerald-600" aria-hidden /> : <XCircle className="w-4 h-4 text-rose-600" aria-hidden />}
+              {armReport.ok ? <CheckCircle2 className="w-4 h-4 text-teal-600" aria-hidden /> : <XCircle className="w-4 h-4 text-rose-600" aria-hidden />}
               گزارش ثبت گام‌به‌گام در سامانه آرم
             </p>
             <ol className="space-y-1.5">
               {armReport.steps.map((s, i) => (
                 <li key={s.key} className="text-[11px] leading-5 flex gap-2">
-                  <span className={`shrink-0 w-4 h-4 rounded-full grid place-content-center ${s.status === "done" ? "bg-emerald-500 text-white" : s.status === "failed" ? "bg-rose-500 text-white" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`shrink-0 w-4 h-4 rounded-full grid place-content-center ${s.status === "done" ? "bg-teal-500 text-white" : s.status === "failed" ? "bg-rose-500 text-white" : "bg-muted text-muted-foreground"}`}>
                     {faNumber(i + 1)}
                   </span>
                   <span>
                     <b>{s.title}</b>
-                    <span className={`me-1 ms-1 ${s.status === "done" ? "text-emerald-600" : s.status === "failed" ? "text-rose-600" : "text-muted-foreground"}`}>
+                    <span className={`me-1 ms-1 ${s.status === "done" ? "text-teal-600" : s.status === "failed" ? "text-rose-600" : "text-muted-foreground"}`}>
                       {s.status === "done" ? "انجام شد" : s.status === "failed" ? "ناموفق" : "در انتظار"}
                     </span>
                     <br />
@@ -518,8 +518,8 @@ export function NewRequestDialog({ open, onOpenChange, mode, editRequest, meta, 
                 {!armToken && " جستجوی زنده نیازمند ورود با «کد پرسنلی + پیامک» است — بدون آن هم می‌توانید ادامه دهید؛ هنگام ثبت در آرم، کاربر مشتری جستجو/ایجاد می‌شود."}
               </p>
               {customerFound === true && (
-                <div className="rounded-lg border border-emerald-300 bg-emerald-50 dark:bg-emerald-950 px-3 py-2 text-[11px] flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" aria-hidden />
+                <div className="rounded-lg border border-teal-300 bg-teal-50 dark:bg-teal-950 px-3 py-2 text-[11px] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" aria-hidden />
                   مشتری موجود در سامانه آرم — به این درخواست متصل شد.
                 </div>
               )}
@@ -785,7 +785,7 @@ export function NewRequestDialog({ open, onOpenChange, mode, editRequest, meta, 
             <Button variant="outline" onClick={prev} disabled={step === 0 || saving} className="gap-1.5">
               <ChevronRight className="w-4 h-4" aria-hidden /> قبلی
             </Button>
-            <Button onClick={next} disabled={saving || (step === 0 && !customerDetermined)} className="gap-1.5 bg-gradient-to-l from-teal-600 to-teal-500 text-white">
+            <Button onClick={next} disabled={saving || (step === 0 && !customerDetermined)} className="gap-1.5 bg-gradient-to-l from-teal-600 to-cyan-500 text-white">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : step === 3 ? <Save className="w-4 h-4" aria-hidden /> : <ChevronLeft className="w-4 h-4" aria-hidden />}
               {step === 3 ? (isEdit ? "ذخیره ویرایش" : mode === "auto" ? "ثبت در سامانه آرم" : "ثبت درخواست") : "بعدی"}
             </Button>

@@ -333,7 +333,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
       {/* شاخص‌ها */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { key: "hunt", label: "فایل‌های شکار", desc: `امتیاز بالای ${faNumber(thresholds.hunt)}`, icon: Sparkles, tone: "border-emerald-500/50 bg-gradient-to-b from-emerald-500/10 to-transparent", iconCls: "text-emerald-600 dark:text-emerald-400" },
+          { key: "hunt", label: "فایل‌های شکار", desc: `امتیاز بالای ${faNumber(thresholds.hunt)}`, icon: Sparkles, tone: "border-teal-500/50 bg-gradient-to-b from-teal-500/10 to-transparent", iconCls: "text-teal-600 dark:text-teal-400" },
           { key: "follow", label: "فایل‌های پیگیری", desc: `${faNumber(thresholds.follow)} تا ${faNumber(thresholds.hunt)}`, icon: Gauge, tone: "border-amber-500/50 bg-gradient-to-b from-amber-500/10 to-transparent", iconCls: "text-amber-600 dark:text-amber-400" },
           { key: "review", label: "فایل‌های بررسی", desc: `زیر ${faNumber(thresholds.follow)}`, icon: ListFilter, tone: "border-border bg-gradient-to-b from-muted/60 to-transparent", iconCls: "text-muted-foreground" },
         ].map((b) => (
@@ -546,10 +546,10 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
                     قانون مالک: فقط فایل‌های شخصی امتیازدهی می‌شوند (غیرشخصی‌ها کامل رد)؛ پیش‌فرض — شخصی ۵۰، زیرقیمت ۲۰، سایر فاکتورهای بهینه ۲۰، مکان ۱۰. هر معیار قابل افزایش/کاهش است.
                   </p>
                   {[
-                    { key: "weightPersonal", label: "شخصی‌بودن (۵۰)", value: settingsData.settings.weightPersonal, hint: "درصد تشخیص شخصی‌بودن فایل", chip: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300", range: "bg-gradient-to-l from-emerald-600 to-emerald-400" },
+                    { key: "weightPersonal", label: "شخصی‌بودن (۵۰)", value: settingsData.settings.weightPersonal, hint: "درصد تشخیص شخصی‌بودن فایل", chip: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300", range: "bg-gradient-to-l from-teal-600 to-cyan-500" },
                     { key: "weightUnderprice", label: "زیرقیمت (۲۰)", value: settingsData.settings.weightUnderprice, hint: "درصد تشخیص زیرقیمت‌بودن", chip: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300", range: "bg-gradient-to-l from-amber-600 to-amber-400" },
                     { key: "weightOther", label: "سایر فاکتورهای بهینه (۲۰)", value: settingsData.settings.weightOther, hint: "شاهکار ایجنت — فوریت/تازگی/تکمیل داده/اصالت/آمادگی", chip: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300", range: "bg-gradient-to-l from-rose-600 to-rose-400" },
-                    { key: "weightLocation", label: "مکان (۱۰)", value: settingsData.settings.weightLocation, hint: "تطبیق مکان فایل با تنظیمات مکان شما", chip: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300", range: "bg-gradient-to-l from-teal-600 to-teal-400" },
+                    { key: "weightLocation", label: "مکان (۱۰)", value: settingsData.settings.weightLocation, hint: "تطبیق مکان فایل با تنظیمات مکان شما", chip: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300", range: "bg-gradient-to-l from-teal-600 to-cyan-500" },
                   ].map((w) => (
                     <div key={w.key} className="flex items-center gap-3">
                       <span className="text-xs w-32 shrink-0 text-muted-foreground" title={w.hint}>{w.label}</span>
@@ -657,7 +657,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
       {/* پنجره‌های سه‌گانه */}
       <Tabs value={bucket} onValueChange={setBucket}>
         <TabsList className="w-full grid grid-cols-3 h-auto p-1">
-          <TabsTrigger value="hunt" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-emerald-600 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
+          <TabsTrigger value="hunt" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-600 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <Sparkles className="w-3.5 h-3.5" aria-hidden /> شکار ({faNumber(counts.hunt)})
           </TabsTrigger>
           <TabsTrigger value="follow" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-amber-600 data-[state=active]:to-amber-500 data-[state=active]:text-white data-[state=active]:shadow-sm">

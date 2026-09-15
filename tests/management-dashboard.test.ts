@@ -1,14 +1,15 @@
 /**
  * تست معماری «داشبورد مدیریتی» — ظرف کاشی‌های مدیریتی
  * ------------------------------------------------------
- * صفحه خانه فقط کاشی‌های ریشه (فایل‌یابی، آگهی، درخواست ملک، داشبورد مدیریتی)
- * را نشان می‌دهد؛ سایر کاشی‌ها با فیلد container به داخل داشبورد مدیریتی منتقل شده‌اند.
+ * صفحه خانه کاشی‌های ریشه (فایل‌یابی، آگهی، درخواست ملک، داشبورد مدیریتی و
+ * تنظیمات عمومی به‌عنوان آخرین کاشی) را نشان می‌دهد؛ سایر کاشی‌ها با فیلد
+ * container به داخل داشبورد مدیریتی منتقل شده‌اند.
  * اجرا: bun test tests/management-dashboard.test.ts
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
 
-const ROOT_EXPECTED = ["file-finder", "listings", "requests", "management-dashboard"];
+const ROOT_EXPECTED = ["file-finder", "listings", "requests", "management-dashboard", "settings"];
 const CHILDREN_EXPECTED = [
   "transactions",
   "contracts",
@@ -19,7 +20,6 @@ const CHILDREN_EXPECTED = [
   "visits",
   "supply-demand",
   "extraction",
-  "settings",
 ];
 
 describe("معماری داشبورد مدیریتی", () => {
@@ -27,7 +27,7 @@ describe("معماری داشبورد مدیریتی", () => {
     await import("@/core/tiles/bootstrap");
   });
 
-  test("صفحه خانه فقط ۴ کاشی ریشه را نشان می‌دهد — به همین ترتیب", async () => {
+  test("صفحه خانه ۵ کاشی ریشه را نشان می‌دهد — تنظیمات عمومی آخرین کاشی", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const root = tileRegistry.listRoot("OWNER").map((t) => t.id);
     expect(root).toEqual(ROOT_EXPECTED);
@@ -36,7 +36,7 @@ describe("معماری داشبورد مدیریتی", () => {
     expect(rootConsultant).toEqual(ROOT_EXPECTED);
   });
 
-  test("۱۰ کاشی مدیریتی داخل داشبورد مدیریتی منتقل شده‌اند — به همین ترتیب", async () => {
+  test("۹ کاشی مدیریتی داخل داشبورد مدیریتی منتقل شده‌اند — به همین ترتیب", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
     expect(children).toEqual(CHILDREN_EXPECTED);
@@ -55,13 +55,14 @@ describe("معماری داشبورد مدیریتی", () => {
     for (const id of CHILDREN_EXPECTED) {
       const tile = tileRegistry.get(id)!;
       expect(tile.container).toBe("management-dashboard");
-    }
-    // همه فرزندان به‌جز تنظیمات عمومی، ایجنت اختصاصی دارند
-    for (const id of CHILDREN_EXPECTED.filter((c) => c !== "settings")) {
-      const tile = tileRegistry.get(id)!;
+      // همه کاشی‌های فرزند ظرف، ایجنت اختصاصی دارند
       expect(tile.agent).not.toBeNull();
       expect(tile.agent!.tileId).toBe(id);
     }
+    // تنظیمات عمومی دیگر فرزند نیست — ریشه است و ایجنت ندارد
+    const settings = tileRegistry.get("settings")!;
+    expect(settings.container).toBeUndefined();
+    expect(settings.agent).toBeNull();
   });
 
   test("خود کاشی داشبورد مدیریتی ظرف ندارد و در رجه‌ستری صحیح تعریف شده است", async () => {
@@ -101,6 +102,12 @@ describe("معماری داشبورد مدیریتی", () => {
       const tile = tileRegistry.get(id)!;
       expect(tile.container).toBeUndefined();
       expect(tile.agent).not.toBeNull();
+    }
+    // ظرف و تنظیمات نیز بدون ظرف‌اند (ایجنت ندارند)
+    for (const id of ["management-dashboard", "settings"]) {
+      const tile = tileRegistry.get(id)!;
+      expect(tile.container).toBeUndefined();
+      expect(tile.agent).toBeNull();
     }
   });
 });

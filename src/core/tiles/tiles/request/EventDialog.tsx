@@ -287,7 +287,7 @@ export function EventDialog({
                         <p className="font-bold flex items-center gap-1.5 flex-wrap">
                           {e.eventTypeName}
                           {e.armEventId && (
-                            <Badge className="text-[8px] gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            <Badge className="text-[8px] gap-1 bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
                               <CheckCircle2 className="w-2.5 h-2.5" aria-hidden /> همگام با آرم
                             </Badge>
                           )}
@@ -310,7 +310,7 @@ export function EventDialog({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>انصراف</Button>
-          <Button onClick={() => void submit()} disabled={saving || loading} className="gap-1.5 bg-gradient-to-l from-teal-600 to-teal-500 text-white">
+          <Button onClick={() => void submit()} disabled={saving || loading} className="gap-1.5 bg-gradient-to-l from-teal-600 to-cyan-500 text-white">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <CalendarPlus className="w-4 h-4" aria-hidden />}
             ثبت رویداد
           </Button>

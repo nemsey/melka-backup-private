@@ -54,7 +54,7 @@ interface DataSourceInfo {
 /** برچسب وضعیت بازه بر اساس درصد درخواست */
 function demandBadge(percent: number): { label: string; style: string } {
   if (percent >= 60) return { label: "تقاضای بالا", style: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" };
-  if (percent >= 40) return { label: "متعادل", style: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" };
+  if (percent >= 40) return { label: "متعادل", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" };
   if (percent > 0) return { label: "تقاضای پایین", style: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" };
   return { label: "بدون درخواست", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
 }

@@ -54,9 +54,9 @@ interface PolicyVersion {
 
 const SEVERITY_STYLE: Record<Insight["severity"], { border: string; icon: React.ReactNode; chip: string }> = {
   info: { border: "border-s-4 border-primary/70", icon: <Info className="w-5 h-5 text-primary" aria-hidden />, chip: "bg-primary/10 text-primary" },
-  positive: { border: "border-s-4 border-emerald-500/70", icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" aria-hidden />, chip: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
-  warning: { border: "border-s-4 border-amber-500/70", icon: <AlertTriangle className="w-5 h-5 text-amber-600" aria-hidden />, chip: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
-  critical: { border: "border-s-4 border-rose-500/80", icon: <XCircle className="w-5 h-5 text-rose-600" aria-hidden />, chip: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" },
+  positive: { border: "border-s-4 border-teal-500/70", icon: <CheckCircle2 className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden />, chip: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" },
+  warning: { border: "border-s-4 border-amber-500/70", icon: <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" aria-hidden />, chip: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
+  critical: { border: "border-s-4 border-rose-500/80", icon: <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" aria-hidden />, chip: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" },
 };
 
 export const DOMAIN_FA: Record<string, string> = {
@@ -220,11 +220,14 @@ export function AgentPanel({ tileId }: { tileId: string }) {
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="w-full flex flex-wrap items-center gap-2 p-3 sm:p-4 text-right hover:bg-muted/40 transition-colors cursor-pointer"
+              className="w-full flex flex-wrap items-center gap-2 p-3 sm:p-4 text-right bg-gradient-to-l from-primary/[0.06] via-transparent to-transparent hover:from-primary/[0.1] transition-colors cursor-pointer border-b border-border/50 data-[state=open]:border-transparent"
               aria-expanded={insightsOpen}
             >
               <span className="flex items-center gap-2 text-base font-extrabold">
-                <BrainCircuit className="w-5 h-5 text-primary" aria-hidden /> بینش‌های ایجنت هوشمند
+                <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 shadow-md shadow-teal-600/25 shrink-0">
+                  <BrainCircuit className="w-5 h-5 text-white" aria-hidden />
+                </span>
+                بینش‌های ایجنت هوشمند
               </span>
               {stats && (
                 <>

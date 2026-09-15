@@ -80,14 +80,14 @@ export function AuthScreen() {
   }, [masterCode, login, toast]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-primary/5 via-background to-background">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
       <main className="w-full max-w-md">
         {/* برندینگ */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/25 mb-4 tile-pop">
-            <Building2 className="w-10 h-10 text-primary-foreground" aria-hidden />
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center shadow-xl shadow-teal-600/30 ring-8 ring-primary/10 mb-4 tile-pop">
+            <Building2 className="w-10 h-10 text-white" aria-hidden />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">داشبورد هوشمند ملک تبریز</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight brand-gradient-text">داشبورد هوشمند ملک تبریز</h1>
           <p className="text-muted-foreground mt-2 text-sm sm:text-base leading-relaxed">
             لایه‌ی هوش تحلیلی و تصمیم‌یار، مکمل سامانه‌ی CRM ملک تبریز
           </p>

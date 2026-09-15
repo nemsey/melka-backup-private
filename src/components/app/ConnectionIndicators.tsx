@@ -75,7 +75,7 @@ export function ConnectionIndicators() {
 
   return (
     <section
-      className="rounded-2xl border border-primary/15 bg-gradient-to-l from-primary/5 via-emerald-500/5 to-transparent p-3.5 sm:p-4"
+      className="rounded-2xl border border-primary/15 bg-gradient-to-l from-primary/[0.07] via-cyan-500/[0.05] to-transparent p-3.5 sm:p-4"
       aria-label="وضعیت اتصال‌های سامانه‌ها"
     >
       <div className="flex items-center justify-between gap-2 flex-wrap mb-2.5">

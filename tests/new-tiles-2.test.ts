@@ -399,7 +399,9 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     expect(ids.indexOf("customer-club")).toBe(2);
     expect(ids.indexOf("finance-commission")).toBe(3);
     expect(ids.indexOf("price-index")).toBe(4);
-    expect(ids.indexOf("settings")).toBe(ids.length - 1);
+    // تنظیمات عمومی روی صفحه هوم (کاشی ریشه آخر) — نه داخل داشبورد مدیریتی
+    expect(ids).not.toContain("settings");
+    expect(tileRegistry.listRoot("OWNER").at(-1)?.id).toBe("settings");
   });
 
   test("هر کاشی جدید ایجنت اختصاصی متصل به شناسه خود دارد", async () => {

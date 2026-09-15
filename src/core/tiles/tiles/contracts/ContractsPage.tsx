@@ -49,7 +49,7 @@ interface ContractsResponse {
 function statusStyle(status: string): { label: string; style: string } {
   const label = (CONTRACT_STATUS_FA as Record<string, string>)[status] ?? status;
   if (status === "confirmedByFinance" || status === "payed") {
-    return { label, style: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" };
+    return { label, style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" };
   }
   if (status === "rejected" || status === "rejectedByFinance" || status === "rescission" || status === "deletedByFinance") {
     return { label, style: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" };
@@ -69,9 +69,9 @@ function funnelBarTone(status: string): string {
   if (status === "waitingForAddRealtors") return "bg-gradient-to-l from-amber-600 to-amber-400";
   if (status === "waitingForRealtors") return "bg-gradient-to-l from-amber-600 to-amber-500";
   if (status === "waitingForFinance") return "bg-gradient-to-l from-rose-500 to-rose-400";
-  if (status === "confirmedByFinance") return "bg-gradient-to-l from-emerald-600 to-emerald-400";
-  if (status === "waitingForDocument") return "bg-gradient-to-l from-teal-600 to-teal-400";
-  return "bg-gradient-to-l from-emerald-700 to-emerald-500";
+  if (status === "confirmedByFinance") return "bg-gradient-to-l from-teal-600 to-cyan-500";
+  if (status === "waitingForDocument") return "bg-gradient-to-l from-teal-600 to-cyan-500";
+  return "bg-gradient-to-l from-teal-700 to-cyan-500";
 }
 
 export function ContractsPage({ settings, onSettingsChange, userRole: _role, onBack: _back }: TilePageProps) {
@@ -336,14 +336,14 @@ export function ContractsPage({ settings, onSettingsChange, userRole: _role, onB
 
                 {/* خریداران */}
                 {selected.buyers.length > 0 && (
-                  <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3 space-y-2">
-                    <p className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                  <div className="rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-900 p-3 space-y-2">
+                    <p className="text-xs font-extrabold text-teal-800 dark:text-teal-300 flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5" aria-hidden /> خریدار / خریداران
                     </p>
                     {selected.buyers.map((b, i) => (
                       <div key={i} className="flex justify-between items-center bg-background/70 rounded-lg px-3 py-2">
                         <span className="inline-flex items-center gap-2 text-xs">
-                          <span className="inline-flex items-center justify-center w-5 h-5 min-w-5 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-[10px] font-bold tabular-nums">{faNumber(i + 1)}</span>
+                          <span className="inline-flex items-center justify-center w-5 h-5 min-w-5 rounded-md bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300 text-[10px] font-bold tabular-nums">{faNumber(i + 1)}</span>
                           {b.fullName}
                         </span>
                         <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">{b.mobileNumber || "—"}</span>
@@ -395,7 +395,7 @@ export function ContractsPage({ settings, onSettingsChange, userRole: _role, onB
                                   variant="secondary"
                                   className={
                                     s.confirmation === "confirm"
-                                      ? "text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                      ? "text-xs bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300"
                                       : s.confirmation === "reject"
                                         ? "text-xs bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
                                         : "text-xs bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"

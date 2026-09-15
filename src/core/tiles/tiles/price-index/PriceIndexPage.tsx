@@ -109,7 +109,7 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
         {[
           { label: "شاخص کل بازار", value: data?.overall ? faToman(data.overall.medianPerMeter) : undefined, sub: "(هر متر)", icon: Gauge, tone: "bg-primary/10 text-primary" },
           { label: "مناطق پوشش‌داده", value: data?.overall ? faNumber(data.overall.coveredAreas) : undefined, icon: MapPin, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
-          { label: "نمونه‌های بازار", value: data?.overall ? faNumber(data.overall.totalSamples) : undefined, icon: Database, tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+          { label: "نمونه‌های بازار", value: data?.overall ? faNumber(data.overall.totalSamples) : undefined, icon: Database, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
           { label: "هشدار جهش", value: data ? faNumber(data.jumps.length) : undefined, icon: Zap, tone: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
         ].map((kpi) => (
           <Card key={kpi.label} className="border-border/60">
@@ -203,7 +203,7 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
                   <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 text-[10px] font-bold tabular-nums">{faNumber(i + 1)}</span>
                   {j.areaName}
                 </span>
-                <span className={`inline-flex items-center gap-1 text-xs font-extrabold tabular-nums ${j.changePercent > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                <span className={`inline-flex items-center gap-1 text-xs font-extrabold tabular-nums ${j.changePercent > 0 ? "text-rose-600 dark:text-rose-400" : "text-teal-600 dark:text-teal-400"}`}>
                   {j.changePercent > 0 ? <ArrowUpRight className="w-3.5 h-3.5" aria-hidden /> : <ArrowDownRight className="w-3.5 h-3.5" aria-hidden />}
                   {faPercent(Math.abs(j.changePercent))} {j.changePercent > 0 ? "افزایش" : "کاهش"}
                   <span className="text-muted-foreground font-normal">({faToman(j.from)} ← {faToman(j.to)})</span>
@@ -277,7 +277,7 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
                         <span className="text-muted-foreground tabular-nums">
                           {faToman(s.medianPerMeter)}
                           {s.changePercent !== null && (
-                            <span className={`ms-1.5 font-bold ${s.changePercent > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                            <span className={`ms-1.5 font-bold ${s.changePercent > 0 ? "text-rose-600 dark:text-rose-400" : "text-teal-600 dark:text-teal-400"}`}>
                               ({s.changePercent > 0 ? "+" : "−"}{faPercent(Math.abs(s.changePercent))})
                             </span>
                           )}
@@ -287,10 +287,10 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
                         <div
                           className={`h-full rounded-full ${
                             s.changePercent !== null && s.changePercent < -15
-                              ? "bg-gradient-to-l from-emerald-600 to-emerald-400"
+                              ? "bg-gradient-to-l from-teal-600 to-cyan-500"
                               : s.changePercent !== null && s.changePercent > 15
                                 ? "bg-gradient-to-l from-rose-500 to-rose-400"
-                                : "bg-gradient-to-l from-teal-600 to-teal-400"
+                                : "bg-gradient-to-l from-teal-600 to-cyan-500"
                           }`}
                           style={{ width: `${Math.max(6, (s.medianPerMeter / maxMedian) * 100)}%` }}
                           title={`${s.areaName}: میانه ${faToman(s.medianPerMeter)} · بازه ${faToman(s.p25PerMeter)} تا ${faToman(s.p75PerMeter)} · ${faNumber(s.sampleCount)} نمونه`}
@@ -416,7 +416,7 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
                                 className={`text-xs tabular-nums ${
                                   d.deviationPercent > 0
                                     ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
-                                    : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                    : "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300"
                                 }`}
                               >
                                 {d.deviationPercent > 0 ? "+" : "−"}{faPercent(Math.abs(d.deviationPercent))}

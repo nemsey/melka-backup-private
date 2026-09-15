@@ -143,7 +143,7 @@ export function RequestsPage({ settings }: TilePageProps) {
             <Button variant="outline" className="gap-1.5 border-teal-400 text-teal-700 hover:bg-teal-50 dark:text-teal-300" onClick={() => openWizard("manual")}>
               <UserRound className="w-4 h-4" aria-hidden /> ثبت دستی (مالک حضوری)
             </Button>
-            <Button className="gap-1.5 bg-gradient-to-l from-teal-600 to-teal-500 text-white shadow" onClick={() => openWizard("auto")}>
+            <Button className="gap-1.5 bg-gradient-to-l from-teal-600 to-cyan-500 text-white shadow" onClick={() => openWizard("auto")}>
               <Zap className="w-4 h-4" aria-hidden /> ثبت اتوماتیک در آرم
             </Button>
           </div>
@@ -153,9 +153,9 @@ export function RequestsPage({ settings }: TilePageProps) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
             { label: "کل درخواست‌ها", value: stats?.total ?? 0, icon: FileStack, cls: "from-stone-600 to-stone-400" },
-            { label: "ثبت دستی", value: stats?.manual ?? 0, icon: UserRound, cls: "from-teal-600 to-teal-400" },
+            { label: "ثبت دستی", value: stats?.manual ?? 0, icon: UserRound, cls: "from-teal-600 to-cyan-500" },
             { label: "ثبت اتوماتیک", value: stats?.auto ?? 0, icon: Zap, cls: "from-amber-600 to-amber-400" },
-            { label: "ثبت‌شده در آرم", value: stats?.armRegistered ?? 0, icon: UploadCloud, cls: "from-emerald-600 to-emerald-400" },
+            { label: "ثبت‌شده در آرم", value: stats?.armRegistered ?? 0, icon: UploadCloud, cls: "from-teal-600 to-cyan-500" },
             { label: "رویدادها (این هفته)", value: stats?.eventsThisWeek ?? 0, icon: CalendarPlus, cls: "from-rose-600 to-rose-400" },
             { label: "آمادهٔ ثبت در آرم", value: stats?.armPending ?? 0, icon: ClipboardList, cls: "from-amber-500 to-amber-300" },
           ].map((kpi, i) => {
@@ -228,7 +228,7 @@ export function RequestsPage({ settings }: TilePageProps) {
               <Button variant="outline" className="gap-1.5" onClick={() => openWizard("manual")}>
                 <Plus className="w-4 h-4" aria-hidden /> ثبت دستی
               </Button>
-              <Button className="gap-1.5 bg-gradient-to-l from-teal-600 to-teal-500 text-white" onClick={() => openWizard("auto")}>
+              <Button className="gap-1.5 bg-gradient-to-l from-teal-600 to-cyan-500 text-white" onClick={() => openWizard("auto")}>
                 <Zap className="w-4 h-4" aria-hidden /> ثبت اتوماتیک
               </Button>
             </div>

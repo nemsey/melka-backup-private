@@ -255,7 +255,7 @@ export function SettingsPage({ onBack }: TilePageProps) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="rounded-lg border bg-card p-3 flex items-center gap-2">
                   {conn.status.services?.some((s) => s.databaseUp) ? (
-                    <Wifi className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                    <Wifi className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                   ) : (
                     <WifiOff className="w-4 h-4 text-amber-600" aria-hidden />
                   )}
@@ -272,7 +272,7 @@ export function SettingsPage({ onBack }: TilePageProps) {
                 </div>
                 <div className="rounded-lg border bg-card p-3">
                   <p className="text-xs text-muted-foreground">حالت اتصال</p>
-                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">اتصال واقعی</p>
+                  <p className="text-sm font-bold text-teal-700 dark:text-teal-400">اتصال واقعی</p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
                   <p className="text-xs text-muted-foreground">زمان پاسخ</p>
@@ -293,7 +293,7 @@ export function SettingsPage({ onBack }: TilePageProps) {
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {s.databaseUp ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 gap-1">
+                          <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 gap-1">
                             <Wifi className="w-3 h-3" aria-hidden /> سالم
                           </Badge>
                         ) : s.reachable ? (

@@ -24,10 +24,10 @@ export function AppHeader() {
   const logout = useAppStore((s) => s.logout);
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 border-b border-primary/10 glass">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 dark:from-emerald-500 dark:to-emerald-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/25">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-lg shadow-teal-600/30 ring-4 ring-primary/10">
             <Building2 className="w-5 h-5 text-white" aria-hidden />
           </div>
           <div className="min-w-0">
@@ -61,7 +61,7 @@ export function AppHeader() {
                 </Avatar>
                 <span className="hidden md:block text-sm font-medium max-w-32 truncate">{user?.displayName}</span>
                 {user?.role === "OWNER" && (
-                  <Badge className="hidden sm:inline-flex bg-amber-500 hover:bg-amber-500 text-amber-950">مالک</Badge>
+                  <Badge className="hidden sm:inline-flex border-transparent bg-gradient-to-l from-amber-600 to-orange-700 text-white hover:from-amber-600 hover:to-orange-700 shadow-sm shadow-amber-700/25">مالک</Badge>
                 )}
                 <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden />
               </button>

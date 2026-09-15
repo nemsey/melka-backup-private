@@ -132,7 +132,7 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "کل بازدیدها", value: summary?.totalCount, icon: Eye, tone: "bg-primary/10 text-primary" },
-          { label: "بررسی‌شده", value: summary?.checkedCount, icon: CheckCircle2, tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+          { label: "بررسی‌شده", value: summary?.checkedCount, icon: CheckCircle2, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
           { label: "آگهی متمایز", value: summary?.distinctPropertyCodes, icon: Hash, tone: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
           { label: "مشتری متمایز", value: summary?.distinctRequesters, icon: Users, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
         ].map((kpi) => (
@@ -299,7 +299,7 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
                       <TableCell className="max-w-[9rem] truncate">{r.requesterName}</TableCell>
                       <TableCell className="max-w-[9rem] truncate">
                         <span className="inline-flex items-center gap-1">
-                          <UserCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                          <UserCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden />
                           {r.checkerName}
                         </span>
                       </TableCell>
@@ -307,7 +307,7 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
                       <TableCell className="text-xs whitespace-nowrap">{faJalaliShortDateTime(r.createdAt)}</TableCell>
                       <TableCell className="text-xs whitespace-nowrap">
                         {r.checkTime ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{faJalaliShortDateTime(r.checkTime)}</span>
+                          <span className="text-teal-600 dark:text-teal-400 font-bold">{faJalaliShortDateTime(r.checkTime)}</span>
                         ) : (
                           <Badge variant="outline" className="gap-1 text-xs">
                             <Clock className="w-3 h-3" aria-hidden /> در انتظار

@@ -45,7 +45,7 @@ export interface DivarAdRow {
 
 /** برچسب/سبک نوع آگهی‌دهنده — هم‌خانواده پالت زمرد/کهربای پروژه */
 const PUBLISHER_CHIPS: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; cls: string }> = {
-  personal: { label: "شخصی (مالک)", icon: ShieldCheck, cls: "text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800" },
+  personal: { label: "شخصی (مالک)", icon: ShieldCheck, cls: "text-teal-700 dark:text-teal-400 border-teal-300 dark:border-teal-800" },
   agent: { label: "مشاور املاک", icon: Briefcase, cls: "text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800" },
   department: { label: "دپارتمان املاک", icon: Briefcase, cls: "text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800" },
   business: { label: "کسب‌وکار املاک", icon: Briefcase, cls: "text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800" },
@@ -70,8 +70,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 const BUCKET_STYLES: Record<string, { label: string; chip: string; ring: string }> = {
   hunt: {
     label: "شکار",
-    chip: "bg-gradient-to-l from-emerald-600 to-emerald-500 text-white shadow-sm shadow-emerald-600/30",
-    ring: "ring-2 ring-emerald-500/60 border-emerald-200/70 dark:border-emerald-900/60",
+    chip: "bg-gradient-to-l from-teal-600 to-cyan-500 text-white shadow-sm shadow-teal-600/30",
+    ring: "ring-2 ring-teal-500/60 border-teal-200/70 dark:border-teal-900/60",
   },
   follow: {
     label: "پیگیری",
@@ -84,10 +84,10 @@ const BUCKET_STYLES: Record<string, { label: string; chip: string; ring: string 
 /** رنگ اختصاصی چهار معیار — پالت زمرد/کهربا/رز/فیروزه (بدون آبی/بنفش) */
 const CRITERION_TONES: Record<string, { track: string; bar: string; text: string; icon: string }> = {
   personal: {
-    track: "bg-emerald-500/15",
-    bar: "bg-gradient-to-l from-emerald-600 to-emerald-400",
-    text: "text-emerald-700 dark:text-emerald-400",
-    icon: "text-emerald-600 dark:text-emerald-400",
+    track: "bg-teal-500/15",
+    bar: "bg-gradient-to-l from-teal-600 to-cyan-500",
+    text: "text-teal-700 dark:text-teal-400",
+    icon: "text-teal-600 dark:text-teal-400",
   },
   underprice: {
     track: "bg-amber-500/15",
@@ -103,7 +103,7 @@ const CRITERION_TONES: Record<string, { track: string; bar: string; text: string
   },
   location: {
     track: "bg-teal-500/15",
-    bar: "bg-gradient-to-l from-teal-600 to-teal-400",
+    bar: "bg-gradient-to-l from-teal-600 to-cyan-500",
     text: "text-teal-700 dark:text-teal-400",
     icon: "text-teal-600 dark:text-teal-400",
   },
@@ -260,7 +260,7 @@ export function AdCard({
         <Button variant="outline" size="sm" className="gap-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900" onClick={() => onReject(ad)} disabled={busy} aria-label="رد آگهی با چک‌لیست دلایل">
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <XCircle className="w-3.5 h-3.5" aria-hidden />} رد آگهی
         </Button>
-        <Button size="sm" className="gap-1.5 bg-gradient-to-l from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 shadow-sm shadow-emerald-600/25" onClick={() => onRegister(ad)} disabled={busy} aria-label="ثبت آگهی در سامانه آرم">
+        <Button size="sm" className="gap-1.5 bg-gradient-to-l from-teal-600 to-cyan-500 hover:from-teal-700 hover:to-cyan-600 shadow-sm shadow-teal-600/25" onClick={() => onRegister(ad)} disabled={busy} aria-label="ثبت آگهی در سامانه آرم">
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <UploadCloud className="w-3.5 h-3.5" aria-hidden />} ثبت آگهی
         </Button>
       </div>

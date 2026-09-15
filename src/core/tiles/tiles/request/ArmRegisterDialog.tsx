@@ -120,7 +120,7 @@ export function ArmRegisterDialog({
       <DialogContent dir="rtl" className="max-w-xl max-h-[92svh] overflow-y-auto">
         <DialogHeader className="text-right space-y-2 items-start">
           <DialogTitle className="text-right flex items-center gap-2">
-            <UploadCloud className="w-5 h-5 text-emerald-600" aria-hidden /> ثبت گام‌به‌گام در سامانه ARM
+            <UploadCloud className="w-5 h-5 text-teal-600" aria-hidden /> ثبت گام‌به‌گام در سامانه ARM
           </DialogTitle>
           <DialogDescription className="text-right leading-relaxed">
             «{request.title}» — ثبت همانند یک کاربر عادی، مرحله به مرحله و بدون دور زدن هیچ گامی (عین new-request-page خود سامانه).
@@ -140,10 +140,10 @@ export function ArmRegisterDialog({
                 <span className="font-bold">آمادگی ۴ گامی</span>
                 <span className="tabular-nums text-muted-foreground">{faNumber(request.completeness.completeCount)} از {faNumber(4)}</span>
               </div>
-              <Progress value={readyPct} indicatorClassName={readyPct === 100 ? "bg-gradient-to-l from-emerald-600 to-emerald-400" : "bg-gradient-to-l from-teal-600 to-teal-400"} />
+              <Progress value={readyPct} indicatorClassName={readyPct === 100 ? "bg-gradient-to-l from-teal-600 to-cyan-500" : "bg-gradient-to-l from-teal-600 to-cyan-500"} />
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
                 {request.completeness.steps.map((s) => (
-                  <span key={s.step} className={s.complete ? "text-emerald-700 dark:text-emerald-300" : "text-rose-600"}>
+                  <span key={s.step} className={s.complete ? "text-teal-700 dark:text-teal-300" : "text-rose-600"}>
                     {s.label} {s.complete ? "✓" : "✗"}
                   </span>
                 ))}
@@ -152,7 +152,7 @@ export function ArmRegisterDialog({
 
             {/* پیش‌نمایش مشتری — عین owner-info-step */}
             {preview?.customerPreview && (
-              <div className={`rounded-xl border p-3 text-[11px] leading-5 flex items-start gap-2 ${preview.customerPreview.found ? "border-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/40" : "border-amber-300 bg-amber-50/70 dark:bg-amber-950/40"}`}>
+              <div className={`rounded-xl border p-3 text-[11px] leading-5 flex items-start gap-2 ${preview.customerPreview.found ? "border-teal-300 bg-teal-50/70 dark:bg-teal-950/40" : "border-amber-300 bg-amber-50/70 dark:bg-amber-950/40"}`}>
                 <UserRound className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
                 <div>
                   <b>گام ۱ — جستجوی مشتری در آرم:</b>{" "}
@@ -178,7 +178,7 @@ export function ArmRegisterDialog({
                 <ol className="space-y-1.5">
                   {steps.map((s, i) => (
                     <li key={`${s.key}-${i}`} className="rounded-lg border p-2.5 text-[11px] leading-5 flex gap-2">
-                      <span className={`shrink-0 w-5 h-5 rounded-full grid place-content-center ${s.status === "done" ? "bg-emerald-500 text-white" : s.status === "failed" ? "bg-rose-500 text-white" : "bg-muted text-muted-foreground"}`}>
+                      <span className={`shrink-0 w-5 h-5 rounded-full grid place-content-center ${s.status === "done" ? "bg-teal-500 text-white" : s.status === "failed" ? "bg-rose-500 text-white" : "bg-muted text-muted-foreground"}`}>
                         {s.status === "done" ? <CheckCircle2 className="w-3 h-3" aria-hidden /> : s.status === "failed" ? <XCircle className="w-3 h-3" aria-hidden /> : faNumber(i + 1)}
                       </span>
                       <div className="min-w-0">
@@ -193,7 +193,7 @@ export function ArmRegisterDialog({
 
             {/* نتیجه نهایی */}
             {report && (
-              <div className={`rounded-xl border p-3 text-[11px] ${report.ok ? "border-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/40" : "border-rose-300 bg-rose-50/70 dark:bg-rose-950/40"}`}>
+              <div className={`rounded-xl border p-3 text-[11px] ${report.ok ? "border-teal-300 bg-teal-50/70 dark:bg-teal-950/40" : "border-rose-300 bg-rose-50/70 dark:bg-rose-950/40"}`}>
                 {report.ok ? (
                   <>
                     درخواست در سامانه آرم ثبت شد (شناسه: {report.armRequestId ?? "—"}).
@@ -224,7 +224,7 @@ export function ArmRegisterDialog({
           <Button
             onClick={() => void execute("create")}
             disabled={executing || loading || readyPct < 100 || !preview?.requirements.armToken}
-            className="gap-1.5 bg-gradient-to-l from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600"
+            className="gap-1.5 bg-gradient-to-l from-teal-600 to-cyan-500 text-white hover:from-teal-700 hover:to-cyan-600"
           >
             {executing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <FileSignature className="w-4 h-4" aria-hidden />}
             ثبت نهایی در سامانه آرم

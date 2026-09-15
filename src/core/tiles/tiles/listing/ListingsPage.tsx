@@ -114,8 +114,8 @@ export function ListingsPage({ settings, onSettingsChange }: TilePageProps) {
           {[
             { label: "کل فایل‌ها", value: stats?.total ?? 0, icon: FileStack, cls: "from-stone-600 to-stone-400" },
             { label: "ثبت دستی", value: stats?.manual ?? 0, icon: UserRound, cls: "from-amber-600 to-amber-400" },
-            { label: "از فایل‌یابی", value: stats?.fromDivar ?? 0, icon: Megaphone, cls: "from-teal-600 to-teal-400" },
-            { label: "منتقل به آرم", value: stats?.crmTransferred ?? 0, icon: UploadCloud, cls: "from-emerald-600 to-emerald-400" },
+            { label: "از فایل‌یابی", value: stats?.fromDivar ?? 0, icon: Megaphone, cls: "from-teal-600 to-cyan-500" },
+            { label: "منتقل به آرم", value: stats?.crmTransferred ?? 0, icon: UploadCloud, cls: "from-teal-600 to-cyan-500" },
             { label: "منتشر در اینستاگرام", value: stats?.instagramPublished ?? 0, icon: Instagram, cls: "from-rose-600 to-rose-400" },
             { label: "در انتظار اقدام", value: stats?.pendingBoth ?? 0, icon: ClipboardCheck, cls: "from-amber-500 to-amber-300" },
           ].map((kpi, i) => {

@@ -197,13 +197,13 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
               {data.ad.publisher ? (
                 <div className={`rounded-xl border p-3 space-y-2 ${
                   data.ad.publisher.type === "personal"
-                    ? "border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20"
+                    ? "border-teal-200 dark:border-teal-900/60 bg-teal-50/50 dark:bg-teal-950/20"
                     : "border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20"
                 }`}>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 min-w-0">
                       {data.ad.publisher.type === "personal" ? (
-                        <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden />
+                        <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden />
                       ) : (
                         <Briefcase className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
                       )}
@@ -246,16 +246,16 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
             <div>
               <h4 className="text-sm font-bold mb-2 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-primary" aria-hidden /> تحلیل هوشمند امتیازدهی</h4>
               <div className="space-y-3">
-                <div className="rounded-xl border p-3 space-y-2 border-emerald-200/70 dark:border-emerald-900/60 bg-emerald-50/30 dark:bg-emerald-950/10">
+                <div className="rounded-xl border p-3 space-y-2 border-teal-200/70 dark:border-teal-900/60 bg-teal-50/30 dark:bg-teal-950/10">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400"><UserCheck className="w-3.5 h-3.5" aria-hidden /> شخصی‌بودن: {faNumber(Math.round(data.analysis.personal.score))}٪</span>
+                    <span className="text-xs font-bold flex items-center gap-1.5 text-teal-700 dark:text-teal-400"><UserCheck className="w-3.5 h-3.5" aria-hidden /> شخصی‌بودن: {faNumber(Math.round(data.analysis.personal.score))}٪</span>
                     {data.analysis.personal.isBroker ? (
                       <Badge variant="destructive" className="text-[10px]">{data.ad.publisher && data.ad.publisher.type !== "personal" ? data.ad.publisher.typeLabel : "مشاور املاک"}</Badge>
                     ) : (
                       <Badge variant="secondary" className="text-[10px] gap-1"><ShieldCheck className="w-3 h-3" aria-hidden /> {data.analysis.personal.confidence === "high" ? "شخصی با اطمینان بالا" : "احتمالاً شخصی"}</Badge>
                     )}
                   </div>
-                  <Progress value={data.analysis.personal.score} className="h-1.5 bg-emerald-500/15" indicatorClassName="bg-gradient-to-l from-emerald-600 to-emerald-400" aria-label="امتیاز شخصی بودن" />
+                  <Progress value={data.analysis.personal.score} className="h-1.5 bg-teal-500/15" indicatorClassName="bg-gradient-to-l from-teal-600 to-cyan-500" aria-label="امتیاز شخصی بودن" />
                   <p className="text-[11px] text-muted-foreground leading-5">
                     {data.analysis.personal.signals.filter((s) => s.hit).map((s) => `«${s.label}» (${s.evidence})`).join("؛ ") || "هیچ سیگنال متنی قوی یافت نشد."}
                   </p>
@@ -300,7 +300,7 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
                       <Badge variant="secondary" className="text-[10px]">{data.analysis.location.lineName} — {data.analysis.location.areaName}</Badge>
                     )}
                   </div>
-                  <Progress value={data.analysis.location.score} className="h-1.5 bg-teal-500/15" indicatorClassName="bg-gradient-to-l from-teal-600 to-teal-400" aria-label="امتیاز مکان" />
+                  <Progress value={data.analysis.location.score} className="h-1.5 bg-teal-500/15" indicatorClassName="bg-gradient-to-l from-teal-600 to-cyan-500" aria-label="امتیاز مکان" />
                   <p className="text-[11px] text-muted-foreground leading-5">{data.analysis.location.reason}</p>
                 </div>
               </div>

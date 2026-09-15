@@ -35,8 +35,8 @@ export const LIFECYCLE_COLOR: Record<LifecycleStage, string> = {
   NEW: "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-300 dark:bg-sky-950 dark:border-sky-900",
   ENGAGED: "text-teal-700 bg-teal-50 border-teal-200 dark:text-teal-300 dark:bg-teal-950 dark:border-teal-900",
   SERIOUS: "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950 dark:border-amber-900",
-  READY_TO_DEAL: "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950 dark:border-emerald-900",
-  CONVERTED: "text-emerald-800 bg-emerald-100 border-emerald-300 dark:text-emerald-200 dark:bg-emerald-900 dark:border-emerald-700",
+  READY_TO_DEAL: "text-teal-700 bg-teal-50 border-teal-200 dark:text-teal-300 dark:bg-teal-950 dark:border-teal-900",
+  CONVERTED: "text-teal-800 bg-teal-100 border-teal-300 dark:text-teal-200 dark:bg-teal-900 dark:border-teal-700",
   DORMANT: "text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-950 dark:border-rose-900",
 };
 

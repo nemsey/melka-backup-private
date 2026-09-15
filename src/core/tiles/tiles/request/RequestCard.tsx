@@ -58,7 +58,7 @@ export function RequestCard({
               <h4 className="font-bold text-sm leading-5">{request.title}</h4>
               <Badge variant="outline" className="text-[9px]">{request.code}</Badge>
               {request.armRequestId ? (
-                <Badge className="text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 gap-1">
+                <Badge className="text-[9px] bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 gap-1">
                   <UploadCloud className="w-3 h-3" aria-hidden /> ثبت‌شده در آرم
                 </Badge>
               ) : (
@@ -107,12 +107,12 @@ export function RequestCard({
               <span>کامل‌بودن ۴ گام (عین فرم آرم)</span>
               <span className="tabular-nums">{faNumber(comp.completeCount)} از {faNumber(comp.total)}</span>
             </div>
-            <Progress value={pct} indicatorClassName={pct === 100 ? "bg-gradient-to-l from-emerald-600 to-emerald-400" : "bg-gradient-to-l from-teal-600 to-teal-400"} />
+            <Progress value={pct} indicatorClassName={pct === 100 ? "bg-gradient-to-l from-teal-600 to-cyan-500" : "bg-gradient-to-l from-teal-600 to-cyan-500"} />
             <div className="flex items-center gap-3 flex-wrap">
               {comp.steps.map((s, i) => {
                 const Icon = STEP_ICONS[i];
                 return (
-                  <span key={s.step} className={`inline-flex items-center gap-1 text-[9px] ${s.complete ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}`} title={s.label}>
+                  <span key={s.step} className={`inline-flex items-center gap-1 text-[9px] ${s.complete ? "text-teal-700 dark:text-teal-300" : "text-muted-foreground"}`} title={s.label}>
                     <Icon className="w-2.5 h-2.5" aria-hidden /> {s.label}
                     {s.complete ? " ✓" : " ○"}
                   </span>
@@ -131,7 +131,7 @@ export function RequestCard({
             <CalendarPlus className="w-3.5 h-3.5" aria-hidden /> ثبت رویداد
           </Button>
           {!request.armRequestId && (
-            <Button size="sm" className="gap-1.5 h-8 bg-gradient-to-l from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600" onClick={() => onRegister(request)} disabled={busy}>
+            <Button size="sm" className="gap-1.5 h-8 bg-gradient-to-l from-teal-600 to-cyan-500 text-white hover:from-teal-700 hover:to-cyan-600" onClick={() => onRegister(request)} disabled={busy}>
               <UploadCloud className="w-3.5 h-3.5" aria-hidden /> ثبت در سامانه ARM
             </Button>
           )}

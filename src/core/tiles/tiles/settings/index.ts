@@ -1,6 +1,7 @@
 /**
  * ماژول کاشی «تنظیمات عمومی» — تعریف و ثبت
  * بدون ایجنت (تنظیمات ماهیتاً عمومی‌اند، نه تحلیلی).
+ * روی صفحه خانه به‌عنوان آخرین کاشی ریشه نمایش داده می‌شود (order: 99).
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
@@ -19,7 +20,6 @@ export const settingsTile = defineTile({
   accent: "stone",
   component: SettingsPage,
   order: 99,
-  container: "management-dashboard",
   agent: null,
   settings: [],
 });

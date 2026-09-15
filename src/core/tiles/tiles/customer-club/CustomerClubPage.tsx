@@ -37,7 +37,7 @@ interface ClubResponse {
 }
 
 function roleBadge(role: "BUYER" | "SELLER" | "EXPERT"): { label: string; style: string } {
-  if (role === "BUYER") return { label: "خریدار", style: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" };
+  if (role === "BUYER") return { label: "خریدار", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" };
   if (role === "SELLER") return { label: "فروشنده", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" };
   return { label: "مشاور", style: "bg-primary/10 text-primary" };
 }
@@ -71,7 +71,7 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
     ? [
         { key: "characters", label: "شخصیت مشتریان", icon: Fingerprint, tone: "text-rose-600 bg-rose-100 dark:bg-rose-950 dark:text-rose-300", items: s.catalogs.characters },
         { key: "jobs", label: "شغل مشتریان", icon: Briefcase, tone: "text-amber-600 bg-amber-100 dark:bg-amber-950 dark:text-amber-300", items: s.catalogs.jobs },
-        { key: "roles", label: "نقش مشتریان", icon: Users, tone: "text-emerald-600 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300", items: s.catalogs.roles },
+        { key: "roles", label: "نقش مشتریان", icon: Users, tone: "text-teal-600 bg-teal-100 dark:bg-teal-950 dark:text-teal-300", items: s.catalogs.roles },
         { key: "seriousness", label: "جدیت مشتریان", icon: Heart, tone: "text-teal-600 bg-teal-100 dark:bg-teal-950 dark:text-teal-300", items: s.catalogs.seriousness },
       ]
     : [];
@@ -85,7 +85,7 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
         {[
           { label: "اعضای جامعه", value: s ? faNumber(s.totalMembers) : undefined, icon: Users, tone: "bg-primary/10 text-primary" },
           { label: "مشتریان تکراری", value: s ? `${faNumber(s.repeatCustomers)} (${faPercent(s.totalMembers > 0 ? Math.round((s.repeatCustomers / s.totalMembers) * 100) : 0)})` : undefined, icon: Repeat, tone: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" },
-          { label: "خریداران", value: s ? faNumber(s.buyers) : undefined, icon: TrendingUp, tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+          { label: "خریداران", value: s ? faNumber(s.buyers) : undefined, icon: TrendingUp, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
           { label: "فروشندگان", value: s ? faNumber(s.sellers) : undefined, icon: Building2, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
         ].map((kpi) => (
           <Card key={kpi.label} className="border-border/60">
@@ -260,7 +260,7 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
                   {s.topCustomers.map((m, i) => (
                     <div key={m.name} className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/40 px-3 py-2.5">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="inline-flex items-center justify-center w-6 h-6 min-w-6 rounded-lg bg-gradient-to-b from-emerald-600 to-emerald-400 text-white text-[10px] font-bold tabular-nums">
+                        <span className="inline-flex items-center justify-center w-6 h-6 min-w-6 rounded-lg bg-gradient-to-b from-teal-600 to-cyan-500 text-white text-[10px] font-bold tabular-nums">
                           {faNumber(i + 1)}
                         </span>
                         <div className="min-w-0">

@@ -162,7 +162,7 @@ export function PmConnectionSection() {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             {conn?.status === "connected" ? (
-              <Badge className="gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              <Badge className="gap-1 bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
                 <ShieldCheck className="w-3 h-3" aria-hidden /> متصل{conn.displayName ? ` — ${conn.displayName}` : ""}
               </Badge>
             ) : conn?.status === "pending" ? (
@@ -196,7 +196,7 @@ export function PmConnectionSection() {
         {conn?.status === "connected" ? (
           <div className="rounded-lg border bg-muted/40 p-3 text-xs leading-relaxed">
             <p className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+              <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
               حساب پرسنلی «{conn.displayName ?? conn.personnelCode ?? "—"}» متصل است — چراغ «حساب شخصی PM» در صفحه خانه سبز است.
             </p>
           </div>

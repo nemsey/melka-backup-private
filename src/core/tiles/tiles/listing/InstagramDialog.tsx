@@ -254,7 +254,7 @@ export function InstagramDialog({
             {/* نتیجه انتشار */}
             {result && (
               <Alert>
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 <AlertTitle className="text-xs">{result.message}</AlertTitle>
                 <AlertDescription className="text-xs">
                   شناسه رسامه: <span dir="ltr" className="font-mono">{result.mediaId}</span>

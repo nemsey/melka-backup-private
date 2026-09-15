@@ -3,9 +3,9 @@
 /**
  * خانه داشبورد — چیدمان کاشی‌ای
  * ------------------------------------------------------
- * صفحه خانه فقط کارگاه اصلی دفتر را نشان می‌دهد: فایل‌یابی، آگهی، درخواست ملک
- * و کاشی «داشبورد مدیریتی» (ظرف همه کاشی‌های تحلیلی/مدیریتی).
- * کاشی‌های داخل ظرف در خود همان کاشی نمایش داده می‌شوند (listChildren).
+ * صفحه خانه: کارگاه اصلی دفتر (فایل‌یابی، آگهی، درخواست ملک) +
+ * کاشی «داشبورد مدیریتی» (ظرف کاشی‌های تحلیلی/مدیریتی) +
+ * کاشی «تنظیمات عمومی» به‌عنوان آخرین کاشی صفحه هوم.
  */
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,23 +31,28 @@ export function DashboardHome() {
       {/* نشانگرهای اتصال — هفت چراغ سبز/قرمز (الزام مالک) */}
       <ConnectionIndicators />
 
-      {/* خوش‌آمد و خلاصه وضعیت */}
+      {/* خوش‌آمد و خلاصه وضعیت — هیروی برند */}
       <section className="mb-8 mt-5">
-        <div className="rounded-2xl border border-primary/15 bg-gradient-to-l from-primary/10 via-emerald-500/5 to-transparent p-5 sm:p-6">
-          <p className="text-xs text-muted-foreground">
+        <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-l from-primary/10 via-cyan-500/[0.06] to-transparent p-5 sm:p-7">
+          {/* هاله‌های تزئینی برند — فیروزه و مس */}
+          <div className="pointer-events-none absolute -top-16 -start-16 w-56 h-56 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+          <div className="pointer-events-none absolute -bottom-20 -end-10 w-56 h-56 rounded-full bg-accent/15 blur-3xl" aria-hidden />
+
+          <p className="relative text-xs text-muted-foreground">
             {displayName ? `خوش آمدید، ${displayName}` : "خوش آمدید"} — لایه هوش تحلیلی ملک تبریز
           </p>
-          <h2 className="text-xl sm:text-2xl font-extrabold mt-1 bg-gradient-to-l from-emerald-700 via-emerald-600 to-amber-600 dark:from-emerald-400 dark:via-emerald-300 dark:to-amber-400 bg-clip-text text-transparent">
+          <h2 className="relative text-xl sm:text-3xl font-extrabold mt-1.5 brand-gradient-text">
             کارگاه اصلی دفتر
           </h2>
-          <p className="text-muted-foreground mt-1.5 text-sm sm:text-base leading-relaxed max-w-3xl">
-            سه کاشی اصلی روزمره دفتر (فایل‌یابی، آگهی، درخواست ملک) همین‌جا در دسترس‌اند؛
-            تحلیل‌ها و مدیریت‌ها درون «داشبورد مدیریتی» گرد آمده‌اند — {faNumber(managementChildren.length)} کاشی مدیریتی با ایجنت هوشمند اختصاصی.
+          <p className="relative text-muted-foreground mt-2 text-sm sm:text-base leading-relaxed max-w-3xl">
+            سه کاشی روزمره دفتر (فایل‌یابی، آگهی، درخواست ملک) همین‌جا در دسترس‌اند؛
+            تحلیل‌ها و مدیریت‌ها درون «داشبورد مدیریتی» گرد آمده‌اند — {faNumber(managementChildren.length)} کاشی مدیریتی با ایجنت هوشمند اختصاصی —
+            و «تنظیمات عمومی» آخرین کاشی همین صفحه است.
           </p>
         </div>
       </section>
 
-      {/* شبکه کاشی‌های اصلی — ریسپانسیو: ۱ ستون موبایل / ۲ تبلت / ۳ دسکتاپ */}
+      {/* شبکه کاشی‌های صفحه هوم — ریسپانسیو: ۱ ستون موبایل / ۲ تبلت / ۳ دسکتاپ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {tiles.map((t, i) => (
           <TileCard
@@ -83,14 +88,14 @@ export function DashboardHome() {
           className="tile-press mt-4 text-right focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl w-full"
           aria-label="رفتن به داشبورد مدیریتی"
         >
-          <Card className="border-dashed border-emerald-500/30 bg-emerald-500/[0.03] hover:bg-emerald-500/[0.06] transition-colors">
+          <Card className="border-dashed border-teal-500/30 bg-teal-500/[0.03] hover:bg-teal-500/[0.06] transition-colors">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center shadow-md shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center shadow-md shadow-teal-600/25 shrink-0">
                 <LayoutDashboard className="w-5 h-5 text-white" aria-hidden />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 جست‌وجوی تحلیل‌ها؟ <b className="text-foreground">داشبورد مدیریتی</b> را باز کنید —
-                معاملات، قراردادها، باشگاه مشتریان، مالی و کمیسیون، شاخص قیمت، کارشناسان، بازدیدها، عرضه و تقاضا، استخراج و تنظیمات عمومی.
+                معاملات، قراردادها، باشگاه مشتریان، مالی و کمیسیون، شاخص قیمت، کارشناسان، بازدیدها، عرضه و تقاضا و استخراج اطلاعات.
               </p>
             </CardContent>
           </Card>
@@ -99,7 +104,7 @@ export function DashboardHome() {
 
       <footer className="mt-auto pt-6 border-t text-center text-xs text-muted-foreground">
         <p>مالک و برنامه‌نویس و طراح: سید نعمت اله سیدی</p>
-        <p className="mt-1">نسخه ۱٫۶٫۰ — داشبورد هوشمند چندعامله ملک تبریز</p>
+        <p className="mt-1">نسخه ۱٫۷٫۰ — هویت بصری «فیروزه تبریز» — داشبورد هوشمند چندعامله ملک تبریز</p>
       </footer>
     </main>
   );

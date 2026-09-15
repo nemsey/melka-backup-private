@@ -73,7 +73,7 @@ type Filters = typeof EMPTY;
 
 /** رتبه همکاری بر اساس مجموع تعامل‌ها */
 function cooperationLevel(total: number): { label: string; style: string } {
-  if (total >= 20) return { label: "محور همکاری", style: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" };
+  if (total >= 20) return { label: "محور همکاری", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" };
   if (total >= 5) return { label: "همکار پرتکرار", style: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" };
   if (total > 0) return { label: "کم‌تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
   return { label: "بدون تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
@@ -165,8 +165,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shrink-0">
-                <UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
+                <UserCheck className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden />
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">کاربران فعال</p>
@@ -457,7 +457,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         <TableCell className="hidden sm:table-cell text-xs">{e.businessTitle}</TableCell>
                         <TableCell className="hidden lg:table-cell text-xs whitespace-nowrap">{faJalaliShort(e.createdAt)}</TableCell>
                         <TableCell className="text-xs">
-                          {e.active ? <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">فعال</Badge> : <Badge variant="destructive">غیرفعال</Badge>}
+                          {e.active ? <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">فعال</Badge> : <Badge variant="destructive">غیرفعال</Badge>}
                         </TableCell>
                         <TableCell className="text-xs font-bold">{faNumber(e.interactionTotal)}</TableCell>
                       </TableRow>

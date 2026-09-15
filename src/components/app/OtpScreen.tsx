@@ -103,12 +103,12 @@ export function OtpScreen() {
   const ss = String(remaining % 60).padStart(2, "0");
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-primary/5 via-background to-background">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
       <main className="w-full max-w-md">
         <Card className="tile-pop border-border/60 shadow-xl shadow-black/5">
           <CardHeader className="text-center">
-            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-              <MessageSquareText className="w-7 h-7 text-primary" aria-hidden />
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center mb-2 shadow-lg shadow-teal-600/25 ring-4 ring-primary/10">
+              <MessageSquareText className="w-7 h-7 text-white" aria-hidden />
             </div>
             <CardTitle className="text-lg">کد تأیید پیامکی</CardTitle>
             <CardDescription className="leading-relaxed">

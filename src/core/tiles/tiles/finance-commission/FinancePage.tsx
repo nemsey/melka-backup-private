@@ -151,7 +151,7 @@ export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role,
       {/* شاخص‌های اصلی */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "قرارداد مرحله مالی", value: s ? faNumber(s.finalizedContracts) : undefined, icon: Receipt, tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+          { label: "قرارداد مرحله مالی", value: s ? faNumber(s.finalizedContracts) : undefined, icon: Receipt, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
           { label: "مشاوران دارای سهم", value: s ? faNumber(s.consultantsWithShare) : undefined, icon: Users, tone: "bg-primary/10 text-primary" },
           { label: "شعبه‌های فعال مالی", value: s ? faNumber(s.branchesWithShare) : undefined, icon: Building2, tone: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300" },
           { label: "میانگین سهم هر مشاور", value: s ? faPercent(s.avgSharePercent) : undefined, icon: Percent, tone: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
@@ -292,7 +292,7 @@ export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role,
                 <Button
                   onClick={() => void runCalculation()}
                   disabled={calcLoading}
-                  className="w-full gap-2 bg-gradient-to-l from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white"
+                  className="w-full gap-2 bg-gradient-to-l from-teal-600 to-cyan-500 hover:from-teal-700 hover:to-cyan-600 text-white"
                 >
                   {calcLoading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Calculator className="w-4 h-4" aria-hidden />}
                   محاسبه کمیسیون و صدور نتیجه
@@ -335,15 +335,15 @@ export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role,
                         commission: result.buyerCommission,
                         tax: result.buyerTax,
                         payable: result.buyerPayable,
-                        tone: "from-emerald-600 to-emerald-400",
-                        bg: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900",
+                        tone: "from-teal-600 to-cyan-500",
+                        bg: "bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-900",
                       },
                       {
                         title: `سهم ${calcResult?.labels?.sellerLabel ?? "فروشنده"} (هر طرف معامله)`,
                         commission: result.sellerCommission,
                         tax: result.sellerTax,
                         payable: result.sellerPayable,
-                        tone: "from-teal-600 to-teal-400",
+                        tone: "from-teal-600 to-cyan-500",
                         bg: "bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-900",
                       },
                     ].map((side) => (
@@ -435,7 +435,7 @@ export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role,
                           <TableCell className="text-xs tabular-nums font-bold">{faPercent(c.totalPercent)}</TableCell>
                           <TableCell className="text-xs tabular-nums">{faPercent(Math.round((c.totalPercent / Math.max(1, c.shareCount)) * 10) / 10)}</TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 tabular-nums">{faNumber(c.confirmed)}</Badge>
+                            <Badge variant="secondary" className="text-xs bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 tabular-nums">{faNumber(c.confirmed)}</Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 tabular-nums">{faNumber(c.pending)}</Badge>
@@ -484,7 +484,7 @@ export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role,
                         </div>
                         <div className="h-3 rounded-full bg-muted overflow-hidden" dir="rtl">
                           <div
-                            className="h-full rounded-full bg-gradient-to-l from-teal-600 to-teal-400"
+                            className="h-full rounded-full bg-gradient-to-l from-teal-600 to-cyan-500"
                             style={{ width: `${Math.max(6, (b.contractCount / max) * 100)}%` }}
                             title={`${b.branch}: ${b.contractCount} قرارداد`}
                           />

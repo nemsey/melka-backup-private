@@ -324,7 +324,7 @@ export function DivarConnectionSection() {
           {phoneConn?.status === "connected" ? (
             <div className="rounded-lg border bg-muted/40 p-3 text-xs leading-relaxed">
               <p className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 اتصال پیامکی برقرار است{phoneConn.lastCheckedAt ? ` — از ${faDateTime(phoneConn.lastCheckedAt)}` : ""}
               </p>
               {phoneConn.lastError && <p className="text-destructive text-[10px] mt-1">{phoneConn.lastError}</p>}

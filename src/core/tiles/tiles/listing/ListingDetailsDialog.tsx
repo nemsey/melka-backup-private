@@ -33,10 +33,10 @@ function StepBadge({ step, label, done }: StepBadgeProps) {
   return (
     <div className="flex items-center justify-between gap-2 text-xs rounded-lg border px-2.5 py-1.5">
       <span className="flex items-center gap-1.5">
-        {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden /> : <XCircle className="w-3.5 h-3.5 text-amber-600" aria-hidden />}
+        {done ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden /> : <XCircle className="w-3.5 h-3.5 text-amber-600" aria-hidden />}
         <span className="text-muted-foreground">گام {["۱", "۲", "۳", "۴", "۵"][step - 1]}: {label}</span>
       </span>
-      <Badge className={`text-[10px] ${done ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"}`}>
+      <Badge className={`text-[10px] ${done ? "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"}`}>
         {done ? "کامل" : "ناقص"}
       </Badge>
     </div>
@@ -156,7 +156,7 @@ export function ListingDetailsDialog({
               </div>
             </div>
             {listing.armCustomerId && (
-              <p className="text-[10px] text-emerald-700 dark:text-emerald-400">کاربر آرم متصل: <span dir="ltr" className="font-mono">{listing.armCustomerId}</span></p>
+              <p className="text-[10px] text-teal-700 dark:text-teal-400">کاربر آرم متصل: <span dir="ltr" className="font-mono">{listing.armCustomerId}</span></p>
             )}
           </section>
 
@@ -296,12 +296,12 @@ export function ListingDetailsDialog({
           <section className="rounded-xl border p-4 space-y-1.5 text-xs">
             <h4 className="text-sm font-bold mb-1">وضعیت انتقال‌ها</h4>
             <p className="flex items-center gap-1.5">
-              {listing.crmTransferredAt ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden /> : <UploadCloud className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />}
+              {listing.crmTransferredAt ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden /> : <UploadCloud className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />}
               CRM (سامانه آرم): {listing.crmTransferredAt ? `منتقل‌شده — ${faDateTime(listing.crmTransferredAt)}` : "منتقل نشده"}
               {listing.armPropertyId && <span dir="ltr" className="font-mono text-[10px]">({listing.armPropertyId.slice(0, 14)}…)</span>}
             </p>
             <p className="flex items-center gap-1.5">
-              {listing.instagramPublishedAt ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden /> : <IgIcon className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />}
+              {listing.instagramPublishedAt ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden /> : <IgIcon className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />}
               اینستاگرام: {listing.instagramPublishedAt ? `منتشرشده — ${faDateTime(listing.instagramPublishedAt)}` : "منتشر نشده"}
             </p>
             <p className="text-[10px] text-muted-foreground">ثبت: {faDateTime(listing.createdAt)} — آخرین تغییر: {faDateTime(listing.updatedAt)}</p>

@@ -190,8 +190,8 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden />
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">دارای رویداد</p>
@@ -475,7 +475,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
                       <TableCell className="hidden md:table-cell text-xs font-mono" dir="rtl">
                         {t.contractHolo ? (
                           <span className="flex items-center gap-1.5">
-                            <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                            <FileCheck2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden />
                             {faDigits(t.contractHolo)}
                           </span>
                         ) : (
@@ -493,7 +493,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
                       </TableCell>
                       <TableCell className="text-xs">
                         {t.eventsCount > 0 ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[11px] gap-1">
+                          <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 text-[11px] gap-1">
                             <TrendingUp className="w-3 h-3" aria-hidden /> {faNumber(t.eventsCount)}
                           </Badge>
                         ) : (

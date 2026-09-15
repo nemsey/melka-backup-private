@@ -100,7 +100,7 @@ export function CrmTransferDialog({
   };
 
   const stepIcon = (status: TransferStepUI["status"]) => {
-    if (status === "done") return <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden />;
+    if (status === "done") return <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden />;
     if (status === "failed") return <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" aria-hidden />;
     if (status === "skipped") return <XCircle className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden />;
     return <Loader2 className="w-4 h-4 animate-spin text-amber-600 shrink-0" aria-hidden />;
@@ -145,7 +145,7 @@ export function CrmTransferDialog({
                     <Badge
                       className={
                         s.done
-                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px]"
+                          ? "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 text-[10px]"
                           : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px]"
                       }
                     >
@@ -174,7 +174,7 @@ export function CrmTransferDialog({
                 <p className="text-xs text-amber-600 dark:text-amber-400 leading-5">جستجو ناموفق بود: {info.customerPreview.error}</p>
               ) : info.customerPreview.found ? (
                 <p className="text-xs leading-5">
-                  <CheckCircle2 className="w-3.5 h-3.5 inline text-emerald-600 dark:text-emerald-400" aria-hidden /> کاربر موجود:{" "}
+                  <CheckCircle2 className="w-3.5 h-3.5 inline text-teal-600 dark:text-teal-400" aria-hidden /> کاربر موجود:{" "}
                   <b>{info.customerPreview.name || info.listing.customerName}</b> — مستقیم به آگهی متصل می‌شود (ایجاد کاربر جدید لازم نیست).
                 </p>
               ) : (
@@ -204,7 +204,7 @@ export function CrmTransferDialog({
                   ))}
                 </ol>
                 {result?.armPropertyId && (
-                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
+                  <p className="text-[11px] text-teal-700 dark:text-teal-400 font-bold">
                     شناسه آگهی در آرم: <span dir="ltr" className="font-mono">{result.armPropertyId}</span>
                   </p>
                 )}
