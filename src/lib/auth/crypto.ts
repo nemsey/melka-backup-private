@@ -33,8 +33,25 @@ export function safeEqual(a: string, b: string): boolean {
 // رمزنگاری توکن‌های ARM (AES-256-GCM)
 // ==========================================================================
 
+/**
+ * راز رمزنگاری — HOTFIX-01 / SEC-2
+ * الزام: MELK_TOKEN_KEY مستقل (نه کد مدیر، نه fallback سورس‌نشسته).
+ * اگر تعریف نشده باشد null برمی‌گرداند تا فراخواننده fail-fast کند؛
+ * در محیط production اعتبارسنجی بوت (assertProductionSecrets) مسدود می‌کند.
+ */
+export function melkTokenSecret(): string | null {
+  return process.env.MELK_TOKEN_KEY?.trim() || null;
+}
+
 function armKey(): Buffer {
-  const secret = process.env.MELK_TOKEN_KEY ?? process.env.MASTER_ACCESS_CODE ?? "melk-tabriz-fallback-key";
+  const secret = melkTokenSecret();
+  if (!secret) {
+    // Fail-fast بدون fallback: فراخواننده باید خطای شفاف بدهد.
+    throw new Error(
+      "[crypto:fail-fast] MELK_TOKEN_KEY تنظیم نشده است — رمزنگاری/رمزگشایی توکن‌ها ممکن نیست (SEC-2). " +
+        "برای محیط توسعه: scripts/dev-secrets.ts یا .env.local؛ برای production: متغیر محیطی سرور."
+    );
+  }
   // کلید ۳۲ بایتی پایدار از راز (بدون ذخیره راز خام)
   return createHash("sha256").update(`arm-token-enc:${secret}`, "utf8").digest();
 }

@@ -32,10 +32,10 @@ describe("تولید و هش توکن", () => {
 
 describe("مقایسه زمان-ثابت (ضد Timing Attack)", () => {
   test("رشته‌های برابر → true", () => {
-    expect(safeEqual("41372895", "41372895")).toBe(true);
+    expect(safeEqual("24681357", "24681357")).toBe(true);
   });
   test("رشته‌های نابرابر → false", () => {
-    expect(safeEqual("41372895", "41372896")).toBe(false);
+    expect(safeEqual("24681357", "24681358")).toBe(false);
   });
   test("طول متفاوت → false (بدون خطا)", () => {
     expect(safeEqual("abc", "abcd")).toBe(false);
@@ -59,8 +59,8 @@ describe("اعتبارسنجی فرمت ورودی‌ها", () => {
     expect(isValidOtpFormat("abc1")).toBe(false);
   });
   test("کد مدیر: دقیقاً ۸ رقم", () => {
-    expect(isValidMasterCodeFormat("41372895")).toBe(true);
-    expect(isValidMasterCodeFormat("4137289")).toBe(false);
-    expect(isValidMasterCodeFormat("413728955")).toBe(false);
+    expect(isValidMasterCodeFormat("24681357")).toBe(true);
+    expect(isValidMasterCodeFormat("2468135")).toBe(false);
+    expect(isValidMasterCodeFormat("246813579")).toBe(false);
   });
 });

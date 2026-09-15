@@ -31,6 +31,17 @@ export async function POST(request: NextRequest) {
     }
 
     const cfg = getMelkApiConfig();
+    // HOTFIX-01 (SEC-1): بدون MASTER_ACCESS_CODE ورود مدیر کاملاً غیرفعال است —
+    // نه fallback، نه عبور با رشته خالی (فرمت ۸ رقمی از قبل رد شده، این گارد عمق دوم است).
+    if (!cfg.masterCode || !isValidMasterCodeFormat(cfg.masterCode)) {
+      await audit("MASTER_LOGIN_UNCONFIGURED", undefined, ip);
+      throw new MelkApiError(
+        "PRECONDITION_FAILED",
+        "کد مدیر روی سرور تنظیم نشده است (MASTER_ACCESS_CODE). با مسیر کد پرسنلی + پیامک وارد شوید یا متغیر محیطی را تنظیم کنید.",
+        503,
+        false
+      );
+    }
     if (!safeEqual(masterCode, cfg.masterCode)) {
       await recordAttempt(MASTER_PERSONNEL, "MASTER_LOGIN", false, ip);
       await audit("MASTER_LOGIN_FAILED", undefined, ip);

@@ -1,15 +1,36 @@
 /**
  * Next.js Instrumentation — راه‌اندازی پس‌زمینه سرور
  * ------------------------------------------------------
- * ثبت حلقه همگام‌سازی خودکار: هر MELK_SYNC_INTERVAL_MINUTES دقیقه،
- * داده واقعی از arus-api.melketabriz.ir استخراج می‌شود (با توکن ARM
- * ذخیره‌شده‌ی آخرین ورود موفق). این حلقه برای مواقعی که سامانه ملک
- * تبریز موقتاً قطع است حیاتی است — به‌محض بازگشت سرور، داده واقعی
- * به‌طور خودکار استخراج و جایگزین می‌شود.
+ * ۱) HOTFIX-01: اعتبارسنجی fail-fast رازهای اجباری (SEC-1/SEC-2) —
+ *    در production نبود MASTER_ACCESS_CODE یا MELK_TOKEN_KEY = عدم بوت.
+ * ۲) HOTFIX-01: چرخش کلید رمزنگاری در startup فقط اگر ROTATION_PENDING=true.
+ * ۳) حلقه همگام‌سازی خودکار: هر MELK_SYNC_INTERVAL_MINUTES دقیقه،
+ *    داده واقعی از arus-api.melketabriz.ir استخراج می‌شود (با توکن ARM
+ *    ذخیره‌شده‌ی آخرین ورود موفق). این حلقه برای مواقعی که سامانه ملک
+ *    تبریز موقتاً قطع است حیاتی است — به‌محض بازگشت سرور، داده واقعی
+ *    به‌طور خودکار استخراج و جایگزین می‌شود.
  */
 
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+
+  // ---------- ۱) fail-fast رازهای اجباری (HOTFIX-01 / SEC-1, SEC-2) ----------
+  const { assertProductionSecrets } = await import("@/lib/melk-api/config");
+  assertProductionSecrets(); // در production نبود راز = throw → بوت نمی‌شود
+
+  // ---------- ۲) چرخش کلید در صورت درخواست صریح (ROTATION_PENDING=true) ----------
+  if (process.env.ROTATION_PENDING === "true") {
+    const { rotateFromEnv } = await import("@/lib/auth/key-rotation");
+    const report = await rotateFromEnv();
+    if (report.ok) {
+      console.log(
+        `[boot:key-rotation] چرخش کلید انجام شد: rotated=${report.rotated} already=${report.alreadyRotated} unreadable=${report.unreadable} — ` +
+          `اکنون ROTATION_PENDING را حذف و MELK_TOKEN_KEY_OLD را از محیط پاک کنید.`
+      );
+    } else {
+      console.error(`[boot:key-rotation] ناکامل: ${report.error ?? "خطای نامشخص"}`);
+    }
+  }
 
   const { getMelkApiConfig } = await import("@/lib/melk-api/config");
   const cfg = getMelkApiConfig();

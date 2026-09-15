@@ -53,6 +53,27 @@ function env(key: string, fallback: string): string {
   return v && v.trim().length > 0 ? v.trim() : fallback;
 }
 
+/**
+ * اعتبارسنجی رازهای اجباری (fail-fast) — HOTFIX-01 / SEC-1
+ * ------------------------------------------------------
+ * در production، غیبت هر یک از رازهای زیر باید «در بوت» شکست بخورد،
+ * نه در اولین فراخوانی سردِ مسیر حساس. fallback سورس‌نشسته ممنوع.
+ */
+export function assertProductionSecrets(): void {
+  if (process.env.NODE_ENV !== "production") return; // dev/test: کلید dev از .env.local یا اسکریپت dev-secrets
+  const missing: string[] = [];
+  if (!process.env.MASTER_ACCESS_CODE?.trim()) missing.push("MASTER_ACCESS_CODE");
+  if (!process.env.MELK_TOKEN_KEY?.trim()) missing.push("MELK_TOKEN_KEY");
+  if (missing.length > 0) {
+    // پیام عمداً به stdout می‌رود تا در لاگ کانتینر دیده شود؛ رازی افشا نمی‌شود.
+    throw new Error(
+      `[boot:fail-fast] رازهای اجباری تنظیم نشده‌اند: ${missing.join(", ")}. ` +
+        `بدون این مقادیر سرور بالا نمی‌آید (SEC-1/SEC-2 — حذف fallback). ` +
+        `راهنما: .env.example را ببینید و سپس scripts/dev-secrets.ts برای محیط توسعه.`
+    );
+  }
+}
+
 export function getMelkApiConfig(): MelkApiConfig {
   return {
     mode: "real" as ApiMode,
@@ -64,7 +85,7 @@ export function getMelkApiConfig(): MelkApiConfig {
     accApiBase: env("MELK_ACC_API_BASE", "https://fm-api.melketabriz.ir/"),
     timeoutMs: Number(env("MELK_API_TIMEOUT_MS", "25000")),
     maxRetries: Number(env("MELK_API_MAX_RETRIES", "2")),
-    masterCode: env("MASTER_ACCESS_CODE", "41372895"),
+    masterCode: env("MASTER_ACCESS_CODE", ""), // SEC-1: بدون fallback — در production با assertProductionSecrets اجباری می‌شود
     sessionTtlHours: Number(env("SESSION_TTL_HOURS", "12")),
     otpRequestWindowMinutes: 10,
     otpRequestMax: 3,

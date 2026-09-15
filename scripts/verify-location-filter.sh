@@ -4,7 +4,7 @@ set -e
 BASE=http://localhost:3000
 
 echo "=== ۱) ورود مالک ==="
-TOKEN=$(curl -s -X POST $BASE/api/auth/master-login -H "content-type: application/json" -d '{"masterCode":"41372895"}' | bun -e 'const r=await Bun.stdin.json(); process.stdout.write(r.token ?? "")')
+TOKEN=$(curl -s -X POST $BASE/api/auth/master-login -H "content-type: application/json" -d "{\"masterCode\":\"${MASTER_ACCESS_CODE:?set MASTER_ACCESS_CODE env}\"}" | bun -e 'const r=await Bun.stdin.json(); process.stdout.write(r.token ?? "")')
 echo "token: ${TOKEN:0:24}..."
 
 echo ""

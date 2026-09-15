@@ -43,7 +43,7 @@ describe("فرمت OTP و کدها (مطابق سامانه واقعی)", () => 
   });
   test("کد مدیر ۸ رقمی است", async () => {
     const { isValidMasterCodeFormat } = await import("@/lib/auth/crypto");
-    expect(isValidMasterCodeFormat("41372895")).toBe(true);
+    expect(isValidMasterCodeFormat("24681357")).toBe(true);
     expect(isValidMasterCodeFormat("1372")).toBe(false);
   });
   test("کد پرسنلی ۶ تا ۱۲ رقم", async () => {

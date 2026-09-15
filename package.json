@@ -11,7 +11,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
-    "test": "DATABASE_URL=file:/home/z/my-project/db/test.db bun test tests/",
+    "test": "DATABASE_URL=file:/home/z/my-project/db/test.db MELK_TOKEN_KEY=test-only-key-not-a-real-secret bun test tests/",
     "test:db:push": "DATABASE_URL=file:/home/z/my-project/db/test.db prisma db push --accept-data-loss"
   },
   "dependencies": {

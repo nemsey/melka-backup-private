@@ -122,7 +122,12 @@ export type DivarSettings = {
   scoringV3Init?: boolean;
 };
 
-/** کلید رمزنگاری اعتبارنامه دیوار (هم‌زنجیره کلید نشست‌های ARM) */
-export function divarSecretEnvKey(): string | undefined {
-  return process.env.DIVAR_TOKEN_KEY || process.env.MELK_TOKEN_KEY || process.env.MASTER_ACCESS_CODE || "melk-tabriz-fallback-key";
+/**
+ * کلید رمزنگاری اعتبارنامه دیوار — HOTFIX-01 / SEC-2
+ * زنجیره: DIVAR_TOKEN_KEY → MELK_TOKEN_KEY (هردو مستقل از کد مدیر).
+ * بدون fallback سورس‌نشسته؛ در نبود کلید null برمی‌گرداند و فراخواننده
+ * باید fail-fast کند (در production توسط assertProductionSecrets مسدود است).
+ */
+export function divarSecretEnvKey(): string | null {
+  return process.env.DIVAR_TOKEN_KEY?.trim() || process.env.MELK_TOKEN_KEY?.trim() || null;
 }
