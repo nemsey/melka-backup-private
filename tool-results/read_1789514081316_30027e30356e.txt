@@ -1,0 +1,554 @@
+     1→"use client";
+     2→
+     3→/**
+     4→ * کاشی «کارشناسان» — صفحه داخلی (بازنویسی بر پایه ساختار واقعی سامانه ARM)
+     5→ * ------------------------------------------------------
+     6→ * عین «users-list» و «realtor-interactions» خود سامانه ملک تبریز:
+     7→ *   • شاخص‌ها: کل کاربران، فعال، پرتعامل‌ترین مشاور، جفت برتر همکاری
+     8→ *   • فیلترها: نام، موبایل، کد پرسنلی، نقش، کسب‌وکار (شعبه)، ثبت‌کننده، وضعیت
+     9→ *   • کارت/جدول: نام، موبایل، نقش، کسب‌وکار، ثبت‌کننده،
+    10→ *     تاریخ ثبت (هجری شمسی)، وضعیت، مجموع تعامل‌ها
+    11→ *   • بخش «تعاملات مشاوران با یکدیگر»: جدول مشاور درخواست × مشاور آگهی × تعداد
+    12→ *     + رتبه‌بندی درجه همکاری
+    13→ *   • شفافیت منبع داده
+    14→ */
+    15→
+    16→import { useCallback, useEffect, useMemo, useState } from "react";
+    17→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    18→import { Input } from "@/components/ui/input";
+    19→import { Label } from "@/components/ui/label";
+    20→import { Button } from "@/components/ui/button";
+    21→import { Badge } from "@/components/ui/badge";
+    22→import { Skeleton } from "@/components/ui/skeleton";
+    23→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+    24→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+    25→import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+    26→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    27→import { useToast } from "@/hooks/use-toast";
+    28→import {
+    29→  Loader2, Filter, RotateCcw, Search, Users, UserCheck, UserX, Phone, Building, Hash, Trophy, Network, ArrowLeftRight, ShieldCheck, Database, AlertTriangle,
+    30→} from "lucide-react";
+    31→import { AgentPanel } from "@/components/app/AgentPanel";
+    32→import type { TilePageProps } from "@/core/tiles/tile-contract";
+    33→import { api, ApiClientError } from "@/lib/client/api";
+    34→import { faNumber, faJalaliShort } from "@/lib/format";
+    35→import { faDigits } from "@/lib/jalali";
+    36→
+    37→interface ExRow {
+    38→  id: string;
+    39→  personnelCode: string;
+    40→  fullName: string;
+    41→  mobile: string;
+    42→  role: string;
+    43→  businessTitle: string;
+    44→  creator: string | null;
+    45→  active: boolean;
+    46→  createdAt: string;
+    47→  /** مجموع تعامل‌ها (نقش درخواست‌دهنده + نقش آگهی‌گذار) */
+    48→  interactionTotal: number;
+    49→}
+    50→
+    51→interface InRow {
+    52→  id: string;
+    53→  requestRealtorName: string;
+    54→  propertyRealtorName: string;
+    55→  count: number;
+    56→}
+    57→
+    58→interface Meta {
+    59→  roles: string[];
+    60→  businesses: string[];
+    61→  creators: string[];
+    62→}
+    63→
+    64→interface DataSourceInfo {
+    65→  real: boolean;
+    66→  cached: boolean;
+    67→  lastSuccessAt: string | null;
+    68→  liveError: string | null;
+    69→}
+    70→
+    71→const EMPTY = { fullName: "", mobile: "", personnelCode: "", role: "all", businessTitle: "all", creator: "all", active: "all" };
+    72→type Filters = typeof EMPTY;
+    73→
+    74→/** رتبه همکاری بر اساس مجموع تعامل‌ها */
+    75→function cooperationLevel(total: number): { label: string; style: string } {
+    76→  if (total >= 20) return { label: "محور همکاری", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" };
+    77→  if (total >= 5) return { label: "همکار پرتکرار", style: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" };
+    78→  if (total > 0) return { label: "کم‌تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
+    79→  return { label: "بدون تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
+    80→}
+    81→
+    82→export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
+    83→  const { toast } = useToast();
+    84→  const [filters, setFilters] = useState<Filters>(EMPTY);
+    85→  const [applied, setApplied] = useState<Filters>(EMPTY);
+    86→  const [meta, setMeta] = useState<Meta | null>(null);
+    87→  const [rows, setRows] = useState<ExRow[] | null>(null);
+    88→  const [total, setTotal] = useState(0);
+    89→  const [source, setSource] = useState<DataSourceInfo | null>(null);
+    90→  const [interactions, setInteractions] = useState<InRow[] | null>(null);
+    91→  const [topRealtors, setTopRealtors] = useState<{ name: string; total: number }[]>([]);
+    92→  const [loading, setLoading] = useState(true);
+    93→  const viewMode = String(settings.viewMode ?? "cards");
+    94→
+    95→  useEffect(() => {
+    96→    api<Meta>("/api/crm/meta")
+    97→      .then(setMeta)
+    98→      .catch(() => setMeta({ roles: [], businesses: [], creators: [] }));
+    99→  }, []);
+   100→
+   101→  const load = useCallback(async () => {
+   102→    setLoading(true);
+   103→    try {
+   104→      const params = new URLSearchParams();
+   105→      if (applied.fullName) params.set("fullName", applied.fullName);
+   106→      if (applied.mobile) params.set("mobile", applied.mobile.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
+   107→      if (applied.personnelCode) params.set("personnelCode", applied.personnelCode.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
+   108→      if (applied.role !== "all") params.set("role", applied.role);
+   109→      if (applied.businessTitle !== "all") params.set("businessTitle", applied.businessTitle);
+   110→      if (applied.creator !== "all") params.set("creator", applied.creator);
+   111→      if (applied.active !== "all") params.set("active", applied.active);
+   112→      params.set("limit", "1000");
+   113→
+   114→      const [exRes, inRes] = await Promise.all([
+   115→        api<{ rows: ExRow[]; total: number; dataSource: DataSourceInfo }>(`/api/crm/experts?${params.toString()}`),
+   116→        api<{ rows: InRow[]; total: number; topRealtors: { name: string; total: number }[] }>("/api/crm/interactions"),
+   117→      ]);
+   118→      setRows(exRes.rows);
+   119→      setTotal(exRes.total);
+   120→      setSource(exRes.dataSource);
+   121→      setInteractions(inRes.rows);
+   122→      setTopRealtors(inRes.topRealtors);
+   123→    } catch (err) {
+   124→      const e = err as ApiClientError;
+   125→      toast({ title: "خطا در دریافت کارشناسان", description: e.message, variant: "destructive" });
+   126→      setRows([]);
+   127→      setInteractions([]);
+   128→    } finally {
+   129→      setLoading(false);
+   130→    }
+   131→  }, [applied, toast]);
+   132→
+   133→  useEffect(() => {
+   134→    void load();
+   135→  }, [load]);
+   136→
+   137→  const kpis = useMemo(() => {
+   138→    if (!rows) return null;
+   139→    const active = rows.filter((r) => r.active).length;
+   140→    const best = [...rows].sort((a, b) => b.interactionTotal - a.interactionTotal)[0];
+   141→    const bestPair = interactions && interactions.length > 0 ? interactions[0] : null;
+   142→    return { count: rows.length, active, best, bestPair };
+   143→  }, [rows, interactions]);
+   144→
+   145→  const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
+   146→
+   147→  return (
+   148→    <div className="space-y-6">
+   149→      {/* ایجنت هوشمند */}
+   150→      <AgentPanel tileId="experts" />
+   151→
+   152→      {/* شاخص‌ها */}
+   153→      {kpis && (
+   154→        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+   155→          <Card>
+   156→            <CardContent className="p-4 flex items-center gap-3">
+   157→              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+   158→                <Users className="w-5 h-5 text-primary" aria-hidden />
+   159→              </div>
+   160→              <div className="min-w-0">
+   161→                <p className="text-xs text-muted-foreground">کل کاربران</p>
+   162→                <p className="text-xl font-extrabold tabular-nums">{faNumber(kpis.count)}</p>
+   163→              </div>
+   164→            </CardContent>
+   165→          </Card>
+   166→          <Card>
+   167→            <CardContent className="p-4 flex items-center gap-3">
+   168→              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
+   169→                <UserCheck className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden />
+   170→              </div>
+   171→              <div className="min-w-0">
+   172→                <p className="text-xs text-muted-foreground">کاربران فعال</p>
+   173→                <p className="text-xl font-extrabold tabular-nums">{faNumber(kpis.active)}</p>
+   174→              </div>
+   175→            </CardContent>
+   176→          </Card>
+   177→          <Card>
+   178→            <CardContent className="p-4 flex items-center gap-3">
+   179→              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0">
+   180→                <Trophy className="w-5 h-5 text-amber-600" aria-hidden />
+   181→              </div>
+   182→              <div className="min-w-0">
+   183→                <p className="text-xs text-muted-foreground truncate">پرتعامل‌ترین مشاور</p>
+   184→                <p className="text-sm font-extrabold truncate">{kpis.best && kpis.best.interactionTotal > 0 ? kpis.best.fullName : "—"}</p>
+   185→              </div>
+   186→            </CardContent>
+   187→          </Card>
+   188→          <Card>
+   189→            <CardContent className="p-4 flex items-center gap-3">
+   190→              <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center shrink-0">
+   191→                <ArrowLeftRight className="w-5 h-5 text-teal-600" aria-hidden />
+   192→              </div>
+   193→              <div className="min-w-0">
+   194→                <p className="text-xs text-muted-foreground truncate">جفت همکاری برتر</p>
+   195→                <p className="text-[11px] font-bold truncate leading-tight">
+   196→                  {kpis.bestPair ? `${kpis.bestPair.requestRealtorName} ↔ ${kpis.bestPair.propertyRealtorName}` : "—"}
+   197→                </p>
+   198→              </div>
+   199→            </CardContent>
+   200→          </Card>
+   201→        </div>
+   202→      )}
+   203→
+   204→      {/* شفافیت منبع داده */}
+   205→      {source && source.liveError && (
+   206→        <Card className="border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/30">
+   207→          <CardContent className="p-4 flex items-start gap-3">
+   208→            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden />
+   209→            <div className="text-xs leading-relaxed space-y-1">
+   210→              <p className="font-bold">استخراج زنده از سامانه ملک تبریز در دسترس نیست</p>
+   211→              <p className="text-muted-foreground">
+   212→                {source.cached
+   213→                  ? "در حال حاضر داده‌های کش‌شده از آخرین استخراج موفق نمایش داده می‌شود."
+   214→                  : "هنوز هیچ داده‌ای از سامانه استخراج نشده است."}{" "}
+   215→                {source.liveError}
+   216→              </p>
+   217→            </div>
+   218→          </CardContent>
+   219→        </Card>
+   220→      )}
+   221→      {source && source.cached && !source.liveError && (
+   222→        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+   223→          <Database className="w-3.5 h-3.5" aria-hidden />
+   224→          آخرین استخراج موفق از سامانه ملک تبریز: {source.lastSuccessAt ? faJalaliShort(source.lastSuccessAt) : "—"}
+   225→        </div>
+   226→      )}
+   227→
+   228→      {/* دو تب: کاربران / تعاملات */}
+   229→      <Tabs defaultValue="experts" dir="rtl">
+   230→        <TabsList className="grid w-full max-w-md grid-cols-2">
+   231→          <TabsTrigger value="experts" className="gap-1.5">
+   232→            <Users className="w-4 h-4" aria-hidden /> کاربران و مشاوران
+   233→          </TabsTrigger>
+   234→          <TabsTrigger value="interactions" className="gap-1.5">
+   235→            <Network className="w-4 h-4" aria-hidden /> تعاملات مشاوران
+   236→          </TabsTrigger>
+   237→        </TabsList>
+   238→
+   239→        {/* ================== تب کاربران ================== */}
+   240→        <TabsContent value="experts" className="space-y-6 mt-4">
+   241→          {/* فیلترها */}
+   242→          <Card>
+   243→            <CardHeader className="py-4">
+   244→              <CardTitle className="text-base flex items-center gap-2">
+   245→                <Filter className="w-5 h-5 text-primary" aria-hidden /> فیلترهای کاربران
+   246→              </CardTitle>
+   247→            </CardHeader>
+   248→            <CardContent>
+   249→              <form
+   250→                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+   251→                onSubmit={(e) => {
+   252→                  e.preventDefault();
+   253→                  setApplied({ ...filters });
+   254→                }}
+   255→              >
+   256→                <div className="space-y-1.5">
+   257→                  <Label htmlFor="f-name">نام و نام خانوادگی</Label>
+   258→                  <Input id="f-name" placeholder="نمونه: سید نعمت اله" value={filters.fullName} onChange={(e) => setF("fullName", e.target.value)} />
+   259→                </div>
+   260→                <div className="space-y-1.5">
+   261→                  <Label htmlFor="f-mobile">شماره موبایل</Label>
+   262→                  <Input id="f-mobile" inputMode="numeric" placeholder="نمونه: ۰۹۱۴۱۲۳۴۵۶۷" value={filters.mobile} onChange={(e) => setF("mobile", e.target.value.replace(/[^\d۰-۹]/g, ""))} />
+   263→                </div>
+   264→                <div className="space-y-1.5">
+   265→                  <Label htmlFor="f-code">کد پرسنلی</Label>
+   266→                  <Input id="f-code" inputMode="numeric" placeholder="نمونه: ۴۱۰۰۳۱۳۲۰" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value.replace(/[^\d۰-۹]/g, ""))} />
+   267→                </div>
+   268→                <div className="space-y-1.5">
+   269→                  <Label>نقش</Label>
+   270→                  <Select value={filters.role} onValueChange={(v) => setF("role", v)}>
+   271→                    <SelectTrigger aria-label="نقش">
+   272→                      <SelectValue placeholder="همه نقش‌ها" />
+   273→                    </SelectTrigger>
+   274→                    <SelectContent>
+   275→                      <SelectItem value="all">همه نقش‌ها</SelectItem>
+   276→                      {meta?.roles.map((r) => (
+   277→                        <SelectItem key={r} value={r}>
+   278→                          {r}
+   279→                        </SelectItem>
+   280→                      ))}
+   281→                    </SelectContent>
+   282→                  </Select>
+   283→                </div>
+   284→                <div className="space-y-1.5">
+   285→                  <Label>کسب‌وکار (شعبه)</Label>
+   286→                  <Select value={filters.businessTitle} onValueChange={(v) => setF("businessTitle", v)}>
+   287→                    <SelectTrigger aria-label="کسب‌وکار">
+   288→                      <SelectValue placeholder="همه کسب‌وکارها" />
+   289→                    </SelectTrigger>
+   290→                    <SelectContent>
+   291→                      <SelectItem value="all">همه کسب‌وکارها</SelectItem>
+   292→                      {meta?.businesses.map((b) => (
+   293→                        <SelectItem key={b} value={b}>
+   294→                          {b}
+   295→                        </SelectItem>
+   296→                      ))}
+   297→                    </SelectContent>
+   298→                  </Select>
+   299→                </div>
+   300→                <div className="space-y-1.5">
+   301→                  <Label>ثبت‌کننده</Label>
+   302→                  <Select value={filters.creator} onValueChange={(v) => setF("creator", v)}>
+   303→                    <SelectTrigger aria-label="ثبت‌کننده">
+   304→                      <SelectValue placeholder="همه ثبت‌کنندگان" />
+   305→                    </SelectTrigger>
+   306→                    <SelectContent>
+   307→                      <SelectItem value="all">همه ثبت‌کنندگان</SelectItem>
+   308→                      {meta?.creators.map((c) => (
+   309→                        <SelectItem key={c} value={c}>
+   310→                          {c}
+   311→                        </SelectItem>
+   312→                      ))}
+   313→                    </SelectContent>
+   314→                  </Select>
+   315→                </div>
+   316→                <div className="space-y-1.5">
+   317→                  <Label>وضعیت</Label>
+   318→                  <Select value={filters.active} onValueChange={(v) => setF("active", v)}>
+   319→                    <SelectTrigger aria-label="وضعیت">
+   320→                      <SelectValue placeholder="همه وضعیت‌ها" />
+   321→                    </SelectTrigger>
+   322→                    <SelectContent>
+   323→                      <SelectItem value="all">همه وضعیت‌ها</SelectItem>
+   324→                      <SelectItem value="true">فعال</SelectItem>
+   325→                      <SelectItem value="false">غیرفعال</SelectItem>
+   326→                    </SelectContent>
+   327→                  </Select>
+   328→                </div>
+   329→                <div className="flex items-end gap-2 lg:col-span-4">
+   330→                  <Button type="submit" className="gap-2" disabled={loading}>
+   331→                    {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Search className="w-4 h-4" aria-hidden />}
+   332→                    اعمال فیلتر
+   333→                  </Button>
+   334→                  <Button
+   335→                    type="button"
+   336→                    variant="outline"
+   337→                    className="gap-2"
+   338→                    onClick={() => {
+   339→                      setFilters(EMPTY);
+   340→                      setApplied(EMPTY);
+   341→                    }}
+   342→                  >
+   343→                    <RotateCcw className="w-4 h-4" aria-hidden /> پاک‌سازی
+   344→                  </Button>
+   345→                  {total > 0 && (
+   346→                    <Badge variant="secondary" className="mb-1">
+   347→                      {faNumber(total)} کاربر
+   348→                    </Badge>
+   349→                  )}
+   350→                </div>
+   351→              </form>
+   352→            </CardContent>
+   353→          </Card>
+   354→
+   355→          {/* فهرست کاربران */}
+   356→          {rows === null ? (
+   357→            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   358→              {[1, 2, 3, 4].map((i) => (
+   359→                <Skeleton key={i} className="h-36 rounded-xl" />
+   360→              ))}
+   361→            </div>
+   362→          ) : rows.length === 0 ? (
+   363→            <Card>
+   364→              <CardContent className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
+   365→                {loading
+   366→                  ? "در حال دریافت…"
+   367→                  : rows.length === 0 && source?.cached === false
+   368→                    ? "هنوز کاربری از سامانه ملک تبریز استخراج نشده است. با بازیابی پایگاه داده سامانه، داده‌ها به‌صورت خودکار همگام می‌شوند یا از تنظیمات، «همگام‌سازی داده‌ها» را بزنید."
+   369→                    : "هیچ کاربری با این فیلترها یافت نشد."}
+   370→              </CardContent>
+   371→            </Card>
+   372→          ) : viewMode === "cards" ? (
+   373→            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   374→              {rows.map((e, i) => {
+   375→                const coop = cooperationLevel(e.interactionTotal);
+   376→                return (
+   377→                  <Card key={e.id} className="tile-pop" style={{ animationDelay: `${i * 0.03}s` }}>
+   378→                    <CardContent className="p-4 sm:p-5">
+   379→                      <div className="flex items-start gap-4">
+   380→                        <Avatar className="w-14 h-14 shrink-0">
+   381→                          <AvatarFallback className="bg-primary/15 text-primary font-bold text-base">
+   382→                            {e.fullName.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+   383→                          </AvatarFallback>
+   384→                        </Avatar>
+   385→                        <div className="min-w-0 flex-1 space-y-3">
+   386→                          <div className="flex flex-wrap items-center gap-2">
+   387→                            <span className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-extrabold text-primary tabular-nums shrink-0" aria-label={`ردیف ${faNumber(i + 1)}`} title={`ردیف ${faNumber(i + 1)}`}>
+   388→                              {faNumber(i + 1)}
+   389→                            </span>
+   390→                            <h4 className="font-bold text-sm sm:text-base">{e.fullName}</h4>
+   391→                            <Badge className={`${coop.style} text-[11px]`}>{coop.label}</Badge>
+   392→                            {!e.active && <Badge variant="destructive" className="text-[11px]">غیرفعال</Badge>}
+   393→                          </div>
+   394→
+   395→                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+   396→                            <span className="flex items-center gap-1.5 text-muted-foreground">
+   397→                              <Hash className="w-3.5 h-3.5 shrink-0" aria-hidden />
+   398→                              <span className="font-mono">{faDigits(e.personnelCode)}</span>
+   399→                            </span>
+   400→                            <span className="flex items-center gap-1.5 text-muted-foreground">
+   401→                              <Phone className="w-3.5 h-3.5 shrink-0" aria-hidden />
+   402→                              <span className="font-mono">{faDigits(e.mobile)}</span>
+   403→                            </span>
+   404→                            <span className="flex items-center gap-1.5 text-muted-foreground">
+   405→                              <ShieldCheck className="w-3.5 h-3.5 shrink-0" aria-hidden />
+   406→                              {e.role}
+   407→                            </span>
+   408→                            <span className="flex items-center gap-1.5 text-muted-foreground">
+   409→                              <Building className="w-3.5 h-3.5 shrink-0" aria-hidden />
+   410→                              {e.businessTitle}
+   411→                            </span>
+   412→                          </div>
+   413→
+   414→                          <div className="flex flex-wrap gap-2 pt-1 border-t items-center">
+   415→                            <Badge variant="secondary" className="text-[11px]">
+   416→                              {faNumber(e.interactionTotal)} تعامل
+   417→                            </Badge>
+   418→                            <span className="text-[11px] text-muted-foreground">
+   419→                              ثبت: {faJalaliShort(e.createdAt)}
+   420→                            </span>
+   421→                            {e.creator && (
+   422→                              <span className="text-[11px] text-muted-foreground mr-auto" title="ثبت‌کننده">
+   423→                                توسط: {e.creator}
+   424→                              </span>
+   425→                            )}
+   426→                          </div>
+   427→                        </div>
+   428→                      </div>
+   429→                    </CardContent>
+   430→                  </Card>
+   431→                );
+   432→              })}
+   433→            </div>
+   434→          ) : (
+   435→            <Card>
+   436→              <CardContent className="p-0 overflow-x-auto">
+   437→                <Table>
+   438→                  <TableHeader className="bg-muted/40">
+   439→                    <TableRow>
+   440→                      <TableHead className="text-right">نام</TableHead>
+   441→                      <TableHead className="text-right">کد پرسنلی</TableHead>
+   442→                      <TableHead className="text-right">موبایل</TableHead>
+   443→                      <TableHead className="text-right hidden md:table-cell">نقش</TableHead>
+   444→                      <TableHead className="text-right hidden sm:table-cell">کسب‌وکار</TableHead>
+   445→                      <TableHead className="text-right hidden lg:table-cell">ثبت</TableHead>
+   446→                      <TableHead className="text-right">وضعیت</TableHead>
+   447→                      <TableHead className="text-right">تعامل</TableHead>
+   448→                    </TableRow>
+   449→                  </TableHeader>
+   450→                  <TableBody>
+   451→                    {rows.map((e) => (
+   452→                      <TableRow key={e.id} className="hover:bg-muted/30">
+   453→                        <TableCell className="text-xs font-medium whitespace-nowrap">{e.fullName}</TableCell>
+   454→                        <TableCell className="text-xs font-mono">{faDigits(e.personnelCode)}</TableCell>
+   455→                        <TableCell className="text-xs font-mono">{faDigits(e.mobile)}</TableCell>
+   456→                        <TableCell className="hidden md:table-cell text-xs">{e.role}</TableCell>
+   457→                        <TableCell className="hidden sm:table-cell text-xs">{e.businessTitle}</TableCell>
+   458→                        <TableCell className="hidden lg:table-cell text-xs whitespace-nowrap">{faJalaliShort(e.createdAt)}</TableCell>
+   459→                        <TableCell className="text-xs">
+   460→                          {e.active ? <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">فعال</Badge> : <Badge variant="destructive">غیرفعال</Badge>}
+   461→                        </TableCell>
+   462→                        <TableCell className="text-xs font-bold">{faNumber(e.interactionTotal)}</TableCell>
+   463→                      </TableRow>
+   464→                    ))}
+   465→                  </TableBody>
+   466→                </Table>
+   467→              </CardContent>
+   468→            </Card>
+   469→          )}
+   470→        </TabsContent>
+   471→
+   472→        {/* ================== تب تعاملات ================== */}
+   473→        <TabsContent value="interactions" className="space-y-4 mt-4">
+   474→          {interactions === null ? (
+   475→            <Skeleton className="h-48 rounded-xl" />
+   476→          ) : interactions.length === 0 ? (
+   477→            <Card>
+   478→              <CardContent className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
+   479→                هنوز تعاملی از «گزارش تعاملات مشاوران» سامانه ملک تبریز استخراج نشده است. این گزارش پس از
+   480→                همگام‌سازی موفق در دسترس قرار می‌گیرد.
+   481→              </CardContent>
+   482→            </Card>
+   483→          ) : (
+   484→            <>
+   485→              {/* رتبه‌بندی درجه همکاری */}
+   486→              {topRealtors.length > 0 && (
+   487→                <Card>
+   488→                  <CardHeader className="py-4">
+   489→                    <CardTitle className="text-base flex items-center gap-2">
+   490→                      <Trophy className="w-5 h-5 text-amber-600 dark:text-amber-400" aria-hidden /> درجه همکاری مشاوران (مجموع طرف درخواست + طرف آگهی)
+   491→                    </CardTitle>
+   492→                  </CardHeader>
+   493→                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+   494→                    {topRealtors.map((r, i) => (
+   495→                      <div key={r.name} className="rounded-lg border bg-card p-2.5 text-center min-w-0">
+   496→                        <div className="text-[10px] text-muted-foreground">رتبه {faNumber(i + 1)}</div>
+   497→                        <div className="text-xs font-bold truncate" title={r.name}>{r.name}</div>
+   498→                        <div className="text-xs text-primary font-extrabold mt-0.5">{faNumber(r.total)} تعامل</div>
+   499→                      </div>
+   500→                    ))}
+   501→                  </CardContent>
+   502→                </Card>
+   503→              )}
+   504→
+   505→              {/* جدول تعاملات — عین ستون‌های خود سامانه */}
+   506→              <Card>
+   507→                <CardHeader className="py-4">
+   508→                  <CardTitle className="text-base flex items-center gap-2">
+   509→                    <Network className="w-5 h-5 text-primary" aria-hidden /> تعاملات مشاوران با یکدیگر
+   510→                  </CardTitle>
+   511→                </CardHeader>
+   512→                <CardContent className="p-0">
+   513→                  <div className="overflow-x-auto max-h-[26rem]">
+   514→                    <Table>
+   515→                      <TableHeader className="sticky top-0 bg-card z-10">
+   516→                        <TableRow>
+   517→                          <TableHead className="text-right">مشاور درخواست</TableHead>
+   518→                          <TableHead className="text-right">مشاور آگهی</TableHead>
+   519→                          <TableHead className="text-right">تعداد همکاری</TableHead>
+   520→                        </TableRow>
+   521→                      </TableHeader>
+   522→                      <TableBody>
+   523→                        {interactions.slice(0, 100).map((r) => (
+   524→                          <TableRow key={r.id} className="hover:bg-muted/30">
+   525→                            <TableCell className="text-xs font-medium">{r.requestRealtorName}</TableCell>
+   526→                            <TableCell className="text-xs font-medium">{r.propertyRealtorName}</TableCell>
+   527→                            <TableCell className="text-xs">
+   528→                              <Badge variant="secondary" className="font-bold">{faNumber(r.count)}</Badge>
+   529→                            </TableCell>
+   530→                          </TableRow>
+   531→                        ))}
+   532→                      </TableBody>
+   533→                    </Table>
+   534→                  </div>
+   535→                  {interactions.length > 100 && (
+   536→                    <p className="p-3 text-[11px] text-muted-foreground text-center">
+   537→                      نمایش ۱۰۰ تعامل برتر از {faNumber(interactions.length)} رکورد
+   538→                    </p>
+   539→                  )}
+   540→                </CardContent>
+   541→              </Card>
+   542→            </>
+   543→          )}
+   544→        </TabsContent>
+   545→      </Tabs>
+   546→
+   547→      <p className="text-[11px] text-muted-foreground leading-relaxed">
+   548→        داده‌ها عین «فهرست کاربران» و «گزارش تعاملات مشاوران» سامانه ملک تبریز استخراج می‌شوند. تاریخ‌های عضویت
+   549→        و ثبت با تقویم هجری شمسی نمایش داده می‌شوند.
+   550→      </p>
+   551→    </div>
+   552→  );
+   553→}
+   554→
