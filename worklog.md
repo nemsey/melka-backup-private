@@ -497,3 +497,24 @@ Stage Summary:
 - هویت بصری نو «فیروزه تبریز» (فیروزهٔ مسجد کبود + مس بازار) در کل اپ یکدست شد؛ رنگ‌های معنایی (هشدار/خطا/اتصال) دست‌نخورده
 - دیمون production با double-fork بین فراخوان‌های ابزار زنده می‌ماند (scripts/start-prod-daemon.py)
 - برای انتشار روی دامنه عمومی، فراخوانی Complete لازم است
+
+---
+Task ID: audit-phase0
+Agent: main (Super Z)
+Task: AI CORE AUDIT & ARCHITECTURAL HARDENING — PHASE 0 (فقط Audit + Design، بدون کد جدید، مطابق دستور رسمی مالک)
+
+Work Log:
+- کاوش کامل کدبیس: هسته (base-agent/policy/tile-contract/tile-registry/bootstrap/db/instrumentation/sync/config) با خواندن مستقیم + ۴ عامل ممیزی موازی (API Routes / Integration libs / UI+Tiles / Tests+Agents)
+- راستی‌آزمایی مستقیم ادعاهای بحرانی: fallback کد مدیر 413795 در config.ts:67 (تأیید: .env فقط DATABASE_URL دارد یعنی فعال)، کلید fallback "melk-tabriz-fallback-key" در crypto.ts:37، deleteMany×6+create در sync.ts:247-260، new PrismaClient() در هر tick سازنده (instrumentation.ts:24)، log:['query'] دائمی (db.ts:10)
+- تدوین گزارش ۲۵ بخشی + ۲ پیوست در فارسی: download/AUDIT-AI-CORE-ARCHITECTURE.md (۱۰۱۹ خط / ~۹۲KB)
+- بخش‌ها: Repository/Layer/Dependency/Tile/Agent/API/DataModel/ExternalIntegration/Security/Persistence/Learning/Memory/RAG/Prediction/Decision/Observability/TestCoverage/TechnicalDebt/Duplication/CriticalBugs/ArchitecturalRisks/RefactoringPlan(PHASE 0-12)/TargetArchitecture(9 لایه)/MigrationPlan/AcceptanceGates(GATE-A..L) + پیوست الف (پاسخ ۱۷ پرسش DoD) + پیوست ب (۶ اقدام فوری)
+- یافته‌های کلیدی: F1 یادگیری=تعدیل وزن بازخوردی بدون Outcome؛ F2 RAG=TF/Cosine Prototype؛ F3 «پیش‌بینی»=heuristic هاردکد بدون ارزیابی؛ F4 سه راز بحرانی فعال (SEC-1/2/3)؛ F5 شالوده سالم (پلاگین کاشی، append-only، ۲۸۹ تست سبز واقعی — نه ۱۶۱)
+- نقض‌های شمرده‌شده: UI→Prisma ×۱ (CustomerManagementPanel)، Agent→Prisma ~۴۶ فراخوانی، Route→Prisma ~۲۰ روت، I/O شبکه زنده در ۲ ایجنت، نوشتن روی GET در ۶ خانواده (W1-W6)
+- طراحی: BaseIntelligentAgent (۱۱ موتور، سازگاری عقب‌وار با BaseLearningAgent)، Memory ۶ لایه + Institutional Promotion، RAG Hybrid قرارداد-اول، PredictionResult/OutcomeRecord، Decision Engine، GATE-A/B/C علامت‌خورده قابل امضا، بقیه 🔓 تا فاز مربوط
+- هیچ تغییری در کد اعمال نشد (مطابق دستور بخش ۲ و ۳۰)
+
+Stage Summary:
+- تحویل: /home/z/my-project/download/AUDIT-AI-CORE-ARCHITECTURE.md — گزارش کامل PHASE 0
+- سه GATE نخست (A: ممیزی کامل، B: نقض‌های شناسایی‌شده، C: مرزهای ۹ لایه) مستند و آماده امضای مالک
+- ۶ اقدام فوری امنیتی/پایداری (پیوست ب) به‌عنوان پیش‌شرط PHASE 1 فهرست شد (SEC-1/2/3 + B1-B3 + B6 + D1)
+- گام بعدی پیشنهادی: تأیید مالک بر GATE-A/B/C → اجرای ۶ اقدام فوری → شروع PHASE 1 (Layer Refactor)
