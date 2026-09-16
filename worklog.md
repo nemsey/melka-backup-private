@@ -721,3 +721,22 @@ Work Log:
 Stage Summary:
 - GATE-D بخش ۱ آماده؛ صفر کد نوشته شد (طبق قانون طلایی فاز)
 - گام بعد P3-02 — اسکلت: ۱۱ فایل interface خالص در src/core/intelligence/engines/ + base-intelligent-agent.ts + engine-deps.ts
+
+---
+Task ID: phase3-p3-02
+Agent: main (Super Z / GLM-5.3)
+Task: P3-02 — اسکلت لایه هوشمندی: ۱۱ interface موتور + BaseIntelligentAgent + EngineDeps
+
+Work Log:
+- ساخت src/core/intelligence/engines/ با ۱۱ فایل قرارداد خالص (context/memory/retrieval/feature/prediction/decision/action-planner/outcome/evaluation/learning/safety) + index.ts صادرات واحد — هر فایل: docblock مسئولیت/مرز/نسخه/فاز + contractVersion: 1 literal-type
+- engine-deps.ts: ظرف EngineDeps با ۱۱ فیلد اختیاری + PassthroughContextEngine (فقط tileId+مهر زمان+purpose) + createDefaultEngineDeps (فقط زمینه؛ ده موتور دیگر عمداً غایب = fallback کامل — تضمین خروجی بایت‌به‌بایت P3-03)
+- base-intelligent-agent.ts: extends BaseLearningAgent؛ سازنده با BaseIntelligentAgentOptions اختیاری (agentId/engines/memory/policy) — بدون گزینه دقیقاً هم‌ارز super() امروزی؛ getter injectedEngines برای تست؛ صفر منطق جدید، صفر فراخوانی موتور در مسیر خروجی
+- index.ts نقطه ورود لایه؛ نوع‌های مرجع (AgentPolicyContent، InsightSeverity) فقط import type از لایه ایجنت — پاک در کامپایل
+- تست tests/phase3-skeleton.test.ts (۱۴ تست): خلوص مستقیم (۱۵ فایل، صفر Prisma/fetch/react ارزشی)، خلوص بازگشتی گراف import از ۱۳ ریشه خالص (الگوی P1-03 — تفکیک import type)، قاعده پل سازگاری (تنها base-intelligent-agent.ts مجاز به import ارزشی لایه ایجنت)، ساخت‌پذیری + fallback + placeholder، قابل-mock بودن هر ۱۱ قرارداد با stub کامل، عدم تداخل رجیستری ایجنت‌ها
+- اصلاح یک غلط تایپی خودم در تست (متن توضیحی چ mixed)
+- راستی‌آزمایی: tsc صفر؛ چهار اجرای پیاپی سبز (۵۳۶/۵۳۶ — قانون دو-سبز با حاشیه)؛ agent.test.ts صفر diff؛ regression-guard --strict PASS
+
+Stage Summary:
+- اسکلت کامل: ۱۵ فایل جدید در src/core/intelligence/ — صفر پیاده‌سازی موتور، صفر Feature، صفر Migration، BaseLearningAgent دست‌نخورده
+- تست ۵۲۲→۵۳۶ (+۱۴)؛ رول‌بک فاز تا اینجا = حذف دایرکتوری جدید + حذف فایل تست
+- گام بعد P3-03 — مهاجرت RequestAgent به BaseIntelligentAgent با اثبات خروجی بایت‌به‌بایت یکسان
