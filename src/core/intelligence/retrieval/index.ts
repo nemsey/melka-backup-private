@@ -17,3 +17,13 @@ export {
   type MetadataFilter,
   type MetadataHost,
 } from "./metadata";
+
+export {
+  KeywordSearch,
+  normalizePersian,
+  tokenizeDual,
+  PERSIAN_STOPWORDS,
+  type BM25Options,
+  type DualTokens,
+  type KeywordHit,
+} from "./keyword-search";

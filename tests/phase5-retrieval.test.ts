@@ -24,6 +24,11 @@ import {
   normalizeForMatch,
   applyMetadataFilter,
 } from "@/core/intelligence/retrieval/metadata";
+import {
+  KeywordSearch,
+  tokenizeDual,
+  normalizePersian,
+} from "@/core/intelligence/retrieval/keyword-search";
 
 // ===================== دایرکتوری موقت تست فایل =====================
 
@@ -189,5 +194,114 @@ describe("P5-02 — MetadataFilter + queryWithFilter (پنج فیلد)", () => {
     const local = applyMetadataFilter(all, { minConfidence: 0.6 });
     expect(local.length).toBe(1);
     expect(local[0].id).toBe(strong.id);
+  });
+});
+
+// ===================== P5-03: BM25 کلیدواژه‌ای فارسی =====================
+
+describe("P5-03 — BM25 KeywordSearch با نرمال‌سازی فارسی", () => {
+  test("جستجوی «ولیعصر» هر دو سندِ حاوی «ولیعصر» و «ولی عصر» را پیدا می‌کند (تطبیق دو-شکل)", () => {
+    const ks = new KeywordSearch();
+    ks.index("joined", "قیمت آپارتمان در ولیعصر رشد کرد");
+    ks.index("spaced", "قیمت آپارتمان در ولی عصر رشد کرد");
+    ks.index("other", "قیمت آپارتمان در باغمیشه رشد کرد");
+
+    const hits = ks.search("ولیعصر", 3);
+    const ids = hits.map((h) => h.id);
+    expect(ids).toContain("joined"); // تطبیق مستقیم primary
+    expect(ids).toContain("spaced"); // تطبیق از طریق توکن مرکب سند
+    expect(ids).not.toContain("other");
+
+    // جهت معکوس: پرسش جدا، سند چسبیده
+    const reverse = ks.search("ولی عصر", 3);
+    const rids = reverse.map((h) => h.id);
+    expect(rids).toContain("joined"); // پرسش مرکب‌سازی کرد → ولیعصر
+    expect(rids).toContain("spaced"); // تطبیق مستقیم primary
+  });
+
+  test("ZWNJ «ائل‌گلی» درست توکنیزه می‌شود — با «ائلگلی» و «ائل گلی» هم‌جوین است", () => {
+    // ZWNJ → فاصله در نرمال‌سازی؛ توکن مرکب شکل چسبیده را بازمی‌سازد
+    expect(normalizePersian("ائل\u200cگلی")).toBe("ائل گلی");
+    const dual = tokenizeDual("خرید خانه در ائل\u200cگلی تبریز");
+    expect(dual.primary).toContain("ائل");
+    expect(dual.primary).toContain("گلی");
+    expect(dual.compound).toContain("ائلگلی");
+    expect(dual.compound).toContain("خانهائل"); // جفت مجاورِ محتوایی
+    expect(dual.compound).not.toContain("درائل"); // stopword قبل از ساخت مرکب حذف شده — زباله نمی‌سازد
+
+    const ks = new KeywordSearch();
+    ks.index("zwnj", "تقاضای خرید در ائل\u200cگلی بالاست");
+    expect(ks.search("ائلگلی", 1).map((h) => h.id)).toEqual(["zwnj"]); // چسبیده → مرکب
+    expect(ks.search("ائل گلی", 1).map((h) => h.id)).toEqual(["zwnj"]); // جدا → primary
+    // ارقام فارسی/عربی هم‌ارز می‌شوند: «قیمت ۳» ⇔ «قیمت 3»
+    const ks2 = new KeywordSearch();
+    ks2.index("num", "قیمت ۳ میلیارد تومان");
+    expect(ks2.search("قیمت 3", 1).map((h) => h.id)).toEqual(["num"]);
+  });
+
+  test("رتبه‌بندی — سند مرتبط‌تر بالاتر؛ topK رعایت می‌شود؛ ترتیب قطعی است", () => {
+    const ks = new KeywordSearch();
+    // دو سند هم‌طول (۵ توکن) — تنها تفاوت: فراوانی «خرید» → برتری صریح tf بدون ابهام طول
+    ks.index("relevant", "خرید آپارتمان ولیعصر خرید خرید");
+    ks.index("partial", "خرید آپارتمان باغمیشه قیمت رشد");
+    ks.index("irrelevant", "اجاره ویلاElahi");
+    ks.index("none", "هیچ موضوع مرتبطی نیست");
+
+    const hits = ks.search("خرید آپارتمان", 2);
+    expect(hits.length).toBe(2);
+    expect(hits[0].id).toBe("relevant"); // tf بالاتر + کوتاه‌تر → امتیاز بیشتر
+    expect(hits.map((h) => h.id)).toContain("partial");
+
+    // تکرارپذیری — دو اجرا همان ترتیب
+    const again = ks.search("خرید آپارتمان", 2);
+    expect(again.map((h) => h.id)).toEqual(hits.map((h) => h.id));
+    expect(again.map((h) => h.score)).toEqual(hits.map((h) => h.score));
+  });
+
+  test("stopword فارسی — حذف می‌شوند، پیشوندهای بر/می/نمی حفظ می‌شوند", () => {
+    const dual = tokenizeDual("و در به از که این را با است بود برای تا یا تبریز");
+    expect(dual.primary).toEqual(["تبریز"]); // فقط محتوایی مانده
+
+    // بر/می/نمی stopword نیستند — به‌عنوان توکن مستقل/جزء مرکب حفظ می‌شوند
+    const prefixes = tokenizeDual("برمی\u200cدارد می\u200cرود");
+    expect(prefixes.primary).toContain("برمی");
+    expect(prefixes.primary).toContain("دارد");
+    expect(prefixes.primary).toContain("می");
+    expect(prefixes.primary).toContain("رود");
+    expect(prefixes.compound).toContain("برمیدارد");
+    expect(prefixes.compound).toContain("میرود");
+
+    // سندِ فقط-stopword هیچ‌وقت نتیجه نمی‌دهد
+    const ks = new KeywordSearch();
+    ks.index("empty", "و در به از که");
+    expect(ks.search("در و به", 5)).toEqual([]);
+    // پرسش فقط-stopword هم نتیجه‌ای ندارد
+    ks.index("content", "گزارش بازار مسکن");
+    expect(ks.search("و در به", 5)).toEqual([]);
+  });
+
+  test("بازه امتیاز معقول + remove/clear — امتیازها مثبت و کران‌دار؛ حذف سند اثر دارد", () => {
+    const ks = new KeywordSearch();
+    ks.index("a", "تحلیل بازار مسکن تبریز در ولیعصر");
+    ks.index("b", "تحلیل معاملات آپارتمان");
+    ks.index("c", "گزارش هفتگی بازار");
+    const hits = ks.search("تحلیل بازار", 10);
+    expect(hits.length).toBeGreaterThan(0);
+    for (const h of hits) {
+      expect(Number.isFinite(h.score)).toBe(true);
+      expect(h.score).toBeGreaterThan(0);
+      expect(h.score).toBeLessThan(50); // کران معقول برای پیکره کوچک
+    }
+    // remove — سند از نتایج خارج می‌شود
+    const target = hits[0].id;
+    ks.remove(target);
+    expect(ks.search("تحلیل بازار", 10).map((h) => h.id)).not.toContain(target);
+    expect(ks.size).toBe(2);
+    // حذف شناسه ناموجود بی‌خطاست
+    expect(() => ks.remove("nope")).not.toThrow();
+    // clear — خالی
+    ks.clear();
+    expect(ks.size).toBe(0);
+    expect(ks.search("تحلیل", 5)).toEqual([]);
   });
 });
