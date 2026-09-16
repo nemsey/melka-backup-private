@@ -563,3 +563,22 @@ Stage Summary:
 - تست: ۳۴۹ → ۳۸۷ (۳۸ تست جدید P1-01) همه سبز؛ tsc src صفر خطا؛ lint پاک؛ build سبز؛ prod سالم
 - صفر تغییر DOM (تأیید بایت‌به‌بایت)؛ صفر Feature؛ صفر Migration
 - گام بعد: P1-02 (انتقال منطق دامنه به analyzers)
+
+---
+Task ID: phase1-p1-02-to-06
+Agent: main (Super Z / GLM-5.3)
+Task: PHASE 1 / P1-02 تا P1-06 — انتقال منطق دامنه، مرز لایه‌ای، خاموشی ignoreBuildErrors، حذف کد مرده، رگرسیون نهایی
+
+Work Log:
+- P1-02 (کامیت eefb07d): ۶ تابع دامنه DTO در analyzers.ts (monthlyCounts با skipInvalid/takeLast، demandLevel/marketTilt آستانه ۶۰/۴۰، cooperationDegree آستانه ۲۰/۵، areaTrendMatrix پنج منطقه برتر، parseFaAmount)؛ شش صفحه فقط فرمت نمایش؛ اسکریپت verify-p1-02.ts با پیاده‌سازی مرجع از baseline — ۴۴ مقایسه قبل/بعد همگی یکسان؛ ۱۹ تست fixture
+- P1-03 (کامیت 4680c16): ماژول خالص src/lib/types/customer-lifecycle.ts (LifecycleStage/LIFECYCLE_FA/LIFECYCLE_COLOR/ACTION_FA/NextAction/Profile/Summary بدون هیچ وابستگی سرور)؛ customer-mgmt فقط re-export؛ CustomerManagementPanel + RequestsPage به ماژول خالص؛ ListingRecordDTO ساختاری در lib/listing/types جایگزین import پراسیما؛ تست مرز با پیمایشگر بازگشتی گراف import (۴۳ tsx — صفر مسیر ارزشی)
+- P1-04 (کامیت 650ea02 + دو fix): ignoreBuildErrors خاموش؛ bun-types در tsconfig؛ کنارگذاری مستند examples/skills/capacitor.config.ts (scaffold غیر-اپ)؛ رفع ۱۵ خطای واقعی (armTokenEnc های کهنه — probe به Session متصل شد طبق SEC-3؛ export {} برای رفع تداخل main سراسری اسکریپت‌ها؛ mock OtpIssueResult؛ castهای دو مرحله‌ای fetch؛ fixture reliable؛ icon قرارداد → LucideIcon و حذف هر دو cast DashboardHome/ManagementDashboard)؛ گارد typecheck-baseline.sh؛ tsc کل پروژه صفر
+- P1-05 (کامیت d4db7b7): حذف ۱۴ کامپوننت ui بی‌استفاده + روت scaffold /api (−۲٬۴۱۴)؛ getKenarKey/divarSecretEnvKey/readDivarPhoneToken (صفر فراخوان)؛ خط مرده onRejected؛ lineId:undefined:undefined در کدبیس یافت نشد (مستند در docs/TODO_P1-05.md — form/chart عمداً نگه داشته شدند)
+- P1-06: رگرسیون بصری با هر دو build از git هم‌زمان (worktree baseline روی 3001 / نهایی روی 3000، یک DB، پروتکل آمادگی) — اثبات ۴ لایه: امضای DOM بایت‌به‌بایت یکسان (معاملات ۱۰٬۱۵۴ / کارشناسان ۱۱٬۲۶۹ / درخواست ۱۲٬۸۶۵ بایت)، متن کامل صفر تفاوت، هندسه SVG صفر تفاوت، VLM «NO VISIBLE DIFFERENCE»؛ تفاوت پیکسلی ~۳٪ = فاز انیمیشن/رسترسازی (کف نویز ۰٫۰۴٪)؛ سنجه باندل E.3: کلاینت −۸۸KB (−۳٫۹٪)؛ گیت فاز ۹ تست؛ گزارش تکمیل ۸ بندی در download/PHASE-1-COMPLETION-REPORT.md
+- نکته زیرساختی: server.js استندالون worktree در مسیر تودرتو ساخته می‌شود (.next/standalone/.wt-baseline/) — static جداگانه کپی شد؛ آرتیفکت رز رنگ rg هنگام نمایش متن فارسی با [ح کشف شد (فایل سالم بود — od راستی‌آزمایی کرد)
+
+Stage Summary:
+- PHASE 1 کامل: ۶/۶ گام با کامیت مستقل + تست اختصاصی + شاهد؛ خالص src −۲٬۰۸۲ خط (هدف ≥۱٬۵۰۰ ✓)
+- تست ۳۴۹ → ۴۲۱ (۷۳ جدید، هدف ≥۲۰ ✓؛ ۱ تست مرجع تابع حذف‌شده کم شد)؛ tsc صفر؛ build سبز با ignoreBuildErrors=false؛ lint پاک؛ باندل کلاینت کوچک‌تر
+- صفر نقض UI→Prisma (مستقیم+بازگشتی)، صفر تعریف تکراری، صفر منطق دامنه در tsx، صفر تفاوت بصری (۴ لایه)، صفر Feature/Migration
+- گام بعد: تأیید شورای راهبری بر گزارش تکمیل → شروع PHASE 2 (۸ Repository، انتقال ۶۷ فراخوانی db.*، Incremental Sync، Logger ساختاریافته)
