@@ -13,6 +13,13 @@ export interface ListingCrmTransferUpdate {
   crmTransferJson: string;
 }
 
+/** داده به‌روزرسانی نتیجه انتشار اینستاگرام روی فایل (روت instagram) */
+export interface ListingInstagramPublicationUpdate {
+  instagramPublishedAt: Date;
+  instagramMediaId: string | null;
+  instagramPostJson: string;
+}
+
 export interface ListingRepository {
   /** فایل‌های اخیر — مرتب بر اساس createdAt نزولی (ایجنت آگهی) */
   listRecent(take: number): Promise<ListingDTO[]>;
@@ -24,4 +31,6 @@ export interface ListingRepository {
   findById(id: string): Promise<ListingDTO | null>;
   /** ثبت نتیجه انتقال CRM (درون‌ریزی خودکار از فایل‌یابی) */
   updateCrmTransfer(id: string, data: ListingCrmTransferUpdate): Promise<void>;
+  /** ثبت نتیجه انتشار اینستاگرام (روت listings/[id]/instagram — P2-03) */
+  updateInstagramPublication(id: string, data: ListingInstagramPublicationUpdate): Promise<void>;
 }

@@ -340,6 +340,7 @@ function makeEmptyListingRepo(): ListingRepository {
     getInstagramConnection: async () => null,
     findById: async () => null,
     updateCrmTransfer: async () => undefined,
+    updateInstagramPublication: async () => undefined,
   };
 }
 

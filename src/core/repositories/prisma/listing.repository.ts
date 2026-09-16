@@ -5,6 +5,7 @@ import type {
   InstagramConnectionDTO,
   InstagramPostLogDTO,
   ListingCrmTransferUpdate,
+  ListingInstagramPublicationUpdate,
   ListingDTO,
   ListingRepository,
 } from "../interfaces";
@@ -40,6 +41,18 @@ export class PrismaListingRepository implements ListingRepository {
         armPropertyId: data.armPropertyId,
         crmTransferredAt: data.crmTransferredAt,
         crmTransferJson: data.crmTransferJson,
+      },
+    });
+  }
+
+  async updateInstagramPublication(id: string, data: ListingInstagramPublicationUpdate): Promise<void> {
+    // عین update قدیم روت listings/[id]/instagram
+    await this.client.listingRecord.update({
+      where: { id },
+      data: {
+        instagramPublishedAt: data.instagramPublishedAt,
+        instagramMediaId: data.instagramMediaId,
+        instagramPostJson: data.instagramPostJson,
       },
     });
   }

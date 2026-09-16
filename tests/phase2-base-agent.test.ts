@@ -484,7 +484,7 @@ describe("P2-02-D — renderInsights با انبار ساختگی", () => {
 
     const evt = memory.appended.find((a) => a.kind === "INTERACTION");
     expect(evt).toBeDefined();
-    const payload = JSON.parse(evt.payloadJson);
+    const payload = JSON.parse(evt!.payloadJson);
     expect(payload.event).toBe("insight-render");
     expect(payload.insightCount).toBe(2);
     expect(payload.policyVersion).toBe(1);

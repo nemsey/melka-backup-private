@@ -28,9 +28,10 @@ export type {
   SupplyDemandUpsertInput,
 } from "./market.repository";
 export type { CustomerRepository, EventArmSyncUpdate } from "./customer.repository";
-export type { ListingRepository, ListingCrmTransferUpdate } from "./listing.repository";
+export type { ListingRepository, ListingCrmTransferUpdate, ListingInstagramPublicationUpdate } from "./listing.repository";
 export type { AgentMemoryRepository } from "./agent-memory.repository";
 export type { PolicyRepository } from "./policy.repository";
 export type { PredictionRepository } from "./prediction.repository";
 export type { OutcomeRepository } from "./outcome.repository";
 export type { IntegrationRepository } from "./integration.repository";
+export type { RequestRepository } from "./request.repository";

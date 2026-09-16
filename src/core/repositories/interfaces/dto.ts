@@ -561,3 +561,71 @@ export interface PmConnectionUpsertInput {
   lastCheckedAt?: Date | null;
   lastError?: string | null;
 }
+
+// ===================== درخواست‌های ملک (P2-03) =====================
+
+/** ردیف RequestRecord — فرم ۵ گامی درخواست ملک */
+export interface RequestRecordDTO {
+  id: string;
+  source: string;
+  customerName: string | null;
+  customerMobile: string | null;
+  armCustomerId: string | null;
+  countryId: string | null;
+  stateId: string | null;
+  cityId: string | null;
+  areaIdsJson: string | null;
+  areaNamesJson: string | null;
+  lineIdsJson: string | null;
+  lineNamesJson: string | null;
+  tradeTypeId: string | null;
+  tradeTypeName: string | null;
+  buildingTypeId: string | null;
+  buildingTypeName: string | null;
+  propertyTypeId: string | null;
+  propertyTypeName: string | null;
+  inputsJson: string | null;
+  customerDescription: string | null;
+  userPaymentMethod: string | null;
+  userPaymentMethodName: string | null;
+  userSeriousity: string | null;
+  userSeriousityName: string | null;
+  realtorDescription: string | null;
+  status: string;
+  armRegistrationJson: string | null;
+  armRegisteredAt: Date | null;
+  armRequestId: string | null;
+  actorCode: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** ردیف RequestEventRecord — رویداد درخواست (عین request-events سامانه) */
+export interface RequestEventDTO {
+  id: string;
+  requestId: string;
+  eventTypeId: string;
+  eventTypeName: string;
+  eventTypeFlagsJson: string | null;
+  date: string | null;
+  hour: string | null;
+  propertyCode: string | null;
+  armPropertyId: string | null;
+  message: string | null;
+  armSyncJson: string | null;
+  armSyncedAt: Date | null;
+  armEventId: string | null;
+  actorCode: string;
+  createdAt: Date;
+}
+
+/** رکورد درخواست با رویدادهای نزولی (عین include قدیم روت events) */
+export type RequestWithEventsDTO = RequestRecordDTO & { events: RequestEventDTO[] };
+
+/** به‌روزرسانی نتیجه همگام‌سازی آرم روی رویداد (مسیر POST events) */
+export interface RequestEventArmSyncInput {
+  armEventId: string | null;
+  armSyncedAt: Date | null;
+  armPropertyId: string | null;
+  armSyncJson: string;
+}

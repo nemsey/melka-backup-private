@@ -16,3 +16,4 @@ export { PrismaPolicyRepository } from "./policy.repository";
 export { PrismaPredictionRepository } from "./prediction.repository";
 export { PrismaOutcomeRepository } from "./outcome.repository";
 export { PrismaIntegrationRepository } from "./integration.repository";
+export { PrismaRequestRepository } from "./request.repository";

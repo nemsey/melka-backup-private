@@ -28,6 +28,7 @@ import { PrismaPolicyRepository } from "./prisma/policy.repository";
 import { PrismaPredictionRepository } from "./prisma/prediction.repository";
 import { PrismaOutcomeRepository } from "./prisma/outcome.repository";
 import { PrismaIntegrationRepository } from "./prisma/integration.repository";
+import { PrismaRequestRepository } from "./prisma/request.repository";
 import type {
   ContractRepository,
   CustomerRepository,
@@ -41,6 +42,7 @@ import type {
   TransactionRepository,
   VisitRepository,
   AgentMemoryRepository,
+  RequestRepository,
 } from "./interfaces";
 
 // ===================== کارخانه (Factory) =====================
@@ -91,6 +93,10 @@ export function getOutcomeRepository(): OutcomeRepository {
 
 export function getIntegrationRepository(): IntegrationRepository {
   return new PrismaIntegrationRepository();
+}
+
+export function getRequestRepository(): RequestRepository {
+  return new PrismaRequestRepository();
 }
 
 // ===================== بسته پیش‌فرض ایجنت‌ها =====================
