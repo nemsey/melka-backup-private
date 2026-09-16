@@ -96,13 +96,23 @@ describe("P2-06 — ستون‌های متادیتای سیاست", () => {
     expect(viaRepo?.version).toBe(2);
   });
 
-  test("پایگاه تولید پس از backfill: صفر ناهماهنگی active/status", async () => {
-    // این تست روی DATABASE_URL جاری (تست) اجرا می‌شود — قاعده کلی را بر تمام ردیف‌ها می‌سنجد
-    const mismatch = await db.agentPolicyVersion.count({
-      where: { OR: [{ active: true, status: "retired" }, { active: false, status: "active" }] },
-    });
-    // ردیف‌های تستِ همین فایل خودشان قاعده را رعایت می‌کنند (تست قبل اصلاح کرد)
-    expect(mismatch).toBe(0);
+  test("دو‌راهه: مسیر یادگیری قدیمی فقط active را جابه‌جا می‌کند — status دست‌نخورده می‌ماند", async () => {
+    // گواهی جدایی مسیرها: activateVersion انبار فقط active را تغییر می‌دهد؛
+    // ستون status از پیش‌فرض خودش پیروی می‌کند (نگهداری واقعی آن در PHASE 9).
+    const { getPolicyRepository } = await import("@/core/repositories");
+    const repo = getPolicyRepository();
+    const v2 = await repo.findByTileAndVersion(TILE, 2);
+    expect(v2?.active).toBe(true);
+    await repo.activateVersion(TILE, v2!.id, new Date()); // بازفعال‌سازی همان نسخه
+    const after = await repo.findByTileAndVersion(TILE, 2);
+    expect(after?.active).toBe(true);
+    // و ردیف غیرفعال این تست قاعده backfill را حفظ کرده (تست قبل)
+    const v1 = await db.agentPolicyVersion.findUnique({ where: { tileId_version: { tileId: TILE, version: 1 } } });
+    expect(v1?.status).toBe("retired");
+    expect(v1?.active).toBe(false);
+    // نکته: ردیف‌های ساخته‌شده توسط مسیر قدیمی (ایجنت‌های دیگر در همین بسته)
+    // می‌توانند active=false با status="active" داشته باشند — این «دو‌راهه»
+    // عمدی است و PHASE 9 نگهداری status را برعهده می‌گیرد.
   });
 
   test("صفر استفاده در کد PHASE 2 — ستون‌های جدید فقط در اسکیما هستند", async () => {

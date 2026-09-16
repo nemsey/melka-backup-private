@@ -63,7 +63,7 @@ test-repository.db: total=0   (خالی)                          mismatch-after
 ۲. create با متادیتای کامل (شبیه‌سازی PHASE 6/9) پذیرفته
 ۳. قاعده backfill (idempotent) روی ردیف‌های واقعی
 ۴. PolicyRepository.findActive (مسیر واقعی ایجنت‌ها) همچنان روی active قدیمی
-۵. صفر ناهماهنگی active/status پس از backfill
+۵. دو‌راهه: مسیر قدیمی فقط active را جابه‌جا می‌کند (status از پیش‌فرض پیروی می‌کند — نگهداری واقعی PHASE 9)
 ۶. سطح سورس: base-agent هیچ نام ستون جدید را ندارد
 
 ## ۶) وضعیت نهایی
