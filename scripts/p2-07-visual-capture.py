@@ -12,7 +12,7 @@ import time
 
 PORT = sys.argv[1]
 PREFIX = sys.argv[2]
-OUT = "/home/z/my-project/download/phase2-visual"
+OUT = sys.argv[3] if len(sys.argv) > 3 else "/home/z/my-project/download/phase2-visual"
 BASE_URL = f"http://localhost:{PORT}"
 MASTER_CODE = "20700000"
 

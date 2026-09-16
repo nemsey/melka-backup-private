@@ -43,6 +43,10 @@ async function main() {
   const TILES = ["transactions", "experts", "visits", "contracts", "file-finder", "finance-commission", "price-index", "customer-club", "extraction", "supply-demand", "listings", "requests"];
   await db.agentMemory.deleteMany({ where: { tileId: { in: TILES } } });
   await db.agentFeedback.deleteMany({ where: { tileId: { in: TILES } } });
+  // P3-05: سیاست‌ها نیز ریست می‌شوند — کامنت پایین («سیاست‌ها: هیچ») این ناوردا را ادعا
+  // می‌کرد اما deleteMany قبلی فقط حافظه/بازخورد را پاک می‌کرد؛ ردیف‌های به‌جامانده از
+  // اجراهای قبلی stats-first دو سمت را ناهمسان می‌کرد (policyVersions 0 ↔ 1)
+  await db.agentPolicyVersion.deleteMany({ where: { tileId: { in: TILES } } });
   await db.divarRejectLog.deleteMany({ where: { token: { startsWith: "p207-ad-" } } });
   await db.divarScanLog.deleteMany({ where: { id: { startsWith: "p207-scan-" } } });
   await db.divarAd.deleteMany({ where: { token: { startsWith: "p207-ad-" } } });
