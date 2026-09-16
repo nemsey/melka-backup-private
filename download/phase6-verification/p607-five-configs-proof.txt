@@ -1,0 +1,26 @@
+✓ گارد ۱-الف: هر 16 فایل مسیر خروجی عیناً با pre-phase6-baseline هم‌خوان است
+✓ گارد ۱-ب: engine-deps.ts — دقیقاً فقط تغییر مصوب P6-06 (فیلد اختیاری + import تایپ)؛ هیچ تفاوت دیگر نیست
+{"ts":"2026-09-16T19:52:21.366Z","level":"info","category":"agent","operation":"render-insights","status":"start","requestId":"e3b85038-6f7e-4259-8ef2-cf9e4b473f9f","traceId":"e3b85038-6f7e-4259-8ef2-cf9e4b473f9f","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":null,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T19:52:21.392Z","level":"info","category":"agent","operation":"render-insights","status":"ok","requestId":"df322ea6-27d9-48cd-80d9-59ca85098bfd","traceId":"df322ea6-27d9-48cd-80d9-59ca85098bfd","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":26,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T19:52:21.400Z","level":"info","category":"agent","operation":"render-insights","status":"start","requestId":"878ebf8b-4a85-4892-9e06-9f30cb238218","traceId":"878ebf8b-4a85-4892-9e06-9f30cb238218","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":null,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T19:52:21.414Z","level":"info","category":"agent","operation":"render-insights","status":"ok","requestId":"7c2c8bb6-d6c1-43bf-976a-f0f23471cef8","traceId":"7c2c8bb6-d6c1-43bf-976a-f0f23471cef8","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":14,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T19:52:21.423Z","level":"info","category":"agent","operation":"render-insights","status":"start","requestId":"d44da644-bfd1-4057-a76b-52443cf1964d","traceId":"d44da644-bfd1-4057-a76b-52443cf1964d","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":null,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T19:52:21.448Z","level":"info","category":"agent","operation":"render-insights","status":"ok","requestId":"03dfc958-eb0b-4166-8d59-87fbedbe8a19","traceId":"03dfc958-eb0b-4166-8d59-87fbedbe8a19","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":25,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T19:52:21.455Z","level":"info","category":"agent","operation":"render-insights","status":"start","requestId":"45843468-0a14-4c67-856f-32173b799f4f","traceId":"45843468-0a14-4c67-856f-32173b799f4f","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":null,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T19:52:21.476Z","level":"info","category":"agent","operation":"render-insights","status":"ok","requestId":"6246a29e-0274-480b-b831-187b0a80fe0f","traceId":"6246a29e-0274-480b-b831-187b0a80fe0f","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":21,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T19:52:21.482Z","level":"info","category":"agent","operation":"render-insights","status":"start","requestId":"5cb1ca91-8971-4db9-a55e-6ff5e20173cb","traceId":"5cb1ca91-8971-4db9-a55e-6ff5e20173cb","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":null,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T19:52:21.498Z","level":"info","category":"agent","operation":"render-insights","status":"ok","requestId":"6f95939c-1b78-4a5e-a7f9-3b4284b8bdc2","traceId":"6f95939c-1b78-4a5e-a7f9-3b4284b8bdc2","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":16,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+✓ گارد ۲: سیم‌کشی زنده — بازیابی C: 5 · D: 3 نتیجه؛ چهار FeatureSet ساخته شد (بازار: 2 نمونه، میانه 30M/m²)؛ پیش‌بینی PROPERTY محاسبه+ذخیره+بازیابی شد (probability=0.590، drivers=6، expectedRevenue=15M)؛ CUSTOMER هم ذخیره شد
+✓ A (بدون موتور/PHASE 3) ⇔ B (بدنه‌های PHASE 4) — بایت‌به‌بایت یکسان (5405 نویسه)
+✓ A ⇔ C (B + Retrieval کامل Hybrid+Reranker) — بایت‌به‌بایت یکسان (5405 نویسه)
+✓ A ⇔ D (C + FeatureEngine + استخراج واقعی چهار FeatureSet) — بایت‌به‌بایت یکسان (5405 نویسه)
+✓ A ⇔ E (D + PredictionEngine + predict ایجنت + ذخیره واقعی) — بایت‌به‌بایت یکسان (5405 نویسه)
+✓ D ⇔ E (تنها اثر افزودن موتور پیش‌بینی) — بایت‌به‌بایت یکسان (5405 نویسه)
+
+بینش‌های پیکربندی A: 6 کارت — health-overview، community-overview، next-action، match-engine، events-overview، churn-alert
+نسخه سیاست: 1 · خاطره‌های مؤثر: 6
+نمونه پیش‌بینی E: type=PROPERTY probability=0.590 confidence=0.712 model=property-predictor-v0.1
+بازه زمانی موردانتظار: 7–38 روز (محتمل‌ترین: 19)
+پاک‌سازی p303 انجام شد.
+
+نتیجه: هر پنج پیکربندی بایت‌به‌بایت یکسان‌اند — بی‌اثری پشته Feature + Prediction بر خروجی اثبات شد.
