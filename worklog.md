@@ -692,3 +692,32 @@ Work Log:
 Stage Summary:
 - PHASE 2 رسماً بسته با تأیید صریح مالک (D0✓ D1✓ D2✓ D3✓ D4✓ D5✓)
 - گام بعد: PHASE 3 / P3-00 — بکاپ db/custom.backup-pre-phase3.db + گیت‌تگ pre-phase3-baseline
+
+---
+Task ID: phase3-p3-00
+Agent: main (Super Z / GLM-5.3)
+Task: P3-00 — خط پایه ایمنی PHASE 3
+
+Work Log:
+- پیش‌شرط D5 برآورده شد (تأیید مالک در همین جلسه) → PHASE 3 رسماً آغاز
+- بکاپ: db/custom.db → db/custom.backup-pre-phase3.db (۱٬۳۶۳٬۹۶۸ بایت، پنج بکاپ تاریخی + این نسخه)
+- گیت‌تگ: pre-phase3-baseline (در کنار phase2-complete و pre-phase2-baseline)
+- رول‌بک کامل فاز: git reset --hard pre-phase3-baseline + بازگردانی بکاپ DB
+
+Stage Summary:
+- خط پایه ایمن؛ گام بعد P3-01 — سند طراحی PHASE-3-DESIGN.md (هر موتور: ورودی/خروجی/مسئولیت/مرز/نسخه/فاز پیاده‌سازی — بدون هیچ کدی)
+
+---
+Task ID: phase3-p3-01
+Agent: main (Super Z / GLM-5.3)
+Task: P3-01 — سند طراحی PHASE-3-DESIGN.md (بدون هیچ کد)
+
+Work Log:
+- مطالعه دقیق سه منبع پیش از طراحی: base-agent.ts (۴۱۴ خط — قرارداد کامل BaseLearningAgent)، request-agent.ts (۲۳۴ خط — هدف مهاجرت P3-03)، policy.ts + prediction/outcome repository interfaces
+- docs/PHASE-3-DESIGN.md نوشته شد: ۷ بخش — خلاصه اجرایی برای مالک، معماری وراثت (BaseLearningAgent → BaseIntelligentAgent → RequestAgent) + چیدمان فایل + ۵ قاعده خلوص، مشخصات کامل ۱۱ موتور (هرکدام: ورودی/خروجی/مسئولیت/مرز/نسخه قرارداد/فاز پیاده‌سازی)، ظرف تزریق EngineDeps، استراتژی Placeholder با تضمین بایت‌به‌بایت، محدوده خارج (۶ ممنوعیت)، معیارهای پذیرش، ریسک‌ها و مسیرهای جایگزین
+- اعلام صادقانه طبق قانون H در خود سند: همه ۱۱ قرارداد فقط interface خالص‌اند — هیچ موتور «آماده» نیست
+- تصمیم طراحی کلیدی: MemoryEngine شش‌لایه بدون Migration — لایه در PHASE 3 فیلد منطقی مشتق از kind امروز (نگاشت پیش‌فرض همه → AGENT)؛ SafetyEngine قاعده سخت affectsExternalSystem ∨ isDestructive → requiredApproval
+
+Stage Summary:
+- GATE-D بخش ۱ آماده؛ صفر کد نوشته شد (طبق قانون طلایی فاز)
+- گام بعد P3-02 — اسکلت: ۱۱ فایل interface خالص در src/core/intelligence/engines/ + base-intelligent-agent.ts + engine-deps.ts
