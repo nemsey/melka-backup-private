@@ -13,11 +13,20 @@
  * ⚠️ اعلام صادقانه (قانون H): این کلاس در PHASE 3 «بدون منطق جدید» است —
  * هیچ مسیر خروجی‌ای موتورها را فراخوانی نمی‌کند. مصرف موتورها از PHASE 4
  * با پیاده‌سازی بدنه‌ها آغاز می‌شود. هیچ ادعای «هوشمند شدن» تا آن زمان معتبر نیست.
+ *
+ * PHASE 4 (سند طراحی PHASE-4-DESIGN بند ۳-۵): دو متد «افزودنی» برای مصرف
+ * فازهای بعد — که در PHASE 4 توسط هیچ مسیر خروجی فراخوانی نمی‌شوند:
+ *  - observe(): ثبت مشاهده در موتور حافظه تزریقی — fire-and-forget با بلع خطا.
+ *  - assembleContext(): مونتاژ زمینه کاری از موتور زمینه دارای قابلیت assemble.
+ * قانون طلایی ۳ حفظ می‌شود: نبودِ موتور ⇔ رفتار بایت‌به‌بایت PHASE 3.
  */
 
 import { BaseLearningAgent } from "@/core/agent/base-agent";
 import type { AgentMemoryRepository, PolicyRepository } from "@/core/repositories";
 import { createDefaultEngineDeps, type EngineDeps } from "./engine-deps";
+import type { ContextEngine, ContextPurpose } from "./engines/context";
+import type { MemoryLayer } from "./engines/memory";
+import type { AssembleOptions, ContextAssembler, WorkingContext } from "./context/context-engine";
 
 /** گزینه‌های سازنده BaseIntelligentAgent */
 export interface BaseIntelligentAgentOptions {
@@ -51,5 +60,39 @@ export abstract class BaseIntelligentAgent extends BaseLearningAgent {
   /** نمای فقط-خواندنی موتورهای تزریق‌شده — برای تست و فازهای بعد */
   get injectedEngines(): Readonly<Partial<EngineDeps>> {
     return this.engines;
+  }
+
+  // ---------- PHASE 4: متدهای افزودنی (خارج از هر مسیر خروجی) ----------
+
+  /**
+   * ثبت مشاهده در موتور حافظه تزریقی — fire-and-forget:
+   *  - بدون موتور حافظه: no-op بی‌صدعا (رفتار PHASE 3).
+   *  - خطای درگاه: بی‌صدا بلعیده می‌شود — مشاهده هرگز نباید خروجی ایجنت را بشکند.
+   *  - tileId مرجع: همین کاشی ایجنت (this.tileId از قرارداد والد).
+   * ⚠️ در PHASE 4 هیچ مسیر خروجی این متد را صدا نمی‌زند (قانون طلایی ۳).
+   */
+  protected async observe(kind: string, payload: Record<string, unknown>, layer: MemoryLayer = "AGENT"): Promise<void> {
+    const memory = this.engines.memory;
+    if (!memory) return;
+    try {
+      await memory.append({ tileId: this.tileId, layer, kind, payload });
+    } catch {
+      // مشاهده نباید هرگز جریان اصلی را بشکند — عمداً بی‌صدا
+    }
+  }
+
+  /**
+   * مونتاژ زمینه کاری از موتور زمینه تزریقی — فقط اگر موتور «قابلیت assemble»
+   * داشته باشد (قرارداد اختیاری ContextAssembler — duck-typing، بدون instanceof):
+   *  - بدون موتور یا بدون قابلیت: null (رفتار PHASE 3).
+   * ⚠️ در PHASE 4 هیچ مسیر خروجی این متد را صدا نمی‌زند (قانون طلایی ۳).
+   */
+  protected async assembleContext(
+    purpose: ContextPurpose,
+    options?: AssembleOptions,
+  ): Promise<WorkingContext | null> {
+    const engine = this.engines.context as (ContextEngine & Partial<ContextAssembler>) | undefined;
+    if (!engine || typeof engine.assemble !== "function") return null;
+    return engine.assemble({ tileId: this.tileId, purpose }, options);
   }
 }

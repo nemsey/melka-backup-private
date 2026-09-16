@@ -127,8 +127,20 @@ function walkImports(startFile: string): Set<string> {
 describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", () => {
   const intelFiles = collectTs(INTEL_DIR);
 
-  test("ناحیه هوشمندی وجود دارد و ۱۵ فایل دارد (۱۱ موتور + index + ۴ اسکلت)", () => {
-    expect(intelFiles.length).toBe(15);
+  test("ناحیه هوشمندی وجود دارد — ترکیب مورد انتظار هر فاز (PHASE 3: ۱۵؛ PHASE 4: +۶ بدنه)", () => {
+    // PHASE 3 (۱۵): ۱۱ قرارداد موتور + engines/index + ۴ اسکلت (base/engine-deps/index + قرارداد زمینه)
+    // PHASE 4 (+۶): memory/{memory-store, vector-index, memory-engine, index} + context/{context-engine, index}
+    const expected = new Set([
+      "engines/context.ts", "engines/memory.ts", "engines/retrieval.ts", "engines/feature.ts",
+      "engines/prediction.ts", "engines/decision.ts", "engines/action-planner.ts", "engines/outcome.ts",
+      "engines/evaluation.ts", "engines/learning.ts", "engines/safety.ts", "engines/index.ts",
+      "base-intelligent-agent.ts", "engine-deps.ts", "index.ts",
+      // ---- PHASE 4 ----
+      "memory/memory-store.ts", "memory/vector-index.ts", "memory/memory-engine.ts", "memory/index.ts",
+      "context/context-engine.ts", "context/index.ts",
+    ]);
+    const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
+    expect([...actual].sort()).toEqual([...expected].sort());
   });
 
   test("هیچ فایلی Prisma یا lib/db را ارزشی import نمی‌کند", () => {

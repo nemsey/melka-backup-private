@@ -1,8 +1,8 @@
 /**
- * لایه هوشمندی (Intelligence Layer) — نقطه ورود واحد (PHASE 3)
+ * لایه هوشمندی (Intelligence Layer) — نقطه ورود واحد (PHASE 3 + PHASE 4)
  * ------------------------------------------------------
- * اسکلت BaseIntelligentAgent با ۱۱ قرارداد موتور.
- * ⚠️ PHASE 3 فقط «شکل» را می‌سازد — بدنه موتورها در PHASE 4 تا 8.
+ * BaseIntelligentAgent با ۱۱ قرارداد موتور (PHASE 3) + بدنه موتورهای
+ * Context و Memory (PHASE 4) — قابل‌تزریق، اثبات‌شده، هنوز مصرف‌نشده در خروجی.
  */
 
 export { BaseIntelligentAgent, type BaseIntelligentAgentOptions } from "./base-intelligent-agent";
@@ -12,3 +12,5 @@ export {
   type EngineDeps,
 } from "./engine-deps";
 export * from "./engines";
+export * from "./memory";
+export * from "./context";
