@@ -1020,3 +1020,19 @@ Work Log:
 Stage Summary:
 - پیش‌شرط‌های شروع PHASE 6.5 کامل: بکاپ ✓ تگ ✓ worklog ✓ پایه سبز ×۲ ✓
 - گام بعد P6.5-01: docs/PHASE-6.5-DESIGN.md — سند طراحی جامع ۱۰بندی + بند آینده‌نگر چند-مستأجری؛ سپس بازبینی شورا (ف۱ + ف۲ + ف۵)
+---
+Task ID: phase65-p6501
+Agent: main (Super Z / GLM-5.3)
+Task: P6.5-01 — سند طراحی جامع docs/PHASE-6.5-DESIGN.md (۱۰ بند اجباری + بند آینده‌نگر)
+
+Work Log:
+- کاوش زمین قبل از طراحی: Schema کامل (Session/AuditLog/SyncState/۹ مدل CRM)، endpoints واقعی ARM/PM (properties/requests/visits/trade-overviews/realtors + صفحه‌بندی NestJS)، الگوی نوشتار sync (کشف کلیدی: مسیر افزایشی P2-04 = upsert+جاروی scoped؛ مسیر کامل = deleteMany — هم‌زیستی مستند شد §۱.۹)، رجیستری ۹۲۶ محله (130×926 راستی‌آزمایی شد)، jalaliToGregorian موجود، VectorIndex/FileSystemStore موجود از PHASE 4، CustomerRepository = دامنه Request
+- سند ۷۲۸خطی با ۱۰ بند اجباری: استراتژی Bulk (pagination 100-500/batch 1000/checkpoint در bulkImportCheckpoint/idempotency سه‌لایه/retry 2s→30s پنج‌تلاش/rate-limit 200ms) · Dedup (۶ کلید طبیعی + دو مدل جدید PropertyRecord/CustomerRecord + merge non-null) · Normalization (۷ تابع خالص + تطبیق سه‌مرحله‌ای رجیستری ۹۲۶ + قاعده مرز واحد ریال/تومان) · ۸ ایندکس افزودنی با جدول نگاشت صادقانه · ConsultantScope (ماتریس دامنه شخصی/تجمیمی + fail-closed + TenantResolver placeholder) · AuditLog (۴ ستون افزودنی + auditAccess) · Feature Batch (۱۰K<60s + checkpoint) · Vector Batch (۱۰K<90s + fallback 50K) · اهداف عملکرد (P50/P95/P99 + ۵ Query + همزمانی ۱۰) · Rollback (۶ سناریو)
+- بند آینده‌نگر §۱۱: tenantId روی ۱۳ جدول + رأی فنی داشبورد (گزینه ۱ در هویت + گزینه ۲ در زیرساخت = تک-کدبیس چند-مستأجر)
+- ۶ انحراف صادقانه مستند (§۱۲): consultantCode≡personnelCode · PropertyRecord جدید · نگاشت ایندکس‌ها · fallback هولوگرام تهی · دامنه Customer در Scope · زمان‌بندی تغییر نام داشبورد منوط به مصوبه
+- کامیت 18f7791 — فقط سند، صفر کد پیاده‌سازی (الگوی P6-01)
+
+Stage Summary:
+- سند طراحی کامل و تحویل‌شده — در انتظار بازبینی شورا (ف۱ + ف۲ + ف۵) طبق شرط پذیرش P6.5-01
+- تصمیم‌های کلیدی معماری: upsert-only بدون حذف · تفکیک checkpoint از sync منظم · ماتریس دامنه Scope · مرز واحد پول · دو مدل جدید افزودنی
+- گام بعد پس از بازبینی: P6.5-02 (ConsultantScope + AuditLog — ستون‌های افزودنی + findWithScope + auditAccess + تست‌های اثبات ۵گانه)
