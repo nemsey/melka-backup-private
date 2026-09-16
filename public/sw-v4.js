@@ -1,12 +1,12 @@
-/* Service Worker — داشبورد ملک تبریز (نسخه ۴ — گیت تحویل PHASE 2)
+/* Service Worker — داشبورد ملک تبریز (نسخه ۴ — گیت تحویل PHASE 3)
    راهبرد نسخه ۳ حفظ شده (پایدار)؛ فقط نسخه و مسیر جدید:
    - HTML و صفحات و اسکریپت‌های Next: همیشه شبکه (network-first) → هرگز HTML کهنه Serve نمی‌شود
    - کش فقط برای فایل‌های تغییرناپذیر (فونت/آیکن/مانیفست)
    - به‌روزرسانی خودکار SW با skipWaiting + clients.claim
-   - پاک‌سازی کامل کش‌های همه نسخه‌های قدیمی (v1/v2/v3/v6) هنگام فعال‌سازی
+   - پاک‌سازی کامل کش‌های همه نسخه‌های قدیمی (v1/v2/v3/v6/v7) هنگام فعال‌سازی
    - مسیر جدید sw-v4.js چون لایه CDN فایل‌های هم‌مسیر را کش می‌کند (درس v3) */
 
-const VERSION = "melk-dash-v7";
+const VERSION = "melk-dash-v8";
 const STATIC_CACHE = `${VERSION}-static`;
 
 /* فقط دارایی‌های واقعاً تغییرناپذیر — بدون HTML و بدون چانک‌های Next */
@@ -39,7 +39,7 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  /* حذف هر کشی که متعلق به نسخه جاری نیست — شامل melk-dash-v1 که عامل صفحه سفید بود */
+  /* حذف هر کشی که متعلق به نسخه جاری نیست — شامل melk-dash-v1 که عامل صفحه سفید بود و v7 گیت تحویل قبلی */
   event.waitUntil(
     caches
       .keys()

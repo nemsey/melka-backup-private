@@ -812,3 +812,17 @@ Work Log:
 Stage Summary:
 - PHASE 3 کامل: ۱۱ قرارداد خالص + ۲ ایجنت مهاجرت‌یافته با اثبات بایت‌به‌بایت + صفر Feature/Migration + BaseLearningAgent دست‌نخورده
 - گام بعد P3-D — گیت تحویل فاز (D0 تا D5) و سپس انتظار تأیید مالک برای PHASE 4
+
+---
+Task ID: phase3-p3-delivery-d0-d2
+Agent: main (Super Z / GLM-5.3)
+Task: P3-D — گیت تحویل PHASE 3 (D0 تا D2)
+
+Work Log:
+- D0: رازها راستی‌آزمایی (هر دو موجود، مجوز ۶۰۰)؛ health ok mode=real؛ watchdog/server شناسایی (PID 2751/2754)
+- D1: bun run build با کد PHASE 3 سبز (سرور قدیمی حین ساخت سرویس‌دهی ادامه داد)؛ static/public به standalone کپی؛ توقف نرم (فلگ .prod-stop + kill سرور → خروج نگهبان)؛ دیمون جدید start-prod-daemon؛ health: ok mode=real با هر سه API خارجی
+- D2: نسخه داخلی SW v7 → v8 (public/sw-v4.js — همان مسیر نسخه‌ای؛ activate همه کش‌های قدیمی از جمله v7 را پاک می‌کند)؛ به‌روزرسانی توضیح SwRegister + بازکپی به standalone؛ راهنمای مالک PWA به‌روز (سه بکاپ → شامل pre-phase3)
+- گارد پیش از کامیت: ۵۵۷/۵۵۷ سبز + گارد ۴-بخشی --strict PASS
+
+Stage Summary:
+- D0 ✓ D1 ✓ D2 ✓ — گام بعد D3: E2E موبایل روی build جدید (ورود مدیر + OTP + اسکرین‌شات)
