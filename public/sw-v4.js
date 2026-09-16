@@ -6,7 +6,7 @@
    - پاک‌سازی کامل کش‌های همه نسخه‌های قدیمی (v1/v2/v3/v6/v7) هنگام فعال‌سازی
    - مسیر جدید sw-v4.js چون لایه CDN فایل‌های هم‌مسیر را کش می‌کند (درس v3) */
 
-const VERSION = "melk-dash-v8";
+const VERSION = "melk-dash-v9";
 const STATIC_CACHE = `${VERSION}-static`;
 
 /* فقط دارایی‌های واقعاً تغییرناپذیر — بدون HTML و بدون چانک‌های Next */
