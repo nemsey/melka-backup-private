@@ -18,7 +18,12 @@
  * فازهای بعد — که در PHASE 4 توسط هیچ مسیر خروجی فراخوانی نمی‌شوند:
  *  - observe(): ثبت مشاهده در موتور حافظه تزریقی — fire-and-forget با بلع خطا.
  *  - assembleContext(): مونتاژ زمینه کاری از موتور زمینه دارای قابلیت assemble.
- * قانون طلایی ۳ حفظ می‌شود: نبودِ موتور ⇔ رفتار بایت‌به‌بایت PHASE 3.
+ *
+ * PHASE 5 (P5-07): سومین متد «افزودنی» با همان الگوی طلایی:
+ *  - assembleCitations(): مونتاژ زمینه با ارجاع — فقط اگر موتور زمینه
+ *    «قابلیت assembleWithCitations» داشته باشد (duck-typing)؛ وگرنه null.
+ * قانون طلایی ۳ حفظ می‌شود: نبودِ موتور ⇔ رفتار بایت‌به‌بایت PHASE 3؛
+ * هیچ مسیر خروجی هیچ‌یک از این متدها را صدا نمی‌زند (صفر مصرف اجباری).
  */
 
 import { BaseLearningAgent } from "@/core/agent/base-agent";
@@ -27,6 +32,11 @@ import { createDefaultEngineDeps, type EngineDeps } from "./engine-deps";
 import type { ContextEngine, ContextPurpose } from "./engines/context";
 import type { MemoryLayer } from "./engines/memory";
 import type { AssembleOptions, ContextAssembler, WorkingContext } from "./context/context-engine";
+import type {
+  AssembleWithCitationsOptions,
+  ContextCitationAssembler,
+} from "./context/context-engine";
+import type { Citation } from "./retrieval/citation-builder";
 
 /** گزینه‌های سازنده BaseIntelligentAgent */
 export interface BaseIntelligentAgentOptions {
@@ -94,5 +104,28 @@ export abstract class BaseIntelligentAgent extends BaseLearningAgent {
     const engine = this.engines.context as (ContextEngine & Partial<ContextAssembler>) | undefined;
     if (!engine || typeof engine.assemble !== "function") return null;
     return engine.assemble({ tileId: this.tileId, purpose }, options);
+  }
+
+  // ---------- PHASE 5 (P5-07): متد افزودنی (خارج از هر مسیر خروجی) ----------
+
+  /**
+   * مونتاژ زمینه با ارجاع از موتور زمینه تزریقی — فقط اگر موتور «قابلیت
+   * assembleWithCitations» داشته باشد (قرارداد اختیاری ContextCitationAssembler —
+   * duck-typing، بدون instanceof):
+   *  - بدون موتور یا بدون قابلیت: null (رفتار PHASE 4).
+   *  - هدف: در PHASE 6-8 برای «چرا این بینش؟ — منبعش کدام حافظه بود؟».
+   * ⚠️ در PHASE 5 هیچ مسیر خروجی این متد را صدا نمی‌زند (قانون طلایی ۳ —
+   * صفر مصرف اجباری؛ الگوی P4-06).
+   */
+  protected async assembleCitations(
+    purpose: ContextPurpose,
+    options?: AssembleWithCitationsOptions,
+  ): Promise<{ context: string; citations: Citation[] } | null> {
+    const engine = this.engines.context as
+      | (ContextEngine & Partial<ContextCitationAssembler>)
+      | undefined;
+    if (!engine || typeof engine.assembleWithCitations !== "function") return null;
+    const wc = await engine.assembleWithCitations({ tileId: this.tileId, purpose }, options);
+    return { context: wc.contextText, citations: wc.citations };
   }
 }

@@ -54,3 +54,9 @@ export {
   type Citation,
   type CitableMemory,
 } from "./citation-builder";
+
+export {
+  RetrievalEngineImpl,
+  createRetrievalEngine,
+  type RetrievalEngineOptions,
+} from "./retrieval-engine";

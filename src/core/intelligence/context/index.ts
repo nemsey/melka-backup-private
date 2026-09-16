@@ -18,4 +18,5 @@ export {
   type AssembleWithCitationsOptions,
   type WorkingContextWithCitations,
   type ContextItemRetriever,
+  type ContextCitationAssembler,
 } from "./context-engine";

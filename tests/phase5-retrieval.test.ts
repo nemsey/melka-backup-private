@@ -43,6 +43,12 @@ import {
   CONTEXT_SEPARATOR,
   type ContextItemRetriever,
 } from "@/core/intelligence/context/context-engine";
+import { RetrievalEngineImpl } from "@/core/intelligence/retrieval/retrieval-engine";
+import { BaseIntelligentAgent } from "@/core/intelligence/base-intelligent-agent";
+import { createDefaultEngineDeps } from "@/core/intelligence/engine-deps";
+import type { InsightCard } from "@/core/agent/base-agent";
+import type { ContextPurpose } from "@/core/intelligence/engines/context";
+import type { AssembleWithCitationsOptions } from "@/core/intelligence/context/context-engine";
 
 // ===================== دایرکتوری موقت تست فایل =====================
 
@@ -669,5 +675,108 @@ describe("P5-06 — Citation در ContextEngineImpl.assembleWithCitations", () =
       const [start, end] = c.positionInContext;
       expect(withCite.contextText.slice(start, end).length).toBeGreaterThan(0);
     }
+  });
+});
+
+// ===================== P5-07: بدنه قرارداد v1 + اتصال افزودنی ایجنت =====================
+
+describe("P5-07 — RetrievalEngineImpl (بدنه قرارداد v1) + اتصال BaseIntelligentAgent.assembleCitations", () => {
+  test("قرارداد v1 دقیق — خروجی سه‌فیلدی، snippets هفت‌فیلدی، method HYBRID، دامنه tileId و فیلتر لایه", async () => {
+    const store = new InMemoryStore();
+    await store.save(makeRecord({ tileId: "requests", text: "گزارش جامعه مشتریان رشد کرد", layer: "EPISODIC" }));
+    await store.save(makeRecord({ tileId: "requests", text: "هشدار ریزش مشتری ارسال شد", layer: "SEMANTIC" }));
+    await store.save(makeRecord({ tileId: "file-finder", text: "گزارش جامعه اسکن دیوار", layer: "EPISODIC" }));
+
+    const engine = await RetrievalEngineImpl.create({ store });
+    expect(engine.contractVersion).toBe(1);
+
+    const result = await engine.retrieve({ tileId: "requests", query: "جامعه مشتریان", k: 5 });
+    // دقیقاً سه فیلد — نه بیشتر (وفاداری به قرارداد v1)
+    expect(Object.keys(result).sort()).toEqual(["hitCount", "method", "snippets"]);
+    expect(result.method).toBe("HYBRID");
+    expect(result.hitCount).toBe(2); // فقط کاشی درخواست — رکورد file-finder بیرون ماند
+    for (const s of result.snippets) {
+      expect(Object.keys(s).sort()).toEqual(["createdAt", "id", "kind", "layer", "sentiment", "text", "tileId"]);
+      expect(s.tileId).toBe("requests");
+    }
+
+    // فیلتر لایه قرارداد
+    const onlySemantic = await engine.retrieve({ tileId: "requests", query: "مشتری", k: 5, layers: ["SEMANTIC"] });
+    expect(onlySemantic.hitCount).toBe(1);
+    expect(onlySemantic.snippets[0].text).toContain("ریزش");
+
+    // k=0 — خروجی خالی با همان شکل
+    expect(await engine.retrieve({ tileId: "requests", query: "x", k: 0 })).toEqual({
+      snippets: [],
+      hitCount: 0,
+      method: "HYBRID",
+    });
+  });
+
+  test("همیشه-تازه — الحاق پس از ساخت بدون sync دستی دیده می‌شود؛ حالت بدون رتبه‌بند هم کار می‌کند", async () => {
+    const store = new InMemoryStore();
+    await store.save(makeRecord({ tileId: "requests", text: "گزارش جامعه مشتریان" }));
+    const engine = await RetrievalEngineImpl.create({ store, reranker: null });
+    expect((await engine.retrieve({ tileId: "requests", query: "ولیعصر", k: 5 })).hitCount).toBe(1);
+
+    await store.save(makeRecord({ tileId: "requests", text: "گزارش ولیعصر ولیعصر ولیعصر" }));
+    const after = await engine.retrieve({ tileId: "requests", query: "ولیعصر", k: 5 });
+    expect(after.hitCount).toBe(2); // رکورد تازه بدون sync دستی در دسترس
+    // بدون رتبه‌بند — برترین نتیجه همان رتبه ادغام RRF است (تطبیق کلیدواژه‌ای قوی)
+    expect(after.snippets[0].text).toContain("ولیعصر ولیعصر");
+  });
+
+  // ---------- ایجنت شاهد (الگوی P4 — صفر وابستگی DB) ----------
+
+  class EchoAgent extends BaseIntelligentAgent {
+    readonly tileId = "requests";
+    readonly name = "ایجنت شاهد پنج";
+    readonly insightDomains = ["ECHO"] as const;
+
+    protected async computeRawInsights(): Promise<InsightCard[]> {
+      return [];
+    }
+
+    async pubAssembleCitations(purpose: ContextPurpose, options?: AssembleWithCitationsOptions) {
+      return this.assembleCitations(purpose, options);
+    }
+  }
+
+  test("اتصال ایجنت — بدون قابلیت assembleWithCitations → null (بدون موتور و با Placeholder)", async () => {
+    const bare = new EchoAgent();
+    expect(await bare.pubAssembleCitations("insight-render", { text: "جامعه" })).toBeNull();
+
+    const placeholder = new EchoAgent({ engines: createDefaultEngineDeps() }); // PassthroughContextEngine
+    expect(await placeholder.pubAssembleCitations("insight-render", { text: "جامعه" })).toBeNull();
+
+    // زنجیره وراثت و ساختار دست‌نخورده (تست P4 تکرار — گارد سازگاری)
+    expect(bare).toBeInstanceOf(BaseIntelligentAgent);
+    expect(typeof bare.injectedEngines).toBe("object");
+  });
+
+  test("اتصال ایجنت — با ContextEngineImpl واقعی → زمینه و ارجاع‌ها برمی‌گردند", async () => {
+    const memory = new MemoryEngineImpl();
+    await memory.append({
+      tileId: "requests",
+      layer: "EPISODIC",
+      kind: "NOTE",
+      payload: { text: "گزارش جامعه مشتریان درخواست رشد کرد", sentiment: 1 },
+    });
+    const agent = new EchoAgent({
+      engines: { context: new ContextEngineImpl({ memory, maxMemories: 5 }), memory },
+    });
+
+    const out = await agent.pubAssembleCitations("insight-render", {
+      text: "جامعه مشتریان",
+      signals: ["سیگنال زنده پنج"],
+    });
+    expect(out).not.toBeNull();
+    expect(out!.citations.length).toBe(1);
+    expect(out!.citations[0].snippet).toContain("جامعه مشتریان");
+    expect(out!.citations[0].relevanceScore).toBeGreaterThan(0);
+    expect(out!.context).toContain("سیگنال زنده پنج");
+    // موقعیت ارجاع داخل زمینه معتبر است
+    const [start, end] = out!.citations[0].positionInContext;
+    expect(out!.context.slice(start, end)).toContain("جامعه مشتریان");
   });
 });

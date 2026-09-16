@@ -100,6 +100,18 @@ export interface AssembleWithCitationsOptions extends AssembleOptions {
 }
 
 /**
+ * قرارداد قابلیت اختیاری «مونتاژ زمینه با ارجاع» — جدای قرارداد پایه ContextEngine.
+ * مصرف‌کننده (BaseIntelligentAgent.assembleCitations) با duck-typing بررسی می‌کند؛
+ * نبودِ قابلیت = null (رفتار PHASE 4).
+ */
+export interface ContextCitationAssembler {
+  assembleWithCitations(
+    query: ContextQuery,
+    options?: AssembleWithCitationsOptions,
+  ): Promise<WorkingContextWithCitations>;
+}
+
+/**
  * زمینه کاری با ارجاع — «گسترش» WorkingContext از طریق وراثت (سند طراحی ۳-۲):
  * فیلدهای موجود دست‌نخورده و شکل خروجی assemble تغییر نمی‌کند؛ نوع جدید
  * فقط خروجی assembleWithCitations است (سازگاری عقب‌وار کامل).
