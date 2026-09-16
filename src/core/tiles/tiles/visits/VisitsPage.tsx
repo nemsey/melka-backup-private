@@ -37,8 +37,9 @@ import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
+import { monthlyCounts } from "@/core/agent/analyzers";
 import { faNumber, faJalaliShortDateTime, faMonthLabel } from "@/lib/format";
-import { faDigits, dateToJalali } from "@/lib/jalali";
+import { faDigits } from "@/lib/jalali";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 
 interface ViRow {
@@ -61,23 +62,6 @@ interface Summary {
 
 const EMPTY = { propertyCode: "", requester: "", checker: "", status: "", dateFrom: "", dateTo: "" };
 type Filters = typeof EMPTY;
-
-/** سری ماهانه از ردیف‌ها (کلید ماه جلالی) — سمت کلاینت برای نمودار */
-function monthlyKeys(rows: ViRow[]): { key: string; label: string; count: number }[] {
-  const map = new Map<string, number>();
-  for (const r of rows) {
-    const iso = new Date(r.createdAt);
-    if (Number.isNaN(iso.getTime())) continue;
-    // کلید ماه جلالی «yyyy-mm» با ارقام لاتین (قابل تحلیل در faMonthLabel)
-    const j = dateToJalali(iso);
-    const key = `${j.jy}-${String(j.jm).padStart(2, "0")}`;
-    map.set(key, (map.get(key) ?? 0) + 1);
-  }
-  return [...map.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .slice(-9)
-    .map(([key, count]) => ({ key, label: faMonthLabel(key), count }));
-}
 
 /** پاسخ کامل روت بازدیدها — شیء یگانه داده هوک */
 interface ViData {
@@ -120,7 +104,10 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
   const summary = data?.summary ?? null;
   const source = data?.dataSource ?? null;
 
-  const chartData = useMemo(() => (rows ? monthlyKeys(rows) : []), [rows]);
+  const chartData = useMemo(
+    () => monthlyCounts((rows ?? []).map((r) => r.createdAt), { skipInvalid: true, takeLast: 9 }).map((p) => ({ key: p.key, label: faMonthLabel(p.key), count: p.count })),
+    [rows]
+  );
   const maxCount = Math.max(1, ...chartData.map((c) => c.count));
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));

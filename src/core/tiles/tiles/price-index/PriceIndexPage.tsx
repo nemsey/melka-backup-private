@@ -34,6 +34,7 @@ import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceAlert, useTileData } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
+import { areaTrendMatrix } from "@/core/agent/analyzers";
 import type { AreaPriceStat, DeviatingAd, PriceIndexConfig, PriceTrendPoint } from "@/lib/melk-api/types";
 import type { AreaStatWithReliability } from "@/lib/melk-api/price-index";
 import { faNumber, faPercent, faToman, faJalaliShortDateTime } from "@/lib/format";
@@ -73,26 +74,12 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
 
   const maxMedian = useMemo(() => Math.max(1, ...(data?.areaStats.map((s) => s.medianPerMeter) ?? [1])), [data]);
 
-  // سری روند برای نمودار خطی — گروه‌بندی بر پایه منطقه (۵ منطقه برتر)
-  const trendChartData = useMemo(() => {
-    const byArea = new Map<string, PriceTrendPoint[]>();
-    for (const p of data?.trend ?? []) {
-      const arr = byArea.get(p.areaName) ?? [];
-      arr.push(p);
-      byArea.set(p.areaName, arr);
-    }
-    const topAreas = [...byArea.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 5);
-    if (topAreas.length === 0) return [];
-    const allDates = [...new Set((data?.trend ?? []).map((p) => p.recordedAt.slice(0, 10)))].sort();
-    return allDates.map((date) => {
-      const row: Record<string, string | number> = { date: faJalaliShortDateTime(`${date}T12:00:00`).split(" ")[0] };
-      for (const [area] of topAreas) {
-        const point = byArea.get(area)?.find((p) => p.recordedAt.slice(0, 10) === date);
-        row[area] = point ? point.medianPerMeter : 0;
-      }
-      return row;
-    });
-  }, [data]);
+  // سری روند برای نمودار خطی — گروه‌بندی ۵ منطقه برتر (منطق دامنه: analyzers) + فرمت تاریخ نمایش
+  const trendChartData = useMemo(
+    () =>
+      areaTrendMatrix(data?.trend ?? []).map((r) => ({ ...r, date: faJalaliShortDateTime(`${r.date}T12:00:00`).split(" ")[0] })),
+    [data]
+  );
 
   return (
     <div className="space-y-6">

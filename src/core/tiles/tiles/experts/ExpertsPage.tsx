@@ -43,6 +43,7 @@ import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceWarning, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
+import { cooperationDegree, type CooperationDegree } from "@/core/agent/analyzers";
 import { faNumber, faJalaliShort } from "@/lib/format";
 import { faDigits } from "@/lib/jalali";
 
@@ -76,12 +77,16 @@ interface Meta {
 const EMPTY = { fullName: "", mobile: "", personnelCode: "", role: "all", businessTitle: "all", creator: "all", active: "all" };
 type Filters = typeof EMPTY;
 
-/** رتبه همکاری بر اساس مجموع تعامل‌ها */
+/** برچسب/رنگ درجه همکاری — نگاشت نمایشی روی درجه دامنه‌ای (آستانه‌ها: analyzers) */
+const COOPERATION_UI: Record<CooperationDegree, { label: string; style: string }> = {
+  CORE: { label: "محور همکاری", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" },
+  FREQUENT: { label: "همکار پرتکرار", style: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
+  RARE: { label: "کم‌تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" },
+  NONE: { label: "بدون تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" },
+};
+
 function cooperationLevel(total: number): { label: string; style: string } {
-  if (total >= 20) return { label: "محور همکاری", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" };
-  if (total >= 5) return { label: "همکار پرتکرار", style: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" };
-  if (total > 0) return { label: "کم‌تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
-  return { label: "بدون تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
+  return COOPERATION_UI[cooperationDegree(total)];
 }
 
 /** داده ترکیبی دو روت کارشناسان + تعاملات — شیء یگانه داده هوک */

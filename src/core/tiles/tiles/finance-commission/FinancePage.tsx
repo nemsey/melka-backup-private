@@ -24,6 +24,7 @@ import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
+import { parseFaAmount } from "@/core/agent/analyzers";
 import type { CommissionResult } from "@/lib/melk-api/types";
 import { faNumber, faPercent, faToman, faTomanExact, faDigits } from "@/lib/format";
 
@@ -71,12 +72,9 @@ interface CalcResponse {
   error?: string;
 }
 
-/** عدد تومان از ورودی متنی (ارقام فارسی/انگلیسی با جداکننده) */
+/** عدد تومان از ورودی متنی (ارقام فارسی/انگلیسی با جداکننده) — منطق دامنه: analyzers */
 function parseAmount(v: string): number | undefined {
-  const normalized = v.replace(/[٬,،\s]/g, "").replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
-  if (normalized === "") return undefined;
-  const n = Number(normalized);
-  return Number.isFinite(n) ? n : undefined;
+  return parseFaAmount(v);
 }
 
 export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {

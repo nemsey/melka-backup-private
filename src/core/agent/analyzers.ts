@@ -409,3 +409,120 @@ export function lookupStats(logs: LkRow[]): LookupStats {
     missingMobile: logs.filter((l) => l.found && !l.personMobile).length,
   };
 }
+
+// ===================== تحلیل‌های DTO — اشتراک UI ↔ سرور (PHASE 1 / P1-02) =====================
+// توابع خالص روی DTOهای API (نه رکورد Prisma) — منطق دامنه‌ای که قبلاً در
+// کامپوننت‌های UI تکرار می‌شد؛ اکنون یگانه و تست‌پذیر.
+// ورودی/خروجی این توابع باید با پیاده‌سازی قبلی داخل صفحات بایت‌به‌بایت یکسان بماند.
+
+export interface MonthCountPointDto {
+  /** کلید ماه جلالی (yyyy-mm) */
+  key: string;
+  count: number;
+}
+
+export interface MonthlyCountsOptions {
+  /** نادیده‌گرفتن تاریخ‌های نامعتبر (سبک صفحه بازدیدها) */
+  skipInvalid?: boolean;
+  /** فقط N ماه آخر (سبک نمودار بازدیدها: ۹ ماه) */
+  takeLast?: number;
+}
+
+/**
+ * شمارش رخدادها به تفکیک ماه هجری شمسی از فهرست تاریخ‌های ISO —
+ * هسته مشترک نمودارهای روند (معاملات/بازدیدها).
+ */
+export function monthlyCounts(dates: (string | null | undefined)[], opts: MonthlyCountsOptions = {}): MonthCountPointDto[] {
+  const map = new Map<string, number>();
+  for (const raw of dates) {
+    if (raw == null) continue;
+    const iso = new Date(raw);
+    if (opts.skipInvalid && Number.isNaN(iso.getTime())) continue;
+    const j = dateToJalali(iso);
+    const key = `${j.jy}-${String(j.jm).padStart(2, "0")}`;
+    map.set(key, (map.get(key) ?? 0) + 1);
+  }
+  const entries = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  if (opts.takeLast !== undefined) {
+    return entries.slice(-opts.takeLast).map(([key, count]) => ({ key, count }));
+  }
+  return entries.map(([key, count]) => ({ key, count }));
+}
+
+// ===================== آستانه‌های دامنه — عرضه و تقاضا =====================
+
+/** سطح تقاضای یک بازه قیمتی — آستانه‌های رسمی گزارش خود سامانه (۶۰/۴۰) */
+export type DemandLevel = "HIGH" | "BALANCED" | "LOW" | "NONE";
+
+export function demandLevel(requestPercent: number): DemandLevel {
+  if (requestPercent >= 60) return "HIGH";
+  if (requestPercent >= 40) return "BALANCED";
+  if (requestPercent > 0) return "LOW";
+  return "NONE";
+}
+
+/** جهت‌گیری بازار بر پایه شاخص تعادل — همان آستانه‌های ۶۰/۴۰ */
+export type MarketTilt = "DEMAND_LED" | "BALANCED" | "SUPPLY_LED";
+
+export function marketTilt(avgRequestPercent: number): MarketTilt {
+  if (avgRequestPercent >= 60) return "DEMAND_LED";
+  if (avgRequestPercent >= 40) return "BALANCED";
+  return "SUPPLY_LED";
+}
+
+// ===================== درجه همکاری مشاوران =====================
+
+/** درجه همکاری مشاور از مجموع تعامل‌ها — آستانه‌های گزارش تعاملات (۲۰/۵) */
+export type CooperationDegree = "CORE" | "FREQUENT" | "RARE" | "NONE";
+
+export function cooperationDegree(totalInteractions: number): CooperationDegree {
+  if (totalInteractions >= 20) return "CORE";
+  if (totalInteractions >= 5) return "FREQUENT";
+  if (totalInteractions > 0) return "RARE";
+  return "NONE";
+}
+
+// ===================== ماتریس روند چند-منطقه‌ای (شاخص قیمت) =====================
+
+export interface TrendPointDto {
+  areaName: string;
+  recordedAt: string;
+  medianPerMeter: number;
+}
+
+/**
+ * ردیف‌های نمودار خطی روند شاخص: N منطقه برتر (پرنمونه‌ترین)،
+ * محور تاریخ = تاریخ‌های ثبت‌شده، مقدار گمشده = ۰ — عین منطق قبلی PriceIndexPage.
+ */
+export function areaTrendMatrix(trend: TrendPointDto[], topN = 5): Record<string, string | number>[] {
+  const byArea = new Map<string, TrendPointDto[]>();
+  for (const p of trend) {
+    const arr = byArea.get(p.areaName) ?? [];
+    arr.push(p);
+    byArea.set(p.areaName, arr);
+  }
+  const topAreas = [...byArea.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, topN);
+  if (topAreas.length === 0) return [];
+  const allDates = [...new Set(trend.map((p) => p.recordedAt.slice(0, 10)))].sort();
+  return allDates.map((date) => {
+    const row: Record<string, string | number> = { date };
+    for (const [area] of topAreas) {
+      const point = byArea.get(area)?.find((p) => p.recordedAt.slice(0, 10) === date);
+      row[area] = point ? point.medianPerMeter : 0;
+    }
+    return row;
+  });
+}
+
+// ===================== تجزیه مبلغ فارسی (مالی و کمیسیون) =====================
+
+/**
+ * تجزیه ورودی مبلغ کاربر (ارقام فارسی/عربی + جداکننده‌های ٬ ، ، و فاصله) به عدد —
+ * عین parseAmount قبلی FinancePage؛ خالی/نامعتبر → undefined.
+ */
+export function parseFaAmount(v: string): number | undefined {
+  const normalized = v.replace(/[٬,،\s]/g, "").replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+  if (normalized === "") return undefined;
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : undefined;
+}

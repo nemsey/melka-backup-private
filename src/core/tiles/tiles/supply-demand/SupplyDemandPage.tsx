@@ -21,6 +21,7 @@ import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
+import { demandLevel, marketTilt, type DemandLevel, type MarketTilt } from "@/core/agent/analyzers";
 import { faNumber, faPercent } from "@/lib/format";
 
 interface SdRow {
@@ -41,13 +42,24 @@ interface SdSummary {
   topSupply: { rangeTitle: string; propertyCount: number; requestPercent: number } | null;
 }
 
-/** برچسب وضعیت بازه بر اساس درصد درخواست */
+/** برچسب/رنگ وضعیت بازه — نگاشت نمایشی روی سطح دامنه‌ای (آستانه‌های ۶۰/۴۰: analyzers) */
+const DEMAND_UI: Record<DemandLevel, { label: string; style: string }> = {
+  HIGH: { label: "تقاضای بالا", style: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" },
+  BALANCED: { label: "متعادل", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" },
+  LOW: { label: "تقاضای پایین", style: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
+  NONE: { label: "بدون درخواست", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" },
+};
+
 function demandBadge(percent: number): { label: string; style: string } {
-  if (percent >= 60) return { label: "تقاضای بالا", style: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" };
-  if (percent >= 40) return { label: "متعادل", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" };
-  if (percent > 0) return { label: "تقاضای پایین", style: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" };
-  return { label: "بدون درخواست", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
+  return DEMAND_UI[demandLevel(percent)];
 }
+
+/** متن هدایت راهبردی بازار — نگاشت نمایشی روی جهت دامنه‌ای */
+const MARKET_TILT_FA: Record<MarketTilt, string> = {
+  DEMAND_LED: "بازار تقاضامحور است: اولویت با پاسخ سریع به درخواست‌هاست.",
+  BALANCED: "بازار نسبتاً متعادل است: قیمت‌گذاری دقیق اهرم رقابت است.",
+  SUPPLY_LED: "بازار عرضه‌محور است: بازنگری قیمت آگهی‌های ماندگار توصیه می‌شود.",
+};
 
 /** پاسخ کامل روت عرضه و تقاضا — شیء یگانه داده هوک */
 interface SdData {
@@ -116,12 +128,7 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
                 {summary.topSupply && summary.topSupply.rangeTitle !== summary.topDemand.rangeTitle
                   ? `؛ پرعرضه‌ترین بازه «${summary.topSupply.rangeTitle}» با ${faNumber(summary.topSupply.propertyCount)} آگهی است.`
                   : ` و ${faNumber(summary.topDemand.propertyCount)} آگهی در همین بازه فعال است.`}{" "}
-                شاخص تعادل {faNumber(summary.avgRequestPercent)}٪ —{" "}
-                {summary.avgRequestPercent >= 60
-                  ? "بازار تقاضامحور است: اولویت با پاسخ سریع به درخواست‌هاست."
-                  : summary.avgRequestPercent >= 40
-                    ? "بازار نسبتاً متعادل است: قیمت‌گذاری دقیق اهرم رقابت است."
-                    : "بازار عرضه‌محور است: بازنگری قیمت آگهی‌های ماندگار توصیه می‌شود."}
+                شاخص تعادل {faNumber(summary.avgRequestPercent)}٪ — {MARKET_TILT_FA[marketTilt(summary.avgRequestPercent)]}
               </p>
             </div>
           </CardContent>

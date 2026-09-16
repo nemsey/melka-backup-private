@@ -52,8 +52,9 @@ import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceWarning, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
+import { monthlyCounts } from "@/core/agent/analyzers";
 import { faNumber, faJalaliShort, faMonthLabel } from "@/lib/format";
-import { faDigits, dateToJalali } from "@/lib/jalali";
+import { faDigits } from "@/lib/jalali";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 
 interface TxRow {
@@ -143,19 +144,11 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
   const source = data?.dataSource ?? null;
   const total = data?.total ?? 0;
 
-  // سری ماهانه — ماه‌های هجری شمسی
-  const monthly = useMemo(() => {
-    if (!rows) return [];
-    const map = new Map<string, number>();
-    for (const t of rows) {
-      const j = dateToJalali(new Date(t.contractDate));
-      const key = `${j.jy}-${String(j.jm).padStart(2, "0")}`;
-      map.set(key, (map.get(key) ?? 0) + 1);
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([k, v]) => ({ month: faMonthLabel(k), count: v }));
-  }, [rows]);
+  // سری ماهانه — ماه‌های هجری شمسی (منطق دامنه: analyzers؛ فرمت نمایش: همین‌جا)
+  const monthly = useMemo(
+    () => monthlyCounts((rows ?? []).map((t) => t.contractDate)).map((p) => ({ month: faMonthLabel(p.key), count: p.count })),
+    [rows]
+  );
 
   // ترکیب تطبیق برای نمودار
   const composition = useMemo(() => {
