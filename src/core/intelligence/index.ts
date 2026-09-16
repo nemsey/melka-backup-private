@@ -14,3 +14,4 @@ export {
 export * from "./engines";
 export * from "./memory";
 export * from "./context";
+export * from "./retrieval";

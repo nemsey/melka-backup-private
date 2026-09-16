@@ -16,6 +16,7 @@
 import { mkdirSync, appendFileSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
 import type { MemoryEntry, MemoryLayer } from "../engines/memory";
+import { applyMetadataFilter, type MetadataFilter } from "../retrieval/metadata";
 
 // ===================== انواع درگاه =====================
 
@@ -27,7 +28,9 @@ export interface MemoryRecord extends MemoryEntry {
   metadata?: Record<string, unknown>;
 }
 
-/** فیلترهای درگاه — زیرمجموعه سازگار با MemoryQuery قرارداد v1 */
+/**
+ * فیلترهای درگاه — زیرمجموعه سازگار با MemoryQuery قرارداد v1
+ */
 export interface MemoryStoreQuery {
   tileId?: string;
   layer?: MemoryLayer;
@@ -46,6 +49,14 @@ export interface MemoryStore {
   deleteById(id: string): Promise<void>;
   /** فقط تست/چرخه عمر — موتور حافظه هرگز صدا نمی‌زند (append-only) */
   clear(): Promise<void>;
+  /**
+   * PHASE 5 (P5-02) — قابلیت افزودنی «اختیاری» (قرارداد قابلیت اختیاری — استاندارد اجباری):
+   * جستجو با فیلتر متادیتا (پیش‌از-جستجو در موتور بازیابی). اختیاری بودن متد تضمین
+   * می‌کند هر پیاده‌سازی ثالث v1 بدون آن همچنان معتبر بماند؛ مصرف‌کننده با duck-typing
+   * بررسی و در نبود آن از مسیر جایگزین محلی (applyMetadataFilter) استفاده می‌کند.
+   * ترتیب خروجی: جدیدترین‌اول بر اساس eventTime حل‌شده (سند METADATA-CONTRACT بند ۵).
+   */
+  queryWithFilter?(filter: MetadataFilter): Promise<MemoryRecord[]>;
 }
 
 // ===================== منطق مشترک فیلتر/مرتب‌سازی =====================
@@ -82,6 +93,12 @@ export class InMemoryStore implements MemoryStore {
 
   async query(query: MemoryStoreQuery): Promise<MemoryRecord[]> {
     return applyMemoryQuery(Array.from(this.records.values()), query);
+  }
+
+  // ---------- PHASE 5 (P5-02): قابلیت افزودنی — فیلتر متادیتا ----------
+
+  async queryWithFilter(filter: MetadataFilter): Promise<MemoryRecord[]> {
+    return applyMetadataFilter(Array.from(this.records.values()), filter);
   }
 
   async deleteById(id: string): Promise<void> {
@@ -158,6 +175,13 @@ export class FileSystemStore implements MemoryStore {
   async query(query: MemoryStoreQuery): Promise<MemoryRecord[]> {
     this.ensureLoaded();
     return applyMemoryQuery(this.records, query);
+  }
+
+  // ---------- PHASE 5 (P5-02): قابلیت افزودنی — فیلتر متادیتا ----------
+
+  async queryWithFilter(filter: MetadataFilter): Promise<MemoryRecord[]> {
+    this.ensureLoaded();
+    return applyMetadataFilter(this.records, filter);
   }
 
   async deleteById(id: string): Promise<void> {
