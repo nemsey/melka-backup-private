@@ -31,12 +31,20 @@ import type { AgentMemoryRepository, PolicyRepository } from "@/core/repositorie
 import { createDefaultEngineDeps, type EngineDeps } from "./engine-deps";
 import type { ContextEngine, ContextPurpose } from "./engines/context";
 import type { MemoryLayer } from "./engines/memory";
+import type { PredictionEngine as PredictionEngineV1 } from "./engines/prediction";
 import type { AssembleOptions, ContextAssembler, WorkingContext } from "./context/context-engine";
 import type {
   AssembleWithCitationsOptions,
   ContextCitationAssembler,
 } from "./context/context-engine";
 import type { Citation } from "./retrieval/citation-builder";
+import type { PredictionRecord, PredictOptions } from "./prediction/prediction-record";
+import type { PredictionProducer } from "./prediction/prediction-engine";
+import type { PredictionRepository } from "./prediction/prediction-repository";
+import type { PropertyFeatureSet } from "./feature/builders/property-features";
+import type { MarketFeatureSet } from "./feature/builders/market-features";
+import type { CustomerFeatureSet } from "./feature/builders/customer-features";
+import type { ExpertFeatureSet } from "./feature/builders/expert-features";
 
 /** گزینه‌های سازنده BaseIntelligentAgent */
 export interface BaseIntelligentAgentOptions {
@@ -127,5 +135,72 @@ export abstract class BaseIntelligentAgent extends BaseLearningAgent {
     if (!engine || typeof engine.assembleWithCitations !== "function") return null;
     const wc = await engine.assembleWithCitations({ tileId: this.tileId, purpose }, options);
     return { context: wc.contextText, citations: wc.citations };
+  }
+
+  // ---------- PHASE 6 (P6-06): متد افزودنی چهارم (خارج از هر مسیر خروجی) ----------
+
+  /**
+   * پیش‌بینی از موتور پیش‌بینی تزریقی — فقط اگر موتور «قابلیت تولید»
+   * داشته باشد (قرارداد اختیاری PredictionProducer — duck-typing):
+   *  - بدون موتور یا بدون قابلیت: null (رفتار PHASE 5).
+   *  - entityData بسته‌های قراردادی: {property, market} / {customer} /
+   *    {expert} / {market} — دامنه MARKET در PHASE 6 predictor ندارد ⇔ null صادقانه.
+   *  - محاسبه ⇔ ذخیره در engines.predictionRepository (اختیاری؛ خطای ذخیره
+   *    بلعیده می‌شود) ⇔ بازگشت رکورد کامل.
+   *  - خطای محاسبه ⇔ null — پیش‌بینی هرگز جریان ایجنت را نمی‌شکند
+   *    (الگوی بلع observe در P4-06).
+   * ⚠️ در PHASE 6 هیچ مسیر خروجی این متد را صدا نمی‌زند (قانون طلایی ۳ —
+   * صفر مصرف اجباری؛ مصرف با تصمیم آگاهانه از PHASE 7-8).
+   */
+  protected async predict<T extends PredictionRecord>(
+    predictionType: "PROPERTY" | "CUSTOMER" | "EXPERT" | "MARKET",
+    entityId: string,
+    entityData: unknown,
+  ): Promise<T | null> {
+    const engine = this.engines.prediction as (PredictionEngineV1 & Partial<PredictionProducer>) | undefined;
+    if (!engine) return null;
+    const context: PredictOptions = { agentId: this.intelligentAgentId ?? "", tileId: this.tileId, entityId };
+    try {
+      if (predictionType === "PROPERTY") {
+        if (typeof engine.predictProperty !== "function") return null;
+        const bundle = entityData as { property?: PropertyFeatureSet; market?: MarketFeatureSet };
+        if (!bundle?.property || !bundle?.market) return null;
+        const record = await engine.predictProperty(bundle.property, bundle.market, context);
+        await this.persistPrediction(record);
+        return record as T;
+      }
+      if (predictionType === "CUSTOMER") {
+        if (typeof engine.predictCustomer !== "function") return null;
+        const bundle = entityData as { customer?: CustomerFeatureSet };
+        if (!bundle?.customer) return null;
+        const record = await engine.predictCustomer(bundle.customer, context);
+        await this.persistPrediction(record);
+        return record as T;
+      }
+      if (predictionType === "EXPERT") {
+        if (typeof engine.predictExpert !== "function") return null;
+        const bundle = entityData as { expert?: ExpertFeatureSet };
+        if (!bundle?.expert) return null;
+        const record = await engine.predictExpert(bundle.expert, context);
+        await this.persistPrediction(record);
+        return record as T;
+      }
+      // MARKET — predictor در PHASE 6 وجود ندارد (دستور فقط سه predictor خواسته) ⇔ null صادقانه
+      return null;
+    } catch {
+      // پیش‌بینی هرگز نباید جریان اصلی را بشکند — عمداً بی‌صدا
+      return null;
+    }
+  }
+
+  /** ذخیره اختیاری در انبار پیش‌بینی — خطا هرگز رکورد را نمی‌اندازد */
+  private async persistPrediction(record: PredictionRecord): Promise<void> {
+    const repo = this.engines.predictionRepository;
+    if (!repo) return;
+    try {
+      await repo.save(record);
+    } catch {
+      // ذخیره اختیاری است — بلع
+    }
   }
 }

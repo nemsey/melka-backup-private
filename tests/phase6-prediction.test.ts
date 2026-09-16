@@ -443,3 +443,96 @@ describe("P6-05 PredictionRepository — دو پیاده‌سازی", () => {
     expect(await repo.findById("ok")).not.toBeNull();
   });
 });
+
+// ===================== ۶) اتصال BaseIntelligentAgent (P6-06) =====================
+
+import { BaseIntelligentAgent } from "@/core/intelligence/base-intelligent-agent";
+import type { PropertyPredictionPayload, CustomerPredictionPayload } from "@/core/intelligence/prediction/prediction-record";
+import type { InsightCard } from "@/core/agent/base-agent";
+
+/** ایجنت نمونه‌مند — متد protected را برای تست نمایان می‌کند (الگوی P5-07) */
+class PredictCapableAgent extends BaseIntelligentAgent {
+  readonly tileId = "requests";
+  readonly name = "predict-test-agent";
+  readonly insightDomains = ["test"] as unknown as readonly string[];
+
+  constructor(engines?: ConstructorParameters<typeof BaseIntelligentAgent>[0]) {
+    super(engines);
+  }
+
+  protected async computeRawInsights(): Promise<InsightCard[]> {
+    return [];
+  }
+
+  async runPredict<T extends PredictionRecord>(type: "PROPERTY" | "CUSTOMER" | "EXPERT" | "MARKET", entityId: string, data: unknown): Promise<T | null> {
+    return this.predict<T>(type, entityId, data);
+  }
+}
+
+describe("P6-06 اتصال افزودنی predict به BaseIntelligentAgent", () => {
+  test("بدون PredictionEngine ⇔ null · با موتور بدون قابلیت ⇔ null · MARKET ⇔ null صادقانه", async () => {
+    const bare = new PredictCapableAgent(); // فقط Placeholder زمینه — عین PHASE 3
+    expect(await bare.runPredict("PROPERTY", "p1", { property, market })).toBeNull();
+
+    const engineOnlyV1 = {
+      // فقط قرارداد v1 بدون متدهای افزودنی — stub مینیمال
+      prediction: {
+        contractVersion: 1 as const,
+        async predict() {
+          throw new Error("نباید صدا زده شود");
+        },
+      },
+    };
+    const stubbed = new PredictCapableAgent({ engines: engineOnlyV1 });
+    expect(await stubbed.runPredict("PROPERTY", "p1", { property, market })).toBeNull();
+
+    const full = new PredictCapableAgent({ engines: { prediction: new PredictionEngineImpl() } });
+    expect(await full.runPredict("MARKET", "area-1", { market })).toBeNull(); // predictor بازار در PHASE 6 نیست
+  });
+
+  test("با PredictionEngine کامل ⇔ رکورد محاسبه و در repository ذخیره می‌شود (findById شاهد)", async () => {
+    const repo = new InMemoryPredictionRepository();
+    const agent = new PredictCapableAgent({
+      agentId: "agent-predict-1",
+      engines: { prediction: new PredictionEngineImpl(), predictionRepository: repo },
+    });
+
+    const record = await agent.runPredict<PredictionRecord<PropertyPredictionPayload>>(
+      "PROPERTY",
+      "prop-001",
+      { property, market },
+    );
+    expect(record).not.toBeNull();
+    expect(record!.predictionType).toBe("PROPERTY");
+    expect(record!.payload.transactionProbability).toBeGreaterThan(0);
+
+    // شاهد ذخیره — دقیقاً همان رکورد در انبار
+    const stored = await repo.findById(record!.predictionId);
+    expect(stored).not.toBeNull();
+    expect(stored!.predictionId).toBe(record!.predictionId);
+  });
+
+  test("snapshot درست: agentId/tileId/entityId از ایجنت پر می‌شوند + بدون repository هم رکورد برمی‌گردد", async () => {
+    const withRepo = new InMemoryPredictionRepository();
+    const agent = new PredictCapableAgent({
+      agentId: "agent-snap",
+      engines: { prediction: new PredictionEngineImpl(), predictionRepository: withRepo },
+    });
+    const record = await agent.runPredict<PredictionRecord<PropertyPredictionPayload>>(
+      "PROPERTY", "prop-snap", { property, market },
+    );
+    expect(record!.contextSnapshot.agentId).toBe("agent-snap");
+    expect(record!.contextSnapshot.tileId).toBe("requests"); // tileId ایجنت
+    expect(record!.contextSnapshot.entityId).toBe("prop-snap");
+    expect(record!.contextSnapshot.entityType).toBe("property");
+
+    // بدون انبار — محاسبه می‌شود، ذخیره نمی‌شود، خطا نمی‌دهد
+    const noRepo = new PredictCapableAgent({ engines: { prediction: new PredictionEngineImpl() } });
+    const r2 = await noRepo.runPredict<PredictionRecord<CustomerPredictionPayload>>(
+      "CUSTOMER", "cust-9", { customer },
+    );
+    expect(r2).not.toBeNull();
+    expect(r2!.payload.conversionProbability).toBeCloseTo(0.695, 10);
+    expect(r2!.contextSnapshot.agentId).toBe(""); // بدون agentId تزریقی
+  });
+});

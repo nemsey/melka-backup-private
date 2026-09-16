@@ -23,6 +23,7 @@ import type { OutcomeEngine } from "./engines/outcome";
 import type { EvaluationEngine } from "./engines/evaluation";
 import type { LearningEngine } from "./engines/learning";
 import type { SafetyEngine } from "./engines/safety";
+import type { PredictionRepository } from "./prediction/prediction-repository";
 
 // ===================== ظرف تزریق =====================
 
@@ -38,6 +39,12 @@ export interface EngineDeps {
   evaluation?: EvaluationEngine;
   learning?: LearningEngine;
   safety?: SafetyEngine;
+  /**
+   * PHASE 6 (P6-06) — فیلد افزودنی اختیاری: انبار پیش‌بینی برای متد
+   * predict ایجنت. غیبتش = رفتار قبل (ذخیره نمی‌شود). افزودنی — همه
+   * مصرف‌کننده‌های موجود EngineDeps بدون تغییر معتبر می‌مانند.
+   */
+  predictionRepository?: PredictionRepository;
 }
 
 // ===================== Placeholder خنثی زمینه =====================
