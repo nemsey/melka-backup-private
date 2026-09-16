@@ -9,7 +9,12 @@
  *    به‌صورت «نسخه جدید» ثبت می‌شود؛ Rollback به هر نسخه ممکن است.
  */
 
-import { db } from "@/lib/db";
+import {
+  getAgentMemoryRepository,
+  getPolicyRepository,
+  type AgentMemoryRepository,
+  type PolicyRepository,
+} from "@/core/repositories";
 import type { AgentPolicyContent, AgentPolicyRecord } from "./policy";
 import { clampWeight, defaultPolicy } from "./policy";
 
@@ -81,22 +86,31 @@ export abstract class BaseLearningAgent {
   /** محاسبه بینش‌های خام از داده — هر ایجنت تخصصی پیاده می‌کند */
   protected abstract computeRawInsights(): Promise<InsightCard[]>;
 
+  // ---------- انبار داده (P2-02-D — تزریق‌پذیر برای تست، صفر DB مستقیم) ----------
+
+  /** وابستگی‌های تزریق‌پذیر BaseLearningAgent — قرارداد سازنده تغییر نکرده است */
+  private readonly memory: AgentMemoryRepository;
+  private readonly policy: PolicyRepository;
+
+  constructor(deps?: { memory?: AgentMemoryRepository; policy?: PolicyRepository }) {
+    this.memory = deps?.memory ?? getAgentMemoryRepository();
+    this.policy = deps?.policy ?? getPolicyRepository();
+  }
+
   // ---------- سیاست ----------
 
   private async ensurePolicy(): Promise<AgentPolicyRecord> {
-    const active = await db.agentPolicyVersion.findFirst({ where: { tileId: this.tileId, active: true } });
+    const active = await this.policy.findActive(this.tileId);
     if (active) return this.toRecord(active);
 
     // نسخه ۱ — سیاست اولیه
-    const created = await db.agentPolicyVersion.create({
-      data: {
-        tileId: this.tileId,
-        version: 1,
-        content: JSON.stringify(defaultPolicy(this.insightDomains)),
-        rationale: "سیاست اولیه — بدون بازخورد کاربر؛ وزن برابر برای همه دسته‌ها.",
-        active: true,
-        activatedAt: new Date(),
-      },
+    const created = await this.policy.createVersion({
+      tileId: this.tileId,
+      version: 1,
+      content: JSON.stringify(defaultPolicy(this.insightDomains)),
+      rationale: "سیاست اولیه — بدون بازخورد کاربر؛ وزن برابر برای همه دسته‌ها.",
+      active: true,
+      activatedAt: new Date(),
     });
     await this.appendMemory("POLICY_CHANGE", {
       event: "policy-created",
@@ -125,23 +139,15 @@ export abstract class BaseLearningAgent {
 
   async listPolicyVersions(): Promise<AgentPolicyRecord[]> {
     await this.ensurePolicy();
-    const rows = await db.agentPolicyVersion.findMany({
-      where: { tileId: this.tileId },
-      orderBy: { version: "desc" },
-    });
+    const rows = await this.policy.listVersions(this.tileId);
     return rows.map((r) => this.toRecord(r));
   }
 
   /** بازگشت به نسخه قبلی سیاست — نسخه فعلی حذف نمی‌شود، فقط غیرفعال */
   async rollbackPolicy(targetVersion: number): Promise<AgentPolicyRecord> {
-    const target = await db.agentPolicyVersion.findUnique({
-      where: { tileId_version: { tileId: this.tileId, version: targetVersion } },
-    });
+    const target = await this.policy.findByTileAndVersion(this.tileId, targetVersion);
     if (!target) throw new Error(`نسخه ${targetVersion} برای این ایجنت وجود ندارد.`);
-    await db.$transaction([
-      db.agentPolicyVersion.updateMany({ where: { tileId: this.tileId, active: true }, data: { active: false } }),
-      db.agentPolicyVersion.update({ where: { id: target.id }, data: { active: true, activatedAt: new Date() } }),
-    ]);
+    await this.policy.activateVersion(this.tileId, target.id, new Date());
     await this.appendMemory("POLICY_CHANGE", {
       event: "policy-rollback",
       fromVersion: "active",
@@ -154,23 +160,13 @@ export abstract class BaseLearningAgent {
   // ---------- حافظه (Append-only) ----------
 
   protected async appendMemory(kind: string, payload: Record<string, unknown>): Promise<void> {
-    await db.agentMemory.create({
-      data: { tileId: this.tileId, kind, payload: JSON.stringify({ ...payload, at: new Date().toISOString() }) },
-    });
+    await this.memory.append(this.tileId, kind, JSON.stringify({ ...payload, at: new Date().toISOString() }));
   }
 
   /** بازیابی قطعات حافظه مرتبط با یک پرسش (RAG اختصاصی کاشی) */
   async retrieveRelevant(query: string, k = 5): Promise<MemorySnippet[]> {
-    const feedbacks = await db.agentFeedback.findMany({
-      where: { tileId: this.tileId },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    });
-    const memories = await db.agentMemory.findMany({
-      where: { tileId: this.tileId },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    });
+    const feedbacks = await this.memory.listFeedbacks(this.tileId, 200);
+    const memories = await this.memory.listRecent(this.tileId, 200);
 
     const qVec = termVector(query);
     const pool: MemorySnippet[] = [
@@ -207,15 +203,13 @@ export abstract class BaseLearningAgent {
     contextSnapshot?: Record<string, unknown>;
   }): Promise<{ totalFeedback: number }> {
     // ثبت بازخورد — فقط افزودنی
-    await db.agentFeedback.create({
-      data: {
-        tileId: this.tileId,
-        insightKey: input.insightKey,
-        insightTitle: input.insightTitle,
-        rating: input.rating,
-        comment: input.comment,
-        context: JSON.stringify({ domain: input.domain, ...(input.contextSnapshot ?? {}) }),
-      },
+    await this.memory.createFeedback({
+      tileId: this.tileId,
+      insightKey: input.insightKey,
+      insightTitle: input.insightTitle,
+      rating: input.rating,
+      comment: input.comment ?? null,
+      context: JSON.stringify({ domain: input.domain, ...(input.contextSnapshot ?? {}) }),
     });
     await this.appendMemory("FEEDBACK", {
       event: "feedback",
@@ -225,7 +219,7 @@ export abstract class BaseLearningAgent {
       comment: input.comment ?? null,
     });
 
-    const totalFeedback = await db.agentFeedback.count({ where: { tileId: this.tileId } });
+    const totalFeedback = await this.memory.countFeedback(this.tileId);
     // بازبینی دوره‌ای سیاست
     await this.reviewPolicyIfNeeded();
     return { totalFeedback };
@@ -240,7 +234,7 @@ export abstract class BaseLearningAgent {
    *  - اگر مجموع تغییرات وزن معنادار نباشد، نسخه جدید ساخته نمی‌شود.
    */
   async reviewPolicyIfNeeded(): Promise<{ updated: boolean; version: number | null }> {
-    const feedbacks = await db.agentFeedback.findMany({ where: { tileId: this.tileId } });
+    const feedbacks = await this.memory.listAllFeedbacks(this.tileId);
     if (feedbacks.length < 5) return { updated: false, version: null };
 
     const domainScores = new Map<string, number>();
@@ -271,25 +265,18 @@ export abstract class BaseLearningAgent {
 
     if (!meaningful) return { updated: false, version: null };
 
-    const latest = await db.agentPolicyVersion.findFirst({
-      where: { tileId: this.tileId },
-      orderBy: { version: "desc" },
-    });
+    const latest = await this.policy.findLatest(this.tileId);
     const nextVersion = (latest?.version ?? 1) + 1;
 
-    const created = await db.agentPolicyVersion.create({
-      data: {
-        tileId: this.tileId,
-        version: nextVersion,
-        content: JSON.stringify({ ...policy.content, weights } as AgentPolicyContent),
-        rationale: `به‌روزرسانی از ${feedbacks.length} بازخورد: ${changes.join("؛ ")}`,
-        active: false,
-      },
+    const created = await this.policy.createVersion({
+      tileId: this.tileId,
+      version: nextVersion,
+      content: JSON.stringify({ ...policy.content, weights } as AgentPolicyContent),
+      rationale: `به‌روزرسانی از ${feedbacks.length} بازخورد: ${changes.join("؛ ")}`,
+      active: false,
+      activatedAt: null,
     });
-    await db.$transaction([
-      db.agentPolicyVersion.updateMany({ where: { tileId: this.tileId, active: true }, data: { active: false } }),
-      db.agentPolicyVersion.update({ where: { id: created.id }, data: { active: true, activatedAt: new Date() } }),
-    ]);
+    await this.policy.activateVersion(this.tileId, created.id, new Date());
     await this.appendMemory("POLICY_CHANGE", {
       event: "policy-updated",
       version: nextVersion,
@@ -358,11 +345,11 @@ export abstract class BaseLearningAgent {
     positiveRate: number;
   }> {
     const [feedbackCount, memoryCount, policyVersions, activePolicy, positives] = await Promise.all([
-      db.agentFeedback.count({ where: { tileId: this.tileId } }),
-      db.agentMemory.count({ where: { tileId: this.tileId } }),
-      db.agentPolicyVersion.count({ where: { tileId: this.tileId } }),
-      db.agentPolicyVersion.findFirst({ where: { tileId: this.tileId, active: true } }),
-      db.agentFeedback.count({ where: { tileId: this.tileId, rating: 1 } }),
+      this.memory.countFeedback(this.tileId),
+      this.memory.countMemory(this.tileId),
+      this.policy.countVersions(this.tileId),
+      this.policy.findActive(this.tileId),
+      this.memory.countFeedback(this.tileId, true),
     ]);
     return {
       feedbackCount,
