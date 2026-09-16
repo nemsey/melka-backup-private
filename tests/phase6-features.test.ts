@@ -14,6 +14,7 @@ import { describe, expect, test } from "bun:test";
 import {
   buildPropertyFeatures,
   type PropertyInput,
+  type PropertyFeatureSet,
 } from "@/core/intelligence/feature/builders/property-features";
 import {
   buildMarketFeatures,
@@ -28,6 +29,19 @@ import {
   buildExpertFeatures,
   type ExpertInput,
 } from "@/core/intelligence/feature/builders/expert-features";
+import {
+  FeatureEngineImpl,
+  PROPERTY_FEATURES_VERSION,
+  CUSTOMER_FEATURES_VERSION,
+} from "@/core/intelligence/feature/feature-engine";
+import {
+  InMemoryFeatureStore,
+  FileSystemFeatureStore,
+} from "@/core/intelligence/feature/feature-store";
+import type { FeatureSet } from "@/core/intelligence/engines/feature";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 // ===================== fixtureهای ثابت =====================
 
@@ -269,3 +283,108 @@ describe("P6-02 buildMarketFeatures", () => {
 function clamp01Odd(): number {
   return Math.min(1, Math.max(0, 3 / 50)) * 0.7;
 }
+
+// ===================== ۵) FeatureEngineImpl (P6-03) =====================
+
+const TMP_P6 = mkdtempSync(join(tmpdir(), "melk-p6-"));
+afterAllP6();
+function afterAllP6() {
+  // ثبت پاک‌سازی با afterAll مشترک فایل (یک بار)
+}
+import { afterAll } from "bun:test";
+afterAll(() => {
+  rmSync(TMP_P6, { recursive: true, force: true });
+});
+
+describe("P6-03 FeatureEngineImpl — قرارداد v1 + افزودنی‌ها", () => {
+  test("compute v1 (دامنه property): بردار عددی + بولی→۱/۰ + missing خالی + asOf ارجی", async () => {
+    const engine = new FeatureEngineImpl(); // بدون کش — حتمی
+    const out: FeatureSet = await engine.compute({
+      tileId: "tile-requests",
+      domain: "property",
+      source: {
+        asOf: "2026-09-16T00:00:00.000Z",
+        property: propertyFixture(),
+        market: marketFixture(),
+        textSignals: { keywordScore: 2 },
+      },
+    });
+    expect(out.tileId).toBe("tile-requests");
+    expect(out.domain).toBe("property");
+    expect(out.computedAt).toBe("2026-09-16T00:00:00.000Z"); // asOf مقدم است
+    expect(out.missing).toEqual([]);
+    expect(out.vector.price).toBe(3_200_000_000);
+    expect(out.vector.underpriceRatio).toBeCloseTo(0.2, 10);
+    expect(out.vector.hasElevator).toBe(1);
+    expect(out.vector.hasParking).toBe(0);
+    // رشته‌ها عمداً بیرون بردارند (شکل v1 فقط عددی)
+    expect(out.vector.propertyType).toBeUndefined();
+    expect(out.vector.areaName).toBeUndefined();
+  });
+
+  test("compute v1 — bundle ناقص/دامنه ناشناخته ⇔ missing صادقانه", async () => {
+    const engine = new FeatureEngineImpl();
+    const partial = await engine.compute({ tileId: "t", domain: "property", source: { property: propertyFixture() } });
+    expect(partial.missing).toEqual(["source.market"]);
+    expect(partial.vector).toEqual({});
+
+    const unknown = await engine.compute({ tileId: "t", domain: "galaxy" });
+    expect(unknown.missing).toEqual(["domain:galaxy"]);
+  });
+
+  test("کش: بار دوم از کش می‌آید (ورودی جهش‌یافته اثر ندارد) و invalidate بازسازی می‌کند", async () => {
+    const store = new InMemoryFeatureStore();
+    const engine = new FeatureEngineImpl(store);
+
+    const first = await engine.extractPropertyFeatures(propertyFixture(), marketFixture());
+    expect(first.rooms).toBe(2);
+
+    // جهش ورودی — نباید در خروجی دوم بیاید (کش)
+    const mutated = await engine.extractPropertyFeatures(
+      propertyFixture({ rooms: 4, price: 9_999_999_999 }),
+      marketFixture(),
+    );
+    expect(mutated.rooms).toBe(2);
+    expect(mutated.price).toBe(3_200_000_000);
+
+    // invalidate زیررشته‌ای → بازسازی با ورودی جدید
+    await store.invalidate("property:prop-001");
+    const rebuilt = await engine.extractPropertyFeatures(
+      propertyFixture({ rooms: 4 }),
+      marketFixture(),
+    );
+    expect(rebuilt.rooms).toBe(4);
+
+    // نسخه ناهماهنگ ⇔ null (کش کهنه برنمی‌گردد)
+    expect(await store.load("property:prop-001", "property-features-v999")).toBeNull();
+    expect(await store.load<PropertyFeatureSet>("property:prop-001", PROPERTY_FEATURES_VERSION)).not.toBeNull();
+  });
+
+  test("کش مشتری + structuredClone: جهش خروجی، کش را نفمی‌کند", async () => {
+    const store = new InMemoryFeatureStore();
+    const engine = new FeatureEngineImpl(store);
+    const out = await engine.extractCustomerFeatures(customerFixture());
+    expect(CUSTOMER_FEATURES_VERSION).toBe("customer-features-v1");
+    out.responseRate = 0.123; // جهش خروجی
+    const again = await engine.extractCustomerFeatures(customerFixture());
+    expect(again.responseRate).toBe(0.8); // کش دست‌نخورده
+  });
+
+  test("FileSystemFeatureStore: دور کامل ذخیره/بارگذاری + ماندگاری بین نمونه‌ها + آخرین-برنده", async () => {
+    const file = join(TMP_P6, "fs-store", "features.jsonl");
+    const a = new FileSystemFeatureStore(file);
+    await a.save("market:area-1", { medianPricePerMeter: 100 }, "market-features-v1");
+    // نمونه دوم همان فایل — ماندگاری واقعی
+    const b = new FileSystemFeatureStore(file);
+    const loaded = await b.load<{ medianPricePerMeter: number }>("market:area-1", "market-features-v1");
+    expect(loaded?.medianPricePerMeter).toBe(100);
+
+    // الحاق مکرر همان کلید = آخرین برنده
+    await b.save("market:area-1", { medianPricePerMeter: 120 }, "market-features-v1");
+    const c = new FileSystemFeatureStore(file);
+    expect((await c.load<{ medianPricePerMeter: number }>("market:area-1", "market-features-v1"))?.medianPricePerMeter).toBe(120);
+
+    await c.invalidate("market:area-1");
+    expect(await c.load("market:area-1", "market-features-v1")).toBeNull();
+  });
+});
