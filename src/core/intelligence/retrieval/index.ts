@@ -27,3 +27,16 @@ export {
   type DualTokens,
   type KeywordHit,
 } from "./keyword-search";
+
+export {
+  HybridRetriever,
+  createHybridRetriever,
+  type VectorSearchFn,
+  type HybridQuery,
+  type HybridOptions,
+  type RetrievedItem,
+  type RetrievalSource,
+  type HybridRetrieverDeps,
+  type HybridRetrieverHandle,
+  type CreateHybridRetrieverOptions,
+} from "./hybrid-retriever";

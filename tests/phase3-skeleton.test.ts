@@ -139,8 +139,8 @@ describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", (
       // ---- PHASE 4 ----
       "memory/memory-store.ts", "memory/vector-index.ts", "memory/memory-engine.ts", "memory/index.ts",
       "context/context-engine.ts", "context/index.ts",
-      // ---- PHASE 5 (به‌ترتیب ساخت: P5-02 دو فایل نخست؛ P5-03 سومی؛ بقیه در گام‌های بعد) ----
-      "retrieval/metadata.ts", "retrieval/index.ts", "retrieval/keyword-search.ts",
+      // ---- PHASE 5 (به‌ترتیب ساخت: P5-02 دو فایل نخست؛ P5-03 سومی؛ P5-04 چهارمی؛ بقیه در گام‌های بعد) ----
+      "retrieval/metadata.ts", "retrieval/index.ts", "retrieval/keyword-search.ts", "retrieval/hybrid-retriever.ts",
     ]);
     const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
     expect([...actual].sort()).toEqual([...expected].sort());

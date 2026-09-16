@@ -29,6 +29,11 @@ import {
   tokenizeDual,
   normalizePersian,
 } from "@/core/intelligence/retrieval/keyword-search";
+import {
+  HybridRetriever,
+  createHybridRetriever,
+} from "@/core/intelligence/retrieval/hybrid-retriever";
+import type { MemoryStore } from "@/core/intelligence/memory/memory-store";
 
 // ===================== دایرکتوری موقت تست فایل =====================
 
@@ -303,5 +308,135 @@ describe("P5-03 — BM25 KeywordSearch با نرمال‌سازی فارسی", (
     ks.clear();
     expect(ks.size).toBe(0);
     expect(ks.search("تحلیل", 5)).toEqual([]);
+  });
+});
+
+// ===================== P5-04: بازیابی ترکیبی RRF =====================
+
+describe("P5-04 — HybridRetriever با RRF", () => {
+  const CORPUS = [
+    "گزارش جامعه مشتریان درخواست ملک رشد کرد", // A — هر دو اصطلاح پرسش
+    "جامعه مشتریان گزارش هفتگی", // B — هر دو اصطلاح، کوتاه‌تر
+    "گزارش جامعه بازدیدها", // C — فقط «جامعه»
+    "تحلیل بازار مسکن تبریز ولیعصر", // D — بی‌ارتباط
+  ];
+
+  /** فروشگاه پرشده با پیکره ثابت */
+  async function corpusStore(): Promise<{ store: InMemoryStore; saved: MemoryRecord[] }> {
+    const store = new InMemoryStore();
+    const saved: MemoryRecord[] = [];
+    for (const text of CORPUS) {
+      const r = makeRecord({ tileId: "requests", text });
+      saved.push(r);
+      await store.save(r);
+    }
+    return { store, saved };
+  }
+
+  test("وزن بردار ۰ ⇔ خروجی عین KeywordSearch (شناسه‌ها و ترتیب)", async () => {
+    const { store } = await corpusStore();
+    const handle = await createHybridRetriever({ store });
+    const out = await handle.retriever.retrieve({ text: "جامعه مشتریان" }, { topK: 4, weightVector: 0 });
+    const kw = handle.keywordSearch.search("جامعه مشتریان", 4);
+    expect(out.map((r) => r.record.id)).toEqual(kw.map((h) => h.id)); // همان شناسه‌ها و همان ترتیب
+    expect(out.length).toBeGreaterThan(0);
+    for (const item of out) {
+      expect(item.sources).toEqual(["keyword"]); // هیچ سهم برداری
+    }
+  });
+
+  test("وزن کلیدواژه ۰ ⇔ خروجی عین VectorSearch (شناسه‌ها و ترتیب)", async () => {
+    const { store } = await corpusStore();
+    const handle = await createHybridRetriever({ store });
+    const out = await handle.retriever.retrieve({ text: "جامعه مشتریان" }, { topK: 4, weightKeyword: 0 });
+    // جستجوی مستقیم روی همان نمایه با همان تعبیه — مرجع
+    const vec = handle.vectorIndex.search(embedText("جامعه مشتریان"), 4);
+    expect(out.map((r) => r.record.id)).toEqual(vec.map((h) => h.id));
+    for (const item of out) {
+      expect(item.sources).toEqual(["vector"]);
+    }
+  });
+
+  test("تطبیق ترکیبی — سند دارای تطبیق کلمه‌ای و معنایی، هر دو منبع را دارد و بالا می‌ماند", async () => {
+    const { store, saved } = await corpusStore();
+    const handle = await createHybridRetriever({ store });
+    const out = await handle.retriever.retrieve({ text: "جامعه مشتریان" }, { topK: 4 });
+
+    // A و B — تطبیق کلیدواژه‌ای مستقیم + رتبه برداری بالا → منبع دوگانه و صدر
+    const topTwo = new Set(out.slice(0, 2).map((r) => r.record.id));
+    expect(topTwo.has(saved[0].id)).toBe(true);
+    expect(topTwo.has(saved[1].id)).toBe(true);
+    const topItem = out[0];
+    expect(topItem.sources).toContain("vector");
+    expect(topItem.sources).toContain("keyword");
+    expect(topItem.vectorRank).not.toBeNull();
+    expect(topItem.keywordRank).not.toBeNull();
+    // امتیاز دوسورس > تک‌سورس (RRF — حضور در هر دو لیست جریمه ندارد، جمع دارد)
+    const singleSource = out.find((r) => r.sources.length === 1);
+    if (singleSource) expect(topItem.score).toBeGreaterThan(singleSource.score);
+  });
+
+  test("MetadataFilter روی نتایج اثر می‌گذارد + مسیر جایگزین بدون قابلیت queryWithFilter + sync پس از الحاق", async () => {
+    const store = new InMemoryStore();
+    const lil = makeRecord({
+      tileId: "requests",
+      text: "گزارش جامعه مشتریان منطقه لیل",
+      metadata: { area: "لیل", city: "تبریز" },
+    });
+    const ilgoli = makeRecord({
+      tileId: "requests",
+      text: "گزارش جامعه مشتریان ائل\u200cگلی",
+      metadata: { area: "ائل\u200cگلی" },
+    });
+    await store.save(lil);
+    await store.save(ilgoli);
+
+    // فروشگاه عمداً بدون قابلیت queryWithFilter — فقط پنج متد v1 (duck-typing مصرف‌کننده)
+    const bare: MemoryStore = {
+      save: (r) => store.save(r),
+      findById: (id) => store.findById(id),
+      query: (q) => store.query(q),
+      deleteById: (id) => store.deleteById(id),
+      clear: () => store.clear(),
+    };
+    const handle = await createHybridRetriever({ store: bare });
+
+    const unfiltered = await handle.retriever.retrieve({ text: "جامعه مشتریان" }, { topK: 5 });
+    expect(unfiltered.map((r) => r.record.id).sort()).toEqual([lil.id, ilgoli.id].sort());
+
+    // فیلتر ناحیه — با نرمال‌سازی فارسی (ائل‌گلی ⇔ ائلگلی)
+    const onlyLil = await handle.retriever.retrieve(
+      { text: "جامعه مشتریان", filter: { area: "لیل" } },
+      { topK: 5 },
+    );
+    expect(onlyLil.map((r) => r.record.id)).toEqual([lil.id]);
+
+    const onlyIlgoli = await handle.retriever.retrieve(
+      { text: "جامعه مشتریان", filter: { area: "ائلگلی" } },
+      { topK: 5 },
+    );
+    expect(onlyIlgoli.map((r) => r.record.id)).toEqual([ilgoli.id]);
+
+    // الحاق + sync — رکورد تازه بدون دوباره‌سازی دستی در دسترس می‌شود
+    const fresh = makeRecord({ tileId: "requests", text: "جامعه مشتریان ولیعصر گزارش", metadata: { area: "ولیعصر" } });
+    await bare.save(fresh);
+    const beforeSync = await handle.retriever.retrieve({ text: "ولیعصر" }, { topK: 5 });
+    expect(beforeSync.map((r) => r.record.id)).not.toContain(fresh.id); // نمایه قدیمی
+    await handle.sync();
+    const afterSync = await handle.retriever.retrieve({ text: "ولیعصر" }, { topK: 5 });
+    expect(afterSync.map((r) => r.record.id)).toContain(fresh.id);
+  });
+
+  test("بی‌داده — فروشگاه خالی و topK صفر هر دو [] برمی‌گردانند", async () => {
+    const empty = new InMemoryStore();
+    const handle = await createHybridRetriever({ store: empty });
+    expect(await handle.retriever.retrieve({ text: "هر چیزی" }, { topK: 5 })).toEqual([]);
+    expect(handle.vectorIndex.size).toBe(0);
+    expect(handle.keywordSearch.size).toBe(0);
+
+    const store = new InMemoryStore();
+    await store.save(makeRecord({ tileId: "requests", text: "گزارش جامعه مشتریان" }));
+    const h2 = await createHybridRetriever({ store });
+    expect(await h2.retriever.retrieve({ text: "جامعه" }, { topK: 0 })).toEqual([]);
   });
 });
