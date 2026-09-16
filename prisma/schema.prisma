@@ -825,5 +825,27 @@ model AgentPolicyVersion {
   createdAt   DateTime @default(now())
   activatedAt DateTime?
 
+  // ---------- P2-06: متادیتای نسخه سیاست (فقط افزودنی — استفاده در PHASE 6/9) ----------
+  // اصل: ستون‌های active قدیمی حذف نمی‌شوند — «دو‌راهه» تا PHASE 9.
+  // در PHASE 2 فقط ساخته/برگشت داده می‌شوند؛ منطق یادگیری صفر تغییر.
+  /// نسخه مدل یادگیری که این سیاست را ساخته (مثل "feedback-weighted-v1")
+  modelVersion       String?
+  /// نسخه مجموعه ویژگی‌های ورودی (مثل "tf-cosine-v1")
+  featureVersion     String?
+  /// پنجره داده آموزش (ISO 8601 duration، مثل "P90D")
+  trainingWindow     String?
+  /// پنجره داده ارزیابی (ISO 8601 duration)
+  evaluationWindow   String?
+  /// سنجه‌های ارزیابی این نسخه (JSON — precision/recall/…)
+  metricsJson        String?
+  /// کد پرسنلی سازنده
+  createdBy           String?
+  /// کد پرسنلی تأییدکننده (گردش کار PHASE 9)
+  approvedBy          String?
+  /// چرخه عمر نسخه: active | retired | draft | archived — دو‌راهه با active
+  status              String?  @default("active")
+  /// هدف بازگشت در صورت لغو این نسخه (نسخه‌ای که باید فعال شود)
+  rollbackTarget      Int?
+
   @@unique([tileId, version])
 }
