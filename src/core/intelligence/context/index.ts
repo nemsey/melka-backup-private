@@ -14,4 +14,8 @@ export {
   type ContextAssembler,
   type ContextMemoryRetriever,
   type ContextMemorySource,
+  // ---- PHASE 5 (P5-06) ----
+  type AssembleWithCitationsOptions,
+  type WorkingContextWithCitations,
+  type ContextItemRetriever,
 } from "./context-engine";

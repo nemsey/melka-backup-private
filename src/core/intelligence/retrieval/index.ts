@@ -47,3 +47,10 @@ export {
   type RerankerWeights,
   type RerankOptions,
 } from "./reranker";
+
+export {
+  CitationBuilder,
+  CITATION_SNIPPET_LENGTH,
+  type Citation,
+  type CitableMemory,
+} from "./citation-builder";

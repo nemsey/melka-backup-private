@@ -35,7 +35,14 @@ import {
   type RetrievedItem,
 } from "@/core/intelligence/retrieval/hybrid-retriever";
 import { Reranker } from "@/core/intelligence/retrieval/reranker";
+import { CITATION_SNIPPET_LENGTH } from "@/core/intelligence/retrieval/citation-builder";
 import type { MemoryStore } from "@/core/intelligence/memory/memory-store";
+import { MemoryEngineImpl } from "@/core/intelligence/memory/memory-engine";
+import {
+  ContextEngineImpl,
+  CONTEXT_SEPARATOR,
+  type ContextItemRetriever,
+} from "@/core/intelligence/context/context-engine";
 
 // ===================== دایرکتوری موقت تست فایل =====================
 
@@ -534,5 +541,133 @@ describe("P5-05 — Reranker heuristic آفلاین", () => {
     expect(out2[0].record.id).toBe(sameDomain.id);
     expect(out2[0].score).toBe(1);
     expect(out2[1].score).toBe(0);
+  });
+});
+
+// ===================== P5-06: ارجاع در ContextEngine =====================
+
+describe("P5-06 — Citation در ContextEngineImpl.assembleWithCitations", () => {
+  /** بازیاب غنی ساختگی — آیتم کامل با متادیتا (الگوی آداپتور Hybrid+Reranker) */
+  function stubRetriever(items: RetrievedItem[]): ContextItemRetriever {
+    return {
+      async retrieveForContext(_tileId: string, _text: string, topK?: number) {
+        return items.slice(0, topK ?? items.length);
+      },
+    };
+  }
+
+  function stubItem(text: string, metadata?: Record<string, unknown>, score = 0.8): RetrievedItem {
+    const record = makeRecord({ tileId: "requests", text, metadata });
+    return { record, score, sources: ["vector", "keyword"], vectorRank: 1, keywordRank: 2 };
+  }
+
+  const Q = { tileId: "requests", purpose: "insight-render" as const };
+
+  test("ارجاع‌ها درست پر می‌شوند — memoryId/agentId/source/relevanceScore + هم‌ارزی متن با assemble", async () => {
+    const items = [
+      stubItem("گزارش جامعه مشتریان رشد کرد", { agentId: "requests-agent", source: "insight_generated", importance: 0.9 }),
+      stubItem("هشدار ریزش مشتری ارسال شد", { agentId: "requests-agent", source: "user_feedback" }),
+    ];
+    const engine = new ContextEngineImpl();
+    const withCite = await engine.assembleWithCitations(Q, {
+      text: "جامعه مشتریان",
+      signals: ["سیگنال زنده آزمون"],
+      retriever: stubRetriever(items),
+    });
+
+    expect(withCite.citations.length).toBe(2);
+    const [c1, c2] = withCite.citations;
+    expect(c1.memoryId).toBe(items[0].record.id);
+    expect(c1.agentId).toBe("requests-agent");
+    expect(c1.source).toBe("insight_generated");
+    expect(c1.relevanceScore).toBe(0.8);
+    expect(c2.source).toBe("user_feedback");
+
+    // assemble بدون منبع غنی حافظه ندارد — زمینه فقط از سیگنال (شاهد مسیر بدون حافظه)
+    const plain = await engine.assemble(Q, {
+      text: "جامعه مشتریان",
+      signals: ["سیگنال زنده آزمون"],
+    });
+    expect(withCite.contextText).toBe(
+      [items[0].record.text, items[1].record.text, "سیگنال زنده آزمون"].join(CONTEXT_SEPARATOR),
+    );
+    expect(withCite.memories.length).toBe(2);
+    expect(withCite.signals).toEqual(["سیگنال زنده آزمون"]);
+    expect(plain.contextText).toBe(["سیگنال زنده آزمون"].join(CONTEXT_SEPARATOR)); // بدون حافظه
+  });
+
+  test("موقعیت دقیق است — slice(start, end) عین متن همان بخش است (با جداکننده‌ها و سیگنال‌ها)", async () => {
+    const texts = ["گزارش جامعه مشتریان", "هشدار ریزش مشتری"];
+    const items = texts.map((t) => stubItem(t));
+    const engine = new ContextEngineImpl();
+    const withCite = await engine.assembleWithCitations(Q, {
+      text: "جامعه مشتریان",
+      signals: ["سیگنال یک", "سیگنال دو"],
+      retriever: stubRetriever(items),
+    });
+
+    // ساختار مورد انتظار: م۱ SEP م۲ SEP س۱ SEP س۲
+    const expected =
+      [texts[0], texts[1], "سیگنال یک", "سیگنال دو"].join(CONTEXT_SEPARATOR);
+    expect(withCite.contextText).toBe(expected);
+
+    for (let i = 0; i < withCite.citations.length; i++) {
+      const c = withCite.citations[i];
+      const [start, end] = c.positionInContext;
+      expect(withCite.contextText.slice(start, end)).toBe(texts[i]); // شاهد برش مستقیم
+    }
+    // مرزها یکسان‌پوشش نیستند و ترتیب صعودی دارند
+    expect(withCite.citations[0].positionInContext[1]).toBeLessThanOrEqual(withCite.citations[1].positionInContext[0]);
+  });
+
+  test("بدون حافظه — citations خالی و زمینه فقط از سیگنال‌ها (سه حالت: بی‌منبع، بی‌متن، فروشگاه خالی)", async () => {
+    const engine = new ContextEngineImpl();
+    const noMemory = await engine.assembleWithCitations(Q, { text: "هر چیزی", signals: ["فقط سیگنال"] });
+    expect(noMemory.citations).toEqual([]);
+    expect(noMemory.contextText).toBe("فقط سیگنال");
+
+    const noText = await engine.assembleWithCitations(Q, { signals: ["فقط سیگنال"] });
+    expect(noText.citations).toEqual([]);
+
+    // مسیر PHASE 4 — حافظه واقعی خالی (بدون بازیاب غنی)
+    const emptyMemory = new MemoryEngineImpl();
+    const engineWithMemory = new ContextEngineImpl({ memory: emptyMemory });
+    const out = await engineWithMemory.assembleWithCitations(Q, { text: "جامعه مشتریان", signals: ["سیگنال"] });
+    expect(out.citations).toEqual([]);
+    expect(out.contextText).toBe("سیگنال");
+  });
+
+  test("گزیده — دقیقاً ۱۰۰ نویسه نخست برای متن بلند؛ متن کوتاه کامل + مسیر جایگزین retrieveSimilar حافظه واقعی + هم‌ارزی بایت‌به‌بایت با assemble", async () => {
+    expect(CITATION_SNIPPET_LENGTH).toBe(100);
+    const longText =
+      "گزارش تفصیلی بازار مسکن تبریز با جزئیات کامل قیمت‌ها و مناطق و محله‌ها و تحلیل روند ماهانه و فصلی و سالانه و پیش‌بینی آینده بازار در ده ماه آینده با احتساب تورم و نرخ بهره و سیاست‌های اعتباری بانک مرکزی و شاخص قیمت مسکن مناطق ده‌گانه شهر";
+    const memory = new MemoryEngineImpl();
+    await memory.append({ tileId: "requests", layer: "EPISODIC", kind: "NOTE", payload: { text: longText, sentiment: 1 } });
+    await memory.append({ tileId: "requests", layer: "EPISODIC", kind: "NOTE", payload: { text: "گزارش هشدار کوتاه", sentiment: -1 } });
+
+    // پرسشی که با هر دو حافظه توکن مشترک دارد (گزارش + هشدار) تا هر دو مثبت شوند
+    const query = "گزارش تفصیلی بازار هشدار";
+    const engine = new ContextEngineImpl({ memory, maxMemories: 2 });
+    const withCite = await engine.assembleWithCitations(Q, { text: query });
+    const plain = await engine.assemble(Q, { text: query });
+
+    // شاهد اصلی «عین قبلی»: هر دو مسیر روی همان منبع حافظه، متن زمینه یکسان می‌سازند
+    expect(withCite.contextText).toBe(plain.contextText);
+    expect(withCite.memories).toEqual(plain.memories);
+
+    expect(withCite.citations.length).toBe(2);
+    const long = withCite.citations.find((c) => c.snippet.length === 100)!;
+    expect(long.snippet).toBe(longText.slice(0, 100)); // دقیقاً ۱۰۰ نویسه نخست
+    const short = withCite.citations.find((c) => c.snippet === "گزارش هشدار کوتاه")!;
+    expect(short).toBeTruthy(); // متن کوتاه کامل در گزیده
+    // مسیر جایگزین (بدون متادیتا): agentId خالی و source پیش‌فرض external — اعلام صادقانه
+    expect(short.agentId).toBe("");
+    expect(short.source).toBe("external");
+    expect(short.relevanceScore).toBeGreaterThan(0);
+    // همه موقعیت‌ها هنوز معتبرند
+    for (const c of withCite.citations) {
+      const [start, end] = c.positionInContext;
+      expect(withCite.contextText.slice(start, end).length).toBeGreaterThan(0);
+    }
   });
 });

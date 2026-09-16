@@ -16,6 +16,8 @@
 
 import type { AgentContext, ContextEngine, ContextPurpose, ContextQuery } from "../engines/context";
 import type { MemoryEngine, MemoryEntry } from "../engines/memory";
+import { CitationBuilder, type Citation, type CitableMemory } from "../retrieval/citation-builder";
+import type { RetrievedItem } from "../retrieval/hybrid-retriever";
 
 // ===================== گزینه‌ها و انواع افزودنی =====================
 
@@ -80,6 +82,33 @@ export interface ContextAssembler {
   assemble(query: ContextQuery, options?: AssembleOptions): Promise<WorkingContext>;
 }
 
+// ===================== PHASE 5 (P5-06): ارجاع/اصل ردیابی =====================
+
+/**
+ * قابلیت اختیاری «بازیابی غنی برای زمینه» — آیتم کامل (متادیتا + امتیاز + منابع).
+ * پیاده‌سازی طبیعی: آداپتوری روی HybridRetriever (+ Reranker). نبود = همان
+ * قابلیت retrieveSimilar منبع حافظه (مسیر PHASE 4 — بدون متادیتا، پیش‌فرض‌های خنثی).
+ */
+export interface ContextItemRetriever {
+  retrieveForContext(tileId: string, text: string, topK?: number): Promise<RetrievedItem[]>;
+}
+
+/** گزینه‌های مونتاژ با ارجاع — همان AssembleOptions + منبع غنی اختیاری */
+export interface AssembleWithCitationsOptions extends AssembleOptions {
+  /** منبع بازیابی غنی (آیتم کامل با متادیتا) — نبود: قابلیت retrieveSimilar حافظه */
+  retriever?: ContextItemRetriever;
+}
+
+/**
+ * زمینه کاری با ارجاع — «گسترش» WorkingContext از طریق وراثت (سند طراحی ۳-۲):
+ * فیلدهای موجود دست‌نخورده و شکل خروجی assemble تغییر نمی‌کند؛ نوع جدید
+ * فقط خروجی assembleWithCitations است (سازگاری عقب‌وار کامل).
+ */
+export interface WorkingContextWithCitations extends WorkingContext {
+  /** ارجاع‌های بخش‌های حافظه‌ای — فقط بخش‌هایی که کامل داخل متن نهایی‌اند */
+  citations: Citation[];
+}
+
 // ===================== موتور =====================
 
 export class ContextEngineImpl implements ContextEngine, ContextAssembler {
@@ -139,6 +168,89 @@ export class ContextEngineImpl implements ContextEngine, ContextAssembler {
       tokenEstimate: Math.ceil(contextText.length / this.charsPerToken),
       budgetTokens,
       truncated,
+    };
+  }
+  // ---------- PHASE 5 (P5-06): قابلیت افزودنی — مونتاژ با ارجاع ----------
+
+  /**
+   * مونتاژ زمینه با ارجاع — همان الگوریتم assemble (ثابت‌ها و جداکننده مشترک)
+   * به‌علاوه شمارش آفست بخش‌ها و ساخت Citation برای بخش‌های حافظه‌ای.
+   * متد assemble موجود «دست‌نخورده» است — این متد مستقل است و خروجی assemble
+   * را بازتولید می‌کند (شاهد: تست هم‌ارزی متن دو مسیر برای همان ورودی).
+   */
+  async assembleWithCitations(
+    query: ContextQuery,
+    options: AssembleWithCitationsOptions = {},
+  ): Promise<WorkingContextWithCitations> {
+    const base = await this.buildContext(query);
+    const text = options.text !== undefined && options.text.trim().length > 0 ? options.text : undefined;
+
+    // ۱) بازیابی — منبع غنی (آیتم کامل) یا قابلیت retrieveSimilar حافظه (PHASE 4)
+    type ScoredPart = { text: string; score: number; citable: CitableMemory; entry: MemoryEntry };
+    const scored: ScoredPart[] = [];
+    if (text !== undefined && options.retriever) {
+      const items = await options.retriever.retrieveForContext(query.tileId, text, options.topK ?? this.maxMemories);
+      for (const item of items) {
+        scored.push({
+          text: item.record.text,
+          score: item.score,
+          citable: { id: item.record.id, text: item.record.text, score: item.score, metadata: item.record.metadata },
+          entry: {
+            id: item.record.id,
+            tileId: item.record.tileId,
+            layer: item.record.layer,
+            kind: item.record.kind,
+            text: item.record.text,
+            sentiment: item.record.sentiment,
+            createdAt: item.record.createdAt,
+          },
+        });
+      }
+    } else if (text !== undefined && this.memory?.retrieveSimilar) {
+      const similar = await this.memory.retrieveSimilar(query.tileId, text, options.topK ?? this.maxMemories);
+      for (const hit of similar) {
+        scored.push({
+          text: hit.entry.text,
+          score: hit.score,
+          citable: { id: hit.entry.id, text: hit.entry.text, score: hit.score }, // بدون متادیتا — پیش‌فرض خنثی
+          entry: hit.entry,
+        });
+      }
+    }
+
+    // ۲) سیگنال‌های زنده — عیناً و بدون تغییر
+    const signals = options.signals ? [...options.signals] : [];
+
+    // ۳) مونتاژ با شمارش آفست + برش بودجه (همان ثابت‌های assemble)
+    const budgetTokens = this.maxContextTokens;
+    const maxChars = budgetTokens * this.charsPerToken;
+    let contextText = "";
+    const bounds: { start: number; end: number; memory?: CitableMemory }[] = [];
+    const allParts: string[] = [...scored.map((s) => s.text), ...signals];
+    for (let i = 0; i < allParts.length; i++) {
+      if (i > 0) contextText += CONTEXT_SEPARATOR;
+      const start = contextText.length;
+      contextText += allParts[i];
+      bounds.push({ start, end: contextText.length, memory: i < scored.length ? scored[i].citable : undefined });
+    }
+    const truncated = contextText.length > maxChars;
+    const finalText = truncated ? contextText.slice(0, maxChars) : contextText;
+
+    // ۴) ارجاع‌ها — فقط بخش‌های حافظه‌ای که کامل داخل متن نهایی‌اند
+    const citationEntries = bounds
+      .filter((b) => b.memory !== undefined)
+      .map((b) => ({ memory: b.memory!, start: b.start, end: b.end }));
+    const citations = new CitationBuilder().buildAll(citationEntries, finalText.length);
+
+    return {
+      base,
+      memories: scored.map((s) => s.entry),
+      signals,
+      contextText: finalText,
+      tokenEstimate: Math.ceil(finalText.length / this.charsPerToken),
+      budgetTokens,
+      truncated,
+      citations,
     };
   }
 }
