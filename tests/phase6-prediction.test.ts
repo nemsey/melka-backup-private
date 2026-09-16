@@ -9,7 +9,7 @@
  * صفر وابستگی DB — heuristicهای خالص.
  */
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, afterAll } from "bun:test";
 
 import {
   PropertyPredictor,
@@ -310,5 +310,136 @@ describe("P6-04 PredictionEngineImpl — قرارداد v1 (پل) + متدهای
     // حتمیت
     const pr2 = await engine.predictProperty(property, market, { now: NOW, entityId: "p1" });
     expect(stablePart(pr)).toEqual(stablePart(pr2));
+  });
+});
+
+// ===================== ۵) PredictionRepository (P6-05) =====================
+
+import {
+  InMemoryPredictionRepository,
+  FileSystemPredictionRepository,
+} from "@/core/intelligence/prediction/prediction-repository";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+const TMP_REPO = mkdtempSync(join(tmpdir(), "melk-p6-repo-"));
+afterAll(() => {
+  rmSync(TMP_REPO, { recursive: true, force: true });
+});
+
+/** رکورد کمکی — پیش‌بینی حداقلی با مهرهای زمانی قابل‌کنترل */
+function makeRecord(overrides: {
+  id: string;
+  entityId: string;
+  entityType?: "property" | "customer" | "expert";
+  model?: string;
+  createdAt: Date;
+  linkedOutcomeId?: string;
+}): PredictionRecord<{ x: number }> {
+  return {
+    predictionId: overrides.id,
+    predictionType: "PROPERTY",
+    probability: 0.5,
+    confidence: 0.5,
+    drivers: [],
+    risks: [],
+    assumptions: [],
+    modelVersion: overrides.model ?? "property-predictor-v0.1",
+    featureVersion: "property-features-v1",
+    contextSnapshot: {
+      agentId: "",
+      tileId: "",
+      entityId: overrides.entityId,
+      entityType: overrides.entityType ?? "property",
+      capturedAt: overrides.createdAt,
+      features: {},
+    },
+    createdAt: overrides.createdAt,
+    ...(overrides.linkedOutcomeId ? { linkedOutcomeId: overrides.linkedOutcomeId } : {}),
+    payload: { x: 1 },
+  };
+}
+
+describe("P6-05 PredictionRepository — دو پیاده‌سازی", () => {
+  test("InMemory: ذخیره و بازیابی کامل (دور کامل + بازگرداندن ساختار)", async () => {
+    const repo = new InMemoryPredictionRepository();
+    const record = makeRecord({ id: "p1", entityId: "prop-001", createdAt: new Date("2026-09-01T00:00:00Z") });
+    await repo.save(record);
+    const found = await repo.findById("p1");
+    expect(found).not.toBeNull();
+    expect(found!.predictionId).toBe("p1");
+    expect(found!.payload).toEqual({ x: 1 });
+    expect(found!.createdAt.getTime()).toBe(record.createdAt.getTime());
+    expect(await repo.findById("missing")).toBeNull();
+  });
+
+  test("InMemory: findByEntity/findByModel با حد + findPendingOutcome + linkOutcome (و خطای نامه‌وجود)", async () => {
+    const repo = new InMemoryPredictionRepository();
+    const d1 = new Date("2026-08-01T00:00:00Z");
+    const d2 = new Date("2026-09-10T00:00:00Z");
+    await repo.save(makeRecord({ id: "a", entityId: "prop-1", createdAt: d1 }));
+    await repo.save(makeRecord({ id: "b", entityId: "prop-1", createdAt: d2 }));
+    await repo.save(makeRecord({ id: "c", entityId: "cust-1", entityType: "customer", model: "customer-predictor-v0.1", createdAt: d2 }));
+    await repo.save(makeRecord({ id: "d", entityId: "prop-2", createdAt: d1, linkedOutcomeId: "out-99" }));
+
+    // جدیدترین-اول
+    const byEntity = await repo.findByEntity("prop-1", "property");
+    expect(byEntity.map((r) => r.predictionId)).toEqual(["b", "a"]);
+
+    const byModel = await repo.findByModel("property-predictor-v0.1", 1);
+    expect(byModel.map((r) => r.predictionId)).toEqual(["b"]);
+
+    // pending: قدیمی‌تر از 2026-09-05 و بدون outcome → a و d؟ d وصله شده → فقط a
+    const pending = await repo.findPendingOutcome(new Date("2026-09-05T00:00:00Z"));
+    expect(pending.map((r) => r.predictionId)).toEqual(["a"]);
+
+    // پیوند پس از سررسید
+    await repo.linkOutcome("a", "out-1");
+    expect((await repo.findById("a"))!.linkedOutcomeId).toBe("out-1");
+    expect(await repo.findPendingOutcome(new Date("2026-09-05T00:00:00Z"))).toEqual([]);
+
+    // پیوند به رکورد ناموجود ⇔ خطا (یکپارچگی داده)
+    expect(repo.linkOutcome("ghost", "out-x")).rejects.toThrow("یافت نشد");
+  });
+
+  test("FileSystem: ماندگاری بین نمونه‌ها + بازگرداندن تاریخ از JSON + آخرین-برنده + linkOutcome با بازنویسی", async () => {
+    const file = join(TMP_REPO, "predictions.jsonl");
+    const d1 = new Date("2026-08-01T00:00:00Z");
+    const first = new FileSystemPredictionRepository(file);
+    await first.save(makeRecord({ id: "f1", entityId: "prop-9", createdAt: d1 }));
+    await first.save(makeRecord({ id: "f2", entityId: "prop-9", createdAt: new Date("2026-09-12T00:00:00Z") }));
+
+    // نمونه دوم همان فایل — بارگذاری تنبل
+    const second = new FileSystemPredictionRepository(file);
+    const found = await second.findById("f1");
+    expect(found).not.toBeNull();
+    expect(found!.createdAt instanceof Date).toBe(true);
+    expect(found!.createdAt.getTime()).toBe(d1.getTime());
+    expect(found!.contextSnapshot.capturedAt instanceof Date).toBe(true);
+
+    // ذخیره دوباره همان شناسه ⇔ آخرین برنده
+    await second.save(makeRecord({ id: "f1", entityId: "prop-9", createdAt: d1, linkedOutcomeId: "out-early" }));
+    const third = new FileSystemPredictionRepository(file);
+    expect((await third.findById("f1"))!.linkedOutcomeId).toBe("out-early");
+
+    // linkOutcome روی فایل
+    await third.linkOutcome("f2", "out-f2");
+    const fourth = new FileSystemPredictionRepository(file);
+    expect((await fourth.findById("f2"))!.linkedOutcomeId).toBe("out-f2");
+    expect((await fourth.findPendingOutcome(new Date("2026-09-20T00:00:00Z")))).toEqual([]);
+    expect(fourth.linkOutcome("ghost", "x")).rejects.toThrow("یافت نشد");
+  });
+
+  test("FileSystem: خط خراب در JSONL بی‌صدا نادیده گرفته می‌شود (صلبیت — الگوی P4-02)", async () => {
+    const file = join(TMP_REPO, "corrupt.jsonl");
+    const { writeFileSync, mkdirSync } = await import("node:fs");
+    mkdirSync(join(TMP_REPO), { recursive: true });
+    writeFileSync(file, '{"predictionId":"good","predictionType":"PROPERTY"...\nNOT-JSON-AT-ALL\n', "utf8");
+    // فقط خط سالم معتبر نیست (contextSnapshot ندارد) → صفر رکورد، بدون throw
+    const repo = new FileSystemPredictionRepository(file);
+    expect(await repo.findById("good")).toBeNull();
+    await repo.save(makeRecord({ id: "ok", entityId: "e", createdAt: new Date() }));
+    expect(await repo.findById("ok")).not.toBeNull();
   });
 });

@@ -149,7 +149,7 @@ describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", (
       "feature/builders/expert-features.ts", "feature/feature-store.ts", "feature/feature-engine.ts",
       "prediction/index.ts", "prediction/prediction-record.ts", "prediction/prediction-engine.ts",
       "prediction/predictors/property-predictor.ts", "prediction/predictors/customer-predictor.ts",
-      "prediction/predictors/expert-predictor.ts",
+      "prediction/predictors/expert-predictor.ts", "prediction/prediction-repository.ts",
     ]);
     const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
     expect([...actual].sort()).toEqual([...expected].sort());
