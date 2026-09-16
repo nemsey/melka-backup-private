@@ -962,3 +962,26 @@ Work Log:
 Stage Summary:
 - پیش‌شرط‌های شروع کامل: بکاپ ✓ تگ ✓ worklog ✓ پایه سبز ×۲ ✓
 - هدف مرحله بعد P6-01: docs/PHASE-6-DESIGN.md + docs/PREDICTION-CONTRACT.md — فقط سند، بدون کد
+---
+Task ID: phase6-p601-p610
+Agent: main (Super Z / GLM-5.3)
+Task: PHASE 6 — P6-01 تا P6-10 (سند → builderها → FeatureEngine → PredictionEngine → Repository → اتصال ایجنت → اثبات → ممیزی → تست → baseline)
+
+Work Log:
+- P6-01: docs/PHASE-6-DESIGN.md + docs/PREDICTION-CONTRACT.md — دو انحراف صادقانه: نام PredictionResult با v1 تصادم ⇔ PredictionRecord (رویه P5-01)؛ «extract» دستور ⇔ compute واقعی v1
+- P6-02: چهار builder خالص (property/customer/expert/market) + guards + barrel — ضدفساد (ساعت‌دارها از ورودی حذف) + ۹ تست؛ گارد exact-file-set +۶ فایل
+- P6-03: FeatureEngineImpl (compute v1 عیناً + ۴ متد افزودنی با کش نسخه‌دار) + FeatureStore (InMemory + FileSystem JSONL) + ۵ تست — باگ خود-افشای کش aliasing رفع ریشه‌ای (structuredClone پس از ذخیره)
+- P6-04: PredictionRecord (۱۲ فیلد + linkedOutcomeId + payload تایپ‌شده) + سه predictor با وزن‌های بازرسی‌پذیر (۹ خروجی فایل‌یابی) + PredictionEngineImpl (پل v1 با ۵ هدف عددی؛ bounds عمداً غایب — قانون H) + ۹ تست؛ دو proxy صادقانه (previousVisits، activeDaysLast30/30)
+- P6-05: PredictionRepository (InMemory + FileSystem JSONL؛ findPendingOutcome برای PHASE 7؛ linkOutcome با خطای یکپارچگی) + ۴ تست
+- P6-06: متد افزودنی چهارم predict روی BaseIntelligentAgent (duck-typing؛ MARKET ⇔ null صادقانه) + فیلد اختیاری predictionRepository روی EngineDeps + ۳ تست
+- P6-07: اثبات ۵ پیکربندی بایت‌به‌بایت — همه ۵۴۰۵ نویسه (عین PHASE 3/4/5)؛ سیم‌کشی زنده: پیش‌بینی PROPERTY واقعی (0.590، ۶ driver) محاسبه+ذخیره+findById؛ حل تنش گارد engine-deps با بازسازی-دقیق (تنها تغییر مجاز = تغییر مصوب)
+- P6-08: ممیزی مرز --strict (پنج صفر) + اسکنر جدید audit-feature-visibility.sh (مسیر مستقیم + نماد barrel؛ ۲۰ نماد) با آزمون نشت عمدی (کاذب-منفی صفر) + گارد ۴→۵بخشی؛ رفع باگ awk خود-افشا
+- P6-09: ۶۵۱/۶۵۱ ×۲ (۳۲ جدید؛ مجموع ≥۶۴۹ عبور) + ۲ تست visibility
+- P6-10: گواهی ۱۰۰ رکورد (توزیع ۷ احتمال + Brier/کالیبراسیون ساختگی + ۱۰۰/۱۰۰ ذخیره) + docs/PREDICTION-BASELINE.md (نسخه ثابت v0.1 + پروتکل ارزیابی PHASE 7)
+- گزارش تکمیل ۱۲بندی: download/PHASE-6-COMPLETION-REPORT.md
+
+Stage Summary:
+- ۱۰ گام با کامیت مستقل بسته؛ ۲۱ فایل جدید + ۲ افزودنی؛ +۴۳۱۳/−۵
+- پنج موتور بدنه‌دار؛ صفر Migration؛ صفر Feature؛ صفر مصرف اجباری؛ v1 دست‌نخورده؛ ۶۵۱ تست ×۲؛ اثبات ۵ پیکربندی ۵۴۰۵ نویسه
+- حکم آمادگی PHASE 7: بله — پس از D5
+- گام بعد P6-D (گیت تحویل D0-D5): محیط زنده + build/start + PWA v10 + E2E موبایل + پیام مالک + انتظار OK
