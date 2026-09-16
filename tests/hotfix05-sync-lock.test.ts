@@ -32,7 +32,7 @@ function fakeArmFetch(delayMs = 60): typeof fetch {
       status: 200,
       headers: { "content-type": "application/json" },
     });
-  }) as typeof fetch;
+  }) as unknown as typeof fetch;
 }
 
 async function seedOneRowEach() {

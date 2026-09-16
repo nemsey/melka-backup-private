@@ -60,7 +60,7 @@ export function DashboardHome() {
             tileId={t.id}
             title={t.title}
             tagline={t.tagline}
-            icon={t.icon as unknown as LucideIcon}
+            icon={t.icon}
             accent={t.accent}
             hasAgent={Boolean(t.agent)}
             order={i}

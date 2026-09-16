@@ -309,7 +309,7 @@ describe("زنجیره استعلام زنده (RealProvider)", () => {
         );
       }
       return new Response(JSON.stringify({ statusCode: 404, status: false, message: "not found" }), { status: 404 });
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
 
     try {
       const provider = getMelkProvider();
@@ -336,7 +336,7 @@ describe("زنجیره استعلام زنده (RealProvider)", () => {
 
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async () =>
-      new Response(JSON.stringify({ statusCode: 200, status: true, data: {} }), { status: 200 })) as typeof fetch;
+      new Response(JSON.stringify({ statusCode: 200, status: true, data: {} }), { status: 200 })) as unknown as typeof fetch;
 
     try {
       const provider = getMelkProvider();
@@ -389,7 +389,7 @@ describe("زنجیره استعلام زنده (RealProvider)", () => {
         );
       }
       return new Response(JSON.stringify({ statusCode: 404, status: false, message: "not found" }), { status: 404 });
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
 
     try {
       const provider = getMelkProvider();

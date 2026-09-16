@@ -8,6 +8,7 @@
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
+import { Home as DummyIcon } from "lucide-react";
 
 const ROOT_EXPECTED = ["file-finder", "listings", "requests", "management-dashboard", "settings"];
 const CHILDREN_EXPECTED = [
@@ -85,7 +86,7 @@ describe("معماری داشبورد مدیریتی", () => {
         title: "تست",
         tagline: "تست",
         description: "تست",
-        icon: Dummy,
+        icon: DummyIcon,
         accent: "stone",
         component: Dummy,
         order: 1,

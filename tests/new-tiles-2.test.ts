@@ -367,7 +367,7 @@ describe("آمار شاخص قیمت روز مناطق", () => {
 
   test("درصد تغییر نسبت به ثبت قبلی الصاق می‌شود", async () => {
     const { attachChangePercent } = await import("@/lib/melk-api/price-index");
-    const areaStats = [{ areaName: "ولیعصر", category: "apartment-sell", medianPerMeter: 30_000_000, p25PerMeter: 0, p75PerMeter: 0, minPerMeter: 0, maxPerMeter: 0, sampleCount: 3, changePercent: null }];
+    const areaStats = [{ areaName: "ولیعصر", category: "apartment-sell", medianPerMeter: 30_000_000, p25PerMeter: 0, p75PerMeter: 0, minPerMeter: 0, maxPerMeter: 0, sampleCount: 3, changePercent: null, reliable: true }];
     const history = [
       { areaName: "ولیعصر", category: "apartment-sell", medianPerMeter: 25_000_000, recordedAt: "2025-08-01T00:00:00Z" },
     ];

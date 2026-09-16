@@ -128,7 +128,7 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
     // شبیه‌سازی موفقیت ارسال پیامک (بدون شبکه واقعی)
     const provider = getMelkProvider();
     const original = provider.requestOtp;
-    provider.requestOtp = async () => ({ expiresInSeconds: 120 });
+    provider.requestOtp = async () => ({ ok: true, expiresInSeconds: 120, message: "شبیه‌سازی تست" });
 
     const statuses: number[] = [];
     try {
@@ -320,7 +320,7 @@ describe("HOTFIX-04/B7 — حذف ناسازگاری 200+ok:false", () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (() => {
       throw new TypeError("fetch failed");
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
     try {
       const req = new NextRequest(
         "http://localhost/api/requests/meta/form?tradeType=sell&buildingType=residential&propertyType=apartment",

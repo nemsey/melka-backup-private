@@ -6,6 +6,7 @@
 import { describe, expect, test, beforeEach, afterAll } from "bun:test";
 import { defineTile } from "@/core/tiles/tile-contract";
 import { tileRegistry } from "@/core/tiles/tile-registry";
+import { Home as DummyIcon } from "lucide-react";
 
 const Dummy = () => null;
 
@@ -16,7 +17,7 @@ function makeTile(overrides: Partial<Parameters<typeof defineTile>[0]> = {}) {
     title: "کاشی تست",
     tagline: "تست",
     description: "تست",
-    icon: Dummy,
+    icon: DummyIcon,
     accent: "emerald",
     component: Dummy,
     order: 10,

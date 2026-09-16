@@ -27,7 +27,8 @@ const nextConfig: NextConfig = {
     ];
   },
   typescript: {
-    ignoreBuildErrors: true,
+    // PHASE 1 / P1-04: تایپ‌چک کامل فعال — صفر خطای tsc در کل پروژه
+    ignoreBuildErrors: false,
   },
   reactStrictMode: false,
 };

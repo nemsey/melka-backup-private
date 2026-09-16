@@ -77,7 +77,7 @@ export function ManagementDashboardPage({ settings, userRole }: TilePageProps) {
               tileId={t.id}
               title={t.title}
               tagline={showTaglines ? t.tagline : ""}
-              icon={t.icon as unknown as LucideIcon}
+              icon={t.icon}
               accent={t.accent}
               hasAgent={Boolean(t.agent)}
               order={i}

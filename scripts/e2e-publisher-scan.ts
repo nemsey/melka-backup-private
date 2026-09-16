@@ -4,6 +4,8 @@
  */
 process.env.DATABASE_URL = "file:/home/z/my-project/db/custom.db";
 
+export {}; // ماژولی شدن — جلوگیری از تداخل main سراسری بین اسکریپت‌ها
+
 async function main() {
   const { runDivarScan } = await import("@/lib/divar/scan");
   const summary = await runDivarScan();

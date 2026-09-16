@@ -9,7 +9,7 @@ const db = new PrismaClient({ datasources: { db: { url: "file:/home/z/my-project
 async function main() {
   const [sessions, syncState, pm, divar, ig] = await Promise.all([
     db.session.count({ where: { armTokenEnc: { not: null } } }),
-    db.syncState.count({ where: { armTokenEnc: { not: null } } }),
+    Promise.resolve(0), // ستون armTokenEnc در HOTFIX-02 حذف شد — همیشه صفر
     db.pmConnection.count({ where: { tokenEnc: { not: null } } }),
     db.divarConnection.count({ where: { OR: [{ tokenEnc: { not: null } }, { apiKeyEnc: { not: null } }] } }),
     db.instagramConnection.count({ where: { tokenEnc: { not: null } } }),

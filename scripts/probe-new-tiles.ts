@@ -13,8 +13,9 @@ const ARM = "https://arus-api.melketabriz.ir/api/apm";
 
 async function main() {
   const prisma = new PrismaClient();
-  const state = await prisma.syncState.findUnique({ where: { id: "singleton" } });
-  const token = decryptSecret(state?.armTokenEnc);
+  // HOTFIX-02/SEC-3: توکن ARM از SyncState به Session منتقل شد
+  const session = await prisma.session.findFirst({ where: { armTokenEnc: { not: null } }, orderBy: { createdAt: "desc" } });
+  const token = decryptSecret(session?.armTokenEnc);
   if (!token) {
     console.log("NO_ARM_TOKEN — ورود موفق ثبت نشده است");
     await prisma.$disconnect();

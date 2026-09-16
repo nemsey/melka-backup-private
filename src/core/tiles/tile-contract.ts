@@ -1,3 +1,5 @@
+import type { LucideIcon } from "lucide-react";
+
 /**
  * قرارداد «کاشی» (Tile Contract)
  * ------------------------------------------------------
@@ -53,7 +55,7 @@ export interface TileDefinition {
   tagline: string;
   description: string;
   /** کامپوننت آیکون کاشی (lucide) */
-  icon: ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   /** کلاس رنگ تاکیدی — از پالت سراسری */
   accent: "emerald" | "amber" | "rose" | "teal" | "stone";
   /** کامپوننت صفحه داخلی کاشی */
