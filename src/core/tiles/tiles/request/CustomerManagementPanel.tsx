@@ -17,8 +17,7 @@ import {
   HeartPulse, Users, Flame, TrendingUp, Trophy, PhoneCall, Home, Link2, Sparkles, ChevronDown, ChevronLeft,
 } from "lucide-react";
 import { faNumber } from "@/lib/format";
-import type { CustomerProfile, CustomerManagementSummary, LifecycleStage } from "@/lib/request/customer-mgmt";
-import { LIFECYCLE_FA, LIFECYCLE_COLOR } from "@/lib/request/customer-mgmt";
+import { LIFECYCLE_FA, LIFECYCLE_COLOR, type CustomerProfile, type CustomerManagementSummary, type LifecycleStage } from "@/lib/types/customer-lifecycle";
 
 export function CustomerManagementPanel({
   summary,

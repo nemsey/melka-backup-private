@@ -19,7 +19,7 @@ import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faNumber } from "@/lib/format";
 import type { RequestRow } from "@/lib/request/types";
-import type { CustomerManagementSummary } from "@/lib/request/customer-mgmt";
+import type { CustomerManagementSummary } from "@/lib/types/customer-lifecycle";
 import { RequestCard } from "./RequestCard";
 import { NewRequestDialog, type RequestMetaResponse } from "./NewRequestDialog";
 import { EventDialog } from "./EventDialog";

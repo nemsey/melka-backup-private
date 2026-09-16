@@ -11,7 +11,72 @@
  *   ۵. توضیحات مشاوران     — قیمت فایل، مطلوبیت، نحوه یافتن، نوع فایل، جدیت، دلیل فروش
  */
 
-import type { ListingRecord } from "@prisma/client";
+/**
+ * DTO ساختاری رکورد آگهی — مستقل از @prisma/client (PHASE 1 / P1-03)
+ * ------------------------------------------------------
+ * این ماژول توسط کامپوننت‌های کلاینت import می‌شود؛ بنابراین هیچ وابستگی
+ * به Prisma (حتی type-only) ندارد. فیلدها عین ستون‌های جدول ListingRecord
+ * (prisma/schema.prisma) هستند و رکورد واقعی Prisma به‌صورت ساختاری
+ * قابل‌انتساب به این DTO است — سرور بدون تغییر همان رکورد را پاس می‌دهد.
+ */
+export interface ListingRecordDTO {
+  id: string;
+  /** manual | divar — منبع ثبت فایل آگهی */
+  source: string;
+  /** توکن آگهی دیوار (برای منبع divar — پیوند به DivarAd) */
+  divarToken: string | null;
+
+  // ---------- گام ۱: اطلاعات مالک ----------
+  customerName: string | null;
+  customerMobile: string | null;
+  armCustomerId: string | null;
+
+  // ---------- گام ۲: اطلاعات مکانی ملک ----------
+  areaId: string | null;
+  areaName: string | null;
+  lineId: string | null;
+  lineName: string | null;
+  postalCode: string | null;
+  address: string | null;
+
+  // ---------- گام ۳: اطلاعات معامله ----------
+  tradeTypeId: string | null;
+  tradeTypeName: string | null;
+  propertyTypeId: string | null;
+  propertyTypeName: string | null;
+  buildingTypeId: string | null;
+  buildingTypeName: string | null;
+  changeWithJson: string | null;
+  inputsJson: string | null;
+
+  // ---------- گام ۴: تصاویر و اسناد ----------
+  imagesJson: string | null;
+  videosJson: string | null;
+  documentsJson: string | null;
+
+  // ---------- گام ۵: توضیحات مشاوران ----------
+  priceEvaluation: string | null;
+  desirabilityLevel: string | null;
+  fileFinding: string | null;
+  fileTypeJson: string | null;
+  userSeriousness: string | null;
+  sellReason: string | null;
+  description: string | null;
+  isLuxury: boolean;
+  isVacation: boolean;
+  isUrgent: boolean;
+  notifyBySms: boolean;
+  status: string;
+
+  // ---------- چرخه عمر و یکپارچه‌سازی ----------
+  crmTransferredAt: Date | null;
+  armPropertyId: string | null;
+  instagramPostJson: string | null;
+  instagramPublishedAt: Date | null;
+  instagramMediaId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // ===================== گام ۳: فهرست‌های مرجع (کشف زنده از API آرم) =====================
 
@@ -387,7 +452,7 @@ export function computeCompleteness(rec: {
 }
 
 /** تبدیل رکورد به ردیف UI */
-export function toListingRow(rec: ListingRecord): ListingRow {
+export function toListingRow(rec: ListingRecordDTO): ListingRow {
   const parse = <T,>(json: string | null, fallback: T): T => {
     try {
       return json ? (JSON.parse(json) as T) : fallback;
