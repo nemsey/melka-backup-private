@@ -945,3 +945,20 @@ Work Log:
 Stage Summary:
 - D0 ✓ D1 ✓ D2 ✓ D3 ✓ D4 ✓ — D5 ⏳ در انتظار «OK» مالک؛ PHASE 6 در «آماده شروع» بدون پیش‌روی
 - production با کد PHASE 5 زنده و سالم؛ ظاهر عین قبل (اثبات بایت‌به‌بایت + پیکسلی)
+---
+Task ID: phase6-p600
+Agent: main (Super Z / GLM-5.3)
+Task: P6-00 — آماده‌سازی PHASE 6 (Feature + Prediction Engine)
+
+Work Log:
+- تأیید رسمی دستور شورا دریافت شد: PHASE 5 رسماً بسته (جدول پذیرش کامل + چهار تقدیر: کشف باگ Hybrid Depth / راه‌حل دو-شکل فارسی BM25 / جدول مقایسه صادقانه / صفر مصرف‌کننده)؛ PHASE 6 با ترتیب P6-00 → P6-10 → P6-D مجاز است
+- تعهد صریح قواعد دهگانه بخش D ثبت شد: صفر Feature قابل‌مشاهده · صفر Migration · v1 دست‌نخورده · صفر مصرف اجباری · اثبات ۵ پیکربندی · گارد ۱۷ فایل · دو-سبز · ≥۳۰ تست (هدف ۶۴۹) · اسکنر visibility جدید · قانون H تشدیدشده
+- بکاپ پایگاه: db/custom.db → db/custom.backup-pre-phase6.db (1,384,448 بایت)
+- همگام‌سازی وضعیت کثیف db/custom.db (نوشتار زنده سرور) با کامیت اداری ed96c32
+- تگ git: pre-phase6-baseline (روی کامیت ed96c32)
+- پایه تست: ۶۱۹/۶۱۹ سبز در دو اجرای پیاپی (5.80s + 5.41s) — قاعده دو-سبز از همین لحظه فعال
+- زنجیره وابستگی PHASE 6: قرارداد (P6-01 سند) → builders چهارگانه خالص (P6-02) → FeatureEngine + FeatureStore (P6-03) → سه Predictor + PredictionResult (P6-04) → PredictionRepository دوپیاده‌سازی (P6-05) → متد افزودنی predict روی BaseIntelligentAgent (P6-06) → اثبات ۵ پیکربندی بایت‌به‌بایت (P6-07) → ممیزی مرز + اسکنر visibility (P6-08) → ≥۳۰ تست (P6-09) → گواهی + baseline (P6-10) → گیت تحویل D0-D5 (P6-D)
+
+Stage Summary:
+- پیش‌شرط‌های شروع کامل: بکاپ ✓ تگ ✓ worklog ✓ پایه سبز ×۲ ✓
+- هدف مرحله بعد P6-01: docs/PHASE-6-DESIGN.md + docs/PREDICTION-CONTRACT.md — فقط سند، بدون کد
