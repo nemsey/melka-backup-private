@@ -484,3 +484,170 @@ describe("P2-02-B — خلوص import ایجنت‌های چندجدولی", () 
     });
   }
 });
+
+// ===================== P2-02-C — ایجنت فایل‌یابی (پرخطرترین) =====================
+
+import { DivarAgent } from "../src/core/agent/divar-agent";
+import type {
+  AdScoreProjection,
+  DivarScanLogDTO,
+  DivarSettingDTO,
+  MarketStatDTO,
+} from "../src/core/repositories/interfaces";
+
+describe("P2-02-C — ایجنت فایل‌یابی با Repository ساختگی — خروجی عین رفتار قبلی", () => {
+  const adScore = (over: Partial<AdScoreProjection> = {}): AdScoreProjection => ({
+    bucket: "hunt", personalScore: 80, totalScore: 76, underpriceScore: 72,
+    otherScore: 65, locationScore: 88, matchedLineName: "محله ۱", matchedAreaName: "منطقه ۱",
+    category: "apartment-sell", publishedAt: new Date(), pricePerMeter: 25_000_000,
+    publisherType: "personal", publisherName: null,
+    ...over,
+  });
+
+  const scanLog = (over: Partial<DivarScanLogDTO> = {}): DivarScanLogDTO => ({
+    id: "SC1", startedAt: new Date(), durationMs: 4200, scanned: 120, fetched: 40,
+    inWindow: 30, outOfArea: 5, autoRejected: 8, newAds: 4, updatedAds: 2,
+    source: "web", error: null,
+    ...over,
+  });
+
+  function makeDivarMarket(
+    ads: AdScoreProjection[],
+    scans: DivarScanLogDTO[],
+    stats: MarketStatDTO[],
+    settings: DivarSettingDTO | null
+  ): MarketRepository {
+    return {
+      listSupplyDemand: async () => [],
+      listSupplyDemandOrderByPropertyCountDesc: async () => [],
+      countSupplyDemand: async () => 0,
+      replaceSupplyDemand: async () => 0,
+      upsertSupplyDemandBatch: async () => ({ created: 0, updated: 0 }),
+      deleteAllSupplyDemand: async () => undefined,
+      listActiveAdScores: async () => ads,
+      listAdsWithPrice: async () => [],
+      listAdPrices: async () => [],
+      listPriceSamples: async () => [],
+      listAdsWithBucketCounts: async () => ({ rows: [], bucketCounts: { hunt: 0, follow: 0, review: 0 } }),
+      findAdByToken: async () => null,
+      setAdStatus: async () => undefined,
+      deleteAdByToken: async () => undefined,
+      listMarketPriceStats: async () => stats,
+      listRecentScanLogs: async () => scans,
+      getDivarSettings: async () => settings,
+      listRefListsByKeys: async () => [],
+      findRefList: async () => null,
+    };
+  }
+
+  test("سناریوی کامل: اسکن سالم + قانون مالک + زیرقیمت + فیلتر مکان + یادگیری از رد", async () => {
+    const settings: DivarSettingDTO = {
+      id: "singleton",
+      dataJson: JSON.stringify({ areaIds: ["1", "2"], lineIds: ["10", "11", "12"] }),
+      locFilterInit: true, updatedAt: new Date(),
+    };
+    const agent = new DivarAgent({
+      market: makeDivarMarket(
+        [
+          adScore(),
+          adScore({ bucket: "follow", personalScore: 45, publisherType: "agent", publisherName: "املاک طاهری" }),
+          adScore({ underpriceScore: 85, pricePerMeter: null }),
+        ],
+        [scanLog(), scanLog({ id: "SC2", error: "network" })],
+        [
+          { id: "M1", scopeKey: "line:10", medianPerMeter: 28_000_000, p25PerMeter: 25_000_000, p75PerMeter: 31_000_000, sampleCount: 22, armPerMeter: null, updatedAt: new Date() },
+          { id: "M2", scopeKey: "area:1", medianPerMeter: 27_000_000, p25PerMeter: 24_000_000, p75PerMeter: 30_000_000, sampleCount: 40, armPerMeter: null, updatedAt: new Date() },
+        ],
+        settings
+      ),
+      outcomes: {
+        listRecentLookups: async () => [],
+        countLookups: async () => 0,
+        createLookup: async () => { throw new Error("stub"); },
+        listRecentRejects: async () => [
+          { id: "RJ1", token: "t1", reasons: JSON.stringify(["broker", "broker", "overpriced"]), note: null, scoreSnapshotJson: null, featureSnapshotJson: null, actorCode: "1", createdAt: new Date() },
+        ],
+        createReject: async () => { throw new Error("stub"); },
+        createCommissionCalc: async () => { throw new Error("stub"); },
+      },
+    });
+
+    const cards = await agent["computeRawInsights"]();
+
+    // SCAN — سلامت اسکن (آخرین موفق + نرخ ۵ اسکن)
+    const scan = cards.find((c) => c.key === "scan-health")!;
+    expect(scan).toBeDefined();
+    expect(scan.severity).toBe("info");
+    expect(scan.body).toContain("۴۲۰");
+
+    // PERSONAL — قانون مالک: ۳ فایل فعال، ۱ شخصی قوی (۸۰+)، ۱ برچسب personal
+    const personal = cards.find((c) => c.key === "personal-filter")!;
+    expect(personal.body).toContain("۳ فایل فعال");
+    expect(personal.body).toContain("۱ فایل با نشانه‌های قوی");
+
+    // PRICE — زیرقیمت ۷۰+ فقط آگهی اول → ۱
+    const price = cards.find((c) => c.key === "price-filter")!;
+    expect(price.metrics?.[0].value).toBe("1");
+    // ۱ محله آماردار (line:10)
+    expect(price.metrics?.[1].value).toBe("1");
+
+    // OTHER — سایر فاکتورها: میانگین (۶۵+۶۵... فقط >0 ها: 65) → میانگین ۶۵
+    const other = cards.find((c) => c.key === "other-factors")!;
+    expect(other).toBeDefined();
+
+    // LOCATION — فیلتر مکان فعال (۲ منطقه، ۳ محله) + ۳/۳ نگاشت
+    const location = cards.find((c) => c.key === "location-filter")!;
+    expect(location.body).toContain("۲ منطقه و ۳ محله");
+
+    // LEARNING — الگوی ردها: broker×2 + overpriced×1
+    const learning = cards.find((c) => c.key === "reject-learning")!;
+    expect(learning.body).toContain("آگهی مشاور املاک (۲ بار)");
+    // سه رد broker → هشدار نشت مشاوران
+    // (فقط ۲ بار ثبت شده؛ هشدار broker-leak نیاز به ۳+ دارد — عین آستانه قبلی)
+    expect(cards.some((c) => c.key === "broker-leak")).toBe(false);
+  });
+
+  test("بدون هیچ داده → فقط کارت راهنمای اسکن", async () => {
+    const agent = new DivarAgent({
+      market: makeDivarMarket([], [], [], null),
+      outcomes: {
+        listRecentLookups: async () => [],
+        countLookups: async () => 0,
+        createLookup: async () => { throw new Error("stub"); },
+        listRecentRejects: async () => [],
+        createReject: async () => { throw new Error("stub"); },
+        createCommissionCalc: async () => { throw new Error("stub"); },
+      },
+    });
+    const cards = await agent["computeRawInsights"]();
+    expect(cards).toHaveLength(1);
+    expect(cards[0].key).toBe("scan-empty");
+  });
+
+  test("خطای Repository → catch داخلی، بدون throw (عین رفتار قبلی)", async () => {
+    const failing: MarketRepository = {
+      ...makeDivarMarket([], [], [], null),
+      listActiveAdScores: async () => { throw new Error("db down"); },
+      listRecentScanLogs: async () => { throw new Error("db down"); },
+    };
+    const agent = new DivarAgent({
+      market: failing,
+      outcomes: {
+        listRecentLookups: async () => [],
+        countLookups: async () => 0,
+        createLookup: async () => { throw new Error("stub"); },
+        listRecentRejects: async () => { throw new Error("db down"); },
+        createReject: async () => { throw new Error("stub"); },
+        createCommissionCalc: async () => { throw new Error("stub"); },
+      },
+    });
+    const cards = await agent["computeRawInsights"]();
+    expect(cards).toEqual([]);
+  });
+
+  test("divar-agent.ts نه @/lib/db import می‌کند نه @prisma/client", async () => {
+    const source = await Bun.file(`${import.meta.dir}/../src/core/agent/divar-agent.ts`).text();
+    expect(/from\s+['"]@\/lib\/db['"]/.test(source)).toBe(false);
+    expect(/from\s+['"]@prisma\/client['"]/.test(source)).toBe(false);
+  });
+});

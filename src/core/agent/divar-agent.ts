@@ -10,27 +10,38 @@
  *  LEARNING  — یادگیری از دلایل رد آگهی توسط کاربر (پیشگیری از تکرار اشتباه)
  */
 
-import { db } from "@/lib/db";
+import { getMarketRepository, getOutcomeRepository, type MarketRepository, type OutcomeRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
+
+/** وابستگی‌های تزریق‌پذیر ایجنت فایل‌یابی */
+export interface DivarAgentDeps {
+  market?: MarketRepository;
+  outcomes?: OutcomeRepository;
+}
 
 export class DivarAgent extends BaseLearningAgent {
   readonly tileId = "file-finder";
   readonly name = "ایجنت فایل‌یابی دیوار";
   readonly insightDomains = ["SCAN", "PERSONAL", "PRICE", "OTHER", "LOCATION", "LEARNING"] as const;
 
+  private readonly market: MarketRepository;
+  private readonly outcomes: OutcomeRepository;
+
+  constructor(deps?: DivarAgentDeps) {
+    super();
+    this.market = deps?.market ?? getMarketRepository();
+    this.outcomes = deps?.outcomes ?? getOutcomeRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const cards: InsightCard[] = [];
 
     const [ads, scans, rejects, marketStats, settingsRow] = await Promise.all([
-      db.divarAd.findMany({
-        where: { status: "active" },
-        select: { bucket: true, personalScore: true, totalScore: true, underpriceScore: true, otherScore: true, locationScore: true, matchedLineName: true, matchedAreaName: true, category: true, publishedAt: true, pricePerMeter: true, publisherType: true, publisherName: true },
-        take: 3000,
-      }).catch(() => []),
-      db.divarScanLog.findMany({ orderBy: { startedAt: "desc" }, take: 5 }).catch(() => []),
-      db.divarRejectLog.findMany({ orderBy: { createdAt: "desc" }, take: 120 }).catch(() => []),
-      db.marketPriceStat.findMany({ take: 500 }).catch(() => []),
-      db.divarSetting.findUnique({ where: { id: "singleton" } }).catch(() => null),
+      this.market.listActiveAdScores(3000).catch(() => []),
+      this.market.listRecentScanLogs(5).catch(() => []),
+      this.outcomes.listRecentRejects(120).catch(() => []),
+      this.market.listMarketPriceStats(500).catch(() => []),
+      this.market.getDivarSettings().catch(() => null),
     ]);
 
     // وضعیت فیلتر مکان (۱۷ منطقة پیش‌فرض مالک یا انتخاب دلخواه)
