@@ -796,3 +796,19 @@ Work Log:
 Stage Summary:
 - رگرسیون کامل سبز: عددی صفر تفاوت + بصری چهارلایه صفر تفاوت ساختاری + VLM تأیید
 - گام بعد P3-06 — اسکریپت ممیزی audit-intelligence-boundary.sh + گواهی نهایی + سند تکمیل ۱۰-بندی
+
+---
+Task ID: phase3-p3-06
+Agent: main (Super Z / GLM-5.3)
+Task: P3-06 — افتتاح نهایی: ممیزی مرز هوشمندی + گارد ۴-بخشی + سند نهایی + گزارش تکمیل
+
+Work Log:
+- scripts/audit-intelligence-graph.ts: پیمایشگر بازگشتی گراف import (تفکیک import type از ارزشی — الگوی P1-03) از ۱۳ ریشه خالص
+- scripts/audit-intelligence-boundary.sh: پنج صفر حاکمیتی (Prisma/lib-db/fetch/react مستقیم + قاعده پل + خلوص بازگشتی) — --strict PASS؛ به‌عنوان بخش [4/4] در regression-guard.sh ادغام شد (الگوی P2-05 برای audit-log-safety)
+- docs/PHASE-3-DESIGN.md → نسخه ۱٫۱ با پیوست وضعیت اجرا (جدول تطبیق بندهای سند با اجرا + تذکر قانون H)
+- گزارش تکمیل ۱۰-بندی: download/PHASE-3-COMPLETION-REPORT.md (جدول گام‌ها + کامیت‌ها، خلاصه diff، پنج صفر ممیزی، تست ۵۵۷، اثبات‌های بایت‌به‌بایت دو ایجنت، رگرسیون عددی/بصری، سازگاری عقب‌وار، پنج کشف زیرساختی، جدول معیارها، قضاوت آمادگی PHASE 4)
+- گواهی نهایی: ۵۵۷/۵۵۷ × ۲ اجرای پیاپی + گارد ۴-بخشی --strict PASS
+
+Stage Summary:
+- PHASE 3 کامل: ۱۱ قرارداد خالص + ۲ ایجنت مهاجرت‌یافته با اثبات بایت‌به‌بایت + صفر Feature/Migration + BaseLearningAgent دست‌نخورده
+- گام بعد P3-D — گیت تحویل فاز (D0 تا D5) و سپس انتظار تأیید مالک برای PHASE 4
