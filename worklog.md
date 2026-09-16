@@ -637,3 +637,21 @@ Stage Summary:
 - روت‌ها ۶۹→۰؛ ایجنت‌ها ۴۷→۰؛ interfaces صفر Prisma — مرز Repository کامل برقرار؛ audit --strict PASS
 - تست ۴۸۵→۴۹۶ همه سبز؛ tsc صفر؛ verify-p2-03: ۳۳/۳۳ یکسان
 - گام بعد: P2-04 — همگام‌سازی افزایشی (upsert کلید طبیعی + Flag پیش‌فرض legacy + SyncState نوساز + SyncDeadLetter)
+
+---
+Task ID: phase2-p2-04-to-p2-07
+Agent: main (Super Z / GLM-5.3)
+Task: PHASE 2 / P2-04 تا P2-07 — همگام‌سازی افزایشی، Logger ساختاریافته، متادیتای سیاست، رگرسیون نهایی و گزارش تکمیل
+
+Work Log:
+- P2-04 (کامیت b9d0367): اسکیمای فقط-افزودنی (SyncState.lastSyncCursor/lastWatermark/syncRunId + جدول SyncDeadLetter) روی هر سه پایگاه با بکاپ؛ مسیر افزایشی با upsertBatch کلید طبیعی از P2-01؛ دسته‌ای سریع + تک‌تکی ایزوله؛ نامه مرده ۳‌ضربه‌ای با محافظت از جارو و حل خودکار؛ cursor پس از هر خانواده؛ خانواده واکشی‌ناموفق دست‌نخورده (بهبود مستند نسبت به legacy)؛ ۹ تست دو-حالته؛ سند SYNC-INCREMENTAL-P2-04.md
+- P2-05 (کامیت 4276634): Logger با ۱۱ فیلد الزامی در هر خط + پاک‌ساز تدافعی (کلید حساس→[redacted]، موبایل/کد→ماسک)؛ رویدادهای الزامی: login/logout (session lib)، otp-failed، sync start/ok/fail، فراخوانی ایجنت مرکزی در BaseLearningAgent، روت آغاز با src/proxy.ts (کشف: Next 16 قرارداد middleware را منسوخ و proxy با Node runtime جایگزین کرد — build پاس شد)، withRouteLog کامل برای health؛ instrumentation console.*→صفر؛ اسکنر audit-log-safety.sh (مثبت/منفی اثبات) فعال در guard؛ ۱۱ تست؛ سند LOGGER-EVENTS-P2-05.md
+- P2-06 (کامیت‌های 2306be2 + a7a83de): ۹ ستون فقط-افزودنی سیاست؛ active دو‌راهه؛ یافته صادقانه: DEFAULT 'active' همه ردیف‌ها را فعال کرد → backfill اصلاحی idempotent سه پایگاه (۲۰→۱۳+۷، ناهماهنگی ۰)؛ باگ ترتیب تست خودم (بررسی سراسری mismatch با ردیف‌های مسیر قدیمی) → بازطراحی به اثبات عدم‌تداخل دو‌راهه؛ ۶ تست؛ سند MIGRATION-P2-06.md
+- P2-07 (کامیت c845bce): عددی ۱۰۰۰-نمونه — کاشت قطعی (mulberry32) روی test-repository؛ دفع بینش در هر دو درخت (re-seed هر سمت + stats-first)؛ ۱۲ ایجنت × ۴۸ بینش × همه فیلدها = صفر تفاوت؛ بصری چهارلایه — baseline worktree پورت 3001 vs فعلی 3000 روی همان پایگاه ایزوله با دیمون double-fork (کشف: PORT باید per-daemon پاس شود؛ unlock نرخ ورود پس از تلاش‌های زیاد): DOM/text/SVG ۹/۹ بایت‌به‌بایت + پیکسل ۳/۳ صفر + VLM NO VISIBLE DIFFERENCE
+- گزارش تکمیل ۱۰ بندی: download/PHASE-2-COMPLETION-REPORT.md
+
+Stage Summary:
+- PHASE 2 کامل: ۴۲۱→۵۲۲ تست (+۱۰۱)، tsc صفر، build سبز، guard سه‌بخشی PASS، strict audit صفر نقض
+- ایجنت ۴۷→۰ | روت ۶۹→۰ | interfaces خالص | ۱۳ Repository | Flag افزایشی پیش‌فرض legacy | Logger | Policy دو‌راهه
+- صفر Feature / صفر Migration مخرب / BaseLearningAgent زنده / قرارداد API بایت‌به‌بایت (۳۳+۴۸+۹ مقایسه)
+- PHASE 3 READY — گزارش برای امضای شورا
