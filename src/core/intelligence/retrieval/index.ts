@@ -40,3 +40,10 @@ export {
   type HybridRetrieverHandle,
   type CreateHybridRetrieverOptions,
 } from "./hybrid-retriever";
+
+export {
+  Reranker,
+  type RerankQuery,
+  type RerankerWeights,
+  type RerankOptions,
+} from "./reranker";

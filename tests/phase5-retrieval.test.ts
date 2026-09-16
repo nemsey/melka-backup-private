@@ -32,7 +32,9 @@ import {
 import {
   HybridRetriever,
   createHybridRetriever,
+  type RetrievedItem,
 } from "@/core/intelligence/retrieval/hybrid-retriever";
+import { Reranker } from "@/core/intelligence/retrieval/reranker";
 import type { MemoryStore } from "@/core/intelligence/memory/memory-store";
 
 // ===================== دایرکتوری موقت تست فایل =====================
@@ -438,5 +440,99 @@ describe("P5-04 — HybridRetriever با RRF", () => {
     await store.save(makeRecord({ tileId: "requests", text: "گزارش جامعه مشتریان" }));
     const h2 = await createHybridRetriever({ store });
     expect(await h2.retriever.retrieve({ text: "جامعه" }, { topK: 0 })).toEqual([]);
+  });
+});
+
+// ===================== P5-05: رتبه‌بند heuristic =====================
+
+describe("P5-05 — Reranker heuristic آفلاین", () => {
+  const HOURS = 3_600_000;
+  const hoursAgo = (h: number) => new Date(Date.now() - h * HOURS).toISOString();
+
+  /** ساخت آیتم بازیابی‌شده دستی — سناریوهای رتبه‌بندی مستقل از جستجو */
+  function item(record: MemoryRecord, score = 0.5): RetrievedItem {
+    return { record, score, sources: ["vector", "keyword"], vectorRank: 1, keywordRank: 1 };
+  }
+
+  test("تازگی — با متن و اهمیت یکسان، حافظه تازه‌تر بالا می‌آید", () => {
+    const fresh = makeRecord({
+      tileId: "requests",
+      text: "گزارش جامعه مشتریان",
+      metadata: { eventTime: hoursAgo(2), importance: 0.5, confidence: 0.5 },
+    });
+    const stale = makeRecord({
+      tileId: "requests",
+      text: "گزارش جامعه مشتریان",
+      metadata: { eventTime: hoursAgo(24 * 40), importance: 0.5, confidence: 0.5 },
+    });
+    const reranker = new Reranker();
+    const out = reranker.rerank([item(stale, 0.5), item(fresh, 0.5)], { text: "جامعه مشتریان" });
+    expect(out[0].record.id).toBe(fresh.id); // تازه‌تر صدر — حتی با ترتیب ورود معکوس
+    expect(out[1].record.id).toBe(stale.id);
+    // امتیاز نهایی در بازه [0,1] با وزن‌های پیش‌فرض (جمع وزن‌ها = 1)
+    for (const o of out) expect(o.score).toBeGreaterThanOrEqual(0), expect(o.score).toBeLessThanOrEqual(1);
+  });
+
+  test("اهمیت — با متن و زمان یکسان، importance بالاتر بالا می‌آید", () => {
+    const high = makeRecord({
+      tileId: "requests",
+      text: "تحلیل بازار مسکن",
+      metadata: { eventTime: hoursAgo(10), importance: 0.95, confidence: 0.4 },
+    });
+    const low = makeRecord({
+      tileId: "requests",
+      text: "تحلیل بازار مسکن",
+      metadata: { eventTime: hoursAgo(10), importance: 0.1, confidence: 0.4 },
+    });
+    const reranker = new Reranker();
+    const out = reranker.rerank([item(low), item(high)], { text: "تحلیل بازار" });
+    expect(out[0].record.id).toBe(high.id);
+    expect(out[1].record.id).toBe(low.id);
+    // رکورد قدیمی بدون متادیتا — پیش‌فرض خنثی 0.5 بین این دو می‌ماند
+    const legacy = makeRecord({ tileId: "requests", text: "تحلیل بازار مسکن", createdAt: hoursAgo(10) });
+    const out2 = reranker.rerank([item(legacy), item(low)], { text: "تحلیل بازار" });
+    expect(out2[0].record.id).toBe(legacy.id); // 0.5 (خنثی) > 0.1
+  });
+
+  test("وزن‌های سفارشی — چیدمان صفر/یک رفتار را کاملاً تعیین می‌کند + تطبیق دامنه", () => {
+    const reranker = new Reranker();
+    // سناریو ۱: فقط اهمیت — سند با امتیاز ادغام پایین‌تر اما اهمیت بالا می‌بَرد
+    const weakMatchHighImportance = makeRecord({
+      tileId: "requests",
+      text: "گزارش بازار",
+      metadata: { importance: 0.9, eventTime: hoursAgo(500) },
+    });
+    const strongMatchLowImportance = makeRecord({
+      tileId: "requests",
+      text: "گزارش بازار",
+      metadata: { importance: 0.2, eventTime: hoursAgo(1) },
+    });
+    const out = reranker.rerank(
+      [item(strongMatchLowImportance, 0.9), item(weakMatchHighImportance, 0.1)],
+      { text: "گزارش بازار" },
+      { weights: { base: 0, recency: 0, importance: 1, confidence: 0, domain: 0 } },
+    );
+    expect(out[0].record.id).toBe(weakMatchHighImportance.id); // فقط اهمیت ملاک است
+    expect(out.map((o) => o.score)).toEqual([0.9, 0.2]);
+
+    // سناریو ۲: فقط تطبیق دامنه — رکورد هم‌دامنه می‌بَرد (با نرمال‌سازی فارسی)
+    const sameDomain = makeRecord({
+      tileId: "requests",
+      text: "گزارش بازار",
+      metadata: { domain: "COMMUNITY_MGMT", importance: 0.1 },
+    });
+    const otherDomain = makeRecord({
+      tileId: "requests",
+      text: "گزارش بازار",
+      metadata: { domain: "CHURN", importance: 0.9 },
+    });
+    const out2 = reranker.rerank(
+      [item(otherDomain), item(sameDomain)],
+      { domain: "community_mgmt" },
+      { weights: { base: 0, recency: 0, importance: 0, confidence: 0, domain: 1 } },
+    );
+    expect(out2[0].record.id).toBe(sameDomain.id);
+    expect(out2[0].score).toBe(1);
+    expect(out2[1].score).toBe(0);
   });
 });
