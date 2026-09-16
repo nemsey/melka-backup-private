@@ -856,3 +856,26 @@ Work Log:
 Stage Summary:
 - اپ و سرور production کاملاً سالم؛ «خطای ۵۰۰» = نقص لایه پلتفرم روی دامنه جلسه قبل؛ دسترسی صحیح مالک فقط از لینک preview همین گفتگو (سازوکار Complete) — در پیام نهایی تحویل داده می‌شود
 - طبق دستور شورا: ادامه با اجرای کامل PHASE 4 (بدنه موتورهای Context و Memory)
+---
+Task ID: phase4-p400-p410
+Agent: main (Super Z / GLM)
+Task: PHASE 4 کامل — بدنه موتورهای Context و Memory (P4-00 تا P4-10)
+
+Work Log:
+- P4-00: بکاپ db/custom.backup-pre-phase4.db + تگ pre-phase4-baseline + پایه ۵۵۷/۵۵۷
+- P4-01: سند طراحی docs/PHASE-4-DESIGN.md — اصل «وفاداری به قرارداد» (v1 = حداقل؛ قابلیت‌ها = متد افزودنی/قرارداد قابلیت اختیاری)
+- P4-02: memory-store.ts — درگاه MemoryStore + InMemoryStore + FileSystemStore (JSONL الحاقی، بارگذاری تنبل، خط-خراب‌پذیرا؛ deleteById/clear فقط تست/چرخه عمر — موتور هرگز صدا نمی‌زند)
+- P4-03: vector-index.ts — تعبیه قطعی آفلاین (هش FNV-1a، ۶۴ بعد، ارقام فارسی/عربی، ZWNJ) + کسینوسی امن-صفر + topK پایدار + تعبیه‌گر تزریقی
+- P4-04: memory-engine.ts — قرارداد v1 دقیق (خروجی query دقیقاً ۷ فیلد) + retrieveSimilar (رتبه‌بندی از طریق نمایه، محدوده tileId، همگام‌سازی تنبل) + consolidate (خود-توان با حذف جذب‌شدگان؛ SEMANTIC/CONSOLIDATED با mergedIds در فراداده) + stats/reindex + کارخانه
+- P4-05: context-engine.ts — buildContext هم‌ارز شکل با Placeholder + assemble (حافظه مرتبط + سیگنال + بودجه توکن ۲۰۴۸/۴) + WorkingContext سریال‌پذیر + قراردادهای قابلیت ContextAssembler/ContextMemoryRetriever
+- P4-06: base-intelligent-agent.ts — تنها فایل مشترک تغییر‌یافته؛ دو متد افزودنی protected: observe (بلع خطا، no-op بدون موتور) و assembleContext (duck-typing)؛ صفر فراخوانی در مسیر خروجی
+- P4-07: scripts/verify-p4-07.ts — گارد ۱۷ فایل دست‌نخورده vs تگ + گارد سیم‌کشی زنده (۱۵ رکورد + زمینه ۸۸ توکنی) + چهار پیکربندی (A بدون موتور / B Placeholder / C بدنه واقعی + ۱۲ خاطره / D = C + observe/assemble پیش از خروجی) — همه ۵۴۰۵ نویسه بایت‌به‌بایت یکسان (۶ کارت، سیاست ۱، ۶ خاطره — عین PHASE 3)
+- P4-08: ۳۶ تست جدید صفر-DB (phase4-engines) + دو-سبز پیاپی ۵۹۳/۵۹۳ ×۲ (هدف مجموع ≥۵۷۷)
+- P4-09: گارد ۴-بخشی --strict PASS (تست + مرز Repository + امنیت لاگ + مرز هوشمندی با پنج صفر) + tsc ۰
+- P4-10: گزارش تکمیل download/PHASE-4-COMPLETION-REPORT.md + پیوست وضعیت اجرا در سند طراحی (v1.1 با سه انحراف صادقانه: mergedIds در فراداده، خود-توانی consolidate، همگام‌سازی تنبل نمایه)
+- ارتقای تست اسکلت PHASE 3: شمارش ۱۵ → exact-file-set ۲۱ فایل (سخت‌گیرانه‌تر و نسخه‌آگاه)
+- سه اشکال خود-افشا حین توسعه اصلاح و تست شد (شکاف idempotency consolidate، نمایه خالی فروشگاه فایل، انتظار اشتباه ZWNJ در تست)
+
+Stage Summary:
+- PHASE 4 کامل: ۶ فایل بدنه + ۳۶ تست + اثبات بایت‌به‌بایت چهار پیکربندی + صفر تغییر خروجی/UI/Migration
+- گام بعد F1: rebuild نهایی + redeploy production با کد PHASE 4 + E2E + پیام مالک (لینک preview همین گفتگو)
