@@ -12,7 +12,7 @@
  *   • شفافیت منبع داده
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
 import {
   Loader2,
   Filter,
@@ -35,10 +34,9 @@ import {
   UserCheck,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, ApiClientError } from "@/lib/client/api";
+import { api } from "@/lib/client/api";
 import { faNumber, faJalaliShortDateTime, faMonthLabel } from "@/lib/format";
 import { faDigits, dateToJalali } from "@/lib/jalali";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
@@ -81,46 +79,46 @@ function monthlyKeys(rows: ViRow[]): { key: string; label: string; count: number
     .map(([key, count]) => ({ key, label: faMonthLabel(key), count }));
 }
 
+/** پاسخ کامل روت بازدیدها — شیء یگانه داده هوک */
+interface ViData {
+  rows: ViRow[];
+  total: number;
+  summary: Summary | null;
+  dataSource: DataSourceInfo | null;
+}
+
+const EMPTY_DATA: ViData = { rows: [], total: 0, summary: null, dataSource: null };
+
 export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
-  const { toast } = useToast();
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [applied, setApplied] = useState<Filters>(EMPTY);
-  const [rows, setRows] = useState<ViRow[] | null>(null);
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [source, setSource] = useState<DataSourceInfo | null>(null);
-  const [loading, setLoading] = useState(true);
   const showCharts = settings.showCharts !== false;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (applied.propertyCode) params.set("propertyCode", applied.propertyCode.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
-      if (applied.requester) params.set("requester", applied.requester);
-      if (applied.checker) params.set("checker", applied.checker);
-      if (applied.status) params.set("status", applied.status);
-      if (applied.dateFrom) params.set("dateFrom", applied.dateFrom);
-      if (applied.dateTo) params.set("dateTo", applied.dateTo);
-      params.set("limit", "1000");
+  const fetchVisits = useCallback(async (): Promise<ViData> => {
+    const params = new URLSearchParams();
+    if (applied.propertyCode) params.set("propertyCode", applied.propertyCode.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
+    if (applied.requester) params.set("requester", applied.requester);
+    if (applied.checker) params.set("checker", applied.checker);
+    if (applied.status) params.set("status", applied.status);
+    if (applied.dateFrom) params.set("dateFrom", applied.dateFrom);
+    if (applied.dateTo) params.set("dateTo", applied.dateTo);
+    params.set("limit", "1000");
 
-      const res = await api<{ rows: ViRow[]; total: number; summary: Summary; dataSource: DataSourceInfo }>(
-        `/api/crm/visits?${params.toString()}`
-      );
-      setRows(res.rows);
-      setSummary(res.summary);
-      setSource(res.dataSource);
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "خطا در دریافت بازدیدها", description: e.message, variant: "destructive" });
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [applied, toast]);
+    const res = await api<{ rows: ViRow[]; total: number; summary: Summary; dataSource: DataSourceInfo }>(
+      `/api/crm/visits?${params.toString()}`
+    );
+    return { rows: res.rows, total: res.total, summary: res.summary, dataSource: res.dataSource };
+  }, [applied]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, loading } = useTileData(fetchVisits, {
+    errorTitle: "خطا در دریافت بازدیدها",
+    // عین رفتار قبلی: خطا → فقط rows خالی می‌شود؛ خلاصه/منبع قبلی می‌ماند
+    errorValue: (prev) => (prev ? { ...prev, rows: [] } : { ...EMPTY_DATA }),
+  });
+
+  const rows = data?.rows ?? null;
+  const summary = data?.summary ?? null;
+  const source = data?.dataSource ?? null;
 
   const chartData = useMemo(() => (rows ? monthlyKeys(rows) : []), [rows]);
   const maxCount = Math.max(1, ...chartData.map((c) => c.count));

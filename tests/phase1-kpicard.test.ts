@@ -138,7 +138,8 @@ describe("P1-01a / KpiCard — ادعاهای ساختاری (grep)", () => {
   test("هر ۸ صفحه CRM از KpiCard مشترک import می‌کنند", () => {
     for (const page of CRM_PAGES) {
       const content = readFileSync(join(TILES, page), "utf8");
-      expect(content).toContain('KpiCard } from "@/components/app/shared"');
+      expect(content).toContain("KpiCard");
+      expect(content).toContain('from "@/components/app/shared"');
     }
   });
 

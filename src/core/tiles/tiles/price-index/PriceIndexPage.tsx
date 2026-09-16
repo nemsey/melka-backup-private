@@ -9,7 +9,7 @@
  * • پایش سلامت قیمت‌گذاری: آگهی‌های منحرف از شاخص منطقه
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import {
   Loader2,
   RotateCcw,
@@ -32,10 +31,9 @@ import {
 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { DataSourceAlert } from "@/components/app/shared";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, DataSourceAlert, useTileData } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, ApiClientError } from "@/lib/client/api";
+import { api } from "@/lib/client/api";
 import type { AreaPriceStat, DeviatingAd, PriceIndexConfig, PriceTrendPoint } from "@/lib/melk-api/types";
 import type { AreaStatWithReliability } from "@/lib/melk-api/price-index";
 import { faNumber, faPercent, faToman, faJalaliShortDateTime } from "@/lib/format";
@@ -62,30 +60,16 @@ const CATEGORY_FA: Record<string, string> = {
 };
 
 export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, onBack: _back }: TilePageProps) {
-  const { toast } = useToast();
-  const [data, setData] = useState<IndexResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<string>(String(settings.defaultCategory ?? "all"));
   const showCharts = settings.showCharts !== false;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (category !== "all") params.set("category", category);
-      const res = await api<IndexResponse>(`/api/crm/price-index?${params.toString()}`);
-      setData(res);
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "خطا در محاسبه شاخص قیمت", description: e.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast, category]);
+  const fetchIndex = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (category !== "all") params.set("category", category);
+    return api<IndexResponse>(`/api/crm/price-index?${params.toString()}`);
+  }, [category]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, loading, reload } = useTileData(fetchIndex, { errorTitle: "خطا در محاسبه شاخص قیمت" });
 
   const maxMedian = useMemo(() => Math.max(1, ...(data?.areaStats.map((s) => s.medianPerMeter) ?? [1])), [data]);
 
@@ -240,7 +224,7 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading} className="gap-1.5">
+                  <Button variant="outline" size="sm" onClick={reload} disabled={loading} className="gap-1.5">
                     {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
                     بازخوانی
                   </Button>

@@ -13,7 +13,7 @@
  *   • شفافیت منبع داده (آخرین استخراج موفق/خطای زنده)
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
 import {
   Loader2,
   Filter,
@@ -50,10 +49,9 @@ import {
   Tooltip as RTooltip,
 } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { DataSourceWarning, type DataSourceInfo } from "@/components/app/shared";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, DataSourceWarning, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, ApiClientError } from "@/lib/client/api";
+import { api } from "@/lib/client/api";
 import { faNumber, faJalaliShort, faMonthLabel } from "@/lib/format";
 import { faDigits, dateToJalali } from "@/lib/jalali";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
@@ -97,56 +95,53 @@ const MATCH_KIND_FA: Record<string, string> = {
   both: "دارای هر دو",
 };
 
+/** پاسخ کامل روت معاملات — شیء یگانه داده هوک */
+interface TxResponse {
+  rows: TxRow[];
+  total: number;
+  summary: Summary;
+  dataSource: DataSourceInfo;
+}
+
+const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
+
 export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _userRole, onBack: _onBack }: TilePageProps) {
-  const { toast } = useToast();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
-  const [rows, setRows] = useState<TxRow[] | null>(null);
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [source, setSource] = useState<DataSourceInfo | null>(null);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
 
   const pageSize = Number(settings.pageSize ?? 10);
   const sortBy = String(settings.sortBy ?? "contractDate");
   const showCharts = settings.showCharts !== false;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (applied.dateFrom) params.set("dateFrom", applied.dateFrom);
-      if (applied.dateTo) params.set("dateTo", applied.dateTo);
-      if (applied.propertyCode) params.set("propertyCode", applied.propertyCode);
-      if (applied.requestCode) params.set("requestCode", applied.requestCode);
-      if (applied.contractHolo) params.set("contractHolo", applied.contractHolo);
-      if (applied.matchKind !== "all") params.set("matchKind", applied.matchKind);
-      params.set("limit", "5000");
-      params.set("offset", "0");
-      params.set("sortBy", sortBy);
-      params.set("sortDir", sortBy === "contractDate" ? "desc" : "desc");
+  const fetchTransactions = useCallback(async (): Promise<TxResponse> => {
+    const params = new URLSearchParams();
+    if (applied.dateFrom) params.set("dateFrom", applied.dateFrom);
+    if (applied.dateTo) params.set("dateTo", applied.dateTo);
+    if (applied.propertyCode) params.set("propertyCode", applied.propertyCode);
+    if (applied.requestCode) params.set("requestCode", applied.requestCode);
+    if (applied.contractHolo) params.set("contractHolo", applied.contractHolo);
+    if (applied.matchKind !== "all") params.set("matchKind", applied.matchKind);
+    params.set("limit", "5000");
+    params.set("offset", "0");
+    params.set("sortBy", sortBy);
+    params.set("sortDir", sortBy === "contractDate" ? "desc" : "desc");
 
-      const res = await api<{ rows: TxRow[]; total: number; summary: Summary; dataSource: DataSourceInfo }>(
-        `/api/crm/transactions?${params.toString()}`
-      );
-      setRows(res.rows);
-      setTotal(res.total);
-      setSummary(res.summary);
-      setSource(res.dataSource);
-      setPage(0);
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "خطا در دریافت معاملات", description: e.message, variant: "destructive" });
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [applied, sortBy, toast]);
+    const res = await api<TxResponse>(`/api/crm/transactions?${params.toString()}`);
+    setPage(0);
+    return res;
+  }, [applied, sortBy]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, loading } = useTileData(fetchTransactions, {
+    errorTitle: "خطا در دریافت معاملات",
+    // عین رفتار قبلی: خطا → فقط rows خالی می‌شود؛ خلاصه/منبع قبلی می‌ماند
+    errorValue: (prev) => (prev ? { ...prev, rows: [] } : { ...EMPTY_RESPONSE }),
+  });
+
+  const rows = data?.rows ?? null;
+  const summary = data?.summary ?? null;
+  const source = data?.dataSource ?? null;
+  const total = data?.total ?? 0;
 
   // سری ماهانه — ماه‌های هجری شمسی
   const monthly = useMemo(() => {

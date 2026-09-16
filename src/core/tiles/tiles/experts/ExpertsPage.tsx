@@ -24,7 +24,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
 import {
   Loader2,
   Filter,
@@ -41,10 +40,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { DataSourceWarning, type DataSourceInfo } from "@/components/app/shared";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, DataSourceWarning, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, ApiClientError } from "@/lib/client/api";
+import { api } from "@/lib/client/api";
 import { faNumber, faJalaliShort } from "@/lib/format";
 import { faDigits } from "@/lib/jalali";
 
@@ -86,17 +84,21 @@ function cooperationLevel(total: number): { label: string; style: string } {
   return { label: "بدون تعامل", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
 }
 
+/** داده ترکیبی دو روت کارشناسان + تعاملات — شیء یگانه داده هوک */
+interface ExData {
+  rows: ExRow[];
+  total: number;
+  dataSource: DataSourceInfo | null;
+  interactions: InRow[];
+  topRealtors: { name: string; total: number }[];
+}
+
+const EMPTY_DATA: ExData = { rows: [], total: 0, dataSource: null, interactions: [], topRealtors: [] };
+
 export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
-  const { toast } = useToast();
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [applied, setApplied] = useState<Filters>(EMPTY);
   const [meta, setMeta] = useState<Meta | null>(null);
-  const [rows, setRows] = useState<ExRow[] | null>(null);
-  const [total, setTotal] = useState(0);
-  const [source, setSource] = useState<DataSourceInfo | null>(null);
-  const [interactions, setInteractions] = useState<InRow[] | null>(null);
-  const [topRealtors, setTopRealtors] = useState<{ name: string; total: number }[]>([]);
-  const [loading, setLoading] = useState(true);
   const viewMode = String(settings.viewMode ?? "cards");
 
   useEffect(() => {
@@ -105,41 +107,41 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
       .catch(() => setMeta({ roles: [], businesses: [], creators: [] }));
   }, []);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (applied.fullName) params.set("fullName", applied.fullName);
-      if (applied.mobile) params.set("mobile", applied.mobile.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
-      if (applied.personnelCode) params.set("personnelCode", applied.personnelCode.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
-      if (applied.role !== "all") params.set("role", applied.role);
-      if (applied.businessTitle !== "all") params.set("businessTitle", applied.businessTitle);
-      if (applied.creator !== "all") params.set("creator", applied.creator);
-      if (applied.active !== "all") params.set("active", applied.active);
-      params.set("limit", "1000");
+  const fetchExperts = useCallback(async (): Promise<ExData> => {
+    const params = new URLSearchParams();
+    if (applied.fullName) params.set("fullName", applied.fullName);
+    if (applied.mobile) params.set("mobile", applied.mobile.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
+    if (applied.personnelCode) params.set("personnelCode", applied.personnelCode.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))));
+    if (applied.role !== "all") params.set("role", applied.role);
+    if (applied.businessTitle !== "all") params.set("businessTitle", applied.businessTitle);
+    if (applied.creator !== "all") params.set("creator", applied.creator);
+    if (applied.active !== "all") params.set("active", applied.active);
+    params.set("limit", "1000");
 
-      const [exRes, inRes] = await Promise.all([
-        api<{ rows: ExRow[]; total: number; dataSource: DataSourceInfo }>(`/api/crm/experts?${params.toString()}`),
-        api<{ rows: InRow[]; total: number; topRealtors: { name: string; total: number }[] }>("/api/crm/interactions"),
-      ]);
-      setRows(exRes.rows);
-      setTotal(exRes.total);
-      setSource(exRes.dataSource);
-      setInteractions(inRes.rows);
-      setTopRealtors(inRes.topRealtors);
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "خطا در دریافت کارشناسان", description: e.message, variant: "destructive" });
-      setRows([]);
-      setInteractions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [applied, toast]);
+    const [exRes, inRes] = await Promise.all([
+      api<{ rows: ExRow[]; total: number; dataSource: DataSourceInfo }>(`/api/crm/experts?${params.toString()}`),
+      api<{ rows: InRow[]; total: number; topRealtors: { name: string; total: number }[] }>("/api/crm/interactions"),
+    ]);
+    return {
+      rows: exRes.rows,
+      total: exRes.total,
+      dataSource: exRes.dataSource,
+      interactions: inRes.rows,
+      topRealtors: inRes.topRealtors,
+    };
+  }, [applied]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, loading } = useTileData(fetchExperts, {
+    errorTitle: "خطا در دریافت کارشناسان",
+    // عین رفتار قبلی: خطا → rows و interactions خالی؛ total/source/topRealtors قبلی می‌ماند
+    errorValue: (prev) => (prev ? { ...prev, rows: [], interactions: [] } : { ...EMPTY_DATA }),
+  });
+
+  const rows = data?.rows ?? null;
+  const total = data?.total ?? 0;
+  const source = data?.dataSource ?? null;
+  const interactions = data?.interactions ?? null;
+  const topRealtors = data?.topRealtors ?? [];
 
   const kpis = useMemo(() => {
     if (!rows) return null;

@@ -10,7 +10,7 @@
  * رنگ‌های وضعیت عین خود سامانه: زرد انتظار / سبز تایید / قرمز رد
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,13 +19,11 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { Loader2, RotateCcw, ScrollText, Filter, Eye, Clock, TrendingDown, Users } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, ApiClientError } from "@/lib/client/api";
+import { api } from "@/lib/client/api";
 import { CONTRACT_STATUS_FA, CONTRACT_STATUSES, type ContractFunnelStage, type CrmContract } from "@/lib/melk-api/types";
 import { faNumber, faPercent, faJalaliShort } from "@/lib/format";
 
@@ -74,34 +72,20 @@ function funnelBarTone(status: string): string {
 }
 
 export function ContractsPage({ settings, onSettingsChange, userRole: _role, onBack: _back }: TilePageProps) {
-  const { toast } = useToast();
-  const [data, setData] = useState<ContractsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>(String(settings.defaultStatus ?? "all"));
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<CrmContract | null>(null);
   const showFunnel = settings.showFunnel !== false;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") params.set("status", statusFilter);
-      if (search.trim()) params.set("search", search.trim());
-      params.set("limit", String(settings.pageSize ?? 30));
-      const res = await api<ContractsResponse>(`/api/crm/contracts?${params.toString()}`);
-      setData(res);
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "خطا در دریافت قراردادها", description: e.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast, statusFilter, search, settings.pageSize]);
+  const fetchContracts = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    if (search.trim()) params.set("search", search.trim());
+    params.set("limit", String(settings.pageSize ?? 30));
+    return api<ContractsResponse>(`/api/crm/contracts?${params.toString()}`);
+  }, [statusFilter, search, settings.pageSize]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, loading, reload } = useTileData(fetchContracts, { errorTitle: "خطا در دریافت قراردادها" });
 
   const funnelMax = useMemo(
     () => Math.max(1, ...(data?.summary.funnel.map((f) => f.count) ?? [1])),
@@ -226,7 +210,7 @@ export function ContractsPage({ settings, onSettingsChange, userRole: _role, onB
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-56 h-9 text-xs"
               />
-              <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={reload} disabled={loading} className="gap-1.5">
                 {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
                 بازخوانی
               </Button>

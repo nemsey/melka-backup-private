@@ -9,7 +9,7 @@
  * • نرخ‌نامه رسمی اتحادیه مشاورین املاک تبریز
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, RotateCcw, Calculator, Receipt, Percent, Users, Building2, FileText, TrendingUp } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import type { CommissionResult } from "@/lib/melk-api/types";
@@ -82,8 +81,6 @@ function parseAmount(v: string): number | undefined {
 
 export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
   const { toast } = useToast();
-  const [data, setData] = useState<FinanceResponse | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // محاسبه‌گر
   const [calcType, setCalcType] = useState<string>("mobayeName");
@@ -94,25 +91,15 @@ export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role,
   const [calcResult, setCalcResult] = useState<CalcResponse | null>(null);
   const [calcLoading, setCalcLoading] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api<FinanceResponse>("/api/crm/finance");
-      setData(res);
-      if (res.commissionConfig?.detail.length) {
-        setCalcType(res.commissionConfig.detail[0].contractType);
-      }
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "خطا در دریافت داده‌های مالی", description: e.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
+  const fetchFinance = useCallback(async () => {
+    const res = await api<FinanceResponse>("/api/crm/finance");
+    if (res.commissionConfig?.detail.length) {
+      setCalcType(res.commissionConfig.detail[0].contractType);
     }
-  }, [toast]);
+    return res;
+  }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, loading, reload } = useTileData(fetchFinance, { errorTitle: "خطا در دریافت داده‌های مالی" });
 
   const activeType = useMemo(
     () => data?.commissionConfig?.detail.find((d) => d.contractType === calcType) ?? null,
@@ -380,7 +367,7 @@ export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role,
                   <Users className="w-5 h-5 text-primary" aria-hidden />
                   حق‌السهم قراردادهای نهایی‌شده به تفکیک مشاور
                 </span>
-                <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading} className="gap-1.5">
+                <Button variant="outline" size="sm" onClick={reload} disabled={loading} className="gap-1.5">
                   {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
                   بازخوانی
                 </Button>

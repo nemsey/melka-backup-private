@@ -9,21 +9,19 @@
  * • فهرست‌های مرجع زنده سامانه ARM: شخصیت / شغل / نقش / جدیت
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
 import { Loader2, RotateCcw, Users, Repeat, TrendingUp, Briefcase, Heart, Fingerprint, Building2 } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, ApiClientError } from "@/lib/client/api";
+import { api } from "@/lib/client/api";
 import type { CustomerClubMember, CustomerClubSummary, RefListItem } from "@/lib/melk-api/types";
 import { faNumber, faPercent, faMonthLabel } from "@/lib/format";
 
@@ -42,27 +40,11 @@ function roleBadge(role: "BUYER" | "SELLER" | "EXPERT"): { label: string; style:
 }
 
 export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
-  const { toast } = useToast();
-  const [data, setData] = useState<ClubResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const showCharts = settings.showCharts !== false;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api<ClubResponse>("/api/crm/customer-club");
-      setData(res);
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "خطا در تحلیل باشگاه مشتریان", description: e.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+  const fetchClub = useCallback(async () => api<ClubResponse>("/api/crm/customer-club"), []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, loading, reload } = useTileData(fetchClub, { errorTitle: "خطا در تحلیل باشگاه مشتریان" });
 
   const s = data?.summary;
   const growthData = (s?.growthSeries ?? []).map((g) => ({ month: faMonthLabel(g.key), count: g.count }));
@@ -163,7 +145,7 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
                   <Repeat className="w-5 h-5 text-rose-600" aria-hidden />
                   مشتریان تکراری — خریدار و فروشنده همزمان
                 </span>
-                <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading} className="gap-1.5">
+                <Button variant="outline" size="sm" onClick={reload} disabled={loading} className="gap-1.5">
                   {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
                   بازخوانی
                 </Button>

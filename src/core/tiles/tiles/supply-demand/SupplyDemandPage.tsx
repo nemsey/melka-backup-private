@@ -10,19 +10,17 @@
  *   • شفافیت منبع داده
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
 import { Loader2, RotateCcw, Scale, Home, Flame, Snowflake, TrendingUp, BarChart3 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { DataSourceAlert, type DataSourceInfo } from "@/components/app/shared";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, ApiClientError } from "@/lib/client/api";
+import { api } from "@/lib/client/api";
 import { faNumber, faPercent } from "@/lib/format";
 
 interface SdRow {
@@ -51,33 +49,33 @@ function demandBadge(percent: number): { label: string; style: string } {
   return { label: "بدون درخواست", style: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" };
 }
 
+/** پاسخ کامل روت عرضه و تقاضا — شیء یگانه داده هوک */
+interface SdData {
+  rows: SdRow[];
+  total: number;
+  summary: SdSummary | null;
+  dataSource: DataSourceInfo | null;
+}
+
+const EMPTY_DATA: SdData = { rows: [], total: 0, summary: null, dataSource: null };
+
 export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
-  const { toast } = useToast();
-  const [rows, setRows] = useState<SdRow[] | null>(null);
-  const [summary, setSummary] = useState<SdSummary | null>(null);
-  const [source, setSource] = useState<DataSourceInfo | null>(null);
-  const [loading, setLoading] = useState(true);
   const showCharts = settings.showCharts !== false;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api<{ rows: SdRow[]; total: number; summary: SdSummary; dataSource: DataSourceInfo }>("/api/crm/supply-demand");
-      setRows(res.rows);
-      setSummary(res.summary);
-      setSource(res.dataSource);
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "خطا در دریافت عرضه و تقاضا", description: e.message, variant: "destructive" });
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+  const fetchSupplyDemand = useCallback(async (): Promise<SdData> => {
+    const res = await api<{ rows: SdRow[]; total: number; summary: SdSummary; dataSource: DataSourceInfo }>("/api/crm/supply-demand");
+    return { rows: res.rows, total: res.total, summary: res.summary, dataSource: res.dataSource };
+  }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, loading, reload } = useTileData(fetchSupplyDemand, {
+    errorTitle: "خطا در دریافت عرضه و تقاضا",
+    // عین رفتار قبلی: خطا → فقط rows خالی می‌شود؛ خلاصه/منبع قبلی می‌ماند
+    errorValue: (prev) => (prev ? { ...prev, rows: [] } : { ...EMPTY_DATA }),
+  });
+
+  const rows = data?.rows ?? null;
+  const summary = data?.summary ?? null;
+  const source = data?.dataSource ?? null;
 
   const maxAds = useMemo(() => Math.max(1, ...(rows ?? []).map((r) => r.propertyCount)), [rows]);
   const maxPercent = useMemo(() => Math.max(10, ...(rows ?? []).map((r) => r.requestPercent)), [rows]);
@@ -193,7 +191,7 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
               <Scale className="w-5 h-5 text-primary" aria-hidden />
               گزارش عرضه و تقاضا — عین ستون‌های خود سامانه
             </span>
-            <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading} className="gap-1.5">
+            <Button variant="outline" size="sm" onClick={reload} disabled={loading} className="gap-1.5">
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
               بازخوانی
             </Button>
