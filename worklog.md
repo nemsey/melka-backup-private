@@ -879,3 +879,16 @@ Work Log:
 Stage Summary:
 - PHASE 4 کامل: ۶ فایل بدنه + ۳۶ تست + اثبات بایت‌به‌بایت چهار پیکربندی + صفر تغییر خروجی/UI/Migration
 - گام بعد F1: rebuild نهایی + redeploy production با کد PHASE 4 + E2E + پیام مالک (لینک preview همین گفتگو)
+---
+Task ID: phase4-delivery-f1-f2
+Agent: main (Super Z / GLM)
+Task: F1+F2 — استقرار نهایی production با کد PHASE 4 + E2E موبایل + گیت تحویل
+
+Work Log:
+- F1: bun run build سبز (BUILD_ID جدید؛ static/public → standalone؛ کد PHASE 4 در چانک‌های ایجنت — assembleContext حاضر؛ بدنه‌های موتور tree-shake شده چون صفر مصرف‌کننده، طبق طراحی)؛ توقف نرم سرور قدیمی (فلگ .prod-stop + kill → خروج نگهبان)؛ دیمون تازه؛ health ok mode=real؛ ROOT :81 ۲۰۰؛ کاشی‌ها ۴۰۱ (احراز صحیح)؛ ورود مدیر OWNER موفق؛ بینش ایجنت زنده؛ خروج تمیز
+- F2: scripts/p4-f2-e2e.py روی build واقعی (۴۰۳×۸۷۴، الگوی p3-d3): ورود ✓ خانه ✓ کاشی درخواست ✓ پنل بینش ایجنت باز ✓ («سیاست نسخه ۱، ۱۸ خاطره، ۶ بینش») خروج ✓ — لاگ ساختاریافته: login OWNER 14:56:41 + logout USER_LOGOUT 14:57:21؛ ۵ اسکرین‌شات + متن پنل در download/delivery-p4/
+- کشف: اسکرین‌شات‌های ورود/کاشی/خروج فاز ۴ بایت‌به‌بایت با تحویل فاز ۳ یکسان‌اند (md5 برابر) — اثبات پیکسلی صفر تغییر UI؛ خانه فقط به‌دلیل شمارنده‌های زنده متفاوت (رفتار مستند P3)؛ خرده‌یافته: agent-browser screenshot پس از تغییر حالت SPA فریم کهنه می‌دهد (متن DOM شاهد معتبر پنل است — الگوی d3-03==d3-04 در P3 هم دیده می‌شود)
+- گیت تحویل: download/DELIVERY-GATE-P4.md — D0 ✓ D1 ✓ D2 ✓ (SW همان v8؛ origin جدید = بدون کش قدیمی) D3 ✓ D4 ✓ (پیام در همین گفتگو) D5 ⏳ در انتظار OK مالک — PHASE 5 تا D5 آغاز نمی‌شود
+
+Stage Summary:
+- production با کد PHASE 4 زنده و سالم؛ کل زنجیره تحویل سبز؛ در انتظار تأیید مالک (D5) برای شروع PHASE 5
