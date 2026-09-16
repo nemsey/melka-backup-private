@@ -52,7 +52,11 @@ function makeHarness<T>() {
   // جعبه ثبت خروجی هوک — جهش پراپرتی (نه انتساب مجدد متغیر بستاری)
   const box: { current: HarnessResult<T> | null } = { current: null };
   const Harness = ({ fetcher, opts }: { fetcher: () => Promise<T>; opts: { errorTitle: string; errorValue?: (prev: T | null) => T | null } }) => {
-    box.current = useTileData(fetcher, opts);
+    const result = useTileData(fetcher, opts);
+    // ثبت خروجی هوک در افکت — الگوی مجاز React (خارج از رندر)
+    React.useEffect(() => {
+      box.current = result;
+    });
     return null;
   };
   return {
