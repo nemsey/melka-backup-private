@@ -291,7 +291,6 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   }, [locData, selAreaIds, selLineIds]);
 
   const onRejected = useCallback(() => {
-    setBusyAction(rejectAd?.token ?? null);
     setBusyAction(null);
     void loadAds(bucket);
   }, [rejectAd, loadAds, bucket]);

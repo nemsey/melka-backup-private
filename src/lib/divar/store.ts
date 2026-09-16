@@ -107,20 +107,9 @@ export async function resetConnection(method: "kenar" | "phone"): Promise<void> 
   await db.divarConnection.deleteMany({ where: { method } });
 }
 
-/** بازیابی کلید کنار (رمزگشایی) */
-export function getKenarKey(): string | null {
-  // فراخوانی async از پایگاه — توسط موتور اسکن با connection ردیف کار می‌کند
-  return null;
-}
-
 export async function readKenarKey(): Promise<string | null> {
   const row = await db.divarConnection.findUnique({ where: { method: "kenar" } });
   return decryptSecret(row?.apiKeyEnc ?? null);
-}
-
-export async function readDivarPhoneToken(): Promise<string | null> {
-  const row = await db.divarConnection.findUnique({ where: { method: "phone" } });
-  return decryptSecret(row?.tokenEnc ?? null);
 }
 
 // ===================== تنظیمات ایجنت =====================

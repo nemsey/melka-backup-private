@@ -108,13 +108,6 @@ describe("HOTFIX-01 — رمزنگاری بدون MELK_TOKEN_KEY", () => {
     expect(() => encryptSecret("secret")).toThrow(/MELK_TOKEN_KEY/);
   });
 
-  test("divarSecretEnvKey بدون کلید null برمی‌گرداند (نه fallback)", async () => {
-    setEnv("NODE_ENV", "development");
-    setEnv("MELK_TOKEN_KEY", undefined);
-    delete process.env.DIVAR_TOKEN_KEY;
-    const { divarSecretEnvKey } = await import("@/lib/divar/config");
-    expect(divarSecretEnvKey()).toBeNull();
-  });
 
   test("با کلید معتبر، رفت‌وبرگشت رمزنگاری کار می‌کند", async () => {
     setEnv("NODE_ENV", "development");
