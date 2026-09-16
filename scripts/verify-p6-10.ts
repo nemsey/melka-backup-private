@@ -132,8 +132,8 @@ async function main() {
       syntheticOutcome(
         property.publisherType === "personal" ? 1 : property.publisherType === "agency" ? 0 : 0.5,
         Math.min(1, Math.max(0, features.underpriceRatio * 5)),
-        Math.min(1, property.publishedHoursAgo / 720),
-        1 - Math.min(1, property.publishedHoursAgo / 336),
+        Math.min(1, (property.publishedHoursAgo ?? 0) / 720),
+        1 - Math.min(1, (property.publishedHoursAgo ?? 0) / 336),
       ),
     );
   }
@@ -171,7 +171,7 @@ async function main() {
   const probs = payloads.map((p) => p.transactionProbability);
   const meanP = probs.reduce((s, v) => s + v, 0) / N;
   const brierHeuristic = probs.reduce((s, p, i) => s + (p - truths[i]!) ** 2, 0) / N;
-  const brierBaseline = truths.reduce((s, t) => s + (meanP - t) ** 2, 0) / N;
+  const brierBaseline = truths.reduce<number>((s, t) => s + (meanP - t) ** 2, 0) / N;
 
   lines.push("");
   lines.push("جدول ۲ — مقایسه heuristic با baseline میانگین ساده");
