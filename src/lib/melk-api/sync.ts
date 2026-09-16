@@ -19,8 +19,23 @@
  * OTP واقعی)؛ اگر توکن منقضی شده باشد، با refreshToken تمدید می‌شود.
  */
 
+import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
+import {
+  getContractRepository,
+  getExpertRepository,
+  getMarketRepository,
+  getTransactionRepository,
+  getVisitRepository,
+  type ContractUpsertInput,
+  type ExpertUpsertInput,
+  type InteractionUpsertInput,
+  type SupplyDemandUpsertInput,
+  type TransactionUpsertInput,
+  type VisitUpsertInput,
+} from "@/core/repositories";
 import { getMelkProvider } from "./provider";
+import { syncMode } from "./sync-mode";
 import { MELK_ENDPOINTS } from "./endpoints";
 import type {
   CommissionCityConfig,
@@ -167,6 +182,12 @@ async function writeSyncState(patch: {
   lastErrorCode?: string | null;
   attempts?: number;
   summaryJson?: string | null;
+  /** P2-04 — نقطه ازسرگیری (JSON {runId, done, counts}) */
+  lastSyncCursor?: string | null;
+  /** P2-04 — علامت آب آخرین داده تازه */
+  lastWatermark?: Date | null;
+  /** P2-04 — شناسه اجرای جاری */
+  syncRunId?: string | null;
 }): Promise<void> {
   await db.syncState.upsert({
     where: { id: SYNC_STATE_ID },
@@ -221,7 +242,13 @@ async function fetchAllPages<T>(
  */
 async function doSyncFromArm(armToken: string): Promise<SyncResult> {
   const now = new Date();
-  await writeSyncState({ lastSyncedAt: now });
+  const incremental = syncMode() === "incremental";
+  const runId = randomUUID();
+  await writeSyncState({
+    lastSyncedAt: now,
+    // شناسه اجرا فقط در حالت افزایشی معنا دارد (legacy به آن دست نمی‌زند)
+    ...(incremental ? { syncRunId: runId } : {}),
+  });
 
   try {
     // ---------------- ۱) گزارش تطابق معاملات + خلاصه ----------------
@@ -239,9 +266,11 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
 
     // ---------------- ۳) تعاملات مشاوران با یکدیگر ----------------
     let interactions: CrmInteraction[] = [];
+    let interactionsFetched = false;
     try {
       const { rows: inRows } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorInteractions, armToken, 20, 200, mapArmInteractionRow);
       interactions = inRows;
+      interactionsFetched = true;
     } catch {
       // تعاملات گزارش مکمل است — نبودش نباید کل همگام‌سازی را شکست بدهد
       interactions = [];
@@ -249,18 +278,22 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
 
     // ---------------- ۴) بازدیدها و پیگیری‌ها (غیربحرانی) ----------------
     let visits: CrmVisit[] = [];
+    let visitsFetched = false;
     try {
       const { rows: viRows } = await fetchAllPages(MELK_ENDPOINTS.arm.visitsList, armToken, 20, 100, mapArmVisitRow);
       visits = viRows;
+      visitsFetched = true;
     } catch {
       visits = [];
     }
 
     // ---------------- ۵) گزارش عرضه و تقاضا (غیربحرانی) ----------------
     let supplyDemand: CrmSupplyDemand[] = [];
+    let supplyDemandFetched = false;
     try {
       const { rows: sdRows } = await fetchAllPages(MELK_ENDPOINTS.armReports.supplyDemand, armToken, 10, 100, mapArmSupplyDemandRow);
       supplyDemand = sdRows;
+      supplyDemandFetched = true;
     } catch {
       supplyDemand = [];
     }
@@ -268,27 +301,38 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
     // ---------------- ۶) قراردادها و اسناد (صورت وضعیت‌ها) (غیربحرانی) ----------------
     // لیست + جزئیات هر قرارداد (خریداران، فروشندگان، حق‌السهم مشاوران)
     let contracts: CrmContract[] = [];
+    let contractsFetched = false;
     try {
       contracts = await fetchContracts(armToken);
+      contractsFetched = true;
     } catch {
       contracts = [];
     }
 
-    // ---------------- ذخیره اتمیک در پایگاه محلی ----------------
-    await db.$transaction([
-      db.transactionRecord.deleteMany({}),
-      db.expertRecord.deleteMany({}),
-      db.interactionRecord.deleteMany({}),
-      db.visitRecord.deleteMany({}),
-      db.supplyDemandRecord.deleteMany({}),
-      db.contractRecord.deleteMany({}),
-      ...toTxCreates(transactions),
-      ...toExCreates(experts),
-      ...toInCreates(interactions),
-      ...toViCreates(visits),
-      ...toSdCreates(supplyDemand),
-      ...toContractCreates(contracts),
-    ]);
+    // ---------------- ذخیره در پایگاه محلی ----------------
+    if (incremental) {
+      // P2-04 — مسیر افزایشی: upsert بر کلید طبیعی + نقطه ازسرگیری + نامه مرده
+      await applyIncrementalSync(runId, {
+        transactions, experts, interactions, visits, supplyDemand, contracts,
+        interactionsFetched, visitsFetched, supplyDemandFetched, contractsFetched,
+      });
+    } else {
+      // مسیر legacy — عین کد قبلی: پاک‌سازی کامل + درج اتمیک
+      await db.$transaction([
+        db.transactionRecord.deleteMany({}),
+        db.expertRecord.deleteMany({}),
+        db.interactionRecord.deleteMany({}),
+        db.visitRecord.deleteMany({}),
+        db.supplyDemandRecord.deleteMany({}),
+        db.contractRecord.deleteMany({}),
+        ...toTxCreates(transactions),
+        ...toExCreates(experts),
+        ...toInCreates(interactions),
+        ...toViCreates(visits),
+        ...toSdCreates(supplyDemand),
+        ...toContractCreates(contracts),
+      ]);
+    }
 
     const successAt = new Date();
     await writeSyncState({
@@ -297,6 +341,7 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
       lastErrorCode: null,
       attempts: 0,
       summaryJson: summary ? JSON.stringify(summary) : null,
+      ...(incremental ? { lastWatermark: successAt } : {}),
     });
 
     return {
@@ -340,6 +385,256 @@ function computeSummaryFromRows(rows: CrmTransaction[]): TradedSummary {
     hasSuggestedProperty: rows.filter((r) => r.suggestedPropertyCount > 0).length,
     hasBoth: rows.filter((r) => r.eventsCount > 0 && r.suggestedPropertyCount > 0).length,
   };
+}
+
+// ==========================================================================
+// P2-04 — همگام‌سازی افزایشی (MELK_SYNC_MODE=incremental)
+// ==========================================================================
+
+/** نگاشت‌های upsert — عین فیلدهای toXxxCreates، فقط به‌جای عملیات Prisma شیء ورودی */
+const toTxUpsert = (t: CrmTransaction): TransactionUpsertInput => ({
+  id: t.id,
+  contractDate: new Date(t.contractDate),
+  propertyCode: t.propertyCode,
+  propertyCustomer: t.propertyCustomer,
+  requestCode: t.requestCode,
+  requestCustomer: t.requestCustomer,
+  contractHolo: t.contractHolo,
+  suggestedPropertyCount: t.suggestedPropertyCount,
+  eventsCount: t.eventsCount,
+});
+
+const toExUpsert = (e: CrmExpert): ExpertUpsertInput => ({
+  id: e.id,
+  personnelCode: e.personnelCode,
+  fullName: e.fullName,
+  mobile: e.mobile,
+  role: e.role,
+  businessTitle: e.businessTitle,
+  creator: e.creator,
+  active: e.active,
+  createdAt: new Date(e.createdAt),
+});
+
+const toInUpsert = (i: CrmInteraction): InteractionUpsertInput => ({
+  id: i.id,
+  requestRealtorName: i.requestRealtorName,
+  propertyRealtorName: i.propertyRealtorName,
+  count: i.count,
+});
+
+const toViUpsert = (v: CrmVisit): VisitUpsertInput => ({
+  id: v.id,
+  propertyCode: v.propertyCode,
+  requesterName: v.requesterName,
+  checkerName: v.checkerName,
+  propertyRealtorName: v.propertyRealtorName,
+  checkTime: v.checkTime ? new Date(v.checkTime) : null,
+  createdAt: new Date(v.createdAt),
+  status: v.status,
+});
+
+const toSdUpsert = (s: CrmSupplyDemand): SupplyDemandUpsertInput => ({
+  id: s.id,
+  rangeTitle: s.rangeTitle,
+  propertyCount: s.propertyCount,
+  requestPercent: s.requestPercent,
+  status: s.status,
+});
+
+const toContractUpsert = (c: CrmContract): ContractUpsertInput => ({
+  id: c.id,
+  status: c.status,
+  contractHolo: c.contractHolo,
+  propertyCode: c.propertyCode,
+  requestCode: c.requestCode,
+  contractType: c.contractType,
+  creatorName: c.creatorName,
+  createdAt: c.createdAt ? new Date(c.createdAt) : null,
+  contractDate: c.contractDate ? new Date(c.contractDate) : null,
+  documentDate: c.documentDate ? new Date(c.documentDate) : null,
+  deliveryDate: c.deliveryDate ? new Date(c.deliveryDate) : null,
+  propertyTitle: c.propertyTitle,
+  propertyAddress: c.propertyAddress,
+  buyerListJson: c.buyers.length > 0 ? JSON.stringify(c.buyers) : null,
+  sellerListJson: c.sellers.length > 0 ? JSON.stringify(c.sellers) : null,
+  realtorListJson: c.realtorShares.length > 0 ? JSON.stringify(c.realtorShares) : null,
+  canAddRealtor: c.canAddRealtor,
+});
+
+/** ثبت/افزایش نامه مرده برای یک ردیف ناموفق — attempts پیاپی؛ ۳+ یعنی «مرده» */
+async function recordDeadLetter(runId: string, entity: string, naturalKey: string, err: unknown): Promise<void> {
+  const message = ((err as Error)?.message ?? "خطای نامشخص").slice(0, 300);
+  await db.syncDeadLetter
+    .upsert({
+      where: { entity_naturalKey: { entity, naturalKey } },
+      create: { runId, entity, naturalKey, attempts: 1, lastError: message },
+      update: { runId, attempts: { increment: 1 }, lastError: message, lastAttemptAt: new Date(), resolvedAt: null },
+    })
+    .catch(() => undefined); // خطای خود نامه مرده هرگز مسیر افزایشی را نمی‌شکند
+}
+
+/** ردیفی که این بار موفق شد → نامه مرده‌اش «حل‌شده» می‌شود */
+async function resolveDeadLetters(entity: string, naturalKeys: string[]): Promise<void> {
+  if (naturalKeys.length === 0) return;
+  await db.syncDeadLetter
+    .updateMany({ where: { entity, naturalKey: { in: naturalKeys }, resolvedAt: null }, data: { resolvedAt: new Date() } })
+    .catch(() => undefined);
+}
+
+/** کلیدهای باز (حل‌نشده) یک خانواده — از جاروی سنگ‌قبرها محافظت می‌شوند */
+async function openDeadLetterKeys(entity: string): Promise<Set<string>> {
+  const rows = await db.syncDeadLetter.findMany({ where: { entity, resolvedAt: null }, select: { naturalKey: true } }).catch(() => []);
+  return new Set(rows.map((r) => r.naturalKey));
+}
+
+/** مشخصات یک خانواده داده برای مسیر افزایشی */
+interface IncrementalFamily<T> {
+  entity: "transactions" | "experts" | "interactions" | "visits" | "supplyDemand" | "contracts";
+  rows: T[];
+  /** واکشی این خانواده موفق بوده؟ (شکست واکشی ⇒ خانواده دست‌نخورده می‌ماند — تفاوت عمدی با legacy) */
+  fetched: boolean;
+  keyOf: (row: T) => string;
+  upsert: (rows: T[]) => Promise<unknown>;
+  /** کلیدهای موجود در پایگاه (برای جاروی سنگ‌قبرها) */
+  listExistingKeys: () => Promise<string[]>;
+  deleteByKeys: (keys: string[]) => Promise<unknown>;
+}
+
+/**
+ * اعمال افزایشی: به‌جای پاک‌سازی کامل، upsert بر کلید طبیعی + جاروی
+ * ردیف‌های محو‌شده (با محافظت نامه‌های مرده باز) + نقطه ازسرگیری پس از
+ * هر خانواده. شکست ردیف منفرد کل اجرا را نمی‌شکند (نامه مرده می‌شود).
+ */
+/** صادرات برای تست (tests/phase2-sync.test.ts) — در کد محصول از syncFromArm استفاده کنید */
+export async function applyIncrementalSync(
+  runId: string,
+  data: {
+    transactions: CrmTransaction[];
+    experts: CrmExpert[];
+    interactions: CrmInteraction[];
+    visits: CrmVisit[];
+    supplyDemand: CrmSupplyDemand[];
+    contracts: CrmContract[];
+    interactionsFetched: boolean;
+    visitsFetched: boolean;
+    supplyDemandFetched: boolean;
+    contractsFetched: boolean;
+  }
+): Promise<void> {
+  const txRepo = getTransactionRepository();
+  const exRepo = getExpertRepository();
+  const mkRepo = getMarketRepository();
+  const ctRepo = getContractRepository();
+  const viRepo = getVisitRepository();
+
+  const families: IncrementalFamily<never>[] = [
+    {
+      entity: "transactions",
+      rows: data.transactions.map(toTxUpsert) as never[],
+      fetched: true,
+      keyOf: (t) => (t as unknown as TransactionUpsertInput).id,
+      upsert: (rows) => txRepo.upsertBatch(rows as unknown as TransactionUpsertInput[]),
+      listExistingKeys: async () => (await db.transactionRecord.findMany({ select: { id: true } })).map((r) => r.id),
+      deleteByKeys: (keys) => db.transactionRecord.deleteMany({ where: { id: { in: keys } } }),
+    },
+    {
+      entity: "experts",
+      rows: data.experts.map(toExUpsert) as never[],
+      fetched: true,
+      keyOf: (e) => (e as unknown as ExpertUpsertInput).personnelCode,
+      upsert: (rows) => exRepo.upsertBatch(rows as unknown as ExpertUpsertInput[]),
+      listExistingKeys: async () => (await db.expertRecord.findMany({ select: { personnelCode: true } })).map((r) => r.personnelCode),
+      deleteByKeys: (keys) => db.expertRecord.deleteMany({ where: { personnelCode: { in: keys } } }),
+    },
+    {
+      entity: "interactions",
+      rows: data.interactions.map(toInUpsert) as never[],
+      fetched: data.interactionsFetched,
+      keyOf: (i) => (i as unknown as InteractionUpsertInput).id,
+      upsert: (rows) => exRepo.upsertInteractionsBatch(rows as unknown as InteractionUpsertInput[]),
+      listExistingKeys: async () => (await db.interactionRecord.findMany({ select: { id: true } })).map((r) => r.id),
+      deleteByKeys: (keys) => db.interactionRecord.deleteMany({ where: { id: { in: keys } } }),
+    },
+    {
+      entity: "visits",
+      rows: data.visits.map(toViUpsert) as never[],
+      fetched: data.visitsFetched,
+      keyOf: (v) => (v as unknown as VisitUpsertInput).id,
+      upsert: (rows) => viRepo.upsertBatch(rows as unknown as VisitUpsertInput[]),
+      listExistingKeys: async () => (await db.visitRecord.findMany({ select: { id: true } })).map((r) => r.id),
+      deleteByKeys: (keys) => db.visitRecord.deleteMany({ where: { id: { in: keys } } }),
+    },
+    {
+      entity: "supplyDemand",
+      rows: data.supplyDemand.map(toSdUpsert) as never[],
+      fetched: data.supplyDemandFetched,
+      keyOf: (s) => (s as unknown as SupplyDemandUpsertInput).id,
+      upsert: (rows) => mkRepo.upsertSupplyDemandBatch(rows as unknown as SupplyDemandUpsertInput[]),
+      listExistingKeys: async () => (await db.supplyDemandRecord.findMany({ select: { id: true } })).map((r) => r.id),
+      deleteByKeys: (keys) => db.supplyDemandRecord.deleteMany({ where: { id: { in: keys } } }),
+    },
+    {
+      entity: "contracts",
+      rows: data.contracts.map(toContractUpsert) as never[],
+      fetched: data.contractsFetched,
+      keyOf: (c) => (c as unknown as ContractUpsertInput).id,
+      upsert: (rows) => ctRepo.upsertBatch(rows as unknown as ContractUpsertInput[]),
+      listExistingKeys: async () => (await db.contractRecord.findMany({ select: { id: true } })).map((r) => r.id),
+      deleteByKeys: (keys) => db.contractRecord.deleteMany({ where: { id: { in: keys } } }),
+    },
+  ];
+
+  const done: Array<{ entity: string; count: number; failed: number }> = [];
+
+  // شناسه اجرا از همان ابتدا ثبت می‌شود (خودکفا بودن applier برای تست/فراخوانی مستقیم)
+  await writeSyncState({ syncRunId: runId });
+
+  for (const family of families) {
+    // واکشی ناموفق ⇒ این خانواده در این اجرا دست‌نخورده می‌ماند (از دست رفتن داده نداریم)
+    if (!family.fetched) {
+      done.push({ entity: family.entity, count: 0, failed: -1 }); // -1 = skipped
+      continue;
+    }
+
+    const keys = family.rows.map(family.keyOf);
+    let failedKeys: string[] = [];
+
+    try {
+      // تلاش دسته‌ای (مسیر سریع — اکثر اجراها موفق‌اند)
+      await family.upsert(family.rows);
+    } catch {
+      // شکست دسته‌ای ⇒ تک‌تک برای ایزوله کردن ردیف‌های خراب (upsertها idempotentند)
+      for (let i = 0; i < family.rows.length; i++) {
+        try {
+          await family.upsert([family.rows[i]]);
+        } catch (err) {
+          failedKeys.push(keys[i]);
+          await recordDeadLetter(runId, family.entity, keys[i], err);
+        }
+      }
+    }
+
+    // ردیف‌های موفق این خانواده که قبلاً نامه مرده بودند → حل‌شده
+    await resolveDeadLetters(family.entity, keys.filter((k) => !failedKeys.includes(k)));
+
+    // جاروی سنگ‌قبرها: ردیف‌هایی که دیگر در سامانه نیستند (به‌جز نامه‌های مرده باز)
+    try {
+      const existing = await family.listExistingKeys();
+      const fetchedSet = new Set(keys);
+      const openDead = await openDeadLetterKeys(family.entity);
+      const stale = existing.filter((k) => !fetchedSet.has(k) && !openDead.has(k));
+      if (stale.length > 0) await family.deleteByKeys(stale);
+    } catch {
+      // جارو شکست خورد ⇒ اجرا همچنان موفق است؛ دفع بعد تمیز می‌کند
+    }
+
+    // نقطه ازسرگیری — پس از هر خانواده به‌روزرسانی می‌شود
+    done.push({ entity: family.entity, count: family.rows.length, failed: failedKeys.length });
+    await writeSyncState({
+      lastSyncCursor: JSON.stringify({ runId, done: done.map((d) => d.entity), detail: done }),
+    });
+  }
 }
 
 /**

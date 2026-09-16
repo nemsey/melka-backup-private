@@ -72,7 +72,38 @@ model SyncState {
   attempts       Int       @default(0)
   /// خلاصه چهارگانه گزارش تطابق سامانه ARM (JSON)
   summaryJson    String?
+  /// P2-04 — نقطهٔ ازسرگیری: خانواده‌های تکمیل‌شدهٔ آخرین اجرا (JSON {runId, families})
+  lastSyncCursor  String?
+  /// P2-04 — علامت آب: زمان آخرین دادهٔ تازهٔ دیده‌شده از سامانه ARM
+  lastWatermark   DateTime?
+  /// P2-04 — شناسه اجرای جاری (idempotency — upsertها با کلید طبیعی بی‌اثر از نو اجرا می‌شوند)
+  syncRunId       String?
   updatedAt      DateTime  @updatedAt
+}
+
+/// P2-04 — نامهٔ مردهٔ همگام‌سازی: ردیفی که ۳ بار پیاپی ناموفق مانده است.
+/// ردیف باز (resolvedAt=null) از مسیر افزایشی حذف نمی‌شود تا اپراتور بررسی کند؛
+/// با موفقیت بعدی resolvedAt پر می‌شود.
+model SyncDeadLetter {
+  id            String    @id @default(cuid())
+  /// شناسه اجرای همگام‌سازی که در آن شکست رخ داد
+  runId         String
+  /// خانواده موجودیت: transactions | experts | interactions | visits | supplyDemand | contracts
+  entity        String
+  /// کلید طبیعی ردیف (id / personnelCode)
+  naturalKey    String
+  /// تعداد تلاش‌های ناموفق پیاپی
+  attempts      Int       @default(1)
+  /// آخرین خطا (کوتاه — ۳۰۰ نویسه)
+  lastError     String?
+  lastAttemptAt DateTime  @default(now())
+  /// زمان حل — null = باز
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@unique([entity, naturalKey])
+  @@index([entity])
+  @@index([runId])
 }
 
 /// معاملات (گزارش تطابق معاملات) — عین ساختار خود سامانه ARM:

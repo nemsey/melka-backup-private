@@ -619,3 +619,21 @@ Stage Summary:
 - P2-02 کامل: A(تک‌جدولی)+B(چندجدولی+E.2 کش)+C(فایل‌یابی)+D(پایه) — ایجنت‌ها ۴۷→۰ فراخوانی db.*، صفر @/lib/db، صفر @prisma/client
 - تست ۴۶۷→۴۸۵ همه سبز؛ tsc صفر؛ BaseLearningAgent زنده با قرارداد تغییرنکرده
 - گام بعد: P2-03 — روت‌ها ۶۹→۰ با کنترلر نازک؛ قرارداد API بایت‌به‌بایت یکسان + ۵ روت integration
+
+---
+Task ID: phase2-p2-03
+Agent: main (Super Z / GLM-5.3)
+Task: PHASE 2 / P2-03 — مهاجرت کامل روت‌ها به لایه Repository (۶۹ → ۰)
+
+Work Log:
+- خرجه‌سازی: RequestRepository سیزدهم (findById/findByIdWithEventsDesc/updateEventArmSync + DTO آینه اسکیما)؛ ListingRepository.updateInstagramPublication (فقط افزودن متد)؛ armCustomerId اختیاری به ListingCrmTransferUpdate (پاک‌سازی صریح عین update قدیم register)
+- ۲۴ فایل روت مهاجرت: CRM (contracts/supply-demand/interactions/meta/transactions/experts/visits/customer-club/finance/commission/lookup/price-index) + divar (scan/ads/[token]/register/reject) + listings ([id]/instagram/transfer-crm) + pm/connection + requests ([id]/register/events)
+- رفتارهای ظریف حفظ شد: meta بازکردن مقادیر یکتا (خروجی بایت‌به‌بایت)، matchKind AND-composition معاملات، groupBy دوتایی کارشناسان، شمارش‌های distinct بازدیدها، upsert خطای PM با .catch بهترین-تلاش، kind=REJECT حافظه رد، update بهترین-تلاش رویداد آرم
+- اثبات قرارداد: scripts/verify-p2-03.ts — ۳۳ مقایسه قبل/بعد (کوئری‌های legacy عیناً کپی از کد پیش از مهاجرت) همه یکسان؛ اجرا روی db/test-repository.db ایزوله طبق E.3 با کاشت خود-تمیزشونده
+- ۱۱ تست integration روی ۵ روت کلیدی (auth/session، crm/transactions، crm/experts، agent/insight، divar/scan) شامل گارد 401 و پیمایشگر خلوص import روت‌ها
+- باگ تست خودم: body.context → body.user (شکل واقعی auth/session)؛ کشف و رفع آلودگی: اسکریپت verify ابتدا روی test.db کاشت داده کرده بود و تست RequestAgent (که buildCustomerManagement واقعی می‌خواند) قرمز شد → پاک‌سازی test.db + انتقال verify به test-repository.db خود-تمیزشونده
+
+Stage Summary:
+- روت‌ها ۶۹→۰؛ ایجنت‌ها ۴۷→۰؛ interfaces صفر Prisma — مرز Repository کامل برقرار؛ audit --strict PASS
+- تست ۴۸۵→۴۹۶ همه سبز؛ tsc صفر؛ verify-p2-03: ۳۳/۳۳ یکسان
+- گام بعد: P2-04 — همگام‌سازی افزایشی (upsert کلید طبیعی + Flag پیش‌فرض legacy + SyncState نوساز + SyncDeadLetter)
