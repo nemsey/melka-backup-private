@@ -49,6 +49,7 @@ interface HarnessResult<T> {
 }
 
 function makeHarness<T>() {
+  // eslint-disable-next-line react-hooks/globals -- ابزار تست: ثبت خروجی هوک برای ادعاها (خارج از رندر خوانده می‌شود)
   let last: HarnessResult<T> | null = null;
   const Harness = ({ fetcher, opts }: { fetcher: () => Promise<T>; opts: { errorTitle: string; errorValue?: (prev: T | null) => T | null } }) => {
     last = useTileData(fetcher, opts);
