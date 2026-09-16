@@ -5,7 +5,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getContractRepository, getExpertRepository } from "@/core/repositories";
 import { ensureSeeded, getCommissionConfig, getSyncState } from "@/lib/melk-api/sync";
 import { COMMISSION_TYPE_FA } from "@/lib/melk-api/commission";
 import type { ContractRealtorShare } from "@/lib/melk-api/types";
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const dateFrom = sp.get("dateFrom");
     const dateTo = sp.get("dateTo");
 
-    const contracts = await db.contractRecord.findMany();
+    const contracts = await getContractRepository().findAll();
     const inRange = contracts.filter((c) => {
       const t = (c.contractDate ?? c.createdAt)?.getTime() ?? null;
       if (t === null) return !dateFrom && !dateTo;
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       .slice(0, 60);
 
     // تجمیع به تفکیک شعبه (از کسر مشاوران هر شعبه)
-    const experts = await db.expertRecord.findMany();
+    const experts = await getExpertRepository().findAll();
     const expertBranch = new Map(experts.map((e) => [e.fullName, e.businessTitle || "بدون شعبه"]));
     const branchMap = new Map<string, { branch: string; contractCount: number; totalPercent: number }>();
     for (const c of finalized) {

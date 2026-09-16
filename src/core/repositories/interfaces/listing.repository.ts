@@ -11,6 +11,8 @@ export interface ListingCrmTransferUpdate {
   armPropertyId: string | null;
   crmTransferredAt: Date;
   crmTransferJson: string;
+  /** پاک‌سازی صریح مشتری آرم — عین update قدیم روت register (اختیاری) */
+  armCustomerId?: string | null;
 }
 
 /** داده به‌روزرسانی نتیجه انتشار اینستاگرام روی فایل (روت instagram) */

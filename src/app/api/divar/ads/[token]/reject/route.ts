@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getAgentMemoryRepository, getMarketRepository, getOutcomeRepository } from "@/core/repositories";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
@@ -41,60 +41,57 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
 
   // HOTFIX-04 (B1): کل زنجیره DB با try/catch — خطای پایگاه هرگز 500 خام نمی‌شود
   try {
-    const ad = await db.divarAd.findUnique({ where: { token } });
+    const market = getMarketRepository();
+    const ad = await market.findAdByToken(token);
     if (!ad) {
       return errorResponse(new MelkApiError("NOT_FOUND", "این فایل یافت نشد — ممکن است قبلاً رد شده باشد.", 404, false));
     }
 
     // ۱) سیگنال یادگیری — فقط افزودنی (آگهی آرشیو نمی‌شود؛ فقط ویژگی‌های لازم برای یادگیری می‌ماند)
-    await db.divarRejectLog.create({
-      data: {
-        token,
-        reasons: JSON.stringify(reasons),
-        note,
-        scoreSnapshotJson: JSON.stringify({
-          personal: ad.personalScore,
-          underprice: ad.underpriceScore,
-          other: ad.otherScore,
-          location: ad.locationScore,
-          total: ad.totalScore,
-          bucket: ad.bucket,
-        }),
-        featureSnapshotJson: JSON.stringify({
-          title: ad.title,
-          category: ad.category,
-          description: (ad.description ?? "").slice(0, 600),
-          matchedLineName: ad.matchedLineName,
-          matchedAreaName: ad.matchedAreaName,
-          pricePerMeter: ad.pricePerMeter,
-        }),
-        actorCode: guard.personnelCode,
-      },
+    await getOutcomeRepository().createReject({
+      token,
+      reasons: JSON.stringify(reasons),
+      note,
+      scoreSnapshotJson: JSON.stringify({
+        personal: ad.personalScore,
+        underprice: ad.underpriceScore,
+        other: ad.otherScore,
+        location: ad.locationScore,
+        total: ad.totalScore,
+        bucket: ad.bucket,
+      }),
+      featureSnapshotJson: JSON.stringify({
+        title: ad.title,
+        category: ad.category,
+        description: (ad.description ?? "").slice(0, 600),
+        matchedLineName: ad.matchedLineName,
+        matchedAreaName: ad.matchedAreaName,
+        pricePerMeter: ad.pricePerMeter,
+      }),
+      actorCode: guard.personnelCode,
     });
 
-    // ۲) حافظه ایجنت — یادگیری از دلایل رد
-    await db.agentMemory.create({
-      data: {
-        tileId: divarAgent.tileId,
-        kind: "REJECT",
-        payload: JSON.stringify({
-          at: new Date().toISOString(),
-          token,
-          reasons,
-          note,
-          personal: ad.personalScore,
-          underprice: ad.underpriceScore,
-          other: ad.otherScore,
-          location: ad.locationScore,
-          total: ad.totalScore,
-          title: ad.title.slice(0, 120),
-          line: ad.matchedLineName,
-        }),
-      },
-    });
+    // ۲) حافظه ایجنت — یادگیری از دلایل رد (عین create قدیم — kind=REJECT)
+    await getAgentMemoryRepository().append(
+      divarAgent.tileId,
+      "REJECT",
+      JSON.stringify({
+        at: new Date().toISOString(),
+        token,
+        reasons,
+        note,
+        personal: ad.personalScore,
+        underprice: ad.underpriceScore,
+        other: ad.otherScore,
+        location: ad.locationScore,
+        total: ad.totalScore,
+        title: ad.title.slice(0, 120),
+        line: ad.matchedLineName,
+      })
+    );
 
     // ۳) آگهی هرگز آرشیو نمی‌شود — حذف کامل رکورد
-    await db.divarAd.delete({ where: { token } });
+    await market.deleteAdByToken(token);
 
     await audit("DIVAR_REJECT", guard.personnelCode, `token=${token} reasons=${reasons.join(",")}`);
 

@@ -35,9 +35,11 @@ export class PrismaListingRepository implements ListingRepository {
   }
 
   async updateCrmTransfer(id: string, data: ListingCrmTransferUpdate): Promise<void> {
+    // عین update قدیم روت register — از جمله پاک‌سازی صریح armCustomerId
     await this.client.listingRecord.update({
       where: { id },
       data: {
+        armCustomerId: data.armCustomerId !== undefined ? data.armCustomerId : null,
         armPropertyId: data.armPropertyId,
         crmTransferredAt: data.crmTransferredAt,
         crmTransferJson: data.crmTransferJson,

@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getListingRepository, getMarketRepository } from "@/core/repositories";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit, updateSessionArmTokens } from "@/lib/auth/session";
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ token: 
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
   const { token } = await ctx.params;
-  const ad = await db.divarAd.findUnique({ where: { token } });
+  const ad = await getMarketRepository().findAdByToken(token);
   if (!ad) {
     return errorResponse(new MelkApiError("NOT_FOUND", "این فایل یافت نشد.", 404, false));
   }
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
   }
 
   const { token } = await ctx.params;
-  const ad = await db.divarAd.findUnique({ where: { token } });
+  const ad = await getMarketRepository().findAdByToken(token);
   if (!ad) {
     return errorResponse(new MelkApiError("NOT_FOUND", "این فایل یافت نشد.", 404, false));
   }
@@ -246,10 +246,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
     }
 
     // ثبت موفق — وضعیت آگهی به registered تغییر می‌کند
-    await db.divarAd.update({
-      where: { token: ad.token },
-      data: { status: "registered" },
-    });
+    await getMarketRepository().setAdStatus(ad.token, "registered");
 
     // ---------- درون‌ریزی خودکار به کاشی «آگهی» (بخش «ب» قانون مالک) ----------
     // فایل‌هایی که کاربر در کاشی فایل‌یابی تأیید (ثبت) می‌کند، خودکار در کاشی آگهی ثبت می‌شوند.
@@ -260,27 +257,23 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
       if (listing) {
         // اتصال به ثبت موفق CRM: شناسه آگهی آرم + گزارش گام‌ها
         const armId = (result.data as { _id?: string; id?: string } | null)?._id ?? (result.data as { _id?: string; id?: string } | null)?.id ?? null;
-        await db.listingRecord
-          .update({
-            where: { id: listing.id },
-            data: {
-              armCustomerId: null,
-              armPropertyId: armId ?? null,
-              crmTransferredAt: new Date(),
-              crmTransferJson: JSON.stringify({
-                via: "file-finder-register",
-                at: new Date().toISOString(),
-                armId: armId ?? null,
-                steps: [
-                  { key: "customer", title: "گام ۱ — اطلاعات مالک", status: "done", detail: "از فرم ثبت فایل‌یابی ارسال شد." },
-                  { key: "location", title: "گام ۲ — اطلاعات مکانی ملک", status: "done", detail: "منطقه/محله آرم از تطبیق دیوار." },
-                  { key: "transaction", title: "گام ۳ — اطلاعات معامله", status: "done", detail: "نگاشت دسته دیوار به نوع‌های آرم." },
-                  { key: "media", title: "گام ۴ — تصاویر و اسناد ملک", status: "done", detail: "تصاویر دیوار پیوست شد." },
-                  { key: "descriptions", title: "گام ۵ — توضیحات مشاوران", status: "done", detail: "قیمت و توضیحات آگهی دیوار." },
-                  { key: "submit", title: "ثبت نهایی در سامانه آرم", status: "done", detail: "از مسیر کاشی فایل‌یابی ثبت شد." },
-                ],
-              }),
-            },
+        await getListingRepository()
+          .updateCrmTransfer(listing.id, {
+            armPropertyId: armId ?? null,
+            crmTransferredAt: new Date(),
+            crmTransferJson: JSON.stringify({
+              via: "file-finder-register",
+              at: new Date().toISOString(),
+              armId: armId ?? null,
+              steps: [
+                { key: "customer", title: "گام ۱ — اطلاعات مالک", status: "done", detail: "از فرم ثبت فایل‌یابی ارسال شد." },
+                { key: "location", title: "گام ۲ — اطلاعات مکانی ملک", status: "done", detail: "منطقه/محله آرم از تطبیق دیوار." },
+                { key: "transaction", title: "گام ۳ — اطلاعات معامله", status: "done", detail: "نگاشت دسته دیوار به نوع‌های آرم." },
+                { key: "media", title: "گام ۴ — تصاویر و اسناد ملک", status: "done", detail: "تصاویر دیوار پیوست شد." },
+                { key: "descriptions", title: "گام ۵ — توضیحات مشاوران", status: "done", detail: "قیمت و توضیحات آگهی دیوار." },
+                { key: "submit", title: "ثبت نهایی در سامانه آرم", status: "done", detail: "از مسیر کاشی فایل‌یابی ثبت شد." },
+              ],
+            }),
           })
           .catch(() => undefined);
         listingId = listing.id;

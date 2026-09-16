@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getMarketRepository, getPredictionRepository } from "@/core/repositories";
 import { getPriceIndexConfigs } from "@/lib/melk-api/sync";
 import {
   attachChangePercent,
@@ -24,27 +24,24 @@ import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 /** ثبت تاریخچه شاخص — حداکثر یک ثبت در هر منطقه در هر روز */
 async function recordHistory(areaStats: ReturnType<typeof computeAreaStats>): Promise<void> {
   const dayKey = new Date().toISOString().slice(0, 10);
-  const existing = await db.priceIndexHistory.findMany({
-    where: { recordedAt: { gte: new Date(`${dayKey}T00:00:00`) } },
-  });
+  const existing = await getPredictionRepository().listHistorySince(new Date(`${dayKey}T00:00:00`));
   const seenKeys = new Set(existing.map((r) => `${r.areaName}::${r.category}`));
-  const creates = areaStats
-    .filter((s) => s.reliable && !seenKeys.has(`${s.areaName}::${s.category}`))
-    .map((s) =>
-      db.priceIndexHistory.create({
-        data: {
-          areaName: s.areaName,
-          category: s.category,
-          medianPerMeter: s.medianPerMeter,
-          p25PerMeter: s.p25PerMeter,
-          p75PerMeter: s.p75PerMeter,
-          minPerMeter: s.minPerMeter,
-          maxPerMeter: s.maxPerMeter,
-          sampleCount: s.sampleCount,
-        },
+  const pending = areaStats.filter((s) => s.reliable && !seenKeys.has(`${s.areaName}::${s.category}`));
+  const prediction = getPredictionRepository();
+  await Promise.all(
+    pending.map((s) =>
+      prediction.createHistoryEntry({
+        areaName: s.areaName,
+        category: s.category,
+        medianPerMeter: s.medianPerMeter,
+        p25PerMeter: s.p25PerMeter,
+        p75PerMeter: s.p75PerMeter,
+        minPerMeter: s.minPerMeter,
+        maxPerMeter: s.maxPerMeter,
+        sampleCount: s.sampleCount,
       })
-    );
-  await Promise.all(creates);
+    )
+  );
 }
 
 export async function GET(request: NextRequest) {
@@ -59,23 +56,7 @@ export async function GET(request: NextRequest) {
     const { indices, liveError: indexError } = await getPriceIndexConfigs();
 
     // ۲) نمونه‌های واقعی بازار — آگهی‌های زنده با قیمت و منطقه تطبیق‌شده
-    const ads = await db.divarAd.findMany({
-      where: {
-        status: { in: ["active", "registered"] },
-        pricePerMeter: { gt: 0 },
-        ...(category ? { category } : {}),
-      },
-      select: {
-        token: true,
-        title: true,
-        category: true,
-        pricePerMeter: true,
-        matchedLineName: true,
-        matchedAreaName: true,
-        totalScore: true,
-        publisherType: true,
-      },
-    });
+    const ads = await getMarketRepository().listPriceSamples(category ?? undefined);
 
     const samples: PriceSample[] = ads
       .filter((a) => (a.matchedLineName ?? a.matchedAreaName) != null)
@@ -96,10 +77,7 @@ export async function GET(request: NextRequest) {
     await recordHistory(rawStats);
 
     // ۵) تغییر نسبت به ثبت قبلی + روند کامل
-    const history = await db.priceIndexHistory.findMany({
-      orderBy: { recordedAt: "desc" },
-      take: 400,
-    });
+    const history = await getPredictionRepository().listRecentHistory(400);
     const historyRows = history.map((h) => ({
       areaName: h.areaName,
       category: h.category,

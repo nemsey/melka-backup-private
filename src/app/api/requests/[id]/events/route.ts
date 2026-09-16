@@ -7,7 +7,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getRequestRepository } from "@/core/repositories";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
   const { id } = await ctx.params;
-  const rec = await db.requestRecord.findUnique({ where: { id }, include: { events: { orderBy: { createdAt: "desc" } } } });
+  const rec = await getRequestRepository().findByIdWithEventsDesc(id);
   if (!rec) return errorResponse(new MelkApiError("NOT_FOUND", "این درخواست یافت نشد.", 404, false));
 
   // انواع رویداد — زنده از خود سامانه (توکن‌دار، عین صفحه رویداد آرم)
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
   }
 
   try {
-    const rec = await db.requestRecord.findUnique({ where: { id } });
+    const rec = await getRequestRepository().findById(id);
     if (!rec) return errorResponse(new MelkApiError("NOT_FOUND", "این درخواست یافت نشد.", 404, false));
 
     // ثبت همزمان در سامانه آرم (اگر درخواست آنجا ثبت شده و توکن هست)
@@ -107,21 +107,18 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
 
     // نتیجه همگام‌سازی آرم را روی رکورد رویداد ذخیره کن
     if (arm) {
-      await db.requestEventRecord
-        .update({
-          where: { id: event.id },
-          data: {
-            armEventId: arm.ok ? arm.armEventId ?? null : null,
-            armSyncedAt: arm.ok ? new Date() : null,
-            armPropertyId: arm.armPropertyId ?? null,
-            armSyncJson: JSON.stringify({
-              at: new Date().toISOString(),
-              ok: arm.ok,
-              armEventId: arm.armEventId ?? null,
-              propertyTitle: arm.propertyTitle ?? null,
-              error: arm.error ?? null,
-            }),
-          },
+      await getRequestRepository()
+        .updateEventArmSync(event.id, {
+          armEventId: arm.ok ? arm.armEventId ?? null : null,
+          armSyncedAt: arm.ok ? new Date() : null,
+          armPropertyId: arm.armPropertyId ?? null,
+          armSyncJson: JSON.stringify({
+            at: new Date().toISOString(),
+            ok: arm.ok,
+            armEventId: arm.armEventId ?? null,
+            propertyTitle: arm.propertyTitle ?? null,
+            error: arm.error ?? null,
+          }),
         })
         .catch(() => undefined);
     }

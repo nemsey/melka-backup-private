@@ -7,8 +7,7 @@
  */
 
 import { NextRequest } from "next/server";
-import type { Prisma } from "@prisma/client";
-import { db } from "@/lib/db";
+import { getVisitRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
@@ -29,39 +28,22 @@ export async function GET(request: NextRequest) {
     const syncState = await getSyncState();
     const sp = request.nextUrl.searchParams;
 
-    const where: Prisma.VisitRecordWhereInput = {};
-    const propertyCode = sp.get("propertyCode");
-    if (propertyCode) where.propertyCode = { contains: propertyCode };
-    const requester = sp.get("requester");
-    if (requester) where.requesterName = { contains: requester };
-    const checker = sp.get("checker");
-    if (checker) where.checkerName = { contains: checker };
-    const status = sp.get("status");
-    if (status) where.status = { contains: status };
-
-    const dateFrom = sp.get("dateFrom");
-    const dateTo = sp.get("dateTo");
-    if (dateFrom || dateTo) {
-      where.createdAt = {
-        ...(dateFrom ? { gte: new Date(`${dateFrom}T00:00:00`) } : {}),
-        ...(dateTo ? { lte: new Date(`${dateTo}T23:59:59.999`) } : {}),
-      };
-    }
-
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 200, 1), 5000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
 
-    const [rows, total] = await Promise.all([
-      db.visitRecord.findMany({ where, orderBy: { createdAt: "desc" }, take: limit, skip: offset }),
-      db.visitRecord.count({ where }),
-    ]);
-
-    // شاخص‌های تحلیلی برای ایجنت و کارت‌های شاخص
-    const [checkedCount, distinctCodes, distinctRequesters] = await Promise.all([
-      db.visitRecord.count({ where: { ...where, checkTime: { not: null } } }),
-      db.visitRecord.findMany({ where, select: { propertyCode: true } }).then((rs) => new Set(rs.map((r) => r.propertyCode)).size),
-      db.visitRecord.findMany({ where, select: { requesterName: true } }).then((rs) => new Set(rs.map((r) => r.requesterName)).size),
-    ]);
+    // فهرست فیلترشده + شاخص‌ها — عین منطق where قبلی (buildVisitWhere)
+    const { rows, total, summary } = await getVisitRepository().listWithSummary(
+      {
+        propertyCode: sp.get("propertyCode") ?? undefined,
+        requester: sp.get("requester") ?? undefined,
+        checker: sp.get("checker") ?? undefined,
+        status: sp.get("status") ?? undefined,
+        dateFrom: sp.get("dateFrom") ?? undefined,
+        dateTo: sp.get("dateTo") ?? undefined,
+      },
+      limit,
+      offset
+    );
 
     return Response.json({
       ok: true,
@@ -70,10 +52,10 @@ export async function GET(request: NextRequest) {
       limit,
       offset,
       summary: {
-        totalCount: total,
-        checkedCount,
-        distinctPropertyCodes: distinctCodes,
-        distinctRequesters: distinctRequesters,
+        totalCount: summary.totalCount,
+        checkedCount: summary.checkedCount,
+        distinctPropertyCodes: summary.distinctPropertyCodes,
+        distinctRequesters: summary.distinctRequesters,
       },
       dataSource: {
         real: true,

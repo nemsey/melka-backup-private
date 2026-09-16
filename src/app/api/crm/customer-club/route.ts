@@ -9,7 +9,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getContractRepository, getExpertRepository, getTransactionRepository } from "@/core/repositories";
 import { ensureSeeded, getCustomerRefLists, getSyncState } from "@/lib/melk-api/sync";
 import {
   buildCustomerClub,
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     // حضورهای واقعی مشتریان در داده‌های کش‌شده
     const appearances: CustomerAppearance[] = [];
 
-    const txs = await db.transactionRecord.findMany();
+    const txs = await getTransactionRepository().findAll();
     for (const t of txs) {
       if (t.propertyCustomer) {
         appearances.push({ name: t.propertyCustomer, role: "SELLER", date: t.contractDate.toISOString() });
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const contracts = await db.contractRecord.findMany();
+    const contracts = await getContractRepository().findAll();
     for (const c of contracts) {
       const date = c.contractDate?.toISOString() ?? c.createdAt?.toISOString() ?? null;
       const buyers = parseJson<{ fullName: string; mobileNumber: string }[]>(c.buyerListJson, []);
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const experts = await db.expertRecord.findMany();
+    const experts = await getExpertRepository().findAll();
     for (const e of experts) {
       appearances.push({ name: e.fullName, role: "EXPERT", date: e.createdAt.toISOString(), mobile: e.mobile });
     }

@@ -5,7 +5,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getMarketRepository } from "@/core/repositories";
 import { errorResponse, requireRole, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
@@ -38,6 +38,6 @@ export async function GET(request: NextRequest) {
     triggerBackgroundScan();
   }
 
-  const logs = await db.divarScanLog.findMany({ orderBy: { startedAt: "desc" }, take: 10 });
+  const logs = await getMarketRepository().listRecentScanLogs(10);
   return Response.json({ ok: true, logs });
 }

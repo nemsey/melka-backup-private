@@ -6,7 +6,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getRequestRepository } from "@/core/repositories";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
   const details = await getRequestDetails(id);
   if (!details) return errorResponse(new MelkApiError("NOT_FOUND", "این درخواست یافت نشد.", 404, false));
 
-  const rec = await db.requestRecord.findUnique({ where: { id } });
+  const rec = await getRequestRepository().findById(id);
   return Response.json({
     ok: true,
     row: details.row,

@@ -7,7 +7,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getMarketRepository, type AdWindowFilter } from "@/core/repositories";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { triggerBackgroundScan, autoScanDue } from "@/lib/divar/scan";
@@ -35,37 +35,17 @@ export async function GET(request: NextRequest) {
   const settings = await loadDivarSettings();
   const allowedLineIds = allowedLineIdsForSelection(settings);
 
-  const whereBase: Record<string, unknown> = { status: "active" };
-  // فیلتر مکان: اجتماع محله‌های مناطق انتخابی + محله‌های خاص (null = همه تبریز)
-  if (allowedLineIds) whereBase.matchedLineId = { in: allowedLineIds };
-
-  const where: Record<string, unknown> = { ...whereBase };
-  if (bucket !== "all") where.bucket = bucket;
-  if (category) where.category = category;
-  if (lineId) where.matchedLineId = lineId;
-
-  const [rows, counts] = await Promise.all([
-    db.divarAd.findMany({
-      where,
-      orderBy: { totalScore: "desc" },
-      take: limit,
-      skip: offset,
-      select: {
-        token: true, category: true, title: true, price: true, priceText: true, pricePerMeter: true,
-        meterage: true, rooms: true, floor: true, buildYear: true, publishedAt: true, bumpedAt: true,
-        locationText: true, matchedAreaName: true, matchedLineName: true,
-        personalScore: true, underpriceScore: true, otherScore: true, locationScore: true, totalScore: true, bucket: true,
-        publisherType: true, publisherName: true,
-        imagesJson: true,
-      },
-    }),
-    db.divarAd.groupBy({ by: ["bucket"], where: whereBase, _count: { _all: true } }),
-  ]);
-
-  const bucketCounts = { hunt: 0, follow: 0, review: 0 };
-  for (const g of counts) {
-    if (g.bucket in bucketCounts) bucketCounts[g.bucket as keyof typeof bucketCounts] = g._count._all;
-  }
+  // پنجره فایل‌یابی + شمارنده دسته‌ها — عین where/groupBy قبلی از انبار
+  const { rows, bucketCounts } = await getMarketRepository().listAdsWithBucketCounts({
+    filter: {
+      bucket,
+      category: category ?? undefined,
+      lineId: lineId ?? undefined,
+      allowedLineIds,
+    } as AdWindowFilter,
+    limit,
+    offset,
+  });
 
   return Response.json({
     ok: true,

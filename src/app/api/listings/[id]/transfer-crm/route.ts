@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getListingRepository } from "@/core/repositories";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
   const { id } = await ctx.params;
-  const rec = await db.listingRecord.findUnique({ where: { id } });
+  const rec = await getListingRepository().findById(id);
   if (!rec) return errorResponse(new MelkApiError("NOT_FOUND", "این فایل آگهی یافت نشد.", 404, false));
 
   const readiness = listingReadiness(rec);

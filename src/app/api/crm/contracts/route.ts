@@ -7,7 +7,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getContractRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import {
   CONTRACT_FUNNEL_ORDER,
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     const statusFilter = sp.get("status");
     const search = sp.get("search")?.trim();
 
-    const rows = await db.contractRecord.findMany({ orderBy: { createdAt: "desc" } });
+    const rows = await getContractRepository().findAllOrderByCreatedAtDesc();
     const total = rows.length;
 
     const contracts: CrmContract[] = rows.map((r) => ({

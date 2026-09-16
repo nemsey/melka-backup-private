@@ -5,7 +5,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getMarketRepository } from "@/core/repositories";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { divarPostUrl, webGetPostDetail, classifyPublisherKind, parseActiveAdCount } from "@/lib/divar/client";
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ token: 
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
   const { token } = await ctx.params;
-  const ad = await db.divarAd.findUnique({ where: { token } });
+  const ad = await getMarketRepository().findAdByToken(token);
   if (!ad) {
     return errorResponse(new MelkApiError("NOT_FOUND", "این فایل یافت نشد — ممکن است رد یا حذف شده باشد.", 404, false));
   }

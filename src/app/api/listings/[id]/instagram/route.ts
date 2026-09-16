@@ -6,7 +6,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getListingRepository, type ListingDTO } from "@/core/repositories";
 import { errorResponse, requireRole, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
@@ -16,7 +16,7 @@ import { igPublish } from "@/lib/instagram/client";
 import type { IgTone } from "@/lib/instagram/config";
 import { priceEvaluationLabel, desirabilityLabel, sellReasonLabel } from "@/lib/listing/types";
 
-function buildSource(rec: NonNullable<Awaited<ReturnType<typeof db.listingRecord.findUnique>>>) {
+function buildSource(rec: ListingDTO) {
   let inputs: Record<string, string> = {};
   try {
     inputs = rec.inputsJson ? (JSON.parse(rec.inputsJson) as Record<string, string>) : {};
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
   const { id } = await ctx.params;
-  const rec = await db.listingRecord.findUnique({ where: { id } });
+  const rec = await getListingRepository().findById(id);
   if (!rec) return errorResponse(new MelkApiError("NOT_FOUND", "این فایل آگهی یافت نشد.", 404, false));
 
   const url = new URL(request.url);
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
   const guard = role.ctx;
 
   const { id } = await ctx.params;
-  const rec = await db.listingRecord.findUnique({ where: { id } });
+  const rec = await getListingRepository().findById(id);
   if (!rec) return errorResponse(new MelkApiError("NOT_FOUND", "این فایل آگهی یافت نشد.", 404, false));
 
   let body: { caption?: string; kind?: "post" | "reel"; imageUrl?: string; videoUrl?: string; tone?: string; confirmed?: boolean };
@@ -171,13 +171,10 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
 
     const publishedAt = new Date();
     await updateInstagramPostLog(logId, { status: "published", publishedAt, resultJson: result });
-    await db.listingRecord.update({
-      where: { id },
-      data: {
-        instagramPublishedAt: publishedAt,
-        instagramMediaId: result.mediaId,
-        instagramPostJson: JSON.stringify({ kind, caption, tone: body.tone ?? "professional", media: kind === "reel" ? [videoUrl] : [imageUrl], permalink: result.permalink ?? null, mediaId: result.mediaId }),
-      },
+    await getListingRepository().updateInstagramPublication(id, {
+      instagramPublishedAt: publishedAt,
+      instagramMediaId: result.mediaId,
+      instagramPostJson: JSON.stringify({ kind, caption, tone: body.tone ?? "professional", media: kind === "reel" ? [videoUrl] : [imageUrl], permalink: result.permalink ?? null, mediaId: result.mediaId }),
     });
     await audit("LISTING_INSTAGRAM_PUBLISH", guard.personnelCode, `id=${id} kind=${kind} mediaId=${result.mediaId}`);
     return Response.json({

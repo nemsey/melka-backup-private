@@ -7,8 +7,7 @@
  */
 
 import { NextRequest } from "next/server";
-import type { Prisma } from "@prisma/client";
-import { db } from "@/lib/db";
+import { getExpertRepository } from "@/core/repositories";
 import { getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
@@ -22,21 +21,8 @@ export async function GET(request: NextRequest) {
     const sp = request.nextUrl.searchParams;
 
     const realtor = sp.get("realtor");
-    let where: Prisma.InteractionRecordWhereInput = {};
-    if (realtor) {
-      where = {
-        OR: [{ requestRealtorName: { contains: realtor } }, { propertyRealtorName: { contains: realtor } }],
-      };
-    }
 
-    const [rows, total] = await Promise.all([
-      db.interactionRecord.findMany({
-        where,
-        orderBy: { count: "desc" },
-        take: 1000,
-      }),
-      db.interactionRecord.count({ where }),
-    ]);
+    const { rows, total } = await getExpertRepository().listInteractions({ realtor: realtor ?? undefined });
 
     // تجمیع درجه همکاری هر مشاور (مجموع طرف درخواست + طرف آگهی)
     const degreeMap = new Map<string, number>();

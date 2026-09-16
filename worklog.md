@@ -582,3 +582,40 @@ Stage Summary:
 - تست ۳۴۹ → ۴۲۱ (۷۳ جدید، هدف ≥۲۰ ✓؛ ۱ تست مرجع تابع حذف‌شده کم شد)؛ tsc صفر؛ build سبز با ignoreBuildErrors=false؛ lint پاک؛ باندل کلاینت کوچک‌تر
 - صفر نقض UI→Prisma (مستقیم+بازگشتی)، صفر تعریف تکراری، صفر منطق دامنه در tsx، صفر تفاوت بصری (۴ لایه)، صفر Feature/Migration
 - گام بعد: تأیید شورای راهبری بر گزارش تکمیل → شروع PHASE 2 (۸ Repository، انتقال ۶۷ فراخوانی db.*، Incremental Sync، Logger ساختاریافته)
+
+---
+Task ID: phase2-p2-00-to-p2-02c
+Agent: main (Super Z / GLM-5.3)
+Task: PHASE 2 / P2-00 تا P2-02-C — آماده‌سازی، لایه Repository، مهاجرت ایجنت‌های تک‌جدولی/چندجدولی/فایل‌یابی
+
+Work Log:
+- P2-00 (کامیت 1180489): بکاپ db/custom.backup-pre-phase2.db؛ گیت‌تگ pre-phase2-baseline؛ اسکلت src/core/repositories/{interfaces,prisma} + src/lib/logger؛ اسکریپت scripts/audit-repository-boundary.sh — خط پایه صادقانه: ایجنت‌ها ۴۷ (تطابق کامل با دستور)، روت‌ها ۶۹ (برآورد ~۲۰ دستور خوش‌بینانه بود — گزارش شد)؛ regression-guard.sh طبق E.7
+- کشف زیرساختی: «bun test» خالی env بار نمی‌کند — دستور صحیح «bun run test» است (package.json: DATABASE_URL=test.db + MELK_TOKEN_KEY تست) — پس از ریست محیط، .env.local با scripts/dev-secrets.ts بازتولید شد
+- P2-01 (کامیت cdbf775): ۱۲ interface (transaction, contract, expert, visit, market, customer, listing, agent-memory, policy, prediction, outcome, integration) + ۲۴ DTO ساختاری + ۱۲ پیاده‌سازی Prisma (کلاینت تزریقی طبق E.3) + کارخانه؛ upsertBatch آماده P2-04؛ ۱۷ تست روی db/test-repository.db
+- P2-02-A (کامیت d0e7637): ایجنت‌های تک‌جدولی (transaction, contract, supply-demand, visits, extraction) با deps تزریقی + factory پیش‌فرض؛ analyzers.ts از DTO خالص؛ ۱۲ تست stub؛ ایجنت‌ها ۴۷→۴۲
+- P2-02-B (کامیت 8826c80): ایجنت‌های چندجدولی (expert, request, finance, price-index, listing, customer-club)؛ E.2 اجرا شد: تعرفه کمیسیون/پیکربندی شاخص فقط از کش (getCommissionConfig→getCachedCommissionConfig، getPriceIndexConfigs→getCachedPriceIndexConfigs) — مسیر رندر بینش هرگز HTTP زنده نمی‌زند، کش خالی→کارت هشدار؛ ۱۳ تست؛ ایجنت‌ها ۴۲→۲۶
+- P2-02-C (کامیت 269c057 + بستن db88ffd): divar-agent با MarketRepository+OutcomeRepository تزریقی؛ diff دامنه‌logic بایت‌به‌بایت یکسان؛ ۵ فراخوانی لیست عین کوئری‌های قبل (where/select/orderBy/take)؛ ۳ باگ تست جلسه‌قطع‌شده اصلاح شد (ارقام لاتین «4.2 ثانیه»، شمارش ۲ شخصی‌قوی/۳ زیرقیمت، عبارت مکان در title، خطای Repository→scan-empty مثل رفتار قدیم)؛ ایجنت‌ها ۲۶→۲۱ (فقط base-agent.ts)
+
+Stage Summary:
+- وضعیت: P2-00/01/02-A/02-B/02-C بسته؛ فقط P2-02-D (base-agent.ts، ۲۱ فراخوانی) مانده از مهاجرت ایجنت‌ها
+- تست ۴۲۱→۴۶۷ همه سبز؛ tsc صفر؛ audit: ایجنت‌ها ۲۱، روت‌ها ۶۹، interfaces صفر @prisma/client
+- گام بعد: P2-02-D — BaseLearningAgent حذف نمی‌شود، فقط بدنه متدها به AgentMemoryRepository+PolicyRepository مهاجرت می‌کند؛ agent.test.ts باید بدون هیچ تغییری سبز بماند
+
+---
+Task ID: phase2-p2-02d
+Agent: main (Super Z / GLM-5.3)
+Task: PHASE 2 / P2-02-D — مهاجرت BaseLearningAgent به انبار (۲۱ فراخوانی + ۲ تراکنش)
+
+Work Log:
+- تحلیل کامل ۲۱ فراخوانی: agentPolicyVersion×۱۳، agentMemory×۴، agentFeedback×۴ + ۲ db.$transaction
+- انبارها از P2-01 آماده بودند: PolicyRepository (findActive/findLatest/findByTileAndVersion/listVersions/createVersion/activateVersion/countVersions) + AgentMemoryRepository (append/listRecent/listFeedbacks/listAllFeedbacks/createFeedback/countMemory/countFeedback) — پوشش ۱۰۰٪
+- مهاجرت فقط بدنه متدها: import db حذف شد؛ سازنده deps اختیاری گرفت (زیرکلاس‌های super() بی‌تغییر)؛ رفتارهای ظریف حفظ شد: rollbackPolicy ردیف پیش از فعال‌سازی برمی‌گرداند (quirk قدیم)، submitFeedback کومنت undefined→null (نتیجه DB یکسان)، reviewPolicyIfNeeded ابتدا نسخه غیرفعال می‌سازد سپس activateVersion اتمیک (ترتیب عین $transaction قدیم)
+- گواهی قرارداد: git diff tests/agent.test.ts = صفر خط — ۱۲/۱۲ سبز بدون هیچ تغییری
+- ۱۸ تست جدید stub (tests/phase2-base-agent.test.ts، صفر DB): خلوص import، سازنده بدون آرگومان، ensurePolicy (موجود/ساخت)، listVersions نزولی، rollback (اتمیک+خاطره+خطای نسخه ناموجود)، سیم‌کشی بازخورد، آستانه‌های بازبینی (۵/۲/clamp ۱٫۸)، RAG، learningStats، renderInsights (ترتیب+maxInsights+INTERACTION)
+- اصلاح یک باگ تست خودم: آستانه معناداری (BETA +3≥2 خطای شمارش) + ارقام لاتین rationale
+- regression-guard.sh سبز؛ audit --strict-agents PASS
+
+Stage Summary:
+- P2-02 کامل: A(تک‌جدولی)+B(چندجدولی+E.2 کش)+C(فایل‌یابی)+D(پایه) — ایجنت‌ها ۴۷→۰ فراخوانی db.*، صفر @/lib/db، صفر @prisma/client
+- تست ۴۶۷→۴۸۵ همه سبز؛ tsc صفر؛ BaseLearningAgent زنده با قرارداد تغییرنکرده
+- گام بعد: P2-03 — روت‌ها ۶۹→۰ با کنترلر نازک؛ قرارداد API بایت‌به‌بایت یکسان + ۵ روت integration

@@ -18,7 +18,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getOutcomeRepository } from "@/core/repositories";
 import { audit, updateSessionArmTokens } from "@/lib/auth/session";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { getMelkProvider } from "@/lib/melk-api/provider";
@@ -99,16 +99,15 @@ export async function POST(request: NextRequest) {
       );
 
       // ثبت فقط افزودنی استعلام — حسابرسی + حافظه ایجنت
-      await db.lookupLog.create({
-        data: {
-          kind: "PROPERTY",
-          code: normalizedCode,
-          found: true,
-          personName: result.owner?.fullName ?? null,
-          personMobile: result.owner?.mobile ?? null,
-          address: result.address && result.address !== "—" ? result.address : null,
-          actorCode: guard.personnelCode,
-        },
+      await getOutcomeRepository().createLookup({
+        kind: "PROPERTY",
+        code: normalizedCode,
+        found: true,
+        personName: result.owner?.fullName ?? null,
+        personMobile: result.owner?.mobile ?? null,
+        address: result.address && result.address !== "—" ? result.address : null,
+        actorCode: guard.personnelCode,
+        errorNote: null,
       });
       await audit("LOOKUP_PROPERTY", guard.personnelCode, `کدآگهی ${normalizedCode}`);
 
@@ -130,15 +129,15 @@ export async function POST(request: NextRequest) {
       (t) => provider.lookupRequestByCode(t, normalizedCode)
     );
 
-    await db.lookupLog.create({
-      data: {
-        kind: "REQUEST",
-        code: normalizedCode,
-        found: true,
-        personName: result.applicant?.fullName ?? null,
-        personMobile: result.applicant?.mobile ?? null,
-        actorCode: guard.personnelCode,
-      },
+    await getOutcomeRepository().createLookup({
+      kind: "REQUEST",
+      code: normalizedCode,
+      found: true,
+      personName: result.applicant?.fullName ?? null,
+      personMobile: result.applicant?.mobile ?? null,
+      address: null,
+      actorCode: guard.personnelCode,
+      errorNote: null,
     });
     await audit("LOOKUP_REQUEST", guard.personnelCode, `کددرخواست ${normalizedCode}`);
 
@@ -154,15 +153,16 @@ export async function POST(request: NextRequest) {
     const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error)?.message ?? "خطای نامشخص", 500, false);
 
     // ثبت استعلام ناموفق — فقط افزودنی
-    await db.lookupLog
-      .create({
-        data: {
-          kind: kind === "property" ? "PROPERTY" : "REQUEST",
-          code: normalizedCode,
-          found: false,
-          actorCode: guard.personnelCode,
-          errorNote: e.message.slice(0, 300),
-        },
+    await getOutcomeRepository()
+      .createLookup({
+        kind: kind === "property" ? "PROPERTY" : "REQUEST",
+        code: normalizedCode,
+        found: false,
+        personName: null,
+        personMobile: null,
+        address: null,
+        actorCode: guard.personnelCode,
+        errorNote: e.message.slice(0, 300),
       })
       .catch(() => undefined);
 
@@ -177,12 +177,11 @@ export async function GET(request: NextRequest) {
 
   const limit = Math.min(Math.max(Number(request.nextUrl.searchParams.get("limit") ?? 50), 1), 200);
   const kind = request.nextUrl.searchParams.get("kind");
-
-  const where = kind === "property" || kind === "request" ? { kind: kind.toUpperCase() } : {};
+  const kindFilter = kind === "property" || kind === "request" ? (kind.toUpperCase() as "PROPERTY" | "REQUEST") : undefined;
 
   const [rows, total] = await Promise.all([
-    db.lookupLog.findMany({ where, orderBy: { createdAt: "desc" }, take: limit }),
-    db.lookupLog.count({ where }),
+    getOutcomeRepository().listRecentLookups(limit, kindFilter),
+    getOutcomeRepository().countLookups(kindFilter),
   ]);
 
   return Response.json({ ok: true, rows, total });

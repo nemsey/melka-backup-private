@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getIntegrationRepository } from "@/core/repositories";
 import { errorResponse, requireRole, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
@@ -19,7 +19,7 @@ import { MELK_ENDPOINTS } from "@/lib/melk-api/endpoints";
 
 /** وضعیت اتصال PM */
 async function getStatus() {
-  const row = await db.pmConnection.findFirst();
+  const row = await getIntegrationRepository().getPmConnection();
   return {
     status: (row?.status as "connected" | "disconnected" | "pending" | "error") ?? "disconnected",
     personnelCode: row?.personnelCode ?? null,
@@ -66,20 +66,22 @@ export async function POST(request: NextRequest) {
           timeoutMs: Math.min(cfg.timeoutMs, 20000),
           maxRetries: 1,
         });
-        await db.pmConnection.upsert({
-          where: { id: "singleton" },
-          create: { id: "singleton", status: "pending", personnelCode: code, lastError: null },
-          update: { status: "pending", personnelCode: code, lastError: null },
+        await getIntegrationRepository().upsertPmConnection({
+          status: "pending",
+          personnelCode: code,
+          lastError: null,
         });
         await audit("PM_OTP_REQUEST", guard.personnelCode, `code=${code}`);
         return Response.json({ ok: true, message: "کد پیامکی سامانه پرسنلی (PM) ارسال شد — گام تأیید کد را انجام دهید." });
       } catch (err) {
         const e = err as MelkApiError;
-        await db.pmConnection.upsert({
-          where: { id: "singleton" },
-          create: { id: "singleton", status: "error", personnelCode: code, lastError: e.message },
-          update: { status: "error", personnelCode: code, lastError: e.message },
-        }).catch(() => undefined);
+        await getIntegrationRepository()
+          .upsertPmConnection({
+            status: "error",
+            personnelCode: code,
+            lastError: e.message,
+          })
+          .catch(() => undefined);
         return errorResponse(new MelkApiError("UNKNOWN", `ارسال پیامک PM ناموفق بود: ${e.message}`, 502, false));
       }
     }
@@ -111,44 +113,33 @@ export async function POST(request: NextRequest) {
         }
         const displayName =
           data.user?.fullName ?? data.user?.name ?? [data.user?.firstName, data.user?.lastName].filter(Boolean).join(" ") ?? data.user?.username ?? code;
-        await db.pmConnection.upsert({
-          where: { id: "singleton" },
-          create: {
-            id: "singleton",
-            status: "connected",
-            personnelCode: code,
-            displayName: displayName || code,
-            tokenEnc: encryptSecret(data.token),
-            refreshTokenEnc: data.refreshToken ? encryptSecret(data.refreshToken) : null,
-            lastCheckedAt: new Date(),
-            lastError: null,
-          },
-          update: {
-            status: "connected",
-            personnelCode: code,
-            displayName: displayName || code,
-            tokenEnc: encryptSecret(data.token),
-            refreshTokenEnc: data.refreshToken ? encryptSecret(data.refreshToken) : null,
-            lastCheckedAt: new Date(),
-            lastError: null,
-          },
+        await getIntegrationRepository().upsertPmConnection({
+          status: "connected",
+          personnelCode: code,
+          displayName: displayName || code,
+          tokenEnc: encryptSecret(data.token),
+          refreshTokenEnc: data.refreshToken ? encryptSecret(data.refreshToken) : null,
+          lastCheckedAt: new Date(),
+          lastError: null,
         });
         await audit("PM_CONNECT", guard.personnelCode, `code=${code}`);
         return Response.json({ ok: true, message: `اتصال حساب شخصی PM برقرار شد${displayName ? ` — «${displayName}»` : ""}.` });
       } catch (err) {
         const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error).message, 502, false);
-        await db.pmConnection.upsert({
-          where: { id: "singleton" },
-          create: { id: "singleton", status: "error", personnelCode: code, lastError: e.message },
-          update: { status: "error", personnelCode: code, lastError: e.message },
-        }).catch(() => undefined);
+        await getIntegrationRepository()
+          .upsertPmConnection({
+            status: "error",
+            personnelCode: code,
+            lastError: e.message,
+          })
+          .catch(() => undefined);
         return errorResponse(e);
       }
     }
 
     // ---------- ریست ----------
     case "reset": {
-      await db.pmConnection.deleteMany({});
+      await getIntegrationRepository().deletePmConnection();
       await audit("PM_RESET", guard.personnelCode);
       return Response.json({ ok: true, message: "اتصال حساب شخصی PM بازنشانی شد — چراغ نشانگر قرمز می‌شود." });
     }
@@ -160,6 +151,6 @@ export async function POST(request: NextRequest) {
 
 /** خواندن توکن PM برای نشانگر (داخلی) */
 export async function readPmToken(): Promise<string | null> {
-  const row = await db.pmConnection.findFirst();
+  const row = await getIntegrationRepository().getPmConnection();
   return decryptSecret(row?.tokenEnc ?? null);
 }

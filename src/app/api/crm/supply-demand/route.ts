@@ -6,7 +6,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getMarketRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const seed = await ensureSeeded(guard.armTokens?.accessToken);
     const syncState = await getSyncState();
 
-    const rows = await db.supplyDemandRecord.findMany({ orderBy: { propertyCount: "desc" } });
+    const rows = await getMarketRepository().listSupplyDemandOrderByPropertyCountDesc();
 
     // شاخص‌های تحلیلی — تعادل بازار
     const totalAds = rows.reduce((a, r) => a + r.propertyCount, 0);

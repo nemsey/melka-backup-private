@@ -7,7 +7,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { getOutcomeRepository } from "@/core/repositories";
 import { getCommissionConfig } from "@/lib/melk-api/sync";
 import { calculateCommission, validateCommissionInput } from "@/lib/melk-api/commission";
 import { MelkApiError } from "@/lib/melk-api/types";
@@ -58,15 +58,13 @@ export async function POST(request: NextRequest) {
     const result = calculateCommission({ ...values, contractType, vatPercent });
 
     // ثبت فقط افزودنی برای حافظه ایجنت مالی
-    await db.commissionCalcLog.create({
-      data: {
-        contractType,
-        inputsJson: JSON.stringify({ ...values, hologramNumber: body.hologramNumber ?? null }),
-        resultJson: JSON.stringify(result),
-        dealValue: result.dealValue,
-        vatPercent,
-        actorCode: guard.personnelCode,
-      },
+    await getOutcomeRepository().createCommissionCalc({
+      contractType,
+      inputsJson: JSON.stringify({ ...values, hologramNumber: body.hologramNumber ?? null }),
+      resultJson: JSON.stringify(result),
+      dealValue: result.dealValue,
+      vatPercent,
+      actorCode: guard.personnelCode,
     });
 
     return Response.json({

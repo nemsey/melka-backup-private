@@ -6,8 +6,7 @@
  */
 
 import { NextRequest } from "next/server";
-import type { Prisma } from "@prisma/client";
-import { db } from "@/lib/db";
+import { getExpertRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
@@ -28,60 +27,24 @@ export async function GET(request: NextRequest) {
     const syncState = await getSyncState();
     const sp = request.nextUrl.searchParams;
 
-    const where: Prisma.ExpertRecordWhereInput = {};
-    const fullName = sp.get("fullName");
-    if (fullName) where.fullName = { contains: fullName };
-    const mobile = sp.get("mobile");
-    if (mobile) where.mobile = { contains: mobile };
-    const personnelCode = sp.get("personnelCode");
-    if (personnelCode) where.personnelCode = { contains: personnelCode };
-    const role = sp.get("role");
-    if (role) where.role = { contains: role };
-    const businessTitle = sp.get("businessTitle");
-    if (businessTitle) where.businessTitle = { contains: businessTitle };
-    const creator = sp.get("creator");
-    if (creator) where.creator = { contains: creator };
-    const active = sp.get("active");
-    if (active === "true" || active === "false") where.active = active === "true";
+    const fullName = sp.get("fullName") ?? undefined;
+    const mobile = sp.get("mobile") ?? undefined;
+    const personnelCode = sp.get("personnelCode") ?? undefined;
+    const role = sp.get("role") ?? undefined;
+    const businessTitle = sp.get("businessTitle") ?? undefined;
+    const creator = sp.get("creator") ?? undefined;
+    const activeRaw = sp.get("active");
+    const active = activeRaw === "true" || activeRaw === "false" ? activeRaw === "true" : undefined;
 
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 50, 1), 1000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
 
-    const [rows, total] = await Promise.all([
-      db.expertRecord.findMany({
-        where,
-        orderBy: { fullName: sp.get("sortDir") === "desc" ? "desc" : "asc" },
-        take: limit,
-        skip: offset,
-      }),
-      db.expertRecord.count({ where }),
-    ]);
-
-    // مجموع تعاملات هر مشاور (مجموع همکاری‌های منجر به تطبیق — از گزارش تعاملات سامانه)
-    const names = rows.map((r) => r.fullName);
-    const [reqGrouped, propGrouped] = await Promise.all([
-      db.interactionRecord.groupBy({
-        by: ["requestRealtorName"],
-        where: { requestRealtorName: { in: names } },
-        _sum: { count: true },
-      }),
-      db.interactionRecord.groupBy({
-        by: ["propertyRealtorName"],
-        where: { propertyRealtorName: { in: names } },
-        _sum: { count: true },
-      }),
-    ]);
-    const reqMap = new Map(reqGrouped.map((g) => [g.requestRealtorName, g._sum.count ?? 0]));
-    const propMap = new Map(propGrouped.map((g) => [g.propertyRealtorName, g._sum.count ?? 0]));
-
-    const enriched = rows.map((r) => {
-      const asRequester = reqMap.get(r.fullName) ?? 0;
-      const asPropertyRealtor = propMap.get(r.fullName) ?? 0;
-      return {
-        ...r,
-        /** مجموع تعامل‌ها (نقش درخواست‌دهنده + نقش آگهی‌گذار) */
-        interactionTotal: asRequester + asPropertyRealtor,
-      };
+    // فهرست + مجموع تعاملات هر مشاور — عین groupBy دوتایی روت قبلی
+    const { rows: enriched, total } = await getExpertRepository().listWithInteractions({
+      filter: { fullName, mobile, personnelCode, role, businessTitle, creator, active },
+      sortDir: sp.get("sortDir") === "desc" ? "desc" : "asc",
+      limit,
+      offset,
     });
 
     return Response.json({
