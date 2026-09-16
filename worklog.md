@@ -892,3 +892,18 @@ Work Log:
 
 Stage Summary:
 - production با کد PHASE 4 زنده و سالم؛ کل زنجیره تحویل سبز؛ در انتظار تأیید مالک (D5) برای شروع PHASE 5
+---
+Task ID: phase5-p500
+Agent: main (Super Z / GLM-5.3)
+Task: P5-00 — آماده‌سازی PHASE 5 (Retrieval + RAG Engine)
+
+Work Log:
+- تأیید رسمی دستور شورا دریافت شد: PHASE 4 رسماً بسته (OK مالک)؛ PHASE 5 با ترتیب P5-00 → P5-10 → P5-D مجاز است
+- بکاپ پایگاه: db/custom.db → db/custom.backup-pre-phase5.db
+- تگ git: pre-phase5-baseline (روی کامیت ddb66aa)
+- پایه تست: ۵۹۳/۵۹۳ سبز در دو اجرای پیاپی (۵.۶s + ۵.۵s — قاعده دو-سبز از همین لحظه فعال)
+- زنجیره وابستگی PHASE 5: metadata.ts (قرارداد) → queryWithFilter (افزودنی روی MemoryStore) → keyword-search (BM25 فارسی) → hybrid-retriever (RRF) → reranker (heuristic) → citation-builder + assembleWithCitations (گسترش ContextEngine) → assembleCitations (افزودنی روی BaseIntelligentAgent) → RetrievalEngineImpl (بدنه قرارداد v1) → اثبات P5-08
+
+Stage Summary:
+- پیش‌شرط‌های شروع کامل: بکاپ ✓ تگ ✓ worklog ✓ پایه سبز ×۲ ✓
+- گام بعد P5-01 — سند طراحی + قرارداد متادیتا (فقط سند، بدون کد)
