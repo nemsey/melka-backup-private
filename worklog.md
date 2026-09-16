@@ -760,3 +760,21 @@ Stage Summary:
 - RequestAgent = نخستین ایجنت مهاجرت‌یافته به معماری ۱۱-موتوری با تضمین اثبات‌شده خروجی بایت‌به‌بایت یکسان — «نمونه مرجع» ثبت شد
 - تست ۵۳۶→۵۴۹ (+۱۳)؛ رول‌بک = بازگردانی extends به BaseLearningAgent (یک خط) + git show pre-phase3-baseline:src/core/agent/request-agent.ts
 - گام بعد P3-04 (اختیاری) — مهاجرت divar agent با همین الگو؛ در صورت طولانی‌شدن → انتقال به PHASE 4
+
+---
+Task ID: phase3-p3-04
+Agent: main (Super Z / GLM-5.3)
+Task: P3-04 — مهاجرت DivarAgent به BaseIntelligentAgent (دومین ایجنت، الگوی مرجع)
+
+Work Log:
+- همان سه تغییر ساختاری P3-03 روی divar-agent.ts: import + DivarAgentDeps افزودنی (engines/memory/policy اختیاری) + سازنده super({agentId:"file-finder", ...})؛ computeRawInsights حرف‌به‌حرف حفظ؛ singleton بدون تغییر
+- اثبات دو-درختی (الگوی P2-07): worktree در pre-phase3-baseline + اسکریپت dump-only verify-p3-04-divar.ts با importهای نسبی (در هر دو درخت به کد همان درخت وصل می‌شود)؛ کاشت قطعی p304: ۲۰ آگهی فعال (برچسب شخصی/مشاور/کسب‌وکار، یک‌نinth بدون قیمت متر، یک‌سوم بدون نگاشت محله)، ۵ اسکن (۱ خطا + ۴ موفق)، ۱۲ رد (۴ broker → مسیر هشدار نشت)، ۵ آمار محله، تنظیمات با فیلتر مکان فعال، ۶ بازخورد + ۲ خاطره RAG؛ ریست کامل کاشی file-finder در ابتدای هر اجرا
+- نتیجه: baseline ⇔ فعلی بایت‌به‌بایت یکسان (۷٬۳۲۰ بایت، ۶ بینش، policyVersion=1، memoryHits=6) — شواهد در download/phase3-verification/ (p304-divar-before-baseline.json / p304-divar-after-current.json)؛ تاریخ‌ها ۴۸+ ساعت قدیم → مرز ۶ ساعت تازگی هرگز لمس نمی‌شود
+- تست tests/divar-agent.intelligent.test.ts (۸ تست، صفر DB): زنجیره وراثت، قرارداد + agentId، رجیستری، پیش‌فرض Placeholder، تزریق ۱۱ موتور، سه حالت خروجی یکسان، کارت scan-empty، چرخه append-only
+- گواهی: tsc صفر؛ ۵۵۷/۵۵۷ × ۲ اجرای پیاپی؛ regression-guard --strict PASS
+- کارهای زیرساختی: git worktree add .wt-p3-baseline (برای P3-05 نگه داشته می‌شود)
+
+Stage Summary:
+- دو ایجنت مهاجرت‌یافته (requests + file-finder) — هدف «≥۱ (هدف ۲)» برآورده شد
+- تست ۵۴۹→۵۵۷ (+۸)؛ رول‌بک = بازگردانی extends هر فایل
+- گام بعد P3-05 — رگرسیون نهایی: ≥۲۰ تست جدید (۲۷+۸=۳۵ تاکنون)، مجموع ≥۵۴۵ ✓ (۵۵۷)، عددی ۱۰۰۰-نمونه دو-درختی، بصری چهارلایه ۳ صفحه

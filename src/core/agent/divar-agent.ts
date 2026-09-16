@@ -10,16 +10,29 @@
  *  LEARNING  — یادگیری از دلایل رد آگهی توسط کاربر (پیشگیری از تکرار اشتباه)
  */
 
-import { getMarketRepository, getOutcomeRepository, type MarketRepository, type OutcomeRepository } from "@/core/repositories";
-import { BaseLearningAgent, type InsightCard } from "./base-agent";
+import { getMarketRepository, getOutcomeRepository, type AgentMemoryRepository, type MarketRepository, type OutcomeRepository, type PolicyRepository } from "@/core/repositories";
+import { BaseIntelligentAgent } from "@/core/intelligence/base-intelligent-agent";
+import type { EngineDeps } from "@/core/intelligence/engine-deps";
+import type { InsightCard } from "./base-agent";
 
-/** وابستگی‌های تزریق‌پذیر ایجنت فایل‌یابی */
+/**
+ * وابستگی‌های تزریق‌پذیر ایجنت فایل‌یابی.
+ * P3-04: فیلدهای engines/memory/policy «افزودنی و اختیاری»‌اند — سازنده بدون
+ * آن‌ها عیناً همان رفتار BaseLearningAgent را دارد (اثبات: verify-p3-04-divar).
+ */
 export interface DivarAgentDeps {
   market?: MarketRepository;
   outcomes?: OutcomeRepository;
+  /** موتورهای لایه هوشمندی — استراتژی Placeholder؛ خروجی را تغییر نمی‌دهد */
+  engines?: EngineDeps;
+  /** انبار حافظه والد — تزریق برای تست */
+  memory?: AgentMemoryRepository;
+  /** انبار سیاست والد — تزریق برای تست */
+  policy?: PolicyRepository;
 }
 
-export class DivarAgent extends BaseLearningAgent {
+/** دومین ایجنت مهاجرت‌یافته به BaseIntelligentAgent (P3-04 — الگوی نمونه مرجع RequestAgent) */
+export class DivarAgent extends BaseIntelligentAgent {
   readonly tileId = "file-finder";
   readonly name = "ایجنت فایل‌یابی دیوار";
   readonly insightDomains = ["SCAN", "PERSONAL", "PRICE", "OTHER", "LOCATION", "LEARNING"] as const;
@@ -28,7 +41,8 @@ export class DivarAgent extends BaseLearningAgent {
   private readonly outcomes: OutcomeRepository;
 
   constructor(deps?: DivarAgentDeps) {
-    super();
+    // بدون engines/memory/policy → دقیقاً هم‌ارز super() قبلی (بایت‌به‌بایت)
+    super({ agentId: "file-finder", engines: deps?.engines, memory: deps?.memory, policy: deps?.policy });
     this.market = deps?.market ?? getMarketRepository();
     this.outcomes = deps?.outcomes ?? getOutcomeRepository();
   }
