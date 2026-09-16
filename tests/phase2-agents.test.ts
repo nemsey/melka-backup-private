@@ -578,16 +578,18 @@ describe("P2-02-C — ایجنت فایل‌یابی با Repository ساختگ�
     const scan = cards.find((c) => c.key === "scan-health")!;
     expect(scan).toBeDefined();
     expect(scan.severity).toBe("info");
-    expect(scan.body).toContain("۴۲۰");
+    // durationMs=4200 → Math.round(4200/100)/10 = 4.2 ثانیه (ارقام لاتین — عین کد قبل از مهاجرت)
+    expect(scan.body).toContain("4.2 ثانیه");
 
-    // PERSONAL — قانون مالک: ۳ فایل فعال، ۱ شخصی قوی (۸۰+)، ۱ برچسب personal
+    // PERSONAL — قانون مالک: ۳ فایل فعال (ارقام لاتین عین کد قبل از مهاجرت)؛
+    // شخصی قوی (۶۰+): آگهی ۱ و ۳ (هر دو ۸۰) → ۲؛ برچسب personal: ۲
     const personal = cards.find((c) => c.key === "personal-filter")!;
-    expect(personal.body).toContain("۳ فایل فعال");
-    expect(personal.body).toContain("۱ فایل با نشانه‌های قوی");
+    expect(personal.body).toContain("3 فایل فعال");
+    expect(personal.body).toContain("2 فایل با نشانه‌های قوی");
 
-    // PRICE — زیرقیمت ۷۰+ فقط آگهی اول → ۱
+    // PRICE — زیرقیمت ۷۰+: هر سه آگهی (۷۲، ۷۲ پیش‌فرض، ۸۵) → ۳
     const price = cards.find((c) => c.key === "price-filter")!;
-    expect(price.metrics?.[0].value).toBe("1");
+    expect(price.metrics?.[0].value).toBe("3");
     // ۱ محله آماردار (line:10)
     expect(price.metrics?.[1].value).toBe("1");
 
@@ -595,13 +597,13 @@ describe("P2-02-C — ایجنت فایل‌یابی با Repository ساختگ�
     const other = cards.find((c) => c.key === "other-factors")!;
     expect(other).toBeDefined();
 
-    // LOCATION — فیلتر مکان فعال (۲ منطقه، ۳ محله) + ۳/۳ نگاشت
+    // LOCATION — فیلتر مکان فعال (۲ منطقه، ۳ محله) + ۳/۳ نگاشت — ارقام لاتین عین کد قبل
     const location = cards.find((c) => c.key === "location-filter")!;
-    expect(location.body).toContain("۲ منطقه و ۳ محله");
+    expect(location.title).toContain("2 منطقه و 3 محله");
 
-    // LEARNING — الگوی ردها: broker×2 + overpriced×1
+    // LEARNING — الگوی ردها: broker×2 + overpriced×1 (ارقام لاتین)
     const learning = cards.find((c) => c.key === "reject-learning")!;
-    expect(learning.body).toContain("آگهی مشاور املاک (۲ بار)");
+    expect(learning.body).toContain("آگهی مشاور املاک (2 بار)");
     // سه رد broker → هشدار نشت مشاوران
     // (فقط ۲ بار ثبت شده؛ هشدار broker-leak نیاز به ۳+ دارد — عین آستانه قبلی)
     expect(cards.some((c) => c.key === "broker-leak")).toBe(false);
@@ -642,7 +644,10 @@ describe("P2-02-C — ایجنت فایل‌یابی با Repository ساختگ�
       },
     });
     const cards = await agent["computeRawInsights"]();
-    expect(cards).toEqual([]);
+    // عین رفتار قبلی: هر فراخوانی db.* در کد قدیم ‎.catch(() => [])‎ داشت → خطا همان داده خالی است
+    // → کارت راهنمای scan-empty ساخته می‌شود (نه آرایه خالی، نه throw)
+    expect(cards).toHaveLength(1);
+    expect(cards[0].key).toBe("scan-empty");
   });
 
   test("divar-agent.ts نه @/lib/db import می‌کند نه @prisma/client", async () => {
