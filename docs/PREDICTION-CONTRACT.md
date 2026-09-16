@@ -96,6 +96,8 @@ export interface PredictionRisk {
 **CustomerPredictionPayload**: `churnProbability`, `conversionProbability`.
 **ExpertPredictionPayload**: `capacitySaturation`, `topRankProbability`.
 
+**احتمال اصلی سطح رکورد (`probability`):** PROPERTY ⇔ `transactionProbability` · CUSTOMER ⇔ `conversionProbability` · EXPERT ⇔ `topRankProbability` (سنداً ثبت شد — payload کامل هر دو/همه را حمل می‌کند).
+
 ## ۴. جدول‌های مرجع heuristic (نسخه v0 — قابل تنظیم؛ کالیبره در PHASE 7)
 
 نمادها: `clamp01(x)=min(1,max(0,x))` · همه وزن‌ها ثابت‌های exported در فایل predictor.
@@ -134,9 +136,12 @@ confidence = clamp01(0.4 + 0.3·clamp01(frequencyCount/10) + 0.3·(previousTrans
 ```
 loadRatio = clamp01(currentLoad/20)                            // ۲۰ پرونده فعال = اشباع مرجع
 capacitySaturation = clamp01(0.70·loadRatio + 0.30·(1 − clamp01(capacityScore)))
-topRankProbability = clamp01(0.40·clamp01(conversionRate) + 0.30·clamp01(networkQuality) + 0.30·clamp01(activityScore))
+activityProxy = clamp01(activeDaysLast30/30)                   // انحراف صادقانه — بند پایین
+topRankProbability = clamp01(0.40·clamp01(conversionRate) + 0.30·clamp01(networkQuality) + 0.30·activityProxy)
 confidence = clamp01(0.4 + 0.3·clamp01(interactionsLast30/100) + 0.3·clamp01(networkSize/20))
 ```
+
+انحراف صادقانه دوم: فرمول دستور `activityScore` می‌خواهد؛ این فیلد در ExpertFeatureSetِ مصوب نیست — `clamp01(activeDaysLast30/30)` (نرخ روزهای فعال) به‌عنوان proxy شفاف جایگزین و سنداً ثبت شد.
 
 ### ۴-۴. risks قاعده‌محور (نمونه‌ها)
 

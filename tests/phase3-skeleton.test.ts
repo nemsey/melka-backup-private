@@ -143,10 +143,13 @@ describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", (
       // ---- PHASE 5 (هفت فایل: metadata، keyword-search، hybrid-retriever، reranker، citation-builder، retrieval-engine + index) ----
       "retrieval/metadata.ts", "retrieval/index.ts", "retrieval/keyword-search.ts", "retrieval/hybrid-retriever.ts",
       "retrieval/reranker.ts", "retrieval/citation-builder.ts", "retrieval/retrieval-engine.ts",
-      // ---- PHASE 6 (P6-02: چهار builder خالص + گاردها + barrel؛ P6-03: store + engine) ----
+      // ---- PHASE 6 (P6-02: چهار builder خالص + گاردها + barrel؛ P6-03: store + engine؛ P6-04: prediction شش‌فایلی) ----
       "feature/index.ts", "feature/builders/guards.ts", "feature/builders/market-features.ts",
       "feature/builders/property-features.ts", "feature/builders/customer-features.ts",
       "feature/builders/expert-features.ts", "feature/feature-store.ts", "feature/feature-engine.ts",
+      "prediction/index.ts", "prediction/prediction-record.ts", "prediction/prediction-engine.ts",
+      "prediction/predictors/property-predictor.ts", "prediction/predictors/customer-predictor.ts",
+      "prediction/predictors/expert-predictor.ts",
     ]);
     const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
     expect([...actual].sort()).toEqual([...expected].sort());

@@ -42,7 +42,7 @@ engine-deps.ts (فیلد اختیاری جدید: predictionRepository — اف�
 BaseIntelligentAgent.predict (P6-06 — متد افزودنی protected چهارم؛ duck-typing)
 ```
 
-جهت import یک‌سویه و بی‌چرخه: `prediction → feature/builders` (فقط type) · `feature-engine → builders + store` · `engine-deps → prediction-repository (type)` · هیچ فایلی در feature از prediction import نمی‌کند. مرز ممیزی `--strict` در تمام فایل‌ها: صفر Prisma / صفر `@/lib/db` / صفر fetch / صفر React.
+جهت import یک‌سویه و بی‌چرخه: `prediction → feature/builders` (type + گاردهای ریاضی خالص guards.ts — دقت‌سازی حین P6-04) · `feature-engine → builders + store` · `engine-deps → prediction-repository (type)` · هیچ فایلی در feature از prediction import نمی‌کند. مرز ممیزی `--strict` در تمام فایل‌ها: صفر Prisma / صفر `@/lib/db` / صفر fetch / صفر React.
 
 ## ۳. تصمیم‌های طراحی (و انحرافات صادقانه از پیش‌نویس دستور)
 
