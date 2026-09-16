@@ -740,3 +740,23 @@ Stage Summary:
 - اسکلت کامل: ۱۵ فایل جدید در src/core/intelligence/ — صفر پیاده‌سازی موتور، صفر Feature، صفر Migration، BaseLearningAgent دست‌نخورده
 - تست ۵۲۲→۵۳۶ (+۱۴)؛ رول‌بک فاز تا اینجا = حذف دایرکتوری جدید + حذف فایل تست
 - گام بعد P3-03 — مهاجرت RequestAgent به BaseIntelligentAgent با اثبات خروجی بایت‌به‌بایت یکسان
+
+---
+Task ID: phase3-p3-03
+Agent: main (Super Z / GLM-5.3)
+Task: P3-03 — مهاجرت RequestAgent به BaseIntelligentAgent (نخستین نمونه مرجع)
+
+Work Log:
+- تغییر ساختاری فقط در سه نقطه request-agent.ts: import + RequestAgentDeps (افزودنی: engines/memory/policy اختیاری) + سازنده (super({agentId:"requests", ...}))؛ computeRawInsights حرف‌به‌حرف حفظ شد؛ singleton بدون تغییر
+- اسکریپت اثبات scripts/verify-p3-03.ts (الگوی P1-02/P2-03): کلاس LegacyRequestAgent با کپی عیناً از baseline + گارد صحت خودکار در زمان اجرا (متن computeRawInsights با git show pre-phase3-baseline بایت‌به‌بایت مقایسه می‌شود — دو باگ خودم در گارد کشف و رفع شد: رخداد نشانگر در رشتهٔ خود گارد → lastIndexOf؛ منطق پایان متد → نشانگر «return cards»)
+- کاشت قطعی p303 روی test-repository.db: ۴ آگهی (فعید/بایگانی/تطبیق‌پذیر)، ۷ درخواست (۵ مشتری: قهرمانِ تطبیق‌قوی/ناقص/راکد ۳۵روزه/آرم‌ناموفق/آماده-ثبت‌نشده + مشتری تبدیل‌شدهٔ چسبنده به داده واقعی معاملات)، ۹ رویداد (هفتهٔ جاری + قدیمی + همگام آرم)، ۷ بازخورد + ۳ خاطره RAG؛ ریست کامل کاشی requests (حافظه+بازخورد+سیاست) پیش از هر پیکربندی
+- نتیجه اثبات: A(Legacy/BaseLearningAgent) ⇔ B(جدید/بدون موتور) ⇔ C(جدید/۱۱ موتور stub) — هر سه مقایسه بایت‌به‌بایت یکسان (۵٬۴۰۵ نویسه)؛ ۶ کارت (health/community/next-action/match/events/churn)؛ خاطره‌های مؤثر ۶ (مسیر RAG زنده)؛ خود-تمیزشونده
+- تست tests/request-agent.intelligent.test.ts (۱۳ تست، صفر DB): mock.module خنثی‌سازی buildCustomerManagement «پیش از» بارگذاری زنجیره ایجنت (همه importهای ایجنت داینامیک) + سه انبار stub درون-حافظه‌ای؛ زنجیره وراثت، تزریق ۱۱ موتور، خروجی یکسان سه حالت، مسیر یادگیری (بازبینی خودکار روی بازخورد پنجم → v2 وزن ۱٫۷۵؛ بازبینی صریح → v3 با clamp ۱٫۸)، rollback، رجیستری
+- سه باگ تست خودم اصلاح شد (طبق قانون شفافیت): انتظار agentId پارامتری (هاردکد «requests» است)، وزن 1.15 (درست: ۱٫۷۵ = 1+0.15×5)، فیلد newVersion (درست: version) + بازبینی خودکار درون submitFeedback
+- اصلاح tsc: intelligentAgentId از protected به public readonly (داده توصیفی فقط-خواندنی)
+- گواهی: agent.test.ts صفر diff؛ base-agent.ts صفر diff؛ tsc صفر؛ ۵۴۹/۵۴۹ × ۲ اجرای پیاپی؛ regression-guard --strict PASS
+
+Stage Summary:
+- RequestAgent = نخستین ایجنت مهاجرت‌یافته به معماری ۱۱-موتوری با تضمین اثبات‌شده خروجی بایت‌به‌بایت یکسان — «نمونه مرجع» ثبت شد
+- تست ۵۳۶→۵۴۹ (+۱۳)؛ رول‌بک = بازگردانی extends به BaseLearningAgent (یک خط) + git show pre-phase3-baseline:src/core/agent/request-agent.ts
+- گام بعد P3-04 (اختیاری) — مهاجرت divar agent با همین الگو؛ در صورت طولانی‌شدن → انتقال به PHASE 4

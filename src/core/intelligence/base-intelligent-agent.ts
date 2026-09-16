@@ -34,8 +34,8 @@ export abstract class BaseIntelligentAgent extends BaseLearningAgent {
   /** موتورهای تزریق‌شده — مصرف از PHASE 4؛ در PHASE 3 فقط ساخت‌پذیری/قابل-mock بودن */
   protected readonly engines: EngineDeps;
 
-  /** شناسه اختیاری ایجنت — برای زمینه موتورها در فازهای بعد */
-  protected readonly intelligentAgentId: string | null;
+  /** شناسه اختیاری ایجنت — برای زمینه موتورها در فازهای بعد (عمومی و فقط-خواندنی: داده توصیفی) */
+  readonly intelligentAgentId: string | null;
 
   constructor(options?: BaseIntelligentAgentOptions) {
     // سازگاری بایت‌به‌بایت: بدون گزینه‌های انبار، عیناً مانند super() امروزی

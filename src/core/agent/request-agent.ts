@@ -16,16 +16,34 @@
  *  ARM_SYNC      — وضعیت ثبت گام‌به‌گام در سامانه آرم
  */
 
-import { getCustomerRepository, type CustomerRepository } from "@/core/repositories";
-import { BaseLearningAgent, type InsightCard } from "./base-agent";
+import { getCustomerRepository, type AgentMemoryRepository, type CustomerRepository, type PolicyRepository } from "@/core/repositories";
+import { BaseIntelligentAgent } from "@/core/intelligence/base-intelligent-agent";
+import type { EngineDeps } from "@/core/intelligence/engine-deps";
+import type { InsightCard } from "./base-agent";
 import { buildCustomerManagement, LIFECYCLE_FA } from "@/lib/request/customer-mgmt";
 
-/** وابستگی‌های تزریق‌پذیر ایجنت مدیریت مشتریان */
+/**
+ * وابستگی‌های تزریق‌پذیر ایجنت مدیریت مشتریان.
+ * P3-03: فیلدهای engines/memory/policy «افزودنی و اختیاری»‌اند — سازنده بدون
+ * آن‌ها عیناً همان رفتار BaseLearningAgent را دارد (خروجی بایت‌به‌بایت یکسان —
+ * اثبات: scripts/verify-p3-03.ts).
+ */
 export interface RequestAgentDeps {
   customers?: CustomerRepository;
+  /** موتورهای لایه هوشمندی — استراتژی Placeholder؛ خروجی را تغییر نمی‌دهد */
+  engines?: EngineDeps;
+  /** انبار حافظه والد — تزریق برای تست */
+  memory?: AgentMemoryRepository;
+  /** انبار سیاست والد — تزریق برای تست */
+  policy?: PolicyRepository;
 }
 
-export class RequestAgent extends BaseLearningAgent {
+/**
+ * نخستین ایجنت مهاجرت‌یافته به BaseIntelligentAgent (نمونه مرجع P3-03).
+ * ⚠️ موتورها در PHASE 3 فراخوانی نمی‌شوند — تنها ساخت‌پذیری/قابل-mock بودن
+ * قراردادها اثبات می‌شود؛ مسیر خروجی عین BaseLearningAgent است.
+ */
+export class RequestAgent extends BaseIntelligentAgent {
   readonly tileId = "requests";
   readonly name = "ایجنت مدیریت مشتریان";
   readonly insightDomains = [
@@ -35,7 +53,8 @@ export class RequestAgent extends BaseLearningAgent {
   private readonly customers: CustomerRepository;
 
   constructor(deps?: RequestAgentDeps) {
-    super();
+    // بدون engines/memory/policy → دقیقاً هم‌ارز super() قبلی (بایت‌به‌بایت)
+    super({ agentId: "requests", engines: deps?.engines, memory: deps?.memory, policy: deps?.policy });
     this.customers = deps?.customers ?? getCustomerRepository();
   }
 
