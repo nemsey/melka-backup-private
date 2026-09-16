@@ -677,3 +677,18 @@ Stage Summary:
 - صفر تغییر رفتار اپ؛ تنها تغییر کد: مسیر SW (نسخه‌بندی تحویل) با گارد کامل سبز
 - گام بعد: دریافت پاسخ مالک → «OK»=DELIVERY-CONFIRMATION+شروع P3-00 / «مشکل»=رفع+بازگشت به D1
 - الحاقیه پس از Complete: جستجوی شناسه عمومی داخل جعبه کامل و بی‌نتیجه (نام‌های مشتق از hostname کانتینر در لبه «Recycled/410»؛ preview-uuid های قابل حدس 404) — نشانی عمومی فقط از سازوکار UI پلتفرم (لینک preview همین گفتگو پس از finalization موفق) قابل دسترس است؛ گزارش DELIVERY-GATE-P2.md به‌روز شد؛ سرور production پایدار (health ok در 10:40)
+
+---
+Task ID: phase2-d5-closure
+Agent: main (Super Z / GLM-5.3)
+Task: D5 — دریافت تأیید مالک و بستن رسمی PHASE 2
+
+Work Log:
+- پاسخ صریح مالک «Ok» در کانال گفتگو دریافت شد (معادل تأیید کامل D5 طبق تعریف گیت تحویل؛ بدون ذکر مشکل)
+- راستی‌آزمایی تازه در لحظه تأیید: /api/health → ok mode=real (هر سه API خارجی real)؛ .env.local هر دو راز (مجوز ۶۰۰)؛ اجرای تازه تست کامل → ۵۲۲ pass / 0 fail (۱٬۹۹۴ ادعا)
+- گزارش DELIVERY-CONFIRMATION-P2.md نوشته شد: رویداد تأیید + جدول سلامت + خلاصه D0-D5 + ثبت رسمی بستن فاز + فعال‌سازی PHASE 3
+- کامیت مستقل بستن فاز ثبت شد
+
+Stage Summary:
+- PHASE 2 رسماً بسته با تأیید صریح مالک (D0✓ D1✓ D2✓ D3✓ D4✓ D5✓)
+- گام بعد: PHASE 3 / P3-00 — بکاپ db/custom.backup-pre-phase3.db + گیت‌تگ pre-phase3-baseline
