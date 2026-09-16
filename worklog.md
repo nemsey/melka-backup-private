@@ -542,3 +542,24 @@ Stage Summary:
 - GATEهای بسته: SEC-1, SEC-2, SEC-3, SEC-6, BUGS-CRITICAL, SYNC-LOCK, LOGS
 - diff: ۴۲ فایل، +۲٬۱۲۵/−۲۲۰
 - گام بعد: تأیید شورای راهبری بر گزارش تکمیل → شروع PHASE 1 (P1-01..P1-06 طبق بخش D)
+
+---
+Task ID: phase1-p1-01
+Agent: main (Super Z / GLM-5.3)
+Task: PHASE 1 / P1-01 — استخراج اشتراک‌های UI (KpiCard + StepReportList + DataSourceInfo + useTileData) در ۸ صفحه CRM + ۳ دیالوگ گام
+
+Work Log:
+- P1-00 baseline: شات «قبل» ۹ صفحه (download/phase1-visual/before-*.png) روی build پیش از PHASE 1؛ ۳۴۹ تست سبز؛ tsc: صفر خطای src (۴۸ خطا همگی در tests/scripts/examples)؛ کد مدیر از .env.local (gitignored) به watchdog منتقل شد (هیچ رازی در سورس)
+- P1-01a (کامیت caecd30): src/components/app/shared/kpi-card.tsx — دو سبک ظرف آیکون (div قدیمی/span آرایه‌ای)، اسکلتون undefined، sub، labelClassName/valueClassName؛ ۸ صفحه مهاجرت؛ ۱۰ تست (SSR قرارداد رندر + grep ساختاری)
+- P1-01b (کامیت c1e491c): step-report-list.tsx — ادغام TransferStepUI/StepReport/ArmStepReport در StepReportItem یگانه + سه گونه compact/detailed/inline؛ CrmTransferDialog+ArmRegisterDialog+NewRequestDialog مهاجرت (ArmStepReport = alias سازگاری)؛ ۸ تست
+- P1-01c (کامیت e92b605): data-source.tsx — رابط DataSourceInfo مشترک (حذف ۴ تعریف تکراری) + DataSourceWarning (کارت کهربایی + خط آخرین استخراج) + DataSourceAlert (بنر منبع داده)؛ ۸ صفحه مهاجرت؛ پیرایش importهای بی‌استفاده با اسکریپت (باگ‌های اولیه اسکریپت: نماد type/as — سه بار بازنویسی و راستی‌آزمایی)؛ ۱۲ تست
+- P1-01d (کامیت 2460961): use-tile-data.ts — هوک بارگذاری+toast+reload+errorValue؛ semantics خطای هر صفحه حفظ شد (identity برای قراردادها/مالی/شاخص/باشگاه؛ rows-reset برای معاملات/کارشناسان/عرضه/بازدید)؛ side-effectهای داخل load (setPage(0) معاملات، setCalcType مالی) به fetcher منتقل شد؛ ۸ رفتار تست واقعی با happy-dom + React 19 act + mock use-toast
+- راستی‌آزمایی بصری میانی: build موفق + باز استقرار prod؛ DOM زنده کارت KPI بایت‌به‌بایت با مارک‌آپ اصلی یکسان (class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0" + lucide-calculator w-5 h-5 text-primary)
+- کشف: تفاوت ارتفاع شات قبل/بعد (۹۳۹→۱۰۸۹px) = حالت داده (شات قبل در لحظه بارگذاری گرفته شد، ردیف KPI هنوز رندر نشده) — نه رگرسیون؛ برای P1-06 پروتکل آمادگی قطعی + checkout هر دو نسخه از git برنامه‌ریزی شد
+- سنجش صادقانه خطوط: صفحات/دیالوگ‌ها −۲۴۴ خط؛ ماژول‌های مشترک جدید +۳۹۰؛ خالص +۱۴۶ — هدف «≥۱۲۰۰ کاهش» از محل چهار جزء الزامی قابل‌نیل نبود (تخمین ممیزی خوش‌بینانه بود)؛ طبق D.8 مستند و در گزارش تکمیل به شورا گزارش می‌شود
+
+Stage Summary:
+- چهار جزء مشترک الزام P1-01 کامل: تعریف تکراری KpiCard=۰، DataSourceInfo=۰ (منبع یگانه shared)، انواع گزارش گام ۳→۱، بویلرپلیت load/toast در ۸ صفحه صفر
+- تست: ۳۴۹ → ۳۸۷ (۳۸ تست جدید P1-01) همه سبز؛ tsc src صفر خطا؛ lint پاک؛ build سبز؛ prod سالم
+- صفر تغییر DOM (تأیید بایت‌به‌بایت)؛ صفر Feature؛ صفر Migration
+- گام بعد: P1-02 (انتقال منطق دامنه به analyzers)
