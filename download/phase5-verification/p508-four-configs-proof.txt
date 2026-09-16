@@ -1,0 +1,22 @@
+✓ گارد ۱: هر 17 فایل مسیر خروجی عیناً با pre-phase5-baseline هم‌خوان است
+{"ts":"2026-09-16T18:28:24.855Z","level":"info","category":"agent","operation":"render-insights","status":"start","requestId":"a64f3cc4-1e72-403b-8d5c-9b296c542f5c","traceId":"a64f3cc4-1e72-403b-8d5c-9b296c542f5c","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":null,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T18:28:24.884Z","level":"info","category":"agent","operation":"render-insights","status":"ok","requestId":"a38c5f40-ba17-420b-b31a-0ddb46ec6c25","traceId":"a38c5f40-ba17-420b-b31a-0ddb46ec6c25","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":29,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T18:28:24.893Z","level":"info","category":"agent","operation":"render-insights","status":"start","requestId":"01c4dbba-806f-44cf-917b-ea118e5bc48d","traceId":"01c4dbba-806f-44cf-917b-ea118e5bc48d","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":null,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T18:28:24.911Z","level":"info","category":"agent","operation":"render-insights","status":"ok","requestId":"0ba9fde4-6dac-4f86-b853-9755acbd8202","traceId":"0ba9fde4-6dac-4f86-b853-9755acbd8202","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":18,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T18:28:24.921Z","level":"info","category":"agent","operation":"render-insights","status":"start","requestId":"e2592934-613b-48f7-a365-1ef7f4ec5be1","traceId":"e2592934-613b-48f7-a365-1ef7f4ec5be1","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":null,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T18:28:24.941Z","level":"info","category":"agent","operation":"render-insights","status":"ok","requestId":"c9ee2dd9-593f-4429-8873-12cc2f479269","traceId":"c9ee2dd9-593f-4429-8873-12cc2f479269","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":20,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T18:28:24.949Z","level":"info","category":"agent","operation":"render-insights","status":"start","requestId":"8f0facfa-46c3-4709-afdd-eedbe0ec7c1c","traceId":"8f0facfa-46c3-4709-afdd-eedbe0ec7c1c","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":null,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+{"ts":"2026-09-16T18:28:24.967Z","level":"info","category":"agent","operation":"render-insights","status":"ok","requestId":"1522b4eb-2130-46e5-bca1-fda88b9d5abc","traceId":"1522b4eb-2130-46e5-bca1-fda88b9d5abc","userId":null,"tenantId":"melk-tabriz","agentId":"requests","tileId":"requests","duration":18,"errorCode":null,"detail":{"agentName":"ایجنت مدیریت مشتریان"}}
+✓ گارد ۲: سیم‌کشی زنده — بازیابی C: 5+3 نتیجه؛ بازیابی D: 5 نتیجه؛ زمینه D با 10 ارجاع معتبر مونتاژ شد (14 رکورد در موتور)
+✓ A (بدون موتور/PHASE 3) ⇔ B (بدنه‌های PHASE 4 / فقط Vector) — بایت‌به‌بایت یکسان (5405 نویسه)
+✓ A ⇔ C (B + Hybrid بدون رتبه‌بند، تزریق و فراخوانی واقعی) — بایت‌به‌بایت یکسان (5405 نویسه)
+✓ A ⇔ D (پشته کامل + Reranker + Citation + observe پیش از خروجی) — بایت‌به‌بایت یکسان (5405 نویسه)
+✓ C ⇔ D — بایت‌به‌بایت یکسان (5405 نویسه)
+
+بینش‌های پیکربندی A: 6 کارت — health-overview، community-overview، next-action، match-engine، events-overview، churn-alert
+نسخه سیاست: 1 · خاطره‌های مؤثر: 6
+نمونه بازسازی بازیابی C (method=HYBRID): جامعه مشتریان درخواست مل | جامعه مشتریان گزارش هفتگ | تطبیق درخواست با آگهی لی
+نمونه ارجاع D: memoryId=f9f18837… score=0.750 pos=[0,38]
+پاک‌سازی p303 انجام شد.
+
+نتیجه: هر چهار پیکربندی بایت‌به‌بایت یکسان‌اند — بی‌اثری پشته بازیابی PHASE 5 بر خروجی اثبات شد.
