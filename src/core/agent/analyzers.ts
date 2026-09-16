@@ -2,20 +2,31 @@
  * تحلیل‌گرهای آماری خالص (Pure Functions)
  * ------------------------------------------------------
  * منطق هسته تحلیل — بدون وابستگی به I/O؛ به همین دلیل کامل تست‌پذیر است.
- * ورودی: رکوردهای Prisma (عین ساختار سامانه واقعی ملک تبریز)؛
+ * ورودی: DTOهای لایه Repository (آینه ساختاری رکوردهای سامانه واقعی ملک تبریز)؛
  * خروجی: آماده برای تولید بینش توسط ایجنت.
  *
  * ✅ تحلیل‌ها بر پایه «گزارش تطابق معاملات»، «فهرست کاربران» و
  * «تعاملات مشاوران» سامانه ARM طراحی شده‌اند.
  * ✅ سری‌های ماهانه بر پایه ماه‌های هجری شمسی (جلالی) ساخته می‌شوند.
+ * ✅ PHASE 2 (P2-02): وابستگی تایپی Prisma حذف شد — ورودی‌ها DTO خالص‌اند.
  */
 
-import type { Prisma } from "@prisma/client";
+// ⚠️ مرز لایه‌ای: این فایل از UI (صفحات کاشی) به‌صورت ارزشی import می‌شود؛
+// DTOها فقط از زیرماژول خالص interfaces برداشته می‌شوند — هرگز از barrel
+// اصلی (@/core/repositories) که پیاده‌سازی‌های Prisma را هم value-export می‌کند.
+import type {
+  ExpertDTO,
+  InteractionDTO,
+  LookupLogDTO,
+  SupplyDemandDTO,
+  TransactionDTO,
+  VisitDTO,
+} from "@/core/repositories/interfaces";
 import { dateToJalali } from "@/lib/jalali";
 
-type TxRow = Prisma.TransactionRecordGetPayload<Record<string, never>>;
-type ExRow = Prisma.ExpertRecordGetPayload<Record<string, never>>;
-type InRow = Prisma.InteractionRecordGetPayload<Record<string, never>>;
+type TxRow = TransactionDTO;
+type ExRow = ExpertDTO;
+type InRow = InteractionDTO;
 
 // ===================== سری زمانی ماهانه (ماه هجری شمسی) =====================
 
@@ -251,7 +262,7 @@ export function isolatedRealtors(experts: ExRow[], interactions: InRow[]): ExRow
 
 // ===================== تحلیل بازدیدها (visits/list خود سامانه) =====================
 
-type ViRow = Prisma.VisitRecordGetPayload<Record<string, never>>;
+type ViRow = VisitDTO;
 
 export interface VisitStats {
   total: number;
@@ -329,7 +340,7 @@ export function mostVisitedProperties(visits: ViRow[], n = 5): { code: string; c
 
 // ===================== تحلیل عرضه و تقاضا (realtor-reports/supply-demand خود سامانه) =====================
 
-type SdRow = Prisma.SupplyDemandRecordGetPayload<Record<string, never>>;
+type SdRow = SupplyDemandDTO;
 
 export interface SupplyDemandStats {
   rangeCount: number;
@@ -364,7 +375,7 @@ export function supplyDemandStats(rows: SdRow[]): SupplyDemandStats {
 
 // ===================== تحلیل استعلام‌های استخراج اطلاعات (LookupLog) =====================
 
-type LkRow = Prisma.LookupLogGetPayload<Record<string, never>>;
+type LkRow = LookupLogDTO;
 
 export interface LookupStats {
   total: number;

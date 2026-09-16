@@ -7,18 +7,30 @@
  * (استعلام‌های مکرر/مهمان) — با یادگیری از بازخورد مدیر.
  */
 
-import { db } from "@/lib/db";
+import { getOutcomeRepository, type OutcomeRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import { lookupStats } from "./analyzers";
 import { faNumber } from "@/lib/format";
+
+/** وابستگی‌های تزریق‌پذیر ایجنت استخراج اطلاعات */
+export interface ExtractionAgentDeps {
+  outcomes?: OutcomeRepository;
+}
 
 export class ExtractionAgent extends BaseLearningAgent {
   readonly tileId = "extraction";
   readonly name = "ایجنت استخراج اطلاعات";
   readonly insightDomains = ["LOOKUP", "COVERAGE", "QUALITY", "SECURITY"] as const;
 
+  private readonly outcomes: OutcomeRepository;
+
+  constructor(deps?: ExtractionAgentDeps) {
+    super();
+    this.outcomes = deps?.outcomes ?? getOutcomeRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
-    const logs = await db.lookupLog.findMany({ orderBy: { createdAt: "desc" }, take: 500 });
+    const logs = await this.outcomes.listRecentLookups(500);
     const cards: InsightCard[] = [];
     if (logs.length === 0) return cards;
 

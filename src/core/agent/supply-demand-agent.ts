@@ -6,18 +6,30 @@
  * و هدایت قیمت‌گذاری آگهی‌های جدید — با یادگیری از بازخورد مدیر.
  */
 
-import { db } from "@/lib/db";
+import { getMarketRepository, type MarketRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import { supplyDemandStats } from "./analyzers";
 import { faNumber } from "@/lib/format";
+
+/** وابستگی‌های تزریق‌پذیر ایجنت عرضه و تقاضا */
+export interface SupplyDemandAgentDeps {
+  market?: MarketRepository;
+}
 
 export class SupplyDemandAgent extends BaseLearningAgent {
   readonly tileId = "supply-demand";
   readonly name = "ایجنت تحلیل عرضه و تقاضا";
   readonly insightDomains = ["BALANCE", "PRESSURE", "STRATEGY"] as const;
 
+  private readonly market: MarketRepository;
+
+  constructor(deps?: SupplyDemandAgentDeps) {
+    super();
+    this.market = deps?.market ?? getMarketRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
-    const rows = await db.supplyDemandRecord.findMany();
+    const rows = await this.market.listSupplyDemand();
     const cards: InsightCard[] = [];
     if (rows.length === 0) return cards;
 

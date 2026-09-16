@@ -6,7 +6,7 @@
  * حق‌السهم مشاوران و پیگیری اسناد ناقص — با یادگیری از بازخورد مدیر.
  */
 
-import { db } from "@/lib/db";
+import { getContractRepository, type ContractRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import { CONTRACT_FUNNEL_ORDER, CONTRACT_REJECT_STATUSES, CONTRACT_STATUS_FA, type ContractRealtorShare } from "@/lib/melk-api/types";
 import { faNumber, faPercent } from "@/lib/format";
@@ -20,13 +20,25 @@ function parseShares(raw: string | null | undefined): ContractRealtorShare[] {
   }
 }
 
+/** وابستگی‌های تزریق‌پذیر ایجنت قراردادها */
+export interface ContractAgentDeps {
+  contracts?: ContractRepository;
+}
+
 export class ContractAgent extends BaseLearningAgent {
   readonly tileId = "contracts";
   readonly name = "ایجنت تحلیل قراردادها و اسناد";
   readonly insightDomains = ["FUNNEL", "BOTTLENECK", "STALLED", "SHARE", "DOCUMENT", "REJECT"] as const;
 
+  private readonly contracts: ContractRepository;
+
+  constructor(deps?: ContractAgentDeps) {
+    super();
+    this.contracts = deps?.contracts ?? getContractRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
-    const rows = await db.contractRecord.findMany();
+    const rows = await this.contracts.findAll();
     const cards: InsightCard[] = [];
     if (rows.length === 0) return cards;
 

@@ -6,7 +6,7 @@
  * رتبه‌بندی بررسی‌کنندگان و آگهی‌های پربازدید — با یادگیری از بازخورد.
  */
 
-import { db } from "@/lib/db";
+import { getVisitRepository, type VisitRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import {
   checkerLeaderboard,
@@ -18,13 +18,25 @@ import {
 } from "./analyzers";
 import { faNumber, faMonthLabel } from "@/lib/format";
 
+/** وابستگی‌های تزریق‌پذیر ایجنت بازدیدها */
+export interface VisitsAgentDeps {
+  visits?: VisitRepository;
+}
+
 export class VisitsAgent extends BaseLearningAgent {
   readonly tileId = "visits";
   readonly name = "ایجنت تحلیل بازدیدها";
   readonly insightDomains = ["VOLUME", "TREND", "STATUS", "LEADERSHIP", "ATTENTION"] as const;
 
+  private readonly visitsRepo: VisitRepository;
+
+  constructor(deps?: VisitsAgentDeps) {
+    super();
+    this.visitsRepo = deps?.visits ?? getVisitRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
-    const visits = await db.visitRecord.findMany();
+    const visits = await this.visitsRepo.findAll();
     const cards: InsightCard[] = [];
     if (visits.length === 0) return cards;
 

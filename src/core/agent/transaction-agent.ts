@@ -7,7 +7,7 @@
  * و تشخیص ناهنجاری — با یادگیری از بازخورد مدیر.
  */
 
-import { db } from "@/lib/db";
+import { getTransactionRepository, type TransactionRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import {
   detectAnomalies,
@@ -18,13 +18,25 @@ import {
 } from "./analyzers";
 import { faNumber, faMonthLabel } from "@/lib/format";
 
+/** وابستگی‌های تزریق‌پذیر ایجنت معاملات (تست: Repository ایزوله/stub) */
+export interface TransactionAgentDeps {
+  transactions?: TransactionRepository;
+}
+
 export class TransactionAgent extends BaseLearningAgent {
   readonly tileId = "transactions";
   readonly name = "ایجنت تحلیل معاملات";
   readonly insightDomains = ["VOLUME", "TREND", "COMPOSITION", "CONVERSION", "DOCUMENT", "ANOMALY"] as const;
 
+  private readonly transactions: TransactionRepository;
+
+  constructor(deps?: TransactionAgentDeps) {
+    super();
+    this.transactions = deps?.transactions ?? getTransactionRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
-    const txs = await db.transactionRecord.findMany();
+    const txs = await this.transactions.findAll();
     const cards: InsightCard[] = [];
     if (txs.length === 0) return cards;
 
