@@ -13,6 +13,7 @@ import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse } from "@/lib/auth/guard";
 import { createSession, audit } from "@/lib/auth/session";
+import { logAuth } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   let personnelCode = "";
@@ -64,6 +65,12 @@ export async function POST(request: NextRequest) {
     // ثبت آن پنجره قفل را تمدید می‌کرد (قفل خود-تمدیدشونده).
     if (personnelCode && !(err instanceof MelkApiError && err.code === "RATE_LIMITED")) {
       await recordAttempt(personnelCode, "VERIFY_OTP", false).catch(() => {});
+      // P2-05 — رویداد الزامی شکست OTP (بدون خودِ کد/موبایل)
+      logAuth("otp-failed", {
+        userId: personnelCode,
+        status: "fail",
+        errorCode: err instanceof MelkApiError ? err.code : "UNKNOWN",
+      });
     }
     if (err instanceof MelkApiError) return errorResponse(err);
     return errorResponse(new MelkApiError("UNKNOWN", "خطای غیرمنتظره در تأیید کد پیامکی.", 500, false));

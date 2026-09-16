@@ -15,6 +15,7 @@ import {
   type AgentMemoryRepository,
   type PolicyRepository,
 } from "@/core/repositories";
+import { logAgentCall } from "@/lib/logger";
 import type { AgentPolicyContent, AgentPolicyRecord } from "./policy";
 import { clampWeight, defaultPolicy } from "./policy";
 
@@ -202,6 +203,28 @@ export abstract class BaseLearningAgent {
     comment?: string;
     contextSnapshot?: Record<string, unknown>;
   }): Promise<{ totalFeedback: number }> {
+    // P2-05 — رویداد الزامی فراخوانی ایجنت
+    const __startedAt = Date.now();
+    logAgentCall({ tileId: this.tileId, agentName: this.name, operation: "submit-feedback", status: "start" });
+    try {
+      const result = await this.submitFeedbackInner(input);
+      logAgentCall({ tileId: this.tileId, agentName: this.name, operation: "submit-feedback", status: "ok", duration: Date.now() - __startedAt });
+      return result;
+    } catch (err) {
+      logAgentCall({ tileId: this.tileId, agentName: this.name, operation: "submit-feedback", status: "fail", duration: Date.now() - __startedAt, errorCode: "AGENT_ERROR" });
+      throw err;
+    }
+  }
+
+  /** بدنه اصلی بازخورد (P2-05: از پوشش لاگ جدا شد — منطق عین قبل) */
+  private async submitFeedbackInner(input: {
+    insightKey: string;
+    insightTitle: string;
+    domain: string;
+    rating: 1 | -1;
+    comment?: string;
+    contextSnapshot?: Record<string, unknown>;
+  }): Promise<{ totalFeedback: number }> {
     // ثبت بازخورد — فقط افزودنی
     await this.memory.createFeedback({
       tileId: this.tileId,
@@ -293,6 +316,35 @@ export abstract class BaseLearningAgent {
    * مرتب‌سازی → ثبت تعامل در حافظه (Append-only).
    */
   async renderInsights(): Promise<{ insights: RenderedInsight[]; policyVersion: number; memoryHits: number }> {
+    // P2-05 — رویداد الزامی فراخوانی ایجنت (مرکزی: همه ایجنت‌ها)
+    const __startedAt = Date.now();
+    logAgentCall({ tileId: this.tileId, agentName: this.name, operation: "render-insights", status: "start" });
+    try {
+      const result = await this.renderInsightsInner();
+      logAgentCall({
+        tileId: this.tileId,
+        agentName: this.name,
+        operation: "render-insights",
+        status: "ok",
+        duration: Date.now() - __startedAt,
+        detail: { insightCount: result.insights.length, policyVersion: result.policyVersion },
+      });
+      return result;
+    } catch (err) {
+      logAgentCall({
+        tileId: this.tileId,
+        agentName: this.name,
+        operation: "render-insights",
+        status: "fail",
+        duration: Date.now() - __startedAt,
+        errorCode: (err as { code?: string })?.code ?? "AGENT_ERROR",
+      });
+      throw err;
+    }
+  }
+
+  /** بدنه اصلی رندر (P2-05: از پوشش لاگ جدا شد — منطق عین قبل) */
+  private async renderInsightsInner(): Promise<{ insights: RenderedInsight[]; policyVersion: number; memoryHits: number }> {
     const policy = await this.getActivePolicy();
     const raw = await this.computeRawInsights();
 

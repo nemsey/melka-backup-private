@@ -35,6 +35,7 @@ import {
   type VisitUpsertInput,
 } from "@/core/repositories";
 import { getMelkProvider } from "./provider";
+import { logSync } from "@/lib/logger";
 import { syncMode } from "./sync-mode";
 import { MELK_ENDPOINTS } from "./endpoints";
 import type {
@@ -244,11 +245,14 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
   const now = new Date();
   const incremental = syncMode() === "incremental";
   const runId = randomUUID();
+  const syncStartedAt = Date.now();
   await writeSyncState({
     lastSyncedAt: now,
     // شناسه اجرا فقط در حالت افزایشی معنا دارد (legacy به آن دست نمی‌زند)
     ...(incremental ? { syncRunId: runId } : {}),
   });
+  // P2-05 — رویداد الزامی همگام‌سازی: آغاز
+  logSync("sync-run", { status: "start", mode: incremental ? "incremental" : "legacy", detail: { runId } });
 
   try {
     // ---------------- ۱) گزارش تطابق معاملات + خلاصه ----------------
@@ -343,6 +347,21 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
       summaryJson: summary ? JSON.stringify(summary) : null,
       ...(incremental ? { lastWatermark: successAt } : {}),
     });
+    // P2-05 — رویداد الزامی همگام‌سازی: پایان موفق
+    logSync("sync-run", {
+      status: "ok",
+      mode: incremental ? "incremental" : "legacy",
+      duration: Date.now() - syncStartedAt,
+      detail: {
+        runId,
+        transactions: transactions.length,
+        experts: experts.length,
+        interactions: interactions.length,
+        visits: visits.length,
+        supplyDemand: supplyDemand.length,
+        contracts: contracts.length,
+      },
+    });
 
     return {
       ok: true,
@@ -361,6 +380,14 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
       lastError: e.message,
       lastErrorCode: e.code,
       attempts: state.attempts + 1,
+    });
+    // P2-05 — رویداد الزامی همگام‌سازی: شکست
+    logSync("sync-run", {
+      status: "fail",
+      mode: incremental ? "incremental" : "legacy",
+      duration: Date.now() - syncStartedAt,
+      errorCode: e.code,
+      detail: { runId },
     });
     return {
       ok: false,

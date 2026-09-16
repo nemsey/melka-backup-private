@@ -21,14 +21,24 @@ export async function register(): Promise<void> {
   // ---------- ۲) چرخش کلید در صورت درخواست صریح (ROTATION_PENDING=true) ----------
   if (process.env.ROTATION_PENDING === "true") {
     const { rotateFromEnv } = await import("@/lib/auth/key-rotation");
+    const { logEvent } = await import("@/lib/logger");
     const report = await rotateFromEnv();
     if (report.ok) {
-      console.log(
-        `[boot:key-rotation] چرخش کلید انجام شد: rotated=${report.rotated} already=${report.alreadyRotated} unreadable=${report.unreadable} — ` +
-          `اکنون ROTATION_PENDING را حذف و MELK_TOKEN_KEY_OLD را از محیط پاک کنید.`
-      );
+      logEvent({
+        category: "system",
+        operation: "key-rotation",
+        status: "ok",
+        detail: { rotated: report.rotated, alreadyRotated: report.alreadyRotated, unreadable: report.unreadable },
+      });
     } else {
-      console.error(`[boot:key-rotation] ناکامل: ${report.error ?? "خطای نامشخص"}`);
+      logEvent({
+        level: "error",
+        category: "system",
+        operation: "key-rotation",
+        status: "fail",
+        errorCode: "ROTATION_INCOMPLETE",
+        detail: { error: report.error ?? "خطای نامشخص" },
+      });
     }
   }
 
@@ -67,7 +77,13 @@ export async function register(): Promise<void> {
         const actorCode = live?.personnelCode ?? "unknown";
         await audit("DATA_SYNC_BACKGROUND", actorCode, `ok=${result.ok}; tx=${result.transactions}; ex=${result.experts}`);
         if (result.ok) {
-          console.log(`[sync:bg] استخراج پس‌زمینه با نشست ${actorCode}: ${result.transactions} معامله، ${result.experts} کاربر`);
+          const { logSync } = await import("@/lib/logger");
+          logSync("sync-run", {
+            status: "ok",
+            mode: "legacy",
+            userId: actorCode,
+            detail: { transactions: result.transactions, experts: result.experts, background: true },
+          });
         }
       } catch {
         // خطای پس‌زمینه بی‌صدا — در تیک بعدی دوباره تلاش می‌شود

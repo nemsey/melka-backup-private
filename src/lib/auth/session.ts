@@ -9,6 +9,7 @@
 
 import { db } from "@/lib/db";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
+import { logAuth } from "@/lib/logger";
 import { decryptSecret, encryptSecret, generateSessionToken, hashToken } from "./crypto";
 import type { ArmTokens, AuthUserInfo, UserRole } from "@/lib/melk-api/types";
 
@@ -46,6 +47,13 @@ export async function createSession(
           }
         : {}),
     },
+  });
+
+  // P2-05 — رویداد الزامی ورود (بدون هیچ داده حساس)
+  logAuth("login", {
+    userId: user.personnelCode,
+    status: "ok",
+    detail: { role: user.role, armSession: Boolean(armTokens?.accessToken) },
   });
 
   return {
@@ -143,6 +151,8 @@ export async function revokeSession(token: string, reason = "USER_LOGOUT"): Prom
   const session = await db.session.findUnique({ where: { tokenHash } });
   if (!session) return false;
   await db.session.update({ where: { id: session.id }, data: { revoked: true, revokedReason: reason, armTokenEnc: null, armRefreshTokenEnc: null } });
+  // P2-05 — رویداد الزامی خروج
+  logAuth("logout", { userId: session.personnelCode, status: "ok", detail: { reason } });
   return true;
 }
 
