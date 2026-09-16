@@ -7,6 +7,7 @@
 #   ۲) audit-repository-boundary.sh (مرز لایه Repository)
 #   ۳) audit-log-safety.sh (اگر وجود دارد — از P2-05 به بعد)
 #   ۴) audit-intelligence-boundary.sh --strict (اگر وجود دارد — از P3-06 به بعد)
+#   ۵) audit-feature-visibility.sh --strict (از P6-08 — صفر نشت Feature/Prediction به UI/API)
 # خروجی: exit 1 اگر هر کدام fail شود.
 #
 # استفاده: bash scripts/regression-guard.sh [audit-mode]
@@ -16,7 +17,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 AUDIT_MODE="${1:-}"
 
-echo "=== [1/4] تست‌ها (پایگاه تست ایزوله) ==="
+echo "=== [1/5] تست‌ها (پایگاه تست ایزوله) ==="
 if ! DATABASE_URL="file:/home/z/my-project/db/test.db" MELK_TOKEN_KEY="test-only-key-not-a-real-secret" \
      bun test tests/ 2>&1 | tail -5; then
   echo "GUARD FAIL: تست‌ها قرمز هستند."
@@ -24,14 +25,14 @@ if ! DATABASE_URL="file:/home/z/my-project/db/test.db" MELK_TOKEN_KEY="test-only
 fi
 
 echo ""
-echo "=== [2/4] مرز Repository (mode: ${AUDIT_MODE:-report-only}) ==="
+echo "=== [2/5] مرز Repository (mode: ${AUDIT_MODE:-report-only}) ==="
 if ! bash scripts/audit-repository-boundary.sh "$AUDIT_MODE"; then
   echo "GUARD FAIL: نقض مرز Repository."
   exit 1
 fi
 
 echo ""
-echo "=== [3/4] امنیت لاگ ==="
+echo "=== [3/5] امنیت لاگ ==="
 if [ -f scripts/audit-log-safety.sh ]; then
   if ! bash scripts/audit-log-safety.sh; then
     echo "GUARD FAIL: داده حساس در لاگ."
@@ -42,7 +43,7 @@ else
 fi
 
 echo ""
-echo "=== [4/4] مرز لایه هوشمندی (PHASE 3) ==="
+echo "=== [4/5] مرز لایه هوشمندی (PHASE 3) ==="
 if [ -f scripts/audit-intelligence-boundary.sh ]; then
   if ! bash scripts/audit-intelligence-boundary.sh --strict; then
     echo "GUARD FAIL: نقض مرز لایه هوشمندی."
@@ -50,6 +51,17 @@ if [ -f scripts/audit-intelligence-boundary.sh ]; then
   fi
 else
   echo "SKIP: audit-intelligence-boundary.sh هنوز ساخته نشده (از P3-06 فعال می‌شود)."
+fi
+
+echo ""
+echo "=== [5/5] مرز دیدپذیری Feature/Prediction (PHASE 6 / P6-08) ==="
+if [ -f scripts/audit-feature-visibility.sh ]; then
+  if ! bash scripts/audit-feature-visibility.sh --strict; then
+    echo "GUARD FAIL: نشت Feature/Prediction به UI/API."
+    exit 1
+  fi
+else
+  echo "SKIP: audit-feature-visibility.sh هنوز ساخته نشده (از P6-08 فعال می‌شود)."
 fi
 
 echo ""
