@@ -655,3 +655,24 @@ Stage Summary:
 - ایجنت ۴۷→۰ | روت ۶۹→۰ | interfaces خالص | ۱۳ Repository | Flag افزایشی پیش‌فرض legacy | Logger | Policy دو‌راهه
 - صفر Feature / صفر Migration مخرب / BaseLearningAgent زنده / قرارداد API بایت‌به‌بایت (۳۳+۴۸+۹ مقایسه)
 - PHASE 3 READY — گزارش برای امضای شورا
+
+---
+Task ID: phase2-delivery-gate
+Agent: main (Super Z / GLM-5.3)
+Task: گیت تحویل PHASE 2 (D0 تا D5) — طبق بخش B سند شماره ۳ شورای راهبری
+
+Work Log:
+- D0: بازسازی .env.local پس از ریست سندباکس (MASTER_ACCESS_CODE دست‌نویس + MELK_TOKEN_KEY از openssl rand -hex 32، مجوز ۶۰۰، gitignored)؛ اثبات دوطرفه fail-fast با scripts/delivery-failfast-proof.ts (بدون رازها→throw نام‌بردن هر دو؛ با رازها→بوت معتبر)؛ hotfix01 ۱۲/۱۲ سبز؛ بازرسی فقط-خواندنی DB با scripts/d0-env-db-audit.ts (۳۰ جدول، ۱۰۲ آگهی/۱۸۳ خاطره/۷۳ آمار قیمت، صفر نامه مرده، صفر اعتبارنامه ذخیره‌شده=صفر یتیمی با کلید تازه)
+- کشف زیرساختی: bun خودکار .env* بار می‌کند — اثبات fail-fast باید از دایرکتوری بدون env اجرا شود وگرنه اثبات خودش آلوده می‌شود
+- D2 (کامیت 1db6fd5): public/sw-v4.js (مسیر جدید طبق درس کش CDN، نسخه داخلی melk-dash-v7، پاک‌سازی همه کش‌های قدیمی در activate) + SwRegister به /sw-v4.js + راهنمای ساده مالک download/PWA-RESET-GUIDE-OWNER.md؛ گارد قبل از کامیت: ۵۲۲/۵۲۲، tsc صفر، strict audits PASS
+- D1: توقف dev؛ bun run build سبز؛ دیمون prod-watchdog (double-fork) روی 3000؛ /api/health → ok با هر سه API در حالت real؛ /sw-v4.js سرو می‌شود (۴۴۷۷ بایت)؛ لاگر ساختاریافته P2-05 در production فعال (۱۱ فیلد در هر خط)
+- بلاکر URL عمومی: دامنه جلسه قبل (k1wr079jxf01-d.space-z.ai) از لایه ALB پلتفرم 500 می‌دهد (درخواست به جعبه نمی‌رسد — server.log فقط localhost)؛ زنجیره محلی app→Caddy کاملاً سالم راستی‌آزمایی شد؛ لینک preview پلتفرم با سازوکار Complete فعال شد و در پیام D4 به مالک اعلام گردید
+- D3: E2E کامل روی build واقعی production با viewport موبایل — ورود مدیر ۴۱۳۷۲۸۹۵ موفق (۵ کاشی ریشه + وضعیت اتصالها ۳ از ۷)؛ مسیر OTP با کد پرسنلی مالک: پیامک واقعی ارسال شد و صفحه کد ۴ رقمی باز شد؛ ۵ اسکرین‌شات شاهد در download/delivery-p2/ + راستی‌آزمایی VLM صفحه خانه و پنل بینش؛ خروج تست شد (رویداد logout با userId=OWNER در لاگ)
+- D4: پیام کوتاه به مالک (نشانی زنده + کد ورود + درخواست تست شخصی) در کانال گفتگو تسلیم شد
+- مستندسازی: download/DELIVERY-GATE-P2.md (گزارش کامل D0-D5 با شواهد و جدول موانع/تصمیم‌ها)
+
+Stage Summary:
+- گیت تحویل: D0 ✓ D1 ✓(زنجیره محلی؛ لینک preview فعال) D2 ✓ D3 ✓ D4 ✓ — D5 در انتظار «OK» مالک
+- PHASE 2 در وضعیت «منتظر تأیید مالک»؛ PHASE 3 تا D5 آغاز نمی‌شود (طبق دستور بخش F)
+- صفر تغییر رفتار اپ؛ تنها تغییر کد: مسیر SW (نسخه‌بندی تحویل) با گارد کامل سبز
+- گام بعد: دریافت پاسخ مالک → «OK»=DELIVERY-CONFIRMATION+شروع P3-00 / «مشکل»=رفع+بازگشت به D1
