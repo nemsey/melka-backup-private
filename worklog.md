@@ -842,3 +842,17 @@ Stage Summary:
 - گیت تحویل: D0 ✓ D1 ✓ D2 ✓ D3 ✓ D4 ✓ — D5 در انتظار «OK» مالک
 - PHASE 3 در وضعیت «منتظر تأیید مالک»؛ PHASE 4 تا D5 آغاز نمی‌شود
 - گام بعد: دریافت پاسخ مالک → OK = DELIVERY-CONFIRMATION + آماده‌سازی PHASE 4 / مشکل = رفع + بازگشت به D1
+---
+Task ID: hotfix-post-reset
+Agent: main (Super Z / GLM)
+Task: رفع خطای Internal Server Error اعلامی مالک (D5 پاسخ «مشکل») — بازگرداندن production پس از ریست سندباکس
+
+Work Log:
+- تشخیص صادقانه ریشه (خلاف حدس اولیه «اتصال DB»): دامنه قدیمی k1wr079jxf01-d.space-z.ai از لایه ALB پلتفرم 500 می‌دهد (سرِ Aliyun FC با X-Fc-Request-Id؛ درخواست هرگز به جعبه نمی‌رسد) — همان یافته مستندشده DELIVERY-GATE-P2.md بند ۵۰. اپ سالم: localhost:3000 و :81 هر دو ۲۰۰؛ health ok mode=real
+- ریست سندباکس (۱۳:۳۷): .env.local پاک شد، دیمون production مُرد، dev خودکار روی ۳۰۰۰ نشست
+- H1: بازسازی .env.local (MASTER_ACCESS_CODE مالک + MELK_TOKEN_KEY تازه ۴۸-hex، مجوز ۶۰۰، gitignored)؛ ممیزی DB (scripts/hotfix-postreset-db-audit.ts): صفر توکن رمزشده در کل DB (۴۸ نشست همگی بدون armTokenEnc؛ صفر اتصال PM/Divar/Instagram) → چرخش کلید صفر اثر داده‌ای؛ singleton پرایسما از قبل در src/lib/db.ts بود — صفر تغییر کد اپ
+- H2: توقف dev → دیمون production (start-prod-daemon) → راستی‌آزمایی زنجیره کامل: ROOT :81 ۲۰۰، health ok، همه API های کاشی ۴۰۱ (احراز هویت صحیح، نه ۵۰۰)، ورود مدیر موفق (OWNER)، API های احرازشده ۲۰۰، بینش ایجنت درخواست‌ها زنده (کد PHASE 3)، خروج تمیز (USER_LOGOUT در لاگ ساختاریافته)
+
+Stage Summary:
+- اپ و سرور production کاملاً سالم؛ «خطای ۵۰۰» = نقص لایه پلتفرم روی دامنه جلسه قبل؛ دسترسی صحیح مالک فقط از لینک preview همین گفتگو (سازوکار Complete) — در پیام نهایی تحویل داده می‌شود
+- طبق دستور شورا: ادامه با اجرای کامل PHASE 4 (بدنه موتورهای Context و Memory)
