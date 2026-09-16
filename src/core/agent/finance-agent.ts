@@ -6,9 +6,9 @@
  * شفافیت تسویه‌حساب — با یادگیری از بازخورد مدیر.
  */
 
-import { db } from "@/lib/db";
+import { getContractRepository, getExpertRepository, getMarketRepository, type ContractRepository, type ExpertRepository, type MarketRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
-import { getCommissionConfig } from "@/lib/melk-api/sync";
+import { getCachedCommissionConfig } from "@/lib/melk-api/sync";
 import { saleCommissionBase } from "@/lib/melk-api/commission";
 import type { ContractRealtorShare } from "@/lib/melk-api/types";
 import { faNumber, faPercent, faToman } from "@/lib/format";
@@ -22,16 +22,38 @@ function parseShares(raw: string | null | undefined): ContractRealtorShare[] {
   }
 }
 
+/** وابستگی‌های تزریق‌پذیر ایجنت مالی */
+export interface FinanceAgentDeps {
+  contracts?: ContractRepository;
+  experts?: ExpertRepository;
+  market?: MarketRepository;
+  /** تزریق تابع فقط-کش تعرفه (تست — بدون HTTP) */
+  commissionConfig?: typeof getCachedCommissionConfig;
+}
+
 export class FinanceAgent extends BaseLearningAgent {
   readonly tileId = "finance-commission";
   readonly name = "ایجنت تحلیل مالی و کمیسیون";
   readonly insightDomains = ["TARIFF", "REVENUE", "SETTLEMENT", "BRANCH", "PIPELINE"] as const;
 
+  private readonly contracts: ContractRepository;
+  private readonly expertsRepo: ExpertRepository;
+  private readonly market: MarketRepository;
+  private readonly loadCommissionConfig: typeof getCachedCommissionConfig;
+
+  constructor(deps?: FinanceAgentDeps) {
+    super();
+    this.contracts = deps?.contracts ?? getContractRepository();
+    this.expertsRepo = deps?.experts ?? getExpertRepository();
+    this.market = deps?.market ?? getMarketRepository();
+    this.loadCommissionConfig = deps?.commissionConfig ?? getCachedCommissionConfig;
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const cards: InsightCard[] = [];
 
-    // ---- TARIFF: تعرفه زنده اتحادیه ----
-    const { configs, liveError } = await getCommissionConfig();
+    // ---- TARIFF: تعرفه اتحادیه — فقط از کش (E.2: مسیر بینش هرگز HTTP زنده ندارد) ----
+    const { configs, liveError } = await this.loadCommissionConfig();
     const tabriz = configs.find((c) => c.cityName.includes("تبریز")) ?? configs[0];
     if (tabriz) {
       cards.push({
@@ -55,7 +77,7 @@ export class FinanceAgent extends BaseLearningAgent {
       });
     }
 
-    const contracts = await db.contractRecord.findMany();
+    const contracts = await this.contracts.findAll();
     if (contracts.length === 0) {
       if (cards.length > 0) return cards;
       return [
@@ -116,7 +138,7 @@ export class FinanceAgent extends BaseLearningAgent {
     }
 
     // ---- BRANCH: مقایسه شعبه‌ها ----
-    const experts = await db.expertRecord.findMany();
+    const experts = await this.expertsRepo.findAll();
     const expertBranch = new Map(experts.map((e) => [e.fullName, e.businessTitle || "بدون شعبه"]));
     const branchMap = new Map<string, number>();
     for (const c of finalized) {
@@ -140,11 +162,7 @@ export class FinanceAgent extends BaseLearningAgent {
     // ---- PIPELINE: پیش‌بینی درآمد ----
     if (inPipeline.length > 0) {
       // برآورد کمیسیون پایه نمونه بر پایه معیار تعرفه (میانگین ثمن معامله نمونه بازار تبریز)
-      const sampleAds = await db.divarAd.findMany({
-        where: { price: { gt: 0 } },
-        select: { price: true },
-        take: 200,
-      });
+      const sampleAds = await this.market.listAdPrices(200);
       const avgPrice = sampleAds.length > 0 ? sampleAds.reduce((s, a) => s + (a.price ?? 0), 0) / sampleAds.length : 0;
       if (avgPrice > 0) {
         const baseCommission = saleCommissionBase(avgPrice) * 2; // هر دو طرف

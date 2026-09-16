@@ -53,6 +53,8 @@ export interface ExpertRepository {
   distinctFilterFields(): Promise<ExpertDistinctFields>;
   /** فهرست تعاملات مشاوران (روت crm/interactions — مرتب بر اساس تعداد، حداکثر ۱۰۰۰) */
   listInteractions(filter: InteractionListFilter): Promise<{ rows: InteractionDTO[]; total: number }>;
+  /** همه تعاملات بدون ترتیب/سقف (تحلیل ایجنت — عین findMany فعلی) */
+  listAllInteractions(): Promise<InteractionDTO[]>;
   /** شمارش کل کارشناسان */
   countAll(): Promise<number>;
   /** شمارش کل تعاملات */

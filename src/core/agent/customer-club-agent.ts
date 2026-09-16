@@ -7,7 +7,7 @@
  * یادگیری از بازخورد مدیر.
  */
 
-import { db } from "@/lib/db";
+import { getContractRepository, getExpertRepository, getMarketRepository, getTransactionRepository, type ContractRepository, type ExpertRepository, type MarketRepository, type TransactionRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import { buildCustomerClub, customerGrowthSeries, topCustomers, type CustomerAppearance } from "@/lib/melk-api/customer-club";
 import { faNumber, faPercent, faMonthLabel } from "@/lib/format";
@@ -21,18 +21,39 @@ function parseJson<T>(raw: string | null | undefined, fallback: T): T {
   }
 }
 
+/** وابستگی‌های تزریق‌پذیر ایجنت باشگاه مشتریان */
+export interface CustomerClubAgentDeps {
+  transactions?: TransactionRepository;
+  contracts?: ContractRepository;
+  experts?: ExpertRepository;
+  market?: MarketRepository;
+}
+
 export class CustomerClubAgent extends BaseLearningAgent {
   readonly tileId = "customer-club";
   readonly name = "ایجنت تحلیل باشگاه مشتریان";
   readonly insightDomains = ["COMMUNITY", "REPEAT", "GROWTH", "LOYALTY", "CATALOG"] as const;
 
+  private readonly transactions: TransactionRepository;
+  private readonly contracts: ContractRepository;
+  private readonly expertsRepo: ExpertRepository;
+  private readonly market: MarketRepository;
+
+  constructor(deps?: CustomerClubAgentDeps) {
+    super();
+    this.transactions = deps?.transactions ?? getTransactionRepository();
+    this.contracts = deps?.contracts ?? getContractRepository();
+    this.expertsRepo = deps?.experts ?? getExpertRepository();
+    this.market = deps?.market ?? getMarketRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const cards: InsightCard[] = [];
 
-    // فهرست‌های مرجع (شخصیت/شغل/نقش/جدیت) — عمومی و زنده
-    const refRows = await db.refListCache.findMany({
-      where: { key: { in: ["user-characters", "user-jobs", "user-roles", "user-seriousness"] } },
-    });
+    // فهرست‌های مرجع (شخصیت/شغل/نقش/جدیت) — از کش محلی
+    const refRows = await this.market.listRefListsByKeys([
+      "user-characters", "user-jobs", "user-roles", "user-seriousness",
+    ]);
     const catalogCounts: Record<string, number> = {};
     for (const r of refRows) {
       const items = parseJson<{ name: string }[]>(r.dataJson, []);
@@ -57,12 +78,12 @@ export class CustomerClubAgent extends BaseLearningAgent {
 
     // حضورهای واقعی
     const appearances: CustomerAppearance[] = [];
-    const txs = await db.transactionRecord.findMany();
+    const txs = await this.transactions.findAll();
     for (const t of txs) {
       if (t.propertyCustomer) appearances.push({ name: t.propertyCustomer, role: "SELLER", date: t.contractDate.toISOString() });
       if (t.requestCustomer) appearances.push({ name: t.requestCustomer, role: "BUYER", date: t.contractDate.toISOString() });
     }
-    const contracts = await db.contractRecord.findMany();
+    const contracts = await this.contracts.findAll();
     for (const c of contracts) {
       const date = c.contractDate?.toISOString() ?? c.createdAt?.toISOString() ?? null;
       for (const b of parseJson<{ fullName: string; mobileNumber: string }[]>(c.buyerListJson, [])) {
@@ -72,7 +93,7 @@ export class CustomerClubAgent extends BaseLearningAgent {
         appearances.push({ name: s.fullName, role: "SELLER", date, mobile: s.mobileNumber });
       }
     }
-    const experts = await db.expertRecord.findMany();
+    const experts = await this.expertsRepo.findAll();
     for (const e of experts) {
       appearances.push({ name: e.fullName, role: "EXPERT", date: e.createdAt.toISOString(), mobile: e.mobile });
     }

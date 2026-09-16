@@ -125,6 +125,14 @@ export class PrismaMarketRepository implements MarketRepository {
     });
   }
 
+  async listAdPrices(take: number): Promise<Array<{ price: number | null }>> {
+    return this.client.divarAd.findMany({
+      where: { price: { gt: 0 } },
+      select: { price: true },
+      take,
+    });
+  }
+
   async listPriceSamples(category?: string): Promise<AdPriceSampleProjection[]> {
     return this.client.divarAd.findMany({
       where: {

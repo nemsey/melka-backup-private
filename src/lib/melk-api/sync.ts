@@ -692,6 +692,38 @@ export async function getCommissionConfig(forceRefresh = false): Promise<{
 }
 
 /**
+ * فقط-کش تعرفه کمیسیون — بدون هیچ HTTP زنده (E.2 دستور PHASE 2):
+ * مسیر رندر بینش ایجنت مالی هرگز I/O شبکه ندارد؛ کش را روت‌ها/همگام‌سازی
+ * پر می‌کنند و اگر خالی/کهنه باشد بینش با هشدار «در دسترس نیست» ساخته می‌شود.
+ */
+export async function getCachedCommissionConfig(): Promise<{
+  configs: CommissionCityConfig[];
+  liveError: string | null;
+}> {
+  const cached = await readRefCache<CommissionCityConfig[]>(REF_KEYS.commissionConfig);
+  if (cached && cached.length > 0) return { configs: cached, liveError: null };
+  return {
+    configs: [],
+    liveError: "تعرفه کمیسیون در کش محلی موجود نیست — با باز کردن صفحه مالی یا همگام‌سازی بعدی تازه می‌شود.",
+  };
+}
+
+/**
+ * فقط-کش پیکربندی شاخص قیمت — بدون هیچ HTTP زنده (E.2 دستور PHASE 2).
+ */
+export async function getCachedPriceIndexConfigs(): Promise<{
+  indices: PriceIndexConfig[];
+  liveError: string | null;
+}> {
+  const cached = await readRefCache<PriceIndexConfig[]>(REF_KEYS.priceIndices);
+  if (cached && cached.length > 0) return { indices: cached, liveError: null };
+  return {
+    indices: [],
+    liveError: "پیکربندی شاخص قیمت در کش محلی موجود نیست — با باز کردن صفحه شاخص قیمت یا همگام‌سازی بعدی تازه می‌شود.",
+  };
+}
+
+/**
  * شاخص‌های قیمت روز سامانه ARM — عمومی با کش ۶ ساعته:
  * فهرست + مناطق هر شاخص + مشخصات فنی.
  */

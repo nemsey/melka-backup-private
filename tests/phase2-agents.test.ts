@@ -108,6 +108,7 @@ function makeMarketRepo(supplyDemand: SupplyDemandDTO[]): MarketRepository {
     deleteAllSupplyDemand: async () => undefined,
     listActiveAdScores: async () => [],
     listAdsWithPrice: async () => [],
+    listAdPrices: async () => [],
     listPriceSamples: async () => [],
     listAdsWithBucketCounts: async () => ({ rows: [], bucketCounts: { hunt: 0, follow: 0, review: 0 } }),
     findAdByToken: async () => null,
@@ -139,6 +140,7 @@ function makeEmptyExpertRepo(): ExpertRepository {
     listWithInteractions: async () => ({ rows: [], total: 0 }),
     distinctFilterFields: async () => ({ roles: [], businesses: [], creators: [] }),
     listInteractions: async () => ({ rows: [], total: 0 }),
+    listAllInteractions: async () => [],
     countAll: async () => 0,
     countAllInteractions: async () => 0,
     replaceAll: async () => 0,
@@ -237,6 +239,243 @@ describe("P2-02-A — خلوص import ایجنت‌های مهاجرت‌کرد�
     "transaction-agent.ts", "contract-agent.ts", "supply-demand-agent.ts",
     "visits-agent.ts", "extraction-agent.ts", "analyzers.ts",
   ];
+  for (const f of migrated) {
+    test(`${f} نه @/lib/db import می‌کند نه @prisma/client`, async () => {
+      const source = await Bun.file(`${import.meta.dir}/../src/core/agent/${f}`).text();
+      expect(/from\s+['"]@\/lib\/db['"]/.test(source)).toBe(false);
+      expect(/from\s+['"]@prisma\/client['"]/.test(source)).toBe(false);
+    });
+  }
+});
+
+// ===================== P2-02-B — ایجنت‌های چندجدولی =====================
+
+import { ExpertAgent } from "../src/core/agent/expert-agent";
+import { RequestAgent } from "../src/core/agent/request-agent";
+import { FinanceAgent } from "../src/core/agent/finance-agent";
+import { PriceIndexAgent } from "../src/core/agent/price-index-agent";
+import { ListingAgent } from "../src/core/agent/listing-agent";
+import { CustomerClubAgent } from "../src/core/agent/customer-club-agent";
+import type {
+  CustomerRepository,
+  ExpertDTO,
+  InteractionDTO,
+  ListingRepository,
+  PredictionRepository,
+  RefListCacheDTO,
+} from "../src/core/repositories/interfaces";
+import type { CommissionCityConfig } from "../src/lib/melk-api/types";
+
+const stubExpert = (over: Partial<ExpertDTO> = {}): ExpertDTO => ({
+  id: "E1", personnelCode: "910001", fullName: "سارا محمدی", mobile: "09141110001",
+  role: "کارشناس فروش", businessTitle: "شعبه مرکزی", creator: null, active: true,
+  createdAt: new Date("2026-01-01T08:00:00Z"), syncedAt: new Date(),
+  ...over,
+});
+
+const stubInteraction = (over: Partial<InteractionDTO> = {}): InteractionDTO => ({
+  id: "I1", requestRealtorName: "سارا محمدی", propertyRealtorName: "رضا کریمی",
+  count: 4, syncedAt: new Date(),
+  ...over,
+});
+
+function makeExpertRepoFull(experts: ExpertDTO[], interactions: InteractionDTO[]): ExpertRepository {
+  return {
+    findAll: async () => experts,
+    listWithInteractions: async () => ({ rows: [], total: 0 }),
+    distinctFilterFields: async () => ({ roles: [], businesses: [], creators: [] }),
+    listInteractions: async () => ({ rows: interactions, total: interactions.length }),
+    listAllInteractions: async () => interactions,
+    countAll: async () => experts.length,
+    countAllInteractions: async () => interactions.length,
+    replaceAll: async () => 0,
+    replaceInteractions: async () => 0,
+    upsertBatch: async () => ({ created: 0, updated: 0 }),
+    upsertInteractionsBatch: async () => ({ created: 0, updated: 0 }),
+    deleteAll: async () => undefined,
+    deleteAllInteractions: async () => undefined,
+  };
+}
+
+function makeMarketRepoWithRefLists(refLists: RefListCacheDTO[], adPrices: Array<{ price: number | null }>): MarketRepository {
+  return {
+    listSupplyDemand: async () => [],
+    listSupplyDemandOrderByPropertyCountDesc: async () => [],
+    countSupplyDemand: async () => 0,
+    replaceSupplyDemand: async () => 0,
+    upsertSupplyDemandBatch: async () => ({ created: 0, updated: 0 }),
+    deleteAllSupplyDemand: async () => undefined,
+    listActiveAdScores: async () => [],
+    listAdsWithPrice: async () => [],
+    listAdPrices: async () => adPrices,
+    listPriceSamples: async () => [],
+    listAdsWithBucketCounts: async () => ({ rows: [], bucketCounts: { hunt: 0, follow: 0, review: 0 } }),
+    findAdByToken: async () => null,
+    setAdStatus: async () => undefined,
+    deleteAdByToken: async () => undefined,
+    listMarketPriceStats: async () => [],
+    listRecentScanLogs: async () => [],
+    getDivarSettings: async () => null,
+    listRefListsByKeys: async () => refLists,
+    findRefList: async () => null,
+  };
+}
+
+function makeEmptyPredictionRepo(history: Array<{ areaName: string; category: string; medianPerMeter: number; recordedAt: string }>): PredictionRepository {
+  return {
+    listRecentHistory: async (take: number) => history.slice(0, take).map((h, i) => ({
+      id: `H${i}`, areaName: h.areaName, category: h.category, medianPerMeter: h.medianPerMeter,
+      p25PerMeter: 0, p75PerMeter: 0, minPerMeter: 0, maxPerMeter: 0, sampleCount: 5,
+      recordedAt: new Date(h.recordedAt),
+    })),
+    listHistorySince: async () => [],
+    createHistoryEntry: async () => { throw new Error("stub"); },
+  };
+}
+
+function makeEmptyListingRepo(): ListingRepository {
+  return {
+    listRecent: async () => [],
+    listRecentPostLogs: async () => [],
+    getInstagramConnection: async () => null,
+    findById: async () => null,
+    updateCrmTransfer: async () => undefined,
+  };
+}
+
+function makeEmptyCustomerRepo(): CustomerRepository {
+  return {
+    listRecentRequests: async () => [],
+    listRecentEvents: async () => [],
+    findById: async () => null,
+    findByIdWithEvents: async () => null,
+    updateEventArmSync: async () => undefined,
+  };
+}
+
+describe("P2-02-B — ایجنت‌های چندجدولی با Repository ساختگی (صفر DB)", () => {
+  test("ExpertAgent: شبکه همکاری و مشاوران منزوی از Stub", async () => {
+    const agent = new ExpertAgent({
+      experts: makeExpertRepoFull(
+        [stubExpert(), stubExpert({ id: "E2", personnelCode: "910002", fullName: "رضا کریمی", active: true })],
+        [stubInteraction()]
+      ),
+    });
+    const cards = await agent["computeRawInsights"]();
+    expect(cards.some((c) => c.key === "ex-composition")).toBe(true);
+    expect(cards.some((c) => c.key === "ex-activity")).toBe(true);
+    expect(cards.some((c) => c.key === "ex-network")).toBe(true);
+  });
+
+  test("RequestAgent: بدون داده → بینش جامعه در حال شکل‌گیری (بدون throw)", async () => {
+    const agent = new RequestAgent({ customers: makeEmptyCustomerRepo() });
+    const cards = await agent["computeRawInsights"]();
+    expect(cards.some((c) => c.key === "community-empty")).toBe(true);
+  });
+
+  test("FinanceAgent: تعرفه فقط از کش — کش خالی → هشدار «در دسترس نیست» (E.2)، بدون HTTP", async () => {
+    const agent = new FinanceAgent({
+      contracts: makeContractRepo([]),
+      experts: makeEmptyExpertRepo(),
+      market: makeMarketRepoWithRefLists([], []),
+      commissionConfig: async () => ({ configs: [], liveError: "تعرفه کمیسیون در کش محلی موجود نیست." }),
+    });
+    const cards = await agent["computeRawInsights"]();
+    // مسیر HTTP هرگز صدا زده نشد → کارت هشدار تعرفه؛
+    // و چون کارتی موجود است، کارت «داده خالی» ساخته نمی‌شود (بازگشت زودهنگام عین کد قبلی)
+    expect(cards.some((c) => c.key === "finance-tariff-error")).toBe(true);
+    expect(cards.some((c) => c.key === "finance-empty")).toBe(false);
+  });
+
+  test("FinanceAgent: کش پر → کارت تعرفه + بینش درآمد از Stub", async () => {
+    const tariff: CommissionCityConfig = {
+      cityId: "1", cityName: "تبریز", valueAddedPercentage: 10,
+      realEstateTariff: "", image: null,
+      detail: [{ contractType: "mobayeName", contractTypeFa: "مبایعه‌نامه", buyerLabel: "خریدار", sellerLabel: "فروشنده", inputs: [] }],
+    };
+    const agent = new FinanceAgent({
+      contracts: makeContractRepo([
+        stubContract({ status: "confirmedByFinance", realtorListJson: JSON.stringify([{ name: "سارا محمدی", unitPercent: 60, confirmation: "confirm", description: "", role: "" }]) }),
+        stubContract({ id: "C2", status: "finished", realtorListJson: JSON.stringify([{ name: "رضا کریمی", unitPercent: 40, confirmation: "confirm", description: "", role: "" }]) }),
+        stubContract({ id: "C3", status: "waitingForRealtors", realtorListJson: JSON.stringify([{ name: "سارا محمدی", unitPercent: 50, confirmation: "pending", description: "", role: "" }]) }),
+      ]),
+      experts: makeExpertRepoFull([
+        stubExpert(),
+        stubExpert({ id: "E2", personnelCode: "910002", fullName: "رضا کریمی", businessTitle: "شعبه ولیعصر" }),
+      ], []),
+      market: makeMarketRepoWithRefLists([], [{ price: 2_000_000_000 }, { price: 4_000_000_000 }]),
+      commissionConfig: async () => ({ configs: [tariff], liveError: null }),
+    });
+    const cards = await agent["computeRawInsights"]();
+    expect(cards.some((c) => c.key === "finance-tariff")).toBe(true);
+    expect(cards.some((c) => c.key === "finance-revenue")).toBe(true);
+    expect(cards.some((c) => c.key === "finance-branch")).toBe(true);
+    expect(cards.some((c) => c.key === "finance-pipeline")).toBe(true);
+  });
+
+  test("PriceIndexAgent: فقط-کش پیکربندی + شاخص از آگهی‌های Stub", async () => {
+    const agent = new PriceIndexAgent({
+      market: {
+        ...makeMarketRepoWithRefLists([], []),
+        listAdsWithPrice: async () => {
+          const mk = (token: string, lineId: string, lineName: string, ppm: number) => ({
+            token, category: "apartment-sell", title: `آپارتمان ${token}`, description: null, priceText: null,
+            price: ppm * 100, pricePerMeter: ppm, meterage: 100, rooms: 2, floor: 3, buildYear: 1400,
+            publishedAt: new Date(), bumpedAt: null, firstSeenAt: new Date(), lastSeenAt: new Date(),
+            locationText: null, latitude: null, longitude: null, matchedAreaId: "1", matchedAreaName: "منطقه ۱",
+            matchedLineId: lineId, matchedLineName: lineName, personalScore: 80, underpriceScore: 70,
+            locationScore: 85, otherScore: 60, totalScore: 75, bucket: "hunt", status: "active",
+            analysisJson: null, imagesJson: null, specsJson: null, changeKey: null,
+            publisherType: "personal", publisherName: null, publisherAdCount: null, publisherBrandUrl: null,
+          });
+          // دو نمونه در هر محله → هر دو محله «قابل‌اتکا» (reliable ≥ ۲ نمونه)
+          return [
+            mk("a1", "10", "محله ۱", 30_000_000),
+            mk("a2", "10", "محله ۱", 32_000_000),
+            mk("a3", "11", "محله ۲", 20_000_000),
+            mk("a4", "11", "محله ۲", 22_000_000),
+          ];
+        },
+      },
+      predictions: makeEmptyPredictionRepo([
+        { areaName: "محله ۱", category: "apartment-sell", medianPerMeter: 25_000_000, recordedAt: "2026-05-01T00:00:00Z" },
+        { areaName: "محله ۱", category: "apartment-sell", medianPerMeter: 35_000_000, recordedAt: "2026-06-01T00:00:00Z" },
+      ]),
+      priceIndexConfigs: async () => ({ indices: [], liveError: "پیکربندی در کش نیست." }),
+    });
+    const cards = await agent["computeRawInsights"]();
+    expect(cards.some((c) => c.key === "index-config-error")).toBe(true);
+    expect(cards.some((c) => c.key === "index-overall")).toBe(true);
+    expect(cards.some((c) => c.key === "index-region")).toBe(true);
+    // جهش ۴۰٪ محله ۱ → هشدار
+    expect(cards.some((c) => c.key === "index-jump")).toBe(true);
+  });
+
+  test("ListingAgent: داده خالی → بینش راه‌اندازی دفتر آگهی + هشدار اینستاگرام", async () => {
+    const agent = new ListingAgent({ listings: makeEmptyListingRepo() });
+    const cards = await agent["computeRawInsights"]();
+    expect(cards.some((c) => c.key === "registry-empty")).toBe(true);
+    expect(cards.some((c) => c.key === "instagram-connection")).toBe(true);
+  });
+
+  test("CustomerClubAgent: فهرست مرجع از کش + جامعه از معاملات/قراردادها/مشاوران", async () => {
+    const agent = new CustomerClubAgent({
+      transactions: makeTxRepo([stubTx()]),
+      contracts: makeContractRepo([stubContract()]),
+      experts: makeExpertRepoFull([stubExpert()], []),
+      market: makeMarketRepoWithRefLists([
+        { key: "user-characters", dataJson: JSON.stringify([{ name: "بها" }, { name: "خوش‌قول" }]), fetchedAt: new Date() },
+        { key: "user-jobs", dataJson: JSON.stringify([{ name: "کارمند" }]), fetchedAt: new Date() },
+      ], []),
+    });
+    const cards = await agent["computeRawInsights"]();
+    expect(cards.some((c) => c.key === "club-catalog")).toBe(true);
+    expect(cards.some((c) => c.key === "club-community")).toBe(true);
+  });
+});
+
+describe("P2-02-B — خلوص import ایجنت‌های چندجدولی", () => {
+  const migrated = ["expert-agent.ts", "request-agent.ts", "finance-agent.ts", "price-index-agent.ts", "listing-agent.ts", "customer-club-agent.ts"];
   for (const f of migrated) {
     test(`${f} نه @/lib/db import می‌کند نه @prisma/client`, async () => {
       const source = await Bun.file(`${import.meta.dir}/../src/core/agent/${f}`).text();

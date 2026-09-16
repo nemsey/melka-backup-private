@@ -6,9 +6,9 @@
  * قیمت‌گذاری (آگهی‌های منحرف از شاخص) — با یادگیری از بازخورد مدیر.
  */
 
-import { db } from "@/lib/db";
+import { getMarketRepository, getPredictionRepository, type MarketRepository, type PredictionRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
-import { getPriceIndexConfigs } from "@/lib/melk-api/sync";
+import { getCachedPriceIndexConfigs } from "@/lib/melk-api/sync";
 import { computeAreaStats, detectJump, findDeviatingAds, overallIndex, type PriceSample } from "@/lib/melk-api/price-index";
 import { faNumber, faPercent, faToman } from "@/lib/format";
 
@@ -23,16 +23,35 @@ const CATEGORY_FA: Record<string, string> = {
   "plot-old": "کلنگی",
 };
 
+/** وابستگی‌های تزریق‌پذیر ایجنت شاخص قیمت */
+export interface PriceIndexAgentDeps {
+  market?: MarketRepository;
+  predictions?: PredictionRepository;
+  /** تزریق تابع فقط-کش پیکربندی شاخص (تست — بدون HTTP) */
+  priceIndexConfigs?: typeof getCachedPriceIndexConfigs;
+}
+
 export class PriceIndexAgent extends BaseLearningAgent {
   readonly tileId = "price-index";
   readonly name = "ایجنت تحلیل شاخص قیمت روز";
   readonly insightDomains = ["MARKET", "REGION", "TREND", "ALERT", "HEALTH"] as const;
 
+  private readonly market: MarketRepository;
+  private readonly predictions: PredictionRepository;
+  private readonly loadPriceIndexConfigs: typeof getCachedPriceIndexConfigs;
+
+  constructor(deps?: PriceIndexAgentDeps) {
+    super();
+    this.market = deps?.market ?? getMarketRepository();
+    this.predictions = deps?.predictions ?? getPredictionRepository();
+    this.loadPriceIndexConfigs = deps?.priceIndexConfigs ?? getCachedPriceIndexConfigs;
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const cards: InsightCard[] = [];
 
-    // ۱) پیکربندی رسمی شاخص سامانه ARM
-    const { indices, liveError } = await getPriceIndexConfigs();
+    // ۱) پیکربندی رسمی شاخص سامانه ARM — فقط از کش (E.2: بدون HTTP زنده)
+    const { indices, liveError } = await this.loadPriceIndexConfigs();
     if (indices.length > 0) {
       const idx = indices[0];
       cards.push({
@@ -57,9 +76,7 @@ export class PriceIndexAgent extends BaseLearningAgent {
     }
 
     // ۲) آمار واقعی بازار از آگهی‌های زنده
-    const ads = await db.divarAd.findMany({
-      where: { status: { in: ["active", "registered"] }, pricePerMeter: { gt: 0 } },
-    });
+    const ads = await this.market.listAdsWithPrice();
     const samples: PriceSample[] = ads
       .filter((a) => (a.matchedLineName ?? a.matchedAreaName) != null)
       .map((a) => ({
@@ -122,7 +139,7 @@ export class PriceIndexAgent extends BaseLearningAgent {
     }
 
     // ---- TREND / ALERT: جهش قیمتی از تاریخچه ----
-    const history = await db.priceIndexHistory.findMany({ orderBy: { recordedAt: "desc" }, take: 400 });
+    const history = await this.predictions.listRecentHistory(400);
     const historyRows = history.map((h) => ({
       areaName: h.areaName,
       category: h.category,

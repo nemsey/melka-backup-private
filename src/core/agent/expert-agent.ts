@@ -6,7 +6,7 @@
  * (هجری شمسی)، شبکه همکاری و مشاوران منزوی — با یادگیری از بازخورد.
  */
 
-import { db } from "@/lib/db";
+import { getExpertRepository, type ExpertRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import {
   businessDistribution,
@@ -21,15 +21,27 @@ import {
 } from "./analyzers";
 import { faNumber, faMonthLabel } from "@/lib/format";
 
+/** وابستگی‌های تزریق‌پذیر ایجنت کارشناسان */
+export interface ExpertAgentDeps {
+  experts?: ExpertRepository;
+}
+
 export class ExpertAgent extends BaseLearningAgent {
   readonly tileId = "experts";
   readonly name = "ایجنت تحلیل کارشناسان";
   readonly insightDomains = ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK"] as const;
 
+  private readonly expertsRepo: ExpertRepository;
+
+  constructor(deps?: ExpertAgentDeps) {
+    super();
+    this.expertsRepo = deps?.experts ?? getExpertRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const [experts, interactions] = await Promise.all([
-      db.expertRecord.findMany(),
-      db.interactionRecord.findMany(),
+      this.expertsRepo.findAll(),
+      this.expertsRepo.listAllInteractions(),
     ]);
     const cards: InsightCard[] = [];
     if (experts.length === 0) return cards;

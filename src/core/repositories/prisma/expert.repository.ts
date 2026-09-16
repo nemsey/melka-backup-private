@@ -120,6 +120,10 @@ export class PrismaExpertRepository implements ExpertRepository {
     return { rows, total };
   }
 
+  async listAllInteractions(): Promise<InteractionDTO[]> {
+    return this.client.interactionRecord.findMany();
+  }
+
   async countAll(): Promise<number> {
     return this.client.expertRecord.count();
   }

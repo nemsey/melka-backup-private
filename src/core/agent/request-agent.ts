@@ -16,9 +16,14 @@
  *  ARM_SYNC      — وضعیت ثبت گام‌به‌گام در سامانه آرم
  */
 
-import { db } from "@/lib/db";
+import { getCustomerRepository, type CustomerRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import { buildCustomerManagement, LIFECYCLE_FA } from "@/lib/request/customer-mgmt";
+
+/** وابستگی‌های تزریق‌پذیر ایجنت مدیریت مشتریان */
+export interface RequestAgentDeps {
+  customers?: CustomerRepository;
+}
 
 export class RequestAgent extends BaseLearningAgent {
   readonly tileId = "requests";
@@ -27,10 +32,17 @@ export class RequestAgent extends BaseLearningAgent {
     "COMMUNITY_MGMT", "CUST_HEALTH", "LIFECYCLE_MGMT", "NEXT_ACTION", "MATCH", "CHURN", "EVENT_MGMT", "ARM_SYNC",
   ] as const;
 
+  private readonly customers: CustomerRepository;
+
+  constructor(deps?: RequestAgentDeps) {
+    super();
+    this.customers = deps?.customers ?? getCustomerRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const cards: InsightCard[] = [];
     const [requests, summary] = await Promise.all([
-      db.requestRecord.findMany({ orderBy: { updatedAt: "desc" }, take: 500 }).catch(() => []),
+      this.customers.listRecentRequests(500).catch(() => []),
       buildCustomerManagement().catch(() => null),
     ]);
 
@@ -165,7 +177,7 @@ export class RequestAgent extends BaseLearningAgent {
     }
 
     // ===== دامنه EVENT_MGMT — رویدادها =====
-    const events = await db.requestEventRecord.findMany({ orderBy: { createdAt: "desc" }, take: 500 }).catch(() => []);
+    const events = await this.customers.listRecentEvents(500).catch(() => []);
     if (events.length > 0) {
       const weekAgo = Date.now() - 7 * 86400_000;
       const thisWeek = events.filter((e) => e.createdAt.getTime() >= weekAgo).length;

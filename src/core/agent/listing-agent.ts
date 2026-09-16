@@ -10,20 +10,32 @@
  *  LEARNING    — یادگیری از بازخوردها (پایه)
  */
 
-import { db } from "@/lib/db";
+import { getListingRepository, type ListingRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
+
+/** وابستگی‌های تزریق‌پذیر ایجنت آگهی */
+export interface ListingAgentDeps {
+  listings?: ListingRepository;
+}
 
 export class ListingAgent extends BaseLearningAgent {
   readonly tileId = "listings";
   readonly name = "ایجنت آگهی";
   readonly insightDomains = ["REGISTRY", "CRM", "INSTAGRAM", "COMPLETENESS", "SOURCE"] as const;
 
+  private readonly listingsRepo: ListingRepository;
+
+  constructor(deps?: ListingAgentDeps) {
+    super();
+    this.listingsRepo = deps?.listings ?? getListingRepository();
+  }
+
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const cards: InsightCard[] = [];
 
     const [listings, postLogs] = await Promise.all([
-      db.listingRecord.findMany({ orderBy: { createdAt: "desc" }, take: 500 }).catch(() => []),
-      db.instagramPostLog.findMany({ orderBy: { createdAt: "desc" }, take: 200 }).catch(() => []),
+      this.listingsRepo.listRecent(500).catch(() => []),
+      this.listingsRepo.listRecentPostLogs(200).catch(() => []),
     ]);
 
     const total = listings.length;
@@ -121,7 +133,7 @@ export class ListingAgent extends BaseLearningAgent {
     // ===== دامنه INSTAGRAM — انتشار محتوا =====
     const publishedLogs = postLogs.filter((p) => p.status === "published");
     const failedLogs = postLogs.filter((p) => p.status === "failed");
-    const igConn = await db.instagramConnection.findFirst().catch(() => null);
+    const igConn = await this.listingsRepo.getInstagramConnection().catch(() => null);
     if (!igConn || igConn.status !== "connected") {
       cards.push({
         key: "instagram-connection",

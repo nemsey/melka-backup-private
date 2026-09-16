@@ -85,6 +85,8 @@ export interface MarketRepository {
   listActiveAdScores(take: number): Promise<AdScoreProjection[]>;
   /** آگهی‌های دارای قیمت هر متر (ایجنت شاخص قیمت — رکورد کامل، بدون select) */
   listAdsWithPrice(): Promise<DivarAdDTO[]>;
+  /** فقط قیمت آگهی‌ها برای برآورد میانگین بازار (ایجنت مالی — عین select فعلی) */
+  listAdPrices(take: number): Promise<Array<{ price: number | null }>>;
   /** نمونه‌های قیمت بازار (روت crm/price-index — عین select فعلی) */
   listPriceSamples(category?: string): Promise<AdPriceSampleProjection[]>;
   /** فهرست پنجره فایل‌یابی + شمارنده دسته‌ها (روت divar/ads) */
