@@ -1060,3 +1060,28 @@ Stage Summary:
 - P6.5-02 کامل: ستون‌های tenantId هفت‌گانه + TenantResolver placeholder + ConsultantScope (ماتریس + fail-closed) + AuditLog Extension + دو مدل جدید + §۱۴ — با صفر منطق فعال multi-tenant و صفر تغییر UI
 - زنجیره شواهد: ۶۷۲ تست ×۲ · شاهد مهاجرت سه‌پایگاه PASS · دو-سبز + tsc صفر · تست دویی زنده ۴۰۱
 - گام بعد P6.5-03: Bulk Import Pipeline (bulk-import.ts + checkpoint در SyncState + rate-limit + تست موک + تست رگرسیون هم‌زیستی §۱.۹)
+
+---
+Task ID: phase65-p6503
+Agent: main (Super Z / GLM-5.3)
+Task: P6.5-03 — Bulk Import Pipeline (طبق دستور شورا P6.5-03 با ترتیب داخلی a→g)
+
+Work Log:
+- پذیرش رسمی P6.5-02 ثبت شد (شورا: ۱۶ ردیف ✓ + دو تقدیر الگو: مدیریت بازسازی جدول Prisma و مستندسازی JSON-null)؛ تذکرات: فعال‌سازی بخش ۶ گارد در P6.5-09، مستندسازی الگوی JSON-null در گزارش P6.5-10، جدی‌گرفتن هم‌زیستی sync
+- کاوش پیش از طراحی: sync.ts کامل (کشف کلیدی: جاروی افزایشی stale=موجود−واکشی‌شده؛ مسیر legacy = deleteMany شش‌جدولی؛ production فعلاً legacy چون MELK_SYNC_MODE تنظیم نیست) + endpoints/adapters (امضاهای نگاشت) + مخزن‌های نوشتاری + الگوی تست phase2-sync (applyIncrementalSync صادرشده برای تست)
+- P6.5-03-a قرارداد: bulk-import.ts با Interface عین شورا + افزوده‌های طراحی (runId/dateRange/totals) + توابع خالص (retryDelayFor عین 2/4/8/16/30s با سقف، clampها، classifyFetchError، RateLimiter پایان-پاسخ→شروع)
+- Schema افزودنی (صفر بازسازی جدول): SyncState.bulkImportCheckpoint + RequestRecord.requestCode @unique + sourceRunId روی ۶ جدول (معامله/کارشناس/تعامل/بازدید/قرارداد/درخواست)
+- P6.5-03-b..e موتور: حلقه صفحات با نا-تکرارپذیری فلاش/چک‌پوینت (صفحه کامل→داده نوشته→checkpoint جلو)؛ resume = lastPage+۱ با تطبیق موجودیت/بازه/نسخه؛ برش batchSize؛ retry با sleep تزریقی + احترام Retry-After (max سیاست، Retry-After)؛ اتمام retryها → checkpoint + FAILED (بند ۳ دستور)؛ خطای رکورد → PARTIAL؛ سقف ایمنی ۱۰K صفحه
+- لایه Repository (صفر Prisma مستقیم): upsertBulk روی ۵ مخزن + upsertInteractionsBulk + upsertArmBulk (کلید requestCode) + مخزن جدید PrismaPropertyRecordRepository (کلید propertyCode)؛ هسته مشترک runBulkUpsert در prisma/base.ts (merge non-null §۲.۴ + تشخیص تغییر Date-آگاه + آمار چهارگانه)؛ checkpoint از طریق IntegrationRepository (فقط ستون خودش)
+- **اصلاح بحرانی هم‌زیستی (بخش D)**: جاروی sync رکورد Bulk خارج از پوشش واکشی را حذف می‌کرد (ادعای §۱.۹ فقط با پوشش کامل صادق بود) → فیلتر sourceRunId: null در listExistingKeys پنج خانواده sync؛ رفتار v1 صفر-تغییر برای داده فعلی؛ مسیر legacy مستند (پیش‌نیاز D0: MELK_SYNC_MODE=incremental)
+- P6.5-03-f تست (+۲۳ → ۶۹۵): سیاست‌ها (۳) · RateLimiter ۱۰۰درخواستی واقعی (۲) · پایه با سینک واقعی ۱۰۰۰→۱۰۰۰ + خالی + برش [100,100,50] + PARTIAL رکورد سم (۴) · checkpoint/resume خودکفا [4,5,6] صفر-تکرار + تطبیق موجودیت/نسخه + رفت‌وبرگشت SyncState (۴) · idempotency created=0/dup=1000 + تغییر فیلد update=1 + merge non-null حفظ (۳) · فاصله واقعی ≥100ms (۱) · retry دقیق [2000,4000] + 400 فوری + 429→25000 + اتمام ۶فراخوان دنباله کامل (۴) · **رگرسیون هم‌زیستی: ۲۰ رکورد Bulk از sync افزایشی با پنجره جزئی جان به در بردند، سنگ‌قبر غیر-Bulk جارو شد، هم‌پوشان update+محافظت، تازه sourceRunId تهی** (۱) · پوشش هفت موجودیت سینک (۱)
+- اشکال خود-افشا و رفع: آلودگی checkpoint بین تست‌ها (تست‌های مکانیکی از checkpoint تست قبلی resume می‌کردند — totalSaved=6 به‌جای 1) → MemCheckpointStore برای تست‌های مکانیکی + تست resume خودکفا؛ کدهای MelkApiError نامعتبر در تست → کدهای مجاز
+- P6.5-03-g: گارد ۶بخشی --strict PASS (بخش ۶ SKIP صریح) + دو-سبز ۶۹۵/۶۹۵ + tsc صفر
+- مهاجرت production: بکاپ گرم VACUUM INTO (custom.backup-pre-p6503.db؛ integrity ok؛ ۵۹ نشست + ۱۳۱ حسابرسی) → push ۲۸ms → شاهد کامل (همه ستون‌ها + ایندکس یکتای requestCode + حفظ داده) → تست دودی زنده (health ok؛ روت‌ها 401 صحیح؛ ROOT :81 = 200)
+- سند: §۱.۱۱ وضعیت اجرا + پنج کشف صادقانه (شکاف جارو / تعارض بند h با بند ۳ / کلیدهای فیزیکی-مفهومی / پیش‌نیاز legacy→incremental در D0 / نگاشت‌های stub)
+- کامیت اجرا + این کامیت worklog
+
+Stage Summary:
+- P6.5-03 کامل: خط لوله انبوه با هر چهار ستون فنی اثبات‌شده + اصلاح بحرانی هم‌زیستی sync+bulk — با صفر LLM، صفر fetch مستقیم، صفر Prisma مستقیم، صفر UI change
+- شواهد: ۶۹۵×۲ سبز · دنباله‌های retry عین دستور · فاصله‌های واقعی rate · رگرسیون هم‌زیستی سبز · شاهد مهاجرت سه‌پایگاه
+- گام بعد P6.5-04: Deduplication + Normalization (normalize.ts با ۷ تابع خالص + رجیستری ۹۲۶ + نمونه ۱۰K موک)
