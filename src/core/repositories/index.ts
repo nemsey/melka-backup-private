@@ -15,6 +15,7 @@
 
 export * from "./interfaces";
 export * from "./prisma";
+export * from "./tenant";
 
 import { PrismaTransactionRepository } from "./prisma/transaction.repository";
 import { PrismaContractRepository } from "./prisma/contract.repository";

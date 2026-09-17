@@ -10,6 +10,7 @@
 import { db } from "@/lib/db";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { logAuth } from "@/lib/logger";
+import { defaultAccessScopeForRole } from "@/core/repositories";
 import { decryptSecret, encryptSecret, generateSessionToken, hashToken } from "./crypto";
 import type { ArmTokens, AuthUserInfo, UserRole } from "@/lib/melk-api/types";
 
@@ -36,6 +37,10 @@ export async function createSession(
       personnelCode: user.personnelCode,
       displayName: user.displayName,
       role: user.role,
+      // P6.5-02 (§۵.۱ ConsultantScope) — دامنه دسترسی داده:
+      // ورود مدیر = OWNER (رفتار فعلی) · ورود OTP مشاور = CONSULTANT.
+      // ستون default اسکیما نیز OWNER است ⇒ نشست‌های موجود همه OWNER ماندند.
+      accessScope: defaultAccessScopeForRole(user.role),
       expiresAt,
       ip: meta.ip,
       userAgent: meta.userAgent,

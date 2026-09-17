@@ -2,8 +2,18 @@
  * PrismaVisitRepository — پیاده‌سازی Prisma قرارداد VisitRepository
  */
 import type { Prisma } from "@prisma/client";
-import type { VisitDTO, VisitListFilter, VisitRepository, VisitUpsertInput } from "../interfaces";
+import type {
+  VisitDTO,
+  VisitListFilter,
+  VisitRepository,
+  VisitScopeQuery,
+  VisitUpsertInput,
+  ScopeFilter,
+  ScopedVisitRepository,
+} from "../interfaces";
+import { personalScopeClause } from "../interfaces";
 import { resolveClient, type PrismaRepoDeps } from "./base";
+import { auditAccess } from "@/lib/audit";
 
 function buildVisitWhere(filter?: VisitListFilter): Prisma.VisitRecordWhereInput {
   const where: Prisma.VisitRecordWhereInput = {};
@@ -34,7 +44,7 @@ function toCreateData(v: VisitUpsertInput): Prisma.VisitRecordCreateInput {
   };
 }
 
-export class PrismaVisitRepository implements VisitRepository {
+export class PrismaVisitRepository implements ScopedVisitRepository {
   private readonly client;
 
   constructor(deps?: PrismaRepoDeps) {
@@ -102,5 +112,32 @@ export class PrismaVisitRepository implements VisitRepository {
 
   async deleteAll(): Promise<void> {
     await this.client.visitRecord.deleteMany({});
+  }
+
+  /**
+   * P6.5-02 (§۵.۲/§۵.۳) — فهرست Scope-دار بازدیدها.
+   * ماتریس دامنه: VisitRecord = داده «شخصی» با ستون انتساب جدید ownerCode
+   * (مشتق از checker در زمان Import) ⇒ CONSULTANT خودش · BRANCH شعبه · OWNER همه.
+   * fail-closed (§۵.۶-۵): ردیف بدون انتساب (ownerCode/branchId تهی — تمام ردیف‌های
+   * موجود تا پیش از Bulk) برای CONSULTANT/BRANCH نامرئی و فقط برای OWNER مرئی است.
+   * فیلتر v1 (buildVisitWhere) با شرط دامنه ترکیب می‌شود. AuditLog هر فراخوانی (§۶.۲).
+   * tenantId حمل می‌شود اما فیلتر فعال نیست — مصوبه §۱۴ شورا (PHASE 8+).
+   */
+  async findWithScope(query: VisitScopeQuery, scope: ScopeFilter): Promise<VisitDTO[]> {
+    const clause = personalScopeClause(scope);
+    if (clause.kind === "DENY_ALL") {
+      await auditAccess(scope, "READ", "visit", 0, "deny-closed:no-personnel-code", { client: this.client });
+      return [];
+    }
+    const where = buildVisitWhere(query.filter);
+    if (clause.kind === "PERSONAL") where.ownerCode = clause.code;
+    else if (clause.kind === "BRANCH") where.branchId = clause.branchId;
+    const rows = await this.client.visitRecord.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      ...(query.take !== undefined ? { take: query.take } : {}),
+    });
+    await auditAccess(scope, "READ", "visit", rows.length, undefined, { client: this.client });
+    return rows;
   }
 }

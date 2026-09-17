@@ -1,16 +1,22 @@
 /**
  * PrismaCustomerRepository — پیاده‌سازی Prisma قرارداد CustomerRepository
  */
+import type { Prisma } from "@prisma/client";
 import type {
   CustomerRepository,
+  CustomerScopeQuery,
   EventArmSyncUpdate,
   RequestEventDTO,
   RequestRecordDTO,
   RequestRecordWithEventsDTO,
+  ScopeFilter,
+  ScopedCustomerRepository,
 } from "../interfaces";
+import { personalScopeClause } from "../interfaces";
 import { resolveClient, type PrismaRepoDeps } from "./base";
+import { auditAccess } from "@/lib/audit";
 
-export class PrismaCustomerRepository implements CustomerRepository {
+export class PrismaCustomerRepository implements ScopedCustomerRepository {
   private readonly client;
 
   constructor(deps?: PrismaRepoDeps) {
@@ -46,5 +52,34 @@ export class PrismaCustomerRepository implements CustomerRepository {
         armSyncJson: data.armSyncJson,
       },
     });
+  }
+
+  /**
+   * P6.5-02 (§۵.۲/§۵.۳ + انحراف مصوب §۱۲-۵) — فهرست Scope-دار دامنه مشتری.
+   * دامنه فعلی مشتری = RequestRecord (فرم ۴ گامی)؛ CustomerRecord (رجیستری
+   * جدید P6.5) پس از پرشدگی Bulk در گام‌های بعد به همین قرارداد добавه می‌شود.
+   * ماتریس: شخصی (actorCode) ⇒ CONSULTANT خودش · BRANCH شعبه · OWNER همه.
+   * مرتب‌سازی عین listRecentRequests (updatedAt نزولی). AuditLog هر فراخوانی (§۶.۲).
+   * tenantId حمل می‌شود اما فیلتر فعال نیست — مصوبه §۱۴ شورا (PHASE 8+).
+   */
+  async findWithScope(query: CustomerScopeQuery, scope: ScopeFilter): Promise<RequestRecordDTO[]> {
+    const clause = personalScopeClause(scope);
+    if (clause.kind === "DENY_ALL") {
+      await auditAccess(scope, "READ", "customer", 0, "deny-closed:no-personnel-code", { client: this.client });
+      return [];
+    }
+    const where: Prisma.RequestRecordWhereInput =
+      clause.kind === "PERSONAL"
+        ? { actorCode: clause.code }
+        : clause.kind === "BRANCH"
+          ? { branchId: clause.branchId }
+          : {};
+    const rows = await this.client.requestRecord.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      ...(query.take !== undefined ? { take: query.take } : {}),
+    });
+    await auditAccess(scope, "READ", "customer", rows.length, undefined, { client: this.client });
+    return rows;
   }
 }

@@ -1,6 +1,7 @@
 /**
  * PrismaListingRepository — پیاده‌سازی Prisma قرارداد ListingRepository
  */
+import type { Prisma } from "@prisma/client";
 import type {
   InstagramConnectionDTO,
   InstagramPostLogDTO,
@@ -8,10 +9,15 @@ import type {
   ListingInstagramPublicationUpdate,
   ListingDTO,
   ListingRepository,
+  ListingScopeQuery,
+  ScopeFilter,
+  ScopedListingRepository,
 } from "../interfaces";
+import { personalScopeClause } from "../interfaces";
 import { resolveClient, type PrismaRepoDeps } from "./base";
+import { auditAccess } from "@/lib/audit";
 
-export class PrismaListingRepository implements ListingRepository {
+export class PrismaListingRepository implements ScopedListingRepository {
   private readonly client;
 
   constructor(deps?: PrismaRepoDeps) {
@@ -57,5 +63,34 @@ export class PrismaListingRepository implements ListingRepository {
         instagramPostJson: data.instagramPostJson,
       },
     });
+  }
+
+  /**
+   * P6.5-02 (§۵.۲/§۵.۳) — فهرست Scope-دار فایل‌های آگهی.
+   * ماتریس دامنه: ListingRecord = داده «شخصی» (actorCode) ⇒
+   * CONSULTANT فقط ردیف‌های خودش · BRANCH فقط شعبه خودش · OWNER همه.
+   * fail-closed: کد/شعبه تهی ⇒ هیچ ردیفی (فقط OWNER بدون شرط است).
+   * AuditLog برای هر فراخوانی ثبت می‌شود (§۶.۲).
+   * tenantId حمل می‌شود اما فیلتر فعال نیست — مصوبه §۱۴ شورا (PHASE 8+).
+   */
+  async findWithScope(query: ListingScopeQuery, scope: ScopeFilter): Promise<ListingDTO[]> {
+    const clause = personalScopeClause(scope);
+    if (clause.kind === "DENY_ALL") {
+      await auditAccess(scope, "READ", "listing", 0, "deny-closed:no-personnel-code", { client: this.client });
+      return [];
+    }
+    const where: Prisma.ListingRecordWhereInput =
+      clause.kind === "PERSONAL"
+        ? { actorCode: clause.code }
+        : clause.kind === "BRANCH"
+          ? { branchId: clause.branchId }
+          : {};
+    const rows = await this.client.listingRecord.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      ...(query.take !== undefined ? { take: query.take } : {}),
+    });
+    await auditAccess(scope, "READ", "listing", rows.length, undefined, { client: this.client });
+    return rows;
   }
 }

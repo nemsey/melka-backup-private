@@ -58,6 +58,8 @@ describe("P2-01 — خلوص لایه interfaces (صفر Prisma)", () => {
       "visit.repository.ts", "market.repository.ts", "customer.repository.ts",
       "listing.repository.ts", "agent-memory.repository.ts", "policy.repository.ts",
       "prediction.repository.ts", "outcome.repository.ts", "integration.repository.ts",
+      "scope.repository.ts", // P6.5-02 — قرارداد ConsultantScope
+      "request.repository.ts",
     ];
     for (const f of files) {
       const path = `${import.meta.dir}/../src/core/repositories/interfaces/${f}`;
@@ -81,6 +83,7 @@ describe("P2-01 — DTOهای ساختاری آینه دقیق ردیف Prisma �
     expect(keys).toEqual([
       "id", "contractDate", "propertyCode", "propertyCustomer", "requestCode",
       "requestCustomer", "contractHolo", "suggestedPropertyCount", "eventsCount", "syncedAt",
+      "ownerCode", "branchId", "tenantId", // P6.5-02 — ستون‌های افزودنی
     ]);
   });
 });

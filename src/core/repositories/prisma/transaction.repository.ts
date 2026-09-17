@@ -12,8 +12,11 @@ import type {
   TransactionListFilter,
   TransactionListResult,
   TransactionUpsertInput,
+  ScopeFilter,
+  ScopedTransactionRepository,
 } from "../interfaces";
 import { resolveClient, type PrismaRepoDeps } from "./base";
+import { auditAccess } from "@/lib/audit";
 
 /** ساخت Prisma WhereInput از فیلتر خالص — عین منطق روت قبلی */
 export function buildTransactionWhere(filter?: TransactionListFilter): Prisma.TransactionRecordWhereInput {
@@ -40,7 +43,7 @@ export function buildTransactionWhere(filter?: TransactionListFilter): Prisma.Tr
   return where;
 }
 
-export class PrismaTransactionRepository implements TransactionRepository {
+export class PrismaTransactionRepository implements ScopedTransactionRepository {
   private readonly client;
 
   constructor(deps?: PrismaRepoDeps) {
@@ -149,5 +152,26 @@ export class PrismaTransactionRepository implements TransactionRepository {
 
   async deleteAll(): Promise<void> {
     await this.client.transactionRecord.deleteMany({});
+  }
+
+  /**
+   * P6.5-02 (§۵.۲/§۵.۳) — فهرست Scope-دار معاملات.
+   * ماتریس دامنه: TransactionRecord = داده «تجمیمی دپارتمان» ⇒ هیچ دامنه‌ای
+   * ردیفی را حذف نمی‌کند (گزارش مدیریتی مشترک؛ پنهان‌کردن از مشاور = تغییر
+   * رفتار قابل‌مشاهده). AuditLog هر دو حالت ثبت می‌شود (§۶.۲).
+   * tenantId حمل می‌شود اما فیلتر فعال نیست — مصوبه §۱۴ شورا (PHASE 8+).
+   */
+  async findWithScope(options: TransactionListOptions, scope: ScopeFilter): Promise<TransactionDTO[]> {
+    const where = buildTransactionWhere(options.filter);
+    const sortBy = options.sortBy ?? "contractDate";
+    const sortDir: Prisma.SortOrder = options.sortDir === "asc" ? "asc" : "desc";
+    const rows = await this.client.transactionRecord.findMany({
+      where,
+      orderBy: { [sortBy]: sortDir },
+      ...(options.limit !== undefined ? { take: options.limit } : {}),
+      ...(options.offset !== undefined ? { skip: options.offset } : {}),
+    });
+    await auditAccess(scope, "READ", "transaction", rows.length, undefined, { client: this.client });
+    return rows;
   }
 }

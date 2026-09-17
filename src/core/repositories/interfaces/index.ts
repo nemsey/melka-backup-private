@@ -35,3 +35,19 @@ export type { PredictionRepository } from "./prediction.repository";
 export type { OutcomeRepository } from "./outcome.repository";
 export type { IntegrationRepository } from "./integration.repository";
 export type { RequestRepository } from "./request.repository";
+
+// ===================== ConsultantScope (P6.5-02 / §۵.۲) =====================
+
+export type {
+  AccessScope,
+  ScopeFilter,
+  ScopeClause,
+  ListingScopeQuery,
+  CustomerScopeQuery,
+  VisitScopeQuery,
+  ScopedTransactionRepository,
+  ScopedListingRepository,
+  ScopedCustomerRepository,
+  ScopedVisitRepository,
+} from "./scope.repository";
+export { scopeFromSession, defaultAccessScopeForRole, personalScopeClause } from "./scope.repository";

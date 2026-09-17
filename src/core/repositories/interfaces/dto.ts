@@ -25,6 +25,11 @@ export interface TransactionDTO {
   suggestedPropertyCount: number;
   eventsCount: number;
   syncedAt: Date;
+  /** P6.5-02 (§۵.۳) — انتساب Scope؛ تجمیعی در ماتریس فعلی */
+  ownerCode: string | null;
+  branchId: string | null;
+  /** P6.5-02 (§۱۴) — آماده‌سازی چند-مستأجری */
+  tenantId: string | null;
 }
 
 /** ورودی جایگزینی/درج دسته‌ای معاملات (برای همگام‌سازی) */
@@ -78,6 +83,9 @@ export interface ExpertDTO {
   active: boolean;
   createdAt: Date;
   syncedAt: Date;
+  /** P6.5-02 (§۵.۳/§۱۴) — انتساب Scope + آماده‌سازی چند-مستأجری */
+  branchId: string | null;
+  tenantId: string | null;
 }
 
 /** ردیف InteractionRecord — تعاملات مشاوران با یکدیگر */
@@ -102,6 +110,11 @@ export interface VisitDTO {
   createdAt: Date;
   status: string;
   syncedAt: Date;
+  /** P6.5-02 (§۵.۳) — انتساب Scope از checker؛ fail-closed روی تهی */
+  ownerCode: string | null;
+  branchId: string | null;
+  /** P6.5-02 (§۱۴) — آماده‌سازی چند-مستأجری */
+  tenantId: string | null;
 }
 
 // ===================== عرضه و تقاضا =====================
@@ -274,6 +287,9 @@ export interface RequestRecordDTO {
   actorCode: string;
   createdAt: Date;
   updatedAt: Date;
+  /** P6.5-02 (§۵.۳/§۱۴) — انتساب Scope + آماده‌سازی چند-مستأجری */
+  branchId: string | null;
+  tenantId: string | null;
 }
 
 /** ردیف RequestEventRecord — رویدادهای درخواست */
@@ -350,6 +366,9 @@ export interface ListingDTO {
   actorCode: string;
   createdAt: Date;
   updatedAt: Date;
+  /** P6.5-02 (§۵.۳/§۱۴) — انتساب Scope + آماده‌سازی چند-مستأجری */
+  branchId: string | null;
+  tenantId: string | null;
 }
 
 /** ردیف InstagramPostLog — گزارش محتوای اینستاگرام */
@@ -562,6 +581,60 @@ export interface PmConnectionUpsertInput {
   lastError?: string | null;
 }
 
+// ===================== رجیستری‌های P6.5 (Data Readiness) =====================
+
+/** ردیف PropertyRecord — کش آگهی‌های ARM (تاریخی + جاری)؛ قیمت = ریال (§۳.۵) */
+export interface PropertyRecordDTO {
+  id: string;
+  propertyCode: string;
+  title: string | null;
+  status: string | null;
+  ownerCode: string | null;
+  ownerName: string | null;
+  branchId: string | null;
+  cityId: string | null;
+  areaId: string | null;
+  areaName: string | null;
+  lineId: string | null;
+  lineName: string | null;
+  address: string | null;
+  propertyTypeId: string | null;
+  propertyTypeName: string | null;
+  tradeTypeId: string | null;
+  tradeTypeName: string | null;
+  price: number | null;
+  pricePerMeter: number | null;
+  meterage: number | null;
+  rooms: number | null;
+  floor: number | null;
+  buildYear: number | null;
+  description: string | null;
+  detailsJson: string | null;
+  ownerMobile: string | null;
+  tenantId: string | null;
+  sourceRunId: string | null;
+  syncedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date;
+}
+
+/** ردیف CustomerRecord — رجیستری مشتریان مشتق (خریدار/فروشنده/درخواست‌دهنده/مالک) */
+export interface CustomerRecordDTO {
+  id: string;
+  mobile: string | null;
+  personnelCode: string | null;
+  fullName: string;
+  rolesJson: string | null;
+  sourceCountsJson: string | null;
+  ownerCode: string | null;
+  branchId: string | null;
+  firstSeenAt: Date | null;
+  lastSeenAt: Date | null;
+  tenantId: string | null;
+  sourceRunId: string | null;
+  updatedAt: Date;
+}
+
 // ===================== درخواست‌های ملک (P2-03) =====================
 
 /** ردیف RequestRecord — فرم ۵ گامی درخواست ملک */
@@ -598,6 +671,9 @@ export interface RequestRecordDTO {
   actorCode: string;
   createdAt: Date;
   updatedAt: Date;
+  /** P6.5-02 (§۵.۳/§۱۴) — انتساب Scope + آماده‌سازی چند-مستأجری */
+  branchId: string | null;
+  tenantId: string | null;
 }
 
 /** ردیف RequestEventRecord — رویداد درخواست (عین request-events سامانه) */

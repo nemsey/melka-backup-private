@@ -33,6 +33,11 @@ model Session {
   revokedReason      String?
   userAgent          String?
   ip                 String?
+  /// P6.5-02 (ConsultantScope §۵.۱) — شعبه کاربر (از PM/businesses) — افزودنی
+  branchId           String?
+  /// P6.5-02 (ConsultantScope §۵.۱) — دامنه دسترسی داده: OWNER | BRANCH | CONSULTANT
+  /// default امن: نشست‌های موجود و ورود مدیر = OWNER (رفتار فعلی صفر-تغییر)
+  accessScope        String   @default("OWNER")
 }
 
 /// ثبت تلاش‌های احراز هویت برای محدودسازی نرخ (Rate Limiting)
@@ -47,13 +52,24 @@ model OtpAttempt {
   @@index([personnelCode, kind, createdAt])
 }
 
-/// رد حسابرسی امنیتی
+/// رد حسابرسی امنیتی — P6.5-02: پسوندهای حسابرسی دسترسی (§۶ طراحی) افزودنی شد؛
+/// action حفظ شد (سازگاری v1)؛ operation تمایز خواندن/نوشتن را صریح می‌کند.
 model AuditLog {
   id        String   @id @default(cuid())
   action    String
   actor     String?
   detail    String?
   createdAt DateTime @default(now())
+  /// P6.5-02 (§۶.۱) — نوع عملیات: READ | WRITE | DELETE
+  operation   String?
+  /// P6.5-02 (§۶.۱) — موجودیت درگیر: transaction | customer | listing | request | visit | contract | property
+  entityType  String?
+  /// P6.5-02 (§۶.۱) — تعداد رکوردهای درگیر این دسترسی
+  recordCount Int?
+  /// P6.5-02 (§۶.۱) — دامنه دسترسی لحظه عملیات: OWNER | BRANCH | CONSULTANT
+  accessScope String?
+  /// P6.5-02 (§۱۱/§۱۴) — آماده‌سازی چند-مستأجری (منطق فعال در PHASE 8+)
+  tenantId    String   @default("melk-tabriz")
 
   @@index([createdAt])
 }
@@ -128,6 +144,13 @@ model TransactionRecord {
   eventsCount           Int      @default(0)
   syncedAt              DateTime @default(now())
 
+  /// P6.5-02 (§۵.۳) — کد کارشناس صاحب رکورد (انتساب Scope؛ در ماتریس فعلی تجمیعی)
+  ownerCode             String?
+  /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
+  branchId              String?
+  /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
+  tenantId              String?  @default("melk-tabriz")
+
   @@index([contractDate])
   @@index([propertyCode])
   @@index([requestCode])
@@ -149,6 +172,11 @@ model ExpertRecord {
   /// تاریخ ثبت/عضویت
   createdAt     DateTime
   syncedAt      DateTime @default(now())
+
+  /// P6.5-02 (§۵.۳) — شعبه انتساب Scope (از PM/businesses)
+  branchId      String?
+  /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
+  tenantId      String? @default("melk-tabriz")
 
   @@index([fullName])
   @@index([role])
@@ -187,6 +215,13 @@ model VisitRecord {
   /// وضعیت بازدید (رشته فارسی سامانه)
   status              String    @default("")
   syncedAt            DateTime  @default(now())
+
+  /// P6.5-02 (§۵.۳) — کد کارشناس بررسی‌کننده (انتساب Scope از checker؛ fail-closed: تهی = فقط OWNER)
+  ownerCode           String?
+  /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
+  branchId            String?
+  /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
+  tenantId            String?  @default("melk-tabriz")
 
   @@index([propertyCode])
   @@index([createdAt])
@@ -452,6 +487,78 @@ model ContractRecord {
   @@index([createdAt])
 }
 
+// ===================== رجیستری‌های P6.5 (Data Readiness — زیرساخت Bulk) =====================
+
+/// P6.5-02 (§۲.۲ طراحی) — کش آگهی‌های ARM (تاریخی + جاری)؛ کلید طبیعی: propertyCode.
+/// مدل جدید افزودنی: جدول خالی در این گام — زیرساخت Bulk Import (P6.5-03)؛
+/// ListingRecord داخلی (فرم ۵ گامی) دست‌نخورده — پل آینده: ListingRecord.armPropertyId.
+model PropertyRecord {
+  id            String   @id                 // شناسه ARM (objectId)
+  propertyCode  String   @unique            // کدآگهی ARM — کلید طبیعی
+  title         String?
+  status        String?
+  // انتساب Scope (§۵)
+  ownerCode     String?                     // relatedRealtor → personnelCode
+  ownerName     String?
+  branchId      String?
+  // مکان (تطبیق‌یافته با رجیستری ۹۲۶ محله — §۳ طراحی)
+  cityId        String?
+  areaId        String?
+  areaName      String?
+  lineId        String?
+  lineName      String?
+  address       String?
+  // مشخصات
+  propertyTypeId   String?
+  propertyTypeName String?
+  tradeTypeId      String?
+  tradeTypeName    String?
+  price            Float?                   // ریال — عدد پایه (§۳.۵ مرز واحد پول)
+  pricePerMeter    Float?                   // ریال
+  meterage         Float?
+  rooms            Int?
+  floor            Int?
+  buildYear        Int?
+  // متن و خام
+  description   String?
+  detailsJson    String?                    // [{label, value}] عین ARM
+  ownerMobile    String?                    // نرمال‌شده 09xxxxxxxxx
+  tenantId       String?  @default("melk-tabriz")   // §۱۴ مصوبه شورا — آماده، غیرفعال
+  sourceRunId    String?                    // آخرین bulk-run که رکورد را نوشت
+  syncedAt       DateTime @default(now())
+  createdAt      DateTime?
+  updatedAt      DateTime @updatedAt
+
+  @@index([cityId, areaId, propertyTypeId, tradeTypeId])   // ایندکس ۱ از §۴
+  @@index([price, meterage])                               // ایندکس ۲ از §۴
+  @@index([createdAt])                                     // ایندکس ۴ از §۴
+  @@index([ownerCode])                                     // پشتیبان ConsultantScope
+  @@index([tenantId])
+}
+
+/// P6.5-02 (§۲.۳ طراحی) — رجیستری مشتریان مشتق (خریدار/فروشنده/درخواست‌دهنده/مالک)؛ افزودنی.
+/// جدول خالی در این گام — پرشدگی در Bulk Import (P6.5-03) با کلید منطقی mobile ?? "pc:"+personnelCode.
+model CustomerRecord {
+  id             String   @id @default(cuid())
+  mobile         String?                    // کلید طبیعی اول — نرمال‌شده
+  personnelCode  String?                    // fallback (کاربر پرسنلی)
+  fullName       String                     // نرمال‌شده نام (§۳.۲)
+  rolesJson      String?                    // ["buyer","seller","requester","owner"]
+  sourceCountsJson String?                  // {contract: n, request: n, property: n, visit: n}
+  ownerCode      String?                    // کارشناس مرتبط (انتساب Scope — §۵)
+  branchId       String?
+  firstSeenAt    DateTime?                  // قدیمی‌ترین تاریخ رکورد منبع
+  lastSeenAt     DateTime?
+  tenantId       String?  @default("melk-tabriz")   // §۱۴ مصوبه شورا — آماده، غیرفعال
+  sourceRunId    String?
+  updatedAt      DateTime @updatedAt
+
+  @@index([fullName])
+  @@index([ownerCode])
+  @@index([mobile])
+  @@index([tenantId])
+}
+
 // ===================== کش فهرست‌های مرجع عمومی سامانه ARM =====================
 
 /// کش فهرست‌های عمومی (بدون توکن) — شخصیت/شغل/نقش/جدیت مشتریان،
@@ -608,6 +715,11 @@ model ListingRecord {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
+  branchId    String?
+  /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
+  tenantId    String? @default("melk-tabriz")
+
   @@index([status])
   @@index([source])
   @@index([divarToken])
@@ -744,6 +856,11 @@ model RequestRecord {
 
   /// رویدادهای درخواست (ثبت رویداد — عین request-events سامانه)
   events  RequestEventRecord[]
+
+  /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
+  branchId  String?
+  /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
+  tenantId  String? @default("melk-tabriz")
 
   @@index([status])
   @@index([source])
