@@ -10,6 +10,7 @@
  * خواندن‌ها و به‌روزرسانی نتیجه آرمِ رویداد را پوشش می‌دهد.
  */
 import type { RequestEventArmSyncInput, RequestRecordDTO, RequestWithEventsDTO } from "./dto";
+import type { ArmRequestBulkRow, BulkUpsertOptions, BulkWriteStats } from "./bulk-write.repository";
 
 export interface RequestRepository {
   /** یک درخواست با شناسه (null اگر نبود) */
@@ -18,4 +19,6 @@ export interface RequestRepository {
   findByIdWithEventsDesc(id: string): Promise<RequestWithEventsDTO | null>;
   /** ذخیره نتیجه همگام‌سازی آرم روی یک رویداد (به‌روزرسانی گزیده) */
   updateEventArmSync(eventId: string, input: RequestEventArmSyncInput): Promise<void>;
+  /** P6.5-03 — درج/به‌روزرسانی انبوه درخواست‌های ARM (source='arm'؛ کلید طبیعی requestCode) */
+  upsertArmBulk(rows: ArmRequestBulkRow[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
 }

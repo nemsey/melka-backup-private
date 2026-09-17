@@ -3,7 +3,7 @@
  */
 import type { Prisma } from "@prisma/client";
 import type { ContractDTO, ContractRepository, ContractUpsertInput } from "../interfaces";
-import { resolveClient, type PrismaRepoDeps } from "./base";
+import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
 
 function toCreateData(c: ContractUpsertInput): Prisma.ContractRecordCreateInput {
   return {
@@ -72,5 +72,17 @@ export class PrismaContractRepository implements ContractRepository {
 
   async deleteAll(): Promise<void> {
     await this.client.contractRecord.deleteMany({});
+  }
+
+  /** P6.5-03 — انبوه با merge non-null (§۲.۴) + محافظت sourceRunId (§۱.۹) */
+  async upsertBulk(rows: ContractUpsertInput[], opts: { sourceRunId: string }): Promise<{ created: number; updated: number; duplicates: number; errors: number }> {
+    return runBulkUpsert({
+      rows,
+      toData: (c) => toCreateData(c) as unknown as Record<string, unknown>,
+      findExisting: (c) => this.client.contractRecord.findUnique({ where: { id: c.id } }) as Promise<Record<string, unknown> | null>,
+      createRow: (data) => this.client.contractRecord.create({ data: data as Prisma.ContractRecordCreateInput }),
+      updateRow: (data) => this.client.contractRecord.update({ where: { id: data.id as string }, data: data as Prisma.ContractRecordUpdateInput }),
+      sourceRunId: opts.sourceRunId,
+    });
   }
 }

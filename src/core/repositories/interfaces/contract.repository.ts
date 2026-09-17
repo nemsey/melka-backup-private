@@ -5,6 +5,7 @@
  * روت crm/contracts، روت crm/finance، روت crm/customer-club، همگام‌سازی.
  */
 import type { ContractDTO } from "./dto";
+import type { BulkUpsertOptions, BulkWriteStats } from "./bulk-write.repository";
 
 /** ورودی درج قرارداد (عین نگاشت toContractCreates در همگام‌سازی) */
 export interface ContractUpsertInput {
@@ -38,6 +39,8 @@ export interface ContractRepository {
   replaceAll(rows: ContractUpsertInput[]): Promise<number>;
   /** درج/به‌روزرسانی مبتنی بر کلید طبیعی id (همگام‌سازی افزایشی — P2-04) */
   upsertBatch(rows: ContractUpsertInput[]): Promise<{ created: number; updated: number }>;
+  /** P6.5-03 — درج/به‌روزرسانی انبوه با merge non-null (Bulk Import) */
+  upsertBulk(rows: ContractUpsertInput[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
   /** پاک‌سازی کامل (ریست کش CRM) */
   deleteAll(): Promise<void>;
 }

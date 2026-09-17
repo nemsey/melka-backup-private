@@ -15,8 +15,22 @@ import type {
   ScopeFilter,
   ScopedTransactionRepository,
 } from "../interfaces";
-import { resolveClient, type PrismaRepoDeps } from "./base";
+import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
 import { auditAccess } from "@/lib/audit";
+
+function toTxData(t: TransactionUpsertInput): Record<string, unknown> {
+  return {
+    id: t.id,
+    contractDate: t.contractDate,
+    propertyCode: t.propertyCode,
+    propertyCustomer: t.propertyCustomer,
+    requestCode: t.requestCode,
+    requestCustomer: t.requestCustomer,
+    contractHolo: t.contractHolo,
+    suggestedPropertyCount: t.suggestedPropertyCount,
+    eventsCount: t.eventsCount,
+  };
+}
 
 /** ساخت Prisma WhereInput از فیلتر خالص — عین منطق روت قبلی */
 export function buildTransactionWhere(filter?: TransactionListFilter): Prisma.TransactionRecordWhereInput {
@@ -122,32 +136,25 @@ export class PrismaTransactionRepository implements ScopedTransactionRepository 
       const existing = await this.client.transactionRecord.findUnique({ where: { id: t.id }, select: { id: true } });
       await this.client.transactionRecord.upsert({
         where: { id: t.id },
-        create: {
-          id: t.id,
-          contractDate: t.contractDate,
-          propertyCode: t.propertyCode,
-          propertyCustomer: t.propertyCustomer,
-          requestCode: t.requestCode,
-          requestCustomer: t.requestCustomer,
-          contractHolo: t.contractHolo,
-          suggestedPropertyCount: t.suggestedPropertyCount,
-          eventsCount: t.eventsCount,
-        },
-        update: {
-          contractDate: t.contractDate,
-          propertyCode: t.propertyCode,
-          propertyCustomer: t.propertyCustomer,
-          requestCode: t.requestCode,
-          requestCustomer: t.requestCustomer,
-          contractHolo: t.contractHolo,
-          suggestedPropertyCount: t.suggestedPropertyCount,
-          eventsCount: t.eventsCount,
-        },
+        create: toTxData(t) as Prisma.TransactionRecordCreateInput,
+        update: toTxData(t) as Prisma.TransactionRecordUpdateInput,
       });
       if (existing) updated += 1;
       else created += 1;
     }
     return { created, updated };
+  }
+
+  /** P6.5-03 — انبوه با merge non-null (§۲.۴) + محافظت sourceRunId (§۱.۹) */
+  async upsertBulk(rows: TransactionUpsertInput[], opts: { sourceRunId: string }): Promise<{ created: number; updated: number; duplicates: number; errors: number }> {
+    return runBulkUpsert({
+      rows,
+      toData: toTxData,
+      findExisting: (t) => this.client.transactionRecord.findUnique({ where: { id: t.id } }) as Promise<Record<string, unknown> | null>,
+      createRow: (data) => this.client.transactionRecord.create({ data: data as Prisma.TransactionRecordCreateInput }),
+      updateRow: (data) => this.client.transactionRecord.update({ where: { id: data.id as string }, data: data as Prisma.TransactionRecordUpdateInput }),
+      sourceRunId: opts.sourceRunId,
+    });
   }
 
   async deleteAll(): Promise<void> {

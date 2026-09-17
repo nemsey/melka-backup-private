@@ -94,6 +94,8 @@ model SyncState {
   lastWatermark   DateTime?
   /// P2-04 — شناسه اجرای جاری (idempotency — upsertها با کلید طبیعی بی‌اثر از نو اجرا می‌شوند)
   syncRunId       String?
+  /// P6.5-03 (§۱.۵) — checkpoint یکپارچه Bulk Import (JSON)؛ جدا از فیلدهای sync منظم
+  bulkImportCheckpoint String?
   updatedAt      DateTime  @updatedAt
 }
 
@@ -150,6 +152,8 @@ model TransactionRecord {
   branchId              String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
   tenantId              String?  @default("melk-tabriz")
+  /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
+  sourceRunId           String?
 
   @@index([contractDate])
   @@index([propertyCode])
@@ -177,6 +181,8 @@ model ExpertRecord {
   branchId      String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
   tenantId      String? @default("melk-tabriz")
+  /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
+  sourceRunId   String?
 
   @@index([fullName])
   @@index([role])
@@ -191,6 +197,8 @@ model InteractionRecord {
   propertyRealtorName String
   count              Int      @default(0)
   syncedAt           DateTime @default(now())
+  /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
+  sourceRunId        String?
 
   @@index([requestRealtorName])
   @@index([propertyRealtorName])
@@ -222,6 +230,8 @@ model VisitRecord {
   branchId            String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
   tenantId            String?  @default("melk-tabriz")
+  /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
+  sourceRunId         String?
 
   @@index([propertyCode])
   @@index([createdAt])
@@ -481,6 +491,8 @@ model ContractRecord {
   /// آیا امکان افزودن مشاور دارد (مرحله در انتظار افزودن مشاور)
   canAddRealtor  Boolean  @default(false)
   syncedAt      DateTime @default(now())
+  /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
+  sourceRunId   String?
 
   @@index([status])
   @@index([contractHolo])
@@ -861,6 +873,10 @@ model RequestRecord {
   branchId  String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
   tenantId  String? @default("melk-tabriz")
+  /// P6.5-03 (§۱.۲) — کد درخواست ARM — کلید طبیعی رکوردهای Bulk (source='arm')
+  requestCode  String?  @unique
+  /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
+  sourceRunId  String?
 
   @@index([status])
   @@index([source])

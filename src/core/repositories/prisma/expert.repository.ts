@@ -15,7 +15,30 @@ import type {
   InteractionDTO,
   InteractionUpsertInput,
 } from "../interfaces";
-import { resolveClient, type PrismaRepoDeps } from "./base";
+import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
+
+function toExData(e: ExpertUpsertInput): Record<string, unknown> {
+  return {
+    id: e.id,
+    personnelCode: e.personnelCode,
+    fullName: e.fullName,
+    mobile: e.mobile,
+    role: e.role,
+    businessTitle: e.businessTitle,
+    creator: e.creator,
+    active: e.active,
+    createdAt: e.createdAt,
+  };
+}
+
+function toInData(i: InteractionUpsertInput): Record<string, unknown> {
+  return {
+    id: i.id,
+    requestRealtorName: i.requestRealtorName,
+    propertyRealtorName: i.propertyRealtorName,
+    count: i.count,
+  };
+}
 
 function buildExpertWhere(filter?: ExpertListFilter): Prisma.ExpertRecordWhereInput {
   const where: Prisma.ExpertRecordWhereInput = {};
@@ -189,6 +212,18 @@ export class PrismaExpertRepository implements ExpertRepository {
     await this.client.expertRecord.deleteMany({});
   }
 
+  /** P6.5-03 — انبوه کارشناسان با merge non-null (کلید طبیعی personnelCode) */
+  async upsertBulk(rows: ExpertUpsertInput[], opts: { sourceRunId: string }): Promise<{ created: number; updated: number; duplicates: number; errors: number }> {
+    return runBulkUpsert({
+      rows,
+      toData: toExData,
+      findExisting: (e) => this.client.expertRecord.findUnique({ where: { personnelCode: e.personnelCode } }) as Promise<Record<string, unknown> | null>,
+      createRow: (data) => this.client.expertRecord.create({ data: data as Prisma.ExpertRecordCreateInput }),
+      updateRow: (data) => this.client.expertRecord.update({ where: { personnelCode: data.personnelCode as string }, data: data as Prisma.ExpertRecordUpdateInput }),
+      sourceRunId: opts.sourceRunId,
+    });
+  }
+
   /** جایگزینی تعاملات — فقط برای همگام‌سازی (درون تراکنش replaceAll شش‌جدولی) */
   async replaceInteractions(rows: InteractionUpsertInput[]): Promise<number> {
     await this.client.$transaction([
@@ -234,6 +269,18 @@ export class PrismaExpertRepository implements ExpertRepository {
 
   async deleteAllInteractions(): Promise<void> {
     await this.client.interactionRecord.deleteMany({});
+  }
+
+  /** P6.5-03 — انبوه تعاملات با merge non-null (کلید طبیعی id) */
+  async upsertInteractionsBulk(rows: InteractionUpsertInput[], opts: { sourceRunId: string }): Promise<{ created: number; updated: number; duplicates: number; errors: number }> {
+    return runBulkUpsert({
+      rows,
+      toData: toInData,
+      findExisting: (i) => this.client.interactionRecord.findUnique({ where: { id: i.id } }) as Promise<Record<string, unknown> | null>,
+      createRow: (data) => this.client.interactionRecord.create({ data: data as Prisma.InteractionRecordCreateInput }),
+      updateRow: (data) => this.client.interactionRecord.update({ where: { id: data.id as string }, data: data as Prisma.InteractionRecordUpdateInput }),
+      sourceRunId: opts.sourceRunId,
+    });
   }
 
   async countAllInteractions(): Promise<number> {

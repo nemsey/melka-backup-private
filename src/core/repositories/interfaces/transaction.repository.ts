@@ -5,6 +5,7 @@
  * روت crm/transactions، روت crm/customer-club، همگام‌سازی (P2-04).
  */
 import type { TransactionDTO, TransactionUpsertInput } from "./dto";
+import type { BulkUpsertOptions, BulkWriteStats } from "./bulk-write.repository";
 
 /** فیلترهای فهرست معاملات — عین پارامترهای روت (خالص، بدون Prisma) */
 export interface TransactionListFilter {
@@ -59,6 +60,8 @@ export interface TransactionRepository {
   replaceAll(rows: TransactionUpsertInput[]): Promise<number>;
   /** درج/به‌روزرسانی مبتنی بر کلید طبیعی id (همگام‌سازی افزایشی — P2-04) */
   upsertBatch(rows: TransactionUpsertInput[]): Promise<{ created: number; updated: number }>;
+  /** P6.5-03 — درج/به‌روزرسانی انبوه با merge non-null (Bulk Import؛ محافظت sourceRunId) */
+  upsertBulk(rows: TransactionUpsertInput[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
   /** پاک‌سازی کامل (ریست کش CRM) */
   deleteAll(): Promise<void>;
 }

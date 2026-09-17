@@ -83,7 +83,7 @@ describe("P2-01 — DTOهای ساختاری آینه دقیق ردیف Prisma �
     expect(keys).toEqual([
       "id", "contractDate", "propertyCode", "propertyCustomer", "requestCode",
       "requestCustomer", "contractHolo", "suggestedPropertyCount", "eventsCount", "syncedAt",
-      "ownerCode", "branchId", "tenantId", // P6.5-02 — ستون‌های افزودنی
+      "ownerCode", "branchId", "tenantId", "sourceRunId", // ستون‌های افزودنی P6.5-02/03
     ]);
   });
 });

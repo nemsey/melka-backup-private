@@ -6,8 +6,22 @@
  *  • findByIdWithEventsDesc ← findUnique + include events (createdAt نزولی)
  *  • updateEventArmSync  ← db.requestEventRecord.update({ where: { id }, data })
  */
-import type { RequestEventArmSyncInput, RequestRecordDTO, RequestRepository, RequestWithEventsDTO } from "../interfaces";
-import { resolveClient, type PrismaRepoDeps } from "./base";
+import type { Prisma } from "@prisma/client";
+import type { ArmRequestBulkRow, RequestEventArmSyncInput, RequestRecordDTO, RequestRepository, RequestWithEventsDTO } from "../interfaces";
+import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
+
+function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> {
+  return {
+    id: r.id,
+    source: "arm",
+    customerName: r.customerName ?? null,
+    customerMobile: r.customerMobile ?? null,
+    status: r.status ?? "ready",
+    requestCode: r.requestCode,
+    actorCode: r.actorCode ?? "arm",
+    ...(r.createdAt ? { createdAt: r.createdAt } : {}),
+  };
+}
 
 export class PrismaRequestRepository implements RequestRepository {
   private readonly client;
@@ -36,6 +50,23 @@ export class PrismaRequestRepository implements RequestRepository {
         armPropertyId: input.armPropertyId,
         armSyncJson: input.armSyncJson,
       },
+    });
+  }
+
+  /**
+   * P6.5-03 — درج/به‌روزرسانی انبوه درخواست‌های ARM (§۱.۲ طراحی):
+   * source='arm' + کلید طبیعی requestCode (ستون افزودنی @unique).
+   * merge non-null: actorCode/id/source هرگز با تهی بازنویسی نمی‌شوند؛
+   * رکوردهای دستی موجود (source='manual') با این کلید تصادم نمی‌کنند (requestCode تهی).
+   */
+  async upsertArmBulk(rows: ArmRequestBulkRow[], opts: { sourceRunId: string }): Promise<{ created: number; updated: number; duplicates: number; errors: number }> {
+    return runBulkUpsert({
+      rows,
+      toData: toArmRequestData,
+      findExisting: (r) => this.client.requestRecord.findUnique({ where: { requestCode: r.requestCode } }) as Promise<Record<string, unknown> | null>,
+      createRow: (data) => this.client.requestRecord.create({ data: data as Prisma.RequestRecordCreateInput }),
+      updateRow: (data) => this.client.requestRecord.update({ where: { requestCode: data.requestCode as string }, data: data as Prisma.RequestRecordUpdateInput }),
+      sourceRunId: opts.sourceRunId,
     });
   }
 }

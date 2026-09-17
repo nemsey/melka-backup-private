@@ -419,7 +419,7 @@ function computeSummaryFromRows(rows: CrmTransaction[]): TradedSummary {
 // ==========================================================================
 
 /** نگاشت‌های upsert — عین فیلدهای toXxxCreates، فقط به‌جای عملیات Prisma شیء ورودی */
-const toTxUpsert = (t: CrmTransaction): TransactionUpsertInput => ({
+export const toTxUpsert = (t: CrmTransaction): TransactionUpsertInput => ({
   id: t.id,
   contractDate: new Date(t.contractDate),
   propertyCode: t.propertyCode,
@@ -431,7 +431,7 @@ const toTxUpsert = (t: CrmTransaction): TransactionUpsertInput => ({
   eventsCount: t.eventsCount,
 });
 
-const toExUpsert = (e: CrmExpert): ExpertUpsertInput => ({
+export const toExUpsert = (e: CrmExpert): ExpertUpsertInput => ({
   id: e.id,
   personnelCode: e.personnelCode,
   fullName: e.fullName,
@@ -443,14 +443,14 @@ const toExUpsert = (e: CrmExpert): ExpertUpsertInput => ({
   createdAt: new Date(e.createdAt),
 });
 
-const toInUpsert = (i: CrmInteraction): InteractionUpsertInput => ({
+export const toInUpsert = (i: CrmInteraction): InteractionUpsertInput => ({
   id: i.id,
   requestRealtorName: i.requestRealtorName,
   propertyRealtorName: i.propertyRealtorName,
   count: i.count,
 });
 
-const toViUpsert = (v: CrmVisit): VisitUpsertInput => ({
+export const toViUpsert = (v: CrmVisit): VisitUpsertInput => ({
   id: v.id,
   propertyCode: v.propertyCode,
   requesterName: v.requesterName,
@@ -469,7 +469,7 @@ const toSdUpsert = (s: CrmSupplyDemand): SupplyDemandUpsertInput => ({
   status: s.status,
 });
 
-const toContractUpsert = (c: CrmContract): ContractUpsertInput => ({
+export const toContractUpsert = (c: CrmContract): ContractUpsertInput => ({
   id: c.id,
   status: c.status,
   contractHolo: c.contractHolo,
@@ -562,7 +562,7 @@ export async function applyIncrementalSync(
       fetched: true,
       keyOf: (t) => (t as unknown as TransactionUpsertInput).id,
       upsert: (rows) => txRepo.upsertBatch(rows as unknown as TransactionUpsertInput[]),
-      listExistingKeys: async () => (await db.transactionRecord.findMany({ select: { id: true } })).map((r) => r.id),
+      listExistingKeys: async () => (await db.transactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
       deleteByKeys: (keys) => db.transactionRecord.deleteMany({ where: { id: { in: keys } } }),
     },
     {
@@ -571,7 +571,7 @@ export async function applyIncrementalSync(
       fetched: true,
       keyOf: (e) => (e as unknown as ExpertUpsertInput).personnelCode,
       upsert: (rows) => exRepo.upsertBatch(rows as unknown as ExpertUpsertInput[]),
-      listExistingKeys: async () => (await db.expertRecord.findMany({ select: { personnelCode: true } })).map((r) => r.personnelCode),
+      listExistingKeys: async () => (await db.expertRecord.findMany({ where: { sourceRunId: null }, select: { personnelCode: true } })).map((r) => r.personnelCode),
       deleteByKeys: (keys) => db.expertRecord.deleteMany({ where: { personnelCode: { in: keys } } }),
     },
     {
@@ -580,7 +580,7 @@ export async function applyIncrementalSync(
       fetched: data.interactionsFetched,
       keyOf: (i) => (i as unknown as InteractionUpsertInput).id,
       upsert: (rows) => exRepo.upsertInteractionsBatch(rows as unknown as InteractionUpsertInput[]),
-      listExistingKeys: async () => (await db.interactionRecord.findMany({ select: { id: true } })).map((r) => r.id),
+      listExistingKeys: async () => (await db.interactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
       deleteByKeys: (keys) => db.interactionRecord.deleteMany({ where: { id: { in: keys } } }),
     },
     {
@@ -589,7 +589,7 @@ export async function applyIncrementalSync(
       fetched: data.visitsFetched,
       keyOf: (v) => (v as unknown as VisitUpsertInput).id,
       upsert: (rows) => viRepo.upsertBatch(rows as unknown as VisitUpsertInput[]),
-      listExistingKeys: async () => (await db.visitRecord.findMany({ select: { id: true } })).map((r) => r.id),
+      listExistingKeys: async () => (await db.visitRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
       deleteByKeys: (keys) => db.visitRecord.deleteMany({ where: { id: { in: keys } } }),
     },
     {
@@ -607,7 +607,7 @@ export async function applyIncrementalSync(
       fetched: data.contractsFetched,
       keyOf: (c) => (c as unknown as ContractUpsertInput).id,
       upsert: (rows) => ctRepo.upsertBatch(rows as unknown as ContractUpsertInput[]),
-      listExistingKeys: async () => (await db.contractRecord.findMany({ select: { id: true } })).map((r) => r.id),
+      listExistingKeys: async () => (await db.contractRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
       deleteByKeys: (keys) => db.contractRecord.deleteMany({ where: { id: { in: keys } } }),
     },
   ];
@@ -646,6 +646,8 @@ export async function applyIncrementalSync(
     await resolveDeadLetters(family.entity, keys.filter((k) => !failedKeys.includes(k)));
 
     // جاروی سنگ‌قبرها: ردیف‌هایی که دیگر در سامانه نیستند (به‌جز نامه‌های مرده باز)
+    // P6.5-03 — رکوردهای Bulk (sourceRunId غیرتهی) از جارو محافظت می‌شوند:
+    // داده تاریخیِ خارج از پوشش واکشی sync است؛ حذفش = حفره داده غیرقابل ترمیم (کشف §۱.۹).
     try {
       const existing = await family.listExistingKeys();
       const fetchedSet = new Set(keys);

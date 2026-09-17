@@ -3,11 +3,12 @@
  * ------------------------------------------------------
  * ⚠️ تنها لایه مجاز برای فراخوانی db.* در قلمرو core/repositories.
  */
-export { resolveClient, type PrismaRepoDeps } from "./base";
+export { resolveClient, runBulkUpsert, mergeNonNullUpdate, sameBulkValue, type PrismaRepoDeps } from "./base";
 export { PrismaTransactionRepository, buildTransactionWhere } from "./transaction.repository";
 export { PrismaContractRepository } from "./contract.repository";
 export { PrismaExpertRepository } from "./expert.repository";
 export { PrismaVisitRepository } from "./visit.repository";
+export { PrismaPropertyRecordRepository } from "./property.repository";
 export { PrismaMarketRepository } from "./market.repository";
 export { PrismaCustomerRepository } from "./customer.repository";
 export { PrismaListingRepository } from "./listing.repository";

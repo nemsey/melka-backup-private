@@ -5,6 +5,7 @@
  * روت crm/experts، crm/meta، crm/interactions، crm/finance، همگام‌سازی.
  */
 import type { ExpertDTO, InteractionDTO } from "./dto";
+import type { BulkUpsertOptions, BulkWriteStats } from "./bulk-write.repository";
 
 /** فیلترهای فهرست کارشناسان — عین پارامترهای روت crm/experts */
 export interface ExpertListFilter {
@@ -67,6 +68,10 @@ export interface ExpertRepository {
   upsertBatch(rows: ExpertUpsertInput[]): Promise<{ created: number; updated: number }>;
   /** درج/به‌روزرسانی تعاملات بر اساس id (همگام‌سازی افزایشی — P2-04) */
   upsertInteractionsBatch(rows: InteractionUpsertInput[]): Promise<{ created: number; updated: number }>;
+  /** P6.5-03 — درج/به‌روزرسانی انبوه کارشناسان با merge non-null (Bulk Import) */
+  upsertBulk(rows: ExpertUpsertInput[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
+  /** P6.5-03 — درج/به‌روزرسانی انبوه تعاملات با merge non-null (Bulk Import) */
+  upsertInteractionsBulk(rows: InteractionUpsertInput[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
   /** پاک‌سازی کامل (ریست کش CRM) */
   deleteAll(): Promise<void>;
   /** پاک‌سازی کامل تعاملات (ریست کش CRM) */

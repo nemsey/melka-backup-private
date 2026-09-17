@@ -31,7 +31,7 @@ const stubTx = (over: Partial<TransactionDTO> = {}): TransactionDTO => ({
   id: "T1", contractDate: new Date("2026-04-15T10:00:00Z"), propertyCode: "P-100",
   propertyCustomer: "علی رضایی", requestCode: "R-200", requestCustomer: "مریم احمدی",
   contractHolo: "H-777", suggestedPropertyCount: 3, eventsCount: 2, syncedAt: new Date(),
-  ownerCode: null, branchId: null, tenantId: "melk-tabriz", // P6.5-02 — ستون‌های افزودنی
+  ownerCode: null, branchId: null, tenantId: "melk-tabriz", sourceRunId: null, // ستون‌های افزودنی P6.5-02/03
   ...over,
 });
 
@@ -41,7 +41,7 @@ const stubContract = (over: Partial<ContractDTO> = {}): ContractDTO => ({
   contractDate: new Date("2026-04-05T00:00:00Z"), documentDate: null, deliveryDate: null,
   propertyTitle: "ملک", propertyAddress: "آدرس", buyerListJson: null, sellerListJson: null,
   realtorListJson: JSON.stringify([{ name: "مشاور یک", unitPercent: 50, confirmation: "confirm", description: "", role: "" }]),
-  canAddRealtor: false, syncedAt: new Date(),
+  canAddRealtor: false, syncedAt: new Date(), sourceRunId: null, // P6.5-03
   ...over,
 });
 
@@ -49,7 +49,7 @@ const stubVisit = (over: Partial<VisitDTO> = {}): VisitDTO => ({
   id: "V1", propertyCode: "P-1", requesterName: "مشتری", checkerName: "بررسی‌گر",
   propertyRealtorName: "مشاور", checkTime: new Date(), createdAt: new Date("2026-04-01T09:00:00Z"),
   status: "بررسی شد", syncedAt: new Date(),
-  ownerCode: null, branchId: null, tenantId: "melk-tabriz", // P6.5-02 — ستون‌های افزودنی
+  ownerCode: null, branchId: null, tenantId: "melk-tabriz", sourceRunId: null, // ستون‌های افزودنی P6.5-02/03
   ...over,
 });
 
@@ -74,6 +74,7 @@ function makeTxRepo(rows: TransactionDTO[]): TransactionRepository {
     countAll: async () => rows.length,
     replaceAll: async () => rows.length,
     upsertBatch: async () => ({ created: 0, updated: 0 }),
+    upsertBulk: async () => ({ created: 0, updated: 0, duplicates: 0, errors: 0 }),
     deleteAll: async () => undefined,
   };
 }
@@ -85,6 +86,7 @@ function makeContractRepo(rows: ContractDTO[]): ContractRepository {
     countAll: async () => rows.length,
     replaceAll: async () => rows.length,
     upsertBatch: async () => ({ created: 0, updated: 0 }),
+    upsertBulk: async () => ({ created: 0, updated: 0, duplicates: 0, errors: 0 }),
     deleteAll: async () => undefined,
   };
 }
@@ -96,6 +98,7 @@ function makeVisitRepo(rows: VisitDTO[]): VisitRepository {
     countAll: async () => rows.length,
     replaceAll: async () => rows.length,
     upsertBatch: async () => ({ created: 0, updated: 0 }),
+    upsertBulk: async () => ({ created: 0, updated: 0, duplicates: 0, errors: 0 }),
     deleteAll: async () => undefined,
   };
 }
@@ -148,7 +151,9 @@ function makeEmptyExpertRepo(): ExpertRepository {
     replaceAll: async () => 0,
     replaceInteractions: async () => 0,
     upsertBatch: async () => ({ created: 0, updated: 0 }),
+    upsertBulk: async () => ({ created: 0, updated: 0, duplicates: 0, errors: 0 }),
     upsertInteractionsBatch: async () => ({ created: 0, updated: 0 }),
+    upsertInteractionsBulk: async () => ({ created: 0, updated: 0, duplicates: 0, errors: 0 }),
     deleteAll: async () => undefined,
     deleteAllInteractions: async () => undefined,
   };
@@ -272,13 +277,13 @@ const stubExpert = (over: Partial<ExpertDTO> = {}): ExpertDTO => ({
   id: "E1", personnelCode: "910001", fullName: "سارا محمدی", mobile: "09141110001",
   role: "کارشناس فروش", businessTitle: "شعبه مرکزی", creator: null, active: true,
   createdAt: new Date("2026-01-01T08:00:00Z"), syncedAt: new Date(),
-  branchId: null, tenantId: "melk-tabriz", // P6.5-02 — ستون‌های افزودنی
+  branchId: null, tenantId: "melk-tabriz", sourceRunId: null, // ستون‌های افزودنی P6.5-02/03
   ...over,
 });
 
 const stubInteraction = (over: Partial<InteractionDTO> = {}): InteractionDTO => ({
   id: "I1", requestRealtorName: "سارا محمدی", propertyRealtorName: "رضا کریمی",
-  count: 4, syncedAt: new Date(),
+  count: 4, syncedAt: new Date(), sourceRunId: null, // P6.5-03
   ...over,
 });
 
@@ -294,7 +299,9 @@ function makeExpertRepoFull(experts: ExpertDTO[], interactions: InteractionDTO[]
     replaceAll: async () => 0,
     replaceInteractions: async () => 0,
     upsertBatch: async () => ({ created: 0, updated: 0 }),
+    upsertBulk: async () => ({ created: 0, updated: 0, duplicates: 0, errors: 0 }),
     upsertInteractionsBatch: async () => ({ created: 0, updated: 0 }),
+    upsertInteractionsBulk: async () => ({ created: 0, updated: 0, duplicates: 0, errors: 0 }),
     deleteAll: async () => undefined,
     deleteAllInteractions: async () => undefined,
   };

@@ -4,6 +4,7 @@
  * مصرف‌کننده‌ها: ایجنت بازدیدها، روت crm/visits، همگام‌سازی.
  */
 import type { VisitDTO } from "./dto";
+import type { BulkUpsertOptions, BulkWriteStats } from "./bulk-write.repository";
 
 /** فیلترهای فهرست بازدیدها — عین پارامترهای روت */
 export interface VisitListFilter {
@@ -34,6 +35,8 @@ export interface VisitRepository {
   replaceAll(rows: VisitUpsertInput[]): Promise<number>;
   /** درج/به‌روزرسانی مبتنی بر کلید طبیعی id (همگام‌سازی افزایشی — P2-04) */
   upsertBatch(rows: VisitUpsertInput[]): Promise<{ created: number; updated: number }>;
+  /** P6.5-03 — درج/به‌روزرسانی انبوه با merge non-null (Bulk Import) */
+  upsertBulk(rows: VisitUpsertInput[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
   /** پاک‌سازی کامل (ریست کش CRM) */
   deleteAll(): Promise<void>;
 }

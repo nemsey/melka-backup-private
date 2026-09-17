@@ -423,7 +423,7 @@ describe("P6.5-02 — auditAccess (§۶.۲)", () => {
 // ===================== ۴) آینه DTOها پس از ستون‌های افزودنی =====================
 
 describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Schema)", () => {
-  test("TransactionDTO — ۱۳ کلید؛ ستون‌های P6.5-02 در دنباله", async () => {
+  test("TransactionDTO — ۱۴ کلید؛ ستون‌های P6.5-02/03 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
@@ -431,39 +431,39 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
       expect(Object.keys(sample!)).toEqual([
         "id", "contractDate", "propertyCode", "propertyCustomer", "requestCode",
         "requestCustomer", "contractHolo", "suggestedPropertyCount", "eventsCount", "syncedAt",
-        "ownerCode", "branchId", "tenantId",
+        "ownerCode", "branchId", "tenantId", "sourceRunId",
       ]);
     } finally {
       await cleanup(c);
     }
   });
 
-  test("VisitDTO — ۱۲ کلید؛ ExpertDTO — ۱۲ کلید", async () => {
+  test("VisitDTO — ۱۳ کلید؛ ExpertDTO — ۱۳ کلید", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const v = await c.visitRecord.findFirst({ where: { id: "p6502-VA" } });
       expect(Object.keys(v!)).toEqual([
         "id", "propertyCode", "requesterName", "checkerName", "propertyRealtorName",
-        "checkTime", "createdAt", "status", "syncedAt", "ownerCode", "branchId", "tenantId",
+        "checkTime", "createdAt", "status", "syncedAt", "ownerCode", "branchId", "tenantId", "sourceRunId",
       ]);
     } finally {
       await cleanup(c);
     }
     const e = await c.expertRecord.findFirst();
     if (e) {
-      expect(Object.keys(e).slice(-2)).toEqual(["branchId", "tenantId"]);
+      expect(Object.keys(e).slice(-3)).toEqual(["branchId", "tenantId", "sourceRunId"]);
     }
   });
 
-  test("RequestRecordDTO — ۳۴ کلید؛ ستون‌های P6.5-02 در دنباله", async () => {
+  test("RequestRecordDTO — ۳۶ کلید؛ ستون‌های P6.5-02/03 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const r = await c.requestRecord.findFirst({ where: { id: "p6502-RA" } });
       const keys = Object.keys(r!);
-      expect(keys.length).toBe(34);
-      expect(keys.slice(-2)).toEqual(["branchId", "tenantId"]);
+      expect(keys.length).toBe(36);
+      expect(keys.slice(-4)).toEqual(["branchId", "tenantId", "requestCode", "sourceRunId"]);
     } finally {
       await cleanup(c);
     }

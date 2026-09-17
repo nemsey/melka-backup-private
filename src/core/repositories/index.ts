@@ -30,6 +30,7 @@ import { PrismaPredictionRepository } from "./prisma/prediction.repository";
 import { PrismaOutcomeRepository } from "./prisma/outcome.repository";
 import { PrismaIntegrationRepository } from "./prisma/integration.repository";
 import { PrismaRequestRepository } from "./prisma/request.repository";
+import { PrismaPropertyRecordRepository } from "./prisma/property.repository";
 import type {
   ContractRepository,
   CustomerRepository,
@@ -40,6 +41,7 @@ import type {
   PolicyRepository,
   PredictionRepository,
   OutcomeRepository,
+  PropertyRecordRepository,
   TransactionRepository,
   VisitRepository,
   AgentMemoryRepository,
@@ -98,6 +100,10 @@ export function getIntegrationRepository(): IntegrationRepository {
 
 export function getRequestRepository(): RequestRepository {
   return new PrismaRequestRepository();
+}
+
+export function getPropertyRecordRepository(): PropertyRecordRepository {
+  return new PrismaPropertyRecordRepository();
 }
 
 // ===================== بسته پیش‌فرض ایجنت‌ها =====================

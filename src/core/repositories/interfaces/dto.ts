@@ -30,6 +30,8 @@ export interface TransactionDTO {
   branchId: string | null;
   /** P6.5-02 (§۱۴) — آماده‌سازی چند-مستأجری */
   tenantId: string | null;
+  /** P6.5-03 — آخرین اجرای Bulk که رکورد را نوشت (محافظت جاروی sync) */
+  sourceRunId: string | null;
 }
 
 /** ورودی جایگزینی/درج دسته‌ای معاملات (برای همگام‌سازی) */
@@ -67,6 +69,8 @@ export interface ContractDTO {
   realtorListJson: string | null;
   canAddRealtor: boolean;
   syncedAt: Date;
+  /** P6.5-03 — آخرین اجرای Bulk که رکورد را نوشت (محافظت جاروی sync) */
+  sourceRunId: string | null;
 }
 
 // ===================== کارشناسان و تعاملات =====================
@@ -86,6 +90,8 @@ export interface ExpertDTO {
   /** P6.5-02 (§۵.۳/§۱۴) — انتساب Scope + آماده‌سازی چند-مستأجری */
   branchId: string | null;
   tenantId: string | null;
+  /** P6.5-03 — آخرین اجرای Bulk که رکورد را نوشت */
+  sourceRunId: string | null;
 }
 
 /** ردیف InteractionRecord — تعاملات مشاوران با یکدیگر */
@@ -95,6 +101,8 @@ export interface InteractionDTO {
   propertyRealtorName: string;
   count: number;
   syncedAt: Date;
+  /** P6.5-03 — آخرین اجرای Bulk که رکورد را نوشت */
+  sourceRunId: string | null;
 }
 
 // ===================== بازدیدها =====================
@@ -115,6 +123,8 @@ export interface VisitDTO {
   branchId: string | null;
   /** P6.5-02 (§۱۴) — آماده‌سازی چند-مستأجری */
   tenantId: string | null;
+  /** P6.5-03 — آخرین اجرای Bulk که رکورد را نوشت (محافظت جاروی sync) */
+  sourceRunId: string | null;
 }
 
 // ===================== عرضه و تقاضا =====================
@@ -290,6 +300,10 @@ export interface RequestRecordDTO {
   /** P6.5-02 (§۵.۳/§۱۴) — انتساب Scope + آماده‌سازی چند-مستأجری */
   branchId: string | null;
   tenantId: string | null;
+  /** P6.5-03 (§۱.۲) — کد درخواست ARM — کلید طبیعی رکوردهای Bulk (source='arm') */
+  requestCode: string | null;
+  /** P6.5-03 — آخرین اجرای Bulk که رکورد را نوشت (محافظت جاروی sync) */
+  sourceRunId: string | null;
 }
 
 /** ردیف RequestEventRecord — رویدادهای درخواست */
@@ -674,6 +688,10 @@ export interface RequestRecordDTO {
   /** P6.5-02 (§۵.۳/§۱۴) — انتساب Scope + آماده‌سازی چند-مستأجری */
   branchId: string | null;
   tenantId: string | null;
+  /** P6.5-03 (§۱.۲) — کد درخواست ARM — کلید طبیعی رکوردهای Bulk (source='arm') */
+  requestCode: string | null;
+  /** P6.5-03 — آخرین اجرای Bulk که رکورد را نوشت (محافظت جاروی sync) */
+  sourceRunId: string | null;
 }
 
 /** ردیف RequestEventRecord — رویداد درخواست (عین request-events سامانه) */

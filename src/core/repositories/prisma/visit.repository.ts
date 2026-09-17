@@ -12,7 +12,7 @@ import type {
   ScopedVisitRepository,
 } from "../interfaces";
 import { personalScopeClause } from "../interfaces";
-import { resolveClient, type PrismaRepoDeps } from "./base";
+import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
 import { auditAccess } from "@/lib/audit";
 
 function buildVisitWhere(filter?: VisitListFilter): Prisma.VisitRecordWhereInput {
@@ -112,6 +112,18 @@ export class PrismaVisitRepository implements ScopedVisitRepository {
 
   async deleteAll(): Promise<void> {
     await this.client.visitRecord.deleteMany({});
+  }
+
+  /** P6.5-03 — انبوه با merge non-null (§۲.۴) + محافظت sourceRunId (§۱.۹) */
+  async upsertBulk(rows: VisitUpsertInput[], opts: { sourceRunId: string }): Promise<{ created: number; updated: number; duplicates: number; errors: number }> {
+    return runBulkUpsert({
+      rows,
+      toData: (v) => toCreateData(v) as unknown as Record<string, unknown>,
+      findExisting: (v) => this.client.visitRecord.findUnique({ where: { id: v.id } }) as Promise<Record<string, unknown> | null>,
+      createRow: (data) => this.client.visitRecord.create({ data: data as Prisma.VisitRecordCreateInput }),
+      updateRow: (data) => this.client.visitRecord.update({ where: { id: data.id as string }, data: data as Prisma.VisitRecordUpdateInput }),
+      sourceRunId: opts.sourceRunId,
+    });
   }
 
   /**

@@ -36,6 +36,16 @@ export type { OutcomeRepository } from "./outcome.repository";
 export type { IntegrationRepository } from "./integration.repository";
 export type { RequestRepository } from "./request.repository";
 
+// ===================== نوشتار انبوه + رجیستری آگهی (P6.5-03) =====================
+
+export type {
+  BulkWriteStats,
+  BulkUpsertOptions,
+  PropertyBulkInput,
+  ArmRequestBulkRow,
+  PropertyRecordRepository,
+} from "./bulk-write.repository";
+
 // ===================== ConsultantScope (P6.5-02 / §۵.۲) =====================
 
 export type {
