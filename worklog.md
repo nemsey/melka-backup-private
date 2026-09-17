@@ -1036,3 +1036,27 @@ Stage Summary:
 - سند طراحی کامل و تحویل‌شده — در انتظار بازبینی شورا (ف۱ + ف۲ + ف۵) طبق شرط پذیرش P6.5-01
 - تصمیم‌های کلیدی معماری: upsert-only بدون حذف · تفکیک checkpoint از sync منظم · ماتریس دامنه Scope · مرز واحد پول · دو مدل جدید افزودنی
 - گام بعد پس از بازبینی: P6.5-02 (ConsultantScope + AuditLog — ستون‌های افزودنی + findWithScope + auditAccess + تست‌های اثبات ۵گانه)
+
+---
+Task ID: phase65-p6502
+Agent: main (Super Z / GLM-5.3)
+Task: P6.5-02 — ConsultantScope + AuditLog Extension + آماده‌سازی چند-دپارتمانی (طبق طراحی مصوب P6.5-01 + مصوبات جدید شورا ملکا-شورا-۰۱۱/۰۱۲)
+
+Work Log:
+- دستور تداوم PHASE 6.5 دریافت و ثبت شد: P6.5-01 رسماً APPROVED (شش انحراف پذیرفته، بدون اصلاح)؛ ترکیب معماری تصویب شد (گزینه ۱ هویت + گزینه ۲ کد + فدرال PHASE 8+)؛ D3 اصلاح شد (تنها تغییر عمدی = تغییر نام داشبورد در P6.5-D)؛ رضایت‌نامه از KPIها حذف شد (بخش D)
+- Schema افزودنی (صفر مخرب): tenantId String? @default('melk-tabriz') روی ۷ جدول مصوب (Listing/Transaction/Customer جدید/Property جدید/Expert/Request/Visit) + AuditLog طبق §۶.۱ (۵ ستون) + Session طبق §۵.۱ (branchId? + accessScope default OWNER) + ستون‌های انتساب §۵.۳ + دو مدل جدید کامل PropertyRecord/CustomerRecord (جداول خالی — زیرساخت P6.5-03)
+- قراردادهای خالص: src/core/repositories/tenant.ts (TenantResolver + DefaultTenantResolver placeholder + resolveTenantId — عین B.2-۲ شورا) + interfaces/scope.repository.ts (AccessScope/ScopeFilter/ScopeClause/personalScopeClause fail-closed/scopeFromSession/defaultAccessScopeForRole + چهار قرارداد Scoped*)
+- پیاده‌سازی: findWithScope روی ۴ مخزن دستوری طبق ماتریس §۵.۳ (Transaction تجمیعی؛ Listing/Customer شخصی با actorCode؛ Visit شخصی با ownerCode جدید + fail-closed) + src/lib/audit.ts (auditAccess غیرمسدودکننده با کلاینت تزریقی؛ action=DATA_ACCESS + operation/entityType/recordCount/accessScope؛ tenantId از default اسکیما) + createSession با accessScope = defaultAccessScopeForRole (صفر تغییر رفتار v1 — هنوز مصرف‌کننده‌ای نیست)
+- صفر منطق فعال multi-tenant (تأکید مصوبه): tenantId فقط حمل می‌شود؛ شاهد تستی با ردیف future-tenant که برای OWNER مرئی می‌ماند
+- مهاجرت: generate + push روی هر دو پایگاه تست؛ production با بکاپ گرم VACUUM INTO (custom.backup-pre-p6502.db، md5 bf7feb2a، integrity ok) → push 30ms → شاهد scripts/verify-p6502-schema.ts روی هر سه PASS (۵۹/۵۹ نشست OWNER ماندند؛ ۱۲۸/۱۲۸ رد حسابرسی حفظ؛ جداول جدید خالی)
+- تست: ۶۵۱ ← ۶۷۲ (+۲۱) — پنج اثبات §۵.۶ (جداسازی A/B در مخازن شخصی · OWNER همه · AuditLog هر دسترسی با فیلدهای درست · نشست قدیمی default OWNER · fail-closed ردیف بدون انتساب) + ماتریس تجمیعی + BRANCH (+ بدون شعبه = deny-closed همراه حسابرسی) + قرارداد auditAccess + شکست غیرمسدودکننده + آینه‌های DTO (۱۳/۱۲/۱۲/۳۴/۴۸/۳۱/۱۳ کلید)
+- گارد ۶بخشی --strict (بخش ۶ = audit-data-isolation.sh با SKIP صریح تا P6.5-09 — الگوی نردبانی P2-05/P3-06/P6-08) × دو-سبز پیاپی ۶۷۲/۶۷۲ + tsc صفر
+- تست دویی زنده پس از مهاجرت: همه روت‌های API = ۴۰۱ صحیح (کامپایل سالم کد جدید در dev)؛ health ok؛ ROOT :81 = ۲۰۰
+- کشف‌های صادقانه (§۱۴.۳ سند): (۱) پرایسما برای ستون غیر-nullable با default روی SQLite از بازسازی جدول استفاده می‌کند — داده کامل حفظ شد (شاهد شمارشی + integrity)؛ (۲) رشد آینه DTO ⇒ ردیف‌های JSON مسیر v1 ستون‌های تهی را در دنباله شیء می‌گیرند — رندر صفحات صفر-تغییر (D3 = md5 اسکرین‌شات)؛ (۳) AuditLog.tenantId از §۶.۱ طراحی مصوب می‌آید نه فهرست هفت‌گانه
+- سند: §۱۴ «آماده‌سازی چند-دپارتمانی» (تصمیم B.1 + اقدامات + کشف‌ها + D3 اصلاح‌شده + اصلاح رضایت‌نامه + نقشه گارد) + اصلاح §۱.۱۰/§۱۱.۳-۵ + وضعیت اجرای پیوست A + ردیف پیوست B
+- کامیت 1b99299 — یک واحد اتمی (کد + Schema + تست + سند + بکاپ)
+
+Stage Summary:
+- P6.5-02 کامل: ستون‌های tenantId هفت‌گانه + TenantResolver placeholder + ConsultantScope (ماتریس + fail-closed) + AuditLog Extension + دو مدل جدید + §۱۴ — با صفر منطق فعال multi-tenant و صفر تغییر UI
+- زنجیره شواهد: ۶۷۲ تست ×۲ · شاهد مهاجرت سه‌پایگاه PASS · دو-سبز + tsc صفر · تست دویی زنده ۴۰۱
+- گام بعد P6.5-03: Bulk Import Pipeline (bulk-import.ts + checkpoint در SyncState + rate-limit + تست موک + تست رگرسیون هم‌زیستی §۱.۹)
