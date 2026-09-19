@@ -121,7 +121,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
     if (applied.businessTitle !== "all") params.set("businessTitle", applied.businessTitle);
     if (applied.creator !== "all") params.set("creator", applied.creator);
     if (applied.active !== "all") params.set("active", applied.active);
-    params.set("limit", "1000");
+    // P6.5-09 — بدون صفحه‌بندی: همهٔ کارشناسان در یک صفحه (سقف سرور ۵۰۰۰)
+    params.set("limit", "5000");
 
     const [exRes, inRes] = await Promise.all([
       api<{ rows: ExRow[]; total: number; dataSource: DataSourceInfo }>(`/api/crm/experts?${params.toString()}`),
@@ -503,7 +504,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {interactions.slice(0, 100).map((r) => (
+                        {/* P6.5-09 — بدون سقف: همهٔ تعاملات در یک صفحه (عین لیست کاربران) */}
+                        {interactions.map((r) => (
                           <TableRow key={r.id} className="hover:bg-muted/30">
                             <TableCell className="text-xs font-medium">{r.requestRealtorName}</TableCell>
                             <TableCell className="text-xs font-medium">{r.propertyRealtorName}</TableCell>
@@ -515,11 +517,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                       </TableBody>
                     </Table>
                   </div>
-                  {interactions.length > 100 && (
-                    <p className="p-3 text-[11px] text-muted-foreground text-center">
-                      نمایش ۱۰۰ تعامل برتر از {faNumber(interactions.length)} رکورد
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             </>

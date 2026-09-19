@@ -155,7 +155,8 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
           </CardHeader>
           <CardContent>
             <div className="space-y-3" role="img" aria-label="نمودار مقایسه عرضه و تقاضا در بازه‌های قیمتی">
-              {rows.slice(0, 12).map((r) => (
+              {/* P6.5-09 — بدون سقف: همهٔ بازه‌ها در یک صفحه */}
+              {rows.map((r) => (
                 <div key={r.id} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold truncate max-w-[55%]">{r.rangeTitle}</span>

@@ -170,7 +170,8 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
                 )}
                 {data.ad.features.length > 0 && (
                   <div className="p-3 flex flex-wrap gap-1.5">
-                    {data.ad.features.slice(0, 12).map((f, i) => (
+                    {/* P6.5-09 — بدون سقف: همهٔ ویژگی‌ها */}
+                    {data.ad.features.map((f, i) => (
                       <Badge key={i} variant="secondary" className="text-[10px]">{f}</Badge>
                     ))}
                   </div>
@@ -310,7 +311,8 @@ export function AdDetailsDialog({ ad, open, onOpenChange }: { ad: DivarAdRow | n
             <div>
               <h4 className="text-sm font-bold mb-2 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-600" aria-hidden /> پیش‌بینی هوشمند دلایل احتمالی رد</h4>
               <div className="rounded-xl border divide-y text-xs">
-                {data.predictions.slice(0, 6).map((p, pi) => (
+                {/* P6.5-09 — بدون سقف: همهٔ پیش‌بینی‌ها */}
+                {data.predictions.map((p, pi) => (
                   <div key={p.key} className="p-2.5 flex items-center justify-between gap-2">
                     <span className="font-medium flex items-center gap-2 min-w-0">
                       <span className="inline-flex items-center justify-center w-4.5 h-4.5 min-w-4.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold text-[9px] tabular-nums shrink-0" aria-label={`ردیف ${faNumber(pi + 1)}`}>{faNumber(pi + 1)}</span>

@@ -70,14 +70,14 @@ export function ListingsPage({ settings, onSettingsChange }: TilePageProps) {
     void load();
   }, [load]);
 
-  const pageSize = Number(settings.pageSize ?? 20) || 20;
+  // P6.5-09 — بدون صفحه‌بندی: همهٔ ردیف‌های فیلترشده در یک صفحهٔ واحد
   const allRows = data?.rows ?? [];
   const rows = (() => {
     let filtered = allRows;
     if (tab === "manual") filtered = allRows.filter((r) => r.source === "manual");
     if (tab === "divar") filtered = allRows.filter((r) => r.source === "divar");
     if (tab === "pending") filtered = allRows.filter((r) => !r.crmTransferredAt || !r.instagramPublishedAt);
-    return filtered.slice(0, pageSize);
+    return filtered;
   })();
 
   const stats = data?.stats;
@@ -168,14 +168,7 @@ export function ListingsPage({ settings, onSettingsChange }: TilePageProps) {
                   {o.label}
                 </Button>
               ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-muted-foreground">تعداد فایل در هر صفحه:</span>
-              {[10, 20, 50].map((n) => (
-                <Button key={n} size="sm" variant={Number(settings.pageSize ?? 20) === n ? "default" : "outline"} onClick={() => onSettingsChange({ pageSize: n })}>
-                  {faNumber(n)}
-                </Button>
-              ))}
+              {/* P6.5-09 — انتخابگر اندازهٔ صفحه حذف شد: فهرست تک‌صفحه‌ای و بی‌نهایت است */}
             </div>
           </CardContent>
         </Card>

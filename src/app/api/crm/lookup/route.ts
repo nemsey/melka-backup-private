@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
   const guard = await requireSessionAsync(request);
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
-  const limit = Math.min(Math.max(Number(request.nextUrl.searchParams.get("limit") ?? 50), 1), 200);
+  const limit = Math.min(Math.max(Number(request.nextUrl.searchParams.get("limit") ?? 50), 1), 1000);
   const kind = request.nextUrl.searchParams.get("kind");
   const kindFilter = kind === "property" || kind === "request" ? (kind.toUpperCase() as "PROPERTY" | "REQUEST") : undefined;
 

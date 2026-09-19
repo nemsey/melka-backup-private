@@ -5,6 +5,15 @@
  * POST — عملیات: start-otp (ارسال پیامک PM) | verify (تأیید کد + ذخیره توکن) | reset
  * عین جریان ورود خود سامانه پرسنلی (pm.melketabriz.ir):
  *   GET  authentication/otp/{code} → POST authentication/otp/login {code, otpCode}
+ *
+ * P6.5-09 (دستور مالک — رفع باگ سهمیهٔ مشترک پیامک PM/ARM):
+ *   · گارد نرخ محلی «مستقل» برای جریان PM (REQUEST_OTP_PM / VERIFY_OTP_PM) —
+ *     قبلاً این روت هیچ گارد محلی نداشت و جریان ARM با صفحهٔ ورود سهمیهٔ
+ *     واحد داشت؛ اکنون هر سه جریان سبد جدا دارند.
+ *   · خطای سمت سرور «پیامک قبلاً ارسال شده» (اتصال قبلی ARM و سپس PM — یا
+ *     بالعکس) ⇒ نرم‌موفق: کدِ همین حالا ارسال‌شده هنوز معتبر است؛ همان
+ *     وارد شود. صفر پیامک جدید، صفر ثبت تلاش ناموفق.
+ *   · خطای «سقف پیامک سمت ملک تبریز» ⇒ پیام شفاف با راهنمایی انتظار.
  */
 
 import { NextRequest } from "next/server";
@@ -13,6 +22,8 @@ import { errorResponse, requireRole, requireSessionAsync } from "@/lib/auth/guar
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
 import { encryptSecret, decryptSecret } from "@/lib/auth/crypto";
+import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
+import { classifySmsSendFailure } from "@/lib/melk-api/sms";
 import { armCall } from "@/lib/melk-api/client";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { MELK_ENDPOINTS } from "@/lib/melk-api/endpoints";
@@ -50,6 +61,7 @@ export async function POST(request: NextRequest) {
   }
 
   const cfg = getMelkApiConfig();
+  const ip = request.headers.get("x-forwarded-for") ?? undefined;
 
   switch (body.action) {
     // ---------- شروع: ارسال پیامک PM ----------
@@ -57,6 +69,11 @@ export async function POST(request: NextRequest) {
       const code = String(body.personnelCode ?? "").trim();
       if (!code || code.length < 3) {
         return errorResponse(new MelkApiError("UNKNOWN", "کد پرسنلی معتبر وارد کنید.", 400, false));
+      }
+      // P6.5-09 — گارد نرخ محلی «مستقل» جریان PM (۳ پیامک/۱۰ دقیقه؛ جدا از ورود و ARM)
+      const rate = await checkRate(code, "REQUEST_OTP_PM", ip);
+      if (!rate.allowed) {
+        return errorResponse(new MelkApiError("RATE_LIMITED", rate.reason ?? "درخواست بیش از حد مجاز.", 429, false));
       }
       try {
         await armCall<unknown>({
@@ -66,6 +83,7 @@ export async function POST(request: NextRequest) {
           timeoutMs: Math.min(cfg.timeoutMs, 20000),
           maxRetries: 1,
         });
+        await recordAttempt(code, "REQUEST_OTP_PM", true, ip);
         await getIntegrationRepository().upsertPmConnection({
           status: "pending",
           personnelCode: code,
@@ -75,6 +93,21 @@ export async function POST(request: NextRequest) {
         return Response.json({ ok: true, message: "کد پیامکی سامانه پرسنلی (PM) ارسال شد — گام تأیید کد را انجام دهید." });
       } catch (err) {
         const e = err as MelkApiError;
+
+        // P6.5-09 — «پیامک قبلاً ارسال شده» (مثلاً اتصال ARM همین حالا) ⇒ نرم‌موفق
+        const sms = classifySmsSendFailure(e.message);
+        if (sms.kind === "ALREADY_SENT") {
+          await getIntegrationRepository()
+            .upsertPmConnection({ status: "pending", personnelCode: code, lastError: null })
+            .catch(() => undefined);
+          await audit("PM_OTP_ALREADY_SENT", guard.personnelCode, `code=${code}`);
+          return Response.json({ ok: true, alreadySent: true, message: sms.userMessage });
+        }
+        // «سقف پیامک سمت ملک تبریز» ⇒ پیام شفاف؛ ثبت تلاش نمی‌کنیم (قفل خود-تمدیدشونده نمی‌سازیم)
+        if (sms.kind === "LIMIT_REACHED") {
+          return errorResponse(new MelkApiError("SMS_LIMIT_REMOTE", sms.userMessage, 429, false));
+        }
+
         await getIntegrationRepository()
           .upsertPmConnection({
             status: "error",
@@ -93,6 +126,11 @@ export async function POST(request: NextRequest) {
       if (!code) return errorResponse(new MelkApiError("UNKNOWN", "کد پرسنلی لازم است.", 400, false));
       if (otp.length < 4 || otp.length > 8) {
         return errorResponse(new MelkApiError("UNKNOWN", "کد پیامکی باید ۴ تا ۸ رقم باشد.", 400, false));
+      }
+      // P6.5-09 — گارد نرخ تأیید «مستقل» جریان PM (۵ تأیید/۱۵ دقیقه + قفل)
+      const rate = await checkRate(code, "VERIFY_OTP_PM", ip);
+      if (!rate.allowed) {
+        return errorResponse(new MelkApiError("RATE_LIMITED", rate.reason ?? "تلاش بیش از حد مجاز.", 429, false));
       }
       try {
         const res = await armCall<{
@@ -113,6 +151,7 @@ export async function POST(request: NextRequest) {
         }
         const displayName =
           data.user?.fullName ?? data.user?.name ?? [data.user?.firstName, data.user?.lastName].filter(Boolean).join(" ") ?? data.user?.username ?? code;
+        await recordAttempt(code, "VERIFY_OTP_PM", true, ip);
         await getIntegrationRepository().upsertPmConnection({
           status: "connected",
           personnelCode: code,
@@ -126,6 +165,8 @@ export async function POST(request: NextRequest) {
         return Response.json({ ok: true, message: `اتصال حساب شخصی PM برقرار شد${displayName ? ` — «${displayName}»` : ""}.` });
       } catch (err) {
         const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error).message, 502, false);
+        // P6.5-09 — تأیید ناموفق در سبد مستقل PM ثبت می‌شود (قفل ۱۵ دقیقه‌ای پس از ۵ شکست)
+        await recordAttempt(code, "VERIFY_OTP_PM", false, ip).catch(() => undefined);
         await getIntegrationRepository()
           .upsertPmConnection({
             status: "error",

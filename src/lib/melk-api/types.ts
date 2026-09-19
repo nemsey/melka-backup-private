@@ -553,6 +553,7 @@ export type MelkErrorCode =
   | "OTP_LOCKED"
   | "PRECONDITION_FAILED"
   | "RATE_LIMITED"
+  | "SMS_LIMIT_REMOTE" // P6.5-09: سقف ارسال پیامک سمت خود سامانه ملک تبریز (429 — قابل انتظار، نه قفل محلی)
   | "NETWORK_ERROR"
   | "TIMEOUT"
   | "UNAUTHORIZED"

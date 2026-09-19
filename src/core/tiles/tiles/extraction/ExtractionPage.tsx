@@ -148,7 +148,8 @@ function DetailList({ details }: { details: { label: string; value: string; unit
         <p className="text-sm font-bold">جزئیات ثبت‌شده در سامانه</p>
       </div>
       <ul className="divide-y">
-        {details.slice(0, 12).map((d, i) => (
+        {/* P6.5-09 — بدون سقف: همهٔ جزئیات */}
+        {details.map((d, i) => (
           <li key={i} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
             <span className="text-muted-foreground shrink-0">{d.label}</span>
             <span className="font-bold text-left" dir="auto">
@@ -184,7 +185,8 @@ export function ExtractionPage({ settings, onSettingsChange: _osc, userRole: _ro
 
   const loadHistory = useCallback(async () => {
     try {
-      const res = await api<{ rows: LookupHistoryRow[]; total: number }>("/api/crm/lookup?limit=20");
+      // P6.5-09 — بدون صفحه‌بندی: کل تاریخچهٔ استخراج در یک صفحه (سقف سرور ۱۰۰۰)
+      const res = await api<{ rows: LookupHistoryRow[]; total: number }>("/api/crm/lookup?limit=1000");
       setHistory(res.rows);
       setHistoryTotal(res.total);
     } catch {

@@ -141,7 +141,8 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
 
   const loadAds = useCallback(async (b: string) => {
     try {
-      const res = await api<AdsResponse>(`/api/divar/ads?bucket=${b}&limit=80`);
+      // P6.5-09 — بدون صفحه‌بندی: همهٔ فایل‌های سطل در یک صفحه (سقف سرور ۱۰۰۰)
+      const res = await api<AdsResponse>(`/api/divar/ads?bucket=${b}&limit=1000`);
       setAdsData(res);
     } catch (err) {
       const e = err as ApiClientError;
@@ -720,7 +721,8 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
             <CardTitle className="text-xs flex items-center gap-1.5"><History className="w-3.5 h-3.5" aria-hidden /> گزارش اسکن‌های اخیر</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5">
-            {scanLogs.slice(0, 5).map((log, i) => (
+            {/* P6.5-09 — بدون سقف: همهٔ گزارش‌های اسکن */}
+            {scanLogs.map((log, i) => (
               <div key={log.id} className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground border-b last:border-0 pb-1.5 last:pb-0">
                 <span className="flex items-center gap-1.5 min-w-0">
                   <span className="inline-flex items-center justify-center w-4.5 h-4.5 min-w-4.5 rounded-md bg-muted font-bold text-[9px] tabular-nums shrink-0" aria-label={`ردیف ${faNumber(i + 1)}`}>{faNumber(i + 1)}</span>

@@ -211,11 +211,11 @@ export function ListingDetailsDialog({
             <h4 className="text-sm font-bold flex items-center gap-1.5"><ImagePlus className="w-4 h-4 text-primary" aria-hidden /> گام ۴: تصاویر و اسناد ملک</h4>
             {listing.images.length > 0 ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {listing.images.slice(0, 8).map((u, i) => (
+                {/* P6.5-09 — بدون سقف: همهٔ تصاویر فایل */}
+                {listing.images.map((u, i) => (
                    
                   <img key={i} src={u} alt={`تصویر ${faNumber(i + 1)} فایل`} className="rounded-lg border h-20 w-full object-cover" loading="lazy" />
                 ))}
-                {listing.images.length > 8 && <p className="text-[10px] text-muted-foreground self-center">+{faNumber(listing.images.length - 8)} تصویر دیگر</p>}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">تصویری ثبت نشده — آگهی بدون عکس هم قابل ثبت است.</p>

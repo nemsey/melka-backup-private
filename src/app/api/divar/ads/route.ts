@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
   const bucketParam = params.get("bucket") ?? "all";
   const category = params.get("category");
   const lineId = params.get("line");
-  const limit = Math.min(Math.max(Number(params.get("limit") ?? 60), 1), 200);
+  // P6.5-09 — سقف تک‌صفحه‌ای: تا ۱۰۰۰ فایل در هر سطل (فهرست بدون صفحه‌بندی)
+  const limit = Math.min(Math.max(Number(params.get("limit") ?? 60), 1), 1000);
   const offset = Math.max(Number(params.get("offset") ?? 0), 0);
 
   const bucket = ["hunt", "follow", "review", "all"].includes(bucketParam) ? bucketParam : "all";

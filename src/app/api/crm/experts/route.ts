@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
     const activeRaw = sp.get("active");
     const active = activeRaw === "true" || activeRaw === "false" ? activeRaw === "true" : undefined;
 
-    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 50, 1), 1000);
+    // P6.5-09 — سقف تک‌صفحه‌ای: تا ۵۰۰۰ کارشناس (فهرست بدون صفحه‌بندی)
+    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 50, 1), 5000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
 
     // P6.5-04-i — کارشناس دادهٔ مرجع سراسری است (ماتریس §۵.۳): همه می‌بینند؛

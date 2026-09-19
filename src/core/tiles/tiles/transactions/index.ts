@@ -40,15 +40,7 @@ export const transactionsTile = defineTile({
       hint: "ترتیب پیش‌فرض نمایش ردیف‌های جدول معاملات",
     },
     {
-      key: "pageSize",
-      label: "تعداد ردیف در هر صفحه",
-      type: "number",
-      defaultValue: 10,
-      min: 5,
-      max: 50,
-      hint: "حجم اطلاعات نمایشی در هر صفحه جدول",
-    },
-    {
+      // P6.5-09 — تنظیم «تعداد ردیف در هر صفحه» حذف شد: جدول تک‌صفحه‌ای و بی‌نهایت است
       key: "showCharts",
       label: "نمایش نمودارها",
       type: "switch",

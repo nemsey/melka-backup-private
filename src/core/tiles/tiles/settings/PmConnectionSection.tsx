@@ -40,6 +40,8 @@ export function PmConnectionSection() {
   const [stage, setStage] = useState<"code" | "otp">("code");
   const [busy, setBusy] = useState(false);
   const [resetting, setResetting] = useState(false);
+  /** پیامک قبلاً ارسال شده — راهنمای گام تأیید (P6.5-09) */
+  const [alreadySentHint, setAlreadySentHint] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -65,13 +67,17 @@ export function PmConnectionSection() {
     }
     setBusy(true);
     try {
-      const res = await api<{ ok: boolean; message: string }>("/api/pm/connection", {
+      const res = await api<{ ok: boolean; message: string; alreadySent?: boolean }>("/api/pm/connection", {
         method: "POST",
         body: { action: "start-otp", personnelCode: trimmed },
       });
       if (res.ok) {
         setStage("otp");
-        toast({ title: "کد پیامکی PM ارسال شد", description: res.message });
+        setAlreadySentHint(res.alreadySent ? res.message : "");
+        toast({
+          title: res.alreadySent ? "پیامک قبلاً ارسال شده" : "کد پیامکی PM ارسال شد",
+          description: res.message,
+        });
       } else {
         toast({ title: "ارسال کد ناموفق", description: res.message, variant: "destructive" });
       }
@@ -225,6 +231,11 @@ export function PmConnectionSection() {
               </Button>
             </div>
             <p className="text-[10px] text-muted-foreground">کد برای کد پرسنلی {personnelCode || conn?.personnelCode} ارسال شده است.</p>
+            {alreadySentHint && (
+              <p className="text-[10px] leading-relaxed rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 p-2">
+                {alreadySentHint}
+              </p>
+            )}
           </div>
         )}
       </CardContent>

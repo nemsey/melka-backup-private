@@ -117,7 +117,8 @@ export async function GET(request: NextRequest) {
           .some((f) => f.replace(/\s+/g, "").includes(q))
       );
     }
-    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 30, 1), 200);
+    // P6.5-09 — سقف تک‌صفحه‌ای: تا ۵۰۰۰ ردیف (لیست بدون صفحه‌بندی)
+    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 30, 1), 5000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
     const page = filtered.slice(offset, offset + limit);
 

@@ -41,15 +41,7 @@ export const contractsTile = defineTile({
       hint: "وضعیت پیش‌فرض نمایش لیست قراردادها هنگام ورود به کاشی",
     },
     {
-      key: "pageSize",
-      label: "تعداد ردیف در هر صفحه",
-      type: "number",
-      defaultValue: 30,
-      min: 10,
-      max: 100,
-      hint: "حجم اطلاعات نمایشی در لیست صورت وضعیت‌ها",
-    },
-    {
+      // P6.5-09 — تنظیم «تعداد ردیف در هر صفحه» حذف شد: لیست تک‌صفحه‌ای و بی‌نهایت است
       key: "showFunnel",
       label: "نمایش نمودار قیفی",
       type: "switch",

@@ -86,7 +86,8 @@ export function VisitsPage({ settings, onSettingsChange: _osc, userRole: _role, 
     if (applied.status) params.set("status", applied.status);
     if (applied.dateFrom) params.set("dateFrom", applied.dateFrom);
     if (applied.dateTo) params.set("dateTo", applied.dateTo);
-    params.set("limit", "1000");
+    // P6.5-09 — بدون صفحه‌بندی: همهٔ ردیف‌ها در یک صفحه (سقف سرور ۵۰۰۰)
+    params.set("limit", "5000");
 
     const res = await api<{ rows: ViRow[]; total: number; summary: Summary; dataSource: DataSourceInfo }>(
       `/api/crm/visits?${params.toString()}`

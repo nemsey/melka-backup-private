@@ -137,8 +137,8 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {faNumber(idx.areas.length)} منطقه تحت پوشش: {idx.areas.slice(0, 10).join("، ")}
-                  {idx.areas.length > 10 ? ` و ${faNumber(idx.areas.length - 10)} منطقه دیگر` : ""}
+                  {/* P6.5-09 — بدون سقف: همهٔ مناطق تحت پوشش */}
+                  {faNumber(idx.areas.length)} منطقه تحت پوشش: {idx.areas.join("، ")}
                 </p>
                 {idx.details.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
@@ -230,7 +230,8 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
                 </div>
               ) : (
                 <div className="space-y-3" role="img" aria-label="مقایسه شاخص قیمت مناطق">
-                  {data.areaStats.slice(0, 18).map((s, i) => (
+                  {/* P6.5-09 — بدون سقف: همهٔ مناطق در یک صفحه */}
+                  {data.areaStats.map((s, i) => (
                     <div key={`${s.areaName}-${s.category}`} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
                         <span className="inline-flex items-center gap-2 font-bold">

@@ -11,6 +11,8 @@
  *     شماره هولوگرام، آگهی پیشنهادی، رویداد
  *   • نمودار روند ماهانه (هجری شمسی) + نمودار ترکیب تطبیق
  *   • شفافیت منبع داده (آخرین استخراج موفق/خطای زنده)
+ *   • P6.5-09 (دستور مالک): جدول «بدون صفحه‌بندی» — همهٔ ردیف‌ها در یک
+ *     صفحهٔ واحد و بی‌نهایت (عین لیست کارشناسان؛ حذف دکمه‌های صفحه و slice)
  */
 
 import { useCallback, useMemo, useState } from "react";
@@ -30,8 +32,6 @@ import {
   Calculator,
   Percent,
   Search,
-  ChevronRight,
-  ChevronLeft,
   BarChart3,
   PieChart,
   Hash,
@@ -109,9 +109,7 @@ const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknow
 export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _userRole, onBack: _onBack }: TilePageProps) {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
-  const [page, setPage] = useState(0);
 
-  const pageSize = Number(settings.pageSize ?? 10);
   const sortBy = String(settings.sortBy ?? "contractDate");
   const showCharts = settings.showCharts !== false;
 
@@ -129,7 +127,6 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
     params.set("sortDir", sortBy === "contractDate" ? "desc" : "desc");
 
     const res = await api<TxResponse>(`/api/crm/transactions?${params.toString()}`);
-    setPage(0);
     return res;
   }, [applied, sortBy]);
 
@@ -160,13 +157,6 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
       { name: "بدون هیچ‌کدام", value: Math.max(0, summary.totalCount - summary.hasRequestEvent - summary.hasSuggestedProperty + summary.hasBoth), fill: "var(--chart-4)" },
     ];
   }, [summary]);
-
-  const pageRows = useMemo(() => {
-    if (!rows) return [];
-    return rows.slice(page * pageSize, (page + 1) * pageSize);
-  }, [rows, page, pageSize]);
-
-  const totalPages = rows ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
 
@@ -362,24 +352,14 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
         </div>
       )}
 
-      {/* جدول — عین ستون‌های گزارش خود سامانه */}
+      {/* جدول — عین ستون‌های گزارش خود سامانه؛ بدون صفحه‌بندی (P6.5-09) */}
       <Card>
         <CardHeader className="py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle className="text-base">فهرست معاملات</CardTitle>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>
-                صفحه {faNumber(page + 1)} از {faNumber(totalPages)}
-              </span>
-              <div className="flex gap-1">
-                <Button variant="outline" size="icon" className="h-7 w-7" disabled={page === 0} onClick={() => setPage((p) => p - 1)} aria-label="صفحه قبل">
-                  <ChevronRight className="w-4 h-4" aria-hidden />
-                </Button>
-                <Button variant="outline" size="icon" className="h-7 w-7" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)} aria-label="صفحه بعد">
-                  <ChevronLeft className="w-4 h-4" aria-hidden />
-                </Button>
-              </div>
-            </div>
+            {rows && rows.length > 0 && (
+              <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -389,7 +369,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
                 <Skeleton key={i} className="h-12" />
               ))}
             </div>
-          ) : pageRows.length === 0 ? (
+          ) : rows.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
               {loading
                 ? "در حال دریافت…"
@@ -412,11 +392,11 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pageRows.map((t, i) => (
+                  {rows.map((t, i) => (
                     <TableRow key={t.id} className="hover:bg-muted/40">
                       <TableCell className="whitespace-nowrap">
-                        <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(page * pageSize + i + 1)}`}>
-                          {faNumber(page * pageSize + i + 1)}
+                        <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
+                          {faNumber(i + 1)}
                         </span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-xs font-medium">{faJalaliShort(t.contractDate)}</TableCell>

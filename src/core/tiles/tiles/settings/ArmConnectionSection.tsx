@@ -8,6 +8,11 @@
  * جاری متصل کنید — بدون خروج و ورود مجدد.
  * جریان عین صفحه ورود: کد پرسنلی → پیامک ARM → تأیید کد → توکن متصل به همین نشست.
  * پس از اتصال، استخراج داده واقعی به‌طور خودکار در پس‌زمینه آغاز می‌شود.
+ *
+ * P6.5-09 (دستور مالک):
+ *   · کلید «ریست» — بازنشانی کامل اتصال ARM و بازگشت به گام اول (عین ریست PM)
+ *   · پاسخ alreadySent (پیامک قبلاً ارسال شده — سهمیهٔ مشترک سمت ملک تبریز):
+ *     بدون خطا، به گام وارد کردن همان کد دریافت‌شده هدایت می‌شود
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -18,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Smartphone, ShieldCheck, XCircle, Building2, RefreshCcw, Unplug } from "lucide-react";
+import { Loader2, Smartphone, ShieldCheck, XCircle, Building2, RefreshCcw, RotateCcw, Unplug } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faDateTime, faNumber } from "@/lib/format";
 
@@ -48,6 +53,9 @@ export function ArmConnectionSection() {
   const [stage, setStage] = useState<"code" | "otp">("code");
   const [busy, setBusy] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  /** پیامک قبلاً ارسال شده — راهنمای گام تأیید (P6.5-09) */
+  const [alreadySentHint, setAlreadySentHint] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -72,13 +80,17 @@ export function ArmConnectionSection() {
     }
     setBusy(true);
     try {
-      const res = await api<{ ok: boolean; message: string }>("/api/arm/connection", {
+      const res = await api<{ ok: boolean; message: string; alreadySent?: boolean }>("/api/arm/connection", {
         method: "POST",
         body: { action: "start-otp", personnelCode: trimmed },
       });
       if (res.ok) {
         setStage("otp");
-        toast({ title: "کد پیامکی ARM ارسال شد", description: res.message });
+        setAlreadySentHint(res.alreadySent ? res.message : "");
+        toast({
+          title: res.alreadySent ? "پیامک قبلاً ارسال شده" : "کد پیامکی ARM ارسال شد",
+          description: res.message,
+        });
       } else {
         toast({ title: "ارسال کد ناموفق", description: res.message, variant: "destructive" });
       }
@@ -130,12 +142,35 @@ export function ArmConnectionSection() {
       toast({ title: "اتصال ARM قطع شد", description: res.message });
       setStage("code");
       setCode("");
+      setAlreadySentHint("");
       await load();
     } catch (err) {
       const e = err as ApiClientError;
       toast({ title: "قطع اتصال ناموفق", description: e.message, variant: "destructive" });
     } finally {
       setDisconnecting(false);
+    }
+  };
+
+  /** P6.5-09 — ریست کامل اتصال ARM (عین ریست PM): پاک‌کردن توکن + بازگشت به گام اول */
+  const reset = async () => {
+    setResetting(true);
+    try {
+      const res = await api<{ ok: boolean; message: string }>("/api/arm/connection", {
+        method: "POST",
+        body: { action: "reset" },
+      });
+      toast({ title: "ریست انجام شد", description: res.message });
+      setStage("code");
+      setCode("");
+      setPersonnelCode("");
+      setAlreadySentHint("");
+      await load();
+    } catch (err) {
+      const e = err as ApiClientError;
+      toast({ title: "ریست ناموفق", description: e.message, variant: "destructive" });
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -180,19 +215,33 @@ export function ArmConnectionSection() {
               </Badge>
             )}
           </div>
-          {isConnected && (
+          <div className="flex items-center gap-2">
+            {/* P6.5-09 — کلید ریست اتصال ARM (عین ریست PM) */}
             <Button
               variant="outline"
               size="sm"
               className="gap-1.5"
-              onClick={() => void disconnect()}
-              disabled={disconnecting}
-              aria-label="قطع اتصال ARM"
+              onClick={() => void reset()}
+              disabled={resetting}
+              aria-label="ریست اتصال ARM"
             >
-              {disconnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Unplug className="w-3.5 h-3.5" aria-hidden />}
-              قطع اتصال
+              {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
+              ریست
             </Button>
-          )}
+            {isConnected && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => void disconnect()}
+                disabled={disconnecting}
+                aria-label="قطع اتصال ARM"
+              >
+                {disconnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Unplug className="w-3.5 h-3.5" aria-hidden />}
+                قطع اتصال
+              </Button>
+            )}
+          </div>
         </div>
 
         {isConnected ? (
@@ -255,6 +304,11 @@ export function ArmConnectionSection() {
             <p className="text-[10px] text-muted-foreground">
               کد برای کد پرسنلی {personnelCode || "—"} ارسال شده است. پس از تأیید، استخراج داده واقعی خودکار آغاز می‌شود.
             </p>
+            {alreadySentHint && (
+              <p className="text-[10px] leading-relaxed rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 p-2">
+                {alreadySentHint}
+              </p>
+            )}
           </div>
         )}
       </CardContent>

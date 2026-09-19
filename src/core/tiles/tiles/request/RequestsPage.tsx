@@ -96,14 +96,14 @@ export function RequestsPage({ settings }: TilePageProps) {
      
   }, [tab]);
 
-  const pageSize = Number(settings.pageSize ?? 20) || 20;
+  // P6.5-09 — بدون صفحه‌بندی: همهٔ ردیف‌های فیلترشده در یک صفحهٔ واحد
   const allRows = data?.rows ?? [];
   const rows = (() => {
     let filtered = allRows;
     if (tab === "manual") filtered = allRows.filter((r) => r.source === "manual");
     if (tab === "auto") filtered = allRows.filter((r) => r.source === "auto");
     if (tab === "pending") filtered = allRows.filter((r) => !r.armRequestId);
-    return filtered.slice(0, pageSize);
+    return filtered;
   })();
 
   const stats = data?.stats;

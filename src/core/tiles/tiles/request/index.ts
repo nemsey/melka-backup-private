@@ -48,15 +48,7 @@ export const requestTile = defineTile({
       defaultValue: true,
       hint: "نمایش گام‌های کامل/ناقص هر درخواست روی کارت",
     },
-    {
-      key: "pageSize",
-      label: "تعداد درخواست در هر صفحه",
-      type: "number",
-      defaultValue: 20,
-      min: 5,
-      max: 100,
-      hint: "حجم اطلاعات نمایشی در لیست درخواست‌ها",
-    },
+    // P6.5-09 — تنظیم «تعداد درخواست در هر صفحه» حذف شد: لیست تک‌صفحه‌ای و بی‌نهایت است
   ],
 });
 

@@ -81,9 +81,10 @@ export function ContractsPage({ settings, onSettingsChange, userRole: _role, onB
     const params = new URLSearchParams();
     if (statusFilter !== "all") params.set("status", statusFilter);
     if (search.trim()) params.set("search", search.trim());
-    params.set("limit", String(settings.pageSize ?? 30));
+    // P6.5-09 — بدون صفحه‌بندی: همهٔ ردیف‌ها در یک صفحه (سقف سرور ۵۰۰۰)
+    params.set("limit", "5000");
     return api<ContractsResponse>(`/api/crm/contracts?${params.toString()}`);
-  }, [statusFilter, search, settings.pageSize]);
+  }, [statusFilter, search]);
 
   const { data, loading, reload } = useTileData(fetchContracts, { errorTitle: "خطا در دریافت قراردادها" });
 

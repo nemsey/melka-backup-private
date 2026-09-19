@@ -47,15 +47,7 @@ export const listingTile = defineTile({
       defaultValue: true,
       hint: "نمایش گام‌های کامل/ناقص هر فایل روی کارت",
     },
-    {
-      key: "pageSize",
-      label: "تعداد فایل در هر صفحه",
-      type: "number",
-      defaultValue: 20,
-      min: 5,
-      max: 100,
-      hint: "حجم اطلاعات نمایشی در لیست فایل‌ها",
-    },
+    // P6.5-09 — تنظیم «تعداد فایل در هر صفحه» حذف شد: لیست تک‌صفحه‌ای و بی‌نهایت است
   ],
 });
 
