@@ -6,6 +6,9 @@
  *   --dry                              آزمون خشک با موک — صفر تماس شبکه (فاصله فشرده ۵۰ms)
  *   --request-otp <personnelCode>      فاز A: درخواست پیامک ورود (۱ GET) — نیازمند چراغ‌سبز مالک (قاعده ۱۰)
  *   --run <personnelCode> <otpCode>    فاز B: ورود + ۹ گام + teardown
+ *   --use-session                      فاز B′: گام‌های ۱ تا ۸ با توکن ARM نشستِ فعال مالک از DB
+ *                                     (بدون لاگین جدید — سقف پیامک دستور ملکا-فوری-۰۰۱ پر شده بود؛
+ *                                     بدون logout — حفظ نشست فعال و sync؛ بدون refresh — ریسک چرخش توکن)
  *   --force-window                     لغو گارد پنجرهٔ ۲۲:۰۰–۰۶:۰۰ فقط با اختیار صریح مالک
  *                                     (دستور ملکا-فوری-۰۰۱ — شاهد window-override در لاگ)
  *
@@ -23,6 +26,8 @@ import { createHash } from "node:crypto";
 import { MELK_ENDPOINTS } from "../src/lib/melk-api/endpoints";
 import { buildQuery } from "../src/lib/melk-api/client";
 import { getMelkApiConfig } from "../src/lib/melk-api/config";
+import { PrismaClient } from "@prisma/client";
+import { decryptSecret } from "../src/lib/auth/crypto";
 
 // ---------------------------------------------------------------------------
 // ثابت‌های گارد
@@ -39,7 +44,7 @@ const cfg = getMelkApiConfig();
 const ARM = cfg.armApiBase;
 const ARM_PUBLIC = cfg.armPublicApiBase;
 
-type Phase = "dry" | "request-otp" | "run";
+type Phase = "dry" | "request-otp" | "run" | "use-session";
 let phase: Phase = "dry";
 /** لغو پنجرهٔ شبانه با اختیار صریح مالک — دستور ملکا-فوری-۰۰۱ (۱۴۰۵/۰۶/۲۸)؛ شاهد در لاگ */
 let forceWindow = false;
@@ -333,6 +338,43 @@ async function stepShapes(): Promise<void> {
   await armCall2("s8b-interactions", ARM, E.realtorInteractions, { auth: true, query: { page: 1, limit: 5 } });
 }
 
+// ---------------------------------------------------------------------------
+// فاز B′ — بارگذاری توکن ARM از نشست فعال مالک (بدون پیامک، بدون لاگین جدید)
+// زمینه: سقف ۲ پیامک دستور ملکا-فوری-۰۰۱ مصرف شد؛ توکن نشست فعال مالک (لاگین موفق
+// داشبورد) با رمزگشایی درون‌فرآیندی استفاده می‌شود — هرگز در لاگ نوشته نمی‌شود.
+// ---------------------------------------------------------------------------
+async function loadSessionToken(): Promise<void> {
+  const db = new PrismaClient();
+  try {
+    const sessions = await db.session.findMany({
+      where: { revoked: false, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: { armTokenEnc: true, createdAt: true, armUserType: true },
+    });
+    for (const s of sessions) {
+      // نشست‌های master بدون توکن ARM مقدار خام کوتاه دارند (<۵۰ کاراکتر) — رد می‌شوند
+      if (!s.armTokenEnc || s.armTokenEnc.length < 50) continue;
+      const plain = decryptSecret(s.armTokenEnc);
+      if (plain && plain !== "null" && plain.length > 20) {
+        token = plain;
+        loginAt = s.createdAt.getTime();
+        log({
+          step: "session-auth",
+          source: "db-session",
+          tokenAcquired: true,
+          sessionAgeMin: Math.round((Date.now() - loginAt) / 60000),
+          armUserType: s.armUserType,
+        });
+        return;
+      }
+    }
+    throw new ReconAbort("NO_ACTIVE_ARM_SESSION");
+  } finally {
+    await db.$disconnect();
+  }
+}
+
 async function stepTtlProbe(): Promise<void> {
   // گام ۳ — آزمون refresh (پایان اجرا؛ حداکثر ۱ POST)
   if (!refreshToken) {
@@ -355,9 +397,10 @@ async function main(): Promise<void> {
 
   if (args.includes("--dry")) phase = "dry";
   else if (args.includes("--request-otp")) phase = "request-otp";
+  else if (args.includes("--use-session")) phase = "use-session";
   else if (args.includes("--run")) phase = "run";
   else {
-    console.error("استفاده: --dry | --request-otp <personnelCode> | --run <personnelCode> <otpCode> | --force-window");
+    console.error("استفاده: --dry | --request-otp <pc> | --run <pc> <otp> | --use-session | --force-window");
     process.exit(2);
   }
   forceWindow = args.includes("--force-window");
@@ -388,7 +431,15 @@ async function main(): Promise<void> {
       console.log("درخواست OTP ثبت شد — پیامک به موبایل ثبت‌شدهٔ مالک در ARM می‌رود.");
       return;
     }
-    if (phase === "run") {
+    if (phase === "use-session") {
+      // فاز B′ — گام‌های ۱ تا ۸ با توکن نشست فعال مالک؛ صفر POST (بدون لاگین/refresh/logout)
+      await loadSessionToken();
+      await stepCountAndDepth(); // گام ۱ + ۲
+      await stepPageSizeDeepLight(); // گام ۴ + ۵ + ۶
+      await stepHeaders(); // گام ۷
+      await stepShapes(); // گام ۸ + ۸-ب
+      log({ step: "s3-ttl", note: "deferred: refresh probe would risk rotating the owner's active session token (background sync depends on it)" });
+    } else if (phase === "run") {
       const personnelCode = args[args.indexOf("--run") + 1];
       const otpCode = args[args.indexOf("--run") + 2];
       if (!personnelCode || !otpCode) throw new Error("کد پرسنلی و کد پیامک لازم است");
@@ -418,7 +469,7 @@ async function main(): Promise<void> {
   } finally {
     // گام ۹ — teardown: همیشه، حتی هنگام abort (logout خارج از گارد ABORT)
     try {
-      if (token && phase !== "dry" && phase !== "request-otp") {
+      if (token && phase === "run") {
         const r = await fetch(`${ARM.replace(/\/$/, "")}/${E.logout}`, {
           method: "POST",
           headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -427,6 +478,9 @@ async function main(): Promise<void> {
         log({ step: "logout", status: r.status });
       } else if (phase === "dry") {
         log({ step: "logout", status: 200, note: "mock" });
+      } else if (phase === "use-session") {
+        // عدم خروج عمدی: توکن متعلق به نشست فعال مالک است — خروج آن، داشبورد و sync را می‌شکند
+        log({ step: "logout", skipped: true, note: "owner-session-token: logout intentionally skipped to protect active dashboard session + background sync" });
       }
     } catch (e) {
       log({ step: "logout", ok: false, error: String(e) });
