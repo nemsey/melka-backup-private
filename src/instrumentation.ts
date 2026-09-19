@@ -14,6 +14,36 @@
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // ---------- ۰) P6.5-08: env جایگزین پلتفرم ----------
+  // فرایند دیپلوی پلتفرم .env/.env.local را می‌زداید و سرور standalone هم
+  // .env ریشه را بار نمی‌کند؛ بدون این گام هر دیپلوی عمومی در بوت می‌میرد
+  // و دامنهٔ عمومی 500 می‌دهد. فقط کلیدهای «غایب» پر می‌شوند (env واقعی اولویت دارد).
+  const { applyPlatformEnvFallbacks } = await import("@/lib/platform-env");
+  const platformEnv = applyPlatformEnvFallbacks();
+  const { logEvent } = await import("@/lib/logger");
+  if (platformEnv.error) {
+    logEvent({
+      level: "warn",
+      category: "system",
+      operation: "platform-env",
+      status: "fail",
+      errorCode: "PLATFORM_ENV_UNREADABLE",
+      detail: { error: platformEnv.error },
+    });
+  }
+  if (platformEnv.applied.length > 0) {
+    logEvent({
+      category: "system",
+      operation: "platform-env",
+      status: "ok",
+      detail: {
+        applied: platformEnv.applied,
+        source: platformEnv.source,
+        note: "platform deploy strips .env/.env.local; real env always takes precedence",
+      },
+    });
+  }
+
   // ---------- ۱) fail-fast رازهای اجباری (HOTFIX-01 / SEC-1, SEC-2) ----------
   const { assertProductionSecrets } = await import("@/lib/melk-api/config");
   assertProductionSecrets(); // در production نبود راز = throw → بوت نمی‌شود
