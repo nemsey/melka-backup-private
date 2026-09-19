@@ -41,7 +41,12 @@ function toCreateData(v: VisitUpsertInput): Prisma.VisitRecordCreateInput {
     checkTime: v.checkTime,
     createdAt: v.createdAt,
     status: v.status,
-  };
+    // P6.5-04-e-v2 — provenance سه‌لایه حقیقت
+    ...(v.rawSourceVersion !== undefined ? { rawSourceVersion: v.rawSourceVersion } : {}),
+    ...(v.extractedAt !== undefined ? { extractedAt: v.extractedAt } : {}),
+    ...(v.extractionBatchId !== undefined ? { extractionBatchId: v.extractionBatchId } : {}),
+    ...(v.normalizationVersion !== undefined ? { normalizationVersion: v.normalizationVersion } : {}),
+  } as Prisma.VisitRecordCreateInput;
 }
 
 export class PrismaVisitRepository implements ScopedVisitRepository {

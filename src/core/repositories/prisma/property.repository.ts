@@ -38,6 +38,14 @@ function toPropertyData(p: PropertyBulkInput): Record<string, unknown> {
     detailsJson: p.detailsJson ?? null,
     ownerMobile: p.ownerMobile ?? null,
     createdAt: p.createdAt ?? null,
+    // P6.5-04-e-v2 — لایه ۱ حقیقت (Raw) + provenance — هرگز توسط نرمال‌سازی تغییر نمی‌کنند
+    ...(p.rawPrice !== undefined ? { rawPrice: p.rawPrice } : {}),
+    ...(p.rawPriceUnit !== undefined ? { rawPriceUnit: p.rawPriceUnit } : {}),
+    ...(p.rawArea !== undefined ? { rawArea: p.rawArea } : {}),
+    ...(p.rawSourceVersion !== undefined ? { rawSourceVersion: p.rawSourceVersion } : {}),
+    ...(p.extractedAt !== undefined ? { extractedAt: p.extractedAt } : {}),
+    ...(p.extractionBatchId !== undefined ? { extractionBatchId: p.extractionBatchId } : {}),
+    ...(p.normalizationVersion !== undefined ? { normalizationVersion: p.normalizationVersion } : {}),
   };
 }
 

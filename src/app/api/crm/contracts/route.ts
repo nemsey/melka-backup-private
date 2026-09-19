@@ -58,6 +58,8 @@ export async function GET(request: NextRequest) {
     const contracts: CrmContract[] = rows.map((r) => ({
       id: r.id,
       status: r.status,
+      // P6.5-04-e-v2 — لایه ۱ حقیقت در مسیر خواندن v1 حمل می‌شود (بدون تغییر رفتار)
+      rawDate: null,
       contractHolo: r.contractHolo,
       propertyCode: r.propertyCode,
       requestCode: r.requestCode,

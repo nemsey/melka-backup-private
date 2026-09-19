@@ -127,9 +127,9 @@ export function mapArmTradedRow(row: Row, index: number, page: number, limit: nu
     null;
 
   // تاریخ معامله — ستون contractDate خود سامانه (جلالی یا ISO)
-  const contractDateDate =
-    anyDateStringToDate(pick(row, ["contractDate", "tradedAt", "dealDate", "createdAt", "date"])) ??
-    new Date();
+  // P6.5-04-e-v2 — لایه ۱ حقیقت: رشته خام عین منبع پیش از هر تبدیلی ذخیره می‌شود
+  const rawDate = pickStr(row, ["contractDate", "tradedAt", "dealDate", "createdAt", "date"]) || null;
+  const contractDateDate = anyDateStringToDate(rawDate) ?? new Date();
 
   const contractHolo =
     pickStr(row, ["contractHolo", "holo", "hologram", "holoCode"]) || null;
@@ -140,6 +140,7 @@ export function mapArmTradedRow(row: Row, index: number, page: number, limit: nu
   return {
     id: pickId(row, `arm-traded-${page}-${limit}-${index}-${Date.now()}`),
     contractDate: contractDateDate.toISOString(),
+    rawDate,
     propertyCode: propertyCode || "—",
     propertyCustomer: propertyCustomer || null,
     requestCode: requestCode || null,
@@ -548,8 +549,11 @@ export function mapArmContractRow(row: Row): CrmContract | null {
   const id = pickId(row, "");
   if (!id) return null;
   const createdAtRaw = anyDateStringToDate(pickStr(row, ["createdAt"]));
+  // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (غنی‌سازی از info در mergeArmContractInfo)
+  const rawDate = pickStr(row, ["createdAt"]) || null;
   return {
     id,
+    rawDate,
     status: pickStr(row, ["status"]) || "preDefined",
     contractHolo: pickStr(row, ["contractHolo"]) || null,
     propertyCode: pickStr(row, ["propertyCode"]) || null,
@@ -588,6 +592,8 @@ export function mergeArmContractInfo(contract: CrmContract, infoPayload: unknown
 
   return {
     ...contract,
+    // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام قرارداد از info عین منبع (اولویت با detail)
+    rawDate: pickStr(info, ["contractDate"]) || contract.rawDate,
     contractDate: toDate(["contractDate"]) ?? contract.createdAt,
     documentDate: toDate(["documentDate"]),
     deliveryDate: toDate(["contractPropertyDate"]),

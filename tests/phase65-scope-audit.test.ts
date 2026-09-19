@@ -423,47 +423,56 @@ describe("P6.5-02 — auditAccess (§۶.۲)", () => {
 // ===================== ۴) آینه DTOها پس از ستون‌های افزودنی =====================
 
 describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Schema)", () => {
-  test("TransactionDTO — ۱۴ کلید؛ ستون‌های P6.5-02/03 در دنباله", async () => {
+  test("TransactionDTO — ۱۹ کلید؛ ستون‌های P6.5-02/03/04 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const sample = await c.transactionRecord.findFirst({ where: { id: "p6502-T1" } });
+      // P6.5-04-e-v2: پنج ستون سه‌لایه حقیقت در دنباله (عین الگوی JSON-null کشف P6.5-02)
       expect(Object.keys(sample!)).toEqual([
         "id", "contractDate", "propertyCode", "propertyCustomer", "requestCode",
         "requestCustomer", "contractHolo", "suggestedPropertyCount", "eventsCount", "syncedAt",
         "ownerCode", "branchId", "tenantId", "sourceRunId",
+        "rawDate", "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
       ]);
     } finally {
       await cleanup(c);
     }
   });
 
-  test("VisitDTO — ۱۳ کلید؛ ExpertDTO — ۱۳ کلید", async () => {
+  test("VisitDTO — ۱۷ کلید؛ ExpertDTO — ۱۷ کلید (با provenance P6.5-04)", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const v = await c.visitRecord.findFirst({ where: { id: "p6502-VA" } });
+      // P6.5-04-e-v2: چهار ستون provenance در دنباله
       expect(Object.keys(v!)).toEqual([
         "id", "propertyCode", "requesterName", "checkerName", "propertyRealtorName",
         "checkTime", "createdAt", "status", "syncedAt", "ownerCode", "branchId", "tenantId", "sourceRunId",
+        "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
       ]);
     } finally {
       await cleanup(c);
     }
     const e = await c.expertRecord.findFirst();
     if (e) {
-      expect(Object.keys(e).slice(-3)).toEqual(["branchId", "tenantId", "sourceRunId"]);
+      // P6.5-04-e-v2: چهار ستون provenance در دنباله
+      expect(Object.keys(e).slice(-4)).toEqual(["rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion"]);
+      expect(Object.keys(e).slice(-8).slice(0, 4)).toEqual(["branchId", "tenantId", "sourceRunId", "rawSourceVersion"]);
     }
   });
 
-  test("RequestRecordDTO — ۳۶ کلید؛ ستون‌های P6.5-02/03 در دنباله", async () => {
+  test("RequestRecordDTO — ۴۰ کلید؛ ستون‌های P6.5-02/03/04 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const r = await c.requestRecord.findFirst({ where: { id: "p6502-RA" } });
       const keys = Object.keys(r!);
-      expect(keys.length).toBe(36);
-      expect(keys.slice(-4)).toEqual(["branchId", "tenantId", "requestCode", "sourceRunId"]);
+      expect(keys.length).toBe(40);
+      expect(keys.slice(-8)).toEqual([
+        "branchId", "tenantId", "requestCode", "sourceRunId",
+        "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
+      ]);
     } finally {
       await cleanup(c);
     }
@@ -482,7 +491,7 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
     }
   });
 
-  test("PropertyRecordDTO — ۳۱ کلید؛ CustomerRecordDTO — ۱۳ کلید (مدل‌های جدید)", async () => {
+  test("PropertyRecordDTO — ۳۸ کلید؛ CustomerRecordDTO — ۱۳ کلید (مدل‌های جدید)", async () => {
     const c = await getTestClient();
     await c.propertyRecord.deleteMany({ where: { id: "p6502-PR1" } });
     await c.customerRecord.deleteMany({ where: { mobile: "09140009999" } });
@@ -496,6 +505,8 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
         "propertyTypeId", "propertyTypeName", "tradeTypeId", "tradeTypeName",
         "price", "pricePerMeter", "meterage", "rooms", "floor", "buildYear",
         "description", "detailsJson", "ownerMobile", "tenantId", "sourceRunId",
+        "rawPrice", "rawPriceUnit", "rawArea",
+        "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
         "syncedAt", "createdAt", "updatedAt",
       ]);
       expect(p.tenantId).toBe("melk-tabriz"); // default

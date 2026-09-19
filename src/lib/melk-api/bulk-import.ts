@@ -56,6 +56,9 @@ import { armCall } from "./client";
 import { getMelkApiConfig } from "./config";
 import { MELK_ENDPOINTS } from "./endpoints";
 import { extractPagedList } from "./adapters";
+// P6.5-04 — نرمال‌سازی لایه ۲ + رجیستری محله (سه‌لایه حقیقت: Raw → Normalized → Derived)
+import { NORMALIZATION_VERSION, normalizeBulkRow, type LocationRegistry } from "./normalize";
+import { getDefaultLocationRegistry } from "./location-registry";
 import {
   mapArmContractRow,
   mapArmInteractionRow,
@@ -131,6 +134,22 @@ export interface BulkImportResult {
   progress: BulkImportProgress;
   error?: string;
   durationMs: number;
+  /** P6.5-04 — آمار نرمال‌سازی این اجرا (لایه ۲ سه‌لایه حقیقت) */
+  normalization?: NormalizationStats;
+}
+
+/**
+ * آمار نرمال‌سازی یک اجرا — P6.5-04 (گزارش نرخ‌ها در P6.5-10):
+ * نرخ نرمال‌سازی = (rowsSeen − ردیف‌های با invalidValues) / rowsSeen
+ * نرخ تطبیق محله = areaMatched / (areaMatched + areaUnmatched)
+ */
+export interface NormalizationStats {
+  rowsSeen: number;
+  rowsChanged: number;
+  fieldsChanged: number;
+  invalidValues: number;
+  areaMatched: number;
+  areaUnmatched: number;
 }
 
 // ==========================================================================
@@ -171,6 +190,8 @@ export interface BulkImportDeps {
   sleep?: (ms: number) => Promise<void>;
   now?: () => Date;
   newRunId?: () => string;
+  /** P6.5-04 — رجیستری محله تزریقی (تست)؛ پیش‌فرض: رجیستری ۹۲۶ پیش‌فرض lazy */
+  registry?: LocationRegistry;
 }
 
 // ==========================================================================
@@ -270,6 +291,7 @@ class BulkImportRunner {
   private readonly deps: BulkImportDeps;
   private readonly limiter: RateLimiter;
   private readonly sleep: (ms: number) => Promise<void>;
+  private registry: LocationRegistry | null = null;
 
   constructor(options: BulkImportOptions, deps: BulkImportDeps) {
     this.opts = options;
@@ -283,6 +305,52 @@ class BulkImportRunner {
 
   private now(): Date {
     return this.deps.now ? this.deps.now() : new Date();
+  }
+
+  /** رجیستری محله — تزریقی تست یا پیش‌فرض ۹۲۶ (lazy + cache) */
+  private resolveRegistry(): LocationRegistry {
+    if (this.deps.registry) return this.deps.registry;
+    if (!this.registry) this.registry = getDefaultLocationRegistry();
+    return this.registry;
+  }
+
+  /**
+   * P6.5-04-e/e-v2 — نرمال‌سازی لایه ۲ + مهر provenance (سه‌لایه حقیقت):
+   * لایه ۱ (Raw) توسط نگاشت آداپتور عین منبع پر شده؛ اینجا لایه ۲ فیلدهای
+   * نرمال را از خام مشتق می‌کند (amount/area/jalaliDate + نام‌ها/کدها) و
+   * مهر extractedAt/extractionBatchId/normalizationVersion روی هر ردیف می‌نشیند.
+   * نرمال‌سازی هرگز مقادیر خام را بازنویسی نمی‌کند.
+   */
+  private normalizeAndStamp(
+    entity: BulkEntity,
+    rows: readonly unknown[],
+    batchRunId: string | undefined,
+    stats: NormalizationStats
+  ): unknown[] {
+    const registry = this.resolveRegistry();
+    const extractedAt = this.now();
+    const out: unknown[] = [];
+    for (const row of rows) {
+      const { row: normalized, stats: rowStats } = normalizeBulkRow(
+        entity,
+        (row ?? {}) as Record<string, unknown>,
+        registry
+      );
+      const stamped = normalized as Record<string, unknown>;
+      stamped.extractedAt = extractedAt;
+      stamped.extractionBatchId = batchRunId ?? null;
+      stamped.normalizationVersion = NORMALIZATION_VERSION;
+      // rawSourceVersion: ARM فعلاً نسخه داده منتشر نمی‌کند — تهی صادقانه (کشف در Reconnaissance §۶)
+      if (stamped.rawSourceVersion === undefined) stamped.rawSourceVersion = null;
+      stats.rowsSeen += 1;
+      if (rowStats.changedFields.length > 0) stats.rowsChanged += 1;
+      stats.fieldsChanged += rowStats.changedFields.length;
+      stats.invalidValues += rowStats.invalidFields.length;
+      if (rowStats.areaMatched) stats.areaMatched += 1;
+      if (rowStats.areaUnmatched) stats.areaUnmatched += 1;
+      out.push(stamped);
+    }
+    return out;
   }
 
   async run(): Promise<BulkImportResult> {
@@ -334,6 +402,16 @@ class BulkImportRunner {
     let status: BulkImportResult["status"] = "COMPLETED";
     let error: string | undefined;
 
+    // P6.5-04 — آمار نرمال‌سازی این اجرا (سه‌لایه حقیقت)
+    const normStats: NormalizationStats = {
+      rowsSeen: 0,
+      rowsChanged: 0,
+      fieldsChanged: 0,
+      invalidValues: 0,
+      areaMatched: 0,
+      areaUnmatched: 0,
+    };
+
     // ---- ۲) حلقه صفحات ----
     let page = cp.lastPage + 1; // نقطه ادامه = آخرین صفحه کامل + ۱
     let pagesRan = 0;
@@ -362,9 +440,12 @@ class BulkImportRunner {
 
       if (fetched.rows.length === 0) break; // پایان داده
 
+      // ---- P6.5-04: نرمال‌سازی لایه ۲ + مهر provenance (پیش از ذخیره) ----
+      const normalizedRows = this.normalizeAndStamp(entity, fetched.rows, cp.runId, normStats);
+
       // ---- ذخیره: برش‌های batchSize + فلاش اجباری پیش از پیشروی checkpoint ----
-      for (let offset = 0; offset < fetched.rows.length; offset += this.batchSize) {
-        const chunk = fetched.rows.slice(offset, offset + this.batchSize);
+      for (let offset = 0; offset < normalizedRows.length; offset += this.batchSize) {
+        const chunk = normalizedRows.slice(offset, offset + this.batchSize);
         const stats = await this.deps.sink.saveBatch(chunk, { sourceRunId: cp.runId!, entity });
         progress.totalSaved += stats.created + stats.updated;
         progress.totalDuplicates += stats.duplicates;
@@ -373,7 +454,7 @@ class BulkImportRunner {
       }
 
       // نا-تکرارپذیری فلاش/چک‌پوینت: صفحه کامل شد → داده نوشته شد → حالا checkpoint جلو می‌رود
-      const lastRow = fetched.rows[fetched.rows.length - 1] as Record<string, unknown> | undefined;
+      const lastRow = normalizedRows[normalizedRows.length - 1] as Record<string, unknown> | undefined;
       cp.lastRecordId = String(lastRow?.id ?? lastRow?.propertyCode ?? lastRow?.requestCode ?? lastRow?.personnelCode ?? "");
       cp.totalProcessed = progress.totalFetched;
       cp.lastPage = page;
@@ -407,6 +488,7 @@ class BulkImportRunner {
       progress,
       ...(error !== undefined ? { error } : {}),
       durationMs: this.now().getTime() - t0,
+      normalization: normStats,
     };
   }
 
@@ -474,6 +556,7 @@ export async function bulkImport(
     ...(deps.sleep ? { sleep: deps.sleep } : {}),
     ...(deps.now ? { now: deps.now } : {}),
     ...(deps.newRunId ? { newRunId: deps.newRunId } : {}),
+    ...(deps.registry ? { registry: deps.registry } : {}),
   }).run();
 }
 
@@ -494,10 +577,19 @@ function pickRaw(row: RawRow, keys: string[]): unknown {
 
 function pickRawStr(row: RawRow, keys: string[]): string | null {
   const v = pickRaw(row, keys);
-  return typeof v === "string" ? v : v === undefined || v === null ? null : String(v);
+  if (typeof v === "string") return v;
+  if (v === undefined || v === null) return null;
+  if (typeof v === "object") return null; // شیء تو در تو ([object Object] نه!) — نگاشت تو در تو در آداپتور کامل
+  return String(v);
 }
 
-/** STUB P6.5-04 — آگهی ARM → PropertyBulkInput (نگاشت حداقلی؛ تکمیل در normalize.ts) */
+/**
+ * آگهی ARM → PropertyBulkInput — نگاشت با لایه ۱ حقیقت (P6.5-04-e-v2):
+ * مقادیر خام عین منبع (rawPrice/rawPriceUnit/rawArea) نگاشته می‌شوند و
+ * لایه ۲ (normalizeBulkRow با kind=amount/area) در خط لوله آن‌ها را به
+ * price (ریال) و meterage مشتق می‌کند — خود خام هرگز تغییر نمی‌کند.
+ * کلیدهای کاندید قیمت/متراژ: تطبیق نهایی با داده زنده در D0/Reconnaissance.
+ */
 function stubMapPropertyRow(row: RawRow): PropertyBulkInput | null {
   const id = pickRawStr(row, ["id", "_id", "objectId"]);
   const propertyCode = pickRawStr(row, ["code", "propertyCode"]);
@@ -507,7 +599,16 @@ function stubMapPropertyRow(row: RawRow): PropertyBulkInput | null {
     propertyCode: propertyCode ?? id!,
     title: pickRawStr(row, ["title"]),
     status: pickRawStr(row, ["status"]),
-    ownerName: pickRawStr(row, ["relatedRealtorName", "realtorName"]),
+    ownerName: pickRawStr(row, ["relatedRealtorName", "realtorName", "ownerName"]),
+    ownerMobile: pickRawStr(row, ["ownerMobile", "mobileNumber", "mobile"]),
+    // مکان — کلیدهای کاندید (تطبیق نهایی با داده زنده در D0/Reconnaissance)
+    areaName: pickRawStr(row, ["areaName", "areaTitle", "area"]),
+    lineName: pickRawStr(row, ["lineName", "lineTitle", "line"]),
+    // P6.5-04-e-v2 — لایه ۱ حقیقت (Raw) — عین منبع، بدون هیچ تبدیلی
+    // (کلیدهای متراژ عمداً جدا از کلیدهای نام محله — «area» نام محله است، نه متراژ)
+    rawPrice: pickRawStr(row, ["price", "priceLabel", "priceText", "totalPrice", "priceFa"]),
+    rawPriceUnit: pickRawStr(row, ["priceUnit", "unit", "currencyLabel"]),
+    rawArea: pickRawStr(row, ["meterage", "metrage", "meterageLabel", "areaMeterage", "propertyMeterage"]),
   };
 }
 
@@ -572,7 +673,8 @@ function armEntityPath(entity: BulkEntity): string {
   }
 }
 
-function mapArmRowToInput(entity: BulkEntity, row: RawRow, index: number, page: number, pageSize: number): unknown | null {
+/** نگاشت ردیف خام ARM → ورودی مخزن هر موجودیت (صادرشده برای تست مسیر واقعی mapping) */
+export function mapArmRowToInput(entity: BulkEntity, row: RawRow, index: number, page: number, pageSize: number): unknown | null {
   switch (entity) {
     case "transaction": {
       const crm = mapArmTradedRow(row, index, page, pageSize);

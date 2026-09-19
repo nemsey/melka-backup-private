@@ -29,6 +29,12 @@ function toTxData(t: TransactionUpsertInput): Record<string, unknown> {
     contractHolo: t.contractHolo,
     suggestedPropertyCount: t.suggestedPropertyCount,
     eventsCount: t.eventsCount,
+    // P6.5-04-e-v2 — سه‌لایه حقیقت (خام + provenance؛ تهی از مسیرهای v1 = حفظ مقدار موجود توسط merge)
+    ...(t.rawDate !== undefined ? { rawDate: t.rawDate } : {}),
+    ...(t.rawSourceVersion !== undefined ? { rawSourceVersion: t.rawSourceVersion } : {}),
+    ...(t.extractedAt !== undefined ? { extractedAt: t.extractedAt } : {}),
+    ...(t.extractionBatchId !== undefined ? { extractionBatchId: t.extractionBatchId } : {}),
+    ...(t.normalizationVersion !== undefined ? { normalizationVersion: t.normalizationVersion } : {}),
   };
 }
 

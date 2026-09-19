@@ -61,6 +61,15 @@ export interface PropertyBulkInput {
   detailsJson?: string | null;
   ownerMobile?: string | null;
   createdAt?: Date | null;
+  /** P6.5-04-e-v2 — لایه ۱ حقیقت (Raw): مقادیر عین منبع؛ هرگز توسط نرمال‌سازی تغییر نمی‌کنند */
+  rawPrice?: string | null;
+  rawPriceUnit?: string | null;
+  rawArea?: string | null;
+  /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت */
+  rawSourceVersion?: string | null;
+  extractedAt?: Date | null;
+  extractionBatchId?: string | null;
+  normalizationVersion?: string | null;
 }
 
 /** ورودی درج/به‌روزرسانی انبوه درخواست ARM — RequestRecord با source='arm' (کلید طبیعی: requestCode) */
@@ -75,6 +84,11 @@ export interface ArmRequestBulkRow {
   /** کارشناس ثبت‌کننده در ARM؛ نبود → 'arm' (رکورد سیستمی) */
   actorCode?: string | null;
   createdAt?: Date | null;
+  /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت (خط لوله Bulk پر می‌کند) */
+  rawSourceVersion?: string | null;
+  extractedAt?: Date | null;
+  extractionBatchId?: string | null;
+  normalizationVersion?: string | null;
 }
 
 /** مخزن رجیستری آگهی‌های ARM — نوشتار انبوه + شمارش (خواندنهای غنی در P6.5-05/08) */

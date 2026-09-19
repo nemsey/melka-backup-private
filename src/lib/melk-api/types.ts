@@ -63,6 +63,8 @@ export interface CrmTransaction {
   id: string;
   /** تاریخ معامله/قرارداد (ISO) — از contractDate سامانه ARM */
   contractDate: string;
+  /** P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (پیش از تبدیل جلالی/ISO؛ هرگز تغییر نمی‌کند) */
+  rawDate: string | null;
   /** کد ملک (آگهی فروشنده) */
   propertyCode: string;
   /** نام مالک/مشتریِ طرف ملک */
@@ -326,6 +328,8 @@ export interface ContractRealtorShare {
 export interface CrmContract {
   id: string;
   status: ContractStatus | string;
+  /** P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (پیش از تبدیل؛ هرگز تغییر نمی‌کند) */
+  rawDate: string | null;
   contractHolo: string | null;
   propertyCode: string | null;
   requestCode: string | null;

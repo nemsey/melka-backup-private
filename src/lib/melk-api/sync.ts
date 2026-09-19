@@ -422,6 +422,8 @@ function computeSummaryFromRows(rows: CrmTransaction[]): TradedSummary {
 export const toTxUpsert = (t: CrmTransaction): TransactionUpsertInput => ({
   id: t.id,
   contractDate: new Date(t.contractDate),
+  // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع
+  rawDate: t.rawDate,
   propertyCode: t.propertyCode,
   propertyCustomer: t.propertyCustomer,
   requestCode: t.requestCode,
@@ -472,6 +474,8 @@ const toSdUpsert = (s: CrmSupplyDemand): SupplyDemandUpsertInput => ({
 export const toContractUpsert = (c: CrmContract): ContractUpsertInput => ({
   id: c.id,
   status: c.status,
+  // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع
+  rawDate: c.rawDate,
   contractHolo: c.contractHolo,
   propertyCode: c.propertyCode,
   requestCode: c.requestCode,

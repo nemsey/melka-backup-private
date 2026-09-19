@@ -20,6 +20,11 @@ function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> {
     requestCode: r.requestCode,
     actorCode: r.actorCode ?? "arm",
     ...(r.createdAt ? { createdAt: r.createdAt } : {}),
+    // P6.5-04-e-v2 — provenance سه‌لایه حقیقت
+    ...(r.rawSourceVersion !== undefined ? { rawSourceVersion: r.rawSourceVersion } : {}),
+    ...(r.extractedAt !== undefined ? { extractedAt: r.extractedAt } : {}),
+    ...(r.extractionBatchId !== undefined ? { extractionBatchId: r.extractionBatchId } : {}),
+    ...(r.normalizationVersion !== undefined ? { normalizationVersion: r.normalizationVersion } : {}),
   };
 }
 

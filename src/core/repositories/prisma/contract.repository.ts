@@ -24,7 +24,13 @@ function toCreateData(c: ContractUpsertInput): Prisma.ContractRecordCreateInput 
     sellerListJson: c.sellerListJson,
     realtorListJson: c.realtorListJson,
     canAddRealtor: c.canAddRealtor,
-  };
+    // P6.5-04-e-v2 — سه‌لایه حقیقت (خام + provenance)
+    ...(c.rawDate !== undefined ? { rawDate: c.rawDate } : {}),
+    ...(c.rawSourceVersion !== undefined ? { rawSourceVersion: c.rawSourceVersion } : {}),
+    ...(c.extractedAt !== undefined ? { extractedAt: c.extractedAt } : {}),
+    ...(c.extractionBatchId !== undefined ? { extractionBatchId: c.extractionBatchId } : {}),
+    ...(c.normalizationVersion !== undefined ? { normalizationVersion: c.normalizationVersion } : {}),
+  } as Prisma.ContractRecordCreateInput;
 }
 
 export class PrismaContractRepository implements ContractRepository {

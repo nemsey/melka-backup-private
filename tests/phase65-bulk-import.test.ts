@@ -436,7 +436,9 @@ describe("P6.5-03-۳ — Idempotency مطلق (§۱.۶ + §۲.۴)", () => {
       // اجرای بعدی همان رکورد با contractHolo تهی
       await bulkImport(opts(), { fetcher: makeFetcher([[txRow(6100, { contractHolo: null, propertyCustomer: null })]]) });
       const row = await db.transactionRecord.findUnique({ where: { id: `${PREFIX}-tx-6100` } });
-      expect(row!.contractHolo).toBe("H-KEEP");       // حفظ شد
+      // P6.5-04: نرمال‌سازی holo (kind=holo → ارقام + حذف جداکننده) «H-KEEP» را به «HKEEP» ذخیره می‌کند؛
+      // ادعای تست = «فیلد تهیِ جدید مقدار موجود نرمال‌شده را پاک نمی‌کند»
+      expect(row!.contractHolo).toBe("HKEEP");         // حفظ شد (نرمال‌شده)
       expect(row!.propertyCustomer).toBe("فروشنده 6100"); // حفظ شد
     } finally {
       await clearBulkTx();

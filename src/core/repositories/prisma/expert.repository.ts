@@ -28,6 +28,11 @@ function toExData(e: ExpertUpsertInput): Record<string, unknown> {
     creator: e.creator,
     active: e.active,
     createdAt: e.createdAt,
+    // P6.5-04-e-v2 — provenance سه‌لایه حقیقت
+    ...(e.rawSourceVersion !== undefined ? { rawSourceVersion: e.rawSourceVersion } : {}),
+    ...(e.extractedAt !== undefined ? { extractedAt: e.extractedAt } : {}),
+    ...(e.extractionBatchId !== undefined ? { extractionBatchId: e.extractionBatchId } : {}),
+    ...(e.normalizationVersion !== undefined ? { normalizationVersion: e.normalizationVersion } : {}),
   };
 }
 
@@ -37,6 +42,11 @@ function toInData(i: InteractionUpsertInput): Record<string, unknown> {
     requestRealtorName: i.requestRealtorName,
     propertyRealtorName: i.propertyRealtorName,
     count: i.count,
+    // P6.5-04-e-v2 — provenance سه‌لایه حقیقت
+    ...(i.rawSourceVersion !== undefined ? { rawSourceVersion: i.rawSourceVersion } : {}),
+    ...(i.extractedAt !== undefined ? { extractedAt: i.extractedAt } : {}),
+    ...(i.extractionBatchId !== undefined ? { extractionBatchId: i.extractionBatchId } : {}),
+    ...(i.normalizationVersion !== undefined ? { normalizationVersion: i.normalizationVersion } : {}),
   };
 }
 

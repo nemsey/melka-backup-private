@@ -22,6 +22,13 @@
 import { jalaliToGregorian, jalaliMonthLength } from "@/lib/jalali";
 import type { BulkEntity } from "./bulk-import";
 
+/**
+ * P6.5-04-e-v2 — نسخه موتور نرمال‌سازی (لایه ۲ سه‌لایه حقیقت).
+ * هر ردیف Bulk این نسخه را در ستون normalizationVersion حمل می‌کند؛
+ * تغییر قواعد نرمال‌سازی ⇒ افزایش این ثابت (Rial/تومان، تاریخ‌ها، رجیستری محله).
+ */
+export const NORMALIZATION_VERSION = "p65-04-v1";
+
 // ==========================================================================
 // ۱) پیش‌پردازش نویسه‌ها — ارقام و حروف عربی/فارسی (مشترک همه توابع)
 // ==========================================================================
@@ -70,6 +77,10 @@ export function normalizeName(raw: string): string {
   s = unifyPersianLetters(s);
   s = s.replace(/\u200C/g, ""); // ZWNJ حذف (عین دستور)
   s = s.replace(NAME_PUNCT_RE, " ");
+  // املا محاوره‌ای پسوند پایانی در نام‌ها (شاهد §۳.۲: رضائي → رضایی):
+  // «ئی/ئي» پایانی = «یی» (ئ→ی)؛ ئ تنها-پایانی هم «ی» — ئ میانی (مسئول/مسئله) دست‌نخورده
+  s = s.replace(/ئ(?=ی(?=\s|$))/g, "ی");
+  s = s.replace(/ئ(?=\s|$)/g, "ی");
   s = s.replace(/\s+/g, " ").trim();
   return s;
 }
@@ -177,6 +188,28 @@ export function normalizeAmount(raw: string | number): number {
   const value = parseFloat(numeric[0]);
   if (!Number.isFinite(value)) return NaN;
   return value * scale * unitFactor;
+}
+
+/**
+ * P6.5-04-e-v2 — تجزیه عدد خام بدون مقیاس واحد (برای متراژ و اعداد ساده):
+ * ارقام فارسی/عربی → لاتین · حذف جداکننده هزارگان · ممیز / و ٫ و . → اعشار.
+ * برخلاف normalizeAmount هیچ واژه واحد/مقیاسی تفسیر نمی‌شود («۱۲۰ متر» → 120).
+ * غیرقابل‌تجزیه → NaN (پاسخ صادقانه).
+ */
+export function parsePersianNumber(raw: string | number): number {
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : NaN;
+  if (typeof raw !== "string") return NaN;
+  let s = latinDigits(raw).replace(CTRL_RE, "").trim();
+  if (s.length === 0) return NaN;
+  s = s.replace(/[\u066C\u060C,'\u00A0\s]/g, "");
+  s = s.replace(/\u066B/g, ".");
+  const decimalMatch = s.match(/(\d+)([/.])(\d+)/);
+  if (decimalMatch) s = decimalMatch[1] + "." + decimalMatch[3];
+  else s = s.replace(/[/.]/g, "");
+  const m = s.match(/^-?\d+(\.\d+)?/);
+  if (!m) return NaN;
+  const v = parseFloat(m[0]);
+  return Number.isFinite(v) ? v : NaN;
 }
 
 // ==========================================================================
@@ -647,7 +680,18 @@ export function mergeRecords<T extends Record<string, unknown>>(existing: T, inc
 // ==========================================================================
 
 /** نوع هر قاعده فیلد */
-type FieldKind = "name" | "propertyCode" | "requestCode" | "mobile" | "holo" | "areaName" | "lineName";
+type FieldKind =
+  | "name"
+  | "propertyCode"
+  | "requestCode"
+  | "mobile"
+  | "holo"
+  | "areaName"
+  | "lineName"
+  /** P6.5-04-e-v2 — لایه ۲ از لایه ۱ خام مشتق می‌شود (سه‌لایه حقیقت) */
+  | "amount" // rawPrice (+rawPriceUnit) → price (ریال)
+  | "area" // rawArea → meterage
+  | "jalaliDate"; // rawDate → contractDate (فقط در نبود مقدار موجود)
 
 interface FieldRule {
   field: string;
@@ -662,6 +706,7 @@ const FIELD_RULES: Record<BulkEntity, readonly FieldRule[]> = {
     { field: "propertyCustomer", kind: "name" },
     { field: "requestCustomer", kind: "name" },
     { field: "contractHolo", kind: "holo" },
+    { field: "rawDate", kind: "jalaliDate" },
   ],
   expert: [
     { field: "personnelCode", kind: "holo" },
@@ -676,6 +721,8 @@ const FIELD_RULES: Record<BulkEntity, readonly FieldRule[]> = {
     { field: "ownerMobile", kind: "mobile" },
     { field: "areaName", kind: "areaName" },
     { field: "lineName", kind: "lineName" },
+    { field: "rawPrice", kind: "amount" },
+    { field: "rawArea", kind: "area" },
   ],
   request: [
     { field: "requestCode", kind: "requestCode" },
@@ -694,6 +741,7 @@ const FIELD_RULES: Record<BulkEntity, readonly FieldRule[]> = {
     { field: "requestCode", kind: "requestCode" },
     { field: "creatorName", kind: "name" },
     { field: "propertyTitle", kind: "name" },
+    { field: "rawDate", kind: "jalaliDate" },
   ],
   interaction: [
     { field: "requestRealtorName", kind: "name" },
@@ -752,6 +800,46 @@ export function normalizeBulkRow<T extends Record<string, unknown>>(
       case "holo":
         normalized = normalizeDigitsOnly(raw);
         break;
+      // ---- P6.5-04-e-v2: مشتق‌سازی لایه ۲ از لایه ۱ خام (سه‌لایه حقیقت) ----
+      case "amount": {
+        // rawPrice (+rawPriceUnit جدا) → price (ریال — §۳.۵ مرز واحد)
+        const unit = typeof out.rawPriceUnit === "string" && out.rawPriceUnit.trim() ? ` ${out.rawPriceUnit.trim()}` : "";
+        const price = normalizeAmount(raw + unit);
+        if (Number.isFinite(price)) {
+          if (out.price !== price) changedFields.push("price");
+          out.price = price;
+        } else if (raw.trim().length > 0) {
+          invalidFields.push("price");
+        }
+        continue; // خود rawPrice عین منبع می‌ماند (لایه ۱ هرگز تغییر نمی‌کند)
+      }
+      case "area": {
+        // rawArea → meterage (عدد ساده — بدون تفسیر واحد پول)
+        const meterage = parsePersianNumber(raw);
+        if (Number.isFinite(meterage)) {
+          if (out.meterage !== meterage) changedFields.push("meterage");
+          out.meterage = meterage;
+        } else if (raw.trim().length > 0) {
+          invalidFields.push("meterage");
+        }
+        continue; // خود rawArea عین منبع می‌ماند
+      }
+      case "jalaliDate": {
+        // rawDate → contractDate — فقط وقتی مقدار معتبر موجود نیست (رکورد قدیمی/ناقص)
+        const hasExisting =
+          out.contractDate instanceof Date ||
+          (typeof out.contractDate === "string" && out.contractDate.length > 0);
+        if (!hasExisting) {
+          const iso = normalizeJalaliDate(raw);
+          if (iso) {
+            out.contractDate = new Date(iso);
+            changedFields.push("contractDate");
+          } else if (raw.trim().length > 0) {
+            invalidFields.push("contractDate");
+          }
+        }
+        continue; // خود rawDate عین منبع می‌ماند
+      }
       case "areaName":
       case "lineName": {
         const match = findLocationInRegistry(raw, registry);

@@ -51,4 +51,9 @@ export interface VisitUpsertInput {
   checkTime: Date | null;
   createdAt: Date;
   status: string;
+  /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت (خط لوله Bulk پر می‌کند) */
+  rawSourceVersion?: string | null;
+  extractedAt?: Date | null;
+  extractionBatchId?: string | null;
+  normalizationVersion?: string | null;
 }

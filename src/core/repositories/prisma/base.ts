@@ -41,6 +41,20 @@ export function sameBulkValue(a: unknown, b: unknown): boolean {
 }
 
 /**
+ * P6.5-04-e-v2 — فیلدهای مهر provenance/حسابرسی: همیشه به‌روز می‌شوند اما
+ * «تغییر محتوایی» حساب نمی‌شوند (عین syncedAt/sourceRunId — §۲.۴ طراحی؛
+ * وگرنه هر اجرای مجدد idempotent به‌عنوان update شمرده می‌شد).
+ */
+const PROVENANCE_FIELDS = new Set([
+  "syncedAt",
+  "sourceRunId",
+  "extractedAt",
+  "extractionBatchId",
+  "normalizationVersion",
+  "rawSourceVersion",
+]);
+
+/**
  * §۲.۴ طراحی — merge non-null: کلیدهای تهی/undefined از update-payload حذف می‌شوند
  * تا مقدار موجود بازنویسی نشود («جدیدترین داده غیرتهی برنده»).
  */
@@ -77,8 +91,10 @@ export async function runBulkUpsert<TInput>(params: {
         stats.created += 1;
       } else {
         const payload = mergeNonNullUpdate(mapped);
-        // آیا محتوای معنوی تغییر کرده؟ (id/syncedAt/sourceRunId از تصمیم مستثنی‌اند)
-        const changed = Object.entries(payload).some(([k, v]) => !sameBulkValue(existing[k], v));
+        // آیا محتوای معنوی تغییر کرده؟ (id + فیلدهای حسابرسی/provenance از تصمیم مستثنی‌اند)
+        const changed = Object.entries(payload).some(
+          ([k, v]) => !PROVENANCE_FIELDS.has(k) && k !== "id" && !sameBulkValue(existing[k], v)
+        );
         await params.updateRow({ ...payload, syncedAt: new Date(), sourceRunId: params.sourceRunId });
         if (changed) stats.updated += 1;
         else stats.duplicates += 1;

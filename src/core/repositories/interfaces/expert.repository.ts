@@ -89,6 +89,11 @@ export interface ExpertUpsertInput {
   creator: string | null;
   active: boolean;
   createdAt: Date;
+  /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت (خط لوله Bulk پر می‌کند) */
+  rawSourceVersion?: string | null;
+  extractedAt?: Date | null;
+  extractionBatchId?: string | null;
+  normalizationVersion?: string | null;
 }
 
 /** ورودی درج تعامل (عین نگاشت toInCreates) */
@@ -97,4 +102,9 @@ export interface InteractionUpsertInput {
   requestRealtorName: string;
   propertyRealtorName: string;
   count: number;
+  /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت (خط لوله Bulk پر می‌کند) */
+  rawSourceVersion?: string | null;
+  extractedAt?: Date | null;
+  extractionBatchId?: string | null;
+  normalizationVersion?: string | null;
 }

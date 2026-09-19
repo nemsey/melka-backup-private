@@ -45,6 +45,12 @@ export interface TransactionUpsertInput {
   contractHolo: string | null;
   suggestedPropertyCount: number;
   eventsCount: number;
+  /** P6.5-04-e-v2 — سه‌لایه حقیقت: لایه ۱ خام + provenance (خط لوله Bulk پر می‌کند؛ مسیرهای v1 تهی می‌گذارند — merge non-null حفظ می‌کند) */
+  rawDate?: string | null;
+  rawSourceVersion?: string | null;
+  extractedAt?: Date | null;
+  extractionBatchId?: string | null;
+  normalizationVersion?: string | null;
 }
 
 // ===================== قراردادها (صورت وضعیت) =====================

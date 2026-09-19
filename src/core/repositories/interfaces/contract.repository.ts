@@ -26,6 +26,12 @@ export interface ContractUpsertInput {
   sellerListJson: string | null;
   realtorListJson: string | null;
   canAddRealtor: boolean;
+  /** P6.5-04-e-v2 — سه‌لایه حقیقت: لایه ۱ خام + provenance (خط لوله Bulk پر می‌کند) */
+  rawDate?: string | null;
+  rawSourceVersion?: string | null;
+  extractedAt?: Date | null;
+  extractionBatchId?: string | null;
+  normalizationVersion?: string | null;
 }
 
 export interface ContractRepository {
