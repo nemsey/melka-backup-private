@@ -52,6 +52,7 @@ import type {
 } from "./types";
 import { MelkApiError } from "./types";
 import {
+  gregorianToJalali,
   mapArmInteractionRow,
   mapArmRealtorRow,
   mapArmTradedRow,
@@ -201,39 +202,89 @@ async function writeSyncState(patch: {
 // استخراج داده واقعی
 // ==========================================================================
 
-/** خواندن یک گزارش صفحه‌بندی‌شده تا انتها (با سقف ایمن صفحات) */
+// ==========================================================================
+// رفع باگ sync — ملکا-شورا-۰۰۷ بخش B.1 (کشف‌های شب ۱ Recon)
+// ==========================================================================
+// ریشهٔ خالی‌بودن همهٔ جدول‌های production (SyncState.lastError با attempts=7):
+//  (۱) گزارش‌های realtor-reports/* بدون startDate+endDate → HTTP 400
+//      «لطفا یک بازه تاریخی انتخاب کنید» — فقط startDate هم کافی نیست (s2-depth).
+//  (۲) traded-count-total فقط «خلاصهٔ چهارگانه» می‌دهد (rowKeys=[] در همهٔ ۲۰۰های
+//      شب ۱) — لیست ردیف‌های معامله از traded-count می‌آید (count/list/page/totalPages).
+//      قبلاً لیست از total خواسته می‌شد ⇒ حتی با ۲۰۰ هم همیشه خالی.
+
+/**
+ * بازهٔ گزارش پیش‌فرض — جلالی YYYY/MM/DD (قالب اثبات‌شدهٔ شب ۱: s4/c1/c2/c3).
+ * مبدأ = 2018-01-01 میلادی (دستور ملکا-شورا-۰۰۷ B.1) = 1396/10/11 جلالی؛
+ * مقصد = امروز به وقت تهران (زیرا بازهٔ «تا امروز» در تقویم سامانهٔ ایرانی است).
+ */
+export function buildReportDateRange(now: Date = new Date()): { startDate: string; endDate: string } {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const [sy, sm, sd] = gregorianToJalali(2018, 1, 1);
+  // امروز تهران به قالب ISO (en-CA → YYYY-MM-DD) — مستقل از TZ فرایند
+  const tehranToday = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tehran",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  const [gy, gm, gd] = tehranToday.split("-").map(Number);
+  const [ey, em, ed] = gregorianToJalali(gy, gm, gd);
+  return {
+    startDate: `${sy}/${pad(sm)}/${pad(sd)}`,
+    endDate: `${ey}/${pad(em)}/${pad(ed)}`,
+  };
+}
+
+/** خلاصهٔ چهارگانهٔ گزارش تطابق از traded-count-total (تک‌تماس، با بازه) */
+async function fetchTradedSummary(
+  armToken: string,
+  range: { startDate: string; endDate: string }
+): Promise<TradedSummary | null> {
+  try {
+    const cfg = getMelkApiConfig();
+    const res = await armCall<unknown>({
+      path: MELK_ENDPOINTS.arm.tradedTotal,
+      baseUrl: cfg.armApiBase,
+      token: armToken,
+      query: { ...range },
+      timeoutMs: cfg.timeoutMs,
+      maxRetries: 0,
+    });
+    return mapArmTradedSummary(res.data ?? null);
+  } catch {
+    return null; // خلاصهٔ غیربحرانی است — در نبودش از خود ردیف‌ها محاسبه می‌شود
+  }
+}
+
+/**
+ * خواندن یک گزارش صفحه‌بندی‌شده تا انتها (با سقف ایمن صفحات).
+ * baseQuery = پارامترهای الزامی گزارش (مثل بازهٔ تاریخی) که در همهٔ صفحات تکرار می‌شوند.
+ */
 async function fetchAllPages<T>(
   path: string,
   armToken: string,
   maxPages: number,
   pageLimit: number,
-  mapRow: (row: Record<string, unknown>, index: number, page: number, limit: number) => T | null
-): Promise<{ rows: T[]; rawSummary: unknown }> {
+  mapRow: (row: Record<string, unknown>, index: number, page: number, limit: number) => T | null,
+  baseQuery: Record<string, string | number> = {}
+): Promise<{ rows: T[] }> {
   const cfg = getMelkApiConfig();
   const rows: T[] = [];
-  let rawSummary: unknown = null;
   for (let page = 1; page <= maxPages; page++) {
     const res = await armCall<unknown>({
       path,
       baseUrl: cfg.armApiBase,
       token: armToken,
-      query: { page, limit: pageLimit },
+      query: { ...baseQuery, page, limit: pageLimit },
       timeoutMs: cfg.timeoutMs,
       maxRetries: 0, // در حلقه صفحه‌بندی تلاش مجدد نمی‌کنیم (صفحه بعدی خودش تازه می‌شود)
     });
-    // خلاصه چهارگانه گزارش تطابق — خود پاسخ «data» است
-    if (path === MELK_ENDPOINTS.arm.tradedTotal && res.data && typeof res.data === "object") {
-      const d = res.data as Record<string, unknown>;
-      if (typeof d.totalCount === "number" || typeof d.hasBoth === "number") {
-        rawSummary = d;
-      }
-    }
     const { rows: pageRows, total, totalPages } = extractPagedList(res.data, (row, i) => mapRow(row, i, page, pageLimit));
     rows.push(...pageRows);
     const pages = totalPages ?? (total > 0 ? Math.ceil(total / pageLimit) : 1);
     if (page >= pages || pageRows.length === 0) break;
   }
-  return { rows, rawSummary };
+  return { rows };
 }
 
 /**
@@ -252,18 +303,23 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
     ...(incremental ? { syncRunId: runId } : {}),
   });
   // P2-05 — رویداد الزامی همگام‌سازی: آغاز
-  logSync("sync-run", { status: "start", mode: incremental ? "incremental" : "legacy", detail: { runId } });
+  const rangeForLog = buildReportDateRange();
+  logSync("sync-run", { status: "start", mode: incremental ? "incremental" : "legacy", detail: { runId, reportRange: rangeForLog } });
 
   try {
     // ---------------- ۱) گزارش تطابق معاملات + خلاصه ----------------
-    const { rows: transactions, rawSummary } = await fetchAllPages(
-      MELK_ENDPOINTS.arm.tradedTotal,
+    // رفع B.1: بازهٔ الزامی ارسال می‌شود و «لیست» از traded-count می‌آید
+    // (traded-count-total فقط خلاصهٔ چهارگانه است — کشف شب ۱).
+    const range = buildReportDateRange();
+    const { rows: transactions } = await fetchAllPages(
+      MELK_ENDPOINTS.arm.tradedCount,
       armToken,
       50,
       100,
-      mapArmTradedRow
+      mapArmTradedRow,
+      range
     );
-    const summary = mapArmTradedSummary(rawSummary) ?? computeSummaryFromRows(transactions);
+    const summary = (await fetchTradedSummary(armToken, range)) ?? computeSummaryFromRows(transactions);
 
     // ---------------- ۲) فهرست کاربران/مشاوران ----------------
     const { rows: experts } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorsList, armToken, 30, 100, mapArmRealtorRow);
@@ -295,7 +351,10 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
     let supplyDemand: CrmSupplyDemand[] = [];
     let supplyDemandFetched = false;
     try {
-      const { rows: sdRows } = await fetchAllPages(MELK_ENDPOINTS.armReports.supplyDemand, armToken, 10, 100, mapArmSupplyDemandRow);
+      // supply-demand هم‌خانوادهٔ realtor-reports است ⇒ بازهٔ الزامی می‌گیرد
+      // (حدس مستندشدهٔ B.1 — اگر سرور پارامتر اضافی را نادیده بگیرد بی‌ضرر است؛
+      // بدون بازه این خانواده 400 می‌دهد. شکست همچنان ساکت-fail غیربحرانی است.)
+      const { rows: sdRows } = await fetchAllPages(MELK_ENDPOINTS.armReports.supplyDemand, armToken, 10, 100, mapArmSupplyDemandRow, range);
       supplyDemand = sdRows;
       supplyDemandFetched = true;
     } catch {
