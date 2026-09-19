@@ -41,6 +41,10 @@ function toCreateData(v: VisitUpsertInput): Prisma.VisitRecordCreateInput {
     checkTime: v.checkTime,
     createdAt: v.createdAt,
     status: v.status,
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع
+    ...(v.rawRequesterName !== undefined ? { rawRequesterName: v.rawRequesterName } : {}),
+    ...(v.rawCheckerName !== undefined ? { rawCheckerName: v.rawCheckerName } : {}),
+    ...(v.rawPropertyRealtorName !== undefined ? { rawPropertyRealtorName: v.rawPropertyRealtorName } : {}),
     // P6.5-04-e-v2 — provenance سه‌لایه حقیقت
     ...(v.rawSourceVersion !== undefined ? { rawSourceVersion: v.rawSourceVersion } : {}),
     ...(v.extractedAt !== undefined ? { extractedAt: v.extractedAt } : {}),

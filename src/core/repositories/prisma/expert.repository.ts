@@ -28,6 +28,11 @@ function toExData(e: ExpertUpsertInput): Record<string, unknown> {
     creator: e.creator,
     active: e.active,
     createdAt: e.createdAt,
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل/کسب‌وکار/ثبت‌کننده خام
+    ...(e.rawFullName !== undefined ? { rawFullName: e.rawFullName } : {}),
+    ...(e.rawMobile !== undefined ? { rawMobile: e.rawMobile } : {}),
+    ...(e.rawBusinessTitle !== undefined ? { rawBusinessTitle: e.rawBusinessTitle } : {}),
+    ...(e.rawCreator !== undefined ? { rawCreator: e.rawCreator } : {}),
     // P6.5-04-e-v2 — provenance سه‌لایه حقیقت
     ...(e.rawSourceVersion !== undefined ? { rawSourceVersion: e.rawSourceVersion } : {}),
     ...(e.extractedAt !== undefined ? { extractedAt: e.extractedAt } : {}),
@@ -42,6 +47,9 @@ function toInData(i: InteractionUpsertInput): Record<string, unknown> {
     requestRealtorName: i.requestRealtorName,
     propertyRealtorName: i.propertyRealtorName,
     count: i.count,
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام (کلید طبیعی)
+    ...(i.rawRequestRealtorName !== undefined ? { rawRequestRealtorName: i.rawRequestRealtorName } : {}),
+    ...(i.rawPropertyRealtorName !== undefined ? { rawPropertyRealtorName: i.rawPropertyRealtorName } : {}),
     // P6.5-04-e-v2 — provenance سه‌لایه حقیقت
     ...(i.rawSourceVersion !== undefined ? { rawSourceVersion: i.rawSourceVersion } : {}),
     ...(i.extractedAt !== undefined ? { extractedAt: i.extractedAt } : {}),
@@ -201,6 +209,11 @@ export class PrismaExpertRepository implements ExpertRepository {
           creator: e.creator,
           active: e.active,
           createdAt: e.createdAt,
+          // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام (عین toExData)
+          ...(e.rawFullName !== undefined ? { rawFullName: e.rawFullName } : {}),
+          ...(e.rawMobile !== undefined ? { rawMobile: e.rawMobile } : {}),
+          ...(e.rawBusinessTitle !== undefined ? { rawBusinessTitle: e.rawBusinessTitle } : {}),
+          ...(e.rawCreator !== undefined ? { rawCreator: e.rawCreator } : {}),
         },
         update: {
           fullName: e.fullName,
@@ -210,6 +223,11 @@ export class PrismaExpertRepository implements ExpertRepository {
           creator: e.creator,
           active: e.active,
           createdAt: e.createdAt,
+          // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام (merge: تهی مقدار موجود را بازنویسی نمی‌کند)
+          ...(e.rawFullName ? { rawFullName: e.rawFullName } : {}),
+          ...(e.rawMobile ? { rawMobile: e.rawMobile } : {}),
+          ...(e.rawBusinessTitle ? { rawBusinessTitle: e.rawBusinessTitle } : {}),
+          ...(e.rawCreator ? { rawCreator: e.rawCreator } : {}),
         },
       });
       if (existing) updated += 1;
@@ -245,6 +263,9 @@ export class PrismaExpertRepository implements ExpertRepository {
             requestRealtorName: i.requestRealtorName,
             propertyRealtorName: i.propertyRealtorName,
             count: i.count,
+            // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام (کلید طبیعی)
+            ...(i.rawRequestRealtorName !== undefined ? { rawRequestRealtorName: i.rawRequestRealtorName } : {}),
+            ...(i.rawPropertyRealtorName !== undefined ? { rawPropertyRealtorName: i.rawPropertyRealtorName } : {}),
           },
         })
       ),
@@ -264,11 +285,17 @@ export class PrismaExpertRepository implements ExpertRepository {
           requestRealtorName: i.requestRealtorName,
           propertyRealtorName: i.propertyRealtorName,
           count: i.count,
+          // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام (کلید طبیعی)
+          ...(i.rawRequestRealtorName !== undefined ? { rawRequestRealtorName: i.rawRequestRealtorName } : {}),
+          ...(i.rawPropertyRealtorName !== undefined ? { rawPropertyRealtorName: i.rawPropertyRealtorName } : {}),
         },
         update: {
           requestRealtorName: i.requestRealtorName,
           propertyRealtorName: i.propertyRealtorName,
           count: i.count,
+          // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام (merge: تهی مقدار موجود را بازنویسی نمی‌کند)
+          ...(i.rawRequestRealtorName ? { rawRequestRealtorName: i.rawRequestRealtorName } : {}),
+          ...(i.rawPropertyRealtorName ? { rawPropertyRealtorName: i.rawPropertyRealtorName } : {}),
         },
       });
       if (existing) updated += 1;

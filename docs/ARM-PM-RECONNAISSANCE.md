@@ -58,6 +58,23 @@
 
 **پیامد برای طرح Bulk (§۱۵):** (الف) sync باید بازهٔ تاریخ بفرستد (رفع باگ فوق)؛ (ب) مسیر معاملات per-realtor است — Bulk با توکن مالک به دادهٔ معاملات سایر کارشناسان دسترسی ندارد؛ گزینه‌ها: trade-overviews با فیلتر، گزارش‌های آماری #۱۲/#۱۳، یا توکن کارشناس دیگر — نیازمند تصمیم شورا؛ (ج) TTL دقیق توکن و آستانهٔ 429 همچنان ⏳ (مشاهدهٔ غیرفعال از طریق sync).
 
+## §۲-پ نتایج B.4-استاتیک (۱۴۰۵/۰۶/۲۹ — تحلیل باندل SPA، صفر تماس API)
+
+> **شواهد:** `scripts/fetch-arm-spa-b4.sh` (قابل‌تکرار) — دانلود فقط فایل‌های ایستای عمومی از میزبان SPA (index.html + چانک ورودی ۱MB + چانک صفحه‌های realtor-interactions/users-list/TradedStatistics) — **صفر درخواست به arus-api، صفر POST، صفر توکن**. همان بیلد قبلی (هش چانک‌ها یکسان: index-Cug6tOnM / realtor-interactions-page-BaAOESpk).
+
+| # | کشف | جزئیات | شاهد باندل |
+|---|---|---|---|
+| ۱ | **علت 404 تعاملات: پسوند /list ما** | صفحهٔ خود سامانه `ee("realtor-reports/realtor-interactions", {params})` را صدا می‌زند — **بدون addToURL**؛ سازوکار `mX = e?.addToURL ? "/"+join : void 0` فقط با گزینهٔ addToURL فعال می‌شود (realtors و visits دارند، تعاملات نه). تحلیل باندل قبلی اشتباهاً پسوند /list را به این خانواده تعمیم داده بود | چانک تعاملات + ورودی |
+| ۲ | **قالب تاریخ = ISO کامل، نه جلالی** | هر دو صفحهٔ TradedStatistics و realtor-interactions تاریخ را با `toDate().toISOString()` سریال می‌کنند و لایهٔ درخواست (Qn) پارامترها را **بدون هیچ تبدیلی** به axios می‌دهد ⇒ آنچه سرور می‌گیرد ISO کامل است (مثل 2026-09-19T20:30:00.000Z). قالب نمایش datepicker جلالی YYYY/MM/DD است ولی مقدار ارسالی ISO — **بازتفسیر شب ۱: totalCount=0 با قالب جلالی می‌تواند ریشهٔ قالب باشد، نه فقط scope** ⏳ تست زندهٔ شب ۲ | onChange هندلرها + Qn |
+| ۳ | **تعاملات: شرط فعال‌سازی کوئری** | صفحه فقط با `(startDate && endDate) || realtor` درخواست می‌فرستد ⇒ بازهٔ کامل یا فیلتر کارشناس الزامی — هم‌خانوادهٔ رفتار 400 بازهٔ اجباری | enabled:T |
+| ۴ | **تعاملات: پارامترهای کامل** | `params: {page, limit, ...فرم}` با فرم = `{startDate, endDate, realtor, hasMatch}`؛ مقدار realtor = **_id کارشناس** (از dropdown با valueField:_id)؛ hasMatch بولی اختیاری | defaultValues + select |
+| ۵ | **تعاملات: شکل پاسخ** | پوشهٔ استاندارد: `data.count` + `data.totalPages` + ردیف‌های `requestRealtorName/propertyRealtorName/count` — ستون‌های جدول عین آداپتور فعلی داشبورد | accessorKey ها |
+| ۶ | **realtors/list: پارامتر فیلتر UI** | صفحهٔ users-list با `addToURL:["list"]` + `params: {"activationStatus[apm]": true}` صدا می‌زند — داشبورد فعلاً بدون این پارامتر صدا می‌زند (رفتار سرور برای نبودش: 200 با همه) | چانک تعاملات (he مشترک) |
+| ۷ | **هدر businessId فقط برای غیر-realtor** | Qn هدر `businessId` را از business._id می‌گذارد **مگر نوع کاربر realtor باشد** (آنگاه حذف) — تبیین مکانیکی کشف شب ۱ که businessId چیزی باز نکرد برای حساب مالک (realtor) | Qn |
+| ۸ | **نقشهٔ درخواست** | تابع Qn: احراز هویت Bearer + refresh تک‌پروازی (single-flight) روی 401 + پیام‌های خطای فارسی؛ base = arus-api/api/apm عین رجیستری | Qn در ورودی |
+
+**اصلاحات کد اعمال‌شده (کامیت این بلوک):** رجیستری `realtorInteractions` → بدون /list · sync تعاملات بازه می‌گیرد · `buildReportDateRange` → ISO کامل عین UI (مبدأ 2018-01-01T00:00:00.000Z تا نیمه‌شب امروز تهران) · Bulk: `armEntityPath(transaction)` → `traded-count` (رفع باگ ماندده کشف ۲ شب ۱ در مسیر Bulk) + نام پارامترهای بازه → `startDate/endDate` ISO. **باقی‌ماندهٔ ⏳ شب ۲:** راستی‌آزمایی زندهٔ مسیر تعاملات (200؟) + آزمون تک‌پروب قالب ISO در برابر جلالی + مسیر فهرست properties/requests (هنوز 404 — نیازمند جستجوی چانک‌های list-of-property-and-request).
+
 ## §۳ Endpoint Map (جدول کامل)
 
 ### ۳.۱ ARM — احراز هویت و سیستم
@@ -76,10 +93,10 @@
 
 | # | مسیر | متد | پارامترها (query) | اجباری | پاسخ | وضعیت |
 |---|---|---|---|---|---|---|
-| ۸ | `realtor-reports/traded-count-total` | GET | `page, limit, startDate, endDate` (جلالی YYYY/MM/DD) | **startDate/endDate اجباری** — بدون آن‌ها 400 | ردیف‌ها + خلاصهٔ چهارگانه `totalCount/hasRequestEvent/hasSuggestedProperty/hasBoth` | ✅ همگام‌سازی واقعی · ⚠️ شب ۱: اجباری بودن بازه + totalCount=۰ برای حساب مالک |
-| ۹ | `realtor-reports/traded-count` | GET | `page, limit, startDate, endDate` | **startDate/endDate اجباری** (شب ۱) | `{count, list, limit, page, totalPages}` | ✅ کد · ⚠️ شب ۱ |
-| ۱۰ | `realtor-reports/realtor-interactions/list` | GET | `page, limit, startDate, endDate, realtor, hasMatch` | page/limit | `{requestRealtorName, propertyRealtorName, count}` | ⚠️ شب ۱: 404 با همین مسیر — نیازمند بازبینی مسیر/پارامتر |
-| ۱۱ | `realtors/list` | GET | `page, limit` | page/limit | `{fullName, mobile, role.name, businessId.title, creator.fullName, createdAt, active, personnelCode}` | ✅ همگام‌سازی واقعی |
+| ۸ | `realtor-reports/traded-count-total` | GET | `page, limit, startDate, endDate` (**ISO کامل — کشف B.4**) | **startDate/endDate اجباری** — بدون آن‌ها 400 | ردیف‌ها + خلاصهٔ چهارگانه `totalCount/hasRequestEvent/hasSuggestedProperty/hasBoth` | ✅ همگام‌سازی واقعی · ⚠️ شب ۱: اجباری بودن بازه + totalCount=۰ برای حساب مالک · ⏳ شب ۲: آزمون ISO در برابر جلالی |
+| ۹ | `realtor-reports/traded-count` | GET | `page, limit, startDate, endDate` (ISO) | **startDate/endDate اجباری** (شب ۱) | `{count, list, limit, page, totalPages}` | ✅ کد · ⚠️ شب ۱ |
+| ۱۰ | `realtor-reports/realtor-interactions` | GET | `page, limit, startDate, endDate, realtor (_id), hasMatch` | **(startDate && endDate) || realtor** (کشف B.4 — enabled صفحه) | `{count, list, totalPages}` ردیف‌های `requestRealtorName/propertyRealtorName/count` | ✅ کشف B.4-استاتیک (بدون /list — علت 404 شب ۱) · ⏳ راستی‌آزمایی زندهٔ شب ۲ |
+| ۱۱ | `realtors/list` | GET | `page, limit` (+ `activationStatus[apm]=true` عین UI — کشف B.4) | page/limit | `{fullName, mobile, role.name, businessId.title, creator.fullName, createdAt, active, personnelCode}` | ✅ همگام‌سازی واقعی |
 | ۱۲ | `realtor-reports/suggested-usage` (+`-total`, `/request`) | GET | page/limit/بازه | page/limit | گزارش آگهی پیشنهادی سیستم | ✅ کشف باندل (مصرف ننشده) |
 | ۱۳ | `realtor-reports/property-statistics` / `request-statistics` | GET | status×realtor + فیلترها | — | ماتریس statusData | ✅ کشف باندل |
 | ۱۴ | `realtor-reports/supply-demand` | GET | `page, limit` | page/limit | رنج‌های عرضه/تقاضا | ✅ همگام‌سازی واقعی |

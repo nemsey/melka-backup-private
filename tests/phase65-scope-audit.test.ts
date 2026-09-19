@@ -423,32 +423,34 @@ describe("P6.5-02 — auditAccess (§۶.۲)", () => {
 // ===================== ۴) آینه DTOها پس از ستون‌های افزودنی =====================
 
 describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Schema)", () => {
-  test("TransactionDTO — ۱۹ کلید؛ ستون‌های P6.5-02/03/04 در دنباله", async () => {
+  test("TransactionDTO — ۲۱ کلید؛ ستون‌های P6.5-02/03/04 + خام‌های B.3 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const sample = await c.transactionRecord.findFirst({ where: { id: "p6502-T1" } });
-      // P6.5-04-e-v2: پنج ستون سه‌لایه حقیقت در دنباله (عین الگوی JSON-null کشف P6.5-02)
+      // P6.5-04-e-v2 + B.3: ستون‌های سه‌لایه حقیقت (خام + provenance) در دنباله
       expect(Object.keys(sample!)).toEqual([
         "id", "contractDate", "propertyCode", "propertyCustomer", "requestCode",
         "requestCustomer", "contractHolo", "suggestedPropertyCount", "eventsCount", "syncedAt",
         "ownerCode", "branchId", "tenantId", "sourceRunId",
-        "rawDate", "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
+        "rawDate", "rawPropertyCustomer", "rawRequestCustomer",
+        "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
       ]);
     } finally {
       await cleanup(c);
     }
   });
 
-  test("VisitDTO — ۱۷ کلید؛ ExpertDTO — ۱۷ کلید (با provenance P6.5-04)", async () => {
+  test("VisitDTO — ۲۰ کلید؛ ExpertDTO — ۲۱ کلید (با خام‌های B.3 + provenance)", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const v = await c.visitRecord.findFirst({ where: { id: "p6502-VA" } });
-      // P6.5-04-e-v2: چهار ستون provenance در دنباله
+      // P6.5-04-e-v2 + B.3: ستون‌های خام + provenance در دنباله
       expect(Object.keys(v!)).toEqual([
         "id", "propertyCode", "requesterName", "checkerName", "propertyRealtorName",
         "checkTime", "createdAt", "status", "syncedAt", "ownerCode", "branchId", "tenantId", "sourceRunId",
+        "rawRequesterName", "rawCheckerName", "rawPropertyRealtorName",
         "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
       ]);
     } finally {
@@ -456,21 +458,25 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
     }
     const e = await c.expertRecord.findFirst();
     if (e) {
-      // P6.5-04-e-v2: چهار ستون provenance در دنباله
+      // B.3: چهار ستون خام نام/موبایل + چهار ستون provenance در دنباله
       expect(Object.keys(e).slice(-4)).toEqual(["rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion"]);
-      expect(Object.keys(e).slice(-8).slice(0, 4)).toEqual(["branchId", "tenantId", "sourceRunId", "rawSourceVersion"]);
+      expect(Object.keys(e).slice(-8)).toEqual([
+        "rawFullName", "rawMobile", "rawBusinessTitle", "rawCreator",
+        "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
+      ]);
     }
   });
 
-  test("RequestRecordDTO — ۴۰ کلید؛ ستون‌های P6.5-02/03/04 در دنباله", async () => {
+  test("RequestRecordDTO — ۴۲ کلید؛ ستون‌های P6.5-02/03/04 + خام‌های B.3 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const r = await c.requestRecord.findFirst({ where: { id: "p6502-RA" } });
       const keys = Object.keys(r!);
-      expect(keys.length).toBe(40);
-      expect(keys.slice(-8)).toEqual([
+      expect(keys.length).toBe(42);
+      expect(keys.slice(-10)).toEqual([
         "branchId", "tenantId", "requestCode", "sourceRunId",
+        "rawCustomerName", "rawCustomerMobile",
         "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
       ]);
     } finally {
@@ -505,7 +511,7 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
         "propertyTypeId", "propertyTypeName", "tradeTypeId", "tradeTypeName",
         "price", "pricePerMeter", "meterage", "rooms", "floor", "buildYear",
         "description", "detailsJson", "ownerMobile", "tenantId", "sourceRunId",
-        "rawPrice", "rawPriceUnit", "rawArea",
+        "rawPrice", "rawPriceUnit", "rawArea", "rawOwnerName", "rawOwnerMobile",
         "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
         "syncedAt", "createdAt", "updatedAt",
       ]);

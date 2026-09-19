@@ -157,6 +157,10 @@ model TransactionRecord {
 
   /// P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (پیش از تبدیل جلالی؛ هرگز توسط نرمال‌سازی تغییر نمی‌کند)
   rawDate               String?
+  /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام خام طرف ملک عین منبع (پیش از normalizeName)
+  rawPropertyCustomer   String?
+  /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام خام طرف درخواست عین منبع
+  rawRequestCustomer    String?
   /// P6.5-04-e-v2 — نسخه داده منبع (ARM فعلاً نسخه منتشر نمی‌کند — تهی تا کشف در Reconnaissance)
   rawSourceVersion      String?
   /// P6.5-04-e-v2 — زمان استخراج (شروع اجرای bulk که این ردیف را نوشت)
@@ -194,6 +198,11 @@ model ExpertRecord {
   tenantId      String? @default("melk-tabriz")
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
   sourceRunId   String?
+  /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل/کسب‌وکار/ثبت‌کننده خام عین منبع
+  rawFullName           String?
+  rawMobile             String?
+  rawBusinessTitle      String?
+  rawCreator            String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
   rawSourceVersion     String?
   extractedAt          DateTime?
@@ -215,6 +224,9 @@ model InteractionRecord {
   syncedAt           DateTime @default(now())
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
   sourceRunId        String?
+  /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع (کلید طبیعی این جدول)
+  rawRequestRealtorName  String?
+  rawPropertyRealtorName String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
   rawSourceVersion     String?
   extractedAt          DateTime?
@@ -253,6 +265,10 @@ model VisitRecord {
   tenantId            String?  @default("melk-tabriz")
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
   sourceRunId         String?
+  /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع
+  rawRequesterName       String?
+  rawCheckerName         String?
+  rawPropertyRealtorName String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
   rawSourceVersion     String?
   extractedAt          DateTime?
@@ -277,6 +293,13 @@ model SupplyDemandRecord {
   /// وضعیت بازه (رشته فارسی سامانه)
   status         String   @default("")
   syncedAt       DateTime @default(now())
+
+  /// B.3 (P6.5-04-v2) — provenance سه‌لایه حقیقت (نوشتهٔ مسیر sync — این جدول مسیر Bulk ندارد)
+  /// rawSourceVersion تهی صادقانه (ARM نسخه منتشر نمی‌کند) · normalizationVersion تهی (موتور نرمال‌سازی روی این جدول اجرا نمی‌شود — عناوین بازه عین منبع می‌مانند)
+  rawSourceVersion      String?
+  extractedAt           DateTime?
+  extractionBatchId     String?
+  normalizationVersion  String?
 
   @@index([rangeTitle])
 }
@@ -521,6 +544,9 @@ model ContractRecord {
   sourceRunId   String?
   /// P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (پیش از تبدیل جلالی؛ هرگز توسط نرمال‌سازی تغییر نمی‌کند)
   rawDate               String?
+  /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام ثبت‌کننده و عنوان ملک خام عین منبع
+  rawCreatorName        String?
+  rawPropertyTitle      String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
   rawSourceVersion      String?
   extractedAt           DateTime?
@@ -574,6 +600,9 @@ model PropertyRecord {
   rawPrice          String?                 // متن/عدد خام مبلغ (پیش از parseAmount)
   rawPriceUnit      String?                 // واحد جدا اگر منبع جدا کرده باشد (تومان/میلیارد…)
   rawArea           String?                 // متن/عدد خام متراژ (پیش از parse)
+  // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مالک خام عین منبع
+  rawOwnerName      String?
+  rawOwnerMobile    String?
   // P6.5-04-e-v2 — provenance سه‌لایه
   rawSourceVersion  String?                 // نسخه داده منبع (ARM فعلاً منتشر نمی‌کند — تهی تا کشف Reconnaissance)
   extractedAt       DateTime?               // زمان استخراج
@@ -919,6 +948,9 @@ model RequestRecord {
   requestCode  String?  @unique
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
   sourceRunId  String?
+  /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مشتری خام عین منبع
+  rawCustomerName       String?
+  rawCustomerMobile     String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
   rawSourceVersion     String?
   extractedAt          DateTime?

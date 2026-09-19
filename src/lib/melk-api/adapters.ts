@@ -141,6 +141,9 @@ export function mapArmTradedRow(row: Row, index: number, page: number, limit: nu
     id: pickId(row, `arm-traded-${page}-${limit}-${index}-${Date.now()}`),
     contractDate: contractDateDate.toISOString(),
     rawDate,
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع (نمایشی = خام؛ لایه ۲ در خط لوله Bulk مشتق می‌شود)
+    rawPropertyCustomer: propertyCustomer || null,
+    rawRequestCustomer: requestCustomer || null,
     propertyCode: propertyCode || "—",
     propertyCustomer: propertyCustomer || null,
     requestCode: requestCode || null,
@@ -229,6 +232,11 @@ export function mapArmRealtorRow(row: Row, index: number): CrmExpert | null {
     personnelCode: personnelCode || `بدون-کد-${index}`,
     fullName,
     mobile: mobile || "—",
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: مقادیر خام عین منبع (نمایشی = خام؛ لایه ۲ در خط لوله Bulk مشتق می‌شود)
+    rawFullName: fullName || null,
+    rawMobile: mobile || null,
+    rawBusinessTitle: businessTitle || null,
+    rawCreator: creator || null,
     role,
     businessTitle,
     creator,
@@ -264,6 +272,9 @@ export function mapArmInteractionRow(row: Row, index: number): CrmInteraction | 
     id: pickId(row, `arm-interaction-${index}-${requestRealtorName}-${propertyRealtorName}`),
     requestRealtorName: requestRealtorName || "نامشخص",
     propertyRealtorName: propertyRealtorName || "نامشخص",
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع (کلید طبیعی این موجودیت)
+    rawRequestRealtorName: requestRealtorName || null,
+    rawPropertyRealtorName: propertyRealtorName || null,
     count: count || 0,
   };
 }
@@ -311,6 +322,10 @@ export function mapArmVisitRow(row: Row, index: number): CrmVisit | null {
     requesterName: requesterName || "نامشخص",
     checkerName: checkerName || "نامشخص",
     propertyRealtorName: propertyRealtorName || "نامشخص",
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع
+    rawRequesterName: requesterName || null,
+    rawCheckerName: checkerName || null,
+    rawPropertyRealtorName: propertyRealtorName || null,
     checkTime: checkTimeDate ? checkTimeDate.toISOString() : null,
     createdAt: createdAtDate.toISOString(),
     status: status || "ثبت‌شده",
@@ -551,15 +566,19 @@ export function mapArmContractRow(row: Row): CrmContract | null {
   const createdAtRaw = anyDateStringToDate(pickStr(row, ["createdAt"]));
   // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (غنی‌سازی از info در mergeArmContractInfo)
   const rawDate = pickStr(row, ["createdAt"]) || null;
+  // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام ثبت‌کننده خام عین منبع
+  const creatorName = pickNestedStr(row, ["creator.identifier.fullName", "creator.fullName"]) || null;
   return {
     id,
     rawDate,
+    rawCreatorName: creatorName,
+    rawPropertyTitle: null,
     status: pickStr(row, ["status"]) || "preDefined",
     contractHolo: pickStr(row, ["contractHolo"]) || null,
     propertyCode: pickStr(row, ["propertyCode"]) || null,
     requestCode: pickStr(row, ["requestCode"]) || null,
     contractType: pickNestedStr(row, ["contractType.label", "contractType"]) || null,
-    creatorName: pickNestedStr(row, ["creator.identifier.fullName", "creator.fullName"]) || null,
+    creatorName,
     createdAt: createdAtRaw ? createdAtRaw.toISOString() : null,
     contractDate: null,
     documentDate: null,
@@ -594,6 +613,8 @@ export function mergeArmContractInfo(contract: CrmContract, infoPayload: unknown
     ...contract,
     // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام قرارداد از info عین منبع (اولویت با detail)
     rawDate: pickStr(info, ["contractDate"]) || contract.rawDate,
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: عنوان ملک خام از info (اولویت با detail)
+    rawPropertyTitle: pickNestedStr(info, ["property.title", "propertyTitle"]) || contract.rawPropertyTitle,
     contractDate: toDate(["contractDate"]) ?? contract.createdAt,
     documentDate: toDate(["documentDate"]),
     deliveryDate: toDate(["contractPropertyDate"]),

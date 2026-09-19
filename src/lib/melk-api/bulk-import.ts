@@ -609,6 +609,9 @@ function stubMapPropertyRow(row: RawRow): PropertyBulkInput | null {
     rawPrice: pickRawStr(row, ["price", "priceLabel", "priceText", "totalPrice", "priceFa"]),
     rawPriceUnit: pickRawStr(row, ["priceUnit", "unit", "currencyLabel"]),
     rawArea: pickRawStr(row, ["meterage", "metrage", "meterageLabel", "areaMeterage", "propertyMeterage"]),
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مالک خام عین منبع
+    rawOwnerName: pickRawStr(row, ["relatedRealtorName", "realtorName", "ownerName"]),
+    rawOwnerMobile: pickRawStr(row, ["ownerMobile", "mobileNumber", "mobile"]),
   };
 }
 
@@ -617,11 +620,16 @@ function stubMapRequestRow(row: RawRow): ArmRequestBulkRow | null {
   const id = pickRawStr(row, ["id", "_id"]);
   const requestCode = pickRawStr(row, ["code", "requestCode"]);
   if (!id && !requestCode) return null;
+  const customerName = pickRawStr(row, ["applicantName", "customerName", "fullName"]);
+  const customerMobile = pickRawStr(row, ["applicantMobile", "customerMobile", "mobileNumber"]);
   return {
     id: id ?? requestCode!,
     requestCode: requestCode ?? id!,
-    customerName: pickRawStr(row, ["applicantName", "customerName", "fullName"]),
-    customerMobile: pickRawStr(row, ["applicantMobile", "customerMobile", "mobileNumber"]),
+    customerName,
+    customerMobile,
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مشتری خام عین منبع
+    rawCustomerName: customerName,
+    rawCustomerMobile: customerMobile,
   };
 }
 
@@ -640,9 +648,10 @@ export function createArmBulkFetcher(init: { entity: BulkEntity; armToken: strin
         query: {
           page: req.page,
           limit: req.pageSize,
-          // نام پارامترهای بازه تاریخ در P6.5-04/D0 با تست زنده نهایی می‌شود (نگاشت صادقانه)
-          ...(req.startDate ? { from: req.startDate.toISOString().slice(0, 10) } : {}),
-          ...(req.endDate ? { to: req.endDate.toISOString().slice(0, 10) } : {}),
+          // B.4-استاتیک: نام پارامترهای بازه عین خود سامانه = startDate/endDate
+          // (صفحه‌های گزارش با toDate().toISOString() سریال می‌کنند — قالب ISO کامل)
+          ...(req.startDate ? { startDate: req.startDate.toISOString() } : {}),
+          ...(req.endDate ? { endDate: req.endDate.toISOString() } : {}),
         },
         timeoutMs: cfg.timeoutMs,
         maxRetries: 0, // مدیریت retry با موتور خود خط لوله (نه client)
@@ -663,7 +672,9 @@ export function createArmBulkFetcher(init: { entity: BulkEntity; armToken: strin
 
 function armEntityPath(entity: BulkEntity): string {
   switch (entity) {
-    case "transaction": return MELK_ENDPOINTS.arm.tradedTotal;
+    // B.4-استاتیک: لیست معاملات از traded-count می‌آید — traded-count-total فقط
+    // «خلاصهٔ چهارگانه» می‌دهد (کشف ۲ شب ۱؛ عین رفع B.1 در مسیر sync)
+    case "transaction": return MELK_ENDPOINTS.arm.tradedCount;
     case "expert": return MELK_ENDPOINTS.arm.realtorsList;
     case "interaction": return MELK_ENDPOINTS.arm.realtorInteractions;
     case "visit": return MELK_ENDPOINTS.arm.visitsList;

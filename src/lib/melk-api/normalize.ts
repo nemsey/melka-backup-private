@@ -23,11 +23,13 @@ import { jalaliToGregorian, jalaliMonthLength } from "@/lib/jalali";
 import type { BulkEntity } from "./bulk-import";
 
 /**
- * P6.5-04-e-v2 — نسخه موتور نرمال‌سازی (لایه ۲ سه‌لایه حقیقت).
+ * P6.5-04-e-v2 → B.3 (P6.5-04-v2) — نسخه موتور نرمال‌سازی (لایه ۲ سه‌لایه حقیقت).
  * هر ردیف Bulk این نسخه را در ستون normalizationVersion حمل می‌کند؛
  * تغییر قواعد نرمال‌سازی ⇒ افزایش این ثابت (Rial/تومان، تاریخ‌ها، رجیستری محله).
+ * B.3: نسل v2 — لایه ۱ خام نام/موبایل (raw*) حفظ و لایه ۲ از آن مشتق می‌شود
+ * (عین الگوی rawPrice→price در e-v2؛ مقادیر نرمال خروجی برای ردیف‌های بدون خام تغییر نمی‌کند).
  */
-export const NORMALIZATION_VERSION = "p65-04-v1";
+export const NORMALIZATION_VERSION = "p65-04-v2";
 
 // ==========================================================================
 // ۱) پیش‌پردازش نویسه‌ها — ارقام و حروف عربی/فارسی (مشترک همه توابع)
@@ -696,28 +698,43 @@ type FieldKind =
 interface FieldRule {
   field: string;
   kind: FieldKind;
+  /**
+   * B.3 (P6.5-04-v2) — فیلد مقصد لایه ۲ برای مشتق‌سازی از خام (سه‌لایه حقیقت):
+   * مقدار نرمال در target نوشته می‌شود و خود فیلد خام عین منبع دست‌نخورده می‌ماند
+   * (الگوی rawPrice→price). نبود target = نرمال‌سازی درجا (سازگاری ردیف‌های قدیمی بدون لایه خام).
+   */
+  target?: string;
 }
 
-/** قواعد فیلد هر موجودیت — «فیلدهای متناسب» عین B.1-d دستور */
+/** قواعد فیلد هر موجودیت — «فیلدهای متناسب» عین B.1-d دستور
+ *  + B.3: قواعد raw→target پیش از قواعد درجا (مشتق‌سازی لایه ۲ از لایه ۱ خام) */
 const FIELD_RULES: Record<BulkEntity, readonly FieldRule[]> = {
   transaction: [
     { field: "propertyCode", kind: "propertyCode" },
     { field: "requestCode", kind: "requestCode" },
+    { field: "rawPropertyCustomer", kind: "name", target: "propertyCustomer" },
     { field: "propertyCustomer", kind: "name" },
+    { field: "rawRequestCustomer", kind: "name", target: "requestCustomer" },
     { field: "requestCustomer", kind: "name" },
     { field: "contractHolo", kind: "holo" },
     { field: "rawDate", kind: "jalaliDate" },
   ],
   expert: [
     { field: "personnelCode", kind: "holo" },
+    { field: "rawFullName", kind: "name", target: "fullName" },
     { field: "fullName", kind: "name" },
+    { field: "rawMobile", kind: "mobile", target: "mobile" },
     { field: "mobile", kind: "mobile" },
+    { field: "rawBusinessTitle", kind: "name", target: "businessTitle" },
     { field: "businessTitle", kind: "name" },
+    { field: "rawCreator", kind: "name", target: "creator" },
     { field: "creator", kind: "name" },
   ],
   listing: [
     { field: "propertyCode", kind: "propertyCode" },
+    { field: "rawOwnerName", kind: "name", target: "ownerName" },
     { field: "ownerName", kind: "name" },
+    { field: "rawOwnerMobile", kind: "mobile", target: "ownerMobile" },
     { field: "ownerMobile", kind: "mobile" },
     { field: "areaName", kind: "areaName" },
     { field: "lineName", kind: "lineName" },
@@ -726,25 +743,34 @@ const FIELD_RULES: Record<BulkEntity, readonly FieldRule[]> = {
   ],
   request: [
     { field: "requestCode", kind: "requestCode" },
+    { field: "rawCustomerName", kind: "name", target: "customerName" },
     { field: "customerName", kind: "name" },
+    { field: "rawCustomerMobile", kind: "mobile", target: "customerMobile" },
     { field: "customerMobile", kind: "mobile" },
   ],
   visit: [
     { field: "propertyCode", kind: "propertyCode" },
+    { field: "rawRequesterName", kind: "name", target: "requesterName" },
     { field: "requesterName", kind: "name" },
+    { field: "rawCheckerName", kind: "name", target: "checkerName" },
     { field: "checkerName", kind: "name" },
+    { field: "rawPropertyRealtorName", kind: "name", target: "propertyRealtorName" },
     { field: "propertyRealtorName", kind: "name" },
   ],
   contract: [
     { field: "contractHolo", kind: "holo" },
     { field: "propertyCode", kind: "propertyCode" },
     { field: "requestCode", kind: "requestCode" },
+    { field: "rawCreatorName", kind: "name", target: "creatorName" },
     { field: "creatorName", kind: "name" },
+    { field: "rawPropertyTitle", kind: "name", target: "propertyTitle" },
     { field: "propertyTitle", kind: "name" },
     { field: "rawDate", kind: "jalaliDate" },
   ],
   interaction: [
+    { field: "rawRequestRealtorName", kind: "name", target: "requestRealtorName" },
     { field: "requestRealtorName", kind: "name" },
+    { field: "rawPropertyRealtorName", kind: "name", target: "propertyRealtorName" },
     { field: "propertyRealtorName", kind: "name" },
   ],
 };
@@ -881,13 +907,19 @@ export function normalizeBulkRow<T extends Record<string, unknown>>(
       }
     }
 
-    if (normalized !== raw) {
-      changedFields.push(rule.field);
-      out[rule.field] = normalized;
+    // B.3 (P6.5-04-v2) — مشتق‌سازی لایه ۲ از لایه ۱ خام: با target مقدار نرمال
+    // در فیلد مقصد نوشته می‌شود و خود فیلد خام عین منبع دست‌نخورده می‌ماند؛
+    // بدون target همان نرمال‌سازی درجای e-v2 (سازگاری ردیف‌های قدیمی بدون خام).
+    // شمارش تغییر فقط وقتی است که «مقدار مقصد» واقعاً عوض شود (idempotency:
+    // اجرای مجدد روی ردیف نرمال‌شده = صفر تغییر، حتی وقتی خام≠نرمال است).
+    const dest = rule.target ?? rule.field;
+    if (out[dest] !== normalized) {
+      if (!changedFields.includes(dest)) changedFields.push(dest);
+      out[dest] = normalized;
     }
     // رد صادقانه: ورودی غیرخالی → خروجی خالی (موبایل نامعتبر و…)
     if (normalized.length === 0 && raw.trim().length > 0) {
-      invalidFields.push(rule.field);
+      if (!invalidFields.includes(dest)) invalidFields.push(dest);
     }
   }
 

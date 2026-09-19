@@ -42,6 +42,9 @@ function toPropertyData(p: PropertyBulkInput): Record<string, unknown> {
     ...(p.rawPrice !== undefined ? { rawPrice: p.rawPrice } : {}),
     ...(p.rawPriceUnit !== undefined ? { rawPriceUnit: p.rawPriceUnit } : {}),
     ...(p.rawArea !== undefined ? { rawArea: p.rawArea } : {}),
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مالک خام
+    ...(p.rawOwnerName !== undefined ? { rawOwnerName: p.rawOwnerName } : {}),
+    ...(p.rawOwnerMobile !== undefined ? { rawOwnerMobile: p.rawOwnerMobile } : {}),
     ...(p.rawSourceVersion !== undefined ? { rawSourceVersion: p.rawSourceVersion } : {}),
     ...(p.extractedAt !== undefined ? { extractedAt: p.extractedAt } : {}),
     ...(p.extractionBatchId !== undefined ? { extractionBatchId: p.extractionBatchId } : {}),

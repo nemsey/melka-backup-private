@@ -31,6 +31,9 @@ function toTxData(t: TransactionUpsertInput): Record<string, unknown> {
     eventsCount: t.eventsCount,
     // P6.5-04-e-v2 — سه‌لایه حقیقت (خام + provenance؛ تهی از مسیرهای v1 = حفظ مقدار موجود توسط merge)
     ...(t.rawDate !== undefined ? { rawDate: t.rawDate } : {}),
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام طرفین
+    ...(t.rawPropertyCustomer !== undefined ? { rawPropertyCustomer: t.rawPropertyCustomer } : {}),
+    ...(t.rawRequestCustomer !== undefined ? { rawRequestCustomer: t.rawRequestCustomer } : {}),
     ...(t.rawSourceVersion !== undefined ? { rawSourceVersion: t.rawSourceVersion } : {}),
     ...(t.extractedAt !== undefined ? { extractedAt: t.extractedAt } : {}),
     ...(t.extractionBatchId !== undefined ? { extractionBatchId: t.extractionBatchId } : {}),

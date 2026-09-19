@@ -42,8 +42,10 @@ export const MELK_ENDPOINTS = {
     tradedTotal: "realtor-reports/traded-count-total",
     /** شمارش معاملات (خلاصه) */
     tradedCount: "realtor-reports/traded-count",
-    /** گزارش تعاملات کارشناسان (addToURL: list — کشف از باندل خود سامانه) */
-    realtorInteractions: "realtor-reports/realtor-interactions/list",
+    /** گزارش تعاملات کارشناسان — B.4-استاتیک: صفحهٔ خود سامانه این مسیر را «بدون پسوند /list»
+     *  صدا می‌زند (ee("realtor-reports/realtor-interactions") بدون addToURL)؛
+     *  پسوند /list در تحلیل باندل قبلی اشتباه به این خانواده تعمیم داده شده بود — عامل 404 شب ۱ */
+    realtorInteractions: "realtor-reports/realtor-interactions",
     /** فهرست کارشناسان (کارشناس املاک = realtor) */
     realtorsList: "realtors/list",
     /** شمارش اعلان‌ها */

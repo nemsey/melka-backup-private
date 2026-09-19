@@ -1,5 +1,5 @@
 /**
- * تست‌های رگرسیون باگ sync — دستور ملکا-شورا-۰۰۷، بخش B.1
+ * تست‌های رگرسیون باگ sync — دستور ملکا-شورا-۰۰۷، بخش B.1 + اصلاحات B.4-استاتیک
  * ------------------------------------------------------
  * ریشهٔ خالی‌بودن جدول‌های production (کشف‌های شب ۱ Recon، لاگ
  * recon-night1.jsonl):
@@ -8,6 +8,11 @@
  *     (فقط startDate هم کافی نیست — رکورد s2-depth).
  *  ۲) traded-count-total فقط «خلاصهٔ چهارگانه» می‌دهد (rowCount=0،
  *     rowKeys=[] در همهٔ ۲۰۰ها) — لیست ردیف‌ها از traded-count می‌آید.
+ *
+ * اصلاحات B.4-استاتیک (تحلیل باندل SPA بدون تماس API):
+ *  ۳) مسیر تعاملات = realtor-reports/realtor-interactions «بدون /list» —
+ *     پسوند /list عامل 404 شب ۱ بود (صفحهٔ خود سامانه addToURL ندارد).
+ *  ۴) قالب بازه = ISO کامل (toDate().toISOString() عین UI؛ بدون تبدیل در لایهٔ درخواست).
  *
  * این تست سرور واقعی را شبیه‌سازی می‌کند: هر درخواست realtor-reports
  * بدون بازهٔ کامل = 400. اگر رفع باگ روزی برگردد، sync شکست می‌خورد و
@@ -80,8 +85,15 @@ globalThis.fetch = (async (input: RequestInfo | URL) => {
     // این endpoint فقط خلاصه می‌دهد — هرگز list (کشف ۲ شب ۱)
     return OK({ totalCount: 2, hasRequestEvent: 1, hasSuggestedProperty: 1, hasBoth: 1 });
   }
+  if (path === "realtor-reports/realtor-interactions") {
+    // B.4-استاتیک: مسیر درست بدون /list + بازهٔ الزامی (عین خانوادهٔ گزارش)
+    if (!hasFullRange) return NEED_RANGE();
+    return PAGED([
+      { _id: "in-b4-1", requestRealtorName: "كريمي", propertyRealtorName: "موسوي", count: 3 },
+    ]);
+  }
   if (path === "realtor-reports/realtor-interactions/list") {
-    // مسیر ۴۰۴ است (کشف شب ۱) — sync باید ساکت-fail غیربحرانی بماند
+    // مسیر قدیمی غلط — باید هرگز صدا زده نشود (رگرسیون B.4)
     return envelope(404, false, "Cannot GET /api/apm/realtor-reports/realtor-interactions/list", { error: "NotFound" });
   }
   if (path === "realtor-reports/supply-demand") {
@@ -127,55 +139,54 @@ afterAll(async () => {
 // تست‌ها
 // ---------------------------------------------------------------------------
 
-describe("B.1 — buildReportDateRange (بازهٔ جلالی پیش‌فرض)", () => {
-  test("مبدأ = 2018-01-01 میلادی = 1396/10/11 جلالی (مستند دستور)", () => {
+describe("B.1+B.4 — buildReportDateRange (بازهٔ ISO عین خود سامانه)", () => {
+  test("مبدأ = 2018-01-01T00:00:00.000Z (مستند دستور؛ معادل 1396/10/11 جلالی)", () => {
     const r = buildReportDateRange(new Date("2026-09-19T20:00:00Z"));
-    expect(r.startDate).toBe("1396/10/11");
+    expect(r.startDate).toBe("2018-01-01T00:00:00.000Z");
   });
 
-  test("مقصد = امروز به وقت تهران (2026-09-19 → 1405/06/28)", () => {
+  test("مقصد = نیمه‌شب امروز تهران به ISO کامل (تهران ۱۴۰۵/۰۶/۲۸ → 2026-09-18T20:30:00.000Z)", () => {
     const r = buildReportDateRange(new Date("2026-09-19T20:00:00Z")); // تهران ۲۳:۳۰ همان روز
-    expect(r.endDate).toBe("1405/06/28");
+    expect(r.endDate).toBe("2026-09-18T20:30:00.000Z");
   });
 
-  test("قالب هر دو طرف YYYY/MM/DD جلالی است", () => {
+  test("قالب هر دو طرف ISO کامل است (کشف B.4: toDate().toISOString() عین UI — نه جلالی)", () => {
     const r = buildReportDateRange(new Date());
-    expect(r.startDate).toMatch(/^1[34]\d{2}\/\d{2}\/\d{2}$/);
-    expect(r.endDate).toMatch(/^1[34]\d{2}\/\d{2}\/\d{2}$/);
+    expect(r.startDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    expect(r.endDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
 });
 
 describe("B.1 — sync با سروری که بازه را الزامی می‌کند (شبیه‌سازی ARM واقعی)", () => {
-  test(
-    "sync موفق: status ok + رکورد > 0 (شاهد موردنیاز دستور B.1)",
-    async () => {
-      const res = await syncFromArm("test-token-b1");
-      expect(res.ok).toBe(true);
-      expect(res.error).toBeUndefined();
-      // شاهد دستور: recordsFetched > 0 — معاملات از traded-count (لیست‌دار)
-      expect(res.transactions).toBe(2);
-      expect(res.experts).toBe(1);
-      // خلاصهٔ چهارگانه از traded-count-total (تنها نقش درست آن)
-      const state = await db.syncState.findUnique({ where: { id: "singleton" } });
-      expect(state?.summaryJson).toContain('"totalCount":2');
-      // رکوردها واقعاً در پایگاه نشسته‌اند
-      expect(await db.transactionRecord.count()).toBe(2);
-      expect(await db.expertRecord.count()).toBe(1);
-    },
-    30_000
-  );
+  test("sync موفق: status ok + رکورد > 0 (شاهد موردنیاز دستور B.1)", async () => {
+    const res = await syncFromArm("test-token-b1");
+    expect(res.ok).toBe(true);
+    expect(res.error).toBeUndefined();
+    // شاهد دستور: recordsFetched > 0 — معاملات از traded-count (لیست‌دار)
+    expect(res.transactions).toBe(2);
+    expect(res.experts).toBe(1);
+    // B.4: تعاملات از مسیر درست + بازه — دیگر 404/ساکت-fail نیست
+    expect(res.interactions).toBe(1);
+    // خلاصهٔ چهارگانه از traded-count-total (تنها نقش درست آن)
+    const state = await db.syncState.findUnique({ where: { id: "singleton" } });
+    expect(state?.summaryJson).toContain('"totalCount":2');
+    // رکوردها واقعاً در پایگاه نشسته‌اند
+    expect(await db.transactionRecord.count()).toBe(2);
+    expect(await db.expertRecord.count()).toBe(1);
+    expect(await db.interactionRecord.count()).toBe(1);
+  }, 30_000);
 
-  test("هر تماس realtor-reportsِ فعال بازهٔ کامل را داشته و قالب بازه جلالی است", () => {
-    // تعاملات (۴۰۴) عمداً بدون بازه می‌ماند — مسیرش غلط است و در شب ۲ کشف می‌شود
+  test("هر تماس realtor-reportsِ فعال بازهٔ کامل را داشته و قالب بازه ISO است", () => {
     const reportCalls = calls.filter((c) =>
       c.path === "realtor-reports/traded-count" ||
       c.path === "realtor-reports/traded-count-total" ||
+      c.path === "realtor-reports/realtor-interactions" ||
       c.path === "realtor-reports/supply-demand"
     );
-    expect(reportCalls.length).toBeGreaterThanOrEqual(3);
+    expect(reportCalls.length).toBeGreaterThanOrEqual(4);
     for (const c of reportCalls) {
-      expect(c.query.get("startDate")).toBe("1396/10/11");
-      expect(c.query.get("endDate")).toMatch(/^1[34]\d{2}\/\d{2}\/\d{2}$/);
+      expect(c.query.get("startDate")).toBe("2018-01-01T00:00:00.000Z");
+      expect(c.query.get("endDate")).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     }
   });
 
@@ -188,10 +199,19 @@ describe("B.1 — sync با سروری که بازه را الزامی می‌ک
     }
   });
 
-  test("مسیر ۴۰۴ تعاملات، sync را نمی‌شکند (ساکت-fail غیربحرانی)", async () => {
-    const res = await syncFromArm("test-token-b1");
-    expect(res.ok).toBe(true);
-    expect(res.interactions).toBe(0);
-    expect(calls.some((c) => c.path === "realtor-reports/realtor-interactions/list")).toBe(true);
+  test("رگرسیون B.4: مسیر تعاملات بدون /list + رکوردش در پایگاه (سه‌لایه B.3)", async () => {
+    // مسیر قدیمی غلط هرگز صدا زده نشده است
+    expect(calls.some((c) => c.path === "realtor-reports/realtor-interactions/list")).toBe(false);
+    // مسیر درست با بازهٔ کامل صدا زده شده است
+    const good = calls.filter((c) => c.path === "realtor-reports/realtor-interactions");
+    expect(good.length).toBeGreaterThanOrEqual(1);
+    for (const c of good) {
+      expect(c.query.get("startDate")).toBe("2018-01-01T00:00:00.000Z");
+    }
+    // لایهٔ خام B.3: نام خام عین منبع + نرمال مشتق
+    const row = await db.interactionRecord.findFirst();
+    expect(row).not.toBeNull();
+    expect(row!.rawRequestRealtorName).toBe("كريمي");
+    expect(row!.requestRealtorName).toBe("کریمی");
   });
 });

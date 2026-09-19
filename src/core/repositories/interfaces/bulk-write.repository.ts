@@ -65,6 +65,9 @@ export interface PropertyBulkInput {
   rawPrice?: string | null;
   rawPriceUnit?: string | null;
   rawArea?: string | null;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مالک خام عین منبع */
+  rawOwnerName?: string | null;
+  rawOwnerMobile?: string | null;
   /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت */
   rawSourceVersion?: string | null;
   extractedAt?: Date | null;
@@ -84,6 +87,9 @@ export interface ArmRequestBulkRow {
   /** کارشناس ثبت‌کننده در ARM؛ نبود → 'arm' (رکورد سیستمی) */
   actorCode?: string | null;
   createdAt?: Date | null;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مشتری خام عین منبع */
+  rawCustomerName?: string | null;
+  rawCustomerMobile?: string | null;
   /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت (خط لوله Bulk پر می‌کند) */
   rawSourceVersion?: string | null;
   extractedAt?: Date | null;

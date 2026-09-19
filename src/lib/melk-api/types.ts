@@ -65,6 +65,10 @@ export interface CrmTransaction {
   contractDate: string;
   /** P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (پیش از تبدیل جلالی/ISO؛ هرگز تغییر نمی‌کند) */
   rawDate: string | null;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام خام طرف ملک عین منبع (پیش از normalizeName) */
+  rawPropertyCustomer: string | null;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام خام طرف درخواست عین منبع */
+  rawRequestCustomer: string | null;
   /** کد ملک (آگهی فروشنده) */
   propertyCode: string;
   /** نام مالک/مشتریِ طرف ملک */
@@ -123,6 +127,11 @@ export interface CrmExpert {
   personnelCode: string;
   fullName: string;
   mobile: string;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: مقادیر خام عین منبع (پیش از نرمال‌سازی) */
+  rawFullName: string | null;
+  rawMobile: string | null;
+  rawBusinessTitle: string | null;
+  rawCreator: string | null;
   /** نقش کاربر (مثلاً «کارشناس و مشاور فروش») */
   role: string;
   /** عنوان کسب‌وکار/شعبه */
@@ -158,6 +167,9 @@ export interface CrmInteraction {
   requestRealtorName: string;
   /** نام مشاورِ طرف آگهی ملک */
   propertyRealtorName: string;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع (کلید طبیعی این موجودیت) */
+  rawRequestRealtorName: string | null;
+  rawPropertyRealtorName: string | null;
   /** تعداد تعامل/همکاری */
   count: number;
 }
@@ -178,6 +190,10 @@ export interface CrmVisit {
   checkerName: string;
   /** نام مشاور آگهی */
   propertyRealtorName: string;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع */
+  rawRequesterName: string | null;
+  rawCheckerName: string | null;
+  rawPropertyRealtorName: string | null;
   /** زمان بررسی (ISO یا رشته جلالی سامانه — نرمال‌شده به ISO) */
   checkTime: string | null;
   /** زمان ثبت بازدید (ISO) */
@@ -330,6 +346,9 @@ export interface CrmContract {
   status: ContractStatus | string;
   /** P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (پیش از تبدیل؛ هرگز تغییر نمی‌کند) */
   rawDate: string | null;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام ثبت‌کننده و عنوان ملک خام عین منبع */
+  rawCreatorName: string | null;
+  rawPropertyTitle: string | null;
   contractHolo: string | null;
   propertyCode: string | null;
   requestCode: string | null;

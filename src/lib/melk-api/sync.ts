@@ -51,8 +51,8 @@ import type {
   TradedSummary,
 } from "./types";
 import { MelkApiError } from "./types";
+import { normalizeMobile, normalizeName } from "./normalize";
 import {
-  gregorianToJalali,
   mapArmInteractionRow,
   mapArmRealtorRow,
   mapArmTradedRow,
@@ -213,26 +213,24 @@ async function writeSyncState(patch: {
 //      قبلاً لیست از total خواسته می‌شد ⇒ حتی با ۲۰۰ هم همیشه خالی.
 
 /**
- * بازهٔ گزارش پیش‌فرض — جلالی YYYY/MM/DD (قالب اثبات‌شدهٔ شب ۱: s4/c1/c2/c3).
- * مبدأ = 2018-01-01 میلادی (دستور ملکا-شورا-۰۰۷ B.1) = 1396/10/11 جلالی؛
- * مقصد = امروز به وقت تهران (زیرا بازهٔ «تا امروز» در تقویم سامانهٔ ایرانی است).
+ * بازهٔ پیش‌فرض گزارش‌های realtor-reports — عین خود سامانه (کشف B.4-استاتیک):
+ * صفحه‌های TradedStatistics و realtor-interactions هر دو تاریخ انتخابی را با
+ * toDate().toISOString() سریال می‌کنند و لایهٔ درخواست (Qn) پارامترها را بدون
+ * هیچ تبدیلی به axios می‌دهد ⇒ قالب «ISO کامل» است، نه جلالی.
+ * (بازتفسیر شب ۱: 200 با totalCount=0 روی قالب جلالی — احتمال ریشهٔ قالب به‌همراه scope)
  */
 export function buildReportDateRange(now: Date = new Date()): { startDate: string; endDate: string } {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const [sy, sm, sd] = gregorianToJalali(2018, 1, 1);
-  // امروز تهران به قالب ISO (en-CA → YYYY-MM-DD) — مستقل از TZ فرایند
+  // مبدأ مستند دستور: 2018-01-01 میلادی (= 1396/10/11 جلالی)
+  const startDate = "2018-01-01T00:00:00.000Z";
+  // مقصد = نیمه‌شب امروز تهران به ISO (عین انتخاب تاریخ «امروز» در datepicker خود سامانه)
   const tehranToday = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tehran",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(now);
-  const [gy, gm, gd] = tehranToday.split("-").map(Number);
-  const [ey, em, ed] = gregorianToJalali(gy, gm, gd);
-  return {
-    startDate: `${sy}/${pad(sm)}/${pad(sd)}`,
-    endDate: `${ey}/${pad(em)}/${pad(ed)}`,
-  };
+  const endDate = new Date(`${tehranToday}T00:00:00+03:30`).toISOString();
+  return { startDate, endDate };
 }
 
 /** خلاصهٔ چهارگانهٔ گزارش تطابق از traded-count-total (تک‌تماس، با بازه) */
@@ -331,7 +329,9 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
     let interactions: CrmInteraction[] = [];
     let interactionsFetched = false;
     try {
-      const { rows: inRows } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorInteractions, armToken, 20, 200, mapArmInteractionRow);
+      // B.4-استاتیک: صفحهٔ خود سامانه کوئری را فقط با (startDate && endDate) || realtor
+      // فعال می‌کند ⇒ بازهٔ گزارش مانند خانوادهٔ realtor-reports ارسال می‌شود
+      const { rows: inRows } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorInteractions, armToken, 20, 200, mapArmInteractionRow, range);
       interactions = inRows;
       interactionsFetched = true;
     } catch {
@@ -395,7 +395,7 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
         ...toExCreates(experts),
         ...toInCreates(interactions),
         ...toViCreates(visits),
-        ...toSdCreates(supplyDemand),
+        ...toSdCreates(supplyDemand, runId),
         ...toContractCreates(contracts),
       ]);
     }
@@ -481,15 +481,32 @@ function computeSummaryFromRows(rows: CrmTransaction[]): TradedSummary {
 // ==========================================================================
 
 /** نگاشت‌های upsert — عین فیلدهای toXxxCreates، فقط به‌جای عملیات Prisma شیء ورودی */
+/**
+ * B.3 (P6.5-04-v2) — نگاشت‌های upsert: لایه ۲ از لایه ۱ در «نقطهٔ نوشتن» مشتق می‌شود
+ * (مسیر sync هم مثل خط لولهٔ Bulk نمایشیِ نرمال + خامِ عین منبع می‌نویسد؛
+ * توابع خالص، بدون I/O؛ نتیجه idempotent با normalizeBulkRow — همان مقدار)
+ */
+const normName = (raw: string | null | undefined): string => {
+  const s = typeof raw === "string" ? raw : "";
+  return normalizeName(s) || s; // نمایشی هرگز خالی نمی‌ماند — fallback خود خام
+};
+const normMobile = (raw: string | null | undefined): string => {
+  const s = typeof raw === "string" ? raw : "";
+  return normalizeMobile(s) || s;
+};
+
 export const toTxUpsert = (t: CrmTransaction): TransactionUpsertInput => ({
   id: t.id,
   contractDate: new Date(t.contractDate),
   // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع
   rawDate: t.rawDate,
+  // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام طرفین عین منبع
+  rawPropertyCustomer: t.rawPropertyCustomer ?? t.propertyCustomer,
+  rawRequestCustomer: t.rawRequestCustomer ?? t.requestCustomer,
   propertyCode: t.propertyCode,
-  propertyCustomer: t.propertyCustomer,
+  propertyCustomer: t.propertyCustomer === null ? null : normName(t.rawPropertyCustomer ?? t.propertyCustomer),
   requestCode: t.requestCode,
-  requestCustomer: t.requestCustomer,
+  requestCustomer: t.requestCustomer === null ? null : normName(t.rawRequestCustomer ?? t.requestCustomer),
   contractHolo: t.contractHolo,
   suggestedPropertyCount: t.suggestedPropertyCount,
   eventsCount: t.eventsCount,
@@ -498,39 +515,57 @@ export const toTxUpsert = (t: CrmTransaction): TransactionUpsertInput => ({
 export const toExUpsert = (e: CrmExpert): ExpertUpsertInput => ({
   id: e.id,
   personnelCode: e.personnelCode,
-  fullName: e.fullName,
-  mobile: e.mobile,
+  fullName: normName(e.rawFullName ?? e.fullName),
+  mobile: normMobile(e.rawMobile ?? e.mobile),
+  // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: مقادیر خام عین منبع
+  rawFullName: e.rawFullName ?? e.fullName,
+  rawMobile: e.rawMobile ?? e.mobile,
+  rawBusinessTitle: e.rawBusinessTitle ?? e.businessTitle,
+  rawCreator: e.rawCreator ?? e.creator,
   role: e.role,
-  businessTitle: e.businessTitle,
-  creator: e.creator,
+  businessTitle: normName(e.rawBusinessTitle ?? e.businessTitle),
+  creator: e.creator === null ? null : normName(e.rawCreator ?? e.creator),
   active: e.active,
   createdAt: new Date(e.createdAt),
 });
 
 export const toInUpsert = (i: CrmInteraction): InteractionUpsertInput => ({
   id: i.id,
-  requestRealtorName: i.requestRealtorName,
-  propertyRealtorName: i.propertyRealtorName,
+  requestRealtorName: normName(i.rawRequestRealtorName ?? i.requestRealtorName),
+  propertyRealtorName: normName(i.rawPropertyRealtorName ?? i.propertyRealtorName),
+  // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام (کلید طبیعی)
+  rawRequestRealtorName: i.rawRequestRealtorName ?? i.requestRealtorName,
+  rawPropertyRealtorName: i.rawPropertyRealtorName ?? i.propertyRealtorName,
   count: i.count,
 });
 
 export const toViUpsert = (v: CrmVisit): VisitUpsertInput => ({
   id: v.id,
   propertyCode: v.propertyCode,
-  requesterName: v.requesterName,
-  checkerName: v.checkerName,
-  propertyRealtorName: v.propertyRealtorName,
+  requesterName: normName(v.rawRequesterName ?? v.requesterName),
+  checkerName: normName(v.rawCheckerName ?? v.checkerName),
+  propertyRealtorName: normName(v.rawPropertyRealtorName ?? v.propertyRealtorName),
+  // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع
+  rawRequesterName: v.rawRequesterName ?? v.requesterName,
+  rawCheckerName: v.rawCheckerName ?? v.checkerName,
+  rawPropertyRealtorName: v.rawPropertyRealtorName ?? v.propertyRealtorName,
   checkTime: v.checkTime ? new Date(v.checkTime) : null,
   createdAt: new Date(v.createdAt),
   status: v.status,
 });
 
-const toSdUpsert = (s: CrmSupplyDemand): SupplyDemandUpsertInput => ({
+/**
+ * B.3 (P6.5-04-v2) — عرضه/تقاضا با مهر provenance:
+ * extractedAt + extractionBatchId (= runId همین اجرای sync) + rawSourceVersion تهی صادقانه.
+ * normalizationVersion نوشته نمی‌شود (موتور نرمال‌سازی روی این جدول اجرا نمی‌شود — عناوین بازه عین منبع می‌مانند).
+ */
+export const toSdUpsert = (s: CrmSupplyDemand, runId?: string): SupplyDemandUpsertInput => ({
   id: s.id,
   rangeTitle: s.rangeTitle,
   propertyCount: s.propertyCount,
   requestPercent: s.requestPercent,
   status: s.status,
+  ...(runId ? { rawSourceVersion: null, extractedAt: new Date(), extractionBatchId: runId } : {}),
 });
 
 export const toContractUpsert = (c: CrmContract): ContractUpsertInput => ({
@@ -538,16 +573,19 @@ export const toContractUpsert = (c: CrmContract): ContractUpsertInput => ({
   status: c.status,
   // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع
   rawDate: c.rawDate,
+  // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام ثبت‌کننده و عنوان ملک خام
+  rawCreatorName: c.rawCreatorName ?? c.creatorName,
+  rawPropertyTitle: c.rawPropertyTitle ?? c.propertyTitle,
   contractHolo: c.contractHolo,
   propertyCode: c.propertyCode,
   requestCode: c.requestCode,
   contractType: c.contractType,
-  creatorName: c.creatorName,
+  creatorName: c.creatorName === null ? null : normName(c.rawCreatorName ?? c.creatorName),
   createdAt: c.createdAt ? new Date(c.createdAt) : null,
   contractDate: c.contractDate ? new Date(c.contractDate) : null,
   documentDate: c.documentDate ? new Date(c.documentDate) : null,
   deliveryDate: c.deliveryDate ? new Date(c.deliveryDate) : null,
-  propertyTitle: c.propertyTitle,
+  propertyTitle: c.propertyTitle === null ? null : normName(c.rawPropertyTitle ?? c.propertyTitle),
   propertyAddress: c.propertyAddress,
   buyerListJson: c.buyers.length > 0 ? JSON.stringify(c.buyers) : null,
   sellerListJson: c.sellers.length > 0 ? JSON.stringify(c.sellers) : null,
@@ -660,7 +698,7 @@ export async function applyIncrementalSync(
     },
     {
       entity: "supplyDemand",
-      rows: data.supplyDemand.map(toSdUpsert) as never[],
+      rows: data.supplyDemand.map((s) => toSdUpsert(s, runId)) as never[],
       fetched: data.supplyDemandFetched,
       keyOf: (s) => (s as unknown as SupplyDemandUpsertInput).id,
       upsert: (rows) => mkRepo.upsertSupplyDemandBatch(rows as unknown as SupplyDemandUpsertInput[]),
@@ -805,12 +843,16 @@ function toTxCreates(rows: CrmTransaction[]) {
         id: t.id,
         contractDate: new Date(t.contractDate),
         propertyCode: t.propertyCode,
-        propertyCustomer: t.propertyCustomer,
+        propertyCustomer: t.propertyCustomer === null ? null : normName(t.rawPropertyCustomer ?? t.propertyCustomer),
         requestCode: t.requestCode,
-        requestCustomer: t.requestCustomer,
+        requestCustomer: t.requestCustomer === null ? null : normName(t.rawRequestCustomer ?? t.requestCustomer),
         contractHolo: t.contractHolo,
         suggestedPropertyCount: t.suggestedPropertyCount,
         eventsCount: t.eventsCount,
+        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: خام‌ها عین منبع
+        ...(t.rawDate !== undefined ? { rawDate: t.rawDate } : {}),
+        ...(t.rawPropertyCustomer !== undefined ? { rawPropertyCustomer: t.rawPropertyCustomer ?? t.propertyCustomer } : {}),
+        ...(t.rawRequestCustomer !== undefined ? { rawRequestCustomer: t.rawRequestCustomer ?? t.requestCustomer } : {}),
       },
     })
   );
@@ -822,13 +864,18 @@ function toExCreates(rows: CrmExpert[]) {
       data: {
         id: e.id,
         personnelCode: e.personnelCode,
-        fullName: e.fullName,
-        mobile: e.mobile,
+        fullName: normName(e.rawFullName ?? e.fullName),
+        mobile: normMobile(e.rawMobile ?? e.mobile),
         role: e.role,
-        businessTitle: e.businessTitle,
-        creator: e.creator,
+        businessTitle: normName(e.rawBusinessTitle ?? e.businessTitle),
+        creator: e.creator === null ? null : normName(e.rawCreator ?? e.creator),
         active: e.active,
         createdAt: new Date(e.createdAt),
+        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: خام‌ها عین منبع
+        ...(e.rawFullName !== undefined ? { rawFullName: e.rawFullName ?? e.fullName } : {}),
+        ...(e.rawMobile !== undefined ? { rawMobile: e.rawMobile ?? e.mobile } : {}),
+        ...(e.rawBusinessTitle !== undefined ? { rawBusinessTitle: e.rawBusinessTitle ?? e.businessTitle } : {}),
+        ...(e.rawCreator !== undefined ? { rawCreator: e.rawCreator ?? e.creator } : {}),
       },
     })
   );
@@ -839,9 +886,12 @@ function toInCreates(rows: CrmInteraction[]) {
     db.interactionRecord.create({
       data: {
         id: i.id,
-        requestRealtorName: i.requestRealtorName,
-        propertyRealtorName: i.propertyRealtorName,
+        requestRealtorName: normName(i.rawRequestRealtorName ?? i.requestRealtorName),
+        propertyRealtorName: normName(i.rawPropertyRealtorName ?? i.propertyRealtorName),
         count: i.count,
+        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام (کلید طبیعی)
+        ...(i.rawRequestRealtorName !== undefined ? { rawRequestRealtorName: i.rawRequestRealtorName ?? i.requestRealtorName } : {}),
+        ...(i.rawPropertyRealtorName !== undefined ? { rawPropertyRealtorName: i.rawPropertyRealtorName ?? i.propertyRealtorName } : {}),
       },
     })
   );
@@ -853,18 +903,23 @@ function toViCreates(rows: CrmVisit[]) {
       data: {
         id: v.id,
         propertyCode: v.propertyCode,
-        requesterName: v.requesterName,
-        checkerName: v.checkerName,
-        propertyRealtorName: v.propertyRealtorName,
+        requesterName: normName(v.rawRequesterName ?? v.requesterName),
+        checkerName: normName(v.rawCheckerName ?? v.checkerName),
+        propertyRealtorName: normName(v.rawPropertyRealtorName ?? v.propertyRealtorName),
         checkTime: v.checkTime ? new Date(v.checkTime) : null,
         createdAt: new Date(v.createdAt),
         status: v.status,
+        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام
+        ...(v.rawRequesterName !== undefined ? { rawRequesterName: v.rawRequesterName ?? v.requesterName } : {}),
+        ...(v.rawCheckerName !== undefined ? { rawCheckerName: v.rawCheckerName ?? v.checkerName } : {}),
+        ...(v.rawPropertyRealtorName !== undefined ? { rawPropertyRealtorName: v.rawPropertyRealtorName ?? v.propertyRealtorName } : {}),
       },
     })
   );
 }
 
-function toSdCreates(rows: CrmSupplyDemand[]) {
+/** B.3 (P6.5-04-v2) — عرضه/تقاضا با مهر provenance (عین toSdUpsert — مسیر legacy) */
+function toSdCreates(rows: CrmSupplyDemand[], runId?: string) {
   return rows.map((s) =>
     db.supplyDemandRecord.create({
       data: {
@@ -873,6 +928,7 @@ function toSdCreates(rows: CrmSupplyDemand[]) {
         propertyCount: s.propertyCount,
         requestPercent: s.requestPercent,
         status: s.status,
+        ...(runId ? { rawSourceVersion: null, extractedAt: new Date(), extractionBatchId: runId } : {}),
       },
     })
   );
@@ -919,17 +975,21 @@ function toContractCreates(rows: CrmContract[]) {
         propertyCode: c.propertyCode,
         requestCode: c.requestCode,
         contractType: c.contractType,
-        creatorName: c.creatorName,
+        creatorName: c.creatorName === null ? null : normName(c.rawCreatorName ?? c.creatorName),
         createdAt: c.createdAt ? new Date(c.createdAt) : null,
         contractDate: c.contractDate ? new Date(c.contractDate) : null,
         documentDate: c.documentDate ? new Date(c.documentDate) : null,
         deliveryDate: c.deliveryDate ? new Date(c.deliveryDate) : null,
-        propertyTitle: c.propertyTitle,
+        propertyTitle: c.propertyTitle === null ? null : normName(c.rawPropertyTitle ?? c.propertyTitle),
         propertyAddress: c.propertyAddress,
         buyerListJson: c.buyers.length > 0 ? JSON.stringify(c.buyers) : null,
         sellerListJson: c.sellers.length > 0 ? JSON.stringify(c.sellers) : null,
         realtorListJson: c.realtorShares.length > 0 ? JSON.stringify(c.realtorShares) : null,
         canAddRealtor: c.canAddRealtor,
+        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: خام‌ها عین منبع
+        ...(c.rawDate !== undefined ? { rawDate: c.rawDate } : {}),
+        ...(c.rawCreatorName !== undefined ? { rawCreatorName: c.rawCreatorName ?? c.creatorName } : {}),
+        ...(c.rawPropertyTitle !== undefined ? { rawPropertyTitle: c.rawPropertyTitle ?? c.propertyTitle } : {}),
       },
     })
   );

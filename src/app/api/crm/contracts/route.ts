@@ -60,6 +60,9 @@ export async function GET(request: NextRequest) {
       status: r.status,
       // P6.5-04-e-v2 — لایه ۱ حقیقت در مسیر خواندن v1 حمل می‌شود (بدون تغییر رفتار)
       rawDate: null,
+      // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: خام‌ها در DTO فعلی نیستند — تهی صادقانه (غنی‌سازی خواندن در P6.5-05/08)
+      rawCreatorName: null,
+      rawPropertyTitle: null,
       contractHolo: r.contractHolo,
       propertyCode: r.propertyCode,
       requestCode: r.requestCode,

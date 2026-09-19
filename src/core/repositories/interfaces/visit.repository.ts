@@ -51,6 +51,10 @@ export interface VisitUpsertInput {
   checkTime: Date | null;
   createdAt: Date;
   status: string;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع */
+  rawRequesterName?: string | null;
+  rawCheckerName?: string | null;
+  rawPropertyRealtorName?: string | null;
   /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت (خط لوله Bulk پر می‌کند) */
   rawSourceVersion?: string | null;
   extractedAt?: Date | null;

@@ -47,6 +47,9 @@ export interface TransactionUpsertInput {
   eventsCount: number;
   /** P6.5-04-e-v2 — سه‌لایه حقیقت: لایه ۱ خام + provenance (خط لوله Bulk پر می‌کند؛ مسیرهای v1 تهی می‌گذارند — merge non-null حفظ می‌کند) */
   rawDate?: string | null;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام طرفین عین منبع */
+  rawPropertyCustomer?: string | null;
+  rawRequestCustomer?: string | null;
   rawSourceVersion?: string | null;
   extractedAt?: Date | null;
   extractionBatchId?: string | null;

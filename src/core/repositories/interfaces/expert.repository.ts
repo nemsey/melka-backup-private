@@ -89,6 +89,11 @@ export interface ExpertUpsertInput {
   creator: string | null;
   active: boolean;
   createdAt: Date;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل/کسب‌وکار/ثبت‌کننده خام عین منبع */
+  rawFullName?: string | null;
+  rawMobile?: string | null;
+  rawBusinessTitle?: string | null;
+  rawCreator?: string | null;
   /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت (خط لوله Bulk پر می‌کند) */
   rawSourceVersion?: string | null;
   extractedAt?: Date | null;
@@ -102,6 +107,9 @@ export interface InteractionUpsertInput {
   requestRealtorName: string;
   propertyRealtorName: string;
   count: number;
+  /** B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع (کلید طبیعی) */
+  rawRequestRealtorName?: string | null;
+  rawPropertyRealtorName?: string | null;
   /** P6.5-04-e-v2 — provenance سه‌لایه حقیقت (خط لوله Bulk پر می‌کند) */
   rawSourceVersion?: string | null;
   extractedAt?: Date | null;

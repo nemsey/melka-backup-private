@@ -54,6 +54,11 @@ export class PrismaMarketRepository implements MarketRepository {
             propertyCount: s.propertyCount,
             requestPercent: s.requestPercent,
             status: s.status,
+            // B.3 (P6.5-04-v2) — provenance سه‌لایه (مسیر sync)
+            ...(s.rawSourceVersion !== undefined ? { rawSourceVersion: s.rawSourceVersion } : {}),
+            ...(s.extractedAt !== undefined ? { extractedAt: s.extractedAt } : {}),
+            ...(s.extractionBatchId !== undefined ? { extractionBatchId: s.extractionBatchId } : {}),
+            ...(s.normalizationVersion !== undefined ? { normalizationVersion: s.normalizationVersion } : {}),
           },
         })
       ),
@@ -74,12 +79,22 @@ export class PrismaMarketRepository implements MarketRepository {
           propertyCount: s.propertyCount,
           requestPercent: s.requestPercent,
           status: s.status,
+          // B.3 (P6.5-04-v2) — provenance سه‌لایه (مسیر sync)
+          ...(s.rawSourceVersion !== undefined ? { rawSourceVersion: s.rawSourceVersion } : {}),
+          ...(s.extractedAt !== undefined ? { extractedAt: s.extractedAt } : {}),
+          ...(s.extractionBatchId !== undefined ? { extractionBatchId: s.extractionBatchId } : {}),
+          ...(s.normalizationVersion !== undefined ? { normalizationVersion: s.normalizationVersion } : {}),
         },
         update: {
           rangeTitle: s.rangeTitle,
           propertyCount: s.propertyCount,
           requestPercent: s.requestPercent,
           status: s.status,
+          // B.3 (P6.5-04-v2) — provenance سه‌لایه (merge: تهی مقدار موجود را بازنویسی نمی‌کند)
+          ...(s.rawSourceVersion ? { rawSourceVersion: s.rawSourceVersion } : {}),
+          ...(s.extractedAt ? { extractedAt: s.extractedAt } : {}),
+          ...(s.extractionBatchId ? { extractionBatchId: s.extractionBatchId } : {}),
+          ...(s.normalizationVersion ? { normalizationVersion: s.normalizationVersion } : {}),
         },
       });
       if (existing) updated += 1;

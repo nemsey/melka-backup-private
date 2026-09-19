@@ -26,6 +26,9 @@ function toCreateData(c: ContractUpsertInput): Prisma.ContractRecordCreateInput 
     canAddRealtor: c.canAddRealtor,
     // P6.5-04-e-v2 — سه‌لایه حقیقت (خام + provenance)
     ...(c.rawDate !== undefined ? { rawDate: c.rawDate } : {}),
+    // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام ثبت‌کننده و عنوان ملک خام
+    ...(c.rawCreatorName !== undefined ? { rawCreatorName: c.rawCreatorName } : {}),
+    ...(c.rawPropertyTitle !== undefined ? { rawPropertyTitle: c.rawPropertyTitle } : {}),
     ...(c.rawSourceVersion !== undefined ? { rawSourceVersion: c.rawSourceVersion } : {}),
     ...(c.extractedAt !== undefined ? { extractedAt: c.extractedAt } : {}),
     ...(c.extractionBatchId !== undefined ? { extractionBatchId: c.extractionBatchId } : {}),

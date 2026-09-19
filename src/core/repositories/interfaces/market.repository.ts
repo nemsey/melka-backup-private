@@ -124,4 +124,10 @@ export interface SupplyDemandUpsertInput {
   propertyCount: number;
   requestPercent: number;
   status: string;
+  /** B.3 (P6.5-04-v2) — provenance سه‌لایه حقیقت (مسیر sync پر می‌کند — این جدول مسیر Bulk ندارد؛
+   *  normalizationVersion تهی می‌ماند: موتور نرمال‌سازی روی این جدول اجرا نمی‌شود) */
+  rawSourceVersion?: string | null;
+  extractedAt?: Date | null;
+  extractionBatchId?: string | null;
+  normalizationVersion?: string | null;
 }
