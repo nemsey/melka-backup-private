@@ -67,9 +67,14 @@ export class PrismaVisitRepository implements ScopedVisitRepository {
   async listWithSummary(
     filter: VisitListFilter,
     limit: number,
-    offset: number
+    offset: number,
+    // P6.5-04-i — شرط دامنهٔ اختیاری از helper مرکزی scope.ts (ownerCode/branchId)
+    scopeWhere?: { ownerCode?: string; branchId?: string }
   ): Promise<{ rows: VisitDTO[]; total: number; summary: { totalCount: number; checkedCount: number; distinctPropertyCodes: number; distinctRequesters: number } }> {
     const where = buildVisitWhere(filter);
+    // فیلتر دامنه با فیلترهای v1 ترکیب می‌شود (AND) — صفر تغییر در غیابش
+    if (scopeWhere?.ownerCode !== undefined) where.ownerCode = scopeWhere.ownerCode;
+    if (scopeWhere?.branchId !== undefined) where.branchId = scopeWhere.branchId;
 
     const [rows, total, checkedCount, distinctCodes, distinctRequesters] = await Promise.all([
       this.client.visitRecord.findMany({ where, orderBy: { createdAt: "desc" }, take: limit, skip: offset }),

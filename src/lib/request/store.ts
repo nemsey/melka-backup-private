@@ -122,9 +122,26 @@ export interface ListRequestsResult {
   stats: RequestStats;
 }
 
-export async function listRequests(filter?: { source?: "manual" | "auto" }): Promise<ListRequestsResult> {
+/**
+ * شرط دامنهٔ اختیاری (P6.5-04-i) — خروجی helper مرکزی scope.ts از مسیر روت.
+ * undefined = بدون فیلتر (OWNER/تجمیعی) · مقدار = محدود به کارشناس/شعبه.
+ */
+export interface RequestScopeConstraint {
+  actorCode?: string;
+  branchId?: string;
+}
+
+export async function listRequests(
+  filter?: { source?: "manual" | "auto" },
+  scope?: RequestScopeConstraint
+): Promise<ListRequestsResult> {
+  const where: { source?: string; actorCode?: string; branchId?: string } = {};
+  if (filter?.source) where.source = filter.source;
+  // P6.5-04-i — فیلتر دامنه فقط از helper مرکزی (صفر فیلتر دست‌نویس در روت‌ها)
+  if (scope?.actorCode !== undefined) where.actorCode = scope.actorCode;
+  if (scope?.branchId !== undefined) where.branchId = scope.branchId;
   const records = await db.requestRecord.findMany({
-    where: filter?.source ? { source: filter.source } : undefined,
+    where,
     orderBy: { updatedAt: "desc" },
     take: 500,
   });
@@ -134,7 +151,11 @@ export async function listRequests(filter?: { source?: "manual" | "auto" }): Pro
 
   const now = Date.now();
   const weekAgo = 7 * 86400_000;
-  const eventsAll = await db.requestEventRecord.findMany({ select: { createdAt: true } });
+  // P6.5-04-i — آمار رویدادها هم‌خوان با نمای دامنه‌دار (فقط رویدادهای درخواست‌های همین نما)
+  const scopedIds = new Set(records.map((r) => r.id));
+  const eventsAll = (await db.requestEventRecord.findMany({ select: { createdAt: true, requestId: true } })).filter((e) =>
+    scopedIds.has(e.requestId)
+  );
   const stats: RequestStats = {
     total: records.length,
     manual: records.filter((r) => r.source === "manual").length,

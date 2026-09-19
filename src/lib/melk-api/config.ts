@@ -34,6 +34,12 @@ export interface MelkApiConfig {
   maxRetries: number;
   /** کد ورود مدیر (مالک) — فقط سمت سرور استفاده می‌شود */
   masterCode: string;
+  /**
+   * P6.5-04-i — کد پرسنلی ARM خودِ مالک (MANAGER_CODE):
+   * ورود OTP از مسیر کارشناسان با این کد ⇒ نقش OWNER (owner-from-expert-ui).
+   * تهی = ویژگی غیرفعال (رفتار قبلی: همیشه CONSULTANT).
+   */
+  managerPersonnelCode: string;
   /** عمر نشست بر حسب ساعت */
   sessionTtlHours: number;
   /** حداکثر درخواست OTP برای هر کد پرسنلی در پنجره ۱۰ دقیقه‌ای */
@@ -86,6 +92,7 @@ export function getMelkApiConfig(): MelkApiConfig {
     timeoutMs: Number(env("MELK_API_TIMEOUT_MS", "25000")),
     maxRetries: Number(env("MELK_API_MAX_RETRIES", "2")),
     masterCode: env("MASTER_ACCESS_CODE", ""), // SEC-1: بدون fallback — در production با assertProductionSecrets اجباری می‌شود
+    managerPersonnelCode: env("MANAGER_CODE", ""), // P6.5-04-i: بدون fallback — صریح یا غیرفعال
     sessionTtlHours: Number(env("SESSION_TTL_HOURS", "12")),
     otpRequestWindowMinutes: 10,
     otpRequestMax: 3,

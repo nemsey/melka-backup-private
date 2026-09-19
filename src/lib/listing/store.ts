@@ -270,11 +270,26 @@ export async function updateListing(id: string, input: ListingUpsertInput): Prom
 }
 
 /** فهرست فایل‌ها + آمار */
-export async function listListings(filter?: { source?: "manual" | "divar"; pendingAction?: boolean }): Promise<{ rows: ListingRow[]; stats: ListingStats }> {
+/**
+ * شرط دامنهٔ اختیاری (P6.5-04-i) — خروجی helper مرکزی scope.ts از مسیر روت.
+ * undefined = بدون فیلتر (OWNER/تجمیعی) · مقدار = محدود به کارشناس/شعبه.
+ */
+export interface ListingScopeConstraint {
+  actorCode?: string;
+  branchId?: string;
+}
+
+export async function listListings(
+  filter?: { source?: "manual" | "divar"; pendingAction?: boolean },
+  scope?: ListingScopeConstraint
+): Promise<{ rows: ListingRow[]; stats: ListingStats }> {
   await importRegisteredDivarAds("system").catch(() => undefined);
-  const where: { source?: string; status?: { not: string } } = {};
+  const where: { source?: string; status?: { not: string }; actorCode?: string; branchId?: string } = {};
   if (filter?.source) where.source = filter.source;
   if (filter?.pendingAction) where.status = { not: "archived" };
+  // P6.5-04-i — فیلتر دامنه فقط از helper مرکزی (صفر فیلتر دست‌نویس در روت‌ها)
+  if (scope?.actorCode !== undefined) where.actorCode = scope.actorCode;
+  if (scope?.branchId !== undefined) where.branchId = scope.branchId;
   const records = await db.listingRecord.findMany({ where, orderBy: { createdAt: "desc" }, take: 500 });
   const rows = records.map(toListingRow);
 

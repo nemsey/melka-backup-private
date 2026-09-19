@@ -10,6 +10,9 @@ import { getExpertRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+// P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
+import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
+import { witnessScopedRead } from "@/lib/audit";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -39,6 +42,10 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 50, 1), 1000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
 
+    // P6.5-04-i — کارشناس دادهٔ مرجع سراسری است (ماتریس §۵.۳): همه می‌بینند؛
+    // مالک با شاهد owner.read — صفر فیلتر (رفتار v1 حفظ)
+    const access = resolveEntityAccess(guard, "expert");
+
     // فهرست + مجموع تعاملات هر مشاور — عین groupBy دوتایی روت قبلی
     const { rows: enriched, total } = await getExpertRepository().listWithInteractions({
       filter: { fullName, mobile, personnelCode, role, businessTitle, creator, active },
@@ -46,6 +53,7 @@ export async function GET(request: NextRequest) {
       limit,
       offset,
     });
+    await witnessScopedRead(guard, "expert", total, access.isOwnerRead, ownerLoginPath(guard));
 
     return Response.json({
       ok: true,

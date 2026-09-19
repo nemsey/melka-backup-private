@@ -11,6 +11,9 @@ import { getExpertRepository } from "@/core/repositories";
 import { getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+// P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمین)
+import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
+import { witnessScopedRead } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   const guard = await requireSessionAsync(request);
@@ -22,7 +25,11 @@ export async function GET(request: NextRequest) {
 
     const realtor = sp.get("realtor");
 
+    // P6.5-04-i — تعامل تجمیعی است (ماتریس §۵.۳): همه می‌بینند؛ مالک با شاهد owner.read
+    const access = resolveEntityAccess(guard, "interaction");
+
     const { rows, total } = await getExpertRepository().listInteractions({ realtor: realtor ?? undefined });
+    await witnessScopedRead(guard, "interaction", total, access.isOwnerRead, ownerLoginPath(guard));
 
     // تجمیع درجه همکاری هر مشاور (مجموع طرف درخواست + طرف آگهی)
     const degreeMap = new Map<string, number>();

@@ -13,6 +13,9 @@ import { getTransactionRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+// P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
+import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
+import { witnessScopedRead } from "@/lib/audit";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -35,6 +38,10 @@ export async function GET(request: NextRequest) {
     const sortBy = (sp.get("sortBy") ?? "contractDate") as "contractDate" | "eventsCount" | "suggestedPropertyCount";
     const sortDir: "asc" | "desc" = sp.get("sortDir") === "asc" ? "asc" : "desc";
 
+    // P6.5-04-i — معامله تجمیعی است (ماتریس §۵.۳): همهٔ دامنه‌ها همهٔ ردیف‌ها؛
+    // مالک با شاهد owner.read — صفر فیلتر برای همه (رفتار v1 حفظ)
+    const access = resolveEntityAccess(guard, "transaction");
+
     // فیلتر + خلاصه چهارگانه از انبار — عین منطق where قبلی (buildTransactionWhere)
     const { rows, total, summary } = await getTransactionRepository().listWithSummary({
       filter: {
@@ -50,6 +57,7 @@ export async function GET(request: NextRequest) {
       limit,
       offset,
     });
+    await witnessScopedRead(guard, "transaction", total, access.isOwnerRead, ownerLoginPath(guard));
 
     return Response.json({
       ok: true,

@@ -19,6 +19,10 @@ export interface SessionContext extends AuthUserInfo {
   expiresAt: string;
   /** توکن‌های ARM رمزگشایی‌شده (فقط اگر از مسیر OTP واقعی وارد شده باشد) */
   armTokens: ArmTokens | null;
+  /** P6.5-04-i — دامنهٔ دادهٔ نشست (§۵.۱): OWNER | BRANCH | CONSULTANT (افزایشی) */
+  accessScope?: string | null;
+  /** P6.5-04-i — شعبهٔ نشست (برای دامنهٔ BRANCH — افزایشی) */
+  branchId?: string | null;
 }
 
 /** ایجاد نشست جدید برای کاربر تأییدشده (به‌همراه توکن‌های ARM رمزنگاری‌شده) */
@@ -70,6 +74,9 @@ export async function createSession(
       role: user.role,
       expiresAt: expiresAt.toISOString(),
       armTokens: armTokens ?? null,
+      // P6.5-04-i — دامنهٔ داده در زمینهٔ نشست تازه (عین ستون ذخیره‌شده)
+      accessScope: session.accessScope,
+      branchId: session.branchId,
     },
   };
 }
@@ -94,6 +101,9 @@ export async function validateSession(token: string): Promise<SessionContext | n
     role: session.role as UserRole,
     expiresAt: session.expiresAt.toISOString(),
     armTokens: sessionToArmTokens(session),
+    // P6.5-04-i — حمل دامنهٔ داده در زمینهٔ نشست (helper مرکزی scope.ts)
+    accessScope: session.accessScope,
+    branchId: session.branchId,
   };
 }
 

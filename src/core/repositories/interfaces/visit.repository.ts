@@ -27,8 +27,17 @@ export interface VisitListSummary {
 export interface VisitRepository {
   /** همه بازدیدها (تحلیل ایجنت) */
   findAll(): Promise<VisitDTO[]>;
-  /** فهرست فیلترشده + شاخص‌ها (روت crm/visits — مرتب بر اساس createdAt نزولی) */
-  listWithSummary(filter: VisitListFilter, limit: number, offset: number): Promise<{ rows: VisitDTO[]; total: number; summary: VisitListSummary }>;
+  /**
+   * فهرست فیلترشده + شاخص‌ها (روت crm/visits — مرتب بر اساس createdAt نزولی).
+   * P6.5-04-i — پارامر چهارم اختیاری: شرط دامنه از helper مرکزی scope.ts
+   * (ownerCode/branchId)؛ غایب = بدون فیلتر (رفتار v1).
+   */
+  listWithSummary(
+    filter: VisitListFilter,
+    limit: number,
+    offset: number,
+    scopeWhere?: { ownerCode?: string; branchId?: string }
+  ): Promise<{ rows: VisitDTO[]; total: number; summary: VisitListSummary }>;
   /** شمارش کل */
   countAll(): Promise<number>;
   /** جایگزینی کامل (حالت legacy همگام‌سازی) */

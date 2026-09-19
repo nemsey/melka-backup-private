@@ -11,6 +11,9 @@ import { getVisitRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+// P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
+import { ownerLoginPath, personalScopeWhere, resolveEntityAccess } from "@/lib/access/scope";
+import { witnessScopedRead } from "@/lib/audit";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -32,6 +35,17 @@ export async function GET(request: NextRequest) {
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
 
     // فهرست فیلترشده + شاخص‌ها — عین منطق where قبلی (buildVisitWhere)
+    // P6.5-04-i — دامنه از helper مرکزی: مالک ⇒ صفر فیلتر؛ مشاور ⇒ فقط بازدیدهای خودش (ownerCode)
+    const access = resolveEntityAccess(guard, "visit");
+    const scopeWhere = personalScopeWhere(access);
+    if (scopeWhere === null) {
+      await witnessScopedRead(guard, "visit", 0, access.isOwnerRead, ownerLoginPath(guard));
+      return Response.json({ ok: true, rows: [], total: 0, limit, offset, summary: { totalCount: 0, checkedCount: 0, distinctPropertyCodes: 0, distinctRequesters: 0 }, dataSource: { real: true, cached: syncState.lastSuccessAt !== null, lastSuccessAt: syncState.lastSuccessAt, lastSyncedAt: syncState.lastSyncedAt, liveError: seed.liveError ?? syncState.lastError, syncAttempts: syncState.attempts } });
+    }
+    const scopeInput =
+      scopeWhere && ("ownerCode" in scopeWhere || "branchId" in scopeWhere)
+        ? { ownerCode: (scopeWhere as { ownerCode?: string }).ownerCode, branchId: (scopeWhere as { branchId?: string }).branchId }
+        : undefined;
     const { rows, total, summary } = await getVisitRepository().listWithSummary(
       {
         propertyCode: sp.get("propertyCode") ?? undefined,
@@ -42,8 +56,10 @@ export async function GET(request: NextRequest) {
         dateTo: sp.get("dateTo") ?? undefined,
       },
       limit,
-      offset
+      offset,
+      scopeInput
     );
+    await witnessScopedRead(guard, "visit", total, access.isOwnerRead, ownerLoginPath(guard));
 
     return Response.json({
       ok: true,

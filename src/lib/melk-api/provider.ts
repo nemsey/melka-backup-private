@@ -117,8 +117,19 @@ function resolveDisplayName(user: ArmLoginData["user"]): string {
   return "";
 }
 
-/** تشخیص نقش داشبورد از نوع کاربر ARM */
-function resolveRole(user: ArmLoginData["user"]): UserRole {
+/**
+ * تشخیص نقش داشبورد از نوع کاربر ARM
+ * P6.5-04-i — owner-from-expert-ui: اگر کد پرسنلی ورودی، کدِ خودِ مالک
+ * (MANAGER_CODE) باشد ⇒ OWNER (دسترسی ۱۰۰٪ داده از helper مرکزی scope)؛
+ * در غیر این صورت realtor = کارشناس املاک ⇒ CONSULTANT (ماتریس §۵.۳).
+ * تابع خالص — مستقیماً تست‌پذیر (گزارش p6504i تست ۷).
+ */
+export function resolveDashboardRole(
+  personnelCode: string,
+  user: ArmLoginData["user"],
+  managerPersonnelCode: string
+): UserRole {
+  if (managerPersonnelCode && personnelCode === managerPersonnelCode) return "OWNER";
   const type = String(user?.type ?? "").toLowerCase();
   // realtor = کارشناس املاک؛ انواع مدیریتی → در داشبورد همان مشاور با دسترسی داده کامل است
   return "CONSULTANT";
@@ -181,7 +192,8 @@ class RealProvider implements MelkProvider {
     const user: AuthUserInfo = {
       personnelCode,
       displayName,
-      role: resolveRole(loginData.user),
+      // P6.5-04-i — owner-from-expert-ui: کد پرسنلی خود مالک ⇒ OWNER
+      role: resolveDashboardRole(personnelCode, loginData.user, this.config.managerPersonnelCode),
     };
 
     return {

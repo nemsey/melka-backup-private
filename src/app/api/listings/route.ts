@@ -9,6 +9,9 @@ import { NextRequest } from "next/server";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
+// P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
+import { ownerLoginPath, personalScopeWhere, resolveEntityAccess } from "@/lib/access/scope";
+import { witnessScopedRead } from "@/lib/audit";
 import { createListing, listListings, importDivarAdAsListing, importRegisteredDivarAds } from "@/lib/listing/store";
 import {
   TRADE_TYPES, PROPERTY_TYPES, BUILDING_TYPES, CHANGEABLE_WITH,
@@ -28,7 +31,16 @@ export async function GET(request: NextRequest) {
     // درون‌ریزی خودکار فایل‌های تأییدشده دیوار (بخش «ب») — idempotent
     await importRegisteredDivarAds(guard.personnelCode).catch(() => undefined);
 
-    const { rows, stats } = await listListings(filter);
+    // P6.5-04-i — دامنه از helper مرکزی: مالک ⇒ صفر فیلتر (همهٔ فایل‌ها)؛
+    // مشاور ⇒ فقط فایل‌های خودش (ماتریس §۵.۳)؛ DENY_ALL ⇒ fail-closed
+    const access = resolveEntityAccess(guard, "listing");
+    const scopeWhere = personalScopeWhere(access);
+    if (scopeWhere === null) {
+      await witnessScopedRead(guard, "listing", 0, access.isOwnerRead, ownerLoginPath(guard));
+      return Response.json({ ok: true, rows: [], stats: { total: 0, manual: 0, fromDivar: 0, drafts: 0, crmTransferred: 0, instagramPublished: 0, pendingBoth: 0 }, meta: { tradeTypes: TRADE_TYPES, propertyTypes: PROPERTY_TYPES, buildingTypes: BUILDING_TYPES, changeWith: CHANGEABLE_WITH, fileFindings: FILE_FINDINGS, fileTypes: FILE_TYPES, userSeriousness: USER_SERIOUSNESS, desirabilityLevels: DESIRABILITY_LEVELS, priceEvaluations: PRICE_EVALUATIONS, sellReasons: SELL_REASONS }, requirements: { armToken: Boolean(guard.armTokens?.accessToken), message: guard.armTokens?.accessToken ? "توکن سامانه آرم موجود است — انتقال به CRM آماده است." : "برای انتقال به CRM باید با «کد پرسنلی + پیامک» وارد شوید (ورود مدیر محلی توکن آرم ندارد)." } });
+    }
+    const { rows, stats } = await listListings(filter, scopeWhere ?? undefined);
+    await witnessScopedRead(guard, "listing", rows.length, access.isOwnerRead, ownerLoginPath(guard));
     return Response.json({
       ok: true,
       rows,

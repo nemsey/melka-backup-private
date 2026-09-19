@@ -8,7 +8,7 @@ async function main() {
   console.log("deadLetters:", dl.length, dl.slice(0, 3).map(d => ({ entity: d.entity, key: d.naturalKey, err: (d.lastError||"").slice(0,80), resolved: !!d.resolvedAt })));
   const ex = await db.expertRecord.count();
   const exDistinct = await db.expertRecord.groupBy({ by: ["personnelCode"], _count: true }).then(g => g.length);
-  const exEmpty = await db.expertRecord.count({ where: { OR: [{ personnelCode: "" }, { personnelCode: null }] } });
+  const exEmpty = await db.expertRecord.count({ where: { OR: [{ personnelCode: "" }] } });
   console.log(JSON.stringify({ experts: ex, distinctCodes: exDistinct, emptyCodes: exEmpty }));
   process.exit(0);
 }

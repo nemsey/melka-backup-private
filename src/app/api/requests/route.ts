@@ -11,6 +11,9 @@ import { NextRequest } from "next/server";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
+// P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
+import { ownerLoginPath, personalScopeWhere, resolveEntityAccess } from "@/lib/access/scope";
+import { witnessScopedRead } from "@/lib/audit";
 import { createRequest, listRequests } from "@/lib/request/store";
 import { registerRequestToArm } from "@/lib/request/arm-register";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
@@ -31,7 +34,16 @@ export async function GET(request: NextRequest) {
     const withCustomers = url.searchParams.get("customers") === "1";
     const filter: { source?: "manual" | "auto" } | undefined = source === "manual" || source === "auto" ? { source } : undefined;
 
-    const { rows, stats } = await listRequests(filter);
+    // P6.5-04-i — دامنه از helper مرکزی: مالک ⇒ صفر فیلتر (همهٔ درخواست‌ها)؛
+    // مشاور ⇒ فقط درخواست‌های خودش (ماتریس §۵.۳)؛ DENY_ALL ⇒ fail-closed
+    const access = resolveEntityAccess(guard, "request");
+    const scopeWhere = personalScopeWhere(access);
+    if (scopeWhere === null) {
+      await witnessScopedRead(guard, "request", 0, access.isOwnerRead, ownerLoginPath(guard));
+      return Response.json({ ok: true, rows: [], stats: { total: 0, manual: 0, auto: 0, ready: 0, draft: 0, armRegistered: 0, armPending: 0, eventsTotal: 0, eventsThisWeek: 0, newThisWeek: 0 }, meta: { tradeTypes: TRADE_TYPES, buildingTypes: BUILDING_TYPES, propertyTypes: PROPERTY_TYPES, paymentMethods: PAYMENT_METHODS, userSeriousness: USER_SERIOUSNESS, geo: { countryId: IRAN_COUNTRY_ID, stateId: AZ_SHARGHI_STATE_ID, cityId: TABRIZ_CITY } }, requirements: { armToken: Boolean(guard.armTokens?.accessToken), message: guard.armTokens?.accessToken ? "توکن سامانه آرم موجود است — ثبت گام‌به‌گام در آرم آماده است." : "برای ثبت در سامانه آرم باید با «کد پرسنلی + پیامک» وارد شوید (ورود مدیر محلی توکن آرم ندارد)." } });
+    }
+    const { rows, stats } = await listRequests(filter, scopeWhere ?? undefined);
+    await witnessScopedRead(guard, "request", rows.length, access.isOwnerRead, ownerLoginPath(guard));
 
     // مدیریت مشتریان (شاهکار ایجنت) — فقط هنگام درخواست صریح (تب مشتریان)
     const customers = withCustomers ? await buildCustomerManagement() : null;

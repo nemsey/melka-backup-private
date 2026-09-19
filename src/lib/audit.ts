@@ -79,3 +79,66 @@ export async function auditAccess(
     });
   }
 }
+
+/**
+ * شاهد یکتا برای خواندنِ مسیرهای helper مرکزی scope (P6.5-04-i):
+ * مالک ⇒ رد owner.read (الزام دستور فاز ۱)؛ مشاور ⇒ رد DATA_ACCESS (قرارداد §۶.۲).
+ * غیرمسدودکننده — عین auditAccess.
+ */
+export async function witnessScopedRead(
+  session: { personnelCode: string; role?: string | null; accessScope?: string | null; branchId?: string | null },
+  entity: string,
+  recordCount: number,
+  isOwnerRead: boolean,
+  path: "manager-code" | "expert-login",
+  deps?: { client?: PrismaClient }
+): Promise<void> {
+  if (isOwnerRead) {
+    await witnessOwnerRead(session, entity, recordCount, path, deps);
+    return;
+  }
+  await auditAccess(session, "READ", entity, recordCount, undefined, deps);
+}
+
+/**
+ * شاهد خواندن داده توسط مالک — P6.5-04-i (الزام فاز ۱ دستور چهارفازی).
+ * هر خواندنِ داده از مسیر helper مرکزی scope.ts که «خواننده مالک» باشد،
+ * این رد را می‌نویسد: action=owner.read · resource=<entity>:<count> ·
+ * session={role, path} — بدون هیچ داده حساس (بدون خود توکن/PII).
+ *
+ * path: مسیر ورود مالک — "manager-code" (ورود با کد مدیر) یا
+ *       "expert-login" (ورود OTP با کد پرسنلی خود مالک = MANAGER_CODE).
+ * غیرمسدودکننده — عین auditAccess (Availability §۶.۲).
+ */
+export async function witnessOwnerRead(
+  session: { personnelCode: string; role?: string | null; accessScope?: string | null },
+  entity: string,
+  recordCount: number,
+  path: "manager-code" | "expert-login",
+  deps?: { client?: PrismaClient }
+): Promise<void> {
+  const client = deps?.client ?? db;
+  try {
+    await client.auditLog.create({
+      data: {
+        action: "owner.read",
+        actor: session.personnelCode,
+        detail: `resource=${entity}:${recordCount}; session={role:${session.role ?? "-"}, path:${path}}`,
+        operation: "READ",
+        entityType: entity,
+        recordCount,
+        accessScope: "OWNER",
+      },
+    });
+  } catch (err) {
+    logEvent({
+      level: "warn",
+      category: "system",
+      operation: "owner-read-witness",
+      status: "fail",
+      errorCode: "AUDIT_WRITE_FAIL",
+      userId: session.personnelCode,
+      detail: { entity, recordCount, reason: err instanceof Error ? err.message : String(err) },
+    });
+  }
+}

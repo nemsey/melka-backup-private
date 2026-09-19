@@ -19,6 +19,9 @@ import {
 } from "@/lib/melk-api/types";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+// P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمین)
+import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
+import { witnessScopedRead } from "@/lib/audit";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -52,8 +55,12 @@ export async function GET(request: NextRequest) {
     const statusFilter = sp.get("status");
     const search = sp.get("search")?.trim();
 
+    // P6.5-04-i — قرارداد تجمیعی است (ماتریس §۵.۳): همه می‌بینند؛ مالک با شاهد owner.read
+    const access = resolveEntityAccess(guard, "contract");
+
     const rows = await getContractRepository().findAllOrderByCreatedAtDesc();
     const total = rows.length;
+    await witnessScopedRead(guard, "contract", total, access.isOwnerRead, ownerLoginPath(guard));
 
     const contracts: CrmContract[] = rows.map((r) => ({
       id: r.id,

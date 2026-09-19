@@ -49,6 +49,8 @@ MASTER_ACCESS_CODE_VALUE="41372895"
 # روی production الزامی است ولی restore قبلی آن را پوشش نمی‌داد ⇒ پس از هر ری‌استارت کانتینر
 # دیمون به حالت legacy (deleteMany+createMany) برمی‌گشت. از این به بعد بازگردانده می‌شود.
 MELK_SYNC_MODE_VALUE="incremental"
+# P6.5-04-i — کد پرسنلی ARM خود مالک (owner-from-expert-ui): ورود OTP با این کد ⇒ نقش OWNER
+MANAGER_CODE_VALUE="410031320"
 
 log() { echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] [dev.sh] $*" >> "$SUPERVISOR_LOG"; }
 
@@ -78,6 +80,10 @@ restore_env() {
     fi
     if env_line_missing MELK_SYNC_MODE .env; then
         echo "MELK_SYNC_MODE=$MELK_SYNC_MODE_VALUE" >> .env
+        changed=1
+    fi
+    if env_line_missing MANAGER_CODE .env; then
+        echo "MANAGER_CODE=$MANAGER_CODE_VALUE" >> .env
         changed=1
     fi
     # .env.local is wiped by the boot restore; recreate it (Next.js picks it up
