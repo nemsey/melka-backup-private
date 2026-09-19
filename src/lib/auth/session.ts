@@ -112,14 +112,29 @@ export function sessionToArmTokens(session: {
   };
 }
 
-/** به‌روزرسانی توکن ARM نشست (پس از تمدید) */
+/**
+ * به‌روزرسانی توکن‌های ARM نشست (پس از تمدید یا «اتصال ARM با کد پیامکی» از تنظیمات)
+ * P6.5-07: userType هم ذخیره می‌شود (قبلاً در تمدید از دست می‌رفت)
+ */
 export async function updateSessionArmTokens(sessionId: string, armTokens: ArmTokens): Promise<void> {
   await db.session.update({
     where: { id: sessionId },
     data: {
       armTokenEnc: encryptSecret(armTokens.accessToken),
       armRefreshTokenEnc: armTokens.refreshToken ? encryptSecret(armTokens.refreshToken) : null,
+      armUserType: armTokens.userType ?? null,
     },
+  });
+}
+
+/**
+ * پاک‌سازی توکن‌های ARM نشست («قطع اتصال ARM» در تنظیمات عمومی)
+ * نشست خود کاربر زنده می‌ماند — فقط دسترسی داده واقعی قطع می‌شود.
+ */
+export async function clearSessionArmTokens(sessionId: string): Promise<void> {
+  await db.session.update({
+    where: { id: sessionId },
+    data: { armTokenEnc: null, armRefreshTokenEnc: null, armUserType: null },
   });
 }
 

@@ -25,6 +25,7 @@ import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { useAppStore } from "@/lib/client/store";
 import { faDateTime, faNumber } from "@/lib/format";
+import { ArmConnectionSection } from "./ArmConnectionSection";
 import { DivarConnectionSection } from "./DivarConnectionSection";
 import { InstagramConnectionSection } from "./InstagramConnectionSection";
 import { PmConnectionSection } from "./PmConnectionSection";
@@ -387,6 +388,10 @@ export function SettingsPage({ onBack }: TilePageProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* اتصال به سامانه ARM با کد پیامکی — دستور مالک ۱۴۰۵/۰۶/۳۰:
+          ورود با کد مستر هم بتواند داده واقعی ARM را متصل کند */}
+      <ArmConnectionSection />
 
       {/* اتصال به دیوار — دو روش با کلید ریست */}
       <DivarConnectionSection />
