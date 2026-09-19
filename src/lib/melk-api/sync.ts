@@ -283,6 +283,9 @@ async function fetchAllPages<T>(
     rows.push(...pageRows);
     const pages = totalPages ?? (total > 0 ? Math.ceil(total / pageLimit) : 1);
     if (page >= pages || pageRows.length === 0) break;
+    // احتیاط توصیه‌شدهٔ ملکا-شورا-۰۰۷ — فاصلهٔ کوتاه بین صفحات: rate آزاد، ولی
+    // بدون burst (پیک صبح شنبهٔ شب ۱ نشان داد لبهٔ مبدأ در فشار لحظه‌ای سیاه‌چاله می‌شود)
+    await new Promise((r) => setTimeout(r, 400));
   }
   return { rows };
 }
