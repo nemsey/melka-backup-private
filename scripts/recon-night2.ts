@@ -38,7 +38,7 @@ const ABORT_FILE = "ABORT";
 const cfg = getMelkApiConfig();
 const ARM = cfg.armApiBase;
 
-type Phase = "dry" | "run";
+type Phase = "dry" | "run" | "followup";
 let phase: Phase = "dry";
 let forceWindow = false;
 let token: string | null = null;
@@ -318,6 +318,32 @@ async function stepD2(): Promise<void> {
   record("TO-trade-overviews", await armCall("TO-trade-overviews", E.tradeOverviewsList, { auth: true, query: { page: 1, limit: 10 } }));
 }
 
+/** فاز پیگیری — رفع ۴۰۰ تعاملات با آرایه‌های پارامتری جایگزین (تنها در صورت توکن زنده) */
+async function stepFollowup(realtorId: string | null, lastTradePage: number | null): Promise<void> {
+  if (realtorId) {
+    // فقط realtor (شرط فعال‌سازی عین UI: (startDate && endDate) || realtor)
+    record("IN2-realtor-only", await armCall("IN2-realtor-only", E.realtorInteractions, { auth: true, query: { page: 1, limit: 100, realtor: realtorId } }));
+    // جلالی + صفحه‌بندی — اگر ۴۰۰ قالب تاریخی بود
+    record("IN3-jalali", await armCall("IN3-jalali", E.realtorInteractions, { auth: true, query: { page: 1, limit: 100, startDate: JALALI_START, endDate: JALALI_END } }));
+    // realtor + بازهٔ ISO + hasMatch (کامل‌ترین شکل فرم UI)
+    record("IN4-full-form", await armCall("IN4-full-form", E.realtorInteractions, { auth: true, query: { page: 1, limit: 100, startDate: ISO_START, endDate: ISO_END, realtor: realtorId, hasMatch: "false" } }));
+  }
+  // عمق دادهٔ معاملات — آخرین صفحهٔ فهرست (قدیمی‌ترین رکورد قابل دسترس)
+  if (lastTradePage && lastTradePage > 1 && lastTradePage <= 200) {
+    record("TX-lastpage", await armCall("TX-lastpage", E.tradedCount, { auth: true, query: { page: lastTradePage, limit: 100, startDate: ISO_START, endDate: ISO_END } }));
+  }
+  // آزمون نهایی — دقیقاً همان بازه‌ای که دیمون sync می‌فرستد (buildReportDateRange)
+  // مبدأ 2018-01-01 + مقصد نیمه‌شب امروز تهران؛ راستی‌آزمایی مسیر production بدون تغییر کد
+  const tehranToday = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  const syncEnd = new Date(`${tehranToday}T00:00:00+03:30`).toISOString();
+  record("SYNC-exact-range", await armCall("SYNC-exact-range", E.tradedCount, {
+    auth: true,
+    query: { page: 1, limit: 100, startDate: "2018-01-01T00:00:00.000Z", endDate: syncEnd },
+  }));
+}
+
 function verdictSummary(): void {
   const v = Object.fromEntries(verdicts.map((x) => [x.step, x]));
   const aTotal = v["A-total-iso"];
@@ -368,13 +394,14 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args.includes("--dry")) phase = "dry";
   else if (args.includes("--run")) phase = "run";
+  else if (args.includes("--followup")) phase = "followup";
   else {
-    console.error("استفاده: --dry | --run [--force-window]");
+    console.error("استفاده: --dry | --run | --followup [--force-window]");
     process.exit(2);
   }
   forceWindow = args.includes("--force-window");
-  if (phase === "run" && forceWindow) log({ event: "window-override", reason: "explicit", tehranHour: tehranHour() });
-  if (phase === "run" && !forceWindow && !inWindow()) {
+  if (phase !== "dry" && forceWindow) log({ event: "window-override", reason: "explicit", tehranHour: tehranHour() });
+  if (phase !== "dry" && !forceWindow && !inWindow()) {
     log({ event: "refused", reason: "OUTSIDE_WINDOW", tehranHour: tehranHour() });
     console.error(`خارج از پنجرهٔ ۲۲:۰۰–۰۶:۰۰ تهران (ساعت فعلی: ${tehranHour()}:xx). اجرا رد شد.`);
     process.exit(3);
@@ -384,10 +411,21 @@ async function main(): Promise<void> {
   let abortReason: string | null = null;
   try {
     await loadSessionToken();
-    const realtorId = await stepTokenProbe();
-    await stepD1(realtorId);
-    await stepD2();
-    verdictSummary();
+    if (phase === "followup") {
+      // فاز پیگیری — realtor از پروب؛ صفحهٔ آخر معاملات از نتیجهٔ A-list-iso (۷۲۸/۱۰۰ → ۸)
+      const realtorId = await stepTokenProbe();
+      const lastPage = Number(process.env.NIGHT2_LAST_TRADE_PAGE ?? 8);
+      await stepFollowup(realtorId, lastPage);
+      console.log("\n================ پیگیری — رفع ۴۰۰ تعاملات ================");
+      for (const x of verdicts) {
+        console.log(`  ${x.step}: HTTP ${x.status} · total=${x.total ?? "—"} · rows=${x.rows} · pages=${x.pages ?? "—"} · قدیمی‌ترین=${x.oldestDate ?? "—"}`);
+      }
+    } else {
+      const realtorId = await stepTokenProbe();
+      await stepD1(realtorId);
+      await stepD2();
+      verdictSummary();
+    }
   } catch (e) {
     if (e instanceof ReconAbort) abortReason = e.reason;
     else {

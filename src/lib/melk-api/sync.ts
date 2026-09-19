@@ -320,7 +320,8 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
       mapArmTradedRow,
       range
     );
-    const summary = (await fetchTradedSummary(armToken, range)) ?? computeSummaryFromRows(transactions);
+    const endpointSummary = await fetchTradedSummary(armToken, range);
+    const summary = resolveTradedSummary(endpointSummary, transactions);
 
     // ---------------- ۲) فهرست کاربران/مشاوران ----------------
     const { rows: experts } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorsList, armToken, 30, 100, mapArmRealtorRow);
@@ -474,6 +475,27 @@ function computeSummaryFromRows(rows: CrmTransaction[]): TradedSummary {
     hasSuggestedProperty: rows.filter((r) => r.suggestedPropertyCount > 0).length,
     hasBoth: rows.filter((r) => r.eventsCount > 0 && r.suggestedPropertyCount > 0).length,
   };
+}
+
+/**
+ * انتخاب خلاصهٔ چهارگانهٔ معاملات — شاهد شب ۲ (recon-night2، ۱۴۰۵/۰۶/۲۹):
+ * خلاصهٔ endpoint (traded-count-total) برای حساب realtor حتی با بازهٔ ISO درست هم
+ * totalCount=0 برمی‌گرداند (خلاصهٔ scope-محور خود آن مسیر)، در حالی که فهرست واقعی
+ * (traded-count) همان لحظه ۷۲۴+ ردیف داده می‌دهد. اصل «دادهٔ صادقانه»:
+ *  - خلاصهٔ endpoint معتبر و غیرصفر → همان (عین رفتار قبلی)
+ *  - خلاصهٔ صفر ولی ردیف واقعی موجود → محاسبه از خود ردیف‌ها (رفع نمایش غلط صفر)
+ *  - خلاصهٔ صفر و ردیف هم صفر → همان صفرِ صادقانهٔ endpoint
+ *  - خطای endpoint (null) → محاسبه از ردیف‌ها (عین رفتار قبلی)
+ */
+export function resolveTradedSummary(
+  endpointSummary: TradedSummary | null,
+  transactions: CrmTransaction[]
+): TradedSummary {
+  if (endpointSummary === null) return computeSummaryFromRows(transactions);
+  if (endpointSummary.totalCount === 0 && transactions.length > 0) {
+    return computeSummaryFromRows(transactions);
+  }
+  return endpointSummary;
 }
 
 // ==========================================================================
