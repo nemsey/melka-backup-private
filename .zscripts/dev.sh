@@ -45,6 +45,10 @@ DEV_LOG_MAX_BYTES=20971520   # 20 MB cap, applied right before each restart
 # --- worklog; NOT production secrets.
 MELK_TOKEN_KEY_VALUE="test-only-key-not-a-real-secret"
 MASTER_ACCESS_CODE_VALUE="41372895"
+# P6.5-04-i (2026-09-20): اعلامیهٔ ۳ مالک (§۱.۱۲-پ سند طراحی) — MELK_SYNC_MODE=incremental
+# روی production الزامی است ولی restore قبلی آن را پوشش نمی‌داد ⇒ پس از هر ری‌استارت کانتینر
+# دیمون به حالت legacy (deleteMany+createMany) برمی‌گشت. از این به بعد بازگردانده می‌شود.
+MELK_SYNC_MODE_VALUE="incremental"
 
 log() { echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] [dev.sh] $*" >> "$SUPERVISOR_LOG"; }
 
@@ -70,6 +74,10 @@ restore_env() {
     fi
     if env_line_missing DATABASE_URL .env; then
         echo "DATABASE_URL=file:/home/z/my-project/db/custom.db" >> .env
+        changed=1
+    fi
+    if env_line_missing MELK_SYNC_MODE .env; then
+        echo "MELK_SYNC_MODE=$MELK_SYNC_MODE_VALUE" >> .env
         changed=1
     fi
     # .env.local is wiped by the boot restore; recreate it (Next.js picks it up

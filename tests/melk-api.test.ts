@@ -197,6 +197,18 @@ describe("آداپتور فهرست کاربران (users-list)", () => {
     const e = mapArmRealtorRow({ fullName: "الف", status: "inactive" }, 1);
     expect(e!.active).toBe(false);
   });
+  test("P6.5-04-i — کلید مصنوعی پایدار بین صفحات: بدون کد پرسنلی ⇒ از _id خود ARM، نه اندیس صفحه (رفع باگ 291→100)", async () => {
+    const { mapArmRealtorRow } = await import("@/lib/melk-api/adapters");
+    // صفحهٔ ۱: اندیس 0 · صفحهٔ ۳: اندیس 0 با _id متفاوت — عین شکل realtors/list (فقط _id/fullName/mobileNumber)
+    const page1row0 = mapArmRealtorRow({ _id: "a1b2c3", fullName: "کارشناس الف", mobileNumber: "0914..." }, 0);
+    const page3row0 = mapArmRealtorRow({ _id: "d4e5f6", fullName: "کارشناس ب", mobileNumber: "0915..." }, 0);
+    expect(page1row0!.personnelCode).toBe("بدون-کد-a1b2c3");
+    expect(page3row0!.personnelCode).toBe("بدون-کد-d4e5f6");
+    expect(page1row0!.personnelCode).not.toBe(page3row0!.personnelCode); // قبلاً هر دو «بدون-کد-0» می‌شدند!
+    // پایداری بین اجراها: همان ردیف در اجرای بعدی همان کلید را می‌گیرد (idempotency)
+    const again = mapArmRealtorRow({ _id: "a1b2c3", fullName: "کارشناس الف", mobileNumber: "0914..." }, 7);
+    expect(again!.personnelCode).toBe(page1row0!.personnelCode);
+  });
 });
 
 describe("آداپتور تعاملات مشاوران (realtor-interactions)", () => {
@@ -227,5 +239,42 @@ describe("استخراج لیست صفحه‌بندی‌شده از پوشه Nes
     const { rows, total } = extractPagedList({ data: [{ x: "1" }] }, (r) => ({ x: String((r as { x: string }).x) }));
     expect(rows.length).toBe(1);
     expect(total).toBe(1);
+  });
+  test("پاکت سطح-بالای ARM (P6.5-04-i) — count/totalPages کنار list عین شاهد شب ۲ traded-count: count=728, totalPages=8 با ۱۰۰ ردیف صفحه", async () => {
+    const { extractPagedList } = await import("@/lib/melk-api/adapters");
+    const payload = {
+      count: 728,
+      limit: 100,
+      list: Array.from({ length: 100 }, (_, i) => ({ _id: `t${i}`, propertyCode: `P${i}` })),
+      page: 1,
+      totalPages: 8,
+    };
+    const { rows, total, totalPages } = extractPagedList(payload, (r) => ({ id: String((r as { _id: string })._id) }));
+    expect(rows.length).toBe(100);
+    expect(total).toBe(728); // نه ۱۰۰ — ریشهٔ توقف sync اتصال در صفحهٔ اول
+    expect(totalPages).toBe(8);
+  });
+  test("پاکت سطح-بالای ARM — realtors/list با limit=1 عین پروب شب ۲: count=291, totalPages=291", async () => {
+    const { extractPagedList } = await import("@/lib/melk-api/adapters");
+    const payload = { count: 291, limit: 1, list: [{ _id: "e1", fullName: "آزمون" }], page: 1, totalPages: 291 };
+    const { rows, total, totalPages } = extractPagedList(payload, (r) => ({ id: String((r as { _id: string })._id) }));
+    expect(rows.length).toBe(1);
+    expect(total).toBe(291);
+    expect(totalPages).toBe(291);
+  });
+  test("پاکت سطح-بالای ARM بدون totalPages → total از count، صفحات از total/limit محاسبه می‌شود", async () => {
+    const { extractPagedList } = await import("@/lib/melk-api/adapters");
+    const payload = { count: 250, limit: 100, list: Array.from({ length: 100 }, (_, i) => ({ i })), page: 1 };
+    const { rows, total, totalPages } = extractPagedList(payload, (r) => ({ i: (r as { i: number }).i }));
+    expect(rows.length).toBe(100);
+    expect(total).toBe(250);
+    expect(totalPages).toBeUndefined(); // fetchAllPages خودش ceil(250/100)=3 می‌شود
+  });
+  test("رگرسیون: آرایه مستقیم data بدون count سطح-بالا — total=list.length می‌ماند", async () => {
+    const { extractPagedList } = await import("@/lib/melk-api/adapters");
+    const { rows, total, totalPages } = extractPagedList({ data: [{ x: 1 }, { x: 2 }] }, (r) => ({ x: (r as { x: number }).x }));
+    expect(rows.length).toBe(2);
+    expect(total).toBe(2);
+    expect(totalPages).toBeUndefined();
   });
 });

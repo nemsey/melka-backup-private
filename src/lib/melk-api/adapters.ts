@@ -227,9 +227,17 @@ export function mapArmRealtorRow(row: Row, index: number): CrmExpert | null {
     anyDateStringToDate(pick(row, ["createdAt", "joinedAt", "registerDate", "startDate"])) ??
     new Date(0);
 
+  // P6.5-04-i — شناسهٔ پایدار خود ARM برای ردیف‌های بدون کد پرسنلی
+  // (realtors/list فقط _id/fullName/mobileNumber برمی‌گرداند — شاهد زندهٔ شب ۲)
+  const armRowId = pickId(row, "");
+
   return {
     id: pickId(row, `arm-realtor-${index}-${personnelCode}`),
-    personnelCode: personnelCode || `بدون-کد-${index}`,
+    // P6.5-04-i — رفع باگ چند-صفحه‌ای: قبلاً «بدون-کد-${index}» با اندیسِ «داخل صفحه»
+    // ساخته می‌شد ⇒ صفحه‌های ۲ به بعد کلیدهای تکراری صفحهٔ ۱ می‌ساختند و upsertها
+    // روی همان ۱۰۰ ردیف اول فرود می‌آمدند (شاهد: fetched=291، جدول=100).
+    // کلید طبیعی اکنون از شناسهٔ خود ARM مشتق می‌شود — پایدار بین صفحات و اجراها.
+    personnelCode: personnelCode || (armRowId ? `بدون-کد-${armRowId}` : `بدون-کد-${index}`),
     fullName,
     mobile: mobile || "—",
     // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: مقادیر خام عین منبع (نمایشی = خام؛ لایه ۲ در خط لوله Bulk مشتق می‌شود)
@@ -508,7 +516,15 @@ export function extractAddress(payload: unknown, rowFallback: Row | null): strin
 /**
  * پاسخ‌های صفحه‌بندی سامانه در قالب‌های مختلفی برمی‌گردند:
  * {data: [...]} | {data: {docs|rows|list|items|data: [...], count, totalPages}}
+ * | پاکت سطح-بالای ARM: {count, limit, list: [...], page, totalPages}
  * این تابع همه را به {rows, total, totalPages} نرمال می‌کند.
+ *
+ * P6.5-04-i (2026-09-20) — پاکت سطح-بالای ARM پشتیبانی شد:
+ * شاهد زندهٔ شب ۲ (recon-night2.jsonl): realtor-reports/traded-count و realtors/list
+ * پاسخ {count:728, limit:100, list:[...100], page:1, totalPages:8} در «سطح بالا»
+ * می‌دهند (بعد از بازکردن پوشهٔ Nest توسط armCall). قبلاً total فقط از پاکت تودرتو
+ * خوانده می‌شد ⇒ total=list.length=100 ⇒ fetchAllPages پس از صفحهٔ ۱ متوقف می‌شد
+ * (ریشهٔ tx=100/ex=100 در sync اتصال ARM مالک ۱۴۰۵/۰۶/۲۸).
  */
 export function extractPagedList<T>(payload: unknown, mapRow: (row: Row, index: number) => T | null): { rows: T[]; total: number; totalPages?: number } {
   let list: unknown = payload;
@@ -525,6 +541,9 @@ export function extractPagedList<T>(payload: unknown, mapRow: (row: Row, index: 
       totalPages = Number(pick(inner as Row, ["totalPages", "pages", "pageCount"]) ?? 0) || undefined;
     } else if (Array.isArray(inner)) {
       list = inner;
+      // پاکت سطح-بالای ARM — count/totalPages کنار list در خود payload
+      total = Number(pick(p, ["count", "total", "totalDocs", "totalCount"]) ?? 0) || 0;
+      totalPages = Number(pick(p, ["totalPages", "pages", "pageCount"]) ?? 0) || undefined;
     }
     if (!total && Array.isArray(list)) total = list.length;
   }
