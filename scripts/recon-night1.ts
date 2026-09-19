@@ -44,7 +44,7 @@ const cfg = getMelkApiConfig();
 const ARM = cfg.armApiBase;
 const ARM_PUBLIC = cfg.armPublicApiBase;
 
-type Phase = "dry" | "request-otp" | "run" | "use-session";
+type Phase = "dry" | "request-otp" | "run" | "use-session" | "corrective" | "business" | "biz-agg";
 let phase: Phase = "dry";
 /** لغو پنجرهٔ شبانه با اختیار صریح مالک — دستور ملکا-فوری-۰۰۱ (۱۴۰۵/۰۶/۲۸)؛ شاهد در لاگ */
 let forceWindow = false;
@@ -208,7 +208,7 @@ async function armCall2(
   step: string,
   base: string,
   path: string,
-  init: { method?: "GET" | "POST"; query?: Record<string, string | number | undefined | null>; body?: unknown; auth?: boolean } = {}
+  init: { method?: "GET" | "POST"; query?: Record<string, string | number | undefined | null>; body?: unknown; auth?: boolean; extraHeaders?: Record<string, string> } = {}
 ): Promise<ArmResult> {
   const method = init.method ?? "GET";
   await gate(step, step); // pacing + ABORT + window + budget
@@ -216,6 +216,7 @@ async function armCall2(
   const headers: Record<string, string> = { Accept: "application/json" }; // عین client.ts
   if (method === "POST") headers["Content-Type"] = "application/json";
   if (init.auth && token) headers.Authorization = `Bearer ${token}`;
+  Object.assign(headers, init.extraHeaders ?? {});
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const t0 = Date.now();
@@ -375,6 +376,78 @@ async function loadSessionToken(): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// فاز اصلاحی — تکمیل گام ۱+۲ پس از کشف پروتکل (بازهٔ تاریخی اجباری)
+// شاهد کشف: هر دو endpoint معاملات بدون بازه → 400 «لطفا یک بازه تاریخی انتخاب کنید»
+// (همان خطای SyncState دیمون با attempts=7 — علت خالی بودن جدول‌های production)
+// ---------------------------------------------------------------------------
+async function stepCorrective(): Promise<void> {
+  // گام ۱ (تکمیل): بازهٔ ماه جاری — total واقعی با پروتکل درست
+  await armCall2("c1-month", ARM, E.tradedTotal, { auth: true, query: { page: 1, limit: 100, startDate: "1405/06/01", endDate: "1405/06/28" } });
+  // گام ۲ (تکمیل): بازهٔ کامل ۲۵ ساله — total/totalPages + قدیمی‌ترین تاریخ صفحهٔ ۱
+  const full = await armCall2("c2-fullrange", ARM, E.tradedTotal, { auth: true, query: { page: 1, limit: 100, startDate: "1375/01/01", endDate: "1405/06/28" } });
+  const tp = full.h.totalPages ?? 0;
+  if (tp > 1 && tp <= 200) {
+    // نمونه‌برداری آخرین صفحه برای قدیمی‌ترین contractDate (حداکثر ۱ GET اضافه)
+    await armCall2("c2b-lastpage", ARM, E.tradedTotal, { auth: true, query: { page: tp, limit: 100, startDate: "1375/01/01", endDate: "1405/06/28" } });
+  }
+  // آیا endpoint شمارش هم بازه می‌پذیرد؟
+  await armCall2("c3-count-dated", ARM, E.tradedCount, { auth: true, query: { startDate: "1405/06/01", endDate: "1405/06/28" } });
+}
+
+/** ثبت شمارنده‌های تجمیعی کسب‌وکار (کلاسِ مصوب total/totalPages — بدون PII) */
+function stepLogBizAggregates(d: Record<string, unknown>, status: number): void {
+  const num = (v: unknown): number | null => (typeof v === "number" ? v : null);
+  const branches = Array.isArray(d.branches) ? d.branches.length : null;
+  const created = typeof d.createdAt === "string" ? d.createdAt.slice(0, 10) : null;
+  log({
+    step: "biz-own-aggregates",
+    status,
+    customerCount: num(d.customerCount),
+    propertyCount: num(d.propertyCount),
+    branchCount: branches,
+    businessCreatedAt: created,
+    isActive: d.isActive === true,
+  });
+  console.log(`کسب‌وکار: فعال=${d.isActive === true} · مشتریان=${num(d.customerCount) ?? "—"} · ملک‌ها=${num(d.propertyCount) ?? "—"} · شعبه‌ها=${branches ?? "—"} · ایجاد=${created ?? "—"}`);
+}
+
+async function stepBizAggregates(): Promise<void> {
+  const own = await armCall2("biz-own", ARM, E.ownBusiness, { auth: true });
+  stepLogBizAggregates((own.body.data ?? {}) as Record<string, unknown>, own.status);
+}
+
+// ---------------------------------------------------------------------------
+// فاز business — آزمون scope کسب‌وکار (چرا totalCount=۰؟)
+// فرضیه: گزارش‌های معاملات به-ازای کاربر خالی‌اند؛ با businessId (کوئری یا هدر)
+// شاید دامنهٔ کسب‌وکار باز شود. شناسه فقط در حافظه/کوئری — هرگز در لاگ (کوئری لاگ نمی‌شود)
+// ---------------------------------------------------------------------------
+async function stepBusinessScope(): Promise<void> {
+  const own = await armCall2("biz-own", ARM, E.ownBusiness, { auth: true });
+  const d = (own.body.data ?? {}) as Record<string, unknown>;
+  const bizNested = d.businessId as Record<string, unknown> | undefined;
+  const bizId =
+    typeof d._id === "string" ? d._id :
+    typeof d.id === "string" ? d.id :
+    bizNested && (typeof bizNested._id === "string" || typeof bizNested.id === "string") ? String(bizNested._id ?? bizNested.id) :
+    null;
+  log({ step: "biz-own-keys", dataKeys: Object.keys(d).sort().slice(0, 40), businessIdFound: bizId !== null });
+  stepLogBizAggregates(d, own.status);
+  console.log(`ownBusiness: HTTP ${own.status} · کلید‌ها: ${Object.keys(d).sort().join(", ").slice(0, 200) || "—"}`);
+  if (!bizId) {
+    console.log("شناسهٔ کسب‌وکار در ownBusiness یافت نشد — آزمون scope ممکن نیست.");
+    return;
+  }
+  // آزمون ۱: businessId به‌عنوان کوئری
+  const q = await armCall2("biz-traded-query", ARM, E.tradedTotal, { auth: true, query: { page: 1, limit: 100, startDate: "1405/06/01", endDate: "1405/06/28", businessId: bizId } });
+  console.log(`tradedTotal + businessId(کوئری): HTTP ${q.status} · totalCount=${q.h.total ?? "—"} · rows=${q.h.rowCount} · pages=${q.h.totalPages ?? "—"}`);
+  // آزمون ۲ (فقط اگر آزمون ۱ خالی بود): businessId به‌عنوان هدر (کامنت client.ts)
+  if ((q.h.total ?? 0) === 0 && q.h.rowCount === 0) {
+    const h = await armCall2("biz-traded-header", ARM, E.tradedTotal, { auth: true, extraHeaders: { businessId: bizId }, query: { page: 1, limit: 100, startDate: "1405/06/01", endDate: "1405/06/28" } });
+    console.log(`tradedTotal + businessId(هدر): HTTP ${h.status} · totalCount=${h.h.total ?? "—"} · rows=${h.h.rowCount} · pages=${h.h.totalPages ?? "—"}`);
+  }
+}
+
 async function stepTtlProbe(): Promise<void> {
   // گام ۳ — آزمون refresh (پایان اجرا؛ حداکثر ۱ POST)
   if (!refreshToken) {
@@ -398,6 +471,9 @@ async function main(): Promise<void> {
   if (args.includes("--dry")) phase = "dry";
   else if (args.includes("--request-otp")) phase = "request-otp";
   else if (args.includes("--use-session")) phase = "use-session";
+  else if (args.includes("--corrective")) phase = "corrective";
+  else if (args.includes("--business")) phase = "business";
+  else if (args.includes("--biz-agg")) phase = "biz-agg";
   else if (args.includes("--run")) phase = "run";
   else {
     console.error("استفاده: --dry | --request-otp <pc> | --run <pc> <otp> | --use-session | --force-window");
@@ -431,7 +507,19 @@ async function main(): Promise<void> {
       console.log("درخواست OTP ثبت شد — پیامک به موبایل ثبت‌شدهٔ مالک در ARM می‌رود.");
       return;
     }
-    if (phase === "use-session") {
+    if (phase === "biz-agg") {
+      // میکرو-فاز: فقط شمارنده‌های تجمیعی کسب‌وکار (۱ GET)
+      await loadSessionToken();
+      await stepBizAggregates();
+    } else if (phase === "business") {
+      // فاز business — آزمون scope کسب‌وکار (علت totalCount=۰)
+      await loadSessionToken();
+      await stepBusinessScope();
+    } else if (phase === "corrective") {
+      // فاز اصلاحی — تکمیل گام ۱+۲ با پروتکل کشف‌شده (توکن نشست فعال؛ صفر POST)
+      await loadSessionToken();
+      await stepCorrective();
+    } else if (phase === "use-session") {
       // فاز B′ — گام‌های ۱ تا ۸ با توکن نشست فعال مالک؛ صفر POST (بدون لاگین/refresh/logout)
       await loadSessionToken();
       await stepCountAndDepth(); // گام ۱ + ۲
@@ -478,7 +566,7 @@ async function main(): Promise<void> {
         log({ step: "logout", status: r.status });
       } else if (phase === "dry") {
         log({ step: "logout", status: 200, note: "mock" });
-      } else if (phase === "use-session") {
+      } else if (phase === "use-session" || phase === "corrective" || phase === "business" || phase === "biz-agg") {
         // عدم خروج عمدی: توکن متعلق به نشست فعال مالک است — خروج آن، داشبورد و sync را می‌شکند
         log({ step: "logout", skipped: true, note: "owner-session-token: logout intentionally skipped to protect active dashboard session + background sync" });
       }

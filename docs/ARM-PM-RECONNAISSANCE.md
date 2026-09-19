@@ -37,6 +37,27 @@
 
 **نکته:** PM در حال حاضر عملاً فقط جریان احراز هویت دارد که داشبورد مصرف می‌کند؛ Bulk Import فاز ۶.۵ تماماً روی ARM متمرکز است (۷ موجودیت §۱.۲ سند طراحی). Reconnaissance عمیق PM در صورت نیاز شورا به runbook شبانه موکول می‌شود (⏳).
 
+## §۲-ب نتایج اجرای شب ۱ (۱۴۰۵/۰۶/۲۸ صبح — دستور مالک ملکا-فوری-۰۰۱، لغو پنجره)
+
+> **شواهد:** `recon-night1.jsonl` (۴۱ رکورد؛ صفر payload/توکن/PII) · کامیت‌های bf4e3e6 / 23fd209 · اجرا: فاز A (OTP 200/902ms) + فاز B′ (۲۵ GET با توکن نشست فعال مالک — سقف ۲ پیامک دستور مصرف شده بود) + فاز اصلاحی (۳ GET) + فاز business (۳ GET) + میکرو-فاز biz-agg (۱ GET). مجموع ≈۳۳ GET موفق ≪ سقف ۱۹۰ · صفر POST در فازهای B′ به بعد.
+
+| # | کشف | جزئیات | رکورد لاگ |
+|---|---|---|---|
+| ۱ | **بازهٔ تاریخی اجباری** | `traded-count-total` و `traded-count` بدون `startDate/endDate` → **400 «لطفا یک بازه تاریخی انتخاب کنید»**؛ با بازه → 200 | s1-count · s1-total · c1-month |
+| ۲ | **باگ ریشه‌ای sync** | `fetchAllPages` در `sync.ts` بدون تاریخ صدا می‌زند → همان 400 → `SyncState.lastError` با attempts=7 و همهٔ جدول‌های production صفر | s1-total + SyncState |
+| ۳ | **totalCount=۰ در همهٔ scopeها** | بازهٔ کامل ۱۳۷۵/۰۱/۰۱–۱۴۰۵/۰۶/۲۸ → 200 با `totalCount=0`؛ businessId به‌صورت کوئری و هدر هم چیزی باز نکرد → گزارش‌های معاملات per-realtor اسکوپ می‌شوند و حساب مالک معاملهٔ شخصی ندارد | c2-fullrange · biz-traded-query · biz-traded-header |
+| ۴ | **دادهٔ کسب‌وکار موجود است** | `businesses/info/own`: فعال از ۲۰۲۳-۰۴-۲۵ · **۷۷,۹۳۴ مشتری · ۳,۷۸۹ ملک · ۳ شعبه** — داده هست، مسئله scope گزارش‌هاست | biz-own-aggregates |
+| ۵ | **limit بزرگ پذیرفته می‌شود** | limit=500 و limit=1000 هر دو → 200 (بدون سقف سمت سرور) | s4-limit500 · s4-limit1000 |
+| ۶ | **سه مسیر 404** | `properties` (فهرست) · `requests` (فهرست) · `realtor-reports/realtor-interactions/list` — همه با page=1&limit=5 → 404؛ فرضیهٔ اصلاح: پسوند `/list` یا نیازمند پارامتر مسیر | s8-property-shape · s8b-requests · s8b-interactions |
+| ۷ | **شکل رکوردها** | realtors: ۳ کلید (حداقلی)؛ visits: ۲۳ کلید؛ trade-overviews: ۱۲ کلید (شامل contractHolo/propertyCode) | s8b-* |
+| ۸ | **زمان پاسخ پیک صبح شنبه** | P50=263ms · P95=265ms (۱۰ درخواست متوالی)؛ realtors 339ms؛ contracts 387ms؛ **visits کندترین: 2373ms** | s6-summary · s8b-* |
+| ۹ | **هدرهای زیرساخت** | فقط `server` + `content-type`؛ بدون Via/X-Cache/X-RateLimit-*/CSP/Retry-After | hdr-probe-* |
+| ۱۰ | **نوسان اتصال در پیک** | دو POST لاگین (۰۳:۲۶/۰۳:۲۸Z) و یک GET (۰۳:۵۱Z) در سیاه‌چالهٔ اتصال افتادند (timeout 30s)؛ درخواست‌های برقرارشده سریع؛ pm-api هم‌زمان تاریک — ازدحام لبهٔ مبدأ، نه بلاک ما | network-error ×3 |
+| ۱۱ | **عمر OTP** | `verificationMinutesLimit=3` دقیقه (۱۸۰s) — کد پیامک ۱ پس از لاگین موفق مالک از داشبورد (۰۳:۲۹:۳۵Z، <8s) مصرف/منقضی شد | phase A + OtpAttempt |
+| ۱۲ | **دایرکتوری کارشناسان** | `realtors/list`: totalPages=59 با limit=5 → **~۲۹۵ کارشناس** در سطح آژانس قابل مشاهده | s8b-realtors |
+
+**پیامد برای طرح Bulk (§۱۵):** (الف) sync باید بازهٔ تاریخ بفرستد (رفع باگ فوق)؛ (ب) مسیر معاملات per-realtor است — Bulk با توکن مالک به دادهٔ معاملات سایر کارشناسان دسترسی ندارد؛ گزینه‌ها: trade-overviews با فیلتر، گزارش‌های آماری #۱۲/#۱۳، یا توکن کارشناس دیگر — نیازمند تصمیم شورا؛ (ج) TTL دقیق توکن و آستانهٔ 429 همچنان ⏳ (مشاهدهٔ غیرفعال از طریق sync).
+
 ## §۳ Endpoint Map (جدول کامل)
 
 ### ۳.۱ ARM — احراز هویت و سیستم
@@ -55,9 +76,9 @@
 
 | # | مسیر | متد | پارامترها (query) | اجباری | پاسخ | وضعیت |
 |---|---|---|---|---|---|---|
-| ۸ | `realtor-reports/traded-count-total` | GET | `page, limit, startDate, endDate` (جلالی YYYY/MM/DD) | page/limit | ردیف‌ها + خلاصه چهارگانه `totalCount/hasRequestEvent/hasSuggestedProperty/hasBoth` | ✅ همگام‌سازی واقعی |
-| ۹ | `realtor-reports/traded-count` | GET | `page, limit, startDate, endDate` | page/limit | `{count, totalPages}` | ✅ کد |
-| ۱۰ | `realtor-reports/realtor-interactions/list` | GET | `page, limit, startDate, endDate, realtor, hasMatch` | page/limit | `{requestRealtorName, propertyRealtorName, count}` | ✅ همگام‌سازی واقعی |
+| ۸ | `realtor-reports/traded-count-total` | GET | `page, limit, startDate, endDate` (جلالی YYYY/MM/DD) | **startDate/endDate اجباری** — بدون آن‌ها 400 | ردیف‌ها + خلاصهٔ چهارگانه `totalCount/hasRequestEvent/hasSuggestedProperty/hasBoth` | ✅ همگام‌سازی واقعی · ⚠️ شب ۱: اجباری بودن بازه + totalCount=۰ برای حساب مالک |
+| ۹ | `realtor-reports/traded-count` | GET | `page, limit, startDate, endDate` | **startDate/endDate اجباری** (شب ۱) | `{count, list, limit, page, totalPages}` | ✅ کد · ⚠️ شب ۱ |
+| ۱۰ | `realtor-reports/realtor-interactions/list` | GET | `page, limit, startDate, endDate, realtor, hasMatch` | page/limit | `{requestRealtorName, propertyRealtorName, count}` | ⚠️ شب ۱: 404 با همین مسیر — نیازمند بازبینی مسیر/پارامتر |
 | ۱۱ | `realtors/list` | GET | `page, limit` | page/limit | `{fullName, mobile, role.name, businessId.title, creator.fullName, createdAt, active, personnelCode}` | ✅ همگام‌سازی واقعی |
 | ۱۲ | `realtor-reports/suggested-usage` (+`-total`, `/request`) | GET | page/limit/بازه | page/limit | گزارش آگهی پیشنهادی سیستم | ✅ کشف باندل (مصرف ننشده) |
 | ۱۳ | `realtor-reports/property-statistics` / `request-statistics` | GET | status×realtor + فیلترها | — | ماتریس statusData | ✅ کشف باندل |
@@ -67,11 +88,11 @@
 
 | # | مسیر | متد | پارامترها | پاسخ | وضعیت |
 |---|---|---|---|---|---|
-| ۱۵ | `properties` (فهرست) | GET | `page, limit`، فیلتر کد/وضعیت | لیست آگهی (id، کد، عنوان، وضعیت، مالک/کارشناس، مکان، مشخصات) | ✅ کشف باندل — نگاشت فیلدهای عددی ⏳ تست زنده |
+| ۱۵ | `properties` (فهرست) | GET | `page, limit`، فیلتر کد/وضعیت | لیست آگهی (id، کد، عنوان، وضعیت، مالک/کارشناس، مکان، مشخصات) | ❌ شب ۱: 404 — مسیر فهرست وجود ندارد؛ فرضیه: `properties/list` یا نیازمند پارامتر |
 | ۱۶ | `properties/info/by-code/{code}` | GET | کدآگهی در مسیر | `{_id, title, relatedRealtor, ...}` | ✅ استفاده واقعی در فایل‌یابی |
 | ۱۷ | `properties/details/{id}` | GET | شناسه در مسیر | `{details: [{label, value, unit}], address, ...}` | ✅ استفاده واقعی |
 | ۱۸ | `properties/owner/{id}` | GET | شناسه در مسیر | ساختار کاربر (mobileNumber, extraUserInfo...) | ✅ استفاده واقعی |
-| ۱۹ | `requests` (فهرست) | GET | `page, limit`، فیلتر کد/وضعیت | لیست درخواست (id، کد، متقاضی، وضعیت) | ✅ کشف باندل |
+| ۱۹ | `requests` (فهرست) | GET | `page, limit`، فیلتر کد/وضعیت | لیست درخواست (id، کد، متقاضی، وضعیت) | ❌ شب ۱: 404 — فرضیه: `requests/list` |
 | ۲۰ | `requests/details/{id}` | GET | شناسه در مسیر | جزئیات کامل درخواست | ✅ کشف باندل |
 | ۲۱ | `requests/applicant/{id}` | GET | شناسه در مسیر | ساختار کاربر متقاضی | ✅ کشف باندل |
 | ۲۲ | `visits/list` | GET | `page, limit` | `{propertyCode, requesterName, checkerName, checkTime, status, createdAt}` | ✅ همگام‌سازی واقعی |
@@ -86,7 +107,7 @@
 | ۲۶ | `configs/current-prices` | GET | بله | ✅ کشف باندل (شاخص قیمت) |
 | ۲۷ | `price-evaluations` (فهرست دلایل فروش/قیمت/مطلوبیت) | GET | بله | ✅ استفاده واقعی (کاشی آگهی) |
 | ۲۸ | `trade-overviews/contribution` | GET | بله | ✅ کشف باندل (تعرفه تقسیم) |
-| ۲۹ | `api/apu/statistics/total` + `businesses/info/own` | GET | بله | ✅ کشف باندل (کمیسیون) |
+| ۲۹ | `api/apu/statistics/total` + `businesses/info/own` | GET | بله | ✅ شب ۱: کسب‌وکار فعال ۲۰۲۳-۰۴-۲۵ · ۷۷,۹۳۴ مشتری · ۳,۷۸۹ ملک · ۳ شعبه |
 | ۳۰ | جریان ۵ گامی ثبت آگهی (`new-property-page`): `countries/list → states/list → cities/list → areas/lines` + `properties/create` | GET/POST | بله | ✅ رمزگشایی کامل باندل (مسیرهای POST هرگز در Bulk صدا زده نمی‌شوند — قاعده ۹ محرمانگی) |
 
 ### ۳.۵ PM
@@ -114,16 +135,16 @@
 |---|---|---|
 | پارامترهای صفحه‌بندی | `page` (۱-مبنا) + `limit`؛ پاسخ شامل `total/totalPages` (یا `count/totalPages`) در سبک mongoose-paginate | ✅ |
 | اندازه صفحه‌های مشاهده‌شده | خود UI رسمی با `limit=100` (معاملات/کارشناسان/بازدید) و `limit=200` (تعاملات) کار می‌کند — داشبورد همین‌ها را عیناً استفاده کرده: معاملات ۵۰ صفحه×۱۰۰، کارشناسان ۳۰×۱۰۰، تعاملات ۲۰×۲۰۰، بازدید ۲۰×۱۰۰، عرضه/تقاضا ۱۰×۱۰۰ | ✅ |
-| حدسقف page size (۵۰/۱۰۰/۵۰۰/۱۰۰۰) | limit=۲۰۰ اثبات‌شده ✅؛ ۵۰۰/۱۰۰۰ ⏳ تست زنده — **تصمیم عملیاتی: Bulk با limit=100 می‌ماند** (عین UI رسمی — قاعده ۷/۱۰ محرمانگی؛ برتری حجم صفحه = الگوی غیرمعمول) | ✅/⏳ |
+| حدسقف page size (۵۰/۱۰۰/۵۰۰/۱۰۰۰) | شب ۱: **limit=500 و limit=1000 هر دو پذیرفته شدند (200)** — بدون سقف سمت سرور؛ **تصمیم عملیاتی: Bulk با limit=100 می‌ماند** (عین UI رسمی — قاعده ۷/۱۰ محرمانگی) | ✅ شب ۱ |
 | سقف تعداد صفحات | ⏳ (داشبورد سقف ایمنی خودش را ۵۰ صفحه/موجودیت در sync دارد؛ Bulk سقف ۱۰٫۰۰۰ صفحه) | ⏳ |
-| rate limit صریح (Retry-After / X-RateLimit-*) | هرگز در پاسخ‌های دیده‌شده مشاهده نشده؛ کد داشبورد 429 را دفاعی مدیریت می‌کند. آستانه واقعی 429: ⏳ تست تدریجی شبانه | ✅ مشاهده‌نبودن / ⏳ آستانه |
+| rate limit صریح (Retry-After / X-RateLimit-*) | شب ۱: در ~۳۳ GET با فاصلهٔ ≥۱.۵s هیچ 429 یا هدر RateLimit دیده نشد؛ آستانهٔ واقعی 429: ⏳ (تست تدریجی در شب Bulk واقعی) | ✅ شب ۱ (در این سطح بار) / ⏳ آستانه |
 | الگوی ترافیک شبانه متفاوت؟ | ⏳ (سنجه‌گیری زمان پاسخ شبانه در ران‌بوک §۱۵-ب) | ⏳ |
 
 ## §۶ Historical Data Availability
 
 | پرسش | پاسخ | وضعیت |
 |---|---|---|
-| داده تاریخی کامل ۲۵ ساله؟ | گزارش «تطابق معاملات» خود سامانه با فیلتر بازه تاریخ (`startDate/endDate` جلالی) کار می‌کند — یعنی دسترسی تاریخی وجود دارد. عمق واقعی: ⏳ (قدیمی‌ترین رکورد قابل دسترسی باید با پرس‌وجوی بازه‌ای در پنجره شبانه مشخص شود) | ✅ مکانیزم / ⏳ عمق |
+| داده تاریخی کامل ۲۵ ساله؟ | مکانیزم بازه‌ای کار می‌کند. شب ۱: بازهٔ کامل ۱۳۷۵/۰۱/۰۱–۱۴۰۵/۰۶/۲۸ → 200 اما **totalCount=۰** — گزارش‌های معاملات برای حساب مالک خالی‌اند (per-realtor scope؛ businessId به کوئری/هدر هم باز نکرد)؛ عمق واقعی برای کارشناسان دارای معامله: ⏳ | ✅ مکانیزم / ⚠️ scope / ⏳ عمق |
 | کوئری دلتا (تغییرات از یک تاریخ)؟ | **بله در سطح گزارش‌محور:** `startDate/endDate` روی traded-count-total/interactions — همان مکانیزمی که checkpoint+resume خط لوله Bulk برای تقسیم ۵–۷ شبانه استفاده می‌کند (§۱.۱۲-ب قاعده ۳). دلتای رکورد-به-رکورد (updatedSince): در باندل دیده نشد — ⏳ | ✅ بازه‌ای |
 | soft-deleted از طریق API؟ | ⏳ (در داده واقعی همگام‌سازی فازهای قبل رکورد حذف‌شده‌ای دیده نشد؛ ادعا نمی‌شود) | ⏳ |
 | رکوردهای آرشیوی/غیرفعال؟ | در `realtors/list` فیلد `active` وجود دارد (کارشناس غیرفعال در پاسخ می‌آید) ✅؛ وضعیت‌های قرارداد (پیش‌نویس→تنظیم سند) همگی در trade-overviews هستند ✅ — یعنی فیلتر وضعیت سمت پاسخ اعمال نمی‌شود مگر پارامتر داده شود | ✅ |
@@ -147,9 +168,9 @@
 
 | پرسش | وضعیت |
 |---|---|
-| زمان پاسخ صفحه معمول (page 1, limit 100) | ✅ مشاهداتی: در پنجره‌های سالم، صفحه ۱۰۰تایی در حد زیر ۱ ثانیه برگشته (حلقه همگام‌سازی ۵ دقیقه‌ای داشبورد بدون تایم‌اوت کار می‌کند؛ timeout داشبورد محافظ‌کارانه ۱۵s) — عدد P50/P95 دقیق: ⏳ سنجه شبانه |
-| صفحه عمیق (page 50+) | ⏳ (سنجه شبانه — ریسک شناخته‌شده offsetهای عمیق در mongoose-paginate) |
-| جستجو با فیلتر | ✅ مشاهداتی: فیلترهای بازه تاریخ روی گزارش‌ها سبک بوده‌اند — سنجه دقیق ⏳ |
+| زمان پاسخ صفحه معمول (page 1, limit 100) | شب ۱ (پیک صبح شنبه): **P50=263ms · P95=265ms** (۱۰ درخواست متوالی)؛ نمونه‌ها 237–2373ms؛ کندترین = visits (2373ms)؛ یک پنجرهٔ ~۲ دقیقه‌ای سیاه‌چالهٔ اتصال (timeout 30s) هم مشاهده شد — شب‌سنجهٔ واقعی همچنان ⏳ | ✅ شب ۱ (پیک) / ⏳ شب |
+| صفحه عمیق (page 50+) | شب ۱: page=50/100 بدون بازهٔ تاریخ → 400 (قانون بازهٔ اجباری)؛ با بازه نیازمند تست مجدد ⏳ (ریسک شناخته‌شدهٔ offsetهای عمیق در mongoose-paginate) |
+| جستجو با فیلتر | ✅ شب ۱: فیلتر بازهٔ تاریخ روی معاملات سبک و سریع (262–287ms) |
 | کندی ساعت اوج | ⚠️ مشاهده‌شده: قطعی‌های طولانی MongoDB سمت ملک تبریز (خطای Mongoose buffering → ۵۰۰) در ساعات مختلف رخ داده — **پاسخ سیاستی: قاعده ۸ محرمانگی (توقف فوری + ۲۴h صبر)** + پایش پاسخ در Bulk | ✅ مشاهداتی |
 | ۱۰۰ درخواست پشت‌سرهم @ ۸۰۰ms | ⏳ شب اول ران‌بوک |
 | رفتار زیر فشار | ⏳ (در Bulk واقعی هرگز آزموده نمی‌شود خارج پنجره شبانه و سقف ۲۰٪) |
@@ -170,10 +191,10 @@
 
 | پرسش | پاسخ | وضعیت |
 |---|---|---|
-| CDN / Load Balancer؟ | nginx جلوی API دیده شده (صفحات خطا)؛ لایه CDN/LB بالاتر ⏳ (بازرسی هدرهای `Via/Server/X-Cache` در تست زنده) | ✅ nginx / ⏳ لایه بالاتر |
-| سرویس third-party؟ | در باندل رسمی امضای Sentry/Datadog مشاهده نشد؛ ⏳ بازرسی هدر پاسخ | ✅ مشاهده‌نبودن |
+| CDN / Load Balancer؟ | nginx جلوی API دیده شده (صفحات خطا)؛ شب ۱: هدرهای پاسخ فقط `server` + `content-type` — بدون Via/X-Cache (لایهٔ CDN/LB قابل‌مشاهده نیست) | ✅ nginx / ✅ شب ۱ (هدرها) |
+| سرویس third-party؟ | در باندل رسمی امضای Sentry/Datadog مشاهده نشد؛ شب ۱: هدر third-party در پاسخ‌ها دیده نشد | ✅ مشاهده‌نبودن + شب ۱ |
 | CORS محدود؟ | خود اپلیکیشن رسمی از مرورگر به همین APIها می‌زند (هم‌مبدأ arm.melketabriz.ir) — CORS باز عمومی دیده نشده؛ ⏳ پاسخ OPTIONS | ✅ مشاهداتی |
-| CSP هدر؟ | ⏳ بازرسی هدر | ⏳ |
+| CSP هدر؟ | شب ۱: هدر CSP/CSP-Report-Only در پاسخ‌های API مشاهده نشد | ✅ شب ۱ |
 | WebSocket/SSE؟ | در باندل رسمی مشاهده نشد — همه داده‌ها polling/GET هستند (خبر خوب برای Bulk: الگوی GET-only عین UI) | ✅ مشاهده‌نبودن |
 
 ## §۱۱ Per-Endpoint Patterns (۱۰ Endpoint پرکاربرد)
