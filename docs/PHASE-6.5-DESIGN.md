@@ -222,6 +222,30 @@ interface BulkCheckpoint {
 | ۴ | production فعلاً در حالت legacy sync اجرا می‌شود (`MELK_SYNC_MODE` تنظیم نیست) — مسیر کامل deleteMany پس از Bulk همه چیز را می‌پاکد و createMany با ردیف محافظت‌شده تصادم یکتایی می‌کند | پذیرفته و مستند (ریسک شناخته‌شده مصوبه: بازیابی = اجرای مجدد idempotent)؛ **پیش‌نیاز عملیاتی D0: تنظیم `MELK_SYNC_MODE=incremental` پیش از Bulk واقعی** — محافظت فقط مسیر افزایشی را پوشش می‌دهد (مسیر legacy دست‌نخورده ماند) — **✅ اجرا شد ۱۴۰۵/۰۶/۲۸ (بخش B ملکا-شورا-۰۰۶): `.env.local` + شاهد لاگ `mode: "incremental"`؛ جزئیات §۱.۱۲-پ)** |
 | ۵ | نگاشت آگهی/درخواست ARM (properties/requests) در این گام stub حداقلی است | طبق دستور («normalize فعلاً stub») — تکمیل در P6.5-04 (normalize.ts)؛ سازگار ARM واقعی از adapters موجود برای پنج موجودیت دیگر بازاستفاده می‌کند |
 
+### ۱.۱۳ وضعیت اجرای §۲/§۳ (P6.5-04 — بسته‌شده)
+
+| اجزا | وضعیت | شاهد |
+|---|---|---|
+| قرارداد ۷ تابع خالص (§۳.۱) + تحمل ورودی number | ✅ | `normalize.ts` — تست‌های گروه ۱–۶ |
+| الگوریتم سه‌لایه تطبیق محله + آستانه ۰٫۷ + fail-closed | ✅ | `findLocationInRegistry` + تست‌های گروه ۷ (ائل‌گلی → ایل گلی؛ ناموجود → null) |
+| رجیستری ۹۲۶ پیش‌فرض (lazy + cache) + findLocationByName | ✅ | `location-registry.ts` — شاهد ۱۰۵۶ مدخل در تست |
+| dedupKey هفت موجودیت + mergeRecords هم‌ارز خالص mergeNonNullUpdate | ✅ | تست گروه ۲/۶ |
+| قلاب نرمال‌سازی خط لوله (normalizeBulkRow) + قواعد فیلد هر موجودیت | ✅ | تست گروه ۸ |
+| **سه‌لایه حقیقت (e-v2):** ستون‌های خام + provenance روی ۷ جدول · مهر extractedAt/extractionBatchId/normalizationVersion در خط لوله · مشتق price/meterage/contractDate از خام · خام هرگز بازنویسی نمی‌شود | ✅ | مهاجرت + شاهد سه‌پایگاه + تست‌های گروه ۹ (integration از مسیر واقعی mapArmRowToInput) |
+| نمونه موک ۱۰K (seed ثابت §۳.۸) | ✅ | نرخ نرمال‌سازی ۹۷٫۰٪ ≥ ۹۵٪ · نرخ تطبیق محله ۸۷٫۶٪ ≥ ۸۵٪ · deterministic |
+| بازبینی دستی ۱۰۰ رکورد | ⏳ با داده واقعی در D0 (موک کامل ✅) | گزارش P6.5-10 |
+
+**کشف‌های صادقانه اجرا (P6.5-04):**
+
+| # | کشف | تصمیم |
+|---|---|---|
+| ۱ | پسوند «ئي/ئی» پایانی در نام‌ها (رضائي) برای شاهد §۳.۲ به «یی» نرمال نمی‌شد؛ حذف ساده ئ هم رضای می‌داد (غلط) | قاعده دوجزئی: ئ پایانی→ی و «ئی» پایانی→«یی»؛ ئ میانی (مسئول/مسئله) دست‌نخورده — تست هر سه حالت |
+| ۲ | مهر provenance در هر اجرا (extractedAt/…=زمان تازه) باعث می‌شد اجرای مجدد idempotent به‌عنوان update شمرده شود | فیلدهای provenance به مجموع مستثنی‌های تشخیص تغییر محتوایی اضافه شدند (عین syncedAt/sourceRunId — §۲.۴) |
+| ۳ | `bun test` برهنه فایل ‎.env‎ را می‌خواند (نه ‎.env.local‎) → بدون تزریق گارد، تست‌ها روی پایگاه production اجرا می‌شدند (اثر تست در SyncState/AuditLog تولید مشاهده شد) | پاک‌سازی اثر + رفع ریشه‌ای: `tests/preload-guard.ts` + `bunfig.toml` — هر اجرای تست به test.db هدایت و کلید تست تزریق می‌شود؛ production هرگز هدف تست نیست |
+| ۴ | کلید کاندید «area» بین نام محله و متراژ در stub آگهی مبهم بود | تفکیک صریح: area→areaName؛ متراژ فقط از کلیدهای meterage/metrage* + گارد شیء→null |
+| ۵ | rawSourceVersion: ARM فعلاً نسخه داده منتشر نمی‌کند | ستون موجود و تهی صادقانه؛ پر شدن پس از کشف در Reconnaissance (§۶ سند Recon) |
+| ۶ | قراردادهای قدیمی مسیر v1 بدون rawDate | تهی می‌ماند (merge non-null) — فقط رکوردهای تازه Bulk لایه خام می‌گیرند |
+
 ### ۱.۱۰ حالت Dry-Run و اجرای واقعی
 
 - تمام توسعه و تست با **موک** (صفر فشار به API مبدأ — شرط پذیرش دستور).
@@ -835,10 +859,15 @@ P6.5-09 با پیام SKIP صریح — همان الگوی نردبانی P2-05
 | InteractionRecord / SupplyDemandRecord | `tenantId` |
 | **PropertyRecord (جدید)** | کل مدل (§۲.۲) |
 | **CustomerRecord (جدید)** | کل مدل (§۲.۳) |
+| **P6.5-04-e-v2 — سه‌لایه حقیقت (۷ جدول Bulk):** | PropertyRecord: `rawPrice?`, `rawPriceUnit?`, `rawArea?` + provenance ×۴ · TransactionRecord: `rawDate?` + provenance ×۴ · ContractRecord: `rawDate?` + provenance ×۴ · ExpertRecord/RequestRecord/VisitRecord/InteractionRecord: provenance ×۴ (`rawSourceVersion?`, `extractedAt?`, `extractionBatchId?`, `normalizationVersion?`) |
 
 > **وضعیت اجرا (P6.5-02):** اعمال‌شده — ستون‌های Session/AuditLog (§۵.۱/§۶.۱)، tenantId هفت جدول +
 > ستون‌های انتساب Scope (§۱۴.۲) و هر دو مدل جدید کامل. باقی‌مانده برای گام‌های بعدی: ایندکس‌های جداول
 > موجود (P6.5-05)، `requestCode` روی RequestRecord و ستون‌های SyncState (P6.5-03/۰۶).
+>
+> **وضعیت اجرا (P6.5-04-e-v2):** اعمال‌شده روی هر سه پایگاه — بکاپ گرم `custom.backup-pre-p6504.db`
+> (md5 33f09347، integrity ok) → push → شاهد `scripts/verify-p6504-schema.ts` PASS ×۳ (همه ستون‌های
+> جدید روی ردیف‌های موجود تهی = صفر تغییر رفتار v1).
 
 ## پیوست B — فایل‌های جدید این فاز
 
@@ -846,6 +875,13 @@ P6.5-09 با پیام SKIP صریح — همان الگوی نردبانی P2-05
 |---|---|---|
 | `src/lib/melk-api/bulk-import.ts` | P6.5-03 | Pipeline |
 | `src/lib/melk-api/normalize.ts` | P6.5-04 | توابع خالص |
+| `src/lib/melk-api/location-registry.ts` | P6.5-04-c | رجیستری ۹۲۶ (lazy + cache) |
+| `tests/phase65-normalize.test.ts` | P6.5-04-f | ۳۶ تست (۹ گروه + نمونه ۱۰K) |
+| `scripts/verify-p6504-schema.ts` | P6.5-04-e-v2 | شاهد مهاجرت سه‌پایگاه |
+| `scripts/verify-sync-mode-production.ts` | بخش B ملکا-شورا-۰۰۶ | شاهد incremental (صفر شبکه) |
+| `scripts/recon-db-snapshot.ts` | بخش D ملکا-شورا-۰۰۶ | شواهد داده Recon |
+| `docs/ARM-PM-RECONNAISSANCE.md` | بخش D ملکا-شورا-۰۰۶ | سند شناسایی ۱۵بندی |
+| `tests/preload-guard.ts` + `bunfig.toml` | P6.5-04 (کشف ۳) | محافظت production از تست |
 | `src/lib/audit.ts` | P6.5-02 | Helper حسابرسی |
 | `src/core/repositories/tenant.ts` | P6.5-02 | Placeholder |
 | `src/core/repositories/interfaces/scope.repository.ts` | P6.5-02 | قرارداد ConsultantScope |

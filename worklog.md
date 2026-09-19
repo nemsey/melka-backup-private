@@ -1085,3 +1085,26 @@ Stage Summary:
 - P6.5-03 کامل: خط لوله انبوه با هر چهار ستون فنی اثبات‌شده + اصلاح بحرانی هم‌زیستی sync+bulk — با صفر LLM، صفر fetch مستقیم، صفر Prisma مستقیم، صفر UI change
 - شواهد: ۶۹۵×۲ سبز · دنباله‌های retry عین دستور · فاصله‌های واقعی rate · رگرسیون هم‌زیستی سبز · شاهد مهاجرت سه‌پایگاه
 - گام بعد P6.5-04: Deduplication + Normalization (normalize.ts با ۷ تابع خالص + رجیستری ۹۲۶ + نمونه ۱۰K موک)
+
+---
+Task ID: phase65-p6504-recon
+Agent: main (Super Z / GLM-5.3)
+Task: P6.5-04 کامل (Deduplication + Normalization + سه‌لایه حقیقت e-v2) + بخش‌های A/B/D دستور یکپارچه ملکا-شورا-۰۰۶ (اعلامیه‌ها + sync-mode + Reconnaissance ARM & PM)
+
+Work Log:
+- **P0 بازیابی پس از ریست سندباکس**: .env.local بازسازی (MASTER_ACCESS_CODE مالک + MELK_TOKEN_KEY تازه ۴۸-hex + MELK_SYNC_MODE=incremental؛ مجوز ۶۰۰) — ممیزی: صفر نشست با توکن رمزشده → چرخش کلید صفر اثر داده‌ای؛ پایه ۶۹۵/۶۹۵ سبز (شکست‌های ظاهری = فراخوانی بدون تزریق env گارد)
+- **بخش A**: سند طراحی §۱.۱۲ — چهار اعلامیه مالک + ده قاعده محرمانگی عملیاتی (درجه ۱؛ ۸۰۰ms کف واقعی، پنجره شبانه، ۲۰٪/شب، هدر یکسان، صفر لاگ خارجی، تک‌توکن، endpoint فقط UI، توقف ۲۴h، GET-only، صفر trace) + به‌روزرسانی کشف ۴ §۱.۱۱ (پیش‌نیاز D0 اجرا شد)
+- **بخش B**: MELK_SYNC_MODE=incremental روی production — شاهد دوگانه: (۱) اسکریپت verify-sync-mode-production.ts: مسیر کد واقعی syncFromArm روی کپی موقت DB با مرز شبکه stub → دو خط لاگ واقعی sync-run با mode:"incremental" + ۶ GET رجیستری، صفر شبکه واقعی؛ (۲) اثبات env فرآیند دیمون زنده از /proc/PID/environ پس از build+restart
+- **P6.5-04-e-v2 (سه‌لایه حقیقت)**: ۳۳ ستون افزودنی nullable روی ۷ جدول Bulk (خام: rawDate/rawPrice/rawPriceUnit/rawArea + provenance ×۴) + مهر خط لوله (extractedAt/extractionBatchId/normalizationVersion=p65-04-v1) + انواع amount/area/jalaliDate در normalizeBulkRow (لایه ۲ از لایه ۱ مشتق — خام هرگز بازنویسی نمی‌شود) + rawDate در آداپتورها (traded/contract/info-merge)
+- **مهاجرت**: بکاپ گرم custom.backup-pre-p6504.db (md5 33f09347، integrity ok) → push سه‌پایگاه → شاهد verify-p6504-schema.ts PASS ×۳ (ستون‌های جدید روی ردیف‌های موجود همه تهی = صفر تغییر v1)
+- **P6.5-04-f تست**: +۳۶ تست (نه گروه: نام/کد/موبایل/مبلغ/تاریخ/merge/رجیستری سه‌لایه/قلاب/یکپارچگی خط لوله از مسیر واقعی mapArmRowToInput) + نمونه ۱۰K با seed ثابت: نرخ نرمال‌سازی ۹۷٫۰٪ ≥ ۹۵٪ · نرخ تطبیق محله ۸۷٫۶٪ ≥ ۸۵٪ · deterministic؛ مجموع ۷۳۱ ≥ هدف ۷۱۲ ✓
+- **کشف‌های صادقانه**: (۱) پسوند «ئي» پایانی — قاعده دوجزئی ئ پایانی→ی / ئی پایانی→یی (شاهد §۳.۲: رضائي→رضایی؛ ئ میانی مسئول دست‌نخورده)؛ (۲) مهر provenance تشخیص تغییر محتوایی را می‌شکست → PROVENANCE_FIELDS به مستثنی‌های §۲.۴ اضافه شد؛ (۳) **bun test برهنه .env را می‌خواند → تست روی production اجرا می‌شد** — اثر در SyncState/AuditLog پاک‌سازی (۴۰ ردیف حسابرسی تست + cursor) + رفع ریشه‌ای: tests/preload-guard.ts + bunfig.toml (هر تست → test.db + کلید تست؛ اثبات هدایت)؛ (۴) ابهام کلید area در stub آگهی → تفکیک صریح نام محله/متراژ + گارد شیء→null
+- **P6.5-04-g**: گارد ۶بخشی --strict PASS ×۲ پیاپی (۷۳۱/۷۳۱) + tsc صفر
+- **بخش D (Reconnaissance)**: سند docs/ARM-PM-RECONNAISSANCE.md — ۱۵ بند کامل: نقشه ۳۴ Endpoint (پوشش ۱۰۰٪ رجیستری) + احراز هویت + صفحه‌بندی (limit=100/200 اثبات‌شده) + تاریخ (بازه جلالی اثبات‌شده، عمق ⏳) + ساختار داده + خطاها (جدول کامل retry-safe) + ریسک‌ها + پیامد برای Bulk + توصیه‌ها + ران‌بوک تست زنده شبانه (۹ گام، ≥۱۵۰۰ms، ≤۲۰۰ GET، بدون اسکنر) — پوشش فعلی ~۷۵-۸۰٪ سؤالات، تصمیم‌های اجرایی Bulk مستقل از ⏳ها
+- **دیمون production**: build تازه + توقف dev → دیمون standalone → health ok mode=real · ROOT :81 = ۲۰۰ · API 401 صحیح · MELK_SYNC_MODE در env فرآیند اثبات
+- **زنجیره بصری**: auth = md5 طلایی (2cd550...) · after-logout = md5 طلایی · کاشی درخواست: ساختار/شمارش‌ها یکسان (۱ درخواست، سیاست ۱، ۶ بینش)، فقط امتیاز سلامت ۵۵→۴۸٪ = رانش زمانی داده زنده (هم‌کلاس شمارنده‌های زنده مستند P6-D)
+
+Stage Summary:
+- P6.5-04 بسته شد (a→h کامل + e-v2) · بخش A ثبت · بخش B فعال با شاهد دوگانه · بخش D سند کامل
+- شواهد: ۷۳۱×۲ + tsc 0 + گارد ۶بخشی + مهاجرت سه‌پایگاه PASS + شاهد incremental صفر-شبکه + md5 بصری طلایی
+- گام بعد: P6.5-05 (Indexing) با دانش Reconnaissance؛ ران‌بوک شب اول Recon → به‌روزرسانی ⏳ها و جدول تخمین §۱۴
