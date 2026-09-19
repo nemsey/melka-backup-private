@@ -1108,3 +1108,27 @@ Stage Summary:
 - P6.5-04 بسته شد (a→h کامل + e-v2) · بخش A ثبت · بخش B فعال با شاهد دوگانه · بخش D سند کامل
 - شواهد: ۷۳۱×۲ + tsc 0 + گارد ۶بخشی + مهاجرت سه‌پایگاه PASS + شاهد incremental صفر-شبکه + md5 بصری طلایی
 - گام بعد: P6.5-05 (Indexing) با دانش Reconnaissance؛ ران‌بوک شب اول Recon → به‌روزرسانی ⏳ها و جدول تخمین §۱۴
+
+---
+Task ID: phase65-p6505-review
+Agent: main (Super Z / GLM)
+Task: بازبینی شورا — گزارش تسلیمی P6.5-05 (Indexing) + ران‌بوک شب اول Recon (گزارش «۲.۱/۲.۲» رسیده در گفتگو)
+
+Work Log:
+- راستی‌آزمایی مستقل گزارش روی مخزن طبق انضباط شواهد (قاعده ۸):
+  * sqlite_master هر سه پایگاه (db/custom.db، db/test.db، prisma/db/test.db): صفر ایندکس جدید — فقط ایندکس‌های v1/P6.5-03 موجودند
+  * git log: هیچ کامیت P6.5-05 وجود ندارد؛ HEAD = afe394d (پس از close-out P6.5-04)؛ درخت پاک بجز tool-results
+  * جستجوی **/*RUNBOOK*: فایل docs/RECON-NIGHT1-RUNBOOK.md اصلاً وجود ندارد
+  * schema.prisma: ستون‌های externalId / dedupKey / locationKey / visitDate در کل اسکیما وجود ندارند → ایندکس‌های ادعایی فیزیکاً ناممکن
+  * شمارش ردیف production: شش جدول هفت‌گانه = ۰ ردیف، RequestRecord = ۱ ردیف → ادعای «SCAN TABLE bulk_transactions (~200K rows)» بی‌مبنا؛ نام جدول bulk_transactions وجود ندارد (جداول واقعی: TransactionRecord و…)؛ خروجی EXPLAIN QUERY PLAN اصلاً شمارش ردیف چاپ نمی‌کند؛ نام‌های ایندکس ادعایی (ux_tx_source_extid و…) با قرارداد نام‌گذاری Prisma (TableName_fields_idx) سازگار نیست
+  * «prisma migrate status پاک»: پوشهٔ prisma/migrations اصلاً وجود ندارد؛ گردش کار مصوب §۴.۲ سند طراحی = bun run db:push (تست → بکاپ گرم → production)
+  * تطبیق با §۴.۱ سند طراحی مصوب P6.5-01: از ۸ ایندکس مصوب (PropertyRecord ×۳، ExpertRecord [personnelCode,branchId]، TransactionRecord [contractHolo]، ContractRecord [propertyCode]، ListingRecord [customerMobile]، RequestEventRecord [eventTypeId,createdAt] + پشتیبان‌ها) صفر مورد اعمال شده؛ مجموعهٔ ادعایی گزارش با مصوبه نیز صفر هم‌پوشانی دارد
+  * bun test یک‌بار روی HEAD: 731 pass / 0 fail / 3049 expect = عین خط پایهٔ P6.5-04 → عدد «۷۳۱/۷۳۱ ×۲» گزارش، بازگویی پایهٔ قبلی است نه شاهد کار جدید
+- کشف جانبی (واقعی و ثبت‌شدنی): prisma/schema.prisma خط ۴۱۴ = `@@index(atchedLineId])` — بایت‌های خراب (فیلد واقعی: matchedLineId؛ سالم: `@@index([matchedLineId])`). منشأ: کامیت همگام‌سازی خودکار پلتفرم 6132e4d (2026-09-13، +۱۵۱ خط مدل Divar). prisma validate سبز می‌ماند؛ DB ایندکس DivarAd_matchedLineId_idx را از قبل دارد و pushهای بعدی (P6.5-03/04) هم حذفش نکردند → نقص نهفتهٔ غیرمسدودکننده ولی باید در نخستین کامیت بعدیِ schema ترمیم شود؛ پرچم تمامیت همگام‌سازی پلتفرم (فایل منبع در حین sync خراب شده)
+- حکم صادره: گزارش P6.5-05 + ران‌بوک = رد (ادعاهای بدون آرتیفکت، چند مورد فیزیکاً ناممکن)؛ چراغ سبز شب اول Recon صادر نشد (ران‌بوک واقعی وجود ندارد و صدور مجوز بر پایهٔ گزارش نادرست نقض انضباط شواهد است)
+
+Stage Summary:
+- وضعیت مخزن: سالم و پابرجا در خط پایهٔ P6.5-04 (731/731 یک‌بار بازتولید شد؛ ARM-PM-RECONNAISSANCE.md با ۱۵ بند و ۳۸ ⏳ موجود؛ دیمون incremental طبق سوابق P6.5-04)
+- حکم بازبینی: P6.5-05 = REJECT و بازگردانی برای تحویل مجدد؛ Night-1 = فاقد مبنای صدور مجوز
+- یافتهٔ جدید برای ترمیم: خرابی بایتی schema.prisma:414 — در اولین کامیت اصلاحی P6.5-05 ترمیم شود
+- مسیر اصلاح ابلاغ شد: §۴.۱ مصوب (۸ ایندکس واقعی) + §۴.۲ (db:push تست→بکاپ گرم→production + EXPLAIN واقعی روی ۵ Query + سنجش قبل/بعد) + ران‌بوک به‌صورت فایل واقعی کامیت‌شده + پنج شرط اجرایی GLM (teardown در finally، ABORT در مرز درخواست، توقف سخت ۰۶:۰۰، ثبت Retry-After، اطلاع قبلی مالک) + گزارش بازتولیدشده از آرتیفکت‌ها (نه از طرح)؛ پنجرهٔ ۱۴۰۵/۰۶/۳۰ در صورت تحویل تا ۰۶/۲۹ هنوز دست‌یافتنی است
