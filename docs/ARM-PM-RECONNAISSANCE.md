@@ -75,6 +75,23 @@
 
 **اصلاحات کد اعمال‌شده (کامیت این بلوک):** رجیستری `realtorInteractions` → بدون /list · sync تعاملات بازه می‌گیرد · `buildReportDateRange` → ISO کامل عین UI (مبدأ 2018-01-01T00:00:00.000Z تا نیمه‌شب امروز تهران) · Bulk: `armEntityPath(transaction)` → `traded-count` (رفع باگ ماندده کشف ۲ شب ۱ در مسیر Bulk) + نام پارامترهای بازه → `startDate/endDate` ISO. **باقی‌ماندهٔ ⏳ شب ۲:** راستی‌آزمایی زندهٔ مسیر تعاملات (200؟) + آزمون تک‌پروب قالب ISO در برابر جلالی + مسیر فهرست properties/requests (هنوز 404 — نیازمند جستجوی چانک‌های list-of-property-and-request).
 
+## §۲-ث نتایج شب دوم — D.1 قالب تاریخ + D.2 مسیر جایگزین (۱۴۰۵/۰۶/۲۹، پنجرهٔ ۲۲:۰۰–۰۶:۰۰ تهران)
+
+> **شواهد:** `scripts/recon-night2.ts` + لاگ `recon-night2.jsonl` — ۱۹ GET کل (سقف ۱۹۰)، صفر POST، صفر پیامک (توکن نشست مالک از DB — ARM آن را زنده می‌داند)، فاصلهٔ ≥۱۵۰۰ms، محرمانگی کامل (صفر PII در لاگ).
+
+| # | کشف | جزئیات | شاهد زنده |
+|---|---|---|---|
+| ۱ | **🔴 دادهٔ معاملات باز شد — ISO درست است، جلالی نه** | `traded-count` (لیست) + بازهٔ ISO کامل → **۷۲۸ رکورد** (۷۲۴ با بازهٔ دقیق sync تا نیمه‌شب امروز) در ۸ صفحه×۱۰۰؛ قدیمی‌ترین 2024-03-07؛ مرتب‌سازی صعودی. همان endpoint با جلالی در شب ۱ → صفرِ بی‌صدا. **H1 (قالب) به‌عنوان ریشهٔ totalCount=0 شب ۱ تأیید شد** | A-list-iso: 200/count=728 · SYNC-exact-range: 200/count=724 |
+| ۲ | **traded-count-total (خلاصه) حتی با ISO هم صفر است** | خلاصهٔ چهارگانه برای حساب realtor مالک scope-محور تهی است (0 ردیف، 0 خلاصه) — مستقل از قالب. اصلاح کد: `resolveTradedSummary` — خلاصهٔ صفر + ردیف واقعی ⇒ محاسبه از خود ردیف‌ها (۴ تست رگرسیون) | A-total-iso: 200/total=0 در برابر A-list-iso: 728 |
+| ۳ | **realtor در traded-count نادیده گرفته می‌شود** | همان 728 با و بدون `realtor=_id` — پارامتر realtor متعلق به خانوادهٔ تعاملات است نه معاملات | D-list-iso-realtor = A-list-iso |
+| ۴ | **تعاملات: فرمول پذیرش = realtor لازم** | تاریخ-تنها (ISO) → 400 · جلالی → 400 · `realtor` تنها → 200 · `realtor+ISO+hasMatch` → 200. مسیر بدون /list قطعاً درست است (شب ۱: 404 → امشب: 200/400 بسته به پارامتر). ردیف برای کارشناسِ آزمون‌شده خالی بود — دادهٔ واقعی نیازمند کارشناسِ دارای تعامل است | IN/IN2/IN3/IN4 |
+| ۵ | **trade-overviews/list زنده — ۱ قرارداد برای این حساب** | 200 با ساختار غنی: `contractType/primaryRealtorList/secondaryRealtorList/realtorsListDecider/status/creator` — مسیر قرارداد per-realtor محدود اما فعال | TO: 200/total=1 |
+| ۶ | **توکن ARM پس از انقضای نشست اپ زنده ماند** | نشست سطح اپ ۱۵:۲۹Z منقضی؛ توکن ARM در ۲۲:۰۰+ تهران همچنان 200 می‌گرفت ⇒ TTL توکن ARM > TTL نشست ما؛ امکان sync بدون پیامک جدید | probe-realtors: 200/total=291 کارشناس |
+| ۷ | **کندی گذرأ ARM** | ~۲۲:۲۰ تهران چند endpoint (از جمله enums عمومی) تا ۲۰s معلق شد؛ سپس بازیابی (enums 200 در 13s) — دیمون sync باید timeout سخاوت‌مندانه داشته باشد (fetchAllPages فعلی 30s است — کافی) | پروب‌های قبل/بعد |
+| ۸ | **ساختار رکورد معامله** | `traded-count` ردیف‌ها: `_id, contractDate, contractHolo, eventsCount, property, propertyCode, propertyCustomer, request, requestCode, requestCustomer, suggestedPropertyCount` — عین آداپتور فعلی + ارجاع‌های تودرتو property/request | rowKeys لاگ |
+
+**پیامدها:** (الف) مسیر sync production بدون تغییر بیشتر داده‌ده است — `SYNC-exact-range` با کوئری دقیق `buildReportDateRange` → 724 رکورد؛ نخستین sync پس از اتصال ARM مالک جداول production را پر می‌کند (سه‌لایهٔ B.3 + provenance)؛ (ب) خلاصهٔ چهارگانه از خود ردیف‌ها محاسبه می‌شود (کامیت شب ۲)؛ (ج) تعاملات تا انتخاب استراتژی realtor (مثلاً _id از ردیف‌های معامله یا کارشناس واجد شرایط) خالی می‌ماند — try/catch دارد و sync را نمی‌شکند؛ (د) حجم واقعی در دسترسِ توکن مالک: 728 معامله + 291 کارشناس + 1 قرارداد — برنامهٔ Bulk شبانه باید با همین اعداد بازتنظیم شود (نه 200K کل سازمان).
+
 ## §۳ Endpoint Map (جدول کامل)
 
 ### ۳.۱ ARM — احراز هویت و سیستم
@@ -93,9 +110,9 @@
 
 | # | مسیر | متد | پارامترها (query) | اجباری | پاسخ | وضعیت |
 |---|---|---|---|---|---|---|
-| ۸ | `realtor-reports/traded-count-total` | GET | `page, limit, startDate, endDate` (**ISO کامل — کشف B.4**) | **startDate/endDate اجباری** — بدون آن‌ها 400 | ردیف‌ها + خلاصهٔ چهارگانه `totalCount/hasRequestEvent/hasSuggestedProperty/hasBoth` | ✅ همگام‌سازی واقعی · ⚠️ شب ۱: اجباری بودن بازه + totalCount=۰ برای حساب مالک · ⏳ شب ۲: آزمون ISO در برابر جلالی |
-| ۹ | `realtor-reports/traded-count` | GET | `page, limit, startDate, endDate` (ISO) | **startDate/endDate اجباری** (شب ۱) | `{count, list, limit, page, totalPages}` | ✅ کد · ⚠️ شب ۱ |
-| ۱۰ | `realtor-reports/realtor-interactions` | GET | `page, limit, startDate, endDate, realtor (_id), hasMatch` | **(startDate && endDate) || realtor** (کشف B.4 — enabled صفحه) | `{count, list, totalPages}` ردیف‌های `requestRealtorName/propertyRealtorName/count` | ✅ کشف B.4-استاتیک (بدون /list — علت 404 شب ۱) · ⏳ راستی‌آزمایی زندهٔ شب ۲ |
+| ۸ | `realtor-reports/traded-count-total` | GET | `page, limit, startDate, endDate` (ISO کامل) | **startDate/endDate اجباری** — بدون آن‌ها 400 | ردیف‌ها + خلاصهٔ چهارگانه `totalCount/hasRequestEvent/hasSuggestedProperty/hasBoth` | ⚠️ شب ۲: برای حساب realtor همیشه خالی (0 ردیف/0 خلاصه حتی با ISO درست) — خلاصه از خود ردیف‌ها محاسبه می‌شود (resolveTradedSummary) |
+| ۹ | `realtor-reports/traded-count` | GET | `page, limit, startDate, endDate` (ISO) | **startDate/endDate اجباری** (شب ۱) | `{count, list, limit, page, totalPages}` ردیف‌های `_id/contractDate/contractHolo/eventsCount/property/propertyCode/propertyCustomer/request/requestCode/requestCustomer/suggestedPropertyCount` | 🔴 **شب ۲: داده‌دار — 728 رکورد با ISO** (724 با بازهٔ sync) — جلالی صفرِ بی‌صدا؛ realtor پارامتر مؤثر نیست؛ مسیر اصلی Bulk و sync |
+| ۱۰ | `realtor-reports/realtor-interactions` | GET | `page, limit, startDate, endDate, realtor (_id), hasMatch` | **realtor برای پذیرش لازم** (شب ۲: تاریخ-تنها → 400 حتی ISO؛ جلالی → 400) | `{list}` (شب ۲) — ردیف‌های `requestRealtorName/propertyRealtorName/count` (کشف باندل) | ✅ شب ۲: مسیر بدون /list تأیید زنده (404→200) — نیازمند realtor واجد شرایط برای دادهٔ واقعی |
 | ۱۱ | `realtors/list` | GET | `page, limit` (+ `activationStatus[apm]=true` عین UI — کشف B.4) | page/limit | `{fullName, mobile, role.name, businessId.title, creator.fullName, createdAt, active, personnelCode}` | ✅ همگام‌سازی واقعی |
 | ۱۲ | `realtor-reports/suggested-usage` (+`-total`, `/request`) | GET | page/limit/بازه | page/limit | گزارش آگهی پیشنهادی سیستم | ✅ کشف باندل (مصرف ننشده) |
 | ۱۳ | `realtor-reports/property-statistics` / `request-statistics` | GET | status×realtor + فیلترها | — | ماتریس statusData | ✅ کشف باندل |
