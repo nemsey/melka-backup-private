@@ -1356,3 +1356,34 @@ Work Log:
 Stage Summary:
 - لینک عمومی مالک از هر دو مسیر (اندروید/دسکتاپ) با همان نشانی j1xyk7gxxf10-d.space-z.ai زنده است؛ نیازی به تغییر نام یا Update مجدد نیست
 - خطای ۴۱۰/۵۰۰ برای همیشه ریشه‌کن شد: هر ریست/دیپلوی بعدی خودترمیم است
+
+---
+Task ID: phase65-b3-b4static
+Agent: main (Super Z / GLM-5.3)
+Task: اجرای B.3 (ادامهٔ نرمال‌سازی سه‌لایه طبق ملکا-شورا-۰۰۵) و B.4-استاتیک (کشف مسیر تعاملات از باندل SPA بدون تماس API) — دستور ملکا-شورا-۰۰۷
+
+Work Log:
+- بازسازی زمینه از worklog + اسناد: e-v2 سه‌لایه روی ۷ جدول بسته شده؛ خلأهای ادامه = لایهٔ خام نام/موبایل‌ها (نرمال‌سازی درجا آن‌ها را بازنویسی می‌کرد) + عرضه‌وتقاضا بدون provenance + مسیر تعاملات 404 شب ۱
+- **B.3 پیاده‌سازی:**
+  * schema: ۲۱ ستون افزودنی nullable — ۱۷ خام (معامله rawPropertyCustomer/rawRequestCustomer · کارشناس rawFullName/rawMobile/rawBusinessTitle/rawCreator · تعاملات ۲ نام · بازدید ۳ نام · قرارداد rawCreatorName/rawPropertyTitle · آگهی rawOwnerName/rawOwnerMobile · درخواست rawCustomerName/rawCustomerMobile) + provenance ×۴ عرضه‌وتقاضا
+  * normalize.ts: FieldRule.target (مشتق‌سازی لایه ۲ از لایه ۱ عین الگوی rawPrice→price) + FIELD_RULES هفت موجودیت با قواعد raw→target پیش از درجا + NORMALIZATION_VERSION → p65-04-v2
+  * کشف idempotency: شمارش تغییر باید به «مقدار مقصد» گره بخورد (out[dest] !== normalized) نه «خام≠نرمال» — وگرنه اجرای مجدد همیشه تغییر می‌شمارد؛ رفع + تست
+  * آداپتورها لایهٔ خام عین منبع (پس از pickStr — trim استاندارد) + مشتق‌سازی در نقطهٔ نوشتن sync (toXUpsert/toXCreates با normName/normMobile خالص + fallback خام) — مسیر sync هم نرمال+خام می‌نویسد (join نام‌ها بین جدول‌ها امن)
+  * مهر provenance عرضه‌وتقاضا از مسیر sync (extractedAt + extractionBatchId=runId · normalizationVersion تهی صادقانه — موتور نرمال‌سازی روی آن اجرا نمی‌شود) — هر دو مسیر incremental و legacy
+  * مخازن: toXData/toCreateData/متدهای v1 (upsertBatch/replaceInteractions/replaceSupplyDemand) همه با شرطی خام — merge non-null حفظ خام
+- مهاجرت: db push سه‌پایگاه (custom/test/test-repository) + شاهد scripts/verify-b3-three-layer.ts PASS ×۳ (۲۱ ستون موجود، تهی روی ردیف‌های موجود، integrity ok)
+- تست: tests/phase65-b3-three-layer.test.ts — ۲۰ تست شش گروه (مشتق‌سازی هفت موجودیت/سازگاری قدیمی/idempotency/آداپتور/خط لولهٔ واقعی bulkImport با شاهد DB/عرضه‌تقاضا) + به‌روزرسانی آینهٔ DTO (scope-audit: شمارش کلیدهای جدید) + رگرسیون B.1 با اصلاحات B.4
+- **B.4-استاتیک (صفر تماس API):**
+  * دانلود باندل با اسکریپت قابل‌تکرار scripts/fetch-arm-spa-b4.sh — فقط GET ایستای عمومی از arm.melketabriz.ir (index.html 1KB + چانک ورودی ۱MB با resume-loop روی اتصال کند ~۳KB/s + سه چانک صفحه) — همان بیلد قبلی (هش‌ها یکسان)
+  * کشف ۱ (هدف اصلی): صفحهٔ تعاملات ee("realtor-reports/realtor-interactions") «بدون addToURL» — پسوند /list ما عامل 404 شب ۱ بود؛ سازوکار mX فقط با گزینهٔ addToURL فعال می‌شود (realtors/visits دارند، تعاملات نه) → رجیستری اصلاح شد
+  * کشف ۲ (سرنوشت‌ساز): قالب تاریخ UI = ISO کامل — هر دو صفحهٔ TradedStatistics و realtor-interactions با toDate().toISOString() سریال می‌کنند و Qn پارامترها را بدون تبدیل به axios می‌دهد ⇒ قالب جلالی B.1 محل تردید جدی؛ بازتفسیر totalCount=0 شب ۱ (احتمال ریشهٔ قالب به‌همراه scope) → buildReportDateRange → ISO (2018-01-01T00:00:00.000Z تا نیمه‌شب امروز تهران)
+  * کشف ۳: تعاملات فقط با (startDate && endDate) || realtor فعال می‌شود → sync تعاملات بازه می‌گیرد؛ کشف ۴: realtor=_id کارشناس + hasMatch بولی؛ کشف ۵: پاسخ {count,list,totalPages} با ستون‌های عین آداپتور؛ کشف ۶: realtors/list با activationStatus[apm]=true؛ کشف ۷: هدر businessId برای realtor حذف می‌شود (تبیین مکانیکی scope شب ۱)؛ کشف ۸: نقشهٔ Qn (Bearer + refresh تک‌پروازی + base عین رجیستری)
+  * کشف جانبی بحرانی: باگ ماندده مسیر Bulk معاملات — armEntityPath هنوز به traded-count-total (خلاصه، همیشه rowKeys=[]) می‌رفت → traded-count (لیست)؛ پارامترهای بازهٔ Bulk → startDate/endDate ISO
+- مستندسازی: سند Recon §۲-پ جدید (۸ کشف با شاهد باندل) + اصلاح ردیف‌های ۸/۹/۱۰/۱۱ نقشهٔ endpoint + طراحی §۱.۱۴ (وضعیت B.3 + ۴ کشف صادقانه + اصلاحات B.4)
+- شواهد کیفیت: ۷۸۲/۷۸۲ (۷۶۲ قبلی + ۲۰ جدید) دو-سبز پیاپی · tsc صفر · گارد ۶بخشی --strict PASS · dev server /api/health ok mode=real · کامیت f3c6284
+
+Stage Summary:
+- B.3 بسته شد: سه‌لایه حقیقت (Raw→Normalized→Derived) اکنون روی هر ۸ جدول داده کامل است — نام‌ها/موبایل‌ها خام حفظ و لایه ۲ مشتق می‌شود؛ ردیف‌های قدیمی بدون خام سازگار می‌مانند (خروجی عین e-v2)
+- B.4-استاتیک بسته شد: علت 404 تعاملات ریشه‌یابی و رفع شد (بدون /list) + قالب ISO تاریخ اثبات باندلی و اعمال شد + باگ مانددهٔ مسیر Bulk معاملات رفع شد
+- مهم‌ترین سؤال باز برای شب ۲: آزمون تک‌پروب ISO در برابر جلالی روی traded-count (تعیین‌کنندهٔ فرضیهٔ قالب vs scope برای totalCount=0) + راستی‌آزمایی زندهٔ مسیر تعاملات + مسیر فهرست properties/requests (چانک list-of-property-and-request-of-user-CMIM70bT)
+- دیپلوی عمومی (j1xyk7gxxf10-d) همچنان روی بیلد قبلی است — اصلاحات B.3/B.4 با دیپلوی بعدی (Complete) زنده می‌شوند؛ دیمون sync پس از لاگین مالک با کد تازه از این به بعد رکوردهای سه‌لایه می‌نویسد
