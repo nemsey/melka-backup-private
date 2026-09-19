@@ -1,11 +1,11 @@
-import { PrismaClient } from '@prisma/client';
-const db = new PrismaClient();
-async function main() {
-  const sessions = await db.session.findMany({ orderBy: { createdAt: 'desc' }, take: 5 });
-  for (const s of sessions) console.log(s.id.slice(0,8), s.personnelCode, s.role, 'revoked:', s.revoked, 'hasArmToken:', !!s.armTokenEnc, 'expires:', s.expiresAt.toISOString());
-  const st = await db.syncState.findFirst();
-  console.log('syncState:', st ? { lastSuccessAt: st.lastSuccessAt, lastError: st.lastError?.slice(0,80), counts: JSON.parse(st.summaryJson ?? 'null') } : null);
-  const [t, e, i] = await Promise.all([db.transactionRecord.count(), db.expertRecord.count(), db.interactionRecord.count()]);
-  console.log('records: tx', t, 'experts', e, 'interactions', i);
+import { PrismaClient } from "@prisma/client";
+const p = new PrismaClient();
+const now = new Date();
+const ss = await p.session.findMany({ orderBy: { createdAt: "desc" }, take: 8, select: { id: true, createdAt: true, expiresAt: true, revoked: true, armUserType: true, armTokenEnc: true, lastSeenAt: true } });
+for (const s of ss) {
+  console.log(
+    `createdAt=${s.createdAt.toISOString()} expiresAt=${s.expiresAt.toISOString()} revoked=${s.revoked}` +
+    ` expired=${s.expiresAt < now} armUserType=${s.armUserType ?? "-"} armTokenLen=${s.armTokenEnc?.length ?? 0} lastSeen=${s.lastSeenAt?.toISOString() ?? "-"}`
+  );
 }
-main().finally(() => db.$disconnect());
+await p.$disconnect();
