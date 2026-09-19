@@ -6,6 +6,8 @@
  *   --dry                              آزمون خشک با موک — صفر تماس شبکه (فاصله فشرده ۵۰ms)
  *   --request-otp <personnelCode>      فاز A: درخواست پیامک ورود (۱ GET) — نیازمند چراغ‌سبز مالک (قاعده ۱۰)
  *   --run <personnelCode> <otpCode>    فاز B: ورود + ۹ گام + teardown
+ *   --force-window                     لغو گارد پنجرهٔ ۲۲:۰۰–۰۶:۰۰ فقط با اختیار صریح مالک
+ *                                     (دستور ملکا-فوری-۰۰۱ — شاهد window-override در لاگ)
  *
  * گاردها (عین docs/RECON-NIGHT1-RUNBOOK.md):
  *   پنجره ۲۲:۰۰–۰۶:۰۰ تهران (زنده) · سقف ۱۹۰ GET کل · سقف ۲۰۰ GET/endpoint
@@ -39,6 +41,8 @@ const ARM_PUBLIC = cfg.armPublicApiBase;
 
 type Phase = "dry" | "request-otp" | "run";
 let phase: Phase = "dry";
+/** لغو پنجرهٔ شبانه با اختیار صریح مالک — دستور ملکا-فوری-۰۰۱ (۱۴۰۵/۰۶/۲۸)؛ شاهد در لاگ */
+let forceWindow = false;
 let token: string | null = null;
 let refreshToken: string | null = null;
 let loginAt = 0;
@@ -139,7 +143,7 @@ function harvest(body: unknown): {
 // ---------------------------------------------------------------------------
 async function gate(step: string, endpointKey: string): Promise<void> {
   if (existsSync(ABORT_FILE)) throw new ReconAbort("ABORT_REQUESTED");
-  if (phase !== "dry" && !inWindow()) throw new ReconAbort("OUTSIDE_WINDOW");
+  if (phase !== "dry" && !forceWindow && !inWindow()) throw new ReconAbort("OUTSIDE_WINDOW");
   if (getCount >= MAX_GET_TOTAL) throw new ReconAbort("GET_BUDGET_EXHAUSTED");
   if ((getCountPerEndpoint[endpointKey] ?? 0) >= MAX_GET_PER_ENDPOINT) throw new ReconAbort("PER_ENDPOINT_CAP");
   const interval = phase === "dry" ? DRY_INTERVAL_MS : MIN_INTERVAL_MS;
@@ -260,7 +264,8 @@ async function armCall2(
 
   log({
     step,
-    endpoint: path,
+    // کد پرسنلی در مسیر OTP هرگز لاگ نمی‌شود (صفر PII — قاعدهٔ ۴ ران‌بوک)
+    endpoint: step === "request-otp" ? path.replace(/\d{4,}/g, "<code>") : path,
     method,
     status: res.status,
     latencyMs,
@@ -352,12 +357,17 @@ async function main(): Promise<void> {
   else if (args.includes("--request-otp")) phase = "request-otp";
   else if (args.includes("--run")) phase = "run";
   else {
-    console.error("استفاده: --dry | --request-otp <personnelCode> | --run <personnelCode> <otpCode>");
+    console.error("استفاده: --dry | --request-otp <personnelCode> | --run <personnelCode> <otpCode> | --force-window");
     process.exit(2);
   }
-  if (phase !== "dry" && !inWindow()) {
+  forceWindow = args.includes("--force-window");
+  if (phase !== "dry" && forceWindow) {
+    // شاهد لغو پنجره — عین بند ۲ دستور مالک ملکا-فوری-۰۰۱
+    log({ event: "window-override", reason: "owner-order", order: "ملکا-فوری-۰۰۱", rule: "3(§۱.۱۲)", tehranHour: tehranHour() });
+  }
+  if (phase !== "dry" && !forceWindow && !inWindow()) {
     log({ event: "refused", reason: "OUTSIDE_WINDOW", tehranHour: tehranHour() });
-    console.error(`خارج از پنجرهٔ ۲۲:۰۰–۰۶:۰۰ تهران (ساعت فعلی: ${tehranHour()}:xx). اجرا رد شد.`);
+    console.error(`خارج از پنجرهٔ ۲۲:۰۰–۰۶:۰۰ تهران (ساعت فعلی: ${tehranHour()}:xx). اجرا رد شد — لغو پنجره فقط با اختیار صریح مالک + --force-window.`);
     process.exit(3);
   }
   log({ event: "start", phase, base: phase === "dry" ? "(mock)" : ARM, getBudget: MAX_GET_TOTAL, intervalMs: phase === "dry" ? DRY_INTERVAL_MS : MIN_INTERVAL_MS });
@@ -367,7 +377,14 @@ async function main(): Promise<void> {
       // فاز A — ۱ GET؛ پیامک به موبایل ثبت‌شدهٔ مالک در ARM (قاعده ۱۰)
       const personnelCode = args[args.indexOf("--request-otp") + 1];
       if (!personnelCode) throw new Error("کد پرسنلی لازم است");
-      await armCall2("request-otp", ARM, E.requestOtp(personnelCode), {});
+      const r = await armCall2("request-otp", ARM, E.requestOtp(personnelCode), {});
+      if (r.status < 200 || r.status >= 300) {
+        // معیار abort ران‌بوک §۲: status ≠ 2xx → توقف (پیامکی ارسال نشده است)
+        log({ event: "otp-request-failed", status: r.status });
+        console.error(`درخواست OTP با وضعیت HTTP ${r.status} رد شد — پیامکی ارسال نشده است.`);
+        process.exitCode = 4;
+        return;
+      }
       console.log("درخواست OTP ثبت شد — پیامک به موبایل ثبت‌شدهٔ مالک در ARM می‌رود.");
       return;
     }
@@ -428,6 +445,7 @@ async function main(): Promise<void> {
       tokenCleared: true,
     });
     console.log(`\n=== خلاصهٔ ${phase} === GET: ${getCount} · POST: ${postCount} · کف فاصلهٔ مشاهده‌شده: ${minGap}ms · abort: ${abortReason ?? "—"}`);
+    if (phase !== "dry" && abortReason !== null) process.exitCode = 1; // اجرای ناتمام = خروج غیرصفر
     if (phase === "dry") {
       const pass = getCount === 25 && postCount === 1 && minGap !== null && minGap >= DRY_INTERVAL_MS - 5 && abortReason === null;
       console.log(pass ? "DRY-RUN PASS ✓ (۲۵ GET + ۱ POST refresh؛ گاردها فعال)" : `DRY-RUN CHECK: getCount=${getCount} postCount=${postCount} minGap=${minGap} abort=${abortReason}`);
