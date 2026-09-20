@@ -385,20 +385,21 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     await import("@/core/tiles/bootstrap");
   });
 
-  test("چهار کاشی جدید در رجیستری ثبت و ترتیبشان منطقی است", async () => {
+  test("P6.5-11 — کاشی‌های ادغام‌شده در رجیستری جدید با ترتیب منطقی", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    expect(tileRegistry.has("contracts")).toBe(true);
     expect(tileRegistry.has("customer-club")).toBe(true);
-    expect(tileRegistry.has("finance-commission")).toBe(true);
     expect(tileRegistry.has("price-index")).toBe(true);
+    // سه کاشی معاملات/قراردادها/مالی → کاشی ادغامی (بند پ)
+    expect(tileRegistry.has("transactions-contracts")).toBe(true);
+    expect(tileRegistry.has("transactions")).toBe(false);
+    expect(tileRegistry.has("contracts")).toBe(false);
+    expect(tileRegistry.has("finance-commission")).toBe(false);
 
-    // کاشی‌های مدیریتی درون «داشبورد مدیریتی» — بلافاصله پس از معاملات
+    // کاشی ادغامی نخستین فرزند داشبورد مدیریتی — بلافاصله پیش از باشگاه مشتریان
     const ids = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
-    expect(ids.indexOf("transactions")).toBe(0);
-    expect(ids.indexOf("contracts")).toBe(1);
-    expect(ids.indexOf("customer-club")).toBe(2);
-    expect(ids.indexOf("finance-commission")).toBe(3);
-    expect(ids.indexOf("price-index")).toBe(4);
+    expect(ids.indexOf("transactions-contracts")).toBe(0);
+    expect(ids.indexOf("customer-club")).toBe(1);
+    expect(ids.indexOf("price-index")).toBe(2);
     // تنظیمات عمومی روی صفحه هوم (کاشی ریشه آخر) — نه داخل داشبورد مدیریتی
     expect(ids).not.toContain("settings");
     expect(tileRegistry.listRoot("OWNER").at(-1)?.id).toBe("settings");
@@ -406,7 +407,7 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
 
   test("هر کاشی جدید ایجنت اختصاصی متصل به شناسه خود دارد", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    for (const id of ["contracts", "customer-club", "finance-commission", "price-index"]) {
+    for (const id of ["transactions-contracts", "customer-club", "price-index"]) {
       const tile = tileRegistry.get(id)!;
       expect(tile.agent).not.toBeNull();
       expect(tile.agent!.tileId).toBe(id);
@@ -443,7 +444,7 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
 
   test("وضعیت پیش‌فرض فیلتر قراردادها معتبر است", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    const tile = tileRegistry.get("contracts")!;
+    const tile = tileRegistry.get("transactions-contracts")!;
     const statusSetting = tile.settings.find((s) => s.key === "defaultStatus")!;
     expect(statusSetting.defaultValue).toBe("all");
     // گزینه‌های وضعیت همگی در وضعیت‌های واقعی سامانه هستند

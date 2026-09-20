@@ -1,7 +1,7 @@
 /**
  * تست‌های PHASE 1 — P1-01c: اجزای مشترک منبع داده (DataSourceInfo)
  * ------------------------------------------------------
- * DataSourceWarning (سبک معاملات/کارشناسان) + DataSourceAlert (شش صفحه دیگر)
+ * DataSourceWarning (سبک معاملات/کارشناسان) + DataSourceAlert (پنج صفحه دیگر)
  * + حذف ۴ تعریف تکراری رابط DataSourceInfo
  */
 
@@ -57,7 +57,7 @@ describe("P1-01c / DataSourceWarning — قرارداد رندر (سبک معا�
   });
 });
 
-describe("P1-01c / DataSourceAlert — قرارداد رندر (سبک شش صفحه)", () => {
+describe("P1-01c / DataSourceAlert — قرارداد رندر (سبک پنج صفحه)", () => {
   test("show=false: هیچ خروجی", () => {
     expect(renderToString(h(DataSourceAlert, { show: false }, "متن"))).toBe("");
   });
@@ -100,14 +100,13 @@ describe("P1-01c / ادعاهای ساختاری (grep)", () => {
     expect(hits).toEqual([join(SRC, "components/app/shared/data-source.tsx")]);
   });
 
-  test("هر ۸ صفحه CRM از DataSourceWarning یا DataSourceAlert استفاده می‌کنند", () => {
+  test("هر ۷ صفحه CRM (P6.5-11: بازدیدها حذف؛ سه‌گانه ادغام شد) از DataSourceWarning یا DataSourceAlert استفاده می‌کنند", () => {
     const pages: Array<[string, string]> = [
-      ["transactions/TransactionsPage.tsx", "DataSourceWarning"],
+      ["transactions-contracts/TransactionsTab.tsx", "DataSourceWarning"],
       ["experts/ExpertsPage.tsx", "DataSourceWarning"],
-      ["visits/VisitsPage.tsx", "DataSourceAlert"],
       ["supply-demand/SupplyDemandPage.tsx", "DataSourceAlert"],
-      ["contracts/ContractsPage.tsx", "DataSourceAlert"],
-      ["finance-commission/FinancePage.tsx", "DataSourceAlert"],
+      ["transactions-contracts/ContractsTab.tsx", "DataSourceAlert"],
+      ["transactions-contracts/FinanceTab.tsx", "DataSourceAlert"],
       ["price-index/PriceIndexPage.tsx", "DataSourceAlert"],
       ["customer-club/CustomerClubPage.tsx", "DataSourceAlert"],
     ];

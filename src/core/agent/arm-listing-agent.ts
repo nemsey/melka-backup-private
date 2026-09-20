@@ -6,13 +6,15 @@
  * تماس مالک (لایه ۲ غنی‌سازی) و تازگی ثبت آگهی‌ها — با یادگیری از بازخورد مدیر.
  */
 
-import { getPropertyRecordRepository, type PropertyRecordRepository } from "@/core/repositories";
+import { getPropertyRecordRepository, getVisitRepository, type PropertyRecordRepository, type VisitRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
+import { mostVisitedProperties } from "./analyzers";
 import { faNumber } from "@/lib/format";
 
 /** وابستگی‌های تزریق‌پذیر ایجنت کاتالوگ آگهی‌های ARM */
 export interface ArmListingAgentDeps {
   property?: PropertyRecordRepository;
+  visits?: VisitRepository;
 }
 
 /** ردیف سبک برای تحلیل‌ها — فقط فیلدهای لازم */
@@ -27,23 +29,42 @@ interface SlimRow {
 export class ArmListingAgent extends BaseLearningAgent {
   readonly tileId = "arm-listings";
   readonly name = "ایجنت آگهی‌های ملک تبریز";
-  readonly insightDomains = ["VOLUME", "TOP_EXPERTS", "REGION", "COVERAGE", "FRESHNESS"] as const;
+  /** P6.5-11 (بند ج) — VISIT_ATTENTION از کاشی حذف‌شدهٔ بازدیدها مهاجرت کرد */
+  readonly insightDomains = ["VOLUME", "TOP_EXPERTS", "REGION", "COVERAGE", "FRESHNESS", "VISIT_ATTENTION"] as const;
 
   private readonly repo: PropertyRecordRepository;
+  private readonly visitsRepo: VisitRepository;
 
   constructor(deps?: ArmListingAgentDeps) {
     super();
     this.repo = deps?.property ?? getPropertyRecordRepository();
+    this.visitsRepo = deps?.visits ?? getVisitRepository();
   }
 
   protected async computeRawInsights(): Promise<InsightCard[]> {
     const cards: InsightCard[] = [];
-    const [{ total, pending, complete }, sample] = await Promise.all([
+    const [{ total, pending, complete }, sample, visits] = await Promise.all([
       this.repo.countEnrichment(),
       // نمونهٔ تحلیلی ۲۰۰۰ ردیف جدیدترین — سبک و کافی برای بینش‌ها
       this.repo.listArmCatalog({}, 2000),
+      this.visitsRepo.findAll(),
     ]);
     if (total === 0) return cards;
+
+    // ---- P6.5-11 (بند ج): VISIT_ATTENTION — آگهی‌های پربازدید (مهاجرت از کاشی بازدیدها) ----
+    if (visits.length > 0) {
+      const hot = mostVisitedProperties(visits, 3);
+      if (hot.length > 0 && hot[0].count >= 2) {
+        cards.push({
+          key: "al-visit-attention",
+          domain: "VISIT_ATTENTION",
+          title: "آگهی‌های پربازدید مشتریان (از بازدیدهای مهاجرت‌یافته)",
+          body: `آگهی کد «${hot[0].code}» با ${faNumber(hot[0].count)} بازدید، پربازدیدترین آگهی است${hot[1] ? `؛ پس از آن آگهی «${hot[1].code}» با ${faNumber(hot[1].count)} بازدید قرار دارد` : ""}. بازدید مکرر روی یک آگهی یعنی تقاضای متمرکز — اگر فروش نهایی نشده، مذاکرهٔ مجدد با مالک پیشنهاد می‌شود.`,
+          severity: "positive",
+          metrics: hot.map((h) => ({ label: `کد ${h.code}`, value: `${faNumber(h.count)} بازدید` })),
+        });
+      }
+    }
     const rows: SlimRow[] = sample.rows.map((r) => ({
       realtorName: r.realtorName,
       areaName: r.areaName,

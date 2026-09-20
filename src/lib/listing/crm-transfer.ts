@@ -438,7 +438,12 @@ export async function execWithArmToken<T>(
     if ((e.code === "UNAUTHORIZED" || e.code === "OTP_INVALID") && guard.armTokens.refreshToken) {
       const { getMelkProvider } = await import("@/lib/melk-api/provider");
       const refreshed = await getMelkProvider().refreshArmToken(guard.armTokens.refreshToken);
-      await updateSessionArmTokens(guard.sessionId, refreshed);
+      // P6.5-11 (بند ث): توکن تمدیدشده هم در نشست و هم در صندوقچهٔ ماندگار —
+      // زنجیرهٔ «اتصال ماندگار» در تمدیدها هرگز نمی‌شکند
+      const { vaultKeyForSession } = await import("@/lib/auth/arm-vault");
+      await updateSessionArmTokens(guard.sessionId, refreshed, {
+        ownerKey: vaultKeyForSession(guard.personnelCode, guard.role),
+      });
       return fn(refreshed.accessToken);
     }
     throw err;

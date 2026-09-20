@@ -17,6 +17,9 @@ import { createHash } from "crypto";
 const { db } = await import("@/lib/db");
 
 const createdSessions: string[] = [];
+// P6.5-11 (بند ث) — صندوقچهٔ اتصال ماندگار باید در تست‌ها خالی باشد تا
+// نشست‌های بدون توکن، استخراج زندهٔ شبکه‌ای (ensureSeeded) اجرا نکنند
+await db.armConnection.deleteMany({}).catch(() => undefined);
 async function makeSession(role: "OWNER" | "CONSULTANT" = "OWNER") {
   const { createSession } = await import("@/lib/auth/session");
   const { token } = await createSession(
@@ -36,6 +39,7 @@ afterAll(async () => {
   for (const t of createdSessions) {
     await db.session.deleteMany({ where: { tokenHash: createHash("sha256").update(t).digest("hex") } }).catch(() => undefined);
   }
+  await db.armConnection.deleteMany({}).catch(() => undefined);
   await db.$disconnect();
 });
 

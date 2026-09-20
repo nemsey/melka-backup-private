@@ -10,9 +10,9 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BrainCircuit, ArrowLeft, Sparkles } from "lucide-react";
+import { BrainCircuit, ArrowLeft, Sparkles, RefreshCw } from "lucide-react";
 import { api } from "@/lib/client/api";
-import { faNumber } from "@/lib/format";
+import { faNumber, faJalaliShortDateTime } from "@/lib/format";
 import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 
@@ -21,6 +21,61 @@ interface AgentStatsLite {
   memoryCount: number;
   policyVersions: number;
   activePolicyVersion: number;
+}
+
+// ===================== P6.5-11 (بند ت) — تاریخ آخرین بروزرسانی روی هر کاشی =====================
+
+interface FreshnessEntry {
+  lastUpdatedAt: string | null;
+  recordCount: number;
+  sourceLabel: string;
+}
+
+/** کش ماژول‌سطحی — یک fetch مشترک برای همهٔ کارت‌های صفحه (TTL ۶۰ثانیه) */
+const freshnessCache: { data: Record<string, FreshnessEntry> | null; at: number; inflight: Promise<Record<string, FreshnessEntry>> | null } = {
+  data: null,
+  at: 0,
+  inflight: null,
+};
+const FRESHNESS_TTL_MS = 60_000;
+
+function loadFreshness(): Promise<Record<string, FreshnessEntry>> {
+  const now = Date.now();
+  if (freshnessCache.data && now - freshnessCache.at < FRESHNESS_TTL_MS) {
+    return Promise.resolve(freshnessCache.data);
+  }
+  if (freshnessCache.inflight) return freshnessCache.inflight;
+  freshnessCache.inflight = api<{ freshness: Record<string, FreshnessEntry> }>("/api/crm/data-freshness")
+    .then((r) => {
+      freshnessCache.data = r.freshness ?? {};
+      freshnessCache.at = Date.now();
+      return freshnessCache.data;
+    })
+    .catch(() => {
+      freshnessCache.data = freshnessCache.data ?? {};
+      freshnessCache.at = Date.now();
+      return freshnessCache.data;
+    })
+    .finally(() => {
+      freshnessCache.inflight = null;
+    });
+  return freshnessCache.inflight;
+}
+
+/** هوک مشترک: تاریخ آخرین بروزرسانی داده‌های یک کاشی (null = بدون داده/خطا) */
+export function useTileFreshness(tileId: string | null): FreshnessEntry | null {
+  const [entry, setEntry] = useState<FreshnessEntry | null>(null);
+  useEffect(() => {
+    if (!tileId) return;
+    let alive = true;
+    loadFreshness().then((map) => {
+      if (alive) setEntry(map[tileId] ?? null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [tileId]);
+  return entry;
 }
 
 /** آمار یادگیری هر کاشی برای نمایش روی کارت */
@@ -108,6 +163,7 @@ export function TileCard({
   onOpen: () => void;
 }) {
   const stats = useAgentStats(hasAgent ? tileId : null);
+  const freshness = useTileFreshness(tileId);
   const a = ACCENTS[accent] ?? ACCENTS.emerald;
 
   return (
@@ -129,6 +185,19 @@ export function TileCard({
         <div className={`pointer-events-none absolute -bottom-10 -start-10 w-40 h-40 rounded-full blur-3xl ${a.glow}`} aria-hidden />
 
         <CardContent className="relative p-5 sm:p-6 flex flex-col gap-4 min-h-[11rem]">
+          {/* P6.5-11 (بند ت) — تاریخ آخرین بروزرسانی دقیق داده‌های همین کاشی */}
+          {freshness && (
+            <div
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground leading-none"
+              title={freshness.sourceLabel}
+            >
+              <RefreshCw className="w-3 h-3 shrink-0 text-teal-600 dark:text-teal-400" aria-hidden />
+              <span className="truncate">
+                آخرین بروزرسانی: {freshness.lastUpdatedAt ? faJalaliShortDateTime(freshness.lastUpdatedAt) : "هنوز داده‌ای ثبت نشده"}
+              </span>
+            </div>
+          )}
+
           <div className="flex items-start justify-between">
             <div
               className={`w-14 h-14 rounded-2xl ${a.icon} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}

@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * کاشی «مالی و کمیسیون» — صفحه داخلی
+ * تب «مالی و کمیسیون» کاشی ادغامی «معاملات و قراردادهای ملک تبریز» — P6.5-11 (بند پ)
+ * منتقل‌شده عین کاشی قبلی — مالی و کمیسیون تمامی کارشناسان ملک تبریز (بند پ-۲)
  * ------------------------------------------------------
  * • محاسبه‌گر کمیسیون عین خود سامانه: شهر → نوع معامله → ورودی‌ها → نتیجه
  *   (کمیسیون هر طرف + مالیات ارزش افزوده + قابل پرداخت) — تعرفه زنده اتحادیه
@@ -20,9 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, RotateCcw, Calculator, Receipt, Percent, Users, Building2, FileText, TrendingUp } from "lucide-react";
-import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
-import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { parseFaAmount } from "@/core/agent/analyzers";
 import type { CommissionResult } from "@/lib/melk-api/types";
@@ -77,7 +76,7 @@ function parseAmount(v: string): number | undefined {
   return parseFaAmount(v);
 }
 
-export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
+export function FinanceTab() {
   const { toast } = useToast();
 
   // محاسبه‌گر
@@ -130,8 +129,6 @@ export function FinancePage({ settings, onSettingsChange: _osc, userRole: _role,
 
   return (
     <div className="space-y-6">
-      <AgentPanel tileId="finance-commission" />
-
       {/* شاخص‌های اصلی */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[

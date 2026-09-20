@@ -13,13 +13,12 @@ const ROOT = "/home/z/my-project";
 const TILES = join(ROOT, "src/core/tiles/tiles");
 const SHARED = join(ROOT, "src/components/app/shared");
 const CRM_PAGES = [
-  "transactions/TransactionsPage.tsx",
+  "transactions-contracts/TransactionsTab.tsx",
   "experts/ExpertsPage.tsx",
   "supply-demand/SupplyDemandPage.tsx",
-  "visits/VisitsPage.tsx",
-  "finance-commission/FinancePage.tsx",
+  "transactions-contracts/FinanceTab.tsx",
   "price-index/PriceIndexPage.tsx",
-  "contracts/ContractsPage.tsx",
+  "transactions-contracts/ContractsTab.tsx",
   "customer-club/CustomerClubPage.tsx",
 ];
 

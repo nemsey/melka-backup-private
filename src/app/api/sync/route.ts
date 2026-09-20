@@ -35,11 +35,15 @@ export async function POST(request: NextRequest) {
     const { sync, newArmToken } = await syncWithRefresh(guard.armTokens.accessToken, guard.armTokens.refreshToken);
 
     // ذخیره توکن تمدیدشده در نشست خود کاربر (نه هیچ singleton)
+    // P6.5-11 (بند ث): + صندوقچهٔ ماندگار — اتصال در ورود بعدی خودکار بازیابی می‌شود
     if (newArmToken) {
+      const { vaultKeyForSession } = await import("@/lib/auth/arm-vault");
       await updateSessionArmTokens(guard.sessionId, {
         accessToken: newArmToken,
         refreshToken: guard.armTokens.refreshToken,
         userType: guard.armTokens.userType,
+      }, {
+        ownerKey: vaultKeyForSession(guard.personnelCode, guard.role),
       });
     }
 

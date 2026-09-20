@@ -17,12 +17,19 @@
  *  H) شبیه‌سازی اتصال موفق: updateSessionArmTokens → GET connected + userType
  *     (همان کاری که verify موفق انجام می‌دهد — بدون تماس شبکه)
  *  I) جریان کامل مالک: نشست بدون توکن → attach → connected → disconnect → disconnected
+ *
+ * P6.5-11 (بند ث) — اتصال ماندگار ARM:
+ *  · صندوقچهٔ ArmConnection باید بین تست‌ها پاک شود (ایزوله‌سازی)
+ *  · تست جدید L: ورود کد مستر پس از اتصال قبلی ⇒ بازیابی خودکار توکن (بدون پیامک)
  */
 
 import { describe, expect, test, afterAll } from "bun:test";
 import { createHash } from "crypto";
 
 const { db } = await import("@/lib/db");
+
+// P6.5-11 (بند ث) — صندوقچهٔ اتصال ماندگار: خالی در شروع و پایان (ایزوله‌سازی تست‌ها)
+await db.armConnection.deleteMany({}).catch(() => undefined);
 
 const created: string[] = [];
 
@@ -64,6 +71,7 @@ afterAll(async () => {
   for (const t of created) {
     await db.session.deleteMany({ where: { tokenHash: createHash("sha256").update(t).digest("hex") } }).catch(() => undefined);
   }
+  await db.armConnection.deleteMany({}).catch(() => undefined);
   await db.auditLog.deleteMany({ where: { actor: { in: ["930001", "930002"] } } }).catch(() => undefined);
   await db.otpAttempt.deleteMany({ where: { personnelCode: { in: ["930001", "930002", "123", "1234567890123"] } } }).catch(() => undefined);
   await db.$disconnect();
@@ -201,6 +209,8 @@ describe("P6.5-07 — چرخه اتصال نشست (بدون تماس شبکه �
   test("H) updateSessionArmTokens (اثر verify موفق): توکن + userType متصل می‌شود", async () => {
     const { GET } = await import("@/app/api/arm/connection/route");
     const { updateSessionArmTokens } = await import("@/lib/auth/session");
+    // ایزوله‌سازی از اتصال ماندگار تست‌های قبلی (این تست چرخهٔ نشست را می‌سنجد نه بند ث را)
+    await db.armConnection.deleteMany({ where: { ownerKey: "master" } }).catch(() => undefined);
     // مالکِ واردشده با کد مستر — بدون توکن
     const s = await makeSession("OWNER", null);
     let body = (await (await GET(getReq(s.token) as never)).json()) as {
@@ -227,6 +237,8 @@ describe("P6.5-07 — چرخه اتصال نشست (بدون تماس شبکه �
     const { GET } = await import("@/app/api/arm/connection/route");
     const { updateSessionArmTokens, clearSessionArmTokens } = await import("@/lib/auth/session");
 
+    // ایزوله‌سازی از اتصال ماندگار تست‌های قبلی (این تست چرخهٔ نشست را می‌سنجد نه بند ث را)
+    await db.armConnection.deleteMany({ where: { ownerKey: "master" } }).catch(() => undefined);
     const s = await makeSession("OWNER", null);
     const status = async () =>
       ((await (await GET(getReq(s.token) as never)).json()) as { connection: { status: string } }).connection.status;
@@ -243,6 +255,8 @@ describe("P6.5-07 — چرخه اتصال نشست (بدون تماس شبکه �
   test("J) توکن ARM هرگز به نشست دیگری نشت نمی‌کند (SEC-3) — نشست دوم بدون توکن می‌ماند", async () => {
     const { GET } = await import("@/app/api/arm/connection/route");
     const { updateSessionArmTokens } = await import("@/lib/auth/session");
+    // ایزوله‌سازی: مشاور ۹۳۰۰۰۰۲ هیچ اتصال ماندگاری ندارد (صندوقچهٔ خودش خالی)
+    await db.armConnection.deleteMany({ where: { ownerKey: "930002" } }).catch(() => undefined);
     const owner = await makeSession("OWNER", null);
     const other = await makeSession("CONSULTANT", null);
 
@@ -252,6 +266,27 @@ describe("P6.5-07 — چرخه اتصال نشست (بدون تماس شبکه �
     const otherBody = (await (await GET(getReq(other.token) as never)).json()) as { connection: { status: string } };
     expect(ownerBody.connection.status).toBe("connected");
     expect(otherBody.connection.status).toBe("disconnected");
+  });
+
+  test("L) P6.5-11 (بند ث) — اتصال ماندگار: ورود مجدد کد مستر ⇒ بازیابی خودکار توکن ARM (بدون پیامک)", async () => {
+    const { GET } = await import("@/app/api/arm/connection/route");
+    const { updateSessionArmTokens } = await import("@/lib/auth/session");
+    // مالک با کد مستر وارد و از تنظیمات به ARM وصل می‌شود
+    const first = await makeSession("OWNER", null);
+    await updateSessionArmTokens(first.context.sessionId, { accessToken: "durable-token-1", refreshToken: "durable-refresh-1", userType: "realtor" }, { ownerKey: "master", personnelCode: "410031320" });
+
+    // خروج (نشست باطل؛ صندوقچه ماندگار می‌ماند)
+    const { revokeSession } = await import("@/lib/auth/session");
+    await revokeSession(first.token, "USER_LOGOUT");
+
+    // ورود مجدد با کد مستر ⇒ توکن ARM خودکار بازیابی می‌شود — بدون پیامک مجدد
+    const second = await makeSession("OWNER", null);
+    const body = (await (await GET(getReq(second.token) as never)).json()) as {
+      connection: { status: string };
+      vault: { durable: boolean } | null;
+    };
+    expect(body.connection.status).toBe("connected");
+    expect(body.vault?.durable).toBe(true);
   });
 });
 

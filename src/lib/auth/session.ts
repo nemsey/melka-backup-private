@@ -12,6 +12,7 @@ import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { logAuth } from "@/lib/logger";
 import { defaultAccessScopeForRole } from "@/core/repositories";
 import { decryptSecret, encryptSecret, generateSessionToken, hashToken } from "./crypto";
+import { persistArmTokensToVault, restoreArmTokensFromVault, vaultKeyForSession } from "./arm-vault";
 import type { ArmTokens, AuthUserInfo, UserRole } from "@/lib/melk-api/types";
 
 export interface SessionContext extends AuthUserInfo {
@@ -35,6 +36,43 @@ export async function createSession(
   const token = generateSessionToken();
   const expiresAt = new Date(Date.now() + cfg.sessionTtlHours * 3600 * 1000);
 
+  // ---- P6.5-11 (بند ث) — اتصال ماندگار ARM: در هر ورود، بدون پیامک ----
+  // ۱) ورود OTP: توکن تازه در دست است ⇒ علاوه بر نشست، در صندوقچه هم ماندگار می‌شود
+  //    (نشست OWNER که با MANAGER_CODE آمده = مالک ⇒ آینه به کلید master)
+  // ۲) ورود کد مستر (بدون توکن): بازیابی خودکار از صندوقچه —
+  //    «با هر ورود به اپلیکیشن نیاز به تجدید اتصال نیست»
+  let effectiveTokens = armTokens ?? null;
+  let restoredFromVault = false;
+  if (effectiveTokens) {
+    const vaultKey = vaultKeyForSession(user.personnelCode, user.role);
+    await persistArmTokensToVault({
+      ownerKey: vaultKey,
+      armTokens: effectiveTokens,
+      personnelCode: user.personnelCode,
+      displayName: user.displayName,
+    }).catch(() => undefined);
+    // مالک با کد پرسنلی MANAGER_CODE وارد شده (نقش OWNER) ⇒ آینهٔ همان توکن روی master
+    if (user.role === "OWNER" && vaultKey !== "master") {
+      await persistArmTokensToVault({
+        ownerKey: "master",
+        armTokens: effectiveTokens,
+        personnelCode: user.personnelCode,
+        displayName: user.displayName,
+      }).catch(() => undefined);
+    }
+  } else {
+    // Fail-safe: هر خطای صندوقچه (مثلاً جدول ناموجود) هرگز ورود را نمی‌شکند
+    try {
+      const restored = await restoreArmTokensFromVault(user.personnelCode, user.role);
+      if (restored) {
+        effectiveTokens = restored;
+        restoredFromVault = true;
+      }
+    } catch {
+      // صندوقچهٔ ماندگار در دسترس نیست — ورود بدون بازیابی ادامه می‌یابد
+    }
+  }
+
   const session = await db.session.create({
     data: {
       tokenHash: hashToken(token),
@@ -48,11 +86,11 @@ export async function createSession(
       expiresAt,
       ip: meta.ip,
       userAgent: meta.userAgent,
-      ...(armTokens?.accessToken
+      ...(effectiveTokens?.accessToken
         ? {
-            armTokenEnc: encryptSecret(armTokens.accessToken),
-            armRefreshTokenEnc: armTokens.refreshToken ? encryptSecret(armTokens.refreshToken) : null,
-            armUserType: armTokens.userType ?? null,
+            armTokenEnc: encryptSecret(effectiveTokens.accessToken),
+            armRefreshTokenEnc: effectiveTokens.refreshToken ? encryptSecret(effectiveTokens.refreshToken) : null,
+            armUserType: effectiveTokens.userType ?? null,
           }
         : {}),
     },
@@ -62,7 +100,7 @@ export async function createSession(
   logAuth("login", {
     userId: user.personnelCode,
     status: "ok",
-    detail: { role: user.role, armSession: Boolean(armTokens?.accessToken) },
+    detail: { role: user.role, armSession: Boolean(effectiveTokens?.accessToken), restoredFromVault },
   });
 
   return {
@@ -73,7 +111,7 @@ export async function createSession(
       displayName: user.displayName,
       role: user.role,
       expiresAt: expiresAt.toISOString(),
-      armTokens: armTokens ?? null,
+      armTokens: effectiveTokens ?? null,
       // P6.5-04-i — دامنهٔ داده در زمینهٔ نشست تازه (عین ستون ذخیره‌شده)
       accessScope: session.accessScope,
       branchId: session.branchId,
@@ -125,8 +163,14 @@ export function sessionToArmTokens(session: {
 /**
  * به‌روزرسانی توکن‌های ARM نشست (پس از تمدید یا «اتصال ARM با کد پیامکی» از تنظیمات)
  * P6.5-07: userType هم ذخیره می‌شود (قبلاً در تمدید از دست می‌رفت)
+ * P6.5-11 (بند ث): توکن تازه هم‌زمان در صندوقچهٔ ماندگار هم نوشته می‌شود
+ * تا زنجیرهٔ «اتصال ماندگار» در تمدیدها هرگز نشکند.
  */
-export async function updateSessionArmTokens(sessionId: string, armTokens: ArmTokens): Promise<void> {
+export async function updateSessionArmTokens(
+  sessionId: string,
+  armTokens: ArmTokens,
+  vault?: { ownerKey: string; personnelCode?: string | null; displayName?: string | null }
+): Promise<void> {
   await db.session.update({
     where: { id: sessionId },
     data: {
@@ -135,6 +179,14 @@ export async function updateSessionArmTokens(sessionId: string, armTokens: ArmTo
       armUserType: armTokens.userType ?? null,
     },
   });
+  if (vault) {
+    await persistArmTokensToVault({
+      ownerKey: vault.ownerKey,
+      armTokens,
+      personnelCode: vault.personnelCode ?? null,
+      ...(vault.displayName !== undefined ? { displayName: vault.displayName } : {}),
+    }).catch(() => undefined);
+  }
 }
 
 /**
@@ -181,6 +233,8 @@ export async function revokeSession(token: string, reason = "USER_LOGOUT"): Prom
   const session = await db.session.findUnique({ where: { tokenHash } });
   if (!session) return false;
   await db.session.update({ where: { id: session.id }, data: { revoked: true, revokedReason: reason, armTokenEnc: null, armRefreshTokenEnc: null } });
+  // P6.5-11 (بند ث): خروج فقط توکن‌های «نشست» را پاک می‌کند —
+  // صندوقچهٔ ماندگار دست‌نخورده می‌ماند تا ورود بعدی خودکار وصل شود.
   // P2-05 — رویداد الزامی خروج
   logAuth("logout", { userId: session.personnelCode, status: "ok", detail: { reason } });
   return true;

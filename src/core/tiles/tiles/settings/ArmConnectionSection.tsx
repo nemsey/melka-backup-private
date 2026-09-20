@@ -36,6 +36,15 @@ interface ArmConnectionResponse {
     role: string;
     sessionExpiresAt: string;
   };
+  /** P6.5-11 (بند ث) — وضعیت صندوقچهٔ اتصال ماندگار */
+  vault: {
+    durable: boolean;
+    status: string | null;
+    displayName: string | null;
+    personnelCode: string | null;
+    lastRefreshedAt: string | null;
+    lastRestoredAt: string | null;
+  } | null;
   sync: {
     lastSuccessAt: string | null;
     lastError: string | null;
@@ -250,6 +259,13 @@ export function ArmConnectionSection() {
               <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
               نشست جاری شما به سامانه ARM متصل است — استخراج داده واقعی و «همگام‌سازی داده‌ها» فعال است.
             </p>
+            {data?.vault?.durable && (
+              <p className="flex items-center gap-1.5 text-teal-700 dark:text-teal-300">
+                <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden />
+                اتصال ماندگار است: با هر ورود بعدی به اپلیکیشن، همین اتصال به‌طور خودکار بازیابی می‌شود — نیازی به پیامک مجدد نیست.
+                {data.vault.lastRestoredAt ? ` (آخرین بازیابی خودکار: ${faDateTime(data.vault.lastRestoredAt)})` : ""}
+              </p>
+            )}
             {data?.sync?.lastSuccessAt && (
               <p className="text-muted-foreground">
                 آخرین استخراج موفق: {faDateTime(data.sync.lastSuccessAt)} — {faNumber(data.sync.transactionCount)} معامله و{" "}

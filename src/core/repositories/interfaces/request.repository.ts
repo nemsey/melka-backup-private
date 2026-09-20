@@ -33,6 +33,10 @@ export interface RequestRepository {
   listArmCatalog(filter: ArmRequestCatalogFilter, limit: number): Promise<{ rows: ArmRequestCatalogRow[]; total: number }>;
   /** P6.5-10 — شمارش غنی‌سازی درخواست‌های ARM: total / pending / complete */
   countArmEnrichment(): Promise<EnrichmentCounts>;
+  /** P6.5-11 (بند ب) — شمارش کل رکوردهای کاتالوگ ARM (source='arm') — مبنای بوت‌استرپ checkpoint */
+  countArmSource(): Promise<number>;
   /** P6.5-10 — برش ردیف‌های در انتظار غنی‌سازی (جدیدترین اول؛ rowIds = هدفگذاری دقیق) */
   listPendingArmEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]>;
+  /** P6.5-11 (بند پ-۵) — تماس درخواست‌دهنده بر اساس کددرخواست‌ها (دسته‌ای؛ source='arm') */
+  findArmRequesterContactsByCodes(requestCodes: string[]): Promise<Array<{ requestCode: string; customerName: string | null; customerMobile: string | null }>>;
 }

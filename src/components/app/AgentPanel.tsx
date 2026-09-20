@@ -115,6 +115,16 @@ export const DOMAIN_FA: Record<string, string> = {
   CHURN: "هشدار ریزش",
   EVENT_MGMT: "رویدادهای پیگیری",
   ARM_SYNC: "ثبت در سامانه آرم",
+  // P6.5-11 — کاشی ادغامی «معاملات و قراردادهای ملک تبریز» + بینش‌های مهاجرت‌یافتهٔ بازدیدها
+  CONTACT_COVERAGE: "پوشش اطلاعات تماس",
+  CONTRACT_TEXT: "متن قرارداد",
+  SHARE_AGGREGATE: "تجمیع حق‌السهم",
+  VISIT_VOLUME: "حجم بازدیدها",
+  VISIT_TREND: "روند بازدیدها",
+  VISIT_STATUS: "نرخ بررسی بازدیدها",
+  VISIT_LEADERSHIP: "بررسی‌کنندگان پیشرو",
+  VISIT_ATTENTION: "آگهی‌های پربازدید",
+  CUST_CONTACT: "دادهٔ تماس مشتریان",
 };
 
 export function AgentPanel({ tileId }: { tileId: string }) {

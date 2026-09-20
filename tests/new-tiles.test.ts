@@ -245,7 +245,8 @@ describe("کاشی‌ها و ایجنت‌های جدید", () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const { getAgent } = await import("@/core/agent");
 
-    for (const id of ["extraction", "visits", "supply-demand"]) {
+    // P6.5-11: کاشی بازدیدها حذف شد — جای آن کاشی ادغامی و عرضه‌وتقاضا/استخراج می‌مانند
+    for (const id of ["extraction", "supply-demand"]) {
       const tile = tileRegistry.get(id);
       expect(tile).not.toBeNull();
       expect(tile!.agent).not.toBeNull();

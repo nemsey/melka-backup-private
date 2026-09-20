@@ -153,6 +153,11 @@ export class PrismaRequestRepository implements RequestRepository {
     return { total, pending, complete: total - pending };
   }
 
+  /** P6.5-11 (بند ب) — شمارش کل رکوردهای کاتالوگ ARM (source='arm') */
+  async countArmSource(): Promise<number> {
+    return this.client.requestRecord.count({ where: { source: "arm" } });
+  }
+
   /** برش ردیف‌های در انتظار غنی‌سازی — جدیدترین اول (بیشترین ارزش فوری) */
   async listPendingArmEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]> {
     const where: Prisma.RequestRecordWhereInput =
@@ -166,5 +171,22 @@ export class PrismaRequestRepository implements RequestRepository {
       select: { id: true, requestCode: true },
     });
     return records.map((r) => ({ id: r.id, naturalKey: r.requestCode ?? "" }));
+  }
+
+  /** P6.5-11 (بند پ-۵) — تماس درخواست‌دهنده بر اساس کددرخواست‌ها (دسته‌ای؛ source='arm')
+   * فقط خواندن ستون‌های موجود — هیچ نوشتنی انجام نمی‌شود (قانون دادهٔ خام) */
+  async findArmRequesterContactsByCodes(
+    requestCodes: string[]
+  ): Promise<Array<{ requestCode: string; customerName: string | null; customerMobile: string | null }>> {
+    if (requestCodes.length === 0) return [];
+    const codes = [...new Set(requestCodes)].filter((c) => c !== "");
+    if (codes.length === 0) return [];
+    const records = await this.client.requestRecord.findMany({
+      where: { source: "arm", requestCode: { in: codes } },
+      select: { requestCode: true, customerName: true, customerMobile: true },
+    });
+    return records
+      .filter((r): r is { requestCode: string; customerName: string | null; customerMobile: string | null } => r.requestCode !== null)
+      .map((r) => ({ requestCode: r.requestCode as string, customerName: r.customerName, customerMobile: r.customerMobile }));
   }
 }

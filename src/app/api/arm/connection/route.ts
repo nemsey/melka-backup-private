@@ -39,6 +39,7 @@ import { classifySmsSendFailure } from "@/lib/melk-api/sms";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { audit, clearSessionArmTokens, updateSessionArmTokens } from "@/lib/auth/session";
+import { getArmVaultStatus, vaultKeyForSession } from "@/lib/auth/arm-vault";
 import { getSyncState } from "@/lib/melk-api/sync";
 
 /** نرمال‌سازی ارقام فارسی/عربی به لاتین */
@@ -54,6 +55,9 @@ export async function GET(request: NextRequest) {
 
   const hasToken = Boolean(guard.armTokens?.accessToken);
   const sync = await getSyncState();
+  // P6.5-11 (بند ث) — وضعیت صندوقچهٔ ماندگار (بدون افشای توکن):
+  // آیا اتصال در ورودهای بعدی خودکار بازیابی می‌شود؟
+  const vault = await getArmVaultStatus(guard.personnelCode, guard.role);
   return Response.json({
     ok: true,
     connection: {
@@ -62,6 +66,14 @@ export async function GET(request: NextRequest) {
       userType: guard.armTokens?.userType ?? null,
       role: guard.role,
       sessionExpiresAt: guard.expiresAt,
+    },
+    vault: {
+      durable: vault.exists,
+      status: vault.status,
+      displayName: vault.displayName,
+      personnelCode: vault.personnelCode,
+      lastRefreshedAt: vault.lastRefreshedAt,
+      lastRestoredAt: vault.lastRestoredAt,
     },
     sync: {
       lastSuccessAt: sync.lastSuccessAt,
@@ -166,12 +178,17 @@ export async function POST(request: NextRequest) {
         const result = await provider.verifyOtp(code, otp);
         await recordAttempt(code, "VERIFY_OTP_ARM", true, ip);
 
-        // توکن‌ها فقط به «نشست خودِ درخواست‌کننده» (SEC-3)
-        await updateSessionArmTokens(guard.sessionId, result.armTokens);
+        // توکن‌ها فقط به «نشست خودِ درخواست‌کننده» (SEC-3) + صندوقچهٔ ماندگار (بند ث P6.5-11):
+        // اتصال مالک از این پس در ورودهای بعدی خودکار بازیابی می‌شود — بدون پیامک مجدد
+        await updateSessionArmTokens(guard.sessionId, result.armTokens, {
+          ownerKey: vaultKeyForSession(guard.personnelCode, guard.role),
+          personnelCode: code,
+          displayName: result.user.displayName,
+        });
         await audit(
           "ARM_CONNECT",
           guard.personnelCode,
-          `armCode=${code}; userType=${result.armTokens.userType ?? "-"}; role=${guard.role}`
+          `armCode=${code}; userType=${result.armTokens.userType ?? "-"}; role=${guard.role}; vault=${vaultKeyForSession(guard.personnelCode, guard.role)}`
         );
 
         // استخراج داده واقعی در پس‌زمینه — مسدودکننده پاسخ نیست؛ خطایش فقط لاگ می‌شود
@@ -229,7 +246,13 @@ export async function POST(request: NextRequest) {
     // ---------- ۴) ریست اتصال ARM (دستور مالک P6.5-09 — عین ریست PM) ----------
     case "reset": {
       await clearSessionArmTokens(guard.sessionId);
-      await audit("ARM_RESET", guard.personnelCode, `role=${guard.role}`);
+      // P6.5-11: ریست = چراغ قرمزِ تمیز — توکن صندوقچهٔ ماندگار هم پاک می‌شود
+      // (خواستهٔ صریح مالک: «از گام اول از نو وصل شود»)؛ ریست نشست را ابطال نمی‌کند
+      const { getIntegrationRepository } = await import("@/core/repositories");
+      await getIntegrationRepository()
+        .clearArmConnectionTokens(vaultKeyForSession(guard.personnelCode, guard.role))
+        .catch(() => undefined);
+      await audit("ARM_RESET", guard.personnelCode, `role=${guard.role}; vaultCleared=true`);
       return Response.json({
         ok: true,
         message: "اتصال ARM بازنشانی شد — چراغ نشانگر قرمز می‌شود. از گام اول (کد پرسنلی + پیامک) دوباره وصل شوید.",

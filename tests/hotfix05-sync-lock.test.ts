@@ -17,10 +17,14 @@ const { db } = await import("@/lib/db");
 
 const createdSessions: string[] = [];
 
+// P6.5-11 (بند ث) — صندوقچهٔ خالی ⇒ نشست آزمایشی بدون بازیابی خودکار توکن (بدون تماس شبکه)
+await db.armConnection.deleteMany({}).catch(() => undefined);
+
 afterAll(async () => {
   for (const t of createdSessions) {
     await db.session.deleteMany({ where: { tokenHash: createHash("sha256").update(t).digest("hex") } }).catch(() => undefined);
   }
+  await db.armConnection.deleteMany({}).catch(() => undefined);
   await db.$disconnect();
 });
 

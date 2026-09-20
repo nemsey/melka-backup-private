@@ -36,10 +36,12 @@ import { extractAddress, extractDetailItems, extractPagedList, extractPersonInfo
 import {
   getPropertyRecordRepository,
   getRequestRepository,
+  getIntegrationRepository,
   type PropertyBulkInput,
   type ArmRequestBulkRow,
   type PropertyRecordRepository,
   type RequestRepository,
+  type SyncCheckpointDTO,
 } from "@/core/repositories";
 
 // ==========================================================================
@@ -203,6 +205,17 @@ export interface ArmCatalogSyncResult {
   totalAtSource: number;
   durationMs: number;
   errorCode?: string;
+  /** P6.5-11 (بند ب) — ازسرگیری: اطلاعات چرخه و نقطهٔ ادامه */
+  resumedFromPage?: number;
+  cycleId?: string;
+  checkpoint?: {
+    lastCompletedPage: number;
+    totalPages: number;
+    phase: string;
+    remainingPages: number;
+    /** دادهٔ تازه‌ای در مبدأ دیده شده که چرخهٔ جاری پوششش نمی‌دهد */
+    newAtSource: boolean;
+  };
 }
 
 export interface ArmCatalogEnrichResult {
@@ -216,6 +229,74 @@ export interface ArmCatalogEnrichResult {
   total: number;
   durationMs: number;
   errorCode?: string;
+}
+
+// ==========================================================================
+// P6.5-11 (بند ب) — نقطهٔ ازسرگیری: «ادامه از جاییکه قطع شد، نه از ابتدا»
+// ==========================================================================
+
+/**
+ * تصمیم نقطهٔ شروع چرخه — سه حالت:
+ *   ۱) checkpoint در جریان با همان pageSize ⇒ ادامه از lastCompletedPage + 1
+ *   ۲) checkpoint کامل/ناسازگار/ناموجود ⇒ چرخهٔ تازه از صفحهٔ ۱ (upsert بی‌اثر)
+ *   ۳) بوت‌استرپ: پیشرفت موجود در DB بدون checkpoint (دادهٔ P6.5-10) ⇒
+ *      floor(count/pageSize) صفحهٔ کامل فرض می‌شود و از بعدش ادامه می‌رویم
+ *
+ * قانون ترتیب (عین bulk-import §۱.۴-۳): دادهٔ صفحه اول «نوشته» می‌شود،
+ * سپس checkpoint جلو می‌رود — قطع برق/شبکه هیچ‌گاه حفرهٔ داده نمی‌سازد.
+ */
+export function resolveCycleStart(
+  saved: SyncCheckpointDTO | null,
+  pageSize: number,
+  existingCount: number
+): { startPage: number; cycleId: string; resumed: boolean; lastCompletedPage: number } {
+  // حالت ۱ — ازسرگیری چرخهٔ ناتمام با همان اندازهٔ صفحه
+  if (saved && saved.phase === "in-progress" && saved.pageSize === pageSize && saved.lastCompletedPage > 0) {
+    return { startPage: saved.lastCompletedPage + 1, cycleId: saved.cycleId, resumed: true, lastCompletedPage: saved.lastCompletedPage };
+  }
+  // حالت ۳ — بوت‌استرپ پیشرفت تاریخی (P6.5-10 پیش از وجود checkpoint)
+  if (!saved && existingCount > pageSize) {
+    const pages = Math.floor(existingCount / pageSize);
+    return { startPage: pages + 1, cycleId: `bootstrap-p6511-${randomUUID().slice(0, 8)}`, resumed: true, lastCompletedPage: pages };
+  }
+  // حالت ۲ — چرخهٔ تازه
+  return { startPage: 1, cycleId: `cycle-${randomUUID().slice(0, 8)}`, resumed: false, lastCompletedPage: 0 };
+}
+
+/** ذخیرهٔ امن checkpoint پس از هر صفحهٔ کامل (داده نوشته شد ⇒ حالا جلو می‌رویم) */
+async function advanceCheckpoint(
+  entity: "listings" | "requests",
+  cp: { cycleId: string; pageSize: number; lastCompletedPage: number; totalPages: number; totalAtSource: number },
+  phase: "in-progress" | "complete"
+): Promise<void> {
+  const repo = getIntegrationRepository();
+  await repo.upsertSyncCheckpoint({
+    id: entity,
+    cycleId: cp.cycleId,
+    pageSize: cp.pageSize,
+    lastCompletedPage: cp.lastCompletedPage,
+    totalPages: cp.totalPages,
+    totalAtSource: cp.totalAtSource,
+    phase,
+    ...(phase === "complete" ? { completedAt: new Date() } : { completedAt: null }),
+  });
+}
+
+/** نمای خواندنی checkpoint برای نتیجهٔ sync */
+function checkpointView(
+  savedLastCompleted: number,
+  totalPages: number,
+  phase: string,
+  totalAtSource: number,
+  savedTotalAtSource: number
+) {
+  return {
+    lastCompletedPage: savedLastCompleted,
+    totalPages,
+    phase,
+    remainingPages: Math.max(0, totalPages - savedLastCompleted),
+    newAtSource: totalAtSource > savedTotalAtSource && savedTotalAtSource > 0,
+  };
 }
 
 // ==========================================================================
@@ -244,7 +325,7 @@ async function fetchListPage(
   return { rows, total: extracted.total, totalPages };
 }
 
-/** همگام‌سازی کامل لایهٔ فهرست آگهی‌ها → PropertyRecord */
+/** همگام‌سازی کامل لایهٔ فهرست آگهی‌ها → PropertyRecord (با نقطهٔ ازسرگیری — بند ب P6.5-11) */
 export async function syncArmListingsCatalog(
   token: string,
   opts: { pageSize?: number; maxPages?: number; repos?: { property?: PropertyRecordRepository } } = {}
@@ -259,13 +340,26 @@ export async function syncArmListingsCatalog(
     duplicates: 0, errors: 0, totalAtSource: 0, durationMs: 0,
   };
 
+  // ---- P6.5-11 (بند ب): تصمیم نقطهٔ شروع — ادامه از آخرین صفحهٔ کامل-ذخیره‌شده ----
+  const integration = getIntegrationRepository();
+  const savedCp = await integration.getSyncCheckpoint("listings");
+  const existingCount = await repo.countEnrichment().then((c) => c.total).catch(() => 0);
+  const cycle = resolveCycleStart(savedCp, pageSize, existingCount);
+  out.resumedFromPage = cycle.resumed ? cycle.startPage : undefined;
+  out.cycleId = cycle.cycleId;
+  let lastCompleted = cycle.lastCompletedPage;
+  let savedTotalAtSource = savedCp?.totalAtSource ?? 0;
+  let reachedEndPage = 1;
+
   try {
-    let page = 1;
-    let endPage = 1;
+    let page = cycle.startPage;
+    let endPage = page;
+    const pagesBudget = cycle.resumed ? Math.max(1, maxPages - 1) : maxPages;
     do {
       const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.propertiesList, page, pageSize);
       out.totalAtSource = total;
-      endPage = Math.min(tp, maxPages);
+      savedTotalAtSource = savedTotalAtSource || total;
+      endPage = Math.min(tp, page + pagesBudget - 1);
       out.pages = page;
       const inputs = rows
         .map((r) => mapArmPropertyListRow(r))
@@ -276,18 +370,30 @@ export async function syncArmListingsCatalog(
       out.updated += stats.updated;
       out.duplicates += stats.duplicates;
       out.errors += stats.errors;
+      // داده نوشته شد ⇒ حالا checkpoint جلو می‌رود (ترتیب حیاتی — حفره داده ممنوع)
+      lastCompleted = page;
+      await advanceCheckpoint("listings", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: lastCompleted, totalPages: tp, totalAtSource: total }, "in-progress");
       page += 1;
       if (page <= endPage) await sleep(catalogRateMs());
     } while (page <= endPage);
+    // چرخه به انتها رسید؟ (آخرین صفحهٔ کامل = totalPages)
+    const finalCp = await integration.getSyncCheckpoint("listings");
+    if (finalCp && finalCp.lastCompletedPage >= endPage) {
+      await advanceCheckpoint("listings", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource }, "complete");
+    }
+    reachedEndPage = endPage;
     out.ok = true;
+    out.checkpoint = checkpointView(lastCompleted, endPage, lastCompleted >= endPage ? "complete" : "in-progress", out.totalAtSource, savedTotalAtSource);
   } catch (err) {
     out.errorCode = (err as { code?: string })?.code ?? "UNKNOWN";
+    // خطا = دادهٔ تا اینجا محفوظ؛ checkpoint روی آخرین صفحهٔ کامل ایستاده — دفع بعد از همان‌جا ادامه
+    out.checkpoint = checkpointView(lastCompleted, Math.max(reachedEndPage, lastCompleted), "in-progress", out.totalAtSource, savedTotalAtSource);
   }
   out.durationMs = Date.now() - started;
   return out;
 }
 
-/** همگام‌سازی کامل لایهٔ فهرست درخواست‌ها → RequestRecord (source='arm') */
+/** همگام‌سازی کامل لایهٔ فهرست درخواست‌ها → RequestRecord (source='arm') — با نقطهٔ ازسرگیری */
 export async function syncArmRequestsCatalog(
   token: string,
   opts: { pageSize?: number; maxPages?: number; startPage?: number; repos?: { request?: RequestRepository } } = {}
@@ -303,13 +409,28 @@ export async function syncArmRequestsCatalog(
     duplicates: 0, errors: 0, totalAtSource: 0, durationMs: 0,
   };
 
+  // ---- P6.5-11 (بند ب): تصمیم نقطهٔ شروع — checkpoint بر startPage صریح اولویت دارد ----
+  const integration = getIntegrationRepository();
+  const savedCp = await integration.getSyncCheckpoint("requests");
+  const existingCount = await repo.countArmSource().catch(() => 0);
+  const cycle = resolveCycleStart(savedCp, pageSize, existingCount);
+  // startPage صریح فقط وقتی هیچ چرخهٔ ناتمامی نیست (سازگاری با اسکریپت شبانهٔ قدیمی)
+  const startPage = cycle.resumed ? cycle.startPage : Math.max(1, opts.startPage ?? 1);
+  out.resumedFromPage = cycle.resumed ? startPage : undefined;
+  out.cycleId = cycle.cycleId;
+  let lastCompleted = cycle.lastCompletedPage;
+  let savedTotalAtSource = savedCp?.totalAtSource ?? 0;
+  let reachedEndPage = 1;
+
   try {
-    let page = Math.max(1, opts.startPage ?? 1);
+    let page = startPage;
     let endPage = page; // سقف نسبی: maxPages صفحه از نقطهٔ شروع (نه سقف مطلق شمارهٔ صفحه)
+    const pagesBudget = cycle.resumed ? Math.max(1, maxPages - 1) : maxPages;
     do {
       const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.requestsList, page, pageSize);
       out.totalAtSource = total;
-      endPage = Math.min(tp, page + maxPages - 1);
+      savedTotalAtSource = savedTotalAtSource || total;
+      endPage = Math.min(tp, page + pagesBudget - 1);
       out.pages = page;
       const inputs = rows
         .map((r) => mapArmRequestListRow(r))
@@ -320,12 +441,22 @@ export async function syncArmRequestsCatalog(
       out.updated += stats.updated;
       out.duplicates += stats.duplicates;
       out.errors += stats.errors;
+      // داده نوشته شد ⇒ حالا checkpoint جلو می‌رود
+      lastCompleted = page;
+      await advanceCheckpoint("requests", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: lastCompleted, totalPages: tp, totalAtSource: total }, "in-progress");
       page += 1;
       if (page <= endPage) await sleep(catalogRateMs());
     } while (page <= endPage);
+    const finalCp = await integration.getSyncCheckpoint("requests");
+    if (finalCp && finalCp.lastCompletedPage >= endPage) {
+      await advanceCheckpoint("requests", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource }, "complete");
+    }
+    reachedEndPage = endPage;
     out.ok = true;
+    out.checkpoint = checkpointView(lastCompleted, endPage, lastCompleted >= endPage ? "complete" : "in-progress", out.totalAtSource, savedTotalAtSource);
   } catch (err) {
     out.errorCode = (err as { code?: string })?.code ?? "UNKNOWN";
+    out.checkpoint = checkpointView(lastCompleted, Math.max(reachedEndPage, lastCompleted), "in-progress", out.totalAtSource, savedTotalAtSource);
   }
   out.durationMs = Date.now() - started;
   return out;

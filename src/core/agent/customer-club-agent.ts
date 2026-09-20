@@ -32,7 +32,8 @@ export interface CustomerClubAgentDeps {
 export class CustomerClubAgent extends BaseLearningAgent {
   readonly tileId = "customer-club";
   readonly name = "ایجنت تحلیل باشگاه مشتریان";
-  readonly insightDomains = ["COMMUNITY", "REPEAT", "GROWTH", "LOYALTY", "CATALOG"] as const;
+  /** P6.5-11 (بند ح-۱) — تضمین حداقل ۵ بینش همیشه‌فعال + دامنهٔ جدید دادهٔ تماس */
+  readonly insightDomains = ["COMMUNITY", "REPEAT", "GROWTH", "LOYALTY", "CATALOG", "CUST_CONTACT"] as const;
 
   private readonly transactions: TransactionRepository;
   private readonly contracts: ContractRepository;
@@ -121,7 +122,7 @@ export class CustomerClubAgent extends BaseLearningAgent {
       ],
     });
 
-    // ---- REPEAT: مشتریان تکراری ----
+    // ---- REPEAT: مشتریان تکراری (بند ح-۱ — همیشه‌فعال؛ حالت خالی هم بینش دارد) ----
     if (repeat.length > 0) {
       const topRepeat = topCustomers(repeat, 3);
       cards.push({
@@ -134,6 +135,15 @@ export class CustomerClubAgent extends BaseLearningAgent {
           { label: "مشتریان دوطرفه", value: faNumber(repeat.length) },
           { label: "سهم از جامعه", value: faPercent(Math.round((repeat.length / total) * 100)) },
         ],
+      });
+    } else if (total > 0) {
+      cards.push({
+        key: "club-repeat-empty",
+        domain: "REPEAT",
+        title: "هنوز مشتری تکراری ثبت نشده است",
+        body: `در ${faNumber(total)} عضو جامعه، هنوز هیچ شخصیتی هم‌زمان در نقش خریدار و فروشنده ظاهر نشده است. مشتریان تکراری با اعتماد بالا بهترین هدف وفادارسازی‌اند — با ثبت دقیق طرفین هر معاملهٔ جدید، این بینش به‌محض شکل‌گیری اولین مورد فعال می‌شود.`,
+        severity: "info",
+        metrics: [{ label: "جامعهٔ فعلی", value: faNumber(total) }],
       });
     }
 
@@ -156,7 +166,7 @@ export class CustomerClubAgent extends BaseLearningAgent {
       });
     }
 
-    // ---- LOYALTY: ارزش وفادارسازی ----
+    // ---- LOYALTY: ارزش وفادارسازی (بند ح-۱ — همیشه‌فعال؛ حالت خالی هم بینش دارد) ----
     const top = topCustomers(members, 5).filter((m) => m.buyerCount + m.sellerCount >= 2);
     if (top.length > 0) {
       cards.push({
@@ -167,7 +177,32 @@ export class CustomerClubAgent extends BaseLearningAgent {
         severity: "info",
         metrics: top.slice(0, 3).map((m) => ({ label: m.name, value: `${faNumber(m.buyerCount + m.sellerCount)} حضور` })),
       });
+    } else {
+      cards.push({
+        key: "club-loyalty-empty",
+        domain: "LOYALTY",
+        title: "پرکارترین مشتریان — در حال شکل‌گیری",
+        body: `هنوز عضوی با بیش از یک حضور ثبت نشده است. با رشد ثبت معاملات و قراردادها، پرکارترین مشتریان به‌عنوان اولویت برنامهٔ وفادارسازی در همین بینش معرفی می‌شوند — فهرست کامل در بخش «فهرست مشتریان» همین کاشی قابل مشاهده است.`,
+        severity: "info",
+        metrics: [{ label: "اعضای در انتظار تکمیل پرونده", value: faNumber(total) }],
+      });
     }
+
+    // ---- P6.5-11 (بند ح-۱): CUST_CONTACT — دادهٔ تماس مشتریان (بینش ششم — همیشه‌فعال) ----
+    const withMobile = members.filter((m) => m.mobile).length;
+    const mobilePct = total > 0 ? Math.round((withMobile / total) * 100) : 0;
+    cards.push({
+      key: "club-contact",
+      domain: "CUST_CONTACT",
+      title: "پوشش شماره تماس جامعه مشتریان",
+      body: `از ${faNumber(total)} عضو جامعه، ${faNumber(withMobile)} نفر (${faPercent(mobilePct)}) شماره تماس ثبت‌شده دارند — تلفن‌های قابل‌کلیک در بخش «فهرست مشتریان» همین کاشی. با ادامهٔ غنی‌سازی تماس مالکان و درخواست‌دهندگان از سامانه ARM، این پوشش هر شب کامل‌تر می‌شود؛ مشتری دارای تماس = قابل پیگیری مستقیم برای کمپین‌ها و یادآوری سرویس.`,
+      severity: mobilePct >= 50 ? "positive" : mobilePct >= 20 ? "info" : "warning",
+      metrics: [
+        { label: "دارای شماره تماس", value: faNumber(withMobile) },
+        { label: "پوشش تماس", value: faPercent(mobilePct) },
+        { label: "در انتظار تکمیل", value: faNumber(total - withMobile) },
+      ],
+    });
 
     return cards;
   }

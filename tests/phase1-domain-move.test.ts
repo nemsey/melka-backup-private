@@ -2,7 +2,7 @@
  * تست‌های PHASE 1 — P1-02: توابع دامنه منتقل‌شده به analyzers
  * ------------------------------------------------------
  * برای هر تابع منتقل‌شده از UI: fixture ثابت + مقدار انتظاری ثابت
- * + ادعای ساختاری: شش صفحه فقط فرمت نمایش دارند، نه محاسبه دامنه.
+ * + ادعای ساختاری: پنج صفحه فقط فرمت نمایش دارند، نه محاسبه دامنه.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -154,17 +154,16 @@ describe("P1-02 / parseFaAmount — تجزیه مبلغ فارسی (مالی و 
   });
 });
 
-describe("P1-02 / ادعاهای ساختاری — شش صفحه فقط فرمت نمایش", () => {
+describe("P1-02 / ادعاهای ساختاری — پنج صفحه فقط فرمت نمایش", () => {
   const TILES = "/home/z/my-project/src/core/tiles/tiles";
 
   test("صفحات از analyzers import می‌کنند (نه محاسبه محلی)", () => {
     const checks: Array<[string, string]> = [
-      ["transactions/TransactionsPage.tsx", "monthlyCounts"],
-      ["visits/VisitsPage.tsx", "monthlyCounts"],
+      ["transactions-contracts/TransactionsTab.tsx", "monthlyCounts"],
       ["experts/ExpertsPage.tsx", "cooperationDegree"],
       ["supply-demand/SupplyDemandPage.tsx", "demandLevel"],
       ["price-index/PriceIndexPage.tsx", "areaTrendMatrix"],
-      ["finance-commission/FinancePage.tsx", "parseFaAmount"],
+      ["transactions-contracts/FinanceTab.tsx", "parseFaAmount"],
     ];
     for (const [page, fn] of checks) {
       const c = readFileSync(join(TILES, page), "utf8");
@@ -181,10 +180,8 @@ describe("P1-02 / ادعاهای ساختاری — شش صفحه فقط فرم�
   });
 
   test("حلقه گروه‌بندی ماه جلالی در tsxها حذف شده (منطق به analyzers رفت)", () => {
-    const tx = readFileSync(join(TILES, "transactions/TransactionsPage.tsx"), "utf8");
+    const tx = readFileSync(join(TILES, "transactions-contracts/TransactionsTab.tsx"), "utf8");
     expect(tx).not.toContain("new Map<string, number>()");
-    const vi = readFileSync(join(TILES, "visits/VisitsPage.tsx"), "utf8");
-    expect(vi).not.toContain("function monthlyKeys");
   });
 
   test("منطق گروه‌بندی روند منطقه‌ای از PriceIndexPage حذف شده", () => {

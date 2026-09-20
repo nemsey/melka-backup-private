@@ -11,17 +11,16 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { Home as DummyIcon } from "lucide-react";
 
 const ROOT_EXPECTED = ["file-finder", "listings", "requests", "management-dashboard", "settings"];
+/** P6.5-11 (بندهای پ و ج): سه کاشی معاملات/قراردادها/مالی → یک کاشی ادغامی؛
+ *  کاشی بازدیدها حذف شد — ۸ فرزند */
 const CHILDREN_EXPECTED = [
-  "transactions",
-  "contracts",
+  "transactions-contracts",
   "customer-club",
-  "finance-commission",
   "price-index",
   "experts",
-  "visits",
   "supply-demand",
   "extraction",
-  // P6.5-10 — دو کاشی جدید کاتالوگ ARM
+  // P6.5-10 — دو کاشی کاتالوگ ARM
   "arm-listings",
   "arm-requests",
 ];
@@ -40,10 +39,33 @@ describe("معماری داشبورد مدیریتی", () => {
     expect(rootConsultant).toEqual(ROOT_EXPECTED);
   });
 
-  test("۱۱ کاشی مدیریتی داخل داشبورد مدیریتی ملک تبریز منتقل شده‌اند — به همین ترتیب", async () => {
+  test("۸ کاشی مدیریتی داخل داشبورد مدیریتی ملک تبریز منتقل شده‌اند — به همین ترتیب (P6.5-11)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
     expect(children).toEqual(CHILDREN_EXPECTED);
+  });
+
+  test("P6.5-11 — کاشی‌های ادغام/حذف‌شده دیگر در رجیستری نیستند", async () => {
+    const { tileRegistry } = await import("@/core/tiles/tile-registry");
+    for (const removed of ["transactions", "contracts", "finance-commission", "visits"]) {
+      expect(tileRegistry.get(removed)).toBeUndefined();
+    }
+  });
+
+  test("P6.5-11 — کاشی ادغامی «معاملات و قراردادهای ملک تبریز» با ایجنت ۲۱ دامنه‌ای (≥۱۵)", async () => {
+    const { tileRegistry } = await import("@/core/tiles/tile-registry");
+    const tile = tileRegistry.get("transactions-contracts")!;
+    expect(tile).toBeDefined();
+    expect(tile.title).toBe("معاملات و قراردادهای ملک تبریز");
+    expect(tile.agent).not.toBeNull();
+    expect(tile.agent!.insightDomains.length).toBeGreaterThanOrEqual(15);
+    expect(tile.agent!.insightDomains).toContain("CONTACT_COVERAGE");
+    expect(tile.agent!.insightDomains).toContain("CONTRACT_TEXT");
+    expect(tile.agent!.insightDomains).toContain("SHARE_AGGREGATE");
+    // بینش‌های مهاجرت‌یافتهٔ بازدیدها (بند ج)
+    expect(tile.agent!.insightDomains).toContain("VISIT_VOLUME");
+    expect(tile.agent!.insightDomains).toContain("VISIT_TREND");
+    expect(tile.agent!.insightDomains).toContain("VISIT_STATUS");
   });
 
   test("هیچ کاشی خارج از ریشه و داشبورد مدیریتی گم نشده است", async () => {

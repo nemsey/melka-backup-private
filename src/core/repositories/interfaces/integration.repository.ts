@@ -1,10 +1,19 @@
 /**
- * IntegrationRepository — قرارداد دسترسی به اتصال سامانه PM
+ * IntegrationRepository — قرارداد دسترسی به اتصال‌های سامانه‌های بیرونی
  * ------------------------------------------------------
- * دامنه: PmConnection (تک‌رکورد singleton — حساب شخصی سامانه پرسنلی).
- * مصرف‌کننده‌ها: روت pm/connection، نشانگرهای اتصال.
+ * دامنه: PmConnection (تک‌رکورد singleton — حساب شخصی سامانه پرسنلی)،
+ * ArmConnection (P6.5-11 بند ث — صندوقچهٔ ماندگار توکن ARM)،
+ * SyncCheckpoint (P6.5-11 بند ب — نقطهٔ ازسرگیری «ادامه از جاییکه قطع شد»).
+ * مصرف‌کننده‌ها: روت‌های pm/arm connection، نشانگرهای اتصال، خط لولهٔ کاتالوگ.
  */
-import type { PmConnectionDTO, PmConnectionUpsertInput } from "./dto";
+import type {
+  PmConnectionDTO,
+  PmConnectionUpsertInput,
+  ArmConnectionDTO,
+  ArmConnectionUpsertInput,
+  SyncCheckpointDTO,
+  SyncCheckpointUpsertInput,
+} from "./dto";
 
 export interface IntegrationRepository {
   /** رکورد اتصال PM (null اگر هرگز متصل نشده) */
@@ -17,4 +26,20 @@ export interface IntegrationRepository {
   getBulkImportCheckpoint(): Promise<string | null>;
   /** P6.5-03 — ذخیره checkpoint (فقط همین ستون را لمس می‌کند) */
   setBulkImportCheckpoint(json: string): Promise<void>;
+
+  // ---- P6.5-11 (بند ث) — صندوقچهٔ ماندگار ARM ----
+  /** رکورد صندوقچهٔ ARM با کلید بازیابی (null اگر آن کلید هرگز متصل نشده) */
+  getArmConnection(ownerKey: string): Promise<ArmConnectionDTO | null>;
+  /** جدیدترین رکورد متصل صندوقچه (برای بازیابی نشست OWNER با کد مستر) */
+  getLatestArmConnection(): Promise<ArmConnectionDTO | null>;
+  /** upsert رکورد صندوقچه با ownerKey */
+  upsertArmConnection(input: ArmConnectionUpsertInput): Promise<void>;
+  /** پاک‌کردن توکن‌های یک کلید (بدون حذف رکورد — سابقه می‌ماند) */
+  clearArmConnectionTokens(ownerKey: string): Promise<void>;
+
+  // ---- P6.5-11 (بند ب) — نقطهٔ ازسرگیری همگام‌سازی ----
+  /** checkpoint موجودیت (null اگر هرگز ذخیره نشده) */
+  getSyncCheckpoint(id: string): Promise<SyncCheckpointDTO | null>;
+  /** upsert checkpoint — فقط صفحاتی که «کامل-ذخیره‌شده» جلو می‌روند */
+  upsertSyncCheckpoint(input: SyncCheckpointUpsertInput): Promise<void>;
 }

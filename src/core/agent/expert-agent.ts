@@ -6,10 +6,11 @@
  * (هجری شمسی)، شبکه همکاری و مشاوران منزوی — با یادگیری از بازخورد.
  */
 
-import { getExpertRepository, type ExpertRepository } from "@/core/repositories";
+import { getExpertRepository, getVisitRepository, type ExpertRepository, type VisitRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import {
   businessDistribution,
+  checkerLeaderboard,
   expertBaseStats,
   growthRate,
   interactionConcentration,
@@ -24,27 +25,47 @@ import { faNumber, faMonthLabel } from "@/lib/format";
 /** وابستگی‌های تزریق‌پذیر ایجنت کارشناسان */
 export interface ExpertAgentDeps {
   experts?: ExpertRepository;
+  visits?: VisitRepository;
 }
 
 export class ExpertAgent extends BaseLearningAgent {
   readonly tileId = "experts";
   readonly name = "ایجنت تحلیل کارشناسان";
-  readonly insightDomains = ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK"] as const;
+  /** P6.5-11 (بند ج) — VISIT_LEADERSHIP از کاشی حذف‌شدهٔ بازدیدها مهاجرت کرد */
+  readonly insightDomains = ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK", "VISIT_LEADERSHIP"] as const;
 
   private readonly expertsRepo: ExpertRepository;
+  private readonly visitsRepo: VisitRepository;
 
   constructor(deps?: ExpertAgentDeps) {
     super();
     this.expertsRepo = deps?.experts ?? getExpertRepository();
+    this.visitsRepo = deps?.visits ?? getVisitRepository();
   }
 
   protected async computeRawInsights(): Promise<InsightCard[]> {
-    const [experts, interactions] = await Promise.all([
+    const [experts, interactions, visits] = await Promise.all([
       this.expertsRepo.findAll(),
       this.expertsRepo.listAllInteractions(),
+      this.visitsRepo.findAll(),
     ]);
     const cards: InsightCard[] = [];
     if (experts.length === 0) return cards;
+
+    // ---- P6.5-11 (بند ج): VISIT_LEADERSHIP — بررسی‌کنندگان پیشرو (مهاجرت از کاشی بازدیدها) ----
+    if (visits.length > 0) {
+      const leaders = checkerLeaderboard(visits, 3);
+      if (leaders.length > 0 && leaders[0].count > 0) {
+        cards.push({
+          key: "ex-visit-leaders",
+          domain: "VISIT_LEADERSHIP",
+          title: "بررسی‌کنندگان پیشرو (از بازدیدهای مهاجرت‌یافته)",
+          body: `«${leaders[0].name}» با ${faNumber(leaders[0].count)} بررسی، پرکارترین بررسی‌کنندهٔ بازدیدها است${leaders[1] ? ` و «${leaders[1].name}» با ${faNumber(leaders[1].count)} بررسی در رتبهٔ دوم است` : ""}. توزیع کار بررسی بین کارشناسان را دوره‌ای بازبینی کنید تا گلوگاه ایجاد نشود.`,
+          severity: "info",
+          metrics: leaders.map((l) => ({ label: l.name, value: `${faNumber(l.count)} بررسی` })),
+        });
+      }
+    }
 
     const base = expertBaseStats(experts);
     const degrees = realtorDegrees(interactions);

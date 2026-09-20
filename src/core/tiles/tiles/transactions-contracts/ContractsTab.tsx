@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * کاشی «قراردادها و اسناد» — صفحه داخلی (بر پایه صورت وضعیت‌های واقعی سامانه ARM)
+ * تب «قراردادها و اسناد» کاشی ادغامی «معاملات و قراردادهای ملک تبریز» — P6.5-11 (بند پ)
+ * منتقل‌شده عین کاشی قبلی — شامل اطلاعات تمامی قراردادها و اسناد تمامی کارشناسان ملک تبریز (بند پ-۳)
  * ------------------------------------------------------
  * • نمودار قیفی چرخه عمر ۹ مرحله‌ای (پیش‌نویس → در انتظار تنظیم سند)
  * • جدول قراردادها: هولوگرام/کد آگهی/کد درخواست، نوع، وضعیت، ثبت‌کننده
@@ -20,9 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, RotateCcw, ScrollText, Filter, Eye, Clock, TrendingDown, Users } from "lucide-react";
-import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
-import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
 import { CONTRACT_STATUS_FA, CONTRACT_STATUSES, type ContractFunnelStage, type CrmContract } from "@/lib/melk-api/types";
 import { faNumber, faPercent, faJalaliShort } from "@/lib/format";
@@ -71,11 +70,11 @@ function funnelBarTone(status: string): string {
   return "bg-gradient-to-l from-teal-700 to-cyan-500";
 }
 
-export function ContractsPage({ settings, onSettingsChange, userRole: _role, onBack: _back }: TilePageProps) {
-  const [statusFilter, setStatusFilter] = useState<string>(String(settings.defaultStatus ?? "all"));
+export function ContractsTab({ settings, onSettingsChange }: { settings?: Record<string, string | number | boolean>; onSettingsChange?: (patch: Record<string, string | number | boolean>) => void }) {
+  const [statusFilter, setStatusFilter] = useState<string>(String(settings?.defaultStatus ?? "all"));
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<CrmContract | null>(null);
-  const showFunnel = settings.showFunnel !== false;
+  const showFunnel = settings?.showFunnel !== false;
 
   const fetchContracts = useCallback(async () => {
     const params = new URLSearchParams();
@@ -97,8 +96,6 @@ export function ContractsPage({ settings, onSettingsChange, userRole: _role, onB
 
   return (
     <div className="space-y-6">
-      <AgentPanel tileId="contracts" />
-
       {/* شاخص‌های اصلی */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
@@ -193,7 +190,7 @@ export function ContractsPage({ settings, onSettingsChange, userRole: _role, onB
               {data && <Badge variant="secondary" className="tabular-nums">({faNumber(data.total)})</Badge>}
             </span>
             <div className="flex items-center gap-2 flex-wrap">
-              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); onSettingsChange({ defaultStatus: v }); }}>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); onSettingsChange?.({ defaultStatus: v }); }}>
                 <SelectTrigger className="w-44 h-9 text-xs">
                   <SelectValue placeholder="همه وضعیت‌ها" />
                 </SelectTrigger>

@@ -604,6 +604,68 @@ export interface PmConnectionUpsertInput {
   lastError?: string | null;
 }
 
+// ===================== P6.5-11 (بند ث) — صندوقچهٔ اتصال ماندگار ARM =====================
+
+/** رکورد ArmConnection — توکن ARM ماندگار فراتر از چرخهٔ عمر نشست */
+export interface ArmConnectionDTO {
+  id: string;
+  /** کلید بازیابی: کد پرسنلی SAM یا «master» برای ورود با کد مستر */
+  ownerKey: string;
+  personnelCode: string | null;
+  displayName: string | null;
+  userType: string | null;
+  tokenEnc: string | null;
+  refreshTokenEnc: string | null;
+  status: string;
+  lastRefreshedAt: Date | null;
+  lastRestoredAt: Date | null;
+  lastError: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** ورودی upsert صندوقچهٔ ARM (ownerKey کلید است) */
+export interface ArmConnectionUpsertInput {
+  ownerKey: string;
+  personnelCode?: string | null;
+  displayName?: string | null;
+  userType?: string | null;
+  tokenEnc?: string | null;
+  refreshTokenEnc?: string | null;
+  status?: string;
+  lastRefreshedAt?: Date | null;
+  lastRestoredAt?: Date | null;
+  lastError?: string | null;
+}
+
+// ===================== P6.5-11 (بند ب) — نقطهٔ ازسرگیری همگام‌سازی =====================
+
+/** رکورد SyncCheckpoint — «ادامه از جاییکه قطع شد» */
+export interface SyncCheckpointDTO {
+  id: string;
+  cycleId: string;
+  pageSize: number;
+  lastCompletedPage: number;
+  totalPages: number;
+  totalAtSource: number;
+  phase: string;
+  completedAt: Date | null;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+/** ورودی upsert نقطهٔ ازسرگیری */
+export interface SyncCheckpointUpsertInput {
+  id: string;
+  cycleId?: string;
+  pageSize?: number;
+  lastCompletedPage?: number;
+  totalPages?: number;
+  totalAtSource?: number;
+  phase?: string;
+  completedAt?: Date | null;
+}
+
 // ===================== رجیستری‌های P6.5 (Data Readiness) =====================
 
 /** ردیف PropertyRecord — کش آگهی‌های ARM (تاریخی + جاری)؛ قیمت = ریال (§۳.۵) */

@@ -200,7 +200,7 @@ describe("P6.5-09 بند ۴ — لیست‌های بدون صفحه‌بندی (
   const read = (p: string) => readFileSync(p, "utf8");
 
   test("E1) جدول معاملات: بدون page state، بدون دکمه صفحه، همهٔ ردیف‌ها رندر می‌شوند", () => {
-    const src = read("src/core/tiles/tiles/transactions/TransactionsPage.tsx");
+    const src = read("src/core/tiles/tiles/transactions-contracts/TransactionsTab.tsx");
     expect(src).not.toContain("useState(0)");
     expect(src).not.toContain("صفحه قبل");
     expect(src).not.toContain("صفحه بعد");
@@ -209,11 +209,11 @@ describe("P6.5-09 بند ۴ — لیست‌های بدون صفحه‌بندی (
   });
 
   test("E2) قراردادها: درخواست همهٔ ردیف‌ها (limit=5000) و حذف تنظیم pageSize", () => {
-    const page = read("src/core/tiles/tiles/contracts/ContractsPage.tsx");
-    const def = read("src/core/tiles/tiles/contracts/index.ts");
+    const page = read("src/core/tiles/tiles/transactions-contracts/ContractsTab.tsx");
+    const def = read("src/core/tiles/tiles/transactions-contracts/index.ts");
     expect(page).toContain('"limit", "5000"');
     expect(page).not.toContain("settings.pageSize");
-    expect(def).not.toContain("pageSize");
+    expect(def).not.toContain('"pageSize"');
     expect(read("src/app/api/crm/contracts/route.ts")).toContain(", 5000)");
   });
 
@@ -246,10 +246,9 @@ describe("P6.5-09 بند ۴ — لیست‌های بدون صفحه‌بندی (
     expect(read("src/core/tiles/tiles/file-finder/FileFinderPage.tsx")).not.toContain("scanLogs.slice(0, 5)");
   });
 
-  test("E6) کارشناسان/بازدیدها: سقف سرور ۵۰۰۰ و درخواست کامل (تک‌صفحه‌ای)", () => {
+  test("E6) کارشناسان: سقف سرور ۵۰۰۰ و درخواست کامل (تک‌صفحه‌ای) — P6.5-11: کاشی بازدیدها حذف شد", () => {
     expect(read("src/app/api/crm/experts/route.ts")).toContain(", 5000)");
     expect(read("src/core/tiles/tiles/experts/ExpertsPage.tsx")).toContain('"limit", "5000"');
-    expect(read("src/core/tiles/tiles/visits/VisitsPage.tsx")).toContain('"limit", "5000"');
   });
 });
 

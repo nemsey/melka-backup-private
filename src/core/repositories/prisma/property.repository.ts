@@ -163,4 +163,18 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     });
     return records.map((r) => ({ id: r.id, naturalKey: r.propertyCode }));
   }
+
+  /** P6.5-11 (بند پ-۵) — تماس مالک ملک بر اساس کدآگهی‌ها (دسته‌ای)
+   * فقط خواندن ستون‌های موجود: rawOwnerName (لایه ۱ حقیقت) + ownerMobile (نرمال‌شده) */
+  async findOwnerContactsByCodes(
+    propertyCodes: string[]
+  ): Promise<Array<{ propertyCode: string; ownerName: string | null; ownerMobile: string | null }>> {
+    if (propertyCodes.length === 0) return [];
+    const codes = [...new Set(propertyCodes)];
+    const records = await this.client.propertyRecord.findMany({
+      where: { propertyCode: { in: codes } },
+      select: { propertyCode: true, rawOwnerName: true, ownerMobile: true },
+    });
+    return records.map((r) => ({ propertyCode: r.propertyCode, ownerName: r.rawOwnerName, ownerMobile: r.ownerMobile }));
+  }
 }

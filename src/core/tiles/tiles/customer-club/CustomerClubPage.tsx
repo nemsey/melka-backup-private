@@ -1,37 +1,74 @@
 "use client";
 
 /**
- * کاشی «باشگاه مشتریان» — صفحه داخلی
+ * کاشی «باشگاه مشتریان ملک تبریز» — صفحه داخلی
  * ------------------------------------------------------
- * • جامعه مشتریان از داده واقعی: معاملات + قراردادها + مشاوران
+ * • جامعه مشتریان از داده واقعی: معاملات + قراردادها + آگهی‌ها و درخواست‌های ARM
+ * • P6.5-11 (بند ح-۲): فهرست مشتریان تک‌صفحه‌ای — تمامی مشتریان ملک تبریز
+ *   (نام و نام خانوادگی، شماره تماس قابل‌کلیک، نقش‌ها، حضور، منبع، اولین/آخرین حضور)
  * • مشتریان تکراری (خریدار و فروشنده همزمان) — برنامه وفادارسازی
  * • رشد جامعه مشتریان در زمان (هجری شمسی)
  * • فهرست‌های مرجع زنده سامانه ARM: شخصیت / شغل / نقش / جدیت
  */
 
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RotateCcw, Users, Repeat, TrendingUp, Briefcase, Heart, Fingerprint, Building2 } from "lucide-react";
+import { Loader2, RotateCcw, Users, Repeat, TrendingUp, Briefcase, Heart, Fingerprint, Building2, Search, Phone } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip } from "recharts";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
 import type { CustomerClubMember, CustomerClubSummary, RefListItem } from "@/lib/melk-api/types";
-import { faNumber, faPercent, faMonthLabel } from "@/lib/format";
+import { faNumber, faPercent, faMonthLabel, faJalaliShort } from "@/lib/format";
+import { faDigits } from "@/lib/jalali";
 
 interface ClubResponse {
   ok: boolean;
   summary: CustomerClubSummary;
   repeatMembers: CustomerClubMember[];
   branches: { branch: string; consultantCount: number }[];
+  /** P6.5-11 (بند ح-۲) — فهرست مشتریان تک‌صفحه‌ای */
+  customers: {
+    rows: DirectoryRow[];
+    total: number;
+    matched: number;
+    stats: { total: number; withMobile: number; buyers: number; sellers: number; owners: number; requesters: number };
+    search: string;
+  };
   dataSource: DataSourceInfo & { catalogsLive: boolean };
 }
+
+interface DirectoryRow {
+  key: string;
+  fullName: string;
+  mobile: string | null;
+  roles: ("BUYER" | "SELLER" | "OWNER" | "REQUESTER")[];
+  appearances: number;
+  sources: ("contract" | "transaction" | "arm-listing" | "arm-request")[];
+  firstSeenAt: string | null;
+  lastSeenAt: string | null;
+}
+
+const ROLE_FA: Record<string, string> = {
+  BUYER: "خریدار",
+  SELLER: "فروشنده",
+  OWNER: "مالک",
+  REQUESTER: "درخواست‌دهنده",
+};
+
+const SOURCE_FA: Record<string, string> = {
+  contract: "قرارداد",
+  transaction: "معامله",
+  "arm-listing": "آگهی ARM",
+  "arm-request": "درخواست ARM",
+};
 
 function roleBadge(role: "BUYER" | "SELLER" | "EXPERT"): { label: string; style: string } {
   if (role === "BUYER") return { label: "خریدار", style: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300" };
@@ -41,12 +78,22 @@ function roleBadge(role: "BUYER" | "SELLER" | "EXPERT"): { label: string; style:
 
 export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
   const showCharts = settings.showCharts !== false;
+  const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
 
-  const fetchClub = useCallback(async () => api<ClubResponse>("/api/crm/customer-club"), []);
+  const fetchClub = useCallback(
+    async () => api<ClubResponse>(`/api/crm/customer-club${appliedSearch ? `?q=${encodeURIComponent(appliedSearch)}` : ""}`),
+    [appliedSearch]
+  );
 
   const { data, loading, reload } = useTileData(fetchClub, { errorTitle: "خطا در تحلیل باشگاه مشتریان" });
 
   const s = data?.summary;
+  const customers = data?.customers;
+  const cStats = customers?.stats;
+
+  // فهرست مشتریان — تک‌صفحه‌ای (نتیجهٔ کامل سرور؛ جست‌وجو سمت سرور)
+  const customerRows = useMemo(() => customers?.rows ?? [], [customers]);
   const growthData = (s?.growthSeries ?? []).map((g) => ({ month: faMonthLabel(g.key), count: g.count }));
   const catalog: { key: keyof CustomerClubSummary["catalogs"]; label: string; icon: typeof Users; tone: string; items: RefListItem[] }[] = s
     ? [
@@ -129,12 +176,151 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
       )}
 
       {/* تب‌های تحلیل جامعه */}
-      <Tabs defaultValue="repeat" dir="rtl">
+      <Tabs defaultValue="customers" dir="rtl">
         <TabsList className="w-full justify-start overflow-x-auto h-auto p-1">
+          <TabsTrigger value="customers" className="gap-1.5">فهرست مشتریان</TabsTrigger>
           <TabsTrigger value="repeat" className="gap-1.5">مشتریان تکراری</TabsTrigger>
           <TabsTrigger value="top" className="gap-1.5">پرکارترین مشتریان</TabsTrigger>
           <TabsTrigger value="catalogs" className="gap-1.5">فهرست‌های مرجع سامانه</TabsTrigger>
         </TabsList>
+
+        {/* P6.5-11 (بند ح-۲) — فهرست مشتریان تک‌صفحه‌ای: تمامی مشتریان ملک تبریز */}
+        <TabsContent value="customers" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center justify-between flex-wrap gap-2">
+                <span className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" aria-hidden />
+                  فهرست مشتریان ملک تبریز
+                  {cStats && <Badge variant="secondary" className="tabular-nums">({faNumber(cStats.total)} مشتری)</Badge>}
+                </span>
+                <form
+                  className="flex items-center gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setAppliedSearch(search);
+                  }}
+                >
+                  <div className="relative">
+                    <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" aria-hidden />
+                    <Input
+                      className="ps-8 w-56 h-9 text-xs"
+                      placeholder="جست‌وجوی نام یا شماره تماس…"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      aria-label="جست‌وجوی مشتری"
+                    />
+                  </div>
+                  <Button type="submit" variant="outline" size="sm" className="gap-1.5" disabled={loading}>
+                    {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Search className="w-3.5 h-3.5" aria-hidden />}
+                    جست‌وجو
+                  </Button>
+                  {appliedSearch && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => {
+                        setSearch("");
+                        setAppliedSearch("");
+                      }}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" aria-hidden /> پاک‌سازی
+                    </Button>
+                  )}
+                </form>
+              </CardTitle>
+              {cStats && (
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Badge variant="outline" className="text-[10px]">دارای تماس: {faNumber(cStats.withMobile)} ({faPercent(cStats.total > 0 ? Math.round((cStats.withMobile / cStats.total) * 100) : 0)})</Badge>
+                  <Badge variant="outline" className="text-[10px]">خریدار: {faNumber(cStats.buyers)}</Badge>
+                  <Badge variant="outline" className="text-[10px]">فروشنده: {faNumber(cStats.sellers)}</Badge>
+                  <Badge variant="outline" className="text-[10px]">مالک: {faNumber(cStats.owners)}</Badge>
+                  <Badge variant="outline" className="text-[10px]">درخواست‌دهنده: {faNumber(cStats.requesters)}</Badge>
+                  {appliedSearch && <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px]">{faNumber(customers?.matched ?? 0)} نتیجه</Badge>}
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className="p-0">
+              {loading && !data ? (
+                <div className="p-4 space-y-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-11" />
+                  ))}
+                </div>
+              ) : customerRows.length === 0 ? (
+                <div className="p-8 text-center text-sm text-muted-foreground leading-relaxed">
+                  {appliedSearch ? "هیچ مشتری‌ای با این جست‌وجو یافت نشد." : "هنوز مشتری‌ای در دفترچه ثبت نشده است — با انتقال اطلاعات از سامانه ملک تبریز، جامعه مشتریان شکل می‌گیرد."}
+                </div>
+              ) : (
+                <div className="overflow-x-auto max-h-[32rem]">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-card z-10">
+                      <TableRow>
+                        <TableHead className="text-right w-12">ردیف</TableHead>
+                        <TableHead className="text-right">نام و نام خانوادگی</TableHead>
+                        <TableHead className="text-right">شماره تماس</TableHead>
+                        <TableHead className="text-right">نقش‌ها</TableHead>
+                        <TableHead className="text-right">حضور</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">منبع</TableHead>
+                        <TableHead className="text-right hidden lg:table-cell">اولین حضور</TableHead>
+                        <TableHead className="text-right hidden lg:table-cell">آخرین حضور</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {customerRows.map((c, i) => (
+                        <TableRow key={c.key} className="hover:bg-muted/40" style={{ contentVisibility: "auto" }}>
+                          <TableCell className="whitespace-nowrap">
+                            <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
+                              {faNumber(i + 1)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs font-medium max-w-44 truncate" title={c.fullName}>{c.fullName}</TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {c.mobile ? (
+                              <a href={`tel:${c.mobile}`} dir="ltr" className="inline-flex items-center gap-1.5 font-mono text-teal-700 dark:text-teal-300 hover:underline">
+                                <Phone className="w-3 h-3 shrink-0" aria-hidden />
+                                {faDigits(c.mobile)}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">در انتظار غنی‌سازی</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1 flex-wrap">
+                              {c.roles.map((r) => (
+                                <Badge key={r} variant="secondary" className="text-[10px] bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
+                                  {ROLE_FA[r] ?? r}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs tabular-nums">{faNumber(c.appearances)}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <div className="flex gap-1 flex-wrap">
+                              {c.sources.map((src) => (
+                                <Badge key={src} variant="outline" className="text-[10px]">
+                                  {SOURCE_FA[src] ?? src}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{c.firstSeenAt ? faJalaliShort(c.firstSeenAt) : "—"}</TableCell>
+                          <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{c.lastSeenAt ? faJalaliShort(c.lastSeenAt) : "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground leading-relaxed p-3 border-t">
+                تک‌صفحه‌ای و بی‌نهایت — تمامی مشتریان ملک تبریز از چهار منبع (قراردادها، معاملات، مالکان آگهی‌های ARM و درخواست‌دهندگان ARM)
+                تلفیق شده‌اند؛ شماره‌های «در انتظار غنی‌سازی» با هر «بروزرسانی از سامانه» تکمیل می‌شوند.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* مشتریان تکراری */}
         <TabsContent value="repeat" className="mt-4">

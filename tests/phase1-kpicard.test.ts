@@ -16,13 +16,12 @@ import { join } from "node:path";
 
 const TILES = "/home/z/my-project/src/core/tiles/tiles";
 const CRM_PAGES = [
-  "transactions/TransactionsPage.tsx",
+  "transactions-contracts/TransactionsTab.tsx",
   "experts/ExpertsPage.tsx",
   "supply-demand/SupplyDemandPage.tsx",
-  "visits/VisitsPage.tsx",
-  "finance-commission/FinancePage.tsx",
+  "transactions-contracts/FinanceTab.tsx",
   "price-index/PriceIndexPage.tsx",
-  "contracts/ContractsPage.tsx",
+  "transactions-contracts/ContractsTab.tsx",
   "customer-club/CustomerClubPage.tsx",
 ];
 
@@ -44,7 +43,7 @@ describe("P1-01a / KpiCard — قرارداد رندر (عین مارک‌آپ �
     expect(html).not.toContain("animate-pulse"); // مقدار تعریف‌شده → بدون اسکلتون
   });
 
-  test("سبک span (شش صفحه دیگر): tone کامل روی ظرف، آیکون بی‌رنگ", () => {
+  test("سبک span (پنج صفحه دیگر): tone کامل روی ظرف، آیکون بی‌رنگ", () => {
     const html = renderToString(
       h(KpiCard, {
         label: "شاخص تعادل بازار",
@@ -135,7 +134,7 @@ describe("P1-01a / KpiCard — ادعاهای ساختاری (grep)", () => {
     expect(hits[0]).toBe("/home/z/my-project/src/components/app/shared/kpi-card.tsx");
   });
 
-  test("هر ۸ صفحه CRM از KpiCard مشترک import می‌کنند", () => {
+  test("هر ۷ صفحه CRM (P6.5-11: بازدیدها حذف؛ سه‌گانه ادغام شد) از KpiCard مشترک import می‌کنند", () => {
     for (const page of CRM_PAGES) {
       const content = readFileSync(join(TILES, page), "utf8");
       expect(content).toContain("KpiCard");
@@ -143,7 +142,7 @@ describe("P1-01a / KpiCard — ادعاهای ساختاری (grep)", () => {
     }
   });
 
-  test("صفر بلوک KPI قدیمی (Card + p-4 flex items-center gap-3) در ۸ صفحه CRM", () => {
+  test("صفر بلوک KPI قدیمی (Card + p-4 flex items-center gap-3) در ۷ صفحه CRM", () => {
     for (const page of CRM_PAGES) {
       const content = readFileSync(join(TILES, page), "utf8");
       expect(content).not.toContain('p-4 flex items-center gap-3');

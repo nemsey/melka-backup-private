@@ -1,18 +1,13 @@
 "use client";
 
 /**
- * کاشی «معاملات» — صفحه داخلی (بازنویسی بر پایه ساختار واقعی سامانه ARM)
+ * تب «معاملات» کاشی ادغامی «معاملات و قراردادهای ملک تبریز» — P6.5-11 (بند پ-۵)
  * ------------------------------------------------------
- * عین «گزارش تطابق معاملات» خود سامانه ملک تبریز + تحلیل داشبورد:
- *   • شاخص‌های چهارگانه: تعداد کل، دارای رویداد، دارای آگهی پیشنهادی، هر دو
- *   • فیلتر تاریخ با «تقویم هجری شمسی» (مثل خود سامانه — startDate/endDate)
- *   • فیلترهای کد ملک، کد درخواست، شماره هولوگرام و نوع تطبیق
- *   • جدول: کد ملک/مالک، کد درخواست/درخواست‌دهنده، تاریخ معامله (جلالی)،
- *     شماره هولوگرام، آگهی پیشنهادی، رویداد
- *   • نمودار روند ماهانه (هجری شمسی) + نمودار ترکیب تطبیق
- *   • شفافیت منبع داده (آخرین استخراج موفق/خطای زنده)
- *   • P6.5-09 (دستور مالک): جدول «بدون صفحه‌بندی» — همهٔ ردیف‌ها در یک
- *     صفحهٔ واحد و بی‌نهایت (عین لیست کارشناسان؛ حذف دکمه‌های صفحه و slice)
+ * فهرست معاملات منتقل‌شده از کاشی قبلی با ستون‌های به‌روزشده:
+ *   بعد از «کد ملک»: «نام و نام خانوادگی مالک» + «موبایل مالک»
+ *   بعد از «کد درخواست»: «نام و نام خانوادگی درخواست‌دهنده» + «موبایل درخواست‌دهنده»
+ *   + ستون «متن قرارداد» + ستون «تجمیع حق‌السهم مشاوران»
+ * تک‌صفحه‌ای و بی‌نهایت (P6.5-09) — همهٔ ردیف‌ها در یک پاسخ واحد.
  */
 
 import { useCallback, useMemo, useState } from "react";
@@ -37,6 +32,9 @@ import {
   Hash,
   FileCheck2,
   Sparkles,
+  Users,
+  Phone,
+  ScrollText,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -48,12 +46,10 @@ import {
   CartesianGrid,
   Tooltip as RTooltip,
 } from "recharts";
-import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceWarning, useTileData, type DataSourceInfo } from "@/components/app/shared";
-import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
 import { monthlyCounts } from "@/core/agent/analyzers";
-import { faNumber, faJalaliShort, faMonthLabel } from "@/lib/format";
+import { faNumber, faJalaliShort, faMonthLabel, faPercent } from "@/lib/format";
 import { faDigits } from "@/lib/jalali";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 
@@ -67,6 +63,13 @@ interface TxRow {
   contractHolo: string | null;
   suggestedPropertyCount: number;
   eventsCount: number;
+  // ---- P6.5-11 (بند پ-۵) — ستون‌های جدید ----
+  ownerName: string | null;
+  ownerMobile: string | null;
+  requesterName: string | null;
+  requesterMobile: string | null;
+  contractText: string | null;
+  consultantsShareSummary: { count: number; totalPercent: number; confirmed: number; pending: number; names: string[] } | null;
 }
 
 interface Summary {
@@ -106,12 +109,9 @@ interface TxResponse {
 
 const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
 
-export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _userRole, onBack: _onBack }: TilePageProps) {
+export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCharts: boolean }) {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
-
-  const sortBy = String(settings.sortBy ?? "contractDate");
-  const showCharts = settings.showCharts !== false;
 
   const fetchTransactions = useCallback(async (): Promise<TxResponse> => {
     const params = new URLSearchParams();
@@ -130,9 +130,8 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
     return res;
   }, [applied, sortBy]);
 
-  const { data, loading } = useTileData(fetchTransactions, {
+  const { data, loading, reload } = useTileData(fetchTransactions, {
     errorTitle: "خطا در دریافت معاملات",
-    // عین رفتار قبلی: خطا → فقط rows خالی می‌شود؛ خلاصه/منبع قبلی می‌ماند
     errorValue: (prev) => (prev ? { ...prev, rows: [] } : { ...EMPTY_RESPONSE }),
   });
 
@@ -141,13 +140,12 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
   const source = data?.dataSource ?? null;
   const total = data?.total ?? 0;
 
-  // سری ماهانه — ماه‌های هجری شمسی (منطق دامنه: analyzers؛ فرمت نمایش: همین‌جا)
+  // سری ماهانه — ماه‌های هجری شمسی
   const monthly = useMemo(
     () => monthlyCounts((rows ?? []).map((t) => t.contractDate)).map((p) => ({ month: faMonthLabel(p.key), count: p.count })),
     [rows]
   );
 
-  // ترکیب تطبیق برای نمودار
   const composition = useMemo(() => {
     if (!summary) return [];
     return [
@@ -158,14 +156,25 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
     ];
   }, [summary]);
 
+  // آمار پوشش ستون‌های جدید (بند پ-۵) — شفافیت کامل بودن داده
+  const coverage = useMemo(() => {
+    if (!rows || rows.length === 0) return null;
+    const pct = (n: number) => Math.round((n / rows.length) * 100);
+    return {
+      ownerName: pct(rows.filter((r) => r.ownerName).length),
+      ownerMobile: pct(rows.filter((r) => r.ownerMobile).length),
+      requesterName: pct(rows.filter((r) => r.requesterName).length),
+      requesterMobile: pct(rows.filter((r) => r.requesterMobile).length),
+      contractText: pct(rows.filter((r) => r.contractText).length),
+      shares: pct(rows.filter((r) => r.consultantsShareSummary).length),
+    };
+  }, [rows]);
+
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
 
   return (
     <div className="space-y-6">
-      {/* ایجنت هوشمند */}
-      <AgentPanel tileId="transactions" />
-
-      {/* شاخص‌های چهارگانه — عین گزارش خود سامانه + دو سهم کلیدی */}
+      {/* شاخص‌های چهارگانه — عین گزارش خود سامانه */}
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <KpiCard
@@ -198,7 +207,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
             icon={Percent}
             iconAs="div"
             iconWrapperClassName="bg-teal-100 dark:bg-teal-950"
-            iconColorClassName="text-teal-600"
+            iconColorClassName="text-teal-600 dark:text-teal-400"
           />
         </div>
       )}
@@ -219,49 +228,22 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
             }}
           >
             <div className="space-y-1.5">
-              <JalaliDatePicker
-                id="f-dateFrom"
-                label="از تاریخ"
-                placeholder="از تاریخ"
-                value={filters.dateFrom}
-                onChange={(v) => setF("dateFrom", v)}
-              />
+              <JalaliDatePicker id="f-dateFrom" label="از تاریخ" placeholder="از تاریخ" value={filters.dateFrom} onChange={(v) => setF("dateFrom", v)} />
             </div>
             <div className="space-y-1.5">
-              <JalaliDatePicker
-                id="f-dateTo"
-                label="تا تاریخ"
-                placeholder="تا تاریخ"
-                value={filters.dateTo}
-                onChange={(v) => setF("dateTo", v)}
-              />
+              <JalaliDatePicker id="f-dateTo" label="تا تاریخ" placeholder="تا تاریخ" value={filters.dateTo} onChange={(v) => setF("dateTo", v)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="f-propertyCode">کد ملک</Label>
-              <Input
-                id="f-propertyCode"
-                placeholder="نمونه: ۱۲۳۴۵"
-                value={filters.propertyCode}
-                onChange={(e) => setF("propertyCode", e.target.value)}
-              />
+              <Input id="f-propertyCode" placeholder="نمونه: ۱۲۳۴۵" value={filters.propertyCode} onChange={(e) => setF("propertyCode", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="f-requestCode">کد درخواست</Label>
-              <Input
-                id="f-requestCode"
-                placeholder="نمونه: ۶۷۸۹"
-                value={filters.requestCode}
-                onChange={(e) => setF("requestCode", e.target.value)}
-              />
+              <Input id="f-requestCode" placeholder="نمونه: ۶۷۸۹" value={filters.requestCode} onChange={(e) => setF("requestCode", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="f-contractHolo">شماره هولوگرام</Label>
-              <Input
-                id="f-contractHolo"
-                placeholder="نمونه: ۹۸۷۶۵"
-                value={filters.contractHolo}
-                onChange={(e) => setF("contractHolo", e.target.value)}
-              />
+              <Input id="f-contractHolo" placeholder="نمونه: ۹۸۷۶۵" value={filters.contractHolo} onChange={(e) => setF("contractHolo", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label>نوع تطبیق</Label>
@@ -294,6 +276,9 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
               >
                 <RotateCcw className="w-4 h-4" aria-hidden /> پاک‌سازی
               </Button>
+              <Button type="button" variant="ghost" className="gap-2" onClick={() => void reload()} disabled={loading}>
+                <RotateCcw className="w-4 h-4" aria-hidden /> بارگذاری مجدد
+              </Button>
               {total > 0 && (
                 <Badge variant="secondary" className="mb-1">
                   {faNumber(total)} معامله منطبق
@@ -322,10 +307,7 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} interval="preserveStartEnd" angle={-20} textAnchor="end" height={48} />
                   <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={32} />
-                  <RTooltip
-                    formatter={(value: number) => [faNumber(value), "تعداد معاملات"]}
-                    contentStyle={{ direction: "rtl", borderRadius: 12, fontSize: 12 }}
-                  />
+                  <RTooltip formatter={(value: number) => [faNumber(value), "تعداد معاملات"]} contentStyle={{ direction: "rtl", borderRadius: 12, fontSize: 12 }} />
                   <Line type="monotone" dataKey="count" stroke="var(--chart-1)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--chart-1)" }} activeDot={{ r: 5 }} />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -352,14 +334,21 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
         </div>
       )}
 
-      {/* جدول — عین ستون‌های گزارش خود سامانه؛ بدون صفحه‌بندی (P6.5-09) */}
+      {/* جدول فهرست معاملات — ستون‌های کامل بند پ-۵؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
       <Card>
         <CardHeader className="py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle className="text-base">فهرست معاملات</CardTitle>
-            {rows && rows.length > 0 && (
-              <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
-            )}
+            <CardTitle className="text-base">فهرست معاملات — تمامی کارشناسان ملک تبریز</CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              {coverage && (
+                <Badge variant="outline" className="text-[11px] gap-1" title="پوشش ستون‌های جدید؛ با هر «بروزرسانی از سامانه» کامل‌تر می‌شود">
+                  پوشش تماس مالک {faPercent(coverage.ownerMobile)} · تماس درخواست‌دهنده {faPercent(coverage.requesterMobile)} · متن قرارداد {faPercent(coverage.contractText)}
+                </Badge>
+              )}
+              {rows && rows.length > 0 && (
+                <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -373,22 +362,26 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
             <div className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
               {loading
                 ? "در حال دریافت…"
-                : rows.length === 0
-                  ? "هنوز معامله‌ای از سامانه ملک تبریز استخراج نشده است. با بازیابی پایگاه داده سامانه، داده‌ها به‌صورت خودکار همگام می‌شوند یا از تنظیمات، «همگام‌سازی داده‌ها» را بزنید."
-                  : "هیچ معامله‌ای با این فیلترها یافت نشد."}
+                : "هنوز معامله‌ای از سامانه ملک تبریز استخراج نشده است. با دکمه «بروزرسانی از سامانه» در بالای همین کاشی، انتقال اطلاعات را آغاز کنید."}
             </div>
           ) : (
-            <div className="overflow-x-auto max-h-[28rem]">
+            <div className="overflow-x-auto max-h-[32rem]">
               <Table>
                 <TableHeader className="sticky top-0 bg-card z-10">
                   <TableRow>
                     <TableHead className="text-right w-12">ردیف</TableHead>
                     <TableHead className="text-right">تاریخ معامله</TableHead>
-                    <TableHead className="text-right">کد ملک / مالک</TableHead>
-                    <TableHead className="text-right">کد درخواست / درخواست‌دهنده</TableHead>
-                    <TableHead className="text-right hidden md:table-cell">شماره هولوگرام</TableHead>
+                    <TableHead className="text-right">کد ملک</TableHead>
+                    <TableHead className="text-right">نام و نام خانوادگی مالک</TableHead>
+                    <TableHead className="text-right">موبایل مالک</TableHead>
+                    <TableHead className="text-right">کد درخواست</TableHead>
+                    <TableHead className="text-right">نام و نام خانوادگی درخواست‌دهنده</TableHead>
+                    <TableHead className="text-right">موبایل درخواست‌دهنده</TableHead>
+                    <TableHead className="text-right hidden xl:table-cell">شماره هولوگرام</TableHead>
                     <TableHead className="text-right">آگهی پیشنهادی</TableHead>
                     <TableHead className="text-right">رویداد</TableHead>
+                    <TableHead className="text-right min-w-64">متن قرارداد</TableHead>
+                    <TableHead className="text-right min-w-44">تجمیع حق‌السهم مشاوران</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -400,27 +393,67 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
                         </span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-xs font-medium">{faJalaliShort(t.contractDate)}</TableCell>
-                      <TableCell className="text-xs">
-                        <div className="flex flex-col">
-                          <span className="font-mono">{faDigits(t.propertyCode)}</span>
-                          {t.propertyCustomer && (
-                            <span className="text-muted-foreground text-[11px] mt-0.5">{t.propertyCustomer}</span>
-                          )}
-                        </div>
+                      <TableCell className="text-xs font-mono">{faDigits(t.propertyCode)}</TableCell>
+                      {/* نام و نام خانوادگی مالک — بعد از ستون کد ملک (بند پ-۵) */}
+                      <TableCell className="text-xs max-w-40 truncate" title={t.ownerName ?? undefined}>
+                        {t.ownerName ? (
+                          <span className="flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden />
+                            {t.ownerName}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">در انتظار غنی‌سازی</span>
+                        )}
+                      </TableCell>
+                      {/* موبایل مالک */}
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {t.ownerMobile ? (
+                          <a
+                            href={`tel:${t.ownerMobile}`}
+                            dir="ltr"
+                            className="inline-flex items-center gap-1.5 font-mono text-teal-700 dark:text-teal-300 hover:underline"
+                          >
+                            <Phone className="w-3 h-3 shrink-0" aria-hidden />
+                            {faDigits(t.ownerMobile)}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs">
                         {t.requestCode ? (
-                          <div className="flex flex-col">
-                            <span className="font-mono">{faDigits(t.requestCode)}</span>
-                            {t.requestCustomer && (
-                              <span className="text-muted-foreground text-[11px] mt-0.5">{t.requestCustomer}</span>
-                            )}
-                          </div>
+                          <span className="font-mono">{faDigits(t.requestCode)}</span>
                         ) : (
                           <span className="text-muted-foreground">— بدون درخواست</span>
                         )}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-xs font-mono" dir="rtl">
+                      {/* نام و نام خانوادگی درخواست‌دهنده — بعد از ستون کد درخواست (بند پ-۵) */}
+                      <TableCell className="text-xs max-w-40 truncate" title={t.requesterName ?? undefined}>
+                        {t.requesterName ? (
+                          <span className="flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden />
+                            {t.requesterName}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">{t.requestCode ? "در انتظار غنی‌سازی" : "—"}</span>
+                        )}
+                      </TableCell>
+                      {/* موبایل درخواست‌دهنده */}
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {t.requesterMobile ? (
+                          <a
+                            href={`tel:${t.requesterMobile}`}
+                            dir="ltr"
+                            className="inline-flex items-center gap-1.5 font-mono text-teal-700 dark:text-teal-300 hover:underline"
+                          >
+                            <Phone className="w-3 h-3 shrink-0" aria-hidden />
+                            {faDigits(t.requesterMobile)}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell text-xs font-mono" dir="rtl">
                         {t.contractHolo ? (
                           <span className="flex items-center gap-1.5">
                             <FileCheck2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden />
@@ -448,6 +481,32 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
+                      {/* متن قرارداد — تولید شفاف از داده‌های ثبت‌شده (لایهٔ تحلیل) */}
+                      <TableCell className="text-xs max-w-96">
+                        {t.contractText ? (
+                          <span className="flex items-start gap-1.5 leading-relaxed" title={t.contractText}>
+                            <ScrollText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" aria-hidden />
+                            <span className="line-clamp-3">{t.contractText}</span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">— بدون قرارداد مرتبط</span>
+                        )}
+                      </TableCell>
+                      {/* تجمیع حق‌السهم مشاوران */}
+                      <TableCell className="text-xs">
+                        {t.consultantsShareSummary ? (
+                          <div className="flex flex-col gap-1 min-w-36">
+                            <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 text-[11px] gap-1 w-fit">
+                              <Users className="w-3 h-3" aria-hidden /> {faNumber(t.consultantsShareSummary.count)} مشاور — {faPercent(t.consultantsShareSummary.totalPercent)}
+                            </Badge>
+                            <span className="text-muted-foreground text-[10px] leading-relaxed line-clamp-2" title={t.consultantsShareSummary.names.join("، ")}>
+                              {t.consultantsShareSummary.names.join("، ")}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -458,8 +517,9 @@ export function TransactionsPage({ settings, onSettingsChange: _osc, userRole: _
       </Card>
 
       <p className="text-[11px] text-muted-foreground leading-relaxed">
-        داده‌ها عین «گزارش تطابق معاملات» سامانه ملک تبریز (arm.melketabriz.ir) استخراج و به‌صورت محلی کش
-        می‌شوند. تاریخ‌ها با تقویم هجری شمسی نمایش داده می‌شوند و فیلتر تاریخ نیز با همین تقویم اعمال می‌شود.
+        داده‌ها عین «گزارش تطابق معاملات» سامانه ملک تبریز استخراج می‌شوند؛ ستون‌های تماس مالک/درخواست‌دهنده از رجیستری آگهی‌ها و
+        درخواست‌های ARM (لایهٔ غنی‌سازی) تکمیل می‌شوند و «متن قرارداد» و «تجمیع حق‌السهم» از فیلدهای واقعیِ قراردادهای ثبت‌شده در
+        همین کاشی ترکیب می‌گردند — هیچ دادهٔ خام تغییر نمی‌کند (قانون دادهٔ مقدس ملک تبریز).
       </p>
     </div>
   );

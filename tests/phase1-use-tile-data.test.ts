@@ -240,18 +240,17 @@ describe("P1-01d / useTileData — قرارداد رفتاری", () => {
 });
 
 describe("P1-01d / useTileData — ادعاهای ساختاری (grep)", () => {
-  test("هر ۸ صفحه CRM از useTileData استفاده می‌کنند", async () => {
+  test("هر ۷ صفحه CRM (P6.5-11: بازدیدها حذف؛ سه‌گانه ادغام شد) از useTileData استفاده می‌کنند", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const TILES = "/home/z/my-project/src/core/tiles/tiles";
     const pages = [
-      "transactions/TransactionsPage.tsx",
+      "transactions-contracts/TransactionsTab.tsx",
       "experts/ExpertsPage.tsx",
       "supply-demand/SupplyDemandPage.tsx",
-      "visits/VisitsPage.tsx",
-      "finance-commission/FinancePage.tsx",
+          "transactions-contracts/FinanceTab.tsx",
       "price-index/PriceIndexPage.tsx",
-      "contracts/ContractsPage.tsx",
+      "transactions-contracts/ContractsTab.tsx",
       "customer-club/CustomerClubPage.tsx",
     ];
     for (const p of pages) {
@@ -259,18 +258,17 @@ describe("P1-01d / useTileData — ادعاهای ساختاری (grep)", () => 
     }
   });
 
-  test("صفر الگوی دستی load/toast قدیمی در ۸ صفحه (setLoading + toast در catch)", async () => {
+  test("صفر الگوی دستی load/toast قدیمی در ۷ صفحه (setLoading + toast در catch)", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const TILES = "/home/z/my-project/src/core/tiles/tiles";
     const pages = [
-      "transactions/TransactionsPage.tsx",
+      "transactions-contracts/TransactionsTab.tsx",
       "experts/ExpertsPage.tsx",
       "supply-demand/SupplyDemandPage.tsx",
-      "visits/VisitsPage.tsx",
-      "finance-commission/FinancePage.tsx",
+          "transactions-contracts/FinanceTab.tsx",
       "price-index/PriceIndexPage.tsx",
-      "contracts/ContractsPage.tsx",
+      "transactions-contracts/ContractsTab.tsx",
       "customer-club/CustomerClubPage.tsx",
     ];
     for (const p of pages) {

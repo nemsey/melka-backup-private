@@ -184,4 +184,6 @@ export interface PropertyRecordRepository {
   countEnrichment(): Promise<EnrichmentCounts>;
   /** P6.5-10 — برش ردیف‌های در انتظار غنی‌سازی (جدیدترین اول؛ rowIds = هدفگذاری دقیق) */
   listPendingEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]>;
+  /** P6.5-11 (بند پ-۵) — تماس مالک ملک بر اساس کدآگهی‌ها (دسته‌ای؛ برای ستون‌های فهرست معاملات) */
+  findOwnerContactsByCodes(propertyCodes: string[]): Promise<Array<{ propertyCode: string; ownerName: string | null; ownerMobile: string | null }>>;
 }
