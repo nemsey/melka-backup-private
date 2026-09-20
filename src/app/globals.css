@@ -293,3 +293,12 @@ button, a, [role="button"] {
 .chart-ltr {
   direction: ltr;
 }
+
+/* P6.5-10 — رندر سبک لیست‌های تک‌صفحه‌ای بسیار بزرگ (کاتالوگ‌های ARM):
+   ردیف‌های خارج از دید رندر نمی‌شوند (content-visibility) — لیست‌های
+   ۱۱ تا ۲۰ هزار ردیفی با اسکرول روان مواجه می‌شوند؛ ارتفاع تخمینی هر
+   ردیف برای اسکرول‌بار پایدار: ۵۳ پیکسل */
+.cv-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 53px;
+}

@@ -72,6 +72,10 @@ export function mergeNonNullUpdate(data: Record<string, unknown>): Record<string
  *  · رکورد موجود → update با merge non-null + syncedAt/sourceRunId همیشه تازه
  *  · محتوای تغییرنیافته → duplicates (فقط فیلدهای حسابرسی جابه‌جا می‌شوند)
  *  · خطای رکورد منفرد → errors (دسته را نمی‌شکند — PARTIAL در سطح خط لوله)
+ *
+ * P6.5-10 — پارامتر touchSyncedAt: مدل‌هایی که ستون syncedAt ندارند
+ * (مثل RequestRecord) باید false بدهند؛ پیش از این، مسیر update چنین
+ * مخزن‌هایی همیشه با «Unknown argument syncedAt» خطا می‌خورد (کشف تست P6.5-10).
  */
 export async function runBulkUpsert<TInput>(params: {
   rows: readonly TInput[];
@@ -80,8 +84,11 @@ export async function runBulkUpsert<TInput>(params: {
   createRow: (data: Record<string, unknown>) => Promise<unknown>;
   updateRow: (data: Record<string, unknown>) => Promise<unknown>;
   sourceRunId: string;
+  /** پیش‌فرض true — فقط برای مدل‌های دارای ستون syncedAt */
+  touchSyncedAt?: boolean;
 }): Promise<BulkWriteStats> {
   const stats: BulkWriteStats = { created: 0, updated: 0, duplicates: 0, errors: 0 };
+  const touchSyncedAt = params.touchSyncedAt !== false;
   for (const row of params.rows) {
     try {
       const mapped = params.toData(row);
@@ -95,7 +102,11 @@ export async function runBulkUpsert<TInput>(params: {
         const changed = Object.entries(payload).some(
           ([k, v]) => !PROVENANCE_FIELDS.has(k) && k !== "id" && !sameBulkValue(existing[k], v)
         );
-        await params.updateRow({ ...payload, syncedAt: new Date(), sourceRunId: params.sourceRunId });
+        await params.updateRow({
+          ...payload,
+          ...(touchSyncedAt ? { syncedAt: new Date() } : {}),
+          sourceRunId: params.sourceRunId,
+        });
         if (changed) stats.updated += 1;
         else stats.duplicates += 1;
       }

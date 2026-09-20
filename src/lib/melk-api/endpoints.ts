@@ -58,12 +58,17 @@ export const MELK_ENDPOINTS = {
     propertyDetails: (id: string) => `properties/details/${encodeURIComponent(id)}`,
     /** اطلاعات مالک آگهی — پاسخ: ساختار کاربر (mobileNumber, extraUserInfo, ...) */
     propertyOwner: (id: string) => `properties/owner/${encodeURIComponent(id)}`,
-    /** فهرست آگهی‌ها (فیلتر کد، وضعیت، صفحه‌بندی) — عین خود سامانه */
-    propertiesList: "properties",
+    /** فهرست آگهی‌ها (فیلتر کد، وضعیت، صفحه‌بندی) — عین خود سامانه
+     *  P6.5-10 (پروب زندهٔ ۱۴۰۵/۰۶/۲۹): مسیر بدون پسوند /list روی ARM با 404
+     *  رد می‌شود — مسیر واقعی عین الگوی addToURL:"list" خود سامانه: properties/list
+     *  (پاکت سطح‌بالای ARM: {list, count, totalPages, page, limit} — count=۱۱۳٬۳۶۳) */
+    propertiesList: "properties/list",
 
     // ============ درخواست (ثبت‌شده توسط کارشناس) — کشف از باندل رسمی ============
-    /** فهرست درخواست‌ها (فیلتر کد، وضعیت، صفحه‌بندی) — عین خود سامانه */
-    requestsList: "requests",
+    /** فهرست درخواست‌ها (فیلتر کد، وضعیت، صفحه‌بندی) — عین خود سامانه
+     *  P6.5-10 (پروب زندهٔ ۱۴۰۵/۰۶/۲۹): مسیر واقعی requests/list (بدون پسوند 404)
+     *  — رفع باگ زنجیرهٔ استخراج کددرخواست کاشی استخراج اطلاعات که تاکنون 404 می‌خورد */
+    requestsList: "requests/list",
     /** جزئیات کامل درخواست */
     requestDetails: (id: string) => `requests/details/${encodeURIComponent(id)}`,
     /** اطلاعات درخواست‌دهنده (مشتری) درخواست — ساختار کاربر */

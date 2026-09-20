@@ -120,7 +120,7 @@ export function TileShell({ tile }: { tile: TileDefinition }) {
           variant="outline"
           size="icon"
           onClick={goBack}
-          aria-label={tileReturnTo ? "بازگشت به داشبورد مدیریتی" : "بازگشت به خانه داشبورد"}
+          aria-label={tileReturnTo ? "بازگشت به داشبورد مدیریتی ملک تبریز" : "بازگشت به خانه داشبورد"}
         >
           <ArrowRight className="w-5 h-5" aria-hidden />
         </Button>

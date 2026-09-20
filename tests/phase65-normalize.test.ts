@@ -114,12 +114,13 @@ function opts(over: Partial<BulkImportOptions> = {}): BulkImportOptions {
 
 async function clearBulkTx() {
   await db.transactionRecord.deleteMany({ where: { id: { startsWith: `${PREFIX}-` } } });
-  await db.syncState.update({ where: { id: "singleton" }, data: { bulkImportCheckpoint: null } });
+  // P6.5-10 — مقاوم به نبودِ singleton (اجرای موازی فایل‌های تست؛ عین الگوی phase65-bulk-import)
+  await db.syncState.update({ where: { id: "singleton" }, data: { bulkImportCheckpoint: null } }).catch(() => undefined);
 }
 
 async function clearBulkProperties() {
   await db.propertyRecord.deleteMany({ where: { id: { startsWith: `${PREFIX}-` } } });
-  await db.syncState.update({ where: { id: "singleton" }, data: { bulkImportCheckpoint: null } });
+  await db.syncState.update({ where: { id: "singleton" }, data: { bulkImportCheckpoint: null } }).catch(() => undefined);
 }
 
 // =====================================================================

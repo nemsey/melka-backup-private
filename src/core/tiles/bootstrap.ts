@@ -16,6 +16,8 @@ import "@/core/tiles/tiles/finance-commission";
 import "@/core/tiles/tiles/price-index";
 import "@/core/tiles/tiles/listing";
 import "@/core/tiles/tiles/request";
+import "@/core/tiles/tiles/arm-listing";
+import "@/core/tiles/tiles/arm-request";
 import "@/core/tiles/tiles/management-dashboard";
 import "@/core/tiles/tiles/settings";
 
@@ -31,5 +33,7 @@ export { financeCommissionTile } from "@/core/tiles/tiles/finance-commission";
 export { priceIndexTile } from "@/core/tiles/tiles/price-index";
 export { listingTile } from "@/core/tiles/tiles/listing";
 export { requestTile } from "@/core/tiles/tiles/request";
+export { armListingTile } from "@/core/tiles/tiles/arm-listing";
+export { armRequestTile } from "@/core/tiles/tiles/arm-request";
 export { managementDashboardTile } from "@/core/tiles/tiles/management-dashboard";
 export { settingsTile } from "@/core/tiles/tiles/settings";

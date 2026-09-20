@@ -21,6 +21,9 @@ const CHILDREN_EXPECTED = [
   "visits",
   "supply-demand",
   "extraction",
+  // P6.5-10 — دو کاشی جدید کاتالوگ ARM
+  "arm-listings",
+  "arm-requests",
 ];
 
 describe("معماری داشبورد مدیریتی", () => {
@@ -37,7 +40,7 @@ describe("معماری داشبورد مدیریتی", () => {
     expect(rootConsultant).toEqual(ROOT_EXPECTED);
   });
 
-  test("۹ کاشی مدیریتی داخل داشبورد مدیریتی منتقل شده‌اند — به همین ترتیب", async () => {
+  test("۱۱ کاشی مدیریتی داخل داشبورد مدیریتی ملک تبریز منتقل شده‌اند — به همین ترتیب", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
     expect(children).toEqual(CHILDREN_EXPECTED);
@@ -71,7 +74,7 @@ describe("معماری داشبورد مدیریتی", () => {
     const md = tileRegistry.get("management-dashboard")!;
     expect(md).toBeDefined();
     expect(md.container).toBeUndefined();
-    expect(md.title).toBe("داشبورد مدیریتی");
+    expect(md.title).toBe("داشبورد مدیریتی ملک تبریز"); // P6.5-10 — بند ۱ دستور مالک
     expect(md.agent).toBeNull(); // ظرف ناوبری — بدون ایجنت (مانند تنظیمات عمومی)
     expect(md.component).toBeDefined();
   });

@@ -46,7 +46,7 @@ export function DashboardHome() {
           </h2>
           <p className="relative text-muted-foreground mt-2 text-sm sm:text-base leading-relaxed max-w-3xl">
             سه کاشی روزمره دفتر (فایل‌یابی، آگهی، درخواست ملک) همین‌جا در دسترس‌اند؛
-            تحلیل‌ها و مدیریت‌ها درون «داشبورد مدیریتی» گرد آمده‌اند — {faNumber(managementChildren.length)} کاشی مدیریتی با ایجنت هوشمند اختصاصی —
+            تحلیل‌ها و مدیریت‌ها درون «داشبورد مدیریتی ملک تبریز» گرد آمده‌اند — {faNumber(managementChildren.length)} کاشی مدیریتی با ایجنت هوشمند اختصاصی —
             و «تنظیمات عمومی» آخرین کاشی همین صفحه است.
           </p>
         </div>
@@ -86,7 +86,7 @@ export function DashboardHome() {
           transition={{ delay: 0.4, duration: 0.3 }}
           onClick={() => openTile("management-dashboard")}
           className="tile-press mt-4 text-right focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl w-full"
-          aria-label="رفتن به داشبورد مدیریتی"
+          aria-label="رفتن به داشبورد مدیریتی ملک تبریز"
         >
           <Card className="border-dashed border-teal-500/30 bg-teal-500/[0.03] hover:bg-teal-500/[0.06] transition-colors">
             <CardContent className="p-4 flex items-center gap-3">
@@ -94,8 +94,8 @@ export function DashboardHome() {
                 <LayoutDashboard className="w-5 h-5 text-white" aria-hidden />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                جست‌وجوی تحلیل‌ها؟ <b className="text-foreground">داشبورد مدیریتی</b> را باز کنید —
-                معاملات، قراردادها، باشگاه مشتریان، مالی و کمیسیون، شاخص قیمت، کارشناسان، بازدیدها، عرضه و تقاضا و استخراج اطلاعات.
+                جست‌وجوی تحلیل‌ها؟ <b className="text-foreground">داشبورد مدیریتی ملک تبریز</b> را باز کنید —
+                معاملات، قراردادها، باشگاه مشتریان، مالی و کمیسیون، شاخص قیمت، کارشناسان، بازدیدها، عرضه و تقاضا، استخراج اطلاعات، آگهی‌ها و درخواست‌های سامانه ARM.
               </p>
             </CardContent>
           </Card>

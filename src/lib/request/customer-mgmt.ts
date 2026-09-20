@@ -300,7 +300,8 @@ export function computeNextActions(args: {
  */
 export async function buildCustomerManagement(): Promise<CustomerManagementSummary> {
   const [requests, events, listings, transactions, contracts] = await Promise.all([
-    db.requestRecord.findMany({ orderBy: { updatedAt: "desc" }, take: 500 }).catch(() => [] as RequestRecord[]),
+    // P6.5-10 — رکوردهای کاتالوگ ARM (source='arm') در مدیریت مشتریانِ درخواست‌های محلی نمی‌آیند
+    db.requestRecord.findMany({ where: { source: { not: "arm" } }, orderBy: { updatedAt: "desc" }, take: 500 }).catch(() => [] as RequestRecord[]),
     db.requestEventRecord.findMany({ orderBy: { createdAt: "desc" }, take: 1000 }).catch(() => [] as RequestEventRecord[]),
     db.listingRecord.findMany({ where: { status: { not: "archived" } }, take: 500 }).catch(() => [] as ListingRecord[]),
     db.transactionRecord.findMany({ take: 500 }).catch(() => []),

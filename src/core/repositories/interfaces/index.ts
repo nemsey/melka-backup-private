@@ -44,6 +44,12 @@ export type {
   PropertyBulkInput,
   ArmRequestBulkRow,
   PropertyRecordRepository,
+  ArmListingCatalogRow,
+  ArmRequestCatalogRow,
+  ArmListingCatalogFilter,
+  ArmRequestCatalogFilter,
+  EnrichmentCounts,
+  PendingEnrichmentRow,
 } from "./bulk-write.repository";
 
 // ===================== ConsultantScope (P6.5-02 / §۵.۲) =====================

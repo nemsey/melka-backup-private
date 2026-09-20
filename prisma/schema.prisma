@@ -934,6 +934,11 @@ model RequestRecord {
 
   /// کد پرسنلی ثبت‌کننده
   actorCode   String
+  /// P6.5-10 — نام و نام خانوادگی کارشناس ثبت‌کننده عین سامانه ARM
+  /// (relatedRealtor ردیف درخواست — برای کاشی «درخواست‌های ملک تبریز»؛ افزودنی)
+  actorName   String?
+  /// P6.5-10 — عنوان درخواست عین سامانه ARM (مثل «خرید زمین یا ملک کلنگی...»)؛ افزودنی
+  title       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

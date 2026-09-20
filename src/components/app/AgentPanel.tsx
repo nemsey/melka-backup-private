@@ -100,6 +100,9 @@ export const DOMAIN_FA: Record<string, string> = {
   ALERT: "هشدار جهش",
   HEALTH: "سلامت قیمت‌گذاری",
   REGISTRY: "دفتر آگهی",
+  // P6.5-10 — کاتالوگ‌های ARM
+  COVERAGE: "پوشش اطلاعات",
+  FRESHNESS: "تازگی داده",
   CRM: "انتقال به آرم",
   INSTAGRAM: "انتشار اینستاگرام",
   COMPLETENESS: "کامل‌بودن ۵ گامی",

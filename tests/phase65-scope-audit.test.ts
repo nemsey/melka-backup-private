@@ -467,18 +467,21 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
     }
   });
 
-  test("RequestRecordDTO — ۴۲ کلید؛ ستون‌های P6.5-02/03/04 + خام‌های B.3 در دنباله", async () => {
+  test("RequestRecordDTO — ۴۴ کلید؛ ستون‌های P6.5-02/03/04/10 + خام‌های B.3 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const r = await c.requestRecord.findFirst({ where: { id: "p6502-RA" } });
       const keys = Object.keys(r!);
-      expect(keys.length).toBe(42);
+      expect(keys.length).toBe(44);
       expect(keys.slice(-10)).toEqual([
         "branchId", "tenantId", "requestCode", "sourceRunId",
         "rawCustomerName", "rawCustomerMobile",
         "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
       ]);
+      // P6.5-10 — ستون‌های افزودنی کاتالوگ ARM (نام کارشناس + عنوان درخواست)
+      expect(keys).toContain("actorName");
+      expect(keys).toContain("title");
     } finally {
       await cleanup(c);
     }

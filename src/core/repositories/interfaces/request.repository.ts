@@ -10,7 +10,15 @@
  * خواندن‌ها و به‌روزرسانی نتیجه آرمِ رویداد را پوشش می‌دهد.
  */
 import type { RequestEventArmSyncInput, RequestRecordDTO, RequestWithEventsDTO } from "./dto";
-import type { ArmRequestBulkRow, BulkUpsertOptions, BulkWriteStats } from "./bulk-write.repository";
+import type {
+  ArmRequestBulkRow,
+  ArmRequestCatalogFilter,
+  ArmRequestCatalogRow,
+  BulkUpsertOptions,
+  BulkWriteStats,
+  EnrichmentCounts,
+  PendingEnrichmentRow,
+} from "./bulk-write.repository";
 
 export interface RequestRepository {
   /** یک درخواست با شناسه (null اگر نبود) */
@@ -21,4 +29,10 @@ export interface RequestRepository {
   updateEventArmSync(eventId: string, input: RequestEventArmSyncInput): Promise<void>;
   /** P6.5-03 — درج/به‌روزرسانی انبوه درخواست‌های ARM (source='arm'؛ کلید طبیعی requestCode) */
   upsertArmBulk(rows: ArmRequestBulkRow[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
+  /** P6.5-10 — کاتالوگ تک‌صفحه‌ای درخواست‌های ARM با فیلتر کد/نام کارشناس (جدیدترین اول) */
+  listArmCatalog(filter: ArmRequestCatalogFilter, limit: number): Promise<{ rows: ArmRequestCatalogRow[]; total: number }>;
+  /** P6.5-10 — شمارش غنی‌سازی درخواست‌های ARM: total / pending / complete */
+  countArmEnrichment(): Promise<EnrichmentCounts>;
+  /** P6.5-10 — برش ردیف‌های در انتظار غنی‌سازی (جدیدترین اول؛ rowIds = هدفگذاری دقیق) */
+  listPendingArmEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]>;
 }

@@ -3,10 +3,18 @@
  * ------------------------------------------------------
  * P6.5-03: رجیستری آگهی‌های ARM (مدل جدید P6.5-02 §۲.۲) — نوشتار انبوه
  * با merge non-null بر کلید طبیعی propertyCode (@unique).
- * خواندن‌های غنی (فیلتر منطقه/قیمت) در P6.5-05/08 به همین قرارداد افزوده می‌شوند.
+ * P6.5-10: خواندن‌های کاتالوگ «آگهی‌های ملک تبریز» — فیلتر کد/کارشناس،
+ * شمارش غنی‌سازی و برش ردیف‌های در انتظار (لایه ۲ تماس مالک).
  */
 import type { Prisma } from "@prisma/client";
-import type { PropertyBulkInput, PropertyRecordRepository } from "../interfaces";
+import type {
+  ArmListingCatalogFilter,
+  ArmListingCatalogRow,
+  EnrichmentCounts,
+  PendingEnrichmentRow,
+  PropertyBulkInput,
+  PropertyRecordRepository,
+} from "../interfaces";
 import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
 
 function toPropertyData(p: PropertyBulkInput): Record<string, unknown> {
@@ -77,5 +85,82 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
         this.client.propertyRecord.update({ where: { propertyCode: data.propertyCode as string }, data: data as Prisma.PropertyRecordUpdateInput }),
       sourceRunId: opts.sourceRunId,
     });
+  }
+
+  // ===================== P6.5-10 — خواندن‌های کاتالوگ آگهی‌های ملک تبریز =====================
+
+  /** کاتالوگ تک‌صفحه‌ای — فیلتر کدآگهی/نام کارشناس (contains)؛ جدیدترین فعالیت اول */
+  async listArmCatalog(
+    filter: ArmListingCatalogFilter,
+    limit: number
+  ): Promise<{ rows: ArmListingCatalogRow[]; total: number }> {
+    const where: Prisma.PropertyRecordWhereInput = {};
+    if (filter.code) where.propertyCode = { contains: filter.code };
+    if (filter.realtorName) where.ownerName = { contains: filter.realtorName };
+
+    const [records, total] = await Promise.all([
+      this.client.propertyRecord.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+        take: limit,
+        select: {
+          id: true,
+          propertyCode: true,
+          title: true,
+          status: true,
+          ownerName: true,
+          rawOwnerName: true,
+          ownerMobile: true,
+          address: true,
+          areaName: true,
+          lineName: true,
+          extractedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.client.propertyRecord.count({ where }),
+    ]);
+
+    const rows: ArmListingCatalogRow[] = records.map((r) => ({
+      id: r.id,
+      propertyCode: r.propertyCode,
+      title: r.title,
+      status: r.status,
+      realtorName: r.ownerName,
+      ownerName: r.rawOwnerName,
+      ownerMobile: r.ownerMobile,
+      address: r.address,
+      areaName: r.areaName,
+      lineName: r.lineName,
+      enrichedAt: r.extractedAt,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+    return { rows, total };
+  }
+
+  /** شمارش غنی‌سازی — extractionBatchId تهی = در انتظار لایه ۲ */
+  async countEnrichment(): Promise<EnrichmentCounts> {
+    const [total, pending] = await Promise.all([
+      this.client.propertyRecord.count(),
+      this.client.propertyRecord.count({ where: { extractionBatchId: null } }),
+    ]);
+    return { total, pending, complete: total - pending };
+  }
+
+  /** برش ردیف‌های در انتظار غنی‌سازی — جدیدترین اول (بیشترین ارزش فوری) */
+  async listPendingEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]> {
+    const where: Prisma.PropertyRecordWhereInput =
+      rowIds && rowIds.length > 0
+        ? { id: { in: rowIds }, extractionBatchId: null }
+        : { extractionBatchId: null };
+    const records = await this.client.propertyRecord.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      take: maxRows,
+      select: { id: true, propertyCode: true },
+    });
+    return records.map((r) => ({ id: r.id, naturalKey: r.propertyCode }));
   }
 }

@@ -12,7 +12,7 @@ import { SettingsPage } from "./SettingsPage";
 export const settingsTile = defineTile({
   id: "settings",
   version: "1.0.0",
-  title: "تنظیمات عمومی",
+  title: "تنظیمات عمومی ملک تبریز",
   tagline: "زبان، تم، حساب کاربری، مدیریت اتصال و راهنمای اپلیکیشن",
   description:
     "تمام تنظیمات سراسری اپلیکیشن: حالت نمایش، حساب کاربری، مدیریت اتصال به سامانه ملک تبریز (تست و ریست)، و راهنمای کامل استفاده.",

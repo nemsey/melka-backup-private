@@ -17,6 +17,8 @@ import { financeAgent } from "./finance-agent";
 import { priceIndexAgent } from "./price-index-agent";
 import { listingAgent } from "./listing-agent";
 import { requestAgent } from "./request-agent";
+import { armListingAgent } from "./arm-listing-agent";
+import { armRequestAgent } from "./arm-request-agent";
 import type { BaseLearningAgent as Agent } from "./base-agent";
 
 const agents = new Map<string, Agent>([
@@ -32,6 +34,8 @@ const agents = new Map<string, Agent>([
   [priceIndexAgent.tileId, priceIndexAgent],
   [listingAgent.tileId, listingAgent],
   [requestAgent.tileId, requestAgent],
+  [armListingAgent.tileId, armListingAgent],
+  [armRequestAgent.tileId, armRequestAgent],
 ]);
 
 /** دسترسی به ایجنت یک کاشی — null اگر کاشی ایجنت ندارد */

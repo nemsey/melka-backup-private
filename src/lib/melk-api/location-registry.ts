@@ -12,6 +12,7 @@
 import { TABRIZ_AREAS } from "@/lib/divar/tabriz-locations";
 import {
   buildLocationRegistry,
+  findLocationInRegistry,
   type LocationEntry,
   type LocationMatch,
   type LocationRegistry,
@@ -56,7 +57,6 @@ export function resetDefaultLocationRegistry(): void {
  */
 export function findLocationByName(raw: string): LocationMatch | null {
   const registry = getDefaultLocationRegistry();
-  const { findLocationInRegistry } = require("./normalize") as typeof import("./normalize");
   return findLocationInRegistry(raw, registry);
 }
 

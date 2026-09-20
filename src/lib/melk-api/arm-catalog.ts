@@ -1,0 +1,567 @@
+/**
+ * خط لوله کاتالوگ ARM — P6.5-10 (کاشی‌های «آگهی‌های ملک تبریز» و «درخواست‌های ملک تبریز»)
+ * ---------------------------------------------------------------------------
+ * دریافت و غنی‌سازی فهرست کامل آگهی‌ها/درخواست‌های سامانه ARM ملک تبریز:
+ *
+ *  لایه ۱ — همگام‌سازی فهرست (سریع):
+ *    properties/list (صفحه‌بندی، سقف limit=500) → رجیستری PropertyRecord
+ *    requests/list   (صفحه‌بندی، سقف limit=500) → RequestRecord با source='arm'
+ *    هر ردیف: کد، عنوان، کارشناس (relatedRealtor)، وضعیت جاری، منطقه/محله،
+ *    آدرس ترکیبی از موقعیت (استان/شهر/منطقه/محله)، تاریخ فعالیت
+ *
+ *  لایه ۲ — غنی‌سازی تماس (هزینه‌بر؛ برش‌برش با نرخ‌محدود):
+ *    آگهی:  properties/owner/{id}    → نام و شماره تماس مالک ملک
+ *           properties/details/{id}  → آدرس دقیق + مشخصات + دسته‌بندی
+ *    درخواست: requests/applicant/{id} → نام و نام خانوادگی و شماره تماس درخواست‌دهنده
+ *    نشانگر پیشرفت: extractionBatchId (تهی = در انتظار غنی‌سازی)
+ *
+ * اصول حاکم (عین bulk-import):
+ *   · صفر fetch مستقیم (فقط melk-api/client) · صفر Prisma مستقیم (فقط Repository)
+ *   · نرخ‌محدود اجباری (پیش‌فرض ۲۰۰ms بین فراخوانی) — صفر فشار به سامانه مبدأ
+ *   · upsert بر کلید طبیعی (propertyCode / requestCode) با merge non-null — idempotent
+ *   · Bulk هرگز deleteMany صادر نمی‌کند (§۱.۹)
+ *
+ * کشف زندهٔ مسیرها (پروب P6.5-10، ۱۴۰۵/۰۶/۲۹):
+ *   فهرست‌ها «بدون پسوند /list» 404 می‌دهند — مسیر واقعی: properties/list و
+ *   requests/list (الگوی addToURL:"list" عین visits/list و trade-overviews/list).
+ *   پاکت سطح‌بالای ARM: { list, count, totalPages, page, limit } — count واقعی:
+ *   آگهی ۱۱٬۳۶۳ · درخواست ۲۰٬۳۹۲ (شاهد پروب).
+ */
+
+import { randomUUID } from "crypto";
+import { armCall } from "./client";
+import { getMelkApiConfig } from "./config";
+import { MELK_ENDPOINTS } from "./endpoints";
+import { extractAddress, extractDetailItems, extractPagedList, extractPersonInfo, normalizeMobile } from "./adapters";
+import {
+  getPropertyRecordRepository,
+  getRequestRepository,
+  type PropertyBulkInput,
+  type ArmRequestBulkRow,
+  type PropertyRecordRepository,
+  type RequestRepository,
+} from "@/core/repositories";
+
+// ==========================================================================
+// تنظیمات خط لوله
+// ==========================================================================
+
+/** فاصلهٔ اجباری بین فراخوانی‌های ARM (ms) — پیش‌فرض ۲۰۰ (عین bulk-import §۱.۸) */
+function catalogRateMs(): number {
+  const n = Number(process.env.MELK_CATALOG_RATE_MS ?? "200");
+  return Number.isFinite(n) && n >= 0 ? n : 200;
+}
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * سقف ایمنی صفحات — ۵۰۰ صفحه × اندازه صفحه = پوشش کامل کاتالوگ‌ها
+ * (آگهی ۲۳ صفحه×۵۰۰ · درخواست ۴۰۸ صفحه×۵۰ — شاهد پروب P6.5-10)
+ */
+const MAX_PAGES = 500;
+
+/** مهلت فهرست — سرور ARM برای فهرست درخواست‌ها هزینهٔ ثابت ~۵ثانیه‌ای دارد
+ * (پروب: limit=50 در ۵٫۱ثانیه؛ limit=500 تا ۶۰ثانیه و بیش از مهلت) */
+const LIST_TIMEOUT_MS = 45_000;
+
+type RawRow = Record<string, unknown>;
+
+function pickStr(row: RawRow, keys: string[]): string | null {
+  for (const k of keys) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim() !== "") return v;
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  }
+  return null;
+}
+
+function pickNestedStr(row: RawRow, path: string): string | null {
+  const parts = path.split(".");
+  let cur: unknown = row;
+  for (const p of parts) {
+    if (!cur || typeof cur !== "object") return null;
+    cur = (cur as RawRow)[p];
+  }
+  if (typeof cur === "string" && cur.trim() !== "") return cur;
+  if (typeof cur === "number" && Number.isFinite(cur)) return String(cur);
+  return null;
+}
+
+function pickDate(v: unknown): Date | null {
+  if (typeof v !== "string" || !v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// ==========================================================================
+// نگاشت خالص ردیف فهرست → ورودی مخزن (قابل تست)
+// ==========================================================================
+
+/** وضعیت جاری ردیف — status[0].currentStatus.name (پروب: «در انتظار تایید مدیر» / «سرنخ») */
+export function currentStatusName(row: RawRow): string | null {
+  const arr = row.status;
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const first = arr[0] as RawRow | null;
+  if (!first || typeof first !== "object") return null;
+  return pickNestedStr(first, "currentStatus.name") ?? pickNestedStr(first, "currentInbox.name");
+}
+
+/** آدرس ترکیبی از موقعیت ثبت‌شده در فهرست — استانی‌ترین → محله‌ای‌ترین (هیچ‌گاه تهی نمی‌ماند) */
+export function composeLocationAddress(row: RawRow): string | null {
+  const parts = ["state.name", "city.name", "area.name", "line.name"]
+    .map((p) => pickNestedStr(row, p))
+    .filter((v): v is string => Boolean(v));
+  const unique = [...new Set(parts.map((s) => s.trim()))];
+  return unique.length > 0 ? unique.join("، ") : null;
+}
+
+/**
+ * ردیف فهرست آگهی ARM → PropertyBulkInput (لایه ۱ — بدون تماس مالک).
+ * معناشناسی ستون‌ها (قرارداد §۲.۲ + B.3):
+ *   ownerName/ownerCode = کارشناس مسؤول (relatedRealtor) — ستون دامنه
+ *   rawOwnerName/rawOwnerMobile/ownerMobile = مالک ملک (لایه ۲ غنی‌سازی)
+ */
+export function mapArmPropertyListRow(row: RawRow): PropertyBulkInput | null {
+  const id = pickStr(row, ["_id", "id"]);
+  const propertyCode = pickStr(row, ["code", "propertyCode"]);
+  // کدآگهی کلید طبیعی است — بدون آن ردیف معتبر نیست (عین فهرست ARM همیشه code دارد)
+  if (!propertyCode) return null;
+
+  const totalPrice = typeof row.totalPrice === "number" ? row.totalPrice : null;
+  const deposit = typeof row.deposite_price === "number" ? row.deposite_price : null;
+  const rent = typeof row.rent_price === "number" ? row.rent_price : null;
+  const price = totalPrice ?? deposit;
+  const pricePerMeter = typeof row.pricePerMeter === "number" ? row.pricePerMeter : null;
+
+  return {
+    id: id ?? propertyCode!,
+    propertyCode: propertyCode ?? id!,
+    title: pickStr(row, ["title"]),
+    status: currentStatusName(row),
+    ownerCode: null, // کد پرسنلی کارشناس در ردیف فهرست نیست — دامنهٔ property تجمیعی است
+    ownerName: pickStr(row, ["relatedRealtor"]),
+    cityId: pickNestedStr(row, "city._id"),
+    areaId: pickNestedStr(row, "area._id"),
+    areaName: pickNestedStr(row, "area.name"),
+    lineId: pickNestedStr(row, "line._id"),
+    lineName: pickNestedStr(row, "line.name"),
+    address: composeLocationAddress(row),
+    price,
+    pricePerMeter,
+    rawPrice: price !== null ? String(price) : rent !== null ? `اجاره: ${rent}` : null,
+    rawPriceUnit: "ریال",
+    createdAt: pickDate(row.updatedAt) ?? pickDate(row.createdAt),
+  };
+}
+
+/** ردیف فهرست درخواست ARM → ArmRequestBulkRow (لایه ۱ — بدون تماس درخواست‌دهنده) */
+export function mapArmRequestListRow(row: RawRow): ArmRequestBulkRow | null {
+  const id = pickStr(row, ["_id", "id"]);
+  const requestCode = pickStr(row, ["code", "requestCode"]);
+  // کد درخواست کلید طبیعی است — بدون آن ردیف معتبر نیست
+  if (!requestCode) return null;
+
+  const relatedCustomer = pickStr(row, ["relatedCustomer"]); // نام خانوادگی مشتری عین فهرست
+  return {
+    id: id ?? requestCode!,
+    requestCode: requestCode ?? id!,
+    customerName: relatedCustomer,
+    customerMobile: null,
+    status: currentStatusName(row),
+    actorCode: null, // کد پرسنلی در ردیف نیست → 'arm' (رکورد سیستمی عین قرارداد §۱.۲)
+    actorName: pickStr(row, ["relatedRealtor"]),
+    title: pickStr(row, ["title"]),
+    createdAt: pickDate(row.createdAt) ?? pickDate(row.updatedAt),
+    rawCustomerName: relatedCustomer,
+    rawCustomerMobile: null,
+  };
+}
+
+/**
+ * دسته‌بندی خطای ARM — آیا نتیجهٔ قطعی است؟
+ * ۴xx غیرقابل تلاش (retryable=false و ۴۰۰≤httpStatus<۵۰۰) یعنی خودِ رکورد/مجوز
+ * مشکل دارد و تلاش مجدد بی‌فایده است؛ ۵xx/شبکه/مهلت (retryable=true) نرم است.
+ */
+function isDefinitive4xx(e: { code?: string; httpStatus?: number; retryable?: boolean }): boolean {
+  if (e?.code === "UNAUTHORIZED") return false;
+  return e?.retryable === false && typeof e.httpStatus === "number" && e.httpStatus >= 400 && e.httpStatus < 500;
+}
+
+// ==========================================================================
+// نتیجه‌های خط لوله
+// ==========================================================================
+
+export interface ArmCatalogSyncResult {
+  entity: "listings" | "requests";
+  ok: boolean;
+  pages: number;
+  fetched: number;
+  created: number;
+  updated: number;
+  duplicates: number;
+  errors: number;
+  totalAtSource: number;
+  durationMs: number;
+  errorCode?: string;
+}
+
+export interface ArmCatalogEnrichResult {
+  entity: "listings" | "requests";
+  ok: boolean;
+  attempted: number;
+  enriched: number; // ردیف‌هایی که دادهٔ تماس/آدرس واقعی یافت شد
+  missingAtSource: number; // ردیف‌هایی که منبع دادهٔ تماس ندارد (نتیجهٔ قطعی، نه خطا)
+  failed: number;
+  remaining: number; // ردیف‌های همچنان در انتظار غنی‌سازی
+  total: number;
+  durationMs: number;
+  errorCode?: string;
+}
+
+// ==========================================================================
+// لایه ۱ — همگام‌سازی فهرست (صفحه‌به‌صفحه با نرخ‌محدود)
+// ==========================================================================
+
+async function fetchListPage(
+  token: string,
+  path: string,
+  page: number,
+  pageSize: number
+): Promise<{ rows: RawRow[]; total: number; totalPages: number }> {
+  const cfg = getMelkApiConfig();
+  const res = await armCall<unknown>({
+    path,
+    baseUrl: cfg.armApiBase,
+    token,
+    query: { page, limit: pageSize },
+    // سرور ARM فهرست درخواست‌ها را با هزینهٔ ثابت ~۵ثانیه‌ای پاسخ می‌دهد (پروب P6.5-10)
+    timeoutMs: LIST_TIMEOUT_MS,
+    maxRetries: 1,
+  });
+  const extracted = extractPagedList<RawRow>(res.data, (row) => (row && typeof row === "object" ? (row as RawRow) : null));
+  const rows = extracted.rows ?? [];
+  const totalPages = extracted.totalPages ?? (extracted.total > 0 ? Math.ceil(extracted.total / pageSize) : 1);
+  return { rows, total: extracted.total, totalPages };
+}
+
+/** همگام‌سازی کامل لایهٔ فهرست آگهی‌ها → PropertyRecord */
+export async function syncArmListingsCatalog(
+  token: string,
+  opts: { pageSize?: number; maxPages?: number; repos?: { property?: PropertyRecordRepository } } = {}
+): Promise<ArmCatalogSyncResult> {
+  const started = Date.now();
+  const repo = opts.repos?.property ?? getPropertyRecordRepository();
+  const pageSize = Math.min(Math.max(opts.pageSize ?? 500, 1), 500);
+  const maxPages = Math.min(opts.maxPages ?? MAX_PAGES, MAX_PAGES);
+  const runId = `p6510-listings-${randomUUID().slice(0, 8)}`;
+  const out: ArmCatalogSyncResult = {
+    entity: "listings", ok: false, pages: 0, fetched: 0, created: 0, updated: 0,
+    duplicates: 0, errors: 0, totalAtSource: 0, durationMs: 0,
+  };
+
+  try {
+    let page = 1;
+    let endPage = 1;
+    do {
+      const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.propertiesList, page, pageSize);
+      out.totalAtSource = total;
+      endPage = Math.min(tp, maxPages);
+      out.pages = page;
+      const inputs = rows
+        .map((r) => mapArmPropertyListRow(r))
+        .filter((r): r is PropertyBulkInput => r !== null);
+      out.fetched += inputs.length;
+      const stats = await repo.upsertBulk(inputs, { sourceRunId: runId });
+      out.created += stats.created;
+      out.updated += stats.updated;
+      out.duplicates += stats.duplicates;
+      out.errors += stats.errors;
+      page += 1;
+      if (page <= endPage) await sleep(catalogRateMs());
+    } while (page <= endPage);
+    out.ok = true;
+  } catch (err) {
+    out.errorCode = (err as { code?: string })?.code ?? "UNKNOWN";
+  }
+  out.durationMs = Date.now() - started;
+  return out;
+}
+
+/** همگام‌سازی کامل لایهٔ فهرست درخواست‌ها → RequestRecord (source='arm') */
+export async function syncArmRequestsCatalog(
+  token: string,
+  opts: { pageSize?: number; maxPages?: number; startPage?: number; repos?: { request?: RequestRepository } } = {}
+): Promise<ArmCatalogSyncResult> {
+  const started = Date.now();
+  const repo = opts.repos?.request ?? getRequestRepository();
+  // pageSize پیش‌فرض ۵۰ — صفحهٔ کوچک عین رفتار خود سامانه پایدار است (پروب: ۵۰۰ => ۶۰ثانیه+)
+  const pageSize = Math.min(Math.max(opts.pageSize ?? 50, 1), 100);
+  const maxPages = Math.min(opts.maxPages ?? MAX_PAGES, MAX_PAGES);
+  const runId = `p6510-requests-${randomUUID().slice(0, 8)}`;
+  const out: ArmCatalogSyncResult = {
+    entity: "requests", ok: false, pages: 0, fetched: 0, created: 0, updated: 0,
+    duplicates: 0, errors: 0, totalAtSource: 0, durationMs: 0,
+  };
+
+  try {
+    let page = Math.max(1, opts.startPage ?? 1);
+    let endPage = page; // سقف نسبی: maxPages صفحه از نقطهٔ شروع (نه سقف مطلق شمارهٔ صفحه)
+    do {
+      const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.requestsList, page, pageSize);
+      out.totalAtSource = total;
+      endPage = Math.min(tp, page + maxPages - 1);
+      out.pages = page;
+      const inputs = rows
+        .map((r) => mapArmRequestListRow(r))
+        .filter((r): r is ArmRequestBulkRow => r !== null);
+      out.fetched += inputs.length;
+      const stats = await repo.upsertArmBulk(inputs, { sourceRunId: runId });
+      out.created += stats.created;
+      out.updated += stats.updated;
+      out.duplicates += stats.duplicates;
+      out.errors += stats.errors;
+      page += 1;
+      if (page <= endPage) await sleep(catalogRateMs());
+    } while (page <= endPage);
+    out.ok = true;
+  } catch (err) {
+    out.errorCode = (err as { code?: string })?.code ?? "UNKNOWN";
+  }
+  out.durationMs = Date.now() - started;
+  return out;
+}
+
+// ==========================================================================
+// لایه ۲ — غنی‌سازی تماس/آدرس (برش‌برش با نرخ‌محدود)
+// ==========================================================================
+
+/** جزئیات آگهی → افزودنی‌های ساختاری (آدرس دقیق + متراژ/اتاق/طبقه + دسته‌بندی) */
+function detailsToPropertyExtras(
+  detailsPayload: unknown
+): Partial<PropertyBulkInput> & { detailsJson?: string | null } {
+  const extras: Partial<PropertyBulkInput> & { detailsJson?: string | null } = {};
+  if (!detailsPayload || typeof detailsPayload !== "object") return extras;
+
+  const address = extractAddress(detailsPayload, null);
+  if (address) extras.address = address;
+
+  const items = extractDetailItems(detailsPayload);
+  if (items.length > 0) extras.detailsJson = JSON.stringify(items);
+  const byName = new Map<string, string>();
+  const raw = detailsPayload as RawRow;
+  if (Array.isArray(raw.details)) {
+    for (const d of raw.details as RawRow[]) {
+      const name = pickStr(d, ["name"]);
+      const value = pickStr(d, ["value"]);
+      if (name && value) byName.set(name, value);
+    }
+  }
+  const meterage = byName.get("space");
+  if (meterage && /^\d+([.,]\d+)?$/.test(meterage)) {
+    extras.rawArea = meterage;
+    extras.meterage = Number(meterage.replace(",", "."));
+  }
+  const rooms = byName.get("room_whole");
+  if (rooms && /^\d+$/.test(rooms)) extras.rooms = Number(rooms);
+  const floor = byName.get("floor");
+  if (floor && /^\d+$/.test(floor)) extras.floor = Number(floor);
+  const year = byName.get("year");
+  if (year && /^\d{4}$/.test(year)) extras.buildYear = Number(year);
+
+  const category = raw.propertyCategory as RawRow | undefined;
+  if (category && typeof category === "object") {
+    extras.tradeTypeName = pickStr(category, ["tradeType"]);
+    extras.propertyTypeName = pickStr(category, ["propertyType"]);
+  }
+  return extras;
+}
+
+/**
+ * غنی‌سازی برشی آگهی‌ها — تا maxRows ردیفِ در انتظار (جدیدترین اول):
+ * owner → نام/موبایل مالک · details → آدرس دقیق و مشخصات.
+ * ردیف‌های موفق/بی‌داده با extractionBatchId علامت می‌خورند (دیگر دوباره پرسیده نمی‌شوند).
+ */
+export async function enrichArmListings(
+  token: string,
+  opts: { maxRows?: number; repos?: { property?: PropertyRecordRepository }; rowIds?: string[] } = {}
+): Promise<ArmCatalogEnrichResult> {
+  const started = Date.now();
+  const repo = opts.repos?.property ?? getPropertyRecordRepository();
+  const maxRows = Math.min(Math.max(opts.maxRows ?? 100, 1), 500);
+  const batchId = `p6510-enr-l-${randomUUID().slice(0, 8)}`;
+  const cfg = getMelkApiConfig();
+  const out: ArmCatalogEnrichResult = {
+    entity: "listings", ok: true, attempted: 0, enriched: 0, missingAtSource: 0,
+    failed: 0, remaining: 0, total: 0, durationMs: 0,
+  };
+
+  const pending = await repo.listPendingEnrichment(maxRows, opts.rowIds);
+  const counts = await repo.countEnrichment();
+  out.total = counts.total;
+
+  for (const row of pending) {
+    out.attempted += 1;
+    const input: PropertyBulkInput = {
+      id: row.id,
+      propertyCode: row.naturalKey,
+      extractedAt: new Date(),
+      extractionBatchId: batchId,
+      normalizationVersion: "arm-catalog-v1",
+    };
+    let gotAny = false;
+    /** خطای نرم = قطعی نیست (شبکه/سرور) — اگر هر دو زنجیره نرم‌شکست خوردند، ردیف علامت نمی‌خورد */
+    let softFailures = 0;
+
+    // ---- مالک ملک: نام و نام خانوادگی + شماره تماس ----
+    try {
+      const own = await armCall<unknown>({
+        path: MELK_ENDPOINTS.arm.propertyOwner(row.id),
+        baseUrl: cfg.armApiBase,
+        token,
+        timeoutMs: 45_000, // نقطهٔ سرد سامانه تا ~۴۰ثانیه (شاهد پروب)
+        maxRetries: 0,
+      });
+      const person = extractPersonInfo(own.data);
+      if (person) {
+        const rawName = pickStr((own.data ?? {}) as RawRow, ["fullName", "lastName"]);
+        const rawMobile = pickStr((own.data ?? {}) as RawRow, ["mobileNumber", "phoneNumber"]);
+        if (rawName) input.rawOwnerName = rawName;
+        if (rawMobile) input.rawOwnerMobile = rawMobile;
+        // مالک ملک = rawOwnerName/rawOwnerMobile (B.3) — ownerName ستون کارشناس است و لمس نمی‌شود
+        if (person.mobile) input.ownerMobile = person.mobile;
+        if (rawName || person.mobile) gotAny = true;
+      }
+    } catch (err) {
+      const e = err as { code?: string; httpStatus?: number; retryable?: boolean };
+      if (e?.code === "UNAUTHORIZED") throw err; // انقضای توکن — کل اجرا متوقف و تمدید می‌شود
+      // خطای ۴xx (نتیجهٔ قطعی: رکورد حذف‌شده/مجوز) ⇒ علامت می‌خورد؛ ۵xx/شبکه/مهلت ⇒ نرم (تلاش در برش بعدی)
+      if (!isDefinitive4xx(e)) softFailures += 1;
+    }
+
+    // ---- جزئیات: آدرس دقیق + مشخصات فنی ----
+    try {
+      const det = await armCall<unknown>({
+        path: MELK_ENDPOINTS.arm.propertyDetails(row.id),
+        baseUrl: cfg.armApiBase,
+        token,
+        timeoutMs: 45_000,
+        maxRetries: 0,
+      });
+      const extras = detailsToPropertyExtras(det.data);
+      Object.assign(input, extras);
+      if (Object.keys(extras).length > 0) gotAny = true;
+    } catch (err) {
+      const e = err as { code?: string };
+      if (e?.code === "UNAUTHORIZED") throw err;
+      softFailures += 1;
+    }
+
+    // هر دو زنجیره قطعی نبود ⇒ بدون علامت؛ در برش بعدی دوباره تلاش می‌شود
+    if (softFailures >= 2) {
+      out.failed += 1;
+      await sleep(catalogRateMs());
+      continue;
+    }
+
+    const stats = await repo.upsertBulk([input], { sourceRunId: batchId });
+    if (stats.errors > 0) {
+      out.failed += 1;
+    } else if (gotAny) {
+      out.enriched += 1;
+    } else {
+      out.missingAtSource += 1;
+    }
+    await sleep(catalogRateMs());
+  }
+
+  const after = await repo.countEnrichment();
+  out.remaining = after.pending;
+  out.total = after.total;
+  out.durationMs = Date.now() - started;
+  return out;
+}
+
+/**
+ * غنی‌سازی برشی درخواست‌ها — تا maxRows ردیفِ در انتظار (جدیدترین اول):
+ * applicant → نام و نام خانوادگی + شماره تماس درخواست‌دهنده.
+ */
+export async function enrichArmRequests(
+  token: string,
+  opts: { maxRows?: number; repos?: { request?: RequestRepository }; rowIds?: string[] } = {}
+): Promise<ArmCatalogEnrichResult> {
+  const started = Date.now();
+  const repo = opts.repos?.request ?? getRequestRepository();
+  const maxRows = Math.min(Math.max(opts.maxRows ?? 100, 1), 500);
+  const batchId = `p6510-enr-r-${randomUUID().slice(0, 8)}`;
+  const cfg = getMelkApiConfig();
+  const out: ArmCatalogEnrichResult = {
+    entity: "requests", ok: true, attempted: 0, enriched: 0, missingAtSource: 0,
+    failed: 0, remaining: 0, total: 0, durationMs: 0,
+  };
+
+  const pending = await repo.listPendingArmEnrichment(maxRows, opts.rowIds);
+  const counts = await repo.countArmEnrichment();
+  out.total = counts.total;
+
+  for (const row of pending) {
+    out.attempted += 1;
+    const input: ArmRequestBulkRow = {
+      id: row.id,
+      requestCode: row.naturalKey,
+      extractedAt: new Date(),
+      extractionBatchId: batchId,
+      normalizationVersion: "arm-catalog-v1",
+    };
+    let gotAny = false;
+    /** خطای نرم = قطعی نیست (شبکه/سرور) — ردیف علامت نمی‌خورد تا در برش بعدی دوباره تلاش شود */
+    let softFail = false;
+    try {
+      const app = await armCall<unknown>({
+        path: MELK_ENDPOINTS.arm.requestApplicant(row.id),
+        baseUrl: cfg.armApiBase,
+        token,
+        timeoutMs: 45_000,
+        maxRetries: 0,
+      });
+      const person = extractPersonInfo(app.data);
+      if (person) {
+        const rawName = pickStr((app.data ?? {}) as RawRow, ["fullName", "lastName"]);
+        const rawMobile = pickStr((app.data ?? {}) as RawRow, ["mobileNumber", "phoneNumber"]);
+        if (rawName) {
+          input.rawCustomerName = rawName;
+          input.customerName = rawName;
+        }
+        if (rawMobile) input.rawCustomerMobile = rawMobile;
+        if (person.mobile) input.customerMobile = normalizeMobile(rawMobile ?? person.mobile);
+        if (rawName || person.mobile) gotAny = true;
+      }
+    } catch (err) {
+      const e = err as { code?: string; httpStatus?: number; retryable?: boolean };
+      if (e?.code === "UNAUTHORIZED") throw err; // انقضای توکن — کل اجرا متوقف و تمدید می‌شود
+      // ۴xx ⇒ نتیجهٔ قطعی (علامت می‌خورد)؛ ۵xx/شبکه/مهلت ⇒ نرم (برش بعدی)
+      softFail = !isDefinitive4xx(e);
+    }
+
+    if (softFail) {
+      out.failed += 1;
+      await sleep(catalogRateMs());
+      continue;
+    }
+
+    const stats = await repo.upsertArmBulk([input], { sourceRunId: batchId });
+    if (stats.errors > 0) {
+      out.failed += 1;
+    } else if (gotAny) {
+      out.enriched += 1;
+    } else {
+      out.missingAtSource += 1;
+    }
+    await sleep(catalogRateMs());
+  }
+
+  const after = await repo.countArmEnrichment();
+  out.remaining = after.pending;
+  out.total = after.total;
+  out.durationMs = Date.now() - started;
+  return out;
+}

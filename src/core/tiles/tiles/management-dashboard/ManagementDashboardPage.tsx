@@ -39,12 +39,12 @@ export function ManagementDashboardPage({ settings, userRole }: TilePageProps) {
               <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 shadow-lg shadow-teal-600/30 shrink-0">
                 <LayoutDashboard className="w-5 h-5 text-white" aria-hidden />
               </span>
-              داشبورد مدیریتی
+              داشبورد مدیریتی ملک تبریز
             </h2>
             <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed max-w-3xl">
               مرکز فرمان تحلیل‌ها و مدیریت دفتر املاک — همه کاشی‌های مدیریتی و تحلیلی در این‌جا گرد آمده‌اند:
               معاملات، قراردادها و اسناد، باشگاه مشتریان، مالی و کمیسیون، شاخص قیمت روز مناطق، کارشناسان، بازدیدها و پیگیری‌ها،
-              عرضه و تقاضا و استخراج اطلاعات. هر کاشی را انتخاب کنید تا وارد فضای تخصصی آن شوید؛
+              عرضه و تقاضا، استخراج اطلاعات، آگهی‌های سامانه ARM و درخواست‌های سامانه ARM. هر کاشی را انتخاب کنید تا وارد فضای تخصصی آن شوید؛
               «تنظیمات عمومی» روی صفحه خانه (آخرین کاشی) در دسترس است.
             </p>
           </div>
@@ -93,7 +93,7 @@ export function ManagementDashboardPage({ settings, userRole }: TilePageProps) {
           <LayoutDashboard className="w-4 h-4 shrink-0 mt-0.5 text-teal-600 dark:text-teal-400" aria-hidden />
           <p>
             دکمه بازگشت هر کاشی داخل این داشبورد، شما را به همین صفحه برمی‌گرداند؛ برای رسیدن به صفحه خانه،
-            از داشبورد مدیریتی یک بار دیگر بازگشت را بزنید. کارگاه اصلی دفتر (فایل‌یابی، آگهی، درخواست ملک) و تنظیمات عمومی همیشه مستقیم روی صفحه خانه در دسترس‌اند.
+            از داشبورد مدیریتی ملک تبریز یک بار دیگر بازگشت را بزنید. کارگاه اصلی دفتر (فایل‌یابی، آگهی، درخواست ملک) و تنظیمات عمومی همیشه مستقیم روی صفحه خانه در دسترس‌اند.
           </p>
         </CardContent>
       </Card>

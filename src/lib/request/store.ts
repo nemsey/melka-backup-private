@@ -135,8 +135,10 @@ export async function listRequests(
   filter?: { source?: "manual" | "auto" },
   scope?: RequestScopeConstraint
 ): Promise<ListRequestsResult> {
-  const where: { source?: string; actorCode?: string; branchId?: string } = {};
-  if (filter?.source) where.source = filter.source;
+  const where: { source?: string | { not: string }; actorCode?: string; branchId?: string } = {};
+  // P6.5-10 — رکوردهای کاتالوگ ARM (source='arm') فقط در کاشی «درخواست‌های ملک تبریز»
+  // دیده می‌شوند؛ کاشی «درخواست ملک» فایل‌های محلی دفتر است (پیش‌فرض: بدون arm)
+  where.source = filter?.source ?? { not: "arm" };
   // P6.5-04-i — فیلتر دامنه فقط از helper مرکزی (صفر فیلتر دست‌نویس در روت‌ها)
   if (scope?.actorCode !== undefined) where.actorCode = scope.actorCode;
   if (scope?.branchId !== undefined) where.branchId = scope.branchId;
