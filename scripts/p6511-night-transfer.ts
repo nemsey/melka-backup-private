@@ -22,7 +22,9 @@ const db = new PrismaClient({
 
 // ---------- پنجرهٔ شبانه (تهران = UTC+3:30) ----------
 function tehranHourUtc3h30(d: Date): number {
-  return (d.getUTCHours() + 3.5) % 24;
+  // دقیق: UTC+3:30 — دقیقه‌ها هم شیفت می‌شوند (رفع باگ: پیش‌تر فقط ساعت گرد می‌شد
+  // و پنجره برای X:31–X:59 اشتباه «خارج» تشخیص داده می‌شد)
+  return ((d.getUTCHours() * 60 + d.getUTCMinutes() + 210) / 60) % 24;
 }
 function inNightWindow(d: Date): boolean {
   const h = tehranHourUtc3h30(d);

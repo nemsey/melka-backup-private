@@ -89,6 +89,8 @@ function makeContractRepo(rows: ContractDTO[]): ContractRepository {
     upsertBatch: async () => ({ created: 0, updated: 0 }),
     upsertBulk: async () => ({ created: 0, updated: 0, duplicates: 0, errors: 0 }),
     deleteAll: async () => undefined,
+    // P6.5-12 — کارگزاری‌های مرتبط (mock خالی؛ این تست ایجنت‌ها را می‌سنجد نه کارگزاری را)
+    listAgencyLookups: async () => [],
   };
 }
 

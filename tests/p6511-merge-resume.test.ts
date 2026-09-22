@@ -195,7 +195,9 @@ describe("P6.5-11 پ — غنی‌سازی ستون‌های جدید فهرست
     const rows = [
       {
         id: "tx-1", contractDate: new Date("2026-06-15T00:00:00Z"), propertyCode: "P-100",
-        propertyCustomer: "مالک از گزارش تطابق", requestCode: "R-200", requestCustomer: null,
+        // P6.5-12 — شاهد دادهٔ واقعی: propertyCustomer خود گزارش فقط «برچسب نقش» است
+        // (۷۳۵/۷۳۵ رکورد production = «فروشنده»)؛ نام واقعی مالک از رجیستری آگهی‌های ARM می‌آید
+        propertyCustomer: "فروشنده", requestCode: "R-200", requestCustomer: null,
         contractHolo: null, suggestedPropertyCount: 2, eventsCount: 1,
       },
       {
@@ -217,8 +219,9 @@ describe("P6.5-11 پ — غنی‌سازی ستون‌های جدید فهرست
     ];
     const out = enrichTransactionRows(rows, { owners, requesters, contracts });
 
-    // ردیف ۱: نام مالک از خود گزارش تطابق (اولویت) + موبایل از ARM + درخواست‌دهنده از ARM
-    expect(out[0].ownerName).toBe("مالک از گزارش تطابق");
+    // ردیف ۱ (اولویت P6.5-12): نام مالک از رجیستری آگهی ARM + موبایل از ARM + درخواست‌دهنده از ARM
+    // (برچسب نقش «فروشنده» دیگر هرگز نام ستون مالک را جعل نمی‌کند)
+    expect(out[0].ownerName).toBe("مالک غنی‌شدهٔ ARM");
     expect(out[0].ownerMobile).toBe("09143334455");
     expect(out[0].requesterName).toBe("درخواست‌دهندهٔ ARM");
     expect(out[0].requesterMobile).toBe("09145556677");
@@ -230,6 +233,30 @@ describe("P6.5-11 پ — غنی‌سازی ستون‌های جدید فهرست
     expect(out[1].consultantsShareSummary?.count).toBe(1);
     expect(out[1].consultantsShareSummary?.totalPercent).toBe(50);
     expect(out[1].ownerName).toBeNull(); // بدون داده — «در انتظار غنی‌سازی» در UI
+  });
+
+  test("enrichTransactionRows (P6.5-12): بدون رجیستری ARM ⇒ برچسب نقش آخرین fallback + طرف فروشندهٔ قرارداد", async () => {
+    const { enrichTransactionRows } = await import("@/lib/melk-api/tx-enrichment");
+    const rows = [
+      // بدون رجیستری آگهی و بدون قرارداد ⇒ برچسب نقش (بهتر از تهی — عین نمایش خود سامانه)
+      { id: "tx-a", contractDate: new Date("2026-06-15T00:00:00Z"), propertyCode: "P-100", propertyCustomer: "فروشنده", requestCode: null, requestCustomer: null, contractHolo: null, suggestedPropertyCount: 0, eventsCount: 0 },
+      // با قراردادِ دارای فروشندهٔ نام‌دار ⇒ نام فروشندهٔ قرارداد بالاتر از برچسب نقش
+      { id: "tx-b", contractDate: new Date("2026-06-16T00:00:00Z"), propertyCode: "P-200", propertyCustomer: "فروشنده", requestCode: null, requestCustomer: null, contractHolo: "H-900", suggestedPropertyCount: 0, eventsCount: 0 },
+    ];
+    const contracts = [
+      {
+        contractHolo: "H-900", propertyCode: "P-200", requestCode: null, contractType: "مبایعه‌نامه",
+        contractDate: new Date("2026-06-10T00:00:00Z"), documentDate: null, deliveryDate: null,
+        propertyTitle: null, propertyAddress: null,
+        buyerListJson: null,
+        sellerListJson: JSON.stringify([{ fullName: "فروشندهٔ قراردادی", mobileNumber: "09149990000" }]),
+        realtorListJson: null, status: "payed",
+      },
+    ];
+    const out = enrichTransactionRows(rows, { owners: [], requesters: [], contracts });
+    expect(out[0].ownerName).toBe("فروشنده"); // fallback نهایی — برچسب نقش
+    expect(out[1].ownerName).toBe("فروشندهٔ قراردادی"); // طرف فروشندهٔ قرارداد > برچسب نقش
+    expect(out[1].ownerMobile).toBe("09149990000");
   });
 });
 
