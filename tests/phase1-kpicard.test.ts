@@ -19,10 +19,7 @@ const CRM_PAGES = [
   "transactions-contracts/TransactionsTab.tsx",
   "experts/ExpertsPage.tsx",
   "supply-demand/SupplyDemandPage.tsx",
-  "transactions-contracts/FinanceTab.tsx",
   "price-index/PriceIndexPage.tsx",
-  "transactions-contracts/ContractsTab.tsx",
-  "customer-club/CustomerClubPage.tsx",
 ];
 
 describe("P1-01a / KpiCard — قرارداد رندر (عین مارک‌آپ قبلی)", () => {

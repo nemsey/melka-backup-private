@@ -163,7 +163,6 @@ describe("P1-02 / ادعاهای ساختاری — پنج صفحه فقط فر�
       ["experts/ExpertsPage.tsx", "cooperationDegree"],
       ["supply-demand/SupplyDemandPage.tsx", "demandLevel"],
       ["price-index/PriceIndexPage.tsx", "areaTrendMatrix"],
-      ["transactions-contracts/FinanceTab.tsx", "parseFaAmount"],
     ];
     for (const [page, fn] of checks) {
       const c = readFileSync(join(TILES, page), "utf8");

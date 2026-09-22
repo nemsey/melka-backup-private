@@ -46,9 +46,16 @@ describe("قالب مبلغ تومانی", () => {
 });
 
 describe("عدد با جداکننده", () => {
-  test("جداکننده هزارگان فارسی", () => {
+  test("جداکننده هزارگان فارسی — P6.5-12 (نکتهٔ ۱ دستور مالک): «،» عین نمونهٔ ۲۰۰،۰۰۰،۰۰۰،۰۰۰", () => {
     expect(faNumber(640)).toBe("۶۴۰");
-    expect(faNumber(1234567)).toBe("۱٬۲۳۴٬۵۶۷");
+    expect(faNumber(1234567)).toBe("۱،۲۳۴،۵۶۷");
+    expect(faNumber(200000000000)).toBe("۲۰۰،۰۰۰،۰۰۰،۰۰۰");
+  });
+
+  test("P6.5-12 — مبلغ کامل با تمام ارقام (faAmountFull)", async () => {
+    const { faAmountFull } = await import("@/lib/format");
+    expect(faAmountFull(19300000000)).toBe("۱۹،۳۰۰،۰۰۰،۰۰۰ تومان");
+    expect(faAmountFull(null)).toBe("—");
   });
 });
 

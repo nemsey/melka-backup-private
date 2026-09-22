@@ -197,7 +197,11 @@ export function mapArmRealtorRow(row: Row, index: number): CrmExpert | null {
     pickNestedStr(row, ["realtor.code", "user.code"]) ||
     "";
 
-  const mobile = pickStr(row, ["mobile", "phone", "phoneNumber", "cellphone", "tel"]) || "";
+  // P6.5-12 — رفع باگ موبایل: فیلد واقعی ARM «mobileNumber» است (شاهد پروب زندهٔ
+  // realtors/list: {_id, fullName, mobileNumber}) — قبلاً فقط mobile/phone/phoneNumber
+  // جست‌وجو می‌شد ⇒ همهٔ ردیف‌ها «—» می‌شدند.
+  const mobile =
+    pickStr(row, ["mobileNumber", "mobile", "phone", "phoneNumber", "cellphone", "tel"]) || "";
 
   // نقش مشتری — مثل «کارشناس و مشاور فروش»
   const role =
@@ -628,8 +632,19 @@ export function mergeArmContractInfo(contract: CrmContract, infoPayload: unknown
   const primaryRaw = Array.isArray(info.primaryRealtorList) ? (info.primaryRealtorList as Row[]) : [];
   const secondaryRaw = Array.isArray(info.secondaryRealtorList) ? (info.secondaryRealtorList as Row[]) : [];
 
+    // P6.5-12 — مبالغ مالی قرارداد عین منبع (contractPrice رشته‌ای در ARM است)
+    const rawContractPrice = pickStr(info, ["contractPrice"]) || null;
+    const contractPriceNum = rawContractPrice !== null ? Number(rawContractPrice.replace(/[٬,،\s]/g, "")) : NaN;
+    const businessId = pickStr(info, ["businessId"]) || null;
+
   return {
     ...contract,
+    // P6.5-12 — لایه ۱ حقیقت + لایه ۲ عددی: مبلغ قرارداد
+    rawContractPrice,
+    contractPrice: Number.isFinite(contractPriceNum) ? contractPriceNum : null,
+    comisionOfContract: pickNum(info, ["comisionOfContract"]) || null,
+    taxOfContract: pickNum(info, ["taxOfContract"]) || null,
+    businessId,
     // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام قرارداد از info عین منبع (اولویت با detail)
     rawDate: pickStr(info, ["contractDate"]) || contract.rawDate,
     // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: عنوان ملک خام از info (اولویت با detail)

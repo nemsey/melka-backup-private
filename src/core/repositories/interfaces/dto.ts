@@ -77,6 +77,13 @@ export interface ContractDTO {
   sellerListJson: string | null;
   realtorListJson: string | null;
   canAddRealtor: boolean;
+  /** P6.5-12 — مبالغ مالی قرارداد (از trade-overviews/info) */
+  contractPrice: number | null;
+  rawContractPrice: string | null;
+  comisionOfContract: number | null;
+  taxOfContract: number | null;
+  /** P6.5-12 — شناسهٔ کسب‌وکار (کلید مشترک سامانه‌ها) */
+  businessId: string | null;
   syncedAt: Date;
   /** P6.5-03 — آخرین اجرای Bulk که رکورد را نوشت (محافظت جاروی sync) */
   sourceRunId: string | null;

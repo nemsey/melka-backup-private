@@ -63,9 +63,18 @@ export function faToman(n: number): string {
   return `${faNumber(n)} تومان`;
 }
 
-/** عدد با جداکننده هزارگان فارسی */
+/** عدد با جداکننده هزارگان فارسی
+ *  P6.5-12 (نکتهٔ ۱ دستور مالک): جداکننده در کل اپ «،» است — عین نمونهٔ دستور:
+ *  ۲۰۰،۰۰۰،۰۰۰،۰۰۰ تومان */
 export function faNumber(n: number): string {
-  return faDigitsLocal(Math.round(n).toLocaleString("en-US")).replace(/,/g, "٬");
+  return faDigitsLocal(Math.round(n).toLocaleString("en-US")).replace(/,/g, "،");
+}
+
+/** P6.5-12 — مبلغ با تمام ارقام و جداکنندهٔ «،»: «۱۹،۳۰۰،۰۰۰،۰۰۰ تومان»
+ *  (بدون خلاصه‌سازی میلیارد/میلیون — عین نمونهٔ دستور مالک) */
+export function faAmountFull(n: number | null | undefined, unit = " تومان"): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "—";
+  return `${faNumber(n)}${unit}`;
 }
 
 /** درصد فارسی */

@@ -208,11 +208,8 @@ describe("P6.5-09 بند ۴ — لیست‌های بدون صفحه‌بندی (
     expect(src).toContain("rows.map((t, i)");
   });
 
-  test("E2) قراردادها: درخواست همهٔ ردیف‌ها (limit=5000) و حذف تنظیم pageSize", () => {
-    const page = read("src/core/tiles/tiles/transactions-contracts/ContractsTab.tsx");
+  test("E2) قراردادها: مسیر تک‌صفحه‌ای برقرار است (P6.5-12: تب قراردادها حذف شد — روت و داده ماندگار)", () => {
     const def = read("src/core/tiles/tiles/transactions-contracts/index.ts");
-    expect(page).toContain('"limit", "5000"');
-    expect(page).not.toContain("settings.pageSize");
     expect(def).not.toContain('"pageSize"');
     expect(read("src/app/api/crm/contracts/route.ts")).toContain(", 5000)");
   });

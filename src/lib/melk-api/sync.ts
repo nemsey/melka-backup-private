@@ -613,6 +613,12 @@ export const toContractUpsert = (c: CrmContract): ContractUpsertInput => ({
   sellerListJson: c.sellers.length > 0 ? JSON.stringify(c.sellers) : null,
   realtorListJson: c.realtorShares.length > 0 ? JSON.stringify(c.realtorShares) : null,
   canAddRealtor: c.canAddRealtor,
+  // P6.5-12 — مبالغ مالی قرارداد (لایه ۲ عددی + لایه ۱ خام)
+  contractPrice: c.contractPrice ?? null,
+  rawContractPrice: c.rawContractPrice ?? null,
+  comisionOfContract: c.comisionOfContract ?? null,
+  taxOfContract: c.taxOfContract ?? null,
+  businessId: c.businessId ?? null,
 });
 
 /** ثبت/افزایش نامه مرده برای یک ردیف ناموفق — attempts پیاپی؛ ۳+ یعنی «مرده» */
@@ -1008,6 +1014,12 @@ function toContractCreates(rows: CrmContract[]) {
         sellerListJson: c.sellers.length > 0 ? JSON.stringify(c.sellers) : null,
         realtorListJson: c.realtorShares.length > 0 ? JSON.stringify(c.realtorShares) : null,
         canAddRealtor: c.canAddRealtor,
+        // P6.5-12 — مبالغ مالی قرارداد
+        ...(c.contractPrice !== undefined && c.contractPrice !== null ? { contractPrice: c.contractPrice } : {}),
+        ...(c.rawContractPrice ? { rawContractPrice: c.rawContractPrice } : {}),
+        ...(c.comisionOfContract !== undefined && c.comisionOfContract !== null ? { comisionOfContract: c.comisionOfContract } : {}),
+        ...(c.taxOfContract !== undefined && c.taxOfContract !== null ? { taxOfContract: c.taxOfContract } : {}),
+        ...(c.businessId ? { businessId: c.businessId } : {}),
         // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: خام‌ها عین منبع
         ...(c.rawDate !== undefined ? { rawDate: c.rawDate } : {}),
         ...(c.rawCreatorName !== undefined ? { rawCreatorName: c.rawCreatorName ?? c.creatorName } : {}),

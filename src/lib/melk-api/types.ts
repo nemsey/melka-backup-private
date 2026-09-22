@@ -364,6 +364,13 @@ export interface CrmContract {
   sellers: { fullName: string; mobileNumber: string }[];
   realtorShares: ContractRealtorShare[];
   canAddRealtor: boolean;
+  /** P6.5-12 — مبالغ مالی (از trade-overviews/info) */
+  contractPrice?: number | null;
+  rawContractPrice?: string | null;
+  comisionOfContract?: number | null;
+  taxOfContract?: number | null;
+  /** P6.5-12 — شناسهٔ کسب‌وکار (کلید مشترک سامانه‌ها) */
+  businessId?: string | null;
 }
 
 /** یک مرحله از قیف چرخه عمر قرارداد */

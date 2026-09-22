@@ -42,6 +42,8 @@ const agents = new Map<string, Agent>([
   [requestAgent.tileId, requestAgent],
   [armListingAgent.tileId, armListingAgent],
   [armRequestAgent.tileId, armRequestAgent],
+  // P6.5-12: کاشی مشتریان حذف شد (بند ب مرحلهٔ قبل) — ایجنت در رجیستری می‌ماند
+  // تا حافظه/بازخورد/نسخه‌های سیاستش از مسیر API در دسترس بماند (نکتهٔ ۲)
   // ایجنت‌های کاشی‌های ادغام‌شده — حفظ‌شده برای دسترسی تاریخچهٔ یادگیری (نکتهٔ ۲)
   [transactionAgent.tileId, transactionAgent],
   [contractAgent.tileId, contractAgent],

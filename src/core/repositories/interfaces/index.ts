@@ -8,7 +8,7 @@
 
 export * from "./dto";
 export type { TransactionRepository, TransactionListOptions, TransactionListFilter, TransactionListResult, TransactionListSummary } from "./transaction.repository";
-export type { ContractRepository, ContractUpsertInput } from "./contract.repository";
+export type { ContractRepository, ContractUpsertInput, AgencyLookupRow } from "./contract.repository";
 export type {
   ExpertRepository,
   ExpertListOptions,

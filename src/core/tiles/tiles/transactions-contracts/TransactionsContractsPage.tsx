@@ -1,31 +1,26 @@
 "use client";
 
 /**
- * کاشی ادغامی «معاملات و قراردادهای ملک تبریز» — P6.5-11 (بند پ)
+ * کاشی «معاملات ملک تبریز» — P6.5-12
  * ------------------------------------------------------
- * ادغام سه کاشی قبلی در یک کاشی واحد:
- *   تب ۱ «معاملات»          — گزارش تطابق + فهرست معاملات با ستون‌های جدید (پ-۵)
- *   تب ۲ «قراردادها و اسناد» — صورت وضعیت‌های ۹ مرحله‌ای + جزئیات (پ-۳)
- *   تب ۳ «مالی و کمیسیون»    — محاسبه‌گر تعرفه اتحادیه + تجمیع حق‌السهم (پ-۲)
- * همهٔ تب‌ها شامل اطلاعات «تمامی کارشناسان ملک تبریز» هستند.
- * ایجنت مولتی‌بینش ۲۱ دامنه‌ای (الزام ≥۱۵ — بند پ-۶) بالای صفحه.
- * دکمهٔ «بروزرسانی از سامانه» — انتقال کامل همهٔ منابع با ازسرگیری (نکتهٔ ۳).
+ * تک‌نما (حذف تب‌های «قراردادها و اسناد» و «مالی و کمیسیون» — دستور مرحلهٔ قبل):
+ * فهرست معاملات با ستون‌های کامل: کد ملک/مالک · درخواست/درخواست‌دهنده ·
+ * نوع قرارداد · هولوگرام · مبلغ (جداکنندهٔ «،») · فایل قرارداد · حق‌السهم با درصد.
+ * ایجنت مولتی‌بینش بالای صفحه + دکمهٔ «بروزرسانی از سامانه» (نکتهٔ ۳).
+ * دادهٔ قراردادها/مالی در پایگاه ماندگار است (قانون دادهٔ مقدس — حذف نما ≠ حذف داده).
  */
 
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileCheck2, ScrollText, Calculator, RefreshCw, Server, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Loader2, RefreshCw, Server, CheckCircle2, AlertTriangle } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faNumber } from "@/lib/format";
 import { TransactionsTab } from "./TransactionsTab";
-import { ContractsTab } from "./ContractsTab";
-import { FinanceTab } from "./FinanceTab";
 
 interface SyncAllResponse {
   ok: boolean;
@@ -38,7 +33,7 @@ interface SyncAllResponse {
   enrichRequests: { enriched?: number; remaining?: number } | null;
 }
 
-export function TransactionsContractsPage({ settings, onSettingsChange }: TilePageProps) {
+export function TransactionsContractsPage({ settings }: TilePageProps) {
   const { toast } = useToast();
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<SyncAllResponse | null>(null);
@@ -46,7 +41,7 @@ export function TransactionsContractsPage({ settings, onSettingsChange }: TilePa
   const sortBy = String(settings.sortBy ?? "contractDate");
   const showCharts = settings.showCharts !== false;
 
-  /** بروزرسانی از سامانه — انتقال کامل همهٔ منابع (نکتهٔ ۳: زیرساخت انتقال امشب مالک) */
+  /** بروزرسانی از سامانه — انتقال کامل همهٔ منابع (نکتهٔ ۳) */
   const syncAll = async () => {
     setSyncing(true);
     try {
@@ -82,10 +77,10 @@ export function TransactionsContractsPage({ settings, onSettingsChange }: TilePa
 
   return (
     <div className="space-y-6">
-      {/* ایجنت هوشمند مولتی‌بینش — ۲۱ دامنه (بند پ-۶) */}
+      {/* ایجنت هوشمند مولتی‌بینش */}
       <AgentPanel tileId="transactions-contracts" />
 
-      {/* نوار انتقال اطلاعات — نکتهٔ ۳: زیرساخت کامل برای انتقال امشب مالک */}
+      {/* نوار انتقال اطلاعات — نکتهٔ ۳ */}
       <Card className="border-teal-500/20 bg-gradient-to-l from-teal-600/[0.06] to-transparent">
         <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-start gap-2.5 min-w-0">
@@ -131,29 +126,8 @@ export function TransactionsContractsPage({ settings, onSettingsChange }: TilePa
         </CardContent>
       </Card>
 
-      {/* سه بخش ادغام‌شده — معاملات + قراردادها و اسناد + مالی و کمیسیون */}
-      <Tabs defaultValue="transactions" dir="rtl" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-xl h-auto p-1">
-          <TabsTrigger value="transactions" className="gap-1.5 py-2 text-xs sm:text-sm">
-            <FileCheck2 className="w-4 h-4" aria-hidden /> معاملات
-          </TabsTrigger>
-          <TabsTrigger value="contracts" className="gap-1.5 py-2 text-xs sm:text-sm">
-            <ScrollText className="w-4 h-4" aria-hidden /> قراردادها و اسناد
-          </TabsTrigger>
-          <TabsTrigger value="finance" className="gap-1.5 py-2 text-xs sm:text-sm">
-            <Calculator className="w-4 h-4" aria-hidden /> مالی و کمیسیون
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="transactions" className="mt-4">
-          <TransactionsTab sortBy={sortBy} showCharts={showCharts} />
-        </TabsContent>
-        <TabsContent value="contracts" className="mt-4">
-          <ContractsTab settings={settings} onSettingsChange={onSettingsChange} />
-        </TabsContent>
-        <TabsContent value="finance" className="mt-4">
-          <FinanceTab />
-        </TabsContent>
-      </Tabs>
+      {/* تک‌نمای فهرست معاملات — P6.5-12 (حذف دو تب ادغام‌شدهٔ قبلی) */}
+      <TransactionsTab sortBy={sortBy} showCharts={showCharts} />
     </div>
   );
 }

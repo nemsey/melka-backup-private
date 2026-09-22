@@ -18,7 +18,8 @@ import { NextRequest } from "next/server";
 import { getContractRepository, getPropertyRecordRepository, getRequestRepository, getTransactionRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
-import { enrichTransactionRows, type ContractLookup } from "@/lib/melk-api/tx-enrichment";
+import { enrichTransactionRows, type ContractLookup, type AgencyLookup } from "@/lib/melk-api/tx-enrichment";
+import { findPmNameByCode } from "@/lib/melk-api/pm-acc-sync";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 // P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
@@ -68,10 +69,12 @@ export async function GET(request: NextRequest) {
     // ---- P6.5-11 (بند پ-۵): غنی‌سازی تحلیلی ستون‌های جدید (فقط خواندن) ----
     const propertyCodes = [...new Set(rows.map((r) => r.propertyCode).filter(Boolean))];
     const requestCodes = [...new Set(rows.map((r) => r.requestCode).filter((c): c is string => Boolean(c)))];
-    const [owners, requesters, contractRows] = await Promise.all([
+    const [owners, requesters, contractRows, agencyRows] = await Promise.all([
       getPropertyRecordRepository().findOwnerContactsByCodes(propertyCodes),
       getRequestRepository().findArmRequesterContactsByCodes(requestCodes),
       getContractRepository().findAll(),
+      // P6.5-12 — کارگزاری‌های مرتبط (فایل قرارداد — بند ت)
+      getContractRepository().listAgencyLookups(),
     ]);
     const contracts: ContractLookup[] = contractRows.map((c) => ({
       contractHolo: c.contractHolo,
@@ -87,15 +90,66 @@ export async function GET(request: NextRequest) {
       sellerListJson: c.sellerListJson,
       realtorListJson: c.realtorListJson,
       status: c.status,
+      // P6.5-12 — مبالغ مالی
+      contractPrice: c.contractPrice,
+      rawContractPrice: c.rawContractPrice,
+      comisionOfContract: c.comisionOfContract,
+      taxOfContract: c.taxOfContract,
     }));
-    const enrichedRows = enrichTransactionRows(rows, { owners, requesters, contracts });
+    const agencies: AgencyLookup[] = agencyRows.map((a) => ({
+      id: a.id,
+      propertyCode: a.propertyCode,
+      propertyId: a.propertyId,
+      realtorName: a.realtorName,
+      creatorName: a.creatorName,
+      payPercent: a.payPercent,
+      sellPrice: a.sellPrice,
+      detailsJson: a.detailsJson,
+      createdAt: a.createdAt,
+    }));
+    let enrichedRows = enrichTransactionRows(rows, { owners, requesters, contracts, agencies });
+
+    // ---- P6.5-12 — فیلترهای نمایشی لایهٔ غنی‌سازی (نام کارشناس · کد پرسنلی · نوع قرارداد) ----
+    const expertName = sp.get("expertName")?.trim();
+    const personnelCode = sp.get("personnelCode")?.trim();
+    const contractType = sp.get("contractType")?.trim();
+    if (expertName || personnelCode || contractType) {
+      // نگاشت کد پرسنلی → نام کارشناس (PM) + نام‌های کارگزاری
+      let pmNames: Set<string> | null = null;
+      if (personnelCode) {
+        const pmName = await findPmNameByCode(personnelCode);
+        pmNames = new Set(pmName ? [pmName.replace(/\s+/g, " ").trim()] : []);
+      }
+      enrichedRows = enrichedRows.filter((r) => {
+        if (contractType) {
+          const t = r.contractType;
+          if (contractType === "مبایعه نامه" && t !== "مبایعه نامه") return false;
+          if (contractType === "اجاره نامه" && t !== "اجاره نامه" && t !== "تمدید اجاره") return false;
+          if (contractType === "نامشخص" && t !== null) return false;
+        }
+        if (expertName || pmNames) {
+          const hay = [
+            ...(r.consultantsShareSummary?.names ?? []),
+            r.agency?.realtorName ?? "",
+            r.agency?.creatorName ?? "",
+          ].join(" ").replace(/\s+/g, " ");
+          if (expertName && !hay.includes(expertName)) return false;
+          if (pmNames && pmNames.size > 0 && ![...pmNames].some((n) => hay.includes(n))) return false;
+          if (pmNames && pmNames.size === 0) return false;
+        }
+        return true;
+      });
+    }
 
     await witnessScopedRead(guard, "transaction", total, access.isOwnerRead, ownerLoginPath(guard));
+
+    // P6.5-12 — اگر فیلتر لایهٔ غنی‌سازی فعال است، شمارش منطبق واقعی همان ردیف‌های باقی‌مانده است
+    const hasEnrichFilters = Boolean(expertName || personnelCode || contractType);
 
     return Response.json({
       ok: true,
       rows: enrichedRows,
-      total,
+      total: hasEnrichFilters ? enrichedRows.length : total,
       limit,
       offset,
       summary,

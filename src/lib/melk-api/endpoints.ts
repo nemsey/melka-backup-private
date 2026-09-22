@@ -108,6 +108,14 @@ export const MELK_ENDPOINTS = {
     /** اطلاعات کسب‌وکار/شعبه خود کاربر */
     ownBusiness: "businesses/info/own",
 
+    // ============ P6.5-12 — کارگزاری‌های صادره (صورت‌وضعیتِ نمایندگی) ============
+    /** فهرست کارگزاری‌ها — عین تب «لیست کارگزاری ها» صفحهٔ ویرایش آگهی خود سامانه
+     *  (کشف از باندل SPA: N("special-properties",{addToURL:["list"],params:{property}})
+     *  — شاهد پروب زندهٔ ۱۴۰۵/۰۷/۰۱: ۷۷ رکورد با realtor/creator/details/payPercent) */
+    specialPropertiesList: "special-properties/list",
+    /** جزئیات کامل کارگزاری — منبع «چاپ کارگزاری صادر شده» خود سامانه (PDF تولیدی) */
+    specialPropertyInfo: (id: string) => `special-properties/info/${encodeURIComponent(id)}`,
+
     // ============ بازیابی کاربر با شماره موبایل ============
     /** استعلام کاربر/مشتری با شماره موبایل */
     userByMobile: (mobile: string) => `users/info/mobile-number/${encodeURIComponent(mobile)}`,
@@ -129,6 +137,16 @@ export const MELK_ENDPOINTS = {
     verifyOtp: "authentication/otp/login",
     /** تمدید توکن سامانه پرسنلی */
     refreshToken: "authentication/refreshToken",
+    // ============ P6.5-12 — رجیستری پرسنل (کشف از باندل SPA سامانه PM) ============
+    /** فهرست پرسنل — شامل code (کد پرسنلی!) + mobileNumber + role + activationStatus
+     *  (شاهد پروب زندهٔ ۱۴۰۵/۰۷/۰۱: ۱۴۲ پرسنل؛ _id همان _id مشترک با ARM — تطبیق ۱۰۰٪) */
+    realtorsList: "realtors/list",
+    /** اطلاعات پرسنلی کامل — استخدام/شعبه/نقش (addToURL: [id]) */
+    realtorPersonnelInfo: (id: string) => `realtors/info/personnelInfo/${encodeURIComponent(id)}`,
+    /** اطلاعات تماس کامل (addToURL: [id]) */
+    realtorContactInfo: (id: string) => `realtors/info/contactInfo/${encodeURIComponent(id)}`,
+    /** مدارک بارگذاری‌شدهٔ پرسنل — فایل‌ها روی cdn.obizim.ir (addToURL: [id]) */
+    realtorUploadedDocuments: (id: string) => `realtors/info/uploadedDocuments/${encodeURIComponent(id)}`,
   },
   /** سامانه مالی (حسابداری) ملک تبریز — کشف از globalSettings.platformsBaseUrl.acc */
   acc: {
@@ -137,5 +155,10 @@ export const MELK_ENDPOINTS = {
     /** محاسبه کمیسیون: POST {cityId}/{contractType} */
     commissionCalculate: (cityId: string, contractType: string) =>
       `apm/commission/${encodeURIComponent(cityId)}/${encodeURIComponent(contractType)}`,
+    // ============ P6.5-12 — داشبورد مالی (کشف از باندل SPA سامانه fm) ============
+    /** فعال‌ترین کارشناسان بر اساس شمار صورت‌وضعیت‌ها (کل کسب‌وکار — نه فقط حساب خود کاربر)
+     *  پاسخ: [{tradeOverviewsCount, realtorId, realtorFullName, realtorImage}]
+     *  (شاهد پروب زندهٔ ۱۴۰۵/۰۷/۰۱: توکن ARM پذیرفته می‌شود؛ نیازمند query=business) */
+    bestRealtor: "dashboard/bestRealtor",
   },
 } as const;

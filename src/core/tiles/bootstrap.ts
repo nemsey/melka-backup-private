@@ -17,7 +17,8 @@ import "@/core/tiles/tiles/experts";
 import "@/core/tiles/tiles/extraction";
 import "@/core/tiles/tiles/supply-demand";
 import "@/core/tiles/tiles/file-finder";
-import "@/core/tiles/tiles/customer-club";
+// P6.5-12 (بند ب مرحلهٔ قبل): کاشی «مشتریان ملک تبریز» حذف شد —
+// دادهٔ مشتریان و ماژول‌های تحلیلی در پایگاه/کتابخانه ماندگارند (قانون دادهٔ مقدس)
 import "@/core/tiles/tiles/price-index";
 import "@/core/tiles/tiles/listing";
 import "@/core/tiles/tiles/request";
@@ -31,7 +32,7 @@ export { expertsTile } from "@/core/tiles/tiles/experts";
 export { extractionTile } from "@/core/tiles/tiles/extraction";
 export { supplyDemandTile } from "@/core/tiles/tiles/supply-demand";
 export { fileFinderTile } from "@/core/tiles/tiles/file-finder";
-export { customerClubTile } from "@/core/tiles/tiles/customer-club";
+// P6.5-12: customerClubTile حذف شد (حذف نما — داده ماندگار)
 export { priceIndexTile } from "@/core/tiles/tiles/price-index";
 export { listingTile } from "@/core/tiles/tiles/listing";
 export { requestTile } from "@/core/tiles/tiles/request";

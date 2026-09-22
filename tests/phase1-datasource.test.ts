@@ -105,10 +105,7 @@ describe("P1-01c / ادعاهای ساختاری (grep)", () => {
       ["transactions-contracts/TransactionsTab.tsx", "DataSourceWarning"],
       ["experts/ExpertsPage.tsx", "DataSourceWarning"],
       ["supply-demand/SupplyDemandPage.tsx", "DataSourceAlert"],
-      ["transactions-contracts/ContractsTab.tsx", "DataSourceAlert"],
-      ["transactions-contracts/FinanceTab.tsx", "DataSourceAlert"],
       ["price-index/PriceIndexPage.tsx", "DataSourceAlert"],
-      ["customer-club/CustomerClubPage.tsx", "DataSourceAlert"],
     ];
     for (const [page, comp] of pages) {
       const c = readFileSync(join(TILES, page), "utf8");

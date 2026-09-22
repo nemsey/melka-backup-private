@@ -59,6 +59,14 @@ interface ExRow {
   createdAt: string;
   /** مجموع تعامل‌ها (نقش درخواست‌دهنده + نقش آگهی‌گذار) */
   interactionTotal: number;
+  /** P6.5-12 — کد پرسنلی واقعی از سامانهٔ PM (منبع حقیقت) */
+  pmCode: string | null;
+  /** P6.5-12 — تعداد معامله مبایعه‌نامه (انتساب شفاف) */
+  saleCount: number;
+  /** P6.5-12 — تعداد معامله اجاره‌نامه (از صورت‌وضعیت‌ها) */
+  rentCount: number;
+  /** P6.5-12 — شمار کل قراردادهای ثبت‌شده در سامانهٔ مالی (کل کسب‌وکار — ۱۰ برتر) */
+  accContractCount: number | null;
 }
 
 interface InRow {
@@ -96,9 +104,16 @@ interface ExData {
   dataSource: DataSourceInfo | null;
   interactions: InRow[];
   topRealtors: { name: string; total: number }[];
+  /** P6.5-12 (بند پ) — فعال‌ترین کارشناسان: ۲۰ مبایعه‌نامه + ۲۰ اجاره‌نامه + شاهد ACC */
+  topExperts: {
+    topSale: { name: string; count: number; pmCode: string | null }[];
+    topRent: { name: string; count: number; pmCode: string | null }[];
+    accTop: { tradeOverviewsCount: number; realtorId: string; realtorFullName: string }[];
+    coverage: { salesTotal: number; salesAttributed: number };
+  } | null;
 }
 
-const EMPTY_DATA: ExData = { rows: [], total: 0, dataSource: null, interactions: [], topRealtors: [] };
+const EMPTY_DATA: ExData = { rows: [], total: 0, dataSource: null, interactions: [], topRealtors: [], topExperts: null };
 
 export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
   const [filters, setFilters] = useState<Filters>(EMPTY);
@@ -125,7 +140,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
     params.set("limit", "5000");
 
     const [exRes, inRes] = await Promise.all([
-      api<{ rows: ExRow[]; total: number; dataSource: DataSourceInfo }>(`/api/crm/experts?${params.toString()}`),
+      api<{ rows: ExRow[]; total: number; dataSource: DataSourceInfo; topExperts: ExData["topExperts"] }>(`/api/crm/experts?${params.toString()}`),
       api<{ rows: InRow[]; total: number; topRealtors: { name: string; total: number }[] }>("/api/crm/interactions"),
     ]);
     return {
@@ -134,6 +149,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
       dataSource: exRes.dataSource,
       interactions: inRes.rows,
       topRealtors: inRes.topRealtors,
+      topExperts: exRes.topExperts ?? null,
     };
   }, [applied]);
 
@@ -148,6 +164,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   const source = data?.dataSource ?? null;
   const interactions = data?.interactions ?? null;
   const topRealtors = data?.topRealtors ?? [];
+  // P6.5-12 (بند پ) — فعال‌ترین کارشناسان (۲۰ مبایعه‌نامه + ۲۰ اجاره‌نامه + شاهد مالی)
+  const topExpertsData = data?.topExperts ?? null;
 
   const kpis = useMemo(() => {
     if (!rows) return null;
@@ -204,6 +222,72 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
             valueClassName="text-[11px] font-bold truncate leading-tight"
           />
         </div>
+      )}
+
+      {/* P6.5-12 (بند پ) — فعال‌ترین کارشناسان بر اساس تعداد معامله */}
+      {topExpertsData && (topExpertsData.topSale.length > 0 || topExpertsData.accTop.length > 0) && (
+        <Card className="border-teal-500/20 bg-gradient-to-l from-teal-600/[0.05] to-transparent">
+          <CardHeader className="py-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-600 dark:text-amber-400" aria-hidden /> فعال‌ترین کارشناسان بر اساس تعداد معامله
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* ۲۰ برتر مبایعه‌نامه */}
+            <div className="rounded-xl border bg-card p-3">
+              <p className="text-xs font-bold mb-2 text-teal-700 dark:text-teal-300">۲۰ کارشناس برتر — مبایعه‌نامه</p>
+              <ol className="space-y-1 max-h-64 overflow-y-auto text-[11px]">
+                {topExpertsData.topSale.length > 0 ? topExpertsData.topSale.map((r, i) => (
+                  <li key={`${r.name}-${i}`} className="flex items-center justify-between gap-2 border-b border-border/40 last:border-0 pb-0.5">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-4.5 h-4.5 min-w-4.5 inline-flex items-center justify-center rounded bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-bold text-[10px]">{faNumber(i + 1)}</span>
+                      <span className="truncate" title={`${r.name}${r.pmCode ? ` — ${r.pmCode}` : ""}`}>{r.name}</span>
+                    </span>
+                    <span className="font-extrabold text-teal-700 dark:text-teal-300 shrink-0">{faNumber(r.count)}</span>
+                  </li>
+                )) : <li className="text-muted-foreground">هنوز معامله‌ای انتساب نشده است</li>}
+              </ol>
+            </div>
+            {/* ۲۰ برتر اجاره‌نامه */}
+            <div className="rounded-xl border bg-card p-3">
+              <p className="text-xs font-bold mb-2 text-amber-700 dark:text-amber-300">۲۰ کارشناس برتر — اجاره‌نامه</p>
+              <ol className="space-y-1 max-h-64 overflow-y-auto text-[11px]">
+                {topExpertsData.topRent.length > 0 ? topExpertsData.topRent.map((r, i) => (
+                  <li key={`${r.name}-${i}`} className="flex items-center justify-between gap-2 border-b border-border/40 last:border-0 pb-0.5">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-4.5 h-4.5 min-w-4.5 inline-flex items-center justify-center rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold text-[10px]">{faNumber(i + 1)}</span>
+                      <span className="truncate" title={`${r.name}${r.pmCode ? ` — ${r.pmCode}` : ""}`}>{r.name}</span>
+                    </span>
+                    <span className="font-extrabold text-amber-700 dark:text-amber-300 shrink-0">{faNumber(r.count)}</span>
+                  </li>
+                )) : <li className="text-muted-foreground leading-relaxed">قرارداد اجاره‌نامه‌ای در دامنهٔ دسترسی حساب فعلی ARM ثبت نشده است — شمارش از صورت‌وضعیت‌های سامانه</li>}
+              </ol>
+            </div>
+            {/* شاهد کل کسب‌وکار (سامانهٔ مالی) */}
+            <div className="rounded-xl border bg-card p-3">
+              <p className="text-xs font-bold mb-2 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-teal-600" aria-hidden />
+                شاهد سامانهٔ مالی — کل کسب‌وکار
+              </p>
+              <ol className="space-y-1 max-h-64 overflow-y-auto text-[11px]">
+                {topExpertsData.accTop.length > 0 ? topExpertsData.accTop.map((r, i) => (
+                  <li key={r.realtorId} className="flex items-center justify-between gap-2 border-b border-border/40 last:border-0 pb-0.5">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-4.5 h-4.5 min-w-4.5 inline-flex items-center justify-center rounded bg-primary/10 text-primary font-bold text-[10px]">{faNumber(i + 1)}</span>
+                      <span className="truncate" title={r.realtorFullName}>{r.realtorFullName}</span>
+                    </span>
+                    <span className="font-extrabold text-primary shrink-0">{faNumber(r.tradeOverviewsCount)}</span>
+                  </li>
+                )) : <li className="text-muted-foreground">در دسترس نیست</li>}
+              </ol>
+              {topExpertsData.coverage.salesTotal > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+                  پوشش انتساب مبایعه‌نامه: {faNumber(topExpertsData.coverage.salesAttributed)} از {faNumber(topExpertsData.coverage.salesTotal)} معامله
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* شفافیت منبع داده */}
@@ -379,7 +463,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                             <span className="flex items-center gap-1.5 text-muted-foreground">
                               <Hash className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                              <span className="font-mono">{faDigits(e.personnelCode)}</span>
+                              <span className="font-mono">{faDigits(e.pmCode ?? (e.personnelCode.startsWith("بدون-کد-") ? "—" : e.personnelCode))}</span>
                             </span>
                             <span className="flex items-center gap-1.5 text-muted-foreground">
                               <Phone className="w-3.5 h-3.5 shrink-0" aria-hidden />
@@ -396,6 +480,17 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                           </div>
 
                           <div className="flex flex-wrap gap-2 pt-1 border-t items-center">
+                            <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 text-[11px]" title="تعداد معامله مبایعه‌نامه (بند ت)">
+                              مبایعه‌نامه: {faNumber(e.saleCount)}
+                            </Badge>
+                            <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[11px]" title="تعداد معامله اجاره‌نامه (بند ت)">
+                              اجاره‌نامه: {faNumber(e.rentCount)}
+                            </Badge>
+                            {e.accContractCount !== null && (
+                              <Badge variant="outline" className="text-[11px] gap-1" title="شمار کل قراردادهای ثبت‌شده در سامانهٔ مالی — کل کسب‌وکار">
+                                <Trophy className="w-3 h-3 text-amber-600" aria-hidden /> مالی کل کسب‌وکار: {faNumber(e.accContractCount)}
+                              </Badge>
+                            )}
                             <Badge variant="secondary" className="text-[11px]">
                               {faNumber(e.interactionTotal)} تعامل
                             </Badge>
@@ -426,6 +521,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                       <TableHead className="text-right">موبایل</TableHead>
                       <TableHead className="text-right hidden md:table-cell">نقش</TableHead>
                       <TableHead className="text-right hidden sm:table-cell">کسب‌وکار</TableHead>
+                      <TableHead className="text-right">مبایعه‌نامه</TableHead>
+                      <TableHead className="text-right">اجاره‌نامه</TableHead>
                       <TableHead className="text-right hidden lg:table-cell">ثبت</TableHead>
                       <TableHead className="text-right">وضعیت</TableHead>
                       <TableHead className="text-right">تعامل</TableHead>
@@ -435,10 +532,12 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                     {rows.map((e) => (
                       <TableRow key={e.id} className="hover:bg-muted/30">
                         <TableCell className="text-xs font-medium whitespace-nowrap">{e.fullName}</TableCell>
-                        <TableCell className="text-xs font-mono">{faDigits(e.personnelCode)}</TableCell>
+                        <TableCell className="text-xs font-mono">{faDigits(e.pmCode ?? (e.personnelCode.startsWith("بدون-کد-") ? "—" : e.personnelCode))}</TableCell>
                         <TableCell className="text-xs font-mono">{faDigits(e.mobile)}</TableCell>
                         <TableCell className="hidden md:table-cell text-xs">{e.role}</TableCell>
                         <TableCell className="hidden sm:table-cell text-xs">{e.businessTitle}</TableCell>
+                        <TableCell className="text-xs font-bold text-teal-700 dark:text-teal-300">{faNumber(e.saleCount)}</TableCell>
+                        <TableCell className="text-xs font-bold text-amber-700 dark:text-amber-300">{faNumber(e.rentCount)}</TableCell>
                         <TableCell className="hidden lg:table-cell text-xs whitespace-nowrap">{faJalaliShort(e.createdAt)}</TableCell>
                         <TableCell className="text-xs">
                           {e.active ? <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">فعال</Badge> : <Badge variant="destructive">غیرفعال</Badge>}

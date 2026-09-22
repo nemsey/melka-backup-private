@@ -28,10 +28,10 @@ describe("P6.5-10 بند ۱ — تغییر نام داشبورد و کاشی‌�
     expect(tile?.title).toBe("داشبورد مدیریتی ملک تبریز");
   });
 
-  test("A2) نام هر ۱۳ کاشی «ملک تبریز» دارد (P6.5-11: ۱۶ − ۳ − ۱ + ۱)", async () => {
+  test("A2) نام هر ۱۲ کاشی «ملک تبریز» دارد (P6.5-12: ۱۳ − ۱ حذف مشتریان)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const all = tileRegistry.listAll("OWNER");
-    expect(all.length).toBe(13);
+    expect(all.length).toBe(12);
     for (const t of all) {
       expect(t.title).toContain("ملک تبریز");
     }
@@ -56,11 +56,11 @@ describe("P6.5-10 بند ۲و۳ — کاشی‌های جدید کاتالوگ AR
     expect(tileRegistry.get("arm-requests")?.title).toBe("درخواست‌های ملک تبریز");
   });
 
-  test("B2) داخل داشبورد مدیریتی ملک تبریز — ۸ فرزند (P6.5-11: ادغام سه‌گانه + حذف بازدیدها)", async () => {
+  test("B2) داخل داشبورد مدیریتی ملک تبریز — ۷ فرزند (P6.5-12: ادغام سه‌گانه + حذف بازدیدها و مشتریان)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
     expect(children).toEqual([
-      "transactions-contracts", "customer-club", "price-index",
+      "transactions-contracts", "price-index",
       "experts", "supply-demand", "extraction", "arm-listings", "arm-requests",
     ]);
   });

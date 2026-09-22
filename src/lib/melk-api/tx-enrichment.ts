@@ -62,6 +62,24 @@ export interface ContractLookup {
   sellerListJson: string | null;
   realtorListJson: string | null;
   status: string;
+  /** P6.5-12 — مبالغ مالی قرارداد */
+  contractPrice?: number | null;
+  rawContractPrice?: string | null;
+  comisionOfContract?: number | null;
+  taxOfContract?: number | null;
+}
+
+/** P6.5-12 — کارگزاری مرتبط با ملک معامله (special-properties سامانه ARM) */
+export interface AgencyLookup {
+  id: string;
+  propertyCode: string | null;
+  propertyId: string | null;
+  realtorName: string | null;
+  creatorName: string | null;
+  payPercent: number | null;
+  sellPrice: number | null;
+  detailsJson: string | null;
+  createdAt: Date | null;
 }
 
 /** خروجی غنی‌شده — ردیف معامله + ستون‌های جدید (بند پ-۵) */
@@ -83,9 +101,17 @@ export type EnrichedTxRow<R extends TxSourceRow = TxSourceRow> = R & {
     confirmed: number;
     pending: number;
     names: string[];
+    /** P6.5-12 — سهم هر مشاور با درصد (بند ب دستور: «در مقابل نام هر مشاور درصد حق السهم») */
+    shares: { name: string; unitPercent: number; confirmation: string }[];
   } | null;
   /** منبع تطبیق قرارداد (شفافیت) */
   contractMatchBy: "holo" | "propertyCode" | "requestCode" | null;
+  /** P6.5-12 — نوع قرارداد (از قرارداد تطبیقی؛ مستقیم یا اجاره) */
+  contractType: string | null;
+  /** P6.5-12 — مبلغ قرارداد (ریال — از قرارداد تطبیقی) */
+  contractAmount: number | null;
+  /** P6.5-12 — کارگزاری مرتبط با ملک (سند نمایندگی — منبع فایل قرارداد) */
+  agency: AgencyLookup | null;
 };
 
 // ==========================================================================
@@ -114,6 +140,11 @@ export function aggregateConsultantShares(
     confirmed,
     pending,
     names: [...new Set(names)].slice(0, 6),
+    // P6.5-12 — سهم‌های تفکیکی با درصد هر مشاور
+    shares: shares
+      .filter((s) => s.name)
+      .slice(0, 8)
+      .map((s) => ({ name: s.name, unitPercent: Number.isFinite(s.unitPercent) ? s.unitPercent : 0, confirmation: s.confirmation ?? "" })),
   };
 }
 
@@ -193,6 +224,8 @@ export interface EnrichContext {
   owners: OwnerContactLookup[];
   requesters: RequesterContactLookup[];
   contracts: ContractLookup[];
+  /** P6.5-12 — کارگزاری‌های مرتبط (بر اساس کد ملک) */
+  agencies?: AgencyLookup[];
 }
 
 /** ایندکس قرارداد بر اساس سه کلید طبیعی — اولویت: هولوگرام > کد ملک > کد درخواست */
@@ -241,17 +274,29 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
   const requesterByCode = new Map(ctx.requesters.map((r) => [r.requestCode, r]));
   const contractIndex = buildContractIndex(ctx.contracts);
 
+  // P6.5-12 — ایندکس کارگزاری‌ها بر اساس کد ملک (جدیدترین اول)
+  const agencyByProperty = new Map<string, AgencyLookup>();
+  for (const a of ctx.agencies ?? []) {
+    if (a.propertyCode && !agencyByProperty.has(a.propertyCode)) agencyByProperty.set(a.propertyCode, a);
+  }
+
   // موبایل‌های طرفین از قراردادها (خریداران/فروشندگان) — مکمل تماس‌های کاتالوگ
   const buyerMobileByRequest = new Map<string, string>();
   const sellerMobileByProperty = new Map<string, string>();
+  const buyerNameByRequest = new Map<string, string>();
+  const sellerNameByProperty = new Map<string, string>();
   for (const c of ctx.contracts) {
     if (c.requestCode) {
       const buyer = parseParties(c.buyerListJson).find((p) => p.mobileNumber);
       if (buyer?.mobileNumber) buyerMobileByRequest.set(c.requestCode, buyer.mobileNumber);
+      const buyerNamed = parseParties(c.buyerListJson).find((p) => p.fullName);
+      if (buyerNamed?.fullName) buyerNameByRequest.set(c.requestCode, buyerNamed.fullName);
     }
     if (c.propertyCode) {
       const seller = parseParties(c.sellerListJson).find((p) => p.mobileNumber);
       if (seller?.mobileNumber) sellerMobileByProperty.set(c.propertyCode, seller.mobileNumber);
+      const sellerNamed = parseParties(c.sellerListJson).find((p) => p.fullName);
+      if (sellerNamed?.fullName) sellerNameByProperty.set(c.propertyCode, sellerNamed.fullName);
     }
   }
 
@@ -259,13 +304,26 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
     const owner = tx.propertyCode ? ownerByCode.get(tx.propertyCode) : undefined;
     const requester = tx.requestCode ? requesterByCode.get(tx.requestCode) : undefined;
     const { contract, by } = matchContractForTx(tx, contractIndex);
+    const agency = tx.propertyCode ? agencyByProperty.get(tx.propertyCode) ?? null : null;
 
-    // نام مالک: نام طرف ملک در خود گزارش تطابق > غنی‌سازی کاتالوگ ARM
-    const ownerName = tx.propertyCustomer?.trim() || owner?.ownerName?.trim() || null;
+    // P6.5-12 — نام واقعی مالک: فیلد propertyCustomer خود گزارش فقط «برچسب نقش» است
+    // (فروشنده/موجر — شاهد داده: ۷۲۷/۷۲۷ = فروشنده)؛ نام واقعی از رجیستری آگهی‌ها
+    // (rawOwnerName — لایه ۱ حقیقت) یا از طرف فروشندهٔ قرارداد می‌آید؛ برچسب نقش
+    // تنها آخرین fallback است (عین نمایش خود سامانه).
+    const ownerName =
+      owner?.ownerName?.trim() ||
+      (tx.propertyCode ? sellerNameByProperty.get(tx.propertyCode)?.trim() ?? null : null) ||
+      tx.propertyCustomer?.trim() ||
+      null;
     const ownerMobile = owner?.ownerMobile?.trim() || (tx.propertyCode ? sellerMobileByProperty.get(tx.propertyCode) ?? null : null);
 
-    // نام درخواست‌دهنده: نام طرف درخواست در خود گزارش > کاتالوگ ARM
-    const requesterName = tx.requestCustomer?.trim() || requester?.customerName?.trim() || null;
+    // P6.5-12 — نام واقعی درخواست‌دهنده: فیلد requestCustomer خود گزارش فقط «برچسب نقش»
+    // است (خریدار/مستأجر)؛ نام واقعی از کاتالوگ درخواست‌ها یا طرف خریدار قرارداد.
+    const requesterName =
+      requester?.customerName?.trim() ||
+      (tx.requestCode ? buyerNameByRequest.get(tx.requestCode) ?? null : null) ||
+      tx.requestCustomer?.trim() ||
+      null;
     const requesterMobile =
       requester?.customerMobile?.trim() || (tx.requestCode ? buyerMobileByRequest.get(tx.requestCode) ?? null : null);
 
@@ -278,6 +336,10 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
       contractText: synthesizeContractText(contract, tx),
       consultantsShareSummary: aggregateConsultantShares(contract?.realtorListJson ?? null),
       contractMatchBy: by,
+      // P6.5-12 — نوع و مبلغ قرارداد از قرارداد تطبیقی
+      contractType: contract?.contractType?.trim() || null,
+      contractAmount: contract?.contractPrice ?? null,
+      agency,
     };
   });
 }

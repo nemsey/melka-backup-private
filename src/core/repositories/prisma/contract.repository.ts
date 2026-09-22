@@ -2,7 +2,7 @@
  * PrismaContractRepository — پیاده‌سازی Prisma قرارداد ContractRepository
  */
 import type { Prisma } from "@prisma/client";
-import type { ContractDTO, ContractRepository, ContractUpsertInput } from "../interfaces";
+import type { ContractDTO, ContractRepository, ContractUpsertInput, AgencyLookupRow } from "../interfaces";
 import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
 
 function toCreateData(c: ContractUpsertInput): Prisma.ContractRecordCreateInput {
@@ -24,6 +24,12 @@ function toCreateData(c: ContractUpsertInput): Prisma.ContractRecordCreateInput 
     sellerListJson: c.sellerListJson,
     realtorListJson: c.realtorListJson,
     canAddRealtor: c.canAddRealtor,
+    // P6.5-12 — مبالغ مالی قرارداد
+    ...(c.contractPrice !== undefined ? { contractPrice: c.contractPrice } : {}),
+    ...(c.rawContractPrice !== undefined ? { rawContractPrice: c.rawContractPrice } : {}),
+    ...(c.comisionOfContract !== undefined ? { comisionOfContract: c.comisionOfContract } : {}),
+    ...(c.taxOfContract !== undefined ? { taxOfContract: c.taxOfContract } : {}),
+    ...(c.businessId !== undefined ? { businessId: c.businessId } : {}),
     // P6.5-04-e-v2 — سه‌لایه حقیقت (خام + provenance)
     ...(c.rawDate !== undefined ? { rawDate: c.rawDate } : {}),
     // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام ثبت‌کننده و عنوان ملک خام
@@ -53,6 +59,24 @@ export class PrismaContractRepository implements ContractRepository {
 
   async countAll(): Promise<number> {
     return this.client.contractRecord.count();
+  }
+
+  /** P6.5-12 — کارگزاری‌های صادره (special-properties) — فقط خواندن برای فهرست معاملات */
+  async listAgencyLookups(): Promise<AgencyLookupRow[]> {
+    return this.client.specialPropertyRecord.findMany({
+      select: {
+        id: true,
+        propertyCode: true,
+        propertyId: true,
+        realtorName: true,
+        creatorName: true,
+        payPercent: true,
+        sellPrice: true,
+        detailsJson: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   async replaceAll(rows: ContractUpsertInput[]): Promise<number> {

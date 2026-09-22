@@ -21,6 +21,7 @@ import {
   topPairs,
 } from "./analyzers";
 import { faNumber, faMonthLabel } from "@/lib/format";
+import { enrichExpertRows, buildTopExpertsInsight } from "@/lib/melk-api/expert-enrichment";
 
 /** وابستگی‌های تزریق‌پذیر ایجنت کارشناسان */
 export interface ExpertAgentDeps {
@@ -31,8 +32,9 @@ export interface ExpertAgentDeps {
 export class ExpertAgent extends BaseLearningAgent {
   readonly tileId = "experts";
   readonly name = "ایجنت تحلیل کارشناسان";
-  /** P6.5-11 (بند ج) — VISIT_LEADERSHIP از کاشی حذف‌شدهٔ بازدیدها مهاجرت کرد */
-  readonly insightDomains = ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK", "VISIT_LEADERSHIP"] as const;
+  /** P6.5-11 (بند ج) — VISIT_LEADERSHIP از کاشی حذف‌شدهٔ بازدیدها مهاجرت کرد
+   *  P6.5-12 (بند پ) — DEAL_ACTIVITY: فعال‌ترین کارشناسان بر اساس تعداد معامله */
+  readonly insightDomains = ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK", "VISIT_LEADERSHIP", "DEAL_ACTIVITY"] as const;
 
   private readonly expertsRepo: ExpertRepository;
   private readonly visitsRepo: VisitRepository;
@@ -51,6 +53,68 @@ export class ExpertAgent extends BaseLearningAgent {
     ]);
     const cards: InsightCard[] = [];
     if (experts.length === 0) return cards;
+
+    // ---- P6.5-12 (بند پ): DEAL_ACTIVITY — فعال‌ترین کارشناسان بر اساس تعداد معامله ----
+    try {
+      const listRows = experts.map((e) => ({
+        id: e.id,
+        personnelCode: e.personnelCode,
+        fullName: e.fullName,
+        mobile: e.mobile,
+        role: e.role,
+        businessTitle: e.businessTitle,
+        creator: e.creator,
+        active: e.active,
+        createdAt: e.createdAt,
+        interactionTotal: 0,
+      }));
+      const enriched = await enrichExpertRows(listRows, null);
+      const top = buildTopExpertsInsight(enriched.rows, enriched.attribution);
+      if (top.topSale.length > 0 || top.accTop.length > 0) {
+        const saleTop3 = top.topSale.slice(0, 3).map((r) => `${r.name} (${faNumber(r.count)})`).join("، ");
+        const accLine = top.accTop.length > 0 ? ` طبق شاهد سامانهٔ مالی (کل کسب‌وکار)، «${top.accTop[0].realtorFullName}» با ${faNumber(top.accTop[0].tradeOverviewsCount)} قرارداد در صدر است.` : "";
+        cards.push({
+          key: "ex-deal-activity-top-sale",
+          domain: "DEAL_ACTIVITY",
+          title: "فعال‌ترین کارشناسان — مبایعه‌نامه (۲۰ نفر برتر)",
+          body: `بر اساس تعداد معامله مبایعه‌نامه، پیشتازان: ${saleTop3 || "—"}.${accLine} پوشش انتساب: ${faNumber(top.coverage.salesAttributed)} از ${faNumber(top.coverage.salesTotal)} معاملهٔ گزارش تطابق از مسیر کارشناس درخواست/آگهی قابل انتساب است.`,
+          severity: "positive",
+          metrics: top.topSale.slice(0, 20).map((r, i) => ({
+            label: `${faNumber(i + 1)}. ${r.name}${r.pmCode ? ` (${r.pmCode})` : ""}`,
+            value: `${faNumber(r.count)} مبایعه‌نامه`,
+          })),
+        });
+        if (top.topRent.length > 0) {
+          const rentTop3 = top.topRent.slice(0, 3).map((r) => `${r.name} (${faNumber(r.count)})`).join("، ");
+          cards.push({
+            key: "ex-deal-activity-top-rent",
+            domain: "DEAL_ACTIVITY",
+            title: "فعال‌ترین کارشناسان — اجاره‌نامه (۲۰ نفر برتر)",
+            body: `بر اساس تعداد معامله اجاره‌نامه، پیشتازان: ${rentTop3}. این شمارش از صورت‌وضعیت‌های ثبت‌شده در سامانه (نوع اجاره‌نامه) استخراج می‌شود.`,
+            severity: "info",
+            metrics: top.topRent.slice(0, 20).map((r, i) => ({
+              label: `${faNumber(i + 1)}. ${r.name}${r.pmCode ? ` (${r.pmCode})` : ""}`,
+              value: `${faNumber(r.count)} اجاره‌نامه`,
+            })),
+          });
+        }
+        if (top.accTop.length > 0) {
+          cards.push({
+            key: "ex-deal-activity-acc-witness",
+            domain: "DEAL_ACTIVITY",
+            title: "شاهد سامانهٔ مالی — بیشترین قرارداد ثبت‌شده (کل کسب‌وکار)",
+            body: `داشبورد سامانهٔ مالی ملک تبریز «${top.accTop[0].realtorFullName}» را با ${faNumber(top.accTop[0].tradeOverviewsCount)} صورت‌وضعیت ثبت‌شده، فعال‌ترین کارشناس کل کسب‌وکار معرفی می‌کند. این شمارش مستقل از دامنهٔ دسترسی حساب ARM است.`,
+            severity: "info",
+            metrics: top.accTop.map((r, i) => ({
+              label: `${faNumber(i + 1)}. ${r.realtorFullName}`,
+              value: `${faNumber(r.tradeOverviewsCount)} قرارداد`,
+            })),
+          });
+        }
+      }
+    } catch {
+      // غنی‌سازی بین‌سامانه‌ای در دسترس نیست — بینش حذف می‌شود، نه کل ایجنت
+    }
 
     // ---- P6.5-11 (بند ج): VISIT_LEADERSHIP — بررسی‌کنندگان پیشرو (مهاجرت از کاشی بازدیدها) ----
     if (visits.length > 0) {

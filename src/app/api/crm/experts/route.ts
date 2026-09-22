@@ -3,12 +3,19 @@
  * فهرست کارشناسان/کاربران با فیلتر — خوانده‌شده از کش محلی
  * فیلترها (عین users-list خود سامانه + توسعه داشبورد):
  *   نام و نام خانوادگی، موبایل، کد پرسنلی، نقش، کسب‌وکار (شعبه)، وضعیت
+ *
+ * P6.5-12 (ثالثاً):
+ *   · کدپرسنلی از سامانهٔ PM (اتصال _id مشترک) — بند الف
+ *   · موبایل از ARM (رفع باگ mobileNumber آداپتور) + پشتیبان PM — بند ب
+ *   · تعداد معامله مبایعه‌نامه/اجاره‌نامه هر کارشناس — بند ت
+ *   · شاهد فعال‌ترین کارشناسان کل کسب‌وکار (ACC bestRealtor) — بند پ
  */
 
 import { NextRequest } from "next/server";
 import { getExpertRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
+import { enrichExpertRows, buildTopExpertsInsight } from "@/lib/melk-api/expert-enrichment";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 // P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
@@ -48,20 +55,27 @@ export async function GET(request: NextRequest) {
     const access = resolveEntityAccess(guard, "expert");
 
     // فهرست + مجموع تعاملات هر مشاور — عین groupBy دوتایی روت قبلی
-    const { rows: enriched, total } = await getExpertRepository().listWithInteractions({
+    const { rows, total } = await getExpertRepository().listWithInteractions({
       filter: { fullName, mobile, personnelCode, role, businessTitle, creator, active },
       sortDir: sp.get("sortDir") === "desc" ? "desc" : "asc",
       limit,
       offset,
     });
+
+    // ---- P6.5-12: غنی‌سازی بین‌سامانه‌ای (کد پرسنلی PM + شمارش معاملات + شاهد ACC) ----
+    const enriched = await enrichExpertRows(rows, guard.armTokens?.accessToken ?? null);
+    const topExperts = buildTopExpertsInsight(enriched.rows, enriched.attribution);
+
     await witnessScopedRead(guard, "expert", total, access.isOwnerRead, ownerLoginPath(guard));
 
     return Response.json({
       ok: true,
-      rows: enriched,
+      rows: enriched.rows,
       total,
       limit,
       offset,
+      // بند پ — فعال‌ترین کارشناسان (۲۰ نفری) + شاهد کل کسب‌وکار
+      topExperts,
       // شفافیت منبع داده برای UI
       dataSource: {
         real: true,

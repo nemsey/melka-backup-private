@@ -21,6 +21,7 @@ import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { audit, updateSessionArmTokens } from "@/lib/auth/session";
 import { syncWithRefresh } from "@/lib/melk-api/sync";
 import { syncArmListingsCatalog, syncArmRequestsCatalog, enrichArmListings, enrichArmRequests } from "@/lib/melk-api/arm-catalog";
+import { syncPmPersonnel, syncSpecialProperties, getAccBestRealtor, getPmSyncToken } from "@/lib/melk-api/pm-acc-sync";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
 
 /** قفل درون‌فرایندی — هم‌زمان فقط یک انتقال کامل فعال است */
@@ -88,6 +89,17 @@ export async function POST(request: NextRequest) {
     const listingsEnrichRes = await runStage(() => execWithArmToken(guard, (t) => enrichArmListings(t, { maxRows: 200 })));
     const requestsEnrichRes = await runStage(() => execWithArmToken(guard, (t) => enrichArmRequests(t, { maxRows: 200 })));
 
+    // ---- P6.5-12: مراحل بین‌سامانه‌ای — پرسنل PM + کارگزاری‌ها + شاهد مالی ----
+    // پرسنل PM: کد پرسنلی کارشناسان (توکن PM ماندگار؛ در نبودش مرحله رد می‌شود)
+    const pmRes = await runStage(async () => {
+      const pmToken = await getPmSyncToken();
+      if (!pmToken) throw new MelkApiError("PRECONDITION_FAILED", "اتصال سامانهٔ پرسنلی (PM) برقرار نیست.", 412, false);
+      return syncPmPersonnel(pmToken);
+    });
+    // کارگزاری‌های صادره + بهترین کارشناسان از دید سامانهٔ مالی (توکن ARM)
+    const agenciesRes = await runStage(() => execWithArmToken(guard, (t) => syncSpecialProperties(t)));
+    const accRes = await runStage(() => execWithArmToken(guard, (t) => getAccBestRealtor(t).then((r) => ({ count: r.length }))));
+
     const summaryParts = [
       main ? `main:tx=${main.transactions};ex=${main.experts};ct=${main.contracts}` : `main:error=${mainError?.slice(0, 60)}`,
       listingsRes.ok && listingsRes.result
@@ -98,6 +110,9 @@ export async function POST(request: NextRequest) {
         : `requests:error=${requestsRes.error?.slice(0, 60)}`,
       listingsEnrichRes.ok && listingsEnrichRes.result ? `enr-l:+${listingsEnrichRes.result.enriched};left=${listingsEnrichRes.result.remaining}` : "",
       requestsEnrichRes.ok && requestsEnrichRes.result ? `enr-r:+${requestsEnrichRes.result.enriched};left=${requestsEnrichRes.result.remaining}` : "",
+      pmRes.ok && pmRes.result ? `pm:${pmRes.result.personnel}` : `pm:error=${pmRes.error?.slice(0, 40)}`,
+      agenciesRes.ok && agenciesRes.result ? `agencies:${agenciesRes.result.total};detailed=${agenciesRes.result.detailed}` : `agencies:error=${agenciesRes.error?.slice(0, 40)}`,
+      accRes.ok && accRes.result ? `acc-best:${accRes.result.count}` : "",
     ].filter(Boolean);
 
     await audit("DATA_SYNC_ALL", guard.personnelCode, summaryParts.join(" | "));
@@ -109,6 +124,10 @@ export async function POST(request: NextRequest) {
       requests: requestsRes.result ?? { ok: false, errorCode: requestsRes.error },
       enrichListings: listingsEnrichRes.result ?? null,
       enrichRequests: requestsEnrichRes.result ?? null,
+      // P6.5-12 — مراحل بین‌سامانه‌ای
+      pmPersonnel: pmRes.result ?? { ok: false, error: pmRes.error },
+      agencies: agenciesRes.result ?? { ok: false, error: agenciesRes.error },
+      accBestRealtor: accRes.result ?? null,
     });
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);

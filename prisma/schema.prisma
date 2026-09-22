@@ -539,6 +539,16 @@ model ContractRecord {
   realtorListJson   String?
   /// آیا امکان افزودن مشاور دارد (مرحله در انتظار افزودن مشاور)
   canAddRealtor  Boolean  @default(false)
+  /// P6.5-12 — مبلغ قرارداد (ریال — از contractPrice رشته‌ای سامانه)
+  contractPrice       Float?
+  /// P6.5-12 — لایه ۱ حقیقت: مبلغ خام عین منبع (رشته)
+  rawContractPrice    String?
+  /// P6.5-12 — کمیسیون قرارداد (ریال)
+  comisionOfContract  Float?
+  /// P6.5-12 — مالیات قرارداد (ریال)
+  taxOfContract       Float?
+  /// P6.5-12 — شناسهٔ کسب‌وکار (از trade-overviews/info — کلید مشترک سامانه‌ها)
+  businessId          String?
   syncedAt      DateTime @default(now())
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
   sourceRunId   String?
@@ -916,6 +926,69 @@ model SyncCheckpoint {
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
+
+/// P6.5-12 — رجیستری پرسنل سامانه PM (سامانه مدیریت پرسنلی ملک تبریز).
+/// منبع: pm-api.melketabriz.ir/api/realtors/list — کلید = همان _id مشترک با ARM
+/// (شاهد پروب زندهٔ ۱۴۰۵/۰۷/۰۱: تطبیق ۳۰/۳۰ = ۱۰۰٪ میان PM و ARM).
+/// این جدول «لایهٔ خام مقدس» است — داده عین منبع؛ حذف/تغییر ممنوع (بند الف P6.5-11).
+model PmPersonnelRecord {
+  /// شناسهٔ مشترک با ExpertRecord.id (همان _id کاربر در هر دو سامانه)
+  id            String   @id
+  /// کد پرسنلی (منبع حقیقت — عین فیلد code سامانه PM)
+  code          String?
+  fullName      String?
+  mobileNumber  String?
+  /// نقش پرسنلی — JSON [{title,_id}] یا رشته
+  roleJson      String?
+  roleTitle     String?
+  /// وضعیت فعال‌سازی پلتفرم‌ها — JSON {ps,acc,apm,chat}
+  activationStatusJson String?
+  /// کسب‌وکار — JSON {title,code}
+  businessJson  String?
+  businessTitle String?
+  /// مسیر تصویر پروفایل روی CDN (cdn.obizim.ir)
+  imageCover    String?
+  /// کل ردیف خام عین منبع (قانون دادهٔ مقدس)
+  rawJson       String?
+  syncedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([code])
+  @@index([fullName])
+}
+
+/// P6.5-12 — رجیستری کارگزاری‌های صادره (special-properties سامانه ARM).
+/// هر «کارگزاری» = قرارداد نمایندگی میان مشاور و مالک برای یک ملک؛
+/// فایل PDF آن در خود سامانه ARM هم «تولیدی از همین داده» است (چاپ کارگزاری صادر شده).
+model SpecialPropertyRecord {
+  id              String   @id
+  /// مشاورِ کارگزاری — JSON {id, fullName}
+  realtorId       String?
+  realtorName     String?
+  /// ثبت‌کننده — JSON {id, fullName}
+  creatorId       String?
+  creatorName     String?
+  /// درصد حق‌الزحمه توافق‌شده
+  payPercent      Float?
+  /// قیمت توافقی مبنای درصد
+  sellPrice       Float?
+  /// بندهای کارگزاری — HTML عین منبع
+  detailsJson     String?
+  /// ملک مرتبط — شناسه ARM (از special-properties/info)
+  propertyId      String?
+  propertyCode    String?
+  /// کل ردیف خام info عین منبع (قانون دادهٔ مقدس)
+  rawJson         String?
+  syncedAt        DateTime @default(now())
+  createdAt       DateTime?
+  updatedAt       DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([realtorId])
+  @@index([propertyCode])
+}
+
 
 // ===================== لایه ایجنت هوشمند (فقط افزودنی / Append-only) =====================
 

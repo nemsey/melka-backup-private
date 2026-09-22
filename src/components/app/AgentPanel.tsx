@@ -63,6 +63,7 @@ export const DOMAIN_FA: Record<string, string> = {
   TREND: "روند بازار",
   VOLUME: "حجم معاملات",
   TOP_EXPERTS: "کارشناسان برتر",
+  DEAL_ACTIVITY: "فعال‌ترین کارشناسان (تعداد معامله)",
   DISTRICT: "تحلیل محله‌ای",
   ANOMALY: "ناهنجاری",
   CONVERSION: "نرخ تبدیل",

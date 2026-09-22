@@ -11,11 +11,9 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { Home as DummyIcon } from "lucide-react";
 
 const ROOT_EXPECTED = ["file-finder", "listings", "requests", "management-dashboard", "settings"];
-/** P6.5-11 (بندهای پ و ج): سه کاشی معاملات/قراردادها/مالی → یک کاشی ادغامی؛
- *  کاشی بازدیدها حذف شد — ۸ فرزند */
+/** P6.5-12: سه کاشی ادغامی + حذف بازدیدها (P6.5-11) + حذف مشتریان (P6.5-12) — ۷ فرزند */
 const CHILDREN_EXPECTED = [
   "transactions-contracts",
-  "customer-club",
   "price-index",
   "experts",
   "supply-demand",
@@ -52,11 +50,11 @@ describe("معماری داشبورد مدیریتی", () => {
     }
   });
 
-  test("P6.5-11 — کاشی ادغامی «معاملات و قراردادهای ملک تبریز» با ایجنت ۲۱ دامنه‌ای (≥۱۵)", async () => {
+  test("P6.5-12 — کاشی «معاملات ملک تبریز» (تغییر نام از نسخهٔ ادغامی) با ایجنت ۲۱ دامنه‌ای (≥۱۵)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const tile = tileRegistry.get("transactions-contracts")!;
     expect(tile).toBeDefined();
-    expect(tile.title).toBe("معاملات و قراردادهای ملک تبریز");
+    expect(tile.title).toBe("معاملات ملک تبریز");
     expect(tile.agent).not.toBeNull();
     expect(tile.agent!.insightDomains.length).toBeGreaterThanOrEqual(15);
     expect(tile.agent!.insightDomains).toContain("CONTACT_COVERAGE");

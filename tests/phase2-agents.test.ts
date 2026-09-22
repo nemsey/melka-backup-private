@@ -42,6 +42,7 @@ const stubContract = (over: Partial<ContractDTO> = {}): ContractDTO => ({
   propertyTitle: "ملک", propertyAddress: "آدرس", buyerListJson: null, sellerListJson: null,
   realtorListJson: JSON.stringify([{ name: "مشاور یک", unitPercent: 50, confirmation: "confirm", description: "", role: "" }]),
   canAddRealtor: false, syncedAt: new Date(), sourceRunId: null, // P6.5-03
+  contractPrice: null, rawContractPrice: null, comisionOfContract: null, taxOfContract: null, businessId: null, // P6.5-12
   ...over,
 });
 
