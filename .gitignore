@@ -56,3 +56,4 @@ server.log
 # Recon night artifacts (runtime, not committed)
 ABORT
 recon-night1*.jsonl
+tool-results/
