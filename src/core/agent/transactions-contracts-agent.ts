@@ -2,15 +2,13 @@
  * ایجنت هوشمند کاشی ادغامی «معاملات و قراردادهای ملک تبریز» — P6.5-11 (بند پ)
  * ------------------------------------------------------
  * ادغام سه ایجنت قبلی (معاملات + قراردادها و اسناد + مالی و کمیسیون) +
- * بینش‌های مهاجرت‌یافته از کاشی بازدیدها (بند ج) + بینش‌های جدید ستون‌های
- * فهرست معاملات (تماس مالک/درخواست‌دهنده، متن قرارداد، تجمیع حق‌السهم).
+ * بینش‌های مهاجرت‌یافته از کاشی بازدیدها (بند ج).
  *
- * دامنه‌های بینش (۲۱ دامنه — الزام بند پ-۶: حداقل ۱۵):
- *   معاملات:   VOLUME · TREND · COMPOSITION · CONVERSION · DOCUMENT · ANOMALY
- *   قراردادها: FUNNEL · BOTTLENECK · STALLED · REJECT
- *   مالی:      TARIFF · REVENUE · SETTLEMENT · BRANCH · PIPELINE
- *   ستون‌های جدید: CONTACT_COVERAGE · CONTRACT_TEXT · SHARE_AGGREGATE
- *   بازدیدها (مهاجرت بند ج): VISIT_VOLUME · VISIT_TREND · VISIT_STATUS
+ * P6.5-14 (ملکا-شورا-۱۴۰۵-۰۱۷ — BLOCK A — بازنویسی بخش بینش معاملات):
+ *   · دو بینش پیشینِ حوزهٔ ترکیب گزارش و نرخ تبدیل، بطور کلی حذف شدند
+ *   · «روند ماهانه» → سه‌سری: مبایعه‌نامه / اجاره / مجموع (مجموع = مبایعه + اجاره + سایر)
+ *   · بینش پوشش → «پوشش اطلاعات فهرست معاملات» با ۷ معیار
+ *   · تازه: کارشناسان برتر سه‌ستونی (۱۰ برتر مبایعه / اجاره / مجموع)
  *
  * حافظهٔ ایجنت‌های قبلی (transactions/contracts/finance-commission) دست‌نخورده
  * در DB می‌ماند (نکتهٔ بسیار مهم ۲ — حفاظت کامل داده).
@@ -35,8 +33,10 @@ import { getCachedCommissionConfig } from "@/lib/melk-api/sync";
 import { saleCommissionBase } from "@/lib/melk-api/commission";
 import { enrichTransactionRows } from "@/lib/melk-api/tx-enrichment";
 import { CONTRACT_FUNNEL_ORDER, CONTRACT_STATUS_FA, type ContractRealtorShare } from "@/lib/melk-api/types";
-import { detectAnomalies, growthRate, matchComposition, monthlySeries, topMonths, visitMonthlySeries, visitStats } from "./analyzers";
+import { detectAnomalies, growthRate, topMonths, visitMonthlySeries, visitStats, txTypeMonthlySeries, topExpertsByTxType, type SharedTxRow } from "./analyzers";
+import { computeTxInfoCoverage } from "@/lib/melk-api/tx-enrichment";
 import { faNumber, faPercent, faToman, faMonthLabel } from "@/lib/format";
+import { dateToJalali } from "@/lib/jalali";
 
 function parseShares(raw: string | null | undefined): ContractRealtorShare[] {
   if (!raw) return [];
@@ -64,11 +64,13 @@ export interface TransactionsContractsAgentDeps {
 export class TransactionsContractsAgent extends BaseLearningAgent {
   readonly tileId = "transactions-contracts";
   readonly name = "ایجنت تحلیل معاملات و قراردادهای ملک تبریز";
+  /** P6.5-14 — دو دامنهٔ پیشینِ گزارش ترکیبی/تبدیلی حذف شدند (دستور A.۱)؛
+   *  INFO_COVERAGE جای CONTACT_COVERAGE نشست و TOP_EXPERTS تازه آمد (A.۴/A.۵) */
   readonly insightDomains = [
-    "VOLUME", "TREND", "COMPOSITION", "CONVERSION", "DOCUMENT", "ANOMALY",
+    "VOLUME", "TREND", "DOCUMENT", "ANOMALY", "TOP_EXPERTS", "INFO_COVERAGE",
     "FUNNEL", "BOTTLENECK", "STALLED", "REJECT",
     "TARIFF", "REVENUE", "SETTLEMENT", "BRANCH", "PIPELINE",
-    "CONTACT_COVERAGE", "CONTRACT_TEXT", "SHARE_AGGREGATE",
+    "CONTRACT_TEXT", "SHARE_AGGREGATE",
     "VISIT_VOLUME", "VISIT_TREND", "VISIT_STATUS",
   ] as const;
 
@@ -100,10 +102,9 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
       this.viRepo.findAll(),
     ]);
 
-    // ================= بخش معاملات (از ایجنت معاملات) =================
+    // ================= بخش معاملات (P6.5-14 — BLOCK A بازنویسی‌شده) =================
     if (txs.length > 0) {
-      const series = monthlySeries(txs);
-      const comp = matchComposition(txs);
+      const comp = matchCompositionLite(txs);
 
       // ---- VOLUME ----
       cards.push({
@@ -113,103 +114,15 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
         body: `در بازهٔ بررسی، ${faNumber(txs.length)} معامله در «گزارش تطابق معاملات» سامانه ملک تبریز ثبت شده است — تمامی کارشناسان ملک تبریز پوشش داده می‌شوند. هر رکورد نشان‌دهندهٔ تطبیق یک آگهی ملک با یک درخواست خرید و ثبت قرارداد مربوطه است.`,
         severity: "info",
         metrics: [
-          { label: "تعداد کل", value: faNumber(comp.totalCount) },
+          { label: "تعداد کل", value: faNumber(txs.length) },
           { label: "از مسیر درخواست", value: faNumber(txs.filter((t) => t.requestCode).length) },
           { label: "دارای هولوگرام", value: faNumber(txs.filter((t) => t.contractHolo).length) },
         ],
       });
 
-      // ---- TREND ----
-      const growth = growthRate(series);
-      if (series.length >= 2) {
-        const last = series[series.length - 1];
-        const prev = series[series.length - 2];
-        cards.push({
-          key: "tc-trend",
-          domain: "TREND",
-          title: "روند ماهانه معاملات",
-          body:
-            growth === null
-              ? "داده کافی برای محاسبه روند وجود ندارد."
-              : growth >= 0
-                ? `تعداد معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ رشد داشته است. اگر این روند ادامه یابد، تمرکز عرضه در ماه‌های آینده منطقی است.`
-                : `تعداد معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ کاهش داشته است. پیشنهاد: بررسی علت افت (فصلی‌بودن یا رقیب) و برنامه‌ریزی کمپین فعال‌سازی مشتریان.`,
-          severity: growth === null ? "info" : growth >= 10 ? "positive" : growth <= -10 ? "warning" : "info",
-          metrics: [
-            { label: "رشد ماهانه", value: growth === null ? "—" : `${faNumber(growth)}٪` },
-            { label: "معاملات ماه اخیر", value: faNumber(last.count) },
-          ],
-        });
-      }
-
-      // ---- COMPOSITION ----
-      cards.push({
-        key: "tc-composition",
-        domain: "COMPOSITION",
-        title: "ترکیب رویداد و آگهی پیشنهادی",
-        body: `از کل ${faNumber(comp.totalCount)} معامله، ${faNumber(comp.hasRequestEvent)} مورد دارای رویداد (تعامل کارشناس با درخواست)، ${faNumber(comp.hasSuggestedProperty)} مورد دارای آگهی پیشنهادی سیستم و ${faNumber(comp.hasBoth)} مورد هر دو را دارند. ${comp.hasSuggestedProperty / Math.max(1, comp.totalCount) < 0.3 ? "سهم پایین آگهی پیشنهادی نشان می‌دهد موتور تطبیق سیستم کمتر استفاده می‌شود — ارزش بررسی دارد." : "موتور تطبیق سیستم نقش مؤثری در معاملات ایفا می‌کند."}`,
-        severity: comp.hasSuggestedProperty / Math.max(1, comp.totalCount) < 0.3 ? "warning" : "positive",
-        metrics: [
-          { label: "دارای رویداد", value: faNumber(comp.hasRequestEvent) },
-          { label: "دارای آگهی پیشنهادی", value: faNumber(comp.hasSuggestedProperty) },
-          { label: "دارای هر دو", value: faNumber(comp.hasBoth) },
-          { label: "بدون هیچ‌کدام", value: faNumber(comp.neither) },
-        ],
-      });
-
-      // ---- CONVERSION ----
-      cards.push({
-        key: "tc-conversion",
-        domain: "CONVERSION",
-        title: "نرخ رساندن درخواست به معامله",
-        body: `${faNumber(comp.requestShare)}٪ از معاملات از مسیر «درخواست خرید ثبت‌شده» نهایی شده‌اند؛ ${comp.requestShare < 50 ? "این عدد نشان می‌دهد نیمی از معاملات خارج از چرخه رسمی درخواست‌ها انجام می‌شود — پیگیری درخواست‌های باز توصیه می‌شود." : "چرخه درخواست‌ها تا معامله به‌خوبی عمل می‌کند."}`,
-        severity: comp.requestShare < 50 ? "warning" : "positive",
-        metrics: [{ label: "سهم معاملات درخواست‌محور", value: `${faNumber(comp.requestShare)}٪` }],
-      });
-
-      // ---- DOCUMENT ----
-      if (comp.holoShare < 95 && comp.totalCount >= 10) {
-        cards.push({
-          key: "tc-document",
-          domain: "DOCUMENT",
-          title: "قراردادهای بدون هولوگرام",
-          body: `${faNumber(comp.totalCount - txs.filter((t) => t.contractHolo).length)} معامله بدون شماره هولوگرام ثبت شده‌اند (${faNumber(100 - comp.holoShare)}٪ از کل). شماره هولوگرام شناسه رسمی سند است؛ نبودش می‌تواند به معنای ثبت ناقص قرارداد در سامانه باشد — بررسی و تکمیل پرونده توصیه می‌شود.`,
-          severity: comp.holoShare < 80 ? "warning" : "info",
-          metrics: [
-            { label: "دارای هولوگرام", value: `${faNumber(comp.holoShare)}٪` },
-            { label: "بدون هولوگرام", value: `${faNumber(100 - comp.holoShare)}٪` },
-          ],
-        });
-      }
-
-      // ---- ANOMALY ----
-      const anomalies = detectAnomalies(series);
-      if (anomalies.length > 0) {
-        const a = anomalies[Math.abs(anomalies[0].z) > Math.abs(anomalies[anomalies.length - 1].z) ? 0 : anomalies.length - 1];
-        cards.push({
-          key: "tc-anomaly",
-          domain: "ANOMALY",
-          title: "ناهنجاری آماری در روند معاملات",
-          body: `ماه ${faMonthLabel(a.key)} با انحراف معیار ${faNumber(Math.abs(a.z))} ${a.direction === "spike" ? "بالاتر" : "پایین‌تر"} از نرمال عمل کرده است (${faNumber(a.count)} معامله). چنین انحرافی معمولاً نشانهٔ موج معاملاتی، تغییر سیاست سامانه یا رویداد فصلی است و ارزش بررسی دارد.`,
-          severity: "critical",
-          metrics: [{ label: "انحراف معیار", value: faNumber(a.z) }],
-        });
-      }
-
-      const peak = topMonths(series, 1);
-      if (peak.length > 0 && series.length >= 3) {
-        cards.push({
-          key: "tc-peak",
-          domain: "TREND",
-          title: "ماه اوج معاملات",
-          body: `پرشمارترین ماهِ ثبت معامله، ${faMonthLabel(peak[0].key)} با ${faNumber(peak[0].count)} معامله بوده است. الگوی فصلی این ماه می‌تواند مبنای برنامه‌ریزی نیروی انسانی و کمپین‌های فروش سال آینده قرار گیرد.`,
-          severity: "positive",
-          metrics: [{ label: faMonthLabel(peak[0].key), value: `${faNumber(peak[0].count)} معامله` }],
-        });
-      }
-
-      // ================= بینش‌های جدید ستون‌های فهرست (بند پ-۵) =================
-      // غنی‌سازی عین روت فهرست — تماس مالک/درخواست‌دهنده + متن قرارداد + حق‌السهم
+      // ================= بینش‌های جدید ستون‌های فهرست (بند پ-۵ + BLOCK C) =================
+      // غنی‌سازی عین روت فهرست — معامله‌محور (trade-overviews/info) + رجیستری‌ها + قراردادها
+      const txInfo = await this.txRepo.findInfoEnrichmentsByTxIds(txs.map((t) => t.id));
       const propertyCodes = [...new Set(txs.map((t) => t.propertyCode).filter(Boolean))];
       const requestCodes = [...new Set(txs.map((t) => t.requestCode).filter((c): c is string => Boolean(c)))];
       const [owners, requesters] = await Promise.all([
@@ -219,6 +132,7 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
       const enriched = enrichTransactionRows(txs, {
         owners,
         requesters,
+        txInfo,
         contracts: contracts.map((c) => ({
           contractHolo: c.contractHolo,
           propertyCode: c.propertyCode,
@@ -236,31 +150,126 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
         })),
       });
 
-      // ---- CONTACT_COVERAGE: پوشش تماس مالک/درخواست‌دهنده ----
-      const withOwnerName = enriched.filter((r) => r.ownerName).length;
-      const withOwnerMobile = enriched.filter((r) => r.ownerMobile).length;
-      const requestRows = enriched.filter((r) => r.requestCode);
-      const withRequesterName = requestRows.filter((r) => r.requesterName).length;
-      const withRequesterMobile = requestRows.filter((r) => r.requesterMobile).length;
-      const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
-      cards.push({
-        key: "tc-contact-coverage",
-        domain: "CONTACT_COVERAGE",
-        title: "پوشش اطلاعات تماس فهرست معاملات",
-        body: `نام مالک برای ${faNumber(pct(withOwnerName, enriched.length))}٪ و موبایل مالک برای ${faNumber(pct(withOwnerMobile, enriched.length))}٪ ردیف‌ها موجود است؛ در بین معاملات دارای درخواست، نام درخواست‌دهنده ${faNumber(pct(withRequesterName, requestRows.length))}٪ و موبایل او ${faNumber(pct(withRequesterMobile, requestRows.length))}٪ پوشش دارد. با ادامهٔ غنی‌سازی برش‌به‌برش از سامانه ARM («بروزرسانی از سامانه»)، این پوشش هر شب کامل‌تر می‌شود — هیچ ردیفی از چرخهٔ غنی‌سازی حذف نمی‌شود.`,
-        severity: withOwnerMobile / Math.max(1, enriched.length) >= 0.5 ? "positive" : "info",
-        metrics: [
-          { label: "نام مالک", value: `${faNumber(pct(withOwnerName, enriched.length))}٪` },
-          { label: "موبایل مالک", value: `${faNumber(pct(withOwnerMobile, enriched.length))}٪` },
-          { label: "نام درخواست‌دهنده", value: `${faNumber(pct(withRequesterName, requestRows.length))}٪` },
-          { label: "موبایل درخواست‌دهنده", value: `${faNumber(pct(withRequesterMobile, requestRows.length))}٪` },
-        ],
-      });
+      // ---- TREND (P6.5-14 A.۲) — روند ماهانهٔ سه‌سری: مبایعه‌نامه / اجاره / مجموع ----
+      // بازهٔ الزامی: فروردین ۱۴۰۴ تا ماه جاری؛ مجموع = مبایعه + اجاره + سایر
+      const typedRows: (SharedTxRow & { shareNames?: string[] })[] = enriched.map((r) => ({
+        contractDate: r.contractDate,
+        contractType: r.contractType,
+        propertyTitle: null,
+        realtorSharesJson: null,
+        shareNames: r.consultantsShareSummary?.names ?? [],
+      }));
+      const series = txTypeMonthlySeries(typedRows, { fromKey: "1404-01", toKey: currentJalaliMonthKey() });
+      const last = series[series.length - 1];
+      const prev = series[series.length - 2];
+      const totalInSeries = series.reduce((s, p) => s + p.total, 0);
+      const saleTotal = series.reduce((s, p) => s + p.sale, 0);
+      const rentTotal = series.reduce((s, p) => s + p.rent, 0);
+      const otherTotal = series.reduce((s, p) => s + p.other, 0);
+      {
+        const growth = last && prev && prev.total > 0 ? Math.round(((last.total - prev.total) / prev.total) * 100) : null;
+        cards.push({
+          key: "tc-trend",
+          domain: "TREND",
+          title: "روند ماهانه معاملات — مبایعه‌نامه، اجاره و مجموع",
+          body: `از فروردین ۱۴۰۴ تا ${faMonthLabel(last?.key ?? "1405-01")} مجموعاً ${faNumber(totalInSeries)} معامله ثبت شده است: ${faNumber(saleTotal)} مبایعه‌نامه، ${faNumber(rentTotal)} اجاره و ${faNumber(otherTotal)} سایر (نامشخص — در مجموع محاسبه می‌شود). ${growth === null ? "برای مقایسهٔ ماه اخیر داده کافی نیست." : growth >= 0 ? `مجموع معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ رشد داشته است.` : `مجموع معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ کاهش داشته است.`} نمودار همین کاشی سه سری را به‌صورت هم‌زمان نشان می‌دهد.`,
+          severity: growth === null ? "info" : growth >= 10 ? "positive" : growth <= -10 ? "warning" : "info",
+          metrics: [
+            { label: "مبایعه‌نامه (کل بازه)", value: faNumber(saleTotal) },
+            { label: "اجاره (کل بازه)", value: faNumber(rentTotal) },
+            { label: "سایر", value: faNumber(otherTotal) },
+            { label: "مجموع", value: faNumber(totalInSeries) },
+          ],
+        });
+      }
+
+      // ---- ANOMALY (بر پایهٔ سری مجموع) ----
+      const anomalies = detectAnomalies(series.map((p) => ({ key: p.key, count: p.total })));
+      if (anomalies.length > 0) {
+        const a = anomalies[Math.abs(anomalies[0].z) > Math.abs(anomalies[anomalies.length - 1].z) ? 0 : anomalies.length - 1];
+        cards.push({
+          key: "tc-anomaly",
+          domain: "ANOMALY",
+          title: "ناهنجاری آماری در روند معاملات",
+          body: `ماه ${faMonthLabel(a.key)} با انحراف معیار ${faNumber(Math.abs(a.z))} ${a.direction === "spike" ? "بالاتر" : "پایین‌تر"} از نرمال عمل کرده است (${faNumber(a.count)} معامله). چنین انحرافی معمولاً نشانهٔ موج معاملاتی، تغییر سیاست سامانه یا رویداد فصلی است و ارزش بررسی دارد.`,
+          severity: "critical",
+          metrics: [{ label: "انحراف معیار", value: faNumber(a.z) }],
+        });
+      }
+
+      const peak = topMonths(series.map((p) => ({ key: p.key, count: p.total })), 1);
+      if (peak.length > 0 && series.length >= 3) {
+        cards.push({
+          key: "tc-peak",
+          domain: "TREND",
+          title: "ماه اوج معاملات",
+          body: `پرشمارترین ماهِ ثبت معامله، ${faMonthLabel(peak[0].key)} با ${faNumber(peak[0].count)} معامله بوده است. الگوی فصلی این ماه می‌تواند مبنای برنامه‌ریزی نیروی انسانی و کمپین‌های فروش سال آینده قرار گیرد.`,
+          severity: "positive",
+          metrics: [{ label: faMonthLabel(peak[0].key), value: `${faNumber(peak[0].count)} معامله` }],
+        });
+      }
+
+      // ---- TOP_EXPERTS (P6.5-14 A.۵) — کارشناسان برتر سه‌ستونی ----
+      {
+        const top = topExpertsByTxType(typedRows, 10);
+        const experts = await this.exRepo.findAll();
+        const codeByName = new Map(experts.map((e) => [e.fullName, e.personnelCode]));
+        const topSale = top.sale[0];
+        const topRent = top.rent[0];
+        const topTotal = top.total[0];
+        cards.push({
+          key: "tc-top-experts",
+          domain: "TOP_EXPERTS",
+          title: "کارشناسان برتر بر اساس تعداد معاملات — مبایعه‌نامه، اجاره و مجموع",
+          body: `بر پایهٔ حق‌السهم‌های ثبت‌شده در صورت‌وضعیت‌های سامانه: ${topSale ? `پیشتاز مبایعه‌نامه «${topSale.name}» با ${faNumber(topSale.count)} معامله` : "معاملهٔ مبایعه‌نامه‌ای با مشاور ثبت‌شده نیست"}؛ ${topRent ? `پیشتاز اجاره «${topRent.name}» با ${faNumber(topRent.count)} معامله` : "معاملهٔ اجاره‌ای با مشاور ثبت‌شده نیست"}؛ ${topTotal ? `پیشتاز مجموع «${topTotal.name}» با ${faNumber(topTotal.count)} معامله` : "داده‌ای نیست"}. فهرست کامل سه‌ستونی (۱۰ نفر هر ستون) در تب «معاملات» همین کاشی نمایش داده می‌شود — مجموع هر کارشناس = مبایعه + اجاره + سایر او.`,
+          severity: "info",
+          metrics: [
+            ...(topSale ? [{ label: "برتر مبایعه‌نامه", value: `${topSale.name} — ${faNumber(topSale.count)}` }] : []),
+            ...(topRent ? [{ label: "برتر اجاره", value: `${topRent.name} — ${faNumber(topRent.count)}` }] : []),
+            ...(topTotal ? [{ label: "برتر مجموع", value: `${topTotal.name} — ${faNumber(topTotal.count)}` }] : []),
+          ],
+        });
+        void codeByName; // کد پرسنلی در فهرست UI نمایش داده می‌شود (اینجا فقط خلاصه)
+      }
+
+      // ---- DOCUMENT ----
+      if (comp.holoShare < 95 && comp.totalCount >= 10) {
+        cards.push({
+          key: "tc-document",
+          domain: "DOCUMENT",
+          title: "قراردادهای بدون هولوگرام",
+          body: `${faNumber(comp.totalCount - txs.filter((t) => t.contractHolo).length)} معامله بدون شماره هولوگرام ثبت شده‌اند (${faNumber(100 - comp.holoShare)}٪ از کل). شماره هولوگرام شناسه رسمی سند است؛ نبودش می‌تواند به معنای ثبت ناقص قرارداد در سامانه باشد — بررسی و تکمیل پرونده توصیه می‌شود.`,
+          severity: comp.holoShare < 80 ? "warning" : "info",
+          metrics: [
+            { label: "دارای هولوگرام", value: `${faNumber(comp.holoShare)}٪` },
+            { label: "بدون هولوگرام", value: `${faNumber(100 - comp.holoShare)}٪` },
+          ],
+        });
+      }
+
+      // ---- INFO_COVERAGE (P6.5-14 A.۴) — پوشش اطلاعات فهرست معاملات · ۷ معیار ----
+      {
+        const cov = computeTxInfoCoverage(enriched);
+        const avgPct = cov.criteria.length > 0 ? Math.round((cov.criteria.reduce((s, c) => s + c.pct, 0) / cov.criteria.length) * 10) / 10 : 0;
+        const weakest = [...cov.criteria].sort((a, b) => a.pct - b.pct)[0];
+        cards.push({
+          key: "tc-info-coverage",
+          domain: "INFO_COVERAGE",
+          title: "پوشش اطلاعات فهرست معاملات",
+          body: `پوشش هفت معیار اطلاعات برای ${faNumber(cov.total)} ردیف فهرست معاملات (میانگین ${faNumber(avgPct)}٪): ${cov.criteria.map((c) => `${c.label} ${faNumber(c.pct)}٪`).join("، ")}. ${weakest && weakest.pct < 95 ? `ضعیف‌ترین معیار «${weakest.label}» با ${faNumber(weakest.pct)}٪ است — با «بروزرسانی از سامانه» و غنی‌سازی معامله‌محور (صورت‌وضعیت هر معامله) این پوشش کامل‌تر می‌شود.` : "همهٔ معیارها در آستانهٔ کامل‌اند."} هیچ ردیفی از چرخهٔ غنی‌سازی حذف نمی‌شود.`,
+          severity: avgPct >= 95 ? "positive" : avgPct >= 70 ? "info" : "warning",
+          metrics: cov.criteria.map((c) => ({
+            label: c.label,
+            value: `${faNumber(c.pct)}٪`,
+            progress: c.pct,
+          })),
+        });
+      }
 
       // ---- CONTRACT_TEXT: پوشش متن قرارداد ----
-      const withContract = enriched.filter((r) => r.contractMatchBy !== null);
+      const withContract = enriched.filter((r) => r.contractMatchBy !== null || r.infoMatch);
       const withText = enriched.filter((r) => r.contractText);
-      const textPct = pct(withText.length, enriched.length);
+      const textPct = enriched.length > 0 ? Math.round((withText.length / enriched.length) * 100) : 0;
       cards.push({
         key: "tc-contract-text",
         domain: "CONTRACT_TEXT",
@@ -533,3 +542,21 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
 }
 
 export const transactionsContractsAgent = new TransactionsContractsAgent();
+
+// ===================== کمکی‌های P6.5-14 (BLOCK A) =====================
+
+/** خلاصهٔ سبک گزارش تطابق — فقط سنجه‌های بینش‌های باقی‌مانده (دامنهٔ ترکیبی پیشین حذف شد) */
+function matchCompositionLite(txs: Array<{ requestCode: string | null; contractHolo: string | null }>): {
+  totalCount: number;
+  holoShare: number;
+} {
+  const n = txs.length;
+  const withHolo = txs.filter((t) => t.contractHolo).length;
+  return { totalCount: n, holoShare: n > 0 ? Math.round((withHolo / n) * 1000) / 10 : 0 };
+}
+
+/** کلید ماه جلالی جاری (yyyy-mm) — سقف بازهٔ روند سه‌سری A.۲ */
+function currentJalaliMonthKey(): string {
+  const j = dateToJalali(new Date());
+  return `${j.jy}-${String(j.jm).padStart(2, "0")}`;
+}

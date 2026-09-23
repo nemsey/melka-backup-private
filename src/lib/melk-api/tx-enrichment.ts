@@ -69,6 +69,25 @@ export interface ContractLookup {
   taxOfContract?: number | null;
 }
 
+/** P6.5-14 (BLOCK C — ملکا-شورا-۱۴۰۵-۰۱۷) — غنی‌سازی معامله‌محور:
+ *  پاسخ نگاشت‌شدهٔ «trade-overviews/info/{txId}» عین منبع؛ بالاترین اولویت
+ *  برای نوع/مبلغ/طرفین/حق‌السهم چون مستقیماً به خود معامله گره خورده است. */
+export interface TxInfoLookup {
+  txId: string;
+  contractType: string | null;
+  contractPrice: number | null;
+  buyerName: string | null;
+  buyerMobile: string | null;
+  sellerName: string | null;
+  sellerMobile: string | null;
+  realtorSharesJson: string | null;
+  propertyTitle: string | null;
+  propertyAddress: string | null;
+  status: string | null;
+  documentDate: Date | null;
+  deliveryDate: Date | null;
+}
+
 /** P6.5-12 — کارگزاری مرتبط با ملک معامله (special-properties سامانه ARM) */
 export interface AgencyLookup {
   id: string;
@@ -92,6 +111,14 @@ export type EnrichedTxRow<R extends TxSourceRow = TxSourceRow> = R & {
   requesterName: string | null;
   /** موبایل درخواست‌دهنده (کد درخواست) */
   requesterMobile: string | null;
+  /** P6.5-14 (BLOCK C) — نام فروشنده (sellerList صورت‌وضعیت — ستون مستقل) */
+  sellerName: string | null;
+  /** P6.5-14 — موبایل فروشنده */
+  sellerMobile: string | null;
+  /** P6.5-14 — نام خریدار (buyerList صورت‌وضعیت — ستون مستقل) */
+  buyerName: string | null;
+  /** P6.5-14 — موبایل خریدار */
+  buyerMobile: string | null;
   /** متن قرارداد — ترکیب شفاف از فیلدهای واقعیِ ثبت‌شده (لایهٔ نمایش) */
   contractText: string | null;
   /** تجمیع حق‌السهم مشاوران — خلاصهٔ عددی + نام‌ها */
@@ -106,6 +133,8 @@ export type EnrichedTxRow<R extends TxSourceRow = TxSourceRow> = R & {
   } | null;
   /** منبع تطبیق قرارداد (شفافیت) */
   contractMatchBy: "holo" | "propertyCode" | "requestCode" | null;
+  /** P6.5-14 — منبع داده‌های معامله‌محور (trade-overviews/info) */
+  infoMatch: boolean;
   /** P6.5-12 — نوع قرارداد (از قرارداد تطبیقی؛ مستقیم یا اجاره) */
   contractType: string | null;
   /** P6.5-12 — مبلغ قرارداد (ریال — از قرارداد تطبیقی) */
@@ -226,6 +255,8 @@ export interface EnrichContext {
   contracts: ContractLookup[];
   /** P6.5-12 — کارگزاری‌های مرتبط (بر اساس کد ملک) */
   agencies?: AgencyLookup[];
+  /** P6.5-14 (BLOCK C) — غنی‌سازی معامله‌محور (بر اساس txId — بالاترین اولویت) */
+  txInfo?: TxInfoLookup[];
 }
 
 /** ایندکس قرارداد بر اساس سه کلید طبیعی — اولویت: هولوگرام > کد ملک > کد درخواست */
@@ -273,6 +304,8 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
   const ownerByCode = new Map(ctx.owners.map((o) => [o.propertyCode, o]));
   const requesterByCode = new Map(ctx.requesters.map((r) => [r.requestCode, r]));
   const contractIndex = buildContractIndex(ctx.contracts);
+  // P6.5-14 (BLOCK C) — ایندکس غنی‌سازی معامله‌محور بر اساس txId
+  const txInfoById = new Map((ctx.txInfo ?? []).map((t) => [t.txId, t]));
 
   // P6.5-12 — ایندکس کارگزاری‌ها بر اساس کد ملک (جدیدترین اول)
   const agencyByProperty = new Map<string, AgencyLookup>();
@@ -305,27 +338,89 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
     const requester = tx.requestCode ? requesterByCode.get(tx.requestCode) : undefined;
     const { contract, by } = matchContractForTx(tx, contractIndex);
     const agency = tx.propertyCode ? agencyByProperty.get(tx.propertyCode) ?? null : null;
+    const info = txInfoById.get(tx.id) ?? null;
+
+    // P6.5-14 (BLOCK C) — طرفین مستقل از صورت‌وضعیت خود معامله (بالاترین اولویت):
+    // فروشنده = sellerList · خریدار = buyerList؛ مالک/درخواست‌دهنده از رجیستری‌ها.
+    const infoSellerName = info?.sellerName?.trim() || null;
+    const infoSellerMobile = info?.sellerMobile?.trim() || null;
+    const infoBuyerName = info?.buyerName?.trim() || null;
+    const infoBuyerMobile = info?.buyerMobile?.trim() || null;
 
     // P6.5-12 — نام واقعی مالک: فیلد propertyCustomer خود گزارش فقط «برچسب نقش» است
-    // (فروشنده/موجر — شاهد داده: ۷۲۷/۷۲۷ = فروشنده)؛ نام واقعی از رجیستری آگهی‌ها
-    // (rawOwnerName — لایه ۱ حقیقت) یا از طرف فروشندهٔ قرارداد می‌آید؛ برچسب نقش
-    // تنها آخرین fallback است (عین نمایش خود سامانه).
+    // (فروشنده/موجر — شاهد داده: ۷۲۷/۷۲۷ = فروشنده)؛ اولویت: رجیستری آگهی‌ها >
+    // فروشندهٔ صورت‌وضعیت خود معامله (P6.5-14) > طرف فروشندهٔ قرارداد > برچسب نقش
     const ownerName =
       owner?.ownerName?.trim() ||
+      infoSellerName ||
       (tx.propertyCode ? sellerNameByProperty.get(tx.propertyCode)?.trim() ?? null : null) ||
       tx.propertyCustomer?.trim() ||
       null;
-    const ownerMobile = owner?.ownerMobile?.trim() || (tx.propertyCode ? sellerMobileByProperty.get(tx.propertyCode) ?? null : null);
+    const ownerMobile =
+      owner?.ownerMobile?.trim() ||
+      infoSellerMobile ||
+      (tx.propertyCode ? sellerMobileByProperty.get(tx.propertyCode) ?? null : null);
 
-    // P6.5-12 — نام واقعی درخواست‌دهنده: فیلد requestCustomer خود گزارش فقط «برچسب نقش»
-    // است (خریدار/مستأجر)؛ نام واقعی از کاتالوگ درخواست‌ها یا طرف خریدار قرارداد.
+    // P6.5-14 — فروشندهٔ مستقل: صورت‌وضعیت خود معامله > قرارداد تطبیقی > رجیستری آگهی
+    const sellerName =
+      infoSellerName ||
+      (tx.propertyCode ? sellerNameByProperty.get(tx.propertyCode)?.trim() ?? null : null) ||
+      owner?.ownerName?.trim() ||
+      null;
+    const sellerMobile =
+      infoSellerMobile ||
+      (tx.propertyCode ? sellerMobileByProperty.get(tx.propertyCode) ?? null : null) ||
+      owner?.ownerMobile?.trim() ||
+      null;
+
+    // P6.5-12 — نام واقعی درخواست‌دهنده: اولویت: کاتالوگ درخواست‌ها > خریدار صورت‌وضعیت
+    // خود معامله (P6.5-14) > طرف خریدار قرارداد > برچسب نقش
     const requesterName =
       requester?.customerName?.trim() ||
+      infoBuyerName ||
       (tx.requestCode ? buyerNameByRequest.get(tx.requestCode) ?? null : null) ||
       tx.requestCustomer?.trim() ||
       null;
     const requesterMobile =
-      requester?.customerMobile?.trim() || (tx.requestCode ? buyerMobileByRequest.get(tx.requestCode) ?? null : null);
+      requester?.customerMobile?.trim() ||
+      infoBuyerMobile ||
+      (tx.requestCode ? buyerMobileByRequest.get(tx.requestCode) ?? null : null);
+
+    // P6.5-14 — خریدار مستقل: صورت‌وضعیت خود معامله > قرارداد تطبیقی > کاتالوگ درخواست‌ها
+    const buyerName =
+      infoBuyerName ||
+      (tx.requestCode ? buyerNameByRequest.get(tx.requestCode) ?? null : null) ||
+      requester?.customerName?.trim() ||
+      null;
+    const buyerMobile =
+      infoBuyerMobile ||
+      (tx.requestCode ? buyerMobileByRequest.get(tx.requestCode) ?? null : null) ||
+      requester?.customerMobile?.trim() ||
+      null;
+
+    // P6.5-14 — نوع/مبلغ/حق‌السهم: غنی‌سازی معامله‌محور > قرارداد تطبیقی
+    const contractType = info?.contractType?.trim() || contract?.contractType?.trim() || null;
+    const contractAmount = info?.contractPrice ?? contract?.contractPrice ?? null;
+    const shareSource = info?.realtorSharesJson ?? contract?.realtorListJson ?? null;
+
+    // P6.5-14 — متن قرارداد: اولویت با داده‌های معامله‌محور (عین خود معامله)
+    const contractLike: ContractLookup | null = info
+      ? {
+          contractHolo: tx.contractHolo,
+          propertyCode: tx.propertyCode,
+          requestCode: tx.requestCode,
+          contractType,
+          contractDate: tx.contractDate,
+          documentDate: info.documentDate,
+          deliveryDate: info.deliveryDate,
+          propertyTitle: info.propertyTitle,
+          propertyAddress: info.propertyAddress,
+          buyerListJson: infoBuyerName ? JSON.stringify([{ fullName: infoBuyerName }]) : null,
+          sellerListJson: infoSellerName ? JSON.stringify([{ fullName: infoSellerName }]) : null,
+          realtorListJson: info.realtorSharesJson,
+          status: info.status ?? contract?.status ?? "",
+        }
+      : contract;
 
     return {
       ...tx,
@@ -333,13 +428,53 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
       ownerMobile,
       requesterName,
       requesterMobile,
-      contractText: synthesizeContractText(contract, tx),
-      consultantsShareSummary: aggregateConsultantShares(contract?.realtorListJson ?? null),
+      sellerName,
+      sellerMobile,
+      buyerName,
+      buyerMobile,
+      contractText: synthesizeContractText(contractLike, tx),
+      consultantsShareSummary: aggregateConsultantShares(shareSource),
       contractMatchBy: by,
-      // P6.5-12 — نوع و مبلغ قرارداد از قرارداد تطبیقی
-      contractType: contract?.contractType?.trim() || null,
-      contractAmount: contract?.contractPrice ?? null,
+      infoMatch: info !== null,
+      // P6.5-14 — نوع و مبلغ با اولویت معامله‌محور
+      contractType,
+      contractAmount,
       agency,
     };
   });
+}
+
+// ==========================================================================
+// P6.5-14 (BLOCK A.۴ — ملکا-شورا-۱۴۰۵-۰۱۷) — پوشش اطلاعات فهرست معاملات
+// ==========================================================================
+
+/** هفت معیار پوشش — عین جدول A.۴ (ترتیب الزامی) */
+export interface TxInfoCoverageCriteria {
+  key: "ownerName" | "ownerMobile" | "buyerName" | "buyerMobile" | "contractType" | "contractAmount" | "shareAggregate";
+  label: string;
+  filled: number;
+  total: number;
+  /** درصد با یک رقم اعشار */
+  pct: number;
+}
+
+export type TxInfoCoverageRow = Pick<
+  EnrichedTxRow,
+  "ownerName" | "ownerMobile" | "buyerName" | "buyerMobile" | "contractType" | "contractAmount" | "consultantsShareSummary"
+>;
+
+/** محاسبهٔ هفت معیار پوشش — خالص و قابل تست (هر فرمول عین جدول A.۴) */
+export function computeTxInfoCoverage(rows: TxInfoCoverageRow[]): { total: number; criteria: TxInfoCoverageCriteria[] } {
+  const total = rows.length;
+  const pct1 = (n: number) => (total > 0 ? Math.round((n / total) * 1000) / 10 : 0);
+  const defs: { key: TxInfoCoverageCriteria["key"]; label: string; filled: number }[] = [
+    { key: "ownerName", label: "نام مالک", filled: rows.filter((r) => Boolean(r.ownerName?.trim())).length },
+    { key: "ownerMobile", label: "موبایل مالک", filled: rows.filter((r) => Boolean(r.ownerMobile?.trim())).length },
+    { key: "buyerName", label: "نام خریدار", filled: rows.filter((r) => Boolean(r.buyerName?.trim())).length },
+    { key: "buyerMobile", label: "موبایل خریدار", filled: rows.filter((r) => Boolean(r.buyerMobile?.trim())).length },
+    { key: "contractType", label: "نوع قرارداد", filled: rows.filter((r) => Boolean(r.contractType?.trim())).length },
+    { key: "contractAmount", label: "مبلغ قرارداد", filled: rows.filter((r) => (r.contractAmount ?? 0) > 0).length },
+    { key: "shareAggregate", label: "تجمیع حق‌السهم مشاوران", filled: rows.filter((r) => (r.consultantsShareSummary?.totalPercent ?? 0) > 0).length },
+  ];
+  return { total, criteria: defs.map((d) => ({ ...d, total, pct: pct1(d.filled) })) };
 }

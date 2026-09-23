@@ -15,7 +15,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { getContractRepository, getPropertyRecordRepository, getRequestRepository, getTransactionRepository } from "@/core/repositories";
+import { getContractRepository, getExpertRepository, getPropertyRecordRepository, getRequestRepository, getTransactionRepository } from "@/core/repositories";
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { enrichTransactionRows, type ContractLookup, type AgencyLookup } from "@/lib/melk-api/tx-enrichment";
@@ -67,6 +67,8 @@ export async function GET(request: NextRequest) {
     });
 
     // ---- P6.5-11 (بند پ-۵): غنی‌سازی تحلیلی ستون‌های جدید (فقط خواندن) ----
+    // P6.5-14 (BLOCK C — ملکا-شورا-۱۴۰۵-۰۱۷) — غنی‌سازی معامله‌محور trade-overviews/info
+    const txInfo = await getTransactionRepository().findInfoEnrichmentsByTxIds(rows.map((r) => r.id));
     const propertyCodes = [...new Set(rows.map((r) => r.propertyCode).filter(Boolean))];
     const requestCodes = [...new Set(rows.map((r) => r.requestCode).filter((c): c is string => Boolean(c)))];
     const [owners, requesters, contractRows, agencyRows] = await Promise.all([
@@ -107,7 +109,7 @@ export async function GET(request: NextRequest) {
       detailsJson: a.detailsJson,
       createdAt: a.createdAt,
     }));
-    let enrichedRows = enrichTransactionRows(rows, { owners, requesters, contracts, agencies });
+    let enrichedRows = enrichTransactionRows(rows, { owners, requesters, contracts, agencies, txInfo });
 
     // ---- P6.5-12 — فیلترهای نمایشی لایهٔ غنی‌سازی (نام کارشناس · کد پرسنلی · نوع قرارداد) ----
     const expertName = sp.get("expertName")?.trim();
@@ -146,6 +148,11 @@ export async function GET(request: NextRequest) {
     // P6.5-12 — اگر فیلتر لایهٔ غنی‌سازی فعال است، شمارش منطبق واقعی همان ردیف‌های باقی‌مانده است
     const hasEnrichFilters = Boolean(expertName || personnelCode || contractType);
 
+    // P6.5-14 (A.۵) — نگاشت نام کارشناس → کد پرسنلی برای سه ستون کارشناسان برتر
+    const expertRows = await getExpertRepository().findAll();
+    const expertCodeByName: Record<string, string> = {};
+    for (const e of expertRows) expertCodeByName[e.fullName] = e.personnelCode;
+
     return Response.json({
       ok: true,
       rows: enrichedRows,
@@ -153,6 +160,7 @@ export async function GET(request: NextRequest) {
       limit,
       offset,
       summary,
+      expertCodeByName,
       // شفافیت منبع داده برای UI
       dataSource: {
         real: true,

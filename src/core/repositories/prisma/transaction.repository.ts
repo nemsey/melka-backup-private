@@ -170,6 +170,35 @@ export class PrismaTransactionRepository implements ScopedTransactionRepository 
     await this.client.transactionRecord.deleteMany({});
   }
 
+  /** P6.5-14 (BLOCK C — ملکا-شورا-۱۴۰۵-۰۱۷) — غنی‌سازی معامله‌محور بر اساس txId */
+  async findInfoEnrichmentsByTxIds(txIds: string[]): Promise<
+    Array<{
+      txId: string;
+      contractType: string | null;
+      contractPrice: number | null;
+      buyerName: string | null;
+      buyerMobile: string | null;
+      sellerName: string | null;
+      sellerMobile: string | null;
+      realtorSharesJson: string | null;
+      propertyTitle: string | null;
+      propertyAddress: string | null;
+      status: string | null;
+      documentDate: Date | null;
+      deliveryDate: Date | null;
+    }>
+  > {
+    if (txIds.length === 0) return [];
+    return this.client.transactionEnrichment.findMany({
+      where: { txId: { in: txIds } },
+      select: {
+        txId: true, contractType: true, contractPrice: true, buyerName: true, buyerMobile: true,
+        sellerName: true, sellerMobile: true, realtorSharesJson: true, propertyTitle: true,
+        propertyAddress: true, status: true, documentDate: true, deliveryDate: true,
+      },
+    });
+  }
+
   /**
    * P6.5-02 (§۵.۲/§۵.۳) — فهرست Scope-دار معاملات.
    * ماتریس دامنه: TransactionRecord = داده «تجمیمی دپارتمان» ⇒ هیچ دامنه‌ای

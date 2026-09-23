@@ -30,7 +30,15 @@ export interface InsightCard {
   title: string;
   body: string;
   severity: InsightSeverity;
-  metrics?: { label: string; value: string }[];
+  metrics?: InsightMetric[];
+}
+
+/** سنجهٔ بینش — P6.5-14: نوار پیشرفت اختیاری برای معیارهای پوشش (A.۴) */
+export interface InsightMetric {
+  label: string;
+  value: string;
+  /** درصد ۰-۱۰۰ برای نمایش نوار پیشرفت رنگ‌بندی‌شده (سبز ≥۹۵ / زرد ۷۰-۹۵ / قرمز <۷۰) */
+  progress?: number;
 }
 
 export interface RenderedInsight extends InsightCard {

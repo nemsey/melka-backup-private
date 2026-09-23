@@ -28,7 +28,7 @@ interface Insight {
   title: string;
   body: string;
   severity: "info" | "positive" | "warning" | "critical";
-  metrics?: { label: string; value: string }[];
+  metrics?: { label: string; value: string; progress?: number }[];
   finalWeight: number;
   learned: boolean;
   weightSource: string;
@@ -327,6 +327,16 @@ export function AgentPanel({ tileId }: { tileId: string }) {
                                       <div className="text-xs font-bold truncate" title={m.value}>
                                         {m.value}
                                       </div>
+                                      {typeof m.progress === "number" && (
+                                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={Math.round(m.progress)} aria-valuemin={0} aria-valuemax={100} aria-label={`${m.label}: ${m.value}`}>
+                                          <div
+                                            className={`h-full rounded-full transition-all ${
+                                              m.progress >= 95 ? "bg-emerald-500" : m.progress >= 70 ? "bg-amber-500" : "bg-red-500"
+                                            }`}
+                                            style={{ width: `${Math.max(2, Math.min(100, m.progress))}%` }}
+                                          />
+                                        </div>
+                                      )}
                                     </div>
                                   ))}
                                 </div>

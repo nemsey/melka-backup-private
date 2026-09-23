@@ -159,7 +159,7 @@ describe("P1-02 / ادعاهای ساختاری — پنج صفحه فقط فر�
 
   test("صفحات از analyzers import می‌کنند (نه محاسبه محلی)", () => {
     const checks: Array<[string, string]> = [
-      ["transactions-contracts/TransactionsTab.tsx", "monthlyCounts"],
+      ["transactions-contracts/TransactionsTab.tsx", "txTypeMonthlySeries"],
       ["experts/ExpertsPage.tsx", "cooperationDegree"],
       ["supply-demand/SupplyDemandPage.tsx", "demandLevel"],
       ["price-index/PriceIndexPage.tsx", "areaTrendMatrix"],

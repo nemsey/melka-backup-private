@@ -62,6 +62,24 @@ export interface TransactionRepository {
   upsertBatch(rows: TransactionUpsertInput[]): Promise<{ created: number; updated: number }>;
   /** P6.5-03 — درج/به‌روزرسانی انبوه با merge non-null (Bulk Import؛ محافظت sourceRunId) */
   upsertBulk(rows: TransactionUpsertInput[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
+  /** P6.5-14 (BLOCK C — ملکا-شورا-۱۴۰۵-۰۱۷) — غنی‌سازی معامله‌محور بر اساس txId */
+  findInfoEnrichmentsByTxIds(txIds: string[]): Promise<
+    Array<{
+      txId: string;
+      contractType: string | null;
+      contractPrice: number | null;
+      buyerName: string | null;
+      buyerMobile: string | null;
+      sellerName: string | null;
+      sellerMobile: string | null;
+      realtorSharesJson: string | null;
+      propertyTitle: string | null;
+      propertyAddress: string | null;
+      status: string | null;
+      documentDate: Date | null;
+      deliveryDate: Date | null;
+    }>
+  >;
   /** پاک‌سازی کامل (ریست کش CRM) */
   deleteAll(): Promise<void>;
 }

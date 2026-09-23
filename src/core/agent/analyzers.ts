@@ -537,3 +537,137 @@ export function parseFaAmount(v: string): number | undefined {
   const n = Number(normalized);
   return Number.isFinite(n) ? n : undefined;
 }
+
+// ===================== P6.5-14 (ملکا-شورا-۱۴۰۵-۰۱۷ — BLOCK A) =====================
+// روند ماهانهٔ سه‌سری (مبایعه‌نامه/اجاره/مجموع) + کارشناسان برتر سه‌ستونی
+
+/** دستهٔ نوع معامله — مجموع = مبایعه + اجاره + سایر (قید ریاضی A.۲) */
+export type TxTypeCategory = "sale" | "rent" | "other";
+
+/** ورودی ردیف نوع‌دار — خروجی غنی‌سازی معاملات (contractType از لایه ۲) */
+export interface TypedTxRow {
+  contractDate: Date | string;
+  /** نوع قرارداد از منبع (غنی‌سازی معامله‌محور / قرارداد تطبیقی) — nullable */
+  contractType: string | null;
+  /** عنوان ملک برای استنتاج نوع (فروش…/رهن و اجاره…) — nullable */
+  propertyTitle?: string | null;
+}
+
+/**
+ * دسته‌بندی نوع یک معامله — زنجیرهٔ A.۲:
+ *   ۱) contractType عین منبع («مبایعه نامه»/«اجاره نامه»/«تمدید اجاره»…)
+ *   ۲) استنتاج از عنوان ملک (فروش… → مبایعه؛ رهن و اجاره/اجاره… → اجاره)
+ *   ۳) هیچ‌کدام → «سایر» (در مجموع محاسبه می‌شود — چون در واقع یک معامله است)
+ */
+export function categorizeTxType(row: TypedTxRow): TxTypeCategory {
+  const t = row.contractType?.trim();
+  if (t) {
+    if (t.includes("مبایعه") || t.includes("خرید و فروش")) return "sale";
+    if (t.includes("اجاره")) return "rent";
+    return "other";
+  }
+  const title = row.propertyTitle?.trim() ?? "";
+  if (title) {
+    if (title.includes("اجاره")) return "rent";
+    if (title.includes("فروش")) return "sale";
+  }
+  return "other";
+}
+
+export interface TxTypeMonthlyPoint {
+  /** کلید ماه جلالی (yyyy-mm) */
+  key: string;
+  /** سری ۱ — تعداد معاملات مبایعه‌نامه */
+  sale: number;
+  /** سری ۲ — تعداد معاملات اجاره (اجاره‌نامه + تمدید اجاره) */
+  rent: number;
+  /** «سایر» — نوع نامشخص؛ در مجموع محاسبه می‌شود */
+  other: number;
+  /** سری ۳ — مجموع = مبایعه + اجاره + سایر (قید ریاضی) */
+  total: number;
+}
+
+/**
+ * سری ماهانهٔ سه‌سری — بازهٔ فروردین ۱۴۰۴ تا ماه جاری (عین دستور A.۲).
+ * ماه‌های بی‌داده با صفر پر می‌شوند تا محور پیوسته باشد.
+ * تضمین ریاضی: total = sale + rent + other در هر ماه.
+ */
+export function txTypeMonthlySeries(rows: TypedTxRow[], range?: { fromKey: string; toKey: string }): TxTypeMonthlyPoint[] {
+  const from = range?.fromKey ?? "1404-01";
+  const to = range?.toKey ?? jalaliMonthKey(new Date());
+  const map = new Map<string, TxTypeMonthlyPoint>();
+  // کلیدهای بازه — پیمایش ماه‌به‌ماه جلالی
+  const [fy, fm] = from.split("-").map(Number);
+  const [ty, tm] = to.split("-").map(Number);
+  let y = fy;
+  let m = fm;
+  while (y < ty || (y === ty && m <= tm)) {
+    const key = `${y}-${String(m).padStart(2, "0")}`;
+    map.set(key, { key, sale: 0, rent: 0, other: 0, total: 0 });
+    m += 1;
+    if (m > 12) { m = 1; y += 1; }
+  }
+  for (const row of rows) {
+    const key = jalaliMonthKey(new Date(row.contractDate));
+    const point = map.get(key);
+    if (!point) continue; // خارج از بازه
+    const cat = categorizeTxType(row);
+    point[cat] += 1;
+    point.total += 1;
+  }
+  return [...map.values()].sort((a, b) => a.key.localeCompare(b.key));
+}
+
+export interface TopExpertRow {
+  name: string;
+  count: number;
+}
+
+/** ورودی ردیف حامل سهم مشاوران + نوع معامله — برای کارشناسان برتر سه‌ستونی */
+export interface SharedTxRow extends TypedTxRow {
+  /** سهم مشاوران — JSON [{name, unitPercent, confirmation}] یا خلاصهٔ ازپیش‌محاسبه */
+  realtorSharesJson?: string | null;
+  shareNames?: string[];
+}
+
+/**
+ * کارشناسان برتر بر اساس تعداد معاملات — سه ستون (A.۵):
+ *   مبایعه‌نامه · اجاره · مجموع (مجموع = مبایعه + اجاره + سایر در هر کارشناس).
+ * هر معامله برای هر مشاورِ دارای سهم یک‌بار شمرده می‌شود (max-نه-جمع عین P6.5-12).
+ */
+export function topExpertsByTxType(rows: SharedTxRow[], n = 10): {
+  sale: TopExpertRow[];
+  rent: TopExpertRow[];
+  total: TopExpertRow[];
+} {
+  const sale = new Map<string, number>();
+  const rent = new Map<string, number>();
+  const total = new Map<string, number>();
+  for (const row of rows) {
+    const names = row.shareNames ?? parseShareNames(row.realtorSharesJson);
+    if (names.length === 0) continue;
+    const cat = categorizeTxType(row);
+    for (const name of names) {
+      sale.set(name, (sale.get(name) ?? 0) + (cat === "sale" ? 1 : 0));
+      rent.set(name, (rent.get(name) ?? 0) + (cat === "rent" ? 1 : 0));
+      total.set(name, (total.get(name) ?? 0) + 1);
+    }
+  }
+  const rank = (m: Map<string, number>): TopExpertRow[] =>
+    [...m.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fa"))
+      .slice(0, n);
+  return { sale: rank(sale), rent: rank(rent), total: rank(total) };
+}
+
+function parseShareNames(json: string | null | undefined): string[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json) as { name?: string }[];
+    if (!Array.isArray(parsed)) return [];
+    return [...new Set(parsed.map((s) => s?.name?.trim()).filter((x): x is string => Boolean(x)))];
+  } catch {
+    return [];
+  }
+}
