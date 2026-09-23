@@ -1,0 +1,56 @@
+{
+  "kind": "trend-validation — ملکا-شورا-۱۴۰۵-۰۱۸ BLOCK A.2",
+  "generatedAt": "2026-09-23T11:02:36.066Z",
+  "range": {
+    "from": "1404-01 (فروردین ۱۴۰۴)",
+    "to": "1405-07"
+  },
+  "dbTypeCounts_inRange": {
+    "مبایعه‌نامه": 510,
+    "پیش‌فروش": 33,
+    "اجاره": 170,
+    "تمدید اجاره": 14,
+    "ثبت‌نشده": 0
+  },
+  "outOfRangeRecords": 12,
+  "seriesTotals": {
+    "series1_sale": 543,
+    "series2_rent": 184,
+    "none": 0,
+    "series3_total": 727
+  },
+  "checks": {
+    "series1_equals_saleFamily": {
+      "expected": 543,
+      "actual": 543,
+      "pass": true
+    },
+    "series2_equals_rentFamily": {
+      "expected": 184,
+      "actual": 184,
+      "pass": true
+    },
+    "series3_equals_s1_s2_none": {
+      "expected": 727,
+      "actual": 727,
+      "pass": true
+    },
+    "series3_equals_totalInRange": {
+      "expected": 727,
+      "actual": 727,
+      "pass": true
+    },
+    "perMonthMath": {
+      "monthsChecked": 19,
+      "allTotalEqSaleRentNone": true,
+      "allS3_ge_S1S2": true
+    },
+    "apiRowsMatchDb": {
+      "expected": 739,
+      "actual": 739,
+      "pass": true
+    }
+  },
+  "monthlyMatchDbVsSeries": true,
+  "allPassed": true
+}

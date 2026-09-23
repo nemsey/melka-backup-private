@@ -1,26 +1,24 @@
 "use client";
 
 /**
- * تب «معاملات» کاشی «معاملات ملک تبریز» — P6.5-12
+ * تب «معاملات» کاشی «معاملات ملک تبریز» — P6.5-15 (ملکا-شورا-۱۴۰۵-۰۱۸ — پروندهٔ نهایی M3)
  * ------------------------------------------------------
- * دستور مالک ۱۴۰۵/۰۷/۰۱ + دستورهای مرحلهٔ قبل (ادغام‌شده):
- *   · ستون «درخواست» (تغییر نام از «کد درخواست / درخواست‌دهنده»)
- *   · کد ملک و درخواست با نام+موبایل تو در تو (لایهٔ غنی‌سازی)
- *   · ستون‌های «نوع قرارداد» + «مبلغ قرارداد» (با جداکنندهٔ «،») + «فایل قرارداد»
- *   · «تجمیع حق‌السهم مشاوران» — درصد حق‌السهم در مقابل نام هر مشاور (بند ب)
- *   · فیلترها بالای فهرست: تاریخ + کدها + هولوگرام + نام کارشناس + کد پرسنلی + نوع قرارداد
- *   · حذف ستون‌های خریدار/فروشنده (برچسب نقش — نه نام واقعی) و فیلتر نوع تطبیق
+ * قانون انواع معاملات ملکا (چهارگانه + ثبت‌نشده) در همه‌جا از classifyContract:
+ *   · روند ماهانهٔ سه‌سری: مبایعه‌نامه (شامل پیش‌فروش) / اجاره (شامل تمدید) / مجموع
+ *   · کارشناسان برتر سه‌ستونی — فقط نام + تعداد (BLOCK C)
+ *   · فیلتر نوع قرارداد: ۵ گزینهٔ چندانتخابی (BLOCK D)
+ *   · ۱۱ ستون به ترتیب دقیق دستور + ساده‌سازی کد ملک/کد درخواست (دستور ۱ و ۲ مالک)
+ *   · فیلترها: اعمال خودکار debounce ۳۰۰ms + نشانگر جستجو + پیام خالی + پاک‌کردن (BLOCK F)
  * تک‌صفحه‌ای و بی‌نهایت (P6.5-09) — همهٔ ردیف‌ها در یک پاسخ واحد.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Loader2,
@@ -33,7 +31,6 @@ import {
   BarChart3,
   FileCheck2,
   Users,
-  Phone,
   FileText,
   Home,
   Inbox,
@@ -52,16 +49,17 @@ import {
 import { KpiCard, DataSourceWarning, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import { api } from "@/lib/client/api";
 import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/core/agent/analyzers";
+import { classifyContract, CONTRACT_KIND_FILTER_LABELS, CONTRACT_KIND_FILTER_VALUES } from "@/lib/contract-classify";
 import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull } from "@/lib/format";
 import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { ContractFileDialog, type ContractDocData } from "./ContractFileDialog";
 
-/** برچسب فارسی سری‌های نمودار روند (A.۳) */
+/** برچسب فارسی سری‌های نمودار روند (B.۱ — ملکا-شورا-۱۴۰۵-۰۱۸) */
 const SERIES_FA: Record<string, string> = {
-  sale: "مبایعه‌نامه",
-  rent: "اجاره",
+  sale: "مبایعه‌نامه (شامل پیش‌فروش)",
+  rent: "اجاره (شامل تمدید)",
   total: "مجموع",
 };
 
@@ -119,6 +117,10 @@ interface Summary {
   withRequest: number;
 }
 
+/**
+ * فیلترها — contractTypes آرایه است (multi-select نوع قرارداد — D.۱؛
+ * تهی = همه). اعمال خودکار با debounce ۳۰۰ms (BLOCK F).
+ */
 const EMPTY_FILTERS = {
   dateFrom: "",
   dateTo: "",
@@ -127,17 +129,10 @@ const EMPTY_FILTERS = {
   contractHolo: "",
   expertName: "",
   personnelCode: "",
-  contractType: "all",
+  contractTypes: [] as string[],
 };
 
 type Filters = typeof EMPTY_FILTERS;
-
-const CONTRACT_TYPE_FA: Record<string, string> = {
-  all: "همه انواع",
-  "مبایعه نامه": "مبایعه نامه",
-  "اجاره نامه": "اجاره نامه",
-  "نامشخص": "بدون قرارداد ثبت‌شده",
-};
 
 /** پاسخ کامل روت معاملات — شیء یگانه داده هوک */
 interface TxResponse {
@@ -145,8 +140,6 @@ interface TxResponse {
   total: number;
   summary: Summary;
   dataSource: DataSourceInfo;
-  /** P6.5-14 (A.۵) — نگاشت نام کارشناس → کد پرسنلی (برای سه ستون کارشناسان برتر) */
-  expertCodeByName?: Record<string, string>;
 }
 
 const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
@@ -169,7 +162,8 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
     if (applied.contractHolo) params.set("contractHolo", applied.contractHolo);
     if (applied.expertName) params.set("expertName", applied.expertName);
     if (applied.personnelCode) params.set("personnelCode", applied.personnelCode);
-    if (applied.contractType !== "all") params.set("contractType", applied.contractType);
+    // BLOCK D — نوع قرارداد چندگانه: ?contractType=…&contractType=… (تهی = همه)
+    for (const t of applied.contractTypes) params.append("contractType", t);
     params.set("limit", "5000");
     params.set("offset", "0");
     params.set("sortBy", sortBy);
@@ -189,7 +183,8 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
   const source = data?.dataSource ?? null;
   const total = data?.total ?? 0;
 
-  // P6.5-14 (A.۲) — سری ماهانهٔ سه‌سری: مبایعه‌نامه / اجاره / مجموع (فروردین ۱۴۰۴ → ماه جاری)
+  // P6.5-15 (A.۱) — سری ماهانهٔ سه‌سری با منطق خانواده‌ای:
+  // مبایعه‌نامه (شامل پیش‌فروش) / اجاره (شامل تمدید) / مجموع (فروردین ۱۴۰۴ → ماه جاری)
   const monthly = useMemo(() => {
     const j = dateToJalali(new Date());
     const currentKey = `${j.jy}-${String(j.jm).padStart(2, "0")}`;
@@ -202,7 +197,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
     }));
   }, [rows]);
 
-  // P6.5-14 — شمارش نوع‌ها برای KPI (از ردیف‌های غنی‌شدهٔ فهرترشده)
+  // P6.5-15 — شمارش خانواده‌ها برای KPI (از classifyContract — مبایعه+پیش‌فروش / اجاره+تمدید / ثبت‌نشده)
   const typeCounts = useMemo(() => {
     let sale = 0;
     let rent = 0;
@@ -216,7 +211,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
     return { sale, rent, other, total: sale + rent + other };
   }, [rows]);
 
-  // P6.5-14 (A.۵) — کارشناسان برتر سه‌ستونی (۱۰ نفر هر ستون)
+  // P6.5-15 (C.۱) — کارشناسان برتر سه‌ستونی (۱۰ نفر هر ستون — فقط نام + تعداد)
   const topExperts = useMemo(() => {
     const shared = (rows ?? []).map((t) => ({
       contractDate: t.contractDate,
@@ -229,6 +224,23 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
   }, [rows]);
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
+  /** تغییر انتخاب یک گزینهٔ نوع قرارداد (multi-select — D.۱) */
+  const toggleContractKind = (value: string) =>
+    setFilters((f) => ({
+      ...f,
+      contractTypes: f.contractTypes.includes(value)
+        ? f.contractTypes.filter((v) => v !== value)
+        : [...f.contractTypes, value],
+    }));
+
+  // BLOCK F (ملکا-شورا-۱۴۰۵-۰۱۸) — اعمال خودکار فیلترها با debounce ۳۰۰ms؛
+  // تغییر نکردن مقدار ⇒ همان مرجع قبلی ⇒ واکشی مجدد نمی‌شود.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setApplied((prev) => (JSON.stringify(prev) === JSON.stringify(filters) ? prev : filters));
+    }, 300);
+    return () => clearTimeout(id);
+  }, [filters]);
 
   /** باز کردن سند قرارداد (بند ت — فایل قرارداد هر معامله) */
   const openContractDoc = (t: TxRow) => {
@@ -271,7 +283,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
 
   return (
     <div className="space-y-6">
-      {/* شاخص‌های چهارجانی — P6.5-14: کل / مبایعه‌نامه / اجاره / سایر */}
+      {/* شاخص‌های چهارجانی — P6.5-15: کل / مبایعه‌نامه (با پیش‌فروش) / اجاره (با تمدید) / بدون قرارداد */}
       {rows && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <KpiCard
@@ -283,7 +295,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
             iconColorClassName="text-primary"
           />
           <KpiCard
-            label="معاملات مبایعه‌نامه"
+            label="مبایعه‌نامه (شامل پیش‌فروش)"
             value={faNumber(typeCounts.sale)}
             icon={Home}
             iconAs="div"
@@ -291,7 +303,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
             iconColorClassName="text-teal-600 dark:text-teal-400"
           />
           <KpiCard
-            label="معاملات اجاره"
+            label="اجاره (شامل تمدید)"
             value={faNumber(typeCounts.rent)}
             icon={TrendingUp}
             iconAs="div"
@@ -299,7 +311,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
             iconColorClassName="text-amber-600"
           />
           <KpiCard
-            label="سایر / نامشخص"
+            label="بدون قرارداد ثبت‌شده"
             value={faNumber(typeCounts.other)}
             icon={Percent}
             iconAs="div"
@@ -309,7 +321,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
         </div>
       )}
 
-      {/* نمودار روند سه‌سری (A.۳) + کارشناسان برتر (A.۵) */}
+      {/* نمودار روند سه‌سری (B.۱ — منطق خانواده‌ای) + کارشناسان برتر (C.۱ — فقط نام + تعداد) */}
       {showCharts && rows && rows.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card>
@@ -333,7 +345,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          {/* سه ستون کارشناسان برتر (A.۵) — نام + کد پرسنلی + تعداد */}
+          {/* سه ستون کارشناسان برتر (C.۱) — فقط نام کارشناس + تعداد؛ مرتب‌سازی نزولی */}
           <Card>
             <CardHeader className="py-4">
               <CardTitle className="text-base flex items-center gap-2">
@@ -355,9 +367,9 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                       <ol className="space-y-1">
                         {list.map((e, i) => (
                           <li key={`${title}-${e.name}`} className="flex items-center justify-between gap-1 border-b border-border/40 pb-0.5">
-                            <span className="truncate" title={`${e.name}${data?.expertCodeByName?.[e.name] ? ` — کد پرسنلی: ${data.expertCodeByName[e.name]}` : ""}`}>
+                            {/* C.۱ — فقط نام + تعداد (نه کد پرسنلی، نه چیز دیگر) */}
+                            <span className="truncate" title={e.name}>
                               <span className="text-muted-foreground text-[10px] ml-0.5">{faNumber(i + 1)}.</span> {e.name}
-                              {data?.expertCodeByName?.[e.name] ? <span className="text-[9px] text-muted-foreground font-mono" dir="ltr"> {faDigits(data.expertCodeByName[e.name])}</span> : null}
                             </span>
                             <span className="font-bold shrink-0 tabular-nums">{faNumber(e.count)}</span>
                           </li>
@@ -375,18 +387,41 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
       {/* شفافیت منبع داده */}
       <DataSourceWarning source={source} />
 
-      {/* فیلترها — B.۱: فوراً بالای فهرست معاملات · موبایل جمع‌شونده · دسکتاپ همیشه باز */}
+      {/* فیلترها — B.۱ (۰۱۷): بالای فهرست · موبایل جمع‌شونده · دسکتاپ همیشه باز
+          BLOCK F (۰۱۸): پاک‌کردن در بالای کارت + اعمال خودکار debounce ۳۰۰ms + نشانگر جستجو */}
       <Card id="m3-filters-card">
         <CardHeader className="py-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Filter className="w-5 h-5 text-primary" aria-hidden /> فیلترهای فهرست معاملات
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Filter className="w-5 h-5 text-primary" aria-hidden /> فیلترهای فهرست معاملات
+            </CardTitle>
+            {/* BLOCK F — دکمهٔ «پاک کردن فیلترها» در بالای کارت فیلتر */}
+            <Button
+              type="button"
+              id="m3-clear-filters"
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1 text-[11px] mr-auto"
+              onClick={() => {
+                setFilters(EMPTY_FILTERS);
+                setApplied(EMPTY_FILTERS);
+              }}
+            >
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden /> پاک کردن فیلترها
+            </Button>
+            {/* BLOCK F — نشانگر «در حال جستجو…» در طول فراخوانی */}
+            {loading ? (
+              <span id="m3-searching" className="flex items-center gap-1.5 text-[11px] text-muted-foreground" role="status">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> در حال جستجو…
+              </span>
+            ) : null}
             {isMobile ? (
-              <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 text-[11px] mr-auto" onClick={() => setFiltersOpen((v) => !v)} aria-expanded={filtersOpen} aria-controls="m3-filters-form">
+              <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 text-[11px]" onClick={() => setFiltersOpen((v) => !v)} aria-expanded={filtersOpen} aria-controls="m3-filters-form">
                 <ChevronDown className={`w-4 h-4 transition-transform ${filtersOpen ? "rotate-180" : ""}`} aria-hidden />
                 {filtersOpen ? "بستن" : "باز کردن"}
               </Button>
             ) : null}
-          </CardTitle>
+          </div>
         </CardHeader>
         {(!isMobile || filtersOpen) && (
         <CardContent>
@@ -406,15 +441,16 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="f-propertyCode">کد ملک</Label>
-              <Input id="f-propertyCode" placeholder="نمونه: ۱۲۳۴۵" value={filters.propertyCode} onChange={(e) => setF("propertyCode", e.target.value)} />
+              {/* رفع F1 — placeholder با ارقام لاتین (عین شکل DB)؛ ورودی فارسی هم سمت سرور نرمال می‌شود */}
+              <Input id="f-propertyCode" placeholder="نمونه: 12345" value={filters.propertyCode} onChange={(e) => setF("propertyCode", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="f-requestCode">کد درخواست</Label>
-              <Input id="f-requestCode" placeholder="نمونه: ۶۷۸۹" value={filters.requestCode} onChange={(e) => setF("requestCode", e.target.value)} />
+              <Input id="f-requestCode" placeholder="نمونه: 6789" value={filters.requestCode} onChange={(e) => setF("requestCode", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="f-contractHolo">شماره هولوگرام</Label>
-              <Input id="f-contractHolo" placeholder="نمونه: ۹۸۷۶۵" value={filters.contractHolo} onChange={(e) => setF("contractHolo", e.target.value)} />
+              <Input id="f-contractHolo" placeholder="نمونه: 98765" value={filters.contractHolo} onChange={(e) => setF("contractHolo", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="f-expertName">نام کارشناس</Label>
@@ -422,38 +458,42 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="f-personnelCode">کد پرسنلی کارشناس</Label>
-              <Input id="f-personnelCode" placeholder="نمونه: ۴۱۰۰۳۱۳۲۰" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} />
+              <Input id="f-personnelCode" placeholder="نمونه: 410031320" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} />
             </div>
-            <div className="space-y-1.5">
-              <Label>نوع قرارداد</Label>
-              <Select value={filters.contractType} onValueChange={(v) => setF("contractType", v)}>
-                <SelectTrigger aria-label="نوع قرارداد">
-                  <SelectValue placeholder="همه انواع" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CONTRACT_TYPE_FA).map(([v, l]) => (
-                    <SelectItem key={v} value={v}>
-                      {l}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* BLOCK D — نوع قرارداد: دقیقاً ۵ گزینهٔ چندانتخابی (۴ نوع + بدون قرارداد) */}
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
+              <Label id="m3-contract-kind-label">نوع قرارداد (چندانتخابی)</Label>
+              <div id="m3-contract-kind-filters" role="group" aria-labelledby="m3-contract-kind-label" className="flex flex-wrap gap-1.5">
+                {CONTRACT_KIND_FILTER_VALUES.map((value) => {
+                  const active = filters.contractTypes.includes(value);
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={active}
+                      className={`h-8 px-3 rounded-full border text-[11px] font-medium transition-colors ${
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground border-border hover:bg-muted"
+                      }`}
+                      onClick={() => toggleContractKind(value)}
+                    >
+                      {active ? "✓ " : ""}
+                      {CONTRACT_KIND_FILTER_LABELS[value]}
+                    </button>
+                  );
+                })}
+              </div>
+              {filters.contractTypes.length > 0 ? (
+                <p className="text-[10px] text-muted-foreground">{faNumber(filters.contractTypes.length)} گزینهٔ فعال — اعمال خودکار</p>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">بدون انتخاب = همهٔ انواع</p>
+              )}
             </div>
-            <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-4">
+            <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-2">
               <Button type="submit" className="gap-2" disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Search className="w-4 h-4" aria-hidden />}
                 اعمال فیلتر
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2"
-                onClick={() => {
-                  setFilters(EMPTY_FILTERS);
-                  setApplied(EMPTY_FILTERS);
-                }}
-              >
-                <RotateCcw className="w-4 h-4" aria-hidden /> پاک‌سازی
               </Button>
               <Button type="button" variant="ghost" className="gap-2" onClick={() => void reload()} disabled={loading}>
                 <RotateCcw className="w-4 h-4" aria-hidden /> بارگذاری مجدد
@@ -469,7 +509,8 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
         )}
       </Card>
 
-      {/* جدول فهرست معاملات — ساختار P6.5-14 (BLOCK B)؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
+      {/* جدول فهرست معاملات — BLOCK E (ملکا-شورا-۱۴۰۵-۰۱۸): ترتیب دقیق ۱۱ ستون؛
+          کد ملک/کد درخواست فقط کد (دستور ۱ و ۲ مالک)؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
       <Card>
         <CardHeader className="py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -487,124 +528,120 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
               ))}
             </div>
           ) : rows.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
-              {loading
-                ? "در حال دریافت…"
-                : "هیچ معامله‌ای با این فیلترها یافت نشد. با پاک‌سازی فیلترها همهٔ معاملات را ببینید یا با دکمه «بروزرسانی از سامانه» انتقال اطلاعات را آغاز کنید."}
+            // BLOCK F — حالت خالی با پیام شفاف
+            <div id="m3-empty-state" className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
+              {loading ? "در حال جستجو…" : "هیچ معامله‌ای با این فیلتر یافت نشد"}
             </div>
           ) : (
             <div className="overflow-x-auto max-h-[32rem]">
               <Table>
                 <TableHeader className="sticky top-0 bg-card z-10">
                   <TableRow>
-                    <TableHead className="text-right w-12">ردیف</TableHead>
-                    <TableHead className="text-right">تاریخ معامله</TableHead>
-                    {/* ۱ — کد ملک — با نام و موبایل مالک تو در تو */}
-                    <TableHead className="text-right min-w-40">
-                      <span className="flex items-center gap-1"><Home className="w-3.5 h-3.5" aria-hidden /> کد ملک</span>
+                    {/* ترتیب الزامی E.۱ — ۱۱ ستون */}
+                    <TableHead className="text-right w-12">۱. ردیف</TableHead>
+                    <TableHead className="text-right">۲. تاریخ معامله</TableHead>
+                    {/* ۳ — کد ملک: فقط کد (E.۲ — دستور ۱ مالک) */}
+                    <TableHead className="text-right min-w-24">
+                      <span className="flex items-center gap-1"><Home className="w-3.5 h-3.5" aria-hidden /> ۳. کد ملک</span>
                     </TableHead>
-                    {/* ۲ — فروشنده (P6.5-14 BLOCK B) — نام و موبایل مستقل */}
-                    <TableHead className="text-right min-w-36">فروشنده</TableHead>
-                    {/* ۳ — درخواست — کد درخواست + نام و موبایل درخواست‌دهنده تو در تو */}
-                    <TableHead className="text-right min-w-40">
-                      <span className="flex items-center gap-1"><Inbox className="w-3.5 h-3.5" aria-hidden /> درخواست</span>
+                    {/* ۴ — فروشنده: نام + موبایل زیر نام (E.۴) */}
+                    <TableHead className="text-right min-w-40">۴. فروشنده</TableHead>
+                    {/* ۵ — کد درخواست: فقط کد (E.۳ — دستور ۲ مالک) */}
+                    <TableHead className="text-right min-w-24">
+                      <span className="flex items-center gap-1"><Inbox className="w-3.5 h-3.5" aria-hidden /> ۵. کد درخواست</span>
                     </TableHead>
-                    {/* ۴ — خریدار (P6.5-14 BLOCK B) — نام و موبایل مستقل */}
-                    <TableHead className="text-right min-w-36">خریدار</TableHead>
-                    {/* ۵ — تجمیع حق‌السهم مشاوران (B.۲: قبل از شماره هولوگرام) */}
-                    <TableHead className="text-right min-w-48">تجمیع حق‌السهم مشاوران</TableHead>
-                    {/* ۶ — شماره هولوگرام (B.۲: بعد از تجمیع حق‌السهم — عین دستور مالک) */}
-                    <TableHead className="text-right">شماره هولوگرام</TableHead>
+                    {/* ۶ — خریدار: نام + موبایل زیر نام (E.۵) */}
+                    <TableHead className="text-right min-w-40">۶. خریدار</TableHead>
                     {/* ۷ — نوع قرارداد */}
-                    <TableHead className="text-right">نوع قرارداد</TableHead>
-                    {/* ۸ — مبلغ قرارداد */}
-                    <TableHead className="text-right min-w-44">مبلغ قرارداد</TableHead>
-                    {/* ۹ — فایل قرارداد */}
-                    <TableHead className="text-right min-w-32">فایل قرارداد</TableHead>
+                    <TableHead className="text-right">۷. نوع قرارداد</TableHead>
+                    {/* ۸ — مبلغ قرارداد (با کاما) */}
+                    <TableHead className="text-right min-w-44">۸. مبلغ قرارداد</TableHead>
+                    {/* ۹ — تجمیع حق‌السهم مشاوران (نام + درصد) */}
+                    <TableHead className="text-right min-w-48">۹. تجمیع حق‌السهم مشاوران</TableHead>
+                    {/* ۱۰ — شماره هولوگرام */}
+                    <TableHead className="text-right">۱۰. شماره هولوگرام</TableHead>
+                    {/* ۱۱ — فایل قرارداد */}
+                    <TableHead className="text-right min-w-32">۱۱. فایل قرارداد</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((t, i) => (
+                  {rows.map((t, i) => {
+                    const kind = classifyContract(t.contractType).kind;
+                    return (
                     <TableRow key={t.id} className="hover:bg-muted/40">
+                      {/* ۱ — ردیف */}
                       <TableCell className="whitespace-nowrap">
                         <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
                           {faNumber(i + 1)}
                         </span>
                       </TableCell>
+                      {/* ۲ — تاریخ معامله (جلالی) */}
                       <TableCell className="whitespace-nowrap text-xs font-medium">{faJalaliShort(t.contractDate)}</TableCell>
-                      {/* کد ملک + نام/موبایل مالک تو در تو */}
-                      <TableCell className="text-xs">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-mono font-semibold">{faDigits(t.propertyCode)}</span>
-                          {t.ownerName ? (
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <Users className="w-3 h-3 shrink-0" aria-hidden />
-                              <span className="truncate max-w-36" title={t.ownerName}>{t.ownerName}</span>
-                              {t.ownerMobile ? (
-                                <a href={`tel:${t.ownerMobile}`} dir="ltr" className="font-mono text-teal-700 dark:text-teal-300 hover:underline shrink-0" title={`تماس با مالک: ${t.ownerMobile}`}>
-                                  <Phone className="w-3 h-3" aria-hidden />
-                                </a>
-                              ) : null}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">مالک: در انتظار غنی‌سازی</span>
-                          )}
-                        </div>
+                      {/* ۳ — کد ملک: فقط کد — بدون نام و موبایل (E.۲؛
+                          مالک = فروشنده و در ستون فروشنده می‌آید) */}
+                      <TableCell className="text-xs whitespace-nowrap">
+                        <code className="font-mono font-semibold" dir="ltr">{faDigits(t.propertyCode)}</code>
                       </TableCell>
-                      {/* ۲ — فروشنده (P6.5-14) — نام و موبایل مستقل از صورت‌وضعیت */}
+                      {/* ۴ — فروشنده: نام + موبایل زیر نام (E.۴ — fallback به مالک در لایهٔ غنی‌سازی) */}
                       <TableCell className="text-xs">
                         {t.sellerName ? (
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3 shrink-0 text-muted-foreground" aria-hidden />
-                            <span className="truncate max-w-36" title={t.sellerName}>{t.sellerName}</span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="truncate max-w-40 font-medium" title={t.sellerName}>{t.sellerName}</span>
                             {t.sellerMobile ? (
-                              <a href={`tel:${t.sellerMobile}`} dir="ltr" className="font-mono text-teal-700 dark:text-teal-300 hover:underline shrink-0" title={`تماس با فروشنده: ${t.sellerMobile}`}>
-                                <Phone className="w-3 h-3" aria-hidden />
+                              <a href={`tel:${t.sellerMobile}`} dir="ltr" className="font-mono text-[11px] text-teal-700 dark:text-teal-300 hover:underline w-fit" title={`تماس با فروشنده: ${t.sellerMobile}`}>
+                                {faDigits(t.sellerMobile)}
                               </a>
-                            ) : null}
-                          </span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">موبایل ثبت‌نشده</span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground text-[10px]">در انتظار غنی‌سازی</span>
                         )}
                       </TableCell>
-                      {/* ۳ — درخواست (بند الف: تغییر نام) + نام/موبایل درخواست‌دهنده تو در تو */}
-                      <TableCell className="text-xs">
-                        <div className="flex flex-col gap-0.5">
-                          {t.requestCode ? (
-                            <span className="font-mono font-semibold">{faDigits(t.requestCode)}</span>
-                          ) : (
-                            <span className="text-muted-foreground">— بدون درخواست</span>
-                          )}
-                          {t.requestCode && (t.requesterName || t.requesterMobile) ? (
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <Users className="w-3 h-3 shrink-0" aria-hidden />
-                              {t.requesterName ? <span className="truncate max-w-36" title={t.requesterName}>{t.requesterName}</span> : null}
-                              {t.requesterMobile ? (
-                                <a href={`tel:${t.requesterMobile}`} dir="ltr" className="font-mono text-teal-700 dark:text-teal-300 hover:underline shrink-0" title={`تماس با درخواست‌دهنده: ${t.requesterMobile}`}>
-                                  <Phone className="w-3 h-3" aria-hidden />
-                                </a>
-                              ) : null}
-                            </span>
-                          ) : null}
-                        </div>
+                      {/* ۵ — کد درخواست: فقط کد — بدون نام و موبایل (E.۳؛
+                          درخواست‌دهنده = خریدار و در ستون خریدار می‌آید) */}
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {t.requestCode ? (
+                          <code className="font-mono font-semibold" dir="ltr">{faDigits(t.requestCode)}</code>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
-                      {/* ۴ — خریدار (P6.5-14) — نام و موبایل مستقل از صورت‌وضعیت */}
+                      {/* ۶ — خریدار: نام + موبایل زیر نام (E.۵ — fallback به درخواست‌دهنده در لایهٔ غنی‌سازی) */}
                       <TableCell className="text-xs">
                         {t.buyerName ? (
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3 shrink-0 text-muted-foreground" aria-hidden />
-                            <span className="truncate max-w-36" title={t.buyerName}>{t.buyerName}</span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="truncate max-w-40 font-medium" title={t.buyerName}>{t.buyerName}</span>
                             {t.buyerMobile ? (
-                              <a href={`tel:${t.buyerMobile}`} dir="ltr" className="font-mono text-teal-700 dark:text-teal-300 hover:underline shrink-0" title={`تماس با خریدار: ${t.buyerMobile}`}>
-                                <Phone className="w-3 h-3" aria-hidden />
+                              <a href={`tel:${t.buyerMobile}`} dir="ltr" className="font-mono text-[11px] text-teal-700 dark:text-teal-300 hover:underline w-fit" title={`تماس با خریدار: ${t.buyerMobile}`}>
+                                {faDigits(t.buyerMobile)}
                               </a>
-                            ) : null}
-                          </span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">موبایل ثبت‌نشده</span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground text-[10px]">در انتظار غنی‌سازی</span>
                         )}
                       </TableCell>
-                      {/* ۵ — تجمیع حق‌السهم مشاوران — با درصد هر مشاور (بند ب) — B.۲: قبل از هولوگرام */}
+                      {/* ۷ — نوع قرارداد: یکی از چهار نوع یا «بدون قرارداد» (classifyContract) */}
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {kind !== "ثبت‌نشده" ? (
+                          <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 text-[11px]">{kind}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-[11px]">— بدون قرارداد</span>
+                        )}
+                      </TableCell>
+                      {/* ۸ — مبلغ قرارداد — با جداکنندهٔ «،» */}
+                      <TableCell className="text-xs whitespace-nowrap font-semibold">
+                        {t.contractAmount !== null ? (
+                          faAmountFull(t.contractAmount)
+                        ) : (
+                          <span className="text-muted-foreground font-normal">—</span>
+                        )}
+                      </TableCell>
+                      {/* ۹ — تجمیع حق‌السهم مشاوران — نام + درصد (بند ب) */}
                       <TableCell className="text-xs">
                         {t.consultantsShareSummary && t.consultantsShareSummary.shares.length > 0 ? (
                           <div className="flex flex-col gap-1 min-w-44">
@@ -627,7 +664,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      {/* ۶ — شماره هولوگرام (B.۲: بعد از تجمیع حق‌السهم) */}
+                      {/* ۱۰ — شماره هولوگرام (متن) */}
                       <TableCell className="text-xs font-mono whitespace-nowrap" dir="rtl">
                         {t.contractHolo ? (
                           <span className="flex items-center gap-1.5">
@@ -638,23 +675,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      {/* ۷ — نوع قرارداد (P6.5-12) */}
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {t.contractType ? (
-                          <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 text-[11px]">{t.contractType}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-[11px]">— بدون قرارداد ثبت‌شده</span>
-                        )}
-                      </TableCell>
-                      {/* ۸ — مبلغ قرارداد — با جداکنندهٔ «،» (نکتهٔ ۱) */}
-                      <TableCell className="text-xs whitespace-nowrap font-semibold">
-                        {t.contractAmount !== null ? (
-                          faAmountFull(t.contractAmount)
-                        ) : (
-                          <span className="text-muted-foreground font-normal">—</span>
-                        )}
-                      </TableCell>
-                      {/* ۹ — فایل قرارداد (بند ت — مهم‌ترین ستون) */}
+                      {/* ۱۱ — فایل قرارداد (دکمهٔ PDF) */}
                       <TableCell className="text-xs">
                         <Button
                           variant="outline"
@@ -668,7 +689,8 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

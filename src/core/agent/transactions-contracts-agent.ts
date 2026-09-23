@@ -34,6 +34,7 @@ import { saleCommissionBase } from "@/lib/melk-api/commission";
 import { enrichTransactionRows } from "@/lib/melk-api/tx-enrichment";
 import { CONTRACT_FUNNEL_ORDER, CONTRACT_STATUS_FA, type ContractRealtorShare } from "@/lib/melk-api/types";
 import { detectAnomalies, growthRate, topMonths, visitMonthlySeries, visitStats, txTypeMonthlySeries, topExpertsByTxType, type SharedTxRow } from "./analyzers";
+import { classifyContract } from "@/lib/contract-classify";
 import { computeTxInfoCoverage } from "@/lib/melk-api/tx-enrichment";
 import { faNumber, faPercent, faToman, faMonthLabel } from "@/lib/format";
 import { dateToJalali } from "@/lib/jalali";
@@ -150,8 +151,9 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
         })),
       });
 
-      // ---- TREND (P6.5-14 A.۲) — روند ماهانهٔ سه‌سری: مبایعه‌نامه / اجاره / مجموع ----
-      // بازهٔ الزامی: فروردین ۱۴۰۴ تا ماه جاری؛ مجموع = مبایعه + اجاره + سایر
+      // ---- TREND (P6.5-15 A.۱ — ملکا-شورا-۱۴۰۵-۰۱۸) — منطق خانواده‌ای ----
+      // سری ۱ (مبایعه‌نامه) = مبایعه + پیش‌فروش · سری ۲ (اجاره) = اجاره + تمدید
+      // سری ۳ (مجموع) = سری۱ + سری۲ + ثبت‌نشده — بازهٔ الزامی: فروردین ۱۴۰۴ تا ماه جاری
       const typedRows: (SharedTxRow & { shareNames?: string[] })[] = enriched.map((r) => ({
         contractDate: r.contractDate,
         contractType: r.contractType,
@@ -165,19 +167,19 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
       const totalInSeries = series.reduce((s, p) => s + p.total, 0);
       const saleTotal = series.reduce((s, p) => s + p.sale, 0);
       const rentTotal = series.reduce((s, p) => s + p.rent, 0);
-      const otherTotal = series.reduce((s, p) => s + p.other, 0);
+      const noneTotal = series.reduce((s, p) => s + p.none, 0);
       {
         const growth = last && prev && prev.total > 0 ? Math.round(((last.total - prev.total) / prev.total) * 100) : null;
         cards.push({
           key: "tc-trend",
           domain: "TREND",
-          title: "روند ماهانه معاملات — مبایعه‌نامه، اجاره و مجموع",
-          body: `از فروردین ۱۴۰۴ تا ${faMonthLabel(last?.key ?? "1405-01")} مجموعاً ${faNumber(totalInSeries)} معامله ثبت شده است: ${faNumber(saleTotal)} مبایعه‌نامه، ${faNumber(rentTotal)} اجاره و ${faNumber(otherTotal)} سایر (نامشخص — در مجموع محاسبه می‌شود). ${growth === null ? "برای مقایسهٔ ماه اخیر داده کافی نیست." : growth >= 0 ? `مجموع معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ رشد داشته است.` : `مجموع معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ کاهش داشته است.`} نمودار همین کاشی سه سری را به‌صورت هم‌زمان نشان می‌دهد.`,
+          title: "روند ماهانه معاملات — مبایعه‌نامه (شامل پیش‌فروش)، اجاره (شامل تمدید) و مجموع",
+          body: `از فروردین ۱۴۰۴ تا ${faMonthLabel(last?.key ?? "1405-01")} مجموعاً ${faNumber(totalInSeries)} معامله ثبت شده است: ${faNumber(saleTotal)} مبایعه‌نامه (شامل ${faNumber(enriched.filter((r) => classifyContract(r.contractType).kind === "پیش‌فروش").length)} پیش‌فروش)، ${faNumber(rentTotal)} اجاره (شامل ${faNumber(enriched.filter((r) => classifyContract(r.contractType).kind === "تمدید اجاره").length)} تمدید اجاره) و ${faNumber(noneTotal)} بدون قرارداد ثبت‌شده (در مجموع محاسبه می‌شوند). ${growth === null ? "برای مقایسهٔ ماه اخیر داده کافی نیست." : growth >= 0 ? `مجموع معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ رشد داشته است.` : `مجموع معاملات ${faMonthLabel(last.key)} نسبت به ${faMonthLabel(prev.key)} حدود ${faNumber(Math.abs(growth))}٪ کاهش داشته است.`} نمودار همین کاشی سه سری را به‌صورت هم‌زمان نشان می‌دهد.`,
           severity: growth === null ? "info" : growth >= 10 ? "positive" : growth <= -10 ? "warning" : "info",
           metrics: [
-            { label: "مبایعه‌نامه (کل بازه)", value: faNumber(saleTotal) },
-            { label: "اجاره (کل بازه)", value: faNumber(rentTotal) },
-            { label: "سایر", value: faNumber(otherTotal) },
+            { label: "مبایعه‌نامه شامل پیش‌فروش (کل بازه)", value: faNumber(saleTotal) },
+            { label: "اجاره شامل تمدید (کل بازه)", value: faNumber(rentTotal) },
+            { label: "بدون قرارداد ثبت‌شده", value: faNumber(noneTotal) },
             { label: "مجموع", value: faNumber(totalInSeries) },
           ],
         });
@@ -209,11 +211,9 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
         });
       }
 
-      // ---- TOP_EXPERTS (P6.5-14 A.۵) — کارشناسان برتر سه‌ستونی ----
+      // ---- TOP_EXPERTS (P6.5-15 C.۱ — ملکا-شورا-۱۴۰۵-۰۱۸) — سه ستون با منطق خانواده‌ای ----
       {
         const top = topExpertsByTxType(typedRows, 10);
-        const experts = await this.exRepo.findAll();
-        const codeByName = new Map(experts.map((e) => [e.fullName, e.personnelCode]));
         const topSale = top.sale[0];
         const topRent = top.rent[0];
         const topTotal = top.total[0];
@@ -221,7 +221,7 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
           key: "tc-top-experts",
           domain: "TOP_EXPERTS",
           title: "کارشناسان برتر بر اساس تعداد معاملات — مبایعه‌نامه، اجاره و مجموع",
-          body: `بر پایهٔ حق‌السهم‌های ثبت‌شده در صورت‌وضعیت‌های سامانه: ${topSale ? `پیشتاز مبایعه‌نامه «${topSale.name}» با ${faNumber(topSale.count)} معامله` : "معاملهٔ مبایعه‌نامه‌ای با مشاور ثبت‌شده نیست"}؛ ${topRent ? `پیشتاز اجاره «${topRent.name}» با ${faNumber(topRent.count)} معامله` : "معاملهٔ اجاره‌ای با مشاور ثبت‌شده نیست"}؛ ${topTotal ? `پیشتاز مجموع «${topTotal.name}» با ${faNumber(topTotal.count)} معامله` : "داده‌ای نیست"}. فهرست کامل سه‌ستونی (۱۰ نفر هر ستون) در تب «معاملات» همین کاشی نمایش داده می‌شود — مجموع هر کارشناس = مبایعه + اجاره + سایر او.`,
+          body: `بر پایهٔ حق‌السهم‌های ثبت‌شده در صورت‌وضعیت‌های سامانه (منطق خانواده‌ای): ${topSale ? `پیشتاز مبایعه‌نامه «${topSale.name}» با ${faNumber(topSale.count)} معامله (مبایعه‌نامه + پیش‌فروش)` : "معاملهٔ مبایعه‌نامه‌ای با مشاور ثبت‌شده نیست"}؛ ${topRent ? `پیشتاز اجاره «${topRent.name}» با ${faNumber(topRent.count)} معامله (اجاره + تمدید)` : "معاملهٔ اجاره‌ای با مشاور ثبت‌شده نیست"}؛ ${topTotal ? `پیشتاز مجموع «${topTotal.name}» با ${faNumber(topTotal.count)} معامله` : "داده‌ای نیست"}. فهرست کامل سه‌ستونی (۱۰ نفر هر ستون — فقط نام و تعداد) در تب «معاملات» همین کاشی نمایش داده می‌شود — مجموع هر کارشناس = مبایعه‌نامه + اجاره + ثبت‌نشده او.`,
           severity: "info",
           metrics: [
             ...(topSale ? [{ label: "برتر مبایعه‌نامه", value: `${topSale.name} — ${faNumber(topSale.count)}` }] : []),
@@ -229,7 +229,6 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
             ...(topTotal ? [{ label: "برتر مجموع", value: `${topTotal.name} — ${faNumber(topTotal.count)}` }] : []),
           ],
         });
-        void codeByName; // کد پرسنلی در فهرست UI نمایش داده می‌شود (اینجا فقط خلاصه)
       }
 
       // ---- DOCUMENT ----

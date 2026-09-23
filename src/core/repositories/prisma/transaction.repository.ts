@@ -47,9 +47,11 @@ export function buildTransactionWhere(filter?: TransactionListFilter): Prisma.Tr
   if (!filter) return where;
   const { dateFrom, dateTo, propertyCode, requestCode, contractHolo, matchKind } = filter;
   if (dateFrom || dateTo) {
+    // P6.5-15 (رفع F5 — ملکا-شورا-۱۴۰۵-۰۱۸) — مرز روز به وقت تهران (+03:30):
+    // کاربر تهرانی «۱ آذر» را از ۰۰:۰۰ به وقت تهران انتظار دارد، نه UTC.
     where.contractDate = {
-      ...(dateFrom ? { gte: new Date(`${dateFrom}T00:00:00`) } : {}),
-      ...(dateTo ? { lte: new Date(`${dateTo}T23:59:59.999`) } : {}),
+      ...(dateFrom ? { gte: new Date(`${dateFrom}T00:00:00+03:30`) } : {}),
+      ...(dateTo ? { lte: new Date(`${dateTo}T23:59:59.999+03:30`) } : {}),
     };
   }
   if (propertyCode) where.propertyCode = { contains: propertyCode };

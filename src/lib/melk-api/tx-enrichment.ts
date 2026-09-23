@@ -130,6 +130,9 @@ export type EnrichedTxRow<R extends TxSourceRow = TxSourceRow> = R & {
     names: string[];
     /** P6.5-12 — سهم هر مشاور با درصد (بند ب دستور: «در مقابل نام هر مشاور درصد حق السهم») */
     shares: { name: string; unitPercent: number; confirmation: string }[];
+    /** P6.5-15 (رفع F3 — ملکا-شورا-۱۴۰۵-۰۱۸) — فهرست «کامل» نام‌های مشاوران بدون بریدگی؛
+     *   فیلتر نام کارشناس سمت سرور روی این فهرست تطبیق می‌خورد (نه خلاصهٔ ۶تایی names) */
+    allNames: string[];
   } | null;
   /** منبع تطبیق قرارداد (شفافیت) */
   contractMatchBy: "holo" | "propertyCode" | "requestCode" | null;
@@ -174,6 +177,8 @@ export function aggregateConsultantShares(
       .filter((s) => s.name)
       .slice(0, 8)
       .map((s) => ({ name: s.name, unitPercent: Number.isFinite(s.unitPercent) ? s.unitPercent : 0, confirmation: s.confirmation ?? "" })),
+    // P6.5-15 (رفع F3) — نام‌های کامل برای فیلتر سمت سرور (بدون slice)
+    allNames: [...new Set(names)],
   };
 }
 

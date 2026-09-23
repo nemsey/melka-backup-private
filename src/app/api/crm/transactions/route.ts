@@ -11,7 +11,14 @@
  * «معاملات و قراردادهای ملک تبریز»:
  *   بعد از کد ملک: نام+موبایل مالک · بعد از کد درخواست: نام+موبایل درخواست‌دهنده
  *   + ستون «متن قرارداد» + ستون «تجمیع حق‌السهم مشاوران»
- *   (لایهٔ تحلیل — فقط خواندن؛ قانون دادهٔ خام بند الف هرگز نقض نمی‌شود)
+ * P6.5-15 (ملکا-شورا-۱۴۰۵-۰۱۸) — پروندهٔ نهایی کاشی M3:
+ *   · BLOCK F — رفع باگ فیلترها با تشخیص filter-bug-diagnosis.md:
+ *       F1: نرمال‌سازی ارقام فارسی/عربی → لاتین در همهٔ فیلترهای کدی
+ *       F2: نوع قرارداد چندگانه بر پایهٔ classifyContract (مقدار ناشناخته ⇒ 400، نه بی‌اثر)
+ *       F3: تطبیق نام کارشناس روی فهرست کامل سهم‌ها (نه خلاصهٔ ۶تایی)
+ *       F5: مرز بازهٔ تاریخ به وقت تهران (+03:30)
+ *   · BLOCK D — contractType چندگانه: ?contractType=مبایعه‌نامه&contractType=پیش‌فروش · ?contractType=none
+ *   · expertCode نام مستعار personnelCode است (پارامتر جلسه ۰۱۸)
  */
 
 import { NextRequest } from "next/server";
@@ -24,11 +31,33 @@ import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 // P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
+// P6.5-15 — قانون انواع معاملات ملکا + نرمال‌سازی ورودی فیلترها
+import { classifyContract, normalizeFilterText, type ContractKind } from "@/lib/contract-classify";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
   const n = Number(v);
   return Number.isFinite(n) ? n : undefined;
+}
+
+/** پارس فیلتر نوع قرارداد چندگانه (D.۱) — ۴ kind + none؛ مقدار ناشناخته ⇒ خطای 400 شفاف (رفع F2) */
+function parseContractTypeFilter(values: string[]): { kinds: Set<ContractKind>; includeNone: boolean } | { error: string } {
+  const kinds = new Set<ContractKind>();
+  let includeNone = false;
+  for (const raw of values) {
+    const v = normalizeFilterText(raw);
+    if (!v) continue;
+    if (v === "none" || v === "بدون قرارداد" || v === "نامشخص") {
+      includeNone = true;
+      continue;
+    }
+    const { kind } = classifyContract(v);
+    if (kind === "ثبت‌نشده") {
+      return { error: `نوع قرارداد «${raw}» شناخته نشد. مقادیر مجاز: مبایعه‌نامه، پیش‌فروش، اجاره، تمدید اجاره، none (بدون قرارداد).` };
+    }
+    kinds.add(kind);
+  }
+  return { kinds, includeNone };
 }
 
 export async function GET(request: NextRequest) {
@@ -50,14 +79,22 @@ export async function GET(request: NextRequest) {
     // مالک با شاهد owner.read — صفر فیلتر برای همه (رفتار v1 حفظ)
     const access = resolveEntityAccess(guard, "transaction");
 
+    // P6.5-15 (BLOCK F — رفع F1) — نرمال‌سازی ورودی فیلترهای کدی/متنی: ارقام فارسی → لاتین + نیم‌فاصله → فاصله
+    const propertyCode = normalizeFilterText(sp.get("propertyCode")) || undefined;
+    const requestCode = normalizeFilterText(sp.get("requestCode")) || undefined;
+    const contractHolo = normalizeFilterText(sp.get("contractHolo")) || undefined;
+    const expertName = normalizeFilterText(sp.get("expertName")) || undefined;
+    // expertCode — نام مستعار جلسه ۰۱۸ برای همان فیلتر کد پرسنلی
+    const personnelCode = normalizeFilterText(sp.get("personnelCode") ?? sp.get("expertCode")) || undefined;
+
     // فیلتر + خلاصه چهارگانه از انبار — عین منطق where قبلی (buildTransactionWhere)
     const { rows, total, summary } = await getTransactionRepository().listWithSummary({
       filter: {
         dateFrom: sp.get("dateFrom") ?? undefined,
         dateTo: sp.get("dateTo") ?? undefined,
-        propertyCode: sp.get("propertyCode") ?? undefined,
-        requestCode: sp.get("requestCode") ?? undefined,
-        contractHolo: sp.get("contractHolo") ?? undefined,
+        propertyCode,
+        requestCode,
+        contractHolo,
         matchKind: (sp.get("matchKind") as "event" | "suggested" | "both" | null) ?? undefined,
       },
       sortBy,
@@ -111,33 +148,47 @@ export async function GET(request: NextRequest) {
     }));
     let enrichedRows = enrichTransactionRows(rows, { owners, requesters, contracts, agencies, txInfo });
 
-    // ---- P6.5-12 — فیلترهای نمایشی لایهٔ غنی‌سازی (نام کارشناس · کد پرسنلی · نوع قرارداد) ----
-    const expertName = sp.get("expertName")?.trim();
-    const personnelCode = sp.get("personnelCode")?.trim();
-    const contractType = sp.get("contractType")?.trim();
-    if (expertName || personnelCode || contractType) {
-      // نگاشت کد پرسنلی → نام کارشناس (PM) + نام‌های کارگزاری
-      let pmNames: Set<string> | null = null;
-      if (personnelCode) {
-        const pmName = await findPmNameByCode(personnelCode);
-        pmNames = new Set(pmName ? [pmName.replace(/\s+/g, " ").trim()] : []);
-      }
-      enrichedRows = enrichedRows.filter((r) => {
-        if (contractType) {
-          const t = r.contractType;
-          if (contractType === "مبایعه نامه" && t !== "مبایعه نامه") return false;
-          if (contractType === "اجاره نامه" && t !== "اجاره نامه" && t !== "تمدید اجاره") return false;
-          if (contractType === "نامشخص" && t !== null) return false;
+    // ---- P6.5-15 (BLOCK D + F — ملکا-شورا-۱۴۰۵-۰۱۸) — فیلترهای لایهٔ غنی‌سازی ----
+    // نوع قرارداد: چندگانه (۴ kind + none) بر پایهٔ classifyContract — رفع F2
+    const contractTypeParams = sp.getAll("contractType").map((v) => v.trim()).filter(Boolean);
+    const contractFilter = contractTypeParams.length > 0 ? parseContractTypeFilter(contractTypeParams) : null;
+    if (contractFilter && "error" in contractFilter) {
+      return errorResponse(new MelkApiError("UNPROCESSABLE", contractFilter.error, 400, false));
+    }
+    const hasEnrichFilters = Boolean(expertName || personnelCode || contractFilter);
+
+    // نگاشت کد پرسنلی → نام کارشناس: PM (نام مستقیم) + رکورد کارشناسان (personnelCode) — رفع F3-دامنه
+    let codeNames: Set<string> | null = null;
+    if (personnelCode) {
+      codeNames = new Set<string>();
+      const pmName = await findPmNameByCode(personnelCode);
+      if (pmName) codeNames.add(pmName.replace(/\s+/g, " ").trim());
+      const expertByCode = await getExpertRepository().findAll();
+      for (const e of expertByCode) {
+        if (e.personnelCode && normalizeFilterText(e.personnelCode) === personnelCode && e.fullName) {
+          codeNames.add(e.fullName.replace(/\s+/g, " ").trim());
         }
-        if (expertName || pmNames) {
+      }
+    }
+
+    if (hasEnrichFilters) {
+      enrichedRows = enrichedRows.filter((r) => {
+        // نوع قرارداد — تطبیق با kind (مستقل از فاصله/نیم‌فاصله)
+        if (contractFilter && !("error" in contractFilter)) {
+          const { kind } = classifyContract(r.contractType);
+          const pass = contractFilter.kinds.has(kind) || (contractFilter.includeNone && kind === "ثبت‌نشده");
+          if (!pass) return false;
+        }
+        // نام کارشناس / کد پرسنلی — تطبیق روی فهرست «کامل» سهم‌ها (رفع F3) + نام‌های کارگزاری
+        if (expertName || codeNames) {
           const hay = [
-            ...(r.consultantsShareSummary?.names ?? []),
+            ...(r.consultantsShareSummary?.allNames ?? r.consultantsShareSummary?.names ?? []),
             r.agency?.realtorName ?? "",
             r.agency?.creatorName ?? "",
           ].join(" ").replace(/\s+/g, " ");
           if (expertName && !hay.includes(expertName)) return false;
-          if (pmNames && pmNames.size > 0 && ![...pmNames].some((n) => hay.includes(n))) return false;
-          if (pmNames && pmNames.size === 0) return false;
+          if (codeNames && codeNames.size > 0 && ![...codeNames].some((n) => hay.includes(n))) return false;
+          if (codeNames && codeNames.size === 0) return false; // کد در هیچ منبعی شناخته نشد
         }
         return true;
       });
@@ -145,14 +196,7 @@ export async function GET(request: NextRequest) {
 
     await witnessScopedRead(guard, "transaction", total, access.isOwnerRead, ownerLoginPath(guard));
 
-    // P6.5-12 — اگر فیلتر لایهٔ غنی‌سازی فعال است، شمارش منطبق واقعی همان ردیف‌های باقی‌مانده است
-    const hasEnrichFilters = Boolean(expertName || personnelCode || contractType);
-
-    // P6.5-14 (A.۵) — نگاشت نام کارشناس → کد پرسنلی برای سه ستون کارشناسان برتر
-    const expertRows = await getExpertRepository().findAll();
-    const expertCodeByName: Record<string, string> = {};
-    for (const e of expertRows) expertCodeByName[e.fullName] = e.personnelCode;
-
+    // P6.5-15 — اگر فیلتر لایهٔ غنی‌سازی فعال است، شمارش منطبق واقعی همان ردیف‌های باقی‌مانده است
     return Response.json({
       ok: true,
       rows: enrichedRows,
@@ -160,7 +204,6 @@ export async function GET(request: NextRequest) {
       limit,
       offset,
       summary,
-      expertCodeByName,
       // شفافیت منبع داده برای UI
       dataSource: {
         real: true,

@@ -23,6 +23,7 @@ import type {
   VisitDTO,
 } from "@/core/repositories/interfaces";
 import { dateToJalali } from "@/lib/jalali";
+import { classifyContract, type ContractFamily } from "@/lib/contract-classify";
 
 type TxRow = TransactionDTO;
 type ExRow = ExpertDTO;
@@ -538,10 +539,13 @@ export function parseFaAmount(v: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-// ===================== P6.5-14 (ملکا-شورا-۱۴۰۵-۰۱۷ — BLOCK A) =====================
-// روند ماهانهٔ سه‌سری (مبایعه‌نامه/اجاره/مجموع) + کارشناسان برتر سه‌ستونی
+// ===================== P6.5-15 (ملکا-شورا-۱۴۰۵-۰۱۸ — BLOCK A/C) =====================
+// روند ماهانهٔ سه‌سری + کارشناسان برتر سه‌ستونی — بر پایهٔ «قانون انواع معاملات ملکا»:
+// سری ۱ (فروش) = مبایعه‌نامه + پیش‌فروش · سری ۲ (اجاره) = اجاره + تمدید اجاره
+// سری ۳ (مجموع) = فروش + اجاره + ثبت‌نشده (رکوردهای بدون قرارداد هم معامله‌اند).
+// دسته‌بندی فقط از طریق تابع مرکزی classifyContract (BLOCK 0.3) — مستقل از فاصله/نیم‌فاصله.
 
-/** دستهٔ نوع معامله — مجموع = مبایعه + اجاره + سایر (قید ریاضی A.۲) */
+/** دستهٔ نوع معامله — مجموع = فروش + اجاره + ثبت‌نشده (قید ریاضی A.۱ جلسه ۰۱۸) */
 export type TxTypeCategory = "sale" | "rent" | "other";
 
 /** ورودی ردیف نوع‌دار — خروجی غنی‌سازی معاملات (contractType از لایه ۲) */
@@ -549,48 +553,49 @@ export interface TypedTxRow {
   contractDate: Date | string;
   /** نوع قرارداد از منبع (غنی‌سازی معامله‌محور / قرارداد تطبیقی) — nullable */
   contractType: string | null;
-  /** عنوان ملک برای استنتاج نوع (فروش…/رهن و اجاره…) — nullable */
+  /** عنوان ملک — فقط برای نمایش؛ در دسته‌بندی جلسه ۰۱۸ استفاده نمی‌شود */
   propertyTitle?: string | null;
 }
 
 /**
- * دسته‌بندی نوع یک معامله — زنجیرهٔ A.۲:
- *   ۱) contractType عین منبع («مبایعه نامه»/«اجاره نامه»/«تمدید اجاره»…)
- *   ۲) استنتاج از عنوان ملک (فروش… → مبایعه؛ رهن و اجاره/اجاره… → اجاره)
- *   ۳) هیچ‌کدام → «سایر» (در مجموع محاسبه می‌شود — چون در واقع یک معامله است)
+ * دسته‌بندی نوع یک معامله — پوشش نازک روی classifyContract (قانون جلسه ۰۱۸):
+ *   family=sale → "sale" (مبایعه‌نامه + پیش‌فروش)
+ *   family=rent → "rent" (اجاره + تمدید اجاره)
+ *   family=none → "other" (ثبت‌نشده — در مجموع محاسبه می‌شود)
+ * دسته‌بندی تنها از contractType است — طبق spec جلسه ۰۱۸ تابع مرکزی فقط rawType می‌گیرد.
  */
 export function categorizeTxType(row: TypedTxRow): TxTypeCategory {
-  const t = row.contractType?.trim();
-  if (t) {
-    if (t.includes("مبایعه") || t.includes("خرید و فروش")) return "sale";
-    if (t.includes("اجاره")) return "rent";
-    return "other";
-  }
-  const title = row.propertyTitle?.trim() ?? "";
-  if (title) {
-    if (title.includes("اجاره")) return "rent";
-    if (title.includes("فروش")) return "sale";
-  }
+  const { family } = classifyContract(row.contractType);
+  if (family === "sale") return "sale";
+  if (family === "rent") return "rent";
   return "other";
+}
+
+/** خانوادهٔ قرارداد ردیف — میان‌بر برای منطق خانواده‌ای BLOCK A/C */
+export function txContractFamily(row: Pick<TypedTxRow, "contractType">): ContractFamily {
+  return classifyContract(row.contractType).family;
 }
 
 export interface TxTypeMonthlyPoint {
   /** کلید ماه جلالی (yyyy-mm) */
   key: string;
-  /** سری ۱ — تعداد معاملات مبایعه‌نامه */
+  /** سری ۱ — مبایعه‌نامه (شامل پیش‌فروش) */
   sale: number;
-  /** سری ۲ — تعداد معاملات اجاره (اجاره‌نامه + تمدید اجاره) */
+  /** سری ۲ — اجاره (شامل تمدید اجاره) */
   rent: number;
-  /** «سایر» — نوع نامشخص؛ در مجموع محاسبه می‌شود */
-  other: number;
-  /** سری ۳ — مجموع = مبایعه + اجاره + سایر (قید ریاضی) */
+  /** بدون قرارداد ثبت‌شده (family=none) — در مجموع محاسبه می‌شود */
+  none: number;
+  /** سری ۳ — مجموع = فروش + اجاره + ثبت‌نشده (قید ریاضی جلسه ۰۱۸) */
   total: number;
 }
 
 /**
- * سری ماهانهٔ سه‌سری — بازهٔ فروردین ۱۴۰۴ تا ماه جاری (عین دستور A.۲).
- * ماه‌های بی‌داده با صفر پر می‌شوند تا محور پیوسته باشد.
- * تضمین ریاضی: total = sale + rent + other در هر ماه.
+ * سری ماهانهٔ سه‌سری — منطق خانواده‌ای جلسه ۰۱۸ (BLOCK A.۱):
+ *   سری ۱ (مبایعه‌نامه) = count(مبایعه‌نامه) + count(پیش‌فروش)
+ *   سری ۲ (اجاره)       = count(اجاره) + count(تمدید اجاره)
+ *   سری ۳ (مجموع)       = سری۱ + سری۲ + count(ثبت‌نشده)
+ * بازه: فروردین ۱۴۰۴ تا ماه جاری؛ ماه‌های بی‌داده با صفر پر می‌شوند.
+ * تضمین ریاضی: total = sale + rent + none در هر ماه.
  */
 export function txTypeMonthlySeries(rows: TypedTxRow[], range?: { fromKey: string; toKey: string }): TxTypeMonthlyPoint[] {
   const from = range?.fromKey ?? "1404-01";
@@ -603,7 +608,7 @@ export function txTypeMonthlySeries(rows: TypedTxRow[], range?: { fromKey: strin
   let m = fm;
   while (y < ty || (y === ty && m <= tm)) {
     const key = `${y}-${String(m).padStart(2, "0")}`;
-    map.set(key, { key, sale: 0, rent: 0, other: 0, total: 0 });
+    map.set(key, { key, sale: 0, rent: 0, none: 0, total: 0 });
     m += 1;
     if (m > 12) { m = 1; y += 1; }
   }
@@ -611,8 +616,10 @@ export function txTypeMonthlySeries(rows: TypedTxRow[], range?: { fromKey: strin
     const key = jalaliMonthKey(new Date(row.contractDate));
     const point = map.get(key);
     if (!point) continue; // خارج از بازه
-    const cat = categorizeTxType(row);
-    point[cat] += 1;
+    const { family } = classifyContract(row.contractType);
+    if (family === "sale") point.sale += 1;
+    else if (family === "rent") point.rent += 1;
+    else point.none += 1;
     point.total += 1;
   }
   return [...map.values()].sort((a, b) => a.key.localeCompare(b.key));
@@ -631,8 +638,10 @@ export interface SharedTxRow extends TypedTxRow {
 }
 
 /**
- * کارشناسان برتر بر اساس تعداد معاملات — سه ستون (A.۵):
- *   مبایعه‌نامه · اجاره · مجموع (مجموع = مبایعه + اجاره + سایر در هر کارشناس).
+ * کارشناسان برتر بر اساس تعداد معاملات — سه ستون با منطق خانواده‌ای (BLOCK C جلسه ۰۱۸):
+ *   ستون ۱ (مبایعه‌نامه) = مبایعه‌نامه + پیش‌فروش هر کارشناس
+ *   ستون ۲ (اجاره)       = اجاره + تمدید اجاره هر کارشناس
+ *   ستون ۳ (مجموع)       = ستون ۱ + ستون ۲ + ثبت‌نشده‌های همان کارشناس
  * هر معامله برای هر مشاورِ دارای سهم یک‌بار شمرده می‌شود (max-نه-جمع عین P6.5-12).
  */
 export function topExpertsByTxType(rows: SharedTxRow[], n = 10): {
@@ -646,10 +655,11 @@ export function topExpertsByTxType(rows: SharedTxRow[], n = 10): {
   for (const row of rows) {
     const names = row.shareNames ?? parseShareNames(row.realtorSharesJson);
     if (names.length === 0) continue;
-    const cat = categorizeTxType(row);
+    const { family } = classifyContract(row.contractType);
     for (const name of names) {
-      sale.set(name, (sale.get(name) ?? 0) + (cat === "sale" ? 1 : 0));
-      rent.set(name, (rent.get(name) ?? 0) + (cat === "rent" ? 1 : 0));
+      if (family === "sale") sale.set(name, (sale.get(name) ?? 0) + 1);
+      else if (family === "rent") rent.set(name, (rent.get(name) ?? 0) + 1);
+      // ستون مجموع هر کارشناس = فروش + اجاره + ثبت‌نشده او (عین ستون ۳ جدول C.۱)
       total.set(name, (total.get(name) ?? 0) + 1);
     }
   }
