@@ -345,7 +345,10 @@ describe("P6.5-10 — مسیرهای واقعی ARM و ساختار UI", () => {
     }
     expect(listingsPage.includes("شماره تماس مالک")).toBe(true);
     expect(listingsPage.includes("آدرس ملک")).toBe(true);
-    expect(requestsPage.includes("شماره تماس درخواست‌دهنده")).toBe(true);
+    // P6521/M2 — تغییر نام ستون‌های درخواست (دستور ۰۲۰): متقاضی + شماره تماس متقاضی
+    expect(requestsPage.includes("شماره تماس متقاضی")).toBe(true);
+    expect(requestsPage.includes("متقاضی")).toBe(true);
+    expect(requestsPage.includes('">منطقه</TableHead>')).toBe(true);
   });
 
   test("F3) سقف تک‌صفحه‌ای سرور ۲۵٬۰۰۰ (کل کاتالوگ ۱۱٬۳۶۳ آگهی + ۲۰٬۳۹۲ درخواست در یک پاسخ)", async () => {

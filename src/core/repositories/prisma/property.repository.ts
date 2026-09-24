@@ -89,7 +89,7 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
 
   // ===================== P6.5-10 — خواندن‌های کاتالوگ آگهی‌های ملک تبریز =====================
 
-  /** کاتالوگ تک‌صفحه‌ای — فیلتر کدآگهی/نام کارشناس (contains)؛ جدیدترین فعالیت اول */
+  /** کاتالوگ تک‌صفحه‌ای — فیلتر کدآگهی/نام کارشناس (contains) + وضعیت‌های خام شش‌حالته (P6521/M1)؛ جدیدترین فعالیت اول */
   async listArmCatalog(
     filter: ArmListingCatalogFilter,
     limit: number
@@ -97,6 +97,8 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     const where: Prisma.PropertyRecordWhereInput = {};
     if (filter.code) where.propertyCode = { contains: filter.code };
     if (filter.realtorName) where.ownerName = { contains: filter.realtorName };
+    // P6521/M1 — فیلتر شش‌حالته: مقادیر خام قانون‌مند (listingStateRawValues) — دقیق، بدون تخمین
+    if (filter.statuses && filter.statuses.length > 0) where.status = { in: filter.statuses };
 
     const [records, total] = await Promise.all([
       this.client.propertyRecord.findMany({
@@ -138,6 +140,15 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
       updatedAt: r.updatedAt,
     }));
     return { rows, total };
+  }
+
+  /** P6521/M1 — توزیع وضعیت‌های خام برای بینش شش‌حالته (groupBy status) */
+  async statusBreakdown(): Promise<Array<{ status: string | null; count: number }>> {
+    const grouped = await this.client.propertyRecord.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+    });
+    return grouped.map((g) => ({ status: g.status, count: g._count._all }));
   }
 
   /** شمارش غنی‌سازی — extractionBatchId تهی = در انتظار لایه ۲ */

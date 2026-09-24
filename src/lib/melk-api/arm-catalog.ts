@@ -13,6 +13,7 @@
  *    آگهی:  properties/owner/{id}    → نام و شماره تماس مالک ملک
  *           properties/details/{id}  → آدرس دقیق + مشخصات + دسته‌بندی
  *    درخواست: requests/applicant/{id} → نام و نام خانوادگی و شماره تماس درخواست‌دهنده
+ *             requests/details/{id}  → منطقه‌های منتخب (P6521/M2 — ستون منطقه)
  *    نشانگر پیشرفت: extractionBatchId (تهی = در انتظار غنی‌سازی)
  *
  * اصول حاکم (عین bulk-import):
@@ -476,6 +477,19 @@ function detailsToPropertyExtras(
   const address = extractAddress(detailsPayload, null);
   if (address) extras.address = address;
 
+  // P6521/M1 — کوی/پلاک دفاعی: اگر payload جزئیات فیلد جداگانه داشته باشد و هنوز در آدرس
+  // نیامده باشد، به انتهای آدرس الحاق می‌شود (منبع فعلی فیلد جدا ندارد — آدرس‌های ۳۳۵گانهٔ
+  // دارای «کوی» و ۴۲گانهٔ دارای «پلاک» همین‌طور داخل متن آدرس‌اند؛ این گارد برای آینده است).
+  if (address && detailsPayload && typeof detailsPayload === "object") {
+    const dp = detailsPayload as RawRow;
+    const kooi = pickStr(dp, ["kooi", "alley", "کوی"]);
+    const plak = pickStr(dp, ["plak", "plot", "buildingNumber", "پلاک"]);
+    const parts: string[] = [];
+    if (kooi && !address.includes(kooi)) parts.push(`کوی ${kooi}`);
+    if (plak && !address.includes(plak)) parts.push(`پلاک ${plak}`);
+    if (parts.length > 0) extras.address = `${address}، ${parts.join("، ")}`;
+  }
+
   const items = extractDetailItems(detailsPayload);
   if (items.length > 0) extras.detailsJson = JSON.stringify(items);
   const byName = new Map<string, string>();
@@ -505,6 +519,43 @@ function detailsToPropertyExtras(
     extras.propertyTypeName = pickStr(category, ["propertyType"]);
   }
   return extras;
+}
+
+/**
+ * P6521/M2 — استخراج دفاعی منطقه‌های منتخب درخواست از payload جزئیات ARM.
+ * شکل دقیق payload جزئیات در باندل مستند نشده (Recon §۲ — کشف مسیر بدون پروب داده)؛
+ * پس هر کلید محتمل را با گارد نوع بررسی می‌کنیم (آرایهٔ رشته یا آرایهٔ اشیای name دار).
+ * خروجی: نام‌های یکتا به ترتیب ظهور؛ ورودی بی‌منطقه = آرایهٔ خالی.
+ */
+export function extractRequestAreas(payload: unknown): string[] {
+  if (!payload || typeof payload !== "object") return [];
+  const p = payload as Record<string, unknown>;
+  const out: string[] = [];
+  const push = (v: unknown): void => {
+    if (typeof v === "string" && v.trim().length > 0) {
+      const name = v.trim();
+      if (!out.includes(name)) out.push(name);
+    } else if (v && typeof v === "object") {
+      const obj = v as Record<string, unknown>;
+      const name = obj["name"] ?? obj["title"];
+      if (typeof name === "string" && name.trim().length > 0) {
+        const trimmed = name.trim();
+        if (!out.includes(trimmed)) out.push(trimmed);
+      }
+    }
+  };
+  for (const key of ["relatedAreas", "areas", "area", "relatedLines", "lines"]) {
+    const v = p[key];
+    if (Array.isArray(v)) v.forEach(push);
+    else if (v) push(v);
+  }
+  // data تودرتو (پاکت Nest)
+  if (p["data"] && typeof p["data"] === "object" && p["data"] !== payload) {
+    for (const name of extractRequestAreas(p["data"])) {
+      if (!out.includes(name)) out.push(name);
+    }
+  }
+  return out;
 }
 
 /**
@@ -671,6 +722,26 @@ export async function enrichArmRequests(
       if (e?.code === "UNAUTHORIZED") throw err; // انقضای توکن — کل اجرا متوقف و تمدید می‌شود
       // ۴xx ⇒ نتیجهٔ قطعی (علامت می‌خورد)؛ ۵xx/شبکه/مهلت ⇒ نرم (برش بعدی)
       softFail = !isDefinitive4xx(e);
+    }
+
+    // P6521/M2 — منطقه‌های منتخب از جزئیات درخواست (بهترین-تلاش؛ خطا به غنی‌سازی تماس آسیب نمی‌زند)
+    if (!softFail) {
+      try {
+        const det = await armCall<unknown>({
+          path: MELK_ENDPOINTS.arm.requestDetails(row.id),
+          baseUrl: cfg.armApiBase,
+          token,
+          timeoutMs: 45_000,
+          maxRetries: 0,
+        });
+        const areaNames = extractRequestAreas(det.data);
+        if (areaNames.length > 0) {
+          input.areaNames = areaNames;
+          gotAny = true;
+        }
+      } catch {
+        /* جزئیات درخواست بهترین-تلاش است — بدون علامت‌گذاری ردیف */
+      }
     }
 
     if (softFail) {

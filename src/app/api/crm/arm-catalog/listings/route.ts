@@ -3,7 +3,9 @@
  * ------------------------------------------------------
  * کاشی «آگهی‌های ملک تبریز» (P6.5-10):
  *   فیلترها: کدآگهی (contains) + نام و نام خانوادگی کارشناس (contains)
+ *            + وضعیت شش‌حالتهٔ چندانتخابی (P6521/M1 — statuses=published,expired,...)
  *   ستون‌ها: کدآگهی، کارشناس، مالک ملک (نام + تماس)، آدرس ملک
+ *   بینش: توزیع شش‌حالته + سایر (P6521/M1 — statusCounts)
  *
  * غنی‌سازی هدفمند: اگر فیلتر کدآگهی داده شده باشد و ردیف‌های یافته هنوز
  * لایه ۲ (تماس مالک/آدرس دقیق) را نداشته باشند، همان ردیف‌ها زنده از
@@ -22,6 +24,7 @@ import { witnessScopedRead } from "@/lib/audit";
 import { getPropertyRecordRepository } from "@/core/repositories";
 import { enrichArmListings } from "@/lib/melk-api/arm-catalog";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
+import { listingStateRawValues, parseListingStateFilter, rollupStatusCounts } from "@/lib/listing-status";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -37,6 +40,9 @@ export async function GET(request: NextRequest) {
     const sp = request.nextUrl.searchParams;
     const code = (sp.get("code") ?? "").replace(/[۰-۹]/g, (d) => String("۰۱۲۳۵۴۶۷۸۹".indexOf(d))).trim() || undefined;
     const realtorName = (sp.get("realtorName") ?? "").trim() || undefined;
+    // P6521/M1 — فیلتر شش‌حالتهٔ چندانتخابی: کلیدهای canonical → مقادیر خام قانون‌مند
+    const stateKeys = parseListingStateFilter(sp.get("states"));
+    const statuses = stateKeys.length > 0 ? listingStateRawValues(stateKeys) : undefined;
     // P6.5-10 — تک‌صفحه‌ای و بی‌نهایت: سقف سرور ۲۵٬۰۰۰ ردیف (کل کاتالوگ منبع ۱۱٬۳۶۳)
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
 
@@ -57,16 +63,20 @@ export async function GET(request: NextRequest) {
 
     // P6.5-04-i — دامنه فقط از helper مرکزی (تجمیعی §۵.۳؛ مالک ⇒ شاهد owner.read)
     const access = resolveEntityAccess(guard, "property");
-    const { rows, total } = await repo.listArmCatalog({ code, realtorName }, limit);
+    const { rows, total } = await repo.listArmCatalog({ code, realtorName, statuses }, limit);
     await witnessScopedRead(guard, "property", total, access.isOwnerRead, ownerLoginPath(guard));
 
     const counts = await repo.countEnrichment();
+    // P6521/M1 — بینش توزیع شش‌حالته (همیشه از کل کاتالوگ، مستقل از فیلتر فعال)
+    const breakdown = await repo.statusBreakdown();
+    const statusCounts = rollupStatusCounts(breakdown.map((b) => [b.status, b.count] as [string | null, number]));
     return Response.json({
       ok: true,
       rows,
       total,
       limit,
       enrichment: counts,
+      statusCounts,
       dataSource: {
         system: "سامانه مدیریت آگهی و درخواست ملک تبریز (ARM)",
         layer1: "فهرست کامل آگهی‌ها — کد، عنوان، کارشناس، وضعیت، موقعیت",

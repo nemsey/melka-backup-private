@@ -22,6 +22,18 @@ import type {
 } from "../interfaces";
 import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
 
+/** P6521/M2 — تجزیهٔ امن areaNamesJson («["ولیعصر","خاوران"]»)؛ ورودی خراب = آرایهٔ خالی */
+function parseAreaNamesJson(json: string | null | undefined): string[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((v): v is string => typeof v === "string" && v.trim().length > 0);
+  } catch {
+    return [];
+  }
+}
+
 function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> {
   return {
     id: r.id,
@@ -35,6 +47,10 @@ function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> {
     ...(r.actorName !== undefined ? { actorName: r.actorName } : {}),
     ...(r.title !== undefined ? { title: r.title } : {}),
     ...(r.createdAt ? { createdAt: r.createdAt } : {}),
+    // P6521/M2 — منطقه‌های منتخب درخواست (متن ساده) از جزئیات ARM
+    ...(r.areaNames !== undefined && r.areaNames !== null && r.areaNames.length > 0
+      ? { areaNamesJson: JSON.stringify(r.areaNames) }
+      : {}),
     // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مشتری خام
     ...(r.rawCustomerName !== undefined ? { rawCustomerName: r.rawCustomerName } : {}),
     ...(r.rawCustomerMobile !== undefined ? { rawCustomerMobile: r.rawCustomerMobile } : {}),
@@ -120,6 +136,7 @@ export class PrismaRequestRepository implements RequestRepository {
           customerName: true,
           rawCustomerName: true,
           customerMobile: true,
+          areaNamesJson: true,
           extractedAt: true,
           createdAt: true,
           updatedAt: true,
@@ -136,6 +153,8 @@ export class PrismaRequestRepository implements RequestRepository {
       actorName: r.actorName,
       customerName: r.customerName ?? r.rawCustomerName,
       customerMobile: r.customerMobile,
+      // P6521/M2 — منطقه‌های منتخب (متن ساده؛ تهی = هنوز از منبع تکمیل نشده)
+      areaNames: parseAreaNamesJson(r.areaNamesJson),
       enrichedAt: r.extractedAt,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,

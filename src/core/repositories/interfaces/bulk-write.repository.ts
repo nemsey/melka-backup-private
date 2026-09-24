@@ -84,6 +84,8 @@ export interface ArmRequestBulkRow {
   customerName?: string | null;
   customerMobile?: string | null;
   status?: string | null;
+  /** P6521/M2 — منطقه‌های منتخب درخواست (متن ساده از requests/details) */
+  areaNames?: string[] | null;
   /** کارشناس ثبت‌کننده در ARM؛ نبود → 'arm' (رکورد سیستمی) */
   actorCode?: string | null;
   /** P6.5-10 — نام و نام خانوادگی کارشناس ثبت‌کننده (relatedRealtor ردیف فهرست ARM) */
@@ -139,16 +141,20 @@ export interface ArmRequestCatalogRow {
   customerName: string | null;
   /** شماره تماس درخواست‌دهنده (نرمال‌شده 09xxxxxxxxx) */
   customerMobile: string | null;
+  /** P6521/M2 — منطقه‌های منتخب (متن ساده؛ تهی = هنوز از منبع تکمیل نشده) */
+  areaNames: string[];
   /** زمان غنی‌سازی تماس — تهی = در انتظار */
   enrichedAt: Date | null;
   createdAt: Date | null;
   updatedAt: Date;
 }
 
-/** فیلتر کاتالوگ آگهی‌های ARM — کدآگهی (contains) + نام کارشناس (contains) */
+/** فیلتر کاتالوگ آگهی‌های ARM — کدآگهی (contains) + نام کارشناس (contains)
+ *  P6521/M1 — statuses: مقادیر خام وضعیت برای فیلتر شش‌حالته (خروجی listingStateRawValues) */
 export interface ArmListingCatalogFilter {
   code?: string;
   realtorName?: string;
+  statuses?: string[];
 }
 
 /** فیلتر کاتالوگ درخواست‌های ARM — کد درخواست (contains) + نام کارشناس (contains) */
@@ -180,6 +186,8 @@ export interface PropertyRecordRepository {
   upsertBulk(rows: PropertyBulkInput[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
   /** P6.5-10 — کاتالوگ تک‌صفحه‌ای با فیلتر کدآگهی/نام کارشناس (جدیدترین اول) */
   listArmCatalog(filter: ArmListingCatalogFilter, limit: number): Promise<{ rows: ArmListingCatalogRow[]; total: number }>;
+  /** P6521/M1 — توزیع وضعیت‌های خام (status × count) برای بینش شش‌حالته */
+  statusBreakdown(): Promise<Array<{ status: string | null; count: number }>>;
   /** P6.5-10 — شمارش غنی‌سازی: total / pending / complete */
   countEnrichment(): Promise<EnrichmentCounts>;
   /** P6.5-10 — برش ردیف‌های در انتظار غنی‌سازی (جدیدترین اول؛ rowIds = هدفگذاری دقیق) */

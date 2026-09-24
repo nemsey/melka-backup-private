@@ -1,13 +1,16 @@
 "use client";
 
 /**
- * کاشی «درخواست‌های ملک تبریز» — صفحه داخلی (P6.5-10)
+ * کاشی «درخواست‌های ملک تبریز» — صفحه داخلی (P6.5-10 + P6521/M2)
  * ------------------------------------------------------
  * کاتالوگ کامل درخواست‌های سامانه ARM ملک تبریز در یک لیست تک‌صفحه‌ای:
- *   • ستون‌ها: کد درخواست، نام و نام خانوادگی کارشناس، نام و نام خانوادگی
- *     درخواست‌دهنده، شماره تماس درخواست‌دهنده (+ عنوان و وضعیت و تاریخ)
+ *   • ستون‌ها: کد درخواست، نام و نام خانوادگی کارشناس، متقاضی (نام + تماس)،
+ *     منطقه (متن ساده — P6521/M2) (+ عنوان و وضعیت و تاریخ)
+ *   • تغییر نام ستون‌ها (P6521/M2 — دستور ۰۲۰): «درخواست‌دهنده» → «متقاضی» و
+ *     «شماره تماس درخواست‌دهنده» → «شماره تماس متقاضی» (واژگان خود ARM: applicant)
  *   • فیلترها: «کد درخواست» و «نام و نام خانوادگی کارشناس»
  *   • استخراج از سامانه ملک تبریز: دکمه بروزرسانی + تکمیل خودکار برش‌به‌برش
+ *     (لایه ۲ جدید: منطقه‌های منتخب از requests/details)
  *   • جست‌وجوی کددرخواست ⇒ غنی‌سازی زندهٔ همان ردیف‌ها در خود روت (سقف ۵)
  *   • ایجنت هوشمند یادگیرندهٔ مولتی‌بینش اختصاصی
  *   • تک‌صفحه‌ای و بی‌نهایت (P6.5-09): بدون صفحه‌بندی؛ content-visibility
@@ -23,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2, Clock, Landmark, Building2,
+  Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2, Clock, Landmark, Building2, MapPin,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard } from "@/components/app/shared";
@@ -40,6 +43,8 @@ interface RequestRow {
   actorName: string | null;
   customerName: string | null;
   customerMobile: string | null;
+  /** P6521/M2 — منطقه‌های منتخب (متن ساده) */
+  areaNames: string[];
   enrichedAt: string | null;
   createdAt: string | null;
   updatedAt: string;
@@ -161,7 +166,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
       {/* شاخص‌ها */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard label="کل درخواست‌های ملک تبریز" value={loading ? undefined : faNumber(data?.total ?? 0)} icon={ClipboardList} iconWrapperClassName="bg-teal-500/10" iconColorClassName="text-teal-600" />
-        <KpiCard label="تماس درخواست‌دهنده تکمیل‌شده" value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-amber-500/10" iconColorClassName="text-amber-600" />
+        <KpiCard label="تماس متقاضی تکمیل‌شده" value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-amber-500/10" iconColorClassName="text-amber-600" />
         <KpiCard label="درخواست امروز" value={loading ? undefined : faNumber(todayCount)} icon={Clock} iconWrapperClassName="bg-rose-500/10" iconColorClassName="text-rose-600" />
         <KpiCard label="کارشناسان فعال" value={loading ? undefined : faNumber(activeActors)} icon={Users} iconWrapperClassName="bg-primary/10" iconColorClassName="text-primary" />
       </div>
@@ -175,7 +180,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
               <div className="min-w-0">
                 <p className="text-sm font-bold">کاتالوگ درخواست‌های سامانه ARM ملک تبریز</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  فهرست کامل (کد، عنوان، کارشناس، وضعیت، نام خانوادگی درخواست‌دهنده) همیشه کامل است؛ نام کامل و شماره موبایل درخواست‌دهنده برش‌به‌برش با زنجیرهٔ عین خود سامانه تکمیل می‌شود.
+                  فهرست کامل (کد، عنوان، کارشناس، وضعیت، نام خانوادگی متقاضی) همیشه کامل است؛ نام کامل و شماره موبایل متقاضی و منطقه‌های منتخب برش‌به‌برش با زنجیرهٔ عین خود سامانه تکمیل می‌شود.
                 </p>
               </div>
             </div>
@@ -187,7 +192,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
           <div>
             <div className="flex items-center justify-between text-xs mb-1.5">
               <span className="text-muted-foreground">
-                تکمیل نام کامل و شماره تماس درخواست‌دهندگان
+                تکمیل نام کامل و شماره تماس متقاضیان و منطقه‌های منتخب
                 {enriching && (
                   <span className="inline-flex items-center gap-1 text-amber-600 ms-2">
                     <Loader2 className="w-3 h-3 animate-spin" aria-hidden /> در حال تکمیل خودکار…
@@ -288,8 +293,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="w-12">ردیف</TableHead>
                     <TableHead className="min-w-24">کد درخواست</TableHead>
                     <TableHead className="min-w-36">کارشناس</TableHead>
-                    <TableHead className="min-w-36">درخواست‌دهنده</TableHead>
-                    <TableHead className="min-w-32">شماره تماس درخواست‌دهنده</TableHead>
+                    <TableHead className="min-w-36">متقاضی</TableHead>
+                    <TableHead className="min-w-32">شماره تماس متقاضی</TableHead>
+                    <TableHead className="min-w-32">منطقه</TableHead>
                     <TableHead className="min-w-28">وضعیت</TableHead>
                     <TableHead className="min-w-28">تاریخ ثبت</TableHead>
                   </TableRow>
@@ -333,6 +339,17 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <Phone className="w-3.5 h-3.5" aria-hidden />
                             {faDigits(r.customerMobile)}
                           </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">در نوبت تکمیل از سامانه</span>
+                        )}
+                      </TableCell>
+                      {/* P6521/M2 — ستون منطقه: متن سادهٔ منطقه‌های منتخب درخواست */}
+                      <TableCell className="text-sm" id="arm-request-area-cell">
+                        {r.areaNames && r.areaNames.length > 0 ? (
+                          <span className="inline-flex items-start gap-1.5 leading-relaxed">
+                            <MapPin className="w-3.5 h-3.5 text-rose-500 mt-0.5 shrink-0" aria-hidden />
+                            {r.areaNames.join("، ")}
+                          </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">در نوبت تکمیل از سامانه</span>
                         )}
