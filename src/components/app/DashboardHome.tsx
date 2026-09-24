@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { ConnectionIndicators } from "./ConnectionIndicators";
 import { TileCard } from "./TileCard";
+import { VersionBadge } from "./VersionBadge";
 
 export function DashboardHome() {
   const userRole = useAppStore((s) => s.user?.role ?? "CONSULTANT");
@@ -104,7 +105,10 @@ export function DashboardHome() {
 
       <footer className="mt-auto pt-6 border-t text-center text-xs text-muted-foreground">
         <p>مالک و برنامه‌نویس و طراح: سید نعمت اله سیدی</p>
-        <p className="mt-1">نسخه ۱٫۷٫۰ — هویت بصری «فیروزه تبریز» — داشبورد هوشمند چندعامله ملک تبریز</p>
+        {/* P6519 — شاهد زندهٔ نسخه در UI (دستور شورا): مالک با یک نگاه می‌فهمد
+            کدام بیلد را می‌بیند؛ مقدار از /api/version خوانده می‌شود */}
+        <VersionBadge />
+        <p className="mt-1">هویت بصری «فیروزه تبریز» — داشبورد هوشمند چندعامله ملک تبریز</p>
       </footer>
     </main>
   );

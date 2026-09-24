@@ -403,6 +403,19 @@ describe("P6.5-11 ح — دفترچهٔ مشتریان (فهرست مشتریا�
     const { createSession } = await import("@/lib/auth/session");
     const { db } = await import("@/lib/db");
     await db.armConnection.deleteMany({}).catch(() => undefined);
+    // P6519 (شورا — رفع دائمی لینک‌های کهنه، رشتهٔ تست): hermeticسازی تست —
+    // روت باشگاه مشتریان در نبود کشِ تازه به ARM زنده وصل می‌شود؛ ARM از این
+    // کانتینر در دسترس نیست (شاهد: curl 000 در 12s) ⇒ تست تا ۲۰۲۶-۰۹-۲۴ به‌صورت
+    // «بمب ساعتی» fail می‌شد (TTL کش ۶ ساعت). کش ۴ کلید را تازه می‌کنیم تا مسیر
+    // کش آزموده شود — بدون تماس شبکه، deterministic. صفر تغییر در کد تولید.
+    const REF_KEYS = ["user-characters", "user-jobs", "user-roles", "user-seriousness"] as const;
+    for (const key of REF_KEYS) {
+      await db.refListCache.upsert({
+        where: { key },
+        update: { fetchedAt: new Date() },
+        create: { key, dataJson: "[]", fetchedAt: new Date() },
+      });
+    }
     const { token } = await createSession(
       { personnelCode: "940001", displayName: "تست p6511", role: "OWNER" },
       { ip: "127.0.0.1" },

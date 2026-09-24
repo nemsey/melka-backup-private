@@ -1235,3 +1235,20 @@ model AgentPolicyVersion {
 
   @@unique([tileId, version])
 }
+
+/// P6519 — شاهد زندهٔ بیلد (دستور شورا: رفع دائمی لینک‌های کهنه، الزام app_meta)
+/// جدول singleton: آخرین بیلدی که سرور با آن بوت شده را ثبت می‌کند.
+/// instrumentation در هر بوت upsert می‌کند؛ صفر رابطه با سایر جداول (قانون حرمت داده — افزودنی خالص).
+model AppMeta {
+  /// همیشه "singleton" — تنها یک رکورد در کل جدول
+  id         String   @id
+  /// "<gitSha8>-<yyyymmdd>-<hhmm>" (production) یا "dev-<sha>-<stamp>" (dev)
+  buildId    String?
+  /// ISO 8601 — زمان build (یا بوت سرور در dev)
+  builtAt    String?
+  /// ۸ نویسهٔ کامیت گیت
+  gitSha     String?
+  /// development | production
+  env        String?
+  recordedAt DateTime @updatedAt
+}

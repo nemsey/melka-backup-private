@@ -1,4 +1,7 @@
 #!/usr/bin/env bun
+
+// ماژول‌سازی — رفع تداخل main بین اسکریپت‌های global (گارد tsc/build)
+export {};
 /**
  * p6515-filter-results.ts — BLOCK F.2/H (ملکا-شورا-۱۴۰۵-۰۱۸)
  * اجرای رسمی ۱۸+ سناریوی فیلتر روی سرور زنده + UI → filter-test-results.json

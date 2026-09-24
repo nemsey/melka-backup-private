@@ -48,6 +48,23 @@ export async function register(): Promise<void> {
   const { assertProductionSecrets } = await import("@/lib/melk-api/config");
   assertProductionSecrets(); // در production نبود راز = throw → بوت نمی‌شود
 
+  // ---------- ۱-ب) P6519: ثبت شاهد بیلد در DB (app_meta) ----------
+  // آخرین بیلدی که سرور با آن بالا آمد در جدول singleton ثبت می‌شود؛
+  // خطای DB هرگز بوت را نمی‌شکند (endpoint /api/version مستقل کار می‌کند).
+  {
+    const { db } = await import("@/lib/db");
+    const { recordBuildWitnessToDb, getBuildWitness } = await import("@/lib/build-witness");
+    const w = getBuildWitness();
+    await recordBuildWitnessToDb(db);
+    const { logEvent } = await import("@/lib/logger");
+    logEvent({
+      category: "system",
+      operation: "build-witness",
+      status: "ok",
+      detail: { buildId: w.buildId, gitSha: w.gitSha, env: w.env, source: w.source, builtAt: w.builtAt },
+    });
+  }
+
   // ---------- ۲) چرخش کلید در صورت درخواست صریح (ROTATION_PENDING=true) ----------
   if (process.env.ROTATION_PENDING === "true") {
     const { rotateFromEnv } = await import("@/lib/auth/key-rotation");

@@ -1,7 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
+import { getBuildWitness } from "@/lib/build-witness";
 import "./globals.css";
+
+/* P6519 — شاهد نسخه در HTML خام: curl -s <لینک> | grep app-build-id
+ * بدون لاگین و بدون اجرای JS قابل راستی‌آزمایی است (metadata سمت سرور رندر می‌شود).
+ * در production مقادیر پخته‌شدهٔ همان بیلد؛ در dev مقدار زندهٔ dev-… */
+const buildWitness = getBuildWitness();
 
 export const metadata: Metadata = {
   title: "داشبورد هوشمند ملک تبریز",
@@ -15,6 +21,10 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
+  },
+  other: {
+    "app-build-id": buildWitness.buildId,
+    "app-git-sha": buildWitness.gitSha,
   },
 };
 
