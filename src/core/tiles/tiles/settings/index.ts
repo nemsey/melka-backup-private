@@ -1,7 +1,7 @@
 /**
  * ماژول کاشی «تنظیمات عمومی» — تعریف و ثبت
  * بدون ایجنت (تنظیمات ماهیتاً عمومی‌اند، نه تحلیلی).
- * روی صفحه خانه به‌عنوان آخرین کاشی ریشه نمایش داده می‌شود (order: 99).
+ * P6526/الف — نام تازه «تنظیمات عمومی» و جایگاه چهارم صفحه هوم (پیش از داشبورد مدیریتی).
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
@@ -12,14 +12,14 @@ import { SettingsPage } from "./SettingsPage";
 export const settingsTile = defineTile({
   id: "settings",
   version: "1.0.0",
-  title: "تنظیمات عمومی ملک تبریز",
+  title: "تنظیمات عمومی",
   tagline: "زبان، تم، حساب کاربری، مدیریت اتصال و راهنمای اپلیکیشن",
   description:
     "تمام تنظیمات سراسری اپلیکیشن: حالت نمایش، حساب کاربری، مدیریت اتصال به سامانه ملک تبریز (تست و ریست)، و راهنمای کامل استفاده.",
   icon: Settings,
   accent: "stone",
   component: SettingsPage,
-  order: 99,
+  order: 4,
   agent: null,
   settings: [],
 });

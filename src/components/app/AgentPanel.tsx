@@ -118,6 +118,8 @@ export const DOMAIN_FA: Record<string, string> = {
   ARM_SYNC: "ثبت در سامانه آرم",
   // P6.5-11 — کاشی ادغامی «معاملات و قراردادهای ملک تبریز» + بینش‌های مهاجرت‌یافتهٔ بازدیدها
   CONTACT_COVERAGE: "پوشش اطلاعات تماس",
+  // P6526/پ — برچسب فارسی دامنهٔ تازهٔ M3 (جایگزین CONTACT_COVERAGE در نسخهٔ P6.5-14)
+  INFO_COVERAGE: "پوشش اطلاعات غنی‌سازی",
   CONTRACT_TEXT: "متن قرارداد",
   SHARE_AGGREGATE: "تجمیع حق‌السهم",
   VISIT_VOLUME: "حجم بازدیدها",

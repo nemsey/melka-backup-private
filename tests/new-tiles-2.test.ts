@@ -396,13 +396,18 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     expect(tileRegistry.has("contracts")).toBe(false);
     expect(tileRegistry.has("finance-commission")).toBe(false);
 
-    // کاشی ادغامی نخستین فرزند داشبورد مدیریتی — بلافاصله پیش از شاخص قیمت
+    // P6526/الف — ترتیب الزامی M1 تا M7: M3 معاملات سوم، M5 شاخص قیمت پنجم
     const ids = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
-    expect(ids.indexOf("transactions-contracts")).toBe(0);
-    expect(ids.indexOf("price-index")).toBe(1);
-    // تنظیمات عمومی روی صفحه هوم (کاشی ریشه آخر) — نه داخل داشبورد مدیریتی
+    expect(ids.indexOf("arm-listings")).toBe(0); // M1
+    expect(ids.indexOf("arm-requests")).toBe(1); // M2
+    expect(ids.indexOf("transactions-contracts")).toBe(2); // M3
+    expect(ids.indexOf("experts")).toBe(3); // M4
+    expect(ids.indexOf("price-index")).toBe(4); // M5
+    expect(ids.indexOf("supply-demand")).toBe(5); // M6
+    expect(ids.indexOf("extraction")).toBe(6); // M7
+    // تنظیمات عمومی ریشه است (چهارم) — نه داخل داشبورد مدیریتی؛ داشبورد مدیریتی آخرین کاشی ریشه
     expect(ids).not.toContain("settings");
-    expect(tileRegistry.listRoot("OWNER").at(-1)?.id).toBe("settings");
+    expect(tileRegistry.listRoot("OWNER").at(-1)?.id).toBe("management-dashboard");
   });
 
   test("هر کاشی جدید ایجنت اختصاصی متصل به شناسه خود دارد", async () => {

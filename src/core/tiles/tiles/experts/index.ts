@@ -12,13 +12,13 @@ export const expertsTile = defineTile({
   id: "experts",
   version: "2.0.0",
   title: "کارشناسان ملک تبریز",
-  tagline: "بانک اطلاعات کاربران و شبکه همکاری مشاوران ملک تبریز",
+  tagline: "M4 — بانک اطلاعات کاربران و شبکه همکاری مشاوران ملک تبریز",
   description:
     "عین «فهرست کاربران» خود سامانه: نام، موبایل، نقش، کسب‌وکار، ثبت‌کننده، تاریخ ثبت (هجری شمسی) و وضعیت — به‌علاوه «تعاملات مشاوران با یکدیگر» و درجه همکاری هر مشاور.",
   icon: Users,
   accent: "teal",
   component: ExpertsPage,
-  order: 6,
+  order: 4,
   container: "management-dashboard",
   agent: {
     tileId: "experts",

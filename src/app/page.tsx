@@ -14,6 +14,8 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { DashboardHome } from "@/components/app/DashboardHome";
 import { TileShell } from "@/components/app/TileShell";
 import { SwRegister } from "@/components/app/SwRegister";
+// P6526/ث-۲ — دکمهٔ «باز کردن در صفحهٔ جدید» برای پیش‌نمایش داخل قاب چت
+import { OpenInNewTabButton } from "@/components/app/OpenInNewTabButton";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import "@/core/tiles/bootstrap";
 import { Loader2 } from "lucide-react";
@@ -30,8 +32,11 @@ export default function Page() {
   // مرحله راه‌اندازی: بازیابی نشست رمزنگاری‌شده
   if (stage === "boot") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background relative">
         <SwRegister />
+        <div className="absolute top-3 start-3 z-50">
+          <OpenInNewTabButton />
+        </div>
         <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden />
         <p className="text-sm text-muted-foreground">در حال بازیابی نشست امن…</p>
       </div>
@@ -43,6 +48,9 @@ export default function Page() {
     return (
       <>
         <SwRegister />
+        <div className="fixed top-3 start-3 z-50">
+          <OpenInNewTabButton />
+        </div>
         <AuthScreen />
       </>
     );
@@ -51,6 +59,9 @@ export default function Page() {
     return (
       <>
         <SwRegister />
+        <div className="fixed top-3 start-3 z-50">
+          <OpenInNewTabButton />
+        </div>
         <OtpScreen />
       </>
     );

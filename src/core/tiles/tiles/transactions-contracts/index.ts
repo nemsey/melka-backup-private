@@ -21,21 +21,23 @@ export const transactionsContractsTile = defineTile({
   id: "transactions-contracts",
   version: "1.1.0",
   title: "معاملات ملک تبریز",
-  tagline: "فهرست معاملات تمامی کارشناسان ملک تبریز با فایل قرارداد، مبلغ و حق‌السهم مشاوران",
+  tagline: "M3 — فهرست معاملات تمامی کارشناسان ملک تبریز با فایل قرارداد، مبلغ و حق‌السهم مشاوران",
   description:
     "فهرست تک‌صفحه‌ای معاملات با ستون‌های کامل: کد ملک با نام و موبایل مالک، درخواست با نام و موبایل درخواست‌دهنده، نوع قرارداد، شماره هولوگرام، مبلغ قرارداد با جداکنندهٔ «،»، فایل قرارداد (سند PDF تولیدی از داده‌های واقعی سامانه‌های ملک تبریز) و تجمیع حق‌السهم مشاوران با درصد هر مشاور — شامل اطلاعات تمامی کارشناسان ملک تبریز با ایجنت هوشمند مولتی‌بینش.",
   icon: FileCheck2,
   accent: "emerald",
   component: TransactionsContractsPage,
-  order: 1,
+  order: 3,
   container: "management-dashboard",
   agent: {
     tileId: "transactions-contracts",
+    // P6526/پ — عین ایجنت واقعی (P6.5-14: INFO_COVERAGE جای CONTACT_COVERAGE نشست؛
+    // TOP_EXPERTS تازه آمد؛ COMPOSITION/CONVERSION حذف شدند) — قرارداد کاشی ↔ ایجنت یکسان
     insightDomains: [
-      "VOLUME", "TREND", "COMPOSITION", "CONVERSION", "DOCUMENT", "ANOMALY",
+      "VOLUME", "TREND", "DOCUMENT", "ANOMALY", "TOP_EXPERTS", "INFO_COVERAGE",
       "FUNNEL", "BOTTLENECK", "STALLED", "REJECT",
       "TARIFF", "REVENUE", "SETTLEMENT", "BRANCH", "PIPELINE",
-      "CONTACT_COVERAGE", "CONTRACT_TEXT", "SHARE_AGGREGATE",
+      "CONTRACT_TEXT", "SHARE_AGGREGATE",
       "VISIT_VOLUME", "VISIT_TREND", "VISIT_STATUS",
     ],
     capabilities: ["memory", "feedback", "policy-versions", "rollback"],

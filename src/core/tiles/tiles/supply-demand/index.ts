@@ -13,13 +13,13 @@ export const supplyDemandTile = defineTile({
   id: "supply-demand",
   version: "1.0.0",
   title: "عرضه و تقاضای ملک تبریز",
-  tagline: "تعادل بازار ملک تبریز: بازه‌های گرم و سرد، فشار تقاضا و هدایت قیمت‌گذاری",
+  tagline: "M6 — تعادل بازار ملک تبریز: بازه‌های گرم و سرد، فشار تقاضا و هدایت قیمت‌گذاری",
   description:
     "عین «گزارش عرضه و تقاضا» خود سامانه ملک تبریز: بازه × تعداد آگهی × درصد درخواست × وضعیت — همراه با شاخص تعادل بازار، بازه‌های با فشار تقاضای بالا/پایین و ایجنت تحلیل بازار برای هدایت قیمت‌گذاری آگهی‌های جدید.",
   icon: Scale,
   accent: "rose",
   component: SupplyDemandPage,
-  order: 8,
+  order: 6,
   container: "management-dashboard",
   agent: {
     tileId: "supply-demand",

@@ -128,6 +128,17 @@ export const useAppStore = create<AppState>()(
               const res = await api<{ ok: boolean; user: AuthUser }>("/api/auth/session");
               if (res.ok) {
                 set({ user: res.user, stage: "home" });
+                // P6526/ث — پیوند عمیق ?tile=<id> (میان‌برهای PWA اندروید + باز کردن مستقیم کاشی)
+                const wanted = new URLSearchParams(window.location.search).get("tile");
+                if (wanted) {
+                  const { tileRegistry } = await import("@/core/tiles/tile-registry");
+                  const role = res.user.role === "OWNER" ? "OWNER" : "CONSULTANT";
+                  const tile = tileRegistry.get(wanted);
+                  const visible = tile && tileRegistry.listAll(role).some((t) => t.id === wanted);
+                  if (tile && visible) {
+                    set({ activeTileId: wanted, stage: "tile" });
+                  }
+                }
                 return;
               }
             }

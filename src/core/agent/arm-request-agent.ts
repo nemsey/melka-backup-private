@@ -1,5 +1,5 @@
 /**
- * ایجنت هوشمند یادگیرندهٔ مولتی‌بینش کاشی «درخواست‌های ملک تبریز» (P6.5-10)
+ * ایجنت هوشمند یادگیرندهٔ مولتی‌بینش کاشی «درخواست ملک تبریز» (M2 — P6.5-10 + P6526/الف)
  * ------------------------------------------------------
  * تخصص: پایش و تحلیل کاتالوگ کامل درخواست‌های سامانه ARM ملک تبریز —
  * حجم و جریان درخواست‌ها، کارشناسان فعال ثبت، پوشش اطلاعات تماس
@@ -27,7 +27,7 @@ interface SlimRow {
 
 export class ArmRequestAgent extends BaseLearningAgent {
   readonly tileId = "arm-requests";
-  readonly name = "ایجنت درخواست‌های ملک تبریز";
+  readonly name = "ایجنت درخواست ملک تبریز";
   readonly insightDomains = ["VOLUME", "TOP_EXPERTS", "COMPOSITION", "COVERAGE", "FRESHNESS"] as const;
 
   private readonly repo: RequestRepository;

@@ -1,26 +1,26 @@
 /**
- * تست معماری «داشبورد مدیریتی» — ظرف کاشی‌های مدیریتی
+ * تست معماری «داشبورد مدیریتی» — ظرف کاشی‌های مدیریتی (P6526/الف — به‌روز)
  * ------------------------------------------------------
- * صفحه خانه کاشی‌های ریشه (فایل‌یابی، آگهی، درخواست ملک، داشبورد مدیریتی و
- * تنظیمات عمومی به‌عنوان آخرین کاشی) را نشان می‌دهد؛ سایر کاشی‌ها با فیلد
- * container به داخل داشبورد مدیریتی منتقل شده‌اند.
+ * صفحه هوم پنج کاشی ریشه را به ترتیب الزامی مالک نشان می‌دهد:
+ *   فایل یابی ملکا · آگهی ملکا · درخواست ملکا · تنظیمات عمومی · داشبورد مدیریتی ملک تبریز
+ * داشبورد مدیریتی ظرف هفت کاشی M1 تا M7 است (ترتیب و نام عین دستور مالک).
  * اجرا: bun test tests/management-dashboard.test.ts
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
 import { Home as DummyIcon } from "lucide-react";
 
-const ROOT_EXPECTED = ["file-finder", "listings", "requests", "management-dashboard", "settings"];
-/** P6.5-12: سه کاشی ادغامی + حذف بازدیدها (P6.5-11) + حذف مشتریان (P6.5-12) — ۷ فرزند */
+/** P6526/الف — ترتیب الزامی مالک: فایل یابی ملکا · آگهی ملکا · درخواست ملکا · تنظیمات عمومی · داشبورد مدیریتی */
+const ROOT_EXPECTED = ["file-finder", "listings", "requests", "settings", "management-dashboard"];
+/** P6526/الف — هفت کاشی مدیریتی به ترتیب و نام الزامی مالک (M1 تا M7) */
 const CHILDREN_EXPECTED = [
-  "transactions-contracts",
-  "price-index",
-  "experts",
-  "supply-demand",
-  "extraction",
-  // P6.5-10 — دو کاشی کاتالوگ ARM
-  "arm-listings",
-  "arm-requests",
+  "arm-listings",        // M1 آگهی ملک تبریز
+  "arm-requests",        // M2 درخواست ملک تبریز
+  "transactions-contracts", // M3 معاملات ملک تبریز
+  "experts",             // M4 کارشناسان ملک تبریز
+  "price-index",         // M5 شاخص قیمت ملک تبریز
+  "supply-demand",       // M6 عرضه و تقاضای ملک تبریز
+  "extraction",          // M7 استخراج اطلاعات ملک تبریز
 ];
 
 describe("معماری داشبورد مدیریتی", () => {
@@ -28,7 +28,7 @@ describe("معماری داشبورد مدیریتی", () => {
     await import("@/core/tiles/bootstrap");
   });
 
-  test("صفحه خانه ۵ کاشی ریشه را نشان می‌دهد — تنظیمات عمومی آخرین کاشی", async () => {
+  test("P6526/الف — صفحه هوم ۵ کاشی ریشه به ترتیب الزامی مالک (تنظیمات عمومی چهارم، داشبورد مدیریتی آخر)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const root = tileRegistry.listRoot("OWNER").map((t) => t.id);
     expect(root).toEqual(ROOT_EXPECTED);
@@ -37,7 +37,7 @@ describe("معماری داشبورد مدیریتی", () => {
     expect(rootConsultant).toEqual(ROOT_EXPECTED);
   });
 
-  test("۸ کاشی مدیریتی داخل داشبورد مدیریتی ملک تبریز منتقل شده‌اند — به همین ترتیب (P6.5-11)", async () => {
+  test("P6526/الف — هفت کاشی مدیریتی M1 تا M7 داخل داشبورد مدیریتی — به همین ترتیب", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
     expect(children).toEqual(CHILDREN_EXPECTED);
@@ -50,14 +50,16 @@ describe("معماری داشبورد مدیریتی", () => {
     }
   });
 
-  test("P6.5-12 — کاشی «معاملات ملک تبریز» (تغییر نام از نسخهٔ ادغامی) با ایجنت ۲۱ دامنه‌ای (≥۱۵)", async () => {
+  test("P6.5-12 + P6526/الف — کاشی M3 «معاملات ملک تبریز» با ایجنت بیست‌دامنه‌ای (≥۱۵) — قرارداد تازه P6.5-14", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const tile = tileRegistry.get("transactions-contracts")!;
     expect(tile).toBeDefined();
     expect(tile.title).toBe("معاملات ملک تبریز");
     expect(tile.agent).not.toBeNull();
     expect(tile.agent!.insightDomains.length).toBeGreaterThanOrEqual(15);
-    expect(tile.agent!.insightDomains).toContain("CONTACT_COVERAGE");
+    // P6526/پ — قرارداد کاشی عین ایجنت واقعی: INFO_COVERAGE جای CONTACT_COVERAGE نشست و TOP_EXPERTS تازه آمد
+    expect(tile.agent!.insightDomains).toContain("INFO_COVERAGE");
+    expect(tile.agent!.insightDomains).toContain("TOP_EXPERTS");
     expect(tile.agent!.insightDomains).toContain("CONTRACT_TEXT");
     expect(tile.agent!.insightDomains).toContain("SHARE_AGGREGATE");
     // بینش‌های مهاجرت‌یافتهٔ بازدیدها (بند ج)

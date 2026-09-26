@@ -19,6 +19,8 @@ import { useAppStore } from "@/lib/client/store";
 import { faDateTime } from "@/lib/format";
 // P6525 — نصب اپلیکیشن (PWA) روی لینک publish
 import { InstallButton } from "@/components/app/InstallButton";
+// P6526/ث-۲ — باز کردن preview در صفحهٔ جدید (وقتی اپ داخل قاب گفت‌وگو است)
+import { OpenInNewTabButton } from "@/components/app/OpenInNewTabButton";
 
 export function AppHeader() {
   const { theme, setTheme } = useTheme();
@@ -41,6 +43,8 @@ export function AppHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* P6526/ث-۲ — داخل قاب چت: باز کردن همین صفحه در برگهٔ تازهٔ مرورگر */}
+          <OpenInNewTabButton />
           {/* P6525 — نصب اپلیکیشن (PWA): کروم/اندروید/ادج → دیالوگ بومی؛ iOS → راهنما */}
           <InstallButton />
           <Button

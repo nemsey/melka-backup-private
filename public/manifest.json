@@ -4,7 +4,9 @@
   "description": "لایه هوش تحلیلی و مدیریتی چندعامله روی CRM ملک تبریز",
   "lang": "fa",
   "dir": "rtl",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#f4f9f8",
@@ -37,14 +39,28 @@
   ],
   "shortcuts": [
     {
-      "name": "کاشی معاملات",
-      "short_name": "معاملات",
-      "url": "/?tile=transactions"
+      "name": "فایل یابی ملکا",
+      "short_name": "فایل یابی",
+      "url": "/?tile=file-finder",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "کاشی کارشناسان",
-      "short_name": "کارشناسان",
-      "url": "/?tile=experts"
+      "name": "آگهی ملکا",
+      "short_name": "آگهی",
+      "url": "/?tile=listings",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "درخواست ملکا",
+      "short_name": "درخواست",
+      "url": "/?tile=requests",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "معاملات ملک تبریز (M3)",
+      "short_name": "معاملات",
+      "url": "/?tile=transactions-contracts",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

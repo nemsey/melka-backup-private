@@ -24,7 +24,6 @@ export interface FreshnessEntry {
 async function tableFreshness(
   /* مدل Prisma Delegate — ساختار پویا (select/orderBy برنامه‌ای)؛
      انعطاف نوع با unknown چون ستون‌ها در زمان اجرا انتخاب می‌شوند */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: any,
   dateColumns: string[],
   where?: Record<string, unknown>

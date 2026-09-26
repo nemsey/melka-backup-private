@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * کاشی «درخواست‌های ملک تبریز» — صفحه داخلی (P6.5-10 + P6521/M2)
+ * کاشی «درخواست ملک تبریز» (M2) — صفحه داخلی (P6.5-10 + P6521/M2 + P6526/ب)
  * ------------------------------------------------------
  * کاتالوگ کامل درخواست‌های سامانه ARM ملک تبریز در یک لیست تک‌صفحه‌ای:
  *   • ستون‌ها: کد درخواست، نام و نام خانوادگی کارشناس، متقاضی (نام + تماس)،
- *     منطقه (متن ساده — P6521/M2) (+ عنوان و وضعیت و تاریخ)
+ *     مناطق (P6526/ب — رکوردهای چندمنطقه‌ای بصورت «فایل مناطق» نمایش داده
+ *     می‌شوند: چیپ شمارنده + دیالوگ سند فهرست شماره‌دار) (+ عنوان و وضعیت و تاریخ)
  *   • تغییر نام ستون‌ها (P6521/M2 — دستور ۰۲۰): «درخواست‌دهنده» → «متقاضی» و
  *     «شماره تماس درخواست‌دهنده» → «شماره تماس متقاضی» (واژگان خود ARM: applicant)
  *   • فیلترها: «کد درخواست» و «نام و نام خانوادگی کارشناس»
@@ -26,8 +27,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2, Clock, Landmark, Building2, MapPin,
+  Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2, Clock, Landmark, Building2,
 } from "lucide-react";
+// P6526/ب — سلول فایل‌گونهٔ ستون مناطق (چیپ + دیالوگ سند برای رکوردهای چندمنطقه‌ای)
+import { AreasFileCell } from "./AreasFileCell";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
@@ -305,7 +308,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-36">کارشناس</TableHead>
                     <TableHead className="min-w-36">متقاضی</TableHead>
                     <TableHead className="min-w-32">شماره تماس متقاضی</TableHead>
-                    <TableHead className="min-w-32">منطقه</TableHead>
+                    <TableHead className="min-w-32">مناطق</TableHead>
                     <TableHead className="min-w-28">وضعیت</TableHead>
                     <TableHead className="min-w-28">تاریخ ثبت</TableHead>
                   </TableRow>
@@ -353,16 +356,12 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                           <span className="text-muted-foreground">در نوبت تکمیل از سامانه</span>
                         )}
                       </TableCell>
-                      {/* P6521/M2 — ستون منطقه: متن سادهٔ منطقه‌های منتخب درخواست */}
+                      {/* P6526/ب — ستون مناطق: رکوردهای چندمنطقه‌ای (بیش از ۳ منطقه)
+                          بصورت «فایل مناطق» نمایش داده می‌شوند — چیپ شمارنده که
+                          سند فهرست شماره‌دار مناطق را در دیالوگ باز می‌کند؛
+                          رکوردهای کم‌منطقه متن سادهٔ درون‌خطی می‌مانند (قانون فهرست) */}
                       <TableCell className="whitespace-normal" id="arm-request-area-cell">
-                        {r.areaNames && r.areaNames.length > 0 ? (
-                          <span className="inline-flex items-start gap-1.5 leading-relaxed">
-                            <MapPin className="w-3.5 h-3.5 text-rose-500 mt-0.5 shrink-0" aria-hidden />
-                            {r.areaNames.join("، ")}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">در نوبت تکمیل از سامانه</span>
-                        )}
+                        <AreasFileCell requestCode={r.requestCode} areaNames={r.areaNames} />
                       </TableCell>
                       <TableCell>
                         {r.status ? (
