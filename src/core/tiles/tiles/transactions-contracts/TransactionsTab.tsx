@@ -164,7 +164,8 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
     if (applied.personnelCode) params.set("personnelCode", applied.personnelCode);
     // BLOCK D — نوع قرارداد چندگانه: ?contractType=…&contractType=… (تهی = همه)
     for (const t of applied.contractTypes) params.append("contractType", t);
-    params.set("limit", "5000");
+    // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت (سقف گارد ایمنی سرور)
+    params.set("limit", "25000");
     params.set("offset", "0");
     params.set("sortBy", sortBy);
     params.set("sortDir", "desc");
@@ -512,13 +513,12 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
       {/* جدول فهرست معاملات — BLOCK E (ملکا-شورا-۱۴۰۵-۰۱۸): ترتیب دقیق ۱۱ ستون؛
           کد ملک/کد درخواست فقط کد (دستور ۱ و ۲ مالک)؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
       <Card>
-        <CardHeader className="py-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle className="text-base">فهرست معاملات — تمامی کارشناسان ملک تبریز</CardTitle>
-            {rows && rows.length > 0 && (
-              <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
-            )}
-          </div>
+        {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین */}
+        <CardHeader className="py-4 flex flex-col items-center gap-1">
+          <CardTitle className="text-base text-center">فهرست معاملات — تمامی کارشناسان ملک تبریز</CardTitle>
+          {rows && rows.length > 0 && (
+            <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {rows === null ? (
@@ -533,35 +533,34 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
               {loading ? "در حال جستجو…" : "هیچ معامله‌ای با این فیلتر یافت نشد"}
             </div>
           ) : (
-            <div className="overflow-x-auto max-h-[32rem]">
-              <Table>
-                <TableHeader className="sticky top-0 bg-card z-10">
+            <Table>
+                <TableHeader>
                   <TableRow>
                     {/* ترتیب الزامی E.۱ — ۱۱ ستون */}
-                    <TableHead className="text-right w-12">۱. ردیف</TableHead>
-                    <TableHead className="text-right">۲. تاریخ معامله</TableHead>
+                    <TableHead className="w-12">۱. ردیف</TableHead>
+                    <TableHead>۲. تاریخ معامله</TableHead>
                     {/* ۳ — کد ملک: فقط کد (E.۲ — دستور ۱ مالک) */}
-                    <TableHead className="text-right min-w-24">
-                      <span className="flex items-center gap-1"><Home className="w-3.5 h-3.5" aria-hidden /> ۳. کد ملک</span>
+                    <TableHead className="min-w-24">
+                      <span className="inline-flex items-center gap-1"><Home className="w-3.5 h-3.5" aria-hidden /> ۳. کد ملک</span>
                     </TableHead>
                     {/* ۴ — فروشنده: نام + موبایل زیر نام (E.۴) */}
-                    <TableHead className="text-right min-w-40">۴. فروشنده</TableHead>
+                    <TableHead className="min-w-40">۴. فروشنده</TableHead>
                     {/* ۵ — کد درخواست: فقط کد (E.۳ — دستور ۲ مالک) */}
-                    <TableHead className="text-right min-w-24">
-                      <span className="flex items-center gap-1"><Inbox className="w-3.5 h-3.5" aria-hidden /> ۵. کد درخواست</span>
+                    <TableHead className="min-w-24">
+                      <span className="inline-flex items-center gap-1"><Inbox className="w-3.5 h-3.5" aria-hidden /> ۵. کد درخواست</span>
                     </TableHead>
                     {/* ۶ — خریدار: نام + موبایل زیر نام (E.۵) */}
-                    <TableHead className="text-right min-w-40">۶. خریدار</TableHead>
+                    <TableHead className="min-w-40">۶. خریدار</TableHead>
                     {/* ۷ — نوع قرارداد */}
-                    <TableHead className="text-right">۷. نوع قرارداد</TableHead>
+                    <TableHead>۷. نوع قرارداد</TableHead>
                     {/* ۸ — مبلغ قرارداد (با کاما) */}
-                    <TableHead className="text-right min-w-44">۸. مبلغ قرارداد</TableHead>
+                    <TableHead className="min-w-44">۸. مبلغ قرارداد</TableHead>
                     {/* ۹ — تجمیع حق‌السهم مشاوران (نام + درصد) */}
-                    <TableHead className="text-right min-w-48">۹. تجمیع حق‌السهم مشاوران</TableHead>
+                    <TableHead className="min-w-48">۹. تجمیع حق‌السهم مشاوران</TableHead>
                     {/* ۱۰ — شماره هولوگرام */}
-                    <TableHead className="text-right">۱۰. شماره هولوگرام</TableHead>
+                    <TableHead>۱۰. شماره هولوگرام</TableHead>
                     {/* ۱۱ — فایل قرارداد */}
-                    <TableHead className="text-right min-w-32">۱۱. فایل قرارداد</TableHead>
+                    <TableHead className="min-w-32">۱۱. فایل قرارداد</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -583,9 +582,9 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                         <code className="font-mono font-semibold" dir="ltr">{faDigits(t.propertyCode)}</code>
                       </TableCell>
                       {/* ۴ — فروشنده: نام + موبایل زیر نام (E.۴ — fallback به مالک در لایهٔ غنی‌سازی) */}
-                      <TableCell className="text-xs">
+                      <TableCell className="whitespace-normal">
                         {t.sellerName ? (
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex flex-col items-center gap-0.5">
                             <span className="truncate max-w-40 font-medium" title={t.sellerName}>{t.sellerName}</span>
                             {t.sellerMobile ? (
                               <a href={`tel:${t.sellerMobile}`} dir="ltr" className="font-mono text-[11px] text-teal-700 dark:text-teal-300 hover:underline w-fit" title={`تماس با فروشنده: ${t.sellerMobile}`}>
@@ -609,9 +608,9 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                         )}
                       </TableCell>
                       {/* ۶ — خریدار: نام + موبایل زیر نام (E.۵ — fallback به درخواست‌دهنده در لایهٔ غنی‌سازی) */}
-                      <TableCell className="text-xs">
+                      <TableCell className="whitespace-normal">
                         {t.buyerName ? (
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex flex-col items-center gap-0.5">
                             <span className="truncate max-w-40 font-medium" title={t.buyerName}>{t.buyerName}</span>
                             {t.buyerMobile ? (
                               <a href={`tel:${t.buyerMobile}`} dir="ltr" className="font-mono text-[11px] text-teal-700 dark:text-teal-300 hover:underline w-fit" title={`تماس با خریدار: ${t.buyerMobile}`}>
@@ -642,15 +641,15 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                         )}
                       </TableCell>
                       {/* ۹ — تجمیع حق‌السهم مشاوران — نام + درصد (بند ب) */}
-                      <TableCell className="text-xs">
+                      <TableCell className="whitespace-normal">
                         {t.consultantsShareSummary && t.consultantsShareSummary.shares.length > 0 ? (
-                          <div className="flex flex-col gap-1 min-w-44">
+                          <div className="flex flex-col items-center gap-1 min-w-44">
                             <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 text-[11px] gap-1 w-fit">
                               <Users className="w-3 h-3" aria-hidden /> {faNumber(t.consultantsShareSummary.count)} مشاور — {faPercent(t.consultantsShareSummary.totalPercent)}
                             </Badge>
                             <ul className="text-muted-foreground text-[10px] leading-relaxed space-y-0.5">
                               {t.consultantsShareSummary.shares.slice(0, 4).map((s, idx) => (
-                                <li key={`${s.name}-${idx}`} className="flex items-center justify-between gap-2">
+                                <li key={`${s.name}-${idx}`} className="flex items-center justify-center gap-2">
                                   <span className="truncate max-w-28" title={s.name}>{s.name}</span>
                                   <span className="font-semibold text-foreground shrink-0">{faPercent(s.unitPercent)}</span>
                                 </li>
@@ -667,7 +666,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                       {/* ۱۰ — شماره هولوگرام (متن) */}
                       <TableCell className="text-xs font-mono whitespace-nowrap" dir="rtl">
                         {t.contractHolo ? (
-                          <span className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1.5">
                             <FileCheck2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden />
                             {faDigits(t.contractHolo)}
                           </span>
@@ -693,7 +692,6 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                   })}
                 </TableBody>
               </Table>
-            </div>
           )}
         </CardContent>
       </Card>

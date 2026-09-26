@@ -254,18 +254,17 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
                   {appliedSearch ? "هیچ مشتری‌ای با این جست‌وجو یافت نشد." : "هنوز مشتری‌ای در دفترچه ثبت نشده است — با انتقال اطلاعات از سامانه ملک تبریز، جامعه مشتریان شکل می‌گیرد."}
                 </div>
               ) : (
-                <div className="overflow-x-auto max-h-[32rem]">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-card z-10">
+                <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableHead className="text-right w-12">ردیف</TableHead>
-                        <TableHead className="text-right">نام و نام خانوادگی</TableHead>
-                        <TableHead className="text-right">شماره تماس</TableHead>
-                        <TableHead className="text-right">نقش‌ها</TableHead>
-                        <TableHead className="text-right">حضور</TableHead>
-                        <TableHead className="text-right hidden md:table-cell">منبع</TableHead>
-                        <TableHead className="text-right hidden lg:table-cell">اولین حضور</TableHead>
-                        <TableHead className="text-right hidden lg:table-cell">آخرین حضور</TableHead>
+                        <TableHead className="w-12">ردیف</TableHead>
+                        <TableHead>نام و نام خانوادگی</TableHead>
+                        <TableHead>شماره تماس</TableHead>
+                        <TableHead>نقش‌ها</TableHead>
+                        <TableHead>حضور</TableHead>
+                        <TableHead className="hidden md:table-cell">منبع</TableHead>
+                        <TableHead className="hidden lg:table-cell">اولین حضور</TableHead>
+                        <TableHead className="hidden lg:table-cell">آخرین حضور</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -312,7 +311,6 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
                       ))}
                     </TableBody>
                   </Table>
-                </div>
               )}
               <p className="text-[11px] text-muted-foreground leading-relaxed p-3 border-t">
                 تک‌صفحه‌ای و بی‌نهایت — تمامی مشتریان ملک تبریز از چهار منبع (قراردادها، معاملات، مالکان آگهی‌های ARM و درخواست‌دهندگان ARM)
@@ -348,9 +346,9 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
                   </p>
                 </div>
               ) : (
-                <div className="rounded-lg border max-h-[24rem] overflow-y-auto">
+                <div className="rounded-lg border">
                   <Table>
-                    <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableHeader>
                       <TableRow>
                         <TableHead className="w-12">ردیف</TableHead>
                         <TableHead>نام مشتری</TableHead>

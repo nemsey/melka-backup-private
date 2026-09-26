@@ -87,30 +87,19 @@ export function classifyContract(rawType: string | null | undefined): ContractCl
  * نرمال‌سازی ارقام فارسی/عربی → لاتین — رفع باگ F1 (filter-bug-diagnosis.md):
  * جدول کدها را با ارقام فارسی نمایش می‌دهد؛ کاربر همان را تایپ می‌کند؛
  * DB ارقام لاتین دارد. این تابع ورودی کاربر را به شکل DB می‌رساند.
+ *
+ * P6525 — پیاده‌سازی به ماژول مرکزی منتقل شد (src/lib/normalize-input.ts):
+ * منبع یگانهٔ نگاشت ارقام/حروف؛ این‌جا فقط برای پایداری API عمومی re-export می‌شود.
  */
-const FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
-const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+export { normalizeFaDigits } from "@/lib/normalize-input";
 
-export function normalizeFaDigits(input: string | null | undefined): string {
-  if (!input) return "";
-  let out = "";
-  for (const ch of input) {
-    const fa = FA_DIGITS.indexOf(ch);
-    if (fa >= 0) {
-      out += String(fa);
-      continue;
-    }
-    const ar = AR_DIGITS.indexOf(ch);
-    if (ar >= 0) {
-      out += String(ar);
-      continue;
-    }
-    out += ch;
-  }
-  return out;
-}
+import { normalizeFilterInput } from "@/lib/normalize-input";
 
-/** نرمال‌سازی ورودی فیلتر متنی/کدی: ارقام → لاتین + نیم‌فاصله → فاصله + فشرده‌سازی فاصله */
+/**
+ * نرمال‌سازی ورودی فیلتر متنی/کدی (P6525 — ارتقا به قانون کامل):
+ * ارقام → لاتین + حروف عربی → فارسی (ي→ی، ك→ک) + نیم‌فاصله → فاصله + فشرده‌سازی.
+ * پسوند contract-type برای همان‌سازی مقادیر نوع قرارداد اعمال می‌شود.
+ */
 export function normalizeFilterText(input: string | null | undefined): string {
-  return normalizeContractTypeValue(normalizeFaDigits(input));
+  return normalizeContractTypeValue(normalizeFilterInput(input));
 }

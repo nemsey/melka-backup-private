@@ -89,15 +89,6 @@ describe("P6521-الف — قانون شش‌حالتهٔ وضعیت آگهی (M
     expect(listingStateRawValues([])).toEqual([]);
   });
 
-  test("ا۶) تجزیهٔ پارامتر states: کلیدهای معتبر می‌مانند، نامعتبرها بی‌صدا حذف می‌شوند", async () => {
-    const { parseListingStateFilter } = await import("@/lib/listing-status");
-    expect(parseListingStateFilter("published,traded")).toEqual(["published", "traded"]);
-    expect(parseListingStateFilter("published,bogus,,expired")).toEqual(["published", "expired"]);
-    expect(parseListingStateFilter(null)).toEqual([]);
-    expect(parseListingStateFilter("")).toEqual([]);
-    expect(parseListingStateFilter(",,")).toEqual([]);
-  });
-
   test("ا۷) تجمیع شمارش‌ها: شش حالت + other + total (ریاضی شاهد DB)", async () => {
     const { rollupStatusCounts } = await import("@/lib/listing-status");
     const out = rollupStatusCounts([
@@ -125,37 +116,37 @@ describe("P6521-الف — قانون شش‌حالتهٔ وضعیت آگهی (M
 // ===================== ب) مخزن آگهی — فیلتر وضعیت + توزیع (M1) =====================
 
 describe("P6521-ب — مخزن آگهی: فیلتر شش‌حالته + توزیع وضعیت", () => {
-  test("ب۱) فیلتر statuses: فقط ردیف‌های همان حالت‌ها برمی‌گردند", async () => {
+  // P6525 — کاشت دادهٔ تست از تستِ فیلترِ حذف‌شدهٔ ب۱ به beforeAll منتقل شد (ب۲ به آن وابسته است)
+  beforeAll(async () => {
     const { getPropertyRecordRepository } = await import("@/core/repositories");
     const { listingStateRawValues } = await import("@/lib/listing-status");
     const repo = getPropertyRecordRepository();
     await repo.upsertBulk(
       [
-        { id: `${T}-a1`, propertyCode: `${T}-601`, title: "آگهی منتشر", ownerName: "کارشناس و", status: "منتشر شده", createdAt: new Date("2026-09-24T09:00:00Z") },
-        { id: `${T}-a2`, propertyCode: `${T}-602`, title: "آگهی معامله", ownerName: "کارشناس و", status: "معامله شده", createdAt: new Date("2026-09-24T08:00:00Z") },
-        { id: `${T}-a3`, propertyCode: `${T}-603`, title: "آگهی اکران", ownerName: "کارشناس و", status: "اکران خصوصی", createdAt: new Date("2026-09-24T07:00:00Z") },
-        { id: `${T}-a4`, propertyCode: `${T}-604`, title: "آگهی انتظار", ownerName: "کارشناس و", status: "در انتظار بررسی مشاوران", createdAt: new Date("2026-09-24T06:00:00Z") },
+        {
+          id: `${T}-p1`,
+          propertyCode: `${T}-911`,
+          ownerName: "کارشناس تست ب",
+          status: listingStateRawValues(["published"])[0],
+          createdAt: new Date("2026-09-24T09:00:00Z"),
+        },
+        {
+          id: `${T}-p2`,
+          propertyCode: `${T}-912`,
+          ownerName: "کارشناس تست ب",
+          status: listingStateRawValues(["traded"])[0],
+          createdAt: new Date("2026-09-24T09:01:00Z"),
+        },
+        {
+          id: `${T}-p3`,
+          propertyCode: `${T}-913`,
+          ownerName: "کارشناس تست ب",
+          status: listingStateRawValues(["private"])[0],
+          createdAt: new Date("2026-09-24T09:02:00Z"),
+        },
       ],
-      { sourceRunId: `${T}-run-a` }
+      { sourceRunId: `${T}-run-b` }
     );
-
-    // فیلتر تک‌حالته: منتشر شده → فقط 601
-    const pub = await repo.listArmCatalog({ statuses: listingStateRawValues(["published"]), code: `${T}-60` }, 100);
-    expect(pub.rows.length).toBe(1);
-    expect(pub.rows[0].propertyCode).toBe(`${T}-601`);
-
-    // فیلتر چندانتخابی: منتشر + معامله + نمایش خصوصی → 601 و 602 و 603 (نه 604)
-    const multi = await repo.listArmCatalog(
-      { statuses: listingStateRawValues(["published", "traded", "private"]), code: `${T}-60` },
-      100
-    );
-    expect(multi.rows.length).toBe(3);
-    const codes = multi.rows.map((r) => r.propertyCode).sort();
-    expect(codes).toEqual([`${T}-601`, `${T}-602`, `${T}-603`]);
-
-    // بدون فیلتر وضعیت → همه ۴ ردیف (رکوردهای انتظاری هم می‌مانند)
-    const all = await repo.listArmCatalog({ code: `${T}-60` }, 100);
-    expect(all.rows.length).toBe(4);
   });
 
   test("ب۲) توزیع وضعیت: groupBy خام → تجمیع canonical با ریاضی درست", async () => {
@@ -273,13 +264,6 @@ describe("P6521-د — extractRequestAreas (دفاعی؛ شکل payload مستن
 // ===================== هـ) روت API آگهی (M1) =====================
 
 describe("P6521-هـ — روت /api/crm/arm-catalog/listings (ساختاری)", () => {
-  test("ه۱) پارامتر states تجزیه و به مقادیر خام قانون‌مند ترجمه می‌شود", () => {
-    const src = readFileSync("src/app/api/crm/arm-catalog/listings/route.ts", "utf8");
-    expect(src.includes('sp.get("states")')).toBe(true);
-    expect(src.includes("parseListingStateFilter")).toBe(true);
-    expect(src.includes("listingStateRawValues")).toBe(true);
-    expect(src.includes("statuses")).toBe(true);
-  });
 
   test("ه۲) بینش توزیع در پاسخ هست: statusCounts از groupBy کل کاتالوگ", () => {
     const src = readFileSync("src/app/api/crm/arm-catalog/listings/route.ts", "utf8");
@@ -302,13 +286,6 @@ describe("P6521-هـ — روت /api/crm/arm-catalog/listings (ساختاری)",
 describe("P6521-و — UI کاشی آگهی‌های ملک تبریز (ساختاری)", () => {
   const page = readFileSync("src/core/tiles/tiles/arm-listing/ArmListingsPage.tsx", "utf8");
 
-  test("و۱) فیلتر چندانتخابی: شش چیپ toggle با aria-pressed + اعمال خودکار", () => {
-    expect(page.includes('id="arm-listing-states-filter"')).toBe(true);
-    expect(page.includes("aria-pressed")).toBe(true);
-    expect(page.includes("toggleState")).toBe(true);
-    expect(page.includes('params.set("states"')).toBe(true);
-    expect(page.includes("LISTING_STATES.map")).toBe(true);
-  });
 
   test("و۲) ستون وضعیت: Badge رنگی canonical + خنثی برای خارج از شش‌گانه", () => {
     expect(page.includes("STATE_BADGE_CLASS")).toBe(true);

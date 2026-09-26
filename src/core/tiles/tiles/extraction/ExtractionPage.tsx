@@ -462,9 +462,9 @@ export function ExtractionPage({ settings, onSettingsChange: _osc, userRole: _ro
                 هنوز استعلامی ثبت نشده است. اولین استعلام را با کدآگهی یا کددرخواست انجام دهید.
               </p>
             ) : (
-              <div className="rounded-lg border max-h-96 overflow-y-auto">
+              <div className="rounded-lg border">
                 <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">ردیف</TableHead>
                       <TableHead>نوع</TableHead>

@@ -4,11 +4,26 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/*
+ * قانون همیشگی فهرست‌ها (P6525 — دستور مالک ۱۴۰۵/۰۷/۰۵)
+ * ------------------------------------------------------
+ * این پریمیتیوها «منبع قانون» هستند؛ هر فهرستی (ایجادشده و قابل‌ایجاد در آینده)
+ * که از Table/TableHeader/TableHead/TableRow/TableCell استفاده کند به‌طور خودکار
+ * مطابق قانون فهرست است — با الگوی نمونهٔ عالی «فهرست معاملات»:
+ *   ۱. تک‌صفحه‌ای — بدون صفحه‌بندی
+ *   ۲. اسکرول سریع — ظرف اسکرول محدود (max-h) + content-visibility ردیف‌ها (cv-row)
+ *   ۳. عنوان فهرست (سطر سرستون‌ها) ثابت و قابل‌رویت در زمان اسکرول — sticky
+ *   ۴. بارگذاری سریع — تمام ردیف‌ها بدون هیچ محدودیتی (سقف فقط گارد ایمنی سرور است)
+ *   ۵. وسط‌چین — سرستون‌ها و سلول‌ها text-center
+ *   + اندازه فونت یکدست سلول‌ها: text-xs (الگوی فهرست معاملات)
+ * لغو قانون فقط با className صریح ممکن است — که گارد تست P6525 آن را در فهرست‌ها می‌گیرد.
+ */
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className="relative w-full overflow-x-auto max-h-[32rem]"
     >
       <table
         data-slot="table"
@@ -23,7 +38,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      className={cn("[&_tr]:border-b sticky top-0 z-10 bg-card", className)}
       {...props}
     />
   )
@@ -57,7 +72,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+        "cv-row hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
         className
       )}
       {...props}
@@ -70,7 +85,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "text-foreground h-10 px-2 text-center align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
       {...props}
@@ -83,7 +98,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "p-2 text-center text-xs align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
       {...props}

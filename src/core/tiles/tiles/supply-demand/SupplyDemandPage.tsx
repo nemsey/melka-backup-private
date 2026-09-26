@@ -216,9 +216,9 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
               </p>
             </div>
           ) : (
-            <div className="rounded-lg border max-h-[28rem] overflow-y-auto">
+            <div className="rounded-lg border">
               <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
+                <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">ردیف</TableHead>
                     <TableHead>بازه</TableHead>

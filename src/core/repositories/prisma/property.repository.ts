@@ -16,6 +16,11 @@ import type {
   PropertyRecordRepository,
 } from "../interfaces";
 import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
+// P6525 — قانون یکسان‌سازی ورودی: منبع یگانهٔ نگاشت ارقام/حروف (رفع باگ ۴/۵)
+import { normalizeFilterInput } from "@/lib/normalize-input";
+
+/** P6525 — سقف اسکن فیلترهای نرمال‌شدهٔ JS (قانون فهرست: تمام ردیف‌ها؛ هم‌راستا با سقف ایمنی روت ۲۵٬۰۰۰) */
+const LIST_SCAN_CAP = 25_000;
 
 function toPropertyData(p: PropertyBulkInput): Record<string, unknown> {
   return {
@@ -89,42 +94,58 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
 
   // ===================== P6.5-10 — خواندن‌های کاتالوگ آگهی‌های ملک تبریز =====================
 
-  /** کاتالوگ تک‌صفحه‌ای — فیلتر کدآگهی/نام کارشناس (contains) + وضعیت‌های خام شش‌حالته (P6521/M1)؛ جدیدترین فعالیت اول */
+  /** کاتالوگ تک‌صفحه‌ای — فیلتر کدآگهی/نام کارشناس (contains) + وضعیت‌های خام شش‌حالته (P6521/M1)؛ جدیدترین فعالیت اول
+   *
+   * P6525 — قانون یکسان‌سازی (رفع باگ تاریخی ۴/۵ + هم‌ارزی ي/ی و ك/ک):
+   * فیلترهای کد و نام کارشناس به‌جای contains خام SQL، با نرمال‌سازی دوطرفه در JS
+   * اعمال می‌شوند (نرمال هر دو سمت: ورودی و رکورد) ⇒ نتیجهٔ ارقام فارسی/عربی/لاتین
+   * و حروف عربی/فارسی همیشه یکسان است. statuses در SQL می‌ماند (مقادیر خام دقیق). */
   async listArmCatalog(
     filter: ArmListingCatalogFilter,
     limit: number
   ): Promise<{ rows: ArmListingCatalogRow[]; total: number }> {
     const where: Prisma.PropertyRecordWhereInput = {};
-    if (filter.code) where.propertyCode = { contains: filter.code };
-    if (filter.realtorName) where.ownerName = { contains: filter.realtorName };
     // P6521/M1 — فیلتر شش‌حالته: مقادیر خام قانون‌مند (listingStateRawValues) — دقیق، بدون تخمین
     if (filter.statuses && filter.statuses.length > 0) where.status = { in: filter.statuses };
 
-    const [records, total] = await Promise.all([
-      this.client.propertyRecord.findMany({
-        where,
-        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
-        take: limit,
-        select: {
-          id: true,
-          propertyCode: true,
-          title: true,
-          status: true,
-          ownerName: true,
-          rawOwnerName: true,
-          ownerMobile: true,
-          address: true,
-          areaName: true,
-          lineName: true,
-          extractedAt: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      this.client.propertyRecord.count({ where }),
-    ]);
+    // P6525 — نرمال‌سازی ورودی فیلترهای کدی/متنی با منبع یگانه
+    const codeNorm = normalizeFilterInput(filter.code);
+    const realtorNorm = normalizeFilterInput(filter.realtorName);
+    const needsJsFilter = codeNorm !== "" || realtorNorm !== "";
+    // با فیلتر JS، کل کاتالوش اسکن می‌شود (قانون فهرست: تمام ردیف‌ها؛ سقف = گارد ایمنی سرور)
+    const fetchTake = needsJsFilter ? LIST_SCAN_CAP : limit;
 
-    const rows: ArmListingCatalogRow[] = records.map((r) => ({
+    const records = await this.client.propertyRecord.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      take: fetchTake,
+      select: {
+        id: true,
+        propertyCode: true,
+        title: true,
+        status: true,
+        ownerName: true,
+        rawOwnerName: true,
+        ownerMobile: true,
+        address: true,
+        areaName: true,
+        lineName: true,
+        extractedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // P6525 — تطبیق نرمال‌شده: نتیجهٔ فارسی = لاتین = عربی (ارقام) و ي = ی، ك = ک (حروف)
+    const matched = needsJsFilter
+      ? records.filter((r) => {
+          if (codeNorm !== "" && !normalizeFilterInput(r.propertyCode).includes(codeNorm)) return false;
+          if (realtorNorm !== "" && !normalizeFilterInput(r.ownerName).includes(realtorNorm)) return false;
+          return true;
+        })
+      : records;
+
+    const rows: ArmListingCatalogRow[] = matched.slice(0, limit).map((r) => ({
       id: r.id,
       propertyCode: r.propertyCode,
       title: r.title,
@@ -139,7 +160,7 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));
-    return { rows, total };
+    return { rows, total: matched.length };
   }
 
   /** P6521/M1 — توزیع وضعیت‌های خام برای بینش شش‌حالته (groupBy status) */

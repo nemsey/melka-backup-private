@@ -33,6 +33,8 @@ import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
 // P6.5-15 — قانون انواع معاملات ملکا + نرمال‌سازی ورودی فیلترها
 import { classifyContract, normalizeFilterText, type ContractKind } from "@/lib/contract-classify";
+// P6525 — قانون یکسان‌سازی ورودی: منبع یگانهٔ نگاشت ارقام/حروف
+import { normalizeFilterInput } from "@/lib/normalize-input";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -70,7 +72,8 @@ export async function GET(request: NextRequest) {
     const syncState = await getSyncState();
     const sp = request.nextUrl.searchParams;
 
-    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 50, 1), 5000);
+    // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت؛ سقف ۲۵٬۰۰۰ فقط گارد ایمنی سرور است (عین دو کاتالوگ ARM)
+    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
     const sortBy = (sp.get("sortBy") ?? "contractDate") as "contractDate" | "eventsCount" | "suggestedPropertyCount";
     const sortDir: "asc" | "desc" = sp.get("sortDir") === "asc" ? "asc" : "desc";
@@ -180,14 +183,17 @@ export async function GET(request: NextRequest) {
           if (!pass) return false;
         }
         // نام کارشناس / کد پرسنلی — تطبیق روی فهرست «کامل» سهم‌ها (رفع F3) + نام‌های کارگزاری
+        // P6525 — نرمال‌سازی دوطرفه (ي/ی، ك/ک، ارقام): نتیجهٔ ورودی فارسی/عربی/لاتین یکسان
         if (expertName || codeNames) {
-          const hay = [
-            ...(r.consultantsShareSummary?.allNames ?? r.consultantsShareSummary?.names ?? []),
-            r.agency?.realtorName ?? "",
-            r.agency?.creatorName ?? "",
-          ].join(" ").replace(/\s+/g, " ");
+          const hay = normalizeFilterInput(
+            [
+              ...(r.consultantsShareSummary?.allNames ?? r.consultantsShareSummary?.names ?? []),
+              r.agency?.realtorName ?? "",
+              r.agency?.creatorName ?? "",
+            ].join(" ")
+          );
           if (expertName && !hay.includes(expertName)) return false;
-          if (codeNames && codeNames.size > 0 && ![...codeNames].some((n) => hay.includes(n))) return false;
+          if (codeNames && codeNames.size > 0 && ![...codeNames].some((n) => hay.includes(normalizeFilterInput(n)))) return false;
           if (codeNames && codeNames.size === 0) return false; // کد در هیچ منبعی شناخته نشد
         }
         return true;

@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,8 @@ import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber } from "@/lib/format";
+// P6525 — قانون یکسان‌سازی ورودی: منبع یگانه (رفع باگ تاریخی ۴/۵ در این صفحه)
+import { normalizeFilterInput } from "@/lib/normalize-input";
 import {
   LISTING_STATES,
   LISTING_STATE_BY_KEY,
@@ -118,8 +120,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
-    if (applied.code) params.set("code", applied.code.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۵۴۶۷۸۹".indexOf(d))));
-    if (applied.realtorName) params.set("realtorName", applied.realtorName);
+    // P6525 — نرمال‌سازی مرکزی: نتیجهٔ ارقام فارسی/عربی/لاتین همیشه یکسان (رفع باگ ۴/۵)
+    if (applied.code) params.set("code", normalizeFilterInput(applied.code));
+    if (applied.realtorName) params.set("realtorName", normalizeFilterInput(applied.realtorName));
     // P6521/M1 — فیلتر چندانتخابی وضعیت (کلیدها با کاما؛ اعمال خودکار با هر کلیک)
     if (selectedStates.length > 0) params.set("states", selectedStates.join(","));
     try {
@@ -416,10 +419,17 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
         </Card>
       ) : (
         <Card>
+          {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین (الگوی فهرست معاملات) */}
+          <CardHeader className="py-4 flex flex-col items-center gap-1">
+            <CardTitle className="text-base text-center">فهرست آگهی‌ها — رجیستری سامانه ARM ملک تبریز</CardTitle>
+            {rows.length > 0 && (
+              <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
+            )}
+          </CardHeader>
           <CardContent className="p-0">
-            <div className="rounded-lg border overflow-x-auto">
+            <div className="rounded-lg border">
               <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
+                <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">ردیف</TableHead>
                     <TableHead className="min-w-24">کد آگهی</TableHead>
@@ -435,22 +445,22 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                   {rows.map((r, i) => {
                     const stateKey = classifyListingStatus(r.status);
                     return (
-                      <TableRow key={r.id} className="cv-row">
-                        <TableCell className="text-xs text-muted-foreground tabular-nums">{faNumber(i + 1)}</TableCell>
+                      <TableRow key={r.id}>
+                        <TableCell className="text-muted-foreground tabular-nums">{faNumber(i + 1)}</TableCell>
                         <TableCell>
                           <span className="inline-flex items-center gap-1.5 font-extrabold tabular-nums" dir="ltr">
                             <Hash className="w-3.5 h-3.5 text-amber-600" aria-hidden />
                             {faDigits(r.propertyCode)}
                           </span>
-                          {showTitles && r.title && <p className="text-[11px] text-muted-foreground mt-0.5 max-w-44 truncate">{r.title}</p>}
+                          {showTitles && r.title && <p className="text-[11px] text-muted-foreground mt-0.5 max-w-44 truncate mx-auto">{r.title}</p>}
                         </TableCell>
                         <TableCell>
-                          <span className="inline-flex items-center gap-1.5 text-sm font-bold">
+                          <span className="inline-flex items-center gap-1.5 font-bold">
                             <Landmark className="w-3.5 h-3.5 text-teal-600 shrink-0" aria-hidden />
                             {r.realtorName ?? "ثبت نشده در سامانه"}
                           </span>
                         </TableCell>
-                        <TableCell className="text-sm font-bold">
+                        <TableCell className="font-bold">
                           {r.ownerName ? (
                             <span className="inline-flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" aria-hidden /> {r.ownerName}
@@ -466,16 +476,16 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <a
                               href={`tel:${r.ownerMobile}`}
                               dir="ltr"
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-sm font-bold text-primary hover:bg-primary/20 transition-colors tabular-nums"
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 font-bold text-primary hover:bg-primary/20 transition-colors tabular-nums"
                             >
                               <Phone className="w-3.5 h-3.5" aria-hidden />
                               {faDigits(r.ownerMobile)}
                             </a>
                           ) : (
-                            <span className="text-xs text-muted-foreground">در نوبت تکمیل از سامانه</span>
+                            <span className="text-muted-foreground">در نوبت تکمیل از سامانه</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">
+                        <TableCell className="whitespace-normal">
                           <span className="inline-flex items-start gap-1.5 leading-relaxed">
                             <MapPin className="w-3.5 h-3.5 text-rose-500 mt-0.5 shrink-0" aria-hidden />
                             {r.address ?? "ثبت نشده در سامانه"}
@@ -493,10 +503,10 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                               </Badge>
                             )
                           ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{r.createdAt ? faDateTime(r.createdAt) : "—"}</TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">{r.createdAt ? faDateTime(r.createdAt) : "—"}</TableCell>
                       </TableRow>
                     );
                   })}

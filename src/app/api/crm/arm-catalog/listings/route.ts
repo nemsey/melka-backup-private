@@ -25,6 +25,8 @@ import { getPropertyRecordRepository } from "@/core/repositories";
 import { enrichArmListings } from "@/lib/melk-api/arm-catalog";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
 import { listingStateRawValues, parseListingStateFilter, rollupStatusCounts } from "@/lib/listing-status";
+// P6525 — قانون یکسان‌سازی ورودی: منبع یگانه (رفع باگ تاریخی ۴/۵ در این روت)
+import { normalizeFilterInput } from "@/lib/normalize-input";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -38,8 +40,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const sp = request.nextUrl.searchParams;
-    const code = (sp.get("code") ?? "").replace(/[۰-۹]/g, (d) => String("۰۱۲۳۵۴۶۷۸۹".indexOf(d))).trim() || undefined;
-    const realtorName = (sp.get("realtorName") ?? "").trim() || undefined;
+    // P6525 — نرمال‌سازی مرکزی: ارقام فارسی/عربی/لاتین + حروف ي/ك — نتیجه همیشه یکسان
+    const code = normalizeFilterInput(sp.get("code")) || undefined;
+    const realtorName = normalizeFilterInput(sp.get("realtorName")) || undefined;
     // P6521/M1 — فیلتر شش‌حالتهٔ چندانتخابی: کلیدهای canonical → مقادیر خام قانون‌مند
     const stateKeys = parseListingStateFilter(sp.get("states"));
     const statuses = stateKeys.length > 0 ? listingStateRawValues(stateKeys) : undefined;

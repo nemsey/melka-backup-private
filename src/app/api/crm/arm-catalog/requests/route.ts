@@ -21,6 +21,8 @@ import { witnessScopedRead } from "@/lib/audit";
 import { getRequestRepository } from "@/core/repositories";
 import { enrichArmRequests } from "@/lib/melk-api/arm-catalog";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
+// P6525 — قانون یکسان‌سازی ورودی: منبع یگانه (رفع باگ تاریخی ۴/۵ در این روت)
+import { normalizeFilterInput } from "@/lib/normalize-input";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -34,8 +36,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const sp = request.nextUrl.searchParams;
-    const code = (sp.get("code") ?? "").replace(/[۰-۹]/g, (d) => String("۰۱۲۳۵۴۶۷۸۹".indexOf(d))).trim() || undefined;
-    const realtorName = (sp.get("realtorName") ?? "").trim() || undefined;
+    // P6525 — نرمال‌سازی مرکزی: ارقام فارسی/عربی/لاتین + حروف ي/ك — نتیجه همیشه یکسان
+    const code = normalizeFilterInput(sp.get("code")) || undefined;
+    const realtorName = normalizeFilterInput(sp.get("realtorName")) || undefined;
     // P6.5-10 — تک‌صفحه‌ای و بی‌نهایت: سقف سرور ۲۵٬۰۰۰ ردیف (کل کاتالوگ منبع ۲۰٬۳۹۲)
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
 

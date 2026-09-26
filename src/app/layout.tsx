@@ -19,12 +19,19 @@ export const metadata: Metadata = {
     icon: "/icons/icon.svg",
     apple: "/icons/icon-192.png",
   },
+  // P6525 — ثالثاً: نصب اپلیکیشن (PWA) روی لینک publish — متاتگ‌های iOS/Apple
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ملک تبریز",
+  },
   formatDetection: {
     telephone: false,
   },
   other: {
     "app-build-id": buildWitness.buildId,
     "app-git-sha": buildWitness.gitSha,
+    "mobile-web-app-capable": "yes",
   },
 };
 

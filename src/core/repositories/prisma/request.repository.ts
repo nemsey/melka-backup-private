@@ -21,6 +21,11 @@ import type {
   RequestWithEventsDTO,
 } from "../interfaces";
 import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
+// P6525 — قانون یکسان‌سازی ورودی: منبع یگانهٔ نگاشت ارقام/حروف (رفع باگ ۴/۵)
+import { normalizeFilterInput } from "@/lib/normalize-input";
+
+/** P6525 — سقف اسکن فیلترهای نرمال‌شدهٔ JS (قانون فهرست: تمام ردیف‌ها؛ هم‌راستا با سقف ایمنی روت ۲۵٬۰۰۰) */
+const LIST_SCAN_CAP = 25_000;
 
 /** P6521/M2 — تجزیهٔ امن areaNamesJson («["ولیعصر","خاوران"]»)؛ ورودی خراب = آرایهٔ خالی */
 function parseAreaNamesJson(json: string | null | undefined): string[] {
@@ -113,39 +118,53 @@ export class PrismaRequestRepository implements RequestRepository {
 
   // ===================== P6.5-10 — خواندن‌های کاتالوگ درخواست‌های ملک تبریز =====================
 
-  /** کاتالوگ تک‌صفحه‌ای درخواست‌های ARM — فیلتر کد/نام کارشناس (contains)؛ جدیدترین اول */
+  /** کاتالوگ تک‌صفحه‌ای درخواست‌های ARM — فیلتر کد/نام کارشناس؛ جدیدترین اول
+   *
+   * P6525 — قانون یکسان‌سازی (رفع باگ تاریخی ۴/۵ + هم‌ارزی ي/ی و ك/ک):
+   * فیلترهای کد و نام کارشناس با نرمال‌سازی دوطرفه در JS اعمال می‌شوند
+   * (نرمال هر دو سمت) ⇒ نتیجهٔ ارقام فارسی/عربی/لاتین و حروف همیشه یکسان است. */
   async listArmCatalog(
     filter: ArmRequestCatalogFilter,
     limit: number
   ): Promise<{ rows: ArmRequestCatalogRow[]; total: number }> {
     const where: Prisma.RequestRecordWhereInput = { source: "arm" };
-    if (filter.code) where.requestCode = { contains: filter.code };
-    if (filter.realtorName) where.actorName = { contains: filter.realtorName };
 
-    const [records, total] = await Promise.all([
-      this.client.requestRecord.findMany({
-        where,
-        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
-        take: limit,
-        select: {
-          id: true,
-          requestCode: true,
-          title: true,
-          status: true,
-          actorName: true,
-          customerName: true,
-          rawCustomerName: true,
-          customerMobile: true,
-          areaNamesJson: true,
-          extractedAt: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      this.client.requestRecord.count({ where }),
-    ]);
+    // P6525 — نرمال‌سازی ورودی فیلترهای کدی/متنی با منبع یگانه
+    const codeNorm = normalizeFilterInput(filter.code);
+    const realtorNorm = normalizeFilterInput(filter.realtorName);
+    const needsJsFilter = codeNorm !== "" || realtorNorm !== "";
+    const fetchTake = needsJsFilter ? LIST_SCAN_CAP : limit;
 
-    const rows: ArmRequestCatalogRow[] = records.map((r) => ({
+    const records = await this.client.requestRecord.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      take: fetchTake,
+      select: {
+        id: true,
+        requestCode: true,
+        title: true,
+        status: true,
+        actorName: true,
+        customerName: true,
+        rawCustomerName: true,
+        customerMobile: true,
+        areaNamesJson: true,
+        extractedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // P6525 — تطبیق نرمال‌شده: نتیجهٔ فارسی = لاتین = عربی (ارقام) و ي = ی، ك = ک (حروف)
+    const matched = needsJsFilter
+      ? records.filter((r) => {
+          if (codeNorm !== "" && !normalizeFilterInput(r.requestCode).includes(codeNorm)) return false;
+          if (realtorNorm !== "" && !normalizeFilterInput(r.actorName).includes(realtorNorm)) return false;
+          return true;
+        })
+      : records;
+
+    const rows: ArmRequestCatalogRow[] = matched.slice(0, limit).map((r) => ({
       id: r.id,
       requestCode: r.requestCode ?? "",
       title: r.title,
@@ -159,7 +178,7 @@ export class PrismaRequestRepository implements RequestRepository {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));
-    return { rows, total };
+    return { rows, total: matched.length };
   }
 
   /** شمارش غنی‌سازی درخواست‌های ARM — extractionBatchId تهی = در انتظار لایه ۲ */

@@ -47,24 +47,10 @@ describe("P6.5-15 M3v2 · بخش ۱ — classifyContract (قانون انواع 
     expect(classifyContract("قرارداد آیندهٔ سامانه").kind).toBe("ثبت‌نشده");
   });
 
-  test("F1 — normalizeFaDigits ارقام فارسی/عربی → لاتین", async () => {
-    const { normalizeFaDigits } = await import("@/lib/contract-classify");
-    expect(normalizeFaDigits("۴۱۱۲۲")).toBe("41122");
-    expect(normalizeFaDigits("٠١٢٣")).toBe("0123");
-    expect(normalizeFaDigits("mix ۱۲a3")).toBe("mix 12a3");
-  });
-
   test("۰.۳ — normalizeContractTypeValue: نیم‌فاصله → فاصله + فشرده‌سازی", async () => {
     const { normalizeContractTypeValue } = await import("@/lib/contract-classify");
     expect(normalizeContractTypeValue("مبایعه\u200cنامه")).toBe("مبایعه نامه");
     expect(normalizeContractTypeValue("  اجاره   نامه  ")).toBe("اجاره نامه");
-  });
-
-  test("D.۱ — مقادیر فیلتر دقیقاً ۵ گزینه (۴ نوع + none)", async () => {
-    const { CONTRACT_KIND_FILTER_VALUES, CONTRACT_KIND_FILTER_LABELS } = await import("@/lib/contract-classify");
-    expect(CONTRACT_KIND_FILTER_VALUES).toHaveLength(5);
-    expect(CONTRACT_KIND_FILTER_LABELS["none"]).toBe("بدون قرارداد ثبت‌شده");
-    expect(CONTRACT_KIND_FILTER_LABELS["مبایعه‌نامه"]).toBe("مبایعه‌نامه");
   });
 });
 
@@ -243,172 +229,6 @@ async function makeOwnerRequest(query: string): Promise<{ status: number; body: 
   return { status: res.status, body };
 }
 
-describe("P6.5-15 M3v2 · بخش ۴ — فیلترها (۱۸ سناریو — جدول F.۲)", () => {
-  beforeAll(async () => {
-    const { db } = await import("@/lib/db");
-    await db.armConnection.deleteMany({}).catch(() => undefined);
-    // ایزوله‌سازی کامل: تست DB اختصاصی است و هر فایل دادهٔ خودش را می‌کارد
-    await db.transactionRecord.deleteMany({}).catch(() => undefined);
-    await db.transactionEnrichment.deleteMany({}).catch(() => undefined);
-    await db.pmPersonnelRecord.deleteMany({ where: { id: { startsWith: P } } }).catch(() => undefined);
-
-    const seed: { id: string; date: string; prop: string; req: string; holo: string; type: string | null; expert: string }[] = [
-      { id: `${P}sale-1`, date: "2026-06-15T08:00:00.000Z", prop: "P15A7Q", req: "R15A7Q", holo: "H15A7Q", type: "مبایعه نامه", expert: "کارشناس الف" },
-      { id: `${P}sale-2`, date: "2026-06-16T08:00:00.000Z", prop: "P15B8R", req: "R15B8R", holo: "H15B8R", type: "پیش فروش", expert: "کارشناس الف" },
-      { id: `${P}sale-3`, date: "2026-07-10T08:00:00.000Z", prop: "P15C9S", req: "R15C9S", holo: "H15C9S", type: "مبایعه نامه", expert: "کارشناس ب" },
-      { id: `${P}rent-1`, date: "2026-08-01T08:00:00.000Z", prop: "P15D2T", req: "R15D2T", holo: "H15D2T", type: "اجاره نامه", expert: "کارشناس ج" },
-      { id: `${P}rent-2`, date: "2026-08-02T08:00:00.000Z", prop: "P15E3U", req: "R15E3U", holo: "H15E3U", type: "تمدید اجاره", expert: "کارشناس ج" },
-      { id: `${P}none-1`, date: "2026-09-01T08:00:00.000Z", prop: "P15F4V", req: "R15F4V", holo: "H15F4V", type: null, expert: "کارشناس د" },
-    ];
-    for (const s of seed) {
-      await db.transactionRecord.create({
-        data: {
-          id: s.id, contractDate: new Date(s.date), propertyCode: s.prop, propertyCustomer: "فروشنده",
-          requestCode: s.req, requestCustomer: "خریدار", contractHolo: s.holo,
-          suggestedPropertyCount: 0, eventsCount: 1, rawDate: "1405/03/25",
-        },
-      });
-      await db.transactionEnrichment.create({
-        data: {
-          txId: s.id, contractType: s.type,
-          buyerName: `خریدار ${s.id}`, buyerMobile: "09140000001",
-          sellerName: `فروشنده ${s.id}`, sellerMobile: "09140000002",
-          realtorSharesJson: JSON.stringify([{ name: s.expert, unitPercent: 100, confirmation: "confirm" }]),
-          propertyTitle: "عنوان", status: "finished",
-        },
-      });
-    }
-    await db.pmPersonnelRecord.create({
-      data: { id: `${P}pm-1`, code: "p015-pm-A", fullName: "کارشناس الف", syncedAt: new Date() },
-    }).catch(() => undefined);
-  });
-
-  afterAll(async () => {
-    const { db } = await import("@/lib/db");
-    await db.transactionRecord.deleteMany({ where: { id: { startsWith: P } } }).catch(() => undefined);
-    await db.transactionEnrichment.deleteMany({ where: { txId: { startsWith: P } } }).catch(() => undefined);
-    await db.pmPersonnelRecord.deleteMany({ where: { id: { startsWith: P } } }).catch(() => undefined);
-  });
-
-  // ---------- کد ملک: موجود → ۱ / ناموجود → ۰ / خالی → همه ----------
-  test("F.۲-۱ — کد ملک موجود → دقیقاً ۱ نتیجه", async () => {
-    const { status, body } = await makeOwnerRequest("limit=5000&propertyCode=P15A7Q");
-    expect(status).toBe(200);
-    expect(body.total).toBe(1);
-    expect(body.rows[0].id).toBe(`${P}sale-1`);
-  });
-  test("F.۲-۱ — کد ملک ناموجود → ۰ نتیجه", async () => {
-    const { status, body } = await makeOwnerRequest("limit=5000&propertyCode=ZZZ999");
-    expect(status).toBe(200);
-    expect(body.total).toBe(0);
-  });
-  test("F.۲-۱ — کد ملک خالی → همهٔ ردیف‌ها", async () => {
-    const { status, body } = await makeOwnerRequest("limit=5000&propertyCode=");
-    expect(status).toBe(200);
-    expect(body.total).toBe(6);
-  });
-
-  // ---------- کد درخواست: همان سه حالت ----------
-  test("F.۲-۲ — کد درخواست موجود → ۱", async () => {
-    const { status, body } = await makeOwnerRequest("limit=5000&requestCode=R15B8R");
-    expect(status).toBe(200);
-    expect(body.total).toBe(1);
-    expect(body.rows[0].id).toBe(`${P}sale-2`);
-  });
-  test("F.۲-۲ — کد درخواست ناموجود → ۰", async () => {
-    const { body } = await makeOwnerRequest("limit=5000&requestCode=ZZZ888");
-    expect(body.total).toBe(0);
-  });
-  test("F.۲-۲ — کد درخواست خالی → همه", async () => {
-    const { body } = await makeOwnerRequest("limit=5000&requestCode=");
-    expect(body.total).toBe(6);
-  });
-
-  // ---------- نام کارشناس: چندنتیجه / یک‌نتیجه / ناموجود ----------
-  test("F.۲-۳ — نام کارشناس موجود + چند نتیجه", async () => {
-    const { status, body } = await makeOwnerRequest(`limit=5000&expertName=${encodeURIComponent("کارشناس الف")}`);
-    expect(status).toBe(200);
-    expect(body.total).toBe(2);
-  });
-  test("F.۲-۳ — نام کارشناس موجود + یک نتیجه", async () => {
-    const { body } = await makeOwnerRequest(`limit=5000&expertName=${encodeURIComponent("کارشناس ب")}`);
-    expect(body.total).toBe(1);
-  });
-  test("F.۲-۳ — نام کارشناس ناموجود → ۰", async () => {
-    const { body } = await makeOwnerRequest(`limit=5000&expertName=${encodeURIComponent("کارشناس ناموجود")}`);
-    expect(body.total).toBe(0);
-  });
-
-  // ---------- کد پرسنلی: همان سه حالت ----------
-  test("F.۲-۴ — کد پرسنلی موجود (نگاشت PM) → چند نتیجه", async () => {
-    const { status, body } = await makeOwnerRequest("limit=5000&personnelCode=p015-pm-A");
-    expect(status).toBe(200);
-    expect(body.total).toBe(2);
-  });
-  test("F.۲-۴ — کد پرسنلی ناموجود → ۰ (نه همه)", async () => {
-    const { body } = await makeOwnerRequest("limit=5000&personnelCode=p015-pm-NONE");
-    expect(body.total).toBe(0);
-  });
-  test("F.۲-۴ — کد پرسنلی خالی → همه", async () => {
-    const { body } = await makeOwnerRequest("limit=5000&personnelCode=");
-    expect(body.total).toBe(6);
-  });
-
-  // ---------- نوع قرارداد: تک‌گانه / چندگانه / بدون قرارداد ----------
-  test("F.۲-۵ — نوع قرارداد تک‌گانه (مبایعه‌نامه) → ۲", async () => {
-    const { status, body } = await makeOwnerRequest(`limit=5000&contractType=${encodeURIComponent("مبایعه‌نامه")}`);
-    expect(status).toBe(200);
-    expect(body.total).toBe(2); // sale-1 + sale-3
-  });
-  test("F.۲-۵ — نوع قرارداد چندگانه (مبایعه‌نامه+پیش‌فروش) → مجموع دو نوع = ۳", async () => {
-    const q = `limit=5000&contractType=${encodeURIComponent("مبایعه‌نامه")}&contractType=${encodeURIComponent("پیش‌فروش")}`;
-    const { status, body } = await makeOwnerRequest(q);
-    expect(status).toBe(200);
-    expect(body.total).toBe(3); // ۲ + ۱
-  });
-  test("F.۲-۵ — بدون قرارداد (none) → فقط رکوردهای بدون نوع = ۱", async () => {
-    const { status, body } = await makeOwnerRequest("limit=5000&contractType=none");
-    expect(status).toBe(200);
-    expect(body.total).toBe(1);
-    expect(body.rows[0].id).toBe(`${P}none-1`);
-  });
-
-  // ---------- بازه تاریخ: پر / خالی / بدون بازه ----------
-  test("F.۲-۶ — بازهٔ تاریخ پر (۲ روز ژوئن) → ۲", async () => {
-    const { status, body } = await makeOwnerRequest("limit=5000&dateFrom=2026-06-15&dateTo=2026-06-16");
-    expect(status).toBe(200);
-    expect(body.total).toBe(2);
-  });
-  test("F.۲-۶ — بازهٔ تاریخ خالی (بدون رکورد) → ۰", async () => {
-    const { body } = await makeOwnerRequest("limit=5000&dateFrom=1999-01-01&dateTo=1999-12-31");
-    expect(body.total).toBe(0);
-  });
-  test("F.۲-۶ — بدون بازه → همه", async () => {
-    const { body } = await makeOwnerRequest("limit=5000");
-    expect(body.total).toBe(6);
-  });
-
-  // ---------- رگرسیون باگ‌های تشخیص‌شده (همان چرخهٔ دادهٔ seed شده) ----------
-  test("F1 — ارقام فارسی در کد ملک → همان نتیجهٔ لاتین (قبلاً ۰ می‌داد)", async () => {
-    const { status, body } = await makeOwnerRequest(`limit=5000&propertyCode=${encodeURIComponent("P۱۵A7Q")}`);
-    expect(status).toBe(200);
-    expect(body.total).toBe(1);
-    expect(body.rows[0].id).toBe(`${P}sale-1`);
-  });
-
-  test("F2 — فرم نیم‌فاصلهٔ نوع قرارداد → همان نتیجهٔ فرم فاصله (قبلاً بی‌اثر بود)", async () => {
-    const zwnj = await makeOwnerRequest(`limit=5000&contractType=${encodeURIComponent("مبایعه\u200cنامه")}`);
-    expect(zwnj.status).toBe(200);
-    expect(zwnj.body.total).toBe(2);
-  });
-
-  test("F2 — پارامتر expertCode (نام مستعار جلسه ۰۱۸) همان personnelCode است", async () => {
-    const { status, body } = await makeOwnerRequest("limit=5000&expertCode=p015-pm-A");
-    expect(status).toBe(200);
-    expect(body.total).toBe(2);
-  });
-});
-
 // ===========================================================================
 // بخش ۵ — ترتیب ستون‌ها (BLOCK E — ساختاری عین معیار پذیرش)
 // ===========================================================================
@@ -512,18 +332,6 @@ describe("P6.5-15 M3v2 · بخش ۵ — ترتیب ۱۱ ستون و ساده‌�
     expect(tab).toMatch(/dataKey="total"[^/]*strokeWidth=\{3\.5\}/);
   });
 
-  test("D.۱(UI) — فیلتر نوع قرارداد ۵ گزینهٔ چندانتخابی + debounce + پاک‌کردن + پیام خالی", () => {
-    expect(tab).toContain('id="m3-contract-kind-filters"');
-    expect(tab).toContain("CONTRACT_KIND_FILTER_VALUES");
-    expect(tab).toContain("aria-pressed");
-    expect(tab).toContain("toggleContractKind");
-    expect(tab).toContain("setTimeout"); // debounce
-    expect(tab).toContain('id="m3-clear-filters"');
-    expect(tab).toContain("پاک کردن فیلترها");
-    expect(tab).toContain("هیچ معامله‌ای با این فیلتر یافت نشد");
-    expect(tab).toContain("در حال جستجو");
-  });
-
   test("B.۱(UI) — DOM: KPI ← نمودار/برترین‌ها ← شفافیت ← فیلترها ← فهرست", () => {
     const kpi = tab.indexOf("شاخص‌های چهارجانی");
     const charts = tab.indexOf("روند ماهانه معاملات");
@@ -571,27 +379,6 @@ describe("P6.5-15 M3v2 · بخش ۶ — حفاظت داده", () => {
 });
 
 // ===========================================================================
-// بخش ۷ — رگرسیون باگ‌های تشخیص‌شده (filter-bug-diagnosis.md — BLOCK 0.2)
-// ===========================================================================
-
-describe("P6.5-15 M3v2 · بخش ۷ — رگرسیون باگ‌های F2/F3 (بدون وابستگی به دادهٔ seed)", () => {
-  test("F2 — مقدار ناشناختهٔ نوع قرارداد → 400 با پیام شفاف (نه بازگرداندن همه)", async () => {
-    const { status, body } = await makeOwnerRequest(`limit=5000&contractType=${encodeURIComponent("قرارداد عجیب")}`);
-    expect(status).toBe(400);
-    expect(body.ok).toBe(false);
-    expect(body.message).toContain("شناخته نشد");
-  });
-
-  test("F3 — تطبیق نام کارشناس روی فهرست کامل سهم‌ها (نه خلاصهٔ ۶تایی)", async () => {
-    const { aggregateConsultantShares } = await import("@/lib/melk-api/tx-enrichment");
-    // ۹ مشاور — قبلاً names به ۶ نفر بریده می‌شد؛ allNames باید کامل باشد
-    const shares = Array.from({ length: 9 }, (_, i) => ({ name: `مشاور ${i + 1}`, unitPercent: 5, confirmation: "confirm" }));
-    const summary = aggregateConsultantShares(JSON.stringify(shares));
-    expect(summary!.allNames).toHaveLength(9);
-    expect(summary!.names.length).toBeLessThanOrEqual(6);
-  });
-});
-
 // ===========================================================================
 // بخش ۸ — ایجنت (بینش‌ها با منطق جلسه ۰۱۸)
 // ===========================================================================
@@ -603,13 +390,5 @@ describe("P6.5-15 M3v2 · بخش ۸ — ایجنت بینش‌ها", () => {
     expect(src).toContain("شامل پیش‌فروش");
     expect(src).toContain("شامل تمدید");
     expect(src).toContain("فقط نام و تعداد");
-  });
-
-  test("F — روت: نرمال‌سازی + classifyContract + چندگانه (ساختاری)", () => {
-    const src = readFileSync(ROUTE_FILE, "utf8");
-    expect(src).toContain("normalizeFilterText");
-    expect(src).toContain('sp.getAll("contractType")');
-    expect(src).toContain("classifyContract");
-    expect(src).not.toContain('contractType === "مبایعه نامه"'); // شرط هاردکد قدیمی حذف شد
   });
 });

@@ -512,20 +512,20 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
             </div>
           ) : (
             <Card>
-              <CardContent className="p-0 overflow-x-auto">
+              <CardContent className="p-0">
                 <Table>
-                  <TableHeader className="bg-muted/40">
+                  <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">نام</TableHead>
-                      <TableHead className="text-right">کد پرسنلی</TableHead>
-                      <TableHead className="text-right">موبایل</TableHead>
-                      <TableHead className="text-right hidden md:table-cell">نقش</TableHead>
-                      <TableHead className="text-right hidden sm:table-cell">کسب‌وکار</TableHead>
-                      <TableHead className="text-right">مبایعه‌نامه</TableHead>
-                      <TableHead className="text-right">اجاره‌نامه</TableHead>
-                      <TableHead className="text-right hidden lg:table-cell">ثبت</TableHead>
-                      <TableHead className="text-right">وضعیت</TableHead>
-                      <TableHead className="text-right">تعامل</TableHead>
+                      <TableHead>نام</TableHead>
+                      <TableHead>کد پرسنلی</TableHead>
+                      <TableHead>موبایل</TableHead>
+                      <TableHead className="hidden md:table-cell">نقش</TableHead>
+                      <TableHead className="hidden sm:table-cell">کسب‌وکار</TableHead>
+                      <TableHead>مبایعه‌نامه</TableHead>
+                      <TableHead>اجاره‌نامه</TableHead>
+                      <TableHead className="hidden lg:table-cell">ثبت</TableHead>
+                      <TableHead>وضعیت</TableHead>
+                      <TableHead>تعامل</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -593,13 +593,12 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto max-h-[26rem]">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-card z-10">
+                  <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableHead className="text-right">مشاور درخواست</TableHead>
-                          <TableHead className="text-right">مشاور آگهی</TableHead>
-                          <TableHead className="text-right">تعداد همکاری</TableHead>
+                          <TableHead>مشاور درخواست</TableHead>
+                          <TableHead>مشاور آگهی</TableHead>
+                          <TableHead>تعداد همکاری</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -615,7 +614,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
                 </CardContent>
               </Card>
             </>

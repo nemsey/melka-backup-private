@@ -17,6 +17,8 @@ import { Building2, LogOut, Moon, Sun, ChevronDown } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAppStore } from "@/lib/client/store";
 import { faDateTime } from "@/lib/format";
+// P6525 — نصب اپلیکیشن (PWA) روی لینک publish
+import { InstallButton } from "@/components/app/InstallButton";
 
 export function AppHeader() {
   const { theme, setTheme } = useTheme();
@@ -39,6 +41,8 @@ export function AppHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* P6525 — نصب اپلیکیشن (PWA): کروم/اندروید/ادج → دیالوگ بومی؛ iOS → راهنما */}
+          <InstallButton />
           <Button
             variant="ghost"
             size="icon"

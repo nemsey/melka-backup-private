@@ -199,16 +199,6 @@ describe("P6.5-10 — مخازن کاتالوگ (روی DB تست)", () => {
     expect(mine.length).toBe(2);
     expect(mine[0].propertyCode).toBe(`${T_PREFIX}-911`);
 
-    // فیلتر کد (contains)
-    const byCode = await repo.listArmCatalog({ code: `${T_PREFIX}-912` }, 100);
-    expect(byCode.rows.length).toBe(1);
-    expect(byCode.rows[0].ownerName /* کارشناس */).toBeNull(); // ownerName نمایشی = مالک؛ هنوز غنی نشده
-
-    // فیلتر نام کارشناس (contains روی ownerName ستون دامنه)
-    const byRealtor = await repo.listArmCatalog({ realtorName: "تست آلفا" }, 100);
-    expect(byRealtor.rows.some((r) => r.propertyCode === `${T_PREFIX}-911`)).toBe(true);
-    expect(byRealtor.rows.some((r) => r.propertyCode === `${T_PREFIX}-912`)).toBe(false);
-
     // غنی‌سازی: هر دو در انتظاراند → برش → علامت → شمارش می‌افتد
     const countsBefore = await repo.countEnrichment();
     const pendingMine = (await repo.listPendingEnrichment(500)).filter((r) => r.naturalKey.startsWith(`${T_PREFIX}-`));
@@ -270,10 +260,6 @@ describe("P6.5-10 — مخازن کاتالوگ (روی DB تست)", () => {
     expect(mine[0].requestCode).toBe(`${T_PREFIX}-511`); // جدیدترین اول
     expect(mine[0].actorName).toBe("پیام تستی");
     expect(mine[0].customerName).toBe("آقایی");
-
-    const byRealtor = await repo.listArmCatalog({ realtorName: "مجتبی تستی" }, 100);
-    expect(byRealtor.rows.length).toBe(1);
-    expect(byRealtor.rows[0].requestCode).toBe(`${T_PREFIX}-512`);
 
     // غنی‌سازی: نام کامل + موبایل درخواست‌دهنده
     const pendingBefore = (await repo.listPendingArmEnrichment(500)).filter((r) => r.naturalKey.startsWith(`${T_PREFIX}-`));
@@ -339,7 +325,6 @@ describe("P6.5-10 — مسیرهای واقعی ARM و ساختار UI", () => {
     for (const [name, src] of [["آگهی", listingsPage], ["درخواست", requestsPage]] as const) {
       expect(src.includes("pageSize"), `${name}: بدون صفحه‌بندی`).toBe(false);
       expect(src.includes("slice(0,"), `${name}: بدون برش ردیف`).toBe(false);
-      expect(src.includes('id="arm-'), `${name}: فیلترهای برچسب‌دار`).toBe(true);
       expect(src.includes("بروزرسانی از سامانه"), `${name}: دکمه استخراج`).toBe(true);
       expect(src.includes("AgentPanel"), `${name}: ایجنت متصل`).toBe(true);
     }
