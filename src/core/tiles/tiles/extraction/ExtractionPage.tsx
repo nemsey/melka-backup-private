@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -474,8 +474,8 @@ export function ExtractionPage({ settings, onSettingsChange: _osc, userRole: _ro
                       <TableHead>زمان</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {history.map((h, i) => (
+                  <TableBodyVirtual rows={history} rowKey={(h) => h.id}>
+                    {(h, i) => (
                       <TableRow key={h.id}>
                         <TableCell>
                           <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
@@ -503,8 +503,8 @@ export function ExtractionPage({ settings, onSettingsChange: _osc, userRole: _ro
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{faDateTime(h.createdAt)}</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
+                    )}
+                  </TableBodyVirtual>
                 </Table>
               </div>
             )}

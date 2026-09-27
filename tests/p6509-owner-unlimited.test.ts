@@ -205,7 +205,11 @@ describe("P6.5-09 بند ۴ — لیست‌های بدون صفحه‌بندی (
     expect(src).not.toContain("صفحه قبل");
     expect(src).not.toContain("صفحه بعد");
     expect(src).not.toContain("pageRows");
-    expect(src).toContain("rows.map((t, i)");
+    // P6527 — رندر پنجره‌ای: کل ردیف‌ها در یک اسکرول (rows به TableBodyVirtual)،
+    // بدون صفحه‌بندی؛ فرزند تابعی عین نقش قبلی rows.map دارد
+    expect(src).toContain("<TableBodyVirtual rows={rows}");
+    expect(src).toMatch(/\{\(t, i\) => \{/);
+    expect(src).not.toMatch(/rows\.slice\(0,\s*\d+\)/);
   });
 
   test("E2) قراردادها: مسیر تک‌صفحه‌ای برقرار است (P6.5-12: تب قراردادها حذف شد — روت و داده ماندگار)", () => {

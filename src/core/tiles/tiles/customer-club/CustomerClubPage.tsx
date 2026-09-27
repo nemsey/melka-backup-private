@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, RotateCcw, Users, Repeat, TrendingUp, Briefcase, Heart, Fingerprint, Building2, Search, Phone } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip } from "recharts";
@@ -267,8 +267,8 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
                         <TableHead className="hidden lg:table-cell">آخرین حضور</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {customerRows.map((c, i) => (
+                    <TableBodyVirtual rows={customerRows} rowKey={(c) => c.key}>
+                      {(c, i) => (
                         <TableRow key={c.key} className="hover:bg-muted/40" style={{ contentVisibility: "auto" }}>
                           <TableCell className="whitespace-nowrap">
                             <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
@@ -308,8 +308,8 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
                           <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{c.firstSeenAt ? faJalaliShort(c.firstSeenAt) : "—"}</TableCell>
                           <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{c.lastSeenAt ? faJalaliShort(c.lastSeenAt) : "—"}</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
+                      )}
+                    </TableBodyVirtual>
                   </Table>
               )}
               <p className="text-[11px] text-muted-foreground leading-relaxed p-3 border-t">
@@ -359,8 +359,8 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
                         <TableHead>تماس</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {data.repeatMembers.map((m, i) => (
+                    <TableBodyVirtual rows={data.repeatMembers} rowKey={(m) => m.name}>
+                      {(m, i) => (
                         <TableRow key={m.name}>
                           <TableCell>
                             <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
@@ -381,8 +381,8 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
                           <TableCell className="text-xs text-muted-foreground">{m.lastSeen ? faMonthLabel(new Date(m.lastSeen).toISOString().slice(0, 7)) : "—"}</TableCell>
                           <TableCell className="text-xs tabular-nums" dir="ltr">{m.mobile ?? "—"}</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
+                      )}
+                    </TableBodyVirtual>
                   </Table>
                 </div>
               )}

@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Loader2,
   Filter,
@@ -563,8 +563,9 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                     <TableHead className="min-w-32">۱۱. فایل قرارداد</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {rows.map((t, i) => {
+                {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
+                <TableBodyVirtual rows={rows} rowKey={(t) => t.id}>
+                  {(t, i) => {
                     const kind = classifyContract(t.contractType).kind;
                     return (
                     <TableRow key={t.id} className="hover:bg-muted/40">
@@ -689,8 +690,8 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                       </TableCell>
                     </TableRow>
                     );
-                  })}
-                </TableBody>
+                  }}
+                </TableBodyVirtual>
               </Table>
           )}
         </CardContent>

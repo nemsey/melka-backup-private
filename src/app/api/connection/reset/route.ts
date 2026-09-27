@@ -33,9 +33,12 @@ export async function POST(request: NextRequest) {
     // ۳) پاک‌سازی کامل کش داده و تلاش برای همگام‌سازی مجدد داده واقعی
     // HOTFIX-05 (B6): یکسان‌سازی — همان تابع واحد ۶جدولی resetCrmCache
     // (قبلاً این روت فقط ۳ جدول را پاک می‌کرد و قراردادهای/بازدیدها/عرضه-تقاضا می‌ماندند)
+    // P6527: بکاپ خودکار پیش از پاک‌سازی — نام فایل در پاسخ و حسابرسی برمی‌گردد
     let resync: { ok: boolean; transactions: number; experts: number; interactions: number; syncedAt?: string; error?: string; errorCode?: string } | null = null;
+    let preResetBackup: string | undefined;
     if (withData) {
-      await clearCrmCacheTables();
+      const clear = await clearCrmCacheTables();
+      preResetBackup = clear.backupFile;
 
       const armToken = guard.armTokens?.accessToken ?? "";
       if (armToken) {
@@ -61,8 +64,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await audit("CONNECTION_RESET", guard.personnelCode, `withData=${withData}`);
-    return Response.json({ ok: true, resync });
+    await audit("CONNECTION_RESET", guard.personnelCode, `withData=${withData}${preResetBackup ? `; backup=${preResetBackup}` : ""}`);
+    return Response.json({ ok: true, resync, backupFile: preResetBackup });
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);
     return errorResponse(new MelkApiError("CONNECTION_RESET", `ریست اتصال ناموفق بود: ${(err as Error).message}`, 500, false));

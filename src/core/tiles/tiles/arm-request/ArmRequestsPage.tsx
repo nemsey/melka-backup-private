@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2, Clock, Landmark, Building2,
@@ -105,20 +105,38 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     void load();
   }, [load]);
 
-  /** برش خودکار غنی‌سازی — تا MAX_AUTO_SLICES برش در هر باز شدن کاشی */
+  /** برش خودکار غنی‌سازی — تا MAX_AUTO_SLICES برش در هر باز شدن کاشی
+   *  P6527: پس از هر برش فقط شمارنده‌ها از پاسخ همان برش به‌روز می‌شود؛
+ *  بارگذاری کامل فقط پس از آخرین برش (remaining=0) — حذف بارهای تکراری ۲٫۸MB */
   const autoEnrichSlice = useCallback(async (): Promise<void> => {
     if (autoSliceBusy.current || autoSliceCount.current >= MAX_AUTO_SLICES) return;
     autoSliceBusy.current = true;
     autoSliceCount.current += 1;
     setEnriching(true);
     try {
-      await api("/api/crm/arm-catalog/sync", {
-        method: "POST",
-        body: { entity: "requests", mode: "enrich", maxRows: AUTO_SLICE_ROWS },
-      });
-      await load();
+      const res = await api<{ enrich?: Array<{ entity: string; enriched: number; remaining: number }> }>(
+        "/api/crm/arm-catalog/sync",
+        { method: "POST", body: { entity: "requests", mode: "enrich", maxRows: AUTO_SLICE_ROWS } },
+      );
+      const e = res.enrich?.find((x) => x.entity === "requests");
+      if (e) {
+        setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                enrichment: {
+                  total: prev.enrichment.total,
+                  complete: Math.min(prev.enrichment.complete + (e.enriched ?? 0), prev.enrichment.total),
+                  pending: e.remaining ?? Math.max(0, prev.enrichment.pending - (e.enriched ?? 0)),
+                },
+              }
+            : prev,
+        );
+        // آخرین برش (دیگر ردیف در نوبتی نیست) — یک بار فهرست کامل تازه می‌شود
+        if ((e.remaining ?? 0) === 0) await load();
+      }
     } catch {
-      /* برش خودکار بهترین-تلاش است */
+      /* برش خودکار بهترین-تلاش است — با شکست، حلقه در همین‌جا می‌ایستد */
     } finally {
       setEnriching(false);
       autoSliceBusy.current = false;
@@ -313,8 +331,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-28">تاریخ ثبت</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {rows.map((r, i) => (
+                {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
+                <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
+                  {(r, i) => (
                     <TableRow key={r.id}>
                       <TableCell className="text-muted-foreground tabular-nums">{faNumber(i + 1)}</TableCell>
                       <TableCell>
@@ -372,8 +391,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                       </TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{r.createdAt ? faDateTime(r.createdAt) : "—"}</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
+                  )}
+                </TableBodyVirtual>
               </Table>
             </div>
             <p className="p-3 text-xs text-muted-foreground text-center border-t">

@@ -27,6 +27,8 @@ import { execWithArmToken } from "@/lib/listing/crm-transfer";
 import { listingStateRawValues, parseListingStateFilter, rollupStatusCounts } from "@/lib/listing-status";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانه (رفع باگ تاریخی ۴/۵ در این روت)
 import { normalizeFilterInput } from "@/lib/normalize-input";
+// P6527 — انتقال فشردهٔ فهرست سنگین (۵٫۹MB → ~۱MB) برای موبایل
+import { compressedJson } from "@/lib/http/compressed-json";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -73,7 +75,8 @@ export async function GET(request: NextRequest) {
     // P6521/M1 — بینش توزیع شش‌حالته (همیشه از کل کاتالوگ، مستقل از فیلتر فعال)
     const breakdown = await repo.statusBreakdown();
     const statusCounts = rollupStatusCounts(breakdown.map((b) => [b.status, b.count] as [string | null, number]));
-    return Response.json({
+    // P6527 — فشردهٔ gzip وقتی کلاینت می‌پذیرد (بدون آن عین Response.json)
+    return await compressedJson({
       ok: true,
       rows,
       total,
@@ -85,7 +88,7 @@ export async function GET(request: NextRequest) {
         layer1: "فهرست کامل آگهی‌ها — کد، عنوان، کارشناس، وضعیت، موقعیت",
         layer2: `تماس مالک و آدرس دقیق — ${counts.complete} از ${counts.total} تکمیل شده`,
       },
-    });
+    }, request.headers.get("accept-encoding"));
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);
     return errorResponse(new MelkApiError("UNKNOWN", "خطا در خواندن کاتالوگ آگهی‌های ملک تبریز.", 500, false));

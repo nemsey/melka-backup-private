@@ -23,6 +23,8 @@ import { enrichArmRequests } from "@/lib/melk-api/arm-catalog";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانه (رفع باگ تاریخی ۴/۵ در این روت)
 import { normalizeFilterInput } from "@/lib/normalize-input";
+// P6527 — انتقال فشردهٔ فهرست سنگین (۲٫۸MB → ~۰٫۵MB) برای موبایل
+import { compressedJson } from "@/lib/http/compressed-json";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -63,7 +65,8 @@ export async function GET(request: NextRequest) {
     await witnessScopedRead(guard, "arm-request", total, access.isOwnerRead, ownerLoginPath(guard));
 
     const counts = await repo.countArmEnrichment();
-    return Response.json({
+    // P6527 — فشردهٔ gzip وقتی کلاینت می‌پذیرد (بدون آن عین Response.json)
+    return await compressedJson({
       ok: true,
       rows,
       total,
@@ -74,7 +77,7 @@ export async function GET(request: NextRequest) {
         layer1: "فهرست کامل درخواست‌ها — کد، عنوان، کارشناس، وضعیت، درخواست‌دهنده",
         layer2: `تماس درخواست‌دهنده — ${counts.complete} از ${counts.total} تکمیل شده`,
       },
-    });
+    }, request.headers.get("accept-encoding"));
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);
     return errorResponse(new MelkApiError("UNKNOWN", "خطا در خواندن کاتالوگ درخواست‌های ملک تبریز.", 500, false));

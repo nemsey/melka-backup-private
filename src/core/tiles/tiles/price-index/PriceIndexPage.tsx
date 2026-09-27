@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -365,8 +365,8 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
                           <TableHead>انحراف</TableHead>
                         </TableRow>
                       </TableHeader>
-                      <TableBody>
-                        {data.deviations.map((d, i) => (
+                      <TableBodyVirtual rows={data.deviations} rowKey={(d) => d.token}>
+                        {(d, i) => (
                           <TableRow key={d.token}>
                             <TableCell>
                               <span className="inline-flex items-center justify-center w-5.5 h-5.5 min-w-5.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tabular-nums" aria-label={`ردیف ${faNumber(i + 1)}`}>
@@ -390,8 +390,8 @@ export function PriceIndexPage({ settings, onSettingsChange, userRole: _role, on
                               </Badge>
                             </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
+                        )}
+                      </TableBodyVirtual>
                     </Table>
                   </div>
                   <p className="text-xs text-muted-foreground mt-3 leading-relaxed">

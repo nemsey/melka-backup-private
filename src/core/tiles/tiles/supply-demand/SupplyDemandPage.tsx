@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, RotateCcw, Scale, Home, Flame, Snowflake, TrendingUp, BarChart3 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceAlert, useTileData, type DataSourceInfo } from "@/components/app/shared";
@@ -227,8 +227,8 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
                     <TableHead>وضعیت</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {rows.map((r, i) => {
+                <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
+                  {(r, i) => {
                     const badge = demandBadge(r.requestPercent);
                     return (
                       <TableRow key={r.id}>
@@ -255,8 +255,8 @@ export function SupplyDemandPage({ settings, onSettingsChange: _osc, userRole: _
                         </TableCell>
                       </TableRow>
                     );
-                  })}
-                </TableBody>
+                  }}
+                </TableBodyVirtual>
               </Table>
             </div>
           )}

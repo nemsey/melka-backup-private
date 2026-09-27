@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -528,8 +528,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                       <TableHead>تعامل</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {rows.map((e) => (
+                  <TableBodyVirtual rows={rows} rowKey={(e) => e.id}>
+                    {(e) => (
                       <TableRow key={e.id} className="hover:bg-muted/30">
                         <TableCell className="text-xs font-medium whitespace-nowrap">{e.fullName}</TableCell>
                         <TableCell className="text-xs font-mono">{faDigits(e.pmCode ?? (e.personnelCode.startsWith("بدون-کد-") ? "—" : e.personnelCode))}</TableCell>
@@ -544,8 +544,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         </TableCell>
                         <TableCell className="text-xs font-bold">{faNumber(e.interactionTotal)}</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
+                    )}
+                  </TableBodyVirtual>
                 </Table>
               </CardContent>
             </Card>
@@ -601,9 +601,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                           <TableHead>تعداد همکاری</TableHead>
                         </TableRow>
                       </TableHeader>
-                      <TableBody>
+                      <TableBodyVirtual rows={interactions} rowKey={(r) => r.id}>
                         {/* P6.5-09 — بدون سقف: همهٔ تعاملات در یک صفحه (عین لیست کاربران) */}
-                        {interactions.map((r) => (
+                        {(r) => (
                           <TableRow key={r.id} className="hover:bg-muted/30">
                             <TableCell className="text-xs font-medium">{r.requestRealtorName}</TableCell>
                             <TableCell className="text-xs font-medium">{r.propertyRealtorName}</TableCell>
@@ -611,8 +611,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                               <Badge variant="secondary" className="font-bold">{faNumber(r.count)}</Badge>
                             </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
+                        )}
+                      </TableBodyVirtual>
                     </Table>
                 </CardContent>
               </Card>

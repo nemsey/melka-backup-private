@@ -35,6 +35,8 @@ import { witnessScopedRead } from "@/lib/audit";
 import { classifyContract, normalizeFilterText, type ContractKind } from "@/lib/contract-classify";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانهٔ نگاشت ارقام/حروف
 import { normalizeFilterInput } from "@/lib/normalize-input";
+// P6527 — انتقال فشردهٔ فهرست سنگین برای موبایل
+import { compressedJson } from "@/lib/http/compressed-json";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -203,7 +205,8 @@ export async function GET(request: NextRequest) {
     await witnessScopedRead(guard, "transaction", total, access.isOwnerRead, ownerLoginPath(guard));
 
     // P6.5-15 — اگر فیلتر لایهٔ غنی‌سازی فعال است، شمارش منطبق واقعی همان ردیف‌های باقی‌مانده است
-    return Response.json({
+    // P6527 — فشردهٔ gzip وقتی کلاینت می‌پذیرد (بدون آن عین Response.json)
+    return await compressedJson({
       ok: true,
       rows: enrichedRows,
       total: hasEnrichFilters ? enrichedRows.length : total,
@@ -219,7 +222,7 @@ export async function GET(request: NextRequest) {
         liveError: seed.liveError ?? syncState.lastError,
         syncAttempts: syncState.attempts,
       },
-    });
+    }, request.headers.get("accept-encoding"));
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);
     return errorResponse(new MelkApiError("UNKNOWN", "خطا در استخراج معاملات.", 500, false));

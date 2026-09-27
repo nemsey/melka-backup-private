@@ -20,6 +20,8 @@
  */
 
 import { randomUUID } from "crypto";
+import { resolve as pathResolve, dirname } from "node:path";
+import { mkdirSync } from "node:fs";
 import { db } from "@/lib/db";
 import {
   getContractRepository,
@@ -848,14 +850,60 @@ export async function ensureSeeded(armToken?: string): Promise<{ transactions: n
  * پاک‌سازی کامل کش CRM — تابع واحد شش‌جدولی (HOTFIX-05)
  * هم connection/reset و هم resetCrmCache از همین تابع استفاده می‌کنند تا
  * «ریست» در کل سیستم فقط یک تعریف داشته باشد (قبلاً: ۳ جدول در روت vs ۶ جدول اینجا).
+ *
+ * P6527 — بکاپ خودکار پیش از پاک‌سازی (رفع دائمی حادثهٔ ۱۴۰۵/۰۷/۰۴):
+ * «ریست اتصال» مالک با توکن مرده، ۷۳۹ معامله + ۲۹۱ کارشناس را بدون مسیر
+ * بازیابی از بین برد (شاهد: backups/pre-p6525 = ۷39 معامله، pre-p6526 = صفر).
+ * از این پس پیش از هر پاک‌سازیِ غیرخالی، یک snapshot کامل (VACUUM INTO) در
+ * backups/pre-reset-<زمان>.db ساخته می‌شود — بهترین-تلاش: شکست بکاپ هرگز
+ * خود ریست را نمی‌شکند؛ نام فایل در خروجی و رخداد حسابرسی برمی‌گردد.
  */
-export async function clearCrmCacheTables(): Promise<void> {
+export interface ClearCrmResult {
+  cleared: boolean;
+  /** فایل بکاپ خودکار (اگر داده‌ای برای بکاپ بود و ساخت موفق بود) */
+  backupFile?: string;
+}
+
+function resolveBackupsDir(): string {
+  // db/custom.db → دو سطح بالا = ریشهٔ پروژه/backups
+  const dbUrl = process.env.DATABASE_URL ?? "file:db/custom.db";
+  const dbFile = dbUrl.replace(/^file:/, "");
+  return pathResolve(dirname(dbFile), "..", "backups");
+}
+
+export async function clearCrmCacheTables(): Promise<ClearCrmResult> {
+  const [txCount, exCount, inCount, viCount, sdCount, ctCount] = await Promise.all([
+    db.transactionRecord.count(),
+    db.expertRecord.count(),
+    db.interactionRecord.count(),
+    db.visitRecord.count(),
+    db.supplyDemandRecord.count(),
+    db.contractRecord.count(),
+  ]);
+  const hasData = txCount + exCount + inCount + viCount + sdCount + ctCount > 0;
+
+  let backupFile: string | undefined;
+  if (hasData) {
+    try {
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const suffix = Math.random().toString(36).slice(2, 8);
+      const dir = resolveBackupsDir();
+      mkdirSync(dir, { recursive: true });
+      backupFile = `${dir}/pre-reset-${stamp}-${suffix}.db`;
+      await db.$executeRawUnsafe(`VACUUM INTO '${backupFile}'`);
+    } catch {
+      // بکاپ بهترین-تلاش است — پاک‌سازی درخواست‌شده همچنان اجرا می‌شود
+      backupFile = undefined;
+    }
+  }
+
   await db.transactionRecord.deleteMany({});
   await db.expertRecord.deleteMany({});
   await db.interactionRecord.deleteMany({});
   await db.visitRecord.deleteMany({});
   await db.supplyDemandRecord.deleteMany({});
   await db.contractRecord.deleteMany({});
+  return { cleared: true, backupFile };
 }
 
 /** پاک‌سازی کامل کش و استخراج مجدد از سامانه واقعی (دکمه ریست اتصال) */
