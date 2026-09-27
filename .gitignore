@@ -57,3 +57,4 @@ server.log
 ABORT
 recon-night1*.jsonl
 tool-results/
+backups/pre-reset-*.db

@@ -164,7 +164,13 @@ describe("HOTFIX-05 — یکسان‌سازی reset (۶ جدول، تابع وا
     expect(beforeCounts[5]).toBeGreaterThanOrEqual(1);
 
     const { clearCrmCacheTables } = await import("@/lib/melk-api/sync");
-    await clearCrmCacheTables();
+    const clear = await clearCrmCacheTables();
+
+    // P6527 — شبکهٔ ایمنی: با دادهٔ غیرخالی، بکاپ خودکار ساخته می‌شود (و پاک تست)
+    expect(clear.backupFile).toBeTruthy();
+    const { existsSync, rmSync } = await import("node:fs");
+    expect(existsSync(clear.backupFile!)).toBe(true);
+    rmSync(clear.backupFile!, { force: true });
 
     const after = await countAll();
     expect(after).toEqual([0, 0, 0, 0, 0, 0]);
@@ -190,9 +196,14 @@ describe("HOTFIX-05 — یکسان‌سازی reset (۶ جدول، تابع وا
     });
     const res = await route.POST(req);
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; resync: { ok: boolean; errorCode?: string } };
+    const body = (await res.json()) as { ok: boolean; backupFile?: string; resync: { ok: boolean; errorCode?: string } };
     expect(body.ok).toBe(true);
     expect(body.resync.ok).toBe(false); // بدون توکن ARM — پیام شفاف
+    // P6527 — بکاپ خودکار در پاسخ روت برمی‌گردد (پاک تست پس از اثبات)
+    expect(body.backupFile).toBeTruthy();
+    const { existsSync, rmSync } = await import("node:fs");
+    expect(existsSync(body.backupFile!)).toBe(true);
+    rmSync(body.backupFile!, { force: true });
 
     const after = await countAll();
     expect(after).toEqual([0, 0, 0, 0, 0, 0]); // هر ۶ جدول (نه ۳ جدول قدیمی)
