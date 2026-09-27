@@ -42,6 +42,40 @@ const buildId = `${gitSha}-${buildStamp(new Date(builtAtIso))}`;
 const nextConfig: NextConfig = {
   output: "standalone",
   generateBuildId: () => buildId,
+  /* =============================================================================
+   * P6528 — لاغرسازی بستهٔ استقرار (ریشهٔ واقعی «Failed» دامنهٔ publish)
+   * -----------------------------------------------------------------------------
+   * file-tracing خروجی standalone، فهرست‌های غیرعملیاتی پروژه را هم ردیابی و
+   * داخل بسته کپی می‌کرد: backups 188M + db 80M + skills 61M + download 28M +
+   * scripts 10M + tool-results 6M … ⇒ بستهٔ 539MB (تار 184MB) از سقف آپلود
+   * خط لولهٔ انتشار پلتفرم رد می‌شد و دامنهٔ publish صفحهٔ «Failed» می‌داد.
+   * دیتابیس تولید در FC از DATABASE_URL محیط می‌آید (start.sh آن را به
+   * file:/app/db/custom.db ست می‌کند و database-runtime-build.sh جداگانه
+   * بستهٔ db/ را می‌سازد) — کپی‌های ردیابی‌شدهٔ این فهرست‌ها کاملاً زائدند.
+   * env.platform.json عمداً مستثناست (سرور در بوت به آن نیازمند است).
+   * ========================================================================== */
+  outputFileTracingExcludes: {
+    "*": [
+      "./backups/**",
+      "./db/**",
+      "./prisma/db/**",
+      "./download/**",
+      "./skills/**",
+      "./scripts/**",
+      "./tool-results/**",
+      "./docs/**",
+      "./examples/**",
+      "./tests/**",
+      "./coverage*.json",
+      "./baseline*.json",
+      "./filter-*.json",
+      "./trend-validation.json",
+      "./recon-*.jsonl",
+      "./dev.log",
+      "./server.log",
+      "./worklog.md",
+    ],
+  },
   env: {
     // در زمان build داخل باندل پخته می‌شوند (پروژه output:standalone — .git در
     // بستهٔ استقرار FC نیست، پس این تنها راه رساندن sha به runtime است)
