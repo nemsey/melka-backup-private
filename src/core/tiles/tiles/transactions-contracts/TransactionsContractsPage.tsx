@@ -10,16 +10,17 @@
  * دادهٔ قراردادها/مالی در پایگاه ماندگار است (قانون دادهٔ مقدس — حذف نما ≠ حذف داده).
  */
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Server, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Loader2, RefreshCw, Server, CheckCircle2, AlertTriangle, History } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+import { useTileFreshness } from "@/components/app/TileCard";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
-import { faNumber } from "@/lib/format";
+import { faNumber, faDateTime } from "@/lib/format";
 import { TransactionsTab } from "./TransactionsTab";
 
 interface SyncAllResponse {
@@ -37,6 +38,20 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
   const { toast } = useToast();
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<SyncAllResponse | null>(null);
+  // P6530/گام ۳ (بند ۴.۲) — تاریخ و ساعت دقیق آخرین بروزرسانی داده‌های معاملات
+  const freshness = useTileFreshness("transactions-contracts");
+  const [lastSuccessAt, setLastSuccessAt] = useState<string | null>(null);
+  const loadLastUpdate = useCallback(async () => {
+    try {
+      const res = await api<{ dataSource?: { lastSuccessAt?: string | null } }>("/api/crm/transactions?limit=1");
+      setLastSuccessAt(res.dataSource?.lastSuccessAt ?? null);
+    } catch {
+      setLastSuccessAt(null);
+    }
+  }, []);
+  useEffect(() => {
+    void loadLastUpdate();
+  }, [loadLastUpdate]);
 
   const sortBy = String(settings.sortBy ?? "contractDate");
   const showCharts = settings.showCharts !== false;
@@ -46,6 +61,7 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
     setSyncing(true);
     try {
       const res = await api<SyncAllResponse>("/api/sync/all", { method: "POST" });
+      void loadLastUpdate(); // تازه‌سازی تاریخ دقیق پس از بروزرسانی
       if (res.busy) {
         toast({ title: "انتقال در حال اجراست", description: res.message ?? "پس از پایان اجرای جاری دوباره بزنید." });
         return;
@@ -80,49 +96,73 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
       {/* ایجنت هوشمند مولتی‌بینش */}
       <AgentPanel tileId="transactions-contracts" />
 
-      {/* نوار انتقال اطلاعات — نکتهٔ ۳ */}
-      <Card className="border-teal-500/20 bg-gradient-to-l from-teal-600/[0.06] to-transparent">
-        <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-start gap-2.5 min-w-0">
-            <Server className="w-5 h-5 shrink-0 mt-0.5 text-teal-600 dark:text-teal-400" aria-hidden />
-            <div className="min-w-0">
-              <p className="text-sm font-medium leading-relaxed">
-                بروزرسانی از سامانه ملک تبریز — گزارش تطابق معاملات، قراردادها، آگهی‌ها و درخواست‌های ARM در یک اجرا
-              </p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                دریافت با «ازسرگیری» انجام می‌شود: در صورت قطعی، ادامه از همان صفحه‌ای است که متوقف شد — نه از ابتدا.
-              </p>
+      {/* بخش بروزرسانی معاملات (گام ۳ بند ۴) — زنجیرهٔ ARM و PM + تاریخ دقیق + ادامه از نقطهٔ قطع */}
+      <Card className="border-sec-m3-200 bg-sec-m3-50" id="m3-update-section">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <Server className="w-5 h-5 shrink-0 mt-0.5 text-sec-m3-700" aria-hidden />
+              <div className="min-w-0">
+                <p className="text-sm font-medium leading-relaxed">
+                  بروزرسانی معاملات از سامانه‌های ملک تبریز — گزارش تطابق معاملات، قراردادها، آگهی‌ها و درخواست‌های ARM با زنجیرهٔ عین خود سامانه‌های ARM و PM در یک اجرا
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  دریافت با «ازسرگیری» انجام می‌شود: در صورت قطعی، ادامه از همان صفحه‌ای است که متوقف شد — نه از ابتدا.
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <Button className="gap-2" onClick={() => void syncAll()} disabled={syncing}>
+            <Button className="gap-2 shrink-0 bg-sec-m3-500 hover:bg-sec-m3-500/90 text-sec-m3-fg" onClick={() => void syncAll()} disabled={syncing}>
               {syncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
               بروزرسانی از سامانه
             </Button>
-            {lastSync && (
-              <div className="flex flex-wrap items-center justify-end gap-1.5">
-                {lastSync.main?.ok ? (
-                  <Badge variant="outline" className="gap-1 text-[10px] text-teal-700 dark:text-teal-300 border-teal-500/30">
-                    <CheckCircle2 className="w-3 h-3" aria-hidden /> معاملات و قراردادها ✓
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="gap-1 text-[10px] text-amber-700 dark:text-amber-300 border-amber-500/30">
-                    <AlertTriangle className="w-3 h-3" aria-hidden /> معاملات: {lastSync.main?.error?.slice(0, 40) ?? "خطا"}
-                  </Badge>
-                )}
-                {lastSync.requests?.checkpoint && (
-                  <Badge variant="outline" className="gap-1 text-[10px]">
-                    درخواست‌ها: {faNumber(lastSync.requests.checkpoint.lastCompletedPage)}/{faNumber(lastSync.requests.checkpoint.totalPages)} صفحه
-                  </Badge>
-                )}
-                {lastSync.listings?.checkpoint && (
-                  <Badge variant="outline" className="gap-1 text-[10px]">
-                    آگهی‌ها: {faNumber(lastSync.listings.checkpoint.lastCompletedPage)}/{faNumber(lastSync.listings.checkpoint.totalPages)} صفحه
-                  </Badge>
-                )}
-              </div>
-            )}
           </div>
+
+          {/* P6530/گام ۳ (بند ۴.۲) — تاریخ و ساعت دقیق آخرین بروزرسانی */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs" id="m3-last-update">
+            <div className="rounded-lg border bg-card p-2.5">
+              <p className="text-muted-foreground">آخرین بروزرسانی موفق معاملات</p>
+              <p className="font-bold mt-0.5">
+                {lastSuccessAt || freshness?.lastUpdatedAt
+                  ? faDateTime((lastSuccessAt ?? freshness!.lastUpdatedAt) as string)
+                  : "هنوز انجام نشده"}
+              </p>
+            </div>
+            <div className="rounded-lg border bg-card p-2.5">
+              <p className="text-muted-foreground">رکوردهای کش‌شدهٔ معاملات</p>
+              <p className="font-bold mt-0.5 tabular-nums">{freshness ? faNumber(freshness.recordCount) : "—"}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-2.5">
+              <p className="text-muted-foreground">منبع داده</p>
+              <p className="font-bold mt-0.5">{freshness?.sourceLabel ?? "سامانه ملک تبریز (ARM)"}</p>
+            </div>
+          </div>
+
+          {lastSync && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {lastSync.main?.ok ? (
+                <Badge variant="outline" className="gap-1 text-[10px] text-teal-700 dark:text-teal-300 border-teal-500/30">
+                  <CheckCircle2 className="w-3 h-3" aria-hidden /> معاملات و قراردادها ✓
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="gap-1 text-[10px] text-amber-700 dark:text-amber-300 border-amber-500/30">
+                  <AlertTriangle className="w-3 h-3" aria-hidden /> معاملات: {lastSync.main?.error?.slice(0, 40) ?? "خطا"}
+                </Badge>
+              )}
+              {lastSync.requests?.checkpoint && (
+                <Badge variant="outline" className="gap-1 text-[10px]">
+                  درخواست‌ها: {faNumber(lastSync.requests.checkpoint.lastCompletedPage)}/{faNumber(lastSync.requests.checkpoint.totalPages)} صفحه
+                </Badge>
+              )}
+              {lastSync.listings?.checkpoint && (
+                <Badge variant="outline" className="gap-1 text-[10px]">
+                  آگهی‌ها: {faNumber(lastSync.listings.checkpoint.lastCompletedPage)}/{faNumber(lastSync.listings.checkpoint.totalPages)} صفحه
+                </Badge>
+              )}
+              <Badge variant="outline" className="gap-1 text-[10px]">
+                <History className="w-3 h-3" aria-hidden /> ازسرگیری از آخرین صفحهٔ کامل
+              </Badge>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -130,4 +170,4 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
       <TransactionsTab sortBy={sortBy} showCharts={showCharts} />
     </div>
   );
-}
+};

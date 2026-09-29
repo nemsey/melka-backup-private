@@ -6,6 +6,9 @@
  * فیلترها (عین خود سامانه + توسعه داشبورد):
  *   بازه تاریخ (جلالی در UI → ISO)، کد ملک، کد درخواست، شماره هولوگرام،
  *   نوع تطبیق (رویداد / آگهی پیشنهادی / هر دو)
+ * P6530/گام ۳ (بند ۲ — فیلتر تمام ستون‌ها):
+ *   فروشنده (نام/موبایل) · خریدار (نام/موبایل) · قیمت قرارداد از/تا ·
+ *   فایل قرارداد (دارد/ندارد) — روی لایهٔ غنی‌سازی
  *
  * P6.5-11 (بند پ-۵) — ستون‌های جدید فهرست معاملات کاشی ادغامی
  * «معاملات و قراردادهای ملک تبریز»:
@@ -160,7 +163,14 @@ export async function GET(request: NextRequest) {
     if (contractFilter && "error" in contractFilter) {
       return errorResponse(new MelkApiError("UNPROCESSABLE", contractFilter.error, 400, false));
     }
-    const hasEnrichFilters = Boolean(expertName || personnelCode || contractFilter);
+    // P6530/گام ۳ (بند ۲) — فیلترهای تمام ستون‌ها روی لایهٔ غنی‌سازی
+    const sellerName = normalizeFilterInput(sp.get("sellerName")) || undefined;
+    const buyerName = normalizeFilterInput(sp.get("buyerName")) || undefined;
+    const priceFrom = (() => { const v = sp.get("priceFrom"); if (!v) return undefined; const n = Number(normalizeFilterInput(v)); return Number.isFinite(n) ? n : undefined; })();
+    const priceTo = (() => { const v = sp.get("priceTo"); if (!v) return undefined; const n = Number(normalizeFilterInput(v)); return Number.isFinite(n) ? n : undefined; })();
+    const hasContractParam = sp.get("hasContract");
+    const hasContract = hasContractParam === "yes" || hasContractParam === "no" ? hasContractParam : undefined;
+    const hasEnrichFilters = Boolean(expertName || personnelCode || contractFilter || sellerName || buyerName || priceFrom !== undefined || priceTo !== undefined || hasContract);
 
     // نگاشت کد پرسنلی → نام کارشناس: PM (نام مستقیم) + رکورد کارشناسان (personnelCode) — رفع F3-دامنه
     let codeNames: Set<string> | null = null;
@@ -198,6 +208,22 @@ export async function GET(request: NextRequest) {
           if (codeNames && codeNames.size > 0 && ![...codeNames].some((n) => hay.includes(normalizeFilterInput(n)))) return false;
           if (codeNames && codeNames.size === 0) return false; // کد در هیچ منبعی شناخته نشد
         }
+        // P6530/گام ۳ — فروشنده: نام یا موبایل (ستون ۴)
+        if (sellerName) {
+          const hay = normalizeFilterInput(`${r.sellerName ?? ""} ${r.ownerName ?? ""} ${r.sellerMobile ?? ""}`);
+          if (!hay.includes(sellerName)) return false;
+        }
+        // P6530/گام ۳ — خریدار: نام یا موبایل (ستون ۶)
+        if (buyerName) {
+          const hay = normalizeFilterInput(`${r.buyerName ?? ""} ${r.requesterName ?? ""} ${r.buyerMobile ?? ""}`);
+          if (!hay.includes(buyerName)) return false;
+        }
+        // P6530/گام ۳ — قیمت قرارداد از/تا (ستون ۸ — تومان)
+        if (priceFrom !== undefined && (r.contractAmount === null || r.contractAmount < priceFrom)) return false;
+        if (priceTo !== undefined && (r.contractAmount === null || r.contractAmount > priceTo)) return false;
+        // P6530/گام ۳ — فایل قرارداد دارد/ندارد (ستون ۱۱)
+        if (hasContract === "yes" && !r.contractMatchBy && !r.contractText) return false;
+        if (hasContract === "no" && (r.contractMatchBy || r.contractText)) return false;
         return true;
       });
     }
@@ -221,6 +247,12 @@ export async function GET(request: NextRequest) {
         lastSyncedAt: syncState.lastSyncedAt,
         liveError: seed.liveError ?? syncState.lastError,
         syncAttempts: syncState.attempts,
+      },
+      // P6530/گام ۳ (بند ۴.۲) — تاریخ و ساعت دقیق آخرین بروزرسانی موفق + نقطهٔ ادامه
+      lastUpdate: {
+        lastSuccessAt: syncState.lastSuccessAt,
+        lastSyncedAt: syncState.lastSyncedAt,
+        attempts: syncState.attempts,
       },
     }, request.headers.get("accept-encoding"));
   } catch (err) {

@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -129,6 +130,12 @@ const EMPTY_FILTERS = {
   contractHolo: "",
   expertName: "",
   personnelCode: "",
+  // P6530/گام ۳ (بند ۲) — فیلتر تمام ستون‌ها: فروشنده/خریدار/قیمت/فایل قرارداد
+  sellerName: "",
+  buyerName: "",
+  priceFrom: "",
+  priceTo: "",
+  hasContract: "all",
   contractTypes: [] as string[],
 };
 
@@ -162,6 +169,12 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
     if (applied.contractHolo) params.set("contractHolo", applied.contractHolo);
     if (applied.expertName) params.set("expertName", applied.expertName);
     if (applied.personnelCode) params.set("personnelCode", applied.personnelCode);
+    // P6530/گام ۳ — فیلترهای تمام ستون‌ها
+    if (applied.sellerName) params.set("sellerName", applied.sellerName);
+    if (applied.buyerName) params.set("buyerName", applied.buyerName);
+    if (applied.priceFrom) params.set("priceFrom", applied.priceFrom);
+    if (applied.priceTo) params.set("priceTo", applied.priceTo);
+    if (applied.hasContract && applied.hasContract !== "all") params.set("hasContract", applied.hasContract);
     // BLOCK D — نوع قرارداد چندگانه: ?contractType=…&contractType=… (تهی = همه)
     for (const t of applied.contractTypes) params.append("contractType", t);
     // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت (سقف گارد ایمنی سرور)
@@ -461,6 +474,39 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
               <Label htmlFor="f-personnelCode">کد پرسنلی کارشناس</Label>
               <Input id="f-personnelCode" placeholder="نمونه: 410031320" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} />
             </div>
+            {/* P6530/گام ۳ — فروشنده (ستون ۴): نام یا موبایل */}
+            <div className="space-y-1.5">
+              <Label htmlFor="f-sellerName">فروشنده (نام یا موبایل)</Label>
+              <Input id="f-sellerName" placeholder="نمونه: علی محمدی یا ۰۹۱۴…" value={filters.sellerName} onChange={(e) => setF("sellerName", e.target.value)} />
+            </div>
+            {/* P6530/گام ۳ — خریدار (ستون ۶): نام یا موبایل */}
+            <div className="space-y-1.5">
+              <Label htmlFor="f-buyerName">خریدار (نام یا موبایل)</Label>
+              <Input id="f-buyerName" placeholder="نمونه: رضا کریمی یا ۰۹۱۴…" value={filters.buyerName} onChange={(e) => setF("buyerName", e.target.value)} />
+            </div>
+            {/* P6530/گام ۳ — قیمت قرارداد (ستون ۸): از/تا تومان */}
+            <div className="space-y-1.5">
+              <Label htmlFor="f-priceFrom">قیمت قرارداد از (تومان)</Label>
+              <Input id="f-priceFrom" inputMode="numeric" placeholder="نمونه: ۱٬۰۰۰٬۰۰۰٬۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="f-priceTo">قیمت قرارداد تا (تومان)</Label>
+              <Input id="f-priceTo" inputMode="numeric" placeholder="نمونه: ۹٬۰۰۰٬۰۰۰٬۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", e.target.value)} />
+            </div>
+            {/* P6530/گام ۳ — فایل قرارداد (ستون ۱۱): دارد/ندارد */}
+            <div className="space-y-1.5">
+              <Label htmlFor="f-hasContract">فایل قرارداد</Label>
+              <Select value={filters.hasContract} onValueChange={(v) => setF("hasContract", v)}>
+                <SelectTrigger id="f-hasContract" aria-label="فیلتر فایل قرارداد">
+                  <SelectValue placeholder="همه" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">همه</SelectItem>
+                  <SelectItem value="yes">دارد</SelectItem>
+                  <SelectItem value="no">ندارد</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {/* BLOCK D — نوع قرارداد: دقیقاً ۵ گزینهٔ چندانتخابی (۴ نوع + بدون قرارداد) */}
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
               <Label id="m3-contract-kind-label">نوع قرارداد (چندانتخابی)</Label>
@@ -537,30 +583,30 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                 <TableHeader>
                   <TableRow>
                     {/* ترتیب الزامی E.۱ — ۱۱ ستون */}
-                    <TableHead className="w-12">۱. ردیف</TableHead>
-                    <TableHead>۲. تاریخ معامله</TableHead>
+                    <TableHead className="w-12">ردیف</TableHead>
+                    <TableHead>تاریخ معامله</TableHead>
                     {/* ۳ — کد ملک: فقط کد (E.۲ — دستور ۱ مالک) */}
                     <TableHead className="min-w-24">
-                      <span className="inline-flex items-center gap-1"><Home className="w-3.5 h-3.5" aria-hidden /> ۳. کد ملک</span>
+                      <span className="inline-flex items-center gap-1"><Home className="w-3.5 h-3.5" aria-hidden /> کد ملک</span>
                     </TableHead>
                     {/* ۴ — فروشنده: نام + موبایل زیر نام (E.۴) */}
-                    <TableHead className="min-w-40">۴. فروشنده</TableHead>
+                    <TableHead className="min-w-40">فروشنده</TableHead>
                     {/* ۵ — کد درخواست: فقط کد (E.۳ — دستور ۲ مالک) */}
                     <TableHead className="min-w-24">
-                      <span className="inline-flex items-center gap-1"><Inbox className="w-3.5 h-3.5" aria-hidden /> ۵. کد درخواست</span>
+                      <span className="inline-flex items-center gap-1"><Inbox className="w-3.5 h-3.5" aria-hidden /> کد درخواست</span>
                     </TableHead>
                     {/* ۶ — خریدار: نام + موبایل زیر نام (E.۵) */}
-                    <TableHead className="min-w-40">۶. خریدار</TableHead>
+                    <TableHead className="min-w-40">خریدار</TableHead>
                     {/* ۷ — نوع قرارداد */}
-                    <TableHead>۷. نوع قرارداد</TableHead>
+                    <TableHead>نوع قرارداد</TableHead>
                     {/* ۸ — مبلغ قرارداد (با کاما) */}
-                    <TableHead className="min-w-44">۸. مبلغ قرارداد</TableHead>
+                    <TableHead className="min-w-44">قیمت قرارداد</TableHead>
                     {/* ۹ — تجمیع حق‌السهم مشاوران (نام + درصد) */}
-                    <TableHead className="min-w-48">۹. تجمیع حق‌السهم مشاوران</TableHead>
+                    <TableHead className="min-w-48">تجمیع حق‌السهم مشاوران</TableHead>
                     {/* ۱۰ — شماره هولوگرام */}
-                    <TableHead>۱۰. شماره هولوگرام</TableHead>
+                    <TableHead>شماره هولوگرام</TableHead>
                     {/* ۱۱ — فایل قرارداد */}
-                    <TableHead className="min-w-32">۱۱. فایل قرارداد</TableHead>
+                    <TableHead className="min-w-32">فایل قرارداد</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
