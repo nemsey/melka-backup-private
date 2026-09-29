@@ -10,18 +10,17 @@
  *     از مسیر API در دسترس بماند (نکتهٔ بسیار مهم ۲ — داده هرگز حذف نمی‌شود).
  *   · ایجنت بازدیدها از رجیستری خارج شد (کاشی حذف شد — بند ج)؛ بینش‌هایش به
  *     ایجنت ادغامی (VISIT_*) و ایجنت کارشناسان و ایجنت آگهی‌های ARM مهاجرت کرد.
+ * P6530/گام ۵: ایجنت‌های M5 (شاخص قیمت)، M6 (عرضه و تقاضا) و M7 (استخراج)
+ *   به‌طور کامل حذف شدند — حافظه/بازخورد/سیاست آن‌ها در DB ماندگار است (دادهٔ مقدس).
  */
 
 import { BaseLearningAgent } from "./base-agent";
 import { transactionAgent } from "./transaction-agent";
 import { expertAgent } from "./expert-agent";
-import { extractionAgent } from "./extraction-agent";
-import { supplyDemandAgent } from "./supply-demand-agent";
 import { divarAgent } from "./divar-agent";
 import { contractAgent } from "./contract-agent";
 import { customerClubAgent } from "./customer-club-agent";
 import { financeAgent } from "./finance-agent";
-import { priceIndexAgent } from "./price-index-agent";
 import { listingAgent } from "./listing-agent";
 import { requestAgent } from "./request-agent";
 import { armListingAgent } from "./arm-listing-agent";
@@ -33,11 +32,8 @@ const agents = new Map<string, Agent>([
   // P6.5-11 — ایجنت کاشی ادغامی «معاملات و قراردادهای ملک تبریز» (بند پ)
   [transactionsContractsAgent.tileId, transactionsContractsAgent],
   [expertAgent.tileId, expertAgent],
-  [extractionAgent.tileId, extractionAgent],
-  [supplyDemandAgent.tileId, supplyDemandAgent],
   [divarAgent.tileId, divarAgent],
   [customerClubAgent.tileId, customerClubAgent],
-  [priceIndexAgent.tileId, priceIndexAgent],
   [listingAgent.tileId, listingAgent],
   [requestAgent.tileId, requestAgent],
   [armListingAgent.tileId, armListingAgent],

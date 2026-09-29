@@ -301,81 +301,6 @@ describe("تحلیل جامعه مشتریان", () => {
 // آمار شاخص قیمت — میانه، چارک، جهش، انحراف
 // ==========================================================================
 
-describe("آمار شاخص قیمت روز مناطق", () => {
-  const samples = [
-    { token: "t1", title: "آگهی ۱", areaName: "ولیعصر", category: "apartment-sell", pricePerMeter: 20_000_000, totalScore: 70, publisherType: "personal" },
-    { token: "t2", title: "آگهی ۲", areaName: "ولیعصر", category: "apartment-sell", pricePerMeter: 30_000_000, totalScore: 60, publisherType: "personal" },
-    { token: "t3", title: "آگهی ۳", areaName: "ولیعصر", category: "apartment-sell", pricePerMeter: 25_000_000, totalScore: 65, publisherType: "personal" },
-    { token: "t4", title: "آگهی ۴", areaName: "آبرسان", category: "apartment-sell", pricePerMeter: 15_000_000, totalScore: 80, publisherType: "personal" },
-    { token: "t5", title: "آگهی ۵", areaName: "آبرسان", category: "apartment-sell", pricePerMeter: 17_000_000, totalScore: 75, publisherType: "personal" },
-    { token: "t6", title: "آگهی ۶", areaName: "آبرسان", category: "apartment-sell", pricePerMeter: 60_000_000, totalScore: 50, publisherType: "agent" },
-  ];
-
-  test("آمار منطقه: میانه/چارک/کمینه/بیشینه + پرچم اعتبار تک‌نمونه", async () => {
-    const { computeAreaStats } = await import("@/lib/melk-api/price-index");
-    const stats = computeAreaStats(samples);
-    expect(stats.length).toBe(2); // ولیعصر و آبرسان
-    const valiasr = stats.find((s) => s.areaName === "ولیعصر")!;
-    expect(valiasr.medianPerMeter).toBe(25_000_000);
-    expect(valiasr.sampleCount).toBe(3);
-    expect(valiasr.minPerMeter).toBe(20_000_000);
-    expect(valiasr.maxPerMeter).toBe(30_000_000);
-    expect(valiasr.reliable).toBe(true);
-    // تک‌نمونه هم برگردانده می‌شود اما «غیرقابل‌اتکا» است
-    const single = computeAreaStats([
-      { token: "x", title: "تنها", areaName: "تپلی باغ", category: "apartment-sell", pricePerMeter: 10_000_000, totalScore: 50, publisherType: null },
-    ]);
-    expect(single.length).toBe(1);
-    expect(single[0].reliable).toBe(false);
-    expect(single[0].medianPerMeter).toBe(10_000_000);
-  });
-
-  test("هشدار جهش: تغییر ≥ ۱۵٪ بین دو ثبت متوالی", async () => {
-    const { detectJump } = await import("@/lib/melk-api/price-index");
-    const history = [
-      { areaName: "ولیعصر", medianPerMeter: 25_000_000, recordedAt: "2025-08-01T00:00:00Z" },
-      { areaName: "ولیعصر", medianPerMeter: 30_000_000, recordedAt: "2025-09-01T00:00:00Z" }, // +۲۰٪ → جهش
-      { areaName: "آبرسان", medianPerMeter: 16_000_000, recordedAt: "2025-08-01T00:00:00Z" },
-      { areaName: "آبرسان", medianPerMeter: 16_500_000, recordedAt: "2025-09-01T00:00:00Z" }, // +۳٪ → نه
-    ];
-    const jumps = detectJump(history, 15);
-    expect(jumps.length).toBe(1);
-    expect(jumps[0].areaName).toBe("ولیعصر");
-    expect(jumps[0].changePercent).toBe(20);
-  });
-
-  test("انحراف از شاخص: خارج از چارک + ≥ ۳۰٪ از میانه", async () => {
-    const { computeAreaStats, findDeviatingAds } = await import("@/lib/melk-api/price-index");
-    const stats = computeAreaStats(samples);
-    const devs = findDeviatingAds(samples, stats, 30);
-    // آگهی t6 (۶۰م در آبرسان با میانه ۱۷م) → انحراف ≈ ۲۵۳٪
-    expect(devs.length).toBe(1);
-    expect(devs[0].token).toBe("t6");
-    expect(devs[0].deviationPercent).toBeGreaterThan(200);
-  });
-
-  test("شاخص کل: میانگین وزنی با تعداد نمونه", async () => {
-    const { computeAreaStats, overallIndex } = await import("@/lib/melk-api/price-index");
-    const stats = computeAreaStats(samples);
-    const overall = overallIndex(stats)!;
-    expect(overall.coveredAreas).toBe(2);
-    expect(overall.totalSamples).toBe(6);
-    // میانگین وزنی: (۲۵م×۳ + ۱۷٫۳۳م×۳)/۶ ≈ ۲۱٫۱۶م — تقریباً
-    expect(overall.medianPerMeter).toBeGreaterThan(18_000_000);
-    expect(overall.medianPerMeter).toBeLessThan(25_000_000);
-  });
-
-  test("درصد تغییر نسبت به ثبت قبلی الصاق می‌شود", async () => {
-    const { attachChangePercent } = await import("@/lib/melk-api/price-index");
-    const areaStats = [{ areaName: "ولیعصر", category: "apartment-sell", medianPerMeter: 30_000_000, p25PerMeter: 0, p75PerMeter: 0, minPerMeter: 0, maxPerMeter: 0, sampleCount: 3, changePercent: null, reliable: true }];
-    const history = [
-      { areaName: "ولیعصر", category: "apartment-sell", medianPerMeter: 25_000_000, recordedAt: "2025-08-01T00:00:00Z" },
-    ];
-    const out = attachChangePercent(areaStats, history);
-    expect(out[0].changePercent).toBe(20);
-  });
-});
-
 // ==========================================================================
 // رجیستری: کاشی‌ها و ایجنت‌های جدید ثبت شده‌اند
 // ==========================================================================
@@ -431,8 +356,10 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     expect(clubAgent).not.toBeNull();
     const financeAgent = getAgent("finance-commission");
     expect(financeAgent).not.toBeNull();
-    const indexAgent = getAgent("price-index");
-    expect(indexAgent).not.toBeNull();
+    // P6530/گام ۵ — ایجنت شاخص قیمت (M5) حذف شد: null
+    expect(getAgent("price-index")).toBeNull();
+    expect(getAgent("supply-demand")).toBeNull();
+    expect(getAgent("extraction")).toBeNull();
   });
 
   test("برچسب فارسی همه دامنه‌های بینش جدید تعریف شده است", async () => {

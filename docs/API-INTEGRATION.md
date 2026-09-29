@@ -175,11 +175,11 @@ Authorization: Bearer <access-token>
 - `trade-overviews` (+ `add-realtor`, `authenticate-realtor`, `confirm`, `contribution`) — چرخه قرارداد: پیش‌نویس → در انتظار افزودن مشاور → در انتظار تایید مشاوران → تایید حق السهم → در انتظار تایید مالی → تایید شده مالی → در انتظار تنظیم سند؛ با حق‌السهم/درصد مشاوران قرارداد، تاریخ سند/قرارداد/تحویل و خریداران.
 - `realtor-reports/suggested-usage` (+ `-total`, `/request`) — گزارش تعامل مشاور با سیستم (آگهی پیشنهادی سیستم در برابر رویداد مشاور).
 - `realtor-reports/property-statistics` / `request-statistics` — ماتریس وضعیت×مشاور (statusData) با فیلترهای عکس/فیلم/بیعانه/کارگزاری، اینستاگرام/دیوار (realtorAddToInsta/realtorAddToDivar)، tradeType/propertyType/buildingType و جستجوی آدرس regex.
-- `configs/current-prices` — شاخص قیمت روز (جزئیات مشخصات و مناطق).
+- `configs/current-prices` — شاخص قیمت روز (جزئیات مشخصات و مناطق). *(P6530/گام ۵: کاشی M5 حذف شد — مسیر منبع صرفاً سند تاریخی)*
 - `visits` — بازدیدها (کد آگهی، نام و شماره درخواست‌دهنده، زمان درخواست/تأیید، وضعیت).
 - `api/apu/statistics/total` + `businesses/info/own` — محاسبه کمیسیون (تعرفه خرید و فروش، اجاره، شماره هولوگرام، صدور قبض).
 - `price-evaluations` — لیست دلایل فروش، قیمت فایل، مطلوبیت فایل.
-- SupplyDemandRanges — رنج عرضه و تقاضا.
+- SupplyDemandRanges — رنج عرضه و تقاضا. *(P6530/گام ۵: کاشی M6 حذف شد — مسیر منبع صرفاً سند تاریخی)*
 
 ## ۸) APIهای داشبورد (BFF)
 

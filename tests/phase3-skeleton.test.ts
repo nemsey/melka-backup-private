@@ -425,6 +425,6 @@ describe("P3-02 — عدم تداخل با قراردادهای موجود", () 
   test("نوع‌های پایه ایجنت (InsightCard و…) از مسیر قبلی هم در دسترس‌اند", async () => {
     const mod = await import("@/core/agent");
     expect(typeof mod.BaseLearningAgent).toBe("function");
-    expect(mod.listAgents().length).toBeGreaterThanOrEqual(12);
+    expect(mod.listAgents().length).toBeGreaterThanOrEqual(9); // P6530/گام ۵: سه ایجنت M5/M6/M7 حذف شدند
   });
 });

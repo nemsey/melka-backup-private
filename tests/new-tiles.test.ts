@@ -51,28 +51,6 @@ describe("نگاشت ردیف بازدید (mapArmVisitRow)", () => {
   });
 });
 
-describe("نگاشت ردیف عرضه و تقاضا (mapArmSupplyDemandRow)", () => {
-  test("ستون‌های عین گزارش خود سامانه", async () => {
-    const { mapArmSupplyDemandRow } = await import("@/lib/melk-api/adapters");
-    const r = mapArmSupplyDemandRow({ _id: "s1", range: "۰ تا ۵۰ میلیون", propertyCount: 120, requestPercent: 78, status: "تقاضای بالا" }, 0);
-    expect(r).not.toBeNull();
-    expect(r!.rangeTitle).toBe("۰ تا ۵۰ میلیون");
-    expect(r!.propertyCount).toBe(120);
-    expect(r!.requestPercent).toBe(78);
-    expect(r!.status).toBe("تقاضای بالا");
-  });
-
-  test("درصد اعشاری ۰ تا ۱ → نرمال به درصد", async () => {
-    const { mapArmSupplyDemandRow } = await import("@/lib/melk-api/adapters");
-    const r = mapArmSupplyDemandRow({ range: "بازه ۱", requestRatio: 0.45, propertyCount: 10 }, 0);
-    expect(r!.requestPercent).toBe(45);
-  });
-
-  test("ردیف بدون عنوان بازه رد می‌شود", async () => {
-    const { mapArmSupplyDemandRow } = await import("@/lib/melk-api/adapters");
-    expect(mapArmSupplyDemandRow({ propertyCount: 5 }, 0)).toBeNull();
-  });
-});
 
 // ==========================================================================
 // استخراج اطلاعات تماس (ساختار user سامانه ARM)
@@ -242,23 +220,22 @@ describe("تحلیل استعلام‌ها (lookupStats)", () => {
 // ==========================================================================
 
 describe("کاشی‌ها و ایجنت‌های جدید", () => {
-  test("بازسازی فازهای ۷-۸-۹ — استخراج/عرضه‌وتقاضا حذف نما شده‌اند (ماژول ماندگار، رجیستری کاشی پاک)", async () => {
+  test("P6530/گام ۵ — استخراج/عرضه‌وتقاضا/شاخص‌قیمت به‌طور کامل حذف شدند (ماژول + رجیستری؛ داده DB ماندگار)", async () => {
     await import("@/core/tiles/bootstrap");
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
 
-    // دستور مالک ۱۴۰۵/۰۷/۷ — داشبورد مدیریتی = دقیقاً M1 تا M4 (کاشی‌ها حذف نما)
-    for (const id of ["extraction", "supply-demand"]) {
+    // داشبورد مدیریتی = دقیقاً M1 تا M4
+    for (const id of ["extraction", "supply-demand", "price-index"]) {
       expect(tileRegistry.get(id)).toBeUndefined();
     }
-    // ماژول‌ها و داده ماندگارند (حذف نما — قانون دادهٔ مقدس)
-    expect(existsSync(join(import.meta.dir, "..", "src/core/tiles/tiles/extraction/index.ts"))).toBe(true);
-    expect(existsSync(join(import.meta.dir, "..", "src/core/tiles/tiles/supply-demand/index.ts"))).toBe(true);
+    // P6530/گام ۵ — حذف کامل: ماژول‌ها هم فیزیکی حذف شدند (داده DB مقدس می‌ماند)
+    expect(existsSync(join(import.meta.dir, "..", "src/core/tiles/tiles/extraction/index.ts"))).toBe(false);
+    expect(existsSync(join(import.meta.dir, "..", "src/core/tiles/tiles/supply-demand/index.ts"))).toBe(false);
+    expect(existsSync(join(import.meta.dir, "..", "src/core/tiles/tiles/price-index/index.ts"))).toBe(false);
   });
 
   test("ایجنت استخراج اطلاعات دامنه‌های LOOKUP/COVERAGE/QUALITY/SECURITY دارد (ماژول ماندگار)", async () => {
-    const { extractionAgent } = await import("@/core/agent/extraction-agent");
-    expect(extractionAgent.insightDomains).toContain("LOOKUP");
-    expect(extractionAgent.insightDomains).toContain("SECURITY");
+    // P6530/گام ۵ — ایجنت استخراج حذف شد
   });
 });
 

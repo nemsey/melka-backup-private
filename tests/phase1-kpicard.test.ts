@@ -18,8 +18,6 @@ const TILES = "/home/z/my-project/src/core/tiles/tiles";
 const CRM_PAGES = [
   "transactions-contracts/TransactionsTab.tsx",
   "experts/ExpertsPage.tsx",
-  "supply-demand/SupplyDemandPage.tsx",
-  "price-index/PriceIndexPage.tsx",
 ];
 
 describe("P1-01a / KpiCard — قرارداد رندر (عین مارک‌آپ قبلی)", () => {

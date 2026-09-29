@@ -96,21 +96,6 @@ export async function computeTilesFreshness(): Promise<Record<string, FreshnessE
       recordCount: club.count,
       sourceLabel: "معاملات + قراردادها + آگهی‌ها و درخواست‌های ARM",
     },
-    "supply-demand": {
-      lastUpdatedAt: isoOrNull(sd.at),
-      recordCount: sd.count,
-      sourceLabel: "گزارش عرضه و تقاضا",
-    },
-    "price-index": {
-      lastUpdatedAt: isoOrNull(price.at),
-      recordCount: price.count,
-      sourceLabel: "پیکربندی و تاریخچهٔ شاخص قیمت",
-    },
-    extraction: {
-      lastUpdatedAt: isoOrNull(look.at),
-      recordCount: look.count,
-      sourceLabel: "تاریخچهٔ استخراج اطلاعات",
-    },
     "file-finder": {
       lastUpdatedAt: isoOrNull(divarAd.at),
       recordCount: divarAd.count,

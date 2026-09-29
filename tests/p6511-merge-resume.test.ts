@@ -461,8 +461,8 @@ describe("P6.5-11 نکتهٔ ۳ — زیرساخت انتقال اطلاعات �
     const { computeTilesFreshness } = await import("@/lib/melk-api/data-freshness");
     const map = await computeTilesFreshness();
     for (const tileId of [
-      "transactions-contracts", "experts", "customer-club", "supply-demand", "price-index",
-      "extraction", "file-finder", "listing", "request", "arm-listing", "arm-request", "management-dashboard",
+      "transactions-contracts", "experts", "customer-club",
+      "file-finder", "listing", "request", "arm-listing", "arm-request", "management-dashboard",
     ]) {
       expect(map[tileId]).toBeDefined();
       expect(map[tileId].sourceLabel.length).toBeGreaterThan(3);
@@ -470,5 +470,9 @@ describe("P6.5-11 نکتهٔ ۳ — زیرساخت انتقال اطلاعات �
     // کاشی‌های حذف‌شده در نقشه نیستند
     expect(map["visits"]).toBeUndefined();
     expect(map["finance-commission"]).toBeUndefined();
+    // P6530/گام ۵ — M5/M6/M7 کاملاً حذف شدند
+    expect(map["supply-demand"]).toBeUndefined();
+    expect(map["price-index"]).toBeUndefined();
+    expect(map["extraction"]).toBeUndefined();
   });
 });

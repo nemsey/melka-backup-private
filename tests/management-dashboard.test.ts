@@ -42,18 +42,18 @@ describe("معماری داشبورد مدیریتی", () => {
     expect(children).toEqual(CHILDREN_EXPECTED);
   });
 
-  test("بازسازی فازهای ۷-۸-۹ — M5/M6/M7 حذف نما شده‌اند: ماژول‌ها ماندگار، رجیستری پاک", async () => {
+  test("P6530/گام ۵ — M5/M6/M7 به‌طور کامل حذف شده‌اند (ماژول‌ها + رجیستری؛ داده DB ماندگار)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     for (const removed of ["price-index", "supply-demand", "extraction"]) {
       expect(tileRegistry.get(removed)).toBeUndefined();
     }
-    // ماژول‌ها و داده ماندگارند (حذف نما — قانون دادهٔ مقدس)
+    // P6530/گام ۵ — حذف کامل: ماژول‌ها هم فیزیکی حذف شدند (داده DB مقدس می‌ماند)
     for (const mod of [
       "src/core/tiles/tiles/price-index/index.ts",
       "src/core/tiles/tiles/supply-demand/index.ts",
       "src/core/tiles/tiles/extraction/index.ts",
     ]) {
-      expect(existsSync(join(import.meta.dir, "..", mod))).toBe(true);
+      expect(existsSync(join(import.meta.dir, "..", mod))).toBe(false);
     }
   });
 

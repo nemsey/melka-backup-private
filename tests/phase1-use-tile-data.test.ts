@@ -247,8 +247,6 @@ describe("P1-01d / useTileData — ادعاهای ساختاری (grep)", () => 
     const pages = [
       "transactions-contracts/TransactionsTab.tsx",
       "experts/ExpertsPage.tsx",
-      "supply-demand/SupplyDemandPage.tsx",
-              "price-index/PriceIndexPage.tsx",
         ];
     for (const p of pages) {
       expect(readFileSync(join(TILES, p), "utf8")).toContain("useTileData(");
@@ -262,8 +260,6 @@ describe("P1-01d / useTileData — ادعاهای ساختاری (grep)", () => 
     const pages = [
       "transactions-contracts/TransactionsTab.tsx",
       "experts/ExpertsPage.tsx",
-      "supply-demand/SupplyDemandPage.tsx",
-              "price-index/PriceIndexPage.tsx",
         ];
     for (const p of pages) {
       const c = readFileSync(join(TILES, p), "utf8");

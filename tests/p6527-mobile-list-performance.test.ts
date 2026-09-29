@@ -160,9 +160,6 @@ describe("P6527 §۳ — اتخاذ رندر پنجره‌ای در همهٔ ف�
     ["arm-request/ArmRequestsPage.tsx", "M2 — درخواست (۷٬۳۱۴ ردیف)", 1],
     ["transactions-contracts/TransactionsTab.tsx", "M3 — معاملات (۷۳۹ ردیف)", 1],
     ["experts/ExpertsPage.tsx", "M4 — کارشناسان (۱ جدول — تعاملات حذف گام ۴ P6530)", 1],
-    ["price-index/PriceIndexPage.tsx", "M5 — شاخص قیمت", 1],
-    ["supply-demand/SupplyDemandPage.tsx", "M6 — عرضه و تقاضا", 1],
-    ["extraction/ExtractionPage.tsx", "M7 — استخراج اطلاعات", 1],
     ["customer-club/CustomerClubPage.tsx", "باشگاه مشتریان (۲ جدول)", 2],
   ];
 

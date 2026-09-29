@@ -231,17 +231,12 @@ describe("P6.5-09 بند ۴ — لیست‌های بدون صفحه‌بندی (
     expect(lstPage).not.toContain("تعداد فایل در هر صفحه");
   });
 
-  test("E4) تعاملات و عرضه‌تقاضا و شاخص قیمت: بدون سقف نمایشی", () => {
+  test("E4) کارشناسان: بدون سقف نمایشی (P6530/گام ۵: عرضه‌تقاضا و شاخص قیمت حذف شدند)", () => {
     expect(read("src/core/tiles/tiles/experts/ExpertsPage.tsx")).not.toContain("interactions.slice(0, 100)");
-    expect(read("src/core/tiles/tiles/supply-demand/SupplyDemandPage.tsx")).not.toContain("rows.slice(0, 12)");
-    const pi = read("src/core/tiles/tiles/price-index/PriceIndexPage.tsx");
-    expect(pi).not.toContain("areaStats.slice(0, 18)");
-    expect(pi).not.toContain("idx.areas.slice(0, 10)");
   });
 
   test("E5) تاریخچه استخراج و دیوار: سقف سرور ۱۰۰۰ و درخواست کامل", () => {
-    expect(read("src/core/tiles/tiles/extraction/ExtractionPage.tsx")).toContain("limit=1000");
-    expect(read("src/app/api/crm/lookup/route.ts")).toContain(", 1000)");
+    // P6530/گام ۵ — کاشی استخراج (M7) و روت lookup حذف شدند
     expect(read("src/core/tiles/tiles/file-finder/FileFinderPage.tsx")).toContain("limit=1000");
     expect(read("src/app/api/divar/ads/route.ts")).toContain(", 1000)");
     expect(read("src/core/tiles/tiles/file-finder/FileFinderPage.tsx")).not.toContain("scanLogs.slice(0, 5)");

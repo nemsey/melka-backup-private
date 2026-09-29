@@ -11,4 +11,3 @@ export * from "./adapters";
 export * from "./sync";
 export * from "./commission";
 export * from "./customer-club";
-export * from "./price-index";

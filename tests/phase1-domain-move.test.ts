@@ -162,8 +162,6 @@ describe("P1-02 / ادعاهای ساختاری — پنج صفحه فقط فر�
       ["transactions-contracts/TransactionsTab.tsx", "txTypeMonthlySeries"],
       // P6530/گام ۴ — cooperationDegree با حذف تعاملات رفت؛ آمار خانواده‌ای M4 از expertFamilyStats
       ["experts/ExpertsPage.tsx", "expertFamilyStats"],
-      ["supply-demand/SupplyDemandPage.tsx", "demandLevel"],
-      ["price-index/PriceIndexPage.tsx", "areaTrendMatrix"],
     ];
     for (const [page, fn] of checks) {
       const c = readFileSync(join(TILES, page), "utf8");
@@ -172,21 +170,9 @@ describe("P1-02 / ادعاهای ساختاری — پنج صفحه فقط فر�
     }
   });
 
-  test("صفر آستانه خام عددی در tsx عرضه/تقاضا و کارشناسان (آستانه‌ها به analyzers رفتند)", () => {
-    const sd = readFileSync(join(TILES, "supply-demand/SupplyDemandPage.tsx"), "utf8");
-    expect(sd).not.toMatch(/percent >= 60|percent >= 40/);
-    const ex = readFileSync(join(TILES, "experts/ExpertsPage.tsx"), "utf8");
-    expect(ex).not.toMatch(/total >= 20|total >= 5/);
-  });
-
   test("حلقه گروه‌بندی ماه جلالی در tsxها حذف شده (منطق به analyzers رفت)", () => {
     const tx = readFileSync(join(TILES, "transactions-contracts/TransactionsTab.tsx"), "utf8");
     expect(tx).not.toContain("new Map<string, number>()");
   });
 
-  test("منطق گروه‌بندی روند منطقه‌ای از PriceIndexPage حذف شده", () => {
-    const pi = readFileSync(join(TILES, "price-index/PriceIndexPage.tsx"), "utf8");
-    expect(pi).not.toContain("byArea");
-    expect(pi).not.toContain("topAreas");
-  });
 });

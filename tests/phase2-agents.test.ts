@@ -8,9 +8,7 @@
 import { describe, expect, test } from "bun:test";
 import { TransactionAgent } from "../src/core/agent/transaction-agent";
 import { ContractAgent } from "../src/core/agent/contract-agent";
-import { SupplyDemandAgent } from "../src/core/agent/supply-demand-agent";
 import { VisitsAgent } from "../src/core/agent/visits-agent";
-import { ExtractionAgent } from "../src/core/agent/extraction-agent";
 import type {
   ContractDTO,
   ContractRepository,
@@ -203,19 +201,6 @@ describe("P2-02-A — ایجنت‌های تک‌جدولی با Repository سا
     expect(cards.some((c) => c.key === "contract-reject")).toBe(true);
   });
 
-  test("SupplyDemandAgent: تعادل بازار گرم از Stub", async () => {
-    const agent = new SupplyDemandAgent({
-      market: makeMarketRepo([
-        stubSd(),
-        stubSd({ id: "S2", rangeTitle: "۵۰ تا ۱۰۰", propertyCount: 40, requestPercent: 15 }),
-      ]),
-    });
-    const cards = await agent["computeRawInsights"]();
-    expect(cards.some((c) => c.key === "sd-balance")).toBe(true);
-    expect(cards.some((c) => c.key === "sd-pressure")).toBe(true);
-    expect(cards.some((c) => c.key === "sd-strategy")).toBe(true);
-  });
-
   test("VisitsAgent: نرخ بررسی و بررسی‌کنندگان از Stub", async () => {
     const agent = new VisitsAgent({
       visits: makeVisitRepo([
@@ -229,27 +214,13 @@ describe("P2-02-A — ایجنت‌های تک‌جدولی با Repository سا
     expect(cards.some((c) => c.key === "vi-leaders")).toBe(true);
   });
 
-  test("ExtractionAgent: حجم و پوشش و امنیت از Stub", async () => {
-    const agent = new ExtractionAgent({
-      outcomes: makeOutcomeRepo([
-        stubLookup(),
-        stubLookup({ id: "L2", kind: "REQUEST", code: "R-900", personMobile: null }),
-        stubLookup({ id: "L3", code: "P-900", found: false, personName: null, errorNote: "یافت نشد" }),
-        stubLookup({ id: "L4", code: "P-900" }),
-      ]),
-    });
-    const cards = await agent["computeRawInsights"]();
-    expect(cards.some((c) => c.key === "lk-volume")).toBe(true);
-    expect(cards.some((c) => c.key === "lk-coverage")).toBe(true);
-    // کد P-900 سه بار استعلام شده → هشدار امنیتی
-    expect(cards.some((c) => c.key === "lk-security")).toBe(true);
-  });
 });
 
 describe("P2-02-A — خلوص import ایجنت‌های مهاجرت‌کرده", () => {
+  // P6530/گام ۵ — supply-demand-agent و extraction-agent حذف شدند
   const migrated = [
-    "transaction-agent.ts", "contract-agent.ts", "supply-demand-agent.ts",
-    "visits-agent.ts", "extraction-agent.ts", "analyzers.ts",
+    "transaction-agent.ts", "contract-agent.ts",
+    "visits-agent.ts", "analyzers.ts",
   ];
   for (const f of migrated) {
     test(`${f} نه @/lib/db import می‌کند نه @prisma/client`, async () => {
@@ -265,7 +236,6 @@ describe("P2-02-A — خلوص import ایجنت‌های مهاجرت‌کرد�
 import { ExpertAgent } from "../src/core/agent/expert-agent";
 import { RequestAgent } from "../src/core/agent/request-agent";
 import { FinanceAgent } from "../src/core/agent/finance-agent";
-import { PriceIndexAgent } from "../src/core/agent/price-index-agent";
 import { ListingAgent } from "../src/core/agent/listing-agent";
 import { CustomerClubAgent } from "../src/core/agent/customer-club-agent";
 import type {
@@ -432,44 +402,6 @@ describe("P2-02-B — ایجنت‌های چندجدولی با Repository سا�
     expect(cards.some((c) => c.key === "finance-pipeline")).toBe(true);
   });
 
-  test("PriceIndexAgent: فقط-کش پیکربندی + شاخص از آگهی‌های Stub", async () => {
-    const agent = new PriceIndexAgent({
-      market: {
-        ...makeMarketRepoWithRefLists([], []),
-        listAdsWithPrice: async () => {
-          const mk = (token: string, lineId: string, lineName: string, ppm: number) => ({
-            token, category: "apartment-sell", title: `آپارتمان ${token}`, description: null, priceText: null,
-            price: ppm * 100, pricePerMeter: ppm, meterage: 100, rooms: 2, floor: 3, buildYear: 1400,
-            publishedAt: new Date(), bumpedAt: null, firstSeenAt: new Date(), lastSeenAt: new Date(),
-            locationText: null, latitude: null, longitude: null, matchedAreaId: "1", matchedAreaName: "منطقه ۱",
-            matchedLineId: lineId, matchedLineName: lineName, personalScore: 80, underpriceScore: 70,
-            locationScore: 85, otherScore: 60, totalScore: 75, bucket: "hunt", status: "active",
-            analysisJson: null, imagesJson: null, specsJson: null, changeKey: null,
-            publisherType: "personal", publisherName: null, publisherAdCount: null, publisherBrandUrl: null,
-          });
-          // دو نمونه در هر محله → هر دو محله «قابل‌اتکا» (reliable ≥ ۲ نمونه)
-          return [
-            mk("a1", "10", "محله ۱", 30_000_000),
-            mk("a2", "10", "محله ۱", 32_000_000),
-            mk("a3", "11", "محله ۲", 20_000_000),
-            mk("a4", "11", "محله ۲", 22_000_000),
-          ];
-        },
-      },
-      predictions: makeEmptyPredictionRepo([
-        { areaName: "محله ۱", category: "apartment-sell", medianPerMeter: 25_000_000, recordedAt: "2026-05-01T00:00:00Z" },
-        { areaName: "محله ۱", category: "apartment-sell", medianPerMeter: 35_000_000, recordedAt: "2026-06-01T00:00:00Z" },
-      ]),
-      priceIndexConfigs: async () => ({ indices: [], liveError: "پیکربندی در کش نیست." }),
-    });
-    const cards = await agent["computeRawInsights"]();
-    expect(cards.some((c) => c.key === "index-config-error")).toBe(true);
-    expect(cards.some((c) => c.key === "index-overall")).toBe(true);
-    expect(cards.some((c) => c.key === "index-region")).toBe(true);
-    // جهش ۴۰٪ محله ۱ → هشدار
-    expect(cards.some((c) => c.key === "index-jump")).toBe(true);
-  });
-
   test("ListingAgent: داده خالی → بینش راه‌اندازی دفتر آگهی + هشدار اینستاگرام", async () => {
     const agent = new ListingAgent({ listings: makeEmptyListingRepo() });
     const cards = await agent["computeRawInsights"]();
@@ -494,7 +426,8 @@ describe("P2-02-B — ایجنت‌های چندجدولی با Repository سا�
 });
 
 describe("P2-02-B — خلوص import ایجنت‌های چندجدولی", () => {
-  const migrated = ["expert-agent.ts", "request-agent.ts", "finance-agent.ts", "price-index-agent.ts", "listing-agent.ts", "customer-club-agent.ts"];
+  // P6530/گام ۵ — price-index-agent حذف شد
+  const migrated = ["expert-agent.ts", "request-agent.ts", "finance-agent.ts", "listing-agent.ts", "customer-club-agent.ts"];
   for (const f of migrated) {
     test(`${f} نه @/lib/db import می‌کند نه @prisma/client`, async () => {
       const source = await Bun.file(`${import.meta.dir}/../src/core/agent/${f}`).text();
