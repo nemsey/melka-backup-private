@@ -1,0 +1,54 @@
+{
+  "ranAt": "2026-09-29T16:33:47.409Z",
+  "tileId": "arm-listing",
+  "predictions": 384,
+  "positiveOutcomes": 192,
+  "negativeOutcomes": 192,
+  "linked": 384,
+  "evaluation": {
+    "tileId": "arm-listing",
+    "windowDays": 3650,
+    "sampleSize": 384,
+    "verdict": "ABOVE_BASELINE",
+    "computedAt": "2026-09-29T16:33:47.409Z",
+    "unresolvablePairs": 0,
+    "target": "probability",
+    "brierScore": 0.2255,
+    "calibration": [
+      {
+        "bucket": "0.0-0.2",
+        "predicted": 0,
+        "observed": 0
+      },
+      {
+        "bucket": "0.2-0.4",
+        "predicted": 0.395,
+        "observed": 0.25
+      },
+      {
+        "bucket": "0.4-0.6",
+        "predicted": 0.492,
+        "observed": 1
+      },
+      {
+        "bucket": "0.6-0.8",
+        "predicted": 0,
+        "observed": 0
+      },
+      {
+        "bucket": "0.8-1.0",
+        "predicted": 0,
+        "observed": 0
+      }
+    ],
+    "lift": 0.0978
+  },
+  "reproduction": {
+    "source": "arm.melketabriz.ir (PropertyRecord واقعی)",
+    "soldStatus": "معامله شده",
+    "controlStatus": "منتشر شده",
+    "ordering": "propertyCode صعودی",
+    "modelVersion": "property-predictor-v0.1",
+    "note": "پیش‌بینی و پیامد روی یک snapshot واحد — سنجش قدرت افتراق، نه دقت زمانی (محدودیت افشاشده)"
+  }
+}

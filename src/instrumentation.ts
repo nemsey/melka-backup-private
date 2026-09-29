@@ -89,6 +89,17 @@ export async function register(): Promise<void> {
     }
   }
 
+  // ---------- ۳-ب) دیمن مغز هوشمند v2 (فازهای ۷/۸/۹ — بازسازی) ----------
+  // حلقهٔ پس‌زمینهٔ سرنوشت: پیش‌بینی روی دادهٔ واقعی ARM + پیامد واقعی +
+  // ارزیابی صادقانه + یادگیری حلقه‌بسته. فقط خواندن از DB محلی و نوشتن
+  // شاهد در intelligence-data/ — بدون تماس خارجی؛ خاموشی با
+  // MELK_INTELLIGENCE_DAEMON=disabled.
+  {
+    const { startIntelligenceDaemon } = await import("@/lib/intelligence/daemon");
+    const { db } = await import("@/lib/db");
+    startIntelligenceDaemon(db);
+  }
+
   // ---------- ۳) حلقه همگام‌سازی پس‌زمینه — HOTFIX-02 (SEC-3) ----------
   // توکن ARM مشترک (SyncState.armTokenEnc) حذف شد؛ تا معرفی «حساب سرویس»
   // مجزا در PHASE 2، تایمر پس‌زمینه فقط با فعال‌سازی صریح (MELK_BACKGROUND_SYNC=enabled)

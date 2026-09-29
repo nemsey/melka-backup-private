@@ -385,34 +385,35 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     await import("@/core/tiles/bootstrap");
   });
 
-  test("P6.5-11 — کاشی‌های ادغام‌شده در رجیستری جدید با ترتیب منطقی", async () => {
+  test("P6.5-11 + بازسازی فازهای ۷-۸-۹ — رجیستری جدید با ترتیب منطقی M1 تا M4", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     // P6.5-12 (بند ب مرحلهٔ قبل): کاشی مشتریان حذف شد — داده ماندگار، نما حذف
     expect(tileRegistry.has("customer-club")).toBe(false);
-    expect(tileRegistry.has("price-index")).toBe(true);
+    // بازسازی فازهای ۷-۸-۹ (۱۴۰۵/۰۷/۷): M5/M6/M7 حذف نما — داده ماندگار، نما حذف
+    expect(tileRegistry.has("price-index")).toBe(false);
+    expect(tileRegistry.has("supply-demand")).toBe(false);
+    expect(tileRegistry.has("extraction")).toBe(false);
     // سه کاشی معاملات/قراردادها/مالی → کاشی ادغامی (بند پ)
     expect(tileRegistry.has("transactions-contracts")).toBe(true);
     expect(tileRegistry.has("transactions")).toBe(false);
     expect(tileRegistry.has("contracts")).toBe(false);
     expect(tileRegistry.has("finance-commission")).toBe(false);
 
-    // P6526/الف — ترتیب الزامی M1 تا M7: M3 معاملات سوم، M5 شاخص قیمت پنجم
+    // بازسازی فازهای ۷-۸-۹ — ترتیب الزامی M1 تا M4
     const ids = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
     expect(ids.indexOf("arm-listings")).toBe(0); // M1
     expect(ids.indexOf("arm-requests")).toBe(1); // M2
     expect(ids.indexOf("transactions-contracts")).toBe(2); // M3
     expect(ids.indexOf("experts")).toBe(3); // M4
-    expect(ids.indexOf("price-index")).toBe(4); // M5
-    expect(ids.indexOf("supply-demand")).toBe(5); // M6
-    expect(ids.indexOf("extraction")).toBe(6); // M7
+    expect(ids.length).toBe(4); // دقیقاً چهار کاشی
     // تنظیمات عمومی ریشه است (چهارم) — نه داخل داشبورد مدیریتی؛ داشبورد مدیریتی آخرین کاشی ریشه
     expect(ids).not.toContain("settings");
     expect(tileRegistry.listRoot("OWNER").at(-1)?.id).toBe("management-dashboard");
   });
 
-  test("هر کاشی جدید ایجنت اختصاصی متصل به شناسه خود دارد", async () => {
+  test("بازسازی فازهای ۷-۸-۹ — کاشی‌های ماندگار M1 تا M4 ایجنت اختصاصی متصل به شناسه خود دارند", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    for (const id of ["transactions-contracts", "price-index"]) {
+    for (const id of ["transactions-contracts", "experts", "arm-listings", "arm-requests"]) {
       const tile = tileRegistry.get(id)!;
       expect(tile.agent).not.toBeNull();
       expect(tile.agent!.tileId).toBe(id);

@@ -3,24 +3,23 @@
  * ------------------------------------------------------
  * صفحه هوم پنج کاشی ریشه را به ترتیب الزامی مالک نشان می‌دهد:
  *   فایل یابی ملکا · آگهی ملکا · درخواست ملکا · تنظیمات عمومی · داشبورد مدیریتی ملک تبریز
- * داشبورد مدیریتی ظرف هفت کاشی M1 تا M7 است (ترتیب و نام عین دستور مالک).
+ * داشبورد مدیریتی ظرف چهار کاشی M1 تا M4 است (بازسازی فازهای ۷-۸-۹ — ترتیب و نام عین دستور مالک).
  * اجرا: bun test tests/management-dashboard.test.ts
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { Home as DummyIcon } from "lucide-react";
 
 /** P6526/الف — ترتیب الزامی مالک: فایل یابی ملکا · آگهی ملکا · درخواست ملکا · تنظیمات عمومی · داشبورد مدیریتی */
 const ROOT_EXPECTED = ["file-finder", "listings", "requests", "settings", "management-dashboard"];
-/** P6526/الف — هفت کاشی مدیریتی به ترتیب و نام الزامی مالک (M1 تا M7) */
+/** بازسازی فازهای ۷-۸-۹ (دستور مالک ۱۴۰۵/۰۷/۷): چهار کاشی مدیریتی M1 تا M4 */
 const CHILDREN_EXPECTED = [
   "arm-listings",        // M1 آگهی ملک تبریز
   "arm-requests",        // M2 درخواست ملک تبریز
   "transactions-contracts", // M3 معاملات ملک تبریز
   "experts",             // M4 کارشناسان ملک تبریز
-  "price-index",         // M5 شاخص قیمت ملک تبریز
-  "supply-demand",       // M6 عرضه و تقاضای ملک تبریز
-  "extraction",          // M7 استخراج اطلاعات ملک تبریز
 ];
 
 describe("معماری داشبورد مدیریتی", () => {
@@ -37,10 +36,25 @@ describe("معماری داشبورد مدیریتی", () => {
     expect(rootConsultant).toEqual(ROOT_EXPECTED);
   });
 
-  test("P6526/الف — هفت کاشی مدیریتی M1 تا M7 داخل داشبورد مدیریتی — به همین ترتیب", async () => {
+  test("بازسازی فازهای ۷-۸-۹ — چهار کاشی مدیریتی M1 تا M4 داخل داشبورد مدیریتی — به همین ترتیب", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
     expect(children).toEqual(CHILDREN_EXPECTED);
+  });
+
+  test("بازسازی فازهای ۷-۸-۹ — M5/M6/M7 حذف نما شده‌اند: ماژول‌ها ماندگار، رجیستری پاک", async () => {
+    const { tileRegistry } = await import("@/core/tiles/tile-registry");
+    for (const removed of ["price-index", "supply-demand", "extraction"]) {
+      expect(tileRegistry.get(removed)).toBeUndefined();
+    }
+    // ماژول‌ها و داده ماندگارند (حذف نما — قانون دادهٔ مقدس)
+    for (const mod of [
+      "src/core/tiles/tiles/price-index/index.ts",
+      "src/core/tiles/tiles/supply-demand/index.ts",
+      "src/core/tiles/tiles/extraction/index.ts",
+    ]) {
+      expect(existsSync(join(import.meta.dir, "..", mod))).toBe(true);
+    }
   });
 
   test("P6.5-11 — کاشی‌های ادغام/حذف‌شده دیگر در رجیستری نیستند", async () => {

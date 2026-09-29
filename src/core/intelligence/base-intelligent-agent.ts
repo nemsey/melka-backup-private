@@ -41,6 +41,9 @@ import type { Citation } from "./retrieval/citation-builder";
 import type { PredictionRecord, PredictOptions } from "./prediction/prediction-record";
 import type { PredictionProducer } from "./prediction/prediction-engine";
 import type { PredictionRepository } from "./prediction/prediction-repository";
+import type { OutcomeEngine, OutcomeRecord } from "./engines/outcome";
+import type { EvaluationReport } from "./engines/evaluation";
+import type { StoredOutcomeRecord } from "./outcome/outcome-store";
 import type { PropertyFeatureSet } from "./feature/builders/property-features";
 import type { MarketFeatureSet } from "./feature/builders/market-features";
 import type { CustomerFeatureSet } from "./feature/builders/customer-features";
@@ -201,6 +204,71 @@ export abstract class BaseIntelligentAgent extends BaseLearningAgent {
       await repo.save(record);
     } catch {
       // ذخیره اختیاری است — بلع
+    }
+  }
+
+  // ---------- PHASE 7 (بازسازی فاز ۷): متد افزودنی پنجم (خارج از هر مسیر خروجی) ----------
+
+  /**
+   * ثبت پیامد واقعی در موتور پیامد تزریقی — الگوی طلایی:
+   *  - بدون موتور پیامد: null (رفتار PHASE 6).
+   *  - خطای درگاه: بی‌صدا بلعیده می‌شود — پیامد هرگز جریان ایجنت را نمی‌شکند.
+   *  - پیوند اختیاری به پیش‌بینی: اگر predictionId داده شود و انبار پیش‌بینی
+   *    حاضر باشد، linkOutcome هم اجرا می‌شود (حلقهٔ بستهٔ سرنوشت).
+   * ⚠️ هیچ مسیر خروجی این متد را صدا نمی‌زند (قانون طلایی ۳).
+   */
+  protected async recordOutcome(
+    outcome: string,
+    options?: { predictionId?: string; decisionKey?: string; evidence?: Record<string, unknown>; occurredAt?: string },
+  ): Promise<{ outcomeId: string } | null> {
+    const engine = this.engines.outcome as
+      | (OutcomeEngine & { append?: (entry: OutcomeRecord) => Promise<StoredOutcomeRecord> })
+      | undefined;
+    if (!engine) return null;
+    try {
+      const entry: OutcomeRecord = {
+        tileId: this.tileId,
+        predictionId: options?.predictionId,
+        decisionKey: options?.decisionKey,
+        outcome,
+        occurredAt: options?.occurredAt ?? new Date().toISOString(),
+        evidence: options?.evidence,
+      };
+      let stored: { outcomeId: string } | null = null;
+      if (typeof engine.append === "function") {
+        stored = await engine.append(entry);
+      } else {
+        await engine.record(entry);
+        stored = { outcomeId: "recorded" };
+      }
+      // حلقهٔ بسته: پیوند به پیش‌بینی مبدأ در انبار پیش‌بینی (اختیاری)
+      if (options?.predictionId && this.engines.predictionRepository && stored?.outcomeId !== "recorded") {
+        try {
+          await this.engines.predictionRepository.linkOutcome(options.predictionId, stored.outcomeId);
+        } catch {
+          // پیوند یکپارچگی است نه جریان اصلی — بلع
+        }
+      }
+      return stored;
+    } catch {
+      return null;
+    }
+  }
+
+  // ---------- PHASE 8 (بازسازی فاز ۸): متد افزودنی ششم (خارج از هر مسیر خروجی) ----------
+
+  /**
+   * ارزیابی کیفیت پیش‌بینی‌های این کاشی با موتور ارزیابی تزریقی —
+   * الگوی طلایی: بدون موتور ⇔ null (رفتار PHASE 7)؛ خطا ⇔ null.
+   * ⚠️ هیچ مسیر خروجی این متد را صدا نمی‌زند (قانون طلایی ۳).
+   */
+  protected async evaluateTile(windowDays?: number): Promise<EvaluationReport | null> {
+    const engine = this.engines.evaluation;
+    if (!engine) return null;
+    try {
+      return await engine.evaluate({ tileId: this.tileId, windowDays });
+    } catch {
+      return null;
     }
   }
 }

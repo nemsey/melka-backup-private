@@ -14,6 +14,7 @@
  * الگوی ایزوله‌سازی: عین tests/phase65-normalize.test.ts — پایگاه test.db از DATABASE_URL.
  */
 import { describe, expect, test } from "bun:test";
+import { buildLocationRegistry } from "../src/lib/melk-api/normalize";
 
 const { db } = await import("@/lib/db");
 
@@ -60,8 +61,7 @@ function miniRegistry(): LocationRegistry {
 }
 
 function buildLocationRegistrySafe(entries: LocationEntry[]): LocationRegistry {
-  // import محلی برای پرهیز از چرخه — عین miniRegistry فایل خواهر
-  const { buildLocationRegistry } = require("../src/lib/melk-api/normalize");
+  // الگوی miniRegistry فایل خواهر — با import ایستا (گارد lint: بدون require)
   return buildLocationRegistry(entries);
 }
 

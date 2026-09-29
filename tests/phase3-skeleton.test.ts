@@ -150,6 +150,14 @@ describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", (
       "prediction/index.ts", "prediction/prediction-record.ts", "prediction/prediction-engine.ts",
       "prediction/predictors/property-predictor.ts", "prediction/predictors/customer-predictor.ts",
       "prediction/predictors/expert-predictor.ts", "prediction/prediction-repository.ts",
+      // ---- بازسازی PHASE 7 (سه بدنهٔ موتور: Outcome + Safety + ActionPlanner) ----
+      "outcome/outcome-store.ts", "outcome/outcome-engine.ts", "outcome/index.ts",
+      "safety/safety-engine.ts", "safety/index.ts",
+      "action/action-planner-engine.ts", "action/index.ts",
+      // ---- بازسازی PHASE 8 (سه بدنهٔ موتور: Evaluation + Learning + Decision) ----
+      "evaluation/evaluation-engine.ts", "evaluation/index.ts",
+      "learning/learning-engine.ts", "learning/index.ts",
+      "decision/decision-engine.ts", "decision/index.ts",
     ]);
     const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
     expect([...actual].sort()).toEqual([...expected].sort());

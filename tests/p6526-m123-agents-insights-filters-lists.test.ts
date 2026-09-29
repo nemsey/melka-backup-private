@@ -95,7 +95,7 @@ describe("P6526/الف §۰ — نام و ترتیب کاشی‌ها", () => {
     );
   });
 
-  test("۰-۳) داشبورد مدیریتی — هفت کاشی M1 تا M7 با نام‌ها و ترتیب عین دستور مالک", async () => {
+  test("۰-۳) داشبورد مدیریتی — چهار کاشی M1 تا M4 با نام‌ها و ترتیب عین دستور مالک (بازسازی فازهای ۷-۸-۹)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER");
     expect(children.map((t) => t.title)).toEqual([
@@ -103,27 +103,25 @@ describe("P6526/الف §۰ — نام و ترتیب کاشی‌ها", () => {
       "درخواست ملک تبریز",
       "معاملات ملک تبریز",
       "کارشناسان ملک تبریز",
-      "شاخص قیمت ملک تبریز",
-      "عرضه و تقاضای ملک تبریز",
-      "استخراج اطلاعات ملک تبریز",
     ]);
     expect(children.map((t) => t.id)).toEqual([
       "arm-listings",
       "arm-requests",
       "transactions-contracts",
       "experts",
-      "price-index",
-      "supply-demand",
-      "extraction",
     ]);
+    // M5/M6/M7 حذف نما شده‌اند (دستور ۱۴۰۵/۰۷/۷) — نه در داشبورد و نه در رجیستری
+    for (const removed of ["price-index", "supply-demand", "extraction"]) {
+      expect(tileRegistry.get(removed)).toBeUndefined();
+    }
   });
 
-  test("۰-۴) ترتیب عددی کاشی‌های مدیریتی پیوسته و یکتاست (۱ تا ۷)", async () => {
+  test("۰-۴) ترتیب عددی کاشی‌های مدیریتی پیوسته و یکتاست (۱ تا ۴)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const orders = tileRegistry
       .listChildren("management-dashboard", "OWNER")
       .map((t) => t.order);
-    expect(orders).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(orders).toEqual([1, 2, 3, 4]);
   });
 
   test("۰-۵) نام‌های قدیمی (آگهی‌های/درخواست‌های/شاخص قیمت روز مناطق/تنظیمات عمومی ملک تبریز) حذف شده‌اند", async () => {

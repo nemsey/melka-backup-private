@@ -9,6 +9,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 // ==========================================================================
 // آداپتورهای بازدیدها و عرضه و تقاضا
@@ -240,28 +242,23 @@ describe("تحلیل استعلام‌ها (lookupStats)", () => {
 // ==========================================================================
 
 describe("کاشی‌ها و ایجنت‌های جدید", () => {
-  test("هر سه کاشی جدید در رجیستری با ایجنت ثبت‌شده‌اند", async () => {
+  test("بازسازی فازهای ۷-۸-۹ — استخراج/عرضه‌وتقاضا حذف نما شده‌اند (ماژول ماندگار، رجیستری کاشی پاک)", async () => {
     await import("@/core/tiles/bootstrap");
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    const { getAgent } = await import("@/core/agent");
 
-    // P6.5-11: کاشی بازدیدها حذف شد — جای آن کاشی ادغامی و عرضه‌وتقاضا/استخراج می‌مانند
+    // دستور مالک ۱۴۰۵/۰۷/۷ — داشبورد مدیریتی = دقیقاً M1 تا M4 (کاشی‌ها حذف نما)
     for (const id of ["extraction", "supply-demand"]) {
-      const tile = tileRegistry.get(id);
-      expect(tile).not.toBeNull();
-      expect(tile!.agent).not.toBeNull();
-      expect(tile!.agent!.tileId).toBe(id);
-      const agent = getAgent(id);
-      expect(agent).not.toBeNull();
-      expect(agent!.tileId).toBe(id);
+      expect(tileRegistry.get(id)).toBeUndefined();
     }
+    // ماژول‌ها و داده ماندگارند (حذف نما — قانون دادهٔ مقدس)
+    expect(existsSync(join(import.meta.dir, "..", "src/core/tiles/tiles/extraction/index.ts"))).toBe(true);
+    expect(existsSync(join(import.meta.dir, "..", "src/core/tiles/tiles/supply-demand/index.ts"))).toBe(true);
   });
 
-  test("ایجنت استخراج اطلاعات دامنه‌های LOOKUP/COVERAGE/QUALITY/SECURITY دارد", async () => {
-    const { getAgent } = await import("@/core/agent");
-    const agent = getAgent("extraction");
-    expect(agent!.insightDomains).toContain("LOOKUP");
-    expect(agent!.insightDomains).toContain("SECURITY");
+  test("ایجنت استخراج اطلاعات دامنه‌های LOOKUP/COVERAGE/QUALITY/SECURITY دارد (ماژول ماندگار)", async () => {
+    const { extractionAgent } = await import("@/core/agent/extraction-agent");
+    expect(extractionAgent.insightDomains).toContain("LOOKUP");
+    expect(extractionAgent.insightDomains).toContain("SECURITY");
   });
 });
 

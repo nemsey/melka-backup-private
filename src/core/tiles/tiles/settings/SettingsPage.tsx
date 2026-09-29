@@ -29,6 +29,7 @@ import { ArmConnectionSection } from "./ArmConnectionSection";
 import { DivarConnectionSection } from "./DivarConnectionSection";
 import { InstagramConnectionSection } from "./InstagramConnectionSection";
 import { PmConnectionSection } from "./PmConnectionSection";
+import { BrainStatusSection } from "./BrainStatusSection";
 
 /** ارقام فارسی محلی برای این صفحه */
 function faDigitsLocal(n: string | number): string {
@@ -160,6 +161,9 @@ export function SettingsPage({ onBack }: TilePageProps) {
           </p>
         </CardContent>
       </Card>
+
+      {/* مغز هوشمند و یادگیر — فازهای ۷/۸/۹ */}
+      <BrainStatusSection />
 
       {/* حساب کاربری */}
       <Card>

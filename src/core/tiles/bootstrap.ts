@@ -14,12 +14,17 @@
 
 import "@/core/tiles/tiles/transactions-contracts";
 import "@/core/tiles/tiles/experts";
-import "@/core/tiles/tiles/extraction";
-import "@/core/tiles/tiles/supply-demand";
+// بازسازی فازهای ۷-۸-۹ (دستور مالک ۱۴۰۵/۰۷/۷ — داشبورد مدیریتی = دقیقاً M1 تا M4):
+// سه کاشی «استخراج اطلاعات» (M7)، «عرضه و تقاضا» (M6) و «شاخص قیمت» (M5)
+// از داشبورد حذف شدند — عین رویهٔ مشتریان (P6.5-12: حذف نما — داده مقدس):
+// ماژول‌ها و همهٔ داده‌های استخراج‌شده در پایگاه/کتابخانه ماندگارند.
+// import "@/core/tiles/tiles/extraction";
+// import "@/core/tiles/tiles/supply-demand";
 import "@/core/tiles/tiles/file-finder";
 // P6.5-12 (بند ب مرحلهٔ قبل): کاشی «مشتریان ملک تبریز» حذف شد —
 // دادهٔ مشتریان و ماژول‌های تحلیلی در پایگاه/کتابخانه ماندگارند (قانون دادهٔ مقدس)
-import "@/core/tiles/tiles/price-index";
+// بازسازی فازهای ۷-۸-۹: M5/M6/M7 نیز از داشبورد حذف شدند (حذف نما — داده ماندگار)
+// import "@/core/tiles/tiles/price-index";
 import "@/core/tiles/tiles/listing";
 import "@/core/tiles/tiles/request";
 import "@/core/tiles/tiles/arm-listing";
@@ -29,11 +34,13 @@ import "@/core/tiles/tiles/settings";
 
 export { transactionsContractsTile } from "@/core/tiles/tiles/transactions-contracts";
 export { expertsTile } from "@/core/tiles/tiles/experts";
-export { extractionTile } from "@/core/tiles/tiles/extraction";
-export { supplyDemandTile } from "@/core/tiles/tiles/supply-demand";
+// بازسازی فازهای ۷-۸-۹: M5/M6/M7 از داشبورد حذف شدند (حذف نما — ماژول‌ها ماندگار)
+// export { extractionTile } from "@/core/tiles/tiles/extraction";
+// export { supplyDemandTile } from "@/core/tiles/tiles/supply-demand";
 export { fileFinderTile } from "@/core/tiles/tiles/file-finder";
 // P6.5-12: customerClubTile حذف شد (حذف نما — داده ماندگار)
-export { priceIndexTile } from "@/core/tiles/tiles/price-index";
+// بازسازی فازهای ۷-۸-۹: priceIndexTile حذف شد (حذف نما — داده ماندگار)
+// export { priceIndexTile } from "@/core/tiles/tiles/price-index";
 export { listingTile } from "@/core/tiles/tiles/listing";
 export { requestTile } from "@/core/tiles/tiles/request";
 export { armListingTile } from "@/core/tiles/tiles/arm-listing";

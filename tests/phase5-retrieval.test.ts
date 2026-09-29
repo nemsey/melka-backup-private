@@ -205,7 +205,7 @@ describe("P5-02 — MetadataFilter + queryWithFilter (پنج فیلد)", () => {
     expect(lenient.map((r) => r.id).sort()).toEqual([strong.id, legacy.id].sort());
 
     // مسیر جایگزین محلی (بدون قابلیت queryWithFilter) همان نتیجه می‌دهد — duck-typing مصرف‌کننده
-    const noCapStore: { query(q: {}): Promise<MemoryRecord[]> } = {
+    const noCapStore: { query(q: unknown): Promise<MemoryRecord[]> } = {
       async query() {
         return [strong, weak, legacy];
       },
@@ -483,7 +483,10 @@ describe("P5-05 — Reranker heuristic آفلاین", () => {
     expect(out[0].record.id).toBe(fresh.id); // تازه‌تر صدر — حتی با ترتیب ورود معکوس
     expect(out[1].record.id).toBe(stale.id);
     // امتیاز نهایی در بازه [0,1] با وزن‌های پیش‌فرض (جمع وزن‌ها = 1)
-    for (const o of out) expect(o.score).toBeGreaterThanOrEqual(0), expect(o.score).toBeLessThanOrEqual(1);
+    for (const o of out) {
+      expect(o.score).toBeGreaterThanOrEqual(0);
+      expect(o.score).toBeLessThanOrEqual(1);
+    }
   });
 
   test("اهمیت — با متن و زمان یکسان، importance بالاتر بالا می‌آید", () => {
