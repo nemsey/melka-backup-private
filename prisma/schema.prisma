@@ -1079,6 +1079,10 @@ model RequestRecord {
   propertyTypeName    String?
   /// فرم پویای دسته‌بندی — JSON {createName: value} (متراژ از/تا، قیمت کل از/تا، امکانات…)
   inputsJson       String?
+  /// P6530/گام ۲ — بازهٔ قیمت متقاضی (تومان) از جزئیات ARM (ستون فهرست M2)
+  priceFrom        Float?
+  /// P6530/گام ۲ — سقف قیمت متقاضی (تومان) از جزئیات ARM (ستون فهرست M2)
+  priceTo          Float?
   /// توضیحات مشتری (عین خود سامانه)
   customerDescription  String?
 

@@ -1,16 +1,21 @@
 /**
  * GET /api/crm/arm-catalog/requests — کاتالوگ تک‌صفحه‌ای درخواست‌های سامانه ARM
  * ------------------------------------------------------
- * کاشی «درخواست‌های ملک تبریز» (P6.5-10):
- *   فیلترها: کد درخواست (contains) + نام و نام خانوادگی کارشناس (contains)
- *   ستون‌ها: کد درخواست، کارشناس، درخواست‌دهنده (نام + تماس)
+ * کاشی «درخواست ملک تبریز» (P6.5-10 + P6521/M2 + P6530/گام ۲):
+ *   ستون‌های ده‌گانهٔ فهرست عین دستور مالک:
+ *     ردیف · کد درخواست · کارشناس · شعبه · متقاضی (نام + موبایل زیر نام) ·
+ *     قیمت از...تا... (تومان) · مناطق · دسته‌بندی (خرید/پیش خرید/رهن و اجاره/
+ *     مشارکت در ساخت) · وضعیت (شش‌حالته) · تاریخ ثبت
+ *   فیلتر بر اساس «تمام ستون‌های فهرست» (بند ۲ دستور):
+ *     code · realtorName · branch · customerName · priceFrom/priceTo ·
+ *     areaName · tradeType (چندگانه) · states (شش‌حالته + سایر) · dateFrom/To
+ *   بینش: توزیع وضعیت شش‌حالته (بند ۳)
+ *   بروزرسانی (بند ۴): زنجیرهٔ عین سامانه ARM (لایه ۱ فهرست + لایه ۲ غنی‌سازی
+ *   متقاضی/مناطق/قیمت/دسته‌بندی) + تاریخ و ساعت دقیق آخرین بروزرسانی + ادامه از
+ *   آخرین صفحهٔ کامل (checkpoint) + گارد پوشش ۲۰٬۳۹۲ منبع (نکتهٔ بسیار مهم ۳)
  *
- * غنی‌سازی هدفمند: اگر فیلتر کد درخواست داده شده باشد و ردیف‌های یافته هنوز
- * لایه ۲ (تماس درخواست‌دهنده) را نداشته باشند، همان ردیف‌ها زنده از
- * زنجیرهٔ عین خود سامانه (requests/applicant) غنی می‌شوند (سقف ۵ ردیف).
- *
- * دامنه (P6.5-10): موجودیت arm-request تجمیعی است (عین property — گزارش
- * دپارتمانی عین خود سامانه) — مالک همه را بدون فیلتر می‌بیند (شاهد owner.read).
+ * دامنه (P6.5-10): موجودیت arm-request تجمیعی است — مالک همه را بدون فیلتر
+ * می‌بیند (شاهد owner.read).
  */
 
 import { NextRequest } from "next/server";
@@ -18,17 +23,28 @@ import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
-import { getRequestRepository } from "@/core/repositories";
+import { getRequestRepository, getIntegrationRepository, getExpertRepository } from "@/core/repositories";
 import { enrichArmRequests } from "@/lib/melk-api/arm-catalog";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانه (رفع باگ تاریخی ۴/۵ در این روت)
 import { normalizeFilterInput } from "@/lib/normalize-input";
 // P6527 — انتقال فشردهٔ فهرست سنگین (۲٫۸MB → ~۰٫۵MB) برای موبایل
 import { compressedJson } from "@/lib/http/compressed-json";
+// P6530/گام ۲ — وضعیت شش‌حالته + شعبه
+import {
+  parseRequestStateFilter,
+  requestFilterIncludesOther,
+  requestStateRawValues,
+  rollupRequestStatusCounts,
+  RequestStateKeyValues,
+} from "@/lib/request-status";
+import { resolveExpertBranch, TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
+import { readOwnerBranchMap } from "@/lib/branch-store";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
-  const n = Number(v);
+  const norm = normalizeFilterInput(v); // ارقام فارسی/عربی → لاتین
+  const n = Number(norm);
   return Number.isFinite(n) ? n : undefined;
 }
 
@@ -38,10 +54,27 @@ export async function GET(request: NextRequest) {
 
   try {
     const sp = request.nextUrl.searchParams;
-    // P6525 — نرمال‌سازی مرکزی: ارقام فارسی/عربی/لاتین + حروف ي/ك — نتیجه همیشه یکسان
+    // P6525 — نرمال‌سازی مرکزی
     const code = normalizeFilterInput(sp.get("code")) || undefined;
     const realtorName = normalizeFilterInput(sp.get("realtorName")) || undefined;
-    // P6.5-10 — تک‌صفحه‌ای و بی‌نهایت: سقف سرور ۲۵٬۰۰۰ ردیف (کل کاتالوگ منبع ۲۰٬۳۹۲)
+    // P6530/گام ۲ — فیلترهای تمام ستون‌ها
+    const customerName = normalizeFilterInput(sp.get("customerName")) || undefined;
+    const areaName = normalizeFilterInput(sp.get("areaName")) || undefined;
+    const priceFrom = num(sp.get("priceFrom"));
+    const priceTo = num(sp.get("priceTo"));
+    const tradeTypes = (sp.getAll("tradeType") || []).map((t) => normalizeFilterInput(t)).filter(Boolean);
+    const dateFrom = sp.get("dateFrom") || undefined;
+    const dateTo = sp.get("dateTo") || undefined;
+    const branchFilter = normalizeFilterInput(sp.get("branch")) || undefined;
+    // P6530/گام ۲ — فیلتر شش‌حالته + «سایر» (NOT IN):
+    // «سایر» = نقیض پنج‌گانهٔ اصلی؛ فهرست مستثنی‌شده‌ها = پنج‌گانهٔ کامل منهای انتخاب‌شده‌ها
+    const stateKeys = parseRequestStateFilter(sp.get("states"));
+    const statuses = stateKeys.length > 0 ? requestStateRawValues(stateKeys) : undefined;
+    const statusesIncludesOther = stateKeys.length > 0 ? requestFilterIncludesOther(stateKeys) : false;
+    const allFiveRaws = requestStateRawValues(RequestStateKeyValues.filter((k) => k !== "other") as any);
+    const statusesExcluded = statusesIncludesOther
+      ? allFiveRaws.filter((v) => !(statuses ?? []).includes(v))
+      : undefined;
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
 
     const repo = getRequestRepository();
@@ -55,29 +88,78 @@ export async function GET(request: NextRequest) {
           await execWithArmToken(guard, (t) => enrichArmRequests(t, { maxRows: incompleteIds.length, rowIds: incompleteIds }));
         }
       } catch {
-        /* غنی‌سازی هدفمند بهترین-تلاش است — فهرست بدون آن هم برگردانده می‌شود */
+        /* بهترین-تلاش — فهرست بدون آن هم برگردانده می‌شود */
       }
     }
 
-    // P6.5-10 — دامنه از helper مرکزی: arm-request تجمیعی؛ مالک ⇒ شاهد owner.read
     const access = resolveEntityAccess(guard, "arm-request");
-    const { rows, total } = await repo.listArmCatalog({ code, realtorName }, limit);
+    const { rows, total } = await repo.listArmCatalog(
+      { code, realtorName, customerName, areaName, priceFrom, priceTo, tradeTypes, statuses, statusesIncludesOther, statusesExcluded, dateFrom, dateTo },
+      limit
+    );
+
+    // ---- P6530/گام ۲ — شعبهٔ کارشناس هر ردیف (زنجیرهٔ تفکیک) ----
+    const [ownerMap, experts] = await Promise.all([
+      readOwnerBranchMap().catch(() => ({} as Record<string, string>)),
+      getExpertRepository()
+        .findAll()
+        .catch(() => [] as Array<{ fullName: string; businessTitle: string | null }>),
+    ]);
+    const businessByExpert = new Map<string, string | null>();
+    for (const e of experts) businessByExpert.set(e.fullName, e.businessTitle);
+    const branchOf = (expertName: string | null): string =>
+      expertName
+        ? resolveExpertBranch(expertName, ownerMap, businessByExpert.get(expertName) ?? null).branch
+        : BRANCH_UNSET;
+
+    const rowsWithBranch = rows.map((r) => ({ ...r, branch: branchOf(r.actorName) }));
+    const filtered = branchFilter
+      ? rowsWithBranch.filter((r) => (branchFilter === "unset" ? r.branch === BRANCH_UNSET : r.branch === branchFilter))
+      : rowsWithBranch;
+
     await witnessScopedRead(guard, "arm-request", total, access.isOwnerRead, ownerLoginPath(guard));
 
     const counts = await repo.countArmEnrichment();
-    // P6527 — فشردهٔ gzip وقتی کلاینت می‌پذیرد (بدون آن عین Response.json)
-    return await compressedJson({
-      ok: true,
-      rows,
-      total,
-      limit,
-      enrichment: counts,
-      dataSource: {
-        system: "سامانه مدیریت آگهی و درخواست ملک تبریز (ARM)",
-        layer1: "فهرست کامل درخواست‌ها — کد، عنوان، کارشناس، وضعیت، درخواست‌دهنده",
-        layer2: `تماس درخواست‌دهنده — ${counts.complete} از ${counts.total} تکمیل شده`,
+    // P6530/گام ۲ (بند ۳) — بینش توزیع شش‌حالته از کل کاتالوگ
+    const breakdown = await repo.statusBreakdownArm();
+    const statusCounts = rollupRequestStatusCounts(breakdown.map((b) => [b.status, b.count] as [string | null, number]));
+
+    // ---- P6530/گام ۲ (نکتهٔ بسیار مهم ۳ + بند ۴.۲) — وضعیت بروزرسانی و پوشش منبع ----
+    const checkpoint = await getIntegrationRepository()
+      .getSyncCheckpoint("requests")
+      .catch(() => null);
+
+    return await compressedJson(
+      {
+        ok: true,
+        rows: filtered,
+        total: filtered.length,
+        limit,
+        enrichment: counts,
+        statusCounts,
+        branches: {
+          registry: TABRIZ_BRANCHES,
+          filter: branchFilter ?? null,
+          resolvedCount: filtered.filter((r) => r.branch !== BRANCH_UNSET).length,
+        },
+        lastUpdate: checkpoint
+          ? {
+              phase: checkpoint.phase,
+              lastCompletedPage: checkpoint.lastCompletedPage,
+              totalPages: checkpoint.totalPages,
+              totalAtSource: checkpoint.totalAtSource,
+              updatedAt: checkpoint.updatedAt,
+              completedAt: checkpoint.completedAt,
+            }
+          : null,
+        dataSource: {
+          system: "سامانه مدیریت آگهی و درخواست ملک تبریز (ARM)",
+          layer1: "فهرست کامل درخواست‌ها — کد، عنوان، کارشناس، وضعیت، تاریخ ثبت",
+          layer2: `متقاضی و تماس او + مناطق + قیمت از/تا + دسته‌بندی — ${counts.complete} از ${counts.total} تکمیل شده`,
+        },
       },
-    }, request.headers.get("accept-encoding"));
+      request.headers.get("accept-encoding")
+    );
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);
     return errorResponse(new MelkApiError("UNKNOWN", "خطا در خواندن کاتالوگ درخواست‌های ملک تبریز.", 500, false));

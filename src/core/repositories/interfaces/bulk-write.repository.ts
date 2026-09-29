@@ -86,6 +86,11 @@ export interface ArmRequestBulkRow {
   status?: string | null;
   /** P6521/M2 — منطقه‌های منتخب درخواست (متن ساده از requests/details) */
   areaNames?: string[] | null;
+  /** P6530/گام ۲ — دسته‌بندی درخواست (خرید/پیش خرید/رهن و اجاره/مشارکت در ساخت — از جزئیات ARM) */
+  tradeTypeName?: string | null;
+  /** P6530/گام ۲ — بازهٔ قیمت متقاضی (تومان — از جزئیات ARM؛ inputs فرم پویا) */
+  priceFrom?: number | null;
+  priceTo?: number | null;
   /** کارشناس ثبت‌کننده در ARM؛ نبود → 'arm' (رکورد سیستمی) */
   actorCode?: string | null;
   /** P6.5-10 — نام و نام خانوادگی کارشناس ثبت‌کننده (relatedRealtor ردیف فهرست ARM) */
@@ -203,6 +208,10 @@ export interface ArmRequestCatalogFilter {
   tradeTypes?: string[];
   /** شش‌حالتهٔ M2: مقادیر خام وضعیت */
   statuses?: string[];
+  /** «سایر» انتخاب شده؟ → فیلتر به‌صورت NOT IN فهرست مستثنی‌شده‌ها اعمال می‌شود */
+  statusesIncludesOther?: boolean;
+  /** فهرست مقادیر خام مستثنی‌شده برای «سایر» (پنج‌گانهٔ کامل منهای انتخاب‌شده‌ها) */
+  statusesExcluded?: string[];
   /** تاریخ ثبت — از / تا (ISO) */
   dateFrom?: string;
   dateTo?: string;

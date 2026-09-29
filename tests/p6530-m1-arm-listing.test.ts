@@ -122,9 +122,9 @@ describe("گام ۱/M1 §۲ — تنظیمات کاشی", () => {
     const tile = tileRegistry.get("arm-listings")!;
     const st = tile.settings.find((s) => s.key === "showTitles");
     expect(st).toBeDefined();
-    expect(st!.type).toBe("switch");
-    expect(st!.defaultValue).toBe(true);
-    expect(st!.hint.length).toBeGreaterThan(5);
+    expect(st?.type).toBe("switch");
+    expect(st?.defaultValue).toBe(true);
+    expect((st?.hint ?? "").length).toBeGreaterThan(5);
   });
 
   test("۲-۳) صفحه M1 از تنظیم showTitles پیروی می‌کند (عنوان زیر کد فقط با فعال‌بودن)", async () => {
@@ -158,7 +158,7 @@ describe("گام ۱/M1 §۳ — وضعیت ده‌حالته", () => {
 
   test("۳-۲) طبقه‌بندی مقادیر خام واقعی DB (شاهد ۱۱٬۴۵۶ رکورد) → ده حالت", async () => {
     const { classifyListingStatus } = await import("@/lib/listing-status");
-    const cases: Array<[string, string | null]> = [
+    const cases: Array<[string | null, string | null]> = [
       ["معامله شده", "traded"],
       ["منتشر شده", "published"],
       ["اکران خصوصی", "private"],
@@ -173,7 +173,7 @@ describe("گام ۱/M1 §۳ — وضعیت ده‌حالته", () => {
       [null, null],
     ];
     for (const [raw, expected] of cases) {
-      expect(classifyListingStatus(raw)).toBe(expected);
+      expect(classifyListingStatus(raw)).toBe(expected as never);
     }
   });
 
@@ -536,7 +536,7 @@ describe("گام ۱/M1 §۷ — بروزرسانی", () => {
     const { resolveCycleStart } = await import("@/lib/melk-api/arm-catalog");
     // ۱) چرخهٔ ناتمام با همان pageSize → ادامه از lastCompletedPage+1
     const resumed = resolveCycleStart(
-      { id: "listings", cycleId: "c1", pageSize: 500, lastCompletedPage: 3, totalPages: 23, totalAtSource: 11456, phase: "in-progress", updatedAt: new Date(), completedAt: null },
+      { id: "listings", cycleId: "c1", pageSize: 500, lastCompletedPage: 3, totalPages: 23, totalAtSource: 11456, phase: "in-progress", updatedAt: new Date(), completedAt: null, createdAt: new Date() },
       500,
       1000
     );
@@ -551,6 +551,38 @@ describe("گام ۱/M1 §۷ — بروزرسانی", () => {
     const boot = resolveCycleStart(null, 500, 11000);
     expect(boot.resumed).toBe(true);
     expect(boot.startPage).toBe(23);
+    // ۴) خوددرمانی (P6530/گام ۲ — نکتهٔ بسیار مهم ۳): چرخهٔ «کاملِ» ناقص → چرخهٔ تازه از ۱
+    //    شاهد زندهٔ DB: ۷٬۳۹۸ رکورد در برابر ۲۰٬۳۹۲ منبع (پوشش ۳۶٪)
+    const healed = resolveCycleStart(
+      { id: "requests", cycleId: "bad-cycle", pageSize: 50, lastCompletedPage: 121, totalPages: 1, totalAtSource: 20392, phase: "complete", updatedAt: new Date(), completedAt: new Date(), createdAt: new Date() },
+      50,
+      7398
+    );
+    expect(healed.resumed).toBe(false);
+    expect(healed.startPage).toBe(1);
+    expect(healed.cycleId).toMatch(/^heal-p6530-/);
+    // چرخهٔ کاملِ باپوشش — دست‌نخورده می‌ماند (ادامه لازم ندارد)
+    const healthy = resolveCycleStart(
+      { id: "listings", cycleId: "good", pageSize: 500, lastCompletedPage: 23, totalPages: 23, totalAtSource: 11363, phase: "complete", updatedAt: new Date(), completedAt: new Date(), createdAt: new Date() },
+      500,
+      11456
+    );
+    expect(healthy.startPage).toBe(1); // چرخهٔ تازه (چون کامل است) — اما نه heal
+    expect(healthy.cycleId).toMatch(/^cycle-/);
+  });
+
+  test("۷-۲ب) گارد صفحهٔ معیوب: پاسخ بی‌داده/بی‌شمارش با ادعای پایان زودرس = گذرا", async () => {
+    const { isDegenerateListPage, hasEnoughCoverage } = await import("@/lib/melk-api/arm-catalog");
+    // صفحهٔ ۱۲۲ با ادعای totalPages=1 و total=0 و بدون ردیف → معیوب (عین شاهد DB)
+    expect(isDegenerateListPage(122, { rows: [], total: 0, totalPages: 1 }, 20392)).toBe(true);
+    // آخرین صفحهٔ واقعی (ردیف‌ها تمام شده‌اند اما شمارش معتبر است) → معیوب نیست
+    expect(isDegenerateListPage(409, { rows: [], total: 20392, totalPages: 408 }, 20392)).toBe(false);
+    // صفحهٔ عادی با داده → سالم
+    expect(isDegenerateListPage(5, { rows: new Array(50), total: 20392, totalPages: 408 }, 20392)).toBe(false);
+    // گارد پوشش: ۷٬۳۹۸ در برابر ۲۰٬۳۹۲ = ناکافی؛ ۱۱٬۴۵۶ در برابر ۱۱٬۳۶۳ = کافی
+    expect(hasEnoughCoverage(7398, 20392)).toBe(false);
+    expect(hasEnoughCoverage(11456, 11363)).toBe(true);
+    expect(hasEnoughCoverage(500, 0)).toBe(true); // شمارش نامعلوم — ملاک نیست
   });
 
   test("۷-۳) روت sync موجود: قرارداد entity=listings + mode (فهرست + غنی‌سازی)", async () => {

@@ -255,6 +255,13 @@ export function resolveCycleStart(
   if (saved && saved.phase === "in-progress" && saved.pageSize === pageSize && saved.lastCompletedPage > 0) {
     return { startPage: saved.lastCompletedPage + 1, cycleId: saved.cycleId, resumed: true, lastCompletedPage: saved.lastCompletedPage };
   }
+  // حالت ۴ (P6530/گام ۲ — نکتهٔ بسیار مهم ۳) — خوددرمانی چرخهٔ «کاملِ» ناقص:
+  // checkpoint کامل است اما پوشش واقعی DB (< ۹۰٪ منبع) می‌گوید چرخه به‌نادرست
+  // بسته شده (شاهد: ۷٬۳۹۸ رکورد در برابر ۲۰٬۳۹۲ منبع) ⇒ چرخهٔ تازه از صفحهٔ ۱؛
+  // upsert بر کلید طبیعی بی‌اثر است و حفره‌های داده پر می‌شوند.
+  if (saved && saved.phase === "complete" && saved.totalAtSource > 0 && existingCount < Math.floor(saved.totalAtSource * 0.9)) {
+    return { startPage: 1, cycleId: `heal-p6530-${randomUUID().slice(0, 8)}`, resumed: false, lastCompletedPage: 0 };
+  }
   // حالت ۳ — بوت‌استرپ پیشرفت تاریخی (P6.5-10 پیش از وجود checkpoint)
   if (!saved && existingCount > pageSize) {
     const pages = Math.floor(existingCount / pageSize);
@@ -262,6 +269,31 @@ export function resolveCycleStart(
   }
   // حالت ۲ — چرخهٔ تازه
   return { startPage: 1, cycleId: `cycle-${randomUUID().slice(0, 8)}`, resumed: false, lastCompletedPage: 0 };
+}
+
+/**
+ * P6530/گام ۲ (نکتهٔ بسیار مهم ۳) — گارد صفحهٔ معیوب:
+ * پاکت‌های گاه‌به‌گاه ARM با total=0/totalPages کوچک‌تر از صفحهٔ جاری برمی‌گردند
+ * (شاهد زندهٔ بسته‌شدن نادرست چرخهٔ درخواست‌ها در صفحهٔ ۱۲۱ از ۴۰۸).
+ * چنین پاسخی «پایان داده» نیست — خطای گذراست و باید صفحه دوباره پرسیده شود.
+ */
+export function isDegenerateListPage(
+  page: number,
+  fetched: { rows: unknown[]; total: number; totalPages: number },
+  knownTotalAtSource: number
+): boolean {
+  // بدون داده و بدون شمارش معتبر + ادعای پایان پیش از صفحهٔ جاری
+  if (fetched.rows.length > 0) return false;
+  if (fetched.total > 0) return false;
+  // اگر منبع قبلاً شمارش معتبر اعلام کرده و این صفحه خالی/بی‌شمارش است → معیوب
+  if (knownTotalAtSource > 0 && fetched.totalPages < page) return true;
+  return false;
+}
+
+/** P6530/گام ۲ — آیا چرخهٔ جاری پوشش کافی برای بسته‌شدن دارد؟ (≥ ۹۰٪ منبع) */
+export function hasEnoughCoverage(existingCount: number, totalAtSource: number): boolean {
+  if (totalAtSource <= 0) return true; // شمارش نامعلوم — تکیه بر رسیدن به آخرین صفحه
+  return existingCount >= Math.floor(totalAtSource * 0.9);
 }
 
 /** ذخیرهٔ امن checkpoint پس از هر صفحهٔ کامل (داده نوشته شد ⇒ حالا جلو می‌رویم) */
@@ -304,7 +336,7 @@ function checkpointView(
 // لایه ۱ — همگام‌سازی فهرست (صفحه‌به‌صفحه با نرخ‌محدود)
 // ==========================================================================
 
-async function fetchListPage(
+async function fetchListPageOnce(
   token: string,
   path: string,
   page: number,
@@ -324,6 +356,30 @@ async function fetchListPage(
   const rows = extracted.rows ?? [];
   const totalPages = extracted.totalPages ?? (extracted.total > 0 ? Math.ceil(extracted.total / pageSize) : 1);
   return { rows, total: extracted.total, totalPages };
+}
+
+/**
+ * P6530/گام ۲ (نکتهٔ بسیار مهم ۳) — واکشی صفحهٔ فهرست با گارد صفحهٔ معیوب:
+ * پاسخ بی‌داده/بی‌شمارش با ادعای پایان پیش از صفحهٔ جاری → خطای گذرا؛
+ * تا دو تلاش مجدد با فاصلهٔ نرخ‌محدود، سپس خطا به بالا می‌رود (چرخه در همان‌جا
+ * می‌ایستد و complete علامت نمی‌خورد — دقیقاً ریشهٔ گم‌شدن ۱۳هزار درخواست).
+ */
+async function fetchListPage(
+  token: string,
+  path: string,
+  page: number,
+  pageSize: number,
+  knownTotalAtSource = 0
+): Promise<{ rows: RawRow[]; total: number; totalPages: number }> {
+  let last = { rows: [] as RawRow[], total: 0, totalPages: 1 };
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    last = await fetchListPageOnce(token, path, page, pageSize);
+    if (!isDegenerateListPage(page, last, knownTotalAtSource)) return last;
+    // صفحهٔ معیوب — تلاش مجدد با فاصلهٔ نرخ‌محدود (سرور شلوغ است)
+    await sleep(Math.max(catalogRateMs(), 500) * (attempt + 1));
+  }
+  // سه بار معیوب ⇒ به‌عنوان خطای گذرای پایدار بالا می‌رود؛ چرخه در همان‌جا می‌ماند
+  return last;
 }
 
 /** همگام‌سازی کامل لایهٔ فهرست آگهی‌ها → PropertyRecord (با نقطهٔ ازسرگیری — بند ب P6.5-11) */
@@ -357,7 +413,7 @@ export async function syncArmListingsCatalog(
     let endPage = page;
     const pagesBudget = cycle.resumed ? Math.max(1, maxPages - 1) : maxPages;
     do {
-      const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.propertiesList, page, pageSize);
+      const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.propertiesList, page, pageSize, savedTotalAtSource);
       out.totalAtSource = total;
       savedTotalAtSource = savedTotalAtSource || total;
       endPage = Math.min(tp, page + pagesBudget - 1);
@@ -377,10 +433,18 @@ export async function syncArmListingsCatalog(
       page += 1;
       if (page <= endPage) await sleep(catalogRateMs());
     } while (page <= endPage);
-    // چرخه به انتها رسید؟ (آخرین صفحهٔ کامل = totalPages)
+    // چرخه به انتها رسید؟ (آخرین صفحهٔ کامل = totalPages) + گارد پوشش P6530/گام ۲:
+    // علامت complete فقط با پوشش ≥ ۹۰٪ شمارش منبع — پاسخ معیوبِ «پایان زودرس» هرگز
+    // چرخهٔ ناقص را کامل جا نمی‌زند (شاهد: چرخهٔ درخواست‌ها در صفحهٔ ۱۲۱ از ۴۰۸)
     const finalCp = await integration.getSyncCheckpoint("listings");
     if (finalCp && finalCp.lastCompletedPage >= endPage) {
-      await advanceCheckpoint("listings", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource }, "complete");
+      const coverage = await repo.countEnrichment().then((c) => c.total).catch(() => 0);
+      if (hasEnoughCoverage(coverage, out.totalAtSource || savedTotalAtSource)) {
+        await advanceCheckpoint("listings", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource }, "complete");
+      } else {
+        // پوشش ناکافی — چرخه باز می‌ماند تا دفعهٔ بعد از همان‌جا ادامه یابد
+        await advanceCheckpoint("listings", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource || savedTotalAtSource }, "in-progress");
+      }
     }
     reachedEndPage = endPage;
     out.ok = true;
@@ -428,7 +492,7 @@ export async function syncArmRequestsCatalog(
     let endPage = page; // سقف نسبی: maxPages صفحه از نقطهٔ شروع (نه سقف مطلق شمارهٔ صفحه)
     const pagesBudget = cycle.resumed ? Math.max(1, maxPages - 1) : maxPages;
     do {
-      const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.requestsList, page, pageSize);
+      const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.requestsList, page, pageSize, savedTotalAtSource);
       out.totalAtSource = total;
       savedTotalAtSource = savedTotalAtSource || total;
       endPage = Math.min(tp, page + pagesBudget - 1);
@@ -450,7 +514,14 @@ export async function syncArmRequestsCatalog(
     } while (page <= endPage);
     const finalCp = await integration.getSyncCheckpoint("requests");
     if (finalCp && finalCp.lastCompletedPage >= endPage) {
-      await advanceCheckpoint("requests", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource }, "complete");
+      // P6530/گام ۲ (نکتهٔ بسیار مهم ۳) — گارد پوشش: ۷٬۳۹۸ رکورد در برابر ۲۰٬۳۹۲ منبع
+      // یعنی چرخه ناقص است؛ علامت complete ممنوع تا پوشش ≥ ۹۰٪ برسد
+      const coverage = await repo.countArmSource().catch(() => 0);
+      if (hasEnoughCoverage(coverage, out.totalAtSource || savedTotalAtSource)) {
+        await advanceCheckpoint("requests", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource }, "complete");
+      } else {
+        await advanceCheckpoint("requests", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource || savedTotalAtSource }, "in-progress");
+      }
     }
     reachedEndPage = endPage;
     out.ok = true;
@@ -519,6 +590,91 @@ function detailsToPropertyExtras(
     extras.propertyTypeName = pickStr(category, ["propertyType"]);
   }
   return extras;
+}
+
+/**
+ * P6530/گام ۲ (بند ۴.۱) — استخراج دفاعی «قیمت متقاضی از/تا» از payload جزئیات ARM.
+ * فرم درخواست خود سامانه فیلدهای «قیمت کل از/تا» را در فرم پویای inputs دارد؛
+ * کلیدهای محتمل (عین الگوی Recon) با گارد نوع بررسی می‌شوند. ارقام فارسی/حروف
+ * پاک‌سازی می‌شوند (parseAmount الگوی bulk). خروجی تهی = منبع قیمت نداشت.
+ */
+export function extractRequestPriceRange(payload: unknown): { from: number | null; to: number | null } {
+  const out = { from: null as number | null, to: null as number | null };
+  if (!payload || typeof payload !== "object") return out;
+  const root = payload as Record<string, unknown>;
+  const containers: Array<Record<string, unknown>> = [root];
+  // data تودرتو (پاکت Nest) + inputs فرم پویا
+  if (root["data"] && typeof root["data"] === "object" && root["data"] !== payload) {
+    containers.push(root["data"] as Record<string, unknown>);
+  }
+  for (const d of containers) {
+    if (d["inputs"] && typeof d["inputs"] === "object" && !Array.isArray(d["inputs"])) {
+      containers.push(d["inputs"] as Record<string, unknown>);
+    }
+  }
+  /** تبدیل ایمن متن/عدد (حتی با ارقام فارسی و جداکننده) → عدد تومانی */
+  const parseNum = (v: unknown): number | null => {
+    if (typeof v === "number" && Number.isFinite(v) && v > 0) return Math.round(v);
+    if (typeof v !== "string") return null;
+    const norm = v
+      .replace(/[\u066C\u066B,،٬\s]/g, "")
+      .replace(/[\u06F0-\u06F9]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+    const n = Number(norm);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+  };
+  const tryKeys = [
+    ["priceFrom", "totalPriceFrom", "minPrice", "price_from", "fromPrice"],
+    ["priceTo", "totalPriceTo", "maxPrice", "price_to", "toPrice"],
+  ] as const;
+  for (const c of containers) {
+    for (let i = 0; i < 2; i += 1) {
+      const slot = i === 0 ? "from" : "to";
+      if (out[slot] !== null) continue;
+      for (const k of tryKeys[i]) {
+        const v = c[k];
+        if (v === undefined || v === null) continue;
+        const parsed = parseNum(v);
+        if (parsed !== null) {
+          out[slot] = parsed;
+          break;
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * P6530/گام ۲ (بند ۴.۱) — استخراج دفاعی «دسته‌بندی درخواست» از payload جزئیات ARM.
+ * دسته‌بندی‌های سامانه ملک تبریز (نکته ۴): خرید / پیش خرید / رهن و اجاره / مشارکت در ساخت.
+ * فقط مقادیر معتبرِ شناخته‌شده برمی‌گردد (صفر جعل)؛ نامعتبر = null.
+ */
+export function extractRequestTradeType(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const root = payload as Record<string, unknown>;
+  const containers: Array<Record<string, unknown>> = [root];
+  if (root["data"] && typeof root["data"] === "object" && root["data"] !== payload) {
+    containers.push(root["data"] as Record<string, unknown>);
+  }
+  const VALID = ["خرید", "پیش خرید", "رهن و اجاره", "مشارکت در ساخت"];
+  const norm = (v: string): string => v.replace(/\u200c/g, " ").replace(/\s+/g, " ").trim();
+  for (const c of containers) {
+    for (const k of ["nameRequest", "tradeType", "tradeTypeName", "requestType", "category"]) {
+      const v = c[k];
+      if (typeof v === "string") {
+        const t = norm(v);
+        if (VALID.includes(t)) return t;
+      } else if (v && typeof v === "object") {
+        const name = (v as Record<string, unknown>)["name"] ?? (v as Record<string, unknown>)["title"];
+        if (typeof name === "string") {
+          const t = norm(name);
+          if (VALID.includes(t)) return t;
+        }
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -739,6 +895,13 @@ export async function enrichArmRequests(
           input.areaNames = areaNames;
           gotAny = true;
         }
+        // P6530/گام ۲ (بند ۴.۱) — قیمت متقاضی از/تا + دسته‌بندی از جزئیات درخواست
+        const priceRange = extractRequestPriceRange(det.data);
+        if (priceRange.from !== null) input.priceFrom = priceRange.from;
+        if (priceRange.to !== null) input.priceTo = priceRange.to;
+        const tradeType = extractRequestTradeType(det.data);
+        if (tradeType) input.tradeTypeName = tradeType;
+        if (priceRange.from !== null || priceRange.to !== null || tradeType) gotAny = true;
       } catch {
         /* جزئیات درخواست بهترین-تلاش است — بدون علامت‌گذاری ردیف */
       }
