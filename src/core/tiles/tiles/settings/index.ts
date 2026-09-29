@@ -17,7 +17,7 @@ export const settingsTile = defineTile({
   description:
     "تمام تنظیمات سراسری اپلیکیشن: حالت نمایش، حساب کاربری، مدیریت اتصال به سامانه ملک تبریز (تست و ریست)، و راهنمای کامل استفاده.",
   icon: Settings,
-  accent: "stone",
+  accent: "settings",
   component: SettingsPage,
   order: 4,
   agent: null,

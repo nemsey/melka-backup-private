@@ -82,7 +82,7 @@ export function BrainStatusSection() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <BrainCircuit className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden /> مغز هوشمند و یادگیر ملکا
+          <BrainCircuit className="w-5 h-5 text-sec-ai-700" aria-hidden /> مغز هوشمند و یادگیر ملکا
         </CardTitle>
         <CardDescription>فازهای ۷ تا ۹ — موتورهای هوشمندی، حلقهٔ سرنوشت و ارزیابی صادقانه روی دادهٔ واقعی</CardDescription>
       </CardHeader>
@@ -113,19 +113,19 @@ export function BrainStatusSection() {
             {/* حلقهٔ سرنوشت */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
               <div className="rounded-lg border p-2.5">
-                <div className="text-lg font-extrabold text-teal-700 dark:text-teal-300">{faNumber(status.outcomeLoop.predictions)}</div>
+                <div className="text-lg font-extrabold text-sec-ai-700">{faNumber(status.outcomeLoop.predictions)}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">پیش‌بینی واقعی</div>
               </div>
               <div className="rounded-lg border p-2.5">
-                <div className="text-lg font-extrabold text-teal-700 dark:text-teal-300">{faNumber(status.outcomeLoop.outcomes.total)}</div>
+                <div className="text-lg font-extrabold text-sec-ai-700">{faNumber(status.outcomeLoop.outcomes.total)}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">پیامد واقعی ARM</div>
               </div>
               <div className="rounded-lg border p-2.5">
-                <div className="text-lg font-extrabold text-teal-700 dark:text-teal-300">{faNumber(status.outcomeLoop.linked)}</div>
+                <div className="text-lg font-extrabold text-sec-ai-700">{faNumber(status.outcomeLoop.linked)}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">پیوند حلقهٔ بسته</div>
               </div>
               <div className="rounded-lg border p-2.5">
-                <div className="text-lg font-extrabold text-teal-700 dark:text-teal-300">
+                <div className="text-lg font-extrabold text-sec-ai-700">
                   {typeof status.evaluation.brierScore === "number" ? faNumber(status.evaluation.brierScore) : "—"}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">نمرهٔ Brier</div>
@@ -135,7 +135,7 @@ export function BrainStatusSection() {
             {/* ارزیابی صادقانه */}
             <div className="text-sm space-y-1.5">
               <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <Gauge className="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400" aria-hidden />
+                <Gauge className="w-4 h-4 shrink-0 text-sec-ai-700" aria-hidden />
                 <span className="font-bold">داوری صادقانه:</span>
                 <span>{faNumber(status.evaluation.sampleSize)} نمونه</span>
                 {typeof status.evaluation.lift === "number" && (
@@ -153,7 +153,7 @@ export function BrainStatusSection() {
             {/* یادگیری */}
             {status.learning && (
               <div className="text-sm flex items-start gap-2 rounded-lg border border-dashed p-3">
-                <GitBranch className="w-4 h-4 shrink-0 mt-0.5 text-teal-600 dark:text-teal-400" aria-hidden />
+                <GitBranch className="w-4 h-4 shrink-0 mt-0.5 text-sec-ai-700" aria-hidden />
                 <div>
                   <span className="font-bold">یادگیری حلقه‌بسته:</span> نسخهٔ {faNumber(status.learning.latestVersion)} سیاست ایجنت M1
                   {status.learning.active ? " (فعال)" : ""} — {status.learning.rationale}

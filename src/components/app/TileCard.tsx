@@ -99,47 +99,129 @@ export function useAgentStats(tileId: string | null) {
 }
 
 /**
- * پالت نقش‌های کاشی — نام‌گذاری سنتی تبریز:
- * فیروزه (emerald) · مس (amber) · یاقوت (rose) · آکوا (teal) · گرانیت (stone)
+ * پالت ۱۳ بخش ملکا — گام صفر (قاعده ۱: «یک رنگ، یک بخش — نه تکرار، نه تضاد»)
+ * هر کلید = یک بخش با رنگ اختصاصی عین جدول دستور مالک؛ ۴ سایه (۵۰/۲۰۰/۵۰۰/۷۰۰)
+ * از متغیرهای --sec-* در globals.css؛ دارک خودکار (قاعده ۴: ۵۰۰→۴۰۰ روشن‌تر).
+ * مولد و شاهد: scripts/p6530/colors.json · کنتراست AA: download/p6530/color-contrast-report.md
+ * نکته: رشته‌ها عمداً ایستا هستند تا اسکنر Tailwind همهٔ کلاس‌ها را تولید کند.
  */
-const ACCENTS: Record<
-  string,
-  { chip: string; icon: string; ring: string; hairline: string; glow: string }
-> = {
-  emerald: {
-    chip: "bg-teal-50 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300",
-    icon: "bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 shadow-lg shadow-teal-600/30",
-    ring: "hover:ring-teal-400/50",
-    hairline: "bg-gradient-to-l from-teal-600 via-cyan-400 to-teal-500",
-    glow: "bg-teal-500/[0.05]",
+export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconText: string; ring: string; hairline: string; glow: string; freshness: string }> = {
+  login: { // صفحهٔ ورود
+    chip: "bg-sec-login-50 text-sec-login-700 border-sec-login-200",
+    icon: "bg-gradient-to-br from-sec-login-700 via-sec-login-500 to-sec-login-500 shadow-lg shadow-sec-login-500/30",
+    iconText: "text-sec-login-fg",
+    ring: "hover:ring-sec-login-500/40",
+    hairline: "bg-gradient-to-l from-sec-login-700 via-sec-login-500 to-sec-login-500",
+    glow: "bg-sec-login-500/[0.05]",
+    freshness: "text-sec-login-700",
   },
-  amber: {
-    chip: "bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
-    icon: "bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 shadow-lg shadow-amber-600/30",
-    ring: "hover:ring-amber-400/50",
-    hairline: "bg-gradient-to-l from-amber-500 via-orange-400 to-amber-600",
-    glow: "bg-amber-500/[0.05]",
+  home: { // صفحهٔ هوم
+    chip: "bg-sec-home-50 text-sec-home-700 border-sec-home-200",
+    icon: "bg-gradient-to-br from-sec-home-700 via-sec-home-500 to-sec-home-500 shadow-lg shadow-sec-home-500/30",
+    iconText: "text-sec-home-fg",
+    ring: "hover:ring-sec-home-500/40",
+    hairline: "bg-gradient-to-l from-sec-home-700 via-sec-home-500 to-sec-home-500",
+    glow: "bg-sec-home-500/[0.05]",
+    freshness: "text-sec-home-700",
   },
-  rose: {
-    chip: "bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300",
-    icon: "bg-gradient-to-br from-rose-500 via-rose-600 to-pink-600 shadow-lg shadow-rose-600/30",
-    ring: "hover:ring-rose-400/50",
-    hairline: "bg-gradient-to-l from-rose-500 via-pink-400 to-rose-600",
-    glow: "bg-rose-500/[0.04]",
+  finder: { // فایل‌یابی ملکا
+    chip: "bg-sec-finder-50 text-sec-finder-700 border-sec-finder-200",
+    icon: "bg-gradient-to-br from-sec-finder-700 via-sec-finder-500 to-sec-finder-500 shadow-lg shadow-sec-finder-500/30",
+    iconText: "text-sec-finder-fg",
+    ring: "hover:ring-sec-finder-500/40",
+    hairline: "bg-gradient-to-l from-sec-finder-700 via-sec-finder-500 to-sec-finder-500",
+    glow: "bg-sec-finder-500/[0.05]",
+    freshness: "text-sec-finder-700",
   },
-  teal: {
-    chip: "bg-cyan-50 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300",
-    icon: "bg-gradient-to-br from-cyan-500 via-cyan-600 to-teal-600 shadow-lg shadow-cyan-600/30",
-    ring: "hover:ring-cyan-400/50",
-    hairline: "bg-gradient-to-l from-cyan-500 via-teal-400 to-cyan-600",
-    glow: "bg-cyan-500/[0.05]",
+  "melka-listing": { // آگهی ملکا
+    chip: "bg-sec-melka-listing-50 text-sec-melka-listing-700 border-sec-melka-listing-200",
+    icon: "bg-gradient-to-br from-sec-melka-listing-700 via-sec-melka-listing-500 to-sec-melka-listing-500 shadow-lg shadow-sec-melka-listing-500/30",
+    iconText: "text-sec-melka-listing-fg",
+    ring: "hover:ring-sec-melka-listing-500/40",
+    hairline: "bg-gradient-to-l from-sec-melka-listing-700 via-sec-melka-listing-500 to-sec-melka-listing-500",
+    glow: "bg-sec-melka-listing-500/[0.05]",
+    freshness: "text-sec-melka-listing-700",
   },
-  stone: {
-    chip: "bg-stone-100 text-stone-700 dark:bg-stone-800/80 dark:text-stone-300",
-    icon: "bg-gradient-to-br from-stone-500 via-stone-600 to-stone-700 shadow-lg shadow-stone-600/30",
-    ring: "hover:ring-stone-400/50",
-    hairline: "bg-gradient-to-l from-stone-500 via-stone-400 to-stone-600",
-    glow: "bg-stone-500/[0.04]",
+  "melka-request": { // درخواست ملکا
+    chip: "bg-sec-melka-request-50 text-sec-melka-request-700 border-sec-melka-request-200",
+    icon: "bg-gradient-to-br from-sec-melka-request-700 via-sec-melka-request-500 to-sec-melka-request-500 shadow-lg shadow-sec-melka-request-500/30",
+    iconText: "text-sec-melka-request-fg",
+    ring: "hover:ring-sec-melka-request-500/40",
+    hairline: "bg-gradient-to-l from-sec-melka-request-700 via-sec-melka-request-500 to-sec-melka-request-500",
+    glow: "bg-sec-melka-request-500/[0.05]",
+    freshness: "text-sec-melka-request-700",
+  },
+  settings: { // تنظیمات عمومی
+    chip: "bg-sec-settings-50 text-sec-settings-700 border-sec-settings-200",
+    icon: "bg-gradient-to-br from-sec-settings-700 via-sec-settings-500 to-sec-settings-500 shadow-lg shadow-sec-settings-500/30",
+    iconText: "text-sec-settings-fg",
+    ring: "hover:ring-sec-settings-500/40",
+    hairline: "bg-gradient-to-l from-sec-settings-700 via-sec-settings-500 to-sec-settings-500",
+    glow: "bg-sec-settings-500/[0.05]",
+    freshness: "text-sec-settings-700",
+  },
+  mgmt: { // داشبورد مدیریتی
+    chip: "bg-sec-mgmt-50 text-sec-mgmt-700 border-sec-mgmt-200",
+    icon: "bg-gradient-to-br from-sec-mgmt-700 via-sec-mgmt-500 to-sec-mgmt-500 shadow-lg shadow-sec-mgmt-500/30",
+    iconText: "text-sec-mgmt-fg",
+    ring: "hover:ring-sec-mgmt-500/40",
+    hairline: "bg-gradient-to-l from-sec-mgmt-700 via-sec-mgmt-500 to-sec-mgmt-500",
+    glow: "bg-sec-mgmt-500/[0.05]",
+    freshness: "text-sec-mgmt-700",
+  },
+  m1: { // M1 آگهی ملک تبریز
+    chip: "bg-sec-m1-50 text-sec-m1-700 border-sec-m1-200",
+    icon: "bg-gradient-to-br from-sec-m1-700 via-sec-m1-500 to-sec-m1-500 shadow-lg shadow-sec-m1-500/30",
+    iconText: "text-sec-m1-fg",
+    ring: "hover:ring-sec-m1-500/40",
+    hairline: "bg-gradient-to-l from-sec-m1-700 via-sec-m1-500 to-sec-m1-500",
+    glow: "bg-sec-m1-500/[0.05]",
+    freshness: "text-sec-m1-700",
+  },
+  m2: { // M2 درخواست ملک تبریز
+    chip: "bg-sec-m2-50 text-sec-m2-700 border-sec-m2-200",
+    icon: "bg-gradient-to-br from-sec-m2-700 via-sec-m2-500 to-sec-m2-500 shadow-lg shadow-sec-m2-500/30",
+    iconText: "text-sec-m2-fg",
+    ring: "hover:ring-sec-m2-500/40",
+    hairline: "bg-gradient-to-l from-sec-m2-700 via-sec-m2-500 to-sec-m2-500",
+    glow: "bg-sec-m2-500/[0.05]",
+    freshness: "text-sec-m2-700",
+  },
+  m3: { // M3 معاملات ملک تبریز
+    chip: "bg-sec-m3-50 text-sec-m3-700 border-sec-m3-200",
+    icon: "bg-gradient-to-br from-sec-m3-700 via-sec-m3-500 to-sec-m3-500 shadow-lg shadow-sec-m3-500/30",
+    iconText: "text-sec-m3-fg",
+    ring: "hover:ring-sec-m3-500/40",
+    hairline: "bg-gradient-to-l from-sec-m3-700 via-sec-m3-500 to-sec-m3-500",
+    glow: "bg-sec-m3-500/[0.05]",
+    freshness: "text-sec-m3-700",
+  },
+  m4: { // M4 کارشناسان ملک تبریز
+    chip: "bg-sec-m4-50 text-sec-m4-700 border-sec-m4-200",
+    icon: "bg-gradient-to-br from-sec-m4-700 via-sec-m4-500 to-sec-m4-500 shadow-lg shadow-sec-m4-500/30",
+    iconText: "text-sec-m4-fg",
+    ring: "hover:ring-sec-m4-500/40",
+    hairline: "bg-gradient-to-l from-sec-m4-700 via-sec-m4-500 to-sec-m4-500",
+    glow: "bg-sec-m4-500/[0.05]",
+    freshness: "text-sec-m4-700",
+  },
+  consultant: { // صفحهٔ مشاور (ایجنت)
+    chip: "bg-sec-consultant-50 text-sec-consultant-700 border-sec-consultant-200",
+    icon: "bg-gradient-to-br from-sec-consultant-700 via-sec-consultant-500 to-sec-consultant-500 shadow-lg shadow-sec-consultant-500/30",
+    iconText: "text-sec-consultant-fg",
+    ring: "hover:ring-sec-consultant-500/40",
+    hairline: "bg-gradient-to-l from-sec-consultant-700 via-sec-consultant-500 to-sec-consultant-500",
+    glow: "bg-sec-consultant-500/[0.05]",
+    freshness: "text-sec-consultant-700",
+  },
+  ai: { // هوش مصنوعی/گزارش‌ها
+    chip: "bg-sec-ai-50 text-sec-ai-700 border-sec-ai-200",
+    icon: "bg-gradient-to-br from-sec-ai-700 via-sec-ai-500 to-sec-ai-500 shadow-lg shadow-sec-ai-500/30",
+    iconText: "text-sec-ai-fg",
+    ring: "hover:ring-sec-ai-500/40",
+    hairline: "bg-gradient-to-l from-sec-ai-700 via-sec-ai-500 to-sec-ai-500",
+    glow: "bg-sec-ai-500/[0.05]",
+    freshness: "text-sec-ai-700",
   },
 };
 
@@ -164,7 +246,7 @@ export function TileCard({
 }) {
   const stats = useAgentStats(hasAgent ? tileId : null);
   const freshness = useTileFreshness(tileId);
-  const a = ACCENTS[accent] ?? ACCENTS.emerald;
+  const a = SECTION_ACCENTS[accent] ?? SECTION_ACCENTS.home;
 
   return (
     <motion.button
@@ -176,7 +258,7 @@ export function TileCard({
       aria-label={`باز کردن کاشی ${title}`}
     >
       <Card
-        className={`group relative h-full overflow-hidden border-border/60 shadow-md shadow-black/5 hover:shadow-xl hover:shadow-black/10 transition-all duration-300 hover:-translate-y-1.5 ring-2 ring-transparent ${a.ring}`}
+        className={`group relative h-full overflow-hidden border-border/60 sec-soft-shadow hover:sec-soft-shadow-lg sec-motion hover:-translate-y-1.5 ring-2 ring-transparent ${a.ring}`}
       >
         {/* خط گرادیانی برند بالای کارت — امضای بصری هر کاشی */}
         <div className={`absolute inset-x-0 top-0 h-1 ${a.hairline} opacity-80`} aria-hidden />
@@ -191,7 +273,7 @@ export function TileCard({
               className="flex items-center gap-1.5 text-[11px] text-muted-foreground leading-none"
               title={freshness.sourceLabel}
             >
-              <RefreshCw className="w-3 h-3 shrink-0 text-teal-600 dark:text-teal-400" aria-hidden />
+              <RefreshCw className={`w-3 h-3 shrink-0 ${a.freshness}`} aria-hidden />
               <span className="truncate">
                 آخرین بروزرسانی: {freshness.lastUpdatedAt ? faJalaliShortDateTime(freshness.lastUpdatedAt) : "هنوز داده‌ای ثبت نشده"}
               </span>
@@ -202,7 +284,7 @@ export function TileCard({
             <div
               className={`w-14 h-14 rounded-2xl ${a.icon} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}
             >
-              <Icon className="w-7 h-7 text-white" aria-hidden />
+              <Icon className={`w-7 h-7 ${a.iconText}`} aria-hidden />
             </div>
             <span className="flex items-center justify-center w-8 h-8 rounded-full border border-border/60 bg-background/60 text-muted-foreground/50 transition-all duration-300 group-hover:border-primary/40 group-hover:text-primary group-hover:-translate-x-1">
               <ArrowLeft className="w-4 h-4" aria-hidden />

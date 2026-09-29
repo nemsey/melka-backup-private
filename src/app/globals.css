@@ -108,6 +108,22 @@
   --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* ============ نقشهٔ رنگ ۱۳ بخش (گام صفر — قاعده ۱) ============
+     ابزارهای تولیدشده: bg-sec-{بخش}-{50|200|500|700} · text-sec-… ·
+     border-sec-… · ring-sec-… · از-sec-…/N (آلفا) — دارک خودکار با قاعده ۴ */
+  --color-sec-login-50: var(--sec-login-50); --color-sec-login-200: var(--sec-login-200); --color-sec-login-500: var(--sec-login-500); --color-sec-login-700: var(--sec-login-700); --color-sec-login-fg: var(--sec-login-fg);
+  --color-sec-home-50: var(--sec-home-50); --color-sec-home-200: var(--sec-home-200); --color-sec-home-500: var(--sec-home-500); --color-sec-home-700: var(--sec-home-700); --color-sec-home-fg: var(--sec-home-fg);
+  --color-sec-finder-50: var(--sec-finder-50); --color-sec-finder-200: var(--sec-finder-200); --color-sec-finder-500: var(--sec-finder-500); --color-sec-finder-700: var(--sec-finder-700); --color-sec-finder-fg: var(--sec-finder-fg);
+  --color-sec-melka-listing-50: var(--sec-melka-listing-50); --color-sec-melka-listing-200: var(--sec-melka-listing-200); --color-sec-melka-listing-500: var(--sec-melka-listing-500); --color-sec-melka-listing-700: var(--sec-melka-listing-700); --color-sec-melka-listing-fg: var(--sec-melka-listing-fg);
+  --color-sec-melka-request-50: var(--sec-melka-request-50); --color-sec-melka-request-200: var(--sec-melka-request-200); --color-sec-melka-request-500: var(--sec-melka-request-500); --color-sec-melka-request-700: var(--sec-melka-request-700); --color-sec-melka-request-fg: var(--sec-melka-request-fg);
+  --color-sec-settings-50: var(--sec-settings-50); --color-sec-settings-200: var(--sec-settings-200); --color-sec-settings-500: var(--sec-settings-500); --color-sec-settings-700: var(--sec-settings-700); --color-sec-settings-fg: var(--sec-settings-fg);
+  --color-sec-mgmt-50: var(--sec-mgmt-50); --color-sec-mgmt-200: var(--sec-mgmt-200); --color-sec-mgmt-500: var(--sec-mgmt-500); --color-sec-mgmt-700: var(--sec-mgmt-700); --color-sec-mgmt-fg: var(--sec-mgmt-fg);
+  --color-sec-m1-50: var(--sec-m1-50); --color-sec-m1-200: var(--sec-m1-200); --color-sec-m1-500: var(--sec-m1-500); --color-sec-m1-700: var(--sec-m1-700); --color-sec-m1-fg: var(--sec-m1-fg);
+  --color-sec-m2-50: var(--sec-m2-50); --color-sec-m2-200: var(--sec-m2-200); --color-sec-m2-500: var(--sec-m2-500); --color-sec-m2-700: var(--sec-m2-700); --color-sec-m2-fg: var(--sec-m2-fg);
+  --color-sec-m3-50: var(--sec-m3-50); --color-sec-m3-200: var(--sec-m3-200); --color-sec-m3-500: var(--sec-m3-500); --color-sec-m3-700: var(--sec-m3-700); --color-sec-m3-fg: var(--sec-m3-fg);
+  --color-sec-m4-50: var(--sec-m4-50); --color-sec-m4-200: var(--sec-m4-200); --color-sec-m4-500: var(--sec-m4-500); --color-sec-m4-700: var(--sec-m4-700); --color-sec-m4-fg: var(--sec-m4-fg);
+  --color-sec-consultant-50: var(--sec-consultant-50); --color-sec-consultant-200: var(--sec-consultant-200); --color-sec-consultant-500: var(--sec-consultant-500); --color-sec-consultant-700: var(--sec-consultant-700); --color-sec-consultant-fg: var(--sec-consultant-fg);
+  --color-sec-ai-50: var(--sec-ai-50); --color-sec-ai-200: var(--sec-ai-200); --color-sec-ai-500: var(--sec-ai-500); --color-sec-ai-700: var(--sec-ai-700); --color-sec-ai-fg: var(--sec-ai-fg);
 }
 
 /* ================================================================
@@ -193,6 +209,63 @@
   --sidebar-accent-foreground: oklch(0.9 0.07 70);
   --sidebar-border: oklch(0.36 0.02 205);
   --sidebar-ring: oklch(0.68 0.115 188);
+}
+
+/* ================================================================
+   نظام رنگ ۱۳ بخش ملکا — قاعده ۱ گام صفر (دستور مالک ۱۴۰۵/۰۷/۹)
+   ----------------------------------------------------------------
+   اصل حاکم: «یک رنگ، یک بخش — نه تکرار، نه تضاد.»
+   هر بخش ۴ سایه دارد (قاعده ۲): ۵۰ پس‌زمینهٔ بسیار روشن · ۲۰۰ حاشیه ·
+   ۵۰۰ رنگ اصلی دکمه · ۷۰۰ متن تیره/تأکید؛ دارک (قاعده ۴): ۵۰۰→۴۰۰ روشن‌تر،
+   متن معکوس (fg ثابت AA) و معادل تیرهٔ ۵۰/۲۰۰/۷۰۰.
+   مولد مرجع: scripts/p6530/gen-palette.py → scripts/p6530/colors.json
+   کنتراست: همهٔ جفت‌های الزامی ≥ ۴٫۵:۱ (WCAG AA) — download/p6530/color-contrast-report.md
+   ================================================================ */
+
+:root {
+  /* ۱. صفحهٔ ورود — بنفش سلطنتی #6D28D9 */
+  --sec-login-50: #f5f0fc; --sec-login-200: #bfa0ee; --sec-login-500: #6d28d9; --sec-login-700: #3c1b7a; --sec-login-fg: #ffffff;
+  /* ۲. صفحهٔ هوم — آبی نفتی #0F172A */
+  --sec-home-50: #eeeff0; --sec-home-200: #9599a1; --sec-home-500: #0f172a; --sec-home-700: #0c1222; --sec-home-fg: #ffffff;
+  /* ۳. فایل‌یابی ملکا — آبی روشن #0284C7 */
+  --sec-finder-50: #edf6fb; --sec-finder-200: #90c9e6; --sec-finder-500: #0284c7; --sec-finder-700: #064970; --sec-finder-fg: #0a0e1a;
+  /* ۴. آگهی ملکا — سبز زمردی #059669 */
+  --sec-melka-listing-50: #eef8f4; --sec-melka-listing-200: #91d1bd; --sec-melka-listing-500: #059669; --sec-melka-listing-700: #085242; --sec-melka-listing-fg: #0a0e1a;
+  /* ۵. درخواست ملکا — نارنجی مرجانی #EA580C */
+  --sec-melka-request-50: #fef3ee; --sec-melka-request-200: #f6b694; --sec-melka-request-500: #ea580c; --sec-melka-request-700: #7a3313; --sec-melka-request-fg: #0a0e1a;
+  /* ۶. تنظیمات عمومی — خاکستری فولادی #475569 */
+  --sec-settings-50: #f2f3f4; --sec-settings-200: #aeb4bd; --sec-settings-500: #475569; --sec-settings-700: #283242; --sec-settings-fg: #ffffff;
+  /* ۷. داشبورد مدیریتی — قهوه‌ای کهربایی #92400E */
+  --sec-mgmt-50: #f7f2ee; --sec-mgmt-200: #cfab95; --sec-mgmt-500: #92400e; --sec-mgmt-700: #4e2714; --sec-mgmt-fg: #ffffff;
+  /* ۸. M1 آگهی ملک تبریز — سبز یشمی #10B981 */
+  --sec-m1-50: #eefaf6; --sec-m1-200: #96e0c8; --sec-m1-500: #10b981; --sec-m1-700: #0d644e; --sec-m1-fg: #0f172a;
+  /* ۹. M2 درخواست ملک تبریز — کهربایی روشن #F59E0B */
+  --sec-m2-50: #fef8ee; --sec-m2-200: #fbd494; --sec-m2-500: #f59e0b; --sec-m2-700: #805612; --sec-m2-fg: #0f172a;
+  /* ۱۰. M3 معاملات ملک تبریز — قرمز یاقوتی #DC2626 */
+  --sec-m3-50: #fdf0f0; --sec-m3-200: #f0a0a0; --sec-m3-500: #dc2626; --sec-m3-700: #731a20; --sec-m3-fg: #ffffff;
+  /* ۱۱. M4 کارشناسان ملک تبریز — فیروزه‌ای #0891B2 */
+  --sec-m4-50: #eef7fa; --sec-m4-200: #92cfdd; --sec-m4-500: #0891b2; --sec-m4-700: #095066; --sec-m4-fg: #0a0e1a;
+  /* ۱۲. صفحهٔ مشاور (ایجنت) — صورتی ارغوانی #DB2777 */
+  --sec-consultant-50: #fcf0f5; --sec-consultant-200: #efa0c3; --sec-consultant-500: #db2777; --sec-consultant-700: #721a48; --sec-consultant-fg: #ffffff;
+  /* ۱۳. هوش مصنوعی/گزارش‌ها — لاجوردی #4F46E5 */
+  --sec-ai-50: #f3f2fd; --sec-ai-200: #b2aef4; --sec-ai-500: #4f46e5; --sec-ai-700: #2c2a80; --sec-ai-fg: #ffffff;
+}
+
+/* قاعده ۴ — دارک مود: ۵۰۰→۴۰۰ روشن‌تر · متن معکوس · هویت رنگی حفظ */
+.dark {
+  --sec-login-50: #221c43; --sec-login-200: #422d7b; --sec-login-500: #844adf; --sec-login-700: #aa82e9; --sec-login-fg: #ffffff;
+  --sec-home-50: #131a27; --sec-home-200: #1e2638; --sec-home-500: #353c4c; --sec-home-700: #898d96; --sec-home-fg: #ffffff;
+  --sec-finder-50: #112b40; --sec-finder-200: #195074; --sec-finder-500: #2a98d0; --sec-finder-700: #6cb8df; --sec-finder-fg: #0a0e1a;
+  --sec-melka-listing-50: #122e31; --sec-melka-listing-200: #1a5750; --sec-melka-listing-500: #2da781; --sec-melka-listing-700: #6ec2a8; --sec-melka-listing-fg: #0f172a;
+  --sec-melka-request-50: #362422; --sec-melka-request-200: #713f2d; --sec-melka-request-500: #ed7333; --sec-melka-request-700: #f39e72; --sec-melka-request-fg: #0f172a;
+  --sec-settings-50: #1c2331; --sec-settings-200: #333e50; --sec-settings-500: #647081; --sec-settings-700: #949ca8; --sec-settings-fg: #ffffff;
+  --sec-mgmt-50: #282022; --sec-mgmt-200: #50362e; --sec-mgmt-500: #a35f35; --sec-mgmt-700: #c09073; --sec-mgmt-fg: #ffffff;
+  --sec-m1-50: #133335; --sec-m1-200: #1e6459; --sec-m1-500: #36c495; --sec-m1-700: #74d6b6; --sec-m1-fg: #0f172a;
+  --sec-m2-50: #382f22; --sec-m2-200: #755a2c; --sec-m2-500: #f7ae32; --sec-m2-700: #f9c771; --sec-m2-fg: #0f172a;
+  --sec-m3-50: #341c26; --sec-m3-200: #6c2c37; --sec-m3-500: #e24949; --sec-m3-700: #eb8181; --sec-m3-fg: #ffffff;
+  --sec-m4-50: #122d3c; --sec-m4-200: #1b556c; --sec-m4-500: #30a3be; --sec-m4-700: #70bfd2; --sec-m4-fg: #0f172a;
+  --sec-consultant-50: #341c33; --sec-consultant-200: #6b2d56; --sec-consultant-500: #e14a8d; --sec-consultant-700: #ea82b0; --sec-consultant-fg: #ffffff;
+  --sec-ai-50: #1d2145; --sec-ai-200: #36387f; --sec-ai-500: #6b64e9; --sec-ai-700: #9994f0; --sec-ai-fg: #ffffff;
 }
 
 @layer base {
@@ -301,4 +374,50 @@ button, a, [role="button"] {
 .cv-row {
   content-visibility: auto;
   contain-intrinsic-size: auto 53px;
+}
+
+/* ================================================================
+   چهار اصل زیبایی (گام صفر — قاعده ۳)
+   ۱. تنفس: هر کارت ≥ ۱۶px پدینگ (کلاس کمکی sec-breath)
+   ۲. عمق: سایهٔ نرم ۰ ۴px ۱۲px — صفر سایهٔ سخت (sec-soft-shadow)
+   ۳. حرکت: ترنزیشن ۲۰۰ms — صفر پرش ناگهانی (sec-motion)
+   ۴. خوانایی: کنتراست ≥ ۴٫۵:۱ در پالت (گزارش کنتراست شاهد است)
+   ================================================================ */
+.sec-breath {
+  padding: 1rem; /* ۱۶px — حداقل قانون */
+}
+@media (min-width: 640px) {
+  .sec-breath { padding: 1.25rem; } /* ۲۰px روی صفحه‌های بزرگ‌تر */
+}
+.sec-soft-shadow {
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.08);
+}
+.dark .sec-soft-shadow {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+}
+.sec-soft-shadow-lg {
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.12);
+}
+.dark .sec-soft-shadow-lg {
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+}
+.sec-motion {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+/* احترام به کاهش حرکت — اصل حرکت هرگز اجباری نیست */
+@media (prefers-reduced-motion: reduce) {
+  .sec-motion { transition-duration: 0ms; }
+}
+
+/* سربرگ هویتی هر بخش — نوار گرادیانی ظریف با رنگ اختصاصی بخش (قاعده ۱) */
+.sec-hairline {
+  height: 0.25rem;
+  border-radius: 999px 999px 0 0;
+  background-image: linear-gradient(to left, var(--sc-500), var(--sc-200));
+}
+.sec-surface {
+  background-color: var(--sc-50);
+  border: 1px solid var(--sc-200);
 }

@@ -31,12 +31,12 @@ export function ManagementDashboardPage({ settings, userRole }: TilePageProps) {
   return (
     <div className="space-y-6">
       {/* سربرگ */}
-      <section className="relative overflow-hidden rounded-2xl border border-teal-500/15 bg-gradient-to-l from-teal-600/10 via-cyan-500/[0.06] to-transparent p-5 sm:p-6">
+      <section className="relative overflow-hidden rounded-2xl border border-sec-mgmt-200 bg-gradient-to-l from-sec-mgmt-500/10 via-sec-mgmt-500/[0.05] to-transparent p-5 sm:p-6">
         <div className="pointer-events-none absolute -top-14 -end-10 w-48 h-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="text-xl font-extrabold flex items-center gap-2">
-              <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 shadow-lg shadow-teal-600/30 shrink-0">
+              <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-sec-mgmt-700 via-sec-mgmt-500 to-sec-mgmt-500 shadow-lg shadow-sec-mgmt-500/30 shrink-0">
                 <LayoutDashboard className="w-5 h-5 text-white" aria-hidden />
               </span>
               داشبورد مدیریتی ملک تبریز
@@ -88,7 +88,7 @@ export function ManagementDashboardPage({ settings, userRole }: TilePageProps) {
       {/* راهنمای بازگشت */}
       <Card className="border-dashed">
         <CardContent className="p-4 text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
-          <LayoutDashboard className="w-4 h-4 shrink-0 mt-0.5 text-teal-600 dark:text-teal-400" aria-hidden />
+          <LayoutDashboard className="w-4 h-4 shrink-0 mt-0.5 text-sec-mgmt-700" aria-hidden />
           <p>
             دکمه بازگشت هر کاشی داخل این داشبورد، شما را به همین صفحه برمی‌گرداند؛ برای رسیدن به صفحه خانه،
             از داشبورد مدیریتی ملک تبریز یک بار دیگر بازگشت را بزنید. کارگاه اصلی دفتر (فایل‌یابی، آگهی، درخواست ملک) و تنظیمات عمومی همیشه مستقیم روی صفحه خانه در دسترس‌اند.

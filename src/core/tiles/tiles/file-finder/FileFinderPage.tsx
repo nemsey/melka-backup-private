@@ -323,7 +323,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
               {lastScan.error ? " — با خطا" : ` — ${faNumber(lastScan.newAds)} فایل شخصی تازه${lastScan.autoRejected > 0 ? ` / ${faNumber(lastScan.autoRejected)} رد خودکار` : ""}`}
             </span>
           )}
-          <Button size="sm" className="gap-1.5" onClick={runScan} disabled={scanning}>
+          <Button size="sm" className="gap-1.5 bg-sec-finder-500 hover:bg-sec-finder-500/90 text-sec-finder-fg" onClick={runScan} disabled={scanning}>
             {scanning ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Crosshair className="w-4 h-4" aria-hidden />}
             اسکن دیوار
           </Button>

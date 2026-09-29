@@ -16,7 +16,7 @@ export const expertsTile = defineTile({
   description:
     "عین «فهرست کاربران» خود سامانه: نام، موبایل، نقش، کسب‌وکار، ثبت‌کننده، تاریخ ثبت (هجری شمسی) و وضعیت — به‌علاوه «تعاملات مشاوران با یکدیگر» و درجه همکاری هر مشاور.",
   icon: Users,
-  accent: "teal",
+  accent: "m4",
   component: ExpertsPage,
   order: 4,
   container: "management-dashboard",

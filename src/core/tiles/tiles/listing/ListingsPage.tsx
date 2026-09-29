@@ -89,7 +89,7 @@ export function ListingsPage({ settings, onSettingsChange }: TilePageProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-extrabold flex items-center gap-2">
-              <Megaphone className="w-6 h-6 text-amber-600 dark:text-amber-400" aria-hidden /> دفتر فایل‌های آگهی
+              <Megaphone className="w-6 h-6 text-sec-melka-listing-700" aria-hidden /> دفتر فایل‌های آگهی
             </h2>
             <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
               ثبت دستی (۵ گامی عین فرم آرم)، ثبت خودکار فایل‌های تأییدشده فایل‌یابی، انتقال گام‌به‌گام به CRM ملک تبریز و انتشار هوشمند در اینستاگرام.
@@ -103,7 +103,7 @@ export function ListingsPage({ settings, onSettingsChange }: TilePageProps) {
             <Button variant="outline" size="icon" onClick={() => setShowSettings((v) => !v)} aria-label="تنظیمات کاشی آگهی">
               <Settings2 className="w-4 h-4" aria-hidden />
             </Button>
-            <Button className="gap-1.5 bg-gradient-to-l from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white shadow" onClick={() => setNewOpen(true)}>
+            <Button className="gap-1.5 bg-gradient-to-l from-sec-melka-listing-700 to-sec-melka-listing-500 hover:from-sec-melka-listing-700 hover:to-sec-melka-listing-500 text-sec-melka-listing-fg shadow" onClick={() => setNewOpen(true)}>
               <Plus className="w-4 h-4" aria-hidden /> ثبت دستی آگهی
             </Button>
           </div>

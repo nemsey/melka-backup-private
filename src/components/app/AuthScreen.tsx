@@ -84,7 +84,7 @@ export function AuthScreen() {
       <main className="w-full max-w-md">
         {/* برندینگ */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center shadow-xl shadow-teal-600/30 ring-8 ring-primary/10 mb-4 tile-pop">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-sec-login-700 via-sec-login-500 to-sec-login-500 flex items-center justify-center shadow-xl shadow-sec-login-500/30 ring-8 ring-primary/10 mb-4 tile-pop">
             <Building2 className="w-10 h-10 text-white" aria-hidden />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight brand-gradient-text">داشبورد هوشمند ملک تبریز</h1>

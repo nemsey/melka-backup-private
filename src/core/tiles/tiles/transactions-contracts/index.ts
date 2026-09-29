@@ -25,7 +25,7 @@ export const transactionsContractsTile = defineTile({
   description:
     "فهرست تک‌صفحه‌ای معاملات با ستون‌های کامل: کد ملک با نام و موبایل مالک، درخواست با نام و موبایل درخواست‌دهنده، نوع قرارداد، شماره هولوگرام، مبلغ قرارداد با جداکنندهٔ «،»، فایل قرارداد (سند PDF تولیدی از داده‌های واقعی سامانه‌های ملک تبریز) و تجمیع حق‌السهم مشاوران با درصد هر مشاور — شامل اطلاعات تمامی کارشناسان ملک تبریز با ایجنت هوشمند مولتی‌بینش.",
   icon: FileCheck2,
-  accent: "emerald",
+  accent: "m3",
   component: TransactionsContractsPage,
   order: 3,
   container: "management-dashboard",

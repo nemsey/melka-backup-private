@@ -107,7 +107,7 @@ export function OtpScreen() {
       <main className="w-full max-w-md">
         <Card className="tile-pop border-border/60 shadow-xl shadow-black/5">
           <CardHeader className="text-center">
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center mb-2 shadow-lg shadow-teal-600/25 ring-4 ring-primary/10">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-sec-login-700 via-sec-login-500 to-sec-login-500 flex items-center justify-center mb-2 shadow-lg shadow-sec-login-500/25 ring-4 ring-primary/10">
               <MessageSquareText className="w-7 h-7 text-white" aria-hidden />
             </div>
             <CardTitle className="text-lg">کد تأیید پیامکی</CardTitle>

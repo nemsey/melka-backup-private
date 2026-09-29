@@ -36,15 +36,15 @@ export function DashboardHome() {
 
       {/* خوش‌آمد و خلاصه وضعیت — هیروی برند */}
       <section className="mb-8 mt-5">
-        <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-l from-primary/10 via-cyan-500/[0.06] to-transparent p-5 sm:p-7">
-          {/* هاله‌های تزئینی برند — فیروزه و مس */}
-          <div className="pointer-events-none absolute -top-16 -start-16 w-56 h-56 rounded-full bg-primary/10 blur-3xl" aria-hidden />
-          <div className="pointer-events-none absolute -bottom-20 -end-10 w-56 h-56 rounded-full bg-accent/15 blur-3xl" aria-hidden />
+        <div className="relative overflow-hidden rounded-2xl border border-sec-home-200 bg-gradient-to-l from-sec-home-500/10 via-sec-home-500/[0.05] to-transparent p-5 sm:p-7">
+          {/* هاله‌های تزئینی هوم — هویت آبی نفتی (گام صفر) */}
+          <div className="pointer-events-none absolute -top-16 -start-16 w-56 h-56 rounded-full bg-sec-home-500/10 blur-3xl" aria-hidden />
+          <div className="pointer-events-none absolute -bottom-20 -end-10 w-56 h-56 rounded-full bg-sec-home-500/[0.07] blur-3xl" aria-hidden />
 
           <p className="relative text-xs text-muted-foreground">
             {displayName ? `خوش آمدید، ${displayName}` : "خوش آمدید"} — لایه هوش تحلیلی ملک تبریز
           </p>
-          <h2 className="relative text-xl sm:text-3xl font-extrabold mt-1.5 brand-gradient-text">
+          <h2 className="relative text-xl sm:text-3xl font-extrabold mt-1.5 text-sec-home-700">
             کارگاه اصلی دفتر
           </h2>
           <p className="relative text-muted-foreground mt-2 text-sm sm:text-base leading-relaxed max-w-3xl">
@@ -90,9 +90,9 @@ export function DashboardHome() {
           className="tile-press mt-4 text-right focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl w-full"
           aria-label="رفتن به داشبورد مدیریتی ملک تبریز"
         >
-          <Card className="border-dashed border-teal-500/30 bg-teal-500/[0.03] hover:bg-teal-500/[0.06] transition-colors">
+          <Card className="border-dashed border-sec-home-200 bg-sec-home-50 hover:bg-sec-home-50/80 transition-colors">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center shadow-md shadow-teal-600/25 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sec-home-700 via-sec-home-500 to-sec-home-500 flex items-center justify-center shadow-md shadow-sec-home-500/25 shrink-0">
                 <LayoutDashboard className="w-5 h-5 text-white" aria-hidden />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">

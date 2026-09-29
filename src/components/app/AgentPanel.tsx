@@ -240,7 +240,7 @@ export function AgentPanel({ tileId }: { tileId: string }) {
               aria-expanded={insightsOpen}
             >
               <span className="flex items-center gap-2 text-base font-extrabold">
-                <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 shadow-md shadow-teal-600/25 shrink-0">
+                <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-sec-consultant-700 via-sec-consultant-500 to-sec-consultant-500 shadow-md shadow-sec-consultant-500/25 shrink-0">
                   <BrainCircuit className="w-5 h-5 text-white" aria-hidden />
                 </span>
                 بینش‌های ایجنت هوشمند

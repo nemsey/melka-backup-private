@@ -129,7 +129,7 @@ export function RequestsPage({ settings }: TilePageProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-extrabold flex items-center gap-2">
-              <ClipboardList className="w-6 h-6 text-teal-600 dark:text-teal-400" aria-hidden /> دفتر درخواست‌های ملک
+              <ClipboardList className="w-6 h-6 text-sec-melka-request-700" aria-hidden /> دفتر درخواست‌های ملک
             </h2>
             <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
               ثبت دستی و اتوماتیک با همان فرم ۴ گامی سامانه آرم (بدون دور زدن هیچ گامی)، ویرایش، ثبت رویداد و ایجنت مدیریت مشتریان.
@@ -143,7 +143,7 @@ export function RequestsPage({ settings }: TilePageProps) {
             <Button variant="outline" className="gap-1.5 border-teal-400 text-teal-700 hover:bg-teal-50 dark:text-teal-300" onClick={() => openWizard("manual")}>
               <UserRound className="w-4 h-4" aria-hidden /> ثبت دستی (مالک حضوری)
             </Button>
-            <Button className="gap-1.5 bg-gradient-to-l from-teal-600 to-cyan-500 text-white shadow" onClick={() => openWizard("auto")}>
+            <Button className="gap-1.5 bg-gradient-to-l from-sec-melka-request-700 to-sec-melka-request-500 text-sec-melka-request-fg shadow" onClick={() => openWizard("auto")}>
               <Zap className="w-4 h-4" aria-hidden /> ثبت اتوماتیک در آرم
             </Button>
           </div>
