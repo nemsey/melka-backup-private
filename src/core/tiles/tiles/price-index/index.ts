@@ -16,7 +16,7 @@ export const priceIndexTile = defineTile({
   description:
     "بر پایه «شاخص قیمت‌های روز» رسمی سامانه ملک تبریز به تفکیک منطقه و مشخصات فنی ملک + آمار واقعی بازار: روند تغییر شاخص‌ها در زمان، مقایسه بین مناطق، هشدار تغییرات جهشی و پایش سلامت قیمت‌گذاری کارشناسان (آگهی‌هایی که از شاخص منطقه فاصله معنادار دارند) — مرجع سریع قیمت‌گذاری برای جلسات مذاکره.",
   icon: Gauge,
-  accent: "amber",
+  accent: "home",
   component: PriceIndexPage,
   order: 5,
   container: "management-dashboard",

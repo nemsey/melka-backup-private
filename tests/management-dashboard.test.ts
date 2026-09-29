@@ -126,7 +126,7 @@ describe("معماری داشبورد مدیریتی", () => {
         tagline: "تست",
         description: "تست",
         icon: DummyIcon,
-        accent: "stone",
+        accent: "settings",
         component: Dummy,
         order: 1,
         settings: [],

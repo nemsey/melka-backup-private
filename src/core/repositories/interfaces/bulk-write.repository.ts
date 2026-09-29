@@ -103,7 +103,10 @@ export interface ArmRequestBulkRow {
   normalizationVersion?: string | null;
 }
 
-/** ردیف کاتالوگ آگهی‌های ARM — نمای نمایشی کاشی «آگهی‌های ملک تبریز» (P6.5-10) */
+/** ردیف کاتالوگ آگهی‌های ARM — نمای نمایشی کاشی «آگهی ملک تبریز» (P6.5-10 + P6530/گام ۱)
+ *  ستون‌های ده‌گانهٔ فهرست عین دستور مالک:
+ *  ردیف · کد آگهی · کارشناس · شعبه · مالک (نام + موبایل زیر نام) · قیمت ملک ·
+ *  آدرس ملک (منطقه، کوی، پلاک) · دسته‌بندی · وضعیت (ده‌حالته) · آخرین فعالیت */
 export interface ArmListingCatalogRow {
   /** شناسه ARM (objectId) */
   id: string;
@@ -117,6 +120,10 @@ export interface ArmListingCatalogRow {
   ownerName: string | null;
   /** شماره تماس مالک ملک (نرمال‌شده 09xxxxxxxxx) */
   ownerMobile: string | null;
+  /** P6530/گام ۱ — قیمت ملک (تومان — عدد پایهٔ سامانه) */
+  price: number | null;
+  /** P6530/گام ۱ — دسته‌بندی آگهی (فروش/پیش فروش/رهن و اجاره/مشارکت در ساخت) */
+  tradeTypeName: string | null;
   /** آدرس ملک (دقیق از جزئیات یا ترکیبی از موقعیت فهرست) */
   address: string | null;
   areaName: string | null;
@@ -127,7 +134,10 @@ export interface ArmListingCatalogRow {
   updatedAt: Date;
 }
 
-/** ردیف کاتالوگ درخواست‌های ARM — نمای نمایشی کاشی «درخواست‌های ملک تبریز» (P6.5-10) */
+/** ردیف کاتالوگ درخواست‌های ARM — نمای نمایشی کاشی «درخواست ملک تبریز» (P6.5-10 + P6530/گام ۲)
+ *  ستون‌های ده‌گانهٔ فهرست عین دستور مالک:
+ *  ردیف · کد درخواست · کارشناس · شعبه · متقاضی (نام + موبایل زیر نام) ·
+ *  قیمت از...تا... · مناطق · دسته‌بندی · وضعیت (شش‌حالته) · تاریخ ثبت */
 export interface ArmRequestCatalogRow {
   /** شناسه ARM (objectId) */
   id: string;
@@ -143,24 +153,59 @@ export interface ArmRequestCatalogRow {
   customerMobile: string | null;
   /** P6521/M2 — منطقه‌های منتخب (متن ساده؛ تهی = هنوز از منبع تکمیل نشده) */
   areaNames: string[];
+  /** P6530/گام ۲ — دسته‌بندی درخواست (خرید/پیش خرید/رهن و اجاره/مشارکت در ساخت) */
+  tradeTypeName: string | null;
+  /** P6530/گام ۲ — بازهٔ قیمت متقاضی (تومان): از / تا (از جزئیات ARM — inputsJson قیمت کل) */
+  priceFrom: number | null;
+  priceTo: number | null;
   /** زمان غنی‌سازی تماس — تهی = در انتظار */
   enrichedAt: Date | null;
   createdAt: Date | null;
   updatedAt: Date;
 }
 
-/** فیلتر کاتالوگ آگهی‌های ARM — کدآگهی (contains) + نام کارشناس (contains)
- *  P6521/M1 — statuses: مقادیر خام وضعیت برای فیلتر شش‌حالته (خروجی listingStateRawValues) */
+/** فیلتر کاتالوگ آگهی‌های ARM — P6530/گام ۱: فیلتر بر اساس «تمام ستون‌های فهرست»
+ *  (بند ۲ دستور): کد، کارشناس، مالک (نام/موبایل)، قیمت (از/تا)، آدرس/منطقه،
+ *  دسته‌بندی، وضعیت (ده‌حالته)، بازهٔ آخرین فعالیت */
 export interface ArmListingCatalogFilter {
   code?: string;
   realtorName?: string;
+  /** مالک: نام یا موبایل (contains نرمال‌شده) */
+  ownerName?: string;
+  /** قیمت ملک — تومان */
+  priceFrom?: number;
+  priceTo?: number;
+  /** آدرس ملک / منطقه (contains نرمال‌شده روی address + areaName) */
+  address?: string;
+  /** دسته‌بندی — مقادیر خام (فروش/پیش فروش/رهن و اجاره/مشارکت در ساخت) */
+  tradeTypes?: string[];
+  /** ده‌حالته: مقادیر خام وضعیت (خروجی listingStateRawValues) */
   statuses?: string[];
+  /** آخرین فعالیت — از / تا (ISO) */
+  activityFrom?: string;
+  activityTo?: string;
 }
 
-/** فیلتر کاتالوگ درخواست‌های ARM — کد درخواست (contains) + نام کارشناس (contains) */
+/** فیلتر کاتالوگ درخواست‌های ARM — P6530/گام ۲: فیلتر بر اساس «تمام ستون‌های فهرست»
+ *  (بند ۲ دستور): کد، کارشناس، متقاضی (نام/موبایل)، قیمت (از/تا)، مناطق،
+ *  دسته‌بندی، وضعیت (شش‌حالته)، بازهٔ تاریخ ثبت */
 export interface ArmRequestCatalogFilter {
   code?: string;
   realtorName?: string;
+  /** متقاضی: نام یا موبایل (contains نرمال‌شده) */
+  customerName?: string;
+  /** قیمت متقاضی — تومان (هم‌پوشانی با بازهٔ از/تای ردیف) */
+  priceFrom?: number;
+  priceTo?: number;
+  /** مناطق (contains نرمال‌شده روی areaNames) */
+  areaName?: string;
+  /** دسته‌بندی — مقادیر خام (خرید/پیش خرید/رهن و اجاره/مشارکت در ساخت) */
+  tradeTypes?: string[];
+  /** شش‌حالتهٔ M2: مقادیر خام وضعیت */
+  statuses?: string[];
+  /** تاریخ ثبت — از / تا (ISO) */
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 /** شمارش وضعیت غنی‌سازی کاتالوگ */

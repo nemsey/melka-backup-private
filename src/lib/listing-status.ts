@@ -1,26 +1,33 @@
 /**
- * قانون شش‌حالتهٔ وضعیت آگهی‌های ARM — P6521 / M1 (دستور ۰۲۰ مالک)
+ * قانون ده‌حالتهٔ وضعیت آگهی‌های ARM — P6530 / گام ۱ / M1 (دستور مالک ۱۴۰۵/۰۷/۹)
  * ---------------------------------------------------------------------------
  * الگوی مرجع: `src/lib/contract-classify.ts` (پروندهٔ M3 — ملکا-شورا-۱۴۰۵-۰۱۸).
  *
- * شش حالت canonical عین دستور مالک:
- *   منتشر شده / منقضی شده / معامله شده / رد توسط مدیر / نمایش خصوصی / فایل غیر قابل احیا
+ * ده حالت canonical عین نکته ۳ دستور مالک:
+ *   معامله شده / منتشر شده / نمایش خصوصی / منقضی شده / رد توسط مدیر /
+ *   در انتظار تایید مدیر / در انتظار تایید مشاور / در انتظار بررسی مشاور /
+ *   فایل قابل احیا / فایل غیر قابل احیا
  *
- * نگاشت بر پایهٔ شاهد DB (۱۱٬۳۹۸ رکورد، 2026-09-24): مقادیر خام ARM دقیقاً شش مقدار
- * برابر حالت‌های دستور دارند (دو مورد فقط تفاوت برچسب: «رد شده توسط مدیر» → «رد توسط مدیر»
- * و «اکران خصوصی» → «نمایش خصوصی»). پنج مقدار انتظاریِ باقیمانده (در انتظار بررسی مشاوران،
- * فایل قابل احیا، در انتظار تایید مشاور، در انتظار معامله، در انتظار تایید مدیر) جزء شش‌گانه
- * نیستند: خارج از طبقه‌بندی می‌مانند (سایر) و **هیچ نگاشت اختراعی روی آن‌ها انجام نمی‌شود**
- * (تصمیم §۳ docs/decision-preview-publish-v2.md).
+ * نگاشت بر پایهٔ شاهد DB (۱۱٬۴۵۶ رکورد، 2026-09-29 — توزیع خام):
+ *   معامله شده ۲۷۰ · منتشر شده ۷۷۰ · اکران خصوصی ۶۷ → نمایش خصوصی ·
+ *   منقضی شده ۱۶۷۵ · رد شده توسط مدیر ۱۵۷ → رد توسط مدیر ·
+ *   در انتظار تایید مدیر ۷ · در انتظار تایید مشاور ۱۹۵ ·
+ *   در انتظار بررسی مشاوران ۱۳۰۵ → در انتظار بررسی مشاور (برچسب دستور) ·
+ *   « فایل قابل احیا» ۴۹۷ (با فاصلهٔ ابتدایی خام!) · فایل غیر قابل احیا ۶۴۹۶ ·
+ *   در انتظار معامله ۱۷ → خارج از ده‌گانه (سایر) — هیچ نگاشت اختراعی انجام نمی‌شود.
  */
 
-/** کلیدهای شش حالت — پایدار برای API/UI/تست‌ها */
+/** کلیدهای ده حالت — پایدار برای API/UI/تست‌ها */
 export type ListingStateKey =
-  | "published"
-  | "expired"
   | "traded"
-  | "rejected"
+  | "published"
   | "private"
+  | "expired"
+  | "rejectedByAdmin"
+  | "pendingAdmin"
+  | "pendingConsultant"
+  | "pendingReview"
+  | "recoverable"
   | "unrecoverable";
 
 export interface ListingStateDef {
@@ -43,15 +50,27 @@ export function normalizeListingStatusText(raw: string | null | undefined): stri
 }
 
 /**
- * قانون شش‌حالته — ترتیب عین دستور مالک.
- * rawValues عین مقادیر مشاهده‌شده در DB زندهٔ ARM است (با نیم‌فاصله نرمال‌شده).
+ * قانون ده‌حالته — ترتیب عین نکته ۳ دستور مالک.
+ * rawValues عین مقادیر مشاهده‌شده در DB زندهٔ ARM است (نرمال‌شده با نیم‌فاصله/فاصله ابتدایی).
  */
 export const LISTING_STATES: readonly ListingStateDef[] = [
+  {
+    key: "traded",
+    label: "معامله شده",
+    rawValues: ["معامله شده"],
+    hint: "ملک این آگهی معامله شده است",
+  },
   {
     key: "published",
     label: "منتشر شده",
     rawValues: ["منتشر شده"],
     hint: "آگهی در سامانه ARM منتشر است",
+  },
+  {
+    key: "private",
+    label: "نمایش خصوصی",
+    rawValues: ["اکران خصوصی"],
+    hint: "آگهی فقط به‌صورت خصوصی نمایش داده می‌شود",
   },
   {
     key: "expired",
@@ -60,22 +79,34 @@ export const LISTING_STATES: readonly ListingStateDef[] = [
     hint: "اعتبار آگهی در سامانه به پایان رسیده است",
   },
   {
-    key: "traded",
-    label: "معامله شده",
-    rawValues: ["معامله شده"],
-    hint: "ملک این آگهی معامله شده است",
-  },
-  {
-    key: "rejected",
+    key: "rejectedByAdmin",
     label: "رد توسط مدیر",
     rawValues: ["رد شده توسط مدیر"],
     hint: "آگهی توسط مدیر سامانه رد شده است",
   },
   {
-    key: "private",
-    label: "نمایش خصوصی",
-    rawValues: ["اکران خصوصی"],
-    hint: "آگهی فقط به‌صورت خصوصی نمایش داده می‌شود",
+    key: "pendingAdmin",
+    label: "در انتظار تایید مدیر",
+    rawValues: ["در انتظار تایید مدیر"],
+    hint: "آگهی در انتظار تأیید مدیر سامانه است",
+  },
+  {
+    key: "pendingConsultant",
+    label: "در انتظار تایید مشاور",
+    rawValues: ["در انتظار تایید مشاور"],
+    hint: "آگهی در انتظار تأیید مشاور مسؤول است",
+  },
+  {
+    key: "pendingReview",
+    label: "در انتظار بررسی مشاور",
+    rawValues: ["در انتظار بررسی مشاوران"],
+    hint: "آگهی در صف بررسی مشاوران است",
+  },
+  {
+    key: "recoverable",
+    label: "فایل قابل احیا",
+    rawValues: ["فایل قابل احیا"],
+    hint: "فایل آگهی در سامانه قابل احیاست",
   },
   {
     key: "unrecoverable",
@@ -101,7 +132,7 @@ const RAW_TO_KEY: ReadonlyMap<string, ListingStateKey> = (() => {
 
 /**
  * طبقه‌بندی وضعیت خام ARM → کلید حالت canonical.
- * خروجی null یعنی «خارج از شش‌گانه» (سایر) — ردیف با متن خام خودش و Badge خنثی نمایش داده می‌شود.
+ * خروجی null یعنی «خارج از ده‌گانه» (سایر) — ردیف با متن خام خودش و Badge خنثی نمایش داده می‌شود.
  */
 export function classifyListingStatus(raw: string | null | undefined): ListingStateKey | null {
   if (!raw) return null;
@@ -145,17 +176,21 @@ export const ListingStateKeyValues: readonly ListingStateKey[] = LISTING_STATES.
 
 /**
  * جمع‌کردن شمارش‌های خام (خروجی groupBy) به توزیع canonical.
- * خروجی: هر شش حالت + «other» برای خارج از شش‌گانه.
+ * خروجی: هر ده حالت + «other» برای خارج از ده‌گانه.
  */
 export function rollupStatusCounts(
   rawCounts: Iterable<[string | null, number]>
 ): Record<ListingStateKey | "other", number> & { total: number } {
   const out = {
-    published: 0,
-    expired: 0,
     traded: 0,
-    rejected: 0,
+    published: 0,
     private: 0,
+    expired: 0,
+    rejectedByAdmin: 0,
+    pendingAdmin: 0,
+    pendingConsultant: 0,
+    pendingReview: 0,
+    recoverable: 0,
     unrecoverable: 0,
     other: 0,
     total: 0,

@@ -17,7 +17,7 @@ export const extractionTile = defineTile({
   description:
     "دو مسیر تخصصی: (۱) با کدآگهی، نام و نام خانوادگی آگهی‌دهنده (مالک ملک)، شماره تماس او و آدرس ملک را مستقیماً از سامانه آرم دریافت کنید؛ (۲) با کددرخواست، نام و نام خانوادگی درخواست‌دهنده (مشتری ملک) و شماره تماس او را ببینید. داده هرگز کش نمی‌شود و هر استعلام با حسابرسی کامل ثبت می‌گردد.",
   icon: FileSearch,
-  accent: "teal",
+  accent: "home",
   component: ExtractionPage,
   order: 7,
   container: "management-dashboard",

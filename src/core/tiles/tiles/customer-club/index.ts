@@ -16,7 +16,7 @@ export const customerClubTile = defineTile({
   description:
     "بر پایه لیست‌های واقعی سامانه (شخصیت، شغل و نقش مشتری) تلفیق‌شده با مالکان و درخواست‌دهندگان حاضر در معاملات: توزیع شخصیت‌ها، مشتریان تکراری (خریدار و فروشنده همزمان) و رشد جامعه مشتریان در زمان — برای شناخت عمیق مخاطب، شخصی‌سازی خدمات و برنامه وفادارسازی.",
   icon: Users,
-  accent: "rose",
+  accent: "consultant",
   component: CustomerClubPage,
   order: 3,
   container: "management-dashboard",

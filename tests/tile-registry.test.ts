@@ -18,7 +18,7 @@ function makeTile(overrides: Partial<Parameters<typeof defineTile>[0]> = {}) {
     tagline: "تست",
     description: "تست",
     icon: DummyIcon,
-    accent: "emerald",
+    accent: "home",
     component: Dummy,
     order: 10,
     settings: [{ key: "k", label: "تنظیم", type: "switch", defaultValue: true }],

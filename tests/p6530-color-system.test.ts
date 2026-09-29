@@ -207,7 +207,7 @@ describe("گام صفر — نظام رنگ ۱۳ بخش (قاعده ۶)", () => 
     for (const [tileId, sectionKey] of Object.entries(expected)) {
       const tile = tileRegistry.get(tileId);
       expect(tile).toBeDefined();
-      expect(tile!.accent).toBe(sectionKey);
+      expect(tile!.accent).toBe(sectionKey as never);
     }
   });
 

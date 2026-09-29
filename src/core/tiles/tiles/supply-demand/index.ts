@@ -17,7 +17,7 @@ export const supplyDemandTile = defineTile({
   description:
     "عین «گزارش عرضه و تقاضا» خود سامانه ملک تبریز: بازه × تعداد آگهی × درصد درخواست × وضعیت — همراه با شاخص تعادل بازار، بازه‌های با فشار تقاضای بالا/پایین و ایجنت تحلیل بازار برای هدایت قیمت‌گذاری آگهی‌های جدید.",
   icon: Scale,
-  accent: "rose",
+  accent: "home",
   component: SupplyDemandPage,
   order: 6,
   container: "management-dashboard",

@@ -105,14 +105,34 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     limit: number
   ): Promise<{ rows: ArmListingCatalogRow[]; total: number }> {
     const where: Prisma.PropertyRecordWhereInput = {};
-    // P6521/M1 — فیلتر شش‌حالته: مقادیر خام قانون‌مند (listingStateRawValues) — دقیق، بدون تخمین
+    // P6521/M1 + P6530 — فیلتر وضعیت: مقادیر خام قانون‌مند (listingStateRawValues) — دقیق، بدون تخمین
     if (filter.statuses && filter.statuses.length > 0) where.status = { in: filter.statuses };
+    // P6530/گام ۱ — دسته‌بندی (دقیق — مقادیر خام سامانه)
+    if (filter.tradeTypes && filter.tradeTypes.length > 0) where.tradeTypeName = { in: filter.tradeTypes };
+    // P6530/گام ۱ — قیمت ملک (تومان) و بازهٔ آخرین فعالیت در SQL (عدد/تاریخ — بدون نرمال‌سازی لازم)
+    if (filter.priceFrom !== undefined || filter.priceTo !== undefined) {
+      where.price = {};
+      if (filter.priceFrom !== undefined) where.price.gte = filter.priceFrom;
+      if (filter.priceTo !== undefined) where.price.lte = filter.priceTo;
+    }
+    if (filter.activityFrom || filter.activityTo) {
+      where.createdAt = {};
+      if (filter.activityFrom) where.createdAt.gte = new Date(filter.activityFrom);
+      if (filter.activityTo) {
+        // پایان روز شامل شود (مرز تاریخ تهران — عین الگوی M3)
+        const to = new Date(filter.activityTo);
+        to.setHours(23, 59, 59, 999);
+        where.createdAt.lte = to;
+      }
+    }
 
     // P6525 — نرمال‌سازی ورودی فیلترهای کدی/متنی با منبع یگانه
     const codeNorm = normalizeFilterInput(filter.code);
     const realtorNorm = normalizeFilterInput(filter.realtorName);
-    const needsJsFilter = codeNorm !== "" || realtorNorm !== "";
-    // با فیلتر JS، کل کاتالوش اسکن می‌شود (قانون فهرست: تمام ردیف‌ها؛ سقف = گارد ایمنی سرور)
+    const ownerNorm = normalizeFilterInput(filter.ownerName);
+    const addrNorm = normalizeFilterInput(filter.address);
+    const needsJsFilter = codeNorm !== "" || realtorNorm !== "" || ownerNorm !== "" || addrNorm !== "";
+    // با فیلتر JS، کل کاتالوگ اسکن می‌شود (قانون فهرست: تمام ردیف‌ها؛ سقف = گارد ایمنی سرور)
     const fetchTake = needsJsFilter ? LIST_SCAN_CAP : limit;
 
     const records = await this.client.propertyRecord.findMany({
@@ -127,6 +147,8 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
         ownerName: true,
         rawOwnerName: true,
         ownerMobile: true,
+        price: true,
+        tradeTypeName: true,
         address: true,
         areaName: true,
         lineName: true,
@@ -137,10 +159,22 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     });
 
     // P6525 — تطبیق نرمال‌شده: نتیجهٔ فارسی = لاتین = عربی (ارقام) و ي = ی، ك = ک (حروف)
+    // P6530/گام ۱ — مالک: نام یا موبایل · آدرس: متن کامل یا منطقه
     const matched = needsJsFilter
       ? records.filter((r) => {
           if (codeNorm !== "" && !normalizeFilterInput(r.propertyCode).includes(codeNorm)) return false;
           if (realtorNorm !== "" && !normalizeFilterInput(r.ownerName).includes(realtorNorm)) return false;
+          if (ownerNorm !== "") {
+            const name = normalizeFilterInput(r.rawOwnerName);
+            const mobile = normalizeFilterInput(r.ownerMobile);
+            if (!name.includes(ownerNorm) && !mobile.includes(ownerNorm)) return false;
+          }
+          if (addrNorm !== "") {
+            const addr = normalizeFilterInput(r.address);
+            const area = normalizeFilterInput(r.areaName);
+            const line = normalizeFilterInput(r.lineName);
+            if (!addr.includes(addrNorm) && !area.includes(addrNorm) && !line.includes(addrNorm)) return false;
+          }
           return true;
         })
       : records;
@@ -153,6 +187,8 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
       realtorName: r.ownerName,
       ownerName: r.rawOwnerName,
       ownerMobile: r.ownerMobile,
+      price: typeof r.price === "number" ? r.price : null,
+      tradeTypeName: r.tradeTypeName,
       address: r.address,
       areaName: r.areaName,
       lineName: r.lineName,

@@ -56,8 +56,10 @@ export interface TileDefinition {
   description: string;
   /** کامپوننت آیکون کاشی (lucide) */
   icon: LucideIcon;
-  /** کلاس رنگ تاکیدی — از پالت سراسری */
-  accent: "emerald" | "amber" | "rose" | "teal" | "stone";
+  /** رنگ هویتی بخش — پالت ۱۳ بخش ملکا (گام صفر P6530 — قاعده ۱؛ SECTION_ACCENTS در TileCard) */
+  accent:
+    | "login" | "home" | "finder" | "melka-listing" | "melka-request" | "settings"
+    | "mgmt" | "m1" | "m2" | "m3" | "m4" | "consultant" | "ai";
   /** کامپوننت صفحه داخلی کاشی */
   component: ComponentType<TilePageProps>;
   /** تعریف تنظیمات اختصاصی — در همان کاشی نگهداری می‌شود */
