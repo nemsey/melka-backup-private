@@ -681,3 +681,20 @@ function parseShareNames(json: string | null | undefined): string[] {
     return [];
   }
 }
+
+
+/** P6530/گام ۴ — آمار خانواده‌ای فهرست کارشناسان (مبایعه نامه با پیش‌فروش · اجاره نامه با تمدید)
+ *  محاسبهٔ خالص برای صفحهٔ M4 — صفحات فقط فرمت می‌کنند (قانون معماری P1-02) */
+export function expertFamilyStats(
+  rows: Array<{ active: boolean; saleCount: number; rentCount: number }>
+): { count: number; active: number; saleTotal: number; rentTotal: number } {
+  let active = 0;
+  let saleTotal = 0;
+  let rentTotal = 0;
+  for (const r of rows) {
+    if (r.active) active += 1;
+    saleTotal += r.saleCount;
+    rentTotal += r.rentCount;
+  }
+  return { count: rows.length, active, saleTotal, rentTotal };
+}

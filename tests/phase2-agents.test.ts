@@ -370,7 +370,7 @@ function makeEmptyCustomerRepo(): CustomerRepository {
 }
 
 describe("P2-02-B — ایجنت‌های چندجدولی با Repository ساختگی (صفر DB)", () => {
-  test("ExpertAgent: شبکه همکاری و مشاوران منزوی از Stub", async () => {
+  test("ExpertAgent: شبکه همکاری و کسب‌وکارها از Stub (گام ۴ P6530: کارت نقش‌ها و منزوی‌ها حذف شدند)", async () => {
     const agent = new ExpertAgent({
       experts: makeExpertRepoFull(
         [stubExpert(), stubExpert({ id: "E2", personnelCode: "910002", fullName: "رضا کریمی", active: true })],
@@ -378,9 +378,12 @@ describe("P2-02-B — ایجنت‌های چندجدولی با Repository سا�
       ),
     });
     const cards = await agent["computeRawInsights"]();
-    expect(cards.some((c) => c.key === "ex-composition")).toBe(true);
+    // P6530/گام ۴ (بند ۵): ex-composition (ترکیب نقش‌های تیم) و ex-risk (منزوی‌ها) حذف شدند
+    expect(cards.some((c) => c.key === "ex-composition")).toBe(false);
+    expect(cards.some((c) => c.key === "ex-risk")).toBe(false);
     expect(cards.some((c) => c.key === "ex-activity")).toBe(true);
     expect(cards.some((c) => c.key === "ex-network")).toBe(true);
+    // ex-businesses فقط با >۱ کسب‌وکار ساخته می‌شود (stub تک‌کسب‌وکار = بدون کارت — داده‌محور)
   });
 
   test("RequestAgent: بدون داده → بینش جامعه در حال شکل‌گیری (بدون throw)", async () => {

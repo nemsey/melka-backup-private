@@ -157,13 +157,13 @@ describe("گام ۳/M3 §۴ — فیلتر تمام ستون‌ها", () => {
     const txRepo = getTransactionRepository();
     await txRepo.upsertBulk([
       {
-        id: `${P}t1`, propertyCode: `${P}7001`, requestCode: `${P}8001`,
-        contractDate: "2026-06-11T00:00:00.000Z",
+        id: `${P}t1`, propertyCode: `${P}7001`, propertyCustomer: "فروشنده اول", requestCustomer: "خریدار اول", requestCode: `${P}8001`,
+        contractDate: new Date("2026-06-11T00:00:00.000Z"),
         contractHolo: "p65m3holo1", suggestedPropertyCount: 1, eventsCount: 1,
       },
       {
-        id: `${P}t2`, propertyCode: `${P}7002`, requestCode: `${P}8002`,
-        contractDate: "2026-06-12T00:00:00.000Z",
+        id: `${P}t2`, propertyCode: `${P}7002`, propertyCustomer: "فروشنده دوم", requestCustomer: "خریدار دوم", requestCode: `${P}8002`,
+        contractDate: new Date("2026-06-12T00:00:00.000Z"),
         contractHolo: "p65m3holo2", suggestedPropertyCount: 0, eventsCount: 2,
       },
     ], { sourceRunId: `${P}-seed` });
@@ -269,9 +269,9 @@ describe("گام ۳/M3 §۵ — بینش‌ها", () => {
     const { getTransactionRepository } = await import("@/core/repositories");
     const { db } = await import("@/lib/db");
     await getTransactionRepository().upsertBulk([
-      { id: `${P}i1`, propertyCode: `${P}7101`, requestCode: null, contractDate: "2026-09-20T00:00:00.000Z", contractHolo: `${P}h1`, suggestedPropertyCount: 2, eventsCount: 1 },
-      { id: `${P}i2`, propertyCode: `${P}7102`, requestCode: `${P}8102`, contractDate: "2026-09-21T00:00:00.000Z", contractHolo: `${P}h2`, suggestedPropertyCount: 0, eventsCount: 3 },
-      { id: `${P}i3`, propertyCode: `${P}7103`, requestCode: `${P}8103`, contractDate: "2026-09-22T00:00:00.000Z", contractHolo: null, suggestedPropertyCount: 1, eventsCount: 0 },
+      { id: `${P}i1`, propertyCode: `${P}7101`, propertyCustomer: "مالک یک", requestCustomer: null, requestCode: null, contractDate: new Date("2026-09-20T00:00:00.000Z"), contractHolo: `${P}h1`, suggestedPropertyCount: 2, eventsCount: 1 },
+      { id: `${P}i2`, propertyCode: `${P}7102`, propertyCustomer: "مالک دو", requestCustomer: "متقاضی دو", requestCode: `${P}8102`, contractDate: new Date("2026-09-21T00:00:00.000Z"), contractHolo: `${P}h2`, suggestedPropertyCount: 0, eventsCount: 3 },
+      { id: `${P}i3`, propertyCode: `${P}7103`, propertyCustomer: "مالک سه", requestCustomer: "متقاضی سه", requestCode: `${P}8103`, contractDate: new Date("2026-09-22T00:00:00.000Z"), contractHolo: null, suggestedPropertyCount: 1, eventsCount: 0 },
     ], { sourceRunId: `${P}-iseed` });
     try {
     const { getAgent } = await import("@/core/agent");

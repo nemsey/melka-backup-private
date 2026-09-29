@@ -160,7 +160,8 @@ describe("P1-02 / ادعاهای ساختاری — پنج صفحه فقط فر�
   test("صفحات از analyzers import می‌کنند (نه محاسبه محلی)", () => {
     const checks: Array<[string, string]> = [
       ["transactions-contracts/TransactionsTab.tsx", "txTypeMonthlySeries"],
-      ["experts/ExpertsPage.tsx", "cooperationDegree"],
+      // P6530/گام ۴ — cooperationDegree با حذف تعاملات رفت؛ آمار خانواده‌ای M4 از expertFamilyStats
+      ["experts/ExpertsPage.tsx", "expertFamilyStats"],
       ["supply-demand/SupplyDemandPage.tsx", "demandLevel"],
       ["price-index/PriceIndexPage.tsx", "areaTrendMatrix"],
     ];

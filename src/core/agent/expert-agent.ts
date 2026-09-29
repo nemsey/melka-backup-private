@@ -3,7 +3,7 @@
  * ------------------------------------------------------
  * تخصص: تحلیل «فهرست کاربران/مشاوران» و «تعاملات مشاوران با یکدیگر»
  * سامانه ملک تبریز — توزیع نقش‌ها، وضعیت فعال/غیرفعال، رشد عضویت
- * (هجری شمسی)، شبکه همکاری و مشاوران منزوی — با یادگیری از بازخورد.
+ * (هجری شمسی)، شبکه همکاری — با یادگیری از بازخورد. (دو بینش ترکیب نقش‌ها و منزوی‌ها: حذف گام ۴)
  */
 
 import { getExpertRepository, getVisitRepository, type ExpertRepository, type VisitRepository } from "@/core/repositories";
@@ -14,10 +14,8 @@ import {
   expertBaseStats,
   growthRate,
   interactionConcentration,
-  isolatedRealtors,
   joinerSeries,
   realtorDegrees,
-  roleDistribution,
   topPairs,
 } from "./analyzers";
 import { faNumber, faMonthLabel } from "@/lib/format";
@@ -134,18 +132,7 @@ export class ExpertAgent extends BaseLearningAgent {
     const base = expertBaseStats(experts);
     const degrees = realtorDegrees(interactions);
 
-    // ---- COMPOSITION: ترکیب تیم (نقش‌ها) ----
-    const roles = roleDistribution(experts);
-    if (roles.length > 0) {
-      cards.push({
-        key: "ex-composition",
-        domain: "COMPOSITION",
-        title: "ترکیب نقش‌های تیم",
-        body: `تیم از ${faNumber(experts.length)} کاربر تشکیل شده است؛ پرشمارترین نقش «${roles[0].name}» با ${faNumber(roles[0].count)} نفر است. ${roles.length > 3 ? "تنوع نقش‌ها بالا است — هماهنگی نقش‌ها و شرح وظایف شفاف اهمیت دارد." : "ترکیب نقش‌ها متمرکز و شفاف است."}`,
-        severity: "info",
-        metrics: roles.slice(0, 4).map((r) => ({ label: r.name, value: `${faNumber(r.count)} نفر` })),
-      });
-    }
+    // ---- P6530/گام ۴ (بند ۵): کارت بینش ترکیب نقش‌ها حذف شد (دستور مالک) ----
 
     // ---- ACTIVITY: وضعیت فعال/غیرفعال ----
     cards.push({
@@ -202,21 +189,7 @@ export class ExpertAgent extends BaseLearningAgent {
       });
     }
 
-    // ---- RISK: مشاوران منزوی (بدون هیچ تعاملی) ----
-    const isolated = isolatedRealtors(experts, interactions);
-    if (isolated.length > 0) {
-      cards.push({
-        key: "ex-risk",
-        domain: "RISK",
-        title: "مشاوران فعالِ بدون تعامل",
-        body: `${faNumber(isolated.length)} کاربر فعال در هیچ همکاریِ منجر به معامله‌ای نقش نداشته‌اند: ${isolated.slice(0, 3).map((i) => i.fullName).join("، ")}${isolated.length > 3 ? " و…" : ""}. این وضعیت نشانه‌ی انزوا یا ناآشنایی با چرخه همکاری است — جلسه‌ی معرفی جریان کار و معرفی به مشاوران پیشتاز توصیه می‌شود.`,
-        severity: "warning",
-        metrics: [
-          { label: "بدون تعامل", value: `${faNumber(isolated.length)} نفر` },
-          { label: "درگیر در شبکه", value: `${faNumber(experts.length - isolated.length)} نفر` },
-        ],
-      });
-    }
+    // ---- P6530/گام ۴ (بند ۵): کارت بینش مشاوران بدون تعامل حذف شد (دستور مالک) ----
 
     // ---- کسب‌وکارهای بزرگ (تکمیل تصویر ساختار) ----
     const businesses = businessDistribution(experts);
