@@ -98,6 +98,12 @@ export async function register(): Promise<void> {
     const { startIntelligenceDaemon } = await import("@/lib/intelligence/daemon");
     const { db } = await import("@/lib/db");
     startIntelligenceDaemon(db);
+
+    // P6530/گام ۶ (نکتهٔ بسیار مهم ۱) — دیمن پایدار اتصال و انتقال داده:
+    // برش‌های کوچک checkpointدار کاتالوگ آگهی‌ها/درخواست‌ها + غنی‌سازی؛
+    // به‌محض اتصال تازهٔ ARM، انتقال خودکار از آخرین نقطه ادامه می‌یابد.
+    const { startCatalogDaemon } = await import("@/lib/melk-api/catalog-daemon");
+    startCatalogDaemon(db);
   }
 
   // ---------- ۳) حلقه همگام‌سازی پس‌زمینه — HOTFIX-02 (SEC-3) ----------

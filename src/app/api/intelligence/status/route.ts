@@ -12,6 +12,7 @@
  * داده همیشه از آخرین اجرای زندهٔ حلقه (یا اجرای در-جا در نخستین درخواست).
  */
 
+import { catalogDaemonStatus } from "@/lib/melk-api/catalog-daemon";
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
@@ -61,6 +62,8 @@ export async function GET(request: NextRequest) {
         },
         evaluation: summary.evaluation,
         daemon: daemonHealth(),
+        // P6530/گام ۶ — دیمن پایدار اتصال و انتقال داده (کاتالوگ‌های ARM)
+        catalogDaemon: catalogDaemonStatus(),
         learning: policy
           ? { latestVersion: policy.latestVersion, active: policy.active, rationale: policy.rationale, createdAt: policy.createdAt }
           : null,

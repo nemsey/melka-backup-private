@@ -46,6 +46,8 @@ import { faNumber, faDateTime } from "@/lib/format";
 import { faDigits } from "@/lib/jalali";
 import { TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
 import { expertFamilyStats } from "@/core/agent/analyzers";
+// P6530/گام ۶ (نکتهٔ ۲) — مرتب‌سازی فارسی: الفبای فارسی + ارقام ۰-۹؛ مستقل از املای ارقام/حروف
+import { faSortBy } from "@/lib/fa-sort";
 
 interface ExRow {
   id: string;
@@ -118,7 +120,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
     errorValue: (prev) => (prev ? { ...prev, rows: [] } : ({ rows: [], total: 0, dataSource: null } as unknown as ExResponse)),
   });
 
-  const rows = data?.rows ?? [];
+  // P6530/گام ۶ — ترتیب نمایشی با الفبای فارسی (faCompare) — نه ترتیب بایتی SQL
+  const rows = useMemo(() => faSortBy(data?.rows ?? [], (r) => r.fullName), [data]);
   const total = data?.total ?? 0;
   const lastUpdate = data?.lastUpdate ?? null;
   const freshness = useTileFreshness("experts");

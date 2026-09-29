@@ -162,93 +162,11 @@ export function SettingsPage({ onBack }: TilePageProps) {
         </CardContent>
       </Card>
 
-      {/* مغز هوشمند و یادگیر — فازهای ۷/۸/۹ */}
-      <BrainStatusSection />
-
-      {/* حساب کاربری */}
-      <Card>
+      {/* ۱ — مدیریت اتصال به سامانه ملک تبریز (سرآغاز بخش‌های اتصال — گام ۶) */}
+      <Card id="settings-connection-hub" className="border-sec-settings-200">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <UserRound className="w-5 h-5 text-primary" aria-hidden /> حساب کاربری
-          </CardTitle>
-          <CardDescription>اطلاعات نشست جاری شما</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" aria-hidden />
-              <span className="font-bold">{user?.displayName}</span>
-            </div>
-            {user?.role === "OWNER" && (
-              <Badge className="bg-amber-500 text-amber-950 gap-1">
-                <BadgeCheck className="w-3.5 h-3.5" aria-hidden /> مالک سامانه
-              </Badge>
-            )}
-            <Badge variant="outline" className="gap-1">
-              <Clock className="w-3.5 h-3.5" aria-hidden /> نشست تا {user ? faDateTime(user.expiresAt) : "—"}
-            </Badge>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            کد پرسنلی: <span dir="ltr" className="font-mono">{user?.personnelCode}</span>
-          </div>
-          <Button variant="destructive" className="gap-2" onClick={() => void logout()}>
-            <LogOut className="w-4 h-4" aria-hidden /> خروج از حساب
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* تم و زبان */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              {theme === "dark" ? <Moon className="w-5 h-5 text-primary" aria-hidden /> : <Sun className="w-5 h-5 text-primary" aria-hidden />} تم نمایش
-            </CardTitle>
-            <CardDescription>حالت روشن یا تاریک رابط کاربری</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between rounded-lg border bg-card p-3">
-              <div className="space-y-0.5 me-4">
-                <Label htmlFor="theme-switch" className="text-sm font-medium">
-                  حالت تاریک
-                </Label>
-                <p className="text-xs text-muted-foreground">مناسب استفاده شبانه و صرفه‌جویی باتری OLED</p>
-              </div>
-              <Switch
-                id="theme-switch"
-                checked={theme === "dark"}
-                onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Languages className="w-5 h-5 text-primary" aria-hidden /> زبان اپلیکیشن
-            </CardTitle>
-            <CardDescription>این اپلیکیشن تک‌زبانه و تخصصی فارسی است</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between rounded-lg border bg-card p-3">
-              <div className="space-y-0.5 me-4">
-                <span className="text-sm font-medium">فارسی (ایران)</span>
-                <p className="text-xs text-muted-foreground">راست‌به‌چپ، ارقام فارسی، تقویم شمسی</p>
-              </div>
-              <Badge variant="secondary" className="gap-1">
-                <Lock className="w-3.5 h-3.5" aria-hidden /> ثابت
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* مدیریت اتصال */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Server className="w-5 h-5 text-primary" aria-hidden /> مدیریت اتصال به سامانه ملک تبریز
+            <Server className="w-5 h-5 text-sec-settings-700" aria-hidden /> مدیریت اتصال به سامانه ملک تبریز
           </CardTitle>
           <CardDescription>
             وضعیت اتصال به arm.melketabriz.ir و pm.melketabriz.ir — در صورت بروز اختلال، اتصال را ریست کنید.
@@ -393,18 +311,106 @@ export function SettingsPage({ onBack }: TilePageProps) {
         </CardContent>
       </Card>
 
-      {/* اتصال به سامانه ARM با کد پیامکی — دستور مالک ۱۴۰۵/۰۶/۳۰:
+      {/* P6530/گام ۶ — ترتیب الزامی بخش‌های اتصال عین دستور مالک:
+          ۱) مدیریت اتصال به سامانه ملک تبریز (بالا — کارت مدیریت)
+          ۲) اتصال به سامانه ARM (آگهی و درخواست)
+          ۳) اتصال به حساب شخصی سامانه PM
+          ۴) اتصال به دیوار
+          ۵) اتصال به اینستاگرام */}
+      {/* ۲ — اتصال به سامانه ARM با کد پیامکی — دستور مالک ۱۴۰۵/۰۶/۳۰:
           ورود با کد مستر هم بتواند داده واقعی ARM را متصل کند */}
       <ArmConnectionSection />
 
-      {/* اتصال به دیوار — دو روش با کلید ریست */}
-      <DivarConnectionSection />
-
-      {/* اتصال به حساب شخصی سامانه PM — برای چراغ نشانگر خانه */}
+      {/* ۳ — اتصال به حساب شخصی سامانه PM — برای چراغ نشانگر خانه */}
       <PmConnectionSection />
 
-      {/* اتصال به اینستاگرام — کاشی آگهی */}
+      {/* ۴ — اتصال به دیوار — دو روش با کلید ریست */}
+      <DivarConnectionSection />
+
+      {/* ۵ — اتصال به اینستاگرام — کاشی آگهی */}
       <InstagramConnectionSection />
+
+      {/* مغز هوشمند و یادگیر — فازهای ۷/۸/۹ */}
+      <BrainStatusSection />
+
+      {/* حساب کاربری */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <UserRound className="w-5 h-5 text-primary" aria-hidden /> حساب کاربری
+          </CardTitle>
+          <CardDescription>اطلاعات نشست جاری شما</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary" aria-hidden />
+              <span className="font-bold">{user?.displayName}</span>
+            </div>
+            {user?.role === "OWNER" && (
+              <Badge className="bg-amber-500 text-amber-950 gap-1">
+                <BadgeCheck className="w-3.5 h-3.5" aria-hidden /> مالک سامانه
+              </Badge>
+            )}
+            <Badge variant="outline" className="gap-1">
+              <Clock className="w-3.5 h-3.5" aria-hidden /> نشست تا {user ? faDateTime(user.expiresAt) : "—"}
+            </Badge>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            کد پرسنلی: <span dir="ltr" className="font-mono">{user?.personnelCode}</span>
+          </div>
+          <Button variant="destructive" className="gap-2" onClick={() => void logout()}>
+            <LogOut className="w-4 h-4" aria-hidden /> خروج از حساب
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* تم و زبان */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              {theme === "dark" ? <Moon className="w-5 h-5 text-primary" aria-hidden /> : <Sun className="w-5 h-5 text-primary" aria-hidden />} تم نمایش
+            </CardTitle>
+            <CardDescription>حالت روشن یا تاریک رابط کاربری</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between rounded-lg border bg-card p-3">
+              <div className="space-y-0.5 me-4">
+                <Label htmlFor="theme-switch" className="text-sm font-medium">
+                  حالت تاریک
+                </Label>
+                <p className="text-xs text-muted-foreground">مناسب استفاده شبانه و صرفه‌جویی باتری OLED</p>
+              </div>
+              <Switch
+                id="theme-switch"
+                checked={theme === "dark"}
+                onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Languages className="w-5 h-5 text-primary" aria-hidden /> زبان اپلیکیشن
+            </CardTitle>
+            <CardDescription>این اپلیکیشن تک‌زبانه و تخصصی فارسی است</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between rounded-lg border bg-card p-3">
+              <div className="space-y-0.5 me-4">
+                <span className="text-sm font-medium">فارسی (ایران)</span>
+                <p className="text-xs text-muted-foreground">راست‌به‌چپ، ارقام فارسی، تقویم شمسی</p>
+              </div>
+              <Badge variant="secondary" className="gap-1">
+                <Lock className="w-3.5 h-3.5" aria-hidden /> ثابت
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* راهنمای اپلیکیشن */}
       <Card>
