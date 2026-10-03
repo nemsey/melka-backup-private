@@ -31,6 +31,8 @@ import { emitEvent } from "@/lib/intelligence/blackboard";
 import { enrichTransactionsInfo } from "./tx-info-enrichment";
 import { getPmSyncToken, syncPmPersonnelInfo } from "./pm-acc-sync";
 import { syncMelkPublicCatalog } from "./melk-public";
+// P6547/گام دوم — همگام‌سازی ساعتی فهرست‌های مرجع انواع ARM (شناسه→نام)
+import { syncTypeRegistries } from "./type-registry";
 
 /** فاصلهٔ پیش‌فرض تیک‌ها — دقیقه */
 const DEFAULT_INTERVAL_MINUTES = 3;
@@ -64,6 +66,8 @@ export interface CatalogDaemonStatus {
     txInfoEnriched?: number;
     pmInfoEnriched?: number;
     melkPublicNewCodes?: number;
+    /** P6547 — تعداد رجیستری‌های مرجع همگام‌شده در این تیک */
+    typeRegistriesSynced?: number;
     cooldownSkip?: boolean;
   } | null;
 }
@@ -116,7 +120,7 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
   s.status.running = true;
   s.status.lastTickAt = Date.now();
   s.status.ticks += 1;
-  const result = { listingsPages: 0, requestsPages: 0, listingsEnriched: 0, requestsEnriched: 0, txInfoEnriched: 0, pmInfoEnriched: 0, melkPublicNewCodes: 0, cooldownSkip: false };
+  const result = { listingsPages: 0, requestsPages: 0, listingsEnriched: 0, requestsEnriched: 0, txInfoEnriched: 0, pmInfoEnriched: 0, melkPublicNewCodes: 0, typeRegistriesSynced: 0, cooldownSkip: false };
   // P6545/BLOCK 1.1 — وضعیت کار در DB (پایدار در برابر ری‌استارت)
   const jobs = new JobStateService(db);
   try {
@@ -210,6 +214,18 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
       }
     } catch {
       s.status.lastError = "PM_INFO_SLICE_FAILED"; // نرم
+    }
+    // P6547/گام دوم — چرخهٔ ساعتی فهرست‌های مرجع انواع ARM (tradeType/buildingType/propertyType/…)
+    if (s.status.ticks % PUBLIC_EVERY_N_TICKS === 0 && live) {
+      try {
+        const armTokensForRegistries = sessionToArmTokens(live);
+        if (armTokensForRegistries?.accessToken) {
+          const reg = await syncTypeRegistries(armTokensForRegistries.accessToken);
+          result.typeRegistriesSynced = reg.synced.length;
+        }
+      } catch {
+        s.status.lastError = "TYPE_REGISTRIES_SYNC_FAILED"; // نرم — چرخهٔ بعدی
+      }
     }
     // P6546/گام صفر-۱ — چرخهٔ ساعتی سامانهٔ عمومی: یافتن کدهای غایب + افزودن (بدون توکن)
     if (s.status.ticks % PUBLIC_EVERY_N_TICKS === 0) {

@@ -388,14 +388,15 @@ export async function syncPmPersonnelInfo(pmToken: string, opts: { maxRows?: num
   const maxRows = Math.min(Math.max(opts.maxRows ?? 25, 1), 100);
   const out: PmPersonnelInfoSyncResult = { ok: true, attempted: 0, enriched: 0, failed: 0, remaining: 0, sampleHireDates: [], sampleBranches: [] };
 
-  // صف: پرسنلِ بدون تاریخ استخدام «یا» بدون شعبه (P6547 — شعبهٔ PM منبع اصلی ستون شعبه شد)
+  // صف: پرسنلِ بدون تاریخ استخدام/شعبه/نوع همکاری (P6547 — شعبه و اشتغال PM منبع اصلی ستون‌ها شد)
+  const PENDING_WHERE = { OR: [{ hireDate: null }, { branchTitle: null }, { employmentType: null }] };
   const pending = await db.pmPersonnelRecord.findMany({
-    where: { OR: [{ hireDate: null }, { branchTitle: null }] },
+    where: PENDING_WHERE,
     select: { id: true, fullName: true },
     take: maxRows,
     orderBy: { updatedAt: "asc" },
   });
-  const remainingCount = await db.pmPersonnelRecord.count({ where: { OR: [{ hireDate: null }, { branchTitle: null }] } });
+  const remainingCount = await db.pmPersonnelRecord.count({ where: PENDING_WHERE });
   out.remaining = remainingCount;
 
   for (const p of pending) {

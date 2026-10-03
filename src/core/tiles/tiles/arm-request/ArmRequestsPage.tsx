@@ -35,7 +35,7 @@ import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } 
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2,
+  Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2, Zap,
   Landmark, PieChart, Banknote, Tag, CalendarDays, Network, Filter, MapPinned, Award, Building2, Home,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
@@ -65,6 +65,10 @@ interface RequestRow {
   title: string | null;
   status: string | null;
   actorName: string | null;
+  /** P6547/گام دوم — فوریت درخواست (urgent خود ردیف فهرست ARM) */
+  urgent: boolean | null;
+  /** P6547/گام دوم — جدیت متقاضی (userSeriousity.name از رجیستری ARM) */
+  seriousnessName: string | null;
   customerName: string | null;
   customerMobile: string | null;
   priceFrom: number | null;
@@ -729,6 +733,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-24">نوع ساختمان</TableHead>
                     <TableHead className="min-w-24">دسته‌بندی</TableHead>
                     <TableHead className="min-w-28">وضعیت</TableHead>
+                    {/* P6547/گام دوم — ستون فوریت (urgent خود ردیف فهرست ARM) */}
+                    <TableHead className="min-w-20">فوریت</TableHead>
                     <TableHead className="min-w-28">تاریخ ثبت</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -844,6 +850,21 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
+                        </TableCell>
+                        {/* P6547/گام دوم — فوریت + جدیت (urgent + userSeriousity از خود ردیف فهرست ARM) */}
+                        <TableCell className="whitespace-nowrap">
+                          <div className="flex flex-col items-center gap-0.5">
+                            {r.urgent ? (
+                              <Badge variant="secondary" className="gap-0.5 text-[10px] border-0 bg-orange-500/15 text-orange-700 dark:text-orange-300" title="درخواست فوری (urgent در سامانه ARM)">
+                                <Zap className="w-2.5 h-2.5" aria-hidden /> فوری
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-[10px]">—</span>
+                            )}
+                            {r.seriousnessName ? (
+                              <span className="text-[9px] text-muted-foreground" title="جدیت متقاضی از رجیستری ARM">جدیت: {r.seriousnessName}</span>
+                            ) : null}
+                          </div>
                         </TableCell>
                         {/* ۱۰ — تاریخ ثبت */}
                         <TableCell className="text-muted-foreground whitespace-nowrap">

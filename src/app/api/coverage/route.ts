@@ -31,6 +31,8 @@ interface ColumnSpec {
 const M1_COLUMNS: ColumnSpec[] = [
   { key: "title", title: "عنوان", fillPath: "همگام‌سازی کاتالوگ ARM + سامانهٔ عمومی (apu — بدون توکن)" },
   { key: "ownerName", title: "کارشناس", fillPath: "همگام‌سازی کاتالوگ ARM (relatedRealtor)" },
+  // P6547/گام یک-۵ — شعبهٔ کارشناس از سامانهٔ PM (personnelInfo.branchId.title)
+  { key: "__branch", title: "شعبه", fillPath: "سامانهٔ PM (realtors/info/personnelInfo — branchId.title)" },
   { key: "rawOwnerName", title: "مالک (نام)", fillPath: "غنی‌سازی تماس مالک — properties/owner (لایه ۲)" },
   { key: "ownerMobile", title: "موبایل مالک", fillPath: "غنی‌سازی تماس مالک — properties/owner (لایه ۲)" },
   { key: "price", title: "قیمت", fillPath: "فهرست ARM + سامانهٔ عمومی apu (totalPrice)" },
@@ -49,6 +51,10 @@ const M1_COLUMNS: ColumnSpec[] = [
 const M2_COLUMNS: ColumnSpec[] = [
   { key: "title", title: "عنوان درخواست", fillPath: "همگام‌سازی کاتالوگ ARM" },
   { key: "actorName", title: "کارشناس", fillPath: "همگام‌سازی کاتالوگ ARM (relatedRealtor)" },
+  // P6547 — شعبهٔ کارشناس از سامانهٔ PM + فوریت/جدیت از خود ردیف فهرست ARM
+  { key: "__branch", title: "شعبه", fillPath: "سامانهٔ PM (realtors/info/personnelInfo — branchId.title)" },
+  { key: "urgent", title: "فوریت", fillPath: "خود ردیف فهرست ARM (urgent)" },
+  { key: "userSeriousityName", title: "جدیت متقاضی", fillPath: "رجیستری ARM (user-seriousness + تفکیک شناسه)" },
   { key: "customerName", title: "متقاضی (نام)", fillPath: "غنی‌سازی متقاضی — requests/applicant (لایه ۲)" },
   { key: "customerMobile", title: "موبایل متقاضی", fillPath: "غنی‌سازی متقاضی — requests/applicant (لایه ۲)" },
   { key: "priceFrom", title: "قیمت (از)", fillPath: "غنی‌سازی جزئیات درخواست ARM (inputs)" },
@@ -80,8 +86,28 @@ const M4_COLUMNS: ColumnSpec[] = [
   { key: "branchId", title: "شعبه", fillPath: "زنجیرهٔ تفکیک شعبه (نقشهٔ مالک → کسب‌وکار)" },
   { key: "roleTitle", title: "نقش پرسنلی", fillPath: "سامانهٔ PM (realtors/list + personnelInfo)" },
   { key: "hireDate", title: "تاریخ استخدام", fillPath: "سامانهٔ PM (realtors/info/personnelInfo — کشف P6546)" },
+  // P6547/گام چهارم — ستون‌های تازه از ساختار فراژرف PM
+  { key: "__employmentType", title: "نوع همکاری", fillPath: "سامانهٔ PM (employeementInfo.typeFa)" },
+  { key: "__voip", title: "شماره داخلی", fillPath: "سامانهٔ PM (voipInfo.extentionNumber)" },
   { key: "active", title: "وضعیت فعال", fillPath: "همگام‌سازی کارشناسان ARM" },
 ];
+
+/** P6547 — شمارش امن پوشش یک فیلد: فیلدهای non-nullable در Prisma «not: null» نمی‌پذیرند
+ *  (باگ تاریخی: count({status: {not: null}}) روی فیلد الزامی → 500) — این helper
+ *  فیلدهای الزامی را مستقیم total برمی‌گرداند و بقیه را با not-null می‌شمارد. */
+const NON_NULLABLE_KEYS = new Set(["status", "source", "personnelCode", "fullName", "mobile", "role", "businessTitle", "active", "actorCode", "requestCode"]);
+
+async function safeCount(db: import("@prisma/client").PrismaClient, model: "propertyRecord" | "requestRecord" | "expertRecord", key: string): Promise<number> {
+  if (NON_NULLABLE_KEYS.has(key)) {
+    if (model === "propertyRecord") return db.propertyRecord.count();
+    if (model === "requestRecord") return db.requestRecord.count();
+    return db.expertRecord.count();
+  }
+  const where = { [key]: { not: null } } as never;
+  if (model === "propertyRecord") return db.propertyRecord.count({ where });
+  if (model === "requestRecord") return db.requestRecord.count({ where });
+  return db.expertRecord.count({ where });
+}
 
 export async function GET(request: NextRequest) {
   const db = await getDb();
@@ -91,15 +117,33 @@ export async function GET(request: NextRequest) {
   try {
     /* ── M1: آگهی‌ها ── */
     const m1Total = await db.propertyRecord.count();
+    // P6547 — نقشهٔ شعبه‌های PM (برای ستون شعبهٔ M1/M2) + نقشهٔ اشتغال/داخلی (M4)
+    const [pmBranchRows, pmEmploymentRows] = await Promise.all([
+      db.pmPersonnelRecord.findMany({ where: { branchTitle: { not: null } }, select: { fullName: true, branchTitle: true } }),
+      db.pmPersonnelRecord.findMany({ select: { id: true, employmentType: true, voipExtension: true } }),
+    ]);
+    const pmBranchSet = new Set(pmBranchRows.map((r) => r.fullName));
+    const m1RealtorNames = await db.propertyRecord.findMany({ select: { ownerName: true }, take: 25000 });
     const m1Filled: Record<string, number> = {};
     for (const c of M1_COLUMNS) {
-      m1Filled[c.key] = await db.propertyRecord.count({ where: { [c.key]: { not: null } } as never });
+      if (c.key === "__branch") {
+        // شعبهٔ آگهی = شعبهٔ کارشناس مسؤول آن در PM — شمارش «آگهی‌ها» (نه کارشناسان متمایز)
+        m1Filled[c.key] = m1RealtorNames.filter((r) => pmBranchSet.has(r.ownerName ?? "")).length;
+        continue;
+      }
+      m1Filled[c.key] = await safeCount(db, "propertyRecord", c.key);
     }
     /* ── M2: درخواست‌ها ── */
     const m2Total = await db.requestRecord.count();
+    const m2ActorNames = await db.requestRecord.findMany({ select: { actorName: true }, take: 25000 });
     const m2Filled: Record<string, number> = {};
     for (const c of M2_COLUMNS) {
-      m2Filled[c.key] = await db.requestRecord.count({ where: { [c.key]: { not: null } } as never });
+      if (c.key === "__branch") {
+        // شعبهٔ درخواست = شعبهٔ کارشناس ثبت‌کننده در PM — شمارش «درخواست‌ها»
+        m2Filled[c.key] = m2ActorNames.filter((r) => pmBranchSet.has(r.actorName ?? "")).length;
+        continue;
+      }
+      m2Filled[c.key] = await safeCount(db, "requestRecord", c.key);
     }
     /* ── M3: معاملات (غنی‌سازی) — P6546: پوشش تمام ستون‌های فهرست ── */
     const m3Total = await db.transactionRecord.count();
@@ -121,8 +165,8 @@ export async function GET(request: NextRequest) {
     const m4Total = await db.expertRecord.count();
     const m4Filled: Record<string, number> = {};
     for (const c of M4_COLUMNS) {
-      if (["roleTitle", "hireDate"].includes(c.key)) continue; // از PM محاسبه می‌شود — پایین‌تر
-      m4Filled[c.key] = await db.expertRecord.count({ where: { [c.key]: { not: null } } as never });
+      if (["roleTitle", "hireDate", "__employmentType", "__voip", "__branchM4"].includes(c.key)) continue; // از PM محاسبه می‌شود — پایین‌تر
+      m4Filled[c.key] = await safeCount(db, "expertRecord", c.key);
     }
     // نقش پرسنلی و تاریخ استخدام از رجیستری PM (تطبیق با _id مشترک)
     const pmPersonnel = await db.pmPersonnelRecord.findMany({ select: { id: true, code: true, roleTitle: true, hireDate: true } });
@@ -131,6 +175,10 @@ export async function GET(request: NextRequest) {
     m4Filled.roleTitle = pmMatched.filter((p) => p.roleTitle).length;
     m4Filled.hireDate = pmMatched.filter((p) => p.hireDate).length;
     m4Filled.personnelCode = pmMatched.filter((p) => p.code).length;
+    // P6547 — نوع همکاری + شماره داخلی از رجیستری PM (تطبیق با _id مشترک)
+    const pmById = new Map(pmEmploymentRows.map((r) => [r.id, r]));
+    m4Filled.__employmentType = m4Total > 0 ? [...new Set(expertIds)].filter((id) => pmById.get(id)?.employmentType).length : 0;
+    m4Filled.__voip = m4Total > 0 ? [...new Set(expertIds)].filter((id) => pmById.get(id)?.voipExtension).length : 0;
 
     const toTable = (cols: ColumnSpec[], filled: Record<string, number>, total: number) =>
       cols.map((c) => ({
