@@ -2045,3 +2045,4 @@ Stage Summary:
 - پروسهٔ مرحلهٔ قبل تکمیل شد: شکاف ۷کامیتی آینهٔ GitHub بسته شد (با معماری تازهٔ survival/code پس از عبور db از سقف ۱۰۰MB GitHub)، ریشهٔ مرگ دیمن‌ها حل شد (double-fork)، مهر نسخه با HEAD همراستا و سه‌شاهد راستی‌آزمایی شد (7d70927-20261003-2119)، خط لولهٔ publish فعال و پایش می‌شود
 - published_build_id: 7d70927-20261003-2119 (بیلد شاهد‌دار؛ preview = HEAD ✓)
 - mirror: github.com/nemsey/melka-backup-private → survival/code = 092acdb ✓ MATCH (main عمداً عقب: 455b99b — GH001 تا مجوز LFS مالک)
+- **بستهٔ بقا (بند ج کامل):** P6547cont-20261003 (۲۷۰MB · ۱۵ فایل): repo.bundle ۱۱۰MB (کل تاریخ + هر دو شاخه با محدودیت بسته‌بندی — پنج blob دیتابیس بدون آن OOM می‌شد: pack-objects signal 9 کشف و مستند شد) + DB×۲ + worklog + env×۲ + شواهد بصری screens-cont + push-log آینه + وابستگی‌ها + EVENTS.md (بند ح) + MANIFEST.md5 + CHAIN.txt (chainIndex=6 · previousChainMd5=69b3408d ← بستهٔ P6547-20261003)
