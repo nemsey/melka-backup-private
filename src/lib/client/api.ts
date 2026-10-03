@@ -9,6 +9,12 @@
  *   ملک تبریز (فهرست‌های بزرگ) دیگر مرورگر را بی‌پایان معلق نمی‌کنند؛
  *   خطای 502/504 سامانه مبدأ با پیام فارسی شفاف و راهنمای ادامه (ازسرگیری
  *   از آخرین نقطه) به کاربر می‌رسد، نه هنگ بی‌پایان.
+ *
+ * P6546 / گام پنجم-پ-۳ — تاب‌آوری بروزرسانی (رفع کامل 502/504/مهلت):
+ *   apiSync برای فراخوانی‌های بروزرسانیِ idempotent (برش‌های دارای checkpoint):
+ *   تا ۳ تلاش خودکار — هر تلاش از آخرین نقطهٔ کامل ادامه می‌یابد (checkpoint)
+ *   پس تلاش مجدد نه از صفر شروع می‌شود نه داده تکراری می‌سازد؛ خطای گذرای
+ *   502/504/مهلت به همین ترتیب خوددرمان می‌شود و کاربر پیام خطا نمی‌بیند.
  */
 
 export class ApiClientError extends Error {
@@ -95,4 +101,33 @@ export async function api<T = unknown>(
     throw new ApiClientError(p?.code ?? "UNKNOWN", p?.message ?? `خطای سرور (${res.status})`, res.status);
   }
   return payload as T;
+}
+
+/**
+ * P6546/گام پنجم-پ-۳ — فراخوانی بروزرسانیِ تاب‌آور (برش‌های idempotent دارای checkpoint).
+ * تا `maxAttempts` تلاش خودکار روی خطاهای گذرای TIMEOUT / UPSTREAM_UNAVAILABLE (502/504)
+ * با وقفهٔ نمایی؛ هر تلاش از آخرین نقطهٔ کامل ادامه می‌یابد (قانون داده اول، سپس checkpoint).
+ * خطای ۴xx (غیرقابل تلاش) و UNAUTHORIZED هرگز تلاش مجدد نمی‌شوند.
+ */
+export async function apiSync<T = unknown>(
+  path: string,
+  init: { method?: "GET" | "POST" | "PATCH" | "DELETE" | "PUT"; body?: unknown; timeoutMs?: number; maxAttempts?: number } = {},
+  onRetry?: (attempt: number, error: ApiClientError) => void
+): Promise<T> {
+  const maxAttempts = Math.min(Math.max(init.maxAttempts ?? 3, 1), 5);
+  let lastError: ApiClientError | null = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await api<T>(path, init);
+    } catch (err) {
+      const e = err as ApiClientError;
+      const transient = e.code === "TIMEOUT" || e.code === "UPSTREAM_UNAVAILABLE" || e.code === "NETWORK_ERROR";
+      if (!transient || attempt === maxAttempts) throw err;
+      lastError = e;
+      onRetry?.(attempt, e);
+      // وقفهٔ نمایی مهربان: ۳ث · ۸ث — سرور مبدأ در ساعت اوج نیاز به نفس دارد
+      await new Promise((r) => setTimeout(r, attempt === 1 ? 3000 : 8000));
+    }
+  }
+  throw lastError ?? new ApiClientError("UNKNOWN", "خطای نامشخص در بروزرسانی.", 0);
 }

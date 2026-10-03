@@ -40,7 +40,7 @@ import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceWarning, TileCoverageTable, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import { useTileFreshness } from "@/components/app/TileCard";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, ApiClientError } from "@/lib/client/api";
+import { api, apiSync, ApiClientError } from "@/lib/client/api";
 import { faNumber, faDateTime } from "@/lib/format";
 import { faDigits } from "@/lib/jalali";
 import { TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
@@ -149,7 +149,12 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   const doSync = useCallback(async () => {
     setSyncing(true);
     try {
-      const res = await api<{ ok: boolean; busy?: boolean; main?: { ok: boolean; experts?: number; error?: string } }>("/api/sync/all", { method: "POST" });
+      // P6546/گام پنجم-پ-۳ — تاب‌آور: تا ۳ تلاش خودکار روی 502/504/مهلت (همهٔ مراحل دارای checkpoint‌اند)
+      const res = await apiSync<{ ok: boolean; busy?: boolean; main?: { ok: boolean; experts?: number; error?: string } }>(
+        "/api/sync/all",
+        { method: "POST" },
+        (attempt) => toast({ title: `ادامهٔ بروزرسانی از نقطهٔ قطع (تلاش ${attempt + 1} از ۳)`, description: "سرور ملک تبریز لحظه‌ای کند بود؛ همان نقطهٔ قبلی ازسرگیری شد." })
+      );
       if (res.busy) {
         toast({ title: "انتقال در حال اجراست", description: "پس از پایان اجرای جاری دوباره بزنید." });
         return;

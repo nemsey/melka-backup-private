@@ -153,7 +153,8 @@ describe("گام ۶ §۲ — دیمون پایدار اتصال", () => {
     const after = await catalogDaemonTick(fakeDb);
     expect(after.ticks).toBe(before.ticks + 1);
     expect(after.lastError).toBeNull();
-    expect(after.lastResult).toEqual({ listingsPages: 0, requestsPages: 0, listingsEnriched: 0, requestsEnriched: 0 });
+    // P6546/گام پنجم-پ-۴ — پایدارساز: سه برش تازه (tx-info + PM + سامانهٔ عمومی) + خنک‌ساز
+    expect(after.lastResult).toMatchObject({ listingsPages: 0, requestsPages: 0, listingsEnriched: 0, requestsEnriched: 0, txInfoEnriched: 0, pmInfoEnriched: 0, melkPublicNewCodes: 0 });
   });
 
   test("۲-۶) قفل هم‌پوشانی: تیک هم‌زمان دوم رد می‌شود (running اولی)", async () => {

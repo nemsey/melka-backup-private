@@ -41,7 +41,7 @@ import {
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, TopRankingTable, TileCoverageTable } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, ApiClientError } from "@/lib/client/api";
+import { api, apiSync, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull } from "@/lib/format";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانه
@@ -251,9 +251,11 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     setSyncing(true);
     try {
       // P6546/گام پنجم-پ — لایهٔ فهرست: ۵۰ صفحه/کلیک · لایهٔ جزئیات: ≈۵۰۰ رکورد/کلیک
-      const res = await api<{ lists: Array<{ fetched: number; totalAtSource: number; ok: boolean }>; enrich?: Array<{ enriched: number; remaining: number }> }>(
+      // P6546/گام پنجم-پ-۳ — تاب‌آور: تا ۳ تلاش خودکار روی 502/504/مهلت (هر تلاش از checkpoint ادامه می‌یابد)
+      const res = await apiSync<{ lists: Array<{ fetched: number; totalAtSource: number; ok: boolean }>; enrich?: Array<{ enriched: number; remaining: number }> }>(
         "/api/crm/arm-catalog/sync",
-        { method: "POST", body: { entity: "requests", mode: "both", maxRows: 500 } }
+        { method: "POST", body: { entity: "requests", mode: "both", maxRows: 500 } },
+        (attempt) => toast({ title: `ادامهٔ بروزرسانی از نقطهٔ قطع (تلاش ${attempt + 1} از ۳)`, description: "سرور ملک تبریز لحظه‌ای کند بود؛ همان نقطهٔ قبلی ازسرگیری شد — هیچ داده‌ای از ابتدا شروع نمی‌شود." })
       );
       const list = res.lists?.[0];
       toast({

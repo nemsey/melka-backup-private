@@ -15,10 +15,32 @@ import type { LearningTier } from "@/core/intelligence/contracts-p7-p11";
 import { TIER_PROFILES } from "@/core/intelligence/contracts-p7-p11";
 
 /** دامنه‌های چهارگانهٔ ملکا (M1-M4) */
-export type ModelDomain = "property" | "request" | "transaction" | "expert";
+export type ModelDomain =
+  | "property"
+  | "request"
+  | "transaction"
+  | "expert"
+  // P6546/گام پنجم-الف-۴ — شش دامنهٔ تازه (تجهیز کاشی‌های فایل‌یابی/آگهی/درخواست/M5/M6/M7)
+  | "divar"
+  | "local-listing"
+  | "local-request"
+  | "matching"
+  | "market"
+  | "coverage";
 
 /** نوع پیامدی که مدل برای آن کالیبره می‌شود */
-export type ModelOutcomeType = "listing_deal" | "request_match" | "transaction_success" | "expert_performance";
+export type ModelOutcomeType =
+  | "listing_deal"
+  | "request_match"
+  | "transaction_success"
+  | "expert_performance"
+  // P6546/گام پنجم-الف-۴
+  | "divar_register"
+  | "local_listing_publish"
+  | "local_request_register"
+  | "match_accept"
+  | "market_index_refresh"
+  | "coverage_improve";
 
 /** پیش‌بین مصرفی از مجموعهٔ مشترک (PredictionEngine) */
 export type ModelPredictor = "PROPERTY" | "CUSTOMER" | "EXPERT" | "none";
@@ -93,6 +115,74 @@ export const MODEL_EXPERT: ModelConfig = {
   outcomeType: "expert_performance",
   features: ["expert.branch", "expert.role", "expert.businessTitle", "expert.dealHistory", "expert.activeStatus"],
   description: "کارشناسان — پیامد: موفقیت در معامله بعدی",
+  engineSet: "SHARED-11",
+};
+
+/* ─────────── P6546/گام پنجم-الف-۴ — شش مدل تازه (تجهیز شش کاشی؛ مدل=پیکربندی) ─────────── */
+
+export const MODEL_DIVAR: ModelConfig = {
+  modelId: "melka-divar-v1",
+  domain: "divar",
+  tileId: "file-finder",
+  predictor: "PROPERTY", // فایل‌یابی: پیش‌بینی احتمال ثبت آگهی دیوار به‌عنوان فرصت
+  outcomeType: "divar_register",
+  features: ["divar.price", "divar.areaMatch", "divar.titleSignals", "divar.freshness", "market.medianPricePerMeter"],
+  description: "فایل‌یابی ملکا (دیوار) — پیامد: تبدیل آگهی دیوار به فرصت ثبت‌شده",
+  engineSet: "SHARED-11",
+};
+
+export const MODEL_LOCAL_LISTING: ModelConfig = {
+  modelId: "melka-local-listing-v1",
+  domain: "local-listing",
+  tileId: "listing",
+  predictor: "PROPERTY",
+  outcomeType: "local_listing_publish",
+  features: ["property.price", "property.propertyType", "property.tradeType", "property.areaId"],
+  description: "آگهی ملکا (فرم داخلی) — پیامد: انتشار/انتقال موفق به CRM",
+  engineSet: "SHARED-11",
+};
+
+export const MODEL_LOCAL_REQUEST: ModelConfig = {
+  modelId: "melka-local-request-v1",
+  domain: "local-request",
+  tileId: "request",
+  predictor: "CUSTOMER",
+  outcomeType: "local_request_register",
+  features: ["customer.seriousness", "customer.budgetRange", "customer.areaPreference"],
+  description: "درخواست ملکا (فرم داخلی) — پیامد: ثبت درخواست در سامانه ARM",
+  engineSet: "SHARED-11",
+};
+
+export const MODEL_MATCHING: ModelConfig = {
+  modelId: "melka-matching-v1",
+  domain: "matching",
+  tileId: "smart-matching",
+  predictor: "none", // تطبیق: ترکیب سیگنال‌هاست نه پیش‌بینی جلو — ثبت پیامد پذیرش/رد
+  outcomeType: "match_accept",
+  features: ["match.score", "match.priceOverlap", "match.areaOverlap", "match.typeMatch", "expert.history"],
+  description: "تطبیق هوشمند M5 — پیامد: پذیرش پیشنهاد تطبیق",
+  engineSet: "SHARED-11",
+};
+
+export const MODEL_MARKET: ModelConfig = {
+  modelId: "melka-market-v1",
+  domain: "market",
+  tileId: "market-index",
+  predictor: "none", // شاخص: توصیف گذشته است نه پیش‌بینی — ثبت پیامد تازگی شاخص
+  outcomeType: "market_index_refresh",
+  features: ["market.medianPricePerMeter", "market.supplyDemandRatio", "market.volume", "market.underpriceRatio"],
+  description: "شاخص بازار M6 — پیامد: تازگی دادهٔ شاخص ماهانه",
+  engineSet: "SHARED-11",
+};
+
+export const MODEL_COVERAGE: ModelConfig = {
+  modelId: "melka-coverage-v1",
+  domain: "coverage",
+  tileId: "data-coverage",
+  predictor: "none", // پوشش: سنجه است نه پیش‌بینی — ثبت پیامد بهبود پوشش
+  outcomeType: "coverage_improve",
+  features: ["coverage.columnPercent", "coverage.pendingEnrichment", "coverage.tileAverage"],
+  description: "پوشش اطلاعات M7 — پیامد: بهبود پوشش ستون‌ها پس از غنی‌سازی",
   engineSet: "SHARED-11",
 };
 
@@ -171,5 +261,12 @@ export function bootstrapModels(): ModelRegistry {
   if (!existing.includes(MODEL_REQUEST.modelId)) modelRegistry.register(MODEL_REQUEST);
   if (!existing.includes(MODEL_TRANSACTION.modelId)) modelRegistry.register(MODEL_TRANSACTION);
   if (!existing.includes(MODEL_EXPERT.modelId)) modelRegistry.register(MODEL_EXPERT);
+  // P6546/گام پنجم-الف-۴ — شش مدل تازه (تجهیز شش کاشی به مغز)
+  if (!existing.includes(MODEL_DIVAR.modelId)) modelRegistry.register(MODEL_DIVAR);
+  if (!existing.includes(MODEL_LOCAL_LISTING.modelId)) modelRegistry.register(MODEL_LOCAL_LISTING);
+  if (!existing.includes(MODEL_LOCAL_REQUEST.modelId)) modelRegistry.register(MODEL_LOCAL_REQUEST);
+  if (!existing.includes(MODEL_MATCHING.modelId)) modelRegistry.register(MODEL_MATCHING);
+  if (!existing.includes(MODEL_MARKET.modelId)) modelRegistry.register(MODEL_MARKET);
+  if (!existing.includes(MODEL_COVERAGE.modelId)) modelRegistry.register(MODEL_COVERAGE);
   return modelRegistry;
 }

@@ -224,3 +224,141 @@ export class ExpertAgent extends DomainIntelligentAgent {
     return { probability };
   }
 }
+
+/* ═══════════════ P6546/گام پنجم-الف-۴ — شش ایجنت تازه (تجهیز شش کاشی به مغز) ═══════════════
+ * قواعد عین چهار ایجنت اصلی: ارث BaseIntelligentAgent + همان ۱۱ موتور مشترک
+ * (engineSet=SHARED-11) + گراف + رویداد تختهٔ سیاه + صفر منطق هوش داخلی. */
+
+/** فایل‌یابی ملکا (دیوار) — کاشی هوم */
+export class DivarIntelligentAgent extends DomainIntelligentAgent {
+  readonly name = "ایجنت فایل‌یابی ملکا (دیوار)";
+  readonly tileId = "file-finder";
+  readonly insightDomains = ["file-finder"] as const;
+
+  constructor(opts: DomainAgentOptions) {
+    bootstrapModels();
+    super(modelRegistry.get("melka-divar-v1")!, opts);
+  }
+
+  /** پیش‌بینی ارزش آگهی دیوار به‌عنوان فرصت (احتمال ثبت) — از مغز مشترک */
+  async predictDivarOpportunity(token: string, priceToman: number | null): Promise<{ probability: number | null }> {
+    const market = await this.featureStore.marketFeatures("tabriz", {
+      areaId: "tabriz",
+      snapshotDate: new Date(),
+      samples: priceToman ? [{ pricePerMeter: priceToman, at: new Date().toISOString() }] : [],
+    } as never);
+    const record = await this.predict<never>("PROPERTY", token, { market });
+    const probability = record ? (record as unknown as { probability?: number }).probability ?? null : null;
+    await this.publishPrediction(token, probability);
+    return { probability };
+  }
+}
+
+/** آگهی ملکا (فرم داخلی ثبت آگهی) — کاشی هوم */
+export class LocalListingIntelligentAgent extends DomainIntelligentAgent {
+  readonly name = "ایجنت آگهی ملکا";
+  readonly tileId = "listing";
+  readonly insightDomains = ["listing"] as const;
+
+  constructor(opts: DomainAgentOptions) {
+    bootstrapModels();
+    super(modelRegistry.get("melka-local-listing-v1")!, opts);
+  }
+
+  /** زمینهٔ گرافی آگهی داخلی + رویداد شفافیت (بدون ادعای عدد) */
+  async listingContext(listingId: string): Promise<{ graphNeighbors: number }> {
+    const neighbors = await this.graphContext("property", "property", listingId, 1);
+    await this.publishPrediction(listingId, null);
+    return { graphNeighbors: neighbors.length };
+  }
+}
+
+/** درخواست ملکا (فرم داخلی ثبت درخواست) — کاشی هوم */
+export class LocalRequestIntelligentAgent extends DomainIntelligentAgent {
+  readonly name = "ایجنت درخواست ملکا";
+  readonly tileId = "request";
+  readonly insightDomains = ["request"] as const;
+
+  constructor(opts: DomainAgentOptions) {
+    bootstrapModels();
+    super(modelRegistry.get("melka-local-request-v1")!, opts);
+  }
+
+  /** پیش‌بینی برآورده شدن درخواست داخلی (ثبت موفق در ARM) — از مغز مشترک */
+  async predictRegisterSuccess(requestId: string): Promise<{ probability: number | null }> {
+    const customer = await this.featureStore.customerFeatures(requestId, {
+      id: requestId,
+      recencyDays: 0,
+      frequencyCount: 1,
+      monetaryValue: 0,
+      responseRate: 0.5,
+      seriousnessScore: 0.5,
+      budgetCompatibility: 0.5,
+    } as never);
+    const record = await this.predict<never>("CUSTOMER", requestId, { customer });
+    const probability = record ? (record as unknown as { probability?: number }).probability ?? null : null;
+    await this.publishPrediction(requestId, probability);
+    return { probability };
+  }
+}
+
+/** تطبیق هوشمند M5 — چهار کاشی مدیریتی */
+export class MatchingIntelligentAgent extends DomainIntelligentAgent {
+  readonly name = "ایجنت تطبیق هوشمند ملک تبریز";
+  readonly tileId = "smart-matching";
+  readonly insightDomains = ["smart-matching"] as const;
+
+  constructor(opts: DomainAgentOptions) {
+    bootstrapModels();
+    super(modelRegistry.get("melka-matching-v1")!, opts);
+  }
+
+  /** زمینهٔ گرافی تطبیق (ملک ↔ درخواست ↔ کارشناس) + رویداد — صفر منطق امتیازدهی داخلی */
+  async matchContext(propertyCode: string, requestId: string): Promise<{ propertyNeighbors: number; requestNeighbors: number }> {
+    const propertyNeighbors = await this.graphContext("property", "property", propertyCode, 1);
+    const requestNeighbors = await this.graphContext("people", "request", requestId, 1);
+    await this.publishPrediction(`${propertyCode}:${requestId}`, null);
+    return { propertyNeighbors: propertyNeighbors.length, requestNeighbors: requestNeighbors.length };
+  }
+}
+
+/** شاخص بازار M6 — چهار کاشی مدیریتی */
+export class MarketIntelligentAgent extends DomainIntelligentAgent {
+  readonly name = "ایجنت شاخص بازار ملک تبریز";
+  readonly tileId = "market-index";
+  readonly insightDomains = ["market-index"] as const;
+
+  constructor(opts: DomainAgentOptions) {
+    bootstrapModels();
+    super(modelRegistry.get("melka-market-v1")!, opts);
+  }
+
+  /** ویژگی‌های بازار از انبار مشترک (یک‌بار استخراج، چندبار مصرف) + رویداد تازگی */
+  async marketSnapshot(areaKey: string, samples: Array<{ pricePerMeter: number; at: string }>): Promise<{ sampled: number }> {
+    const market = await this.featureStore.marketFeatures(areaKey, {
+      areaId: areaKey,
+      snapshotDate: new Date(),
+      samples,
+    } as never);
+    await this.publishPrediction(`market:${areaKey}`, null);
+    return { sampled: (market as unknown as { samples?: unknown[] }).samples?.length ?? samples.length };
+  }
+}
+
+/** پوشش اطلاعات M7 — چهار کاشی مدیریتی */
+export class CoverageIntelligentAgent extends DomainIntelligentAgent {
+  readonly name = "ایجنت پوشش اطلاعات ملک تبریز";
+  readonly tileId = "data-coverage";
+  readonly insightDomains = ["data-coverage"] as const;
+
+  constructor(opts: DomainAgentOptions) {
+    bootstrapModels();
+    super(modelRegistry.get("melka-coverage-v1")!, opts);
+  }
+
+  /** رویداد بهبود پوشش روی تختهٔ سیاه — سنجه است نه پیش‌بینی (predictor=none) */
+  async reportCoverageImprovement(tileKey: string, beforePct: number, afterPct: number): Promise<{ improved: boolean }> {
+    await this.publishPrediction(`coverage:${tileKey}:${afterPct >= beforePct ? "up" : "down"}`, null);
+    return { improved: afterPct > beforePct };
+  }
+}

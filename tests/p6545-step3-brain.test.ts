@@ -36,11 +36,15 @@ afterAll(async () => { await db.$disconnect(); await real.$disconnect(); });
 describe("گام۳/B3.2 — رجیستری مدل‌ها", () => {
   beforeAll(() => { bootstrapModels(); });
 
-  test("م-۳-۱ چهار مدل مصوب جلسه ۰۳۳ ثبت شده‌اند", () => {
+  test("م-۳-۱ ده مدل ثبت شده‌اند (چهار مدل جلسه ۰۳۳ + شش مدل تجهیز P6546/گام پنجم-الف-۴)", () => {
     bootstrapModels();
-    expect(modelRegistry.size).toBe(4);
+    expect(modelRegistry.size).toBe(10); // P6546: +۶ مدل (فایل‌یابی/آگهی/درخواست/M5/M6/M7)
     expect(modelRegistry.list().map((m) => m.modelId).sort()).toEqual(
-      ["melka-expert-v1", "melka-property-v3", "melka-request-v1", "melka-transaction-v2"].sort(),
+      [
+        "melka-expert-v1", "melka-property-v3", "melka-request-v1", "melka-transaction-v2",
+        // P6546/گام پنجم-الف-۴ — شش مدل تجهیز تازه
+        "melka-divar-v1", "melka-local-listing-v1", "melka-local-request-v1", "melka-matching-v1", "melka-market-v1", "melka-coverage-v1",
+      ].sort(),
     );
   });
 
@@ -93,7 +97,8 @@ describe("گام۳/B3.2 — رجیستری مدل‌ها", () => {
   });
 
   test("م-۳-۱۱ هر مدل ویژگی‌های ورودی تعریف‌شده دارد", () => {
-    for (const m of modelRegistry.list()) expect(m.features.length).toBeGreaterThan(3);
+    // P6546 — مدل پوشش M7 سه ویژگی دارد (سنجه است نه پیش‌بینی)
+    for (const m of modelRegistry.list()) expect(m.features.length).toBeGreaterThanOrEqual(3);
   });
 
   test("م-۳-۱۲ Tier اولیهٔ مدل تازه = ۰", () => {
@@ -137,13 +142,13 @@ describe("گام۳/B3.2 — رجیستری مدل‌ها", () => {
 
   test("م-۳-۱۸ allTierStates چهار وضعیت مستقل برمی‌گرداند", () => {
     bootstrapModels();
-    expect(modelRegistry.allTierStates()).toHaveLength(4);
+    expect(modelRegistry.allTierStates()).toHaveLength(10); // P6546
   });
 
   test("م-۳-۱۹ bootstrapModels دوباره‌اجرای امن (idempotent) دارد", () => {
     bootstrapModels();
     bootstrapModels();
-    expect(modelRegistry.size).toBe(4);
+    expect(modelRegistry.size).toBe(10); // P6546: idempotent با ده مدل
   });
 
   test("م-۳-۲۰ شاهد models-registry.json با ۴ مدل", () => {
