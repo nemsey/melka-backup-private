@@ -467,14 +467,18 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
     }
   });
 
-  test("RequestRecordDTO — ۴۶ کلید؛ ستون‌های P6.5-02/03/04/10 + P6530/گام ۲ + خام‌های B.3 در دنباله", async () => {
+  test("RequestRecordDTO — ۴۹ کلید (P6547: +urgent/luxury/changeable)؛ ستون‌های P6.5-02/03/04/10 + P6530/گام ۲ + خام‌های B.3 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const r = await c.requestRecord.findFirst({ where: { id: "p6502-RA" } });
       const keys = Object.keys(r!);
       // P6530/گام ۲ — دو ستون تازهٔ بازهٔ قیمت متقاضی (بعد از inputsJson)
-      expect(keys.length).toBe(46);
+      // P6547/گام دوم — سه ستون تازه: urgent/luxury/changeable (پایان مدل)
+      expect(keys.length).toBe(49);
+      // P6547 — سه ستون تازه بلافاصله پس از جدیت مشتری (userSeriousityName)
+      const ui = keys.indexOf("urgent");
+      expect(keys.slice(ui - 1, ui + 3)).toEqual(["userSeriousityName", "urgent", "luxury", "changeable"]);
       expect(keys.slice(18, 21)).toEqual(["inputsJson", "priceFrom", "priceTo"]);
       expect(keys.slice(-10)).toEqual([
         "branchId", "tenantId", "requestCode", "sourceRunId",

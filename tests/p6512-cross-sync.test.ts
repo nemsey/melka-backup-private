@@ -308,8 +308,9 @@ describe("P6.5-12 C — ستون‌های تازهٔ فهرست معاملات (
 
     // سهم هر مشاور با درصد (بند ب: «در مقابل نام هر مشاور درصد حق السهم»)
     expect(out[0].consultantsShareSummary?.shares).toEqual([
-      { name: "مشاور الف", unitPercent: 60, confirmation: "confirm" },
-      { name: "مشاور ب", unitPercent: 40, confirmation: "pending" },
+      // P6547/گام سوم-۴ — شعبهٔ مشاور از سامانهٔ PM (بدون نقشه → null صادقانه)
+      { name: "مشاور الف", branch: null, unitPercent: 60, confirmation: "confirm" },
+      { name: "مشاور ب", branch: null, unitPercent: 40, confirmation: "pending" },
     ]);
     expect(out[0].consultantsShareSummary?.totalPercent).toBe(100);
     // نوع و مبلغ قرارداد از قرارداد تطبیقی

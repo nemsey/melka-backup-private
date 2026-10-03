@@ -8,7 +8,6 @@ import { describe, expect, test } from "bun:test";
 import {
   monthlySeries,
   growthRate,
-  detectAnomalies,
   matchComposition,
   topMonths,
   roleDistribution,
@@ -137,18 +136,7 @@ describe("ماه‌های اوج", () => {
   });
 });
 
-describe("ناهنجاری آماری", () => {
-  test("جهش ناهنجار شناسایی می‌شود", () => {
-    const series = Array.from({ length: 8 }, (_, i) => ({ key: `1405-0${i + 1}`, count: 5 }));
-    series[5].count = 40; // جهش
-    const anomalies = detectAnomalies(series);
-    expect(anomalies.length).toBeGreaterThanOrEqual(1);
-    expect(anomalies[0].direction).toBe("spike");
-  });
-  test("سری کوتاه → بدون ناهنجاری", () => {
-    expect(detectAnomalies([{ key: "1405-01", count: 1 }])).toEqual([]);
-  });
-});
+// P6547/گام سوم-۵ — تست‌های «ناهنجاری آماری» حذف شدند (بینش و موتور تشخیص حذف شد)
 
 describe("توزیع نقش و کسب‌وکار (users-list)", () => {
   test("گروه‌بندی نقش‌ها", () => {

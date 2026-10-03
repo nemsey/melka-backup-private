@@ -65,31 +65,6 @@ export function growthRate(series: MonthlyPoint[]): number | null {
   return Math.round(((last.count - prev.count) / prev.count) * 1000) / 10;
 }
 
-// ===================== تشخیص ناهنجاری (z-score) =====================
-
-export interface AnomalyPoint {
-  key: string;
-  count: number;
-  z: number;
-  direction: "spike" | "drop";
-}
-
-export function detectAnomalies(series: MonthlyPoint[], threshold = 1.8): AnomalyPoint[] {
-  if (series.length < 4) return [];
-  const values = series.map((p) => p.count);
-  const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length;
-  const std = Math.sqrt(variance);
-  if (std === 0) return [];
-  return series
-    .map((p) => ({
-      key: p.key,
-      count: p.count,
-      z: Math.round(((p.count - mean) / std) * 100) / 100,
-      direction: (p.count > mean ? "spike" : "drop") as "spike" | "drop",
-    }))
-    .filter((p) => Math.abs(p.z) >= threshold);
-}
 
 // ===================== ترکیب گزارش تطابق (چهارگانه خود سامانه) =====================
 

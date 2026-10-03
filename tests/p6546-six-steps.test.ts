@@ -357,7 +357,7 @@ describe("P6546/گام چهارم — مرتب‌سازی و غنی‌سازی �
 /* ═══════════════════════════ گام پنجم ═══════════════════════════ */
 
 describe("P6546/گام پنجم-الف — پوشش تمام ستون‌ها + تجهیز مغز + ترتیب", () => {
-  test("الف-۱) پوشش تمام ستون‌ها در /api/coverage (M1=۱۵ · M2=۱۱ · M3=۹ · M4=۸)", async () => {
+  test("الف-۱) پوشش تمام ستون‌ها در /api/coverage (P6547: M1=۱۶ · M2=۱۴ · M3=۹ · M4=۱۰)", async () => {
     const { db } = await import("@/lib/db");
     const { tierFromRealData } = await import("@/core/intelligence/p7-core");
     void db;
@@ -370,10 +370,10 @@ describe("P6546/گام پنجم-الف — پوشش تمام ستون‌ها + �
     const m2 = route.slice(route.indexOf("M2_COLUMNS"), route.indexOf("M3_COLUMNS"));
     const m3 = route.slice(route.indexOf("M3_COLUMNS"), route.indexOf("M4_COLUMNS"));
     const m4 = route.slice(route.indexOf("M4_COLUMNS"), route.indexOf("export async function GET"));
-    expect((m1.match(/key: "/g) ?? []).length).toBe(15);
-    expect((m2.match(/key: "/g) ?? []).length).toBe(11);
+    expect((m1.match(/key: "/g) ?? []).length).toBe(16); // P6547: +شعبهٔ PM
+    expect((m2.match(/key: "/g) ?? []).length).toBe(14); // P6547: +شعبه + فوریت + جدیت
     expect((m3.match(/key: "/g) ?? []).length).toBe(9);
-    expect((m4.match(/key: "/g) ?? []).length).toBe(8);
+    expect((m4.match(/key: "/g) ?? []).length).toBe(10); // P6547: +نوع همکاری + شماره داخلی
     await db.$disconnect();
   });
 
@@ -430,7 +430,7 @@ describe("P6546/گام پنجم-الف — پوشش تمام ستون‌ها + �
 
   test("الف-۵) شاهد تجهیز: ده ایجنت ساخت‌پذیر + زمینهٔ گرافی زنده (فایل شاهد)", () => {
     const proof = JSON.parse(readFileSync("/home/z/my-project/download/p6546/brain-equipment-proof.json", "utf8"));
-    expect(proof.brain.engines).toBe(11);
+    expect(proof.brain.engines).toBe(11); // مجموعهٔ موتورهای مشترک SHARED-11 (P6537)
     expect(proof.brain.changedEngines).toBe(0);
     expect(proof.models.length).toBe(10);
     expect(proof.allAgentsShareSameEngines).toBe(true);
