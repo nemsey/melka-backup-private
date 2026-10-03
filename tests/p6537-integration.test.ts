@@ -121,7 +121,10 @@ describe("یکپارچگی — حلقهٔ بزرگ روی دادهٔ واقعی 
   test("ح-۵ P7: ارزیابی سایه فعال (بدون ارتقا — نیازمند شورا)", async () => {
     const r = await runIntelligenceCoreCycle();
     expect(r.p7.shadow.shadowBrier).toBeGreaterThan(0);
-    expect(r.p7.shadow.verdict).toBe("keep_primary"); // تأیید شورا false → هرگز ارتقا
+    // P6545: پس از کالیبراسیون مصوب شورا (جلسه ۰۳۳ تصمیم ۱)، مدل اصلی (Brier ۰٫۱۲۵) از سایه
+    // (۰٫۲۳۱) بهتر شد — حکم صادقانه: reject. قفل شورا: councilApproved=false → هرگز promote
+    expect(["keep_primary", "reject"]).toContain(r.p7.shadow.verdict);
+    expect(r.p7.shadow.verdict).not.toBe("promote"); // ارتقا فقط با تأیید شورا
   });
   test("ح-۶ P7: رانش سنجیده‌شده با کنش", async () => {
     const r = await runIntelligenceCoreCycle();
@@ -163,25 +166,37 @@ describe("یکپارچگی — حلقهٔ بزرگ روی دادهٔ واقعی 
     expect(r.p10.overallScore).toBeGreaterThan(0);
     expect(["healthy", "degraded", "critical"]).toContain(r.p10.systemHealth);
   });
-  test("ح-۱۲ P10: حداقل ۳ مشکل واقعی کشف‌شده (شرط P10-D)", async () => {
+  // P6545: پس از اجرای ترمیم‌های مصوب جلسه ۰۳۳ (recalibrate + retrain)، دو مشکل
+  // (کالیبراسیون و Brier) حل شدند و پیش از آن ≥۳ مشکل واقعی کشف شده بود (شاهد P6537).
+  // اکنون صادقانه: ≥۲ مشکل باقی‌مانده (رانش + کهنگی داده) + دو مشکل حل‌شده = pass
+  test("ح-۱۲ P10: مشکلات واقعی — کشف ≥۳ در P6537، پس از ترمیم مصوب ≥۲ باقی", async () => {
     const r = await runIntelligenceCoreCycle();
-    expect(r.p10.realProblems.length).toBeGreaterThanOrEqual(3);
+    expect(r.p10.realProblems.length).toBeGreaterThanOrEqual(2);
+    expect(r.p10.checks).toHaveLength(25);
   });
-  test("ح-۱۳ مشکل واقعی ۱: کالیبراسیون سطل میانی (شاهد loop-latest)", async () => {
+  // P6545: مشکل ۱ (کالیبراسیون سطل ۰٫۴-۰٫۶) با مصوبهٔ تصمیم ۱ جلسه ۰۳۳ ترمیم شد
+  test("ح-۱۳ مشکل ۱: کالیبراسیون پس از ترمیم مصوب — DIAG-MODEL-002 دیگر fail نیست", async () => {
     const r = await runIntelligenceCoreCycle();
-    expect(r.p10.realProblems.some((p) => p.checkId === "DIAG-MODEL-002")).toBe(true);
+    const cal = r.p10.checks.find((c) => c.id === "DIAG-MODEL-002");
+    expect(cal?.status).not.toBe("fail"); // ترمیم‌شده (شاهد: download/p6545/recalibrate-proof.json)
+    expect(r.p7.calibration?.applied).toBe(true);
+    expect(r.p7.calibration!.calibratedBrier).toBeLessThanOrEqual(r.p7.calibration!.rawBrier);
   });
-  test("ح-۱۴ مشکل واقعی ۲: Brier واقعی بالای هدف ۰٫۲۰", async () => {
+  // P6545: مشکل ۲ (Brier > هدف) با هدف Tier-aware (تصمیم ۳) + کالیبراسیون (تصمیم ۱) حل شد
+  test("ح-۱۴ مشکل ۲: Brier زیر هدف Tier-aware ۰٫۲۲ — DIAG-MODEL-001 دیگر fail نیست", async () => {
     const r = await runIntelligenceCoreCycle();
-    expect(r.p10.realProblems.some((p) => p.checkId === "DIAG-MODEL-001")).toBe(true);
+    const brier = r.p10.checks.find((c) => c.id === "DIAG-MODEL-001");
+    expect(brier?.status).not.toBe("fail");
+    expect(r.p7.brierTarget).toBe(0.22); // هدف Tier 3 — تصمیم ۳ جلسه ۰۳۳
   });
   test("ح-۱۵ مشکل واقعی ۳: سن دادهٔ پیامد (>۲۴ ساعت)", async () => {
     const r = await runIntelligenceCoreCycle();
     expect(r.p10.realProblems.some((p) => p.checkId === "DIAG-DATA-003")).toBe(true);
   });
+  // P6545: پس از ترمیم مصوب، پیشنهادها از مشکلات باقی‌مانده (رانش/کهنگی) می‌آیند
   test("ح-۱۶ P11: پیشنهادهای ترمیم از مشکلات واقعی (شرط P11-D)", async () => {
     const r = await runIntelligenceCoreCycle();
-    expect(r.p11.proposals.length).toBeGreaterThanOrEqual(3);
+    expect(r.p11.proposals.length).toBeGreaterThanOrEqual(1);
     expect(r.p11.proposals.every((p) => p.status === "pending")).toBe(true);
   });
   test("ح-۱۷ P11: دروازهٔ تأیید فعال + صفر اجرا (قفل ابدی)", async () => {

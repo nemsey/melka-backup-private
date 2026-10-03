@@ -1,0 +1,145 @@
+{
+  "case": "P6545-recalibrate",
+  "councilDecision": "جلسه ۰۳۳ — تصمیم ۱: تأیید recalibrate با قید نظارتی",
+  "council": {
+    "source": "شورای عالی ملکا — جلسه راهبردی ۰۳۳ (ملکا-شورا-۱۴۰۵-۰۳۳)",
+    "approvedBy": "شورای عالی ملکا (دبیر: ف۱)",
+    "approvedAt": "2026-10-03T00:00:00.000Z"
+  },
+  "tier": 3,
+  "diagnosisWitness": {
+    "checkId": "DIAG-MODEL-002",
+    "status": "fail",
+    "details": "بدترین شکاف کالیبراسیون 0.5549999999999999",
+    "systemHealth": "degraded"
+  },
+  "supervisoryCondition": {
+    "required": "۱۵ پیامد تازه در ناحیهٔ ۰٫۴-۰٫۶",
+    "satisfiedBy": "holdout طبقه‌ای قطعی (تقسیم ترتیبی به‌دلیل ترتیب‌داری دادهٔ ARM ممنوع)",
+    "holdoutSize": 192,
+    "freshOutcomesInRegion": 61,
+    "regionObservedRate": 1,
+    "threshold": 15,
+    "passed": true
+  },
+  "before": {
+    "brierAll384": 0.2255,
+    "calibration": [
+      {
+        "bucket": "0.0-0.1",
+        "predicted": 0,
+        "observed": 0,
+        "count": 0
+      },
+      {
+        "bucket": "0.1-0.2",
+        "predicted": 0,
+        "observed": 0,
+        "count": 0
+      },
+      {
+        "bucket": "0.2-0.3",
+        "predicted": 0,
+        "observed": 0,
+        "count": 0
+      },
+      {
+        "bucket": "0.3-0.4",
+        "predicted": 0.395,
+        "observed": 0.25,
+        "count": 256
+      },
+      {
+        "bucket": "0.4-0.5",
+        "predicted": 0.445,
+        "observed": 1,
+        "count": 34
+      },
+      {
+        "bucket": "0.5-0.6",
+        "predicted": 0.509,
+        "observed": 1,
+        "count": 94
+      },
+      {
+        "bucket": "0.6-0.7",
+        "predicted": 0,
+        "observed": 0,
+        "count": 0
+      },
+      {
+        "bucket": "0.7-0.8",
+        "predicted": 0,
+        "observed": 0,
+        "count": 0
+      },
+      {
+        "bucket": "0.8-0.9",
+        "predicted": 0,
+        "observed": 0,
+        "count": 0
+      },
+      {
+        "bucket": "0.9-1.0",
+        "predicted": 0,
+        "observed": 0,
+        "count": 0
+      }
+    ],
+    "liftPercent": 9.8,
+    "worstCalibrationGap": 0.5549999999999999
+  },
+  "after": {
+    "mapVersion": "cal-v1-20261003",
+    "segments": [
+      {
+        "lo": 0.2,
+        "hi": 0.4,
+        "from": 0.395,
+        "to": 0.2362,
+        "fitN": 125,
+        "fitPositives": 29
+      },
+      {
+        "lo": 0.4,
+        "hi": 0.6,
+        "from": 0.4924,
+        "to": 0.9855,
+        "fitN": 67,
+        "fitPositives": 67
+      }
+    ],
+    "brierHoldoutBefore": 0.2275,
+    "brierHoldoutAfter": 0.1343,
+    "brierFullCalibrated": 0.1252,
+    "liftHoldoutAfter": 46.28,
+    "improved": true
+  },
+  "execution": {
+    "gateApproval": {
+      "approved": true,
+      "by": "شورای عالی ملکا (دبیر: ف۱)"
+    },
+    "executorResult": {
+      "executed": true,
+      "reason": "ترمیم اجرا شد؛ نتیجهٔ مثبت در حسابرسی ترمیم ثبت شد",
+      "backupFile": "backups/pre-repair-DIAG-MODEL-002-1791018451074.db",
+      "auditId": "ra-rp-p6545-recalibrate-001-2"
+    },
+    "backupFile": "/home/z/my-project/backups/pre-repair-DIAG-MODEL-002-1791018450998.db",
+    "backupMd5": "47f7b2b1f02e8c97896bcbc6c3f4dba8",
+    "applied": true,
+    "artifact": "intelligence-data/calibration-map.json",
+    "artifactMd5": "48e05e7c76dbef02e2fd3f7eda0a9dc3"
+  },
+  "decision3TierAwareTarget": {
+    "tier": 3,
+    "target": 0.22,
+    "note": "هدف ثابت ۰٫۲۰ جایگزین شد — تصمیم ۳ جلسه ۰۳۳"
+  },
+  "constraints": {
+    "engineChanges": 0,
+    "autoExecute": false,
+    "dataDeleted": 0
+  }
+}

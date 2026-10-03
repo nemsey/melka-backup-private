@@ -25,6 +25,13 @@ import { ActionPlannerEngineImpl, DecisionEngineImpl, SafetyEngineImpl } from "@
 import { GovernanceEngineImpl, PolicyEvaluationEngineImpl, emptyGovernanceContext, type PolicySignal } from "@/core/intelligence/p9-core";
 import { SelfDiagnosisEngineImpl, healthySnapshot, type SystemSnapshot } from "@/core/intelligence/p10-core";
 import { RepairApprovalGateImpl, SelfRepairEngineImpl } from "@/core/intelligence/p11-core";
+// P6545/BLOCK 0.2 — لایهٔ کالیبراسیون (تصمیم‌های ۱ و ۳ جلسه ۰۳۳) — افزودنی، صفر تغییر موتور
+import {
+  tierAwareBrierTarget,
+  calibratePairs,
+  type CalibrationMap,
+  type CalibrationPair,
+} from "@/core/intelligence/calibration/calibration-map";
 import {
   blackboardWrite,
   emitEvent,
@@ -49,6 +56,17 @@ async function loadJsonl<T>(file: string): Promise<T[]> {
   return raw.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l) as T);
 }
 
+/** P6545 — بارگذاری نگاشت کالیبراسیون تأییدشدهٔ شورا (غیاب = بدون کالیبراسیون) */
+async function loadCalibrationMap(): Promise<CalibrationMap | null> {
+  try {
+    const p = path.join(DATA_DIR, "calibration-map.json");
+    if (!existsSync(p)) return null;
+    return JSON.parse(await readFile(p, "utf8")) as CalibrationMap;
+  } catch {
+    return null;
+  }
+}
+
 export interface CoreCycleReport {
   ranAt: string;
   tier: LearningTier;
@@ -60,6 +78,17 @@ export interface CoreCycleReport {
     learning: LearningCycleResult;
     shadow: { verdict: string; shadowBrier: number; primaryBrier: number };
     drift: { type: string; magnitude: number; action: string; rationale: string };
+    /** P6545 — وضعیت کالیبراسیون مصوب شورا (جلسه ۰۳۳ تصمیم ۱) */
+    calibration?: {
+      applied: boolean;
+      mapVersion: string | null;
+      rawBrier: number;
+      calibratedBrier: number;
+      rawLift: number;
+      calibratedLift: number;
+    };
+    /** P6545 — هدف Tier-aware (تصمیم ۳) */
+    brierTarget: number;
   };
   p8: {
     decisions: Array<Pick<DecisionRecord, "id" | "predictionId" | "decisionType" | "proposedAction" | "confidence" | "rationale" | "autoExecute" | "requiresApproval">>;
@@ -110,6 +139,7 @@ export async function runIntelligenceCoreCycle(opts: CoreCycleOptions = {}): Pro
   /* ── دادهٔ واقعی ARM ── */
   const predictions = await loadJsonl<RawPrediction>("predictions.jsonl");
   const outcomes = await loadJsonl<RawOutcome>("outcomes.jsonl");
+  const calibrationMap = await loadCalibrationMap(); // P6545 — مصوبهٔ تصمیم ۱ جلسه ۰۳۳
 
   /* ═══ P7 — یادگیری از نتیجه ═══ */
   const { tier } = tierFromRealData(outcomes.map((o) => ({ observedAt: o.occurredAt, ...o })) as never[]);
@@ -119,10 +149,17 @@ export async function runIntelligenceCoreCycle(opts: CoreCycleOptions = {}): Pro
   await emitEvent("outcome.recorded", { collected: records.length, coverage });
 
   const pairs: Pair[] = records.map((r) => ({ predictionId: r.predictionId, predictedValue: r.predictedValue, observedValue: r.observedValue }));
+  // P6545 — ارزیابی خام (پیش از کالیبراسیون) برای شفافیت + ارزیابی کالیبره‌شدهٔ مدل فعال
   const evaluationEngine = new EvaluationEngineImpl();
   const window = { from: records.length ? records[0].predictedAt : ranAt, to: ranAt };
-  const evaluation = evaluationEngine.evaluate("arm-listing-v0", pairs, window, tier);
-  await emitEvent("evaluation.completed", { brier: evaluation.metrics.brierScore, lift: evaluation.metrics.lift, verdict: evaluation.verdict });
+  const rawEvaluation = evaluationEngine.evaluate("arm-listing-v0", pairs, window, tier);
+  const activePairs: Pair[] = calibrationMap
+    ? calibratePairs(calibrationMap, pairs as CalibrationPair[]).map((p) => ({ predictionId: p.predictionId, predictedValue: p.predictedValue, observedValue: p.observedValue }))
+    : pairs;
+  const evaluation = calibrationMap
+    ? evaluationEngine.evaluate("arm-listing-v0", activePairs, window, tier)
+    : rawEvaluation;
+  await emitEvent("evaluation.completed", { brier: evaluation.metrics.brierScore, lift: evaluation.metrics.lift, verdict: evaluation.verdict, calibrated: Boolean(calibrationMap) });
 
   const learningPolicy: LearningPolicy = {
     id: `lp-arm-listing-${evaluation.id}`,
@@ -155,9 +192,9 @@ export async function runIntelligenceCoreCycle(opts: CoreCycleOptions = {}): Pro
   shadow.currentReport = shadowReport;
   shadow = shadowFramework.evaluate(shadow, evaluation, 30, false); // تأیید شورا: false — همیشه گزارش، هرگز ارتقا
 
-  // رانش: نیمهٔ اول در برابر نیمهٔ دوم دادهٔ واقعی
-  const half = Math.floor(pairs.length / 2);
-  const drift = new DriftDetector().detectPerformanceDrift("arm-listing-v0", pairs.slice(0, half), pairs.slice(half));
+  // رانش: نیمهٔ اول در برابر نیمهٔ دوم دادهٔ واقعی — روی مدل فعال (کالیبره‌شده اگر مصوب باشد)
+  const half = Math.floor(activePairs.length / 2);
+  const drift = new DriftDetector().detectPerformanceDrift("arm-listing-v0", activePairs.slice(0, half), activePairs.slice(half));
 
   /* ═══ P8 — تصمیم روی ۱۰ پیش‌بینی واقعی ═══ */
   const safety = new SafetyEngineImpl();
@@ -246,6 +283,7 @@ export async function runIntelligenceCoreCycle(opts: CoreCycleOptions = {}): Pro
   const snapshot: SystemSnapshot = {
     ...healthySnapshot(tier),
     brierScore: evaluation.metrics.brierScore,
+    brierTarget: tierAwareBrierTarget(tier), // P6545 — تصمیم ۳ جلسه ۰۳۳: هدف Tier-aware (جایگزین عدد ثابت ۰٫۲۰)
     worstCalibrationGap: Math.round(worstGap * 1000) / 1000,
     driftMagnitude: drift.magnitude,
     dataAgeHours,
@@ -287,6 +325,17 @@ export async function runIntelligenceCoreCycle(opts: CoreCycleOptions = {}): Pro
       learning,
       shadow: { verdict: shadow.verdict ?? "keep_primary", shadowBrier: shadowReport.metrics.brierScore, primaryBrier: evaluation.metrics.brierScore },
       drift: { type: drift.driftType, magnitude: drift.magnitude, action: drift.action, rationale: drift.rationale },
+      calibration: calibrationMap
+        ? {
+            applied: true,
+            mapVersion: calibrationMap.version,
+            rawBrier: rawEvaluation.metrics.brierScore,
+            calibratedBrier: evaluation.metrics.brierScore,
+            rawLift: rawEvaluation.metrics.lift,
+            calibratedLift: evaluation.metrics.lift,
+          }
+        : { applied: false, mapVersion: null, rawBrier: rawEvaluation.metrics.brierScore, calibratedBrier: rawEvaluation.metrics.brierScore, rawLift: rawEvaluation.metrics.lift, calibratedLift: rawEvaluation.metrics.lift },
+      brierTarget: tierAwareBrierTarget(tier),
     },
     p8: {
       decisions: decisions.map((d) => ({ id: d.id, predictionId: d.predictionId, decisionType: d.decisionType, proposedAction: d.proposedAction, confidence: d.confidence, rationale: d.rationale, autoExecute: d.autoExecute, requiresApproval: d.requiresApproval })),

@@ -1,0 +1,95 @@
+{
+  "case": "P6545-sync-refresh",
+  "councilDecision": "جلسه ۰۳۳ — تصمیم ۴: تأیید فوری همگام‌سازی با قید دادهٔ مقدس (checkpoint + resumedFrom)",
+  "startedAt": "2026-10-03T09:02:59.559Z",
+  "stalenessHoursBefore": 88.1,
+  "vaultTokenAvailable": true,
+  "tokenRefreshed": false,
+  "refreshError": "عدم احراز هویت",
+  "before": {
+    "latestPropertySyncedAt": "2026-09-29T16:57:00.282Z",
+    "propertyCount": 11456,
+    "requestCount": 7399,
+    "listingsCheckpoint": {
+      "phase": "complete",
+      "lastCompletedPage": 4
+    },
+    "requestsCheckpoint": {
+      "phase": "complete",
+      "lastCompletedPage": 121
+    }
+  },
+  "listings": {
+    "entity": "listings",
+    "ok": false,
+    "pages": 0,
+    "fetched": 0,
+    "created": 0,
+    "updated": 0,
+    "duplicates": 0,
+    "errors": 0,
+    "totalAtSource": 0,
+    "durationMs": 276,
+    "cycleId": "cycle-c08cfb32",
+    "errorCode": "UNAUTHORIZED",
+    "checkpoint": {
+      "lastCompletedPage": 0,
+      "totalPages": 1,
+      "phase": "in-progress",
+      "remainingPages": 1,
+      "newAtSource": false
+    }
+  },
+  "requests": {
+    "entity": "requests",
+    "ok": false,
+    "pages": 0,
+    "fetched": 0,
+    "created": 0,
+    "updated": 0,
+    "duplicates": 0,
+    "errors": 0,
+    "totalAtSource": 0,
+    "durationMs": 272,
+    "cycleId": "cycle-a3feb5c0",
+    "errorCode": "UNAUTHORIZED",
+    "checkpoint": {
+      "lastCompletedPage": 0,
+      "totalPages": 1,
+      "phase": "in-progress",
+      "remainingPages": 1,
+      "newAtSource": false
+    }
+  },
+  "after": {
+    "latestPropertySyncedAt": "2026-09-29T16:57:00.282Z",
+    "propertyCount": 11456,
+    "requestCount": 7399,
+    "listingsCheckpoint": {
+      "id": "listings",
+      "cycleId": "cycle-c30b4074",
+      "pageSize": 500,
+      "lastCompletedPage": 4,
+      "totalPages": 1,
+      "totalAtSource": 0,
+      "phase": "complete",
+      "completedAt": "2026-09-29T16:56:11.811Z",
+      "updatedAt": "2026-09-29T16:56:11.812Z",
+      "createdAt": "2026-09-20T13:18:28.127Z"
+    },
+    "requestsCheckpoint": {
+      "id": "requests",
+      "cycleId": "cycle-9d505f7f",
+      "pageSize": 50,
+      "lastCompletedPage": 121,
+      "totalPages": 1,
+      "totalAtSource": 0,
+      "phase": "complete",
+      "completedAt": "2026-09-27T21:16:37.334Z",
+      "updatedAt": "2026-09-27T21:16:37.335Z",
+      "createdAt": "2026-09-20T13:19:10.594Z"
+    }
+  },
+  "stalenessHoursAfter": 88.1,
+  "finishedAt": "2026-10-03T09:03:50.282Z"
+}

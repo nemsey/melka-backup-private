@@ -161,6 +161,8 @@ describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", (
       // ---- P6537 / سند ۰۲۷: قراردادهای یکپارچهٔ P7 تا P11 + پنج موتورخانهٔ فازی ----
       "contracts-p7-p11.ts",
       "p7-core.ts", "p8-core.ts", "p9-core.ts", "p10-core.ts", "p11-core.ts",
+      // ---- P6545 / جلسه ۰۳۳: لایهٔ کالیبراسیون (تصمیم‌های ۱ و ۳) — افزودنی، جزو ۱۱ موتور نیست ----
+      "calibration/calibration-map.ts", "calibration/index.ts",
     ]);
     const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
     expect([...actual].sort()).toEqual([...expected].sort());
