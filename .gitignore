@@ -58,3 +58,7 @@ ABORT
 recon-night1*.jsonl
 tool-results/
 backups/pre-reset-*.db
+
+# P6544 (قانون تثبیت ۰۳۱) — اسرار آینه و بسته‌های بقا: هرگز به git نمی‌روند
+upload/.mirror/
+upload/.survival/
