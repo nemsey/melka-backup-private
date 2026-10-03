@@ -86,14 +86,26 @@ export interface CoreCycleReport {
 }
 
 export interface CoreCycleOptions {
-  /** موتور DB برای سیاست‌های واقعی — در تست‌ها می‌تواند حذف شود */
+  /** موتور DB برای سیاست‌های واقعی — در تست‌ها می‌تواند حذف شود؛ بدون آن، تنبل از lib/db بارگذاری می‌شود */
   db?: PrismaClient;
+}
+
+/** بارگذاری تنبل db — روت‌ها هرگز مستقیم @/lib/db را import نمی‌کنند (گارد P2-03) */
+async function resolveDb(): Promise<PrismaClient | undefined> {
+  try {
+    const mod = (await import("@/lib/db")) as { db: PrismaClient };
+    return mod.db;
+  } catch {
+    return undefined;
+  }
 }
 
 /** اجرای کامل حلقهٔ بزرگ روی دادهٔ واقعی — صفر اجرای خودکار */
 export async function runIntelligenceCoreCycle(opts: CoreCycleOptions = {}): Promise<CoreCycleReport> {
   const ranAt = new Date().toISOString();
   const events: IntelligenceEvent[] = [];
+  const db = opts.db ?? (await resolveDb());
+  const dbOpts = { ...opts, db };
 
   /* ── دادهٔ واقعی ARM ── */
   const predictions = await loadJsonl<RawPrediction>("predictions.jsonl");
@@ -177,10 +189,10 @@ export async function runIntelligenceCoreCycle(opts: CoreCycleOptions = {}): Pro
   const policyEngine = new PolicyEvaluationEngineImpl();
   const policyEvaluations: PolicyEvaluation[] = [];
   let policySignals: PolicySignal[] = [];
-  if (opts.db) {
+  if (dbOpts.db) {
     try {
-      const versions = await opts.db.agentPolicyVersion.findMany({ orderBy: { createdAt: "desc" }, take: 5 });
-      const feedbacks = await opts.db.agentFeedback.findMany({ take: 500 });
+      const versions = await dbOpts.db.agentPolicyVersion.findMany({ orderBy: { createdAt: "desc" }, take: 5 });
+      const feedbacks = await dbOpts.db.agentFeedback.findMany({ take: 500 });
       policySignals = versions.map((v) => {
         const related = feedbacks.filter((f) => f.tileId === v.tileId);
         return {
@@ -213,10 +225,10 @@ export async function runIntelligenceCoreCycle(opts: CoreCycleOptions = {}): Pro
 
   // حاکمیت روی زمینهٔ واقعی
   const gctx = emptyGovernanceContext();
-  if (opts.db) {
+  if (dbOpts.db) {
     try {
       const monthAgo = new Date(Date.now() - 30 * 86400000);
-      gctx.sessionsOlderThan30d = await opts.db.session.count({ where: { createdAt: { lt: monthAgo }, expiresAt: { gt: new Date() } } });
+      gctx.sessionsOlderThan30d = await dbOpts.db.session.count({ where: { createdAt: { lt: monthAgo }, expiresAt: { gt: new Date() } } });
     } catch { /* بدون DB — صفر */
     }
   }

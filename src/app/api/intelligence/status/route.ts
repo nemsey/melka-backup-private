@@ -18,7 +18,6 @@ import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { daemonHealth, ensureBrainStatus, getLearningSnapshot } from "@/lib/intelligence/daemon";
 import { runIntelligenceCoreCycle } from "@/lib/intelligence/core-cycle";
-import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +48,8 @@ export async function GET(request: NextRequest) {
     const policy = await getLearningSnapshot();
 
     // سند ۰۲۷ — چرخهٔ بزرگ P7→P11 روی دادهٔ واقعی (صفر اجرای خودکار)
-    const core = await runIntelligenceCoreCycle({ db });
+    // db در لایهٔ lib به‌صورت تنبل بارگذاری می‌شود (خلوص روت‌ها — گارد P2-03)
+    const core = await runIntelligenceCoreCycle();
 
     return Response.json(
       {

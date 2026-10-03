@@ -127,7 +127,7 @@ function walkImports(startFile: string): Set<string> {
 describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", () => {
   const intelFiles = collectTs(INTEL_DIR);
 
-  test("ناحیه هوشمندی وجود دارد — ترکیب مورد انتظار هر فاز (PHASE 3: ۱۵؛ PHASE 4: +۶؛ PHASE 5: +۷؛ PHASE 6: +۶ بدنه Feature)", () => {
+  test("ناحیه هوشمندی وجود دارد — ترکیب مورد انتظار هر فاز (PHASE 3: ۱۵؛ PHASE 4: +۶؛ PHASE 5: +۷؛ PHASE 6: +۶؛ سند ۰۲۷: +۶)", () => {
     // PHASE 3 (۱۵): ۱۱ قرارداد موتور + engines/index + ۴ اسکلت (base/engine-deps/index + قرارداد زمینه)
     // PHASE 4 (+۶): memory/{memory-store, vector-index, memory-engine, index} + context/{context-engine, index}
     // PHASE 5 (+۷): retrieval/{metadata, keyword-search, hybrid-retriever, reranker, citation-builder, retrieval-engine, index}
@@ -158,6 +158,9 @@ describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", (
       "evaluation/evaluation-engine.ts", "evaluation/index.ts",
       "learning/learning-engine.ts", "learning/index.ts",
       "decision/decision-engine.ts", "decision/index.ts",
+      // ---- P6537 / سند ۰۲۷: قراردادهای یکپارچهٔ P7 تا P11 + پنج موتورخانهٔ فازی ----
+      "contracts-p7-p11.ts",
+      "p7-core.ts", "p8-core.ts", "p9-core.ts", "p10-core.ts", "p11-core.ts",
     ]);
     const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
     expect([...actual].sort()).toEqual([...expected].sort());
