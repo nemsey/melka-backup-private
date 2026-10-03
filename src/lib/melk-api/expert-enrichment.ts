@@ -39,6 +39,10 @@ export interface ExpertEnrichedRow {
   rentCount: number;
   /** P6.5-12 — شمار کل قراردادهای ثبت‌شده در سامانهٔ مالی (کل کسب‌وکار — ۱۰ نفر برتر) */
   accContractCount: number | null;
+  /** P6546/گام چهارم — تاریخ استخدام از سامانهٔ PM (realtors/info/personnelInfo) */
+  hireDate: string | null;
+  /** P6546/گام چهارم — نقش/عنوان شغلی پرسنلی از سامانهٔ PM */
+  roleTitle: string | null;
 }
 
 export interface ExpertEnrichmentResult {
@@ -81,13 +85,17 @@ export async function enrichExpertRows(
   }>,
   armToken: string | null
 ): Promise<ExpertEnrichmentResult> {
-  // ---------- ۱) پرسنل PM: نگاشت _id → code ----------
-  const pmRows = await db.pmPersonnelRecord.findMany({ select: { id: true, code: true, mobileNumber: true } });
+  // ---------- ۱) پرسنل PM: نگاشت _id → code + استخدام/نقش (P6546/گام چهارم) ----------
+  const pmRows = await db.pmPersonnelRecord.findMany({ select: { id: true, code: true, mobileNumber: true, hireDate: true, jobTitle: true, roleTitle: true } });
   const pmCodeById = new Map<string, string>();
   const pmMobileById = new Map<string, string>();
+  const pmHireById = new Map<string, string>();
+  const pmRoleById = new Map<string, string>();
   for (const p of pmRows) {
     if (p.code) pmCodeById.set(p.id, p.code);
     if (p.mobileNumber) pmMobileById.set(p.id, p.mobileNumber);
+    if (p.hireDate) pmHireById.set(p.id, p.hireDate);
+    if (p.jobTitle ?? p.roleTitle) pmRoleById.set(p.id, (p.jobTitle ?? p.roleTitle) as string);
   }
 
   // ---------- ۲) انتساب فروش‌ها (۷۲۷ معاملهٔ گزارش تطابق) ----------
@@ -164,6 +172,9 @@ export async function enrichExpertRows(
       saleCount,
       rentCount: rentFromContract,
       accContractCount: accCountById.get(r.id) ?? null,
+      // P6546/گام چهارم — تاریخ استخدام و نقش پرسنلی از سامانهٔ PM (personnelInfo)
+      hireDate: pmHireById.get(r.id) ?? null,
+      roleTitle: pmRoleById.get(r.id) ?? null,
     };
   });
 

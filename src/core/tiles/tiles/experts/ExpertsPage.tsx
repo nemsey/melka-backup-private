@@ -1,25 +1,24 @@
 "use client";
 
 /**
- * کاشی «کارشناسان ملک تبریز» — صفحه داخلی (P6530/گام ۴ — دستور مالک ۱۴۰۵/۰۷/۹)
+ * کاشی «کارشناسان ملک تبریز» — صفحه داخلی (P6530/گام ۴ + P6546/گام چهارم)
  * ------------------------------------------------------
- * فهرست هشت‌ستونی عین دستور مالک (بند الف):
- *   ردیف · کارشناس (نام + موبایل «زیر نام» — نکته ۱) · کد پرسنلی · شعبه ·
- *   مبایعه نامه (مجموع مبایعه‌نامه + پیش‌فروش — نکته ۳) ·
- *   اجاره نامه (مجموع اجاره + تمدید اجاره — نکته ۴) ·
- *   آدرس کارشناس · وضعیت (فعال/غیرفعال — نکته ۵)
+ * فهرست — عین دستور مالک (P6546/گام چهارم):
+ *   ردیف · کارشناس (نام + موبایل زیر نام) · تاریخ استخدام (بلافاصله پس از نام —
+ *   بند ۲) · کد پرسنلی (بدون کد = «-» — بند ۳) · شعبه · نقش پرسنلی ·
+ *   مبایعه نامه (مجموع مبایعه‌نامه + پیش‌فروش) · اجاره نامه (اجاره + تمدید) ·
+ *   آدرس کارشناس · وضعیت (فعال/غیرفعال)
  *
- * حذف‌های دستور:
- *   · ستون تعامل (نکته ۲) و تب/بخش تعاملات (بند ۳)
- *   · دو بینش ترکیب نقش‌ها و مشاوران بدون تعامل (بند ۵)
- *   · شاهد سامانهٔ مالی کل کسب‌وکار (بند ۶)
+ * اولویت ترتیب قرارگیری (P6546/گام چهارم-۱):
+ *   ۱. تعداد بالای معاملات مبایعه‌نامه (مجموع مبایعه‌نامه + پیش‌فروش)
+ *   ۲. تعداد بالای معاملات اجاره‌نامه (مجموع اجاره‌نامه + تمدید اجاره)
+ *   ۳. دارای کد پرسنلی و شعبه
  *
- * فیلتر بر اساس تمام ستون‌ها (بند ۲): کارشناس (نام/موبایل) · کد پرسنلی ·
- *   شعبه (چهار شعبه + تعیین‌نشده) · مبایعه‌نامه از/تا · اجاره‌نامه از/تا ·
- *   آدرس · وضعیت
+ * حذف‌های P6546/گام چهارم (بند ۶):
+ *   · بینش «فعال‌ترین کارشناسان مبایعه‌نامه (۲۰ نفر برتر)»
+ *   · بینش «شاهد سامانهٔ مالی — بیشترین قرارداد ثبت‌شده (کل کسب‌وکار)»
  *
- * بخش «بروزرسانی فهرست کارشناسان و کارکنان» (بند ۴): زنجیرهٔ عین سامانه‌های
- * ARM و PM + تاریخ و ساعت دقیق آخرین بروزرسانی + ازسرگیری از آخرین نقطه.
+ * فیلتر بر اساس تمام ستون‌ها + جدول پوشش تمام ستون‌ها (گام پنجم)
  * رنگ بخش: فیروزه‌ای #0891B2 (گام صفر — sec-m4)
  */
 
@@ -35,10 +34,10 @@ import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } 
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RotateCcw, Search, Users, UserCheck, Phone, RefreshCw, Hash, CheckCircle2,
-  Network, Building2, Banknote, FileSignature, MapPin, Filter, History, IdCard,
+  Network, Building2, Banknote, FileSignature, MapPin, Filter, History, IdCard, CalendarClock, BriefcaseBusiness,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, DataSourceWarning, useTileData, type DataSourceInfo } from "@/components/app/shared";
+import { KpiCard, DataSourceWarning, TileCoverageTable, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import { useTileFreshness } from "@/components/app/TileCard";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
@@ -46,8 +45,6 @@ import { faNumber, faDateTime } from "@/lib/format";
 import { faDigits } from "@/lib/jalali";
 import { TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
 import { expertFamilyStats } from "@/core/agent/analyzers";
-// P6530/گام ۶ (نکتهٔ ۲) — مرتب‌سازی فارسی: الفبای فارسی + ارقام ۰-۹؛ مستقل از املای ارقام/حروف
-import { faSortBy } from "@/lib/fa-sort";
 
 interface ExRow {
   id: string;
@@ -67,8 +64,12 @@ interface ExRow {
   rentCount: number;
   /** P6530/گام ۴ — شعبهٔ کارشناس (زنجیرهٔ تفکیک) */
   branch: string;
-  /** P6530/گام ۴ — آدرس کارشناس (تا ارائهٔ داده توسط ARM/PM: ثبت نشده) */
+  /** P6530/گام ۴ — آدرس کارشناس */
   address: string | null;
+  /** P6546/گام چهارم-۲ — تاریخ استخدام از سامانهٔ PM (personnelInfo) */
+  hireDate: string | null;
+  /** P6546/گام چهارم-۴ — نقش/عنوان شغلی پرسنلی از سامانهٔ PM */
+  roleTitle: string | null;
 }
 
 interface ExResponse {
@@ -120,15 +121,29 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
     errorValue: (prev) => (prev ? { ...prev, rows: [] } : ({ rows: [], total: 0, dataSource: null } as unknown as ExResponse)),
   });
 
-  // P6530/گام ۶ — ترتیب نمایشی با الفبای فارسی (faCompare) — نه ترتیب بایتی SQL
-  const rows = useMemo(() => faSortBy(data?.rows ?? [], (r) => r.fullName), [data]);
+  // P6546/گام چهارم-۱ — اولویت ترتیب عین دستور مالک:
+  //   ۱) مبایعه‌نامه (مجموع مبایعه‌نامه + پیش‌فروش) نزولی
+  //   ۲) اجاره‌نامه (مجموع اجاره + تمدید) نزولی
+  //   ۳) دارای کد پرسنلی و شعبه (سپس الفبای فارسی برای ثبات)
+  const rows = useMemo(() => {
+    const list = [...(data?.rows ?? [])];
+    list.sort((a, b) => {
+      if (b.saleCount !== a.saleCount) return b.saleCount - a.saleCount; // اولویت ۱
+      if (b.rentCount !== a.rentCount) return b.rentCount - a.rentCount; // اولویت ۲
+      const aHas = a.pmCode && a.branch !== BRANCH_UNSET ? 1 : 0; // اولویت ۳
+      const bHas = b.pmCode && b.branch !== BRANCH_UNSET ? 1 : 0;
+      if (bHas !== aHas) return bHas - aHas;
+      return a.fullName.localeCompare(b.fullName, "fa"); // ثبات نمایش
+    });
+    return list;
+  }, [data]);
   const total = data?.total ?? 0;
   const lastUpdate = data?.lastUpdate ?? null;
   const freshness = useTileFreshness("experts");
 
   // P6530/گام ۴ — محاسبهٔ خالص در analyzers (صفحه فقط فرمت می‌کند — قانون P1-02)
   const kpis = useMemo(() => expertFamilyStats(rows), [rows]);
-  const source = data?.dataSource ?? null;
+  // P6546/گام سوم-۳ — بنر خطای استخراج زنده حذف شد؛ دادهٔ کش‌شدهٔ سالم سرو می‌شود
 
   /** بروزرسانی فهرست کارشناسان و کارکنان (بند ۴) — زنجیرهٔ ARM و PM */
   const doSync = useCallback(async () => {
@@ -170,8 +185,10 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
         <KpiCard label="مجموع اجاره نامه" value={loading ? undefined : faNumber(kpis.rentTotal)} sub="شامل تمدید اجاره" icon={Banknote} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
       </div>
 
-      {/* شفافیت منبع داده */}
-      {source && <DataSourceWarning source={source} />}
+      {/* شفافیت منبع داده — P6546/گام سوم-۳: بنر خطای زنده حذف شد؛ کش سالم سرو می‌شود */}
+
+      {/* P6546/گام پنجم-الف-۲ — جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
+      <TileCoverageTable tileKey="m4" accentClass="text-sec-m4-700" />
 
       {/* بخش بروزرسانی فهرست کارشناسان و کارکنان (بند ۴) */}
       <Card className="border-sec-m4-200 bg-sec-m4-50" id="m4-update-section">
@@ -394,14 +411,18 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">ردیف</TableHead>
-                    <TableHead className="min-w-44">کارشناس</TableHead>
-                    <TableHead className="min-w-28">کد پرسنلی</TableHead>
-                    <TableHead className="min-w-28">شعبه</TableHead>
-                    <TableHead className="min-w-28">مبایعه نامه</TableHead>
-                    <TableHead className="min-w-28">اجاره نامه</TableHead>
-                    <TableHead className="min-w-40">آدرس کارشناس</TableHead>
-                    <TableHead className="min-w-24">وضعیت</TableHead>
+                    <TableHead className="w-10">ردیف</TableHead>
+                    <TableHead className="min-w-40">کارشناس</TableHead>
+                    {/* P6546/گام چهارم-۲ — تاریخ استخدام بلافاصله پس از نام کارشناس */}
+                    <TableHead className="min-w-24">تاریخ استخدام</TableHead>
+                    <TableHead className="min-w-24">کد پرسنلی</TableHead>
+                    <TableHead className="min-w-24">شعبه</TableHead>
+                    {/* P6546/گام چهارم-۴ — نقش پرسنلی از ساختار سامانهٔ PM */}
+                    <TableHead className="min-w-24">نقش پرسنلی</TableHead>
+                    <TableHead className="min-w-24">مبایعه نامه</TableHead>
+                    <TableHead className="min-w-24">اجاره نامه</TableHead>
+                    <TableHead className="min-w-36">آدرس کارشناس</TableHead>
+                    <TableHead className="min-w-20">وضعیت</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
@@ -429,14 +450,29 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                           )}
                         </div>
                       </TableCell>
-                      {/* ۳ — کد پرسنلی (منبع حقیقت: PM) */}
+                      {/* ۳ — تاریخ استخدام (P6546/گام چهارم-۲ — بلافاصله پس از نام؛ از PM personnelInfo) */}
                       <TableCell className="whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 font-bold tabular-nums" dir="ltr" title={r.pmCode ? `کد پرسنلی از سامانهٔ PM: ${faDigits(r.pmCode)}` : "کد پرسنلی از رجیستری کارشناسان ARM"}>
-                          <IdCard className="w-3.5 h-3.5 text-sec-m4-700 shrink-0" aria-hidden />
-                          {faDigits(r.pmCode ?? r.personnelCode)}
-                        </span>
+                        {r.hireDate ? (
+                          <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium" title={r.hireDate}>
+                            <CalendarClock className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden />
+                            {/\d{4}-\d{2}-\d{2}/.test(r.hireDate) ? faDateTime(r.hireDate) : faDigits(r.hireDate)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">—</span>
+                        )}
                       </TableCell>
-                      {/* ۴ — شعبه */}
+                      {/* ۴ — کد پرسنلی (منبع حقیقت: PM — بدون کد = «-» بند ۳) */}
+                      <TableCell className="whitespace-nowrap">
+                        {r.pmCode ?? r.personnelCode ? (
+                          <span className="inline-flex items-center gap-1 font-bold tabular-nums" dir="ltr" title={r.pmCode ? `کد پرسنلی از سامانهٔ PM: ${faDigits(r.pmCode)}` : "کد پرسنلی از رجیستری کارشناسان ARM"}>
+                            <IdCard className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden />
+                            {faDigits(r.pmCode ?? r.personnelCode)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground font-bold" title="این رکورد در سامانهٔ PM کد پرسنلی ندارد">-</span>
+                        )}
+                      </TableCell>
+                      {/* ۵ — شعبه */}
                       <TableCell>
                         {r.branch && r.branch !== BRANCH_UNSET ? (
                           <Badge variant="outline" className="gap-1 text-[11px] border-sec-m4-200 bg-sec-m4-50 text-sec-m4-700">
@@ -444,6 +480,16 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground text-[11px]">{BRANCH_UNSET}</span>
+                        )}
+                      </TableCell>
+                      {/* ۵-ب — نقش پرسنلی (P6546/گام چهارم-۴ — از ساختار سامانهٔ PM) */}
+                      <TableCell className="whitespace-nowrap">
+                        {r.roleTitle ? (
+                          <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m4-200 bg-sec-m4-50 text-sec-m4-700">
+                            <BriefcaseBusiness className="w-2.5 h-2.5" aria-hidden /> {r.roleTitle}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">—</span>
                         )}
                       </TableCell>
                       {/* ۵ — مبایعه نامه = مبایعه‌نامه + پیش‌فروش (نکته ۳) */}

@@ -20,3 +20,6 @@ export {
   type DataSourceWarningProps,
 } from "./data-source";
 export { useTileData, type UseTileDataOptions, type UseTileDataResult } from "./use-tile-data";
+// P6546/گام پنجم — مؤلفه‌های مشترک کاشی‌های چهارگانه
+export { TileCoverageTable, type CoverageColumn } from "./coverage-table";
+export { TopRankingTable, type RankRow } from "./top-ranking-table";

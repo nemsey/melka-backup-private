@@ -678,6 +678,40 @@ export function extractRequestTradeType(payload: unknown): string | null {
 }
 
 /**
+ * P6546/گام دوم — استخراج «نوع ملک درخواستی» و «نوع ساختمان» از payload جزئیات درخواست ARM.
+ * ساختار خود سامانه: propertyCategory: { tradeType, propertyType, buildingType? } +
+ * فیلدهای مسطح همپوشان. خروجی تهی = منبع مقدار نداشت (خنثی‌سازی صادقانه).
+ */
+export function extractRequestPropertyTypes(payload: unknown): { propertyTypeName: string | null; buildingTypeName: string | null } {
+  const out = { propertyTypeName: null as string | null, buildingTypeName: null as string | null };
+  if (!payload || typeof payload !== "object") return out;
+  const root = payload as Record<string, unknown>;
+  const containers: Array<Record<string, unknown>> = [root];
+  if (root["data"] && typeof root["data"] === "object" && root["data"] !== payload) {
+    containers.push(root["data"] as Record<string, unknown>);
+  }
+  const nameOf = (v: unknown): string | null => {
+    if (typeof v === "string" && v.trim()) return v.trim();
+    if (v && typeof v === "object") {
+      const n = (v as Record<string, unknown>)["name"] ?? (v as Record<string, unknown>)["title"];
+      if (typeof n === "string" && n.trim()) return n.trim();
+    }
+    return null;
+  };
+  for (const c of containers) {
+    const cat = c["propertyCategory"];
+    if (cat && typeof cat === "object") {
+      const pc = cat as Record<string, unknown>;
+      out.propertyTypeName = out.propertyTypeName ?? nameOf(pc["propertyType"]) ?? nameOf(pc["propertyTypeName"]);
+      out.buildingTypeName = out.buildingTypeName ?? nameOf(pc["buildingType"]) ?? nameOf(pc["buildingTypeName"]);
+    }
+    out.propertyTypeName = out.propertyTypeName ?? nameOf(c["propertyType"]) ?? nameOf(c["propertyTypeName"]);
+    out.buildingTypeName = out.buildingTypeName ?? nameOf(c["buildingType"]) ?? nameOf(c["buildingTypeName"]);
+  }
+  return out;
+}
+
+/**
  * P6521/M2 — استخراج دفاعی منطقه‌های منتخب درخواست از payload جزئیات ARM.
  * شکل دقیق payload جزئیات در باندل مستند نشده (Recon §۲ — کشف مسیر بدون پروب داده)؛
  * پس هر کلید محتمل را با گارد نوع بررسی می‌کنیم (آرایهٔ رشته یا آرایهٔ اشیای name دار).
@@ -901,7 +935,11 @@ export async function enrichArmRequests(
         if (priceRange.to !== null) input.priceTo = priceRange.to;
         const tradeType = extractRequestTradeType(det.data);
         if (tradeType) input.tradeTypeName = tradeType;
-        if (priceRange.from !== null || priceRange.to !== null || tradeType) gotAny = true;
+        // P6546/گام دوم — نوع ملک درخواستی + نوع ساختمان از جزئیات درخواست (غنی‌سازی ستون‌های فهرست)
+        const propTypes = extractRequestPropertyTypes(det.data);
+        if (propTypes.propertyTypeName) input.propertyTypeName = propTypes.propertyTypeName;
+        if (propTypes.buildingTypeName) input.buildingTypeName = propTypes.buildingTypeName;
+        if (priceRange.from !== null || priceRange.to !== null || tradeType || propTypes.propertyTypeName) gotAny = true;
       } catch {
         /* جزئیات درخواست بهترین-تلاش است — بدون علامت‌گذاری ردیف */
       }

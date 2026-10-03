@@ -37,7 +37,7 @@ export const transactionsContractsTile = defineTile({
       "VOLUME", "TREND", "DOCUMENT", "ANOMALY", "TOP_EXPERTS", "INFO_COVERAGE",
       "FUNNEL", "BOTTLENECK", "STALLED", "REJECT",
       "TARIFF", "REVENUE", "SETTLEMENT", "BRANCH", "PIPELINE",
-      "CONTRACT_TEXT", "SHARE_AGGREGATE",
+      "SHARE_AGGREGATE",
       "VISIT_VOLUME", "VISIT_TREND", "VISIT_STATUS",
     ],
     capabilities: ["memory", "feedback", "policy-versions", "rollback"],

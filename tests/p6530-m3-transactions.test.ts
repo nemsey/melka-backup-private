@@ -115,17 +115,18 @@ describe("گام ۳/M3 §۳ — عناوین فهرست (بند ۱)", () => {
       "کد درخواست",
       "خریدار",
       "نوع قرارداد",
-      "قیمت قرارداد",
+      "قیمت",
       "تجمیع حق‌السهم مشاوران",
       "شماره هولوگرام",
       "فایل قرارداد",
     ]);
   });
 
-  test("۳-۲) عنوان قدیمی «مبلغ قرارداد» حذف شده (بند ۱: قیمت قرارداد)", async () => {
+  test("۳-۲) عنوان قدیمی «مبلغ قرارداد» و «قیمت قرارداد» حذف شده (P6546/گام پنجم-ت-۴: نام ستون = قیمت)", async () => {
     const s = readFileSync(`${TILES}/transactions-contracts/TransactionsTab.tsx`, "utf8");
     expect(s).not.toMatch(/<TableHead[^>]*>.*مبلغ قرارداد/);
-    expect(s).toContain("قیمت قرارداد");
+    expect(s).not.toMatch(/<TableHead[^>]*>.*قیمت قرارداد/);
+    expect(s).toContain("قیمت");
   });
 
   test("۳-۳) ترتیب ستون‌ها دست‌نخورده (لاغیر — بند ۱ فقط عنوان)", async () => {
@@ -134,7 +135,7 @@ describe("گام ۳/M3 §۳ — عناوین فهرست (بند ۱)", () => {
     const headerStart = s.indexOf("<TableHeader>");
     const headerEnd = s.indexOf("</TableHeader>");
     const header = s.slice(headerStart, headerEnd);
-    const order = ["ردیف", "تاریخ معامله", "کد ملک", "فروشنده", "کد درخواست", "خریدار", "نوع قرارداد", "قیمت قرارداد", "تجمیع حق‌السهم", "شماره هولوگرام", "فایل قرارداد"]
+    const order = ["ردیف", "تاریخ معامله", "کد ملک", "فروشنده", "کد درخواست", "خریدار", "نوع قرارداد", "قیمت", "تجمیع حق‌السهم", "شماره هولوگرام", "فایل قرارداد"]
       .map((t) => header.indexOf(t));
     for (const idx of order) expect(idx).toBeGreaterThanOrEqual(0);
     for (let i = 1; i < order.length; i += 1) {
@@ -308,8 +309,11 @@ describe("گام ۳/M3 §۶ — بروزرسانی", () => {
     expect(s).toContain('id="m3-update-section"');
     expect(s).toContain('id="m3-last-update"');
     expect(s).toContain("آخرین بروزرسانی موفق معاملات");
-    expect(s).toContain("ازسرگیری از آخرین صفحهٔ کامل");
+    expect(s).toContain("ازسرگیری از آخرین نقطهٔ کامل");
     expect(s).toMatch(/ARM و PM/);
+    // P6546/گام سوم-۱ — بروزرسانی پس‌زمینه‌ای با پیشرفت (بدون مهلت ۹۰ ثانیه)
+    expect(s).toContain("/api/crm/transactions/sync");
+    expect(s).toContain("data-testid=\"m3-sync-progress\"");
   });
 
   test("۶-۳) روت sync/all: همهٔ منابع با ازسرگیری (زنجیرهٔ ARM و PM)", async () => {
@@ -332,9 +336,9 @@ describe("گام ۳/M3 §۷ — قیمت قرارداد با کاما و توم�
     expect(faAmountFull(500_000_000)).toBe("۵۰۰،۰۰۰،۰۰۰ تومان");
   });
 
-  test("۷-۲) ستون قیمت قرارداد در صفحه از faAmountFull استفاده می‌کند", async () => {
+  test("۷-۲) ستون قیمت در صفحه از faAmountFull با قالب بدون واحد استفاده می‌کند (P6546/گام پنجم-ت-۴)", async () => {
     const s = readFileSync(`${TILES}/transactions-contracts/TransactionsTab.tsx`, "utf8");
-    expect(s).toMatch(/faAmountFull\(t\.contractAmount\)/);
+    expect(s).toMatch(/faAmountFull\(t\.contractAmount, ""\)/);
   });
 });
 

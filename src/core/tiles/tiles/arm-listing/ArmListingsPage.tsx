@@ -23,7 +23,7 @@
  * رنگ بخش: سبز یشمی #10B981 (گام صفر — sec-m1)
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,10 +36,11 @@ import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RotateCcw, Search, Home, Users, Phone, MapPin, RefreshCw, Hash, CheckCircle2, Clock,
-  Landmark, Building2, PieChart, Banknote, Tag, History, Network, Filter,
+  Landmark, Building2, PieChart, Banknote, Tag, History, Network, Filter, Ruler, BedDouble, Layers,
+  CalendarDays, TrendingUp, Award, MapPinned, Globe,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, TopRankingTable, TileCoverageTable } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
@@ -68,6 +69,13 @@ interface ListingRow {
   address: string | null;
   areaName: string | null;
   lineName: string | null;
+  /** P6546/گام یک — ستون‌های غنی‌شده از جزئیات ARM + سامانهٔ عمومی (apu) */
+  propertyTypeName: string | null;
+  meterage: number | null;
+  rooms: number | null;
+  floor: number | null;
+  buildYear: number | null;
+  pricePerMeter: number | null;
   branch: string;
   enrichedAt: string | null;
   createdAt: string | null;
@@ -255,15 +263,16 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
   const doSync = useCallback(async () => {
     setSyncing(true);
     try {
+      // P6546/گام پنجم-پ — لایهٔ فهرست: ≈۵٬۰۰۰ رکورد/کلیک (۱۰ صفحه×۵۰۰) · لایهٔ جزئیات: ≈۵۰۰ رکورد/کلیک
       const res = await api<{ lists: Array<{ fetched: number; totalAtSource: number; ok: boolean }>; enrich?: Array<{ enriched: number; remaining: number }> }>(
         "/api/crm/arm-catalog/sync",
-        { method: "POST", body: { entity: "listings", mode: "both", maxRows: 150 } }
+        { method: "POST", body: { entity: "listings", mode: "both", maxRows: 500 } }
       );
       const list = res.lists?.[0];
       toast({
-        title: "بروزرسانی آگهی‌ها از سامانه ملک تبریز انجام شد",
+        title: "بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز انجام شد",
         description: list
-          ? `${faNumber(list.fetched)} آگهی از مجموع ${faNumber(list.totalAtSource)} آگهی سامانه ARM در این برش خوانده شد و برش غنی‌سازی مالک و آدرس دقیق هم اجرا شد. ادامهٔ بروزرسانی از همان صفحه‌ای که تمام شده بود، ازسر گرفته می‌شود.`
+          ? `${faNumber(list.fetched)} آگهی از مجموع ${faNumber(list.totalAtSource)} آگهی سامانه ARM در این برش (حدود ۵٬۰۰۰ رکورد) خوانده شد و برش تکمیل جزئیات (حدود ۵۰۰ رکورد: مالک، آدرس، متراژ، اتاق، طبقه، سال ساخت، نوع ملک) هم اجرا شد. ادامهٔ بروزرسانی از همان صفحه‌ای که تمام شده بود، ازسر گرفته می‌شود.`
           : "بروزرسانی اجرا شد.",
       });
       await load();
@@ -287,6 +296,29 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
     stateFilterActive ||
     selectedTrades.length > 0 ||
     Object.values(applied).some((v) => v !== "");
+
+  // P6546/گام یک-۲ — بینش ۱۰ کارشناس پرآگهی (تجمیع زندهٔ فهرست)
+  const topRealtors = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      if (r.realtorName) counts.set(r.realtorName, (counts.get(r.realtorName) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "fa"));
+  }, [rows]);
+
+  // P6546/گام یک-۳ — بینش ۱۰ قطب عرضه آگه در مناطق تبریز (تجمیع زندهٔ فهرست)
+  const topHubs = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const area = r.areaName ?? r.address?.split("،")[0]?.trim();
+      if (area) counts.set(area, (counts.get(area) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "fa"));
+  }, [rows]);
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
 
@@ -346,6 +378,33 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
           </div>
         </CardContent>
       </Card>
+
+      {/* ============ جداول و نمودارها (P6546/گام پنجم-الف-۳ — ترتیب الزامی: بینش‌ها → جداول → پوشش → بروزرسانی → فیلتر → فهرست) ============ */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4" id="m1-tables-section">
+        {/* P6546/گام یک-۲ — جدول ۱۰ کارشناسان پرآگهی */}
+        <TopRankingTable
+          id="m1-top-realtors"
+          title="جدول ۱۰ کارشناسان پرآگهی ملک تبریز"
+          description="کارشناسانی که بیشترین آگهی در رجیستری سامانه ملک تبریز ثبت کرده‌اند — تجمیع زنده از فهرست همین کاشی."
+          rows={topRealtors}
+          countLabel="کارشناس"
+          icon={Award}
+          accentClass="text-sec-m1-700"
+        />
+        {/* P6546/گام یک-۳ — جدول ۱۰ قطب‌های عرضه آگه */}
+        <TopRankingTable
+          id="m1-top-hubs"
+          title="جدول ۱۰ قطب‌های عرضه آگه در مناطق تبریز"
+          description="مناطق و محله‌هایی که بیشترین آگهی در آن‌ها ثبت شده — قطب‌های عرضهٔ ملک تبریز."
+          rows={topHubs}
+          countLabel="منطقه"
+          icon={MapPinned}
+          accentClass="text-sec-m1-700"
+        />
+      </div>
+
+      {/* P6546/گام پنجم-الف-۲ — جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
+      <TileCoverageTable tileKey="m1" accentClass="text-sec-m1-700" />
 
       {/* بخش بروزرسانی آگهی (گام ۱ بند ۴) — زنجیرهٔ ARM + تاریخ دقیق + ادامه از نقطهٔ قطع */}
       <Card className="border-sec-m1-200 bg-sec-m1-50">
@@ -501,9 +560,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                 </div>
               </div>
 
-              {/* فیلترهای متنی/عددی تمام ستون‌ها */}
+              {/* فیلترهای متنی/عددی تمام ستون‌ها — P6546/گام پنجم-ب: چیدمان جمع‌وجور + بازه‌های روبروهم */}
               <form
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end"
                 onSubmit={(e) => {
                   e.preventDefault();
                   setApplied({ ...filters });
@@ -559,30 +618,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="arm-listing-price-from">قیمت از (تومان)</Label>
-                  <Input
-                    id="arm-listing-price-from"
-                    value={filters.priceFrom}
-                    onChange={(e) => setF("priceFrom", e.target.value)}
-                    placeholder="نمونه: ۵۰۰٬۰۰۰٬۰۰۰"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    className="font-bold"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="arm-listing-price-to">قیمت تا (تومان)</Label>
-                  <Input
-                    id="arm-listing-price-to"
-                    value={filters.priceTo}
-                    onChange={(e) => setF("priceTo", e.target.value)}
-                    placeholder="نمونه: ۹٬۰۰۰٬۰۰۰٬۰۰۰"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    className="font-bold"
-                  />
-                </div>
-                <div className="space-y-1.5">
                   <Label htmlFor="arm-listing-address">آدرس ملک / منطقه</Label>
                   <Input
                     id="arm-listing-address"
@@ -593,18 +628,42 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     className="font-bold"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px]">آخرین فعالیت از</Label>
+                {/* P6546/گام پنجم-ب-۲ — فیلد دوعاملی بازه‌ای روبروهم: قیمت: از … تا … */}
+                <div className="space-y-1.5">
+                  <Label>قیمت (تومان)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      id="arm-listing-price-from"
+                      aria-label="قیمت از (تومان)"
+                      value={filters.priceFrom}
+                      onChange={(e) => setF("priceFrom", e.target.value)}
+                      placeholder="از ۹٬۰۰۰٬۰۰۰٬۰۰۰"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      className="font-bold text-[11px]"
+                    />
+                    <Input
+                      id="arm-listing-price-to"
+                      aria-label="قیمت تا (تومان)"
+                      value={filters.priceTo}
+                      onChange={(e) => setF("priceTo", e.target.value)}
+                      placeholder="تا ۱۲٬۰۰۰٬۰۰۰٬۰۰۰"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      className="font-bold text-[11px]"
+                    />
+                  </div>
+                </div>
+                {/* بازهٔ آخرین فعالیت — روبروهم */}
+                <div className="space-y-1.5">
+                  <Label>آخرین فعالیت</Label>
+                  <div className="grid grid-cols-2 gap-2">
                     <JalaliDatePicker
                       value={filters.activityFrom}
                       onChange={(v) => setF("activityFrom", v)}
                       placeholder="از تاریخ"
                       id="arm-listing-activity-from"
                     />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px]">تا</Label>
                     <JalaliDatePicker
                       value={filters.activityTo}
                       onChange={(v) => setF("activityTo", v)}
@@ -613,7 +672,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     />
                   </div>
                 </div>
-                <div className="flex gap-2 lg:col-span-4">
+                <div className="flex gap-2 lg:col-span-3">
                   <Button type="submit" className="gap-2 flex-1 bg-sec-m1-500 hover:bg-sec-m1-500/90 text-sec-m1-fg">
                     <Search className="w-4 h-4" aria-hidden /> اعمال فیلتر
                   </Button>
@@ -671,16 +730,24 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">ردیف</TableHead>
-                    <TableHead className="min-w-24">کد آگهی</TableHead>
-                    <TableHead className="min-w-36">کارشناس</TableHead>
-                    <TableHead className="min-w-28">شعبه</TableHead>
-                    <TableHead className="min-w-40">مالک</TableHead>
-                    <TableHead className="min-w-40">قیمت ملک</TableHead>
-                    <TableHead className="min-w-52">آدرس ملک</TableHead>
-                    <TableHead className="min-w-28">دسته‌بندی</TableHead>
-                    <TableHead className="min-w-32">وضعیت</TableHead>
-                    <TableHead className="min-w-32">آخرین فعالیت</TableHead>
+                    <TableHead className="w-10">ردیف</TableHead>
+                    <TableHead className="min-w-20">کد آگهی</TableHead>
+                    <TableHead className="min-w-28">کارشناس</TableHead>
+                    <TableHead className="min-w-24">شعبه</TableHead>
+                    <TableHead className="min-w-36">مالک</TableHead>
+                    {/* P6546/گام پنجم-ت-۴ — ستون قیمت با نام «قیمت» و قالب ۹،۰۰۰،۰۰۰،۰۰۰ */}
+                    <TableHead className="min-w-32">قیمت</TableHead>
+                    <TableHead className="min-w-28">قیمت هر متر</TableHead>
+                    <TableHead className="min-w-44">آدرس ملک</TableHead>
+                    {/* P6546/گام یک — شش ستون غنی‌شده از ساختار ثبت آگهی ARM + سامانهٔ عمومی */}
+                    <TableHead className="min-w-24">نوع ملک</TableHead>
+                    <TableHead className="min-w-20">متراژ</TableHead>
+                    <TableHead className="min-w-16">اتاق</TableHead>
+                    <TableHead className="min-w-16">طبقه</TableHead>
+                    <TableHead className="min-w-20">ساخت</TableHead>
+                    <TableHead className="min-w-24">دسته‌بندی</TableHead>
+                    <TableHead className="min-w-28">وضعیت</TableHead>
+                    <TableHead className="min-w-28">آخرین فعالیت</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -742,28 +809,93 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             </span>
                           )}
                         </TableCell>
-                        {/* ۶ — قیمت ملک (نکته ۳: کاما + تومان) */}
+                        {/* ۶ — قیمت (P6546/گام پنجم-ت-۴: نام «قیمت» + قالب ۹،۰۰۰،۰۰۰،۰۰۰ بدون واحد) */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.price === "number" && r.price > 0 ? (
-                            <span className="inline-flex items-center gap-1.5 font-bold tabular-nums" title={faAmountFull(r.price)}>
-                              <Banknote className="w-3.5 h-3.5 text-sec-m1-700 shrink-0" aria-hidden />
-                              {faAmountFull(r.price)}
+                            <span className="inline-flex items-center gap-1 font-bold tabular-nums text-[11px]" title={`${faAmountFull(r.price)} — تومان`}>
+                              <Banknote className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
+                              {faAmountFull(r.price, "")}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground text-[11px]">ثبت نشده در سامانه</span>
+                            <span className="text-muted-foreground text-[10px]">ثبت نشده</span>
+                          )}
+                        </TableCell>
+                        {/* ۶-ب — قیمت هر متر (P6546/گام یک — از فهرست سامانهٔ عمومی + جزئیات ARM) */}
+                        <TableCell className="whitespace-nowrap">
+                          {typeof r.pricePerMeter === "number" && r.pricePerMeter > 0 ? (
+                            <span className="inline-flex items-center gap-1 font-medium tabular-nums text-[11px]" title={`${faAmountFull(r.pricePerMeter)} — تومان هر مترمربع`}>
+                              <TrendingUp className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
+                              {faAmountFull(r.pricePerMeter, "")}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
                         {/* ۷ — آدرس ملک (منطقه، کوی، پلاک) */}
                         <TableCell className="whitespace-normal">
-                          <span className="inline-flex items-start gap-1.5 leading-relaxed">
-                            <MapPin className="w-3.5 h-3.5 text-sec-m1-700 mt-0.5 shrink-0" aria-hidden />
-                            <span className="text-xs">
+                          <span className="inline-flex items-start gap-1 leading-relaxed">
+                            <MapPin className="w-3 h-3 text-sec-m1-700 mt-0.5 shrink-0" aria-hidden />
+                            <span className="text-[11px]">
                               {r.address ?? "ثبت نشده در سامانه"}
                               {r.areaName && !r.address?.includes(r.areaName) ? (
                                 <span className="text-muted-foreground"> ({r.areaName})</span>
                               ) : null}
                             </span>
                           </span>
+                        </TableCell>
+                        {/* ۷-ب — نوع ملک (P6546/گام یک — propertyTypeName از جزئیات + apu) */}
+                        <TableCell className="whitespace-nowrap">
+                          {r.propertyTypeName ? (
+                            <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m1-200 bg-sec-m1-50 text-sec-m1-700">
+                              <Building2 className="w-2.5 h-2.5" aria-hidden /> {r.propertyTypeName}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۷-پ — متراژ */}
+                        <TableCell className="whitespace-nowrap">
+                          {typeof r.meterage === "number" && r.meterage > 0 ? (
+                            <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium" title="مترمربع">
+                              <Ruler className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
+                              {faNumber(r.meterage)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۷-ت — اتاق */}
+                        <TableCell className="whitespace-nowrap">
+                          {typeof r.rooms === "number" && r.rooms > 0 ? (
+                            <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium">
+                              <BedDouble className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
+                              {faNumber(r.rooms)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۷-ث — طبقه */}
+                        <TableCell className="whitespace-nowrap">
+                          {typeof r.floor === "number" && r.floor > 0 ? (
+                            <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium">
+                              <Layers className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
+                              {faNumber(r.floor)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۷-ج — سال ساخت */}
+                        <TableCell className="whitespace-nowrap">
+                          {typeof r.buildYear === "number" && r.buildYear > 0 ? (
+                            <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium">
+                              <CalendarDays className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
+                              {faNumber(r.buildYear)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
                         </TableCell>
                         {/* ۸ — دسته‌بندی (نکته ۴) */}
                         <TableCell className="whitespace-nowrap">

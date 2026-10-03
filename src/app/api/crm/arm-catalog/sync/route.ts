@@ -2,11 +2,15 @@
  * POST /api/crm/arm-catalog/sync — استخراج/بروزرسانی کاتالوگ‌های ARM
  * ------------------------------------------------------
  * بدنه: { entity: "listings" | "requests" | "both", mode: "lists" | "enrich" | "both", maxRows?: number }
- *   mode=lists — لایه ۱: همگام‌سازی کامل فهرست (صفحه‌به‌صفحه با نرخ‌محدود)؛
- *                ~۲۳ صفحه آگهی + ~۴۱ صفحه درخواست در سقف ۵۰۰تایی
+ *   mode=lists — لایه ۱: همگام‌سازی فهرست (صفحه‌به‌صفحه با نرخ‌محدود)
  *   mode=enrich — لایه ۲: غنی‌سازی برشی تا maxRows ردیفِ در انتظار (پیش‌فرض ۱۰۰،
- *                سقف ۴۰۰) — تماس مالک/درخواست‌دهنده + آدرس دقیق از زنجیرهٔ
+ *                سقف ۵۰۰) — تماس مالک/درخواست‌دهنده + آدرس دقیق از زنجیرهٔ
  *                عین خود سامانه؛ ردیف‌های تکمیل‌شده دیگر پرسیده نمی‌شوند
+ *
+ * P6546/گام پنجم-پ (دستور مالک — لایه‌های بروزرسانی):
+ *   · لایهٔ فهرست آگهی‌ها: هر کلیک ≈ ۵٬۰۰۰ رکورد (۱۰ صفحه × ۵۰۰)
+ *   · لایهٔ فهرست درخواست‌ها: هر کلیک ۵۰ صفحه (≈ ۲٬۵۰۰ رکورد)
+ *   · لایهٔ تکمیل جزئیات: هر کلیک ≈ ۵۰۰ رکورد غنی‌سازی
  *
  * توکن ARM فقط از نشست جاری (SEC-3 عین HOTFIX-02) — تمدید خودکار در صورت انقضا.
  * هر اجرا با personnelCode بازیگر در AuditLog ثبت می‌شود (ARM_CATALOG_SYNC).
@@ -54,7 +58,8 @@ export async function POST(request: NextRequest) {
 
   const entity = body.entity === "requests" ? "requests" : body.entity === "listings" ? "listings" : "both";
   const mode = body.mode === "lists" ? "lists" : body.mode === "enrich" ? "enrich" : "both";
-  const maxRows = Math.min(Math.max(Number(body.maxRows ?? 100) || 100, 1), 400);
+  // P6546/گام پنجم-پ-۲ — لایهٔ تکمیل جزئیات: هر کلیک ≈ ۵۰۰ رکورد (سقف ۵۰۰)
+  const maxRows = Math.min(Math.max(Number(body.maxRows ?? 100) || 100, 1), 500);
 
   const wantListings = entity === "listings" || entity === "both";
   const wantRequests = entity === "requests" || entity === "both";
@@ -63,14 +68,15 @@ export async function POST(request: NextRequest) {
     const listResults: ArmCatalogSyncResult[] = [];
     const enrichResults: ArmCatalogEnrichResult[] = [];
 
-    // ---- لایه ۱ — همگام‌سازی فهرست (برش‌بندی‌شده: هر کلیک ۱٬۵۰۰ ردیف تازه از هر کاتالوگ؛
-    //      ادامهٔ برش‌ها با کلیک‌های بعدی یا حالت شبانهٔ کامل — سرور ARM در ساعات کاری کند است) ----
+    // ---- لایه ۱ — همگام‌سازی فهرست (P6546/گام پنجم-پ-۱:
+    //      آگهی‌ها ≈ ۵٬۰۰۰ رکورد/کلیک (۱۰ صفحه × ۵۰۰) و درخواست‌ها ۵۰ صفحه/کلیک؛
+    //      ادامهٔ برش‌ها با کلیک‌های بعدی — checkpoint از همان نقطه ادامه می‌یابد) ----
     if ((mode === "lists" || mode === "both") && wantListings) {
-      const res = await execWithArmToken(guard, (t) => syncArmListingsCatalog(t, { maxPages: 3 }));
+      const res = await execWithArmToken(guard, (t) => syncArmListingsCatalog(t, { maxPages: 10 }));
       listResults.push(res);
     }
     if ((mode === "lists" || mode === "both") && wantRequests) {
-      const res = await execWithArmToken(guard, (t) => syncArmRequestsCatalog(t, { maxPages: 15 }));
+      const res = await execWithArmToken(guard, (t) => syncArmRequestsCatalog(t, { maxPages: 50 }));
       listResults.push(res);
     }
 

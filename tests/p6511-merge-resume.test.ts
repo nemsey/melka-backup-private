@@ -271,9 +271,11 @@ describe("P6.5-11 پ-۶ — ایجنت کاشی ادغامی (≥۱۵ بینش)"
     expect(agent).not.toBeNull();
     expect(agent!.insightDomains.length).toBeGreaterThanOrEqual(15);
     // P6.5-14 (A.۱) — COMPOSITION/CONVERSION حذف؛ INFO_COVERAGE/TOP_EXPERTS تازه
-    for (const d of ["VOLUME", "TREND", "FUNNEL", "BOTTLENECK", "REVENUE", "SETTLEMENT", "INFO_COVERAGE", "CONTRACT_TEXT", "SHARE_AGGREGATE", "TOP_EXPERTS"]) {
+    // P6546/گام سوم-۲ — CONTRACT_TEXT (پوشش متن قرارداد) حذف شد
+    for (const d of ["VOLUME", "TREND", "FUNNEL", "BOTTLENECK", "REVENUE", "SETTLEMENT", "INFO_COVERAGE", "SHARE_AGGREGATE", "TOP_EXPERTS"]) {
       expect(agent!.insightDomains as readonly string[]).toContain(d);
     }
+    expect(agent!.insightDomains as readonly string[]).not.toContain("CONTRACT_TEXT");
     for (const removed of ["COMPOSITION", "CONVERSION", "CONTACT_COVERAGE"]) {
       expect(agent!.insightDomains as readonly string[]).not.toContain(removed);
     }

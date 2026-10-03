@@ -88,6 +88,10 @@ export interface ArmRequestBulkRow {
   areaNames?: string[] | null;
   /** P6530/گام ۲ — دسته‌بندی درخواست (خرید/پیش خرید/رهن و اجاره/مشارکت در ساخت — از جزئیات ARM) */
   tradeTypeName?: string | null;
+  /** P6546/گام دوم — نوع ملک درخواستی (از جزئیات ARM — propertyCategory) */
+  propertyTypeName?: string | null;
+  /** P6546/گام دوم — نوع ساختمان درخواستی (از جزئیات ARM) */
+  buildingTypeName?: string | null;
   /** P6530/گام ۲ — بازهٔ قیمت متقاضی (تومان — از جزئیات ARM؛ inputs فرم پویا) */
   priceFrom?: number | null;
   priceTo?: number | null;
@@ -133,6 +137,18 @@ export interface ArmListingCatalogRow {
   address: string | null;
   areaName: string | null;
   lineName: string | null;
+  /** P6546/گام یک — نوع ملک (آپارتمان/زمین یا کلنگی/...) از properties/details + APU عمومی */
+  propertyTypeName: string | null;
+  /** P6546/گام یک — متراژ (مترمربع) */
+  meterage: number | null;
+  /** P6546/گام یک — تعداد اتاق */
+  rooms: number | null;
+  /** P6546/گام یک — طبقه */
+  floor: number | null;
+  /** P6546/گام یک — سال ساخت */
+  buildYear: number | null;
+  /** P6546/گام یک — قیمت هر متر (تومان) */
+  pricePerMeter: number | null;
   /** زمان غنی‌سازی تماس — تهی = در انتظار */
   enrichedAt: Date | null;
   createdAt: Date | null;
@@ -160,6 +176,10 @@ export interface ArmRequestCatalogRow {
   areaNames: string[];
   /** P6530/گام ۲ — دسته‌بندی درخواست (خرید/پیش خرید/رهن و اجاره/مشارکت در ساخت) */
   tradeTypeName: string | null;
+  /** P6546/گام دوم — نوع ملک درخواستی (از جزئیات ARM) */
+  propertyTypeName: string | null;
+  /** P6546/گام دوم — نوع ساختمان درخواستی (از جزئیات ARM) */
+  buildingTypeName: string | null;
   /** P6530/گام ۲ — بازهٔ قیمت متقاضی (تومان): از / تا (از جزئیات ARM — inputsJson قیمت کل) */
   priceFrom: number | null;
   priceTo: number | null;

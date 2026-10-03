@@ -94,16 +94,16 @@ export class ArmListingAgent extends BaseLearningAgent {
       if (!r.realtorName) continue;
       byRealtor.set(r.realtorName, (byRealtor.get(r.realtorName) ?? 0) + 1);
     }
-    const topRealtors = [...byRealtor.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const topRealtors = [...byRealtor.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
     if (topRealtors.length > 0) {
       cards.push({
         key: "al-top-experts",
         domain: "TOP_EXPERTS",
-        title: "کارشناسان پرآگهی ملک تبریز",
+        title: "کارشناسان پرآگهی ملک تبریز (۱۰ نفر برتر)",
         body: `در جدیدترین ${faNumber(rows.length)} آگهی، «${topRealtors[0][0]}» با ${faNumber(topRealtors[0][1])} آگهی در صدر قرار دارد و پس از او ${topRealtors
-          .slice(1)
+          .slice(1, 10)
           .map(([n, c]) => `«${n}» (${faNumber(c)})`)
-          .join(" و ")} آمده‌اند. تمرکز بالای فایل‌ها نزد یک کارشناس می‌تواند نشانهٔ قدرت بازاریابی او یا گلوگاه ظرفیت تیم باشد؛ برای توزیع بار، بازدیدهای این کارشناسان را در کاشی «بازدیدها و پیگیری‌های ملک تبریز» مقایسه کنید.`,
+          .join(" و ")} آمده‌اند. جدول کامل ۱۰ کارشناسان پرآگهی با سهم هر نفر در همین کاشی (بخش جداول) آمده است. تمرکز بالای فایل‌ها نزد یک کارشناس می‌تواند نشانهٔ قدرت بازاریابی او یا گلوگاه ظرفیت تیم باشد.`,
         severity: "info",
         metrics: topRealtors.map(([n, c]) => ({ label: n, value: faNumber(c) })),
       });
@@ -115,17 +115,17 @@ export class ArmListingAgent extends BaseLearningAgent {
       if (!r.areaName) continue;
       byArea.set(r.areaName, (byArea.get(r.areaName) ?? 0) + 1);
     }
-    const topAreas = [...byArea.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const topAreas = [...byArea.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
     if (topAreas.length > 0) {
       const share = Math.round((topAreas[0][1] / Math.max(1, rows.length)) * 1000) / 10;
       cards.push({
         key: "al-region",
         domain: "REGION",
-        title: "قطب‌های عرضه آگه در مناطق تبریز",
+        title: "قطب‌های عرضه آگه در مناطق تبریز (۱۰ قطب برتر)",
         body: `منطقهٔ «${topAreas[0][0]}» با ${faNumber(topAreas[0][1])} آگهی (${faNumber(share)}٪ از نمونهٔ جدید) پرآگهی‌ترین منطقهٔ ثبت‌شده در سامانه ARM است؛ ${topAreas
-          .slice(1)
+          .slice(1, 10)
           .map(([n, c]) => `«${n}» (${faNumber(c)})`)
-          .join(" و ")} در رتبه‌های بعدی‌اند. تمرکز عرضه در چند منطقه، فرصت تخصصی‌شدن مشاوران و همین‌طور سیگنال تقاضای بازار آن محله‌هاست — مغز هوشمند ملکا همین سیگنال را در پیش‌بینی احتمال معامله هر آگه به‌کار می‌گیرد (فازهای ۷ تا ۹).`,
+          .join(" و ")} در رتبه‌های بعدی‌اند. جدول کامل ۱۰ قطب عرضه با سهم هر منطقه در همین کاشی (بخش جداول) آمده است. تمرکز عرضه در چند منطقه، فرصت تخصصی‌شدن مشاوران و همین‌طور سیگنال تقاضای بازار آن محله‌هاست.`,
         severity: "info",
         metrics: topAreas.map(([n, c]) => ({ label: n, value: faNumber(c) })),
       });

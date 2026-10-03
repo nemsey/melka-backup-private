@@ -79,7 +79,8 @@ describe("معماری داشبورد مدیریتی", () => {
     // P6526/پ — قرارداد کاشی عین ایجنت واقعی: INFO_COVERAGE جای CONTACT_COVERAGE نشست و TOP_EXPERTS تازه آمد
     expect(tile.agent!.insightDomains).toContain("INFO_COVERAGE");
     expect(tile.agent!.insightDomains).toContain("TOP_EXPERTS");
-    expect(tile.agent!.insightDomains).toContain("CONTRACT_TEXT");
+    // P6546/گام سوم-۲ — دامنهٔ CONTRACT_TEXT (پوشش متن قرارداد) حذف شد
+    expect(tile.agent!.insightDomains).not.toContain("CONTRACT_TEXT");
     expect(tile.agent!.insightDomains).toContain("SHARE_AGGREGATE");
     // بینش‌های مهاجرت‌یافتهٔ بازدیدها (بند ج)
     expect(tile.agent!.insightDomains).toContain("VISIT_VOLUME");

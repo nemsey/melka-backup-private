@@ -58,6 +58,9 @@ function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> {
       : {}),
     // P6530/گام ۲ — دسته‌بندی درخواست + بازهٔ قیمت متقاضی از جزئیات ARM
     ...(r.tradeTypeName !== undefined ? { tradeTypeName: r.tradeTypeName } : {}),
+    // P6546/گام دوم — نوع ملک + نوع ساختمان درخواستی از جزئیات ARM
+    ...(r.propertyTypeName !== undefined ? { propertyTypeName: r.propertyTypeName } : {}),
+    ...(r.buildingTypeName !== undefined ? { buildingTypeName: r.buildingTypeName } : {}),
     ...(r.priceFrom !== undefined && r.priceFrom !== null ? { priceFrom: r.priceFrom } : {}),
     ...(r.priceTo !== undefined && r.priceTo !== null ? { priceTo: r.priceTo } : {}),
     // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مشتری خام
@@ -196,6 +199,8 @@ export class PrismaRequestRepository implements RequestRepository {
         customerMobile: true,
         areaNamesJson: true,
         tradeTypeName: true,
+        propertyTypeName: true,
+        buildingTypeName: true,
         priceFrom: true,
         priceTo: true,
         extractedAt: true,
@@ -235,6 +240,9 @@ export class PrismaRequestRepository implements RequestRepository {
       areaNames: parseAreaNamesJson(r.areaNamesJson),
       // P6530/گام ۲ — دسته‌بندی + بازهٔ قیمت متقاضی
       tradeTypeName: r.tradeTypeName,
+      // P6546/گام دوم — نوع ملک + نوع ساختمان درخواستی
+      propertyTypeName: r.propertyTypeName,
+      buildingTypeName: r.buildingTypeName,
       priceFrom: r.priceFrom,
       priceTo: r.priceTo,
       enrichedAt: r.extractedAt,

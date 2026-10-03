@@ -27,38 +27,60 @@ interface ColumnSpec {
   fillPath: string; // مسیر پر شدن — پیشنهاد
 }
 
+// P6546/گام پنجم-الف-۱ — پوشش «تمام ستون‌های فهرست» هر کاشی (بدون حذف ستون‌های پیشین)
 const M1_COLUMNS: ColumnSpec[] = [
-  { key: "title", title: "عنوان", fillPath: "همگام‌سازی کاتالوگ ARM (دیمن خودکار پس از ورود OTP)" },
-  { key: "areaName", title: "منطقه", fillPath: "غنی‌سازی تنبل — با باز شدن ردیف از ARM کشیده می‌شود" },
-  { key: "propertyTypeName", title: "نوع ملک", fillPath: "همگام‌سازی کاتالوگ ARM" },
-  { key: "tradeTypeName", title: "نوع معامله", fillPath: "همگام‌سازی کاتالوگ ARM" },
-  { key: "price", title: "قیمت", fillPath: "غنی‌سازی تنبل + تکمیل توسط کارشناس" },
-  { key: "meterage", title: "متراژ", fillPath: "غنی‌سازی تنبل" },
-  { key: "ownerMobile", title: "موبایل مالک", fillPath: "تماس مالک توسط کارشناس (فرآیند کاشی آگهی)" },
-  { key: "address", title: "آدرس", fillPath: "غنی‌سازی آدرس ARM" },
+  { key: "title", title: "عنوان", fillPath: "همگام‌سازی کاتالوگ ARM + سامانهٔ عمومی (apu — بدون توکن)" },
+  { key: "ownerName", title: "کارشناس", fillPath: "همگام‌سازی کاتالوگ ARM (relatedRealtor)" },
+  { key: "rawOwnerName", title: "مالک (نام)", fillPath: "غنی‌سازی تماس مالک — properties/owner (لایه ۲)" },
+  { key: "ownerMobile", title: "موبایل مالک", fillPath: "غنی‌سازی تماس مالک — properties/owner (لایه ۲)" },
+  { key: "price", title: "قیمت", fillPath: "فهرست ARM + سامانهٔ عمومی apu (totalPrice)" },
+  { key: "pricePerMeter", title: "قیمت هر متر", fillPath: "فهرست سامانهٔ عمومی apu + جزئیات ARM" },
+  { key: "address", title: "آدرس ملک", fillPath: "غنی‌سازی آدرس دقیق — properties/details" },
+  { key: "areaName", title: "منطقه", fillPath: "فهرست سامانهٔ عمومی apu + جزئیات ARM" },
+  { key: "propertyTypeName", title: "نوع ملک", fillPath: "فهرست سامانهٔ عمومی apu + جزئیات ARM" },
+  { key: "tradeTypeName", title: "دسته‌بندی", fillPath: "فهرست سامانهٔ عمومی apu + جزئیات ARM" },
+  { key: "meterage", title: "متراژ", fillPath: "سامانهٔ عمومی apu (info/by-code) + جزئیات ARM" },
+  { key: "rooms", title: "اتاق", fillPath: "سامانهٔ عمومی apu (info/by-code) + جزئیات ARM" },
+  { key: "floor", title: "طبقه", fillPath: "سامانهٔ عمومی apu (info/by-code) + جزئیات ARM" },
+  { key: "buildYear", title: "سال ساخت", fillPath: "سامانهٔ عمومی apu (info/by-code) + جزئیات ARM" },
+  { key: "status", title: "وضعیت", fillPath: "همگام‌سازی کاتالوگ ARM (currentStatus)" },
 ];
+// P6546/گام دوم + گام پنجم — پوشش تمام ستون‌های فهرست درخواست
 const M2_COLUMNS: ColumnSpec[] = [
   { key: "title", title: "عنوان درخواست", fillPath: "همگام‌سازی کاتالوگ ARM" },
-  { key: "customerName", title: "نام مشتری", fillPath: "همگام‌سازی کاتالوگ ARM" },
-  { key: "customerMobile", title: "موبایل مشتری", fillPath: "همگام‌سازی کاتالوگ ARM" },
-  { key: "tradeTypeName", title: "نوع معامله", fillPath: "غنی‌سازی جزئیات درخواست ARM (نیازمند توکن زنده)" },
-  { key: "priceFrom", title: "بازهٔ قیمت (از)", fillPath: "غنی‌سازی جزئیات درخواست ARM" },
-  { key: "priceTo", title: "بازهٔ قیمت (تا)", fillPath: "غنی‌سازی جزئیات درخواست ARM" },
+  { key: "actorName", title: "کارشناس", fillPath: "همگام‌سازی کاتالوگ ARM (relatedRealtor)" },
+  { key: "customerName", title: "متقاضی (نام)", fillPath: "غنی‌سازی متقاضی — requests/applicant (لایه ۲)" },
+  { key: "customerMobile", title: "موبایل متقاضی", fillPath: "غنی‌سازی متقاضی — requests/applicant (لایه ۲)" },
+  { key: "priceFrom", title: "قیمت (از)", fillPath: "غنی‌سازی جزئیات درخواست ARM (inputs)" },
+  { key: "priceTo", title: "قیمت (تا)", fillPath: "غنی‌سازی جزئیات درخواست ARM (inputs)" },
   { key: "areaNamesJson", title: "مناطق منتخب", fillPath: "غنی‌سازی جزئیات درخواست ARM" },
+  { key: "propertyTypeName", title: "نوع ملک درخواستی", fillPath: "غنی‌سازی جزئیات درخواست ARM (propertyCategory)" },
+  { key: "buildingTypeName", title: "نوع ساختمان", fillPath: "غنی‌سازی جزئیات درخواست ARM (propertyCategory)" },
+  { key: "tradeTypeName", title: "دسته‌بندی", fillPath: "غنی‌سازی جزئیات درخواست ARM" },
+  { key: "status", title: "وضعیت", fillPath: "همگام‌سازی کاتالوگ ARM" },
 ];
+// P6546/گام سوم + گام پنجم — پوشش تمام ستون‌های فهرست معاملات
 const M3_COLUMNS: ColumnSpec[] = [
-  { key: "propertyCode", title: "کد ملک", fillPath: "همگام‌سازی صورت‌وضعیت ARM" },
-  { key: "contractDate", title: "تاریخ قرارداد", fillPath: "همگام‌سازی صورت‌وضعیت ARM" },
-  { key: "contractType", title: "نوع قرارداد", fillPath: "غنی‌سازی صورت‌وضعیت (tx-info)" },
-  { key: "contractPrice", title: "قیمت قرارداد", fillPath: "غنی‌سازی صورت‌وضعیت (tx-info)" },
-  { key: "buyerName", title: "خریدار", fillPath: "غنی‌سازی صورت‌وضعیت (tx-info)" },
-  { key: "sellerName", title: "فروشنده", fillPath: "غنی‌سازی صورت‌وضعیت (tx-info)" },
+  { key: "propertyCode", title: "کد ملک", fillPath: "گزارش تطابق معاملات ARM (traded-count)" },
+  { key: "contractDate", title: "تاریخ معامله", fillPath: "گزارش تطابق معاملات ARM" },
+  { key: "requestCode", title: "کد درخواست", fillPath: "گزارش تطابق معاملات ARM" },
+  { key: "contractType", title: "نوع قرارداد", fillPath: "غنی‌سازی صورت‌وضعیت (trade-overviews/info)" },
+  { key: "contractPrice", title: "قیمت", fillPath: "غنی‌سازی صورت‌وضعیت (trade-overviews/info)" },
+  { key: "buyerName", title: "خریدار", fillPath: "غنی‌سازی صورت‌وضعیت (trade-overviews/info)" },
+  { key: "sellerName", title: "فروشنده", fillPath: "غنی‌سازی صورت‌وضعیت (trade-overviews/info)" },
+  { key: "contractHolo", title: "شماره هولوگرام", fillPath: "غنی‌سازی صورت‌وضعیت (trade-overviews/info)" },
+  { key: "realtorSharesJson", title: "تجمیع حق‌السهم مشاوران", fillPath: "غنی‌سازی صورت‌وضعیت (trade-overviews/info)" },
 ];
+// P6546/گام چهارم + گام پنجم — پوشش تمام ستون‌های فهرست کارشناسان
 const M4_COLUMNS: ColumnSpec[] = [
-  { key: "fullName", title: "نام کامل", fillPath: "همگام‌سازی کارشناسان ARM" },
-  { key: "mobile", title: "موبایل", fillPath: "همگام‌سازی کارشناسان ARM" },
-  { key: "businessTitle", title: "عنوان شغلی", fillPath: "همگام‌سازی PM" },
-  { key: "branchId", title: "شعبه", fillPath: "همگام‌سازی شعب" },
+  { key: "fullName", title: "نام کامل", fillPath: "همگام‌سازی کارشناسان ARM (realtors/list)" },
+  { key: "mobile", title: "موبایل", fillPath: "همگام‌سازی کارشناسان ARM + پشتیبان PM" },
+  { key: "personnelCode", title: "کد پرسنلی", fillPath: "رجیستری پرسنل PM (realtors/list — منبع حقیقت)" },
+  { key: "businessTitle", title: "عنوان کسب‌وکار", fillPath: "همگام‌سازی کارشناسان ARM" },
+  { key: "branchId", title: "شعبه", fillPath: "زنجیرهٔ تفکیک شعبه (نقشهٔ مالک → کسب‌وکار)" },
+  { key: "roleTitle", title: "نقش پرسنلی", fillPath: "سامانهٔ PM (realtors/list + personnelInfo)" },
+  { key: "hireDate", title: "تاریخ استخدام", fillPath: "سامانهٔ PM (realtors/info/personnelInfo — کشف P6546)" },
+  { key: "active", title: "وضعیت فعال", fillPath: "همگام‌سازی کارشناسان ARM" },
 ];
 
 export async function GET(request: NextRequest) {
@@ -79,23 +101,36 @@ export async function GET(request: NextRequest) {
     for (const c of M2_COLUMNS) {
       m2Filled[c.key] = await db.requestRecord.count({ where: { [c.key]: { not: null } } as never });
     }
-    /* ── M3: معاملات (غنی‌سازی) ── */
+    /* ── M3: معاملات (غنی‌سازی) — P6546: پوشش تمام ستون‌های فهرست ── */
     const m3Total = await db.transactionRecord.count();
-    const enrichments = await db.transactionEnrichment.findMany({ select: { contractType: true, contractPrice: true, buyerName: true, sellerName: true, txId: true } });
+    const enrichments = await db.transactionEnrichment.findMany({
+      select: { contractType: true, contractPrice: true, buyerName: true, sellerName: true, realtorSharesJson: true, txId: true },
+    });
     const m3Filled: Record<string, number> = {
       propertyCode: await db.transactionRecord.count({ where: { propertyCode: { not: "" } } }),
       contractDate: m3Total,
+      requestCode: await db.transactionRecord.count({ where: { requestCode: { not: null } } }),
       contractType: enrichments.filter((e) => e.contractType).length,
       contractPrice: enrichments.filter((e) => e.contractPrice).length,
       buyerName: enrichments.filter((e) => e.buyerName).length,
       sellerName: enrichments.filter((e) => e.sellerName).length,
+      contractHolo: await db.transactionRecord.count({ where: { contractHolo: { not: null } } }),
+      realtorSharesJson: enrichments.filter((e) => e.realtorSharesJson).length,
     };
-    /* ── M4: کارشناسان ── */
+    /* ── M4: کارشناسان — P6546: پوشش تمام ستون‌ها (تلفیق ARM + PM) ── */
     const m4Total = await db.expertRecord.count();
     const m4Filled: Record<string, number> = {};
     for (const c of M4_COLUMNS) {
+      if (["roleTitle", "hireDate"].includes(c.key)) continue; // از PM محاسبه می‌شود — پایین‌تر
       m4Filled[c.key] = await db.expertRecord.count({ where: { [c.key]: { not: null } } as never });
     }
+    // نقش پرسنلی و تاریخ استخدام از رجیستری PM (تطبیق با _id مشترک)
+    const pmPersonnel = await db.pmPersonnelRecord.findMany({ select: { id: true, code: true, roleTitle: true, hireDate: true } });
+    const expertIds = new Set((await db.expertRecord.findMany({ select: { id: true } })).map((e) => e.id));
+    const pmMatched = pmPersonnel.filter((p) => expertIds.has(p.id));
+    m4Filled.roleTitle = pmMatched.filter((p) => p.roleTitle).length;
+    m4Filled.hireDate = pmMatched.filter((p) => p.hireDate).length;
+    m4Filled.personnelCode = pmMatched.filter((p) => p.code).length;
 
     const toTable = (cols: ColumnSpec[], filled: Record<string, number>, total: number) =>
       cols.map((c) => ({

@@ -21,7 +21,7 @@ import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { audit, updateSessionArmTokens } from "@/lib/auth/session";
 import { syncWithRefresh } from "@/lib/melk-api/sync";
 import { syncArmListingsCatalog, syncArmRequestsCatalog, enrichArmListings, enrichArmRequests } from "@/lib/melk-api/arm-catalog";
-import { syncPmPersonnel, syncSpecialProperties, getAccBestRealtor, getPmSyncToken } from "@/lib/melk-api/pm-acc-sync";
+import { syncPmPersonnel, syncPmPersonnelInfo, syncSpecialProperties, getAccBestRealtor, getPmSyncToken } from "@/lib/melk-api/pm-acc-sync";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
 
 /** قفل درون‌فرایندی — هم‌زمان فقط یک انتقال کامل فعال است */
@@ -96,6 +96,12 @@ export async function POST(request: NextRequest) {
       if (!pmToken) throw new MelkApiError("PRECONDITION_FAILED", "اتصال سامانهٔ پرسنلی (PM) برقرار نیست.", 412, false);
       return syncPmPersonnel(pmToken);
     });
+    // P6546/گام چهارم — غنی‌سازی تاریخ استخدام و نقش پرسنلی (personnelInfo — برش محدود)
+    const pmInfoRes = await runStage(async () => {
+      const pmToken = await getPmSyncToken();
+      if (!pmToken) throw new MelkApiError("PRECONDITION_FAILED", "اتصال سامانهٔ پرسنلی (PM) برقرار نیست.", 412, false);
+      return syncPmPersonnelInfo(pmToken, { maxRows: 25 });
+    });
     // کارگزاری‌های صادره + بهترین کارشناسان از دید سامانهٔ مالی (توکن ARM)
     const agenciesRes = await runStage(() => execWithArmToken(guard, (t) => syncSpecialProperties(t)));
     const accRes = await runStage(() => execWithArmToken(guard, (t) => getAccBestRealtor(t).then((r) => ({ count: r.length }))));
@@ -111,6 +117,7 @@ export async function POST(request: NextRequest) {
       listingsEnrichRes.ok && listingsEnrichRes.result ? `enr-l:+${listingsEnrichRes.result.enriched};left=${listingsEnrichRes.result.remaining}` : "",
       requestsEnrichRes.ok && requestsEnrichRes.result ? `enr-r:+${requestsEnrichRes.result.enriched};left=${requestsEnrichRes.result.remaining}` : "",
       pmRes.ok && pmRes.result ? `pm:${pmRes.result.personnel}` : `pm:error=${pmRes.error?.slice(0, 40)}`,
+      pmInfoRes.ok && pmInfoRes.result ? `pm-info:+${pmInfoRes.result.enriched};left=${pmInfoRes.result.remaining}` : "",
       agenciesRes.ok && agenciesRes.result ? `agencies:${agenciesRes.result.total};detailed=${agenciesRes.result.detailed}` : `agencies:error=${agenciesRes.error?.slice(0, 40)}`,
       accRes.ok && accRes.result ? `acc-best:${accRes.result.count}` : "",
     ].filter(Boolean);

@@ -71,7 +71,7 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
     "VOLUME", "TREND", "DOCUMENT", "ANOMALY", "TOP_EXPERTS", "INFO_COVERAGE",
     "FUNNEL", "BOTTLENECK", "STALLED", "REJECT",
     "TARIFF", "REVENUE", "SETTLEMENT", "BRANCH", "PIPELINE",
-    "CONTRACT_TEXT", "SHARE_AGGREGATE",
+    "SHARE_AGGREGATE",
     "VISIT_VOLUME", "VISIT_TREND", "VISIT_STATUS",
   ] as const;
 
@@ -266,21 +266,8 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
       }
 
       // ---- CONTRACT_TEXT: پوشش متن قرارداد ----
-      const withContract = enriched.filter((r) => r.contractMatchBy !== null || r.infoMatch);
-      const withText = enriched.filter((r) => r.contractText);
-      const textPct = enriched.length > 0 ? Math.round((withText.length / enriched.length) * 100) : 0;
-      cards.push({
-        key: "tc-contract-text",
-        domain: "CONTRACT_TEXT",
-        title: "پوشش متن قرارداد در فهرست معاملات",
-        body: `برای ${faNumber(withText.length)} ردیف از ${faNumber(enriched.length)} (${faNumber(textPct)}٪)، متن قرارداد از فیلدهای واقعیِ ثبت‌شده (نوع قرارداد، هولوگرام، طرفین، ملک، تاریخ‌ها و مشاوران) ترکیب شده است — متن تولیدیِ شفاف از داده‌های خود سامانه، نه دادهٔ جعلی. ${faNumber(withContract.length)} ردیف با قرارداد مرتبط تطبیق یافته‌اند (هولوگرام/کد ملک/کد درخواست).`,
-        severity: textPct >= 30 ? "positive" : "info",
-        metrics: [
-          { label: "ردیف‌های دارای متن", value: faNumber(withText.length) },
-          { label: "تطبیق با قرارداد", value: faNumber(withContract.length) },
-          { label: "پوشش", value: `${faNumber(textPct)}٪` },
-        ],
-      });
+      // P6546/گام سوم-۲ — این بینش بنا بر دستور مالک از کاشی معاملات حذف شد
+      // (بینش پوشش اطلاعات فهرست در tc-info-coverage با پوشش تمام ستون‌ها ادامه دارد).
 
       // ---- SHARE_AGGREGATE: تجمیع حق‌السهم ----
       const rowsWithShare = enriched.filter((r) => r.consultantsShareSummary);

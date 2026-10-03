@@ -215,9 +215,13 @@ describe("گام ۶ §۳ — مرتب‌سازی فارسی فهرست‌ها", 
     expect(faCompare("علي", "علی")).toBe(0); // ي عربی = ی فارسی
   });
 
-  test("۳-۶) فهرست کارشناسان M4 با مرتب‌سازی فارسی نمایش داده می‌شود", async () => {
+  test("۳-۶) فهرست کارشناسان M4 با اولویت سه‌گانهٔ P6546 مرتب می‌شود (مبایعه‌نامه ← اجاره‌نامه ← کدپرسنلی/شعبه)", async () => {
     const s = readFileSync(`${TILES}/experts/ExpertsPage.tsx`, "utf8");
-    expect(s).toContain("faSortBy");
+    // P6546/گام چهارم-۱ — مرتب‌سازی الفبایی جای خود را به سه‌اولویتهٔ دستور داد
+    expect(s).not.toContain("faSortBy");
+    expect(s).toContain("b.saleCount - a.saleCount"); // اولویت ۱
+    expect(s).toContain("b.rentCount - a.rentCount"); // اولویت ۲
+    expect(s).toContain("a.pmCode && a.branch !== BRANCH_UNSET ? 1 : 0"); // اولویت ۳
   });
 
   test("۳-۷) فیلترها از قبل هم‌ارزند (شاهد به‌روز): normalizeFilterInput منبع یگانه", async () => {

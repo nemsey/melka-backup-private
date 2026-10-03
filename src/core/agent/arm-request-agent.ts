@@ -74,14 +74,14 @@ export class ArmRequestAgent extends BaseLearningAgent {
       if (!r.actorName) continue;
       byActor.set(r.actorName, (byActor.get(r.actorName) ?? 0) + 1);
     }
-    const topActors = [...byActor.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const topActors = [...byActor.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10); // P6546/گام دوم-۲: ۱۰ نفر برتر
     if (topActors.length > 0) {
       cards.push({
         key: "ar-top-experts",
         domain: "TOP_EXPERTS",
-        title: "کارشناسان پرثبت درخواست",
+        title: "کارشناسان پردرخواست ملک تبریز (۱۰ نفر برتر)",
         body: `در جدیدترین ${faNumber(rows.length)} درخواست، «${topActors[0][0]}» با ${faNumber(topActors[0][1])} ثبت در صدر است و پس از او ${topActors
-          .slice(1)
+          .slice(1, 10)
           .map(([n, c]) => `«${n}» (${faNumber(c)})`)
           .join(" و ")} قرار دارند. ثبت درخواست بیشتر یعنی جریان ورودی مشتری قوی‌تر برای آن کارشناس؛ تطبیق این رتبه‌بندی با «آگهی‌های ملک تبریز» نشان می‌دهد هر کارشناس در کدام سمت بازار (عرضه یا تقاضا) فعال‌تر است.`,
         severity: "info",

@@ -23,7 +23,7 @@
  * رنگ بخش: کهربایی روشن #F59E0B (گام صفر — sec-m2)
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,10 +36,10 @@ import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2,
-  Landmark, PieChart, Banknote, Tag, CalendarDays, Network, Filter, MapPinned,
+  Landmark, PieChart, Banknote, Tag, CalendarDays, Network, Filter, MapPinned, Award, Building2, Home,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard } from "@/components/app/shared";
+import { KpiCard, TopRankingTable, TileCoverageTable } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
@@ -68,6 +68,9 @@ interface RequestRow {
   priceFrom: number | null;
   priceTo: number | null;
   tradeTypeName: string | null;
+  /** P6546/گام دوم — نوع ملک درخواستی + نوع ساختمان (از جزئیات ARM) */
+  propertyTypeName: string | null;
+  buildingTypeName: string | null;
   areaNames: string[];
   branch: string;
   enrichedAt: string | null;
@@ -247,15 +250,16 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
   const doSync = useCallback(async () => {
     setSyncing(true);
     try {
+      // P6546/گام پنجم-پ — لایهٔ فهرست: ۵۰ صفحه/کلیک · لایهٔ جزئیات: ≈۵۰۰ رکورد/کلیک
       const res = await api<{ lists: Array<{ fetched: number; totalAtSource: number; ok: boolean }>; enrich?: Array<{ enriched: number; remaining: number }> }>(
         "/api/crm/arm-catalog/sync",
-        { method: "POST", body: { entity: "requests", mode: "both", maxRows: 150 } }
+        { method: "POST", body: { entity: "requests", mode: "both", maxRows: 500 } }
       );
       const list = res.lists?.[0];
       toast({
-        title: "بروزرسانی درخواست‌ها از سامانه ملک تبریز انجام شد",
+        title: "بروزرسانی درخواست‌ها از سامانه‌های ملک تبریز انجام شد",
         description: list
-          ? `${faNumber(list.fetched)} درخواست از مجموع ${faNumber(list.totalAtSource)} درخواست سامانه ARM در این برش خوانده شد و برش غنی‌سازی متقاضی/مناطق/قیمت هم اجرا شد. ادامهٔ بروزرسانی از همان صفحه‌ای که تمام شده بود، ازسر گرفته می‌شود.`
+          ? `${faNumber(list.fetched)} درخواست از مجموع ${faNumber(list.totalAtSource)} درخواست سامانه ARM در این برش (۵۰ صفحه) خوانده شد و برش تکمیل جزئیات (حدود ۵۰۰ رکورد: متقاضی، مناطق، قیمت، دسته‌بندی، نوع ملک، نوع ساختمان) هم اجرا شد. ادامهٔ بروزرسانی از همان صفحه‌ای که تمام شده بود، ازسر گرفته می‌شود.`
           : "بروزرسانی اجرا شد.",
       });
       await load();
@@ -282,14 +286,38 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
 
-  /** نمایش بازهٔ قیمت متقاضی: «از ۹،۰۰۰،۰۰۰،۰۰۰ تا ۱۲،۰۰۰،۰۰۰،۰۰۰ تومان» */
+  // P6546/گام دوم-۲ — بینش ۱۰ کارشناس پردرخواست (تجمیع زندهٔ فهرست)
+  const topRealtors = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      if (r.actorName) counts.set(r.actorName, (counts.get(r.actorName) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "fa"));
+  }, [rows]);
+
+  // P6546/گام دوم-۳ — بینش ۱۰ قطب درخواست در مناطق تبریز (تجمیع زنده از areaNames)
+  const topHubs = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      for (const a of r.areaNames ?? []) {
+        if (a.trim()) counts.set(a.trim(), (counts.get(a.trim()) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "fa"));
+  }, [rows]);
+
+  /** نمایش بازهٔ قیمت متقاضی (P6546/گام پنجم-ت-۴): «از ۹،۰۰۰،۰۰۰،۰۰۰ / تا ۱۲،۰۰۰،۰۰۰،۰۰۰» */
   const priceRangeLabel = (r: RequestRow): string | null => {
     if (r.priceFrom === null && r.priceTo === null) return null;
     if (r.priceFrom !== null && r.priceTo !== null) {
-      return `${faAmountFull(r.priceFrom, "")} تا ${faAmountFull(r.priceTo)}`;
+      return `از ${faAmountFull(r.priceFrom, "")} / تا ${faAmountFull(r.priceTo, "")}`;
     }
-    if (r.priceFrom !== null) return `از ${faAmountFull(r.priceFrom)}`;
-    return `تا ${faAmountFull(r.priceTo!)}`;
+    if (r.priceFrom !== null) return `از ${faAmountFull(r.priceFrom, "")}`;
+    return `تا ${faAmountFull(r.priceTo!, "")}`;
   };
 
   return (
@@ -341,6 +369,33 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
           </div>
         </CardContent>
       </Card>
+
+      {/* ============ جداول و نمودارها (P6546 — ترتیب الزامی: بینش‌ها → جداول → پوشش → بروزرسانی → فیلتر → فهرست) ============ */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4" id="m2-tables-section">
+        {/* P6546/گام دوم-۲ — جدول ۱۰ کارشناسان پردرخواست */}
+        <TopRankingTable
+          id="m2-top-realtors"
+          title="جدول ۱۰ کارشناسان پردرخواست ملک تبریز"
+          description="کارشناسانی که بیشترین درخواست در کاتالوگ سامانه ملک تبریز ثبت کرده‌اند — تجمیع زنده از فهرست همین کاشی."
+          rows={topRealtors}
+          countLabel="کارشناس"
+          icon={Award}
+          accentClass="text-sec-m2-700"
+        />
+        {/* P6546/گام دوم-۳ — جدول ۱۰ قطب‌های درخواست */}
+        <TopRankingTable
+          id="m2-top-hubs"
+          title="جدول ۱۰ قطب‌های درخواست در مناطق تبریز"
+          description="مناطق و محله‌هایی که بیشترین درخواست برای آن‌ها ثبت شده — قطب‌های تقاضای ملک تبریز."
+          rows={topHubs}
+          countLabel="منطقه"
+          icon={MapPinned}
+          accentClass="text-sec-m2-700"
+        />
+      </div>
+
+      {/* P6546/گام پنجم-الف-۲ — جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
+      <TileCoverageTable tileKey="m2" accentClass="text-sec-m2-700" />
 
       {/* بخش بروزرسانی درخواست‌ها (گام ۲ بند ۴) */}
       <Card className="border-sec-m2-200 bg-sec-m2-50">
@@ -484,9 +539,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                 </div>
               </div>
 
-              {/* فیلترهای متنی/عددی تمام ستون‌ها */}
+              {/* فیلترهای متنی/عددی تمام ستون‌ها — P6546/گام پنجم-ب: چیدمان جمع‌وجور + بازه‌های روبروهم */}
               <form
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end"
                 onSubmit={(e) => {
                   e.preventDefault();
                   setApplied({ ...filters });
@@ -541,29 +596,31 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     className="font-bold"
                   />
                 </div>
+                {/* P6546/گام پنجم-ب-۲ — فیلد دوعاملی بازه‌ای روبروهم: قیمت: از … تا … */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="arm-request-price-from">قیمت از (تومان)</Label>
-                  <Input
-                    id="arm-request-price-from"
-                    value={filters.priceFrom}
-                    onChange={(e) => setF("priceFrom", e.target.value)}
-                    placeholder="نمونه: ۵۰۰٬۰۰۰٬۰۰۰"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    className="font-bold"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="arm-request-price-to">قیمت تا (تومان)</Label>
-                  <Input
-                    id="arm-request-price-to"
-                    value={filters.priceTo}
-                    onChange={(e) => setF("priceTo", e.target.value)}
-                    placeholder="نمونه: ۹٬۰۰۰٬۰۰۰٬۰۰۰"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    className="font-bold"
-                  />
+                  <Label>قیمت (تومان)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      id="arm-request-price-from"
+                      aria-label="قیمت از (تومان)"
+                      value={filters.priceFrom}
+                      onChange={(e) => setF("priceFrom", e.target.value)}
+                      placeholder="از ۹٬۰۰۰٬۰۰۰٬۰۰۰"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      className="font-bold text-[11px]"
+                    />
+                    <Input
+                      id="arm-request-price-to"
+                      aria-label="قیمت تا (تومان)"
+                      value={filters.priceTo}
+                      onChange={(e) => setF("priceTo", e.target.value)}
+                      placeholder="تا ۱۲٬۰۰۰٬۰۰۰٬۰۰۰"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      className="font-bold text-[11px]"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="arm-request-area">مناطق</Label>
@@ -576,18 +633,16 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     className="font-bold"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px]">تاریخ ثبت از</Label>
+                {/* بازهٔ تاریخ ثبت — روبروهم */}
+                <div className="space-y-1.5">
+                  <Label>تاریخ ثبت</Label>
+                  <div className="grid grid-cols-2 gap-2">
                     <JalaliDatePicker
                       value={filters.dateFrom}
                       onChange={(v) => setF("dateFrom", v)}
                       placeholder="از تاریخ"
                       id="arm-request-date-from"
                     />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px]">تا</Label>
                     <JalaliDatePicker
                       value={filters.dateTo}
                       onChange={(v) => setF("dateTo", v)}
@@ -596,7 +651,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     />
                   </div>
                 </div>
-                <div className="flex gap-2 lg:col-span-4">
+                <div className="flex gap-2 lg:col-span-3">
                   <Button type="submit" className="gap-2 flex-1 bg-sec-m2-500 hover:bg-sec-m2-500/90 text-sec-m2-fg">
                     <Search className="w-4 h-4" aria-hidden /> اعمال فیلتر
                   </Button>
@@ -653,16 +708,20 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">ردیف</TableHead>
-                    <TableHead className="min-w-24">کد درخواست</TableHead>
-                    <TableHead className="min-w-36">کارشناس</TableHead>
-                    <TableHead className="min-w-28">شعبه</TableHead>
-                    <TableHead className="min-w-40">متقاضی</TableHead>
-                    <TableHead className="min-w-48">قیمت از...تا...</TableHead>
-                    <TableHead className="min-w-40">مناطق</TableHead>
-                    <TableHead className="min-w-28">دسته‌بندی</TableHead>
-                    <TableHead className="min-w-32">وضعیت</TableHead>
-                    <TableHead className="min-w-32">تاریخ ثبت</TableHead>
+                    <TableHead className="w-10">ردیف</TableHead>
+                    <TableHead className="min-w-20">کد درخواست</TableHead>
+                    <TableHead className="min-w-28">کارشناس</TableHead>
+                    <TableHead className="min-w-24">شعبه</TableHead>
+                    <TableHead className="min-w-36">متقاضی</TableHead>
+                    {/* P6546/گام پنجم-ت-۴ — ستون قیمت با نام «قیمت» و قالب از/تا */}
+                    <TableHead className="min-w-40">قیمت</TableHead>
+                    <TableHead className="min-w-36">مناطق</TableHead>
+                    {/* P6546/گام دوم — ستون‌های غنی‌شده از ساختار ثبت درخواست ARM */}
+                    <TableHead className="min-w-24">نوع ملک</TableHead>
+                    <TableHead className="min-w-24">نوع ساختمان</TableHead>
+                    <TableHead className="min-w-24">دسته‌بندی</TableHead>
+                    <TableHead className="min-w-28">وضعیت</TableHead>
+                    <TableHead className="min-w-28">تاریخ ثبت</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
@@ -723,20 +782,40 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             </span>
                           )}
                         </TableCell>
-                        {/* ۶ — قیمت از...تا... (نکتهٔ بسیار مهم ۵: کاما + تومان) */}
+                        {/* ۶ — قیمت (P6546/گام پنجم-ت-۴: «از ۹،۰۰۰،۰۰۰،۰۰۰ / تا ۱۲،۰۰۰،۰۰۰،۰۰۰») */}
                         <TableCell className="whitespace-nowrap">
                           {priceRangeLabel(r) ? (
-                            <span className="inline-flex items-center gap-1.5 font-bold tabular-nums" title={priceRangeLabel(r)!}>
-                              <Banknote className="w-3.5 h-3.5 text-sec-m2-700 shrink-0" aria-hidden />
+                            <span className="inline-flex items-center gap-1 font-bold tabular-nums text-[11px]" title={priceRangeLabel(r)!}>
+                              <Banknote className="w-3 h-3 text-sec-m2-700 shrink-0" aria-hidden />
                               {priceRangeLabel(r)}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground text-[11px]">در نوبت تکمیل از سامانه</span>
+                            <span className="text-muted-foreground text-[10px]">در نوبت تکمیل</span>
                           )}
                         </TableCell>
                         {/* ۷ — مناطق (نکته ۲: فقط نام مناطق؛ >۳ = فایل مناطق P6526/ب) */}
                         <TableCell className="whitespace-normal">
                           <AreasFileCell requestCode={r.requestCode} areaNames={r.areaNames} />
+                        </TableCell>
+                        {/* ۷-ب — نوع ملک درخواستی (P6546/گام دوم — از جزئیات ARM) */}
+                        <TableCell className="whitespace-nowrap">
+                          {r.propertyTypeName ? (
+                            <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m2-200 bg-sec-m2-50 text-sec-m2-700">
+                              <Building2 className="w-2.5 h-2.5" aria-hidden /> {r.propertyTypeName}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۷-پ — نوع ساختمان (P6546/گام دوم) */}
+                        <TableCell className="whitespace-nowrap">
+                          {r.buildingTypeName ? (
+                            <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m2-200 bg-sec-m2-50 text-sec-m2-700">
+                              <Home className="w-2.5 h-2.5" aria-hidden /> {r.buildingTypeName}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
                         </TableCell>
                         {/* ۸ — دسته‌بندی (نکته ۴) */}
                         <TableCell className="whitespace-nowrap">

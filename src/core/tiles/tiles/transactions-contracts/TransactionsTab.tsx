@@ -47,7 +47,7 @@ import {
   Tooltip as RTooltip,
   Legend,
 } from "recharts";
-import { KpiCard, DataSourceWarning, useTileData, type DataSourceInfo } from "@/components/app/shared";
+import { KpiCard, useTileData, TileCoverageTable, type DataSourceInfo } from "@/components/app/shared";
 import { api } from "@/lib/client/api";
 import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/core/agent/analyzers";
 import { classifyContract, CONTRACT_KIND_FILTER_LABELS, CONTRACT_KIND_FILTER_VALUES } from "@/lib/contract-classify";
@@ -151,7 +151,7 @@ interface TxResponse {
 
 const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
 
-export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCharts: boolean }) {
+export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode }) {
   const isMobile = useIsMobile();
   // B.۱ (ملکا-شورا-۱۴۰۵-۰۱۷) — فیلترها در موبایل جمع‌شونده؛ در دسکتاپ همیشه باز
   const [filtersOpen, setFiltersOpen] = useState(true);
@@ -194,7 +194,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
 
   const rows = data?.rows ?? null;
   const summary = data?.summary ?? null;
-  const source = data?.dataSource ?? null;
+  // P6546/گام سوم-۳ — پیام «استخراج زنده...در دسترس نیست» حذف شد؛ دادهٔ کش‌شده سالم سرو می‌شود
   const total = data?.total ?? 0;
 
   // P6.5-15 (A.۱) — سری ماهانهٔ سه‌سری با منطق خانواده‌ای:
@@ -398,8 +398,13 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
         </div>
       )}
 
-      {/* شفافیت منبع داده */}
-      <DataSourceWarning source={source} />
+      {/* P6546/گام پنجم-الف-۲ — جدول پوشش اطلاعات فهرست (تمام ستون‌های فهرست معاملات)
+          ترتیب الزامی: بینش‌ها → جداول و نمودارها → پوشش → بروزرسانی → فیلتر → فهرست */}
+      <TileCoverageTable tileKey="m3" accentClass="text-sec-m3-700" />
+
+      {/* P6546/گام سوم + گام پنجم-الف-۳ — بخش بروزرسانی (از صفحه به همین‌جا منتقل شد:
+          بعد از جداول/نمودارها و پوشش، قبل از فیلتر و فهرست) */}
+      {updateSection}
 
       {/* فیلترها — B.۱ (۰۱۷): بالای فهرست · موبایل جمع‌شونده · دسکتاپ همیشه باز
           BLOCK F (۰۱۸): پاک‌کردن در بالای کارت + اعمال خودکار debounce ۳۰۰ms + نشانگر جستجو */}
@@ -484,14 +489,13 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
               <Label htmlFor="f-buyerName">خریدار (نام یا موبایل)</Label>
               <Input id="f-buyerName" placeholder="نمونه: رضا کریمی یا ۰۹۱۴…" value={filters.buyerName} onChange={(e) => setF("buyerName", e.target.value)} />
             </div>
-            {/* P6530/گام ۳ — قیمت قرارداد (ستون ۸): از/تا تومان */}
+            {/* P6546/گام پنجم-ت-۴ — قیمت (از/تا روبروهم — ستون «قیمت») */}
             <div className="space-y-1.5">
-              <Label htmlFor="f-priceFrom">قیمت قرارداد از (تومان)</Label>
-              <Input id="f-priceFrom" inputMode="numeric" placeholder="نمونه: ۱٬۰۰۰٬۰۰۰٬۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="f-priceTo">قیمت قرارداد تا (تومان)</Label>
-              <Input id="f-priceTo" inputMode="numeric" placeholder="نمونه: ۹٬۰۰۰٬۰۰۰٬۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", e.target.value)} />
+              <Label>قیمت (تومان)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input id="f-priceFrom" aria-label="قیمت از (تومان)" inputMode="numeric" placeholder="از ۹٬۰۰۰٬۰۰۰٬۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", e.target.value)} className="text-[11px] font-bold" />
+                <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲٬۰۰۰٬۰۰۰٬۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", e.target.value)} className="text-[11px] font-bold" />
+              </div>
             </div>
             {/* P6530/گام ۳ — فایل قرارداد (ستون ۱۱): دارد/ندارد */}
             <div className="space-y-1.5">
@@ -600,7 +604,7 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                     {/* ۷ — نوع قرارداد */}
                     <TableHead>نوع قرارداد</TableHead>
                     {/* ۸ — مبلغ قرارداد (با کاما) */}
-                    <TableHead className="min-w-44">قیمت قرارداد</TableHead>
+                    <TableHead className="min-w-40">قیمت</TableHead>
                     {/* ۹ — تجمیع حق‌السهم مشاوران (نام + درصد) */}
                     <TableHead className="min-w-48">تجمیع حق‌السهم مشاوران</TableHead>
                     {/* ۱۰ — شماره هولوگرام */}
@@ -679,10 +683,10 @@ export function TransactionsTab({ sortBy, showCharts }: { sortBy: string; showCh
                           <span className="text-muted-foreground text-[11px]">— بدون قرارداد</span>
                         )}
                       </TableCell>
-                      {/* ۸ — مبلغ قرارداد — با جداکنندهٔ «،» */}
+                      {/* ۸ — قیمت (P6546/گام پنجم-ت-۴: قالب ۹،۰۰۰،۰۰۰،۰۰۰ بدون واحد) */}
                       <TableCell className="text-xs whitespace-nowrap font-semibold">
                         {t.contractAmount !== null ? (
-                          faAmountFull(t.contractAmount)
+                          faAmountFull(t.contractAmount, "")
                         ) : (
                           <span className="text-muted-foreground font-normal">—</span>
                         )}

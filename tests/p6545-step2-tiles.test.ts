@@ -479,10 +479,13 @@ describe("گام۲/M7 — پوشش اطلاعات", () => {
     expect(route).toContain("M4_COLUMNS");
   });
 
-  test("م-۷-۱۷ مسیر پر شدن ستون‌ها فارسی و راهنماست", () => {
+  test("م-۷-۱۷ مسیر پر شدن ستون‌ها فارسی و راهنماست (P6546: نقشهٔ endpointهای کشف‌شده)", () => {
     const route = readFileSync("src/app/api/coverage/route.ts", "utf8");
-    expect(route).toContain("غنی‌سازی تنبل");
-    expect(route).toContain("ورود OTP");
+    // P6546/گام ششم — مسیرها اکنون endpointهای واقعی کشف‌شده را نام می‌برند
+    expect(route).toContain("properties/owner");
+    expect(route).toContain("trade-overviews/info");
+    expect(route).toContain("سامانهٔ عمومی apu");
+    expect(route).toContain("personnelInfo");
   });
 
   test("م-۷-۱۸ لینک مستقیم رکوردهای ناقص در API هست", () => {

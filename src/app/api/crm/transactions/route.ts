@@ -245,7 +245,10 @@ export async function GET(request: NextRequest) {
         cached: syncState.lastSuccessAt !== null,
         lastSuccessAt: syncState.lastSuccessAt,
         lastSyncedAt: syncState.lastSyncedAt,
-        liveError: seed.liveError ?? syncState.lastError,
+        // P6546/گام سوم-۳ (رفع ریشه‌ای): خطای زنده فقط وقتی گزارش می‌شود که «هیچ» دادهٔ
+        // کش‌شده‌ای برای نمایش نباشد؛ با وجود کش سالم، خطای قدیمی/گذرا هرگز فهرست را
+        // با بنر «استخراج زنده در دسترس نیست» آلوده نمی‌کند.
+        liveError: summary.totalCount === 0 ? (seed.liveError ?? syncState.lastError) : null,
         syncAttempts: syncState.attempts,
       },
       // P6530/گام ۳ (بند ۴.۲) — تاریخ و ساعت دقیق آخرین بروزرسانی موفق + نقطهٔ ادامه

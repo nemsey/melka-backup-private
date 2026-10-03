@@ -306,3 +306,104 @@ export async function getAccBestRealtor(armToken: string | null): Promise<AccBes
   }
   return fresh;
 }
+
+// ===================== P6546/گام چهارم — غنی‌سازی استخدام پرسنل PM =====================
+
+export interface PmPersonnelInfoSyncResult {
+  ok: boolean;
+  attempted: number;
+  enriched: number;
+  failed: number;
+  remaining: number;
+  sampleHireDates: Array<{ id: string; fullName: string | null; hireDate: string | null; jobTitle: string | null }>;
+  error?: string;
+}
+
+/**
+ * P6546/گام چهارم-۲/۴ — تکمیل «تاریخ استخدام» و عنوان شغلی پرسنل از نقطهٔ اتصال
+ * کشف‌شدهٔ سامانهٔ PM: realtors/info/personnelInfo/{id} (در endpoints ثبت شده بود
+ * اما هرگز صدا زده نمی‌شد). برش‌به‌برش (پیش‌فرض ۲۵ پرسنل در هر اجرا)؛
+ * upsert-only — قانون دادهٔ مقدس؛ شکست نرم در برش بعدی دوباره تلاش می‌شود.
+ */
+export async function syncPmPersonnelInfo(pmToken: string, opts: { maxRows?: number } = {}): Promise<PmPersonnelInfoSyncResult> {
+  const cfg = getMelkApiConfig();
+  const maxRows = Math.min(Math.max(opts.maxRows ?? 25, 1), 100);
+  const out: PmPersonnelInfoSyncResult = { ok: true, attempted: 0, enriched: 0, failed: 0, remaining: 0, sampleHireDates: [] };
+
+  // صف: پرسنلِ بدون تاریخ استخدام (خودِ لایهٔ فهرست پیش از این sync شده است)
+  const pending = await db.pmPersonnelRecord.findMany({
+    where: { hireDate: null },
+    select: { id: true, fullName: true },
+    take: maxRows,
+    orderBy: { updatedAt: "asc" },
+  });
+  const remainingCount = await db.pmPersonnelRecord.count({ where: { hireDate: null } });
+  out.remaining = remainingCount;
+
+  for (const p of pending) {
+    out.attempted += 1;
+    try {
+      const res = await armCall<unknown>({
+        path: MELK_ENDPOINTS.pm.realtorPersonnelInfo(p.id),
+        baseUrl: cfg.pmApiBase,
+        token: pmToken,
+        timeoutMs: 45_000,
+        maxRetries: 0,
+      });
+      const d = (res.data ?? {}) as Record<string, unknown>;
+      /** استخراج دفاعی تاریخ استخدام — ساختارهای محتمل سامانهٔ PM */
+      const hireDate =
+        pickHireDate(d) ??
+        pickHireDate((d.personnelInfo ?? null) as Record<string, unknown> | null) ??
+        pickHireDate((d.info ?? null) as Record<string, unknown> | null);
+      const jobTitle =
+        pickStr(d, ["jobTitle", "title", "roleTitle"]) ??
+        (() => {
+          const role = d.role as Record<string, unknown> | undefined;
+          return role && typeof role === "object" && "title" in role ? String(role.title ?? "") || null : null;
+        })();
+      const patch: Record<string, string | null> = {};
+      if (hireDate) patch.hireDate = hireDate;
+      if (jobTitle) patch.jobTitle = jobTitle;
+      if (Object.keys(patch).length > 0) {
+        await db.pmPersonnelRecord.update({ where: { id: p.id }, data: patch });
+        out.enriched += 1;
+        if (out.sampleHireDates.length < 5) {
+          out.sampleHireDates.push({ id: p.id, fullName: p.fullName, hireDate: patch.hireDate ?? null, jobTitle: patch.jobTitle ?? null });
+        }
+      } else {
+        // منبع مقدار نداشت — علامت صادقانه برای عدم پرسش مکرر
+        await db.pmPersonnelRecord.update({ where: { id: p.id }, data: { hireDate: "نامشخص در سامانه PM" } }).catch(() => undefined);
+      }
+    } catch {
+      out.failed += 1; // خطای نرم — برش بعدی دوباره تلاش می‌کند
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  out.remaining = await db.pmPersonnelRecord.count({ where: { hireDate: null } });
+  return out;
+}
+
+/** استخراج دفاعی تاریخ استخدام از ساختارهای محتمل (رشته ISO / جلالی / timestamp)
+ *  کشف زندهٔ P6546 (شاهد: download/p6546/pm-hire-date-proof.json): ساختار واقعی
+ *  سامانهٔ PM = employeementInfo: { date, type, baseSalary, ... } (با املاای خاص خود سامانه)
+ *  + headRealtor (مدیر) + branchId (شعبهٔ PM) + role. */
+function pickHireDate(d: Record<string, unknown> | null | undefined): string | null {
+  if (!d || typeof d !== "object") return null;
+  const emp = d["employeementInfo"];
+  const v =
+    (emp && typeof emp === "object" ? (emp as Record<string, unknown>)["date"] : undefined) ??
+    d["hireDate"] ?? d["hire_date"] ?? d["employmentDate"] ?? d["employment_date"] ?? d["startDate"] ?? d["start_date"] ??
+    (d["contract"] && typeof d["contract"] === "object" ? (d["contract"] as Record<string, unknown>)["startDate"] : undefined);
+  if (typeof v === "string" && v.trim()) return v.trim();
+  if (typeof v === "number" && Number.isFinite(v)) return new Date(v).toISOString();
+  return null;
+}
+
+function pickStr(d: Record<string, unknown>, keys: string[]): string | null {
+  for (const k of keys) {
+    const v = d[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}

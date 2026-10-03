@@ -100,15 +100,17 @@ describe("P1-01c / ادعاهای ساختاری (grep)", () => {
     expect(hits).toEqual([join(SRC, "components/app/shared/data-source.tsx")]);
   });
 
-  test("هر ۷ صفحه CRM (P6.5-11: بازدیدها حذف؛ سه‌گانه ادغام شد) از DataSourceWarning یا DataSourceAlert استفاده می‌کنند", () => {
-    const pages: Array<[string, string]> = [
-      ["transactions-contracts/TransactionsTab.tsx", "DataSourceWarning"],
-      ["experts/ExpertsPage.tsx", "DataSourceWarning"],
-    ];
-    for (const [page, comp] of pages) {
+  test("P6546/گام سوم-۳ — بنر «استخراج زنده در دسترس نیست» از کاشی‌های M3 و M4 حذف شد (دستور مالک)", () => {
+    // پیام خطای زنده بنا بر دستور گام سوم-۳ از صفحهٔ کاشی حذف شد؛
+    // دادهٔ کش‌شدهٔ سالم سرو می‌شود و ریشهٔ خطا در لایهٔ روت رفع شده است
+    // (liveError فقط وقتی کش «خالی» است گزارش می‌شود).
+    for (const page of ["transactions-contracts/TransactionsTab.tsx", "experts/ExpertsPage.tsx"]) {
       const c = readFileSync(join(TILES, page), "utf8");
-      expect(c).toContain(`<${comp}`);
+      expect(c).not.toContain("<DataSourceWarning");
     }
+    // روت معاملات: liveError فقط با کش خالی (رفع ریشه‌ای)
+    const route = readFileSync(join(TILES, "../../../app/api/crm/transactions/route.ts"), "utf8");
+    expect(route).toContain("summary.totalCount === 0 ? (seed.liveError ?? syncState.lastError) : null");
   });
 
   test("صفر بلوک Alert دستی «منبع داده» باقی نمانده", () => {
