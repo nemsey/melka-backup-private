@@ -87,9 +87,10 @@ export function AuthScreen() {
           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-sec-login-700 via-sec-login-500 to-sec-login-500 flex items-center justify-center shadow-xl shadow-sec-login-500/30 ring-8 ring-primary/10 mb-4 tile-pop">
             <Building2 className="w-10 h-10 text-white" aria-hidden />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight brand-gradient-text">داشبورد هوشمند ملک تبریز</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight brand-gradient-text">اکوسیستم هوشمند ملک ایران</h1>
+          <p className="text-xs font-bold text-primary mt-1">ملکا</p>
           <p className="text-muted-foreground mt-2 text-sm sm:text-base leading-relaxed">
-            لایه‌ی هوش تحلیلی و تصمیم‌یار، مکمل سامانه‌ی CRM ملک تبریز
+            ملکا — لایه‌ی هوش تحلیلی و تصمیم‌یار، مکمل سامانه‌های ملک تبریز
           </p>
         </div>
 

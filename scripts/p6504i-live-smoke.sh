@@ -2,7 +2,7 @@
 # شاهد زندهٔ P6.5-04-i: ورود مدیر → خواندن ۷ موجودیت → رد owner.read
 set -e
 BASE="http://localhost:3000"
-TOKEN=$(curl -s -X POST "$BASE/api/auth/master-login" -H "Content-Type: application/json" -d '{"masterCode":"41372895"}' | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))")
+TOKEN=$(curl -s -X POST "$BASE/api/auth/master-login" -H "Content-Type: application/json" -d '{"masterCode":"80211186"}' | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))")
 if [ -z "$TOKEN" ]; then echo "LOGIN FAILED"; exit 1; fi
 echo "✓ master login OK"
 AUTH="Authorization: Bearer $TOKEN"

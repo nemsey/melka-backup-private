@@ -56,7 +56,7 @@ print("۱) وضعیت:", state)
 if "auth" in (state or ""):
     print(" ", click_button_containing("ورود با کد مدیر"))
     time.sleep(1)
-    print(" ", ab("fill", "#masterCode", "41372895"))
+    print(" ", ab("fill", "#masterCode", "80211186"))
     print(" ", ab("click", 'button[type="submit"]'))
     time.sleep(6)
 

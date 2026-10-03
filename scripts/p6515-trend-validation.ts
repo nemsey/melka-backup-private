@@ -58,7 +58,7 @@ async function main() {
   const loginRes = await fetch(`${BASE}/api/auth/master-login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ masterCode: process.env.MASTER_ACCESS_CODE ?? "41372895" }),
+    body: JSON.stringify({ masterCode: process.env.MASTER_ACCESS_CODE ?? "80211186" }),
   }).then((r) => r.json() as Promise<{ token: string }>);
   const apiRes = await fetch(`${BASE}/api/crm/transactions?limit=5000&offset=0&sortBy=contractDate&sortDir=desc`, {
     headers: { Authorization: `Bearer ${loginRes.token}` },

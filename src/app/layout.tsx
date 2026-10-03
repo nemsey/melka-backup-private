@@ -10,10 +10,11 @@ import "./globals.css";
 const buildWitness = getBuildWitness();
 
 export const metadata: Metadata = {
-  title: "داشبورد هوشمند ملک تبریز",
+  // P6547/گام صفر-۲ — نام رسمی اپلیکیشن: «اکوسیستم هوشمند ملک ایران» · نام اختصاری: «ملکا»
+  title: "اکوسیستم هوشمند ملک ایران (ملکا)",
   description:
-    "لایه هوش تحلیلی و مدیریتی روی سامانه CRM ملک تبریز — داشبورد چندعامله با ایجنت‌های یادگیرنده برای معاملات و کارشناسان.",
-  applicationName: "داشبورد ملک تبریز",
+    "اکوسیستم هوشمند ملک ایران — ملکا: لایه هوش تحلیلی و مدیریتی روی سامانه‌های ملک تبریز — داشبورد چندعامله با ایجنت‌های یادگیرنده برای معاملات و کارشناسان.",
+  applicationName: "ملکا — اکوسیستم هوشمند ملک ایران",
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/icon.svg",
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ملک تبریز",
+    title: "ملکا",
   },
   formatDetection: {
     telephone: false,

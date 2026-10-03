@@ -31,7 +31,7 @@ for line in snap.split("\n"):
 print("toggle ref:", ref)
 print(ab("click", f"@{ref}"))
 time.sleep(1)
-print(ab("fill", "#masterCode", "41372895"))
+print(ab("fill", "#masterCode", "80211186"))
 print(ab("click", 'button[type="submit"]'))
 time.sleep(6)
 

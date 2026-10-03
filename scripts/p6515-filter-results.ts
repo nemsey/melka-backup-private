@@ -12,7 +12,7 @@ async function main() {
   const login = await fetch(`${BASE}/api/auth/master-login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ masterCode: "41372895" }),
+    body: JSON.stringify({ masterCode: "80211186" }),
   }).then((r) => r.json() as Promise<{ token: string }>);
 
   const q = (params: Record<string, string | string[]>): string => {

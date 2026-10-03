@@ -16,7 +16,7 @@ import time
 
 BASE_URL = "http://localhost:3000"
 OUT = "/home/z/my-project/download/delivery-p6"
-MASTER_CODE = "41372895"
+MASTER_CODE = "80211186"
 
 os.makedirs(OUT, exist_ok=True)
 

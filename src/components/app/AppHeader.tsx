@@ -35,9 +35,9 @@ export function AppHeader() {
             <Building2 className="w-5 h-5 text-white" aria-hidden />
           </div>
           <div className="min-w-0">
-            <h1 className="font-extrabold text-sm sm:text-base leading-tight truncate">داشبورد هوشمند ملک تبریز</h1>
+            <h1 className="font-extrabold text-sm sm:text-base leading-tight truncate">اکوسیستم هوشمند ملک ایران</h1>
             <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight hidden sm:block">
-              لایه هوش تحلیلی روی CRM ملک تبریز
+              ملکا — لایه هوش تحلیلی روی سامانه‌های ملک تبریز
             </p>
           </div>
         </div>

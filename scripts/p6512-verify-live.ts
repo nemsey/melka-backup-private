@@ -10,7 +10,7 @@
 import { PrismaClient } from "@prisma/client";
 const db = new PrismaClient();
 const BASE = process.env.VERIFY_BASE ?? "http://localhost:3000";
-const MASTER_CODE = process.env.MASTER_ACCESS_CODE ?? "41372895";
+const MASTER_CODE = process.env.MASTER_ACCESS_CODE ?? "80211186";
 
 interface Res<T> {
   status: number;

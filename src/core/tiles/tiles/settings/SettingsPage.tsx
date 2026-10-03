@@ -65,7 +65,7 @@ export function SettingsPage({ onBack }: TilePageProps) {
         <CardContent className="p-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-primary" aria-hidden />
-            <span className="text-sm font-bold">داشبورد هوشمند چندعامله ملک تبریز</span>
+            <span className="text-sm font-bold">ملکا — اکوسیستم هوشمند ملک ایران</span>
           </div>
           <span className="text-xs text-muted-foreground">نسخه ۱٫۰٫۰</span>
         </CardContent>

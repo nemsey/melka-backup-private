@@ -131,7 +131,7 @@ describe("HOTFIX-01 — پاکسازی سورس از رازهای fallback", () 
       const text = await Bun.file(file).text();
       if (text.includes("melk-tabriz-fallback-key")) offenders.push(`${file}: melk-tabriz-fallback-key`);
       // کد مدیر ۸ رقمی قدیمی به‌عنوان literal در سورس ممنوع
-      if (/\b41372895\b/.test(text)) offenders.push(`${file}: 41372895`);
+      if (/\b80211186\b/.test(text)) offenders.push(`${file}: 80211186`);
     }
     expect(offenders).toEqual([]);
   });
