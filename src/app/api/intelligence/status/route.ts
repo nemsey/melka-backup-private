@@ -17,6 +17,8 @@ import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { daemonHealth, ensureBrainStatus, getLearningSnapshot } from "@/lib/intelligence/daemon";
+import { runIntelligenceCoreCycle } from "@/lib/intelligence/core-cycle";
+import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -46,12 +48,54 @@ export async function GET(request: NextRequest) {
     // آخرین نسخهٔ سیاست ایجنت M1 (یادگیری حلقه‌بسته)
     const policy = await getLearningSnapshot();
 
+    // سند ۰۲۷ — چرخهٔ بزرگ P7→P11 روی دادهٔ واقعی (صفر اجرای خودکار)
+    const core = await runIntelligenceCoreCycle({ db });
+
     return Response.json(
       {
         ok: true,
         engines: ENGINES.map((e) => ({ ...e, hasBody: true })),
         enginesWithBody: ENGINES.length,
         enginesTotal: ENGINES.length,
+        coreCycle: {
+          ranAt: core.ranAt,
+          tier: core.tier,
+          tierBasis: core.tierBasis,
+          p7: {
+            outcomesCollected: core.p7.outcomesCollected,
+            coveragePercent: core.p7.coveragePercent,
+            brier: core.p7.evaluation.metrics.brierScore,
+            lift: core.p7.evaluation.metrics.lift,
+            ece: core.p7.evaluation.metrics.ece,
+            verdict: core.p7.evaluation.verdict,
+            rationale: core.p7.evaluation.rationale,
+            learning: { learned: core.p7.learning.learned, reason: core.p7.learning.reason, tier: core.p7.learning.tier },
+            shadow: core.p7.shadow,
+            drift: core.p7.drift,
+          },
+          p8: {
+            decisionsCount: core.p8.decisions.length,
+            safetyAllPassed: core.p8.safetyAllPassed,
+            blockedCount: core.p8.blockedCount,
+            plansCount: core.p8.plansCount,
+            sample: core.p8.decisions.slice(0, 3).map((d) => ({ decisionType: d.decisionType, proposedAction: d.proposedAction, confidence: d.confidence, autoExecute: d.autoExecute })),
+          },
+          p9: {
+            policyEvaluations: core.p9.policyEvaluations.map((p) => ({ policyId: p.policyId, verdict: p.verdict, rationale: p.rationale })),
+            governance: core.p9.governance,
+          },
+          p10: {
+            systemHealth: core.p10.systemHealth,
+            overallScore: core.p10.overallScore,
+            problems: core.p10.realProblems,
+            checksSummary: { pass: core.p10.checks.filter((c) => c.status === "pass").length, warn: core.p10.checks.filter((c) => c.status === "warn").length, fail: core.p10.checks.filter((c) => c.status === "fail").length },
+          },
+          p11: {
+            pendingProposals: core.p11.proposals.map((p) => ({ id: p.id, sourceCheckId: p.sourceCheckId, severity: p.severity, action: p.proposedAction.type, rationale: p.rationale })),
+            executedCount: core.p11.executedCount,
+            gateReviews: core.p11.gateReviews,
+          },
+        },
         outcomeLoop: {
           tileId: summary.tileId,
           predictions: summary.predictions,
@@ -67,7 +111,7 @@ export async function GET(request: NextRequest) {
         learning: policy
           ? { latestVersion: policy.latestVersion, active: policy.active, rationale: policy.rationale, createdAt: policy.createdAt }
           : null,
-        phases: { 7: "پیاده‌سازی کامل (Outcome + Safety + ActionPlanner + حلقهٔ سرنوشت)", 8: "پیاده‌سازی کامل (Evaluation + Learning + Decision)", 9: "پیاده‌سازی کامل (سیم‌کشی ۱۱/۱۱ + دیمن v2 + شفافیت مغز)" },
+        phases: { 7: "بازسازی سند ۰۲۷ — Outcome/Evaluation/Learning + Tier + Shadow + Drift", 8: "بازسازی سند ۰۲۷ — Decision/Planner/Safety (صفر auto_execute)", 9: "بازسازی سند ۰۲۷ — PolicyEval + Governance ۱۵ قاعده", 10: "خودتشخیصی ۲۵ بررسی — شناخت صادقانهٔ سیستم", 11: "خودترمیمی کنترل‌شده — پیشنهاد بدون اجرا (قفل شورا)" },
       },
       { headers: { "Cache-Control": "no-store, must-revalidate" } },
     );

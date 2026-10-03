@@ -1,0 +1,43 @@
+{
+  "generatedAt": "2026-10-03T07:57:21.991Z",
+  "caseId": "P6537",
+  "document": "ملکا-شورا-۱۴۰۵-۰۲۷",
+  "files": [
+    {
+      "path": "download/p6537/p7-evaluation.json",
+      "description": "شاهد فاز ۷ — یادگیری از نتیجهٔ واقعی",
+      "md5": "dd45b93379faf2db777034b180a83537",
+      "bytes": 3093
+    },
+    {
+      "path": "download/p6537/p8-decisions.json",
+      "description": "شاهد فاز ۸ — موتور تصمیم روی پیش‌بینی‌های واقعی",
+      "md5": "1d0803d6f13c2dbe068742a59235ee06",
+      "bytes": 8400
+    },
+    {
+      "path": "download/p6537/p9-policies.json",
+      "description": "شاهد فاز ۹ — ارزیابی سیاست + حاکمیت",
+      "md5": "224b5465df84b6862cdb5ee6a7d2394e",
+      "bytes": 2438
+    },
+    {
+      "path": "download/p6537/p10-diagnosis.json",
+      "description": "شاهد فاز ۱۰ — خودتشخیصی با ۳ مشکل واقعی",
+      "md5": "7a51b9cd1e1ec7bcabfc045f747dba0f",
+      "bytes": 4675
+    },
+    {
+      "path": "download/p6537/p11-repairs.json",
+      "description": "شاهد فاز ۱۱ — خودترمیمی کنترل‌شده (قفل شورا)",
+      "md5": "0888ac11ff362605504ee4976c4c63a4",
+      "bytes": 2069
+    },
+    {
+      "path": "download/p6537/blackboard.json",
+      "description": "شاهد تختهٔ سیاه — append-only با هش دست‌نخورده",
+      "md5": "b4b227ee8652d7b87e5cbf8d8ca1d6d6",
+      "bytes": 2055
+    }
+  ]
+}

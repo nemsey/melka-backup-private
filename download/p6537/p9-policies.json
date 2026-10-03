@@ -1,0 +1,75 @@
+{
+  "policyEvaluations": [
+    {
+      "policyId": "agent-policy-transactions-contracts-v1",
+      "policyType": "learning",
+      "verdict": "retire",
+      "rationale": "اثربخشی 0 زیر ۰٫۳ است — سیاست agent-policy-transactions-contracts-v1 بازنشسته می‌شود (منابع آزاد می‌شود).",
+      "metrics": {
+        "effectiveness": 0,
+        "stability": 1,
+        "compliance": 1,
+        "costImpact": 1,
+        "sideEffects": []
+      }
+    },
+    {
+      "policyId": "agent-policy-arm-requests-v1",
+      "policyType": "learning",
+      "verdict": "retire",
+      "rationale": "اثربخشی 0 زیر ۰٫۳ است — سیاست agent-policy-arm-requests-v1 بازنشسته می‌شود (منابع آزاد می‌شود).",
+      "metrics": {
+        "effectiveness": 0,
+        "stability": 1,
+        "compliance": 1,
+        "costImpact": 1,
+        "sideEffects": []
+      }
+    },
+    {
+      "policyId": "agent-policy-arm-listings-v1",
+      "policyType": "learning",
+      "verdict": "retire",
+      "rationale": "اثربخشی 0 زیر ۰٫۳ است — سیاست agent-policy-arm-listings-v1 بازنشسته می‌شود (منابع آزاد می‌شود).",
+      "metrics": {
+        "effectiveness": 0,
+        "stability": 1,
+        "compliance": 1,
+        "costImpact": 1,
+        "sideEffects": []
+      }
+    },
+    {
+      "policyId": "agent-policy-test-agent-tile-v5",
+      "policyType": "learning",
+      "verdict": "keep",
+      "rationale": "اثربخشی 0.78 و پایبندی 1 هر دو در محدودهٔ مطلوب — سیاست agent-policy-test-agent-tile-v5 نگه داشته می‌شود.",
+      "metrics": {
+        "effectiveness": 0.78,
+        "stability": 0.71,
+        "compliance": 1,
+        "costImpact": 1,
+        "sideEffects": []
+      }
+    },
+    {
+      "policyId": "agent-policy-test-agent-tile-v4",
+      "policyType": "learning",
+      "verdict": "keep",
+      "rationale": "اثربخشی 0.78 و پایبندی 1 هر دو در محدودهٔ مطلوب — سیاست agent-policy-test-agent-tile-v4 نگه داشته می‌شود.",
+      "metrics": {
+        "effectiveness": 0.78,
+        "stability": 0.71,
+        "compliance": 1,
+        "costImpact": 1,
+        "sideEffects": []
+      }
+    }
+  ],
+  "governance": {
+    "passed": 15,
+    "failed": 0,
+    "criticalViolations": [],
+    "details": []
+  }
+}

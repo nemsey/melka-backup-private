@@ -1,0 +1,174 @@
+{
+  "systemHealth": "degraded",
+  "overallScore": 86,
+  "checks": [
+    {
+      "id": "DIAG-DATA-001",
+      "name": "انسجام داده (رکوردهای یتیم)",
+      "status": "pass",
+      "details": "0 رکورد پیامد بدون پیش‌بینی مرجع"
+    },
+    {
+      "id": "DIAG-DATA-002",
+      "name": "پوشش ستون‌های کلیدی",
+      "status": "pass",
+      "details": "پوشش ستون‌ها 100٪"
+    },
+    {
+      "id": "DIAG-DATA-003",
+      "name": "تازگی داده",
+      "status": "fail",
+      "details": "آخرین داده 87 ساعت پیش"
+    },
+    {
+      "id": "DIAG-DATA-004",
+      "name": "صفر حذف غیرمجاز",
+      "status": "pass",
+      "details": "0 حذف غیرمجاز"
+    },
+    {
+      "id": "DIAG-DATA-005",
+      "name": "بکاپ‌های موجود",
+      "status": "pass",
+      "details": "27 فایل بکاپ موجود"
+    },
+    {
+      "id": "DIAG-DATA-006",
+      "name": "تناقض بین جداول",
+      "status": "pass",
+      "details": "0 تناقض شمارشی بین جداول"
+    },
+    {
+      "id": "DIAG-DATA-007",
+      "name": "حجم رشد هفتگی",
+      "status": "pass",
+      "details": "رشد 2٪ در هفته"
+    },
+    {
+      "id": "DIAG-MODEL-001",
+      "name": "Brier Score",
+      "status": "warn",
+      "details": "Brier = 0.2255 (هدف ≤ 0.2)"
+    },
+    {
+      "id": "DIAG-MODEL-002",
+      "name": "کالیبراسیون",
+      "status": "fail",
+      "details": "بدترین شکاف کالیبراسیون 0.555"
+    },
+    {
+      "id": "DIAG-MODEL-003",
+      "name": "رانش (Drift)",
+      "status": "fail",
+      "details": "مقدار رانش 0.139"
+    },
+    {
+      "id": "DIAG-MODEL-004",
+      "name": "Overfitting",
+      "status": "pass",
+      "details": "شکاف آموزش/آزمون 0.05"
+    },
+    {
+      "id": "DIAG-MODEL-005",
+      "name": "نسخهٔ فعال مدل مطابق انتظار",
+      "status": "pass",
+      "details": "نسخهٔ فعال مطابق انتظار"
+    },
+    {
+      "id": "DIAG-MODEL-006",
+      "name": "Shadow Evaluation فعال",
+      "status": "pass",
+      "details": "ارزیابی سایه فعال"
+    },
+    {
+      "id": "DIAG-ENGINE-001",
+      "name": "موتورهای زنده",
+      "status": "pass",
+      "details": "11/11 موتور زنده"
+    },
+    {
+      "id": "DIAG-ENGINE-002",
+      "name": "زمان پاسخ موتورها",
+      "status": "pass",
+      "details": "بدترین تأخیر 120ms"
+    },
+    {
+      "id": "DIAG-ENGINE-003",
+      "name": "صفر خطای متوالی",
+      "status": "pass",
+      "details": "0 خطای متوالی"
+    },
+    {
+      "id": "DIAG-ENGINE-004",
+      "name": "اعتبار Tier فعلی",
+      "status": "pass",
+      "details": "Tier 3 معتبر"
+    },
+    {
+      "id": "DIAG-ENGINE-005",
+      "name": "چرخهٔ یادگیری فعال",
+      "status": "pass",
+      "details": "چرخهٔ یادگیری فعال"
+    },
+    {
+      "id": "DIAG-SEC-001",
+      "name": "AuditLog فعال",
+      "status": "pass",
+      "details": "حسابرسی فعال"
+    },
+    {
+      "id": "DIAG-SEC-002",
+      "name": "صفر دسترسی غیرمجاز ۲۴ ساعت گذشته",
+      "status": "pass",
+      "details": "0 دسترسی غیرمجاز"
+    },
+    {
+      "id": "DIAG-SEC-003",
+      "name": "صفر LLM call در production",
+      "status": "pass",
+      "details": "0 فراخوانی LLM"
+    },
+    {
+      "id": "DIAG-SEC-004",
+      "name": "صفر POST در سامانهٔ مبدأ",
+      "status": "pass",
+      "details": "0 درخواست POST به مبدأ"
+    },
+    {
+      "id": "DIAG-GOV-001",
+      "name": "۱۵ قاعدهٔ حاکمیت enforce",
+      "status": "pass",
+      "details": "15/15 قاعده برقرار"
+    },
+    {
+      "id": "DIAG-GOV-002",
+      "name": "صفر نقض critical",
+      "status": "pass",
+      "details": "0 نقض بحرانی"
+    },
+    {
+      "id": "DIAG-GOV-003",
+      "name": "ارزیابی ۹۰ روزهٔ سیاست‌ها به‌روز",
+      "status": "pass",
+      "details": "آخرین ارزیابی 0 روز پیش"
+    }
+  ],
+  "realProblems": [
+    {
+      "checkId": "DIAG-DATA-003",
+      "details": "آخرین داده 87 ساعت پیش"
+    },
+    {
+      "checkId": "DIAG-MODEL-002",
+      "details": "بدترین شکاف کالیبراسیون 0.555"
+    },
+    {
+      "checkId": "DIAG-MODEL-003",
+      "details": "مقدار رانش 0.139"
+    },
+    {
+      "checkId": "DIAG-MODEL-001",
+      "details": "Brier = 0.2255 (هدف ≤ 0.2)"
+    }
+  ]
+}
