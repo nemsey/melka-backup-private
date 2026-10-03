@@ -1895,3 +1895,20 @@ Work Log:
 
 Stage Summary:
 - آینه فعال و راستی‌آزمایی‌شده · بستهٔ بقا مهر و موم شد (CHAIN genesis) · دیمن ۶ساعته زنده و سبز · همهٔ شاهدها ثبت
+
+---
+Task ID: p6537-intelligence-core-027 (BLOCK 0)
+Agent: main (Super Z / GLM)
+Task: دستور مالک — اجرای مصوبهٔ شورای عالی ملکا «سند راهبردی یکپارچه ۰۲۷» (بازسازی یکپارچهٔ فازهای ۷ تا ۱۱ هستهٔ هوش) روی آخرین ورژن، طبق قانون تثبیت ملکا-شورا-۱۴۰۵-۰۳۱ + گزارش وضعیت بندها با شاهد + قانون لینک
+
+Work Log:
+- **وارسی آغاز جلسه (بند و):** HEAD = 17d3ec3 (بدون تغییر کد نسبت به 76ed3d4 — فقط فایل‌های paste) · مهر preview = 76ed3d4-20261003-0629 (زنده و سبز؛ نیازمند نوسازی مهر در پایان طبق بند د) · کامیت‌های پروندهٔ قبل (P6544: 0a739ca + 528840b) موجود ✓ · بستهٔ بقای P6544-20261003 در upload/.survival موجود ✓ · دیمن آینهٔ ۶ساعته زنده (pid 1794، آخرین پوش ok در 06:37:47Z) ✓
+- **شمارش‌های کلیدی DB:** RequestRecord=7399 · TransactionRecord=739 · ExpertRecord=291 · PmPersonnelRecord=142 · AgentMemory=350 · AgentPolicyVersion=23 · AuditLog=930 · Session=158 · ListingRecord=0 (یافتهٔ مهم — کاندیدای مشکل واقعی P10) · RefListCache=7
+- **وضعیت publish (شاهد صادقانه):** دامنهٔ r1a5k87hzbg0-d = HTTP 412 با خطای CAExited پلتفرم: «tar: ./next-service-dist/.next/node_modules/@prisma: Directory renamed before its status could be extracted» — استقرار FC درجریان شکست خورده؛ در پایان پرونده بررسی و گزارش می‌شود
+- **حلقهٔ واقعی ARM (ورودی روح P7):** intelligence-data/ = ۳۸۴ پیش‌بینی + ۳۸۴ پیامد واقعی پیوندشده · loop-latest.json زنده (اجرای امروز 07:29Z): Brier=0.2255 · حکم ABOVE_BASELINE · مشکل واقعی کالیبراسیون کشف‌شده: سطل 0.4-0.6 با پیش‌بینی 0.492 اما مشاهدهٔ 1.0
+- **بکاپ گرم (بند ز):** upload/.survival/pre-p6537-warm-1791013351518.db (md5 a70b6bf324f3f1608f826117c9694c7b)
+- **hash پیش‌کار (بند ی):** 17d3ec3eb9ccaeda2f685bf0edde594048600cf4 — نقطهٔ بازگشت در صورت خرابی
+- تست پایهٔ کامل در پس‌زمینه آغاز شد (نتیجه در گام بعدی ثبت می‌شود)
+
+Stage Summary:
+- BLOCK 0 بسته شد؛ ورودی‌های واقعی و شواهد اولیه جمع شد؛ سه مشکل واقعی کاندید برای P10 ثبت شد (کالیبراسیون سطل 0.4-0.6 · Brier 0.2255 > هدف 0.20 · publish 412 CAExited)
