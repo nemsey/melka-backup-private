@@ -45,6 +45,8 @@ import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull } from "@/lib/format";
+// P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
+import { valueSoftClass, valueSolidClass, branchBadgeClass } from "@/lib/value-colors";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانه (رفع باگ تاریخی ۴/۵ در این صفحه)
 import { normalizeFilterInput } from "@/lib/normalize-input";
 import {
@@ -549,10 +551,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                         type="button"
                         onClick={() => toggleTrade(t)}
                         aria-pressed={active}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-bold sec-motion ${
-                          active
-                            ? "bg-sec-m1-500 text-sec-m1-fg border-sec-m1-500"
-                            : "bg-sec-m1-50 text-sec-m1-700 border-sec-m1-200 opacity-80 hover:opacity-100"
+                        // P6547/گام پنجم-ب-نکته ۱ — رنگ متمایز هر دسته (فروش=سبز روشن، پیش فروش=آبی، رهن و اجاره=بنفش، مشارکت=کهربایی)
+                        className={`rounded-full px-3 py-1.5 text-xs font-bold sec-motion ${
+                          active ? valueSolidClass(t) : `${valueSoftClass(t)} opacity-80 hover:opacity-100`
                         }`}
                       >
                         {active ? "✓ " : ""}{t}
@@ -602,7 +603,12 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <SelectContent>
                       <SelectItem value="all">همهٔ شعب</SelectItem>
                       {TABRIZ_BRANCHES.map((b) => (
-                        <SelectItem key={b} value={b}>{b}</SelectItem>
+                        <SelectItem key={b} value={b}>
+                          <span className="inline-flex items-center gap-2">
+                            <span className={`inline-block size-2.5 rounded-full ${branchBadgeClass(b)}`} aria-hidden />
+                            {b}
+                          </span>
+                        </SelectItem>
                       ))}
                       <SelectItem value="unset">{BRANCH_UNSET}</SelectItem>
                     </SelectContent>
@@ -778,7 +784,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                         {/* ۴ — شعبه (نکته ۲) */}
                         <TableCell>
                           {r.branch && r.branch !== BRANCH_UNSET ? (
-                            <Badge variant="outline" className="gap-1 text-[11px] border-sec-m1-200 bg-sec-m1-50 text-sec-m1-700">
+                            <Badge variant="outline" className={`gap-1 text-[11px] border-0 ${branchBadgeClass(r.branch)}`} title="شعبهٔ کارشناس — از سامانهٔ PM">
                               <Network className="w-3 h-3" aria-hidden /> {r.branch}
                             </Badge>
                           ) : (
@@ -902,7 +908,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                         {/* ۸ — دسته‌بندی (نکته ۴) */}
                         <TableCell className="whitespace-nowrap">
                           {r.tradeTypeName ? (
-                            <Badge variant="secondary" className="gap-1 text-[11px]">
+                            <Badge variant="secondary" className={`gap-1 text-[11px] border-0 ${valueSoftClass(r.tradeTypeName)}`}>
                               <Tag className="w-3 h-3" aria-hidden /> {r.tradeTypeName}
                             </Badge>
                           ) : (

@@ -128,8 +128,10 @@ export type EnrichedTxRow<R extends TxSourceRow = TxSourceRow> = R & {
     confirmed: number;
     pending: number;
     names: string[];
-    /** P6.5-12 — سهم هر مشاور با درصد (بند ب دستور: «در مقابل نام هر مشاور درصد حق السهم») */
-    shares: { name: string; unitPercent: number; confirmation: string }[];
+    /** P6.5-12 — سهم هر مشاور با درصد (بند ب دستور: «در مقابل نام هر مشاور درصد حق السهم")
+     *  P6547/گام سوم-۴ — شعبهٔ مشاور نیز در هر سهم (قالب: «سراج میزانی ارتش ۲۵٪» —
+     *  شعبه از branchId.title واقعی سامانهٔ PM) */
+    shares: { name: string; branch?: string | null; unitPercent: number; confirmation: string }[];
     /** P6.5-15 (رفع F3 — ملکا-شورا-۱۴۰۵-۰۱۸) — فهرست «کامل» نام‌های مشاوران بدون بریدگی؛
      *   فیلتر نام کارشناس سمت سرور روی این فهرست تطبیق می‌خورد (نه خلاصهٔ ۶تایی names) */
     allNames: string[];
@@ -151,7 +153,9 @@ export type EnrichedTxRow<R extends TxSourceRow = TxSourceRow> = R & {
 // ==========================================================================
 
 export function aggregateConsultantShares(
-  realtorListJson: string | null | undefined
+  realtorListJson: string | null | undefined,
+  /** P6547/گام سوم-۴ — نقشهٔ نام→شعبه (از branchId.title سامانهٔ PM) — اختیاری */
+  branchByConsultant?: Record<string, string> | null
 ): EnrichedTxRow["consultantsShareSummary"] {
   if (!realtorListJson) return null;
   let shares: ContractRealtorShare[] = [];
@@ -172,11 +176,17 @@ export function aggregateConsultantShares(
     confirmed,
     pending,
     names: [...new Set(names)].slice(0, 6),
-    // P6.5-12 — سهم‌های تفکیکی با درصد هر مشاور
+    // P6.5-12 — سهم‌های تفکیکی با درصد هر مشاور + شعبهٔ PM (P6547)
     shares: shares
       .filter((s) => s.name)
       .slice(0, 8)
-      .map((s) => ({ name: s.name, unitPercent: Number.isFinite(s.unitPercent) ? s.unitPercent : 0, confirmation: s.confirmation ?? "" })),
+      .map((s) => ({
+        name: s.name,
+        // P6547/گام سوم-۴ — شعبهٔ مشاور از سامانهٔ PM (اگر تفکیک شده باشد)
+        branch: branchByConsultant?.[s.name] ?? null,
+        unitPercent: Number.isFinite(s.unitPercent) ? s.unitPercent : 0,
+        confirmation: s.confirmation ?? "",
+      })),
     // P6.5-15 (رفع F3) — نام‌های کامل برای فیلتر سمت سرور (بدون slice)
     allNames: [...new Set(names)],
   };
@@ -262,6 +272,9 @@ export interface EnrichContext {
   agencies?: AgencyLookup[];
   /** P6.5-14 (BLOCK C) — غنی‌سازی معامله‌محور (بر اساس txId — بالاترین اولویت) */
   txInfo?: TxInfoLookup[];
+  /** P6547/گام سوم-۴ — نقشهٔ نام→شعبهٔ مشاوران (branchId.title سامانهٔ PM)
+   *  برای درج شعبه در هر رکورد ستون «تجمیع حق‌السهم مشاوران» (قالب: نام + شعبه + درصد) */
+  branchByConsultant?: Record<string, string> | null;
 }
 
 /** ایندکس قرارداد بر اساس سه کلید طبیعی — اولویت: هولوگرام > کد ملک > کد درخواست */
@@ -438,7 +451,7 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
       buyerName,
       buyerMobile,
       contractText: synthesizeContractText(contractLike, tx),
-      consultantsShareSummary: aggregateConsultantShares(shareSource),
+      consultantsShareSummary: aggregateConsultantShares(shareSource, ctx.branchByConsultant),
       contractMatchBy: by,
       infoMatch: info !== null,
       // P6.5-14 — نوع و مبلغ با اولویت معامله‌محور

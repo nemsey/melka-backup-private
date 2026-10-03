@@ -33,7 +33,8 @@ import { getCachedCommissionConfig } from "@/lib/melk-api/sync";
 import { saleCommissionBase } from "@/lib/melk-api/commission";
 import { enrichTransactionRows } from "@/lib/melk-api/tx-enrichment";
 import { CONTRACT_FUNNEL_ORDER, CONTRACT_STATUS_FA, type ContractRealtorShare } from "@/lib/melk-api/types";
-import { detectAnomalies, growthRate, topMonths, visitMonthlySeries, visitStats, txTypeMonthlySeries, topExpertsByTxType, type SharedTxRow } from "./analyzers";
+// P6547/گام سوم-۵ — detectAnomalies حذف شد (بینش ناهنجاری آماری حذف شد)
+import { growthRate, topMonths, visitMonthlySeries, visitStats, txTypeMonthlySeries, topExpertsByTxType, type SharedTxRow } from "./analyzers";
 import { classifyContract } from "@/lib/contract-classify";
 import { computeTxInfoCoverage } from "@/lib/melk-api/tx-enrichment";
 import { faNumber, faPercent, faToman, faMonthLabel } from "@/lib/format";
@@ -68,7 +69,7 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
   /** P6.5-14 — دو دامنهٔ پیشینِ گزارش ترکیبی/تبدیلی حذف شدند (دستور A.۱)؛
    *  INFO_COVERAGE جای CONTACT_COVERAGE نشست و TOP_EXPERTS تازه آمد (A.۴/A.۵) */
   readonly insightDomains = [
-    "VOLUME", "TREND", "DOCUMENT", "ANOMALY", "TOP_EXPERTS", "INFO_COVERAGE",
+    "VOLUME", "TREND", "DOCUMENT", "TOP_EXPERTS", "INFO_COVERAGE",
     "FUNNEL", "BOTTLENECK", "STALLED", "REJECT",
     "TARIFF", "REVENUE", "SETTLEMENT", "BRANCH", "PIPELINE",
     "SHARE_AGGREGATE",
@@ -185,19 +186,7 @@ export class TransactionsContractsAgent extends BaseLearningAgent {
         });
       }
 
-      // ---- ANOMALY (بر پایهٔ سری مجموع) ----
-      const anomalies = detectAnomalies(series.map((p) => ({ key: p.key, count: p.total })));
-      if (anomalies.length > 0) {
-        const a = anomalies[Math.abs(anomalies[0].z) > Math.abs(anomalies[anomalies.length - 1].z) ? 0 : anomalies.length - 1];
-        cards.push({
-          key: "tc-anomaly",
-          domain: "ANOMALY",
-          title: "ناهنجاری آماری در روند معاملات",
-          body: `ماه ${faMonthLabel(a.key)} با انحراف معیار ${faNumber(Math.abs(a.z))} ${a.direction === "spike" ? "بالاتر" : "پایین‌تر"} از نرمال عمل کرده است (${faNumber(a.count)} معامله). چنین انحرافی معمولاً نشانهٔ موج معاملاتی، تغییر سیاست سامانه یا رویداد فصلی است و ارزش بررسی دارد.`,
-          severity: "critical",
-          metrics: [{ label: "انحراف معیار", value: faNumber(a.z) }],
-        });
-      }
+      // P6547/گام سوم-۵ — بینش «ناهنجاری آماری در روند معاملات» حذف شد (دستور مالک)
 
       const peak = topMonths(series.map((p) => ({ key: p.key, count: p.total })), 1);
       if (peak.length > 0 && series.length >= 3) {

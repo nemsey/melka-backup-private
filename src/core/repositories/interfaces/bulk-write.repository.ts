@@ -86,6 +86,8 @@ export interface ArmRequestBulkRow {
   status?: string | null;
   /** P6521/M2 — منطقه‌های منتخب درخواست (متن ساده از requests/details) */
   areaNames?: string[] | null;
+  /** P6547/گام دوم — محله‌های منتخب درخواست (متن ساده — از area/line خود ردیف فهرست ARM) */
+  lineNames?: string[] | null;
   /** P6530/گام ۲ — دسته‌بندی درخواست (خرید/پیش خرید/رهن و اجاره/مشارکت در ساخت — از جزئیات ARM) */
   tradeTypeName?: string | null;
   /** P6546/گام دوم — نوع ملک درخواستی (از جزئیات ARM — propertyCategory) */
@@ -95,6 +97,16 @@ export interface ArmRequestBulkRow {
   /** P6530/گام ۲ — بازهٔ قیمت متقاضی (تومان — از جزئیات ARM؛ inputs فرم پویا) */
   priceFrom?: number | null;
   priceTo?: number | null;
+  /** P6547/گام دوم — روش پرداخت متقاضی (userPaymentMethod.name خود ردیف فهرست) */
+  paymentMethodName?: string | null;
+  /** P6547/گام دوم — جدیت متقاضی (userSeriousity.name خود ردیف فهرست) */
+  seriousnessName?: string | null;
+  /** P6547/گام دوم — فوریت درخواست (urgent خود ردیف فهرست ARM) */
+  urgent?: boolean | null;
+  /** P6547/گام دوم — درخواست لوکس (luxury خود ردیف فهرست ARM) */
+  luxury?: boolean | null;
+  /** P6547/گام دوم — قابل معاوضه (changeable خود ردیف فهرست ARM) */
+  changeable?: boolean | null;
   /** کارشناس ثبت‌کننده در ARM؛ نبود → 'arm' (رکورد سیستمی) */
   actorCode?: string | null;
   /** P6.5-10 — نام و نام خانوادگی کارشناس ثبت‌کننده (relatedRealtor ردیف فهرست ARM) */
@@ -174,6 +186,8 @@ export interface ArmRequestCatalogRow {
   customerMobile: string | null;
   /** P6521/M2 — منطقه‌های منتخب (متن ساده؛ تهی = هنوز از منبع تکمیل نشده) */
   areaNames: string[];
+  /** P6547/گام دوم — محله‌های منتخب (line[] خود ردیف فهرست ARM) */
+  lineNames: string[];
   /** P6530/گام ۲ — دسته‌بندی درخواست (خرید/پیش خرید/رهن و اجاره/مشارکت در ساخت) */
   tradeTypeName: string | null;
   /** P6546/گام دوم — نوع ملک درخواستی (از جزئیات ARM) */
@@ -183,6 +197,16 @@ export interface ArmRequestCatalogRow {
   /** P6530/گام ۲ — بازهٔ قیمت متقاضی (تومان): از / تا (از جزئیات ARM — inputsJson قیمت کل) */
   priceFrom: number | null;
   priceTo: number | null;
+  /** P6547/گام دوم — روش پرداخت متقاضی (userPaymentMethod.name خود ردیف فهرست) */
+  paymentMethodName: string | null;
+  /** P6547/گام دوم — جدیت متقاضی (userSeriousity.name خود ردیف فهرست) */
+  seriousnessName: string | null;
+  /** P6547/گام دوم — فوریت درخواست (urgent خود ردیف فهرست ARM) */
+  urgent: boolean | null;
+  /** P6547/گام دوم — درخواست لوکس (luxury خود ردیف فهرست ARM) */
+  luxury: boolean | null;
+  /** P6547/گام دوم — قابل معاوضه (changeable خود ردیف فهرست ARM) */
+  changeable: boolean | null;
   /** زمان غنی‌سازی تماس — تهی = در انتظار */
   enrichedAt: Date | null;
   createdAt: Date | null;

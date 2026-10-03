@@ -3,12 +3,16 @@
  * ------------------------------------------------------
  * تخصص: پایش و تحلیل رجیستری کامل آگهی‌های سامانه ARM ملک تبریز —
  * حجم و ترکیب کاتالوگ، کارشناسان پرآگهی، توزیع منطقه‌ای، پوشش اطلاعات
- * تماس مالک (لایه ۲ غنی‌سازی) و تازگی ثبت آگهی‌ها — با یادگیری از بازخورد مدیر.
+ * فهرست (تمام ستون‌ها — P6547/گام یک-۳) و تازگی ثبت آگهی‌ها — با یادگیری از بازخورد مدیر.
+ *
+ * P6547/گام یک-۲ — بینش «کیفیت اطلاعات تماس مالکان در سامانه ARM» حذف شد
+ * و جایگزین آن بینش جامع «پوشش اطلاعات فهرست» (تمام ستون‌ها) شد.
  */
 
 import { getPropertyRecordRepository, getVisitRepository, type PropertyRecordRepository, type VisitRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import { mostVisitedProperties } from "./analyzers";
+import { buildCoverageInsight, type CoverageColumnInput } from "./coverage-insight";
 import { faNumber } from "@/lib/format";
 
 /** وابستگی‌های تزریق‌پذیر ایجنت کاتالوگ آگهی‌های ARM */
@@ -131,25 +135,28 @@ export class ArmListingAgent extends BaseLearningAgent {
       });
     }
 
-    // ---- COVERAGE: پوشش اطلاعات تماس مالک ----
+    // ---- P6547/گام یک-۳: پوشش اطلاعات فهرست (تمام ستون‌های فهرست — جایگزین بینش حذف‌شدهٔ کیفیت تماس) ----
     if (sample.rows.length > 0) {
-      const enrichedSample = sample.rows.filter((r) => r.enrichedAt);
-      if (enrichedSample.length > 0) {
-        const withMobile = enrichedSample.filter((r) => r.ownerMobile).length;
-        const mobilePct = Math.round((withMobile / enrichedSample.length) * 1000) / 10;
-        const withoutName = enrichedSample.filter((r) => !r.ownerName).length;
-        cards.push({
-          key: "al-coverage",
-          domain: "COVERAGE",
-          title: "کیفیت اطلاعات تماس مالکان در سامانه ARM",
-          body: `در ${faNumber(enrichedSample.length)} آگهی غنی‌سازی‌شده، ${faNumber(mobilePct)}٪ شماره تماس مالک و ${faNumber(enrichedSample.length - withoutName)} مورد نام و نام خانوادگی مالک دارند. آگهی‌های بدون شماره تماس معمولاً از ثبت ناقص اطلاعات مشتری در فرم ثبت آگیهای سامانه می‌آیند؛ پیگیری تکمیل آن‌ها توسط کارشناس مسؤول، نرخ تبدیل تماس را بالا می‌برد.`,
-          severity: mobilePct < 70 ? "warning" : "positive",
-          metrics: [
-            { label: "دارای شماره تماس", value: `${faNumber(mobilePct)}٪` },
-            { label: "دارای نام مالک", value: faNumber(enrichedSample.length - withoutName) },
-          ],
-        });
-      }
+      const n = sample.rows.length;
+      const covCols: CoverageColumnInput[] = [
+        { title: "عنوان", filled: sample.rows.filter((r) => r.title?.trim()).length, total: n, fillPath: "فهرست ARM (title)" },
+        { title: "کارشناس", filled: sample.rows.filter((r) => r.realtorName?.trim()).length, total: n, fillPath: "فهرست ARM (relatedRealtor)" },
+        { title: "مالک (نام)", filled: sample.rows.filter((r) => r.ownerName?.trim()).length, total: n, fillPath: "غنی‌سازی properties/owner" },
+        { title: "موبایل مالک", filled: sample.rows.filter((r) => r.ownerMobile?.trim()).length, total: n, fillPath: "غنی‌سازی properties/owner" },
+        { title: "قیمت", filled: sample.rows.filter((r) => (r.price ?? 0) > 0).length, total: n, fillPath: "فهرست ARM + سامانهٔ عمومی apu" },
+        { title: "قیمت هر متر", filled: sample.rows.filter((r) => (r.pricePerMeter ?? 0) > 0).length, total: n, fillPath: "سامانهٔ عمومی apu + جزئیات ARM" },
+        { title: "آدرس ملک", filled: sample.rows.filter((r) => r.address?.trim()).length, total: n, fillPath: "غنی‌سازی properties/details" },
+        { title: "منطقه", filled: sample.rows.filter((r) => r.areaName?.trim()).length, total: n, fillPath: "فهرست ARM (area)" },
+        { title: "نوع ملک", filled: sample.rows.filter((r) => r.propertyTypeName?.trim()).length, total: n, fillPath: "سامانهٔ عمومی apu + جزئیات ARM" },
+        { title: "متراژ", filled: sample.rows.filter((r) => (r.meterage ?? 0) > 0).length, total: n, fillPath: "سامانهٔ عمومی apu + جزئیات ARM" },
+        { title: "اتاق", filled: sample.rows.filter((r) => (r.rooms ?? 0) > 0).length, total: n, fillPath: "سامانهٔ عمومی apu + جزئیات ARM" },
+        { title: "طبقه", filled: sample.rows.filter((r) => (r.floor ?? 0) > 0 || r.floor === 0).length, total: n, fillPath: "سامانهٔ عمومی apu + جزئیات ARM" },
+        { title: "سال ساخت", filled: sample.rows.filter((r) => (r.buildYear ?? 0) > 0).length, total: n, fillPath: "سامانهٔ عمومی apu + جزئیات ARM" },
+        { title: "دسته‌بندی", filled: sample.rows.filter((r) => r.tradeTypeName?.trim()).length, total: n, fillPath: "سامانهٔ عمومی apu + جزئیات ARM" },
+        { title: "وضعیت", filled: sample.rows.filter((r) => r.status?.trim()).length, total: n, fillPath: "فهرست ARM (currentStatus)" },
+      ];
+      const covCard = buildCoverageInsight("آگهی ملک تبریز", "al-list-coverage", covCols);
+      if (covCard) cards.push(covCard);
     }
 
     // ---- FRESHNESS: تازگی ثبت آگهی‌ها ----

@@ -23,7 +23,7 @@ import { MelkApiError } from "@/lib/melk-api/types";
 import { enrichExpertRows } from "@/lib/melk-api/expert-enrichment";
 // P6530/گام ۴ — شعبه: زنجیرهٔ تفکیک چهار شعبهٔ ملک تبریز
 import { resolveExpertBranch, TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
-import { readOwnerBranchMap } from "@/lib/branch-store";
+import { readOwnerBranchMap, readPmBranchMap } from "@/lib/branch-store";
 import { normalizeFilterInput } from "@/lib/normalize-input";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 // P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
@@ -80,11 +80,15 @@ export async function GET(request: NextRequest) {
     // ---- P6.5-12: غنی‌سازی بین‌سامانه‌ای (کد پرسنلی PM + شمارش معاملات خانواده‌ای) ----
     const enriched = await enrichExpertRows(rows, guard.armTokens?.accessToken ?? null);
 
-    // ---- P6530/گام ۴ — شعبهٔ هر کارشناس (زنجیرهٔ تفکیک) + آدرس ----
-    const ownerMap = await readOwnerBranchMap().catch(() => ({} as Record<string, string>));
+    // ---- P6530/گام ۴ + P6547/گام چهارم-۱ — شعبهٔ هر کارشناس (زنجیرهٔ تفکیک: PM ← مالک ← کسب‌وکار) + آدرس ----
+    const [ownerMap, pmBranchMap] = await Promise.all([
+      readOwnerBranchMap().catch(() => ({} as Record<string, string>)),
+      // P6547 — شعبهٔ واقعی از سامانهٔ PM (personnelInfo.branchId.title — منبع اصلی)
+      readPmBranchMap().catch(() => ({} as Record<string, string>)),
+    ]);
     const rowsWithBranch = enriched.rows.map((r) => ({
       ...r,
-      branch: resolveExpertBranch(r.fullName, ownerMap, r.businessTitle).branch,
+      branch: resolveExpertBranch(r.fullName, ownerMap, r.businessTitle, pmBranchMap).branch,
       // آدرس کارشناس — ستون الزامی دستور؛ منبع فعلی ARM/PM آدرس پرسنل را ارائه
       // نمی‌کند → نمایش صادقانه «ثبت نشده» تا ارائهٔ داده در زنجیرهٔ بروزرسانی
       address: null as string | null,

@@ -13,8 +13,9 @@
  *   بروزرسانی (بند ۴): خواندن checkpoint «listings» → تاریخ/ساعت دقیق آخرین
  *   بروزرسانی + نقطهٔ ادامه (remainingPages) برای «شروع از جایی که قطع شد»
  *
- * شعبه (نکته ۲): زنجیرهٔ تفکیک src/lib/branches.ts — نقشهٔ مالک →
- * businessId.title سامانه → «تعیین نشده»
+ * شعبه (نکته ۲ + P6547/گام یک-۵): زنجیرهٔ تفکیک src/lib/branches.ts —
+ *   شعبهٔ PM (personnelInfo.branchId.title — منبع اصلی) → نقشهٔ مالک →
+ *   businessId.title سامانه → «تعیین نشده»
  *
  * غنی‌سازی هدفمند: اگر فیلتر کدآگهی داده شده باشد و ردیف‌های یافته هنوز
  * لایه ۲ را نداشته باشند، همان ردیف‌ها زنده غنی می‌شوند (سقف ۵).
@@ -35,7 +36,7 @@ import { normalizeFilterInput } from "@/lib/normalize-input";
 import { compressedJson } from "@/lib/http/compressed-json";
 // P6530/گام ۱ — شعبه: زنجیرهٔ تفکیک چهار شعبهٔ ملک تبریز
 import { resolveExpertBranch, TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
-import { readOwnerBranchMap } from "@/lib/branch-store";
+import { readOwnerBranchMap, readPmBranchMap } from "@/lib/branch-store";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -93,18 +94,20 @@ export async function GET(request: NextRequest) {
       limit
     );
 
-    // ---- P6530/گام ۱ — شعبهٔ کارشناس هر ردیف (زنجیرهٔ تفکیک) ----
-    const [ownerMap, experts] = await Promise.all([
+    // ---- P6530/گام ۱ + P6547/گام یک-۵ — شعبهٔ کارشناس هر ردیف (زنجیرهٔ تفکیک: PM ← مالک ← کسب‌وکار) ----
+    const [ownerMap, experts, pmBranchMap] = await Promise.all([
       readOwnerBranchMap().catch(() => ({} as Record<string, string>)),
       getExpertRepository()
         .findAll()
-        .catch(() => [] as Array<{ fullName: string; businessTitle: string | null }>)
+        .catch(() => [] as Array<{ fullName: string; businessTitle: string | null }>),
+      // P6547 — شعبهٔ واقعی از سامانهٔ PM (branchId.title از personnelInfo)
+      readPmBranchMap().catch(() => ({} as Record<string, string>)),
     ]);
     const businessByExpert = new Map<string, string | null>();
     for (const e of experts) businessByExpert.set(e.fullName, e.businessTitle);
     const branchOf = (expertName: string | null): string =>
       expertName
-        ? resolveExpertBranch(expertName, ownerMap, businessByExpert.get(expertName) ?? null).branch
+        ? resolveExpertBranch(expertName, ownerMap, businessByExpert.get(expertName) ?? null, pmBranchMap).branch
         : BRANCH_UNSET;
 
     // فیلتر شعبه (نکته ۲) — بعد از تفکیک، روی ستون شعبه
@@ -141,6 +144,8 @@ export async function GET(request: NextRequest) {
           registry: TABRIZ_BRANCHES,
           filter: branchFilter ?? null,
           resolvedCount: filtered.filter((r) => r.branch !== BRANCH_UNSET).length,
+          // P6547 — تعداد شعبه‌های تفکیک‌شده از سامانهٔ PM (منبع اصلی)
+          pmResolvedCount: filtered.filter((r) => Boolean(pmBranchMap[(r as { realtorName: string | null }).realtorName ?? ""])).length,
         },
         lastUpdate: checkpoint
           ? {

@@ -55,24 +55,42 @@ export function matchTabrizBranch(businessTitle: string | null | undefined): str
 
 /**
  * تفکیک شعبهٔ یک کارشناس — زنجیرهٔ کامل (خالص و قابل تست).
- * @param expertName نام کارشناس (کلید نقشهٔ مالک)
- * @param ownerMap نقشهٔ دستی مالک (اختیاری)
+ * P6547/گام یک-۵ و گام چهارم-۱ — «اطلاعات ستون شعبه از سامانه pm استخراج گردد»:
+ *   شعبهٔ PM (branchId.title از realtors/info/personnelInfo — کشف زندهٔ ۱۴۰۵/۰۷/۱۲)
+ *   منبع اصلی شد و در صدر زنجیره نشست.
+ * @param expertName نام کارشناس (کلید تطبیق پرسنل PM + نقشهٔ مالک)
+ * @param pmBranchMap نقشهٔ نام→شعبه از رجیستری پرسنل PM (branchTitle — منبع اصلی)
+ * @param ownerMap نقشهٔ دستی مالک (اختیاری — مکمل برای پرسنلِ فاقد شعبه در PM)
  * @param systemBusinessTitle businessId.title از ARM/PM (اختیاری)
  */
 export function resolveExpertBranch(
   expertName: string | null | undefined,
   ownerMap?: Record<string, string> | null,
-  systemBusinessTitle?: string | null
-): { branch: string; source: "owner-map" | "system" | "unset" } {
-  // ۱) نقشهٔ مالک — معتبرترین منبع
-  if (ownerMap && expertName) {
-    const direct = ownerMap[expertName];
-    if (direct && TABRIZ_BRANCHES.includes(direct)) return { branch: direct, source: "owner-map" };
-    // جست‌وجوی نرمال‌شده (ي/ك/نیم‌فاصله)
-    const norm = normalizeBranchText(expertName);
-    for (const [k, v] of Object.entries(ownerMap)) {
-      if (normalizeBranchText(k) === norm && TABRIZ_BRANCHES.includes(v)) {
-        return { branch: v, source: "owner-map" };
+  systemBusinessTitle?: string | null,
+  pmBranchMap?: Record<string, string> | null
+): { branch: string; source: "pm" | "owner-map" | "system" | "unset" } {
+  if (expertName) {
+    // ۰) P6547 — سامانهٔ PM: منبع اصلی ستون شعبه (عین دستور مالک)
+    if (pmBranchMap) {
+      const direct = pmBranchMap[expertName];
+      if (direct && TABRIZ_BRANCHES.includes(direct)) return { branch: direct, source: "pm" };
+      const norm = normalizeBranchText(expertName);
+      for (const [k, v] of Object.entries(pmBranchMap)) {
+        if (normalizeBranchText(k) === norm && TABRIZ_BRANCHES.includes(v)) {
+          return { branch: v, source: "pm" };
+        }
+      }
+    }
+    // ۱) نقشهٔ مالک — مکمل (پرسنلی که PM شعبه‌اش را نداده)
+    if (ownerMap) {
+      const direct = ownerMap[expertName];
+      if (direct && TABRIZ_BRANCHES.includes(direct)) return { branch: direct, source: "owner-map" };
+      // جست‌وجوی نرمال‌شده (ي/ك/نیم‌فاصله)
+      const norm = normalizeBranchText(expertName);
+      for (const [k, v] of Object.entries(ownerMap)) {
+        if (normalizeBranchText(k) === norm && TABRIZ_BRANCHES.includes(v)) {
+          return { branch: v, source: "owner-map" };
+        }
       }
     }
   }

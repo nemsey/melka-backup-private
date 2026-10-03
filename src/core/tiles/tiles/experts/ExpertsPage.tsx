@@ -33,7 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, RotateCcw, Search, Users, UserCheck, Phone, RefreshCw, Hash, CheckCircle2,
+  Loader2, RotateCcw, Search, Users, UserCheck, Phone, RefreshCw, Hash, CheckCircle2, Handshake,
   Network, Building2, Banknote, FileSignature, MapPin, Filter, History, IdCard, CalendarClock, BriefcaseBusiness,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
@@ -41,7 +41,9 @@ import { KpiCard, DataSourceWarning, TileCoverageTable, useTileData, type DataSo
 import { useTileFreshness } from "@/components/app/TileCard";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, ApiClientError } from "@/lib/client/api";
-import { faNumber, faDateTime } from "@/lib/format";
+import { faNumber, faDateTime, faJalaliShort } from "@/lib/format";
+// P6547/گام پنجم — نظام رنگ متمایز شعبه‌ها (هارمونی فیلتر↔فهرست)
+import { branchBadgeClass } from "@/lib/value-colors";
 import { faDigits } from "@/lib/jalali";
 import { TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
 import { expertFamilyStats } from "@/core/agent/analyzers";
@@ -70,6 +72,14 @@ interface ExRow {
   hireDate: string | null;
   /** P6546/گام چهارم-۴ — نقش/عنوان شغلی پرسنلی از سامانهٔ PM */
   roleTitle: string | null;
+  /** P6547/گام چهارم — نوع همکاری پرسنلی از سامانهٔ PM (employeementInfo.typeFa) */
+  employmentType: string | null;
+  /** P6547/گام چهارم — درصد سهام پرسنل از سامانهٔ PM (shareHolderPercentage) */
+  sharePercent: number | null;
+  /** P6547/گام چهارم — شماره داخلی تلفن سازمانی از سامانهٔ PM (voipInfo) */
+  voipExtension: string | null;
+  /** P6547/گام چهارم — شعبهٔ عین سامانهٔ PM (branchId.title از personnelInfo) */
+  pmBranchTitle: string | null;
 }
 
 interface ExResponse {
@@ -424,6 +434,10 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                     <TableHead className="min-w-24">شعبه</TableHead>
                     {/* P6546/گام چهارم-۴ — نقش پرسنلی از ساختار سامانهٔ PM */}
                     <TableHead className="min-w-24">نقش پرسنلی</TableHead>
+                    {/* P6547/گام چهارم — نوع همکاری (employeementInfo.typeFa از PM) */}
+                    <TableHead className="min-w-24">نوع همکاری</TableHead>
+                    {/* P6547/گام چهارم — شماره داخلی تلفن سازمانی (voipInfo از PM) */}
+                    <TableHead className="min-w-20">شماره داخلی</TableHead>
                     <TableHead className="min-w-24">مبایعه نامه</TableHead>
                     <TableHead className="min-w-24">اجاره نامه</TableHead>
                     <TableHead className="min-w-36">آدرس کارشناس</TableHead>
@@ -460,7 +474,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         {r.hireDate ? (
                           <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium" title={r.hireDate}>
                             <CalendarClock className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden />
-                            {/\d{4}-\d{2}-\d{2}/.test(r.hireDate) ? faDateTime(r.hireDate) : faDigits(r.hireDate)}
+                            {/\d{4}-\d{2}-\d{2}/.test(r.hireDate) ? faJalaliShort(r.hireDate) : faDigits(r.hireDate)}
                           </span>
                         ) : (
                           <span className="text-muted-foreground text-[10px]">—</span>
@@ -477,10 +491,10 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                           <span className="text-muted-foreground font-bold" title="این رکورد در سامانهٔ PM کد پرسنلی ندارد">-</span>
                         )}
                       </TableCell>
-                      {/* ۵ — شعبه */}
+                      {/* ۵ — شعبه (P6547: رنگ متمایز هر شعبه + منبع PM) */}
                       <TableCell>
                         {r.branch && r.branch !== BRANCH_UNSET ? (
-                          <Badge variant="outline" className="gap-1 text-[11px] border-sec-m4-200 bg-sec-m4-50 text-sec-m4-700">
+                          <Badge variant="outline" className={`gap-1 text-[11px] border-0 ${branchBadgeClass(r.branch)}`} title={r.pmBranchTitle === r.branch ? "شعبهٔ عین سامانهٔ PM (personnelInfo.branchId)" : "زنجیرهٔ تفکیک شعبه (PM ← نقشهٔ مالک ← کسب‌وکار)"}>
                             <Network className="w-3 h-3" aria-hidden /> {r.branch}
                           </Badge>
                         ) : (
@@ -493,6 +507,29 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                           <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m4-200 bg-sec-m4-50 text-sec-m4-700">
                             <BriefcaseBusiness className="w-2.5 h-2.5" aria-hidden /> {r.roleTitle}
                           </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">—</span>
+                        )}
+                      </TableCell>
+                      {/* P6547/گام چهارم — نوع همکاری + درصد سهام (employeementInfo از PM) */}
+                      <TableCell className="whitespace-nowrap">
+                        {r.employmentType ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium" title={r.sharePercent ? `نوع همکاری از سامانهٔ PM — درصد سهام: ${r.sharePercent}٪` : "نوع همکاری از سامانهٔ PM (employeementInfo)"}>
+                            <Handshake className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden />
+                            {r.employmentType}
+                            {r.sharePercent ? <span className="font-bold text-sec-m4-700">({faNumber(r.sharePercent)}٪)</span> : null}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">—</span>
+                        )}
+                      </TableCell>
+                      {/* P6547/گام چهارم — شماره داخلی تلفن سازمانی (voipInfo از PM) */}
+                      <TableCell className="whitespace-nowrap">
+                        {r.voipExtension ? (
+                          <span className="inline-flex items-center gap-1 font-mono tabular-nums text-[11px] font-bold" dir="ltr" title="شماره داخلی تلفن سازمانی از سامانهٔ PM (voipInfo)">
+                            <Phone className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden />
+                            {faDigits(r.voipExtension)}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground text-[10px]">—</span>
                         )}

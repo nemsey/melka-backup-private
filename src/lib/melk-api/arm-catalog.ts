@@ -157,7 +157,39 @@ export function mapArmPropertyListRow(row: RawRow): PropertyBulkInput | null {
   };
 }
 
-/** ردیف فهرست درخواست ARM → ArmRequestBulkRow (لایه ۱ — بدون تماس درخواست‌دهنده) */
+/** استخراج نام‌های آرایهٔ اشیاء {_id, name} — area[]/line[] خود ردیف فهرست درخواست
+ *  P6547/گام دوم (کشف زندهٔ ۱۴۰۵/۰۷/۱۲): ساختار فهرست requests/list عین ثبت کارشناسان:
+ *    area: [{_id, name}] · line: [{_id, name}] — بدون نیاز به requests/details (که 500 می‌دهد) */
+export function extractNameArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  const out: string[] = [];
+  for (const item of v) {
+    if (typeof item === "string" && item.trim()) {
+      const t = item.trim();
+      if (!out.includes(t)) out.push(t);
+    } else if (item && typeof item === "object") {
+      const name = (item as Record<string, unknown>)["name"] ?? (item as Record<string, unknown>)["title"];
+      if (typeof name === "string" && name.trim()) {
+        const t = name.trim();
+        if (!out.includes(t)) out.push(t);
+      }
+    }
+  }
+  return out;
+}
+
+/** نام آبجکت مرجع ({_id, name}) — tradeType/buildingType/propertyType/… */
+export function refName(v: unknown): string | null {
+  if (!v || typeof v !== "object") return null;
+  const name = (v as Record<string, unknown>)["name"] ?? (v as Record<string, unknown>)["title"];
+  return typeof name === "string" && name.trim() ? name.trim() : null;
+}
+
+/** ردیف فهرست درخواست ARM → ArmRequestBulkRow (لایه ۱ — بدون تماس درخواست‌دهنده)
+ *  P6547/گام دوم-۱/۲ — ساختار ثبت درخواست کارشناسان (عین requests/list) کامل استخراج می‌شود:
+ *  area[] + line[] + totalPrice_from/to + tradeType + buildingType + propertyType +
+ *  userPaymentMethod + userSeriousity + urgent/luxury/changeable — همه از خود ردیف فهرست
+ *  (شاهکار کشف: requests/details روی سرور ARM خطای 500 می‌دهد؛ خود فهرست غنی است) */
 export function mapArmRequestListRow(row: RawRow): ArmRequestBulkRow | null {
   const id = pickStr(row, ["_id", "id"]);
   const requestCode = pickStr(row, ["code", "requestCode"]);
@@ -165,6 +197,19 @@ export function mapArmRequestListRow(row: RawRow): ArmRequestBulkRow | null {
   if (!requestCode) return null;
 
   const relatedCustomer = pickStr(row, ["relatedCustomer"]); // نام خانوادگی مشتری عین فهرست
+  // P6547/گام دوم — منطقه‌ها/محله‌ها از خود ردیف فهرست (آرایه‌های area/line)
+  const areaNames = extractNameArray(row.area);
+  const lineNames = extractNameArray(row.line);
+  // P6547/گام دوم — بازهٔ قیمت متقاضی از خود ردیف فهرست (totalPrice_from/totalPrice_to)
+  const priceFrom = typeof row.totalPrice_from === "number" && row.totalPrice_from > 0 ? row.totalPrice_from : null;
+  const priceTo = typeof row.totalPrice_to === "number" && row.totalPrice_to > 0 ? row.totalPrice_to : null;
+  // P6547/گام دوم — دسته‌بندی/نوع ملک/نوع ساختمان از آبجکت‌های مرجع خود ردیف
+  const tradeTypeName = refName(row.tradeType);
+  const buildingTypeName = refName(row.buildingType);
+  const propertyTypeName = refName(row.propertyType);
+  const paymentMethodName = refName(row.userPaymentMethod);
+  const seriousnessName = refName(row.userSeriousity);
+
   return {
     id: id ?? requestCode!,
     requestCode: requestCode ?? id!,
@@ -177,6 +222,19 @@ export function mapArmRequestListRow(row: RawRow): ArmRequestBulkRow | null {
     createdAt: pickDate(row.createdAt) ?? pickDate(row.updatedAt),
     rawCustomerName: relatedCustomer,
     rawCustomerMobile: null,
+    // P6547/گام دوم — داده‌های غنی خود ردیف فهرست (بدون وابستگی به details)
+    ...(areaNames.length > 0 ? { areaNames } : {}),
+    ...(lineNames.length > 0 ? { lineNames } : {}),
+    ...(priceFrom !== null ? { priceFrom } : {}),
+    ...(priceTo !== null ? { priceTo } : {}),
+    ...(tradeTypeName ? { tradeTypeName } : {}),
+    ...(buildingTypeName ? { buildingTypeName } : {}),
+    ...(propertyTypeName ? { propertyTypeName } : {}),
+    ...(paymentMethodName ? { paymentMethodName } : {}),
+    ...(seriousnessName ? { seriousnessName } : {}),
+    ...(typeof row.urgent === "boolean" ? { urgent: row.urgent } : {}),
+    ...(typeof row.luxury === "boolean" ? { luxury: row.luxury } : {}),
+    ...(typeof row.changeable === "boolean" ? { changeable: row.changeable } : {}),
   };
 }
 

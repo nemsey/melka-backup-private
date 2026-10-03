@@ -39,7 +39,7 @@ import {
   RequestStateKeyValues,
 } from "@/lib/request-status";
 import { resolveExpertBranch, TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
-import { readOwnerBranchMap } from "@/lib/branch-store";
+import { readOwnerBranchMap, readPmBranchMap } from "@/lib/branch-store";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -98,18 +98,20 @@ export async function GET(request: NextRequest) {
       limit
     );
 
-    // ---- P6530/گام ۲ — شعبهٔ کارشناس هر ردیف (زنجیرهٔ تفکیک) ----
-    const [ownerMap, experts] = await Promise.all([
+    // ---- P6530/گام ۲ + P6547/گام دوم — شعبهٔ کارشناس هر ردیف (زنجیرهٔ تفکیک: PM ← مالک ← کسب‌وکار) ----
+    const [ownerMap, experts, pmBranchMap] = await Promise.all([
       readOwnerBranchMap().catch(() => ({} as Record<string, string>)),
       getExpertRepository()
         .findAll()
         .catch(() => [] as Array<{ fullName: string; businessTitle: string | null }>),
+      // P6547 — شعبهٔ واقعی از سامانهٔ PM (personnelInfo.branchId.title — منبع اصلی)
+      readPmBranchMap().catch(() => ({} as Record<string, string>)),
     ]);
     const businessByExpert = new Map<string, string | null>();
     for (const e of experts) businessByExpert.set(e.fullName, e.businessTitle);
     const branchOf = (expertName: string | null): string =>
       expertName
-        ? resolveExpertBranch(expertName, ownerMap, businessByExpert.get(expertName) ?? null).branch
+        ? resolveExpertBranch(expertName, ownerMap, businessByExpert.get(expertName) ?? null, pmBranchMap).branch
         : BRANCH_UNSET;
 
     const rowsWithBranch = rows.map((r) => ({ ...r, branch: branchOf(r.actorName) }));

@@ -10,7 +10,6 @@
 import { getTransactionRepository, type TransactionRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import {
-  detectAnomalies,
   growthRate,
   matchComposition,
   monthlySeries,
@@ -26,7 +25,7 @@ export interface TransactionAgentDeps {
 export class TransactionAgent extends BaseLearningAgent {
   readonly tileId = "transactions";
   readonly name = "ایجنت تحلیل معاملات";
-  readonly insightDomains = ["VOLUME", "TREND", "COMPOSITION", "CONVERSION", "DOCUMENT", "ANOMALY"] as const;
+  readonly insightDomains = ["VOLUME", "TREND", "COMPOSITION", "CONVERSION", "DOCUMENT"] as const;
 
   private readonly transactions: TransactionRepository;
 
@@ -120,19 +119,7 @@ export class TransactionAgent extends BaseLearningAgent {
       });
     }
 
-    // ---- ANOMALY: ناهنجاری‌ها ----
-    const anomalies = detectAnomalies(series);
-    if (anomalies.length > 0) {
-      const a = anomalies[Math.abs(anomalies[0].z) > Math.abs(anomalies[anomalies.length - 1].z) ? 0 : anomalies.length - 1];
-      cards.push({
-        key: "tx-anomaly",
-        domain: "ANOMALY",
-        title: "ناهنجاری آماری در روند معاملات",
-        body: `ماه ${faMonthLabel(a.key)} با انحراف معیار ${faNumber(Math.abs(a.z))} ${a.direction === "spike" ? "بالاتر" : "پایین‌تر"} از نرمال عمل کرده است (${faNumber(a.count)} معامله). چنین انحرافی معمولاً نشانه‌ی موج معاملاتی، تغییر سیاست سامانه یا رویداد فصلی است و ارزش بررسی دارد.`,
-        severity: "critical",
-        metrics: [{ label: "انحراف معیار", value: faNumber(a.z) }],
-      });
-    }
+    // P6547/گام سوم-۵ — بینش «ناهنجاری آماری در روند معاملات» حذف شد (دستور مالک)
 
     // ---- ماه‌های اوق (تکمیل تصویر روند) ----
     const peak = topMonths(series, 1);

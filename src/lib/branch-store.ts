@@ -66,3 +66,28 @@ export async function branchesOverview(): Promise<{
   const ownerMap = await readOwnerBranchMap();
   return { registry: [...TABRIZ_BRANCHES], ownerMap };
 }
+
+/**
+ * P6547/گام یک-۵ + گام چهارم-۱ — نقشهٔ شعبه از رجیستری پرسنل سامانهٔ PM.
+ * «اطلاعات ستون شعبه از سامانه pm استخراج گردد» — branchId.title واقعی هر پرسنل
+ * از realtors/info/personnelInfo (کشف زندهٔ ۱۴۰۵/۰۷/۱۲: ملکی تبریزی · باغلارباغی · …)
+ * در PmPersonnelRecord.branchTitle ذخیره شده و اینجا به نقشهٔ نام→شعبه تبدیل می‌شود.
+ * خروجی: شیء خالص — قابل تست؛ شکست DB = نقشهٔ خالی (زنجیره به منبع بعدی می‌رود).
+ */
+export async function readPmBranchMap(): Promise<Record<string, string>> {
+  try {
+    const rows = await db.pmPersonnelRecord.findMany({
+      where: { branchTitle: { not: null } },
+      select: { fullName: true, branchTitle: true },
+    });
+    const out: Record<string, string> = {};
+    for (const r of rows) {
+      if (r.fullName && r.branchTitle && TABRIZ_BRANCHES.includes(r.branchTitle)) {
+        out[r.fullName] = r.branchTitle;
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}

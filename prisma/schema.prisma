@@ -1015,6 +1015,17 @@ model PmPersonnelRecord {
   jobTitle      String?
   /// P6546/گامچهارم — شماره قرارداد/شماره پرسنلی سامانه PM (از personnelInfo)
   contractNo    String?
+  /// P6547/گام‌های ۱و۳و۴ — شعبهٔ پرسنل از سامانه PM (branchId.title از personnelInfo — کشف زندهٔ ۱۴۰۵/۰۷/۱۲)
+  /// شاهد کشف: سراج میزانی → ملکی تبریزی · توحید میزانی → باغلارباغی (چهار شعبهٔ رسمی ملک تبریز)
+  branchTitle   String?
+  /// شناسهٔ شعبه در سامانه PM (branchId._id)
+  branchCode    String?
+  /// P6547/گام چهارم — نوع همکاری پرسنلی (employeementInfo.typeFa از personnelInfo: «حق السهم (درصد)» / «حقوق ماهیانه»)
+  employmentType String?
+  /// P6547/گام چهارم — درصد سهام پرسنل (employeementInfo.shareHolderPercentage از personnelInfo)
+  sharePercent   Float?
+  /// P6547/گام چهارم — شماره داخلی تلفن سازمانی (voipInfo.extentionNumber از realtors/list)
+  voipExtension  String?
   /// وضعیت فعال‌سازی پلتفرم‌ها — JSON {ps,acc,apm,chat}
   activationStatusJson String?
   /// کسب‌وکار — JSON {title,code}
@@ -1119,6 +1130,12 @@ model RequestRecord {
   /// جدیت مشتری (user-seriousness خود سامانه)
   userSeriousity      String?
   userSeriousityName  String?
+  /// P6547/گام دوم — فوریت درخواست (urgent خود ردیف فهرست ARM)
+  urgent              Boolean?
+  /// P6547/گام دوم — درخواست لوکس (luxury خود ردیف فهرست ARM)
+  luxury              Boolean?
+  /// P6547/گام دوم — قابل معاوضه (changeable خود ردیف فهرست ARM)
+  changeable          Boolean?
   /// توضیحات مشاور
   realtorDescription  String?
 

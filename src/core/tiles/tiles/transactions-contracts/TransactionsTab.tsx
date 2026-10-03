@@ -52,6 +52,8 @@ import { api } from "@/lib/client/api";
 import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/core/agent/analyzers";
 import { classifyContract, CONTRACT_KIND_FILTER_LABELS, CONTRACT_KIND_FILTER_VALUES } from "@/lib/contract-classify";
 import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull } from "@/lib/format";
+// P6547/گام پنجم — نظام رنگ مشترک فیلتر↔فهرست (هارمونی تضمینی) + شعبهٔ PM در حق‌السهم
+import { branchBadgeClass } from "@/lib/value-colors";
 import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
@@ -92,7 +94,8 @@ interface TxRow {
     confirmed: number;
     pending: number;
     names: string[];
-    shares: { name: string; unitPercent: number; confirmation: string }[];
+    // P6547/گام سوم-۴ — شعبهٔ مشاور در هر سهم (قالب «سراج میزانی ارتش ۲۵٪» — شعبه از سامانهٔ PM)
+    shares: { name: string; branch?: string | null; unitPercent: number; confirmation: string }[];
   } | null;
   // ---- P6.5-12 ----
   contractType: string | null;
@@ -691,7 +694,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                           <span className="text-muted-foreground font-normal">—</span>
                         )}
                       </TableCell>
-                      {/* ۹ — تجمیع حق‌السهم مشاوران — نام + درصد (بند ب) */}
+                      {/* ۹ — تجمیع حق‌السهم مشاوران — نام + شعبه + درصد (P6547/گام سوم-۴: قالب «سراج میزانی ارتش ۲۵٪») */}
                       <TableCell className="whitespace-normal">
                         {t.consultantsShareSummary && t.consultantsShareSummary.shares.length > 0 ? (
                           <div className="flex flex-col items-center gap-1 min-w-44">
@@ -700,8 +703,12 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                             </Badge>
                             <ul className="text-muted-foreground text-[10px] leading-relaxed space-y-0.5">
                               {t.consultantsShareSummary.shares.slice(0, 4).map((s, idx) => (
-                                <li key={`${s.name}-${idx}`} className="flex items-center justify-center gap-2">
-                                  <span className="truncate max-w-28" title={s.name}>{s.name}</span>
+                                <li key={`${s.name}-${idx}`} className="flex flex-wrap items-center justify-center gap-1">
+                                  <span className="truncate max-w-28 font-medium text-foreground" title={s.name}>{s.name}</span>
+                                  {/* P6547 — شعبهٔ مشاور از سامانهٔ PM (branchId.title) */}
+                                  {s.branch ? (
+                                    <Badge variant="outline" className={`h-4 px-1 text-[9px] border-0 ${branchBadgeClass(s.branch)}`} title={`شعبهٔ ${s.branch} — از سامانهٔ PM`}>{s.branch}</Badge>
+                                  ) : null}
                                   <span className="font-semibold text-foreground shrink-0">{faPercent(s.unitPercent)}</span>
                                 </li>
                               ))}

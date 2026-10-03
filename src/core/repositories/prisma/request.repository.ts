@@ -39,7 +39,7 @@ function parseAreaNamesJson(json: string | null | undefined): string[] {
   }
 }
 
-function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> {
+export function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> {
   return {
     id: r.id,
     source: "arm",
@@ -56,6 +56,10 @@ function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> {
     ...(r.areaNames !== undefined && r.areaNames !== null && r.areaNames.length > 0
       ? { areaNamesJson: JSON.stringify(r.areaNames) }
       : {}),
+    // P6547/گام دوم — محله‌های منتخب درخواست (line[] خود ردیف فهرست ARM)
+    ...(r.lineNames !== undefined && r.lineNames !== null && r.lineNames.length > 0
+      ? { lineNamesJson: JSON.stringify(r.lineNames) }
+      : {}),
     // P6530/گام ۲ — دسته‌بندی درخواست + بازهٔ قیمت متقاضی از جزئیات ARM
     ...(r.tradeTypeName !== undefined ? { tradeTypeName: r.tradeTypeName } : {}),
     // P6546/گام دوم — نوع ملک + نوع ساختمان درخواستی از جزئیات ARM
@@ -63,6 +67,12 @@ function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> {
     ...(r.buildingTypeName !== undefined ? { buildingTypeName: r.buildingTypeName } : {}),
     ...(r.priceFrom !== undefined && r.priceFrom !== null ? { priceFrom: r.priceFrom } : {}),
     ...(r.priceTo !== undefined && r.priceTo !== null ? { priceTo: r.priceTo } : {}),
+    // P6547/گام دوم — روش پرداخت/جدیت/فوریت/لوکس/قابل معاوضه از خود ردیف فهرست ARM
+    ...(r.paymentMethodName !== undefined && r.paymentMethodName !== null ? { userPaymentMethodName: r.paymentMethodName } : {}),
+    ...(r.seriousnessName !== undefined && r.seriousnessName !== null ? { userSeriousityName: r.seriousnessName } : {}),
+    ...(r.urgent !== undefined && r.urgent !== null ? { urgent: r.urgent } : {}),
+    ...(r.luxury !== undefined && r.luxury !== null ? { luxury: r.luxury } : {}),
+    ...(r.changeable !== undefined && r.changeable !== null ? { changeable: r.changeable } : {}),
     // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مشتری خام
     ...(r.rawCustomerName !== undefined ? { rawCustomerName: r.rawCustomerName } : {}),
     ...(r.rawCustomerMobile !== undefined ? { rawCustomerMobile: r.rawCustomerMobile } : {}),
@@ -198,7 +208,13 @@ export class PrismaRequestRepository implements RequestRepository {
         rawCustomerName: true,
         customerMobile: true,
         areaNamesJson: true,
+        lineNamesJson: true,
         tradeTypeName: true,
+        userPaymentMethodName: true,
+        userSeriousityName: true,
+        urgent: true,
+        luxury: true,
+        changeable: true,
         propertyTypeName: true,
         buildingTypeName: true,
         priceFrom: true,
@@ -238,6 +254,8 @@ export class PrismaRequestRepository implements RequestRepository {
       customerMobile: r.customerMobile,
       // P6521/M2 — منطقه‌های منتخب (متن ساده؛ تهی = هنوز از منبع تکمیل نشده)
       areaNames: parseAreaNamesJson(r.areaNamesJson),
+      // P6547/گام دوم — محله‌های منتخب + پرداخت/جدیت/فوریت/لوکس/معاوضه از خود ردیف فهرست
+      lineNames: parseAreaNamesJson(r.lineNamesJson),
       // P6530/گام ۲ — دسته‌بندی + بازهٔ قیمت متقاضی
       tradeTypeName: r.tradeTypeName,
       // P6546/گام دوم — نوع ملک + نوع ساختمان درخواستی
@@ -245,6 +263,11 @@ export class PrismaRequestRepository implements RequestRepository {
       buildingTypeName: r.buildingTypeName,
       priceFrom: r.priceFrom,
       priceTo: r.priceTo,
+      paymentMethodName: r.userPaymentMethodName,
+      seriousnessName: r.userSeriousityName,
+      urgent: r.urgent,
+      luxury: r.luxury,
+      changeable: r.changeable,
       enrichedAt: r.extractedAt,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,

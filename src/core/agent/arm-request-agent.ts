@@ -2,13 +2,14 @@
  * ایجنت هوشمند یادگیرندهٔ مولتی‌بینش کاشی «درخواست ملک تبریز» (M2 — P6.5-10 + P6526/الف)
  * ------------------------------------------------------
  * تخصص: پایش و تحلیل کاتالوگ کامل درخواست‌های سامانه ARM ملک تبریز —
- * حجم و جریان درخواست‌ها، کارشناسان فعال ثبت، پوشش اطلاعات تماس
- * درخواست‌دهندگان (لایه ۲ غنی‌سازی)، ترکیب وضعیت‌ها و تازگی ثبت —
+ * حجم و جریان درخواست‌ها، کارشناسان فعال ثبت، پوشش اطلاعات فهرست
+ * (تمام ستون‌ها — P6547/گام دوم-۳)، ترکیب وضعیت‌ها و تازگی ثبت —
  * با یادگیری از بازخورد مدیر.
  */
 
 import { getRequestRepository, type RequestRepository } from "@/core/repositories";
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
+import { buildCoverageInsight, type CoverageColumnInput } from "./coverage-insight";
 import { faNumber } from "@/lib/format";
 
 /** وابستگی‌های تزریق‌پذیر ایجنت کاتالوگ درخواست‌های ARM */
@@ -110,21 +111,25 @@ export class ArmRequestAgent extends BaseLearningAgent {
       });
     }
 
-    // ---- COVERAGE: پوشش اطلاعات تماس درخواست‌دهندگان ----
+    // ---- P6547/گام دوم-۳: پوشش اطلاعات فهرست (تمام ستون‌ها — جایگزین بینش کیفیت تماس) ----
     if (sample.rows.length > 0) {
-      const enrichedSample = sample.rows.filter((r) => r.enrichedAt);
-      if (enrichedSample.length > 0) {
-        const withMobile = enrichedSample.filter((r) => r.customerMobile).length;
-        const mobilePct = Math.round((withMobile / enrichedSample.length) * 1000) / 10;
-        cards.push({
-          key: "ar-coverage",
-          domain: "COVERAGE",
-          title: "کیفیت اطلاعات تماس درخواست‌دهندگان",
-          body: `در ${faNumber(enrichedSample.length)} درخواست غنی‌سازی‌شده، ${faNumber(mobilePct)}٪ شماره موبایل درخواست‌دهنده در سامانه ARM ثبت شده است. درخواست بدون شماره تماس، عملاً سرنخ غیرقابل‌پیگیری است — فهرست این موارد و آموزش کارشناسان ثبت‌کننده برای الزامِ ثبت موبایل، بازده پیگیری را جهش می‌دهد.`,
-          severity: mobilePct < 70 ? "warning" : "positive",
-          metrics: [{ label: "دارای شماره تماس", value: `${faNumber(mobilePct)}٪` }],
-        });
-      }
+      const n = sample.rows.length;
+      const covCols: CoverageColumnInput[] = [
+        { title: "عنوان درخواست", filled: sample.rows.filter((r) => r.title?.trim()).length, total: n, fillPath: "فهرست ARM (title)" },
+        { title: "کارشناس", filled: sample.rows.filter((r) => r.actorName?.trim()).length, total: n, fillPath: "فهرست ARM (relatedRealtor)" },
+        { title: "متقاضی (نام)", filled: sample.rows.filter((r) => r.customerName?.trim()).length, total: n, fillPath: "غنی‌سازی requests/applicant" },
+        { title: "موبایل متقاضی", filled: sample.rows.filter((r) => r.customerMobile?.trim()).length, total: n, fillPath: "غنی‌سازی requests/applicant" },
+        { title: "قیمت (از)", filled: sample.rows.filter((r) => (r.priceFrom ?? 0) > 0).length, total: n, fillPath: "خود ردیف فهرست ARM (totalPrice_from)" },
+        { title: "قیمت (تا)", filled: sample.rows.filter((r) => (r.priceTo ?? 0) > 0).length, total: n, fillPath: "خود ردیف فهرست ARM (totalPrice_to)" },
+        { title: "مناطق", filled: sample.rows.filter((r) => r.areaNames.length > 0).length, total: n, fillPath: "خود ردیف فهرست ARM (area[])" },
+        { title: "محله‌ها", filled: sample.rows.filter((r) => r.lineNames.length > 0).length, total: n, fillPath: "خود ردیف فهرست ARM (line[])" },
+        { title: "نوع ملک درخواستی", filled: sample.rows.filter((r) => r.propertyTypeName?.trim()).length, total: n, fillPath: "خود ردیف فهرست ARM (propertyType)" },
+        { title: "نوع ساختمان", filled: sample.rows.filter((r) => r.buildingTypeName?.trim()).length, total: n, fillPath: "خود ردیف فهرست ARM (buildingType)" },
+        { title: "دسته‌بندی", filled: sample.rows.filter((r) => r.tradeTypeName?.trim()).length, total: n, fillPath: "خود ردیف فهرست ARM (tradeType)" },
+        { title: "وضعیت", filled: sample.rows.filter((r) => r.status?.trim()).length, total: n, fillPath: "فهرست ARM (currentStatus)" },
+      ];
+      const covCard = buildCoverageInsight("درخواست ملک تبریز", "ar-list-coverage", covCols);
+      if (covCard) cards.push(covCard);
     }
 
     // ---- FRESHNESS: تازگی ثبت درخواست‌ها ----

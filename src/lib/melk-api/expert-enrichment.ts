@@ -43,6 +43,14 @@ export interface ExpertEnrichedRow {
   hireDate: string | null;
   /** P6546/گام چهارم — نقش/عنوان شغلی پرسنلی از سامانهٔ PM */
   roleTitle: string | null;
+  /** P6547/گام چهارم — نوع همکاری پرسنلی از سامانهٔ PM (employeementInfo.typeFa) */
+  employmentType: string | null;
+  /** P6547/گام چهارم — درصد سهام پرسنل از سامانهٔ PM (employeementInfo.shareHolderPercentage) */
+  sharePercent: number | null;
+  /** P6547/گام چهارم — شماره داخلی تلفن سازمانی از سامانهٔ PM (voipInfo.extentionNumber) */
+  voipExtension: string | null;
+  /** P6547/گام چهارم — شعبهٔ پرسنل از سامانهٔ PM (branchId.title از personnelInfo) */
+  pmBranchTitle: string | null;
 }
 
 export interface ExpertEnrichmentResult {
@@ -86,16 +94,27 @@ export async function enrichExpertRows(
   armToken: string | null
 ): Promise<ExpertEnrichmentResult> {
   // ---------- ۱) پرسنل PM: نگاشت _id → code + استخدام/نقش (P6546/گام چهارم) ----------
-  const pmRows = await db.pmPersonnelRecord.findMany({ select: { id: true, code: true, mobileNumber: true, hireDate: true, jobTitle: true, roleTitle: true } });
+  const pmRows = await db.pmPersonnelRecord.findMany({
+    select: { id: true, code: true, mobileNumber: true, hireDate: true, jobTitle: true, roleTitle: true, employmentType: true, sharePercent: true, voipExtension: true, branchTitle: true },
+  });
   const pmCodeById = new Map<string, string>();
   const pmMobileById = new Map<string, string>();
   const pmHireById = new Map<string, string>();
   const pmRoleById = new Map<string, string>();
+  // P6547/گام چهارم — نگاشت‌های تازه: نوع همکاری · درصد سهام · شماره داخلی · شعبهٔ PM
+  const pmEmpTypeById = new Map<string, string>();
+  const pmShareById = new Map<string, number>();
+  const pmVoipById = new Map<string, string>();
+  const pmBranchById = new Map<string, string>();
   for (const p of pmRows) {
     if (p.code) pmCodeById.set(p.id, p.code);
     if (p.mobileNumber) pmMobileById.set(p.id, p.mobileNumber);
     if (p.hireDate) pmHireById.set(p.id, p.hireDate);
     if (p.jobTitle ?? p.roleTitle) pmRoleById.set(p.id, (p.jobTitle ?? p.roleTitle) as string);
+    if (p.employmentType) pmEmpTypeById.set(p.id, p.employmentType);
+    if (p.sharePercent !== null && p.sharePercent !== undefined) pmShareById.set(p.id, p.sharePercent);
+    if (p.voipExtension) pmVoipById.set(p.id, p.voipExtension);
+    if (p.branchTitle) pmBranchById.set(p.id, p.branchTitle);
   }
 
   // ---------- ۲) انتساب فروش‌ها (۷۲۷ معاملهٔ گزارش تطابق) ----------
@@ -175,6 +194,11 @@ export async function enrichExpertRows(
       // P6546/گام چهارم — تاریخ استخدام و نقش پرسنلی از سامانهٔ PM (personnelInfo)
       hireDate: pmHireById.get(r.id) ?? null,
       roleTitle: pmRoleById.get(r.id) ?? null,
+      // P6547/گام چهارم — ستون‌های تازه از ساختار فراژرف سامانهٔ PM
+      employmentType: pmEmpTypeById.get(r.id) ?? null,
+      sharePercent: pmShareById.get(r.id) ?? null,
+      voipExtension: pmVoipById.get(r.id) ?? null,
+      pmBranchTitle: pmBranchById.get(r.id) ?? null,
     };
   });
 

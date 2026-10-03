@@ -316,7 +316,65 @@ export interface PmPersonnelInfoSyncResult {
   failed: number;
   remaining: number;
   sampleHireDates: Array<{ id: string; fullName: string | null; hireDate: string | null; jobTitle: string | null }>;
+  /** P6547 — نمونهٔ شعبه‌های استخراج‌شده از personnelInfo (شاهد زنده) */
+  sampleBranches?: Array<{ id: string; fullName: string | null; branchTitle: string | null }>;
   error?: string;
+}
+
+/** P6547/گام‌های ۱و۳و۴ — استخراج دفاعی شعبه از ساختار کشف‌شدهٔ زندهٔ سامانهٔ PM:
+ *  personnelInfo.branchId = { _id, title } — شاهد پروب ۱۴۰۵/۰۷/۱۲:
+ *  سراج میزانی → { title: "ملکی تبریزی" } · توحید میزانی → { title: "باغلارباغی" }
+ *  (چهار شعبهٔ رسمی ملک تبریز: ارتش · باغلارباغی · ملکی تبریزی · هتل مرمر) */
+export function pickBranchTitle(d: Record<string, unknown> | null | undefined): { title: string | null; code: string | null } {
+  if (!d || typeof d !== "object") return { title: null, code: null };
+  const sources: Array<Record<string, unknown> | null | undefined> = [d, d["personnelInfo"] as Record<string, unknown> | undefined, d["info"] as Record<string, unknown> | undefined];
+  for (const src of sources) {
+    if (!src || typeof src !== "object") continue;
+    const b = src["branchId"] as Record<string, unknown> | string | null | undefined;
+    if (b && typeof b === "object") {
+      const title = typeof b["title"] === "string" && b["title"].trim() ? b["title"].trim() : null;
+      const code = typeof b["_id"] === "string" && b["_id"].trim() ? b["_id"].trim() : null;
+      if (title || code) return { title, code };
+    } else if (typeof b === "string" && b.trim()) {
+      return { title: b.trim(), code: null };
+    }
+  }
+  return { title: null, code: null };
+}
+
+/** P6547/گام چهارم — استخراج نوع همکاری + درصد سهام از employeementInfo (personnelInfo)
+ *  ساختار کشف‌شدهٔ زنده: typeFa: [{label: "حق السهم (درصد)", value: 47.5}, …] +
+ *  type (۱=حق‌السهم · ۳=حقوق ماهیانه) + shareHolderPercentage */
+export function pickEmploymentInfo(d: Record<string, unknown> | null | undefined): { type: string | null; sharePercent: number | null } {
+  if (!d || typeof d !== "object") return { type: null, sharePercent: null };
+  const src = (d["employeementInfo"] ?? d) as Record<string, unknown>;
+  if (!src || typeof src !== "object") return { type: null, sharePercent: null };
+  // درصد سهام — shareHolderPercentage یا value در typeFa
+  let share: number | null = null;
+  if (typeof src["shareHolderPercentage"] === "number" && (src["shareHolderPercentage"] as number) > 0) {
+    share = src["shareHolderPercentage"] as number;
+  }
+  // نوع همکاری — label نخستین typeFa دارای مقدار؛ fallback: type عددی
+  let type: string | null = null;
+  const typeFa = src["typeFa"];
+  if (Array.isArray(typeFa)) {
+    for (const t of typeFa) {
+      if (t && typeof t === "object") {
+        const label = (t as Record<string, unknown>)["label"];
+        const value = (t as Record<string, unknown>)["value"];
+        if (typeof label === "string" && label.trim() && value !== null && value !== undefined) {
+          type = label.trim();
+          if (typeof value === "number" && value > 0 && share === null) share = value;
+          break;
+        }
+      }
+    }
+  }
+  if (!type && typeof src["type"] === "number") {
+    // انواع شناخته‌شدهٔ سامانهٔ PM: ۱=حق السهم (درصد) · ۳=حقوق ماهیانه — سایر مقادیر صادقانه نامشخص
+    type = src["type"] === 1 ? "حق السهم (درصد)" : src["type"] === 3 ? "حقوق ماهیانه" : null;
+  }
+  return { type, sharePercent: share };
 }
 
 /**
@@ -328,16 +386,16 @@ export interface PmPersonnelInfoSyncResult {
 export async function syncPmPersonnelInfo(pmToken: string, opts: { maxRows?: number } = {}): Promise<PmPersonnelInfoSyncResult> {
   const cfg = getMelkApiConfig();
   const maxRows = Math.min(Math.max(opts.maxRows ?? 25, 1), 100);
-  const out: PmPersonnelInfoSyncResult = { ok: true, attempted: 0, enriched: 0, failed: 0, remaining: 0, sampleHireDates: [] };
+  const out: PmPersonnelInfoSyncResult = { ok: true, attempted: 0, enriched: 0, failed: 0, remaining: 0, sampleHireDates: [], sampleBranches: [] };
 
-  // صف: پرسنلِ بدون تاریخ استخدام (خودِ لایهٔ فهرست پیش از این sync شده است)
+  // صف: پرسنلِ بدون تاریخ استخدام «یا» بدون شعبه (P6547 — شعبهٔ PM منبع اصلی ستون شعبه شد)
   const pending = await db.pmPersonnelRecord.findMany({
-    where: { hireDate: null },
+    where: { OR: [{ hireDate: null }, { branchTitle: null }] },
     select: { id: true, fullName: true },
     take: maxRows,
     orderBy: { updatedAt: "asc" },
   });
-  const remainingCount = await db.pmPersonnelRecord.count({ where: { hireDate: null } });
+  const remainingCount = await db.pmPersonnelRecord.count({ where: { OR: [{ hireDate: null }, { branchTitle: null }] } });
   out.remaining = remainingCount;
 
   for (const p of pending) {
@@ -362,14 +420,25 @@ export async function syncPmPersonnelInfo(pmToken: string, opts: { maxRows?: num
           const role = d.role as Record<string, unknown> | undefined;
           return role && typeof role === "object" && "title" in role ? String(role.title ?? "") || null : null;
         })();
-      const patch: Record<string, string | null> = {};
+      const patch: Record<string, string | number | null> = {};
       if (hireDate) patch.hireDate = hireDate;
       if (jobTitle) patch.jobTitle = jobTitle;
+      // P6547 — شعبهٔ پرسنل از branchId سامانهٔ PM (منبع اصلی ستون شعبهٔ M1/M2/M3/M4)
+      const branch = pickBranchTitle(d);
+      if (branch.title) patch.branchTitle = branch.title;
+      if (branch.code) patch.branchCode = branch.code;
+      // P6547/گام چهارم — نوع همکاری + درصد سهام از employeementInfo
+      const emp = pickEmploymentInfo(d);
+      if (emp.type) patch.employmentType = emp.type;
+      if (emp.sharePercent !== null) patch.sharePercent = emp.sharePercent;
       if (Object.keys(patch).length > 0) {
         await db.pmPersonnelRecord.update({ where: { id: p.id }, data: patch });
         out.enriched += 1;
         if (out.sampleHireDates.length < 5) {
-          out.sampleHireDates.push({ id: p.id, fullName: p.fullName, hireDate: patch.hireDate ?? null, jobTitle: patch.jobTitle ?? null });
+          out.sampleHireDates.push({ id: p.id, fullName: p.fullName, hireDate: (patch.hireDate as string) ?? null, jobTitle: (patch.jobTitle as string) ?? null });
+        }
+        if (branch.title && (out.sampleBranches?.length ?? 0) < 5) {
+          out.sampleBranches!.push({ id: p.id, fullName: p.fullName, branchTitle: branch.title });
         }
       } else {
         // منبع مقدار نداشت — علامت صادقانه برای عدم پرسش مکرر

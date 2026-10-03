@@ -30,6 +30,8 @@ import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { enrichTransactionRows, type ContractLookup, type AgencyLookup } from "@/lib/melk-api/tx-enrichment";
 import { findPmNameByCode } from "@/lib/melk-api/pm-acc-sync";
+// P6547/گام سوم-۴ — شعبهٔ مشاوران از سامانهٔ PM برای ستون تجمیع حق‌السهم
+import { readPmBranchMap } from "@/lib/branch-store";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 // P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
@@ -154,7 +156,15 @@ export async function GET(request: NextRequest) {
       detailsJson: a.detailsJson,
       createdAt: a.createdAt,
     }));
-    let enrichedRows = enrichTransactionRows(rows, { owners, requesters, contracts, agencies, txInfo });
+    let enrichedRows = enrichTransactionRows(rows, {
+      owners,
+      requesters,
+      contracts,
+      agencies,
+      txInfo,
+      // P6547/گام سوم-۴ — شعبهٔ هر مشاور از branchId.title واقعی سامانهٔ PM (قالب: نام + شعبه + درصد)
+      branchByConsultant: await readPmBranchMap().catch(() => ({} as Record<string, string>)),
+    });
 
     // ---- P6.5-15 (BLOCK D + F — ملکا-شورا-۱۴۰۵-۰۱۸) — فیلترهای لایهٔ غنی‌سازی ----
     // نوع قرارداد: چندگانه (۴ kind + none) بر پایهٔ classifyContract — رفع F2
