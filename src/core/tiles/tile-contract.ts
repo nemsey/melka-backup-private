@@ -59,7 +59,7 @@ export interface TileDefinition {
   /** رنگ هویتی بخش — پالت ۱۳ بخش ملکا (گام صفر P6530 — قاعده ۱؛ SECTION_ACCENTS در TileCard) */
   accent:
     | "login" | "home" | "finder" | "melka-listing" | "melka-request" | "settings"
-    | "mgmt" | "m1" | "m2" | "m3" | "m4" | "consultant" | "ai";
+    | "mgmt" | "m1" | "m2" | "m3" | "m4" | "m5" | "m6" | "m7" | "m8" | "consultant" | "ai";
   /** کامپوننت صفحه داخلی کاشی */
   component: ComponentType<TilePageProps>;
   /** تعریف تنظیمات اختصاصی — در همان کاشی نگهداری می‌شود */

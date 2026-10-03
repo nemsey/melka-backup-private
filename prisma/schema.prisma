@@ -38,6 +38,8 @@ model Session {
   /// P6.5-02 (ConsultantScope §۵.۱) — دامنه دسترسی داده: OWNER | BRANCH | CONSULTANT
   /// default امن: نشست‌های موجود و ورود مدیر = OWNER (رفتار فعلی صفر-تغییر)
   accessScope        String   @default("OWNER")
+  /// P6545/گام۱ (BLOCK 1.3) — آرشیو دادهٔ مرده: صفر حذف؛ فقط برچسب (قانون دادهٔ مقدس)
+  archivedAt         DateTime?
 }
 
 /// ثبت تلاش‌های احراز هویت برای محدودسازی نرخ (Rate Limiting)
@@ -1255,4 +1257,95 @@ model AppMeta {
   /// development | production
   env        String?
   recordedAt DateTime @updatedAt
+}
+
+/// P6545/گام۱ (BLOCK 1.1) — پایدارسازی وضعیت کار پس‌زمینه در DB (جلسه ۰۳۰ سؤال ۹)
+/// پیش از این، پیشرفت کارها فقط در حافظهٔ فرایند بود و با ری‌استارت گم می‌شد.
+/// الگوی الزامی جلسه ۰۳۳: jobId, lastCompletedPage, resumedFrom, updatedAt.
+model SyncJobState {
+  /// شناسهٔ کار — مثل catalog-listings | catalog-requests | catalog-enrich-listings | main-sync
+  jobId            String   @id
+  /// خانوادهٔ کار: catalog | enrichment | sync
+  jobKind          String
+  /// idle | running | paused | done | failed
+  status           String   @default("idle")
+  /// آخرین صفحهٔ کامل-ذخیره‌شده (داده اول، سپس چک‌پوینت)
+  lastCompletedPage Int     @default(0)
+  /// نقطهٔ ازسرگیری (ادامه — هرگز شروع از صفر)
+  resumedFrom      Int      @default(1)
+  totalPages       Int      @default(0)
+  /// ۰ تا ۱۰۰ — شفافیت UI
+  progressPercent  Float    @default(0)
+  /// جزئیات آخرین برش (JSON) — شفافیت کامل
+  detailJson       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([jobKind, status])
+}
+
+/// P6545/گام۱ (BLOCK 1.2) — سه گراف اصلی (جلسه ۰۰۷/۰۲۲/۰۳۰): گراف ملک، افراد، معاملات
+/// ذخیرهٔ generic در DB — هر گراف: nodes + edges + traverse + findPath + query.
+model GraphNode {
+  id        String   @id @default(cuid())
+  /// property | people | transaction
+  graph     String
+  /// property | person | expert | customer | transaction | request | area
+  nodeType  String
+  /// شناسهٔ طبیعی رکورد مرجع (propertyCode / personnelCode / tx id / mobile / areaId)
+  refId     String
+  label     String?
+  /// ویژگی‌های گره — JSON (آدرس، متراژ، قیمت، نوع، مالک‌ها، آگهی‌ها، معاملات …)
+  propsJson String?
+  tenantId  String?  @default("melk-tabriz")
+  syncedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([graph, nodeType, refId])
+  @@index([graph, nodeType])
+  @@index([nodeType, refId])
+}
+
+/// یال‌های سه گراف — ملک↔مالک · ملک↔آگهی · ملک↔معامله · فرد↔ملک · فرد↔معامله · فرد↔درخواست …
+model GraphEdge {
+  id        String   @id @default(cuid())
+  graph     String
+  fromType  String
+  fromRef   String
+  toType    String
+  toRef     String
+  /// owned_by | listed_by | located_in | involves_property | bought | sold | brokered_by | requested_for | matches
+  edgeType  String
+  weight    Float    @default(1)
+  propsJson String?
+  createdAt DateTime @default(now())
+
+  @@unique([graph, fromType, fromRef, toType, toRef, edgeType])
+  @@index([graph, edgeType])
+  @@index([fromType, fromRef])
+  @@index([toType, toRef])
+}
+
+/// P6545/گام۱ (BLOCK 1.4) — هشدار فرصت: تطبیق آگهی↔درخواست (جلسه ۰۳۰ سؤال ۱۰)
+/// قید مطلق: صفر اجرای خودکار — فقط هشدار.
+model OpportunityAlert {
+  id          String   @id @default(cuid())
+  /// listing_to_request | request_to_listing
+  direction   String
+  /// کدآگهی (PropertyRecord.propertyCode)
+  listingCode String?
+  /// شناسهٔ درخواست (RequestRecord.id)
+  requestId   String?
+  /// امتیاز تطبیق (۰ تا ۱) — آستانهٔ انتشار: ≥ ۰٫۷
+  matchScore  Float
+  /// دلایل تطبیق — JSON [{factor, value, weight}]
+  matchReasons String
+  /// new | seen | dismissed
+  status      String   @default("new")
+  emittedAt   DateTime @default(now())
+  seenAt      DateTime?
+
+  @@index([direction, status])
+  @@index([listingCode])
+  @@index([requestId])
 }

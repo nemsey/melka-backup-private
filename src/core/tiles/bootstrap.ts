@@ -25,6 +25,11 @@ import "@/core/tiles/tiles/request";
 import "@/core/tiles/tiles/arm-listing";
 import "@/core/tiles/tiles/arm-request";
 import "@/core/tiles/tiles/management-dashboard";
+// P6545/گام۲ — چهار کاشی تازهٔ جلسه ۰۳۳ (BLOCK 2.5)
+import "@/core/tiles/tiles/smart-matching";
+import "@/core/tiles/tiles/market-index";
+import "@/core/tiles/tiles/data-coverage";
+import "@/core/tiles/tiles/learning-tier";
 import "@/core/tiles/tiles/settings";
 
 export { transactionsContractsTile } from "@/core/tiles/tiles/transactions-contracts";
@@ -36,4 +41,9 @@ export { requestTile } from "@/core/tiles/tiles/request";
 export { armListingTile } from "@/core/tiles/tiles/arm-listing";
 export { armRequestTile } from "@/core/tiles/tiles/arm-request";
 export { managementDashboardTile } from "@/core/tiles/tiles/management-dashboard";
+// P6545/گام۲ — صادرات چهار کاشی تازه
+export { smartMatchingTile } from "@/core/tiles/tiles/smart-matching";
+export { marketIndexTile } from "@/core/tiles/tiles/market-index";
+export { dataCoverageTile } from "@/core/tiles/tiles/data-coverage";
+export { learningTierTile } from "@/core/tiles/tiles/learning-tier";
 export { settingsTile } from "@/core/tiles/tiles/settings";

@@ -15,11 +15,16 @@ import { Home as DummyIcon } from "lucide-react";
 /** P6526/الف — ترتیب الزامی مالک: فایل یابی ملکا · آگهی ملکا · درخواست ملکا · تنظیمات عمومی · داشبورد مدیریتی */
 const ROOT_EXPECTED = ["file-finder", "listings", "requests", "settings", "management-dashboard"];
 /** بازسازی فازهای ۷-۸-۹ (دستور مالک ۱۴۰۵/۰۷/۷): چهار کاشی مدیریتی M1 تا M4 */
+// P6545/گام۲ (جلسه ۰۳۳): چهار کاشی تازهٔ M5-M8 به داشبورد مدیریتی افزوده شدند
 const CHILDREN_EXPECTED = [
   "arm-listings",        // M1 آگهی ملک تبریز
   "arm-requests",        // M2 درخواست ملک تبریز
   "transactions-contracts", // M3 معاملات ملک تبریز
   "experts",             // M4 کارشناسان ملک تبریز
+  "smart-matching",      // M5 تطبیق هوشمند (P6545)
+  "market-index",        // M6 شاخص بازار (P6545)
+  "data-coverage",       // M7 پوشش داده (P6545)
+  "learning-tier",       // M8 یادگیری و Tier (P6545)
 ];
 
 describe("معماری داشبورد مدیریتی", () => {
@@ -36,7 +41,7 @@ describe("معماری داشبورد مدیریتی", () => {
     expect(rootConsultant).toEqual(ROOT_EXPECTED);
   });
 
-  test("بازسازی فازهای ۷-۸-۹ — چهار کاشی مدیریتی M1 تا M4 داخل داشبورد مدیریتی — به همین ترتیب", async () => {
+  test("P6545 — هشت کاشی مدیریتی M1 تا M8 داخل داشبورد مدیریتی — به همین ترتیب (جلسه ۰۳۳)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
     expect(children).toEqual(CHILDREN_EXPECTED);

@@ -30,6 +30,8 @@ import { DivarConnectionSection } from "./DivarConnectionSection";
 import { InstagramConnectionSection } from "./InstagramConnectionSection";
 import { PmConnectionSection } from "./PmConnectionSection";
 import { BrainStatusSection } from "./BrainStatusSection";
+// P6545/گام۱ — هشدار فرصت + کارهای پس‌زمینه (BLOCK 1.1 + 1.4)
+import { OpportunityJobsSection } from "./OpportunityJobsSection";
 
 /** ارقام فارسی محلی برای این صفحه */
 function faDigitsLocal(n: string | number): string {
@@ -332,6 +334,9 @@ export function SettingsPage({ onBack }: TilePageProps) {
 
       {/* مغز هوشمند و یادگیر — فازهای ۷/۸/۹ */}
       <BrainStatusSection />
+
+      {/* P6545/گام۱ — هشدار فرصت + کارهای پس‌زمینه (جلسه ۰۳۳) */}
+      <OpportunityJobsSection />
 
       {/* حساب کاربری */}
       <Card>

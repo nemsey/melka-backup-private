@@ -69,7 +69,8 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
     expect(consultantRoots).toEqual(ownerRoots);
   });
 
-  test("۰-۳) داشبورد مدیریتی — چهار کاشی M1 تا M4 با نام‌ها و ترتیب عین دستور مالک", async () => {
+  // P6545/گام۲ (جلسه ۰۳۳): چهار کاشی تازهٔ M5-M8 به داشبورد مدیریتی افزوده شدند
+  test("۰-۳) داشبورد مدیریتی — هشت کاشی M1 تا M8 با نام‌ها و ترتیب (P6545/جلسه ۰۳۳)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER");
     expect(children.map((t) => t.title)).toEqual([
@@ -77,8 +78,12 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
       "درخواست ملک تبریز",
       "معاملات ملک تبریز",
       "کارشناسان ملک تبریز",
+      "تطبیق هوشمند ملک تبریز",
+      "شاخص بازار ملک تبریز",
+      "پوشش اطلاعات ملک تبریز",
+      "مغز ملکا — یادگیری و Tier",
     ]);
-    expect(children.map((t) => t.order)).toEqual([1, 2, 3, 4]);
+    expect(children.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
   test("۰-۴) کاشی‌های M5/M6/M7 در رجیستری فعال ثبت نشده‌اند (حذف نما — فاز ۷/۸/۹)", async () => {

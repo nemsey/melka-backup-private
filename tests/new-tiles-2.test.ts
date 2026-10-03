@@ -330,7 +330,11 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     expect(ids.indexOf("arm-requests")).toBe(1); // M2
     expect(ids.indexOf("transactions-contracts")).toBe(2); // M3
     expect(ids.indexOf("experts")).toBe(3); // M4
-    expect(ids.length).toBe(4); // دقیقاً چهار کاشی
+    expect(ids.length).toBe(8); // هشت کاشی — M1-M4 + چهار کاشی تازهٔ P6545 (جلسه ۰۳۳)
+    expect(ids.indexOf("smart-matching")).toBe(4); // M5
+    expect(ids.indexOf("market-index")).toBe(5); // M6
+    expect(ids.indexOf("data-coverage")).toBe(6); // M7
+    expect(ids.indexOf("learning-tier")).toBe(7); // M8
     // تنظیمات عمومی ریشه است (چهارم) — نه داخل داشبورد مدیریتی؛ داشبورد مدیریتی آخرین کاشی ریشه
     expect(ids).not.toContain("settings");
     expect(tileRegistry.listRoot("OWNER").at(-1)?.id).toBe("management-dashboard");

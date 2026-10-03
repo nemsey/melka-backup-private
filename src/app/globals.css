@@ -119,6 +119,10 @@
   --color-sec-settings-50: var(--sec-settings-50); --color-sec-settings-200: var(--sec-settings-200); --color-sec-settings-500: var(--sec-settings-500); --color-sec-settings-700: var(--sec-settings-700); --color-sec-settings-fg: var(--sec-settings-fg);
   --color-sec-mgmt-50: var(--sec-mgmt-50); --color-sec-mgmt-200: var(--sec-mgmt-200); --color-sec-mgmt-500: var(--sec-mgmt-500); --color-sec-mgmt-700: var(--sec-mgmt-700); --color-sec-mgmt-fg: var(--sec-mgmt-fg);
   --color-sec-m1-50: var(--sec-m1-50); --color-sec-m1-200: var(--sec-m1-200); --color-sec-m1-500: var(--sec-m1-500); --color-sec-m1-700: var(--sec-m1-700); --color-sec-m1-fg: var(--sec-m1-fg);
+  --color-sec-m5-50: var(--sec-m5-50); --color-sec-m5-200: var(--sec-m5-200); --color-sec-m5-500: var(--sec-m5-500); --color-sec-m5-700: var(--sec-m5-700); --color-sec-m5-fg: var(--sec-m5-fg);
+  --color-sec-m6-50: var(--sec-m6-50); --color-sec-m6-200: var(--sec-m6-200); --color-sec-m6-500: var(--sec-m6-500); --color-sec-m6-700: var(--sec-m6-700); --color-sec-m6-fg: var(--sec-m6-fg);
+  --color-sec-m7-50: var(--sec-m7-50); --color-sec-m7-200: var(--sec-m7-200); --color-sec-m7-500: var(--sec-m7-500); --color-sec-m7-700: var(--sec-m7-700); --color-sec-m7-fg: var(--sec-m7-fg);
+  --color-sec-m8-50: var(--sec-m8-50); --color-sec-m8-200: var(--sec-m8-200); --color-sec-m8-500: var(--sec-m8-500); --color-sec-m8-700: var(--sec-m8-700); --color-sec-m8-fg: var(--sec-m8-fg);
   --color-sec-m2-50: var(--sec-m2-50); --color-sec-m2-200: var(--sec-m2-200); --color-sec-m2-500: var(--sec-m2-500); --color-sec-m2-700: var(--sec-m2-700); --color-sec-m2-fg: var(--sec-m2-fg);
   --color-sec-m3-50: var(--sec-m3-50); --color-sec-m3-200: var(--sec-m3-200); --color-sec-m3-500: var(--sec-m3-500); --color-sec-m3-700: var(--sec-m3-700); --color-sec-m3-fg: var(--sec-m3-fg);
   --color-sec-m4-50: var(--sec-m4-50); --color-sec-m4-200: var(--sec-m4-200); --color-sec-m4-500: var(--sec-m4-500); --color-sec-m4-700: var(--sec-m4-700); --color-sec-m4-fg: var(--sec-m4-fg);
@@ -249,6 +253,14 @@
   --sec-consultant-50: #fcf0f5; --sec-consultant-200: #efa0c3; --sec-consultant-500: #db2777; --sec-consultant-700: #721a48; --sec-consultant-fg: #ffffff;
   /* ۱۳. هوش مصنوعی/گزارش‌ها — لاجوردی #4F46E5 */
   --sec-ai-50: #f3f2fd; --sec-ai-200: #b2aef4; --sec-ai-500: #4f46e5; --sec-ai-700: #2c2a80; --sec-ai-fg: #ffffff;
+  /* ۱۴. M5 تطبیق هوشمند — بنفش ارغوانی #7C3AED (P6545) */
+  --sec-m5-50: #f5f3ff; --sec-m5-200: #c4b5fd; --sec-m5-500: #7c3aed; --sec-m5-700: #4c1d95; --sec-m5-fg: #ffffff;
+  /* ۱۵. M6 شاخص بازار — سبز لیمویی #65A30D (P6545) */
+  --sec-m6-50: #f7fee7; --sec-m6-200: #d9f99d; --sec-m6-500: #65a30d; --sec-m6-700: #3f6212; --sec-m6-fg: #0a0e1a;
+  /* ۱۶. M7 پوشش داده — آبی #2563EB (P6545) */
+  --sec-m7-50: #eff6ff; --sec-m7-200: #bfdbfe; --sec-m7-500: #2563eb; --sec-m7-700: #1e40af; --sec-m7-fg: #ffffff;
+  /* ۱۷. M8 یادگیری و Tier — فیروزه‌ای تیره #0D9488 (P6545) */
+  --sec-m8-50: #f0fdfa; --sec-m8-200: #99f6e4; --sec-m8-500: #0d9488; --sec-m8-700: #134e4a; --sec-m8-fg: #0f172a;
 }
 
 /* قاعده ۴ — دارک مود: ۵۰۰→۴۰۰ روشن‌تر · متن معکوس · هویت رنگی حفظ */
@@ -266,6 +278,10 @@
   --sec-m4-50: #122d3c; --sec-m4-200: #1b556c; --sec-m4-500: #30a3be; --sec-m4-700: #70bfd2; --sec-m4-fg: #0f172a;
   --sec-consultant-50: #341c33; --sec-consultant-200: #6b2d56; --sec-consultant-500: #e14a8d; --sec-consultant-700: #ea82b0; --sec-consultant-fg: #ffffff;
   --sec-ai-50: #1d2145; --sec-ai-200: #36387f; --sec-ai-500: #6b64e9; --sec-ai-700: #9994f0; --sec-ai-fg: #ffffff;
+  --sec-m5-50: #221c43; --sec-m5-200: #42308a; --sec-m5-500: #8b5cf6; --sec-m5-700: #a78bfa; --sec-m5-fg: #ffffff;
+  --sec-m6-50: #1d2a12; --sec-m6-200: #3c5220; --sec-m6-500: #84cc16; --sec-m6-700: #bef264; --sec-m6-fg: #0a0e1a;
+  --sec-m7-50: #101f43; --sec-m7-200: #1c3a8a; --sec-m7-500: #3b82f6; --sec-m7-700: #7b9ff9; --sec-m7-fg: #ffffff;
+  --sec-m8-50: #0f2e2b; --sec-m8-200: #14524c; --sec-m8-500: #2dd4bf; --sec-m8-700: #5eead4; --sec-m8-fg: #0f172a;
 }
 
 @layer base {

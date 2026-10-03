@@ -97,6 +97,22 @@ export async function POST(request: NextRequest) {
     // الف: ثبت دستی (مالک حضوری) — ذخیره محلی با همان ۴ گام کامل
     const result = await createRequest(input, guard.personnelCode);
 
+    // P6545/گام۱ (BLOCK 1.4) — رویداد فرصت: درخواست تازه روی تختهٔ سیاه + شنوندهٔ هشدار
+    // (صفر اجرای خودکار — فقط هشدار تطبیق ≥ ۰٫۷)
+    if (result.ok && result.record?.id) {
+      try {
+        const { emitEvent } = await import("@/lib/intelligence/blackboard");
+        await emitEvent("request.created", { requestId: result.record.id, source: "manual", actor: guard.personnelCode });
+        const { OpportunityListener } = await import("@/core/matching/opportunity-listener");
+        const { db: appDb } = await import("@/lib/db");
+        const listener = new OpportunityListener(appDb, 3);
+        const alertReport = await listener.onRequestCreated(result.record.id);
+        if (alertReport.alertsCreated > 0) {
+          await emitEvent("opportunity.alerted", { requestId: result.record.id, alerts: alertReport.alertsCreated, topScore: alertReport.topScores[0] ?? null });
+        }
+      } catch { /* هشدار هرگز ثبت درخواست را نمی‌شکند */ }
+    }
+
     // ب: ثبت اتوماتیک — پس از تکمیل فرم، ثبت مستقیم و گام‌به‌گام در سامانه آرم
     let arm: Awaited<ReturnType<typeof registerRequestToArm>> | null = null;
     if (body.autoRegister && result.ok && result.record) {

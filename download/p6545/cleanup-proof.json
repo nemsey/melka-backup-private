@@ -1,0 +1,1025 @@
+{
+  "analyzedAt": "2026-10-03T10:08:25.558Z",
+  "found": 157,
+  "byPriority": {
+    "1": 1,
+    "2": 0,
+    "3": 156
+  },
+  "items": [
+    {
+      "priority": 1,
+      "category": "orphan",
+      "table": "VisitRecord",
+      "recordId": "6aa3e2a036bf30de972f64d9",
+      "reason": "مشاور مرجع «نامشخص» در ExpertRecord موجود نیست"
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyc5gks0003kxxiktm95bfh",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyc62lf000ykxxizuvoaof0",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031320"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyc6p5p0016kxxiw9dlhj5o",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031320"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyc8ld8001dkxxig95v528t",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031322"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyca8vl001jkxxibg8rfla2",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031323"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyfj07i0002kxrt5ou3s7ow",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyfj08b0005kxrtmh40wkgq",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyfopbq0009kxrt05omommx",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyfrzq3000ekxrthab76fna",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyh7igq000hkxrtosk1kksb",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyhaxa60001kx4qsk2ulf8m",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyhbljz0004kx4q09k37pro",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyhii270009kx4qaw6b5ufm",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyhko8o000ckx4q2dv254lp",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyhr2bf000hkx4q3q6b5ycl",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtypjgwr0001qotutc2nhhld",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtypk2e20004qotuvlpaf78u",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtypn05i0001qozxsp6oymd2",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmtyvfyuf0001qosylrout8gn",
+      "reason": "نشست منقضی (2026-09-13) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu07fpxt0001nv5onjvnxtnp",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu07zj3f001tnvqdvw4sn6oy",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu09v9950001nvy9kunwjlgv",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu09wdjp0001nv8roic3vrsd",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu0a04lx0023nv8rz2obah10",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu0edxk70001nvzqi9nxjhec",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu0fos090001nvnf4rst80w8",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu0fsmg20026nvnflj2jmn5u",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu0hvwwo002knvnfqr5xmfmc",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu0i1q1g002nnvnfnokfd57m",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu0i8rxa0001nv1r81vui5ow",
+      "reason": "نشست منقضی (2026-09-14) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu1sxack0001umr20ly7omiq",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu1sxyni0004umr237e8gfvl",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu1t6696000eumr2rkwsbm0d",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu1tarak000kumr25kztgzpv",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu1tbbj30001umq611dz4xix",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu1tehj60004umq6o5tnprv9",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu1tenrf0007umq6bz47wsgy",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu27mnem0001rtui4mdn13my",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu27on900004rtuijv93fv04",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu29mv1v0021qauge53pq47v",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu2jmad20001lxlwkvl2hmb3",
+      "reason": "نشست منقضی (2026-09-15) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu3azg8x000au3ugg13a7mmm",
+      "reason": "نشست منقضی (2026-09-16) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu3b5mwt000ou3uglk25jktq",
+      "reason": "نشست منقضی (2026-09-16) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu3di54l0001u35j4gw01dxo",
+      "reason": "نشست منقضی (2026-09-16) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu3yma4q0003sm4ib52tfvlg",
+      "reason": "نشست منقضی (2026-09-16) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu436kow0001smds5ei1nznm",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu43b5yy0025smdsu1ddx3bx",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu43eo6s0029smds075mtj16",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu46per60001rskrqsaj4r93",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu46pthz0005rskr7cknxf11",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu482sx40001rs69yusphc91",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu484p7n0006rs695qxbm97d",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu487llz000brs693hv3klc3",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu4g0u0g0001thqc53lqlf76",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu4g2xoa0005thqc0wujr0t4",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu4g3swk000bthqc9ruzn8vo",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu4jhkf50001thy4bjzs8k8b",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu4ji73t0004thy4bs6e80h7",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu4jir6y0008thy4p3p0mrwt",
+      "reason": "نشست منقضی (2026-09-17) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu7prc3d0001sitrh9qs1902",
+      "reason": "نشست منقضی (2026-09-19) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu7pu3v30006sitrutlszevd",
+      "reason": "نشست منقضی (2026-09-19) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu7r0xs7000asitrxumak38x",
+      "reason": "نشست منقضی (2026-09-19) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu7thomw000gsitrg0h59hrj",
+      "reason": "نشست منقضی (2026-09-19) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031320"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu7tmk9g000qsitrow1gay72",
+      "reason": "نشست منقضی (2026-09-19) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu7twncl0015sitrvoj8cnqg",
+      "reason": "نشست منقضی (2026-09-19) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031320"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu8nxwbo0001mzsybtysv2c0",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu8o4onh0001mzloll7navqm",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu8o5uqk0004mzlo76bffv65",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu8o5zul0008mzlot5tw0h3p",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu8o64k3000bmzloz0ye6oqd",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu8p6jlj0001mzdwpvhfixki",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu8wgh3h0001snuv9x4xhxn1",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu8xv50r0004snuvgqrtfpq4",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu90dddg0001snsnzcrazdol",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu9h03jc000hq2v56ock1odd",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu9iptz10000q2ts5ftjd0mh",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031320"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu9ipz560000q2uh3hhrafhq",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031320"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu9iq7qr0000q2vgcewbvj3m",
+      "reason": "نشست منقضی (2026-09-20) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031320"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu9ubq2y0002pjxson23ele4",
+      "reason": "نشست منقضی (2026-09-21) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmu9uhr2r0008pjxsgd5sb5ap",
+      "reason": "نشست منقضی (2026-09-21) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmuc43mcm0002r3uy8g0sgyld",
+      "reason": "نشست منقضی (2026-09-22) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmuc741a40007r3fzb0fg666c",
+      "reason": "نشست منقضی (2026-09-22) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmuc74a36000cr3fzjpf0ta6a",
+      "reason": "نشست منقضی (2026-09-22) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmuc7icjw000ur3fz419q0gre",
+      "reason": "نشست منقضی (2026-09-22) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmuc7isah0013r3fz8s345bt3",
+      "reason": "نشست منقضی (2026-09-22) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmuc7kqrf0003r38pn800stsl",
+      "reason": "نشست منقضی (2026-09-22) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmud63u250003n4trzotzh6xs",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmud7205l000cn4trrm5emmut",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmud72pyk000in4truucrtcor",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmud73m6m000pn4trb6cjvtlr",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "410031320"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmud7d2aq0016n4trtadt0sv9",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmudtg56z0002lntxup9izh3c",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmudtgtev0006lntxjswgk9xb",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmudu30md000llntxeau7vfbu",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmudu6pe1000wlntxt8t28sl3",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmudu9rzi0013lntx0xty59l3",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmuduf8xz001elntx0amz7bw9",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmudyz6ee000dlnyly5txhkow",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    },
+    {
+      "priority": 3,
+      "category": "stale",
+      "table": "Session",
+      "recordId": "cmudyzxum0013lnyl8sf4y26n",
+      "reason": "نشست منقضی (2026-09-23) — دادهٔ امنیتی مرده",
+      "detail": {
+        "personnelCode": "OWNER"
+      }
+    }
+  ],
+  "archived": 0,
+  "archivedSamples": [],
+  "beforeCounts": {
+    "sessionTotal": 162,
+    "sessionExpired": 156,
+    "otpOld": 0,
+    "requestTotal": 7509,
+    "visitTotal": 1
+  },
+  "afterCounts": {
+    "sessionTotal": 162,
+    "sessionExpired": 156,
+    "otpOld": 0,
+    "requestTotal": 7509,
+    "visitTotal": 1
+  },
+  "deleted": 0
+}

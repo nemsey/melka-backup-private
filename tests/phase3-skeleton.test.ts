@@ -163,6 +163,10 @@ describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", (
       "p7-core.ts", "p8-core.ts", "p9-core.ts", "p10-core.ts", "p11-core.ts",
       // ---- P6545 / جلسه ۰۳۳: لایهٔ کالیبراسیون (تصمیم‌های ۱ و ۳) — افزودنی، جزو ۱۱ موتور نیست ----
       "calibration/calibration-map.ts", "calibration/index.ts",
+      // ---- P6545 / گام۳ (BLOCK 3.2/3.3/3.5): رجیستری مدل‌ها + ایجنت‌های دامنه‌ای + پیامد بین‌کاشی ----
+      "models/registry.ts", "models/index.ts",
+      "agents/domain-agents.ts", "agents/index.ts",
+      "cross-tile.ts",
     ]);
     const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
     expect([...actual].sort()).toEqual([...expected].sort());

@@ -1,0 +1,208 @@
+{
+  "case": "P6545-cross-tile-outcomes",
+  "council": "جلسه ۰۳۳ — BLOCK 3.5: یک معامله = پیامد برای ۴ مدل",
+  "ranAt": "2026-10-03T09:34:03.194Z",
+  "batch": {
+    "transactions": 10,
+    "outcomes": 37,
+    "events": 37,
+    "target": 10,
+    "perTx": 4
+  },
+  "sampleOutcomes": [
+    {
+      "id": "ct-m1-6ab24e3c609ed33e8fe20e9a",
+      "predictionType": "listing_deal",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ab24e3c609ed33e8fe20e9a",
+        "TransactionEnrichment.txId=6ab24e3c609ed33e8fe20e9a"
+      ]
+    },
+    {
+      "id": "ct-m2-6ab24e3c609ed33e8fe20e9a",
+      "predictionType": "request_match",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.requestCode=51831"
+      ]
+    },
+    {
+      "id": "ct-m3-6ab24e3c609ed33e8fe20e9a",
+      "predictionType": "transaction_success",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ab24e3c609ed33e8fe20e9a"
+      ]
+    },
+    {
+      "id": "ct-m4-6ab24e3c609ed33e8fe20e9a",
+      "predictionType": "expert_performance",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ab24e3c609ed33e8fe20e9a"
+      ]
+    },
+    {
+      "id": "ct-m1-6ab233b8609ed33e8fe1f2b5",
+      "predictionType": "listing_deal",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ab233b8609ed33e8fe1f2b5",
+        "TransactionEnrichment.txId=6ab233b8609ed33e8fe1f2b5"
+      ]
+    },
+    {
+      "id": "ct-m2-6ab233b8609ed33e8fe1f2b5",
+      "predictionType": "request_match",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.requestCode=52448"
+      ]
+    },
+    {
+      "id": "ct-m3-6ab233b8609ed33e8fe1f2b5",
+      "predictionType": "transaction_success",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ab233b8609ed33e8fe1f2b5"
+      ]
+    },
+    {
+      "id": "ct-m1-6ab0e989609ed33e8fdf7add",
+      "predictionType": "listing_deal",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ab0e989609ed33e8fdf7add",
+        "TransactionEnrichment.txId=6ab0e989609ed33e8fdf7add"
+      ]
+    },
+    {
+      "id": "ct-m2-6ab0e989609ed33e8fdf7add",
+      "predictionType": "request_match",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.requestCode=38912"
+      ]
+    },
+    {
+      "id": "ct-m3-6ab0e989609ed33e8fdf7add",
+      "predictionType": "transaction_success",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ab0e989609ed33e8fdf7add"
+      ]
+    },
+    {
+      "id": "ct-m1-6aae997bcbbc75bc76c92e49",
+      "predictionType": "listing_deal",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6aae997bcbbc75bc76c92e49",
+        "TransactionEnrichment.txId=6aae997bcbbc75bc76c92e49"
+      ]
+    },
+    {
+      "id": "ct-m2-6aae997bcbbc75bc76c92e49",
+      "predictionType": "request_match",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.requestCode=52280"
+      ]
+    }
+  ],
+  "totalPersisted": 37,
+  "agents": [
+    {
+      "agent": "PropertyAgent",
+      "model": "melka-property-v3",
+      "sample": "propertyCode=1105",
+      "result": {
+        "probability": null,
+        "graphNeighbors": 2
+      }
+    },
+    {
+      "agent": "RequestAgent",
+      "model": "melka-request-v1",
+      "sample": "requestId=6aaeb3e4b04b9d4babad4c51",
+      "result": {
+        "probability": null
+      }
+    },
+    {
+      "agent": "TransactionAgent",
+      "model": "melka-transaction-v2",
+      "sample": "txId=6aa8fc819aff63cef5b78cd8",
+      "result": {
+        "ok": true,
+        "propertyCode": "57327",
+        "graphPaths": 3,
+        "contractType": "اجاره نامه",
+        "contractPriceMilionToman": null
+      }
+    },
+    {
+      "agent": "ExpertAgent",
+      "model": "melka-expert-v1",
+      "sample": "personnelCode=بدون-کد-693d88f94bb9f44c0552e133",
+      "result": {
+        "probability": null
+      }
+    }
+  ],
+  "featureStore": {
+    "identity": {
+      "entityId": "59115",
+      "viaAgent1": {
+        "areaId": "614f7eb2a50555f0a54c3a14",
+        "areaName": "خاوران",
+        "price": 100000000,
+        "pricePerMeter": 0,
+        "areaMedianPricePerMeter": 500000,
+        "underpriceRatio": 1,
+        "propertyType": "آپارتمان",
+        "tradeType": "رهن و اجاره",
+        "meterage": 200,
+        "rooms": 3,
+        "age": null,
+        "hasElevator": false,
+        "hasParking": false,
+        "photoCount": null,
+        "hasVideo": false,
+        "descriptionLength": 0,
+        "descriptionKeywordScore": 0,
+        "publisherType": "unknown",
+        "publishedHoursAgo": 0,
+        "priceChangeCount": 0,
+        "previousPriceDelta": 0
+      },
+      "viaSharedStore": {
+        "areaId": "614f7eb2a50555f0a54c3a14",
+        "areaName": "خاوران",
+        "price": 100000000,
+        "pricePerMeter": 0,
+        "areaMedianPricePerMeter": 500000,
+        "underpriceRatio": 1,
+        "propertyType": "آپارتمان",
+        "tradeType": "رهن و اجاره",
+        "meterage": 200,
+        "rooms": 3,
+        "age": null,
+        "hasElevator": false,
+        "hasParking": false,
+        "photoCount": null,
+        "hasVideo": false,
+        "descriptionLength": 0,
+        "descriptionKeywordScore": 0,
+        "publisherType": "unknown",
+        "publishedHoursAgo": 0,
+        "priceChangeCount": 0,
+        "previousPriceDelta": 0
+      },
+      "identical": true
+    },
+    "sampledFeatureCount": 34,
+    "version": "shared-feature-store-v1"
+  }
+}

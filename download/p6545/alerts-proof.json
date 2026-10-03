@@ -1,0 +1,569 @@
+{
+  "case": "P6545-opportunity-alerts",
+  "council": "جلسه ۰۳۳ — BLOCK 1.4: ۵ هشدار واقعی روی دادهٔ زنده (آستانهٔ ۰٫۷ · صفر اجرای خودکار)",
+  "runAt": "2026-10-03T10:08:26.295Z",
+  "tier": 3,
+  "threshold": 0.7,
+  "backfill": {
+    "source": "backfill",
+    "evaluated": 90,
+    "alertsCreated": 89,
+    "topScores": [
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      0.75,
+      0.75
+    ]
+  },
+  "alerts": [
+    {
+      "id": "cmus8bhqc09skk7y1pd8p4th5",
+      "direction": "request_to_listing",
+      "listingCode": "35509",
+      "requestId": "6a82c37b2f01c45018133c79",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "95-150 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhqc09sjk7y1fmt4nxmv",
+      "direction": "request_to_listing",
+      "listingCode": "35104",
+      "requestId": "6a82c37b2f01c45018133c79",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "95-150 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhqa09shk7y1al02iqxs",
+      "direction": "request_to_listing",
+      "listingCode": "26649",
+      "requestId": "6a82c37b2f01c45018133c79",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "گلکار"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "95-150 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhqb09sik7y1iyffle5l",
+      "direction": "request_to_listing",
+      "listingCode": "27207",
+      "requestId": "6a82c37b2f01c45018133c79",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 0.99,
+          "weight": 0.2,
+          "note": "95-150 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhqa09sgk7y1zx1lbfx2",
+      "direction": "request_to_listing",
+      "listingCode": "25607",
+      "requestId": "6a82c37b2f01c45018133c79",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "95-150 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhpp09sfk7y1yjcetons",
+      "direction": "request_to_listing",
+      "listingCode": "27584",
+      "requestId": "6a81facab427c116f88038d3",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "توانیر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "180-350 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhpo09sek7y1j6kustx9",
+      "direction": "request_to_listing",
+      "listingCode": "25979",
+      "requestId": "6a81facab427c116f88038d3",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "کوی پزشکان آبرسان"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "180-350 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhpn09sck7y1kkfwk5t0",
+      "direction": "request_to_listing",
+      "listingCode": "23882",
+      "requestId": "6a81facab427c116f88038d3",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "180-350 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhpo09sdk7y1qw7ld9fp",
+      "direction": "request_to_listing",
+      "listingCode": "24136",
+      "requestId": "6a81facab427c116f88038d3",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "عباسی"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "180-350 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhpm09sbk7y113yn6tcq",
+      "direction": "request_to_listing",
+      "listingCode": "23733",
+      "requestId": "6a81facab427c116f88038d3",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "180-350 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhp209sak7y1gr6depnw",
+      "direction": "request_to_listing",
+      "listingCode": "58722",
+      "requestId": "6a81ee46b348d8b3674e3818",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "کوی زمرد"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-120 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhp209s9k7y163xu0sxm",
+      "direction": "request_to_listing",
+      "listingCode": "57775",
+      "requestId": "6a81ee46b348d8b3674e3818",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-120 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhoz09s7k7y1c3pmxwah",
+      "direction": "request_to_listing",
+      "listingCode": "57626",
+      "requestId": "6a81ee46b348d8b3674e3818",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-120 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhp009s8k7y1ko81e57u",
+      "direction": "request_to_listing",
+      "listingCode": "57689",
+      "requestId": "6a81ee46b348d8b3674e3818",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "فرشته جنوبی"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-120 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhoz09s6k7y1pc6o4ezw",
+      "direction": "request_to_listing",
+      "listingCode": "42070",
+      "requestId": "6a81ee46b348d8b3674e3818",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "فرشته شمالی"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-120 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhoe09s5k7y1gwy6gs7i",
+      "direction": "request_to_listing",
+      "listingCode": "36269",
+      "requestId": "6a81d1bc93146f2edd5e143c",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-130 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhoc09s3k7y1xg8v8lbt",
+      "direction": "request_to_listing",
+      "listingCode": "35104",
+      "requestId": "6a81d1bc93146f2edd5e143c",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-130 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhod09s4k7y11kkg84yp",
+      "direction": "request_to_listing",
+      "listingCode": "35511",
+      "requestId": "6a81d1bc93146f2edd5e143c",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-130 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhoc09s2k7y17zpvmhro",
+      "direction": "request_to_listing",
+      "listingCode": "26649",
+      "requestId": "6a81d1bc93146f2edd5e143c",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "گلکار"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-130 متر"
+        }
+      ]
+    },
+    {
+      "id": "cmus8bhob09s1k7y1ens15wvb",
+      "direction": "request_to_listing",
+      "listingCode": "25607",
+      "requestId": "6a81d1bc93146f2edd5e143c",
+      "score": 0.75,
+      "topReasons": [
+        {
+          "factor": "فاصله قیمت",
+          "value": 0.5,
+          "weight": 0.25,
+          "note": "بدون بازهٔ قیمت (خنثی)"
+        },
+        {
+          "factor": "نزدیکی جغرافیایی",
+          "value": 0.5,
+          "weight": 0.15,
+          "note": "ولیعصر"
+        },
+        {
+          "factor": "تناسب متراژ",
+          "value": 1,
+          "weight": 0.2,
+          "note": "100-130 متر"
+        }
+      ]
+    }
+  ],
+  "target": 5,
+  "passed": true,
+  "constraint": "صفر اجرای خودکار — فقط هشدار"
+}

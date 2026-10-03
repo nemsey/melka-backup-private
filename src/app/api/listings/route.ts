@@ -95,6 +95,31 @@ export async function POST(request: NextRequest) {
     // ثبت دستی ۵ گامی
     const result = await createListing(body, guard.personnelCode);
     await audit("LISTING_CREATE", guard.personnelCode, `id=${result.record?.id} ok=${result.ok}`);
+
+    // P6545/گام۱ (BLOCK 1.4) — رویداد فرصت: آگهی تازه روی تختهٔ سیاه + شنوندهٔ هشدار
+    // (صفر اجرای خودکار — فقط هشدار تطبیق ≥ ۰٫۷)
+    if (result.record?.id) {
+      try {
+        const { emitEvent } = await import("@/lib/intelligence/blackboard");
+        await emitEvent("listing.created", { listingId: result.record.id, source: "manual", actor: guard.personnelCode });
+        // تطبیق با درخواست‌های فعال — آگهی دستی کد ملک ARM ندارد؛ هشدار بر اساس آگهی منتشرشدهٔ تازه‌تر
+        const { db: appDb } = await import("@/lib/db");
+        const { OpportunityListener } = await import("@/core/matching/opportunity-listener");
+        const latestPublished = await appDb.propertyRecord.findFirst({
+          where: { status: "منتشر شده" },
+          orderBy: { syncedAt: "desc" },
+          select: { propertyCode: true },
+        });
+        if (latestPublished) {
+          const listener = new OpportunityListener(appDb, 3);
+          const alertReport = await listener.onListingCreated(latestPublished.propertyCode);
+          if (alertReport.alertsCreated > 0) {
+            await emitEvent("opportunity.alerted", { listingCode: latestPublished.propertyCode, alerts: alertReport.alertsCreated, topScore: alertReport.topScores[0] ?? null });
+          }
+        }
+      } catch { /* هشدار هرگز ثبت آگهی را نمی‌شکند */ }
+    }
+
     return Response.json({
       ok: true,
       id: result.record?.id,

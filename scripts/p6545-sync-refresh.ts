@@ -8,7 +8,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { restoreArmTokensFromVault } from "../src/lib/auth/arm-vault";
+import { JobStateService, JOB_IDS } from "../src/lib/melk-api/job-state";
 import { syncArmListingsCatalog, syncArmRequestsCatalog } from "../src/lib/melk-api/arm-catalog";
 
 const db = new PrismaClient();
@@ -40,9 +40,26 @@ async function main() {
   // ۴-الف) اگر توکن منقضی بود → تمدید با refresh token (زنجیرهٔ ماندگاری P6.5-11)
   let tokenRefreshed = false;
   let refreshError: string | null = null;
+  const withDeadline = async <T>(p: Promise<T>, ms: number, label: string): Promise<T | { __timeout: true; label: string }> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<{ __timeout: true; label: string }>((r) => {
+      timer = setTimeout(() => r({ __timeout: true as const, label }), ms);
+    });
+    try {
+      return await Promise.race([p, timeout]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
   if (token) {
-    // پروب سریع اعتبار توکن: صفحهٔ ۱ کاتالوگ آگهی‌ها
-    const probe = await syncArmListingsCatalog(token, { pageSize: 1, maxPages: 1 });
+    console.log("[sync-refresh] probing token validity (deadline 60s)...");
+    const probe = (await withDeadline(syncArmListingsCatalog(token, { pageSize: 1, maxPages: 1 }), 150_000, "probe")) as any;
+    if (probe.__timeout) {
+      console.log("[sync-refresh] probe TIMEOUT — ARM unresponsive");
+      refreshError = "سرویس ARM در مهلت ۶۰ ثانیه پاسخ نداد (کندی/معلق‌بودن سمت منبع) + توکن منقضی";
+      await new JobStateService(db).upsert({ jobId: "catalog-listings", jobKind: "catalog", status: "failed", detail: { error: "TIMEOUT-60s", note: "ARM unresponsive + expired token" } });
+    } else {
+    console.log("[sync-refresh] probe done:", probe.ok, (probe as any).errorCode ?? "");
     if (!probe.ok && probe.errorCode === "UNAUTHORIZED" && refreshToken) {
       try {
         const { getMelkProvider } = await import("../src/lib/melk-api/provider");
@@ -62,6 +79,7 @@ async function main() {
       } catch (e: unknown) {
         refreshError = e instanceof Error ? e.message : String(e);
       }
+    }
     }
   }
 
@@ -86,22 +104,30 @@ async function main() {
     },
   };
 
+  // P6545/BLOCK 1.1 — ثبت وضعیت کار در DB (پایدار در برابر ری‌استارت)
+  const jobs = new JobStateService(db);
   if (!token) {
     result.ok = false;
     result.error = "هیچ توکن ARM در خزانهٔ ماندگار (master) موجود نیست — ورود OTP مالک لازم است؛ صفر شروع از صفر رخ نداده (چک‌پوینت‌ها دست‌نخورده‌اند)";
   } else {
     // ۳) همگام‌سازی کاتالوگ با ادامه از چک‌پوینت (resumedFromPage در نتیجه)
     try {
-      const listings = await syncArmListingsCatalog(token, { pageSize: 500, maxPages: 6 });
+      const listings = (await withDeadline(syncArmListingsCatalog(token, { pageSize: 500, maxPages: 2 }), 240_000, "listings")) as any;
+      if (listings.__timeout) throw new Error("TIMEOUT-90s: ARM unresponsive");
       result.listings = listings;
+      await jobs.upsert({ jobId: JOB_IDS.catalogListings, jobKind: "catalog", status: listings.ok ? (listings.checkpoint?.phase === "complete" ? "done" : "running") : "failed", lastCompletedPage: listings.checkpoint?.lastCompletedPage ?? 0, totalPages: listings.checkpoint?.totalPages ?? 0, detail: { pages: listings.pages, created: listings.created, updated: listings.updated, errorCode: (listings as any).errorCode ?? null } });
     } catch (e: unknown) {
       result.listings = { ok: false, error: e instanceof Error ? e.message : String(e) };
+      await jobs.upsert({ jobId: JOB_IDS.catalogListings, jobKind: "catalog", status: "failed", detail: { error: String(e) } });
     }
     try {
-      const requests = await syncArmRequestsCatalog(token, { pageSize: 500, maxPages: 6 });
+      const requests = (await withDeadline(syncArmRequestsCatalog(token, { pageSize: 500, maxPages: 2 }), 240_000, "requests")) as any;
+      if (requests.__timeout) throw new Error("TIMEOUT-90s: ARM unresponsive");
       result.requests = requests;
+      await jobs.upsert({ jobId: JOB_IDS.catalogRequests, jobKind: "catalog", status: requests.ok ? (requests.checkpoint?.phase === "complete" ? "done" : "running") : "failed", lastCompletedPage: requests.checkpoint?.lastCompletedPage ?? 0, totalPages: requests.checkpoint?.totalPages ?? 0, detail: { pages: requests.pages, created: requests.created, updated: requests.updated, errorCode: (requests as any).errorCode ?? null } });
     } catch (e: unknown) {
       result.requests = { ok: false, error: e instanceof Error ? e.message : String(e) };
+      await jobs.upsert({ jobId: JOB_IDS.catalogRequests, jobKind: "catalog", status: "failed", detail: { error: String(e) } });
     }
   }
 
@@ -123,4 +149,4 @@ async function main() {
   console.log(JSON.stringify({ ok: result.ok ?? true, stalenessHoursBefore, stalenessHoursAfter: result.stalenessHoursAfter, listings: (result.listings as any)?.ok, requests: (result.requests as any)?.ok }, null, 2));
 }
 
-main().catch((e) => { console.error("FATAL", e); process.exit(1); }).finally(() => db.$disconnect());
+main().then(() => { db.$disconnect().finally(() => process.exit(0)); }).catch((e) => { console.error("FATAL", e); db.$disconnect().finally(() => process.exit(1)); });

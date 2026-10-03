@@ -101,7 +101,11 @@ export type IntelligenceEventName =
   | "diagnosis.completed"
   | "repair.proposed"
   | "repair.executed"
-  | "repair.rolled_back";
+  | "repair.rolled_back"
+  // P6545/گام۱ (BLOCK 1.4) — رویدادهای فرصت (جلسه ۰۳۳) — افزودنی
+  | "listing.created"
+  | "request.created"
+  | "opportunity.alerted";
 
 export interface IntelligenceEvent {
   name: IntelligenceEventName;
