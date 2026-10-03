@@ -1912,3 +1912,28 @@ Work Log:
 
 Stage Summary:
 - BLOCK 0 بسته شد؛ ورودی‌های واقعی و شواهد اولیه جمع شد؛ سه مشکل واقعی کاندید برای P10 ثبت شد (کالیبراسیون سطل 0.4-0.6 · Brier 0.2255 > هدف 0.20 · publish 412 CAExited)
+
+---
+Task ID: p6537-intelligence-core-027 (گزارش اصلی)
+Agent: main (Super Z / GLM)
+Task: اجرای کامل مصوبهٔ شورای عالی ملکا «سند راهبردی یکپارچه ۰۲۷» روی آخرین ورژن — بازسازی یکپارچهٔ فازهای ۷ تا ۱۱ هستهٔ هوش (P7 یادگیری از نتیجه · P8 تصمیم ایمن · P9 حاکمیت · P10 خودتشخیصی · P11 خودترمیمی کنترل‌شده) طبق قانون تثبیت ۱۴۰۵-۰۳۱
+
+Work Log:
+- **BLOCK 0 (بند و):** HEAD=17d3ec3 · مهر preview=76ed3d4-20261003-0629 · کامیت‌ها و بستهٔ بقای P6544 موجود · دیمن آینهٔ ۶ساعته زنده (پوش ok) · شمارش‌های کلیدی DB ثبت شد · بکاپ گرم upload/.survival/pre-p6537-warm-1791013351518.db (md5 a70b6bf3)
+- **P7 (سند ۰۲۷ §۲):** قراردادهای عین سند (OutcomeRecord/EvaluationReport/LearningPolicy/DriftReport/ShadowEvaluation) + سه موتور (Outcome: جمع‌آوری/پوشش/پیوند · Evaluation: Brier/LogLoss/Accuracy/Calibration-10/ECE/Lift/compareModels با نمونهٔ کم سخت‌گیرانه‌تر · Learning: Tier-aware با گرادیان Brier و PolicyChangeLog و rollback) + نظام Tier پنج‌لایه (جلسه ۰۲۵) + Shadow با چهار شرط ارتقا + DriftDetector سه‌گانه — ۹۷ تست
+- **P8 (§۳):** DecisionRecord با قفل نوعی (requiresApproval:true / autoExecute:false) + چهار ناحیهٔ احتمال + سه قاعدهٔ دامنه + گزینه‌های رد‌شده با دلیل + ActionPlanner پنج‌الگویی با simulate/estimateImpact/rollbackPlan + Safety هفت‌قاعده‌ای (SAF-001..007) — ۷۳ تست
+- **P9 (§۴):** PolicyEvaluation با قواعد حکم عین سند (keep/adjust/retire) + GovernanceEngine با ۱۵ قاعده GOV-* در ۵ دامنه و سه حالت enforcement — ۵۲ تست
+- **P10 (§۵):** SelfDiagnosis با ۲۵ بررسی اجباری در ۵ دسته (داده۷/مدل۶/موتور۵/امنیت۴/حاکمیت۳) + HealthScore + هشدار بحرانی بلافاصله + توصیه‌ها — ۶۵ تست
+- **P11 (§۶):** SelfRepair (هر fail→پیشنهاد، هر warn سه‌بار→پیشنهاد، اولویت‌بندی) + ApprovalGate سه‌شرطی + Executor (سقف ۱/۲۴ساعت + بکاپ خودکار + rollback خودکار در نتیجهٔ منفی) — ۵۱ تست
+- **یکپارچگی (§۷-۸):** Blackboard (append-only + TTL۳۰روز + هش md5 هر ورودی + راستی‌آزمایی زنجیره) در src/lib/intelligence/blackboard.ts + Event Bus با ۱۲ رویداد (هر انتشار روی تخته) + Evidence Network (captureEvidence با md5) + ارکستراتور core-cycle (حلقهٔ بزرگ روی ۳۸۴ پیوند واقعی ARM) + به‌روزرسانی /api/intelligence/status (چرخهٔ کامل P7→P11) + کارت مغز فازهای ۷-۱۱ با Tier و خودتشخیصی — ۳۸ تست
+- **روح روی دادهٔ واقعی (شواهد mohr-shode در download/p6537/):** Tier=۳ (۳۸۴ پیامد، ۱ دوره) · Brier=۰٫۲۲۵۵ · Lift=+۹٫۸٪ · حکم better · سایه بدون ارتقا (قفل شورا) · ۱۰ تصمیم واقعی با ایمنی همه · ۵ سیاست با هر سه حکم · حاکمیت ۱۵/۱۵ · خودتشخیصی: degraded ۸۶/۱۰۰ با **۴ مشکل واقعی** (کالیبراسیون ۰٫۵۵۵ fail · رانش ۰٫۱۳۹ fail · Brier>هدف warn · کهنگی داده ۸۷h fail) · ۳ پیشنهاد ترمیم pending با دروازهٔ سه‌شرطی · صفر اجرا
+- **اسناد روح:** docs/P7-SOUL.md تا P11-SOUL.md + INTELLIGENCE-CORE-SOUL.md (دروازه‌های P7-D تا INTELLIGENCE-D همه با شاهد)
+- **راستی‌آزمایی زنده:** /api/intelligence/status با نشست واقعی: tier 3 · 384 outcomes · brier 0.2255 · 10 decisions safetyAllPassed · gov 15/15 · 4 problems · 3 proposals · 0 executed ✓ · کارت مغز در مرورگر واقعی 412×915 با DOM-اثبات (فاز ۷ ✓ ۸ ✓ ۹ ✓ ۱۰ ✓ ۱۱ ✓ · Tier ۳) + ۲ اسکرین‌شات
+- **کیفیت:** کل مجموعه **۱۴۹۴ pass / ۲ fail ×۲ پیاپی یکسان** (۲ خطای باقی‌مانده = تست‌های fa-sort قدیمی از کامیت 76ed3d4 با انتظار غلط ریاضی — پیاده‌سازی درست است؛ راستی‌آزمایی مستقل در نقشهٔ وقایع؛ طبق بند الف فقط گزارش) · tsc صفر · ESLint صفر · ۴ گارد PASS · بیلد production سبز
+- **قانون ۰۳۱:** کامیت‌های پله‌ای ۵گانه · بکاپ گرم پیش‌کار · hash بازگشت 17d3ec3 · بستهٔ بقا P6537-20261003 (بند ج کامل: bundle+DB+worklog+manifest+env+شواهد+وابستگی‌ها) · زنجیرهٔ هش chainIndex=2 با previousChainMd5=c0297503 (بند ک) · نقشهٔ وقایه کامل با ۸ رخداد صادقانه (بند ح)
+- **کامیت‌ها:** 5cc24b3 (موتورها+تست‌ها) · fcce52e (یکپارچگی+روح+شواهد) · 0335925 (دروازه‌کیفیت) · f6edb4f (شواهد بصری)
+
+Stage Summary:
+- سند ۰۲۷ کامل اجرا شد: هستهٔ هوش با ۱۱ موتورِ بدنه‌دار + روحِ شاهد‌دار — فازهای ۷ تا ۱۱ بازسازی و یکپارچه شدند؛ دو قفل ابدی (صفر auto_execute + صفر ترمیم بدون شورا) در سطح نوع، موتور، گارد و تست قفل شده‌اند
+- سیستم برای اولین بار خودش را شناخت و صادقانه گزارش داد: ۴ مشکل واقعی (نه نمایشی) + ۳ پیشنهاد ترمیم در انتظار شورا — «خودآگاهی بدون صداقت، نمایش است» عملی شد
+- published_build_id: 0335925-20261003-0801 (بیلد production شاهد‌دار) · مهر preview پس از نوسازی: 0335925-20261003-0802 = HEAD ✓
