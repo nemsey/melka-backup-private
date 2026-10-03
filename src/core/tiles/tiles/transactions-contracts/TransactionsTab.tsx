@@ -53,7 +53,7 @@ import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/cor
 import { classifyContract, CONTRACT_KIND_FILTER_LABELS, CONTRACT_KIND_FILTER_VALUES } from "@/lib/contract-classify";
 import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull } from "@/lib/format";
 // P6547/گام پنجم — نظام رنگ مشترک فیلتر↔فهرست (هارمونی تضمینی) + شعبهٔ PM در حق‌السهم
-import { branchBadgeClass } from "@/lib/value-colors";
+import { branchBadgeClass, valueSoftClass, valueSolidClass } from "@/lib/value-colors";
 import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
@@ -525,10 +525,9 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                       key={value}
                       type="button"
                       aria-pressed={active}
-                      className={`h-8 px-3 rounded-full border text-[11px] font-medium transition-colors ${
-                        active
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:bg-muted"
+                      // P6547/گام پنجم-ب — رنگ متمایز هر نوع قرارداد (هارمونی با ستون فهرست)
+                      className={`h-8 px-3 rounded-full text-[11px] font-medium transition-colors ${
+                        active ? valueSolidClass(value) : `${valueSoftClass(value)} opacity-80 hover:opacity-100`
                       }`}
                       onClick={() => toggleContractKind(value)}
                     >
@@ -681,7 +680,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                       {/* ۷ — نوع قرارداد: یکی از چهار نوع یا «بدون قرارداد» (classifyContract) */}
                       <TableCell className="text-xs whitespace-nowrap">
                         {kind !== "ثبت‌نشده" ? (
-                          <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 text-[11px]">{kind}</Badge>
+                          <Badge variant="secondary" className={`text-[11px] border-0 ${valueSoftClass(kind)}`}>{kind}</Badge>
                         ) : (
                           <span className="text-muted-foreground text-[11px]">— بدون قرارداد</span>
                         )}

@@ -295,7 +295,12 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                 <SelectContent>
                   <SelectItem value="all">همهٔ شعب</SelectItem>
                   {TABRIZ_BRANCHES.map((b) => (
-                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                    <SelectItem key={b} value={b}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className={`inline-block size-2.5 rounded-full ${branchBadgeClass(b)}`} aria-hidden />
+                        {b}
+                      </span>
+                    </SelectItem>
                   ))}
                   <SelectItem value="unset">{BRANCH_UNSET}</SelectItem>
                 </SelectContent>

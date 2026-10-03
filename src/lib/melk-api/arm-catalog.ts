@@ -44,6 +44,8 @@ import {
   type RequestRepository,
   type SyncCheckpointDTO,
 } from "@/core/repositories";
+// P6547/گام دوم — نقشه‌های شناسه→نام فهرست‌های مرجع سامانه ARM
+import type { TypeMaps } from "./type-registry";
 
 // ==========================================================================
 // تنظیمات خط لوله
@@ -185,12 +187,25 @@ export function refName(v: unknown): string | null {
   return typeof name === "string" && name.trim() ? name.trim() : null;
 }
 
+/** P6547/گام دوم — تفکیک نام فیلد مرجع: {name} آبجکت یا شناسهٔ خام با نقشهٔ رجیستری
+ *  (کشف زنده: tradeType/buildingType/… در ردیف فهرست درخواست «شناسهٔ خام»اند؛
+ *  فهرست‌های مرجع building-types/list و property-types/list و … نام‌ها را می‌دهند) */
+function resolveRefName(v: unknown, map?: Map<string, string>): string | null {
+  if (v && typeof v === "object") return refName(v);
+  if (typeof v === "string" && v.trim()) {
+    const id = v.trim();
+    return map?.get(id) ?? null;
+  }
+  return null;
+}
+
 /** ردیف فهرست درخواست ARM → ArmRequestBulkRow (لایه ۱ — بدون تماس درخواست‌دهنده)
  *  P6547/گام دوم-۱/۲ — ساختار ثبت درخواست کارشناسان (عین requests/list) کامل استخراج می‌شود:
  *  area[] + line[] + totalPrice_from/to + tradeType + buildingType + propertyType +
  *  userPaymentMethod + userSeriousity + urgent/luxury/changeable — همه از خود ردیف فهرست
- *  (شاهکار کشف: requests/details روی سرور ARM خطای 500 می‌دهد؛ خود فهرست غنی است) */
-export function mapArmRequestListRow(row: RawRow): ArmRequestBulkRow | null {
+ *  (شاهکار کشف: requests/details روی سرور ARM خطای 500 می‌دهد؛ خود فهرست غنی است)
+ *  typeMaps — نقشه‌های شناسه→نام فهرست‌های مرجع (اختیاری؛ نبود = ستون نام خالی می‌ماند) */
+export function mapArmRequestListRow(row: RawRow, typeMaps?: TypeMaps): ArmRequestBulkRow | null {
   const id = pickStr(row, ["_id", "id"]);
   const requestCode = pickStr(row, ["code", "requestCode"]);
   // کد درخواست کلید طبیعی است — بدون آن ردیف معتبر نیست
@@ -203,12 +218,12 @@ export function mapArmRequestListRow(row: RawRow): ArmRequestBulkRow | null {
   // P6547/گام دوم — بازهٔ قیمت متقاضی از خود ردیف فهرست (totalPrice_from/totalPrice_to)
   const priceFrom = typeof row.totalPrice_from === "number" && row.totalPrice_from > 0 ? row.totalPrice_from : null;
   const priceTo = typeof row.totalPrice_to === "number" && row.totalPrice_to > 0 ? row.totalPrice_to : null;
-  // P6547/گام دوم — دسته‌بندی/نوع ملک/نوع ساختمان از آبجکت‌های مرجع خود ردیف
-  const tradeTypeName = refName(row.tradeType);
-  const buildingTypeName = refName(row.buildingType);
-  const propertyTypeName = refName(row.propertyType);
-  const paymentMethodName = refName(row.userPaymentMethod);
-  const seriousnessName = refName(row.userSeriousity);
+  // P6547/گام دوم — دسته‌بندی/نوع ملک/نوع ساختمان/پرداخت/جدیت: {name} یا شناسه + نقشهٔ رجیستری
+  const tradeTypeName = resolveRefName(row.tradeType, typeMaps?.tradeType);
+  const buildingTypeName = resolveRefName(row.buildingType, typeMaps?.buildingType);
+  const propertyTypeName = resolveRefName(row.propertyType, typeMaps?.propertyType);
+  const paymentMethodName = resolveRefName(row.userPaymentMethod, typeMaps?.paymentMethod);
+  const seriousnessName = resolveRefName(row.userSeriousity, typeMaps?.seriousness);
 
   return {
     id: id ?? requestCode!,
@@ -549,6 +564,9 @@ export async function syncArmRequestsCatalog(
     let page = startPage;
     let endPage = page; // سقف نسبی: maxPages صفحه از نقطهٔ شروع (نه سقف مطلق شمارهٔ صفحه)
     const pagesBudget = cycle.resumed ? Math.max(1, maxPages - 1) : maxPages;
+    // P6547/گام دوم — نقشه‌های شناسه→نام فهرست‌های مرجع (tradeType/buildingType/…) — یک‌بار در هر اجرا
+    const { loadTypeMaps } = await import("./type-registry");
+    const typeMaps = await loadTypeMaps().catch(() => undefined);
     do {
       const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.requestsList, page, pageSize, savedTotalAtSource);
       out.totalAtSource = total;
@@ -556,7 +574,7 @@ export async function syncArmRequestsCatalog(
       endPage = Math.min(tp, page + pagesBudget - 1);
       out.pages = page;
       const inputs = rows
-        .map((r) => mapArmRequestListRow(r))
+        .map((r) => mapArmRequestListRow(r, typeMaps))
         .filter((r): r is ArmRequestBulkRow => r !== null);
       out.fetched += inputs.length;
       const stats = await repo.upsertArmBulk(inputs, { sourceRunId: runId });

@@ -20,6 +20,9 @@ import {
 } from "./analyzers";
 import { faNumber, faMonthLabel } from "@/lib/format";
 import { enrichExpertRows, buildTopExpertsInsight } from "@/lib/melk-api/expert-enrichment";
+// P6547/گام چهارم-۴ — بینش پوشش اطلاعات فهرست (تمام ستون‌ها)
+import { buildCoverageInsight, type CoverageColumnInput } from "./coverage-insight";
+import { readPmBranchMap } from "@/lib/branch-store";
 
 /** وابستگی‌های تزریق‌پذیر ایجنت کارشناسان */
 export interface ExpertAgentDeps {
@@ -32,7 +35,7 @@ export class ExpertAgent extends BaseLearningAgent {
   readonly name = "ایجنت تحلیل کارشناسان";
   /** P6.5-11 (بند ج) — VISIT_LEADERSHIP از کاشی حذف‌شدهٔ بازدیدها مهاجرت کرد
    *  P6.5-12 (بند پ) — DEAL_ACTIVITY: فعال‌ترین کارشناسان بر اساس تعداد معامله */
-  readonly insightDomains = ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK", "VISIT_LEADERSHIP", "DEAL_ACTIVITY"] as const;
+  readonly insightDomains = ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK", "VISIT_LEADERSHIP", "DEAL_ACTIVITY", "COVERAGE"] as const;
 
   private readonly expertsRepo: ExpertRepository;
   private readonly visitsRepo: VisitRepository;
@@ -88,6 +91,33 @@ export class ExpertAgent extends BaseLearningAgent {
       }
     } catch {
       // غنی‌سازی بین‌سامانه‌ای در دسترس نیست — بینش حذف می‌شود، نه کل ایجنت
+    }
+
+    // ---- P6547/گام چهارم-۴: پوشش اطلاعات فهرست کارشناسان (تمام ستون‌ها) ----
+    try {
+      const listRows = experts.map((e) => ({
+        id: e.id, personnelCode: e.personnelCode, fullName: e.fullName, mobile: e.mobile, role: e.role,
+        businessTitle: e.businessTitle, creator: e.creator, active: e.active, createdAt: e.createdAt, interactionTotal: 0,
+      }));
+      const [enriched, pmBranchMap] = await Promise.all([enrichExpertRows(listRows, null), readPmBranchMap()]);
+      const n = enriched.rows.length;
+      const covCols: CoverageColumnInput[] = [
+        { title: "نام کامل", filled: enriched.rows.filter((r) => r.fullName?.trim()).length, total: n, fillPath: "رجیستری ARM (realtors/list)" },
+        { title: "موبایل", filled: enriched.rows.filter((r) => r.mobile?.trim()).length, total: n, fillPath: "رجیستری ARM + پشتیبان PM" },
+        { title: "کد پرسنلی", filled: enriched.rows.filter((r) => r.pmCode ?? r.personnelCode).length, total: n, fillPath: "سامانهٔ PM (realtors/list — code)" },
+        { title: "شعبه", filled: enriched.rows.filter((r) => Boolean(pmBranchMap[r.fullName])).length, total: n, fillPath: "سامانهٔ PM (personnelInfo.branchId)" },
+        { title: "نقش پرسنلی", filled: enriched.rows.filter((r) => r.roleTitle?.trim()).length, total: n, fillPath: "سامانهٔ PM (personnelInfo — jobTitle)" },
+        { title: "تاریخ استخدام", filled: enriched.rows.filter((r) => r.hireDate?.trim()).length, total: n, fillPath: "سامانهٔ PM (personnelInfo.employeementInfo.date)" },
+        { title: "نوع همکاری", filled: enriched.rows.filter((r) => r.employmentType?.trim()).length, total: n, fillPath: "سامانهٔ PM (employeementInfo.typeFa)" },
+        { title: "شماره داخلی", filled: enriched.rows.filter((r) => r.voipExtension?.trim()).length, total: n, fillPath: "سامانهٔ PM (voipInfo.extentionNumber)" },
+        { title: "مبایعه‌نامه", filled: enriched.rows.filter((r) => r.saleCount > 0).length, total: n, fillPath: "صورت‌وضعیت‌های ARM (تطبیق هولوگرام/کد)" },
+        { title: "اجاره‌نامه", filled: enriched.rows.filter((r) => r.rentCount > 0).length, total: n, fillPath: "صورت‌وضعیت‌های ARM (تطبیق هولوگرام/کد)" },
+        { title: "وضعیت فعال", filled: enriched.rows.filter((r) => typeof r.active === "boolean").length, total: n, fillPath: "رجیستری ARM" },
+      ];
+      const covCard = buildCoverageInsight("کارشناسان ملک تبریز", "ex-list-coverage", covCols);
+      if (covCard) cards.push(covCard);
+    } catch {
+      // غنی‌سازی در دسترس نیست — بینش پوشش حذف می‌شود، نه کل ایجنت
     }
 
     // ---- P6.5-11 (بند ج): VISIT_LEADERSHIP — بررسی‌کنندگان پیشرو (مهاجرت از کاشی بازدیدها) ----

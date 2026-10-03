@@ -12,6 +12,7 @@ import { armCall } from "../src/lib/melk-api/client";
 import { getMelkApiConfig } from "../src/lib/melk-api/config";
 import { MELK_ENDPOINTS } from "../src/lib/melk-api/endpoints";
 import { mapArmRequestListRow } from "../src/lib/melk-api/arm-catalog";
+import { loadTypeMaps, type TypeMaps } from "../src/lib/melk-api/type-registry";
 import type { ArmRequestBulkRow } from "../src/core/repositories/interfaces/bulk-write.repository";
 
 const db = new PrismaClient();
@@ -40,7 +41,7 @@ async function upsertRows(inputs: ArmRequestBulkRow[]): Promise<{ created: numbe
   return { created, updated };
 }
 
-async function worker(ARM_TOKEN: string, cfg: ReturnType<typeof getMelkApiConfig>, workerId: number, pages: number[], results: PageResult[]): Promise<void> {
+async function worker(ARM_TOKEN: string, cfg: ReturnType<typeof getMelkApiConfig>, workerId: number, pages: number[], results: PageResult[], typeMaps?: TypeMaps): Promise<void> {
   for (const page of pages) {
     const t0 = Date.now();
     let attempts = 0;
@@ -57,7 +58,7 @@ async function worker(ARM_TOKEN: string, cfg: ReturnType<typeof getMelkApiConfig
         });
         const d = (res.data ?? {}) as Record<string, unknown>;
         const list = Array.isArray(d["list"]) ? (d["list"] as Record<string, unknown>[]) : [];
-        const inputs = list.map((r) => mapArmRequestListRow(r)).filter((r): r is ArmRequestBulkRow => r !== null);
+        const inputs = list.map((r) => mapArmRequestListRow(r, typeMaps)).filter((r): r is ArmRequestBulkRow => r !== null);
         const { created, updated } = await upsertRows(inputs);
         results.push({ page, ok: true, rows: inputs.length, created, updated, ms: Date.now() - t0 });
         if (workerId === 0 && results.length % 10 === 0) {
@@ -96,9 +97,12 @@ async function main() {
   const chunks: number[][] = Array.from({ length: WORKERS }, () => []);
   allPages.forEach((p, i) => chunks[i % WORKERS].push(p));
 
+  // P6547 — نقشه‌های شناسه→نام فهرست‌های مرجع (فروش/مسکونی/آپارتمان/نقدی/خیلی زیاد…)
+  const typeMaps = await loadTypeMaps().catch(() => undefined);
+  console.log("type maps loaded:", typeMaps ? `tradeType=${typeMaps.tradeType.size} propertyType=${typeMaps.propertyType.size}` : "none");
   const results: PageResult[] = [];
   const t0 = Date.now();
-  await Promise.all(chunks.map((pages, i) => worker(ARM_TOKEN, cfg, i, pages, results)));
+  await Promise.all(chunks.map((pages, i) => worker(ARM_TOKEN, cfg, i, pages, results, typeMaps)));
 
   const ok = results.filter((r) => r.ok);
   const failed = results.filter((r) => !r.ok);
@@ -108,6 +112,10 @@ async function main() {
     withLine: await db.requestRecord.count({ where: { lineNamesJson: { not: null } } }),
     withPrice: await db.requestRecord.count({ where: { priceFrom: { not: null } } }),
     withTrade: await db.requestRecord.count({ where: { tradeTypeName: { not: null } } }),
+    withProperty: await db.requestRecord.count({ where: { propertyTypeName: { not: null } } }),
+    withBuilding: await db.requestRecord.count({ where: { buildingTypeName: { not: null } } }),
+    withSeriousness: await db.requestRecord.count({ where: { userSeriousityName: { not: null } } }),
+    withPayment: await db.requestRecord.count({ where: { userPaymentMethodName: { not: null } } }),
     withUrgent: await db.requestRecord.count({ where: { urgent: { not: null } } }),
   };
   // توزیع مناطق — دادهٔ جدول «قطب‌های عرضه درخواست»
