@@ -1,0 +1,26 @@
+{
+  "case": "P6545-final-stamp",
+  "stampedAt": "2026-10-03T10:41:33.016271+00:00",
+  "head": "f120a30a0fc0ce87defaf56292b492b79f7f9831",
+  "preview": {
+    "url": "https://preview-chat-a8de3bf8-675e-4118-a187-43577994e924.space-z.ai",
+    "http": 200,
+    "buildId": "f120a30-20261003-1040",
+    "gitSha": "f120a30",
+    "equalsHead": true
+  },
+  "publish": {
+    "url": "https://r1a5k87hzbg0-d.space-z.ai",
+    "http": 412,
+    "status": "412 CAExited — مصنوع استقرار پلتفرم (معلّق طبق تصمیم شورا؛ پایش ۸ساعته فعال؛ صفر تغییر کد)"
+  },
+  "mirror": {
+    "remote": "github.com/nemsey/melka-backup-private",
+    "verified": true
+  },
+  "survival": {
+    "package": "upload/.survival/P6545-20261003",
+    "chainIndex": 3,
+    "chainMd5": "495b9924c93cd8544f097350c328cad9"
+  }
+}

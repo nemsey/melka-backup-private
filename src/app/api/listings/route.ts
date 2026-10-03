@@ -1,0 +1,136 @@
+/**
+ * /api/listings — کاشی «آگهی»
+ * ------------------------------------------------------
+ * GET  — فهرست فایل‌های آگهی + آمار + فهرست‌های مرجع ۵ گامی (متا)
+ * POST — ثبت دستی فایل آگهی (گام‌به‌گام ۵ مرحله‌ای — عین فرم آرم)
+ */
+
+import { NextRequest } from "next/server";
+import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { MelkApiError } from "@/lib/melk-api/types";
+import { audit } from "@/lib/auth/session";
+// P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
+import { ownerLoginPath, personalScopeWhere, resolveEntityAccess } from "@/lib/access/scope";
+import { witnessScopedRead } from "@/lib/audit";
+import { createListing, listListings, importDivarAdAsListing, importRegisteredDivarAds } from "@/lib/listing/store";
+import {
+  TRADE_TYPES, PROPERTY_TYPES, BUILDING_TYPES, CHANGEABLE_WITH,
+  FILE_FINDINGS, FILE_TYPES, USER_SERIOUSNESS, DESIRABILITY_LEVELS, PRICE_EVALUATIONS, SELL_REASONS,
+  type ListingUpsertInput,
+} from "@/lib/listing/types";
+
+export async function GET(request: NextRequest) {
+  const guard = await requireSessionAsync(request);
+  if (guard instanceof MelkApiError) return errorResponse(guard);
+
+  try {
+    const url = new URL(request.url);
+    const source = url.searchParams.get("source");
+    const filter: { source?: "manual" | "divar" } | undefined = source === "manual" || source === "divar" ? { source } : undefined;
+
+    // درون‌ریزی خودکار فایل‌های تأییدشده دیوار (بخش «ب») — idempotent
+    await importRegisteredDivarAds(guard.personnelCode).catch(() => undefined);
+
+    // P6.5-04-i — دامنه از helper مرکزی: مالک ⇒ صفر فیلتر (همهٔ فایل‌ها)؛
+    // مشاور ⇒ فقط فایل‌های خودش (ماتریس §۵.۳)؛ DENY_ALL ⇒ fail-closed
+    const access = resolveEntityAccess(guard, "listing");
+    const scopeWhere = personalScopeWhere(access);
+    if (scopeWhere === null) {
+      await witnessScopedRead(guard, "listing", 0, access.isOwnerRead, ownerLoginPath(guard));
+      return Response.json({ ok: true, rows: [], stats: { total: 0, manual: 0, fromDivar: 0, drafts: 0, crmTransferred: 0, instagramPublished: 0, pendingBoth: 0 }, meta: { tradeTypes: TRADE_TYPES, propertyTypes: PROPERTY_TYPES, buildingTypes: BUILDING_TYPES, changeWith: CHANGEABLE_WITH, fileFindings: FILE_FINDINGS, fileTypes: FILE_TYPES, userSeriousness: USER_SERIOUSNESS, desirabilityLevels: DESIRABILITY_LEVELS, priceEvaluations: PRICE_EVALUATIONS, sellReasons: SELL_REASONS }, requirements: { armToken: Boolean(guard.armTokens?.accessToken), message: guard.armTokens?.accessToken ? "توکن سامانه آرم موجود است — انتقال به CRM آماده است." : "برای انتقال به CRM باید با «کد پرسنلی + پیامک» وارد شوید (ورود مدیر محلی توکن آرم ندارد)." } });
+    }
+    const { rows, stats } = await listListings(filter, scopeWhere ?? undefined);
+    await witnessScopedRead(guard, "listing", rows.length, access.isOwnerRead, ownerLoginPath(guard));
+    return Response.json({
+      ok: true,
+      rows,
+      stats,
+      meta: {
+        tradeTypes: TRADE_TYPES,
+        propertyTypes: PROPERTY_TYPES,
+        buildingTypes: BUILDING_TYPES,
+        changeWith: CHANGEABLE_WITH,
+        fileFindings: FILE_FINDINGS,
+        fileTypes: FILE_TYPES,
+        userSeriousness: USER_SERIOUSNESS,
+        desirabilityLevels: DESIRABILITY_LEVELS,
+        priceEvaluations: PRICE_EVALUATIONS,
+        sellReasons: SELL_REASONS,
+      },
+      requirements: {
+        armToken: Boolean(guard.armTokens?.accessToken),
+        message: guard.armTokens?.accessToken
+          ? "توکن سامانه آرم موجود است — انتقال به CRM آماده است."
+          : "برای انتقال به CRM باید با «کد پرسنلی + پیامک» وارد شوید (ورود مدیر محلی توکن آرم ندارد).",
+      },
+    });
+  } catch (err) {
+    const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error)?.message ?? "خطای سروری", 500, false);
+    return errorResponse(e);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const guard = await requireSessionAsync(request);
+  if (guard instanceof MelkApiError) return errorResponse(guard);
+
+  let body: ListingUpsertInput & { divarToken?: string; importDivar?: boolean };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return errorResponse(new MelkApiError("UNKNOWN", "بدنه درخواست نامعتبر است.", 400, false));
+  }
+
+  try {
+    // درون‌ریزی یک آگهی دیوار خاص (کلید ثبت از فایل‌یابی)
+    if (body.importDivar && body.divarToken) {
+      const rec = await importDivarAdAsListing(body.divarToken, guard.personnelCode);
+      if (!rec) {
+        return errorResponse(new MelkApiError("NOT_FOUND", "این آگهی دیوار یافت نشد.", 404, false));
+      }
+      await audit("LISTING_IMPORT_DIVAR", guard.personnelCode, `token=${body.divarToken}`);
+      return Response.json({ ok: true, id: rec.id, message: "فایل از دیوار در کاشی آگهی ثبت شد." });
+    }
+
+    // ثبت دستی ۵ گامی
+    const result = await createListing(body, guard.personnelCode);
+    await audit("LISTING_CREATE", guard.personnelCode, `id=${result.record?.id} ok=${result.ok}`);
+
+    // P6545/گام۱ (BLOCK 1.4) — رویداد فرصت: آگهی تازه روی تختهٔ سیاه + شنوندهٔ هشدار
+    // (صفر اجرای خودکار — فقط هشدار تطبیق ≥ ۰٫۷)
+    if (result.record?.id) {
+      try {
+        const { emitEvent } = await import("@/lib/intelligence/blackboard");
+        await emitEvent("listing.created", { listingId: result.record.id, source: "manual", actor: guard.personnelCode });
+        // تطبیق با درخواست‌های فعال — آگهی دستی کد ملک ARM ندارد؛ هشدار بر اساس آگهی منتشرشدهٔ تازه‌تر
+        const { db: appDb } = await import("@/lib/db");
+        const { OpportunityListener } = await import("@/core/matching/opportunity-listener");
+        const latestPublished = await appDb.propertyRecord.findFirst({
+          where: { status: "منتشر شده" },
+          orderBy: { syncedAt: "desc" },
+          select: { propertyCode: true },
+        });
+        if (latestPublished) {
+          const listener = new OpportunityListener(appDb, 3);
+          const alertReport = await listener.onListingCreated(latestPublished.propertyCode);
+          if (alertReport.alertsCreated > 0) {
+            await emitEvent("opportunity.alerted", { listingCode: latestPublished.propertyCode, alerts: alertReport.alertsCreated, topScore: alertReport.topScores[0] ?? null });
+          }
+        }
+      } catch { /* هشدار هرگز ثبت آگهی را نمی‌شکند */ }
+    }
+
+    return Response.json({
+      ok: true,
+      id: result.record?.id,
+      complete: result.ok,
+      errors: result.errors,
+      message: result.ok
+        ? "فایل آگهی دستی با هر ۵ گام کامل ثبت شد — آماده انتقال به CRM و اینستاگرام."
+        : "فایل آگهی به عنوان پیش‌نویس ثبت شد — گام‌های ناقص را از دکمه «جزییات/تکمیل» ادامه دهید.",
+    });
+  } catch (err) {
+    const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error)?.message ?? "خطای ثبت فایل", 500, false);
+    return errorResponse(e);
+  }
+}

@@ -1,0 +1,825 @@
+     1→/**
+     2→ * تست جامع کاشی «فایل‌یابی از دیوار»
+     3→ * - تجزیه داده واقعی دیوار (قیمت/تاریخ جلالی انتشار/مشخصات)
+     4→ * - سه فیلتر هوشمند: شخصی‌بودن، زیرقیمت، مکان (عین منطقه‌بندی آرم)
+     5→ * - امتیاز نهایی و دسته‌بندی شکار/پیگیری/بررسی (وزن ۵۰/۳۰/۲۰)
+     6→ * - کلیدهای چهارگانه: پل به دیوار، جزییات (پیش‌بینی دلایل رد)، رد (بدون آرشیو + یادگیری)، ثبت
+     7→ * - منطق اسکن: حساسیت به «زمان انتشار واقعی» نه نردبان؛ تکراری‌ها فقط با تغییر مهم
+     8→ * اجرا: bun test tests/divar.test.ts
+     9→ */
+    10→
+    11→import { describe, expect, test, beforeEach, mock } from "bun:test";
+    12→
+    13→// ==========================================================================
+    14→// ۱) تجزیه داده واقعی دیوار — ارقام فارسی، قیمت، تاریخ انتشار جلالی
+    15→// ==========================================================================
+    16→
+    17→describe("فیلتر زمانی — تجزیه «انتشار آگهی» جلالی دیوار (زمان واقعی ایجاد)", () => {
+    18→  test("الگوی واقعی API دیوار: «۱۹ شهریور ۱۴۰۵، ۱۴:۰۲»", async () => {
+    19→    const { parseDivarJalaliDateTime } = await import("@/lib/divar/parse");
+    20→    const d = parseDivarJalaliDateTime("۱۹ شهریور ۱۴۰۵، ۱۴:۰۲");
+    21→    expect(d).not.toBeNull();
+    22→    // ۱۹ شهریور ۱۴۰۵ = ۱۰ سپتامبر ۲۰۲۶؛ ۱۴:۰۲ تهران (+۳:۳۰) → ۱۰:۳۲ UTC
+    23→    expect(d!.getUTCFullYear()).toBe(2026);
+    24→    expect(d!.getUTCMonth()).toBe(8); // سپتامبر
+    25→    expect(d!.getUTCDate()).toBe(10);
+    26→    expect(d!.getUTCHours()).toBe(10);
+    27→    expect(d!.getUTCMinutes()).toBe(32);
+    28→  });
+    29→
+    30→  test("بدون ساعت → ظهر فرض می‌شود", async () => {
+    31→    const { parseDivarJalaliDateTime } = await import("@/lib/divar/parse");
+    32→    const d = parseDivarJalaliDateTime("۱ فروردین ۱۴۰۴");
+    33→    expect(d).not.toBeNull();
+    34→    expect(d!.getUTCFullYear()).toBe(2025);
+    35→    expect(d!.getUTCMonth()).toBe(2); // مارس
+    36→    expect(d!.getUTCDate()).toBe(21);
+    37→  });
+    38→
+    39→  test("متن نامعتبر → null (نه تاریخ جعلی)", async () => {
+    40→    const { parseDivarJalaliDateTime } = await import("@/lib/divar/parse");
+    41→    expect(parseDivarJalaliDateTime(null)).toBeNull();
+    42→    expect(parseDivarJalaliDateTime("لحظاتی پیش")).toBeNull();
+    43→    expect(parseDivarJalaliDateTime("۳ روز پیش در تبریز")).toBeNull();
+    44→  });
+    45→
+    46→  test("حساسیت بازه زمانی: ۱۲ ساعت/۲۴ ساعت/هفته", async () => {
+    47→    const { timeWindowHours } = await import("@/lib/divar/config");
+    48→    expect(timeWindowHours("12h")).toBe(12);
+    49→    expect(timeWindowHours("24h")).toBe(24);
+    50→    expect(timeWindowHours("7d")).toBe(168);
+    51→    expect(timeWindowHours("unknown")).toBe(24); // پیش‌فرض امن
+    52→  });
+    53→});
+    54→
+    55→describe("تجزیه قیمت و مشخصات دیوار", () => {
+    56→  test("قیمت فارسی با جداکننده («۳,۷۰۰,۰۰۰,۰۰۰ تومان»)", async () => {
+    57→    const { parsePriceToman } = await import("@/lib/divar/parse");
+    58→    expect(parsePriceToman("۳,۷۰۰,۰۰۰,۰۰۰ تومان")).toBe(3700000000);
+    59→    expect(parsePriceToman("۴۹,۳۳۳,۰۰۰ تومان")).toBe(49333000);
+    60→    expect(parsePriceToman(null)).toBeNull();
+    61→    expect(parsePriceToman("توافقی")).toBeNull();
+    62→  });
+    63→  test("متراژ/طبقه/سال ساخت/اتاق", async () => {
+    64→    const { parseMeterage, parseFloor, parseBuildYear, parseRooms } = await import("@/lib/divar/parse");
+    65→    expect(parseMeterage("۷۵")).toBe(75);
+    66→    expect(parseFloor("۴ از ۱۰")).toEqual({ floor: 4, total: 10 });
+    67→    expect(parseBuildYear("۱۳۹۰")).toBe(1390);
+    68→    expect(parseRooms("۲")).toBe(2);
+    69→    expect(parseRooms("بدون اتاق")).toBe(0);
+    70→  });
+    71→});
+    72→
+    73→// ==========================================================================
+    74→// ۲) فیلتر هوشمند «شخصی بودن» — مهم‌ترین فیلتر
+    75→// ==========================================================================
+    76→
+    77→describe("فیلتر هوشمند شخصی‌بودن", () => {
+    78→  test("آگهی مشاور املاک → امتیاز پایین + برچسب مشاور", async () => {
+    79→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+    80→    const r = scorePersonalAd({
+    81→      title: "فروش آپارتمان ۸۵ متری زعفرانیه آژانس املاک ملک برتر",
+    82→      description: "مشاور املاک شما آماده ارائه چند فایل دربست در زعفرانیه است. با مشاور تماس بگیرید.",
+    83→    });
+    84→    expect(r.score).toBeLessThan(40);
+    85→    expect(r.isBroker).toBe(true);
+    86→  });
+    87→  test("آگهی شخصی مالک («بدون واسطه») → امتیاز بالا", async () => {
+    88→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+    89→    const r = scorePersonalAd({
+    90→      title: "فروش اضطراری آپارتمان ۸۰ متری",
+    91→      description: "مالک هستم، بدون واسطه. به دلیل ضرورت مالی فوری فروش می‌کنم. سند تکبرگ آماده انتقال.",
+    92→    });
+    93→    expect(r.score).toBeGreaterThan(85);
+    94→    expect(r.isBroker).toBe(false);
+    95→  });
+    96→  test("سیگنال رسمی کنار: business_data → قطعاً مشاور", async () => {
+    97→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+    98→    const r = scorePersonalAd({
+    99→      title: "هر متن",
+   100→      businessName: "املاک سپهر",
+   101→      isBusinessAccount: true,
+   102→    });
+   103→    expect(r.isBroker).toBe(true);
+   104→    expect(r.score).toBeLessThan(30);
+   105→  });
+   106→  test("سیگنال رسمی کنار: حساب شخصی → امتیاز قوی شخصی", async () => {
+   107→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+   108→    const r = scorePersonalAd({ title: "آپارتمان ۶۰ متری", isBusinessAccount: false });
+   109→    expect(r.score).toBeGreaterThanOrEqual(90); // ۵۰ پایه + ۴۰ سیگنال رسمی
+   110→  });
+   111→  test("متن خنثی → امتیاز میانه و اطمینان پایین", async () => {
+   112→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+   113→    const r = scorePersonalAd({ title: "آپارتمان ۷۰ متری ولیعصر" });
+   114→    expect(r.score).toBe(50);
+   115→    expect(r.confidence).toBe("low");
+   116→  });
+   117→});
+   118→
+   119→// ==========================================================================
+   120→// ۲-ب) برچسب آگهی‌دهنده — عین بخش زیر نقشه دیوار (مشاور املاک/دپارتمان املاک/شخصی)
+   121→// ساختارها از پاسخ‌های واقعی و زنده API دیوار استخراج شده‌اند.
+   122→// ==========================================================================
+   123→
+   124→describe("تشخیص آگهی‌دهنده از برچسب زیر نقشه دیوار", () => {
+   125→  test("طبقه‌بندی نوع کسب‌وکار از نام — نام‌های واقعی تبریز", async () => {
+   126→    const { classifyPublisherKind } = await import("@/lib/divar/client");
+   127→    // مشاور تکی
+   128→    expect(classifyPublisherKind("مشاور حسن رحمتی")).toBe("agent");
+   129→    expect(classifyPublisherKind("مشاور یونس شیرینی اتا")).toBe("agent");
+   130→    // گروه/شعبه/آژانس → دپارتمان
+   131→    expect(classifyPublisherKind("گروه مشاورین املاک طاهری")).toBe("department");
+   132→    expect(classifyPublisherKind("ملک تبریز ۰۴۱۴۱۰۱ شعبه باغلارباغی")).toBe("department");
+   133→    expect(classifyPublisherKind("املاک اطلس")).toBe("department");
+   134→    expect(classifyPublisherKind("املاک ابهری")).toBe("department");
+   135→    // نام نامشخص
+   136→    expect(classifyPublisherKind(null)).toBe("business");
+   137→    expect(classifyPublisherKind("")).toBe("business");
+   138→  });
+   139→
+   140→  test("تجزیه تعداد آگهی فعال («۸ آگهی فعال» → 8)", async () => {
+   141→    const { parseActiveAdCount } = await import("@/lib/divar/client");
+   142→    expect(parseActiveAdCount("۸ آگهی فعال")).toBe(8);
+   143→    expect(parseActiveAdCount("۵۱۲ آگهی فعال")).toBe(512);
+   144→    expect(parseActiveAdCount(null)).toBeNull();
+   145→    expect(parseActiveAdCount("بدون متن عددی")).toBeNull();
+   146→  });
+   147→
+   148→  test("تجزیه پاسخ lazy کارت کسب‌وکار زیر نقشه — EVENT_ROW واقعی دیوار", async () => {
+   149→    const { parseBusinessLazyResponse } = await import("@/lib/divar/client");
+   150→    const raw = {
+   151→      widget_list: [
+   152→        { widget_type: "SECTION_DIVIDER_ROW", data: { "@type": "type.googleapis.com/widgets.SectionDividerRowData" } },
+   153→        {
+   154→          widget_type: "EVENT_ROW",
+   155→          data: {
+   156→            "@type": "type.googleapis.com/widgets.EventRowData",
+   157→            title: "گروه مشاورین املاک طاهری",
+   158→            subtitle: "۸ آگهی فعال",
+   159→            image_url: "https://s100.divarcdn.com/static/imgs/widget-icons/light/icon_secondary/v1/business_real_estate_agency.png",
+   160→            label: "همه آگهی‌ها",
+   161→            action: { type: "PREMIUM_PANEL_BRAND_LANDING", payload: { "@type": "type.googleapis.com/widgets.PremiumPanelBrandLandingPayload", brand_token: "xDiClpnF", is_public: true } },
+   162→            type: "NORMAL",
+   163→          },
+   164→        },
+   165→      ],
+   166→    };
+   167→    const r = parseBusinessLazyResponse(raw);
+   168→    expect(r).not.toBeNull();
+   169→    expect(r!.name).toBe("گروه مشاورین املاک طاهری");
+   170→    expect(r!.adCountText).toBe("۸ آگهی فعال");
+   171→    expect(r!.brandUrl).toBe("https://divar.ir/pro/xDiClpnF");
+   172→    expect(parseBusinessLazyResponse({ widget_list: [] })).toBeNull();
+   173→    expect(parseBusinessLazyResponse(null)).toBeNull();
+   174→  });
+   175→
+   176→  test("تجزیه جزئیات آگهی مشاور: BUSINESS_SECTION موجود است و درخواست lazy استخراج می‌شود", async () => {
+   177→    const { parsePostDetailResponse } = await import("@/lib/divar/client");
+   178→    const raw = {
+   179→      city: { name: "تبریز" },
+   180→      contact: { chat_enabled: true },
+   181→      sections: [
+   182→        { section_name: "TITLE", widgets: [{ widget_type: "LEGEND_TITLE_ROW", data: { title: "آپارتمان ۶۷متر شهرک اندیشه املاک طاهری فروش فوری" } }] },
+   183→        { section_name: "MAP", widgets: [{ widget_type: "MAP_ROW", data: { location: { exact_data: { point: { latitude: 38.079, longitude: 46.376 } } } } }] },
+   184→        {
+   185→          section_name: "BUSINESS_SECTION",
+   186→          widgets: [
+   187→            {
+   188→              widget_type: "LAZY_SECTION",
+   189→              data: {
+   190→                rest_request_path: "/v8/premium-user/post-page/business-data/gaFak0ZB/lazy",
+   191→                request_data: {
+   192→                  "@type": "type.googleapis.com/premium_panel.GetPostBusinessLazyWidgetsRequest.RequestData",
+   193→                  post_token: "gaFak0ZB",
+   194→                  hashed_post_owner_user_id: "1f6ce13d",
+   195→                  post_business_type: "premium-panel",
+   196→                },
+   197→              },
+   198→            },
+   199→          ],
+   200→        },
+   201→      ],
+   202→    };
+   203→    const d = parsePostDetailResponse(raw, "gaFak0ZB");
+   204→    expect(d.title).toBe("آپارتمان ۶۷متر شهرک اندیشه املاک طاهری فروش فوری");
+   205→    expect(d.publisherType).toBe("business"); // پیش از واکشی نام
+   206→    expect(d.businessRequest).not.toBeNull();
+   207→    expect(d.businessRequest!.post_token).toBe("gaFak0ZB");
+   208→  });
+   209→
+   210→  test("تجزیه جزئیات آگهی شخصی: بدون BUSINESS_SECTION → شخصی (مالک)", async () => {
+   211→    const { parsePostDetailResponse } = await import("@/lib/divar/client");
+   212→    const raw = {
+   213→      city: { name: "تبریز" },
+   214→      sections: [
+   215→        { section_name: "TITLE", widgets: [{ widget_type: "LEGEND_TITLE_ROW", data: { title: "آپارتمان نقلی با وام شنب غازان" } }] },
+   216→        { section_name: "DESCRIPTION", widgets: [{ widget_type: "DESCRIPTION_ROW", data: { text: "آپارتمان دوطبقه" } }] },
+   217→        { section_name: "MAP", widgets: [{ widget_type: "MAP_ROW", data: { location: { exact_data: { point: { latitude: 38.08, longitude: 46.23 } } } } }] },
+   218→      ],
+   219→    };
+   220→    const d = parsePostDetailResponse(raw, "galQkF2u");
+   221→    expect(d.publisherType).toBe("personal");
+   222→    expect(d.businessRequest).toBeNull();
+   223→    expect(d.publisherName).toBeNull();
+   224→  });
+   225→});
+   226→
+   227→describe("سیگنال رسمی برچسب دیوار در امتیاز شخصی‌بودن", () => {
+   228→  test("آگهی با برچسب «مشاور املاک» زیر نقشه → قطعاً مشاور؛ حتی با متن «مالک هستم بدون واسطه»", async () => {
+   229→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+   230→    const r = scorePersonalAd({
+   231→      title: "فروش فوری آپارتمان ۱۵۰ متر بهار",
+   232→      description: "مالک هستم، بدون واسطه، مستقیم از مالک، ضرورت مالی فوری — سند تکبرگ",
+   233→      publisherType: "agent",
+   234→      publisherName: "مشاور حسن رحمتی",
+   235→    });
+   236→    expect(r.score).toBeLessThanOrEqual(8); // سقف قطعی
+   237→    expect(r.isBroker).toBe(true);
+   238→    const sig = r.signals.find((s) => s.key === "divar:publisher");
+   239→    expect(sig).toBeDefined();
+   240→    expect(sig!.hit).toBe(true);
+   241→    expect(sig!.label).toContain("مشاور املاک");
+   242→    expect(sig!.label).toContain("مشاور حسن رحمتی");
+   243→    expect(sig!.evidence).toContain("BUSINESS_SECTION");
+   244→  });
+   245→
+   246→  test("آگهی با برچسب «دپارتمان املاک» (گروه/شعبه) → قطعاً مشاور", async () => {
+   247→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+   248→    const r = scorePersonalAd({
+   249→      title: "واحد ۲۱۰ متری در خاوران تبریز",
+   250→      publisherType: "department",
+   251→      publisherName: "ملک تبریز ۰۴۱۴۱۰۱ شعبه باغلارباغی",
+   252→    });
+   253→    expect(r.score).toBeLessThanOrEqual(8);
+   254→    expect(r.isBroker).toBe(true);
+   255→    expect(r.signals.find((s) => s.key === "divar:publisher")!.label).toContain("دپارتمان املاک");
+   256→  });
+   257→
+   258→  test("آگهی کسب‌وکار بدون نام («business») → باز هم مشاور", async () => {
+   259→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+   260→    const r = scorePersonalAd({ title: "پیش‌فروش", publisherType: "business" });
+   261→    expect(r.isBroker).toBe(true);
+   262→    expect(r.score).toBeLessThanOrEqual(8);
+   263→  });
+   264→
+   265→  test("برچسب «شخصی» (فاقد کسب‌وکار املاک) → امتیاز تقویت‌شده", async () => {
+   266→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+   267→    const r = scorePersonalAd({ title: "آپارتمان ۷۰ متری ولیعصر", publisherType: "personal" });
+   268→    expect(r.score).toBe(80); // ۵۰ پایه + ۳۰ برچسب شخصی
+   269→    expect(r.isBroker).toBe(false);
+   270→    const sig = r.signals.find((s) => s.key === "divar:publisher");
+   271→    expect(sig!.label).toContain("شخصی");
+   272→  });
+   273→
+   274→  test("فقدان برچسب ( داده قدیمی/کنار ) → رفتار پیشین حفظ می‌شود (خنثی ۵۰)", async () => {
+   275→    const { scorePersonalAd } = await import("@/lib/divar/scoring");
+   276→    const r = scorePersonalAd({ title: "آپارتمان ۷۰ متری ولیعصر" });
+   277→    expect(r.score).toBe(50);
+   278→    expect(r.signals.find((s) => s.key === "divar:publisher")).toBeUndefined();
+   279→  });
+   280→});
+   281→
+   282→// ==========================================================================
+   283→// ۳) فیلتر هوشمند «زیر قیمت» — شاهکار مقایسه‌ای
+   284→// ==========================================================================
+   285→
+   286→describe("فیلتر هوشمند زیرقیمت", () => {
+   287→  test("۲۰٪ زیر میانگین محله → امتیاز بالا با درصد مثبت", async () => {
+   288→    const { scoreUnderprice } = await import("@/lib/divar/scoring");
+   289→    const r = scoreUnderprice({
+   290→      pricePerMeter: 40_000_000,
+   291→      ref: { medianPerMeter: 50_000_000, sampleCount: 9, source: "divar" },
+   292→      minSample: 4,
+   293→    });
+   294→    expect(r.percentBelow).toBeCloseTo(20, 0);
+   295→    expect(r.score).toBeGreaterThan(70);
+   296→    expect(r.referencePerMeter).toBe(50_000_000);
+   297→    expect(r.method).toBe("divar");
+   298→  });
+   299→  test("گران‌تر از بازار → امتیاز صفر/بسیار پایین", async () => {
+   300→    const { scoreUnderprice } = await import("@/lib/divar/scoring");
+   301→    const r = scoreUnderprice({
+   302→      pricePerMeter: 70_000_000,
+   303→      ref: { medianPerMeter: 50_000_000, sampleCount: 9, source: "divar" },
+   304→      minSample: 4,
+   305→    });
+   306→    expect(r.percentBelow).toBeLessThan(0);
+   307→    expect(r.score).toBeLessThan(25);
+   308→  });
+   309→  test("نمونه کمتر از حد → بدون قضاوت (صفر صادقانه)", async () => {
+   310→    const { scoreUnderprice } = await import("@/lib/divar/scoring");
+   311→    const r = scoreUnderprice({
+   312→      pricePerMeter: 40_000_000,
+   313→      ref: { medianPerMeter: 50_000_000, sampleCount: 2, source: "divar" },
+   314→      minSample: 4,
+   315→    });
+   316→    expect(r.score).toBe(0);
+   317→    expect(r.method).toBe("none");
+   318→    expect(r.reason).toContain("آمار کافی");
+   319→  });
+   320→  test("مرجع ترکیبی دیوار+آرم (وزن‌دار)", async () => {
+   321→    const { scoreUnderprice } = await import("@/lib/divar/scoring");
+   322→    const r = scoreUnderprice({
+   323→      pricePerMeter: 39_500_000,
+   324→      ref: { medianPerMeter: 50_000_000, sampleCount: 10, source: "divar" },
+   325→      armRefPerMeter: 40_000_000,
+   326→      armWeight: 0.5,
+   327→      minSample: 4,
+   328→    });
+   329→    // مرجع = ۴۵ میلیون (میانه دو منبع)
+   330→    expect(r.method).toBe("divar+arm");
+   331→    expect(r.referencePerMeter).toBe(45_000_000);
+   332→    expect(r.percentBelow).toBeCloseTo(12.2, 0);
+   333→    expect(r.confidence).toBe("high");
+   334→  });
+   335→  test("بدون قیمت هر متر → امتیاز صفر با دلیل روشن", async () => {
+   336→    const { scoreUnderprice } = await import("@/lib/divar/scoring");
+   337→    const r = scoreUnderprice({ pricePerMeter: null, ref: null });
+   338→    expect(r.score).toBe(0);
+   339→    expect(r.reason).toContain("قابل استخراج نیست");
+   340→  });
+   341→});
+   342→
+   343→// ==========================================================================
+   344→// ۴) فیلتر هوشمند «مکان» — منطقه‌بندی عین سامانه آرم
+   345→// ==========================================================================
+   346→
+   347→describe("فیلتر هوشمند مکان (منطبق با آرم)", () => {
+   348→  test("رجیستری آرم: ۱۳۰ منطقه و ۹۲۶ محله تبریز بارگذاری می‌شود", async () => {
+   349→    const { TABRIZ_AREAS, ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+   350→    expect(TABRIZ_AREAS.length).toBe(130);
+   351→    expect(ALL_LINES.length).toBe(926);
+   352→  });
+   353→  test("تطبیق متنی: «خ نیکو ششم» در متن → محله شهرک اندیشه", async () => {
+   354→    const { matchTabrizLocation } = await import("@/lib/divar/tabriz-locations");
+   355→    const r = matchTabrizLocation({ title: "واحد ۷۵ متری شهرک اندیشه نیکو ۶", locationText: "۳ روز پیش در تبریز، خ نیکو ششم" });
+   356→    expect(r.lineName).toBeTruthy();
+   357→    expect(r.score).toBeGreaterThanOrEqual(60);
+   358→    expect(r.areaName).toBeTruthy();
+   359→  });
+   360→  test("تطبیق مختصات: نقطه روی مرکز محله → امتیاز کامل", async () => {
+   361→    const { matchTabrizLocation, ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+   362→    const line = ALL_LINES.find((l) => l.lat != null && l.lng != null && l.n === "ارگ")!;
+   363→    const r = matchTabrizLocation({ title: "فایل", latitude: line.lat, longitude: line.lng });
+   364→    expect(r.lineId).toBe(line.id);
+   365→    expect(r.score).toBe(100);
+   366→  });
+   367→  test("تطبیق متنی+مختصاتی هم‌محله → امتیاز ≥ ۷۸", async () => {
+   368→    const { matchTabrizLocation, ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+   369→    const line = ALL_LINES.find((l) => l.lat != null && l.lng != null && l.n === "ارگ")!;
+   370→    const r = matchTabrizLocation({
+   371→      title: "اپارتمان در ارگ تبریز",
+   372→      locationText: "در تبریز، ارگ",
+   373→      latitude: line.lat! + 0.001,
+   374→      longitude: line.lng! + 0.001,
+   375→    });
+   376→    expect(r.score).toBeGreaterThanOrEqual(92);
+   377→    expect(r.method).toBe("both");
+   378→  });
+   379→  test("بیرون از محدوده انتخابی کاربر → امتیاز صفر", async () => {
+   380→    const { scoreLocation } = await import("@/lib/divar/scoring");
+   381→    const { ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+   382→    const inLine = ALL_LINES.find((l) => l.n === "ارگ")!;
+   383→    const outLine = ALL_LINES.find((l) => l.n !== "ارگ" && l.areaId !== inLine.areaId)!;
+   384→    const r = scoreLocation({
+   385→      title: `اپارتمان ${outLine.n}`,
+   386→      locationText: `در تبریز، ${outLine.n}`,
+   387→      selectedAreaIds: [inLine.areaId],
+   388→      selectedLineIds: [],
+   389→    });
+   390→    expect(r.score).toBe(0);
+   391→    expect(r.reason).toContain("بیرون از محدوده");
+   392→  });
+   393→  test("بدون هیچ سیگنال مکانی → صفر با دلیل", async () => {
+   394→    const { matchTabrizLocation } = await import("@/lib/divar/tabriz-locations");
+   395→    const r = matchTabrizLocation({ title: "فایل بی‌نشانه" });
+   396→    expect(r.score).toBe(0);
+   397→    expect(r.method).toBe("none");
+   398→  });
+   399→});
+   400→
+   401→// ==========================================================================
+   402→// ۵) امتیاز نهایی ۱ تا ۱۰۰ + دسته‌بندی سه پنجره (وزن ۵۰/۳۰/۲۰)
+   403→// ==========================================================================
+   404→
+   405→describe("امتیاز نهایی و پنجره‌های شکار/پیگیری/بررسی", () => {
+   406→  const settings = { weightPersonal: 50, weightUnderprice: 30, weightLocation: 20, huntThreshold: 70, followThreshold: 40 };
+   407→  test("فایل قوی (شخصی ۹۰/زیرقیمت ۸۰/مکان ۱۰۰) → شکار", async () => {
+   408→    const { computeTotalScore } = await import("@/lib/divar/scoring");
+   409→    const r = computeTotalScore({ personal: 90, underprice: 80, location: 100, settings });
+   410→    expect(r.total).toBe(89); // (۹۰×۵۰+۸۰×۳۰+۱۰۰×۲۰)/۱۰۰
+   411→    expect(r.bucket).toBe("hunt");
+   412→  });
+   413→  test("فایل میانه (۵۰/۵۰/۵۰) → پیگیری", async () => {
+   414→    const { computeTotalScore } = await import("@/lib/divar/scoring");
+   415→    const r = computeTotalScore({ personal: 50, underprice: 50, location: 50, settings });
+   416→    expect(r.total).toBe(50);
+   417→    expect(r.bucket).toBe("follow");
+   418→  });
+   419→  test("فایل ضعیف (مشاور) → بررسی", async () => {
+   420→    const { computeTotalScore } = await import("@/lib/divar/scoring");
+   421→    const r = computeTotalScore({ personal: 10, underprice: 20, location: 30, settings });
+   422→    expect(r.total).toBeLessThan(40);
+   423→    expect(r.bucket).toBe("review");
+   424→  });
+   425→  test("وزن‌های دلخواه کاربر رعایت می‌شود (۳۰/۴۰/۳۰)", async () => {
+   426→    const { computeTotalScore } = await import("@/lib/divar/scoring");
+   427→    const r = computeTotalScore({ personal: 100, underprice: 50, location: 0, settings: { ...settings, weightPersonal: 30, weightUnderprice: 40, weightLocation: 30 } });
+   428→    expect(r.total).toBe(50); // (۱۰۰×۳۰+۵۰×۴۰+۰×۳۰)/۱۰۰
+   429→  });
+   430→  test("آستانه‌های قابل تنظیم: شکار بالای ۸۰", async () => {
+   431→    const { computeTotalScore } = await import("@/lib/divar/scoring");
+   432→    const r = computeTotalScore({ personal: 90, underprice: 60, location: 60, settings: { ...settings, huntThreshold: 80 } });
+   433→    expect(r.total).toBe(75);
+   434→    expect(r.bucket).toBe("follow");
+   435→  });
+   436→  test("آستانه غیرمنطقی خودکار اصلاح می‌شود (پیگیری < شکار)", async () => {
+   437→    const { computeTotalScore } = await import("@/lib/divar/scoring");
+   438→    const r = computeTotalScore({ personal: 50, underprice: 50, location: 50, settings: { ...settings, huntThreshold: 40, followThreshold: 70 } });
+   439→    expect(r.bucket).toBe("hunt"); // ۵۰ > hunt(۴۰)
+   440→  });
+   441→});
+   442→
+   443→// ==========================================================================
+   444→// ۶) کلید «جزییات آگهی» — پیش‌بینی هوشمند دلایل رد
+   445→// ==========================================================================
+   446→
+   447→describe("کلید جزییات — پیش‌بینی دلایل احتمالی رد توسط کاربر", () => {
+   448→  test("آگهی مشاور → دلیل «broker» با احتمال بالا پیش‌بینی می‌شود", async () => {
+   449→    const { predictRejectReasons, scorePersonalAd } = await import("@/lib/divar/scoring");
+   450→    const personal = scorePersonalAd({ title: "آژانس املاک فروش فایل", description: "مشاور املاک، چند فایل" });
+   451→    const preds = predictRejectReasons({
+   452→      personal,
+   453→      underprice: { score: 0, percentBelow: null, referencePerMeter: null, sampleCount: 0, confidence: "low", method: "none", reason: "—" },
+   454→      location: { score: 0, areaId: null, areaName: null, lineId: null, lineName: null, method: "none", reason: "—" },
+   455→      pricePerMeter: null,
+   456→    });
+   457→    expect(preds.find((p) => p.key === "broker")).toBeTruthy();
+   458→    expect(preds.find((p) => p.key === "broker")!.likely).toBeGreaterThanOrEqual(80);
+   459→    expect(preds.find((p) => p.key === "no-price")).toBeTruthy();
+   460→  });
+   461→  test("فایل گران → دلیل «overpriced» پیش‌بینی می‌شود", async () => {
+   462→    const { predictRejectReasons } = await import("@/lib/divar/scoring");
+   463→    const preds = predictRejectReasons({
+   464→      personal: { score: 80, isBroker: false, confidence: "high", signals: [] },
+   465→      underprice: { score: 10, percentBelow: -20, referencePerMeter: 50_000_000, sampleCount: 8, confidence: "medium", method: "divar", reason: "—" },
+   466→      location: { score: 90, areaId: "a", areaName: "X", lineId: "l", lineName: "Y", method: "both", reason: "—" },
+   467→      pricePerMeter: 60_000_000,
+   468→    });
+   469→    expect(preds.find((p) => p.key === "overpriced")).toBeTruthy();
+   470→    expect(preds.find((p) => p.key === "broker")).toBeFalsy();
+   471→  });
+   472→});
+   473→
+   474→// ==========================================================================
+   475→// ۷) کلید «رد آگهی» — بدون آرشیو، فقط یادگیری (تست یکپارچه با پایگاه)
+   476→// ==========================================================================
+   477→
+   478→describe("کلید رد آگهی — بدون آرشیو + یادگیری", () => {
+   479→  test("پس از رد: آگهی حذف، سیگنال یادگیری می‌ماند", async () => {
+   480→    const { db } = await import("@/lib/db");
+   481→    // آماده‌سازی آگهی آزمایشی
+   482→    await db.divarAd.create({
+   483→      data: {
+   484→        token: "testreject1",
+   485→        category: "apartment-sell",
+   486→        title: "آزمون رد",
+   487→        personalScore: 55,
+   488→        underpriceScore: 60,
+   489→        locationScore: 70,
+   490→        totalScore: 60,
+   491→        bucket: "follow",
+   492→        status: "active",
+   493→      },
+   494→    });
+   495→    expect(await db.divarAd.findUnique({ where: { token: "testreject1" } })).toBeTruthy();
+   496→
+   497→    // منطق رد (عین route)
+   498→    const ad = await db.divarAd.findUnique({ where: { token: "testreject1" } });
+   499→    await db.divarRejectLog.create({
+   500→      data: {
+   501→        token: "testreject1",
+   502→        reasons: JSON.stringify(["broker", "overpriced"]),
+   503→        note: "مشاور شناخته‌شده",
+   504→        scoreSnapshotJson: JSON.stringify({ personal: 55, total: 60 }),
+   505→        featureSnapshotJson: JSON.stringify({ title: "آزمون رد" }),
+   506→        actorCode: "TEST",
+   507→      },
+   508→    });
+   509→    await db.divarAd.delete({ where: { token: "testreject1" } });
+   510→
+   511→    // آگهی آرشیو نشد؟
+   512→    expect(await db.divarAd.findUnique({ where: { token: "testreject1" } })).toBeNull();
+   513→    // سیگنال یادگیری ماند؟
+   514→    const log = await db.divarRejectLog.findFirst({ where: { token: "testreject1" } });
+   515→    expect(log).toBeTruthy();
+   516→    expect(JSON.parse(log!.reasons)).toEqual(["broker", "overpriced"]);
+   517→    // پاک‌سازی
+   518→    await db.divarRejectLog.deleteMany({ where: { token: "testreject1" } });
+   519→  });
+   520→
+   521→  test("الگوی یادگیری ایجنت از دلایل رد (خلاصه‌سازی شایع‌ترین دلایل)", async () => {
+   522→    const { db } = await import("@/lib/db");
+   523→    const reasons = ["broker", "broker", "location", "overpriced", "broker", "location"];
+   524→    for (let i = 0; i < reasons.length; i++) {
+   525→      await db.divarRejectLog.create({
+   526→        data: { token: `learn${i}`, reasons: JSON.stringify([reasons[i]]), actorCode: "TEST" },
+   527→      });
+   528→    }
+   529→    const logs = await db.divarRejectLog.findMany({ where: { token: { startsWith: "learn" } } });
+   530→    const count = new Map<string, number>();
+   531→    for (const l of logs) for (const r of JSON.parse(l.reasons) as string[]) count.set(r, (count.get(r) ?? 0) + 1);
+   532→    const top = [...count.entries()].sort((a, b) => b[1] - a[1])[0];
+   533→    expect(top[0]).toBe("broker");
+   534→    expect(top[1]).toBe(3);
+   535→    await db.divarRejectLog.deleteMany({ where: { token: { startsWith: "learn" } } });
+   536→  });
+   537→});
+   538→
+   539→// ==========================================================================
+   540→// ۸) منطق اسکن: حساسیت به زمان انتشار واقعی + تکراری فقط با تغییر مهم
+   541→// ==========================================================================
+   542→
+   543→describe("منطق اسکن — زمان واقعی انتشار و تکراری‌ها", () => {
+   544→  test("آگهی نردبان‌شده قدیمی (بیرون از بازه) هرگز ذخیره نمی‌شود (رد سیستم)", async () => {
+   545→    const { db } = await import("@/lib/db");
+   546→    const { parseDivarJalaliDateTime } = await import("@/lib/divar/parse");
+   547→    // آگهی منتشرشده ۱ ماه پیش — حتی اگر در صف اول جستجو (نردبان) ظاهر شود
+   548→    const publishedAt = parseDivarJalaliDateTime("۱۵ شهریور ۱۴۰۵، ۱۰:۰۰");
+   549→    const windowStart = new Date(Date.now() - 24 * 3600 * 1000);
+   550→    expect(publishedAt! < windowStart).toBe(true); // بیرون از بازه ۲۴ ساعت
+   551→    // در موتور اسکن: continue بدون ذخیره — این تست قرارداد را قفل می‌کند
+   552→    expect(await db.divarAd.findUnique({ where: { token: "should-not-exist" } })).toBeNull();
+   553→  });
+   554→
+   555→  test("آگهی تازه داخل بازه → ذخیره می‌شود", async () => {
+   556→    const { db } = await import("@/lib/db");
+   557→    const { parseDivarJalaliDateTime } = await import("@/lib/divar/parse");
+   558→    const three = new Date(Date.now() - 3 * 3600 * 1000);
+   559→    const windowStart = new Date(Date.now() - 24 * 3600 * 1000);
+   560→    expect(three >= windowStart).toBe(true);
+   561→  });
+   562→
+   563→  test("کلید تغییر (changeKey): قیمت ثابت → بدون رفرش جزئیات؛ تغییر قیمت → به‌روزرسانی", () => {
+   564→    const keyOf = (token: string, price: number | null) => `${token}|${price ?? "np"}`;
+   565→    expect(keyOf("A", 100)).toBe(keyOf("A", 100)); // بدون تغییر
+   566→    expect(keyOf("A", 100)).not.toBe(keyOf("A", 120)); // قیمت عوض شد → تغییر مهم
+   567→    expect(keyOf("B", 100)).not.toBe(keyOf("A", 100)); // آگهی متفاوت
+   568→  });
+   569→});
+   570→
+   571→// ==========================================================================
+   572→// ۹) کلیدهای «پل به دیوار» و «ثبت آگهی»
+   573→// ==========================================================================
+   574→
+   575→describe("کلید پل به دیوار و ثبت آگهی", () => {
+   576→  test("ساخت نشانی صحیح آگهی دیوار", async () => {
+   577→    const { divarPostUrl } = await import("@/lib/divar/client");
+   578→    const url = divarPostUrl("gW4fL8Xq", "فروش آپارتمان اکازیون");
+   579→    expect(url).toContain("https://divar.ir/v/");
+   580→    expect(url).toContain("gW4fL8Xq");
+   581→  });
+   582→
+   583→  test("نگاشت دسته دیوار به نوع معامله آرم (ثبت آگهی)", async () => {
+   584→    // عین نگاشت route ثبت آگهی
+   585→    const CATEGORY_MAP: Record<string, { tradeType: string }> = {
+   586→      "apartment-sell": { tradeType: "فروش" },
+   587→      "apartment-rent": { tradeType: "رهن و اجاره" },
+   588→      "plot-old": { tradeType: "فروش" },
+   589→    };
+   590→    expect(CATEGORY_MAP["apartment-sell"].tradeType).toBe("فروش");
+   591→    expect(CATEGORY_MAP["apartment-rent"].tradeType).toBe("رهن و اجاره");
+   592→  });
+   593→
+   594→  test("اعتبارسنجی فرم ثبت: مالک + موبایل + کد پستی ۱۰ رقمی", () => {
+   595→    const validOwner = (name: string, mobile: string) => name.trim().length >= 3 && /^09\d{9}$/.test(mobile.replace(/\D/g, ""));
+   596→    expect(validOwner("علی محمدی", "09141234567")).toBe(true);
+   597→    expect(validOwner("ع", "09141234567")).toBe(false); // نام کوتاه
+   598→    expect(validOwner("علی محمدی", "914123")).toBe(false); // موبایل ناقص
+   599→    const validPostal = (p: string) => p === "" || p.replace(/\D/g, "").length === 10;
+   600→    expect(validPostal("5133675134")).toBe(true);
+   601→    expect(validPostal("123")).toBe(false);
+   602→  });
+   603→});
+   604→
+   605→// ==========================================================================
+   606→// ۱۰) تنظیمات ایجنت — اعتبارسنجی منطقی
+   607→// ==========================================================================
+   608→
+   609→describe("تنظیمات ایجنت فایل‌یابی", () => {
+   610→  test("پیش‌فرض: وزن ۵۰/۳۰/۲۰، آستانه ۷۰/۴۰، اسکن ۱۵ دقیقه", async () => {
+   611→    const { DIVAR_DEFAULT_SETTINGS } = await import("@/lib/divar/config");
+   612→    expect(DIVAR_DEFAULT_SETTINGS.weightPersonal).toBe(50);
+   613→    expect(DIVAR_DEFAULT_SETTINGS.weightUnderprice).toBe(30);
+   614→    expect(DIVAR_DEFAULT_SETTINGS.weightLocation).toBe(20);
+   615→    expect(DIVAR_DEFAULT_SETTINGS.huntThreshold).toBe(70);
+   616→    expect(DIVAR_DEFAULT_SETTINGS.followThreshold).toBe(40);
+   617→    expect(DIVAR_DEFAULT_SETTINGS.autoScanMinutes).toBe(15);
+   618→  });
+   619→  test("clamp: مقادیر خارج از بازه اصلاح می‌شوند (عین منطق ذخیره)", async () => {
+   620→    const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(n)));
+   621→    expect(clamp(150, 0, 100)).toBe(100);
+   622→    expect(clamp(-5, 0, 100)).toBe(0);
+   623→    expect(clamp(55.7, 0, 100)).toBe(56);
+   624→  });
+   625→  test("دسته‌های دیوار — همه املاک موجودند", async () => {
+   626→    const { DIVAR_REAL_ESTATE_CATEGORIES } = await import("@/lib/divar/config");
+   627→    const values = DIVAR_REAL_ESTATE_CATEGORIES.map((c) => c.value);
+   628→    expect(values).toContain("apartment-sell");
+   629→    expect(values).toContain("plot-old");
+   630→    expect(values).toContain("commercial-rent");
+   631→    expect(values.length).toBeGreaterThanOrEqual(13);
+   632→  });
+   633→});
+   634→
+   635→// ==========================================================================
+   636→// ۱۱) فیلتر مکان ایجنت — ۱۷ منطقه پیش‌فرض مالک + قرارداد فیلتر اسکن/فهرست
+   637→// ==========================================================================
+   638→
+   639→describe("فیلتر مکان — ۱۷ منطقه پیش‌فرض مالک (منطبق با رجیستری آرم)", () => {
+   640→  test("هر ۱۷ نام منطقه به منطقه واقعی آرم حل می‌شود (هیچ نام گمشده نیست)", async () => {
+   641→    const { DEFAULT_LOCATION_AREA_NAMES, DEFAULT_LOCATION_AREA_IDS, resolveAreaIdsByNames } = await import(
+   642→      "@/lib/divar/tabriz-locations"
+   643→    );
+   644→    expect(DEFAULT_LOCATION_AREA_NAMES.length).toBe(17);
+   645→    const r = resolveAreaIdsByNames(DEFAULT_LOCATION_AREA_NAMES);
+   646→    expect(r.missing).toEqual([]); // دقت کامل: هیچ منطقه‌ای حل‌نشده نمی‌ماند
+   647→    expect(r.ids.length).toBe(17); // بدون تکرار
+   648→    expect(DEFAULT_LOCATION_AREA_IDS.length).toBe(17);
+   649→  });
+   650→
+   651→  test("نام‌های محاوره‌ای مالک با نویسه‌های متفاوت هم حل می‌شوند (۳۵ فارسی/لاتین، پرانتز، ZWNJ)", async () => {
+   652→    const { resolveAreaIdsByNames } = await import("@/lib/divar/tabriz-locations");
+   653→    const r = resolveAreaIdsByNames([
+   654→      "۳۵ متری سینا", // ارقام فارسی — نام آرم «35 متری سینا»
+   655→      "دادگستری ایل گلی", // بدون پرانتز — نام آرم «دادگستری (ایل گلی)»
+   656→      "الهی‌پرست", // نیم‌فاصله — نام آرم «الهی پرست»
+   657→      "ولی عصر", // با فاصله — نام آرم «ولیعصر»
+   658→    ]);
+   659→    expect(r.missing).toEqual([]);
+   660→    expect(r.ids.length).toBe(4);
+   661→  });
+   662→
+   663→  test("پیش‌فرض تنظیمات: همان ۱۷ منطقه + پوشش محله‌ها ≥ ۱۵۰", async () => {
+   664→    const { DIVAR_DEFAULT_SETTINGS } = await import("@/lib/divar/config");
+   665→    const { DEFAULT_LOCATION_AREA_IDS, ALL_LINES, TABRIZ_AREAS } = await import("@/lib/divar/tabriz-locations");
+   666→    expect(DIVAR_DEFAULT_SETTINGS.areaIds).toEqual(DEFAULT_LOCATION_AREA_IDS);
+   667→    expect(DIVAR_DEFAULT_SETTINGS.lineIds).toEqual([]);
+   668→    const covered = ALL_LINES.filter((l) => DEFAULT_LOCATION_AREA_IDS.includes(l.areaId)).length;
+   669→    expect(covered).toBeGreaterThanOrEqual(150);
+   670→    expect(covered).toBeLessThanOrEqual(ALL_LINES.length);
+   671→    expect(TABRIZ_AREAS.find((a) => a.id === DIVAR_DEFAULT_SETTINGS.areaIds[0])?.n).toBe("ولیعصر");
+   672→  });
+   673→
+   674→  test("قرارداد فیلتر اسکن (locationAllowed): درون/بیرون/بدون تطبیق/فیلتر خاموش", async () => {
+   675→    const { locationAllowed, ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+   676→    const inLine = ALL_LINES.find((l) => l.n === "ارگ")!; // منطقه 17 شهریور جدید
+   677→    const outLine = ALL_LINES.find((l) => l.areaId !== inLine.areaId)!;
+   678→    const sel = { areaIds: [inLine.areaId], lineIds: [] };
+   679→    // آگهیِ هم‌منطقه → مجاز
+   680→    expect(locationAllowed({ areaId: inLine.areaId, lineId: inLine.id }, sel)).toBe(true);
+   681→    // آگهیِ منطقه دیگر → رد (هرگز ذخیره نمی‌شود)
+   682→    expect(locationAllowed({ areaId: outLine.areaId, lineId: outLine.id }, sel)).toBe(false);
+   683→    // بدون تطبیق قابل اتکا → رد
+   684→    expect(locationAllowed(null, sel)).toBe(false);
+   685→    expect(locationAllowed({ areaId: null, lineId: null }, sel)).toBe(false);
+   686→    // فیلتر خاموش → همه مجاز (حتی بدون تطبیق)
+   687→    expect(locationAllowed(null, { areaIds: [], lineIds: [] })).toBe(true);
+   688→    expect(locationAllowed({ areaId: outLine.areaId, lineId: outLine.id }, { areaIds: [], lineIds: [] })).toBe(true);
+   689→  });
+   690→
+   691→  test("اجتماع منطقه+محله در lineInSelection (منطبق با فیلتر مکان آرم)", async () => {
+   692→    const { lineInSelection, ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+   693→    const a = ALL_LINES[0];
+   694→    const other = ALL_LINES.find((l) => l.areaId !== a.areaId)!;
+   695→    // انتخاب منطقه → همه محله‌هایش مجاز، حتی بدون انتخاب محله
+   696→    expect(lineInSelection(a, { areaIds: [a.areaId], lineIds: [] })).toBe(true);
+   697→    expect(lineInSelection(other, { areaIds: [a.areaId], lineIds: [] })).toBe(false);
+   698→    // انتخاب محله خاص از منطقه دیگر → همان مجاز (اجتماع، نه اشتراک)
+   699→    expect(lineInSelection(other, { areaIds: [a.areaId], lineIds: [other.id] })).toBe(true);
+   700→    expect(lineInSelection(a, { areaIds: [a.areaId], lineIds: [other.id] })).toBe(true);
+   701→    // بدون هیچ انتخابی → همه
+   702→    expect(lineInSelection(a, { areaIds: [], lineIds: [] })).toBe(true);
+   703→  });
+   704→
+   705→  test("فهرست خواندن آگهی‌ها: allowedLineIdsForSelection اجتماع محله‌های مناطق انتخابی", async () => {
+   706→    const { allowedLineIdsForSelection, ALL_LINES, DEFAULT_LOCATION_AREA_IDS } = await import(
+   707→      "@/lib/divar/tabriz-locations"
+   708→    );
+   709→    // فیلتر خاموش → null (پرس‌وجوی بدون قید مکان)
+   710→    expect(allowedLineIdsForSelection({ areaIds: [], lineIds: [] })).toBeNull();
+   711→    // فیلتر ۱۷ منطقه → همه محله‌های همان مناطق
+   712→    const ids = allowedLineIdsForSelection({ areaIds: DEFAULT_LOCATION_AREA_IDS, lineIds: [] })!;
+   713→    const expected = ALL_LINES.filter((l) => DEFAULT_LOCATION_AREA_IDS.includes(l.areaId)).map((l) => l.id);
+   714→    expect(ids.length).toBe(expected.length);
+   715→    for (const id of expected) expect(ids).toContain(id);
+   716→    // محله خاص از منطقه انتخاب‌نشده هم اضافه می‌شود (اجتماع)
+   717→    const someOut = ALL_LINES.find((l) => !DEFAULT_LOCATION_AREA_IDS.includes(l.areaId))!;
+   718→    const ids2 = allowedLineIdsForSelection({ areaIds: DEFAULT_LOCATION_AREA_IDS, lineIds: [someOut.id] })!;
+   719→    expect(ids2).toContain(someOut.id);
+   720→    expect(ids2.length).toBe(expected.length + 1);
+   721→  });
+   722→
+   723→  test("اعتبارسنجی انتخاب مکان: شناسه نامعتبر رد، شناسه معتبر قبول", async () => {
+   724→    const { validateLocationSelection, ALL_LINES, TABRIZ_AREAS } = await import("@/lib/divar/tabriz-locations");
+   725→    const v1 = validateLocationSelection(["fake-area-id"], []);
+   726→    expect(v1.ok).toBe(false);
+   727→    expect(v1.message).toBeTruthy();
+   728→    const v2 = validateLocationSelection([], ["fake-line-id"]);
+   729→    expect(v2.ok).toBe(false);
+   730→    const v3 = validateLocationSelection([TABRIZ_AREAS[0].id], [ALL_LINES[0].id]);
+   731→    expect(v3.ok).toBe(true);
+   732→    expect(v3.message).toBeNull();
+   733→  });
+   734→
+   735→  test("امتیاز مکان با فیلتر فعال: آگهی منطقه انتخابی امتیاز می‌گیرد؛ محله خاص منطقه دیگر هم مجاز است (اجتماع)", async () => {
+   736→    const { scoreLocation } = await import("@/lib/divar/scoring");
+   737→    const { ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+   738→    const inLine = ALL_LINES.find((l) => l.n === "ارگ")!;
+   739→    const outLine = ALL_LINES.find((l) => l.areaId !== inLine.areaId && l.n.length >= 4)!;
+   740→    // درون منطقه انتخابی → امتیاز کامل
+   741→    const r1 = scoreLocation({
+   742→      title: `اپارتمان ${inLine.n}`,
+   743→      locationText: `در تبریز، ${inLine.n}`,
+   744→      selectedAreaIds: [inLine.areaId],
+   745→      selectedLineIds: [],
+   746→    });
+   747→    expect(r1.score).toBeGreaterThan(0);
+   748→    expect(r1.reason).not.toContain("بیرون از محدوده");
+   749→    // بیرون از انتخاب → صفر + دلیل
+   750→    const r2 = scoreLocation({
+   751→      title: `اپارتمان ${outLine.n}`,
+   752→      locationText: `در تبریز، ${outLine.n}`,
+   753→      selectedAreaIds: [inLine.areaId],
+   754→      selectedLineIds: [],
+   755→    });
+   756→    expect(r2.score).toBe(0);
+   757→    expect(r2.reason).toContain("بیرون از محدوده");
+   758→    // محله خاص از منطقه دیگر در انتخاب محله‌ها → مجاز (اجتماع)
+   759→    const r3 = scoreLocation({
+   760→      title: `اپارتمان ${outLine.n}`,
+   761→      locationText: `در تبریز، ${outLine.n}`,
+   762→      selectedAreaIds: [inLine.areaId],
+   763→      selectedLineIds: [outLine.id],
+   764→    });
+   765→    expect(r3.score).toBeGreaterThan(0);
+   766→    expect(r3.reason).not.toContain("بیرون از محدوده");
+   767→  });
+   768→});
+   769→
+   770→describe("فیلتر مکان — مهاجرت یک‌باره و ذخیره انتخاب (پایگاه)", () => {
+   771→  test("نصب قدیمی بدون انتخاب مکانی → پس از نخستین بارگذاری، ۱۷ منطقه پیش‌فرض مالک فعال می‌شود", async () => {
+   772→    const { db } = await import("@/lib/db");
+   773→    const { loadDivarSettings } = await import("@/lib/divar/store");
+   774→    const { DEFAULT_LOCATION_AREA_IDS } = await import("@/lib/divar/tabriz-locations");
+   775→    // شبیه‌سازی ردیف قدیمی: بدون انتخاب مکانی و بدون پرچم مهاجرت
+   776→    const oldJson = JSON.stringify({
+   777→      timeWindow: "24h",
+   778→      categories: ["apartment-sell"],
+   779→      weightPersonal: 50,
+   780→      weightUnderprice: 30,
+   781→      weightLocation: 20,
+   782→      huntThreshold: 70,
+   783→      followThreshold: 40,
+   784→      autoScanMinutes: 15,
+   785→      areaIds: [],
+   786→      lineIds: [],
+   787→      maxScanPages: 3,
+   788→      minMarketSample: 4,
+   789→      armPriceWeight: 0.35,
+   790→    });
+   791→    await db.divarSetting.upsert({
+   792→      where: { id: "singleton" },
+   793→      create: { id: "singleton", dataJson: oldJson, locFilterInit: false },
+   794→      update: { dataJson: oldJson, locFilterInit: false },
+   795→    });
+   796→    const settings = await loadDivarSettings();
+   797→    expect(settings.areaIds).toEqual(DEFAULT_LOCATION_AREA_IDS);
+   798→    expect(settings.lineIds).toEqual([]);
+   799→    // پرچم مهاجرت ثبت شد؟
+   800→    const row = await db.divarSetting.findUnique({ where: { id: "singleton" } });
+   801→    expect(row?.locFilterInit).toBe(true);
+   802→  });
+   803→
+   804→  test("پس از مقداردهی، «همه تبریز» (خالی) انتخاب آگاهانه است و به پیش‌فرض برنمی‌گردد", async () => {
+   805→    const { db } = await import("@/lib/db");
+   806→    const { loadDivarSettings, saveDivarSettings } = await import("@/lib/divar/store");
+   807→    await saveDivarSettings({ areaIds: [], lineIds: [] });
+   808→    const settings = await loadDivarSettings();
+   809→    expect(settings.areaIds).toEqual([]);
+   810→    expect(settings.lineIds).toEqual([]);
+   811→  });
+   812→
+   813→  test("ذخیره انتخاب با حذف تکرار و پاک‌سازی مقادیر غیررشته‌ای", async () => {
+   814→    const { saveDivarSettings, loadDivarSettings } = await import("@/lib/divar/store");
+   815→    const { TABRIZ_AREAS } = await import("@/lib/divar/tabriz-locations");
+   816→    const ids = [TABRIZ_AREAS[0].id, TABRIZ_AREAS[1].id, TABRIZ_AREAS[0].id];
+   817→    await saveDivarSettings({ areaIds: ids });
+   818→    const settings = await loadDivarSettings();
+   819→    expect(settings.areaIds.length).toBe(2);
+   820→    // بازگرداندن پیش‌فرض برای تست‌های بعدی
+   821→    const { DEFAULT_LOCATION_AREA_IDS } = await import("@/lib/divar/tabriz-locations");
+   822→    await saveDivarSettings({ areaIds: [...DEFAULT_LOCATION_AREA_IDS], lineIds: [] });
+   823→  });
+   824→});
+   825→

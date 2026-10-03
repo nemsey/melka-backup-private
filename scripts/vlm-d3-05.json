@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Yes, the insights panel is rendered with readable insight cards, and nothing appears visually broken.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1789554745,
+  "id": "2026091618322352cd3d7caea94d97",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "2026091618322352cd3d7caea94d97",
+  "usage": {
+    "completion_tokens": 19,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 2540,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 2559
+  }
+}

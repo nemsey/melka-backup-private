@@ -1,0 +1,16 @@
+{
+  "policyId": "lp-arm-listing-p6545-retrain",
+  "version": "v2-retrain",
+  "trainedAt": "2026-10-03T09:07:31.075Z",
+  "tierAtTraining": 3,
+  "council": {
+    "source": "شورای عالی ملکا — جلسه راهبردی ۰۳۳ (ملکا-شورا-۱۴۰۵-۰۳۳)",
+    "approvedBy": "شورای عالی ملکا (دبیر: ف۱)",
+    "approvedAt": "2026-10-03T00:00:00.000Z"
+  },
+  "liftBefore": 9.8,
+  "liftAfter": 46.28,
+  "kept": true,
+  "weightUpdates": [],
+  "evidence": "download/p6545/retrain-proof.json"
+}

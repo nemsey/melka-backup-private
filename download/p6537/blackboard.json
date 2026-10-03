@@ -1,0 +1,82 @@
+{
+  "entries": 791,
+  "verify": {
+    "total": 791,
+    "intact": 791
+  },
+  "sample": [
+    {
+      "id": "bb-mus3mxmi-t8ot",
+      "namespace": "daemon",
+      "engineId": "event-bus",
+      "writtenAt": "2026-10-03T07:57:21.978Z",
+      "payload": {
+        "name": "policy.retired",
+        "at": "2026-10-03T07:57:21.978Z",
+        "detail": {
+          "policyId": "agent-policy-arm-requests-v1"
+        }
+      },
+      "hash": "6c78f6ec85eb9ca40dab75c5a57323b7"
+    },
+    {
+      "id": "bb-mus3mxmi-gxqh",
+      "namespace": "daemon",
+      "engineId": "event-bus",
+      "writtenAt": "2026-10-03T07:57:21.978Z",
+      "payload": {
+        "name": "policy.retired",
+        "at": "2026-10-03T07:57:21.978Z",
+        "detail": {
+          "policyId": "agent-policy-arm-listings-v1"
+        }
+      },
+      "hash": "131cc31a28cd4b1916594ef01f577f56"
+    },
+    {
+      "id": "bb-mus3mxmm-ykb3",
+      "namespace": "daemon",
+      "engineId": "event-bus",
+      "writtenAt": "2026-10-03T07:57:21.982Z",
+      "payload": {
+        "name": "diagnosis.completed",
+        "at": "2026-10-03T07:57:21.982Z",
+        "detail": {
+          "health": "degraded",
+          "score": 86,
+          "problems": 4
+        }
+      },
+      "hash": "36c927cd08ea4c3933e8c3d3a2476722"
+    },
+    {
+      "id": "bb-mus3mxmn-fcjl",
+      "namespace": "daemon",
+      "engineId": "event-bus",
+      "writtenAt": "2026-10-03T07:57:21.983Z",
+      "payload": {
+        "name": "repair.proposed",
+        "at": "2026-10-03T07:57:21.983Z",
+        "detail": {
+          "count": 3,
+          "all": "pending",
+          "requiresCouncilApproval": true
+        }
+      },
+      "hash": "40538abd194f6a7e43028f9d5e7947e8"
+    },
+    {
+      "id": "bb-mus3mxmn-p56l",
+      "namespace": "p7",
+      "engineId": "core-cycle",
+      "writtenAt": "2026-10-03T07:57:21.983Z",
+      "payload": {
+        "ranAt": "2026-10-03T07:57:21.934Z",
+        "brier": 0.2255,
+        "tier": 3,
+        "coverage": 100
+      },
+      "hash": "e9a727683896ba408c700410f85c900c"
+    }
+  ]
+}

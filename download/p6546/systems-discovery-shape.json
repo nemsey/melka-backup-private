@@ -1,0 +1,87 @@
+{
+  "probeAt": "2026-10-03T13:37:33.923Z",
+  "apu:properties/info/by-code/58398": {
+    "status": 200,
+    "head": "{\"statusCode\":200,\"status\":true,\"data\":{\"_id\":\"6a96f5da53326239569dd208\",\"inputs\":{\"space\":68,\"totalPrice\":8750000000,\"floor\":1,\"room_whole\":1,\"floor_whole\":4,\"unit\":2,\"year\":{\"label\":1385,\"value\":1385},\"side\":{\"label\":\"جنوبی\",\"value\":\"south\"},\"construct_type\":{\"label\":\"مجتمع\",\"value\":\"complex\"},\"sanad\":{\"label\":\"شش دانگ\",\"value\":\"sixdong\"},\"elevator\":true,\"parking\":true},\"details\":[{\"label\":\"کد آگهی\",\"name\":\"code\",\"value\":\"58398\",\"isSpecial\":true},{\"label\":\"متراژ\",\"name\":\"space\",\"value\":68,\"uni"
+  },
+  "apu:properties/details/635945ee6975593b2e7c071b": {
+    "status": 404,
+    "head": "{\"statusCode\":404,\"status\":false,\"data\":{\"error\":\"PageNotFoundError\",\"stack\":null},\"message\":\"صفحه مورد نظر یافت نشد\"}"
+  },
+  "apu:requests/list?page=1&limit=2": {
+    "status": 401,
+    "head": "{\"statusCode\":401,\"status\":false,\"data\":{\"error\":\"UnAuthorizedError\"},\"message\":\"عدم احراز هویت! لطفا مجددا لاگین بفرمایید.\"}"
+  },
+  "gap:api/v1": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/v1</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/v1/": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/v1/</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/health": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/health</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/auth": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/auth</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/auth/login": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/auth/login</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/authentication/otp/login": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/authentication/otp/login</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/v1/auth/otp": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/v1/auth/otp</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/chats": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/chats</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/v1/chats": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/v1/chats</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/rooms": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/rooms</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/messages": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/messages</pre>\n</body>\n</html>\n"
+  },
+  "gap:api-docs": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api-docs</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/swagger": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/swagger</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/v1/api-service/subscribe": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/v1/api-service/subscribe</pre>\n</body>\n</html>\n"
+  },
+  "gapRootHrefs": [],
+  "mpRootHrefs": []
+}

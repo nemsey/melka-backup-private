@@ -1,0 +1,31 @@
+{
+  "cookies": [
+    {
+      "name": "__next_hmr_refresh_hash__",
+      "value": "69",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1.0,
+      "size": 27,
+      "httpOnly": false,
+      "secure": false,
+      "session": true
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "melk-app-state",
+          "value": "{\"state\":{\"tileSettings\":{}},\"version\":0}"
+        },
+        {
+          "name": "melk.secure.v1",
+          "value": "{\"iv\":\"jy4PXbOIxkgCwmPZ\",\"data\":\"Bg6ibEzaBe1mXh06qK6eRoGq/dfz+KxhgFP8JSZrJjvu1unS3VJYB+3q+9xDOKU412gbaggvKXHhhdrQNOsdl6d995zrTS3v/ZQAwnEYYYqimIpN3xgWidtgJmm75NL0hv+xbz/oNP3TPfDqDTBI43jPJHsXb8uhv5ipofAhWKzrsTaR2w4MMr8UUONoQGX0vtB1u04e5vaIs30FMz5/jTT65NH/VDn4w4bG+wX4GOqvvhKKhNpVWhkb5wEWMcaAF20oHo/LnK3E8ftqkwK4uaPpvRkfe87F+m0RFRAKaMxiGZY2fx/zoxPlLCiSEejfNPXPNtzCb6lnZYRgnO+dt8RuASVVR4DY\"}"
+        }
+      ],
+      "sessionStorage": []
+    }
+  ]
+}

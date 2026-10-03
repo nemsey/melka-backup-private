@@ -1,0 +1,1111 @@
+     1→/**
+     2→ * همگام‌سازی داده CRM از سامانه‌های واقعی ملک تبریز به پایگاه محلی
+     3→ * ------------------------------------------------------
+     4→ * استراتژی: «استخراج و کش» — داده‌های خام از arus-api.melketabriz.ir
+     5→ * (توکن‌دار) کشیده و در Prisma ذخیره می‌شوند؛ تحلیل‌های ایجنت
+     6→ * و فیلترهای سنگین روی پایگاه محلی اجرا می‌شوند تا عملکرد بالا و
+     7→ * بار کم روی سامانه اصلی حفظ شود.
+     8→ *
+     9→ * ✅ فقط داده واقعی: هیچ داده دمو تولید نمی‌شود. اگر سامانه در دسترس
+    10→ * نباشد، خطای شفاف فارسی برگردانده می‌شود و کش قبلی (انقضادار) حفظ
+    11→ * می‌شود و وضعیت SyncState ثبت می‌گردد.
+    12→ *
+    13→ * سه گزارش عین خود سامانه ARM استخراج می‌شود:
+    14→ *   ۱) گزارش تطابق معاملات (traded-count-total) + خلاصه چهارگانه
+    15→ *   ۲) فهرست کاربران/مشاوران (realtors/list)
+    16→ *   ۳) تعاملات مشاوران با یکدیگر (realtor-interactions)
+    17→ *
+    18→ * نکته مهم: توکن ARM از نشست کاربر واردشده استفاده می‌شود (جریان
+    19→ * OTP واقعی)؛ اگر توکن منقضی شده باشد، با refreshToken تمدید می‌شود.
+    20→ */
+    21→
+    22→import { randomUUID } from "crypto";
+    23→import { db } from "@/lib/db";
+    24→import {
+    25→  getContractRepository,
+    26→  getExpertRepository,
+    27→  getMarketRepository,
+    28→  getTransactionRepository,
+    29→  getVisitRepository,
+    30→  type ContractUpsertInput,
+    31→  type ExpertUpsertInput,
+    32→  type InteractionUpsertInput,
+    33→  type SupplyDemandUpsertInput,
+    34→  type TransactionUpsertInput,
+    35→  type VisitUpsertInput,
+    36→} from "@/core/repositories";
+    37→import { getMelkProvider } from "./provider";
+    38→import { logSync } from "@/lib/logger";
+    39→import { syncMode } from "./sync-mode";
+    40→import { MELK_ENDPOINTS } from "./endpoints";
+    41→import type {
+    42→  CommissionCityConfig,
+    43→  CrmContract,
+    44→  CrmExpert,
+    45→  CrmInteraction,
+    46→  CrmSupplyDemand,
+    47→  CrmTransaction,
+    48→  CrmVisit,
+    49→  PriceIndexConfig,
+    50→  RefListItem,
+    51→  TradedSummary,
+    52→} from "./types";
+    53→import { MelkApiError } from "./types";
+    54→import {
+    55→  mapArmInteractionRow,
+    56→  mapArmRealtorRow,
+    57→  mapArmTradedRow,
+    58→  mapArmTradedSummary,
+    59→  mapArmSupplyDemandRow,
+    60→  mapArmVisitRow,
+    61→  extractPagedList,
+    62→  mapArmContractRow,
+    63→  mergeArmContractInfo,
+    64→  mapCommissionConfig,
+    65→  mapPriceIndexAreas,
+    66→  mapPriceIndexConfig,
+    67→  mapPriceIndexDetails,
+    68→  mapRefList,
+    69→} from "./adapters";
+    70→import { armCall } from "./client";
+    71→import { getMelkApiConfig } from "./config";
+    72→
+    73→/** نتیجه همگام‌سازی با جزئیات وضعیت */
+    74→export interface SyncResult {
+    75→  ok: boolean;
+    76→  transactions: number;
+    77→  experts: number;
+    78→  interactions: number;
+    79→  visits: number;
+    80→  supplyDemand: number;
+    81→  contracts: number;
+    82→  syncedAt: string;
+    83→  error?: string;
+    84→  errorCode?: string;
+    85→}
+    86→
+    87→/** آخرین وضعیت موفق همگام‌سازی (برای نمایش در UI) */
+    88→export interface SyncStateInfo {
+    89→  lastSyncedAt: string | null;
+    90→  lastSuccessAt: string | null;
+    91→  lastError: string | null;
+    92→  lastErrorCode: string | null;
+    93→  transactionCount: number;
+    94→  expertCount: number;
+    95→  interactionCount: number;
+    96→  visitCount: number;
+    97→  supplyDemandCount: number;
+    98→  /** خلاصه چهارگانه گزارش تطابق (از خود سامانه ARM) */
+    99→  summary: TradedSummary | null;
+   100→  attempts: number;
+   101→}
+   102→
+   103→const SYNC_STATE_ID = "singleton";
+   104→
+   105→// ==========================================================================
+   106→// قفل همزمانی sync — HOTFIX-05 (B6)
+   107→// ==========================================================================
+   108→// الگوی __divarScanRunning (lib/divar/scan.ts) به لایه sync منتقل شد:
+   109→// همگام‌سازی deleteMany+createMany هرگز نباید موازی اجرا شود. فراخوان‌های
+   110→// موازی به همان اجرای در-جریان «می‌پیوندند» (نتیجه مشترک، بدون شروع مجدد).
+   111→
+   112→let __armSyncInFlight: Promise<SyncResult> | null = null;
+   113→let __armSyncExecutionCount = 0;
+   114→
+   115→/** آیا همگام‌سازی ARM در جریان است؟ (برای مشاهده‌پذیری/تست) */
+   116→export function isArmSyncInFlight(): boolean {
+   117→  return __armSyncInFlight !== null;
+   118→}
+   119→
+   120→/** تعداد اجرای واقعی sync از بالا آمدن فرایند — متریک ضد-همزمانی (HOTFIX-05) */
+   121→export function getArmSyncExecutionCount(): number {
+   122→  return __armSyncExecutionCount;
+   123→}
+   124→
+   125→/** همگام‌سازی با توکن ARM — با قفل همزمانی: اجرای موازی = پیوستن به اجرای جاری */
+   126→export function syncFromArm(armToken: string): Promise<SyncResult> {
+   127→  if (__armSyncInFlight) return __armSyncInFlight; // در جریان است → صبر تا اتمام (نه شروع مجدد)
+   128→  __armSyncExecutionCount += 1;
+   129→  __armSyncInFlight = doSyncFromArm(armToken).finally(() => {
+   130→    __armSyncInFlight = null;
+   131→  });
+   132→  return __armSyncInFlight;
+   133→}
+   134→
+   135→async function readSyncState() {
+   136→  let state = await db.syncState.findUnique({ where: { id: SYNC_STATE_ID } });
+   137→  if (!state) {
+   138→    state = await db.syncState.create({ data: { id: SYNC_STATE_ID } });
+   139→  }
+   140→  return state;
+   141→}
+   142→
+   143→function parseSummary(json: string | null | undefined): TradedSummary | null {
+   144→  if (!json) return null;
+   145→  try {
+   146→    const s = JSON.parse(json) as TradedSummary;
+   147→    if (typeof s.totalCount === "number") return s;
+   148→    return null;
+   149→  } catch {
+   150→    return null;
+   151→  }
+   152→}
+   153→
+   154→/** خواندن وضعیت همگام‌سازی برای نمایش (بدون خطا پرتاب نمی‌شود) */
+   155→export async function getSyncState(): Promise<SyncStateInfo> {
+   156→  const state = await readSyncState();
+   157→  const [txCount, exCount, inCount, viCount, sdCount] = await Promise.all([
+   158→    db.transactionRecord.count(),
+   159→    db.expertRecord.count(),
+   160→    db.interactionRecord.count(),
+   161→    db.visitRecord.count(),
+   162→    db.supplyDemandRecord.count(),
+   163→  ]);
+   164→  return {
+   165→    lastSyncedAt: state.lastSyncedAt?.toISOString() ?? null,
+   166→    lastSuccessAt: state.lastSuccessAt?.toISOString() ?? null,
+   167→    lastError: state.lastError,
+   168→    lastErrorCode: state.lastErrorCode,
+   169→    transactionCount: txCount,
+   170→    expertCount: exCount,
+   171→    interactionCount: inCount,
+   172→    visitCount: viCount,
+   173→    supplyDemandCount: sdCount,
+   174→    summary: parseSummary(state.summaryJson),
+   175→    attempts: state.attempts,
+   176→  };
+   177→}
+   178→
+   179→async function writeSyncState(patch: {
+   180→  lastSyncedAt?: Date;
+   181→  lastSuccessAt?: Date;
+   182→  lastError?: string | null;
+   183→  lastErrorCode?: string | null;
+   184→  attempts?: number;
+   185→  summaryJson?: string | null;
+   186→  /** P2-04 — نقطه ازسرگیری (JSON {runId, done, counts}) */
+   187→  lastSyncCursor?: string | null;
+   188→  /** P2-04 — علامت آب آخرین داده تازه */
+   189→  lastWatermark?: Date | null;
+   190→  /** P2-04 — شناسه اجرای جاری */
+   191→  syncRunId?: string | null;
+   192→}): Promise<void> {
+   193→  await db.syncState.upsert({
+   194→    where: { id: SYNC_STATE_ID },
+   195→    update: patch,
+   196→    create: { id: SYNC_STATE_ID, ...patch },
+   197→  });
+   198→}
+   199→
+   200→// ==========================================================================
+   201→// استخراج داده واقعی
+   202→// ==========================================================================
+   203→
+   204→/** خواندن یک گزارش صفحه‌بندی‌شده تا انتها (با سقف ایمن صفحات) */
+   205→async function fetchAllPages<T>(
+   206→  path: string,
+   207→  armToken: string,
+   208→  maxPages: number,
+   209→  pageLimit: number,
+   210→  mapRow: (row: Record<string, unknown>, index: number, page: number, limit: number) => T | null
+   211→): Promise<{ rows: T[]; rawSummary: unknown }> {
+   212→  const cfg = getMelkApiConfig();
+   213→  const rows: T[] = [];
+   214→  let rawSummary: unknown = null;
+   215→  for (let page = 1; page <= maxPages; page++) {
+   216→    const res = await armCall<unknown>({
+   217→      path,
+   218→      baseUrl: cfg.armApiBase,
+   219→      token: armToken,
+   220→      query: { page, limit: pageLimit },
+   221→      timeoutMs: cfg.timeoutMs,
+   222→      maxRetries: 0, // در حلقه صفحه‌بندی تلاش مجدد نمی‌کنیم (صفحه بعدی خودش تازه می‌شود)
+   223→    });
+   224→    // خلاصه چهارگانه گزارش تطابق — خود پاسخ «data» است
+   225→    if (path === MELK_ENDPOINTS.arm.tradedTotal && res.data && typeof res.data === "object") {
+   226→      const d = res.data as Record<string, unknown>;
+   227→      if (typeof d.totalCount === "number" || typeof d.hasBoth === "number") {
+   228→        rawSummary = d;
+   229→      }
+   230→    }
+   231→    const { rows: pageRows, total, totalPages } = extractPagedList(res.data, (row, i) => mapRow(row, i, page, pageLimit));
+   232→    rows.push(...pageRows);
+   233→    const pages = totalPages ?? (total > 0 ? Math.ceil(total / pageLimit) : 1);
+   234→    if (page >= pages || pageRows.length === 0) break;
+   235→  }
+   236→  return { rows, rawSummary };
+   237→}
+   238→
+   239→/**
+   240→ * استخراج کامل معاملات، کارشناسان، تعاملات، بازدیدها و عرضه/تقاضا از سامانه ARM
+   241→ * با توکن ARM. صفحه‌بندی به‌طور خودکار طی می‌شود (تا سقف ایمن صفحات).
+   242→ * (پیاده‌سازی داخلی — همیشه از syncFromArm استفاده کنید تا قفل همزمانی اعمال شود)
+   243→ */
+   244→async function doSyncFromArm(armToken: string): Promise<SyncResult> {
+   245→  const now = new Date();
+   246→  const incremental = syncMode() === "incremental";
+   247→  const runId = randomUUID();
+   248→  const syncStartedAt = Date.now();
+   249→  await writeSyncState({
+   250→    lastSyncedAt: now,
+   251→    // شناسه اجرا فقط در حالت افزایشی معنا دارد (legacy به آن دست نمی‌زند)
+   252→    ...(incremental ? { syncRunId: runId } : {}),
+   253→  });
+   254→  // P2-05 — رویداد الزامی همگام‌سازی: آغاز
+   255→  logSync("sync-run", { status: "start", mode: incremental ? "incremental" : "legacy", detail: { runId } });
+   256→
+   257→  try {
+   258→    // ---------------- ۱) گزارش تطابق معاملات + خلاصه ----------------
+   259→    const { rows: transactions, rawSummary } = await fetchAllPages(
+   260→      MELK_ENDPOINTS.arm.tradedTotal,
+   261→      armToken,
+   262→      50,
+   263→      100,
+   264→      mapArmTradedRow
+   265→    );
+   266→    const summary = mapArmTradedSummary(rawSummary) ?? computeSummaryFromRows(transactions);
+   267→
+   268→    // ---------------- ۲) فهرست کاربران/مشاوران ----------------
+   269→    const { rows: experts } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorsList, armToken, 30, 100, mapArmRealtorRow);
+   270→
+   271→    // ---------------- ۳) تعاملات مشاوران با یکدیگر ----------------
+   272→    let interactions: CrmInteraction[] = [];
+   273→    let interactionsFetched = false;
+   274→    try {
+   275→      const { rows: inRows } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorInteractions, armToken, 20, 200, mapArmInteractionRow);
+   276→      interactions = inRows;
+   277→      interactionsFetched = true;
+   278→    } catch {
+   279→      // تعاملات گزارش مکمل است — نبودش نباید کل همگام‌سازی را شکست بدهد
+   280→      interactions = [];
+   281→    }
+   282→
+   283→    // ---------------- ۴) بازدیدها و پیگیری‌ها (غیربحرانی) ----------------
+   284→    let visits: CrmVisit[] = [];
+   285→    let visitsFetched = false;
+   286→    try {
+   287→      const { rows: viRows } = await fetchAllPages(MELK_ENDPOINTS.arm.visitsList, armToken, 20, 100, mapArmVisitRow);
+   288→      visits = viRows;
+   289→      visitsFetched = true;
+   290→    } catch {
+   291→      visits = [];
+   292→    }
+   293→
+   294→    // ---------------- ۵) گزارش عرضه و تقاضا (غیربحرانی) ----------------
+   295→    let supplyDemand: CrmSupplyDemand[] = [];
+   296→    let supplyDemandFetched = false;
+   297→    try {
+   298→      const { rows: sdRows } = await fetchAllPages(MELK_ENDPOINTS.armReports.supplyDemand, armToken, 10, 100, mapArmSupplyDemandRow);
+   299→      supplyDemand = sdRows;
+   300→      supplyDemandFetched = true;
+   301→    } catch {
+   302→      supplyDemand = [];
+   303→    }
+   304→
+   305→    // ---------------- ۶) قراردادها و اسناد (صورت وضعیت‌ها) (غیربحرانی) ----------------
+   306→    // لیست + جزئیات هر قرارداد (خریداران، فروشندگان، حق‌السهم مشاوران)
+   307→    let contracts: CrmContract[] = [];
+   308→    let contractsFetched = false;
+   309→    try {
+   310→      contracts = await fetchContracts(armToken);
+   311→      contractsFetched = true;
+   312→    } catch {
+   313→      contracts = [];
+   314→    }
+   315→
+   316→    // ---------------- ذخیره در پایگاه محلی ----------------
+   317→    if (incremental) {
+   318→      // P2-04 — مسیر افزایشی: upsert بر کلید طبیعی + نقطه ازسرگیری + نامه مرده
+   319→      await applyIncrementalSync(runId, {
+   320→        transactions, experts, interactions, visits, supplyDemand, contracts,
+   321→        interactionsFetched, visitsFetched, supplyDemandFetched, contractsFetched,
+   322→      });
+   323→    } else {
+   324→      // مسیر legacy — عین کد قبلی: پاک‌سازی کامل + درج اتمیک
+   325→      await db.$transaction([
+   326→        db.transactionRecord.deleteMany({}),
+   327→        db.expertRecord.deleteMany({}),
+   328→        db.interactionRecord.deleteMany({}),
+   329→        db.visitRecord.deleteMany({}),
+   330→        db.supplyDemandRecord.deleteMany({}),
+   331→        db.contractRecord.deleteMany({}),
+   332→        ...toTxCreates(transactions),
+   333→        ...toExCreates(experts),
+   334→        ...toInCreates(interactions),
+   335→        ...toViCreates(visits),
+   336→        ...toSdCreates(supplyDemand),
+   337→        ...toContractCreates(contracts),
+   338→      ]);
+   339→    }
+   340→
+   341→    const successAt = new Date();
+   342→    await writeSyncState({
+   343→      lastSuccessAt: successAt,
+   344→      lastError: null,
+   345→      lastErrorCode: null,
+   346→      attempts: 0,
+   347→      summaryJson: summary ? JSON.stringify(summary) : null,
+   348→      ...(incremental ? { lastWatermark: successAt } : {}),
+   349→    });
+   350→    // P2-05 — رویداد الزامی همگام‌سازی: پایان موفق
+   351→    logSync("sync-run", {
+   352→      status: "ok",
+   353→      mode: incremental ? "incremental" : "legacy",
+   354→      duration: Date.now() - syncStartedAt,
+   355→      detail: {
+   356→        runId,
+   357→        transactions: transactions.length,
+   358→        experts: experts.length,
+   359→        interactions: interactions.length,
+   360→        visits: visits.length,
+   361→        supplyDemand: supplyDemand.length,
+   362→        contracts: contracts.length,
+   363→      },
+   364→    });
+   365→
+   366→    return {
+   367→      ok: true,
+   368→      transactions: transactions.length,
+   369→      experts: experts.length,
+   370→      interactions: interactions.length,
+   371→      visits: visits.length,
+   372→      supplyDemand: supplyDemand.length,
+   373→      contracts: contracts.length,
+   374→      syncedAt: successAt.toISOString(),
+   375→    };
+   376→  } catch (err) {
+   377→    const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error)?.message ?? "خطای نامشخص", 500, false);
+   378→    const state = await readSyncState();
+   379→    await writeSyncState({
+   380→      lastError: e.message,
+   381→      lastErrorCode: e.code,
+   382→      attempts: state.attempts + 1,
+   383→    });
+   384→    // P2-05 — رویداد الزامی همگام‌سازی: شکست
+   385→    logSync("sync-run", {
+   386→      status: "fail",
+   387→      mode: incremental ? "incremental" : "legacy",
+   388→      duration: Date.now() - syncStartedAt,
+   389→      errorCode: e.code,
+   390→      detail: { runId },
+   391→    });
+   392→    return {
+   393→      ok: false,
+   394→      transactions: 0,
+   395→      experts: 0,
+   396→      interactions: 0,
+   397→      visits: 0,
+   398→      supplyDemand: 0,
+   399→      contracts: 0,
+   400→      syncedAt: now.toISOString(),
+   401→      error: e.message,
+   402→      errorCode: e.code,
+   403→    };
+   404→  }
+   405→}
+   406→
+   407→/** اگر سامانه خلاصه چهارگانه را نفرستاد، از ردیف‌ها محاسبه می‌شود */
+   408→function computeSummaryFromRows(rows: CrmTransaction[]): TradedSummary {
+   409→  return {
+   410→    totalCount: rows.length,
+   411→    hasRequestEvent: rows.filter((r) => r.eventsCount > 0).length,
+   412→    hasSuggestedProperty: rows.filter((r) => r.suggestedPropertyCount > 0).length,
+   413→    hasBoth: rows.filter((r) => r.eventsCount > 0 && r.suggestedPropertyCount > 0).length,
+   414→  };
+   415→}
+   416→
+   417→// ==========================================================================
+   418→// P2-04 — همگام‌سازی افزایشی (MELK_SYNC_MODE=incremental)
+   419→// ==========================================================================
+   420→
+   421→/** نگاشت‌های upsert — عین فیلدهای toXxxCreates، فقط به‌جای عملیات Prisma شیء ورودی */
+   422→export const toTxUpsert = (t: CrmTransaction): TransactionUpsertInput => ({
+   423→  id: t.id,
+   424→  contractDate: new Date(t.contractDate),
+   425→  // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع
+   426→  rawDate: t.rawDate,
+   427→  propertyCode: t.propertyCode,
+   428→  propertyCustomer: t.propertyCustomer,
+   429→  requestCode: t.requestCode,
+   430→  requestCustomer: t.requestCustomer,
+   431→  contractHolo: t.contractHolo,
+   432→  suggestedPropertyCount: t.suggestedPropertyCount,
+   433→  eventsCount: t.eventsCount,
+   434→});
+   435→
+   436→export const toExUpsert = (e: CrmExpert): ExpertUpsertInput => ({
+   437→  id: e.id,
+   438→  personnelCode: e.personnelCode,
+   439→  fullName: e.fullName,
+   440→  mobile: e.mobile,
+   441→  role: e.role,
+   442→  businessTitle: e.businessTitle,
+   443→  creator: e.creator,
+   444→  active: e.active,
+   445→  createdAt: new Date(e.createdAt),
+   446→});
+   447→
+   448→export const toInUpsert = (i: CrmInteraction): InteractionUpsertInput => ({
+   449→  id: i.id,
+   450→  requestRealtorName: i.requestRealtorName,
+   451→  propertyRealtorName: i.propertyRealtorName,
+   452→  count: i.count,
+   453→});
+   454→
+   455→export const toViUpsert = (v: CrmVisit): VisitUpsertInput => ({
+   456→  id: v.id,
+   457→  propertyCode: v.propertyCode,
+   458→  requesterName: v.requesterName,
+   459→  checkerName: v.checkerName,
+   460→  propertyRealtorName: v.propertyRealtorName,
+   461→  checkTime: v.checkTime ? new Date(v.checkTime) : null,
+   462→  createdAt: new Date(v.createdAt),
+   463→  status: v.status,
+   464→});
+   465→
+   466→const toSdUpsert = (s: CrmSupplyDemand): SupplyDemandUpsertInput => ({
+   467→  id: s.id,
+   468→  rangeTitle: s.rangeTitle,
+   469→  propertyCount: s.propertyCount,
+   470→  requestPercent: s.requestPercent,
+   471→  status: s.status,
+   472→});
+   473→
+   474→export const toContractUpsert = (c: CrmContract): ContractUpsertInput => ({
+   475→  id: c.id,
+   476→  status: c.status,
+   477→  // P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع
+   478→  rawDate: c.rawDate,
+   479→  contractHolo: c.contractHolo,
+   480→  propertyCode: c.propertyCode,
+   481→  requestCode: c.requestCode,
+   482→  contractType: c.contractType,
+   483→  creatorName: c.creatorName,
+   484→  createdAt: c.createdAt ? new Date(c.createdAt) : null,
+   485→  contractDate: c.contractDate ? new Date(c.contractDate) : null,
+   486→  documentDate: c.documentDate ? new Date(c.documentDate) : null,
+   487→  deliveryDate: c.deliveryDate ? new Date(c.deliveryDate) : null,
+   488→  propertyTitle: c.propertyTitle,
+   489→  propertyAddress: c.propertyAddress,
+   490→  buyerListJson: c.buyers.length > 0 ? JSON.stringify(c.buyers) : null,
+   491→  sellerListJson: c.sellers.length > 0 ? JSON.stringify(c.sellers) : null,
+   492→  realtorListJson: c.realtorShares.length > 0 ? JSON.stringify(c.realtorShares) : null,
+   493→  canAddRealtor: c.canAddRealtor,
+   494→});
+   495→
+   496→/** ثبت/افزایش نامه مرده برای یک ردیف ناموفق — attempts پیاپی؛ ۳+ یعنی «مرده» */
+   497→async function recordDeadLetter(runId: string, entity: string, naturalKey: string, err: unknown): Promise<void> {
+   498→  const message = ((err as Error)?.message ?? "خطای نامشخص").slice(0, 300);
+   499→  await db.syncDeadLetter
+   500→    .upsert({
+   501→      where: { entity_naturalKey: { entity, naturalKey } },
+   502→      create: { runId, entity, naturalKey, attempts: 1, lastError: message },
+   503→      update: { runId, attempts: { increment: 1 }, lastError: message, lastAttemptAt: new Date(), resolvedAt: null },
+   504→    })
+   505→    .catch(() => undefined); // خطای خود نامه مرده هرگز مسیر افزایشی را نمی‌شکند
+   506→}
+   507→
+   508→/** ردیفی که این بار موفق شد → نامه مرده‌اش «حل‌شده» می‌شود */
+   509→async function resolveDeadLetters(entity: string, naturalKeys: string[]): Promise<void> {
+   510→  if (naturalKeys.length === 0) return;
+   511→  await db.syncDeadLetter
+   512→    .updateMany({ where: { entity, naturalKey: { in: naturalKeys }, resolvedAt: null }, data: { resolvedAt: new Date() } })
+   513→    .catch(() => undefined);
+   514→}
+   515→
+   516→/** کلیدهای باز (حل‌نشده) یک خانواده — از جاروی سنگ‌قبرها محافظت می‌شوند */
+   517→async function openDeadLetterKeys(entity: string): Promise<Set<string>> {
+   518→  const rows = await db.syncDeadLetter.findMany({ where: { entity, resolvedAt: null }, select: { naturalKey: true } }).catch(() => []);
+   519→  return new Set(rows.map((r) => r.naturalKey));
+   520→}
+   521→
+   522→/** مشخصات یک خانواده داده برای مسیر افزایشی */
+   523→interface IncrementalFamily<T> {
+   524→  entity: "transactions" | "experts" | "interactions" | "visits" | "supplyDemand" | "contracts";
+   525→  rows: T[];
+   526→  /** واکشی این خانواده موفق بوده؟ (شکست واکشی ⇒ خانواده دست‌نخورده می‌ماند — تفاوت عمدی با legacy) */
+   527→  fetched: boolean;
+   528→  keyOf: (row: T) => string;
+   529→  upsert: (rows: T[]) => Promise<unknown>;
+   530→  /** کلیدهای موجود در پایگاه (برای جاروی سنگ‌قبرها) */
+   531→  listExistingKeys: () => Promise<string[]>;
+   532→  deleteByKeys: (keys: string[]) => Promise<unknown>;
+   533→}
+   534→
+   535→/**
+   536→ * اعمال افزایشی: به‌جای پاک‌سازی کامل، upsert بر کلید طبیعی + جاروی
+   537→ * ردیف‌های محو‌شده (با محافظت نامه‌های مرده باز) + نقطه ازسرگیری پس از
+   538→ * هر خانواده. شکست ردیف منفرد کل اجرا را نمی‌شکند (نامه مرده می‌شود).
+   539→ */
+   540→/** صادرات برای تست (tests/phase2-sync.test.ts) — در کد محصول از syncFromArm استفاده کنید */
+   541→export async function applyIncrementalSync(
+   542→  runId: string,
+   543→  data: {
+   544→    transactions: CrmTransaction[];
+   545→    experts: CrmExpert[];
+   546→    interactions: CrmInteraction[];
+   547→    visits: CrmVisit[];
+   548→    supplyDemand: CrmSupplyDemand[];
+   549→    contracts: CrmContract[];
+   550→    interactionsFetched: boolean;
+   551→    visitsFetched: boolean;
+   552→    supplyDemandFetched: boolean;
+   553→    contractsFetched: boolean;
+   554→  }
+   555→): Promise<void> {
+   556→  const txRepo = getTransactionRepository();
+   557→  const exRepo = getExpertRepository();
+   558→  const mkRepo = getMarketRepository();
+   559→  const ctRepo = getContractRepository();
+   560→  const viRepo = getVisitRepository();
+   561→
+   562→  const families: IncrementalFamily<never>[] = [
+   563→    {
+   564→      entity: "transactions",
+   565→      rows: data.transactions.map(toTxUpsert) as never[],
+   566→      fetched: true,
+   567→      keyOf: (t) => (t as unknown as TransactionUpsertInput).id,
+   568→      upsert: (rows) => txRepo.upsertBatch(rows as unknown as TransactionUpsertInput[]),
+   569→      listExistingKeys: async () => (await db.transactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
+   570→      deleteByKeys: (keys) => db.transactionRecord.deleteMany({ where: { id: { in: keys } } }),
+   571→    },
+   572→    {
+   573→      entity: "experts",
+   574→      rows: data.experts.map(toExUpsert) as never[],
+   575→      fetched: true,
+   576→      keyOf: (e) => (e as unknown as ExpertUpsertInput).personnelCode,
+   577→      upsert: (rows) => exRepo.upsertBatch(rows as unknown as ExpertUpsertInput[]),
+   578→      listExistingKeys: async () => (await db.expertRecord.findMany({ where: { sourceRunId: null }, select: { personnelCode: true } })).map((r) => r.personnelCode),
+   579→      deleteByKeys: (keys) => db.expertRecord.deleteMany({ where: { personnelCode: { in: keys } } }),
+   580→    },
+   581→    {
+   582→      entity: "interactions",
+   583→      rows: data.interactions.map(toInUpsert) as never[],
+   584→      fetched: data.interactionsFetched,
+   585→      keyOf: (i) => (i as unknown as InteractionUpsertInput).id,
+   586→      upsert: (rows) => exRepo.upsertInteractionsBatch(rows as unknown as InteractionUpsertInput[]),
+   587→      listExistingKeys: async () => (await db.interactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
+   588→      deleteByKeys: (keys) => db.interactionRecord.deleteMany({ where: { id: { in: keys } } }),
+   589→    },
+   590→    {
+   591→      entity: "visits",
+   592→      rows: data.visits.map(toViUpsert) as never[],
+   593→      fetched: data.visitsFetched,
+   594→      keyOf: (v) => (v as unknown as VisitUpsertInput).id,
+   595→      upsert: (rows) => viRepo.upsertBatch(rows as unknown as VisitUpsertInput[]),
+   596→      listExistingKeys: async () => (await db.visitRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
+   597→      deleteByKeys: (keys) => db.visitRecord.deleteMany({ where: { id: { in: keys } } }),
+   598→    },
+   599→    {
+   600→      entity: "supplyDemand",
+   601→      rows: data.supplyDemand.map(toSdUpsert) as never[],
+   602→      fetched: data.supplyDemandFetched,
+   603→      keyOf: (s) => (s as unknown as SupplyDemandUpsertInput).id,
+   604→      upsert: (rows) => mkRepo.upsertSupplyDemandBatch(rows as unknown as SupplyDemandUpsertInput[]),
+   605→      listExistingKeys: async () => (await db.supplyDemandRecord.findMany({ select: { id: true } })).map((r) => r.id),
+   606→      deleteByKeys: (keys) => db.supplyDemandRecord.deleteMany({ where: { id: { in: keys } } }),
+   607→    },
+   608→    {
+   609→      entity: "contracts",
+   610→      rows: data.contracts.map(toContractUpsert) as never[],
+   611→      fetched: data.contractsFetched,
+   612→      keyOf: (c) => (c as unknown as ContractUpsertInput).id,
+   613→      upsert: (rows) => ctRepo.upsertBatch(rows as unknown as ContractUpsertInput[]),
+   614→      listExistingKeys: async () => (await db.contractRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
+   615→      deleteByKeys: (keys) => db.contractRecord.deleteMany({ where: { id: { in: keys } } }),
+   616→    },
+   617→  ];
+   618→
+   619→  const done: Array<{ entity: string; count: number; failed: number }> = [];
+   620→
+   621→  // شناسه اجرا از همان ابتدا ثبت می‌شود (خودکفا بودن applier برای تست/فراخوانی مستقیم)
+   622→  await writeSyncState({ syncRunId: runId });
+   623→
+   624→  for (const family of families) {
+   625→    // واکشی ناموفق ⇒ این خانواده در این اجرا دست‌نخورده می‌ماند (از دست رفتن داده نداریم)
+   626→    if (!family.fetched) {
+   627→      done.push({ entity: family.entity, count: 0, failed: -1 }); // -1 = skipped
+   628→      continue;
+   629→    }
+   630→
+   631→    const keys = family.rows.map(family.keyOf);
+   632→    let failedKeys: string[] = [];
+   633→
+   634→    try {
+   635→      // تلاش دسته‌ای (مسیر سریع — اکثر اجراها موفق‌اند)
+   636→      await family.upsert(family.rows);
+   637→    } catch {
+   638→      // شکست دسته‌ای ⇒ تک‌تک برای ایزوله کردن ردیف‌های خراب (upsertها idempotentند)
+   639→      for (let i = 0; i < family.rows.length; i++) {
+   640→        try {
+   641→          await family.upsert([family.rows[i]]);
+   642→        } catch (err) {
+   643→          failedKeys.push(keys[i]);
+   644→          await recordDeadLetter(runId, family.entity, keys[i], err);
+   645→        }
+   646→      }
+   647→    }
+   648→
+   649→    // ردیف‌های موفق این خانواده که قبلاً نامه مرده بودند → حل‌شده
+   650→    await resolveDeadLetters(family.entity, keys.filter((k) => !failedKeys.includes(k)));
+   651→
+   652→    // جاروی سنگ‌قبرها: ردیف‌هایی که دیگر در سامانه نیستند (به‌جز نامه‌های مرده باز)
+   653→    // P6.5-03 — رکوردهای Bulk (sourceRunId غیرتهی) از جارو محافظت می‌شوند:
+   654→    // داده تاریخیِ خارج از پوشش واکشی sync است؛ حذفش = حفره داده غیرقابل ترمیم (کشف §۱.۹).
+   655→    try {
+   656→      const existing = await family.listExistingKeys();
+   657→      const fetchedSet = new Set(keys);
+   658→      const openDead = await openDeadLetterKeys(family.entity);
+   659→      const stale = existing.filter((k) => !fetchedSet.has(k) && !openDead.has(k));
+   660→      if (stale.length > 0) await family.deleteByKeys(stale);
+   661→    } catch {
+   662→      // جارو شکست خورد ⇒ اجرا همچنان موفق است؛ دفع بعد تمیز می‌کند
+   663→    }
+   664→
+   665→    // نقطه ازسرگیری — پس از هر خانواده به‌روزرسانی می‌شود
+   666→    done.push({ entity: family.entity, count: family.rows.length, failed: failedKeys.length });
+   667→    await writeSyncState({
+   668→      lastSyncCursor: JSON.stringify({ runId, done: done.map((d) => d.entity), detail: done }),
+   669→    });
+   670→  }
+   671→}
+   672→
+   673→/**
+   674→ * همگام‌سازی با توکن ARM نشست جاری — اگر توکن منقضی شده باشد
+   675→ * ابتدا با refreshToken تمدید می‌شود.
+   676→ */
+   677→export async function syncWithRefresh(
+   678→  armToken: string,
+   679→  armRefreshToken: string
+   680→): Promise<{ sync: SyncResult; newArmToken?: string }> {
+   681→  const provider = getMelkProvider();
+   682→  let token = armToken;
+   683→  let newArmToken: string | undefined;
+   684→
+   685→  // تلاش اول؛ در صورت انقضا، تمدید و تلاش مجدد
+   686→  let sync = await syncFromArm(token);
+   687→  if (!sync.ok && (sync.errorCode === "UNAUTHORIZED" || sync.errorCode === "OTP_INVALID") && armRefreshToken) {
+   688→    try {
+   689→      const refreshed = await provider.refreshArmToken(armRefreshToken);
+   690→      token = refreshed.accessToken;
+   691→      newArmToken = refreshed.accessToken;
+   692→      sync = await syncFromArm(token);
+   693→    } catch (refreshErr) {
+   694→      const e = refreshErr instanceof MelkApiError ? refreshErr : new MelkApiError("UNKNOWN", "تمدید توکن ناموفق", 401, false);
+   695→      sync = { ok: false, transactions: 0, experts: 0, interactions: 0, visits: 0, supplyDemand: 0, contracts: 0, syncedAt: new Date().toISOString(), error: e.message, errorCode: e.code };
+   696→    }
+   697→  }
+   698→  return { sync, newArmToken };
+   699→}
+   700→
+   701→/** در صورت خالی‌بودن کش، داده‌های واقعی را با توکن ARM بارگذاری می‌کند */
+   702→export async function ensureSeeded(armToken?: string): Promise<{ transactions: number; experts: number; interactions: number; visits: number; supplyDemand: number; liveError?: string }> {
+   703→  const [txCount, exCount, inCount, viCount, sdCount] = await Promise.all([
+   704→    db.transactionRecord.count(),
+   705→    db.expertRecord.count(),
+   706→    db.interactionRecord.count(),
+   707→    db.visitRecord.count(),
+   708→    db.supplyDemandRecord.count(),
+   709→  ]);
+   710→
+   711→  if ((txCount === 0 || exCount === 0) && armToken) {
+   712→    const { sync } = await syncWithRefresh(armToken, "");
+   713→    if (sync.ok) return { transactions: sync.transactions, experts: sync.experts, interactions: sync.interactions, visits: sync.visits, supplyDemand: sync.supplyDemand };
+   714→    return { transactions: txCount, experts: exCount, interactions: inCount, visits: viCount, supplyDemand: sdCount, liveError: sync.error };
+   715→  }
+   716→  return { transactions: txCount, experts: exCount, interactions: inCount, visits: viCount, supplyDemand: sdCount };
+   717→}
+   718→
+   719→/**
+   720→ * پاک‌سازی کامل کش CRM — تابع واحد شش‌جدولی (HOTFIX-05)
+   721→ * هم connection/reset و هم resetCrmCache از همین تابع استفاده می‌کنند تا
+   722→ * «ریست» در کل سیستم فقط یک تعریف داشته باشد (قبلاً: ۳ جدول در روت vs ۶ جدول اینجا).
+   723→ */
+   724→export async function clearCrmCacheTables(): Promise<void> {
+   725→  await db.transactionRecord.deleteMany({});
+   726→  await db.expertRecord.deleteMany({});
+   727→  await db.interactionRecord.deleteMany({});
+   728→  await db.visitRecord.deleteMany({});
+   729→  await db.supplyDemandRecord.deleteMany({});
+   730→  await db.contractRecord.deleteMany({});
+   731→}
+   732→
+   733→/** پاک‌سازی کامل کش و استخراج مجدد از سامانه واقعی (دکمه ریست اتصال) */
+   734→export async function resetCrmCache(armToken: string): Promise<SyncResult> {
+   735→  await clearCrmCacheTables();
+   736→  return syncFromArm(armToken);
+   737→}
+   738→
+   739→function toTxCreates(rows: CrmTransaction[]) {
+   740→  return rows.map((t) =>
+   741→    db.transactionRecord.create({
+   742→      data: {
+   743→        id: t.id,
+   744→        contractDate: new Date(t.contractDate),
+   745→        propertyCode: t.propertyCode,
+   746→        propertyCustomer: t.propertyCustomer,
+   747→        requestCode: t.requestCode,
+   748→        requestCustomer: t.requestCustomer,
+   749→        contractHolo: t.contractHolo,
+   750→        suggestedPropertyCount: t.suggestedPropertyCount,
+   751→        eventsCount: t.eventsCount,
+   752→      },
+   753→    })
+   754→  );
+   755→}
+   756→
+   757→function toExCreates(rows: CrmExpert[]) {
+   758→  return rows.map((e) =>
+   759→    db.expertRecord.create({
+   760→      data: {
+   761→        id: e.id,
+   762→        personnelCode: e.personnelCode,
+   763→        fullName: e.fullName,
+   764→        mobile: e.mobile,
+   765→        role: e.role,
+   766→        businessTitle: e.businessTitle,
+   767→        creator: e.creator,
+   768→        active: e.active,
+   769→        createdAt: new Date(e.createdAt),
+   770→      },
+   771→    })
+   772→  );
+   773→}
+   774→
+   775→function toInCreates(rows: CrmInteraction[]) {
+   776→  return rows.map((i) =>
+   777→    db.interactionRecord.create({
+   778→      data: {
+   779→        id: i.id,
+   780→        requestRealtorName: i.requestRealtorName,
+   781→        propertyRealtorName: i.propertyRealtorName,
+   782→        count: i.count,
+   783→      },
+   784→    })
+   785→  );
+   786→}
+   787→
+   788→function toViCreates(rows: CrmVisit[]) {
+   789→  return rows.map((v) =>
+   790→    db.visitRecord.create({
+   791→      data: {
+   792→        id: v.id,
+   793→        propertyCode: v.propertyCode,
+   794→        requesterName: v.requesterName,
+   795→        checkerName: v.checkerName,
+   796→        propertyRealtorName: v.propertyRealtorName,
+   797→        checkTime: v.checkTime ? new Date(v.checkTime) : null,
+   798→        createdAt: new Date(v.createdAt),
+   799→        status: v.status,
+   800→      },
+   801→    })
+   802→  );
+   803→}
+   804→
+   805→function toSdCreates(rows: CrmSupplyDemand[]) {
+   806→  return rows.map((s) =>
+   807→    db.supplyDemandRecord.create({
+   808→      data: {
+   809→        id: s.id,
+   810→        rangeTitle: s.rangeTitle,
+   811→        propertyCount: s.propertyCount,
+   812→        requestPercent: s.requestPercent,
+   813→        status: s.status,
+   814→      },
+   815→    })
+   816→  );
+   817→}
+   818→
+   819→// ==========================================================================
+   820→// قراردادها و اسناد — استخراج لیست + جزئیات
+   821→// ==========================================================================
+   822→
+   823→/**
+   824→ * استخراج قراردادها (صورت وضعیت‌ها): ابتدا لیست صفحه‌بندی‌شده، سپس
+   825→ * جزئیات کامل هر قرارداد (خریداران/فروشندگان/حق‌السهم مشاوران).
+   826→ * جزئیات فقط برای ۴۰۰ قرارداد نخست گرفته می‌شود (حفاظت از بار سامانه).
+   827→ */
+   828→export async function fetchContracts(armToken: string): Promise<CrmContract[]> {
+   829→  const cfg = getMelkApiConfig();
+   830→  const { rows } = await fetchAllPages(MELK_ENDPOINTS.arm.tradeOverviewsList, armToken, 30, 100, mapArmContractRow);
+   831→  const detailed: CrmContract[] = [];
+   832→  for (const c of rows.slice(0, 400)) {
+   833→    try {
+   834→      const info = await armCall<unknown>({
+   835→        path: MELK_ENDPOINTS.arm.tradeOverviewInfo(c.id),
+   836→        baseUrl: cfg.armApiBase,
+   837→        token: armToken,
+   838→        timeoutMs: cfg.timeoutMs,
+   839→        maxRetries: 0,
+   840→      });
+   841→      detailed.push(mergeArmContractInfo(c, info.data));
+   842→    } catch {
+   843→      // جزئیات این قرارداد در دسترس نیست — همان ردیف لیست نگه داشته می‌شود
+   844→      detailed.push(c);
+   845→    }
+   846→  }
+   847→  return detailed;
+   848→}
+   849→
+   850→function toContractCreates(rows: CrmContract[]) {
+   851→  return rows.map((c) =>
+   852→    db.contractRecord.create({
+   853→      data: {
+   854→        id: c.id,
+   855→        status: c.status,
+   856→        contractHolo: c.contractHolo,
+   857→        propertyCode: c.propertyCode,
+   858→        requestCode: c.requestCode,
+   859→        contractType: c.contractType,
+   860→        creatorName: c.creatorName,
+   861→        createdAt: c.createdAt ? new Date(c.createdAt) : null,
+   862→        contractDate: c.contractDate ? new Date(c.contractDate) : null,
+   863→        documentDate: c.documentDate ? new Date(c.documentDate) : null,
+   864→        deliveryDate: c.deliveryDate ? new Date(c.deliveryDate) : null,
+   865→        propertyTitle: c.propertyTitle,
+   866→        propertyAddress: c.propertyAddress,
+   867→        buyerListJson: c.buyers.length > 0 ? JSON.stringify(c.buyers) : null,
+   868→        sellerListJson: c.sellers.length > 0 ? JSON.stringify(c.sellers) : null,
+   869→        realtorListJson: c.realtorShares.length > 0 ? JSON.stringify(c.realtorShares) : null,
+   870→        canAddRealtor: c.canAddRealtor,
+   871→      },
+   872→    })
+   873→  );
+   874→}
+   875→
+   876→// ==========================================================================
+   877→// فهرست‌های مرجع عمومی — بدون توکن (لایه عمومی سامانه ARM و مالی fm)
+   878→// ==========================================================================
+   879→
+   880→/** کلیدهای کش فهرست‌های عمومی */
+   881→export const REF_KEYS = {
+   882→  characters: "user-characters",
+   883→  jobs: "user-jobs",
+   884→  roles: "user-roles",
+   885→  seriousness: "user-seriousness",
+   886→  priceIndices: "price-indices",
+   887→  commissionConfig: "commission-config",
+   888→} as const;
+   889→
+   890→/** عمر مفید کش فهرست‌های عمومی — ۶ ساعت */
+   891→const REF_TTL_MS = 6 * 60 * 60 * 1000;
+   892→
+   893→/** خواندن کش فهرست عمومی — null اگر نیست یا کهنه است */
+   894→async function readRefCache<T>(key: string): Promise<T | null> {
+   895→  const row = await db.refListCache.findUnique({ where: { key } });
+   896→  if (!row) return null;
+   897→  const age = Date.now() - row.fetchedAt.getTime();
+   898→  if (age > REF_TTL_MS) return null;
+   899→  try {
+   900→    return JSON.parse(row.dataJson) as T;
+   901→  } catch {
+   902→    return null;
+   903→  }
+   904→}
+   905→
+   906→/** نوشتن کش فهرست عمومی */
+   907→async function writeRefCache(key: string, data: unknown): Promise<void> {
+   908→  await db.refListCache.upsert({
+   909→    where: { key },
+   910→    update: { dataJson: JSON.stringify(data), fetchedAt: new Date() },
+   911→    create: { key, dataJson: JSON.stringify(data) },
+   912→  });
+   913→}
+   914→
+   915→/**
+   916→ * فهرست‌های مرجع باشگاه مشتریان — عمومی (بدون توکن) با کش ۶ ساعته:
+   917→ * شخصیت‌ها، شغل‌ها، نقش‌ها و جدیت مشتریان.
+   918→ */
+   919→export async function getCustomerRefLists(forceRefresh = false): Promise<{
+   920→  characters: RefListItem[];
+   921→  jobs: RefListItem[];
+   922→  roles: RefListItem[];
+   923→  seriousness: RefListItem[];
+   924→  liveError: string | null;
+   925→}> {
+   926→  const cfg = getMelkApiConfig();
+   927→  if (!forceRefresh) {
+   928→    const [characters, jobs, roles, seriousness] = await Promise.all([
+   929→      readRefCache<RefListItem[]>(REF_KEYS.characters),
+   930→      readRefCache<RefListItem[]>(REF_KEYS.jobs),
+   931→      readRefCache<RefListItem[]>(REF_KEYS.roles),
+   932→      readRefCache<RefListItem[]>(REF_KEYS.seriousness),
+   933→    ]);
+   934→    if (characters && jobs && roles && seriousness) {
+   935→      return { characters, jobs, roles, seriousness, liveError: null };
+   936→    }
+   937→  }
+   938→
+   939→  try {
+   940→    const [charRes, jobRes, roleRes, seriousRes] = await Promise.all(
+   941→      [
+   942→        MELK_ENDPOINTS.arm.userCharacters,
+   943→        MELK_ENDPOINTS.arm.userJobs,
+   944→        MELK_ENDPOINTS.arm.userRoles,
+   945→        MELK_ENDPOINTS.arm.userSeriousness,
+   946→      ].map(async (path) => {
+   947→        const r = await armCall<unknown>({
+   948→          path,
+   949→          baseUrl: cfg.armApiBase,
+   950→          timeoutMs: cfg.timeoutMs,
+   951→          maxRetries: 1,
+   952→        });
+   953→        return r.data;
+   954→      })
+   955→    );
+   956→    const characters = mapRefList(charRes);
+   957→    const jobs = mapRefList(jobRes);
+   958→    const roles = mapRefList(roleRes);
+   959→    const seriousness = mapRefList(seriousRes);
+   960→    // ذخیره کش حتی ناقص — هر فهرست جداگانه
+   961→    await Promise.all([
+   962→      writeRefCache(REF_KEYS.characters, characters),
+   963→      writeRefCache(REF_KEYS.jobs, jobs),
+   964→      writeRefCache(REF_KEYS.roles, roles),
+   965→      writeRefCache(REF_KEYS.seriousness, seriousness),
+   966→    ]);
+   967→    return { characters, jobs, roles, seriousness, liveError: null };
+   968→  } catch (err) {
+   969→    // بازگشت کش کهنه (اگر هست) با پیام خطا
+   970→    const [characters, jobs, roles, seriousness] = await Promise.all([
+   971→      db.refListCache.findUnique({ where: { key: REF_KEYS.characters } }),
+   972→      db.refListCache.findUnique({ where: { key: REF_KEYS.jobs } }),
+   973→      db.refListCache.findUnique({ where: { key: REF_KEYS.roles } }),
+   974→      db.refListCache.findUnique({ where: { key: REF_KEYS.seriousness } }),
+   975→    ]);
+   976→    const parse = (row: { dataJson: string } | null): RefListItem[] => {
+   977→      if (!row) return [];
+   978→      try { return JSON.parse(row.dataJson) as RefListItem[]; } catch { return []; }
+   979→    };
+   980→    return {
+   981→      characters: parse(characters),
+   982→      jobs: parse(jobs),
+   983→      roles: parse(roles),
+   984→      seriousness: parse(seriousness),
+   985→      liveError: err instanceof MelkApiError ? err.message : "خطا در دریافت فهرست‌های مرجع مشتریان.",
+   986→    };
+   987→  }
+   988→}
+   989→
+   990→/**
+   991→ * پیکربندی تعرفه کمیسیون از سامانه مالی (fm) — عمومی با کش ۶ ساعته.
+   992→ */
+   993→export async function getCommissionConfig(forceRefresh = false): Promise<{
+   994→  configs: CommissionCityConfig[];
+   995→  liveError: string | null;
+   996→}> {
+   997→  const cfg = getMelkApiConfig();
+   998→  if (!forceRefresh) {
+   999→    const cached = await readRefCache<CommissionCityConfig[]>(REF_KEYS.commissionConfig);
+  1000→    if (cached && cached.length > 0) return { configs: cached, liveError: null };
+  1001→  }
+  1002→  try {
+  1003→    // پوشه سامانه مالی متفاوت است (بدون /api/apm استاندارد) — فراخوانی مستقیم
+  1004→    const res = await armCall<unknown>({
+  1005→      path: MELK_ENDPOINTS.acc.commissionConfigList,
+  1006→      baseUrl: cfg.accApiBase,
+  1007→      timeoutMs: cfg.timeoutMs,
+  1008→      maxRetries: 1,
+  1009→    });
+  1010→    const configs = mapCommissionConfig(res.data ?? res);
+  1011→    if (configs.length > 0) await writeRefCache(REF_KEYS.commissionConfig, configs);
+  1012→    return { configs, liveError: null };
+  1013→  } catch (err) {
+  1014→    const cached = await readRefCache<CommissionCityConfig[]>(REF_KEYS.commissionConfig);
+  1015→    return {
+  1016→      configs: cached ?? [],
+  1017→      liveError: err instanceof MelkApiError ? err.message : "خطا در دریافت تعرفه کمیسیون.",
+  1018→    };
+  1019→  }
+  1020→}
+  1021→
+  1022→/**
+  1023→ * فقط-کش تعرفه کمیسیون — بدون هیچ HTTP زنده (E.2 دستور PHASE 2):
+  1024→ * مسیر رندر بینش ایجنت مالی هرگز I/O شبکه ندارد؛ کش را روت‌ها/همگام‌سازی
+  1025→ * پر می‌کنند و اگر خالی/کهنه باشد بینش با هشدار «در دسترس نیست» ساخته می‌شود.
+  1026→ */
+  1027→export async function getCachedCommissionConfig(): Promise<{
+  1028→  configs: CommissionCityConfig[];
+  1029→  liveError: string | null;
+  1030→}> {
+  1031→  const cached = await readRefCache<CommissionCityConfig[]>(REF_KEYS.commissionConfig);
+  1032→  if (cached && cached.length > 0) return { configs: cached, liveError: null };
+  1033→  return {
+  1034→    configs: [],
+  1035→    liveError: "تعرفه کمیسیون در کش محلی موجود نیست — با باز کردن صفحه مالی یا همگام‌سازی بعدی تازه می‌شود.",
+  1036→  };
+  1037→}
+  1038→
+  1039→/**
+  1040→ * فقط-کش پیکربندی شاخص قیمت — بدون هیچ HTTP زنده (E.2 دستور PHASE 2).
+  1041→ */
+  1042→export async function getCachedPriceIndexConfigs(): Promise<{
+  1043→  indices: PriceIndexConfig[];
+  1044→  liveError: string | null;
+  1045→}> {
+  1046→  const cached = await readRefCache<PriceIndexConfig[]>(REF_KEYS.priceIndices);
+  1047→  if (cached && cached.length > 0) return { indices: cached, liveError: null };
+  1048→  return {
+  1049→    indices: [],
+  1050→    liveError: "پیکربندی شاخص قیمت در کش محلی موجود نیست — با باز کردن صفحه شاخص قیمت یا همگام‌سازی بعدی تازه می‌شود.",
+  1051→  };
+  1052→}
+  1053→
+  1054→/**
+  1055→ * شاخص‌های قیمت روز سامانه ARM — عمومی با کش ۶ ساعته:
+  1056→ * فهرست + مناطق هر شاخص + مشخصات فنی.
+  1057→ */
+  1058→export async function getPriceIndexConfigs(forceRefresh = false): Promise<{
+  1059→  indices: PriceIndexConfig[];
+  1060→  liveError: string | null;
+  1061→}> {
+  1062→  const cfg = getMelkApiConfig();
+  1063→  if (!forceRefresh) {
+  1064→    const cached = await readRefCache<PriceIndexConfig[]>(REF_KEYS.priceIndices);
+  1065→    if (cached && cached.length > 0) return { indices: cached, liveError: null };
+  1066→  }
+  1067→  try {
+  1068→    const listRes = await armCall<unknown>({
+  1069→      path: MELK_ENDPOINTS.arm.currentPricesList,
+  1070→      baseUrl: cfg.armApiBase,
+  1071→      query: { returnList: "true" },
+  1072→      timeoutMs: cfg.timeoutMs,
+  1073→      maxRetries: 1,
+  1074→    });
+  1075→    const { rows } = extractPagedList<Record<string, unknown>>(listRes.data, (row) => (row && typeof row === "object" ? (row as Record<string, unknown>) : null));
+  1076→    const indices: PriceIndexConfig[] = [];
+  1077→    for (const row of rows) {
+  1078→      const base = mapPriceIndexConfig(row);
+  1079→      if (!base) continue;
+  1080→      // مناطق و مشخصات فنی هر شاخص — عمومی
+  1081→      const [areasRes, detailsRes] = await Promise.all([
+  1082→        armCall<unknown>({
+  1083→          path: MELK_ENDPOINTS.arm.currentPriceAreas(base.id),
+  1084→          baseUrl: cfg.armApiBase,
+  1085→          timeoutMs: cfg.timeoutMs,
+  1086→          maxRetries: 0,
+  1087→        }).catch(() => null),
+  1088→        armCall<unknown>({
+  1089→          path: MELK_ENDPOINTS.arm.currentPriceDetails(base.id),
+  1090→          baseUrl: cfg.armApiBase,
+  1091→          timeoutMs: cfg.timeoutMs,
+  1092→          maxRetries: 0,
+  1093→        }).catch(() => null),
+  1094→      ]);
+  1095→      indices.push({
+  1096→        ...base,
+  1097→        areas: areasRes ? mapPriceIndexAreas(areasRes.data) : [],
+  1098→        details: detailsRes ? mapPriceIndexDetails(detailsRes.data) : [],
+  1099→      });
+  1100→    }
+  1101→    if (indices.length > 0) await writeRefCache(REF_KEYS.priceIndices, indices);
+  1102→    return { indices, liveError: null };
+  1103→  } catch (err) {
+  1104→    const cached = await readRefCache<PriceIndexConfig[]>(REF_KEYS.priceIndices);
+  1105→    return {
+  1106→      indices: cached ?? [],
+  1107→      liveError: err instanceof MelkApiError ? err.message : "خطا در دریافت شاخص‌های قیمت روز.",
+  1108→    };
+  1109→  }
+  1110→}
+  1111→

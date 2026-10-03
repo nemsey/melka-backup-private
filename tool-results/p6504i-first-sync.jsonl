@@ -1,0 +1,17 @@
+{"ts":"2026-09-19T21:54:14.322Z","event":"start","purpose":"P6.5-04-i phase-3 first data-bearing sync","mode":"incremental"}
+{"ts":"2026-09-19T21:54:14.324Z","event":"window-guard","ok":true,"tehranHourNow":"01"}
+{"ts":"2026-09-19T21:54:14.352Z","event":"before","tableCounts":{"transactions":100,"experts":100,"visits":1,"interactions":0,"supplyDemand":5,"contracts":1},"lastSuccessAt":"2026-09-19T18:06:32.409Z"}
+{"ts":"2026-09-19T21:54:14.354Z","event":"session-auth","source":"db-session","sessionRole":"OWNER","personnelCode":"OWNER","appSessionValid":true,"armUserType":"realtor","armAccessTokenBytes":171,"armRefreshTokenBytes":171}
+{"ts":"2026-09-19T21:54:16.904Z","event":"probe","endpoint":"realtors/list","status":200,"alive":true}
+{"ts":"2026-09-19T21:54:49.179Z","event":"start","purpose":"P6.5-04-i phase-3 first data-bearing sync","mode":"incremental"}
+{"ts":"2026-09-19T21:54:49.180Z","event":"window-guard","ok":true,"tehranHourNow":"01"}
+{"ts":"2026-09-19T21:54:49.205Z","event":"before","tableCounts":{"transactions":100,"experts":100,"visits":1,"interactions":0,"supplyDemand":5,"contracts":1},"lastSuccessAt":"2026-09-19T18:06:32.409Z"}
+{"ts":"2026-09-19T21:54:49.207Z","event":"session-auth","source":"db-session","sessionRole":"OWNER","personnelCode":"OWNER","appSessionValid":true,"armUserType":"realtor","armAccessTokenBytes":171,"armRefreshTokenBytes":171}
+{"ts":"2026-09-19T21:54:53.399Z","event":"probe","endpoint":"realtors/list","status":200,"alive":true}
+{"ts":"2026-09-19T21:55:55.295Z","event":"sync-result","ok":true,"error":null,"errorCode":null,"durationMs":61894,"fetched":{"transactions":727,"experts":291,"visits":1,"interactions":0,"supplyDemand":5,"contracts":1},"totalRecordsFetched":1025,"tableCountsAfter":{"transactions":727,"experts":100,"visits":1,"interactions":0,"supplyDemand":5,"contracts":1},"syncState":{"lastError":null,"attempts":0,"lastSuccessAt":"2026-09-19T21:55:55.292Z","syncRunId":"1ef4d35a-02d9-4dec-a90e-12794920c956"}}
+{"ts":"2026-09-19T21:58:10.578Z","event":"start","purpose":"P6.5-04-i phase-3 first data-bearing sync","mode":"incremental"}
+{"ts":"2026-09-19T21:58:10.579Z","event":"window-guard","ok":true,"tehranHourNow":"01"}
+{"ts":"2026-09-19T21:58:10.606Z","event":"before","tableCounts":{"transactions":727,"experts":100,"visits":1,"interactions":0,"supplyDemand":5,"contracts":1},"lastSuccessAt":"2026-09-19T21:55:55.292Z"}
+{"ts":"2026-09-19T21:58:10.608Z","event":"session-auth","source":"db-session","sessionRole":"OWNER","personnelCode":"OWNER","appSessionValid":true,"armUserType":"realtor","armAccessTokenBytes":171,"armRefreshTokenBytes":171}
+{"ts":"2026-09-19T21:58:11.598Z","event":"probe","endpoint":"realtors/list","status":200,"alive":true}
+{"ts":"2026-09-19T21:59:31.098Z","event":"sync-result","ok":true,"error":null,"errorCode":null,"durationMs":79497,"fetched":{"transactions":727,"experts":291,"visits":1,"interactions":0,"supplyDemand":5,"contracts":1},"totalRecordsFetched":1025,"tableCountsAfter":{"transactions":727,"experts":291,"visits":1,"interactions":0,"supplyDemand":5,"contracts":1},"syncState":{"lastError":null,"attempts":0,"lastSuccessAt":"2026-09-19T21:59:31.093Z","syncRunId":"f40da63b-228a-4088-874a-80ac205bb357"}}

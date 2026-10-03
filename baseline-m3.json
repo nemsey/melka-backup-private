@@ -1,0 +1,148 @@
+{
+  "kind": "BEFORE (baseline)",
+  "generatedAt": "2026-09-23T07:35:07.491Z",
+  "backupMd5": "53c8b7ed5d8659c82dff87db166619ba",
+  "coverage": {
+    "totalTransactions": 739,
+    "withRequestCode": 739,
+    "fields": {
+      "propertyCode": {
+        "filled": 739,
+        "target": 100
+      },
+      "ownerName": {
+        "filled": 739,
+        "target": 98
+      },
+      "ownerMobile": {
+        "filled": 16,
+        "target": 95
+      },
+      "sellerName": {
+        "filled": 739,
+        "target": 98
+      },
+      "sellerMobile": {
+        "filled": 16,
+        "target": 95
+      },
+      "requestCode": {
+        "filled": 739,
+        "target": 95
+      },
+      "requesterName": {
+        "filled": 739,
+        "target": 95
+      },
+      "requesterMobile": {
+        "filled": 40,
+        "target": 95
+      },
+      "buyerName": {
+        "filled": 739,
+        "target": 98
+      },
+      "buyerMobile": {
+        "filled": 40,
+        "target": 95
+      },
+      "shareAggregate": {
+        "filled": 1,
+        "target": 95
+      },
+      "contractHolo": {
+        "filled": 739,
+        "target": 100
+      },
+      "contractType": {
+        "filled": 1,
+        "target": 100
+      },
+      "contractAmount": {
+        "filled": 1,
+        "target": 95
+      },
+      "contractFile": {
+        "filled": 739,
+        "target": 100
+      }
+    }
+  },
+  "percents": {
+    "propertyCode": {
+      "pct": 100,
+      "target": 100,
+      "meetsTarget": true
+    },
+    "ownerName": {
+      "pct": 100,
+      "target": 98,
+      "meetsTarget": true
+    },
+    "ownerMobile": {
+      "pct": 2.2,
+      "target": 95,
+      "meetsTarget": false
+    },
+    "sellerName": {
+      "pct": 100,
+      "target": 98,
+      "meetsTarget": true
+    },
+    "sellerMobile": {
+      "pct": 2.2,
+      "target": 95,
+      "meetsTarget": false
+    },
+    "requestCode": {
+      "pct": 100,
+      "target": 95,
+      "meetsTarget": true
+    },
+    "requesterName": {
+      "pct": 100,
+      "target": 95,
+      "meetsTarget": true
+    },
+    "requesterMobile": {
+      "pct": 5.4,
+      "target": 95,
+      "meetsTarget": false
+    },
+    "buyerName": {
+      "pct": 100,
+      "target": 98,
+      "meetsTarget": true
+    },
+    "buyerMobile": {
+      "pct": 5.4,
+      "target": 95,
+      "meetsTarget": false
+    },
+    "shareAggregate": {
+      "pct": 0.1,
+      "target": 95,
+      "meetsTarget": false
+    },
+    "contractHolo": {
+      "pct": 100,
+      "target": 100,
+      "meetsTarget": true
+    },
+    "contractType": {
+      "pct": 0.1,
+      "target": 100,
+      "meetsTarget": false
+    },
+    "contractAmount": {
+      "pct": 0.1,
+      "target": 95,
+      "meetsTarget": false
+    },
+    "contractFile": {
+      "pct": 100,
+      "target": 100,
+      "meetsTarget": true
+    }
+  }
+}

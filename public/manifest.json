@@ -1,0 +1,66 @@
+{
+  "name": "اکوسیستم هوشمند ملک ایران",
+  "short_name": "ملکا",
+  "description": "ملکا — اکوسیستم هوشمند ملک ایران: لایه هوش تحلیلی و مدیریتی چندعامله روی سامانه‌های ملک تبریز",
+  "lang": "fa",
+  "dir": "rtl",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f9f8",
+  "theme_color": "#007776",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "فایل یابی ملکا",
+      "short_name": "فایل یابی",
+      "url": "/?tile=file-finder",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "آگهی ملکا",
+      "short_name": "آگهی",
+      "url": "/?tile=listings",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "درخواست ملکا",
+      "short_name": "درخواست",
+      "url": "/?tile=requests",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "معاملات ملک تبریز (M3)",
+      "short_name": "معاملات",
+      "url": "/?tile=transactions-contracts",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

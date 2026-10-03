@@ -1,0 +1,108 @@
+{
+  "claim": "۱۰ تصمیم واقعی با prediction + rationale + confidence + alternatives + صفر auto_execute",
+  "decisions": [
+    {
+      "id": "dec-5c81970f-mus3mxm7",
+      "predictionId": "5c81970f-ee50-4cf8-8ddb-ccf6fe565983",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 85٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 85٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    },
+    {
+      "id": "dec-7e5f9522-mus3mxm8",
+      "predictionId": "7e5f9522-e764-4ab2-8417-2f75643f4234",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 91٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 91٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    },
+    {
+      "id": "dec-765cdac7-mus3mxm8",
+      "predictionId": "765cdac7-b055-4b77-9273-55c7f0f8beea",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 91٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 91٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    },
+    {
+      "id": "dec-0b00d766-mus3mxm8",
+      "predictionId": "0b00d766-f1f7-44ae-bbe0-c8c0bf3c5823",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 92٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 92٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    },
+    {
+      "id": "dec-8bcc98d8-mus3mxm8",
+      "predictionId": "8bcc98d8-c09d-483b-bfd9-0892eea57fd4",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 88٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 88٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    },
+    {
+      "id": "dec-41869a99-mus3mxm8",
+      "predictionId": "41869a99-f06d-4ea4-8e72-b977e30fb961",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 86٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 86٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    },
+    {
+      "id": "dec-3df179bc-mus3mxm8",
+      "predictionId": "3df179bc-992a-40c8-9945-8e846b1899fa",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 86٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 86٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    },
+    {
+      "id": "dec-56003d19-mus3mxm8",
+      "predictionId": "56003d19-bc76-4195-ad48-9426674b6945",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 91٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 91٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    },
+    {
+      "id": "dec-d3372095-mus3mxm8",
+      "predictionId": "d3372095-2cf4-451a-a915-57fa9f48f2f0",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 92٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 92٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    },
+    {
+      "id": "dec-e6dbeda4-mus3mxm8",
+      "predictionId": "e6dbeda4-384b-4c6d-81d3-ff9e1ff67d0a",
+      "decisionType": "adjust_price",
+      "proposedAction": "پیشنهاد تعدیل قیمت (قیمت 84٪ زیر میانگین محلی است)",
+      "confidence": 0.509,
+      "rationale": "پیش‌بینی 51٪ — اقدام پیشنهادی — تماس فعال. قیمت 84٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت. کارشناس کارشناس برتر در این نوع ملک 95٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس. نوع نهایی: adjust_price. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).",
+      "autoExecute": false,
+      "requiresApproval": true
+    }
+  ],
+  "safetyAllPassed": true,
+  "blockedCount": 0,
+  "plansCount": 10
+}

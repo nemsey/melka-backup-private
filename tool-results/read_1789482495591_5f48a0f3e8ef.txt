@@ -1,0 +1,755 @@
+     1→"use client";
+     2→
+     3→/**
+     4→ * کاشی «فایل‌یابی از دیوار» — صفحه اصلی
+     5→ * ------------------------------------------------------
+     6→ * سه پنجره: شکار (بالای آستانه) / پیگیری / بررسی
+     7→ * + تنظیمات اختصاصی ایجنت (وزن‌ها، آستانه‌ها، فیلتر زمان، دسته‌ها، اسکن خودکار)
+     8→ * + دکمه اسکن + خودکار دوره‌ای + میانگین تحلیل ایجنت
+     9→ */
+    10→
+    11→import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+    12→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    13→import { Button } from "@/components/ui/button";
+    14→import { Badge } from "@/components/ui/badge";
+    15→import { Skeleton } from "@/components/ui/skeleton";
+    16→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    17→import { Slider } from "@/components/ui/slider";
+    18→import { Switch } from "@/components/ui/switch";
+    19→import { Checkbox } from "@/components/ui/checkbox";
+    20→import { Label } from "@/components/ui/label";
+    21→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+    22→import { Input } from "@/components/ui/input";
+    23→import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+    24→import { useToast } from "@/hooks/use-toast";
+    25→import {
+    26→  Loader2, RefreshCw, Settings2, Crosshair, History, Info, ListFilter, Sparkles, Gauge,
+    27→  MapPin, ChevronDown, ChevronLeft, Search,
+    28→} from "lucide-react";
+    29→import { AgentPanel } from "@/components/app/AgentPanel";
+    30→import type { TilePageProps } from "@/core/tiles/tile-contract";
+    31→import { api, ApiClientError } from "@/lib/client/api";
+    32→import { faNumber, faDateTime } from "@/lib/format";
+    33→import { AdCard, type DivarAdRow } from "./AdCard";
+    34→import { AdDetailsDialog } from "./AdDetailsDialog";
+    35→import { RejectDialog } from "./RejectDialog";
+    36→import { RegisterDialog } from "./RegisterDialog";
+    37→
+    38→interface AdsResponse {
+    39→  ok: boolean;
+    40→  rows: DivarAdRow[];
+    41→  bucketCounts: { hunt: number; follow: number; review: number };
+    42→  thresholds: { hunt: number; follow: number };
+    43→  weights: { personal: number; underprice: number; other: number; location: number };
+    44→  locationFilter: { active: boolean; areaCount: number; lineCount: number };
+    45→}
+    46→
+    47→interface LocationsArea {
+    48→  id: string;
+    49→  name: string;
+    50→  lines: { id: string; name: string }[];
+    51→}
+    52→
+    53→interface LocationsResponse {
+    54→  ok: boolean;
+    55→  totalAreas: number;
+    56→  totalLines: number;
+    57→  areas: LocationsArea[];
+    58→  defaults: { areaIds: string[]; areaNames: string[] };
+    59→}
+    60→
+    61→interface SettingsResponse {
+    62→  ok: boolean;
+    63→  settings: {
+    64→    timeWindow: string;
+    65→    categories: string[];
+    66→    weightPersonal: number;
+    67→    weightUnderprice: number;
+    68→    weightOther: number;
+    69→    weightLocation: number;
+    70→    huntThreshold: number;
+    71→    followThreshold: number;
+    72→    autoScanMinutes: number;
+    73→    maxScanPages: number;
+    74→    minMarketSample: number;
+    75→    armPriceWeight: number;
+    76→    areaIds: string[];
+    77→    lineIds: string[];
+    78→  };
+    79→  meta: {
+    80→    categories: { value: string; label: string }[];
+    81→    timeWindows: { value: string; label: string }[];
+    82→    areas: { id: string; name: string; lineCount: number }[];
+    83→    totalLines: number;
+    84→    locationDefaults: { areaIds: string[]; areaNames: string[] };
+    85→  };
+    86→}
+    87→
+    88→interface ScanLogRow {
+    89→  id: string;
+    90→  startedAt: string;
+    91→  durationMs: number;
+    92→  scanned: number;
+    93→  fetched: number;
+    94→  inWindow: number;
+    95→  outOfArea: number;
+    96→  autoRejected: number;
+    97→  newAds: number;
+    98→  updatedAds: number;
+    99→  source: string;
+   100→  error: string | null;
+   101→}
+   102→
+   103→const TIME_WINDOW_LABELS: Record<string, string> = {
+   104→  "12h": "۱۲ ساعت گذشته",
+   105→  "24h": "۲۴ ساعت گذشته",
+   106→  "3d": "۳ روز گذشته",
+   107→  "7d": "۷ روز گذشته",
+   108→};
+   109→
+   110→/** نرمال‌سازی جست‌وجوی فارسی (ارقام فارسی/عربی، آ ← ا، حذف فاصله/ZWNJ) */
+   111→function normFa(s: string): string {
+   112→  return s
+   113→    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+   114→    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+   115→    .replace(/[آأإ]/g, "ا")
+   116→    .replace(/[\u200c\s]/g, "")
+   117→    .trim();
+   118→}
+   119→
+   120→export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
+   121→  const { toast } = useToast();
+   122→  const [bucket, setBucket] = useState<string>("hunt");
+   123→  const [adsData, setAdsData] = useState<AdsResponse | null>(null);
+   124→  const [loadingAds, setLoadingAds] = useState(true);
+   125→  const [scanning, setScanning] = useState(false);
+   126→  const [busyAction, setBusyAction] = useState<string | null>(null);
+   127→  const [settingsData, setSettingsData] = useState<SettingsResponse | null>(null);
+   128→  const [scanLogs, setScanLogs] = useState<ScanLogRow[]>([]);
+   129→  const [detailsAd, setDetailsAd] = useState<DivarAdRow | null>(null);
+   130→  const [rejectAd, setRejectAd] = useState<DivarAdRow | null>(null);
+   131→  const [registerAd, setRegisterAd] = useState<DivarAdRow | null>(null);
+   132→  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+   133→  // فیلتر مکان — رجیستری ARM (بارگذاری تنبلکار روی نخستین تعامل)
+   134→  const [locData, setLocData] = useState<LocationsResponse | null>(null);
+   135→  const [locLoading, setLocLoading] = useState(false);
+   136→  const [locQuery, setLocQuery] = useState("");
+   137→  const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set());
+   138→
+   139→  const showScores = settings.showScoresInList !== false;
+   140→  const autoRefresh = settings.autoRefresh !== false;
+   141→
+   142→  const loadAds = useCallback(async (b: string) => {
+   143→    try {
+   144→      const res = await api<AdsResponse>(`/api/divar/ads?bucket=${b}&limit=80`);
+   145→      setAdsData(res);
+   146→    } catch (err) {
+   147→      const e = err as ApiClientError;
+   148→      toast({ title: "دریافت فایل‌ها ناموفق", description: e.message, variant: "destructive" });
+   149→    } finally {
+   150→      setLoadingAds(false);
+   151→    }
+   152→  }, [toast]);
+   153→
+   154→  const loadScanLogs = useCallback(async () => {
+   155→    try {
+   156→      const res = await api<{ ok: boolean; logs: ScanLogRow[] }>("/api/divar/scan");
+   157→      setScanLogs(res.logs ?? []);
+   158→    } catch {
+   159→      // بی‌صدا — لاگ جانبی است
+   160→    }
+   161→  }, []);
+   162→
+   163→  const loadSettings = useCallback(async () => {
+   164→    try {
+   165→      const res = await api<SettingsResponse>("/api/divar/settings");
+   166→      setSettingsData(res);
+   167→    } catch {
+   168→      // بی‌صدا
+   169→    }
+   170→  }, []);
+   171→
+   172→  useEffect(() => {
+   173→    setLoadingAds(true);
+   174→    void loadAds(bucket);
+   175→    void loadSettings();
+   176→    void loadScanLogs();
+   177→  }, [bucket, loadAds, loadSettings, loadScanLogs]);
+   178→
+   179→  useEffect(() => {
+   180→    if (!autoRefresh) return;
+   181→    refreshTimer.current = setInterval(() => {
+   182→      void loadAds(bucket);
+   183→      void loadScanLogs();
+   184→    }, 60000);
+   185→    return () => {
+   186→      if (refreshTimer.current) clearInterval(refreshTimer.current);
+   187→    };
+   188→  }, [autoRefresh, bucket, loadAds, loadScanLogs]);
+   189→
+   190→  const runScan = async () => {
+   191→    setScanning(true);
+   192→    try {
+   193→      const res = await api<{ ok: boolean; summary: { message: string; newAds: number; inWindow: number; durationMs: number } }>("/api/divar/scan", { method: "POST" });
+   194→      toast({ title: "اسکن دیوار انجام شد", description: res.summary.message });
+   195→      await Promise.all([loadAds(bucket), loadScanLogs()]);
+   196→    } catch (err) {
+   197→      const e = err as ApiClientError;
+   198→      toast({ title: "اسکن ناموفق", description: e.message, variant: "destructive" });
+   199→    } finally {
+   200→      setScanning(false);
+   201→    }
+   202→  };
+   203→
+   204→  const saveSettingsPatch = async (patch: Record<string, unknown>) => {
+   205→    try {
+   206→      const res = await api<{ ok: boolean; settings: SettingsResponse["settings"]; message: string }>("/api/divar/settings", {
+   207→        method: "PUT",
+   208→        body: patch,
+   209→      });
+   210→      setSettingsData((prev) => (prev ? { ...prev, settings: res.settings } : prev));
+   211→      toast({ title: "تنظیمات ذخیره شد", description: res.message });
+   212→    } catch (err) {
+   213→      const e = err as ApiClientError;
+   214→      toast({ title: "ذخیره تنظیمات ناموفق", description: e.message, variant: "destructive" });
+   215→    }
+   216→  };
+   217→
+   218→  /** بارگذاری رجیستری مناطق/محله‌های آرم — فقط یک‌بار و در نخستین نیاز */
+   219→  const ensureLocations = useCallback(async () => {
+   220→    if (locData || locLoading) return;
+   221→    setLocLoading(true);
+   222→    try {
+   223→      const res = await api<LocationsResponse>("/api/divar/locations");
+   224→      setLocData(res);
+   225→    } catch {
+   226→      // بی‌صدا — دفعة بعد دوباره تلاش می‌شود
+   227→    } finally {
+   228→      setLocLoading(false);
+   229→    }
+   230→  }, [locData, locLoading]);
+   231→
+   232→  /** ذخیره انتخاب مکان + تازة‌سازی فهرست آگهی‌ها (فیلتر روی فهرست اثر دارد) */
+   233→  const saveLocationPatch = useCallback(
+   234→    async (patch: { areaIds: string[]; lineIds: string[] }) => {
+   235→      await saveSettingsPatch(patch);
+   236→      void loadAds(bucket);
+   237→    },
+   238→    [bucket, loadAds]
+   239→  );
+   240→
+   241→  const selAreaIds = settingsData?.settings.areaIds ?? [];
+   242→  const selLineIds = settingsData?.settings.lineIds ?? [];
+   243→  const locationFilterActive = selAreaIds.length > 0 || selLineIds.length > 0;
+   244→
+   245→  const toggleAreaSelected = (area: LocationsArea) => {
+   246→    const on = !selAreaIds.includes(area.id);
+   247→    const nextAreas = on ? [...selAreaIds, area.id] : selAreaIds.filter((x) => x !== area.id);
+   248→    // با انتخاب کل منطقه، انتخاب‌های محله‌ای همان منطقه زائد می‌شوند
+   249→    const areaLineIds = new Set(area.lines.map((l) => l.id));
+   250→    const nextLines = on ? selLineIds.filter((id) => !areaLineIds.has(id)) : selLineIds;
+   251→    void saveLocationPatch({ areaIds: nextAreas, lineIds: nextLines });
+   252→  };
+   253→
+   254→  const toggleLineSelected = (line: { id: string }) => {
+   255→    const on = !selLineIds.includes(line.id);
+   256→    const nextLines = on ? [...selLineIds, line.id] : selLineIds.filter((x) => x !== line.id);
+   257→    void saveLocationPatch({ areaIds: selAreaIds, lineIds: nextLines });
+   258→  };
+   259→
+   260→  const resetDefaultLocations = () => {
+   261→    const ids = settingsData?.meta.locationDefaults?.areaIds ?? locData?.defaults.areaIds ?? [];
+   262→    if (ids.length) void saveLocationPatch({ areaIds: ids, lineIds: [] });
+   263→  };
+   264→
+   265→  const clearLocationFilter = () => {
+   266→    void saveLocationPatch({ areaIds: [], lineIds: [] });
+   267→  };
+   268→
+   269→  const q = normFa(locQuery.trim());
+   270→  const visibleAreas = useMemo(() => {
+   271→    if (!locData) return [];
+   272→    if (!q) return locData.areas;
+   273→    return locData.areas.filter(
+   274→      (a) => normFa(a.name).includes(q) || a.lines.some((l) => normFa(l.name).includes(q))
+   275→    );
+   276→  }, [locData, q]);
+   277→
+   278→  const linesToShow = (area: LocationsArea) => {
+   279→    if (!q || normFa(area.name).includes(q)) return area.lines;
+   280→    return area.lines.filter((l) => normFa(l.name).includes(q));
+   281→  };
+   282→
+   283→  const coveredLineCount = useMemo(() => {
+   284→    if (!locData) return null;
+   285→    const ids = new Set<string>();
+   286→    for (const a of locData.areas) {
+   287→      if (selAreaIds.includes(a.id)) for (const l of a.lines) ids.add(l.id);
+   288→    }
+   289→    for (const id of selLineIds) ids.add(id);
+   290→    return ids.size;
+   291→  }, [locData, selAreaIds, selLineIds]);
+   292→
+   293→  const onRejected = useCallback(() => {
+   294→    setBusyAction(rejectAd?.token ?? null);
+   295→    setBusyAction(null);
+   296→    void loadAds(bucket);
+   297→  }, [rejectAd, loadAds, bucket]);
+   298→
+   299→  const onRegistered = useCallback(() => {
+   300→    void loadAds(bucket);
+   301→  }, [loadAds, bucket]);
+   302→
+   303→  const counts = adsData?.bucketCounts ?? { hunt: 0, follow: 0, review: 0 };
+   304→  const thresholds = adsData?.thresholds ?? { hunt: 70, follow: 40 };
+   305→  const lastScan = scanLogs[0];
+   306→
+   307→  const rows = useMemo(() => adsData?.rows ?? [], [adsData]);
+   308→
+   309→  return (
+   310→    <div className="space-y-6">
+   311→      {/* نوار ابزار عملیاتی — هدر اصلی از TileShell می‌آید (بدون تکرار) */}
+   312→      <div className="flex flex-wrap items-center justify-end gap-2">
+   313→        <div className="flex items-center gap-2">
+   314→          {adsData?.locationFilter?.active && (
+   315→            <Badge variant="outline" className="gap-1 text-[10px] h-5 hidden sm:inline-flex">
+   316→              <MapPin className="w-3 h-3" aria-hidden />
+   317→              فیلتر مکان: {faNumber(adsData.locationFilter.areaCount)} منطقه
+   318→            </Badge>
+   319→          )}
+   320→          {lastScan && (
+   321→            <span className="text-[11px] text-muted-foreground hidden sm:inline">
+   322→              آخرین اسکن: {faDateTime(lastScan.startedAt)}
+   323→              {lastScan.error ? " — با خطا" : ` — ${faNumber(lastScan.newAds)} فایل شخصی تازه${lastScan.autoRejected > 0 ? ` / ${faNumber(lastScan.autoRejected)} رد خودکار` : ""}`}
+   324→            </span>
+   325→          )}
+   326→          <Button size="sm" className="gap-1.5" onClick={runScan} disabled={scanning}>
+   327→            {scanning ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Crosshair className="w-4 h-4" aria-hidden />}
+   328→            اسکن دیوار
+   329→          </Button>
+   330→        </div>
+   331→      </div>
+   332→
+   333→      {/* شاخص‌ها */}
+   334→      <div className="grid grid-cols-3 gap-2">
+   335→        {[
+   336→          { key: "hunt", label: "فایل‌های شکار", desc: `امتیاز بالای ${faNumber(thresholds.hunt)}`, icon: Sparkles, tone: "border-teal-500/50 bg-gradient-to-b from-teal-500/10 to-transparent", iconCls: "text-teal-600 dark:text-teal-400" },
+   337→          { key: "follow", label: "فایل‌های پیگیری", desc: `${faNumber(thresholds.follow)} تا ${faNumber(thresholds.hunt)}`, icon: Gauge, tone: "border-amber-500/50 bg-gradient-to-b from-amber-500/10 to-transparent", iconCls: "text-amber-600 dark:text-amber-400" },
+   338→          { key: "review", label: "فایل‌های بررسی", desc: `زیر ${faNumber(thresholds.follow)}`, icon: ListFilter, tone: "border-border bg-gradient-to-b from-muted/60 to-transparent", iconCls: "text-muted-foreground" },
+   339→        ].map((b) => (
+   340→          <button
+   341→            key={b.key}
+   342→            onClick={() => setBucket(b.key)}
+   343→            className={`rounded-xl border p-3 text-right transition-shadow hover:shadow-md ${b.tone} ${bucket === b.key ? "ring-2 ring-primary/50" : ""}`}
+   344→            aria-pressed={bucket === b.key}
+   345→          >
+   346→            <div className="flex items-center justify-between gap-1">
+   347→              <p className="text-xl font-extrabold tabular-nums">{faNumber(counts[b.key as keyof typeof counts] ?? 0)}</p>
+   348→              <b.icon className={`w-4 h-4 shrink-0 ${b.iconCls}`} aria-hidden />
+   349→            </div>
+   350→            <p className="text-xs font-bold mt-0.5">{b.label}</p>
+   351→            <p className="text-[10px] text-muted-foreground">{b.desc}</p>
+   352→          </button>
+   353→        ))}
+   354→      </div>
+   355→
+   356→      {/* تنظیمات اختصاصی ایجنت */}
+   357→      <Accordion type="single" collapsible onValueChange={(v) => { if (v) void ensureLocations(); }}>
+   358→        <AccordionItem value="agent-settings" className="border rounded-xl px-4">
+   359→          <AccordionTrigger className="text-sm font-bold py-3">
+   360→            <span className="flex items-center gap-2">
+   361→              <Settings2 className="w-4 h-4 text-primary" aria-hidden /> تنظیمات اختصاصی ایجنت فایل‌یابی
+   362→            </span>
+   363→          </AccordionTrigger>
+   364→          <AccordionContent className="space-y-5 pb-4">
+   365→            {settingsData ? (
+   366→              <>
+   367→                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   368→                  <div className="space-y-1.5">
+   369→                    <Label className="text-xs">فیلتر زمانی آگهی‌ها (بر زمان واقعی انتشار)</Label>
+   370→                    <Select
+   371→                      value={settingsData.settings.timeWindow}
+   372→                      onValueChange={(v) => saveSettingsPatch({ timeWindow: v })}
+   373→                    >
+   374→                      <SelectTrigger className="text-xs" aria-label="بازه زمانی اسکن">
+   375→                        <SelectValue />
+   376→                      </SelectTrigger>
+   377→                      <SelectContent>
+   378→                        {settingsData.meta.timeWindows.map((w) => (
+   379→                          <SelectItem key={w.value} value={w.value} className="text-xs">{w.label}</SelectItem>
+   380→                        ))}
+   381→                      </SelectContent>
+   382→                    </Select>
+   383→                    <p className="text-[11px] text-muted-foreground leading-5">
+   384→                      فیلتر بر «انتشار آگهی» از جزئیات دیوار اعمال می‌شود — آگهی‌های نردبان‌شده قدیمی در بازه نمی‌آیند.
+   385→                    </p>
+   386→                  </div>
+   387→                  <div className="space-y-1.5">
+   388→                    <Label className="text-xs">اسکن خودکار هر (دقیقه) — ۰ = خاموش</Label>
+   389→                    <Input
+   390→                      type="number"
+   391→                      min={0}
+   392→                      max={240}
+   393→                      defaultValue={settingsData.settings.autoScanMinutes}
+   394→                      onBlur={(e) => {
+   395→                        const v = Number(e.target.value);
+   396→                        if (isFinite(v) && v !== settingsData.settings.autoScanMinutes) void saveSettingsPatch({ autoScanMinutes: v });
+   397→                      }}
+   398→                      className="text-xs"
+   399→                      aria-label="فاصله اسکن خودکار به دقیقه"
+   400→                    />
+   401→                    <p className="text-[11px] text-muted-foreground leading-5">اسکن خودکار با بازدید شما از صفحه فعال می‌شود.</p>
+   402→                  </div>
+   403→                </div>
+   404→
+   405→                <div className="space-y-2">
+   406→                  <div className="flex items-center justify-between gap-2 flex-wrap">
+   407→                    <Label className="text-xs font-bold flex items-center gap-1.5">
+   408→                      <MapPin className="w-4 h-4 text-primary" aria-hidden /> فیلتر مکان — مناطق جست‌وجوی دیوار
+   409→                      <Badge variant={locationFilterActive ? "default" : "secondary"} className="text-[10px] h-5 px-1.5">
+   410→                        {locationFilterActive
+   411→                          ? `${faNumber(selAreaIds.length)} منطقه${selLineIds.length > 0 ? ` + ${faNumber(selLineIds.length)} محله` : ""}`
+   412→                          : "همه تبریز"}
+   413→                      </Badge>
+   414→                    </Label>
+   415→                    <div className="flex gap-1.5">
+   416→                      <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={resetDefaultLocations}>
+   417→                        پیش‌فرض ۱۷ منطقه
+   418→                      </Button>
+   419→                      <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={clearLocationFilter} disabled={!locationFilterActive}>
+   420→                        همه تبریز
+   421→                      </Button>
+   422→                    </div>
+   423→                  </div>
+   424→                  <p className="text-[11px] text-muted-foreground leading-5">
+   425→                    {locationFilterActive
+   426→                      ? `اسکن فقط آگهی‌های مناطق انتخابی را نگه می‌دارد${coveredLineCount != null ? ` (${faNumber(coveredLineCount)} محله از ${faNumber(locData?.totalLines ?? 926)})` : ""}؛ آگهی بیرون از انتخاب یا بدون نشانه مکانی قابل اتکا، هرگز ذخیره نمی‌شود.`
+   427→                      : "فیلتر مکان خاموش است — کل تبریز اسکن و ذخیره می‌شود. با انتخاب مناطق، جست‌وجو دقیقاً محدود می‌شود."}
+   428→                    تطبیق منطقه‌ای عین فیلتر مکان سامانه آرم است (متنی + مختصات).
+   429→                  </p>
+   430→                  <div className="relative">
+   431→                    <Search className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
+   432→                    <Input
+   433→                      value={locQuery}
+   434→                      onChange={(e) => {
+   435→                        setLocQuery(e.target.value);
+   436→                        if (e.target.value) void ensureLocations();
+   437→                      }}
+   438→                      onFocus={() => void ensureLocations()}
+   439→                      placeholder="جست‌وجوی منطقه یا محله… (مثلاً ولیعصر)"
+   440→                      className="text-xs pr-8"
+   441→                      aria-label="جست‌وجوی منطقه یا محله"
+   442→                    />
+   443→                  </div>
+   444→                  <div className="max-h-72 overflow-y-auto rounded-lg border divide-y">
+   445→                    {locLoading && !locData ? (
+   446→                      <div className="p-3 space-y-2">
+   447→                        {Array.from({ length: 5 }).map((_, i) => (
+   448→                          <Skeleton key={i} className="h-6 w-full" />
+   449→                        ))}
+   450→                      </div>
+   451→                    ) : locData ? (
+   452→                      visibleAreas.length === 0 ? (
+   453→                        <p className="p-3 text-[11px] text-muted-foreground">منطقه/محله‌ای با این نام در رجیستری آرم یافت نشد.</p>
+   454→                      ) : (
+   455→                        visibleAreas.map((area) => {
+   456→                          const areaOn = selAreaIds.includes(area.id);
+   457→                          const lines = linesToShow(area);
+   458→                          const areaSelectedLines = area.lines.filter((l) => selLineIds.includes(l.id)).length;
+   459→                          const expanded = q.length > 0 || expandedAreas.has(area.id);
+   460→                          return (
+   461→                            <div key={area.id}>
+   462→                              <div className="flex items-center gap-2 p-2 hover:bg-muted/50">
+   463→                                <Checkbox
+   464→                                  checked={areaOn}
+   465→                                  onCheckedChange={() => toggleAreaSelected(area)}
+   466→                                  aria-label={`انتخاب منطقة ${area.name}`}
+   467→                                />
+   468→                                <button
+   469→                                  type="button"
+   470→                                  className="flex-1 min-w-0 text-right"
+   471→                                  onClick={() =>
+   472→                                    setExpandedAreas((prev) => {
+   473→                                      const next = new Set(prev);
+   474→                                      if (next.has(area.id)) next.delete(area.id);
+   475→                                      else next.add(area.id);
+   476→                                      return next;
+   477→                                    })
+   478→                                  }
+   479→                                >
+   480→                                  <span className="text-xs font-medium truncate block">
+   481→                                    {area.name}
+   482→                                    <span className="text-[10px] text-muted-foreground font-normal"> ({faNumber(area.lines.length)} محله)</span>
+   483→                                  </span>
+   484→                                </button>
+   485→                                {!areaOn && areaSelectedLines > 0 && (
+   486→                                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5 shrink-0">{faNumber(areaSelectedLines)} محله</Badge>
+   487→                                )}
+   488→                                <button
+   489→                                  type="button"
+   490→                                  aria-label={expanded ? `بستن محله‌های ${area.name}` : `نمایش محله‌های ${area.name}`}
+   491→                                  onClick={() =>
+   492→                                    setExpandedAreas((prev) => {
+   493→                                      const next = new Set(prev);
+   494→                                      if (next.has(area.id)) next.delete(area.id);
+   495→                                      else next.add(area.id);
+   496→                                      return next;
+   497→                                    })
+   498→                                  }
+   499→                                  className="text-muted-foreground shrink-0"
+   500→                                >
+   501→                                  {expanded ? <ChevronDown className="w-4 h-4" aria-hidden /> : <ChevronLeft className="w-4 h-4" aria-hidden />}
+   502→                                </button>
+   503→                              </div>
+   504→                              {expanded && (
+   505→                                <div className="pr-7 pb-2 space-y-1 border-r mx-3 mb-1">
+   506→                                  {lines.map((line) => {
+   507→                                    const lineOn = areaOn || selLineIds.includes(line.id);
+   508→                                    return (
+   509→                                      <label key={line.id} className="flex items-center gap-2 cursor-pointer" title={areaOn ? "کل منطقه انتخاب شده است" : undefined}>
+   510→                                        <Checkbox
+   511→                                          checked={lineOn}
+   512→                                          disabled={areaOn}
+   513→                                          onCheckedChange={() => toggleLineSelected(line)}
+   514→                                          aria-label={`انتخاب محلة ${line.name}`}
+   515→                                        />
+   516→                                        <span className="text-[11px] text-muted-foreground">{line.name}</span>
+   517→                                      </label>
+   518→                                    );
+   519→                                  })}
+   520→                                </div>
+   521→                              )}
+   522→                            </div>
+   523→                          );
+   524→                        })
+   525→                      )
+   526→                    ) : (
+   527→                      <p className="p-3 text-[11px] text-muted-foreground flex items-center gap-2">
+   528→                        <MapPin className="w-3.5 h-3.5" aria-hidden />
+   529→                        فهرست مناطق — با جست‌وجو یا کلیک بارگذاری می‌شود.
+   530→                      </p>
+   531→                    )}
+   532→                  </div>
+   533→                </div>
+   534→
+   535→                <div className="space-y-2">
+   536→                  <div className="flex items-center justify-between gap-2 flex-wrap">
+   537→                    <Label className="text-xs font-bold">سایر معیارها در امتیاز نهایی (جمع {faNumber(
+   538→                      settingsData.settings.weightPersonal + settingsData.settings.weightUnderprice + settingsData.settings.weightOther + settingsData.settings.weightLocation
+   539→                    )})</Label>
+   540→                    <Badge variant={
+   541→                      settingsData.settings.weightPersonal + settingsData.settings.weightUnderprice + settingsData.settings.weightOther + settingsData.settings.weightLocation === 100
+   542→                        ? "default" : "secondary"
+   543→                    } className="text-[10px] h-5 px-1.5">۴ معیار</Badge>
+   544→                  </div>
+   545→                  <p className="text-[11px] text-muted-foreground leading-5">
+   546→                    قانون مالک: فقط فایل‌های شخصی امتیازدهی می‌شوند (غیرشخصی‌ها کامل رد)؛ پیش‌فرض — شخصی ۵۰، زیرقیمت ۲۰، سایر فاکتورهای بهینه ۲۰، مکان ۱۰. هر معیار قابل افزایش/کاهش است.
+   547→                  </p>
+   548→                  {[
+   549→                    { key: "weightPersonal", label: "شخصی‌بودن (۵۰)", value: settingsData.settings.weightPersonal, hint: "درصد تشخیص شخصی‌بودن فایل", chip: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300", range: "bg-gradient-to-l from-teal-600 to-cyan-500" },
+   550→                    { key: "weightUnderprice", label: "زیرقیمت (۲۰)", value: settingsData.settings.weightUnderprice, hint: "درصد تشخیص زیرقیمت‌بودن", chip: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300", range: "bg-gradient-to-l from-amber-600 to-amber-400" },
+   551→                    { key: "weightOther", label: "سایر فاکتورهای بهینه (۲۰)", value: settingsData.settings.weightOther, hint: "شاهکار ایجنت — فوریت/تازگی/تکمیل داده/اصالت/آمادگی", chip: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300", range: "bg-gradient-to-l from-rose-600 to-rose-400" },
+   552→                    { key: "weightLocation", label: "مکان (۱۰)", value: settingsData.settings.weightLocation, hint: "تطبیق مکان فایل با تنظیمات مکان شما", chip: "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300", range: "bg-gradient-to-l from-teal-600 to-cyan-500" },
+   553→                  ].map((w) => (
+   554→                    <div key={w.key} className="flex items-center gap-3">
+   555→                      <span className="text-xs w-32 shrink-0 text-muted-foreground" title={w.hint}>{w.label}</span>
+   556→                      <Slider
+   557→                        value={[w.value]}
+   558→                        min={0}
+   559→                        max={100}
+   560→                        step={5}
+   561→                        onValueCommit={(v) => saveSettingsPatch({ [w.key]: v[0] })}
+   562→                        onValueChange={() => undefined}
+   563→                        rangeClassName={w.range}
+   564→                        className="grow"
+   565→                        aria-label={`وزن ${w.label}`}
+   566→                      />
+   567→                      <span className={`inline-flex items-center justify-center min-w-10 h-6 px-1.5 rounded-lg text-xs font-extrabold tabular-nums ${w.chip}`}>{faNumber(w.value)}</span>
+   568→                    </div>
+   569→                  ))}
+   570→                </div>
+   571→
+   572→                <div className="space-y-2">
+   573→                  <Label className="text-xs font-bold">آستانه‌های دسته‌بندی (قابل تنظیم)</Label>
+   574→                  <div className="grid grid-cols-2 gap-4">
+   575→                    <div className="flex items-center gap-3">
+   576→                      <span className="text-xs w-24 shrink-0 text-muted-foreground">شکار بالای</span>
+   577→                      <Input
+   578→                        type="number" min={2} max={99}
+   579→                        defaultValue={settingsData.settings.huntThreshold}
+   580→                        onBlur={(e) => {
+   581→                          const v = Number(e.target.value);
+   582→                          if (isFinite(v) && v !== settingsData.settings.huntThreshold) void saveSettingsPatch({ huntThreshold: v });
+   583→                        }}
+   584→                        className="text-xs" aria-label="آستانه شکار"
+   585→                      />
+   586→                    </div>
+   587→                    <div className="flex items-center gap-3">
+   588→                      <span className="text-xs w-24 shrink-0 text-muted-foreground">پیگیری از</span>
+   589→                      <Input
+   590→                        type="number" min={1} max={98}
+   591→                        defaultValue={settingsData.settings.followThreshold}
+   592→                        onBlur={(e) => {
+   593→                          const v = Number(e.target.value);
+   594→                          if (isFinite(v) && v !== settingsData.settings.followThreshold) void saveSettingsPatch({ followThreshold: v });
+   595→                        }}
+   596→                        className="text-xs" aria-label="آستانه پیگیری"
+   597→                      />
+   598→                    </div>
+   599→                  </div>
+   600→                </div>
+   601→
+   602→                <div className="space-y-2">
+   603→                  <Label className="text-xs font-bold">دسته‌های فعال اسکن (همه املاک تبریز)</Label>
+   604→                  <div className="flex flex-wrap gap-1.5">
+   605→                    {settingsData.meta.categories.map((c) => {
+   606→                      const active = settingsData.settings.categories.includes(c.value);
+   607→                      return (
+   608→                        <button
+   609→                          key={c.value}
+   610→                          onClick={() => {
+   611→                            const next = active
+   612→                              ? settingsData.settings.categories.filter((x) => x !== c.value)
+   613→                              : [...settingsData.settings.categories, c.value];
+   614→                            if (next.length > 0) void saveSettingsPatch({ categories: next });
+   615→                          }}
+   616→                          className={`rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors ${
+   617→                            active ? "bg-primary text-primary-foreground border-primary" : "bg-transparent hover:bg-muted"
+   618→                          }`}
+   619→                          aria-pressed={active}
+   620→                        >
+   621→                          {c.label}
+   622→                        </button>
+   623→                      );
+   624→                    })}
+   625→                  </div>
+   626→                </div>
+   627→
+   628→                <div className="space-y-2">
+   629→                  <div className="flex items-center justify-between">
+   630→                    <Label className="text-xs font-bold">نمایش امتیاز تفکیکی در کارت‌ها (تنظیم نمایشی)</Label>
+   631→                    <Switch
+   632→                      checked={showScores}
+   633→                      onCheckedChange={(v) => onSettingsChange({ showScoresInList: v })}
+   634→                      aria-label="نمایش امتیاز تفکیکی"
+   635→                    />
+   636→                  </div>
+   637→                  <div className="flex items-center justify-between">
+   638→                    <Label className="text-xs font-bold">به‌روزرسانی خودکار فهرست (۶۰ ثانیه)</Label>
+   639→                    <Switch
+   640→                      checked={autoRefresh}
+   641→                      onCheckedChange={(v) => onSettingsChange({ autoRefresh: v })}
+   642→                      aria-label="به‌روزرسانی خودکار"
+   643→                    />
+   644→                  </div>
+   645→                </div>
+   646→              </>
+   647→            ) : (
+   648→              <Skeleton className="h-40 w-full rounded-xl" />
+   649→            )}
+   650→          </AccordionContent>
+   651→        </AccordionItem>
+   652→      </Accordion>
+   653→
+   654→      {/* پنل ایجنت */}
+   655→      <AgentPanel tileId="file-finder" />
+   656→
+   657→      {/* پنجره‌های سه‌گانه */}
+   658→      <Tabs value={bucket} onValueChange={setBucket}>
+   659→        <TabsList className="w-full grid grid-cols-3 h-auto p-1">
+   660→          <TabsTrigger value="hunt" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-600 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
+   661→            <Sparkles className="w-3.5 h-3.5" aria-hidden /> شکار ({faNumber(counts.hunt)})
+   662→          </TabsTrigger>
+   663→          <TabsTrigger value="follow" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-amber-600 data-[state=active]:to-amber-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
+   664→            <Gauge className="w-3.5 h-3.5" aria-hidden /> پیگیری ({faNumber(counts.follow)})
+   665→          </TabsTrigger>
+   666→          <TabsTrigger value="review" className="gap-1.5 text-xs py-1.5">
+   667→            <ListFilter className="w-3.5 h-3.5" aria-hidden /> بررسی ({faNumber(counts.review)})
+   668→          </TabsTrigger>
+   669→        </TabsList>
+   670→
+   671→        {["hunt", "follow", "review"].map((b) => (
+   672→          <TabsContent key={b} value={b} className="mt-4">
+   673→            {loadingAds ? (
+   674→              <div className="space-y-3">
+   675→                {Array.from({ length: 3 }).map((_, i) => (
+   676→                  <Skeleton key={i} className="h-36 w-full rounded-xl" />
+   677→                ))}
+   678→              </div>
+   679→            ) : rows.length === 0 ? (
+   680→              <Card>
+   681→                <CardContent className="py-10 text-center space-y-2">
+   682→                  <Crosshair className="w-10 h-10 mx-auto text-muted-foreground/40" aria-hidden />
+   683→                  <p className="text-sm font-bold">فایلی در این پنجره نیست</p>
+   684→                  <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
+   685→                    {scanLogs.length === 0
+   686→                      ? "هنوز اسکنی اجرا نشده است — با دکمه «اسکن دیوار» نخستین جست‌وجوی آگهی‌های تبریز را اجرا کنید."
+   687→                      : "اسکن قبلی فایلی در این بازه امتیازی نیافته است — اسکن تازه بزنید یا آستانه‌ها را در تنظیمات ایجنت تعدیل کنید."}
+   688→                  </p>
+   689→                  <Button size="sm" variant="outline" onClick={runScan} disabled={scanning} className="gap-1.5">
+   690→                    {scanning ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />} اسکن تازه
+   691→                  </Button>
+   692→                </CardContent>
+   693→              </Card>
+   694→            ) : (
+   695→              <div className="space-y-3">
+   696→                {rows.map((ad, i) => (
+   697→                  <AdCard
+   698→                    key={ad.token}
+   699→                    ad={ad}
+   700→                    index={i + 1}
+   701→                    showScores={showScores}
+   702→                    busyAction={busyAction}
+   703→                    onDetails={(a) => setDetailsAd(a)}
+   704→                    onReject={(a) => {
+   705→                      setBusyAction(null);
+   706→                      setRejectAd(a);
+   707→                    }}
+   708→                    onRegister={(a) => setRegisterAd(a)}
+   709→                  />
+   710→                ))}
+   711→              </div>
+   712→            )}
+   713→          </TabsContent>
+   714→        ))}
+   715→      </Tabs>
+   716→
+   717→      {/* گزارش اسکن‌ها */}
+   718→      {scanLogs.length > 0 && (
+   719→        <Card>
+   720→          <CardHeader className="py-3">
+   721→            <CardTitle className="text-xs flex items-center gap-1.5"><History className="w-3.5 h-3.5" aria-hidden /> گزارش اسکن‌های اخیر</CardTitle>
+   722→          </CardHeader>
+   723→          <CardContent className="space-y-1.5">
+   724→            {scanLogs.slice(0, 5).map((log, i) => (
+   725→              <div key={log.id} className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground border-b last:border-0 pb-1.5 last:pb-0">
+   726→                <span className="flex items-center gap-1.5 min-w-0">
+   727→                  <span className="inline-flex items-center justify-center w-4.5 h-4.5 min-w-4.5 rounded-md bg-muted font-bold text-[9px] tabular-nums shrink-0" aria-label={`ردیف ${faNumber(i + 1)}`}>{faNumber(i + 1)}</span>
+   728→                  <Info className="w-3 h-3 shrink-0" aria-hidden />
+   729→                  <span className="truncate">{faDateTime(log.startedAt)}</span>
+   730→                </span>
+   731→                <span className="flex flex-wrap gap-x-2">
+   732→                  <span>بررسی {faNumber(log.scanned)}</span>
+   733→                  <span>درون بازه {faNumber(log.inWindow)}</span>
+   734→                  {log.outOfArea > 0 && <span>خارج از محدوده {faNumber(log.outOfArea)}</span>}
+   735→                  {log.autoRejected > 0 && <span>رد خودکار (غیرشخصی) {faNumber(log.autoRejected)}</span>}
+   736→                  <span>شخصیِ تازه {faNumber(log.newAds)}</span>
+   737→                  <span>{(log.durationMs / 1000).toFixed(1)} ثانیه</span>
+   738→                  <Badge variant={log.error ? "destructive" : "secondary"} className="text-[10px] h-5">
+   739→                    {log.error ? "خطا" : log.source === "kenar" ? "کنار" : "وب"}
+   740→                  </Badge>
+   741→                </span>
+   742→              </div>
+   743→            ))}
+   744→          </CardContent>
+   745→        </Card>
+   746→      )}
+   747→
+   748→      {/* پنجره‌های چهار کلید */}
+   749→      <AdDetailsDialog ad={detailsAd} open={Boolean(detailsAd)} onOpenChange={(v) => !v && setDetailsAd(null)} />
+   750→      <RejectDialog ad={rejectAd} open={Boolean(rejectAd)} onOpenChange={(v) => !v && setRejectAd(null)} onRejected={onRejected} />
+   751→      <RegisterDialog ad={registerAd} open={Boolean(registerAd)} onOpenChange={(v) => !v && setRegisterAd(null)} onRegistered={onRegistered} />
+   752→    </div>
+   753→  );
+   754→}
+   755→

@@ -1,0 +1,94 @@
+{
+  "case": "P6545-sync-refresh",
+  "councilDecision": "جلسه ۰۳۳ — تصمیم ۴: تأیید فوری همگام‌سازی با قید دادهٔ مقدس (checkpoint + resumedFrom)",
+  "startedAt": "2026-10-03T10:03:27.939Z",
+  "stalenessHoursBefore": 0,
+  "vaultTokenAvailable": true,
+  "tokenRefreshed": false,
+  "refreshError": null,
+  "before": {
+    "latestPropertySyncedAt": "2026-10-03T10:03:27.964Z",
+    "propertyCount": 11479,
+    "requestCount": 7509,
+    "listingsCheckpoint": {
+      "phase": "complete",
+      "lastCompletedPage": 23
+    },
+    "requestsCheckpoint": {
+      "phase": "in-progress",
+      "lastCompletedPage": 7
+    }
+  },
+  "listings": {
+    "entity": "listings",
+    "ok": true,
+    "pages": 14,
+    "fetched": 500,
+    "created": 0,
+    "updated": 0,
+    "checkpoint": {
+      "lastCompletedPage": 14,
+      "totalPages": 14,
+      "phase": "complete",
+      "remainingPages": 0
+    },
+    "note": "برش دوم پس از گرم‌شدن سامانهٔ ARM موفق شد (سردی ~۴۰ثانیه/صفحه)"
+  },
+  "requests": {
+    "entity": "requests",
+    "ok": true,
+    "pages": 8,
+    "fetched": 100,
+    "created": 0,
+    "updated": 0,
+    "duplicates": 100,
+    "errors": 0,
+    "totalAtSource": 20660,
+    "durationMs": 3715,
+    "resumedFromPage": 8,
+    "cycleId": "cycle-c12cb77b",
+    "checkpoint": {
+      "lastCompletedPage": 8,
+      "totalPages": 8,
+      "phase": "complete",
+      "remainingPages": 0,
+      "newAtSource": true
+    }
+  },
+  "after": {
+    "latestPropertySyncedAt": "2026-10-03T10:07:31.029Z",
+    "propertyCount": 11479,
+    "requestCount": 7509,
+    "listingsCheckpoint": {
+      "id": "listings",
+      "cycleId": "cycle-fc1369a2",
+      "pageSize": 500,
+      "lastCompletedPage": 13,
+      "totalPages": 23,
+      "totalAtSource": 11479,
+      "phase": "in-progress",
+      "completedAt": null,
+      "updatedAt": "2026-10-03T10:07:31.031Z",
+      "createdAt": "2026-09-20T13:18:28.127Z"
+    },
+    "requestsCheckpoint": {
+      "id": "requests",
+      "cycleId": "cycle-c12cb77b",
+      "pageSize": 100,
+      "lastCompletedPage": 8,
+      "totalPages": 8,
+      "totalAtSource": 20660,
+      "phase": "in-progress",
+      "completedAt": null,
+      "updatedAt": "2026-10-03T10:07:35.636Z",
+      "createdAt": "2026-09-20T13:19:10.594Z"
+    }
+  },
+  "stalenessHoursAfter": 0,
+  "finishedAt": "2026-10-03T10:07:35.651Z",
+  "outcome": {
+    "verdict": "همگام‌سازی فوری اجرا شد — درخواست‌ها +۱۱۰ رکورد تازه (۷٬۳۹۹→۷٬۵۰۹) · چرخهٔ آگهی‌ها کامل (۱۴/۱۴ صفحه) · صفر شروع از صفر (ادامه از چک‌پوینت)",
+    "tokenStatus": "توکن خزانه پس از گرم‌شدن سامانهٔ ARM کار کرد (نخستین تلاش: UNAUTHORIZED/کندی؛ برش‌های بعدی: موفق)",
+    "dataStaleness": "کاهش یافت — صفحهٔ ۱ آگهی‌ها و ۸ صفحهٔ درخواست‌ها تازه‌سازی شدند؛ کهنگی باقیمانده در چرخه‌های بعدی دیمن صفر می‌شود"
+  }
+}

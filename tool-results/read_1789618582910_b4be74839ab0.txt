@@ -1,0 +1,729 @@
+     1→# PHASE 6.5 — سند طراحی جامع «Data Readiness Sprint»
+     2→
+     3→| مشخصات | مقدار |
+     4→|---|---|
+     5→| سند | `docs/PHASE-6.5-DESIGN.md` |
+     6→| مرجع دستور | ملکا-شورا-۱۴۰۵-۰۰۳-یکپارچه — لازم‌الاجرا، جایگزین هر دستور قبلی این دوره |
+     7→| صادرکننده اجرا | GLM-5.3 (Senior Architect + AI/Agent Engineer + Data Engineer) |
+     8→| تاریخ | ۱۴۰۵/۰۶/۲۶ |
+     9→| وضعیت | **Draft v1.0 — در انتظار بازبینی شورا (ف۱ + ف۲ + ف۵)** |
+    10→| Baseline اجرا | تگ `pre-phase6.5-baseline` (کامیت d9ab45b) · بکاپ `db/custom.backup-pre-bulk-import.db` (md5 `25013bd8ad8a2fee8187864e33e80b68`) · پایه تست ۶۵۱/۶۵۱ ×۲ سبز |
+    11→| اصل حاکم | Speed + Quality + Zero-Cost |
+    12→| شعار | «داده گنج است. اما گنجی که استخراج نشده، سنگ است.» |
+    13→| افق اتصال | هفته آینده — اتصال به ARM/PM دپارتمان املاک ملک تبریز (۱۵۰ کارشناس، ۳ شعبه، ۲۵ سال داده) |
+    14→
+    15→---
+    16→
+    17→## ۰. خلاصه اجرایی و نقشه وابستگی
+    18→
+    19→### ۰.۱ هدف یک‌جمله‌ای
+    20→
+    21→زیرساخت «ذخیره، پاکسازی، یکپارچه‌سازی و پرس‌وجوی سریع» داده تاریخی ARM/PM را در هفت روز آماده می‌کنیم — به‌گونه‌ای که هر رکورد استخراجی «مانند گنج» نگه داشته شود (صفر حذف)، هر پرس‌وجو زیر ۵۰۰ms (P95 @ ۲۰۰K رکورد) پاسخ دهد، تفکیک کارشناسی (ConsultantScope) و رد حسابرسی (AuditLog) در لایه Query تضمین شود و آمادگی چند-دپارتمانی از همین ابتدا (ستون `tenantId` آماده، بدون منطق فعال) در معماری بنشیند.
+    22→
+    23→### ۰.۲ زنجیره وابستگی گام‌ها (۷ روز)
+    24→
+    25→```
+    26→P6.5-00 آماده‌سازی (✓ انجام شد — بکاپ + تگ + ۶۵۱×۲)
+    27→   │
+    28→P6.5-01 این سند (طراحی) ── بازبینی شورا (ف۱+ف۲+ف۵)
+    29→   │
+    30→   ├── P6.5-02 ConsultantScope + AuditLog (ستون‌های افزودنی + findWithScope + auditAccess)
+    31→   │        │  (پیش‌نیاز امنیتی Bulk — «تأیید امنیت قبل از Bulk واقعی»)
+    32→   │        ▼
+    33→   ├── P6.5-03 Bulk Import Pipeline (bulk-import.ts + checkpoint + rate-limit)
+    34→   │        │
+    35→   │        ▼
+    36→   ├── P6.5-04 Deduplication + Normalization (normalize.ts — توابع خالص)
+    37→   │        │  (۰۳ و ۰۴ هم‌پوشان اجرا می‌شوند: normalize ورودی upsert در ۰۳ است؛
+    38→   │        │   اجرای مستقل ۰۴ = تست واحد + نمونه ۱۰K موک + بازبینی دستی ۱۰۰ رکورد)
+    39→   │        ▼
+    40→   ├── P6.5-05 Indexing (۸ ایندکس افزودنی + EXPLAIN QUERY PLAN)
+    41→   │        │
+    42→   │        ├──────────────────────────────┐
+    43→   │        ▼                              ▼
+    44→   ├── P6.5-06 Feature Extraction Batch   P6.5-07 Vector Index Bulk
+    45→   │   (۱۰K → ۴ FeatureSet، بدون Prediction)   (۱۰K → تعبیه هش‌محور، صفر LLM)
+    46→   │        │                              │
+    47→   │        └──────────────┬───────────────┘
+    48→   │                       ▼
+    49→   ├── P6.5-08 Query Performance Test (P50/P95/P99 پنج Query + همزمانی ۱۰)
+    50→   │                       │
+    51→   │                       ▼
+    52→   ├── P6.5-09 Security Audit (audit-data-isolation.sh + گارد ۶بخشی)
+    53→   │                       │
+    54→   │                       ▼
+    55→   └── P6.5-10 Documentation (DATA-READINESS-REPORT.md) ──► P6.5-D (D0-D5)
+    56→
+    57→موازی (در طول هفته): B-01..B-03 (کسب‌وکار) + C-01..C-03 (حقوقی) — فقط متن Markdown
+    58→```
+    59→
+    60→### ۰.۳ قواعد صفرِ غیرقابل مذاکره (بخش H دستور — پذیرفته‌شده)
+    61→
+    62→۱. صفر LLM API Call در Production — همه موتورها heuristic + offline.
+    63→۲. صفر هزینه پولی — بدون Vector DB پولی، بدون Fine-tune، بدون API خارجی.
+    64→۳. صفر Migration مخرب Schema — فقط افزودنی + nullable.
+    65→۴. قرارداد v1 لایه هوشمندی دست‌نخورده.
+    66→۵. صفر تغییر UI/API قابل‌مشاهده (مستثنا: تغییر نام داشبورد **فقط** در صورت مصوبه صریح شورا — §۱۱.۳).
+    67→۶. گارد ۶بخشی `--strict` قبل از هر کامیت.
+    68→۷. دو-سبز پیاپی قبل از هر کامیت.
+    69→۸. هر گام: کامیت + تست + شاهد + سند.
+    70→۹. Rollback Plan برای هر Migration.
+    71→۱۰. Rate Limiting به سامانه مبدأ.
+    72→۱۱. AuditLog اجباری برای هر Access.
+    73→۱۲. Blocker → Alternative → Decision → Continue.
+    74→۱۳. قانون H تشدیدشده: صفر ادعای «تحلیل هوشمند» تا داده واقعی وارد نشده.
+    75→۱۴. صفر حذف داده تاریخی — فقط dedup/merge.
+    76→
+    77→---
+    78→
+    79→## ۱. استراتژی Bulk Import
+    80→
+    81→### ۱.۱ اصول معماری
+    82→
+    83→**الف) adapter-driven و per-tenant آینده‌نگر:** تمام خواندن از ARM/PM از لایه `src/lib/melk-api/` موجود می‌گذرد (client + endpoints + adapters). هیچ fetch مستقیمی در pipeline نیست. دپارتمان‌های آینده = ماژول adapter جدید با همین قرارداد؛ موتور Bulk مشترک می‌ماند.
+    84→
+    85→**ب) upsert-only، هرگز delete:** الگوی نوشتار = `upsert` بر کلید طبیعی (همان الگوی مسیر افزایشی P2-04 در sync موجود). این هم قاعده ۱۴ (صفر حذف) را ارضا می‌کند و هم idempotency طبیعی می‌دهد — اجرای مجدد از ابتدا یا از checkpoint، نتیجه یکسان دارد.
+    86→
+    87→**ج) صفر فشار به سامانه مبدأ:** حداقل ۲۰۰ms فاصله بین درخواست‌ها + timeout + retry محدود. سامانه مبدأ سامانه تولیدیِ زنده دپارتمان است، منبع تست ما نیست.
+    88→
+    89→**د) resumable به‌صورت ذاتی:** هر صفحه پس از ذخیرهٔ موفق batch، checkpoint به‌روز می‌شود؛ قطع برق/شبکه/فرایند = ادامه از همان صفحه.
+    90→
+    91→### ۱.۲ جدول نگاشت موجودیت ← Endpoint ← جدول مقصد ← کلید طبیعی
+    92→
+    93→| entity (قرارداد دستور) | منبع ARM (endpoint کشف‌شده) | جدول مقصد Prisma | کلید طبیعی (dedup) | وضعیت جدول |
+    94→|---|---|---|---|---|
+    95→| `transaction` | `realtor-reports/traded-count-total` (صفحه‌بندی + بازه تاریخ) | `TransactionRecord` (موجود) | `contractHolo` | موجود — فقط ستون‌های افزودنی |
+    96→| `expert` | `realtors/list` + مکمل PM | `ExpertRecord` (موجود) | `personnelCode` | موجود |
+    97→| `listing` | `properties` (فهرست آگهی‌ها + `properties/info/by-code/{code}` برای غنی‌سازی مرحله دوم) | **`PropertyRecord` (جدید — §۲.۲)** | `propertyCode` | **جدید** |
+    98→| `request` | `requests` (فهرست + `requests/details/{id}`) | `RequestRecord` (موجود، `source='arm'`) | `requestCode` (ستون افزودنی) | موجود + یک ستون |
+    99→| `visit` | `visits/list` | `VisitRecord` (موجود) | `id` ردیف ARM | موجود |
+   100→| `contract` | `trade-overviews/list` + `trade-overviews/info/{id}` | `ContractRecord` (موجود) | `contractHolo + propertyCode` | موجود |
+   101→| `customer` (مشتق) | مشتق از buyer/seller قرارداد + applicant درخواست + owner آگهی | **`CustomerRecord` (جدید — §۲.۳)** | `mobile`، fallback `pc:{personnelCode}` | **جدید** |
+   102→
+   103→> **نکته نگاشت:** دستور، کلید `request` را `requestCode` خواسته و `RequestRecord` امروز چنین ستونی ندارد (`armRequestId` مخصوص ثبت‌های خودِ اپ است). یک ستون افزودنی `requestCode String?` + ایندکس یکتا اضافه می‌شود؛ رکوردهای Bulk با `source='arm'` (مقدار جدید در ستون رشته‌ای موجود — تغییر داده، نه Schema) متمایز می‌شوند تا مصرف‌کنندگان v1 بتوانند در صورت نیاز تفکیک کنند.
+   104→
+   105→### ۱.۳ قرارداد رابط (عین بخش C دستور — بدون انحراف)
+   106→
+   107→```typescript
+   108→// src/lib/melk-api/bulk-import.ts  (P6.5-03)
+   109→export interface BulkImportOptions {
+   110→  entity: 'transaction' | 'expert' | 'listing' | 'request' | 'visit' | 'contract';
+   111→  startDate?: Date;
+   112→  endDate?: Date;
+   113→  pageSize?: number;      // default: 100 — بازه مجاز 100..500
+   114→  batchSize?: number;     // default: 1000
+   115→  onProgress?: (progress: BulkImportProgress) => void;
+   116→}
+   117→
+   118→export interface BulkImportProgress {
+   119→  entity: string;
+   120→  totalFetched: number;
+   121→  totalSaved: number;
+   122→  duplicatesSkipped: number;
+   123→  errors: number;
+   124→  currentPage: number;
+   125→  checkpoint: string;     // JSON serialized
+   126→}
+   127→```
+   128→
+   129→محدودیت‌های اعتبارسنجی ورودی (fail-fast): `pageSize` clamp به [100, 500]؛ `batchSize` clamp به [100, 2000]؛ بازه تاریخ معکوس → خطای صریح فارسی.
+   130→
+   131→### ۱.۴ جریان اجرای گام‌به‌گام
+   132→
+   133→```
+   134→۱) خواندن checkpoint از SyncState.bulkImportCheckpoint (ستون افزودنی §۵.۴)
+   135→   ── پیوند فنی: syncState singleton با upsert (الگوی موجود sync.ts:193)
+   136→۲) LOOP صفحات:
+   137→   a) fetch page(currentPage, pageSize, dateRange)        ← armCall موجود
+   138→      · Rate-limit: sleep ≥ 200ms از پایان درخواست قبلی
+   139→      · Retry: تا ۵ تلاش، backoff نمایی 2s→4s→8s→16s→30s (cap 30s)
+   140→        روی خطای شبکه/5xx/429؛ خطای 4xx (غیر 429) = توقف فوری با خطای صریح
+   141→   b) normalize هر ردیف (§۳ — توابع خالص normalize.ts)
+   142→   c) dedupKey محاسبه (§۲.۱)
+   143→   d) batch save: هر 1000 رکورد → prisma.$transaction با upsert بر کلید طبیعی
+   144→      · رکورد موجود → update (merge non-null — §۲.۴)
+   145→      · رکورد جدید  → create
+   146→      · شمارش created/updated/duplicatesSkipped جداگانه
+   147→   e) به‌روزرسانی checkpoint (entity, page, dateRange, totals, updatedAt)
+   148→   f) onProgress(...) → گزارش زنده
+   149→   g) پایان: صفحه خالی یا page > totalPages (از extractPagedList موجود)
+   150→۳) قطع midway: checkpoint ذخیره‌شده + throw با جزئیات (entity/page/خطا/آخرین کلید)
+   151→۴) اجرای مجدد: خواندن checkpoint → ادامه از همان صفحه → بدون تکرار (idempotent)
+   152→۵) پایان موفق: جمع‌باخت در Progress نهایی + ثبت AuditLog عملیات WRITE
+   153→```
+   154→
+   155→### ۱.۵ Checkpoint — قرارداد دقیق
+   156→
+   157→```typescript
+   158→// محتوای JSON در SyncState.bulkImportCheckpoint (String? — افزودنی):
+   159→interface BulkCheckpoint {
+   160→  entity: string;
+   161→  currentPage: number;        // آخرین صفحهٔ «کامل-ذخیره‌شده» + 1 = نقطه ادامه
+   162→  dateRange?: { from: string; to: string };  // ISO
+   163→  totals: { fetched: number; saved: number; dup: number; errors: number };
+   164→  startedAt: string;
+   165→  updatedAt: string;
+   166→  runId: string;              // randomUUID — هم‌خانواده syncRunId موجود
+   167→}
+   168→```
+   169→
+   170→**قاعده جداسازی:** Bulk **هرگز** فیلدهای sync منظم (`lastSyncCursor`، `lastWatermark`، `syncRunId`) را لمس نمی‌کند — فقط `bulkImportCheckpoint` مال خودش است. این تضمین می‌کند حالت sync منظم و نقطه ازسرگیری آن، دست‌نخورده می‌ماند.
+   171→
+   172→### ۱.۶ Idempotency — سه لایه
+   173→
+   174→1. **کلید طبیعی:** upsert پرایسما بر کلیدهای §۲.۱ — اجرای دوباره = update بی‌ضرر.
+   175→2. **Checkpoint صفحه‌ای:** ادامه از نقطه قطع، بدون refetch صفحات کامل‌شده.
+   176→3. **runId:** هر اجرا شناسه مستقل دارد؛ گزارش‌ها و AuditLog به runId گره می‌خورند (قابلیت تفکیک آماری).
+   177→
+   178→### ۱.۷ Retry با Backoff نمایی
+   179→
+   180→| تلاش | تأخیر | شرط |
+   181→|---|---|---|
+   182→| ۱ (retry اول) | 2s | شبکه قطع / 5xx / 429 |
+   183→| ۲ | 4s | همان شرط |
+   184→| ۳ | 8s | همان شرط |
+   185→| ۴ | 16s | همان شرط |
+   186→| ۵ (آخرین) | 30s | همان شرط — پس از آن: ذخیره checkpoint + throw |
+   187→
+   188→خطاهای 400/401/403/404 (منطقی، نه گذرا) → بدون retry، توقف فوری با پیام فارسی شفاف. خطای 401 → راهنمای «توکن منقضی شده؛ نشست را تمدید کنید» (توکن از نشست کاربر صاحب کد پرسنلی، مطابق معماری موجود).
+   189→
+   190→### ۱.۸ Rate Limiting
+   191→
+   192→حداقل **۲۰۰ms** فاصله بین «پایان پاسخ قبلی» تا «شروع درخواست بعدی» (نه شروع-به-شروع). پیاده‌سازی: تایم‌استمپ آخرین پاسخ + sleep باقی‌مانده. تست: اندازه‌گیری واقعی فاصله در تست واحد با موک fetch (شرط پذیرش دستور). صفحات ۱۰۰تایی + ۲۰۰ms ⇒ سقف ~۵ درخواست/ثانیه ⇒ احترام کامل به سامانه مبدأ.
+   193→
+   194→### ۱.۹ هم‌زیستی با sync منظم — کشف طراحی (مهم)
+   195→
+   196→وضعیت موجود sync دو مسیر دارد:
+   197→- **مسیر کامل** (اولین اجرا / بدون cursor): `deleteMany` شش خانواده + `createMany` — **خطر: اگر پس از Bulk اجرا شود، داده تاریخی را پاک می‌کند.**
+   198→- **مسیر افزایشی P2-04** (حالت پایای پس از cursor): `upsertBatch` بر کلید طبیعی + «جاروی» `deleteByKeys` که **فقط کلیدهای دیده‌شده در همان اجرا** را جارو می‌کند — رکوردهای تاریخیِ خارج از بازه sync، هرگز در مجموعه کلید جارو نیستند ⇒ ** Bulk با مسیر افزایشی هم‌زیست کامل دارد.**
+   199→
+   200→**قاعده طراحی:** (الف) Bulk فقط upsert می‌زند و هرگز deleteMany صادر نمی‌کند؛ (ب) پس از Bulk، حالت پایای sync = افزایشی است (که هست)؛ (ج) ریسک مسیر کامل، مستند و پذیرفته‌شده با بازیابی **ارزان و قطعی**: اجرای مجدد Bulk از صفر (idempotent — همان رکوردها، همان کلیدها، همان نتیجه)؛ (د) P6.5-03 یک تست رگرسیون صریح می‌نویسد: «پس از Bulk، اجرای sync افزایشی هیچ رکورد bulk را حذف نمی‌کند» (شاهد شمارشی قبل/بعد).
+   201→
+   202→### ۱.۱۰ حالت Dry-Run و اجرای واقعی
+   203→
+   204→- تمام توسعه و تست با **موک** (صفر فشار به API مبدأ — شرط پذیرش دستور).
+   205→- `dryRun: true` (گزینه افزودنی): عبور کامل از normalize + dedup + شمارش، بدون نوشتن در DB — خروجی = گزارش آماری.
+   206→- Bulk واقعی **فقط** در D0 پس از: تأیید امنیت (P6.5-02 + P6.5-09) + تأیید Performance (P6.5-08) + بکاپ تازه + رضایت‌نامه محضری (اخذ‌شده طبق اعلام مالک) — مطابق بخش L-۹.
+   207→
+   208→---
+   209→
+   210→## ۲. Deduplication Rules
+   211→
+   212→### ۲.۱ جدول کلیدهای طبیعی (عین دستور)
+   213→
+   214→| موجودیت | کلید طبیعی | نکات اجرایی |
+   215→|---|---|---|
+   216→| property (listing) | `propertyCode` (از ARM) | ستون `@unique` روی PropertyRecord جدید |
+   217→| request | `requestCode` | ستون افزودنی `requestCode String?` + ایندکس یکتای جزئی (فقط رکوردهای source='arm') |
+   218→| customer | `mobile`، fallback `personnelCode` | کلید منطقی: `mobile ?? "pc:" + personnelCode`؛ ستون mobile یکتا |
+   219→| expert | `personnelCode` | موجود (`@unique` روی ExpertRecord) |
+   220→| transaction | `contractHolo` | مقدار تهی/تکرار-خالی → fallback ترکیبی `propertyCode + "|" + requestCode + "|" + contractDate` (سند صادقانه: معاملات بدون هولوگرام در داده ۲۵ ساله محتمل است؛ کلید سقوط‌پذیر مستند) |
+   221→| contract | `contractHolo + propertyCode` | کلید ترکیبی؛ هولوگرام تهی → ردیف صرفاً update-merge می‌شود نه create تکراری (با کلید `id` ARM) |
+   222→
+   223→### ۲.۲ مدل جدید `PropertyRecord` — رجیستری آگهی‌های ARM
+   224→
+   225→**انحراف صادقانه شماره ۲ (مستند در §۱۲):** دستور موجودیت bulk را `listing` نامیده، اما `ListingRecord` موجود = «فرم ۵ گامی فایل آگهی داخلی» است (با actorCode غیرتهی، انتقال CRM، اینستاگرام). آگهی تاریخی ARM موجودیتی با شکل متفاوت است (کدآگهی، realtor مرتبط، جزئیات برچسب/مقدار). تزریق ۲۰۰K رکورد ARM در ListingRecord: نقض معنا، مجبور به مقدار ساختگی actorCode، و تغییر رفتار مصرف‌کنندگان v1 (کاشی فایل‌ها). **راه‌حل:** مدل افزودنی جدید — صفر برخورد با داده موجود، پل آینده از طریق `ListingRecord.armPropertyId` (موجود).
+   226→
+   227→```prisma
+   228→/// P6.5 — کش آگهی‌های ARM (تاریخی + جاری)؛ کلید طبیعی: propertyCode
+   229→model PropertyRecord {
+   230→  id            String   @id                 // شناسه ARM (objectId)
+   231→  propertyCode  String   @unique            // کدآگهی ARM — کلید طبیعی
+   232→  title         String?
+   233→  status        String?
+   234→  // انتساب Scope (§۵)
+   235→  ownerCode     String?                     // relatedRealtor → personnelCode
+   236→  ownerName     String?
+   237→  branchId      String?
+   238→  // مکان (تطبیق‌یافته با رجیستری ۹۲۶ — §۳)
+   239→  cityId        String?
+   240→  areaId        String?
+   241→  areaName      String?
+   242→  lineId        String?
+   243→  lineName      String?
+   244→  address       String?
+   245→  // مشخصات
+   246→  propertyTypeId   String?
+   247→  propertyTypeName String?
+   248→  tradeTypeId      String?
+   249→  tradeTypeName    String?
+   250→  price            Float?                   // ریال — عدد پایه (§۳.۵)
+   251→  pricePerMeter    Float?                   // ریال
+   252→  meterage         Float?
+   253→  rooms            Int?
+   254→  floor            Int?
+   255→  buildYear        Int?
+   256→  // متن و خام
+   257→  description   String?
+   258→  detailsJson    String?                    // [{label, value}] عین ARM
+   259→  ownerMobile    String?                    // نرمال‌شده 09xxxxxxxxx
+   260→  tenantId       String   @default("melk-tabriz")   // §۱۱ — آماده، غیرفعال
+   261→  sourceRunId    String?                    // آخرین bulk-run که رکورد را نوشت
+   262→  syncedAt       DateTime @default(now())
+   263→  createdAt      DateTime?
+   264→  updatedAt      DateTime @updatedAt
+   265→
+   266→  @@index([cityId, areaId, propertyTypeId, tradeTypeId])   // ایندکس ۱ از §۴
+   267→  @@index([price, meterage])                               // ایندکس ۲ از §۴
+   268→  @@index([createdAt])                                     // ایندکس ۴ از §۴
+   269→  @@index([ownerCode])                                     // پشتیبان ConsultantScope
+   270→  @@index([tenantId])
+   271→}
+   272→```
+   273→
+   274→### ۲.۳ مدل جدید `CustomerRecord` — رجیستری مشتریان مشتق
+   275→
+   276→مشتری از چهار مسیر مشتق می‌شود: خریداران/فروشندگان قرارداد (`buyerListJson`/`sellerListJson`)، درخواست‌دهندگان (applicant)، مالکان آگهی (owner). هر ردیف منبع → استخراج (fullName, mobile) → upsert در CustomerRecord با کلید موبایل.
+   277→
+   278→```prisma
+   279→/// P6.5 — رجیستری مشتریان مشتق (خریدار/فروشنده/درخواست‌دهنده/مالک)؛ افزودنی
+   280→model CustomerRecord {
+   281→  id             String   @id @default(cuid())
+   282→  mobile         String?                    // کلید طبیعی اول — نرمال‌شده
+   283→  personnelCode  String?                    // fallback (کاربر پرسنلی)
+   284→  fullName       String                     // نرمال‌شده نام (§۳.۲)
+   285→  rolesJson      String?                    // ["buyer","seller","requester","owner"]
+   286→  sourceCountsJson String?                  // {contract: n, request: n, property: n, visit: n}
+   287→  ownerCode      String?                    // کارشناس مرتبط (انتساب Scope — §۵)
+   288→  branchId       String?
+   289→  firstSeenAt    DateTime?                  // قدیمی‌ترین تاریخ رکورد منبع
+   290→  lastSeenAt     DateTime?
+   291→  tenantId       String   @default("melk-tabriz")
+   292→  sourceRunId    String?
+   293→  updatedAt      DateTime @updatedAt
+   294→
+   295→  @@index([fullName])
+   296→  @@index([ownerCode])
+   297→  @@index([mobile])
+   298→  @@index([tenantId])
+   299→}
+   300→```
+   301→
+   302→**قاعده حذف تکراری مشتری:** یک موبایل = یک رکورد. برخورد: merge — نقش‌ها اجتماع گرفته می‌شوند، شمارش منابع جمع می‌شود، نام طولانی‌تر/کامل‌تر برنده می‌شود (تعداد توکن بیشتر)، firstSeenAt کمینه/lastSeenAt بیشینه. صفر حذف فیزیکی (قاعده ۱۴).
+   303→
+   304→### ۲.۴ رفتار برخورد تکراری — merge non-null
+   305→
+   306→در upsert هر موجودیت: فیلدهای تهیِ رکورد جدید، مقدار موجود را بازنویسی نمی‌کنند؛ فیلدهای غیرتهی جدید، مقدار قدیمی را به‌روز می‌کنند (استراتژی «جدیدترین داده غیرتهی برنده»). استثنا: فیلدهای حسابرسی (`syncedAt`, `sourceRunId`) همیشه به‌روز. پیاده‌سازی در لایه نگاشت (قبل از upsert، مقدار موجود خوانده نمی‌شود — به‌جای آن در update-data فقط کلیدهای غیرتهی قرار می‌گیرند).
+   307→
+   308→### ۲.۵ گزارش نرخ تکراری
+   309→
+   310→هر اجرا (dry-run و واقعی) گزارش می‌دهد: به تفکیک موجودیت — totalFetched / created / updated / duplicatesSkipped (رکوردهایی که محتوای تغییرنیافته داشتند و فقط syncedAt جابه‌جا شد) / mergeCount. پیش‌بینی دستور: ۵-۱۵٪ — در P6.5-10 با اعداد واقعی ثبت می‌شود.
+   311→
+   312→## ۳. Normalization Rules
+   313→
+   314→### ۳.۱ قرارداد توابع خالص (عین دستور — `src/lib/melk-api/normalize.ts` در P6.5-04)
+   315→
+   316→```typescript
+   317→export function normalizePropertyCode(raw: string): string;
+   318→export function normalizeName(raw: string): string;
+   319→export function normalizeAreaName(raw: string): string;
+   320→export function normalizeJalaliDate(raw: string): string; // → ISO 8601
+   321→export function normalizeAmount(raw: string): number;     // → ریال (عدد پایه)
+   322→export function normalizeMobile(raw: string): string;
+   323→export function dedupKey(entity: string, record: unknown): string;
+   324→```
+   325→
+   326→همه توابع: **خالص** (صفر DB/fetch/ساعت سیستم)، deterministic، با تست واحد ≥۱۰ مورد (شرط پذیرش دستور). ورودی نامعتبر → خروجی صادقانه (رشته خالی یا مقدار تهی مستند) — هرگز throw خام.
+   327→
+   328→### ۳.۲ نرمال‌سازی نام‌ها — `normalizeName`
+   329→
+   330→ترتیب اعمال: (۱) یکسان‌سازی ارقام فارسی→لاتین؛ (۲) تبدیل نویسه‌های عربی: `ي→ی`، `ك→ک`، `ة→ه`؛ (۳) نرمال‌سازی ZWNJ: فاصله‌های مجاز دور ZWNJ حفظ، ZWNJ‌های دوتایی/سه‌تایی → یکی؛ (۴) فاصله‌های تکراری → یکی؛ (۵) trim؛ (۶) حذف نویسه‌های کنترلی. مثال شاهد: `" سید علي  رضائي "` → `"سید علی رضایی"`.
+   331→
+   332→### ۳.۳ نرمال‌سازی محله‌ها — `normalizeAreaName` با رجیستری ۹۲۶
+   333→
+   334→منبع: `src/lib/divar/tabriz-locations.data.json` (۱۳۰ منطقه × ۹۲۶ محله با شناسه‌های ARM — راستی‌آزمایی‌شده در P6.5-00).
+   335→
+   336→الگوریتم تطبیق (سه‌مرحله‌ای، صفر وابستگی خارجی):
+   337→1. **تطبیق دقیق پس از نرمال‌سازی نام** (نرمال‌سازی §۳.۲ روی نام محله + حذف پسوندهای رایج «محله»، weighting مساوی) → بازگشت `{areaId, areaName, lineId, lineName}`.
+   338→2. **تطبیق contains دوسویه** (نام ورودی ⊆ نام رجیستری یا برعکس) → بازگشت بهترین تطبیق یکتا؛ چند تطبیق مبهم → عدم تطبیق.
+   339→3. **بدون تطبیق** → بازگشت نام نرمال‌شده خام + پرچم `unmatched` (در گزارش P6.5-10 فهرست می‌شود؛ هدف نرخ موفق ≥۹۵٪ شرط پذیرش).
+   340→
+   341→خروجی نهایی همیشه نام **رسمی رجیستری** است (نه املای ورودی) — یکسان‌سازی ارجاع در کل پایگاه.
+   342→
+   343→### ۳.۴ نرمال‌سازی تاریخ — `normalizeJalaliDate` → ISO 8601
+   344→
+   345→پشتیبانی سه فرم ورودی: `1400/01/15`، `1400-1-5`، `۱۴۰۰/۰۱/۱۵` (ارقام فارسی). تبدیل با `jalaliToGregorian` موجود در `src/lib/jalali.ts` (راستی‌آزمایی‌شده). خروجی: `2021-03-05T00:00:00.000Z` (نیمه‌شب UTC — تاریخ‌های تجاری بدون ساعت). تاریخ نامعتبر (مثلاً 1400/13/01) → رشته خالی + شمارش در گزارش خطای نرمال‌سازی.
+   346→
+   347→### ۳.۵ نرمال‌سازی مبالغ — `normalizeAmount` → ریال (عدد پایه)
+   348→
+   349→پشتیبانی: ارقام لاتین/فارسی، جداکننده `,` و `،` و `'`، مقیاس‌واژه‌ها (`میلیون`، `میلیارد`، `تومان`، `تریلیون`)، كسر با `/` (مثل `2/5 میلیارد` در متن فارسی = ۲.۵ میلیارد). **خروجی همیشه ریال** (تومان ×۱۰). 
+   350→
+   351→**قاعده مرز واحد (مهم — ضد فساد FeatureSet):** خط لوله جدید (PropertyRecord/normalize) = **ریال**؛ جداول موروثی (`DivarAd.price`، `MarketPriceStat`) = **تومان** دست‌نخورده. این دو هرگز در یک محاسبه FeatureSet مخلوط نمی‌شوند — Market-FeatureSet خط لوله Bulk از خود PropertyRecordها ساخته می‌شود (ریال-با-ریال)، و فایل‌یابی دیوار از آمار خودش (تومان-با-تومان). تبدیل فقط در مرز صریح و مستند.
+   352→
+   353→### ۳.۶ نرمال‌سازی موبایل — `normalizeMobile`
+   354→
+   355→| ورودی | خروجی |
+   356→|---|---|
+   357→| `09141234567` | `09141234567` |
+   358→| `+989141234567` | `09141234567` |
+   359→| `00989141234567` | `09141234567` |
+   360→| `۹۱۴۱۲۳۴۵۶۷` (بدون ۰) | `09141234567` |
+   361→| `9141234567` (بدون ۰) | `09141234567` |
+   362→
+   363→قواعد: ارقام فارسی→لاتین؛ حذف نویسه‌های غیررقمی (فاصله، `-`، `(`، `)`)؛ حذف پیشوند `+98`/`0098`؛ افزودن `0` پیشوندی برای ۱۰رقمی؛ اعتبارسنجی نهایی `^09\d{9}$` — نامعتبر → رشته خالی (شمارش در گزارش).
+   364→
+   365→### ۳.۷ `dedupKey` — پیاده‌سازی مرجع کلیدهای §۲.۱
+   366→
+   367→تابع dispatch بر موجودیت + استخراج فیلد کلیدی از رکورد نرمال‌شده؛ خروجی رشته یکتا با پیشوند موجودیت (مثلاً `property:12345`، `customer:09141234567`، `customer:pc:1015`، `transaction:HOL-7788`). فقط برای گزارش/شمارش/تست استفاده می‌شود — خود upsert مستقیماً روی ستون‌های کلید Prisma عمل می‌کند (هیچ جدول کلید-مشتق اضافه نمی‌شود).
+   368→
+   369→### ۳.۸ کیفیت و بازبینی
+   370→
+   371→- تست واحد ≥۱۰ مورد برای هر تابع (شرط پذیرش) + کیس‌های مرزی (ورودی خالی، فقط-فاصله، ارقام مخلوط، تاریخ سال کبیسه).
+   372→- نمونه موک ۱۰٬۰۰۰ رکورد (مولد deterministic با seed ثابت — قابل بازتولید).
+   373→- **بازبینی دستی ۱۰۰ رکورد** توسط تیم (شرط پذیرش دستور) — فهرست و نتیجه در گزارش P6.5-10 ثبت می‌شود.
+   374→
+   375→---
+   376→
+   377→## ۴. Indexing Strategy — ۸ ایندکس افزودنی
+   378→
+   379→### ۴.۱ جدول نگاشت شاخص‌های دستور ← ایندکس‌های واقعی
+   380→
+   381→| # | شاخص دستور (نمای مفهومی) | ایندکس واقعی (Prisma) | جدول | وضعیت |
+   382→|---|---|---|---|---|
+   383→| ۱ | `[cityId, areaId, propertyType, tradeType]` | `@@index([cityId, areaId, propertyTypeId, tradeTypeId])` | PropertyRecord (جدید) | **جدید** |
+   384→| ۲ | `[price, meterage]` | `@@index([price, meterage])` | PropertyRecord (جدید) | **جدید** |
+   385→| ۳ | `[personnelCode, branchId]` | `@@index([personnelCode, branchId])` + ستون افزودنی `branchId String?` | ExpertRecord | **جدید** |
+   386→| ۴ | `[createdAt]` | `@@index([createdAt])` | PropertyRecord (جدید) | **جدید** |
+   387→| ۵ | `[contractHolo]` | `@@index([contractHolo])` | TransactionRecord | **جدید** |
+   388→| ۶ | `[propertyCode]` | `@@index([propertyCode])` | ContractRecord | **جدید** (ایندکس propertyCode موجود روی TransactionRecord/VisitRecord حفظ شد) |
+   389→| ۷ | `[customerMobile]` | `@@index([customerMobile])` | ListingRecord | **جدید** (روی RequestRecord از قبل موجود است) |
+   390→| ۸ | `[interactionType, timestamp]` | `@@index([eventTypeId, createdAt])` | RequestEventRecord | **جدید** — نگاشت صادقانه: «تعامل» در داده واقعی ما = رویداد درخواست |
+   391→
+   392→> **نگاشت صادقانه (§۱۲-۳):** نام ستون‌های دستور نمای مفهومی بودند؛ نگاشت به ستون‌های واقعیِ موجود در Schema انجام شد. ایندکس‌های پشتیبان اضافی (فراتر از ۸): `[ownerCode]` روی چهار جدول Scope-دار، `[mobile]` و `[tenantId]` روی CustomerRecord/PropertyRecord — برای ConsultantScope و آینده چند-مستأجری.
+   393→
+   394→### ۴.۲ اجرا و راستی‌آزمایی
+   395→
+   396→1. افزودن به `prisma/schema.prisma` (همه افزودنی — صفر تغییر/حذف ستون).
+   397→2. `bun run db:push` (اسکریپت موجود `db:push` = `prisma db push --accept-data-loss`) — اول روی پایگاه تست (`db/test.db`)، بعد production.
+   398→3. **EXPLAIN QUERY PLAN** برای ۵ Query کلیدی (همان ۵ Query P6.5-08): هرکدام باید `USING INDEX` یا `SEARCH ... USING INDEX` نشان دهد، نه `SCAN` کامل.
+   399→4. اندازه‌گیری و مستندسازی زمان دقیق (قبل/بعد ایندکس) — شرط پذیرش دستور.
+   400→
+   401→### ۴.۳ Rollback ایندکس‌ها
+   402→
+   403→ایندکس = تغییر Schema افزودنی با rollback بی‌آسیب: حذف ایندکس از schema + db push (بدون دسترسی به داده). بدون نیاز به بازگشت بکاپ. SQLite ایندکس‌های اضافی فقط فضای دیسک می‌گیرند (محدود) و بر نوشتار اثر جزئی دارند — قابل پذیرش در مقیاس ۲۰۰K.
+   404→
+   405→---
+   406→
+   407→## ۵. ConsultantScope Design
+   408→
+   409→### ۵.۱ توسعه مدل Session (افزودنی)
+   410→
+   411→```prisma
+   412→model Session {
+   413→  // ... فیلدهای موجود دست‌نخورده ...
+   414→  branchId     String?    // شعبه (از PM/businesses) — افزودنی
+   415→  accessScope  String     @default("OWNER")   // OWNER | BRANCH | CONSULTANT — افزودنی
+   416→}
+   417→```
+   418→
+   419→- **default امن:** تمام نشست‌های موجود و ورود مدیر = `OWNER` (عین دستور) — رفتار فعلی صفر-تغییر.
+   420→- نشست‌های مشاورِ جدید (ورود OTP با کد پرسنلی) = `CONSULTANT` به‌صورت پیش‌فرض؛ `BRANCH` با انتخاب شعبه در تنظیمات آینده.
+   421→- **انحراف صادقانه شماره ۱ (§۱۲):** دستور ستون `consultantCode` خواسته؛ `Session.personnelCode` **همین نقش را دارد** (غیرتهی، یکتا-معنایی، موجود). ستون تکراری = ریسک واگرایی داده. تصمیم: `consultantCode ≡ personnelCode` (موجود) — ستون جدید اضافه نمی‌شود.
+   422→
+   423→### ۵.۲ قرارداد ScopeFilter و متد findWithScope
+   424→
+   425→```typescript
+   426→// قرارداد مشترک (interfaces/ — افزودنی)
+   427→export type AccessScope = 'OWNER' | 'BRANCH' | 'CONSULTANT';
+   428→
+   429→export interface ScopeFilter {
+   430→  tenantId: string;          // همیشه 'melk-tabriz' در این فاز
+   431→  accessScope: AccessScope;
+   432→  personnelCode: string;     // کد کارشناس نشست (≡ consultantCode)
+   433→  branchId?: string | null;  // برای BRANCH
+   434→}
+   435→
+   436→// روی ۴ مخزن دستوری (Transaction, Customer, Listing, Visit) — افزودنی:
+   437→export interface ScopedRepository<T> {
+   438→  /** متدهای v1 دست‌نخورده — رفتار فعلی حفظ می‌شود */
+   439→  findWithScope<Q>(query: Q, scope: ScopeFilter): Promise<T[]>;
+   440→}
+   441→```
+   442→
+   443→- متدهای v1 (findAll/listRecent/...) **دست‌نخورده** — هیچ امضایی تغییر نمی‌کند.
+   444→- در Service Layer: هر Query تازه‌نوشته scope دریافت می‌کند؛ مسیرهای v1 موجود در همین فاز به‌تدریج و بدون تغییر رفتار مالک (OWNER = بدون فیلتر) scope می‌گیرند.
+   445→
+   446→### ۵.۳ ستون‌های انتساب (افزودنی) و ماتریس دامنه
+   447→
+   448→افزودنی بر جداول Scope-دار: `ownerCode String?` (کد کارشناس صاحب رکورد، از relatedRealtor/realtor/checker مشتق در زمان Import) + `branchId String?`.
+   449→
+   450→**ماتریس دامنه — تصمیم معماری صریح (شفاف و مستند):**
+   451→
+   452→| جدول | نوع داده | OWNER | BRANCH | CONSULTANT |
+   453→|---|---|---|---|---|
+   454→| ListingRecord | شخصی (actorCode موجود) | همه | `branchId` برابر | `actorCode` برابر |
+   455→| RequestRecord / RequestEventRecord | شخصی (actorCode) | همه | `branchId` برابر | `actorCode` برابر |
+   456→| CustomerRecord | شخصی (ownerCode) | همه | `branchId` برابر | `ownerCode` برابر |
+   457→| VisitRecord | شخصی (ownerCode افزودنی از checker) | همه | `branchId` برابر | `ownerCode` برابر |
+   458→| TransactionRecord | تجمیعی دپارتمان | همه | همه | همه |
+   459→| InteractionRecord / SupplyDemandRecord | تجمیعی دپارتمان | همه | همه | همه |
+   460→| ContractRecord | تجمیعی + داده شخصی خریدار/فروشنده | همه | همه | همه |
+   461→
+   462→**فلسفه (کشف صادقانه و مستند):** گزارش‌های تطابق/تعامل/عرضه-تقاضا، «داده دپارتمانیِ مشترک» هستند (ماهیت گزارش مدیریتی)، نه مال یک کارشناس؛ پنهان‌کردنشان از مشاور = تغییر رفتار قابل‌مشاهده و ناقض B.2-۵. داده «شخصی» (فایل‌ها، درخواست‌ها، مشتریان، بازدیدها) دقیقاً همان چیزی است که دستور تستش را خواسته: «کارشناس A داده کارشناس B را نمی‌بیند» — این جداول **fail-closed** هستند: ردیف بدون انتساب (`ownerCode` تهی) فقط برای OWNER مرئی است.
+   463→
+   464→### ۵.۴ توسعه SyncState (افزودنی)
+   465→
+   466→```prisma
+   467→model SyncState {
+   468→  // ... فیلدهای موجود ...
+   469→  bulkImportCheckpoint  String?   // P6.5-03 — checkpoint یکپارچه (JSON §۱.۵)
+   470→  bulkFeatureCheckpoint String?   // P6.5-06 — ازسرگیری استخراج ویژگی
+   471→}
+   472→```
+   473→
+   474→### ۵.۵ TenantResolver — placeholder (بخش F دستور)
+   475→
+   476→```typescript
+   477→// src/core/repositories/tenant.ts (P6.5-02 — افزودنی)
+   478→/** Placeholder چند-مستأجری: در PHASE 6.5 فقط tenant پیش‌فرض برمی‌گرداند.
+   479→ *  منطق فعال (پرش از tenantId نشست به فیلتر کوئری) عمداً معلق است تا فاز بعدی. */
+   480→export function resolveTenantId(_session: { branchId?: string | null } | null): string {
+   481→  return 'melk-tabriz';
+   482→}
+   483→```
+   484→
+   485→صفر منطق فعال؛ صفر مصرف اجباری؛ فقط نقطه اتصال معماری ثبت می‌شود تا PHASE 8+ مسیر مستقیمی برای فعال‌سازی داشته باشد.
+   486→
+   487→### ۵.۶ تست‌های اثبات (شرط پذیرش P6.5-02)
+   488→
+   489→1. مشاور A رکورد مشاور B را در هر ۴ مخزن شخصی **نمی‌بیند** (Repository-level، با داده seed دو کارشناس).
+   490→2. OWNER همه داده را می‌بیند.
+   491→3. AuditLog برای هر findWithScope ثبت می‌شود (§۶).
+   492→4. نشست قدیمی (بدون accessScope) با default `OWNER` کار می‌کند — صفر شکست.
+   493→5. رکورد بدون انتساب در جدول شخصی: برای CONSULTANT/BRANCH نامرئی، برای OWNER مرئی (fail-closed).
+   494→
+   495→---
+   496→
+   497→## ۶. AuditLog Extension
+   498→
+   499→### ۶.۱ ستون‌های افزودنی
+   500→
+   501→```prisma
+   502→model AuditLog {
+   503→  // ... فیلدهای موجود (action, actor, detail, createdAt) ...
+   504→  operation   String?   // READ | WRITE | DELETE
+   505→  entityType  String?   // transaction | customer | listing | request | visit | contract | property
+   506→  recordCount Int?      // تعداد رکوردهای درگیر این دسترسی
+   507→  accessScope String?   // OWNER | BRANCH | CONSULTANT
+   508→  tenantId    String    @default("melk-tabriz")
+   509→}
+   510→```
+   511→
+   512→فیلد `action` موجود حفظ می‌شود (سازگاری v1)؛ `operation` تمایز خواندن/نوشتن را صریح می‌کند.
+   513→
+   514→### ۶.۲ Helper — `auditAccess`
+   515→
+   516→```typescript
+   517→// src/lib/audit.ts (P6.5-02 — فایل جدید)
+   518→export async function auditAccess(
+   519→  session: { personnelCode: string; accessScope?: string | null; branchId?: string | null },
+   520→  operation: 'READ' | 'WRITE' | 'DELETE',
+   521→  entityType: string,
+   522→  recordCount: number,
+   523→  detail?: string
+   524→): Promise<void>;
+   525→```
+   526→
+   527→- فراخوانی از Service/Repository پس از هر `findWithScope` و هر نوشتار Bulk.
+   528→- شکست نوشتن AuditLog = خطای ثبت‌شده در logger ولی **سد** عملیات نیست (Availability) — به‌جز Bulk واقعی که در آن شکست audit = توقف (داده حساس بزرگ‌مقیاس).
+   529→- **قاعده صفر-دسترسی-بدون-حسابرسی:** اسکنر P6.5-09 (`audit-data-isolation.sh`) این را استاتیک اعمال می‌کند (§ بخش گام ۰۹).
+   530→
+   531→### ۶.۳ حجم و نگهداری
+   532→
+   533→AuditLog از امروز append-only است (هرگز update/delete) — سازگار با قاعده ۱۴. رشد مورد انتظار: هر findWithScope یک ردیف (~۱۰۰ بایت) — در استفاده عادی < ۱۰۰ ردیف/روز؛ پس از Bulk واقعی ~ده‌ها ردیف اجرایی. در مقیاس هفته‌ها بی‌خطر؛ سیاست آرشیو (جدا کردن ردیف‌های >۶ ماه به فایل) به PHASE 8 موکول و مستند شد.
+   534→
+   535→## ۷. Feature Extraction Batch Pipeline
+   536→
+   537→### ۷.۱ اسکریپت — `scripts/batch-feature-extraction.ts` (P6.5-06)
+   538→
+   539→```
+   540→۱) خواندن checkpoint از SyncState.bulkFeatureCheckpoint
+   541→۲) خواندن رکوردهای اصلی در batch های ۱۰٬۰۰۰ ( PropertyRecord → PropertyInput
+   542→   + ساخت MarketSampleInput از تجمیع منطقه‌ای همان batch + Expert/Customer از جداول خودشان)
+   543→۳) استخراج ۴ FeatureSet از طریق FeatureEngine (متدهای افزودنی PHASE 6:
+   544→   extractProperty/Customer/Expert/MarketFeatures) — v1 compute دست‌نخورده
+   545→۴) ذخیره تدریجی در FeatureStore (FileSystemFeatureStore موجود — JSONL الحاقی)
+   546→۵) به‌روزرسانی checkpoint پس از هر batch + progress reporting
+   547→۶) صفر LLM · صفر Prediction (قانون H) · صفر نوشتار در جداول CRM
+   548→```
+   549→
+   550→### ۷.۲ قرارداد Checkpoint
+   551→
+   552→```typescript
+   553→interface FeatureCheckpoint {
+   554→  entity: 'property' | 'customer' | 'expert' | 'market';
+   555→  lastCursorId: string;        // آخرین id batch کامل‌شده — ترتیب پایدار (id صعودی)
+   556→  processed: number;
+   557→  savedFeatures: number;
+   558→  startedAt: string; updatedAt: string; runId: string;
+   559→}
+   560→```
+   561→
+   562→### ۷.۳ اهداف و شواهد عملکردی
+   563→
+   564→- ۱۰K رکورد < ۶۰ ثانیه (شرط پذیرش) — سنجش با `Date.now()` دور کل batch، خروجی در گزارش.
+   565→- تخمین ۲۰۰K = خطی از ۱۰K (ثبت صادقانه در گزارش؛ اگر >۲۰ دقیقه ⇒ فعال‌سازی گزینه موازی‌سازی Worker Threads از جدول ریسک §۱۳).
+   566→- تست ازسرگیری: قطع عمدی پس از batch دوم → ادامه از cursor → صفر رکورد تکراری در FeatureStore (last-wins JSONL تضمین می‌دهد).
+   567→- تست ذخیره/بازیابی: خواندن مجدد FileSystemFeatureStore در نمونه جدید = همان مجموعه.
+   568→
+   569→### ۷.۴ قید ضد-فساد واحد
+   570→
+   571→Market-FeatureSet خط لوله Bulk از PropertyRecord (ریال) ساخته می‌شود؛ هیچ آمار تومانی جداول دیوار/موروثی وارد این محاسبه نمی‌شود (§۳.۵). `featureVersion` هر چهار builder همان نسخه‌های ثابت PHASE 6 است — بازتولید مستقیم پایه ارزیابی.
+   572→
+   573→---
+   574→
+   575→## ۸. Vector Index Batch Pipeline
+   576→
+   577→### ۸.۱ اسکریپت — `scripts/batch-vector-index.ts` (P6.5-07)
+   578→
+   579→```
+   580→۱) خواندن checkpoint (همان قرارداد §۷.۲ با entity='vector')
+   581→۲) برای هر PropertyRecord: متن = trim(title + ' ' + description)
+   582→   · رکورد بدون متن → شمارش skip (صادقانه در گزارش) — تولید متن ساختگی ممنوع
+   583→۳) تعبیه hash-based با VectorIndex موجود (PHASE 4) — صفر LLM، deterministic
+   584→۴) ذخیره در FileSystemStore (JSONL الحاقی — همان مکانیزم حافظه PHASE 4)
+   585→۵) checkpoint + progress
+   586→```
+   587→
+   588→### ۸.۲ اهداف و کیفیت
+   589→
+   590→- ۱۰K رکورد < ۹۰ ثانیه (شرط پذیرش).
+   591→- تست جستجوی معنایی روی ایندکس ساخته‌شده: ۱۰ Query دستی (شرط پذیرش) — هر Query با ۳ عبارت مرتبط/غیرمرتبط، سنجش اینکه hit برتر متعلق به دامنه مرتبط است؛ نتیجه کیفی در گزارش P6.5-10 ثبت می‌شود (بدون ادعای دقت — قانون H).
+   592→- **Fallback حجم (عین جدول ریسک دستور):** اگر ۲۰۰K از زمان/فضا عبور کند ⇒ ایندکس فقط ۵۰K رکورد نخست به‌ترتیب **قدیمی‌ترین اول** (داده تاریخی گنج است) + incremental برای باقی.
+   593→
+   594→---
+   595→
+   596→## ۹. Performance Targets
+   597→
+   598→### ۹.۱ جدول اهداف (معیار GATE-DATA-۸)
+   599→
+   600→| سنجه | هدف | ابزار سنجش |
+   601→|---|---|---|
+   602→| Query P50 | < ۱۰۰ms | `scripts/query-performance-test.ts` |
+   603→| Query P95 | < ۵۰۰ms @ ۲۰۰K رکورد | همان — با seed ۲۰۰K رکورد مصنوعی deterministic |
+   604→| Query P99 | < ۱۰۰۰ms | همان |
+   605→| Feature Extraction | ۱۰K < ۶۰s | `scripts/batch-feature-extraction.ts` |
+   606→| Vector Index | ۱۰K < ۹۰s | `scripts/batch-vector-index.ts` |
+   607→| همزمانی | ۱۰ Query موازی بدون degradation (>۲× کند شدن P95) | همان — Promise.all×۱۰ |
+   608→
+   609→### ۹.۲ پنج Query سنجش (عین دستور P6.5-08)
+   610→
+   611→1. آخرین معاملات منطقه X (TransactionRecord با فیلتر منطقه از پیوند PropertyRecord/کد منطقه).
+   612→2. فایل‌های زیرقیمت منطقه Y (PropertyRecord: `pricePerMeter` زیر میانه منطقه — همین Query مسیر ایندکس §۴-۲ را می‌سنجد).
+   613→3. مشتریان فعال ۳۰ روز اخیر (CustomerRecord: `lastSeenAt >= now-30d`).
+   614→4. کارشناسان پرتعامل (InteractionRecord تجمعی + ExpertRecord join).
+   615→5. جستجوی معنایی روی description (Vector Index + بازگشت به رکورد).
+   616→
+   617→### ۹.۳ روش سنجش منصفانه
+   618→
+   619→هر Query: ۲۰ اجرای گرم (پس از ۳ اجرای سرد)، ثبت P50/P95/P99، میانه ۳ دور. Seed مصنوعی ۲۰۰K: مولد deterministic با توزیع واقع‌نمایانه (منطقه/قیمت/تاریخ از رجیستری ۹۲۶ و بازه ۲۵ ساله). گزارش کامل در P6.5-10.
+   620→
+   621→---
+   622→
+   623→## ۱۰. Rollback Plan
+   624→
+   625→| سناریو | مسیر بازگشت | هزینه |
+   626→|---|---|---|
+   627→| شکست Bulk Import (وسط کار) | checkpoint ذخیره است؛ ادامه از نقطه قطع یا توقف کامل — داده نیمه‌جذب‌شده بی‌ضرر است (upsert idempotent) | صفر |
+   628→| خرابی داده پس از Bulk | بازیابی از `db/custom.backup-pre-bulk-import.db` (کپی معکوس + ریستارت سرویس) | دقیقه‌ای |
+   629→| باگ در Query Layer | Feature Flag بازگشت به Query قدیم: پرچم محیطی `SCOPE_QUERY_V1=1` در findWithScope که مسیر فیلتر را دور می‌زند (فقط برای مالک/دیباگ — پیش‌فرض خاموش) | صفر |
+   630→| باگ در ایندکس‌ها | حذف ایندکس از schema + db push (§۴.۳) | دقیقه‌ای |
+   631→| ستون‌های افزودنی | همه nullable/default — حذف بدون آسیب (§ همه Migrationها) | دقیقه‌ای |
+   632→| هم‌زیستی sync کامل/افزایشی | §۱.۹ — مسیر کامل پس از Bulk = اجرای مجدد Bulk (idempotent) | زمان import |
+   633→
+   634→**قاعده:** هر Migration این فاز (ستون/جدول/ایندکس) باید در کامیت خودش دستور حذف-بی‌آسیب مستند داشته باشد (قاعده H-۹).
+   635→
+   636→---
+   637→
+   638→## ۱۱. بند آینده‌نگر: توسعه‌پذیری چند-دپارتمانی (بخش F دستور)
+   639→
+   640→### ۱۱.۱ ستون tenantId — فهرست دقیق جداول
+   641→
+   642→افزودنی `tenantId String @default("melk-tabriz")` روی جداول کلیدی: `PropertyRecord`، `CustomerRecord`، `TransactionRecord`، `ExpertRecord`، `InteractionRecord`، `VisitRecord`، `SupplyDemandRecord`، `ContractRecord`، `ListingRecord`، `RequestRecord`، `RequestEventRecord`، `AuditLog`، `Session`. (SQLite: ستون جدید با default غیرتهی، ردیف‌های موجود خودکار مقدار default می‌گیرند — بدون بازنویسی داده.)
+   643→
+   644→### ۱۱.۲ TenantResolver — placeholder
+   645→
+   646→§۵.۵ — صفر منطق فعال در این فاز؛ فقط ستون آماده + نقطه اتصال کد. فعال‌سازی منطق multi-tenant = تصمیم PHASE 8+ با دستور جدید شورا.
+   647→
+   648→### ۱۱.۳ رأی فنی GLM درباره دو گزینه داشبورد (پاسخ به بخش اول پیام شورا)
+   649→
+   650→**گزینه ۱:** داشبورد مستقل هر دپارتمان (تغییر نام به «داشبورد مدیریتی ملک تبریز» + ساخت داشبورد جدا به‌ازای هر دپارتمان).
+   651→**گزینه ۲:** داشبورد واحد + تنظیمات ایجنت برای اتصال به دپارتمان‌های دیگر.
+   652→
+   653→**توصیه GLM — ترکیب هدفمند: «گزینه ۱ در لایه هویت و دامنه، گزینه ۲ در لایه کد و زیرساخت»:**
+   654→
+   655→1. **تغییر نام: موافق.** داشبورد و کاشی‌هایش واقعاً مختص سامانه‌های ملک تبریز است (ARM/PM)؛ نام صادقانه «داشبورد مدیریتی ملک تبریز» است. اجرای آن یک رشته است.
+   656→2. **داشبورد جدا به‌ازای دپارتمان: موافق در سطح «نمایش و دامنه داده»، مخالف در سطح «فورک کد».** فورک N نسخه اپ = تکثیر باگ، N برابر نگهداری، هدررفت پنج موتور بدنه‌دار، نقض قید صفر هزینه. راه درست: **یک کدبیس، یک استقرار، تفکیک در tenantId** — هر دپارتمان = یک مستأجر با داشبورد خودش (کاشی‌ها/داده/تنظیمات اتصال خودش). بخش F دستور دقیقاً همین ستون را تجویز کرده — معماری پیشنهادی امتداد طبیعی مصوبه شوراست.
+   657→3. **مکانیسم گزینه ۲ (تنظیمات ایجنت): به‌عنوان «پیکربندی اتصال per-tenant» حفظ می‌شود**، نه سوئیچ سراسری اختلاط. دلیل فنی قاطع: اختلاط داده دو دپارتمان در یک کاشی، FeatureSetهای Market را فاسد می‌کند (تعداد عرضه یک منطقه از دو منبع دوبار شمرده می‌شود؛ میانه قیمت دوگانه) و مرز رضایت‌نامه‌های محضری per- department را مخدوش می‌کند.
+   658→4. **افق گروهی:** اگر مالک در آینده «نمای فرامستأجری» خواست (جمع بازار تبریز از چند دپارتمان)، داشبورد فدرال جدا با نقش OWNER-گروهی در PHASE 8+ ساخته می‌شود — خواندن cross-tenant فقط با نقش، هرگز اختلاط نوشتار.
+   659→5. **زمان‌بندی تغییر نام (در انتظار تصمیم شورا):** تنش با B.2-۵ (صفر تغییر UI) و D3 (md5). دو مسیر: (الف) اجرا در P6.5-D همراه PWA v11 به‌عنوان «تغییر عمدی مصوب و مستند» با اصلاح ملاک D3 به «صفر تغییر ناخواسته + فهرست تغییرات عمدی = ۱ مورد»؛ (ب) اجرا بلافاصله پس از بسته‌شدن D5 به‌عنوان میکرو-گام جدا. **توصیه GLM: مسیر (الف)** — مالک در D4/D5 نام جدید را می‌بیند و یک چرخه تحویل اضافه برای یک رشته لازم نمی‌شود. این بند پیش از P6.5-D به مصوبه شورا نیاز دارد.
+   660→
+   661→---
+   662→
+   663→## ۱۲. انحرافات صادقانه از متن دستور (فهرست کامل)
+   664→
+   665→| # | موضوع | متن دستور | تصمیم مستند | توجیه |
+   666→|---|---|---|---|---|
+   667→| ۱ | Session | ستون `consultantCode?` | اضافه نمی‌شود — `consultantCode ≡ personnelCode` موجود (غیرتهی) | ستون تکراری = ریسک واگرایی؛ معنای یکسان |
+   668→| ۲ | موجودیت listing | مقصد نامشخص | مدل جدید `PropertyRecord` (کلید propertyCode)؛ `ListingRecord` = فرم ۵ گامی داخلی، دست‌نخورده | شکل داده ARM با فرم داخلی متفاوت است؛ حفظ معنا + پل `armPropertyId` موجود |
+   669→| ۳ | ۸ ایندکس | نام ستون‌های مفهومی | نگاشت به ستون‌های واقعی (§۴.۱) — مهم‌ترین: `interactionType,timestamp → eventTypeId,createdAt` | ستون‌های دستور در Schema واقعی وجود ندارند؛ نگاشت معنایی معتبر |
+   670→| ۴ | transaction | کلید `contractHolo` | fallback ترکیبی برای هولوگرام تهی (§۲.۱) | داده ۲۵ ساله قطعاً ردیف بدون هولوگرام دارد |
+   671→| ۵ | مشتری در Scope | «CustomerRepository» | دامنه مشتری = RequestRecord/RequestEventRecord فعلی + CustomerRecord جدید | مخزن موجود همین دامنه را پوشش می‌دهد؛ رجیستری جدید برای Bulk |
+   672→| ۶ | تغییر نام داشبورد | (بخش اول پیام) | طراحی §۱۱.۳ — اجرا منوط به مصوبه شورا درباره زمان‌بندی | تنش با B.2-۵/D3 — تصمیم بالادستی |
+   673→
+   674→---
+   675→
+   676→## ۱۳. ریسک‌ها و مسیرهای جایگزین
+   677→
+   678→| ریسک | احتمال | مسیر جایگزین |
+   679→|---|---|---|
+   680→| API ملک تبریز کند/ناپایدار | متوسط | Batch کوچک‌تر (۱۰۰) + retry بیشتر + timeout بالاتر (§۱.۷) |
+   681→| SQLite به سقف ظرفیت برسد | پایین | Migration برنامه‌ریزی‌شده به PostgreSQL در PHASE 8 (مصوبه موجود) |
+   682→| Feature Extraction روی ۲۰۰K کند | متوسط | موازی‌سازی Worker Threads + ذخیره تدریجی (§۷.۳) |
+   683→| Vector Index حجم بالا | متوسط | Fallback: ایندکس ۵۰K رکورد اول + incremental (§۸.۲) |
+   684→| داده‌های مشابه با فرمت متفاوت | بالا | Normalization جامع (§۳) + بازبینی دستی ۱۰۰ رکورد |
+   685→| Bulk Import نیمه‌کاره بماند | متوسط | Checkpoint هر صفحه — ازسرگیری خودکار (§۱.۵) |
+   686→| نشت داده بین کارشناسان | پایین | ConsultantScope + گارد ۶بخشی + آزمون نشت عمدی (P6.5-09) |
+   687→| حرکت به چند-دپارتمانی زودهنگام | متوسط | ستون tenantId آماده — بدون منطق فعال (§۱۱) |
+   688→| **تازه:** مسیر sync کامل پس از Bulk، تاریخ را پاک کند | پایین | §۱.۹ — حالت پایا = افزایشی؛ بازیابی = اجرای مجدد Bulk idempotent + تست رگرسیون صریح |
+   689→| **تازه:** واحد پول ریال/تومان مخلوط شود | متوسط | قاعده مرز واحد (§۳.۵) + تست واحد صریح روی مرز |
+   690→| **تازه:** نرخ unmatched محله‌ها > ۵٪ | متوسط | فهرست unmatched در گزارش + توسعه قاموس مترادف (بازبینی دستی) در P6.5-10 |
+   691→
+   692→---
+   693→
+   694→## پیوست A — تغییرات Schema در یک نگاه (همه افزودنی)
+   695→
+   696→| مدل | ستون/ایندکس جدید |
+   697→|---|---|
+   698→| Session | `branchId?`، `accessScope @default("OWNER")`، `tenantId @default("melk-tabriz")` |
+   699→| AuditLog | `operation?`، `entityType?`، `recordCount?`، `accessScope?`، `tenantId` |
+   700→| SyncState | `bulkImportCheckpoint?`، `bulkFeatureCheckpoint?` |
+   701→| ExpertRecord | `branchId?`، `tenantId` + ایندکس `[personnelCode, branchId]` |
+   702→| TransactionRecord | `ownerCode?`، `branchId?`، `tenantId` + ایندکس `[contractHolo]` |
+   703→| VisitRecord | `ownerCode?`، `branchId?`، `tenantId` |
+   704→| ContractRecord | ایندکس `[propertyCode]`، `tenantId` |
+   705→| ListingRecord | `branchId?`، `tenantId` + ایندکس `[customerMobile]` |
+   706→| RequestRecord | `requestCode?`، `branchId?`، `tenantId` |
+   707→| RequestEventRecord | ایندکس `[eventTypeId, createdAt]`، `tenantId` |
+   708→| InteractionRecord / SupplyDemandRecord | `tenantId` |
+   709→| **PropertyRecord (جدید)** | کل مدل (§۲.۲) |
+   710→| **CustomerRecord (جدید)** | کل مدل (§۲.۳) |
+   711→
+   712→## پیوست B — فایل‌های جدید این فاز
+   713→
+   714→| فایل | گام | نوع |
+   715→|---|---|---|
+   716→| `src/lib/melk-api/bulk-import.ts` | P6.5-03 | Pipeline |
+   717→| `src/lib/melk-api/normalize.ts` | P6.5-04 | توابع خالص |
+   718→| `src/lib/audit.ts` | P6.5-02 | Helper حسابرسی |
+   719→| `src/core/repositories/tenant.ts` | P6.5-02 | Placeholder |
+   720→| `scripts/batch-feature-extraction.ts` | P6.5-06 | Batch |
+   721→| `scripts/batch-vector-index.ts` | P6.5-07 | Batch |
+   722→| `scripts/query-performance-test.ts` | P6.5-08 | سنجش |
+   723→| `scripts/audit-data-isolation.sh` | P6.5-09 | اسکنر امنیتی |
+   724→| `docs/DATA-READINESS-REPORT.md` | P6.5-10 | گزارش |
+   725→| `docs/BUSINESS-MODEL.md` · `docs/MARKET-MAP.md` · `docs/UNIT-ECONOMICS.md` | B-01..03 | کسب‌وکار |
+   726→| `docs/legal/CONSULTANT-AGREEMENT.md` · `TERMS-OF-SERVICE.md` · `PRIVACY-POLICY.md` | C-01..03 | حقوقی |
+   727→
+   728→
+   729→
