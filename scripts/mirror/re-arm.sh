@@ -65,7 +65,9 @@ fi
 if pgrep -f mirror-daemon.sh >/dev/null 2>&1; then
   echo "OK: دیمن آینه از قبل در حال اجراست."
 else
-  nohup bash scripts/mirror/mirror-daemon.sh >> "$MIRROR_DIR/daemon.out" 2>&1 &
+  # P6547: الگوی double-fork — سندباکس فرزندانِ مستقیمِ پوستهٔ ابزار را با پایان
+  # فراخوانی می‌کشد؛ یتیم‌سازی فوری (PPID=1 داخل setsid) بقا را تضمین می‌کند.
+  ( setsid nohup bash scripts/mirror/mirror-daemon.sh >> "$MIRROR_DIR/daemon.out" 2>&1 </dev/null & )
   sleep 2
   if pgrep -f mirror-daemon.sh >/dev/null 2>&1; then
     echo "OK: دیمن ۶ساعته راه‌اندازی شد (pid: $(pgrep -f mirror-daemon.sh | head -1))."
