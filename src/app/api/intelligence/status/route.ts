@@ -72,6 +72,10 @@ export async function GET(request: NextRequest) {
             learning: { learned: core.p7.learning.learned, reason: core.p7.learning.reason, tier: core.p7.learning.tier },
             shadow: core.p7.shadow,
             drift: core.p7.drift,
+            // P6545/گام۲ — فیلدهای افزودنی برای کاشی M8 (کالیبراسیون مصوب جلسه ۰۳۳ + هدف Tier-aware)
+            calibration: core.p7.calibration ?? { applied: false, mapVersion: null, rawBrier: core.p7.evaluation.metrics.brierScore, calibratedBrier: core.p7.evaluation.metrics.brierScore, rawLift: core.p7.evaluation.metrics.lift, calibratedLift: core.p7.evaluation.metrics.lift },
+            brierTarget: core.p7.brierTarget,
+            evaluation: { metrics: { brierScore: core.p7.evaluation.metrics.brierScore, lift: core.p7.evaluation.metrics.lift, ece: core.p7.evaluation.metrics.ece }, verdict: core.p7.evaluation.verdict },
           },
           p8: {
             decisionsCount: core.p8.decisions.length,
@@ -89,11 +93,15 @@ export async function GET(request: NextRequest) {
             overallScore: core.p10.overallScore,
             problems: core.p10.realProblems,
             checksSummary: { pass: core.p10.checks.filter((c) => c.status === "pass").length, warn: core.p10.checks.filter((c) => c.status === "warn").length, fail: core.p10.checks.filter((c) => c.status === "fail").length },
+            // P6545/گام۲ — فهرست کامل ۲۵ بررسی برای کاشی M8 (افزودنی)
+            checks: core.p10.checks.map((c) => ({ id: c.id, name: c.name, status: c.status, details: c.details })),
           },
           p11: {
             pendingProposals: core.p11.proposals.map((p) => ({ id: p.id, sourceCheckId: p.sourceCheckId, severity: p.severity, action: p.proposedAction.type, rationale: p.rationale })),
             executedCount: core.p11.executedCount,
             gateReviews: core.p11.gateReviews,
+            // P6545/گام۲ — نام مستعار برای کاشی M8 (افزودنی)
+            proposals: core.p11.proposals.map((p) => ({ id: p.id, sourceCheckId: p.sourceCheckId, severity: p.severity, status: p.status, rationale: p.rationale })),
           },
         },
         outcomeLoop: {

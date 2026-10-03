@@ -66,6 +66,9 @@ export function LearningTierPage({ onBack }: TilePageProps) {
   const outcomes = cycle?.tierBasis.linkedOutcomes ?? 0;
   const nextAt = tier < 4 ? TIER_MIN_OUTCOMES[tier + 1] : null;
   const tierProgress = nextAt ? Math.min(100, Math.round((outcomes / nextAt) * 100)) : 100;
+  // صداقت Tier 4: نتیجهٔ کافی بدون ۳ دورهٔ متمایز ارتقا نمی‌دهد (نظام Tier)
+  const periods = cycle?.tierBasis.distinctPeriods ?? 0;
+  const tier4PeriodBlock = tier === 3 && nextAt !== null && outcomes >= nextAt && periods < 3;
   const checks = cycle?.p10.checks ?? [];
   const pass = checks.filter((c) => c.status === "pass").length;
   const warn = checks.filter((c) => c.status === "warn").length;
@@ -96,7 +99,9 @@ export function LearningTierPage({ onBack }: TilePageProps) {
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="outline">{faDigits(outcomes)} نتیجهٔ واقعی پیوندشده</Badge>
                 <Badge variant="outline">{faDigits(cycle.tierBasis.distinctPeriods)} دورهٔ متمایز</Badge>
-                {nextAt ? <span>تا Tier {faDigits(tier + 1)}: {faDigits(Math.max(0, nextAt - outcomes))} نتیجهٔ باقی‌مانده (سرحد: {faDigits(nextAt)})</span> : <span>Tier ۴ — کامل</span>}
+                {tier4PeriodBlock
+                  ? <span>نتیجه‌ها کافی است ({faDigits(outcomes)} ≥ {faDigits(nextAt)}) — مانع ارتقا به Tier ۴: دوره‌های متمایز ({faDigits(periods)} از ۳)</span>
+                  : nextAt ? <span>تا Tier {faDigits(tier + 1)}: {faDigits(Math.max(0, nextAt - outcomes))} نتیجهٔ باقی‌مانده (سرحد: {faDigits(nextAt)})</span> : <span>Tier ۴ — کامل</span>}
               </div>
               <div className="grid gap-2 text-xs sm:grid-cols-3">
                 <div className="rounded border p-2">
