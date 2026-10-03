@@ -245,4 +245,23 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     });
     return records.map((r) => ({ propertyCode: r.propertyCode, ownerName: r.rawOwnerName, ownerMobile: r.ownerMobile }));
   }
+
+  // ---- P6546/گام صفر — تشخیص کدهای غایب از سامانهٔ عمومی ----
+  async findExistingCodes(codes: string[]): Promise<string[]> {
+    if (codes.length === 0) return [];
+    const uniq = [...new Set(codes)];
+    const records = await this.client.propertyRecord.findMany({
+      where: { propertyCode: { in: uniq } },
+      select: { propertyCode: true },
+    });
+    return records.map((r) => r.propertyCode);
+  }
+
+  // ---- P6546/گام پنجم — به‌روزرسانی هدفمند (غنی‌سازی چند-منبعی) ----
+  async updateCatalogFields(propertyCode: string, patch: Record<string, string | number | null>): Promise<void> {
+    await this.client.propertyRecord.update({
+      where: { propertyCode },
+      data: patch as Prisma.PropertyRecordUpdateInput,
+    });
+  }
 }

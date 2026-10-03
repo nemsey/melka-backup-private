@@ -16,6 +16,8 @@ import { ArrowRight, Settings2, Info } from "lucide-react";
 import type { TileDefinition, TileSettingDefinition, TilePageProps } from "@/core/tiles/tile-contract";
 import { useAppStore } from "@/lib/client/store";
 import { faNumber, faDigits } from "@/lib/format";
+// P6546/گام صفر-۵ — ثابت ماندن بخش وضعیت اتصال: نمایش در «همهٔ» کاشی‌ها
+import { ConnectionIndicators } from "./ConnectionIndicators";
 
 function SettingControl({ def, value, onChange }: { def: TileSettingDefinition; value: string | number | boolean; onChange: (v: string | number | boolean) => void }) {
   switch (def.type) {
@@ -166,6 +168,11 @@ export function TileShell({ tile }: { tile: TileDefinition }) {
             </SheetContent>
           </Sheet>
         )}
+      </div>
+
+      {/* P6546/گام صفر-۵ — نوار پایدار وضعیت اتصال‌ها: علاوه بر صفحهٔ هوم، در تمام کاشی‌ها نیز رویت می‌شود */}
+      <div className="mb-4" data-testid="tileshell-connection-bar">
+        <ConnectionIndicators variant="compact" />
       </div>
 
       {/* محتوای صفحه کاشی */}

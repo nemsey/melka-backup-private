@@ -13,6 +13,10 @@
  *   · کلید «ریست» — بازنشانی کامل اتصال ARM و بازگشت به گام اول (عین ریست PM)
  *   · پاسخ alreadySent (پیامک قبلاً ارسال شده — سهمیهٔ مشترک سمت ملک تبریز):
  *     بدون خطا، به گام وارد کردن همان کد دریافت‌شده هدایت می‌شود
+ *
+ * P6546/گام صفر — پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز»:
+ *   embedded=true → همین بخش به‌جای Card مستقل، به‌صورت بخش توکار داخل
+ *   پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز» رندر می‌شود (الگوی یکپارچهٔ دیوار).
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -53,7 +57,7 @@ interface ArmConnectionResponse {
   };
 }
 
-export function ArmConnectionSection() {
+export function ArmConnectionSection({ embedded = false }: { embedded?: boolean } = {}) {
   const { toast } = useToast();
   const [data, setData] = useState<ArmConnectionResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,7 +188,11 @@ export function ArmConnectionSection() {
   };
 
   if (loading) {
-    return (
+    return embedded ? (
+      <section className="rounded-xl border p-4" aria-busy="true">
+        <Skeleton className="h-24 w-full rounded-xl" />
+      </section>
+    ) : (
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -201,6 +209,143 @@ export function ArmConnectionSection() {
   const conn = data?.connection;
   const isConnected = conn?.status === "connected";
 
+  const body = (
+    <>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          {isConnected ? (
+            <Badge className="gap-1 bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
+              <ShieldCheck className="w-3 h-3" aria-hidden /> متصل{conn?.userType ? ` — ${conn.userType === "realtor" ? "کارشناس املاک" : conn.userType}` : ""}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="gap-1">
+              <XCircle className="w-3 h-3" aria-hidden /> قطع
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {/* P6.5-09 — کلید ریست اتصال ARM (عین ریست PM) */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => void reset()}
+            disabled={resetting}
+            aria-label="ریست اتصال ARM"
+          >
+            {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
+            ریست
+          </Button>
+          {isConnected && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => void disconnect()}
+              disabled={disconnecting}
+              aria-label="قطع اتصال ARM"
+            >
+              {disconnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Unplug className="w-3.5 h-3.5" aria-hidden />}
+              قطع اتصال
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {isConnected ? (
+        <div className="rounded-lg border bg-muted/40 p-3 text-xs leading-relaxed space-y-1">
+          <p className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+            نشست جاری شما به سامانه ARM متصل است — استخراج داده واقعی و «همگام‌سازی داده‌ها» فعال است.
+          </p>
+          {data?.vault?.durable && (
+            <p className="flex items-center gap-1.5 text-teal-700 dark:text-teal-300">
+              <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden />
+              اتصال ماندگار است: با هر ورود بعدی به اپلیکیشن، همین اتصال به‌طور خودکار بازیابی می‌شود — نیازی به پیامک مجدد نیست.
+              {data.vault.lastRestoredAt ? ` (آخرین بازیابی خودکار: ${faDateTime(data.vault.lastRestoredAt)})` : ""}
+            </p>
+          )}
+          {data?.sync?.lastSuccessAt && (
+            <p className="text-muted-foreground">
+              آخرین استخراج موفق: {faDateTime(data.sync.lastSuccessAt)} — {faNumber(data.sync.transactionCount)} معامله و{" "}
+              {faNumber(data.sync.expertCount)} کارشناس در کش
+            </p>
+          )}
+          <Button variant="link" size="sm" className="h-auto p-0 gap-1 text-xs" onClick={() => setStage("code")}>
+            <RefreshCcw className="w-3 h-3" aria-hidden /> اتصال مجدد / تعویض حساب ARM
+          </Button>
+        </div>
+      ) : stage === "code" ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="arm-code" className="text-xs">کد پرسنلی (مطابق سامانه ARM)</Label>
+          <div className="flex gap-2">
+            <Input
+              id="arm-code"
+              value={personnelCode}
+              onChange={(e) => setPersonnelCode(e.target.value)}
+              placeholder="کد پرسنلی…"
+              inputMode="numeric"
+              dir="ltr"
+              className="text-xs"
+            />
+            <Button size="sm" className="shrink-0 gap-1.5" onClick={() => void startOtp()} disabled={busy}>
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Smartphone className="w-3.5 h-3.5" aria-hidden />}
+              دریافت کد پیامکی
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-4">
+            کد تأیید از سمت خود سامانه ARM به موبایل شما پیامک می‌شود. اگر با «کد مدیر» وارد شده‌اید، از همین‌جا اتصال داده واقعی را
+            بدون خروج از حساب برقرار کنید.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <Label htmlFor="arm-otp" className="text-xs">کد پیامکی ۴ رقمی دریافتی از سامانه ARM</Label>
+          <div className="flex gap-2">
+            <Input
+              id="arm-otp"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="کد تأیید…"
+              inputMode="numeric"
+              dir="ltr"
+              className="text-xs"
+            />
+            <Button size="sm" className="shrink-0 gap-1.5" onClick={() => void verify()} disabled={busy}>
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <ShieldCheck className="w-3.5 h-3.5" aria-hidden />}
+              تأیید و اتصال
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            کد برای کد پرسنلی {personnelCode || "—"} ارسال شده است. پس از تأیید، استخراج داده واقعی خودکار آغاز می‌شود.
+          </p>
+          {alreadySentHint && (
+            <p className="text-[10px] leading-relaxed rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 p-2">
+              {alreadySentHint}
+            </p>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  // P6546/گام صفر — توکار داخل پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز»
+  if (embedded) {
+    return (
+      <section className="rounded-xl border p-4 space-y-4" aria-label="اتصال به سامانه ARM">
+        <header className="space-y-0.5">
+          <h4 className="text-sm font-bold flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-primary" aria-hidden /> اتصال به سامانه ARM (آگهی و درخواست)
+          </h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            سامانه آگهی و درخواست ملک تبریز (arm.melketabriz.ir) — با کد پرسنلی + پیامک، عین صفحه ورود، بدون خروج از حساب فعلی
+          </p>
+        </header>
+        {body}
+      </section>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -211,123 +356,7 @@ export function ArmConnectionSection() {
           سامانه آگهی و درخواست ملک تبریز (arm.melketabriz.ir) — با کد پرسنلی + پیامک، عین صفحه ورود، بدون خروج از حساب فعلی
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            {isConnected ? (
-              <Badge className="gap-1 bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
-                <ShieldCheck className="w-3 h-3" aria-hidden /> متصل{conn?.userType ? ` — ${conn.userType === "realtor" ? "کارشناس املاک" : conn.userType}` : ""}
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="gap-1">
-                <XCircle className="w-3 h-3" aria-hidden /> قطع
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {/* P6.5-09 — کلید ریست اتصال ARM (عین ریست PM) */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => void reset()}
-              disabled={resetting}
-              aria-label="ریست اتصال ARM"
-            >
-              {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
-              ریست
-            </Button>
-            {isConnected && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => void disconnect()}
-                disabled={disconnecting}
-                aria-label="قطع اتصال ARM"
-              >
-                {disconnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Unplug className="w-3.5 h-3.5" aria-hidden />}
-                قطع اتصال
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {isConnected ? (
-          <div className="rounded-lg border bg-muted/40 p-3 text-xs leading-relaxed space-y-1">
-            <p className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
-              نشست جاری شما به سامانه ARM متصل است — استخراج داده واقعی و «همگام‌سازی داده‌ها» فعال است.
-            </p>
-            {data?.vault?.durable && (
-              <p className="flex items-center gap-1.5 text-teal-700 dark:text-teal-300">
-                <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden />
-                اتصال ماندگار است: با هر ورود بعدی به اپلیکیشن، همین اتصال به‌طور خودکار بازیابی می‌شود — نیازی به پیامک مجدد نیست.
-                {data.vault.lastRestoredAt ? ` (آخرین بازیابی خودکار: ${faDateTime(data.vault.lastRestoredAt)})` : ""}
-              </p>
-            )}
-            {data?.sync?.lastSuccessAt && (
-              <p className="text-muted-foreground">
-                آخرین استخراج موفق: {faDateTime(data.sync.lastSuccessAt)} — {faNumber(data.sync.transactionCount)} معامله و{" "}
-                {faNumber(data.sync.expertCount)} کارشناس در کش
-              </p>
-            )}
-            <Button variant="link" size="sm" className="h-auto p-0 gap-1 text-xs" onClick={() => setStage("code")}>
-              <RefreshCcw className="w-3 h-3" aria-hidden /> اتصال مجدد / تعویض حساب ARM
-            </Button>
-          </div>
-        ) : stage === "code" ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="arm-code" className="text-xs">کد پرسنلی (مطابق سامانه ARM)</Label>
-            <div className="flex gap-2">
-              <Input
-                id="arm-code"
-                value={personnelCode}
-                onChange={(e) => setPersonnelCode(e.target.value)}
-                placeholder="کد پرسنلی…"
-                inputMode="numeric"
-                dir="ltr"
-                className="text-xs"
-              />
-              <Button size="sm" className="shrink-0 gap-1.5" onClick={() => void startOtp()} disabled={busy}>
-                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Smartphone className="w-3.5 h-3.5" aria-hidden />}
-                دریافت کد پیامکی
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground leading-4">
-              کد تأیید از سمت خود سامانه ARM به موبایل شما پیامک می‌شود. اگر با «کد مدیر» وارد شده‌اید، از همین‌جا اتصال داده واقعی را
-              بدون خروج از حساب برقرار کنید.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            <Label htmlFor="arm-otp" className="text-xs">کد پیامکی ۴ رقمی دریافتی از سامانه ARM</Label>
-            <div className="flex gap-2">
-              <Input
-                id="arm-otp"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="کد تأیید…"
-                inputMode="numeric"
-                dir="ltr"
-                className="text-xs"
-              />
-              <Button size="sm" className="shrink-0 gap-1.5" onClick={() => void verify()} disabled={busy}>
-                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <ShieldCheck className="w-3.5 h-3.5" aria-hidden />}
-                تأیید و اتصال
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              کد برای کد پرسنلی {personnelCode || "—"} ارسال شده است. پس از تأیید، استخراج داده واقعی خودکار آغاز می‌شود.
-            </p>
-            {alreadySentHint && (
-              <p className="text-[10px] leading-relaxed rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 p-2">
-                {alreadySentHint}
-              </p>
-            )}
-          </div>
-        )}
-      </CardContent>
+      <CardContent className="space-y-4">{body}</CardContent>
     </Card>
   );
 }

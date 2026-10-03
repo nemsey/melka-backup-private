@@ -1,13 +1,16 @@
 /**
- * نشانگرهای اتصال — هفت چراغ سبز/قرمز بالای صفحه خانه
+ * نشانگرهای اتصال — ده چراغ سبز/قرمز بالای صفحه خانه
  * ------------------------------------------------------
  * ۱. حساب شخصی سامانه ARM  — نشست دارای توکن آرم (ورود با کد پرسنلی + پیامک)
  * ۲. API سامانه ARM        — در دسترس بودن arus-api (کش ۶۰ ثانیه)
  * ۳. حساب شخصی سامانه PM   — اتصال ثبت‌شده PM (کد پرسنلی + پیامک از تنظیمات)
  * ۴. API سامانه PM         — در دسترس بودن pm-api (کش ۶۰ ثانیه)
- * ۵. API دیوار             — کنار متصل یا API وب دیوار در دسترس
- * ۶. حساب شخصی دیوار       — اتصال پیامکی دیوار (توکن)
- * ۷. حساب اینستاگرام       — توکن Graph API معتبر
+ * ۵. سامانه عمومی ملک تبریز — API عمومی apu (melketabriz.com) — P6546/گام صفر
+ * ۶. حساب شخصی سامانه GAP  — اتصال ثبت‌شده سامانه گفت‌وگو — P6546/گام صفر
+ * ۷. API سامانه GAP        — در دسترس بودن gap-api — P6546/گام صفر
+ * ۸. API دیوار             — کنار متصل یا API وب دیوار در دسترس
+ * ۹. حساب شخصی دیوار       — اتصال پیامکی دیوار (توکن)
+ * ۱۰. حساب اینستاگرام      — توکن Graph API معتبر
  */
 
 import { db } from "@/lib/db";
@@ -15,7 +18,17 @@ import { probeGet } from "@/lib/melk-api/client";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { decryptSecret } from "@/lib/auth/crypto";
 
-export type IndicatorKey = "armAccount" | "armApi" | "pmAccount" | "pmApi" | "divarApi" | "divarAccount" | "instagramAccount";
+export type IndicatorKey =
+  | "armAccount"
+  | "armApi"
+  | "pmAccount"
+  | "pmApi"
+  | "melkPublicApi"
+  | "gapAccount"
+  | "gapApi"
+  | "divarApi"
+  | "divarAccount"
+  | "instagramAccount";
 
 export interface IndicatorState {
   key: IndicatorKey;
@@ -149,7 +162,55 @@ export async function computeIndicators(sessionHasArmToken: boolean, sessionArmU
     checkedAt: new Date(pmProbe.at).toISOString(),
   };
 
-  // ۵. API دیوار
+  // ۵. سامانه عمومی ملک تبریز (P6546) — API عمومی apu که melketabriz.com از آن می‌خواند
+  const melkPublicProbe = await cachedProbe(
+    "melkPublicApi",
+    cfg.melkPublicApiBase,
+    "properties/list?page=1&limit=1",
+    "API عمومی سامانه ملک تبریز (melketabriz.com) پاسخ می‌دهد",
+    "API عمومی سامانه ملک تبریز (melketabriz.com) در دسترس نیست"
+  ).catch(() => ({ at: Date.now(), ok: false, detail: "API عمومی سامانه ملک تبریز (melketabriz.com) در دسترس نیست" }) as ProbeCache);
+  const melkPublicApi: IndicatorState = {
+    key: "melkPublicApi",
+    label: "سامانه عمومی ملک تبریز",
+    connected: melkPublicProbe.ok,
+    detail: melkPublicProbe.detail,
+    checkedAt: new Date(melkPublicProbe.at).toISOString(),
+  };
+
+  // ۶. حساب شخصی سامانه GAP (P6546)
+  const gapConn = await db.gapConnection.findFirst().catch(() => null);
+  const gapAccount: IndicatorState = {
+    key: "gapAccount",
+    label: "حساب شخصی GAP",
+    connected: gapConn?.status === "connected" && Boolean(decryptSecret(gapConn.tokenEnc ?? null)),
+    detail:
+      gapConn?.status === "connected"
+        ? `حساب سامانه گفت‌وگو «${gapConn.displayName ?? gapConn.personnelCode ?? ""}» متصل است`
+        : gapConn?.status === "error"
+          ? `اتصال GAP خطا دارد: ${gapConn.lastError ?? "نامشخص"}`
+          : gapConn?.status === "pending"
+            ? "در انتظار تأیید کد پیامکی GAP"
+            : "اتصال سامانه گفت‌وگو (GAP) از تنظیمات عمومی برقرار نشده است",
+    checkedAt: gapConn?.lastCheckedAt?.toISOString() ?? now,
+  };
+
+  // ۷. API سامانه GAP (P6546) — gap-api زنده است (پاسخ HTTP هر نوعی = در دسترس)
+  const gapProbe = await probeGet(cfg.gapApiBase, "", Math.min(cfg.timeoutMs, 9000)).catch(() => ({
+    httpStatus: 0,
+    bodyText: "",
+    ok: false,
+    latencyMs: 0,
+  }));
+  const gapApi: IndicatorState = {
+    key: "gapApi",
+    label: "API سامانه GAP",
+    connected: gapProbe.httpStatus > 0,
+    detail: gapProbe.httpStatus > 0 ? `سرور gap-api پاسخ می‌دهد (HTTP ${gapProbe.httpStatus})` : "سرور gap-api.melketabriz.ir در دسترس نیست",
+    checkedAt: now,
+  };
+
+  // ۸. API دیوار
   const divarProbe = await probeDivar().catch(() => ({ at: Date.now(), ok: false, detail: "API دیوار در دسترس نیست" }) as ProbeCache);
   const divarApi: IndicatorState = {
     key: "divarApi",
@@ -159,7 +220,7 @@ export async function computeIndicators(sessionHasArmToken: boolean, sessionArmU
     checkedAt: new Date(divarProbe.at).toISOString(),
   };
 
-  // ۶. حساب شخصی دیوار
+  // ۹. حساب شخصی دیوار
   const divarPhone = await db.divarConnection.findUnique({ where: { method: "phone" } }).catch(() => null);
   const divarAccount: IndicatorState = {
     key: "divarAccount",
@@ -176,7 +237,7 @@ export async function computeIndicators(sessionHasArmToken: boolean, sessionArmU
     checkedAt: divarPhone?.lastCheckedAt?.toISOString() ?? now,
   };
 
-  // ۷. حساب اینستاگرام
+  // ۱۰. حساب اینستاگرام
   const igConn = await db.instagramConnection.findFirst().catch(() => null);
   const instagramAccount: IndicatorState = {
     key: "instagramAccount",
@@ -191,5 +252,5 @@ export async function computeIndicators(sessionHasArmToken: boolean, sessionArmU
     checkedAt: igConn?.lastCheckedAt?.toISOString() ?? now,
   };
 
-  return [armAccount, armApi, pmAccount, pmApi, divarApi, divarAccount, instagramAccount];
+  return [armAccount, armApi, pmAccount, pmApi, melkPublicApi, gapAccount, gapApi, divarApi, divarAccount, instagramAccount];
 }

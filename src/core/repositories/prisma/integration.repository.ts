@@ -6,6 +6,8 @@ import type { Prisma } from "@prisma/client";
 import type {
   PmConnectionDTO,
   PmConnectionUpsertInput,
+  GapConnectionDTO,
+  GapConnectionUpsertInput,
   ArmConnectionDTO,
   ArmConnectionUpsertInput,
   SyncCheckpointDTO,
@@ -44,6 +46,32 @@ export class PrismaIntegrationRepository implements IntegrationRepository {
 
   async deletePmConnection(): Promise<void> {
     await this.client.pmConnection.deleteMany({});
+  }
+
+  // ---- P6546/گام صفر — اتصال سامانه GAP ----
+  async getGapConnection(): Promise<GapConnectionDTO | null> {
+    return this.client.gapConnection.findFirst();
+  }
+
+  async upsertGapConnection(input: GapConnectionUpsertInput): Promise<void> {
+    const base = {
+      status: input.status,
+      personnelCode: input.personnelCode,
+      ...(input.displayName !== undefined ? { displayName: input.displayName } : {}),
+      ...(input.tokenEnc !== undefined ? { tokenEnc: input.tokenEnc } : {}),
+      ...(input.refreshTokenEnc !== undefined ? { refreshTokenEnc: input.refreshTokenEnc } : {}),
+      ...(input.lastCheckedAt !== undefined ? { lastCheckedAt: input.lastCheckedAt } : {}),
+      ...(input.lastError !== undefined ? { lastError: input.lastError } : {}),
+    };
+    await this.client.gapConnection.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", ...base },
+      update: base,
+    });
+  }
+
+  async deleteGapConnection(): Promise<void> {
+    await this.client.gapConnection.deleteMany({});
   }
 
   /** P6.5-03 — checkpoint یکپارچه Bulk Import (فقط همین ستون؛ فیلدهای sync منظم دست‌نخورده — §۱.۵) */

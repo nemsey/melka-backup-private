@@ -291,10 +291,13 @@ describe("P6.5-07 — چرخه اتصال نشست (بدون تماس شبکه �
 });
 
 describe("P6.5-07 — رجیستری UI", () => {
-  test("K) ArmConnectionSection در صفحه تنظیمات mount شده و مسیر API موجود است", async () => {
+  test("K) ArmConnectionSection در صفحه تنظیمات mount شده و مسیر API موجود است (P6546: توکار در پیکرهٔ اتصال به ملک تبریز)", async () => {
     const fs = await import("fs");
+    // P6546/گام صفر — بخش ARM اکنون توکار (embedded) درون پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز» رندر می‌شود
+    const unifiedSrc = fs.readFileSync("src/core/tiles/tiles/settings/MelkTabrizConnectionSection.tsx", "utf8");
+    expect(unifiedSrc.includes("ArmConnectionSection")).toBe(true);
     const settingsSrc = fs.readFileSync("src/core/tiles/tiles/settings/SettingsPage.tsx", "utf8");
-    expect(settingsSrc.includes("ArmConnectionSection")).toBe(true);
+    expect(settingsSrc.includes("MelkTabrizConnectionSection")).toBe(true);
     expect(fs.existsSync("src/app/api/arm/connection/route.ts")).toBe(true);
     expect(fs.existsSync("src/core/tiles/tiles/settings/ArmConnectionSection.tsx")).toBe(true);
   });

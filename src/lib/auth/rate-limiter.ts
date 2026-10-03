@@ -32,7 +32,9 @@ export type RateKind =
   | "REQUEST_OTP_PM"
   | "VERIFY_OTP_PM"
   | "REQUEST_OTP_ARM"
-  | "VERIFY_OTP_ARM";
+  | "VERIFY_OTP_ARM"
+  | "REQUEST_OTP_GAP"
+  | "VERIFY_OTP_GAP";
 
 export interface RateVerdict {
   allowed: boolean;

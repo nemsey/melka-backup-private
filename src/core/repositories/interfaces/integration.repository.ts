@@ -9,6 +9,8 @@
 import type {
   PmConnectionDTO,
   PmConnectionUpsertInput,
+  GapConnectionDTO,
+  GapConnectionUpsertInput,
   ArmConnectionDTO,
   ArmConnectionUpsertInput,
   SyncCheckpointDTO,
@@ -22,6 +24,14 @@ export interface IntegrationRepository {
   upsertPmConnection(input: PmConnectionUpsertInput): Promise<void>;
   /** حذف کامل رکورد اتصال (ریست) */
   deletePmConnection(): Promise<void>;
+
+  // ---- P6546/گام صفر — اتصال سامانه GAP (گفت‌وگوی آنلاین ملک تبریز) ----
+  /** رکورد singleton اتصال GAP (null اگر هرگز متصل نشده) */
+  getGapConnection(): Promise<GapConnectionDTO | null>;
+  /** upsert رکورد singleton اتصال GAP */
+  upsertGapConnection(input: GapConnectionUpsertInput): Promise<void>;
+  /** حذف کامل رکورد اتصال GAP (ریست) */
+  deleteGapConnection(): Promise<void>;
   /** P6.5-03 — checkpoint یکپارچه Bulk Import (JSON در SyncState.singleton؛ جدا از فیلدهای sync منظم §۱.۵) */
   getBulkImportCheckpoint(): Promise<string | null>;
   /** P6.5-03 — ذخیره checkpoint (فقط همین ستون را لمس می‌کند) */

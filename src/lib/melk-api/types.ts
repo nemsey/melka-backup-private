@@ -541,7 +541,7 @@ export interface ConnectionStatus {
 }
 
 export interface ArmServiceStatus {
-  service: "ARM_API" | "ARM_PUBLIC" | "PM_API";
+  service: "ARM_API" | "ARM_PUBLIC" | "PM_API" | "MELK_PUBLIC_API" | "GAP_API";
   label: string;
   reachable: boolean;
   /** پایگاه داده سامانه پشتیبان در دسترس است؟ */

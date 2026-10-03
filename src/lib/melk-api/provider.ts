@@ -521,6 +521,53 @@ class RealProvider implements MelkProvider {
       });
     }
 
+    // ۴) API سامانه عمومی ملک تبریز (P6546/گام صفر) — بخش عمومی apu (بدون توکن)
+    try {
+      const probe = await probeGet(this.config.melkPublicApiBase, `${MELK_ENDPOINTS.melkPublic.propertiesList}?page=1&limit=1`, 12000);
+      const dbUp = probe.httpStatus === 200 && !probe.bodyText.includes("MongooseError");
+      services.push({
+        service: "MELK_PUBLIC_API",
+        label: "سامانه عمومی ملک تبریز (melketabriz.com)",
+        reachable: true,
+        databaseUp: dbUp,
+        httpStatus: probe.httpStatus,
+        latencyMs: probe.latencyMs,
+        detail: dbUp ? "فهرست عمومی آگهی‌ها پاسخ می‌دهد" : "بخش عمومی سامانه ملک تبریز در دسترس نیست",
+      });
+    } catch {
+      services.push({
+        service: "MELK_PUBLIC_API",
+        label: "سامانه عمومی ملک تبریز (melketabriz.com)",
+        reachable: false,
+        databaseUp: false,
+        latencyMs: -1,
+        detail: "دسترسی شبکه به بخش عمومی arus-api.melketabriz.ir برقرار نشد.",
+      });
+    }
+
+    // ۵) API سامانه گفت‌وگو GAP (P6546/گام صفر) — سرور Express؛ هر پاسخ HTTP = در دسترس
+    try {
+      const probe = await probeGet(this.config.gapApiBase, "", 12000);
+      services.push({
+        service: "GAP_API",
+        label: "سامانه گفت‌وگوی آنلاین (gap.melketabriz.ir)",
+        reachable: probe.httpStatus > 0,
+        databaseUp: probe.httpStatus > 0,
+        httpStatus: probe.httpStatus,
+        latencyMs: probe.latencyMs,
+        detail: probe.httpStatus > 0 ? `سرور gap-api پاسخ می‌دهد (HTTP ${probe.httpStatus})` : "سرور gap-api.melketabriz.ir پاسخ نداد",
+      });
+    } catch {
+      services.push({
+        service: "GAP_API",
+        label: "سامانه گفت‌وگوی آنلاین (gap.melketabriz.ir)",
+        reachable: false,
+        databaseUp: false,
+        latencyMs: -1,
+        detail: "دسترسی شبکه به gap-api.melketabriz.ir برقرار نشد.",
+      });
+    }
+
     const anyDbUp = services.some((s) => s.databaseUp);
     const anyReachable = services.some((s) => s.reachable);
     const armDbUp = services.find((s) => s.service === "ARM_API")?.databaseUp ?? false;

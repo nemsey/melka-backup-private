@@ -611,6 +611,33 @@ export interface PmConnectionUpsertInput {
   lastError?: string | null;
 }
 
+// ===================== P6546/گام صفر — اتصال سامانه GAP (گفت‌وگوی آنلاین ملک تبریز) =====================
+
+/** رکورد GapConnection — عین ساختار PmConnection */
+export interface GapConnectionDTO {
+  id: string;
+  status: string;
+  personnelCode: string | null;
+  displayName: string | null;
+  tokenEnc: string | null;
+  refreshTokenEnc: string | null;
+  lastCheckedAt: Date | null;
+  lastError: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** ورودی upsert اتصال GAP */
+export interface GapConnectionUpsertInput {
+  status: string;
+  personnelCode: string | null;
+  displayName?: string | null;
+  tokenEnc?: string | null;
+  refreshTokenEnc?: string | null;
+  lastCheckedAt?: Date | null;
+  lastError?: string | null;
+}
+
 // ===================== P6.5-11 (بند ث) — صندوقچهٔ اتصال ماندگار ARM =====================
 
 /** رکورد ArmConnection — توکن ARM ماندگار فراتر از چرخهٔ عمر نشست */

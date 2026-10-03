@@ -881,6 +881,24 @@ model PmConnection {
   updatedAt     DateTime  @updatedAt
 }
 
+/// P6546/گام صفر — اتصال به سامانه GAP (سامانه گفت‌وگوی آنلاین ملک تبریز)
+/// همان الگوی PmConnection: ردیف یگانه با وضعیت و توکن رمزنگاری‌شده
+model GapConnection {
+  id            String    @id @default(cuid())
+  /// connected | disconnected | pending | error
+  status        String    @default("disconnected")
+  personnelCode String?
+  displayName   String?
+  /// توکن دسترسی GAP — رمزنگاری‌شده
+  tokenEnc      String?
+  /// توکن تمدید GAP — رمزنگاری‌شده
+  refreshTokenEnc String?
+  lastCheckedAt DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
 /// P6.5-11 (بند ث) — صندوقچهٔ ماندگار توکن‌های ARM — جدا از چرخهٔ عمر نشست.
 /// مشکل: توکن ARM فقط در Session ذخیره می‌شد و با هر خروج/انقضای نشست پاک می‌شد
 /// ⇒ مالک در «هر ورود» مجبور به تجدید اتصال با پیامک بود.
@@ -991,6 +1009,12 @@ model PmPersonnelRecord {
   /// نقش پرسنلی — JSON [{title,_id}] یا رشته
   roleJson      String?
   roleTitle     String?
+  /// P6546/گامچهارم — تاریخ استخدام (از realtors/info/personnelInfo سامانه PM)
+  hireDate      String?
+  /// P6546/گامچهارم — عنوان شغلی/سمت پرسنلی (از personnelInfo)
+  jobTitle      String?
+  /// P6546/گامچهارم — شماره قرارداد/شماره پرسنلی سامانه PM (از personnelInfo)
+  contractNo    String?
   /// وضعیت فعال‌سازی پلتفرم‌ها — JSON {ps,acc,apm,chat}
   activationStatusJson String?
   /// کسب‌وکار — JSON {title,code}

@@ -1,0 +1,117 @@
+{
+  "probeAt": "2026-10-03T13:32:11.020Z",
+  "gap": {
+    "rootStatus": 200,
+    "rootLength": 12237,
+    "chunks": [
+      "/_next/static/chunks/8da835781d923426.js",
+      "/_next/static/chunks/1524f60996f4fb86.js",
+      "/_next/static/chunks/4738479eb33af51c.js",
+      "/_next/static/chunks/c9dd956cd07257d3.js",
+      "/_next/static/chunks/turbopack-a7ed57123598dde9.js",
+      "/_next/static/chunks/b792853841e8e310.js",
+      "/_next/static/chunks/afe65815de2cd7a2.js",
+      "/_next/static/chunks/ff1a16fafef87110.js",
+      "/_next/static/chunks/d2be314c3ece3fbe.js",
+      "/_next/static/chunks/291b1d7e34b77edd.js",
+      "/_next/static/chunks/a6dad97d9634a72d.js"
+    ],
+    "apiPaths": [],
+    "baseUrls": []
+  },
+  "melkPublic": {
+    "androidStatus": 200,
+    "androidLength": 809813,
+    "androidHead": "<!DOCTYPE html><html lang=\"fa\" dir=\"rtl\" data-type=\"mt_melk\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover\"/><style data-precedence=\"next\" data-href=\"/_next/static/chunks/3syvenzjloom0.css /_next/static/chunks/0b4zcm33ucg_g.css /_next/static/chunks/0cskk9n_9g0_f.css /_next/static/chunks/0d228f3te8dvv.css\">@layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-animation-delay:0s;--tw-animation-direction:normal;--tw-animation-duration:initial;--tw-animation-fill-mode:none;--tw-animation-iteration-count:1;--tw-enter-blur:0;--tw-enter-opacity:1;--tw-enter-rotate:0;--tw-enter-scale:1;--tw-enter-translate-x:0;--tw-enter-translate-y:0;--tw-exit-blur:0;--tw-exit-opacity:1;--tw-exit-rotate:0;--tw-exit-scale:1;--tw-exit-translate-x:0;--tw-exit-translate-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-translate-z:0;--tw-scale-x:1;--tw-scale-y:1;--tw-scale-z:1;--tw-rotate-x:initial;--tw-rotate-y:initial;--tw-rotate-z:initial;--tw-skew-x:initial;--tw-skew-y:initial;--tw-space-y-revers",
+    "chunks": [
+      "/_next/static/chunks/3ivcc6t1s04dh.js",
+      "/_next/static/chunks/3ba9voxaqylb2.js",
+      "/_next/static/chunks/0mh0ufarzeu14.js",
+      "/_next/static/chunks/34wvn5zw0a69w.js",
+      "/_next/static/chunks/11jq0c2_zavac.js",
+      "/_next/static/chunks/turbopack-0md8iszoyn1cb.js",
+      "/_next/static/chunks/0xpkrk0sjaais.js",
+      "/_next/static/chunks/20hey_nr605ls.js",
+      "/_next/static/chunks/2s4e2_vbscdrd.js",
+      "/_next/static/chunks/2a_fthv2dfim4.js",
+      "/_next/static/chunks/1woiza826yd33.js",
+      "/_next/static/chunks/1516zi8wu239e.js",
+      "/_next/static/chunks/1_2lzto1o4tn7.js",
+      "/_next/static/chunks/0slmiyo84lmib.js",
+      "/_next/static/chunks/2kcc9uun4f7c4.js",
+      "/_next/static/chunks/2cs-i3fpkqdaq.js",
+      "/_next/static/chunks/1qu2o1jtqexvm.js",
+      "/_next/static/chunks/0cz1d0mv5g_q7.js"
+    ],
+    "apiPaths": [
+      "api-node",
+      "api-edge",
+      "search",
+      "api/apu/realtors/info/by-code",
+      "post",
+      "post_office",
+      "postal_horn",
+      "postal",
+      "postbox",
+      "api/apu/upload",
+      "apiService",
+      "postCreateContactChat",
+      "apiKey",
+      "melke-tabriz.firebaseapp.com",
+      "melke-tabriz",
+      "melke-tabriz.appspot.com",
+      "api/v1/api-service/subscribe",
+      "api/v1/api-service/unsubscribe",
+      "/api/apu/authentication/refresh-token",
+      "/api/apu/authentication/logout",
+      "api",
+      "poster",
+      "poster-layer",
+      "v4",
+      "v6",
+      "api.setState",
+      "melkType",
+      "postProcess",
+      "postProcessor",
+      "searchParams"
+    ],
+    "baseUrls": [
+      "https://gap-api.melketabriz.ir/api/",
+      "https://gap-api.melketabriz.ir/",
+      "https://emoji.melketabriz.ir/",
+      "https://arus-api.melketabriz.ir/",
+      "https://www.melketabriz.com/",
+      "https://notif-api.melketabriz.ir/"
+    ],
+    "probe:/api/properties": {
+      "status": 0,
+      "ct": "",
+      "head": "The operation was aborted."
+    },
+    "probe:/api/properties/list": {
+      "status": 0,
+      "ct": "",
+      "head": "The operation was aborted."
+    },
+    "probe:/api/posts": {
+      "status": 0,
+      "ct": "",
+      "head": "The operation was aborted."
+    },
+    "probe:/api/v1/properties": {
+      "status": 0,
+      "ct": "",
+      "head": "The operation was aborted."
+    },
+    "probe:/api/search": {
+      "status": 0,
+      "ct": "",
+      "head": "The operation was aborted."
+    },
+    "probe:/api/property/list": {
+      "status": 0,
+      "ct": "",
+      "head": "The operation was aborted."
+    }
+  }
+}

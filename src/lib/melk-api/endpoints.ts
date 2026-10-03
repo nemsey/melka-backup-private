@@ -161,4 +161,35 @@ export const MELK_ENDPOINTS = {
      *  (شاهد پروب زندهٔ ۱۴۰۵/۰۷/۰۱: توکن ARM پذیرفته می‌شود؛ نیازمند query=business) */
     bestRealtor: "dashboard/bestRealtor",
   },
+
+  // ============ P6546/گام صفر — سامانه GAP (سامانه گفت‌وگوی آنلاین ملک تبریز) ============
+  /** کشف از باندل سامانه‌های ملک تبریز (gap.melketabriz.ir ← gap-api.melketabriz.ir/api/)
+   *  سرور Express زنده است؛ احراز هویت از الگوی خانوادهٔ ملک تبریز (OTP) پیاده شده و
+   *  پایهٔ آدرس از طریق MELK_GAP_API_BASE قابل تنظیم است. */
+  gap: {
+    /** درخواست صدور کد پیامکی سامانه گفت‌وگو — الگوی خانوادهٔ ملک تبریز */
+    requestOtp: (personnelCode: string) => `authentication/otp/${encodeURIComponent(personnelCode)}`,
+    /** تأیید کد پیامکی و ورود به سامانه GAP */
+    verifyOtp: "authentication/otp/login",
+    /** تمدید توکن سامانه GAP */
+    refreshToken: "authentication/refresh-token",
+  },
+
+  // ============ P6546/گام صفر — سامانه عمومی ملک تبریز (melketabriz.com) ============
+  /** کشف زندهٔ P6546 (شاهد: download/p6546/systems-discovery-*.json):
+   *  پایهٔ arus-api.melketabriz.ir/api/apu/ — همان سرور ARM با بخش عمومی apu که
+   *  سامانهٔ عمومی melketabriz.com از آن می‌خواند. همهٔ مسیرهای زیر «بدون توکن» پاسخ می‌دهند:
+   *  · properties/list        → ۲۰۰ (count=۳٬۶۷۹ آگهی منتشرشدهٔ عمومی + رکورد غنی)
+   *  · properties/info/by-code/{code} → ۲۰۰ (details[] برچسب‌دار + inputs + area/line + ...)
+   *  · realtors/info/by-code/{code}   → ۲۰۰/۴۰۴ (اطلاعات عمومی کارشناس) */
+  melkPublic: {
+    /** فهرست آگهی‌های منتشرشدهٔ عمومی (صفحه‌بندی: page, limit) — بدون توکن */
+    propertiesList: "properties/list",
+    /** جزئیات کامل عمومی یک آگهی با کدملک — بدون توکن
+     *  پاسخ: { inputs, details[{label,value,unit}], area, line, listOfRealtors,
+     *          customerDescriptionList, fileScore, rateObj, changeWith, isPublished, ... } */
+    propertyInfoByCode: (code: string | number) => `properties/info/by-code/${encodeURIComponent(String(code))}`,
+    /** اطلاعات عمومی کارشناس با کد پرسنلی — بدون توکن */
+    realtorInfoByCode: (code: string | number) => `realtors/info/by-code/${encodeURIComponent(String(code))}`,
+  },
 } as const;

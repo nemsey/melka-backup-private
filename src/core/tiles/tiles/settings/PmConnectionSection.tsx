@@ -5,6 +5,10 @@
  * ------------------------------------------------------
  * جریان عین خود سامانه پرسنلی: کد پرسنلی → پیامک PM → تأیید کد → توکن ذخیره‌شده
  * چراغ «حساب شخصی PM» در صفحه خانه از همین اتصال سبز می‌شود.
+ *
+ * P6546/گام صفر — پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز»:
+ *   embedded=true → همین بخش به‌جای Card مستقل، به‌صورت بخش توکار داخل
+ *   پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز» رندر می‌شود (الگوی یکپارچهٔ دیوار).
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -31,7 +35,7 @@ interface PmConnectionResponse {
   };
 }
 
-export function PmConnectionSection() {
+export function PmConnectionSection({ embedded = false }: { embedded?: boolean } = {}) {
   const { toast } = useToast();
   const [data, setData] = useState<PmConnectionResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,7 +144,11 @@ export function PmConnectionSection() {
   };
 
   if (loading) {
-    return (
+    return embedded ? (
+      <section className="rounded-xl border p-4" aria-busy="true">
+        <Skeleton className="h-24 w-full rounded-xl" />
+      </section>
+    ) : (
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -156,6 +164,99 @@ export function PmConnectionSection() {
 
   const conn = data?.connection;
 
+  const body = (
+    <>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          {conn?.status === "connected" ? (
+            <Badge className="gap-1 bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
+              <ShieldCheck className="w-3 h-3" aria-hidden /> متصل{conn.displayName ? ` — ${conn.displayName}` : ""}
+            </Badge>
+          ) : conn?.status === "pending" ? (
+            <Badge variant="secondary" className="gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" aria-hidden /> در انتظار کد
+            </Badge>
+          ) : conn?.status === "error" ? (
+            <Badge variant="destructive" className="gap-1">
+              <XCircle className="w-3 h-3" aria-hidden /> خطا
+            </Badge>
+          ) : (
+            <Badge variant="outline">قطع</Badge>
+          )}
+          {conn?.lastCheckedAt && <span className="text-[10px] text-muted-foreground">{faDateTime(conn.lastCheckedAt)}</span>}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => void reset()}
+          disabled={resetting || conn?.status === "disconnected"}
+          aria-label="ریست اتصال PM"
+        >
+          {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
+          ریست
+        </Button>
+      </div>
+
+      {conn?.lastError && <p className="text-[10px] text-destructive leading-4">{conn.lastError}</p>}
+
+      {conn?.status === "connected" ? (
+        <div className="rounded-lg border bg-muted/40 p-3 text-xs leading-relaxed">
+          <p className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+            حساب پرسنلی «{conn.displayName ?? conn.personnelCode ?? "—"}» متصل است — چراغ «حساب شخصی PM» در صفحه خانه سبز است.
+          </p>
+        </div>
+      ) : stage === "code" ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="pm-code" className="text-xs">کد پرسنلی (مطابق سامانه PM)</Label>
+          <div className="flex gap-2">
+            <Input id="pm-code" value={personnelCode} onChange={(e) => setPersonnelCode(e.target.value)} placeholder="کد پرسنلی…" dir="ltr" className="text-xs" />
+            <Button size="sm" className="shrink-0 gap-1.5" onClick={() => void startOtp()} disabled={busy}>
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Smartphone className="w-3.5 h-3.5" aria-hidden />}
+              دریافت کد پیامکی PM
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-4">
+            کد تأیید از سمت خود سامانه پرسنلی ملک تبریز به موبایل شما پیامک می‌شود.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <Label htmlFor="pm-otp" className="text-xs">کد پیامکی دریافتی از سامانه PM</Label>
+          <div className="flex gap-2">
+            <Input id="pm-otp" value={code} onChange={(e) => setCode(e.target.value)} placeholder="کد تأیید…" inputMode="numeric" dir="ltr" className="text-xs" />
+            <Button size="sm" className="shrink-0 gap-1.5" onClick={() => void verify()} disabled={busy}>
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <ShieldCheck className="w-3.5 h-3.5" aria-hidden />}
+              تأیید و اتصال
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">کد برای کد پرسنلی {personnelCode || conn?.personnelCode} ارسال شده است.</p>
+          {alreadySentHint && (
+            <p className="text-[10px] leading-relaxed rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 p-2">
+              {alreadySentHint}
+            </p>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  // P6546/گام صفر — توکار داخل پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز»
+  if (embedded) {
+    return (
+      <section className="rounded-xl border p-4 space-y-4" aria-label="اتصال به حساب شخصی سامانه PM">
+        <header className="space-y-0.5">
+          <h4 className="text-sm font-bold flex items-center gap-2">
+            <Server className="w-4 h-4 text-primary" aria-hidden /> اتصال به حساب شخصی سامانه PM
+          </h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">سامانه مدیریت پرسنلی ملک تبریز (pm.melketabriz.ir) — با کد پرسنلی + پیامک، عین خود سامانه</p>
+        </header>
+        {body}
+      </section>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -164,81 +265,7 @@ export function PmConnectionSection() {
         </CardTitle>
         <CardDescription>سامانه مدیریت پرسنلی ملک تبریز (pm.melketabriz.ir) — با کد پرسنلی + پیامک، عین خود سامانه</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            {conn?.status === "connected" ? (
-              <Badge className="gap-1 bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
-                <ShieldCheck className="w-3 h-3" aria-hidden /> متصل{conn.displayName ? ` — ${conn.displayName}` : ""}
-              </Badge>
-            ) : conn?.status === "pending" ? (
-              <Badge variant="secondary" className="gap-1">
-                <Loader2 className="w-3 h-3 animate-spin" aria-hidden /> در انتظار کد
-              </Badge>
-            ) : conn?.status === "error" ? (
-              <Badge variant="destructive" className="gap-1">
-                <XCircle className="w-3 h-3" aria-hidden /> خطا
-              </Badge>
-            ) : (
-              <Badge variant="outline">قطع</Badge>
-            )}
-            {conn?.lastCheckedAt && <span className="text-[10px] text-muted-foreground">{faDateTime(conn.lastCheckedAt)}</span>}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => void reset()}
-            disabled={resetting || conn?.status === "disconnected"}
-            aria-label="ریست اتصال PM"
-          >
-            {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <RotateCcw className="w-3.5 h-3.5" aria-hidden />}
-            ریست
-          </Button>
-        </div>
-
-        {conn?.lastError && <p className="text-[10px] text-destructive leading-4">{conn.lastError}</p>}
-
-        {conn?.status === "connected" ? (
-          <div className="rounded-lg border bg-muted/40 p-3 text-xs leading-relaxed">
-            <p className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
-              حساب پرسنلی «{conn.displayName ?? conn.personnelCode ?? "—"}» متصل است — چراغ «حساب شخصی PM» در صفحه خانه سبز است.
-            </p>
-          </div>
-        ) : stage === "code" ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="pm-code" className="text-xs">کد پرسنلی (مطابق سامانه PM)</Label>
-            <div className="flex gap-2">
-              <Input id="pm-code" value={personnelCode} onChange={(e) => setPersonnelCode(e.target.value)} placeholder="کد پرسنلی…" dir="ltr" className="text-xs" />
-              <Button size="sm" className="shrink-0 gap-1.5" onClick={() => void startOtp()} disabled={busy}>
-                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Smartphone className="w-3.5 h-3.5" aria-hidden />}
-                دریافت کد پیامکی PM
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground leading-4">
-              کد تأیید از سمت خود سامانه پرسنلی ملک تبریز به موبایل شما پیامک می‌شود.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            <Label htmlFor="pm-otp" className="text-xs">کد پیامکی دریافتی از سامانه PM</Label>
-            <div className="flex gap-2">
-              <Input id="pm-otp" value={code} onChange={(e) => setCode(e.target.value)} placeholder="کد تأیید…" inputMode="numeric" dir="ltr" className="text-xs" />
-              <Button size="sm" className="shrink-0 gap-1.5" onClick={() => void verify()} disabled={busy}>
-                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <ShieldCheck className="w-3.5 h-3.5" aria-hidden />}
-                تأیید و اتصال
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">کد برای کد پرسنلی {personnelCode || conn?.personnelCode} ارسال شده است.</p>
-            {alreadySentHint && (
-              <p className="text-[10px] leading-relaxed rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 p-2">
-                {alreadySentHint}
-              </p>
-            )}
-          </div>
-        )}
-      </CardContent>
+      <CardContent className="space-y-4">{body}</CardContent>
     </Card>
   );
 }

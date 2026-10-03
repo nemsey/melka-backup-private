@@ -248,4 +248,8 @@ export interface PropertyRecordRepository {
   listPendingEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]>;
   /** P6.5-11 (بند پ-۵) — تماس مالک ملک بر اساس کدآگهی‌ها (دسته‌ای؛ برای ستون‌های فهرست معاملات) */
   findOwnerContactsByCodes(propertyCodes: string[]): Promise<Array<{ propertyCode: string; ownerName: string | null; ownerMobile: string | null }>>;
+  /** P6546/گام صفر — کدهای موجود از میان فهرست داده‌شده (تشخیص کدهای غایب از سامانهٔ عمومی) */
+  findExistingCodes(codes: string[]): Promise<string[]>;
+  /** P6546/گام پنجم — به‌روزرسانی هدفمند ردیف‌ها (فقط فیلدهای داده‌شده؛ برای غنی‌سازی چند-منبعی) */
+  updateCatalogFields(propertyCode: string, patch: Record<string, string | number | null>): Promise<void>;
 }

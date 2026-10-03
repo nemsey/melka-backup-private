@@ -13,45 +13,97 @@ const SRC = "/home/z/my-project/src";
 const TILES = "/home/z/my-project/src/core/tiles/tiles";
 
 /* ==========================================================================
- * §۱ — ترتیب الزامی بخش‌های اتصال
+ * §۱ — ترتیب الزامی بخش‌های تنظیمات عمومی (P6546/گام صفر — ساختار جدید هفت‌بخشی)
+ * بازنویسی P6546: ساختار قدیمی پنج‌بخشی جای خود را به پیکرهٔ یکپارچهٔ
+ * «اتصال به ملک تبریز» + بخش ادغامی «حساب کاربری و تنظیمات کلی» داده است.
  * ========================================================================== */
 
-describe("گام ۶ §۱ — ترتیب بخش‌های اتصال در تنظیمات عمومی", () => {
-  test("۱-۱) پنج بخش اتصال به ترتیب عین دستور مالک", async () => {
+describe("گام صفر P6546 — ترتیب هفت‌بخشی تنظیمات عمومی", () => {
+  test("۱-۱) هفت بخش به ترتیب عین دستور مالک", async () => {
     const s = readFileSync(`${TILES}/settings/SettingsPage.tsx`, "utf8");
     const order = [
-      s.indexOf("مدیریت اتصال به سامانه ملک تبریز"),
-      s.indexOf("اتصال به سامانه ARM"),
-      s.indexOf("اتصال به حساب شخصی سامانه PM"),
-      s.indexOf("اتصال به دیوار"),
-      s.indexOf("اتصال به اینستاگرام"),
+      { name: "اتصال به ملک تبریز", idx: s.indexOf("<MelkTabrizConnectionSection />") },
+      { name: "اتصال به دیوار", idx: s.indexOf("<DivarConnectionSection />") },
+      { name: "اتصال به اینستاگرام", idx: s.indexOf("<InstagramConnectionSection />") },
+      { name: "مغز هوشمند", idx: s.indexOf("<BrainStatusSection />") },
+      { name: "هشدار فرصت و کارهای پس‌زمینه", idx: s.indexOf("<OpportunityJobsSection />") },
+      { name: "حساب کاربری و تنظیمات کلی", idx: s.indexOf("<AccountGeneralSection />") },
+    ];
+    for (const { name, idx } of order) expect(idx, `بخش ${name} باید در صفحه باشد`).toBeGreaterThan(-1);
+    for (let i = 1; i < order.length; i += 1) {
+      expect(order[i].idx, `بخش «${order[i].name}» باید بعد از «${order[i - 1].name}» باشد`).toBeGreaterThan(order[i - 1].idx);
+    }
+  });
+
+  test("۱-۲) کارت مالک در ابتدا و پیکرهٔ اتصال به ملک تبریز بلافاصله پس از آن", async () => {
+    const s = readFileSync(`${TILES}/settings/SettingsPage.tsx`, "utf8");
+    const ownerIdx = s.indexOf("مالک و برنامه نویس و طراح");
+    const melkIdx = s.indexOf("<MelkTabrizConnectionSection />");
+    const divarIdx = s.indexOf("<DivarConnectionSection />");
+    expect(ownerIdx).toBeGreaterThan(-1);
+    expect(melkIdx).toBeGreaterThan(ownerIdx);
+    expect(melkIdx).toBeLessThan(divarIdx);
+  });
+
+  test("۱-۳) پیکرهٔ یکپارچهٔ اتصال به ملک تبریز: مدیریت + ARM + PM + GAP + سامانه عمومی (الگوی دیوار)", async () => {
+    const s = readFileSync(`${TILES}/settings/MelkTabrizConnectionSection.tsx`, "utf8");
+    expect(s).toContain('id="settings-connection-hub"');
+    expect(s).toContain("اتصال به ملک تبریز");
+    // ترتیب توکار: مدیریت → ARM → PM → GAP → رابط سامانه عمومی
+    const order = [
+      s.indexOf('id="settings-connection-hub"'),
+      s.indexOf("<ArmConnectionSection embedded />"),
+      s.indexOf("<PmConnectionSection embedded />"),
+      s.indexOf("<GapConnectionSection embedded />"),
+      s.indexOf('aria-label="رابط سامانه عمومی ملک تبریز"'),
     ];
     for (const idx of order) expect(idx).toBeGreaterThan(-1);
     for (let i = 1; i < order.length; i += 1) {
-      expect(order[i], `بخش ${i + 1} باید بعد از بخش ${i} باشد`).toBeGreaterThan(order[i - 1]);
-    }
-  });
-
-  test("۱-۲) کارت مدیریت اتصال قبل از هر بخش اتصال دیگر و بلافاصله پس از کارت مالک", async () => {
-    const s = readFileSync(`${TILES}/settings/SettingsPage.tsx`, "utf8");
-    const hubIdx = s.indexOf('id="settings-connection-hub"');
-    const armIdx = s.indexOf("<ArmConnectionSection />");
-    const ownerIdx = s.indexOf("مالک و برنامه نویس و طراح");
-    expect(hubIdx).toBeGreaterThan(ownerIdx);
-    expect(hubIdx).toBeLessThan(armIdx);
-  });
-
-  test("۱-۳) ترتیب JSX رندر: hub → ARM → PM → دیوار → اینستاگرام", async () => {
-    const s = readFileSync(`${TILES}/settings/SettingsPage.tsx`, "utf8");
-    const order = [
-      s.indexOf("<ArmConnectionSection />"),
-      s.indexOf("<PmConnectionSection />"),
-      s.indexOf("<DivarConnectionSection />"),
-      s.indexOf("<InstagramConnectionSection />"),
-    ];
-    for (let i = 1; i < order.length; i += 1) {
       expect(order[i]).toBeGreaterThan(order[i - 1]);
     }
+  });
+
+  test("۱-۴) بخش ادغامی حساب کاربری و تنظیمات کلی شامل هر چهار بخش پیشین", async () => {
+    const s = readFileSync(`${TILES}/settings/AccountGeneralSection.tsx`, "utf8");
+    expect(s).toContain("حساب کاربری و تنظیمات کلی");
+    expect(s).toContain("تم نمایش");
+    expect(s).toContain("زبان اپلیکیشن");
+    expect(s).toContain("راهنمای اپلیکیشن");
+    expect(s).toContain("خروج از حساب");
+  });
+
+  test("۱-۵) بخش GAP همانند ARM/PM (روت + مؤلفه + گارد نرخ مستقل)", async () => {
+    const route = readFileSync(`${SRC}/app/api/gap/connection/route.ts`, "utf8");
+    expect(route).toContain("start-otp");
+    expect(route).toContain("REQUEST_OTP_GAP");
+    expect(route).toContain('requireRole(request, "OWNER"');
+    const comp = readFileSync(`${TILES}/settings/GapConnectionSection.tsx`, "utf8");
+    expect(comp).toContain("اتصال به سامانه GAP");
+    expect(comp).toContain("/api/gap/connection");
+  });
+
+  test("۱-۶) رابط سامانهٔ عمومی (apu) در endpoints + کتابخانهٔ استخراج + روت", async () => {
+    const ep = readFileSync(`${SRC}/lib/melk-api/endpoints.ts`, "utf8");
+    expect(ep).toContain("melkPublic:");
+    expect(ep).toContain("properties/list");
+    expect(ep).toContain("properties/info/by-code");
+    const lib = readFileSync(`${SRC}/lib/melk-api/melk-public.ts`, "utf8");
+    expect(lib).toContain("syncMelkPublicCatalog");
+    expect(lib).toContain("merge-non-null");
+    const route = readFileSync(`${SRC}/app/api/melk-public/sync/route.ts`, "utf8");
+    expect(route).toContain("syncMelkPublicCatalog");
+  });
+
+  test("۱-۷) ده نشانگر اتصال شامل سامانه عمومی و GAP + نمایش پایدار در کاشی‌ها", async () => {
+    const ind = readFileSync(`${SRC}/lib/indicators.ts`, "utf8");
+    expect(ind).toContain('"melkPublicApi"');
+    expect(ind).toContain('"gapAccount"');
+    expect(ind).toContain('"gapApi"');
+    const comp = readFileSync(`${SRC}/components/app/ConnectionIndicators.tsx`, "utf8");
+    expect(comp).toContain('variant="compact"');
+    expect(comp).toContain("سامانه عمومی ملک تبریز");
+    const shell = readFileSync(`${SRC}/components/app/TileShell.tsx`, "utf8");
+    expect(shell).toContain('variant="compact"');
   });
 });
 

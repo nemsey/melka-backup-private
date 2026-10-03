@@ -26,6 +26,14 @@ export interface MelkApiConfig {
   armPublicApiBase: string;
   /** پایه API سامانه PM — کشف واقعی */
   pmApiBase: string;
+  /** آدرس فرانت سامانه GAP (مدیریت گفت‌وگو — اطلاعاتی/نمایشی) — P6546/گام صفر */
+  gapFrontUrl: string;
+  /** پایه API سامانه GAP (gap-api.melketabriz.ir/api/) — کشف از باندل سامانه‌های ملک تبریز */
+  gapApiBase: string;
+  /** آدرس فرانت سامانه عمومی ملک تبریز (melketabriz.com) */
+  melkPublicFrontUrl: string;
+  /** پایه API عمومی سامانه ملک تبریز (arus-api.melketabriz.ir/api/apu/) — بدون توکن، کشف P6546 */
+  melkPublicApiBase: string;
   /** پایه API سامانه مالی (حسابداری fm) — کشف واقعی از platformsBaseUrl.acc */
   accApiBase: string;
   /** مهلت پاسخ درخواست (میلی‌ثانیه) */
@@ -85,6 +93,10 @@ export function getMelkApiConfig(): MelkApiConfig {
     mode: "real" as ApiMode,
     armFrontUrl: env("MELK_ARM_FRONT_URL", "https://arm.melketabriz.ir"),
     pmFrontUrl: env("MELK_PM_FRONT_URL", "https://pm.melketabriz.ir"),
+    gapFrontUrl: env("MELK_GAP_FRONT_URL", "https://gap.melketabriz.ir"),
+    gapApiBase: env("MELK_GAP_API_BASE", "https://gap-api.melketabriz.ir/api/"),
+    melkPublicFrontUrl: env("MELK_PUBLIC_FRONT_URL", "https://www.melketabriz.com"),
+    melkPublicApiBase: env("MELK_PUBLIC_API_BASE", "https://arus-api.melketabriz.ir/api/apu/"),
     armApiBase: env("MELK_ARM_API_BASE", "https://arus-api.melketabriz.ir/api/apm/"),
     armPublicApiBase: env("MELK_ARM_PUBLIC_API_BASE", "https://arus-api.melketabriz.ir/api/public/"),
     pmApiBase: env("MELK_PM_API_BASE", "https://pm-api.melketabriz.ir/api/"),
