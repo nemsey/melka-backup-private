@@ -51,7 +51,12 @@ do_push() {
   local t0 t1 dur head_before result
   head_before="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
   t0=$(date +%s)
-  if git push mirror --all --tags --force >/dev/null 2>&1; then result=ok; else result=fail; fi
+  # نکته: git اجازهٔ هم‌زمانی --all و --tags را نمی‌دهد → دو پوش مجزا
+  if git push mirror --all --force >/dev/null 2>&1 && git push mirror --tags --force >/dev/null 2>&1; then
+    result=ok
+  else
+    result=fail
+  fi
   t1=$(date +%s); dur=$((t1 - t0))
   log_event push "\"result\":\"$result\",\"head\":\"$head_before\",\"durationSec\":$dur"
   [[ "$result" == "ok" ]]
