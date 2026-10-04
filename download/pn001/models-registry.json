@@ -1,0 +1,99 @@
+{
+  "case": "PN-001",
+  "block": "3.2",
+  "generatedAt": "2026-10-04T14:01:53.711Z",
+  "engineSet": "SHARED-11",
+  "count": 10,
+  "models": [
+    {
+      "modelId": "melka-property-v3",
+      "domain": "property",
+      "tileId": "arm-listings",
+      "outcomeType": "listing_deal",
+      "predictor": "PROPERTY",
+      "featuresCount": 11,
+      "description": "آگهی‌های ملک — پیامد: فروش/اجاره شدن آگهی"
+    },
+    {
+      "modelId": "melka-request-v1",
+      "domain": "request",
+      "tileId": "arm-requests",
+      "outcomeType": "request_match",
+      "predictor": "CUSTOMER",
+      "featuresCount": 5,
+      "description": "درخواست‌ها — پیامد: درخواست به معامله رسید؟"
+    },
+    {
+      "modelId": "melka-transaction-v2",
+      "domain": "transaction",
+      "tileId": "transactions-contracts",
+      "outcomeType": "transaction_success",
+      "predictor": "none",
+      "featuresCount": 5,
+      "description": "معاملات — پیامد: زمان بسته شدن و قیمت نهایی"
+    },
+    {
+      "modelId": "melka-expert-v1",
+      "domain": "expert",
+      "tileId": "experts",
+      "outcomeType": "expert_performance",
+      "predictor": "EXPERT",
+      "featuresCount": 5,
+      "description": "کارشناسان — پیامد: موفقیت در معامله بعدی"
+    },
+    {
+      "modelId": "melka-divar-v1",
+      "domain": "divar",
+      "tileId": "file-finder",
+      "outcomeType": "divar_register",
+      "predictor": "PROPERTY",
+      "featuresCount": 5,
+      "description": "فایل‌یابی ملکا (دیوار) — پیامد: تبدیل آگهی دیوار به فرصت ثبت‌شده"
+    },
+    {
+      "modelId": "melka-local-listing-v1",
+      "domain": "local-listing",
+      "tileId": "listing",
+      "outcomeType": "local_listing_publish",
+      "predictor": "PROPERTY",
+      "featuresCount": 4,
+      "description": "آگهی ملکا (فرم داخلی) — پیامد: انتشار/انتقال موفق به CRM"
+    },
+    {
+      "modelId": "melka-local-request-v1",
+      "domain": "local-request",
+      "tileId": "request",
+      "outcomeType": "local_request_register",
+      "predictor": "CUSTOMER",
+      "featuresCount": 3,
+      "description": "درخواست ملکا (فرم داخلی) — پیامد: ثبت درخواست در سامانه ARM"
+    },
+    {
+      "modelId": "melka-matching-v1",
+      "domain": "matching",
+      "tileId": "smart-matching",
+      "outcomeType": "match_accept",
+      "predictor": "none",
+      "featuresCount": 5,
+      "description": "تطبیق هوشمند M5 — پیامد: پذیرش پیشنهاد تطبیق"
+    },
+    {
+      "modelId": "melka-market-v1",
+      "domain": "market",
+      "tileId": "market-index",
+      "outcomeType": "market_index_refresh",
+      "predictor": "none",
+      "featuresCount": 4,
+      "description": "شاخص بازار M6 — پیامد: تازگی دادهٔ شاخص ماهانه"
+    },
+    {
+      "modelId": "melka-coverage-v1",
+      "domain": "coverage",
+      "tileId": "data-coverage",
+      "outcomeType": "coverage_improve",
+      "predictor": "none",
+      "featuresCount": 3,
+      "description": "پوشش اطلاعات M7 — پیامد: بهبود پوشش ستون‌ها پس از غنی‌سازی"
+    }
+  ]
+}

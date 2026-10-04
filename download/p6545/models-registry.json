@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-10-04T14:01:53.712Z",
+  "brain": {
+    "engines": 11,
+    "changedEngines": 0
+  },
+  "models": [
+    {
+      "modelId": "melka-property-v3",
+      "domain": "property",
+      "tileId": "arm-listings",
+      "outcomeType": "listing_deal",
+      "predictor": "PROPERTY"
+    },
+    {
+      "modelId": "melka-request-v1",
+      "domain": "request",
+      "tileId": "arm-requests",
+      "outcomeType": "request_match",
+      "predictor": "CUSTOMER"
+    },
+    {
+      "modelId": "melka-transaction-v2",
+      "domain": "transaction",
+      "tileId": "transactions-contracts",
+      "outcomeType": "transaction_success",
+      "predictor": "none"
+    },
+    {
+      "modelId": "melka-expert-v1",
+      "domain": "expert",
+      "tileId": "experts",
+      "outcomeType": "expert_performance",
+      "predictor": "EXPERT"
+    },
+    {
+      "modelId": "melka-divar-v1",
+      "domain": "divar",
+      "tileId": "file-finder",
+      "outcomeType": "divar_register",
+      "predictor": "PROPERTY"
+    },
+    {
+      "modelId": "melka-local-listing-v1",
+      "domain": "local-listing",
+      "tileId": "listing",
+      "outcomeType": "local_listing_publish",
+      "predictor": "PROPERTY"
+    },
+    {
+      "modelId": "melka-local-request-v1",
+      "domain": "local-request",
+      "tileId": "request",
+      "outcomeType": "local_request_register",
+      "predictor": "CUSTOMER"
+    },
+    {
+      "modelId": "melka-matching-v1",
+      "domain": "matching",
+      "tileId": "smart-matching",
+      "outcomeType": "match_accept",
+      "predictor": "none"
+    },
+    {
+      "modelId": "melka-market-v1",
+      "domain": "market",
+      "tileId": "market-index",
+      "outcomeType": "market_index_refresh",
+      "predictor": "none"
+    },
+    {
+      "modelId": "melka-coverage-v1",
+      "domain": "coverage",
+      "tileId": "data-coverage",
+      "outcomeType": "coverage_improve",
+      "predictor": "none"
+    }
+  ]
+}

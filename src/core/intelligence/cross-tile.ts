@@ -1,11 +1,12 @@
 /**
  * P6545 / گام ۳ — BLOCK 3.5: Cross-Tile Outcomes (پیامدهای بین‌کاشی)
  * ---------------------------------------------------------------------------
- * یک معاملهٔ واقعی = پیامد برای ۴ مدل:
+ * یک معاملهٔ واقعی = پیامد برای ۵ مدل (ن۰۰۱ BLOCK 3.5 — پیامد پنجم M5):
  *   M1 ملک: فروش/اجاره رفت (listing_deal)
  *   M2 درخواست: برآورده شد (request_match)
  *   M3 معامله: موفق (transaction_success)
  *   M4 کارشناس: موفق بود (expert_performance)
+ *   M5 تطبیق: درست بود (match_accept — وقتی معامله از پیوند آگهی↔درخواست آمده)
  *
  * هر پیامد OutcomeRecord با EvidenceLink (کد معامله/ملک/درخواست/کارشناس)
  * + رویداد outcome.recorded روی تختهٔ سیاه.
@@ -119,6 +120,24 @@ export async function emitCrossTileOutcomes(db: PrismaClient, txId: string): Pro
       evidenceChain: [evidenceLink("query", `TransactionRecord.id=${tx.id}`, expertEvidence)],
       ...base,
     });
+  }
+
+  /* ۵) M5 — تطبیق: درست بود (ن۰۰۱ BLOCK 3.5 — وقتی معامله از پیوند آگهی↔درخواست آمده) */
+  if (tx.propertyCode && tx.requestCode) {
+    const matchedReq = await db.requestRecord.findFirst({ where: { requestCode: tx.requestCode } });
+    if (matchedReq) {
+      outcomes.push({
+        id: `ct-m5-${tx.id}`,
+        predictionId: `match-${tx.propertyCode}-${matchedReq.id}`,
+        predictionType: "match_accept",
+        predictedAt: occurredAt,
+        predictedValue: 1,
+        observedValue: 1,
+        resolution: "success",
+        evidenceChain: [evidenceLink("query", `TransactionRecord.id=${tx.id}`, `تطبیق ملک ${tx.propertyCode} ↔ درخواست ${tx.requestCode} به معامله رسید — مدل melka-matching-v1`)],
+        ...base,
+      });
+    }
   }
 
   // ماندگاری + رویدادها
