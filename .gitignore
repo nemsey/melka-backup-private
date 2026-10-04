@@ -66,3 +66,10 @@ upload/.survival/
 # P6548-recovery — قرنطینهٔ شبیه‌سازی و بکاپ پیش‌بازیابی (حجیم — هرگز به git نمی‌روند)
 scripts/recovery-034/scratch/
 backups/pre-recovery-034-*/
+
+# P6549 — قانون ۰۳۵-A + بهداشت کامیت بوت پلتفرم: داده در upload، نه در git
+/db/custom.db
+/upload/
+/backups/*.db
+/backups/*.tar
+*.pid
