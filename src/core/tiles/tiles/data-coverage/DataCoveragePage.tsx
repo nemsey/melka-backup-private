@@ -155,3 +155,7 @@ export function DataCoveragePage({ onBack }: TilePageProps) {
     </div>
   );
 }
+
+
+/** P6549 — خروجی پیش‌فرض برای بارگذاری تنبل (lazyPage) */
+export default DataCoveragePage;

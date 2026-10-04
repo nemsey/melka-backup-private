@@ -98,3 +98,7 @@ export function ManagementDashboardPage({ settings, userRole }: TilePageProps) {
     </div>
   );
 }
+
+
+/** P6549 — خروجی پیش‌فرض برای بارگذاری تنبل (lazyPage) */
+export default ManagementDashboardPage;

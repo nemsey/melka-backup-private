@@ -4,9 +4,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { Users } from "lucide-react";
-import { ExpertsPage } from "./ExpertsPage";
 
 export const expertsTile = defineTile({
   id: "experts",
@@ -17,7 +18,7 @@ export const expertsTile = defineTile({
     "عین «فهرست کاربران» خود سامانه: نام، موبایل، نقش، کسب‌وکار، ثبت‌کننده، تاریخ ثبت (هجری شمسی) و وضعیت — به‌علاوه «تعاملات مشاوران با یکدیگر» و درجه همکاری هر مشاور.",
   icon: Users,
   accent: "m4",
-  component: ExpertsPage,
+  component: lazyPage(() => import("./ExpertsPage")),
   order: 4,
   container: "management-dashboard",
   agent: {

@@ -6,9 +6,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { Sparkles } from "lucide-react";
-import { SmartMatchingPage } from "./SmartMatchingPage";
 
 export const smartMatchingTile = defineTile({
   id: "smart-matching",
@@ -19,7 +20,7 @@ export const smartMatchingTile = defineTile({
     "تطبیق هوشمند دو جهت: با ورود کد ملک، ۵ درخواست فعال برتر و با ورود درخواست، ۵ آگهی منتشرشدهٔ برتر پیشنهاد می‌شود. فیلتر سخت (معکوس نوع معامله، تلاقی قیمت و منطقه، نوع ملک) + امتیاز نرم پنج‌عامله (فاصله قیمت، نزدیکی جغرافیایی، تناسب متراژ، تازگی، سابقه کارشناس) با پوشش سیگنال شفاف. هر پذیرش/رد در حلقهٔ یادگیری ثبت و وزن‌ها تدریجاً شخصی می‌شوند. Tier-aware. صفر اجرای خودکار — پیشنهاد فقط.",
   icon: Sparkles,
   accent: "m5",
-  component: SmartMatchingPage,
+  component: lazyPage(() => import("./SmartMatchingPage")),
   order: 5,
   container: "management-dashboard",
   minRole: "OWNER",

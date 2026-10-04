@@ -9,9 +9,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { LayoutDashboard } from "lucide-react";
-import { ManagementDashboardPage } from "./ManagementDashboardPage";
 
 export const managementDashboardTile = defineTile({
   id: "management-dashboard",
@@ -23,7 +24,7 @@ export const managementDashboardTile = defineTile({
 
   icon: LayoutDashboard,
   accent: "mgmt",
-  component: ManagementDashboardPage,
+  component: lazyPage(() => import("./ManagementDashboardPage")),
   order: 5,
   agent: null,
   settings: [

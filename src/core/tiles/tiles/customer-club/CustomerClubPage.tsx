@@ -472,3 +472,7 @@ export function CustomerClubPage({ settings, onSettingsChange: _osc, userRole: _
     </div>
   );
 }
+
+
+/** P6549 — خروجی پیش‌فرض برای بارگذاری تنبل (lazyPage) */
+export default CustomerClubPage;

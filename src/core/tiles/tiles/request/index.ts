@@ -7,9 +7,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { ClipboardList } from "lucide-react";
-import { RequestsPage } from "./RequestsPage";
 
 export const requestTile = defineTile({
   id: "requests",
@@ -20,7 +21,7 @@ export const requestTile = defineTile({
     "تمام درخواست‌های ملک در یک دفتر واحد — با همان فرم ۴ گامی سامانه آرم و بدون دور زدن هیچ گامی: (۱) «ثبت دستی» برای مشتریانی که حضوری (در دفتر) درخواست ثبت دارند — اطلاعات مشتری، اطلاعات مکانی درخواست، جزییات درخواست و اطلاعات تکمیلی؛ (۲) «ثبت اتوماتیک» — فرم پرشونده که با تکمیل اطلاعات، درخواست همانند یک کاربر عادی مرحله‌به‌مرحله در سامانه آرم ملک تبریز ثبت می‌شود (جستجو/ایجاد مشتری، شناسه‌های منطقه‌بندی، فرم دسته‌بندی و ثبت نهایی)؛ (۳) کلید «ویرایش» و کلید «ثبت رویداد» برای هر درخواست — رویدادها عین سامانه آرم (نوع رویداد + تاریخ + ساعت + کدآگهی + پیام)؛ (۴) ایجنت «مدیریت مشتریان»: پروفایل ۳۶۰ درجه هر مشتری، امتیاز سلامت، چرخه عمر، اقدام بعدی هوشمند و تطبیق درخواست با آگهی‌های دفتر آگهی.",
   icon: ClipboardList,
   accent: "melka-request",
-  component: RequestsPage,
+  component: lazyPage(() => import("./RequestsPage")),
   order: 3,
   agent: {
     tileId: "requests",

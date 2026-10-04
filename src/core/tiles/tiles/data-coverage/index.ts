@@ -5,9 +5,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { Database } from "lucide-react";
-import { DataCoveragePage } from "./DataCoveragePage";
 
 export const dataCoverageTile = defineTile({
   id: "data-coverage",
@@ -18,7 +19,7 @@ export const dataCoverageTile = defineTile({
     "پوشش اطلاعات چهار کاشی مدیریتی: جدول درصد پوشش هر ستون، نمودار میله‌ای، فهرست رکوردهای ناقص با لینک مستقیم، پیشنهاد مسیر پر شدن هر ستون (همگام‌سازی/غنی‌سازی/کارشناس) و نمایش Tier فعلی برای بینش Tier-aware.",
   icon: Database,
   accent: "m7",
-  component: DataCoveragePage,
+  component: lazyPage(() => import("./DataCoveragePage")),
   order: 7,
   container: "management-dashboard",
   minRole: "OWNER",

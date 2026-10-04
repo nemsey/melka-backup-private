@@ -41,8 +41,15 @@ export default function Page() {
         <div className="absolute top-3 start-3 z-50">
           <OpenInNewTabButton />
         </div>
-        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden />
-        <p className="text-sm text-muted-foreground">در حال بازیابی نشست امن…</p>
+        {/* P6549/۰۳۵-B-ح: هویت برند در نخستین رنگ — LCP همان FCP می‌شود (بدون پرش محتوا) */}
+        <div className="flex flex-col items-center gap-3" role="status" aria-label="ملکا در حال راه‌اندازی">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center shadow-xl shadow-primary/25">
+            <Loader2 className="w-8 h-8 animate-spin text-white" aria-hidden />
+          </div>
+          <h1 className="text-2xl font-extrabold text-primary">ملکا</h1>
+          <p className="text-sm text-muted-foreground">اکوسیستم هوشمند ملک ایران</p>
+          <p className="text-xs text-muted-foreground/80">در حال بازیابی نشست امن…</p>
+        </div>
       </div>
     );
   }
