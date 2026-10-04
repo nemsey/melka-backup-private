@@ -1,0 +1,486 @@
+{
+  "case": "PN-001",
+  "block": 1,
+  "generatedAt": "2026-10-04T13:36:52.350Z",
+  "directive": "ملکا-شورا-ن۰۰۱-۱۴۰۵ — بخش ۱٫۲/۱٫۳/۱٫۴",
+  "graphs": {
+    "buildReports": [
+      {
+        "graph": "property",
+        "nodesWritten": 9773,
+        "edgesWritten": 21043,
+        "sources": {
+          "properties": 9095,
+          "areas": 9095,
+          "owners": 8220,
+          "experts": 3728
+        },
+        "builtAt": "2026-10-04T13:36:49.095Z"
+      },
+      {
+        "graph": "people",
+        "nodesWritten": 19636,
+        "edgesWritten": 14769,
+        "sources": {
+          "experts": 0,
+          "personnel": 0,
+          "owners": 8220,
+          "requesters": 6549,
+          "txParties": 0
+        },
+        "builtAt": "2026-10-04T13:36:50.682Z"
+      },
+      {
+        "graph": "transaction",
+        "nodesWritten": 0,
+        "edgesWritten": 0,
+        "sources": {
+          "transactions": 0,
+          "propertyLinks": 0,
+          "requestLinks": 0,
+          "parties": 0,
+          "brokers": 0
+        },
+        "builtAt": "2026-10-04T13:36:50.686Z"
+      }
+    ],
+    "stats": {
+      "property": {
+        "graph": "property",
+        "nodes": 9773,
+        "edges": 21043,
+        "byNodeType": {
+          "area": 119,
+          "expert": 114,
+          "person": 445,
+          "property": 9095
+        },
+        "byEdgeType": {
+          "listed_by": 3728,
+          "located_in": 9095,
+          "owned_by": 8220
+        }
+      },
+      "people": {
+        "graph": "people",
+        "nodes": 19636,
+        "edges": 14769,
+        "byNodeType": {
+          "person": 4867,
+          "property": 8220,
+          "request": 6549
+        },
+        "byEdgeType": {
+          "owns": 8220,
+          "requested": 6549
+        }
+      },
+      "transaction": {
+        "graph": "transaction",
+        "nodes": 0,
+        "edges": 0,
+        "byNodeType": {},
+        "byEdgeType": {}
+      }
+    },
+    "totals": {
+      "nodes": 29409,
+      "edges": 35812
+    },
+    "acceptance": {
+      "requiredNodes": 1000,
+      "requiredEdges": 5000,
+      "nodesOK": true,
+      "edgesOK": true
+    },
+    "integrity": {
+      "danglingEdges": {
+        "property": 0,
+        "people": 0,
+        "transaction": 0
+      }
+    }
+  },
+  "traversalWitness": {
+    "startNode": {
+      "nodeType": "property",
+      "refId": "10169"
+    },
+    "pathCount": 6,
+    "samples": [
+      {
+        "nodes": [
+          {
+            "nodeType": "property",
+            "refId": "10169",
+            "label": "فروش آپارتمان مسکونی 220 متری"
+          },
+          {
+            "nodeType": "area",
+            "refId": "63e9f830b44615addb867683",
+            "label": "کوچه صدر"
+          }
+        ],
+        "edges": [
+          {
+            "edgeType": "located_in",
+            "fromRef": "10169",
+            "toRef": "63e9f830b44615addb867683"
+          }
+        ],
+        "depth": 1
+      },
+      {
+        "nodes": [
+          {
+            "nodeType": "property",
+            "refId": "10169",
+            "label": "فروش آپارتمان مسکونی 220 متری"
+          },
+          {
+            "nodeType": "person",
+            "refId": "name:رامین  نجفی",
+            "label": "رامین  نجفی"
+          }
+        ],
+        "edges": [
+          {
+            "edgeType": "owned_by",
+            "fromRef": "10169",
+            "toRef": "name:رامین  نجفی"
+          }
+        ],
+        "depth": 1
+      },
+      {
+        "nodes": [
+          {
+            "nodeType": "property",
+            "refId": "10169",
+            "label": "فروش آپارتمان مسکونی 220 متری"
+          },
+          {
+            "nodeType": "expert",
+            "refId": "410031078",
+            "label": "رامین  نجفی"
+          }
+        ],
+        "edges": [
+          {
+            "edgeType": "listed_by",
+            "fromRef": "10169",
+            "toRef": "410031078"
+          }
+        ],
+        "depth": 1
+      }
+    ]
+  },
+  "findPathWitness": {
+    "from": {
+      "nodeType": "property",
+      "refId": "10169"
+    },
+    "to": {
+      "nodeType": "area",
+      "refId": "63e9f830b44615addb867683"
+    },
+    "path": {
+      "nodes": [
+        {
+          "nodeType": "property",
+          "refId": "10169",
+          "label": null
+        },
+        {
+          "nodeType": "area",
+          "refId": "63e9f830b44615addb867683",
+          "label": null
+        }
+      ],
+      "edges": [
+        {
+          "edgeType": "located_in",
+          "fromRef": "10169",
+          "toRef": "63e9f830b44615addb867683"
+        }
+      ],
+      "depth": 1
+    }
+  },
+  "opportunityAlerts": {
+    "backfillReport": {
+      "source": "backfill",
+      "evaluated": 85,
+      "alertsCreated": 84,
+      "topScores": [
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9
+      ]
+    },
+    "acceptance": {
+      "required": 5,
+      "actual": 84,
+      "ok": true
+    },
+    "topAlerts": [
+      {
+        "id": "cmutv7e5o1ee0k5r9yl38zyiz",
+        "direction": "request_to_listing",
+        "listingCode": "59089",
+        "requestId": "67a0ca451d0edf52b88163d5",
+        "matchScore": 0.9,
+        "matchReasons": [
+          {
+            "factor": "فاصله قیمت",
+            "value": 1,
+            "weight": 0.25,
+            "note": "بازهٔ 30000000000-40000000000"
+          },
+          {
+            "factor": "نزدیکی جغرافیایی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "ولیعصر"
+          },
+          {
+            "factor": "تناسب متراژ",
+            "value": 1,
+            "weight": 0.2,
+            "note": "100-200 متر"
+          },
+          {
+            "factor": "تازگی آگهی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "0 روز"
+          },
+          {
+            "factor": "سابقه کارشناس",
+            "value": 0,
+            "weight": 0.1,
+            "note": "0 معامله"
+          },
+          {
+            "factor": "تطابق نوع ملک",
+            "value": 1,
+            "weight": 0.15,
+            "note": "آپارتمان"
+          }
+        ],
+        "status": "new",
+        "emittedAt": "2026-10-04T13:36:52.333Z"
+      },
+      {
+        "id": "cmutv7e5n1edzk5r9skt0dmj9",
+        "direction": "request_to_listing",
+        "listingCode": "25507",
+        "requestId": "67a0ca451d0edf52b88163d5",
+        "matchScore": 0.9,
+        "matchReasons": [
+          {
+            "factor": "فاصله قیمت",
+            "value": 1,
+            "weight": 0.25,
+            "note": "بازهٔ 30000000000-40000000000"
+          },
+          {
+            "factor": "نزدیکی جغرافیایی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "ولیعصر"
+          },
+          {
+            "factor": "تناسب متراژ",
+            "value": 1,
+            "weight": 0.2,
+            "note": "100-200 متر"
+          },
+          {
+            "factor": "تازگی آگهی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "0 روز"
+          },
+          {
+            "factor": "سابقه کارشناس",
+            "value": 0,
+            "weight": 0.1,
+            "note": "0 معامله"
+          },
+          {
+            "factor": "تطابق نوع ملک",
+            "value": 1,
+            "weight": 0.15,
+            "note": "آپارتمان"
+          }
+        ],
+        "status": "new",
+        "emittedAt": "2026-10-04T13:36:52.332Z"
+      },
+      {
+        "id": "cmutv7e5m1edxk5r9go76e0u2",
+        "direction": "request_to_listing",
+        "listingCode": "56609",
+        "requestId": "67a0ca451d0edf52b88163d5",
+        "matchScore": 0.9,
+        "matchReasons": [
+          {
+            "factor": "فاصله قیمت",
+            "value": 1,
+            "weight": 0.25,
+            "note": "بازهٔ 30000000000-40000000000"
+          },
+          {
+            "factor": "نزدیکی جغرافیایی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "ولیعصر"
+          },
+          {
+            "factor": "تناسب متراژ",
+            "value": 1,
+            "weight": 0.2,
+            "note": "100-200 متر"
+          },
+          {
+            "factor": "تازگی آگهی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "0 روز"
+          },
+          {
+            "factor": "سابقه کارشناس",
+            "value": 0,
+            "weight": 0.1,
+            "note": "0 معامله"
+          },
+          {
+            "factor": "تطابق نوع ملک",
+            "value": 1,
+            "weight": 0.15,
+            "note": "آپارتمان"
+          }
+        ],
+        "status": "new",
+        "emittedAt": "2026-10-04T13:36:52.331Z"
+      },
+      {
+        "id": "cmutv7e5n1edyk5r9xe3zn6c7",
+        "direction": "request_to_listing",
+        "listingCode": "51300",
+        "requestId": "67a0ca451d0edf52b88163d5",
+        "matchScore": 0.9,
+        "matchReasons": [
+          {
+            "factor": "فاصله قیمت",
+            "value": 1,
+            "weight": 0.25,
+            "note": "بازهٔ 30000000000-40000000000"
+          },
+          {
+            "factor": "نزدیکی جغرافیایی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "ولیعصر"
+          },
+          {
+            "factor": "تناسب متراژ",
+            "value": 1,
+            "weight": 0.2,
+            "note": "100-200 متر"
+          },
+          {
+            "factor": "تازگی آگهی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "0 روز"
+          },
+          {
+            "factor": "سابقه کارشناس",
+            "value": 0,
+            "weight": 0.1,
+            "note": "0 معامله"
+          },
+          {
+            "factor": "تطابق نوع ملک",
+            "value": 1,
+            "weight": 0.15,
+            "note": "آپارتمان"
+          }
+        ],
+        "status": "new",
+        "emittedAt": "2026-10-04T13:36:52.331Z"
+      },
+      {
+        "id": "cmutv7e5l1edwk5r961ti0m2x",
+        "direction": "request_to_listing",
+        "listingCode": "45764",
+        "requestId": "67a0ca451d0edf52b88163d5",
+        "matchScore": 0.9,
+        "matchReasons": [
+          {
+            "factor": "فاصله قیمت",
+            "value": 1,
+            "weight": 0.25,
+            "note": "بازهٔ 30000000000-40000000000"
+          },
+          {
+            "factor": "نزدیکی جغرافیایی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "ولیعصر"
+          },
+          {
+            "factor": "تناسب متراژ",
+            "value": 1,
+            "weight": 0.2,
+            "note": "100-200 متر"
+          },
+          {
+            "factor": "تازگی آگهی",
+            "value": 1,
+            "weight": 0.15,
+            "note": "0 روز"
+          },
+          {
+            "factor": "سابقه کارشناس",
+            "value": 0,
+            "weight": 0.1,
+            "note": "0 معامله"
+          },
+          {
+            "factor": "تطابق نوع ملک",
+            "value": 1,
+            "weight": 0.15,
+            "note": "آپارتمان"
+          }
+        ],
+        "status": "new",
+        "emittedAt": "2026-10-04T13:36:52.330Z"
+      }
+    ],
+    "constraint": "صفر اجرای خودکار — فقط هشدار (آستانهٔ انتشار ≥ ۰٫۷)"
+  },
+  "cleanup": {
+    "found": 0,
+    "byPriority": {
+      "1": 0,
+      "2": 0,
+      "3": 0
+    },
+    "archived": 0,
+    "samples": [],
+    "deleted": 0,
+    "sacredDataLaw": "صفر حذف — قانون دادهٔ مقدس رعایت شد"
+  },
+  "durationMs": 4960
+}
