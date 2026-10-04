@@ -11,16 +11,16 @@
 import { useEffect, useState } from "react";
 
 export function SplashScreen() {
-  const [show, setShow] = useState(true);
+  // مقدار اولیهٔ lazy: در همان رندر اول تصمن گرفته می‌شود (بدون setState همگام در effect)
+  const [show, setShow] = useState(() => {
+    if (typeof window === "undefined") return true;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+    return sessionStorage.getItem("melka-splash-shown") !== "1";
+  });
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShow(false);
-      return;
-    }
-    if (sessionStorage.getItem("melka-splash-shown") === "1") { setShow(false); return; }
+    if (!show) return;
     const t1 = window.setTimeout(() => {
       setFading(true);
       sessionStorage.setItem("melka-splash-shown", "1");

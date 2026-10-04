@@ -12,11 +12,10 @@ import { WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export function OfflineBadge() {
-  const [online, setOnline] = useState(true);
+  const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
   const { toast } = useToast();
 
   useEffect(() => {
-    setOnline(navigator.onLine);
     const goOffline = () => setOnline(false);
     const goOnline = () => {
       setOnline(true);

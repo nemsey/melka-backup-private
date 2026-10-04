@@ -84,7 +84,7 @@ const M4_COLUMNS: ColumnSpec[] = [
   { key: "personnelCode", title: "کد پرسنلی", fillPath: "رجیستری پرسنل PM (realtors/list — منبع حقیقت)" },
   { key: "address", title: "آدرس", fillPath: "سامانهٔ PM (realtors/info/contactInfo — contactInfo.address) — کشف P6549" },
   { key: "businessTitle", title: "عنوان کسب‌وکار", fillPath: "همگام‌سازی کارشناسان ARM" },
-  { key: "__branch", title: "شعبه", fillPath: "زنجیرهٔ تفکیک شعبه (نقشهٔ مالک → کسب‌وکار)" },
+  { key: "__branchM4", title: "شعبه", fillPath: "سامانهٔ PM (personnelInfo.branchId.title — تفکیک نام کارشناس)" },
   { key: "roleTitle", title: "نقش پرسنلی", fillPath: "سامانهٔ PM (realtors/list + personnelInfo)" },
   { key: "hireDate", title: "تاریخ استخدام", fillPath: "سامانهٔ PM (realtors/info/personnelInfo — کشف P6546)" },
   // P6547/گام چهارم — ستون‌های تازه از ساختار فراژرف PM
@@ -166,16 +166,20 @@ export async function GET(request: NextRequest) {
     const m4Total = await db.expertRecord.count();
     const m4Filled: Record<string, number> = {};
     for (const c of M4_COLUMNS) {
-      if (["roleTitle", "hireDate", "__employmentType", "__voip", "__branchM4"].includes(c.key)) continue; // از PM محاسبه می‌شود — پایین‌تر
+      if (["roleTitle", "hireDate", "__employmentType", "__voip", "__branchM4", "address"].includes(c.key)) continue; // از PM محاسبه می‌شود — پایین‌تر (address: ExpertRecord فاقد فیلد است)
       m4Filled[c.key] = await safeCount(db, "expertRecord", c.key);
     }
     // نقش پرسنلی و تاریخ استخدام از رجیستری PM (تطبیق با _id مشترک)
-    const pmPersonnel = await db.pmPersonnelRecord.findMany({ select: { id: true, code: true, roleTitle: true, hireDate: true } });
+    const pmPersonnel = await db.pmPersonnelRecord.findMany({ select: { id: true, code: true, roleTitle: true, hireDate: true, address: true, branchTitle: true } });
     const expertIds = new Set((await db.expertRecord.findMany({ select: { id: true } })).map((e) => e.id));
     const pmMatched = pmPersonnel.filter((p) => expertIds.has(p.id));
     m4Filled.roleTitle = pmMatched.filter((p) => p.roleTitle).length;
     m4Filled.hireDate = pmMatched.filter((p) => p.hireDate).length;
     m4Filled.personnelCode = pmMatched.filter((p) => p.code).length;
+    // P6549 — آدرس (contactInfo.address) و شعبه (branchTitle) از همان کوئری PM بالا
+    const pmExtraById = new Map(pmPersonnel.map((r) => [r.id, r]));
+    m4Filled.address = m4Total > 0 ? [...expertIds].filter((id) => pmExtraById.get(id)?.address).length : 0;
+    m4Filled.__branchM4 = m4Total > 0 ? [...expertIds].filter((id) => pmExtraById.get(id)?.branchTitle).length : 0;
     // P6547 — نوع همکاری + شماره داخلی از رجیستری PM (تطبیق با _id مشترک)
     const pmById = new Map(pmEmploymentRows.map((r) => [r.id, r]));
     m4Filled.__employmentType = m4Total > 0 ? [...new Set(expertIds)].filter((id) => pmById.get(id)?.employmentType).length : 0;

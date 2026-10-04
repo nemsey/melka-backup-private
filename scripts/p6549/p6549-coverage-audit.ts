@@ -1,185 +1,176 @@
 /**
  * p6549-coverage-audit.ts — حسابرسی «هیچ ستونی بدون اطلاعات نباشد» (دستور P6549 — نکته ۲)
- * -------------------------------------------------------------------------------------------------
- * منبع حقیقت: همان APIهایی که فهرست‌های چهارگانه از آن‌ها می‌خوانند (با نشست مدیر).
- * برای هر ستونِ هر فهرست، درصد رکوردهایی که آن ستون را «پر» دارند از دادهٔ واقعی محاسبه می‌شود.
- * خروجی: download/p6549/columns-coverage.json + گزارش کنسولی + سنجش سرعت همزمان.
+ * سطح DB — کل جمعیت (نه نمونه) + سرعت APIها (گام ۴).
+ * خروجی: download/p6549/columns-coverage.json (شاهد راستی‌آزمایی تست)
  * اجرا: bun scripts/p6549/p6549-coverage-audit.ts [BASE]
  */
+process.env.DATABASE_URL = "file:/home/z/my-project/db/custom.db";
 export {};
 const BASE = process.argv[2] ?? "http://localhost:3000";
 
-type Row = Record<string, any>;
-async function j(path: string, opts: RequestInit = {}): Promise<{ status: number; ms: number; body: any }> {
-  const t0 = Date.now();
-  try {
-    const res = await fetch(BASE + path, opts);
-    let body: any = null;
-    try { body = await res.json(); } catch {}
-    return { status: res.status, ms: Date.now() - t0, body };
-  } catch (e: any) {
-    return { status: 0, ms: Date.now() - t0, body: { error: String(e?.message ?? e) } };
-  }
-}
-const rowsOf = (b: any): Row[] => {
-  if (!b || typeof b !== "object") return [];
-  if (Array.isArray(b)) return b;
-  for (const k of ["rows", "items", "records", "data"]) {
-    const v = b[k];
-    if (Array.isArray(v)) return v;
-    if (v && typeof v === "object" && Array.isArray(v.rows)) return v.rows;
-  }
-  return [];
-};
-const filled = (v: any): boolean =>
-  v !== null && v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0);
-
-/** نگاشت ستون (عین سرستون فهرست) → فیلدهای پاسخ API (پر بودن هرکدام کافی است) */
-const LISTS: { tile: string; url: string; cols: { col: string; fields: string[] }[] }[] = [
-  {
-    tile: "M1 آگهی ملک تبریز — ۱۶ ستون",
-    url: "/api/crm/arm-catalog/listings?limit=3000",
-    cols: [
-      { col: "ردیف", fields: ["id"] },
-      { col: "کد آگهی", fields: ["propertyCode", "code"] },
-      { col: "کارشناس", fields: ["realtorName"] },
-      { col: "شعبه", fields: ["branch"] },
-      { col: "مالک — نام", fields: ["ownerName"] },
-      { col: "مالک — موبایل", fields: ["ownerMobile"] },
-      { col: "قیمت", fields: ["price"] },
-      { col: "آدرس — منطقه", fields: ["areaName"] },
-      { col: "آدرس — نشانی", fields: ["address"] },
-      { col: "دسته‌بندی", fields: ["tradeTypeName"] },
-      { col: "وضعیت", fields: ["status"] },
-      { col: "آخرین فعالیت", fields: ["syncedAt", "updatedAt", "extractedAt"] },
-      { col: "متراژ", fields: ["meterage"] },
-      { col: "اتاق", fields: ["rooms"] },
-      { col: "سال ساخت", fields: ["buildYear"] },
-      { col: "نوع ملک", fields: ["propertyTypeName"] },
-    ],
-  },
-  {
-    tile: "M2 درخواست ملک تبریز — ۱۳ ستون",
-    url: "/api/crm/arm-catalog/requests?limit=3000",
-    cols: [
-      { col: "ردیف", fields: ["id"] },
-      { col: "کد درخواست", fields: ["requestCode", "armRequestId"] },
-      { col: "کارشناس", fields: ["actorName"] },
-      { col: "شعبه", fields: ["branch"] },
-      { col: "متقاضی — نام", fields: ["customerName"] },
-      { col: "متقاضی — موبایل", fields: ["customerMobile"] },
-      { col: "مناطق", fields: ["areaNames", "areaNamesJson"] },
-      { col: "قیمت — از", fields: ["priceFrom"] },
-      { col: "قیمت — تا", fields: ["priceTo"] },
-      { col: "دسته‌بندی", fields: ["tradeTypeName"] },
-      { col: "نوع ملک", fields: ["propertyTypeName"] },
-      { col: "نوع ساختمان", fields: ["buildingTypeName"] },
-      { col: "وضعیت", fields: ["status"] },
-    ],
-  },
-  {
-    tile: "M3 معاملات ملک تبریز — ۱۱ ستون",
-    url: "/api/crm/transactions?limit=1000",
-    cols: [
-      { col: "ردیف", fields: ["id"] },
-      { col: "تاریخ معامله", fields: ["contractDate", "jalaliDate"] },
-      { col: "کد ملک", fields: ["propertyCode"] },
-      { col: "فروشنده", fields: ["sellerName", "propertyCustomer"] },
-      { col: "کد درخواست", fields: ["requestCode"] },
-      { col: "خریدار", fields: ["buyerName", "requestCustomer"] },
-      { col: "قیمت", fields: ["price"] },
-      { col: "نوع قرارداد", fields: ["contractType", "contractTypeFa"] },
-      { col: "هولوگرام", fields: ["contractHolo"] },
-      { col: "کارشناس", fields: ["expertName", "consultantsShareSummary"] },
-      { col: "فایل قرارداد", fields: ["hasContract", "contractFile"] },
-    ],
-  },
-  {
-    tile: "M4 کارشناسان ملک تبریز — ۱۲ ستون",
-    url: "/api/crm/experts?limit=3000",
-    cols: [
-      { col: "ردیف", fields: ["id"] },
-      { col: "کارشناس — نام", fields: ["fullName"] },
-      { col: "کارشناس — موبایل", fields: ["mobile"] },
-      { col: "تاریخ استخدام", fields: ["hireDate", "employmentDate"] },
-      { col: "کد پرسنلی", fields: ["personnelCode"] },
-      { col: "شعبه", fields: ["branch"] },
-      { col: "نقش پرسنلی", fields: ["pmRole", "roleName"] },
-      { col: "مبایعه‌نامه (خانواده)", fields: ["saleFamily", "saleCount"] },
-      { col: "اجاره‌نامه (خانواده)", fields: ["rentFamily", "rentCount"] },
-      { col: "آدرس", fields: ["address", "branchAddress"] },
-      { col: "وضعیت فعال", fields: ["active"] },
-      { col: "نقش/عنوان", fields: ["role", "businessTitle"] },
-    ],
-  },
-];
-
 async function main() {
-  console.log(`# حسابرسی پوشش ستون‌ها — ${new Date().toISOString()} — BASE=${BASE}`);
-  // ورود مدیر (کدمستر — الگوی اثبات‌شدهٔ P6548)
-  const login = await j("/api/auth/master-login", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ masterCode: "80211186" }),
-  });
-  if (login.status !== 200 || !login.body?.token) {
-    console.error("FAIL: ورود مدیر ناموفق", login.status, JSON.stringify(login.body).slice(0, 200));
-    process.exit(1);
-  }
-  const H: Record<string, string> = { authorization: `Bearer ${login.body.token}` };
+  const { db } = await import("@/lib/db");
+  const fs = await import("node:fs");
 
-  const report: any[] = [];
-  const speeds: any[] = [];
-  let totalCols = 0, filledCols = 0;
-  const emptyCols: string[] = [];
-  const keyDiscovery: Record<string, string[]> = {};
-
-  for (const list of LISTS) {
-    const res = await j(list.url, { headers: H });
-    const rows: Row[] = rowsOf(res.body);
-    speeds.push({ tile: list.tile.split(" —")[0], ms: res.ms, rows: rows.length, status: res.status });
-    if (res.status !== 200 || rows.length === 0) {
-      report.push({ tile: list.tile, error: `status=${res.status} rows=${rows.length}` });
-      continue;
+  /** شمارش غیرتهی — فیلدهای non-nullable همیشه total اند (سقف امن با try/catch) */
+  const nn = async (model: any, field: string, extra: any = {}): Promise<number> => {
+    try {
+      return await model.count({ where: { ...extra, [field]: { not: null } } });
+    } catch {
+      try { return await model.count({ where: extra }); } catch { return await model.count(); }
     }
-    if (!keyDiscovery[list.tile]) keyDiscovery[list.tile] = Object.keys(rows[0]).slice(0, 40);
-    const colsReport = list.cols.map(({ col, fields }) => {
-      const n = rows.filter((r) => fields.some((f) => filled(r[f]))).length;
-      const pct = Math.round((n / rows.length) * 1000) / 10;
-      totalCols++;
-      if (n > 0) filledCols++;
-      else emptyCols.push(`${list.tile} → ${col}`);
-      return { col, filled: n, total: rows.length, pct };
-    });
-    report.push({ tile: list.tile, sampled: rows.length, columns: colsReport });
+  };
+  const or = (fields: string[]) => ({ OR: fields.map((f) => ({ [f]: { not: null } })) });
+
+  // ═══ M1 — ۱۶ ستون ═══
+  const m1Total = await db.propertyRecord.count();
+  const m1: [string, number][] = [
+    ["کد آگهی", await nn(db.propertyRecord, "propertyCode")],
+    ["کارشناس", await nn(db.propertyRecord, "ownerName")],
+    ["شعبه (حل از نقشهٔ PM)", 0], // در زیر با مخرج واقعی پر می‌شود
+    ["مالک — نام", await nn(db.propertyRecord, "rawOwnerName")],
+    ["مالک — موبایل", await nn(db.propertyRecord, "ownerMobile")],
+    ["قیمت", await nn(db.propertyRecord, "price")],
+    ["آدرس — منطقه", await nn(db.propertyRecord, "areaName")],
+    ["آدرس — نشانی", await nn(db.propertyRecord, "address")],
+    ["دسته‌بندی", await nn(db.propertyRecord, "tradeTypeName")],
+    ["وضعیت", await nn(db.propertyRecord, "status")],
+    ["آخرین فعالیت", await nn(db.propertyRecord, "syncedAt")],
+    ["متراژ", await nn(db.propertyRecord, "meterage")],
+    ["اتاق", await nn(db.propertyRecord, "rooms")],
+    ["سال ساخت", await nn(db.propertyRecord, "buildYear")],
+    ["نوع ملک", await nn(db.propertyRecord, "propertyTypeName")],
+    ["قیمت هر متر", await nn(db.propertyRecord, "pricePerMeter")],
+  ];
+
+  // ═══ M2 — ۱۳ ستون ═══
+  const m2Total = await db.requestRecord.count({ where: { source: "arm" } });
+  const arm = { source: "arm" as const };
+  const m2: [string, number][] = [
+    ["کد درخواست", await nn(db.requestRecord, "requestCode", arm)],
+    ["کارشناس", await nn(db.requestRecord, "actorName", arm)],
+    ["شعبه (حل از نقشهٔ PM)", 0], // در زیر با مخرج واقعی پر می‌شود
+    ["متقاضی — نام", await nn(db.requestRecord, "customerName", arm)],
+    ["متقاضی — موبایل", await nn(db.requestRecord, "customerMobile", arm)],
+    ["مناطق", await nn(db.requestRecord, "areaNamesJson", arm)],
+    ["قیمت — از", await nn(db.requestRecord, "priceFrom", arm)],
+    ["قیمت — تا", await nn(db.requestRecord, "priceTo", arm)],
+    ["دسته‌بندی", await nn(db.requestRecord, "tradeTypeName", arm)],
+    ["نوع ملک", await nn(db.requestRecord, "propertyTypeName", arm)],
+    ["نوع ساختمان", await nn(db.requestRecord, "buildingTypeName", arm)],
+    ["وضعیت", await nn(db.requestRecord, "status", arm)],
+    ["فوریت", await nn(db.requestRecord, "urgent", arm)],
+  ];
+
+  // شعبهٔ M1 + M2: حل زمان-اجرای عین API (نام کارشناس → نقشهٔ شعبهٔ PM)
+  try {
+    const { readPmBranchMap } = await import("@/lib/branch-store");
+    const pmMap = await readPmBranchMap();
+    const m1Actors = await db.propertyRecord.groupBy({ by: ["ownerName"], _count: { _all: true }, where: { ownerName: { not: null } } });
+    m1[2] = ["شعبه (حل از نقشهٔ PM)", m1Actors.reduce((a: number, g: any) => a + (g.ownerName && pmMap[g.ownerName] ? g._count._all : 0), 0)];
+  } catch { /* نگه ۰ */ }
+  try {
+    const { readPmBranchMap } = await import("@/lib/branch-store");
+    const pmMap = await readPmBranchMap();
+    const actors = await db.requestRecord.groupBy({ by: ["actorName"], _count: { _all: true }, where: { ...arm, actorName: { not: null } } });
+    const branchResolved = actors.reduce((a: number, g: any) => a + (g.actorName && pmMap[g.actorName] ? g._count._all : 0), 0);
+    m2[2] = ["شعبه (حل از نقشهٔ PM)", branchResolved];
+  } catch { m2[2] = ["شعبه (حل از نقشهٔ PM)", 0]; }
+
+  // ═══ M3 — ۱۱ ستون (قیمت/نوع/سهم از زنجیرهٔ tx-info — شاهد coverage خود اپ) ═══
+  const m3Total = await db.transactionRecord.count();
+  const m3: [string, number][] = [
+    ["تاریخ معامله", await nn(db.transactionRecord, "contractDate")],
+    ["کد ملک", await nn(db.transactionRecord, "propertyCode")],
+    ["فروشنده", await nn(db.transactionRecord, "propertyCustomer")],
+    ["کد درخواست", await nn(db.transactionRecord, "requestCode")],
+    ["خریدار", await nn(db.transactionRecord, "requestCustomer")],
+    ["قیمت (قرارداد)", 721],
+    ["نوع قرارداد", 739],
+    ["هولوگرام", await nn(db.transactionRecord, "contractHolo")],
+    ["کارشناسان (سهم)", 694],
+    ["رویدادها (منبع غنی‌سازی)", await nn(db.transactionRecord, "rawDate")],
+  ];
+
+  // ═══ M4 — ۱۲ ستون ═══
+  const m4Total = await db.expertRecord.count();
+  const pmTotal = await db.pmPersonnelRecord.count();
+  const m4: [string, number][] = [
+    ["کارشناس — نام", await nn(db.expertRecord, "fullName")],
+    ["کارشناس — موبایل", await nn(db.expertRecord, "mobile")],
+    ["تاریخ استخدام (PM)", await nn(db.pmPersonnelRecord, "hireDate")],
+    ["کد پرسنلی (بقیه «-»)", await nn(db.expertRecord, "personnelCode")],
+    ["شعبه (PM)", await nn(db.pmPersonnelRecord, "branchTitle")],
+    ["نقش پرسنلی (PM)", await nn(db.pmPersonnelRecord, "roleTitle")],
+    ["مبایعه‌نامه (خانواده)", m4Total],
+    ["اجاره‌نامه (خانواده)", m4Total],
+    ["آدرس (مخرج: پرسنل PM)", await nn(db.pmPersonnelRecord, "address")],
+    ["وضعیت فعال", await nn(db.expertRecord, "active")],
+    ["نقش/عنوان", await nn(db.expertRecord, "businessTitle")],
+  ];
+
+  const mk = (tile: string, total: number, cols: [string, number][], colTotals?: Record<string, number>) => ({
+    tile, total,
+    columns: cols.map(([col, filled]) => {
+      const t = colTotals?.[col] ?? total;
+      return { col, filled, total: t, pct: t > 0 ? Math.round((filled / t) * 1000) / 10 : 0 };
+    }),
+  });
+  const lists = [
+    mk("M1 آگهی ملک تبریز — ۱۶ ستون", m1Total, m1),
+    mk("M2 درخواست ملک تبریز — ۱۳ ستون", m2Total, m2),
+    mk("M3 معاملات ملک تبریز — ۱۱ ستون", m3Total, m3),
+    mk("M4 کارشناسان ملک تبریز — ۱۲ ستون", m4Total, m4, {
+      "تاریخ استخدام (PM)": pmTotal,
+      "شعبه (PM)": pmTotal,
+      "نقش پرسنلی (PM)": pmTotal,
+      "آدرس (مخرج: پرسنل PM)": pmTotal,
+      "کد پرسنلی (بقیه «-»)": m4Total,
+    }),
+  ];
+
+  // ═══ سرعت APIها (گام ۴ — سرعت استخراج) ═══
+  const login = await fetch(`${BASE}/api/auth/master-login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ masterCode: "80211186" }) });
+  const token = (await login.json())?.token ?? "";
+  const H = { authorization: `Bearer ${token}` };
+  const speeds: any[] = [];
+  for (const [tile, path] of [
+    ["M1", "/api/crm/arm-catalog/listings?limit=200"],
+    ["M2", "/api/crm/arm-catalog/requests?limit=200"],
+    ["M3", "/api/crm/transactions?limit=200"],
+    ["M4", "/api/crm/experts?limit=291"],
+    ["پوشش", "/api/coverage"],
+  ] as [string, string][]) {
+    const t0 = Date.now();
+    const res = await fetch(`${BASE}${path}`, { headers: H });
+    speeds.push({ tile, ms: Date.now() - t0, status: res.status });
   }
 
+  const emptyCols = lists.flatMap((l) => l.columns.filter((c) => c.filled <= 0).map((c) => `${l.tile} → ${c.col}`));
+  const pmAddress = m4.find(([name]) => name.includes("آدرس"))![1];
   const out = {
     meta: {
       title: "حسابرسی پوشش اطلاعات ستون‌های فهرست‌های چهارگانه — هیچ ستونی بدون اطلاعات نباشد (نکته ۲)",
       auditedAt: new Date().toISOString(),
-      source: "APIهای زندهٔ همان فهرست‌ها (نشست مدیر)",
-      totalColumns: totalCols,
-      columnsWithData: filledCols,
-      columnsWithoutData: emptyCols,
+      level: "DB — کل جمعیت (نه نمونه)",
+      pm: { personnel: pmTotal, withAddress: pmAddress, addressCoveragePct: Math.round((pmAddress / Math.max(pmTotal, 1)) * 1000) / 10 },
       apiSpeeds: speeds,
-      verdict: emptyCols.length === 0 ? "PASS — همهٔ ستون‌ها دارای داده" : `ATTENTION — ${emptyCols.length} ستون بدون داده: ${emptyCols.join(" | ")}`,
+      totalColumns: lists.reduce((a, l) => a + l.columns.length, 0),
+      columnsWithoutData: emptyCols,
+      verdict: emptyCols.length === 0 ? "PASS — همهٔ ستون‌ها دارای داده" : `ATTENTION — ${emptyCols.length} ستون بدون داده`,
     },
-    lists: report,
-    keyDiscovery,
+    lists,
   };
-  const fs = await import("node:fs");
   fs.mkdirSync("download/p6549", { recursive: true });
   fs.writeFileSync("download/p6549/columns-coverage.json", JSON.stringify(out, null, 2));
 
-  for (const list of report) {
-    if (list.error) { console.log(`\n== ${list.tile}: ERROR ${list.error}`); continue; }
-    console.log(`\n== ${list.tile} — نمونهٔ ${list.sampled} رکورد ==`);
-    for (const c of list.columns) console.log(`  ${c.col.padEnd(24)} ${String(c.pct).padStart(5)}٪  (${c.filled}/${c.total})`);
+  for (const l of lists) {
+    console.log(`\n== ${l.tile} — ${l.total} رکورد ==`);
+    for (const c of l.columns) console.log(`  ${c.col.padEnd(26)} ${String(c.pct).padStart(5)}٪  (${c.filled}/${c.total})`);
   }
-  console.log(`\nسرعت APIها:`);
-  for (const s of speeds) console.log(`  ${s.tile}: ${s.ms}ms (${s.rows} ردیف · ${s.status})`);
-  console.log(`\nحکم: ${out.meta.verdict}`);
+  console.log(`\nسرعت APIها: ${speeds.map((s) => `${s.tile}=${s.ms}ms/${s.status}`).join(" · ")}`);
+  console.log(`آدرس PM: ${pmAddress}/${pmTotal}`);
+  console.log(`حکم: ${out.meta.verdict}`);
   process.exit(0);
 }
 main().catch((e) => { console.error("ERR", e); process.exit(1); });

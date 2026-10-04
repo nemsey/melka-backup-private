@@ -357,7 +357,7 @@ describe("P6546/گام چهارم — مرتب‌سازی و غنی‌سازی �
 /* ═══════════════════════════ گام پنجم ═══════════════════════════ */
 
 describe("P6546/گام پنجم-الف — پوشش تمام ستون‌ها + تجهیز مغز + ترتیب", () => {
-  test("الف-۱) پوشش تمام ستون‌ها در /api/coverage (P6547: M1=۱۶ · M2=۱۴ · M3=۹ · M4=۱۰)", async () => {
+  test("الف-۱) پوشش تمام ستون‌ها در /api/coverage (P6547: M1=۱۶ · M2=۱۴ · M3=۹ · M4=۱۱+آدرس P6549)", async () => {
     const { db } = await import("@/lib/db");
     const { tierFromRealData } = await import("@/core/intelligence/p7-core");
     void db;
@@ -373,7 +373,7 @@ describe("P6546/گام پنجم-الف — پوشش تمام ستون‌ها + �
     expect((m1.match(/key: "/g) ?? []).length).toBe(16); // P6547: +شعبهٔ PM
     expect((m2.match(/key: "/g) ?? []).length).toBe(14); // P6547: +شعبه + فوریت + جدیت
     expect((m3.match(/key: "/g) ?? []).length).toBe(9);
-    expect((m4.match(/key: "/g) ?? []).length).toBe(10); // P6547: +نوع همکاری + شماره داخلی
+    expect((m4.match(/key: "/g) ?? []).length).toBe(11); // P6547: +نوع همکاری + شماره داخلی · P6549: +آدرس PM
     await db.$disconnect();
   });
 
