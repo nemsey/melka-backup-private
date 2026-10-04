@@ -73,3 +73,7 @@ backups/pre-recovery-034-*/
 /backups/*.db
 /backups/*.tar
 *.pid
+
+# P6550 — استیجینگ/قرنطینهٔ بستهٔ انتقال (بزرگ؛ خروجی‌شان در upload/skeleton)
+scripts/p6550-staging/
+scripts/p6550-quarantine/
