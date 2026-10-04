@@ -23,11 +23,30 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeftRight, Building2, ClipboardList, Loader2, Search, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
-import { faDigits } from "@/lib/format";
+import { faDigits, faAmountFull, faRelative } from "@/lib/format";
 
 const faPct = (n: number) => `${faDigits(n)}٪`;
 
+/** قیمت گزینه — عدد یا بازهٔ از/تا (گام پنجم ن۰۰۱) */
+function priceLabel(info: MatchOptionInfo): string {
+  if (info.priceFrom == null && info.priceTo == null) return "—";
+  if (info.priceFrom != null && info.priceTo != null && info.priceFrom !== info.priceTo) {
+    return `${faAmountFull(info.priceFrom, "")} تا ${faAmountFull(info.priceTo, "")}`;
+  }
+  return faAmountFull(info.priceFrom ?? info.priceTo);
+}
+
 interface MatchReason { factor: string; value: number; weight: number; note: string }
+/** الزام گام پنجم ن۰۰۱ — اطلاعات کامل هر گزینهٔ پیشنهادی */
+interface MatchOptionInfo {
+  code: string;
+  ownerName: string | null;
+  mobile: string | null;
+  region: string | null;
+  priceFrom: number | null;
+  priceTo: number | null;
+  lastSeenAt: string | null;
+}
 interface MatchCandidate {
   requestId: string;
   listingCode?: string;
@@ -37,6 +56,7 @@ interface MatchCandidate {
   reasons: MatchReason[];
   hardFilterNotes: string[];
   signalCoverage: number;
+  info?: MatchOptionInfo;
 }
 interface MatchResult {
   direction: "listing_to_request" | "request_to_listing";
@@ -145,7 +165,7 @@ export function SmartMatchingPage({ onBack }: TilePageProps) {
           </Card>
 
           {result.candidates.map((c, i) => (
-            <Card key={c.requestId} className="overflow-hidden">
+            <Card key={`${c.requestId}:${c.listingCode ?? i}`} className="overflow-hidden">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-sm leading-6">
@@ -166,6 +186,16 @@ export function SmartMatchingPage({ onBack }: TilePageProps) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
+                {c.info ? (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-sec-m5-200 bg-sec-m5-50/60 p-2 text-xs sm:grid-cols-3">
+                    <span className="text-muted-foreground">کد: <b className="text-foreground">{faDigits(c.info.code)}</b></span>
+                    <span className="text-muted-foreground">{result.direction === "listing_to_request" ? "مشتری" : "مالک"}: <b className="text-foreground">{c.info.ownerName ?? "—"}</b></span>
+                    <span dir="ltr" className="text-muted-foreground">{c.info.mobile ?? "—"}</span>
+                    <span className="text-muted-foreground">منطقه: <b className="text-foreground">{c.info.region ?? "—"}</b></span>
+                    <span className="text-muted-foreground">قیمت: <b className="text-foreground">{priceLabel(c.info)}</b></span>
+                    <span className="text-muted-foreground">تازگی: <b className="text-foreground">{c.info.lastSeenAt ? faRelative(c.info.lastSeenAt) : "—"}</b></span>
+                  </div>
+                ) : null}
                 {c.hardFilterNotes.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {c.hardFilterNotes.map((n) => <Badge key={n} variant="outline" className="text-[10px] text-emerald-700 border-emerald-300">{n}</Badge>)}

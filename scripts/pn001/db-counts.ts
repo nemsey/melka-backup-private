@@ -14,8 +14,7 @@ async function main() {
   ] as const;
   for (const m of models) {
     try {
-      // @ts-expect-error — پویا
-      counts[m] = await db[m].count();
+      counts[m] = await (db as unknown as Record<string, { count(): Promise<number> }>)[m].count();
     } catch {
       counts[m] = -1; // مدل وجود ندارد
     }

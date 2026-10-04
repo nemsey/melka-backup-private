@@ -57,6 +57,27 @@ export interface RequestProfile {
 
 export type TradeIntent = "buy" | "rent" | "unknown";
 
+/**
+ * اطلاعات کامل هر گزینهٔ پیشنهادی — الزام گام پنجم (ن۰۰۱ BLOCK 2.1):
+ * وقتی کد آگهی داده می‌شود، گزینه‌های کد درخواست با اطلاعات کامل عرضه شوند — و بالعکس.
+ * یعنی هر گزینهٔ پیشنهادی شامل: کد، نام مالک، موبایل، منطقه، قیمت، تازگی.
+ */
+export interface MatchOptionInfo {
+  /** کد درخواست (تب ۱) یا کد ملک (تب ۲) */
+  code: string;
+  /** نام مالک (تب ۲) یا نام مشتری درخواست‌دهنده (تب ۱) */
+  ownerName: string | null;
+  /** موبایل */
+  mobile: string | null;
+  /** منطقه — نام یا فهرست مناطق */
+  region: string | null;
+  /** قیمت — عدد یا بازهٔ از/تا (برای آگهی: from = to = قیمت ملک) */
+  priceFrom: number | null;
+  priceTo: number | null;
+  /** تازگی — زمان مرجع (آخرین بروزرسانی/همگام‌سازی) برای نمایش نسبی */
+  lastSeenAt: string | null;
+}
+
 export interface MatchCandidate {
   requestId: string;
   score: number;
@@ -65,6 +86,8 @@ export interface MatchCandidate {
   hardFilterNotes: string[];
   /** پوشش سیگنال واقعی — کسر وزن عواملی که داده‌شان موجود بود (۰ تا ۱) */
   signalCoverage: number;
+  /** الزام گام پنجم ن۰۰۱ — اطلاعات کامل گزینه */
+  info?: MatchOptionInfo;
 }
 
 export interface MatchResult {
@@ -229,7 +252,7 @@ export class MatchingEngine {
     // کاندیداها: درخواست‌های فعال
     const rows = await this.db.requestRecord.findMany({
       where: { status: { in: ACTIVE_REQUEST_STATUSES } },
-      select: { id: true, requestCode: true, title: true, customerName: true, status: true, tradeTypeName: true, propertyTypeName: true, priceFrom: true, priceTo: true, areaNamesJson: true },
+      select: { id: true, requestCode: true, title: true, customerName: true, customerMobile: true, status: true, tradeTypeName: true, propertyTypeName: true, priceFrom: true, priceTo: true, areaNamesJson: true, updatedAt: true },
       take: this.candidateLimit ?? 3000,
       orderBy: { updatedAt: "desc" },
     });
@@ -242,7 +265,17 @@ export class MatchingEngine {
     for (const r of rows) {
       const req = this.toRequestProfile(r);
       const s = this.score(profile, req, ownerTx);
-      if (s.hardPassed) scored.push({ ...s, requestId: req.id, requestLabel: req.title ?? req.id });
+      // گام پنجم ن۰۰۱ — گزینهٔ درخواست با اطلاعات کامل: کد، نام مشتری، موبایل، مناطق، بازهٔ قیمت، تازگی
+      const info: MatchOptionInfo = {
+        code: r.requestCode ?? r.id,
+        ownerName: r.customerName,
+        mobile: r.customerMobile,
+        region: req.areaNames.length > 0 ? req.areaNames.slice(0, 3).join("، ") : null,
+        priceFrom: r.priceFrom,
+        priceTo: r.priceTo,
+        lastSeenAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : null,
+      };
+      if (s.hardPassed) scored.push({ ...s, requestId: req.id, requestLabel: req.title ?? req.id, info });
     }
     scored.sort((a, b) => b.score - a.score);
     return {
@@ -270,7 +303,7 @@ export class MatchingEngine {
     // کاندیداها: آگهی‌های منتشرشده
     const rows = await this.db.propertyRecord.findMany({
       where: { status: "منتشر شده" },
-      select: { propertyCode: true, tradeTypeName: true, propertyTypeName: true, price: true, meterage: true, areaName: true, lineName: true, ownerCode: true, status: true, syncedAt: true, title: true },
+      select: { propertyCode: true, tradeTypeName: true, propertyTypeName: true, price: true, meterage: true, areaName: true, lineName: true, ownerCode: true, ownerName: true, ownerMobile: true, status: true, syncedAt: true, title: true },
       take: this.candidateLimit ?? 3000,
       orderBy: { syncedAt: "desc" },
     });
@@ -290,7 +323,17 @@ export class MatchingEngine {
       };
       const ownerTx = row.ownerCode ? txByOwner.get(row.ownerCode) ?? 0 : 0;
       const s = this.score(profile, req, ownerTx);
-      if (s.hardPassed) scored.push({ ...s, requestId: req.id, listingCode: row.propertyCode });
+      // گام پنجم ن۰۰۱ — گزینهٔ آگهی با اطلاعات کامل: کد، نام مالک، موبایل، منطقه، قیمت، تازگی
+      const info: MatchOptionInfo = {
+        code: row.propertyCode,
+        ownerName: row.ownerName,
+        mobile: row.ownerMobile,
+        region: row.areaName,
+        priceFrom: row.price,
+        priceTo: row.price,
+        lastSeenAt: row.syncedAt instanceof Date ? row.syncedAt.toISOString() : null,
+      };
+      if (s.hardPassed) scored.push({ ...s, requestId: req.id, listingCode: row.propertyCode, info });
     }
     scored.sort((a, b) => b.score - a.score);
     return {
