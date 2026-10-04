@@ -4,9 +4,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { Users } from "lucide-react";
-import { CustomerClubPage } from "./CustomerClubPage";
 
 export const customerClubTile = defineTile({
   id: "customer-club",
@@ -17,7 +18,7 @@ export const customerClubTile = defineTile({
     "بر پایه لیست‌های واقعی سامانه (شخصیت، شغل و نقش مشتری) تلفیق‌شده با مالکان و درخواست‌دهندگان حاضر در معاملات: توزیع شخصیت‌ها، مشتریان تکراری (خریدار و فروشنده همزمان) و رشد جامعه مشتریان در زمان — برای شناخت عمیق مخاطب، شخصی‌سازی خدمات و برنامه وفادارسازی.",
   icon: Users,
   accent: "consultant",
-  component: CustomerClubPage,
+  component: lazyPage(() => import("./CustomerClubPage")),
   order: 3,
   container: "management-dashboard",
   agent: {

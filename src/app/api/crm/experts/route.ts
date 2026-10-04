@@ -89,9 +89,9 @@ export async function GET(request: NextRequest) {
     const rowsWithBranch = enriched.rows.map((r) => ({
       ...r,
       branch: resolveExpertBranch(r.fullName, ownerMap, r.businessTitle, pmBranchMap).branch,
-      // آدرس کارشناس — ستون الزامی دستور؛ منبع فعلی ARM/PM آدرس پرسنل را ارائه
-      // نمی‌کند → نمایش صادقانه «ثبت نشده» تا ارائهٔ داده در زنجیرهٔ بروزرسانی
-      address: null as string | null,
+      // P6549 — آدرس کارشناس از سامانهٔ PM (realtors/info/contactInfo → contactInfo.address؛
+      // کشف زندهٔ ۱۴۰۵/۰۷/۱۲ — backfill p6549). رکوردهای بدون پرسنل PM → «-» صادقانه.
+      address: (r.address as string | null) ?? null,
     }));
 
     // ---- P6530/گام ۴ (بند ۲) — فیلترهای لایهٔ شعبه/شمارش/آدرس ----

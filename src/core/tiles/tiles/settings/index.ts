@@ -5,9 +5,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { Settings } from "lucide-react";
-import { SettingsPage } from "./SettingsPage";
 
 export const settingsTile = defineTile({
   id: "settings",
@@ -18,7 +19,7 @@ export const settingsTile = defineTile({
     "تمام تنظیمات سراسری اپلیکیشن: حالت نمایش، حساب کاربری، مدیریت اتصال به سامانه ملک تبریز (تست و ریست)، و راهنمای کامل استفاده.",
   icon: Settings,
   accent: "settings",
-  component: SettingsPage,
+  component: lazyPage(() => import("./SettingsPage")),
   order: 4,
   agent: null,
   settings: [],

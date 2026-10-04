@@ -304,7 +304,7 @@ export class PrismaRequestRepository implements RequestRepository {
   async listPendingArmEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]> {
     const where: Prisma.RequestRecordWhereInput =
       rowIds && rowIds.length > 0
-        ? { source: "arm", id: { in: rowIds }, extractionBatchId: null }
+        ? { source: "arm", id: { in: rowIds } } // P6549 — هدفمند: re-enrichment ستون‌های ناقص (بدون فیلتر pending)
         : { source: "arm", extractionBatchId: null };
     const records = await this.client.requestRecord.findMany({
       where,

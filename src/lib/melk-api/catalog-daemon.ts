@@ -40,6 +40,8 @@ const DEFAULT_INTERVAL_MINUTES = 3;
 const PAGES_PER_TICK = 2;
 /** سقف ردیف غنی‌سازی هر موجودیت در هر تیک */
 const ENRICH_ROWS_PER_TICK = 25;
+/** P6549 — برش تکمیل ستون‌های ناقص M2 در هر تیک (غنی‌سازی هدفمند) */
+const COMPLETION_ROWS_PER_TICK = 60;
 /** P6546 — سقف ردیف غنی‌سازی صورت‌وضعیت معاملات در هر تیک */
 const TX_INFO_ROWS_PER_TICK = 10;
 /** P6546 — سقف پرسنل PM (استخدام) در هر تیک */
@@ -195,6 +197,35 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
           result.requestsEnriched = re.enriched;
         } catch (e) {
           s.status.lastError = (e as { code?: string })?.code ?? "ENRICH_REQUESTS_FAILED";
+        }
+        // P6549 — برش «تکمیل ستون‌های ناقص M2» (نکته ۳ استمرار): ردیف‌های غنی‌شدهٔ قبلی که
+        // موبایل متقاضی / دسته‌بندی / نوع ملک / بازهٔ قیمت ندارند، هدفمند re-enrich می‌شوند
+        // (rowIds از فیلتر pending عبور می‌کند — رفع ریشهٔ ۸٫۹٪ ماندن موبایل متقاضی).
+        try {
+          const incomplete = await db.requestRecord.findMany({
+            where: {
+              source: "arm",
+              customerMobile: null,
+              OR: [
+                { tradeTypeName: null },
+                { buildingTypeName: null },
+                { priceFrom: null },
+                { rawCustomerMobile: null },
+              ],
+            },
+            orderBy: { updatedAt: "asc" }, // round-robin: تلاش‌شده‌ها به انتهای صف می‌روند
+            take: COMPLETION_ROWS_PER_TICK,
+            select: { id: true },
+          });
+          if (incomplete.length > 0) {
+            const ce = await enrichArmRequests(armTokens.accessToken, {
+              maxRows: COMPLETION_ROWS_PER_TICK,
+              rowIds: incomplete.map((r) => r.id),
+            });
+            result.requestsEnriched += ce.enriched;
+          }
+        } catch {
+          s.status.lastError = "M2_COMPLETION_SLICE_FAILED"; // نرم — تیک بعدی ادامه می‌دهد
         }
         // P6546/گام سوم + پ-۴ — برش غنی‌سازی صورت‌وضعیت‌های معاملات (نوع/مبلغ/طرفین)
         try {

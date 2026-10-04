@@ -14,9 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useTheme } from "next-themes";
-import { Moon, Sun, LogOut, Languages, UserRound, Clock, HelpCircle, Lock, ShieldCheck, BadgeCheck } from "lucide-react";
+import { Moon, Sun, LogOut, Languages, UserRound, Clock, HelpCircle, Lock, ShieldCheck, BadgeCheck, Monitor } from "lucide-react";
 import { useAppStore } from "@/lib/client/store";
 import { faDateTime } from "@/lib/format";
+import { switchThemeSoft } from "@/lib/theme-transition";
 
 export function AccountGeneralSection() {
   const { theme, setTheme } = useTheme();
@@ -65,19 +66,28 @@ export function AccountGeneralSection() {
             <h4 className="text-sm font-bold flex items-center gap-2">
               {theme === "dark" ? <Moon className="w-4 h-4 text-primary" aria-hidden /> : <Sun className="w-4 h-4 text-primary" aria-hidden />} تم نمایش
             </h4>
-            <p className="text-xs text-muted-foreground">حالت روشن یا تاریک رابط کاربری</p>
-            <div className="flex items-center justify-between rounded-lg border bg-card p-3">
-              <div className="space-y-0.5 me-4">
-                <Label htmlFor="theme-switch" className="text-sm font-medium">
-                  حالت تاریک
-                </Label>
-                <p className="text-xs text-muted-foreground">مناسب استفاده شبانه و صرفه‌جویی باتری OLED</p>
-              </div>
-              <Switch
-                id="theme-switch"
-                checked={theme === "dark"}
-                onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
-              />
+            <p className="text-xs text-muted-foreground">حالت روشن، تاریک یا هماهنگ با سیستم — با انتقال نرم</p>
+            {/* قانون ۰۳۵-B/ج-۲: سه‌گزینه — روشن (پیش‌فرض) · سیستم (prefers-color-scheme) · تاریک */}
+            <div role="radiogroup" aria-label="انتخاب تم نمایش" className="grid grid-cols-3 gap-1 rounded-xl border bg-card p-1">
+              {([
+                { value: "light", label: "روشن", icon: Sun },
+                { value: "system", label: "سیستم", icon: Monitor },
+                { value: "dark", label: "تاریک", icon: Moon },
+              ] as { value: "light" | "system" | "dark"; label: string; icon: typeof Sun }[]).map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={theme === value}
+                  onClick={() => switchThemeSoft(value, setTheme)}
+                  className={`min-h-11 flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    theme === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="size-4" aria-hidden />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 

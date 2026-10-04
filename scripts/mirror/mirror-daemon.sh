@@ -38,9 +38,18 @@ WEEKLY_EVERY=28           # هر بیست‌وهشتمین سیکل = ۱ هفت�
 SNAPSHOT_BRANCH="survival/code"   # شاخهٔ یتیم — درخت کامل بدون فایل‌های بالای سقف
 SIZE_LIMIT_BYTES=$((99 * 1024 * 1024))  # سقف سخت GitHub ۱۰۰MB — حاشیهٔ امنتی ۱MB
 
-# --- گارد: تنها یک نمونه از دیمن ---
-if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE" 2>/dev/null)" 2>/dev/null; then
-  echo "daemon already running (pid $(cat "$PID_FILE"))" >&2
+# --- گارد: تنها یک نمونه از دیمن (P6549: وارسی هویت cmdline نه صرفاً زنده‌بودن) ---
+# تصادم PID پس از ریست کانتینر: pid قدیمی ممکن است به فرایندی بی‌ربط (مثل postcss)
+# افتاده باشد ⇒ گارد قبلی دیمن را برای همیشه قفل می‌کرد.
+guard_pid() { cat "$PID_FILE" 2>/dev/null; }
+is_our_daemon() {
+  local p; p="$(guard_pid)"
+  [[ -n "$p" ]] || return 1
+  kill -0 "$p" 2>/dev/null || return 1
+  grep -qa "mirror-daemon.sh" "/proc/$p/cmdline" 2>/dev/null
+}
+if is_our_daemon; then
+  echo "daemon already running (pid $(guard_pid))" >&2
   exit 0
 fi
 echo $$ > "$PID_FILE"

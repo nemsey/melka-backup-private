@@ -4,9 +4,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { Radar } from "lucide-react";
-import { FileFinderPage } from "./FileFinderPage";
 
 export const fileFinderTile = defineTile({
   id: "file-finder",
@@ -17,7 +18,7 @@ export const fileFinderTile = defineTile({
     "ایجنت اختصاصی فایل‌یابی، آگهی‌های املاک دیوار تبریز را اسکن می‌کند و بر اساس سه فیلتر هوشمند امتیازدهی می‌کند: (۱) شخصی‌بودن آگهی — تشخیص مالک از مشاور املاک؛ (۲) زیرقیمت‌بودن — مقایسه قیمت هر متر با آگهی‌های مشابه همان محله (ترکیبی با سامانه آرم)؛ (۳) مکان — تطبیق با ۱۳۰ منطقه و ۹۲۶ محله تبریز عین منطقه‌بندی سامانه آرم. فایل‌ها به سه پنجره تقسیم می‌شوند: شکار (بالای ۷۰)، پیگیری (۴۰ تا ۷۰)، بررسی (زیر ۴۰). روی هر فایل چهار کلید: پل به دیوار، جزییات با تحلیل امتیاز و پیش‌بینی دلایل رد، رد با چک‌لیست یادگیرنده، و ثبت خودکار در سامانه آرم با پیش‌پر کامل. آگهی‌های ردشده هرگز آرشیو نمی‌شوند — فقط سیگنال یادگیری می‌ماند.",
   icon: Radar,
   accent: "finder",
-  component: FileFinderPage,
+  component: lazyPage(() => import("./FileFinderPage")),
   order: 1,
   agent: {
     tileId: "file-finder",

@@ -13,9 +13,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { FileCheck2 } from "lucide-react";
-import { TransactionsContractsPage } from "./TransactionsContractsPage";
 
 export const transactionsContractsTile = defineTile({
   id: "transactions-contracts",
@@ -26,7 +27,7 @@ export const transactionsContractsTile = defineTile({
     "فهرست تک‌صفحه‌ای معاملات با ستون‌های کامل: کد ملک با نام و موبایل مالک، درخواست با نام و موبایل درخواست‌دهنده، نوع قرارداد، شماره هولوگرام، مبلغ قرارداد با جداکنندهٔ «،»، فایل قرارداد (سند PDF تولیدی از داده‌های واقعی سامانه‌های ملک تبریز) و تجمیع حق‌السهم مشاوران با درصد هر مشاور — شامل اطلاعات تمامی کارشناسان ملک تبریز با ایجنت هوشمند مولتی‌بینش.",
   icon: FileCheck2,
   accent: "m3",
-  component: TransactionsContractsPage,
+  component: lazyPage(() => import("./TransactionsContractsPage")),
   order: 3,
   container: "management-dashboard",
   agent: {

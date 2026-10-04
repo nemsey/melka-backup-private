@@ -7,9 +7,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { Megaphone } from "lucide-react";
-import { ListingsPage } from "./ListingsPage";
 
 export const listingTile = defineTile({
   id: "listings",
@@ -20,7 +21,7 @@ export const listingTile = defineTile({
     "تمام فایل‌های آگهی در یک دفتر واحد: (۱) ثبت دستی برای مالکانی که حضوری درخواست ثبت دارند — با همان فرم ۵ گامی سامانه آرم (اطلاعات مالک، اطلاعات مکانی، اطلاعات معامله، تصاویر و اسناد، توضیحات مشاوران) و بدون دور زدن هیچ گامی؛ (۲) ثبت خودکار فایل‌هایی که در کاشی «فایل‌یابی» تأیید می‌شوند؛ (۳) کلید «انتقال به CRM» هر آگهی: ثبت خودکار در سامانه آرم مثل یک کاربر عادی — جستجوی/ایجاد مالک، شناسه‌های منطقه‌بندی، فرم معامله و ثبت نهایی؛ (۴) کلید «انتقال به اینستاگرام»: از اطلاعات فایل محتوای حرفه‌ای (پست یا رییلز) تولید و پس از تأیید شما در حساب اینستاگرام کسب‌وکار منتشر می‌شود.",
   icon: Megaphone,
   accent: "melka-listing",
-  component: ListingsPage,
+  component: lazyPage(() => import("./ListingsPage")),
   order: 2,
   agent: {
     tileId: "listings",

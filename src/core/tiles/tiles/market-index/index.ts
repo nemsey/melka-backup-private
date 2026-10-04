@@ -5,9 +5,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { TrendingUp } from "lucide-react";
-import { MarketIndexPage } from "./MarketIndexPage";
 
 export const marketIndexTile = defineTile({
   id: "market-index",
@@ -18,7 +19,7 @@ export const marketIndexTile = defineTile({
     "شاخص بازار از دادهٔ واقعی سامانه ARM: روند قیمت ماهانهٔ معاملات (تقویم شمسی از فروردین ۱۴۰۴)، میانهٔ قیمت هر متر در ۱۰ منطقهٔ پرتقاضا، قیمت بر اساس نوع ملک (آپارتمان/ویلا/زمین/مغازه)، مقایسهٔ معاملات واقعی با آگهی‌های فعال و نمودار سه‌سری حجم (معاملات، آگهی‌ها، درخواست‌ها).",
   icon: TrendingUp,
   accent: "m6",
-  component: MarketIndexPage,
+  component: lazyPage(() => import("./MarketIndexPage")),
   order: 6,
   container: "management-dashboard",
   minRole: "OWNER",

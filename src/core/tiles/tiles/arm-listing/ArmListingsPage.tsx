@@ -33,6 +33,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
+// P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
+import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
+import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RotateCcw, Search, Home, Users, Phone, MapPin, RefreshCw, Hash, CheckCircle2, Clock,
@@ -167,9 +170,13 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
   const [selectedStates, setSelectedStates] = useState<ListingStateKey[]>([]);
   /** دسته‌بندی‌های انتخاب‌شدهٔ فیلتر چندانتخابی */
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(
+    // قانون ۰۳۵-B/ت-۵: آکاردئون در موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
+  );
   const [data, setData] = useState<ListingsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const autoSliceCount = useRef(0);
@@ -194,8 +201,10 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
     try {
       const res = await api<ListingsResponse>(`/api/crm/arm-catalog/listings?${params.toString()}`);
       setData(res);
+      setLoadError(false);
     } catch {
       setData({ rows: [], total: 0, enrichment: { total: 0, pending: 0, complete: 0 }, lastUpdate: null });
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -326,8 +335,12 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
 
+  // قانون ۰۳۵-B/ج-۸ — کشیدن برای تازه‌سازی (فهرست در پنجرهٔ لمسی)
+  const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void load());
+
   return (
     <div className="space-y-6">
+      <PtrIndicator innerRef={ptrRef} spinning={ptrSpinning} />
       {/* ایجنت هوشمند یادگیرندهٔ مولتی‌بینش */}
       <AgentPanel tileId="arm-listings" />
 
@@ -712,16 +725,28 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
             <Skeleton key={i} className="h-16 rounded-xl" />
           ))}
         </div>
+      ) : loadError ? (
+        <Card className="border-dashed">
+          <CardContent className="p-0">
+            <ErrorState onRetry={() => void load()} />
+          </CardContent>
+        </Card>
       ) : rows.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="p-8 text-center space-y-3">
-            <Home className="w-10 h-10 text-muted-foreground mx-auto" aria-hidden />
-            <p className="text-sm font-bold">هیچ آگهی مطابق پیدا نشد</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {data?.total === 0
-                ? "هنوز کاتالوگ آگهی‌های ملک تبریز استخراج نشده است — دکمه «بروزرسانی از سامانه» را بزنید تا کل آگهی‌های سامانه ARM استخراج شود."
-                : "فیلترها را تغییر دهید یا آن‌ها را پاک کنید تا همهٔ آگهی‌ها دیده شوند."}
-            </p>
+          <CardContent className="p-0">
+            <EmptyState
+              hasFilters={Boolean(
+                applied.code || applied.realtorName || applied.branch || applied.ownerName || applied.address ||
+                applied.priceFrom || applied.priceTo || applied.activityFrom || applied.activityTo ||
+                selectedStates.length > 0 || selectedTrades.length > 0
+              )}
+              onClearFilters={() => {
+                setFilters(EMPTY_FILTERS);
+                setApplied(EMPTY_FILTERS);
+                setSelectedStates([]);
+                setSelectedTrades([]);
+              }}
+            />
           </CardContent>
         </Card>
       ) : (
@@ -956,3 +981,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
     </div>
   );
 }
+
+
+/** P6549 — خروجی پیش‌فرض برای بارگذاری تنبل (lazyPage) */
+export default ArmListingsPage;

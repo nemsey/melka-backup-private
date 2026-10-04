@@ -55,7 +55,8 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <body className="antialiased bg-background text-foreground min-h-screen">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+        {/* قانون ۰۳۵-B/ج-۲: روشن پیش‌فرض + احترام به prefers-color-scheme (گزینهٔ «سیستم») */}
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           {children}
           <Toaster />
         </ThemeProvider>

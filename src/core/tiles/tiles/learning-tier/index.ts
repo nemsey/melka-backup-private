@@ -5,9 +5,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { Brain } from "lucide-react";
-import { LearningTierPage } from "./LearningTierPage";
 
 export const learningTierTile = defineTile({
   id: "learning-tier",
@@ -18,7 +19,7 @@ export const learningTierTile = defineTile({
     "پنل یادگیری مغز ملکا: Tier فعلی با نوار پیشرفت و نتیجه‌های باقی‌مانده تا Tier بعدی، اثر ترمیم مصوب جلسه ۰۳۳ (بازکالیبراسیون)، تصمیم‌ها و ترمیم‌های در انتظار تأیید شورا (صفر اجرای خودکار)، نمایشگر رویدادهای بین‌کاشی (تختهٔ سیاه) و خلاصهٔ ۲۵ بررسی خودتشخیصی با وضعیت هر بررسی.",
   icon: Brain,
   accent: "m8",
-  component: LearningTierPage,
+  component: lazyPage(() => import("./LearningTierPage")),
   order: 8,
   container: "management-dashboard",
   minRole: "OWNER",

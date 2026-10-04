@@ -4,6 +4,24 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/* قانون ظاهر فاخر ۰۳۵-B/ج-۷ — ریپل لمسی (فقط ورودی لمسی؛ دسکتاپ دست‌نخورده) */
+function useRipple() {
+  return React.useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType !== "touch") return
+    const btn = e.currentTarget
+    const rect = btn.getBoundingClientRect()
+    const size = Math.max(rect.width, rect.height)
+    const ink = document.createElement("span")
+    ink.className = "ripple-ink"
+    ink.style.width = ink.style.height = `${size}px`
+    ink.style.left = `${e.clientX - rect.left - size / 2}px`
+    ink.style.top = `${e.clientY - rect.top - size / 2}px`
+    if (getComputedStyle(btn).position === "static") btn.style.position = "relative"
+    btn.appendChild(ink)
+    window.setTimeout(() => ink.remove(), 520)
+  }, [])
+}
+
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
@@ -40,17 +58,20 @@ function Button({
   variant,
   size,
   asChild = false,
+  onPointerDown,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
   const Comp = asChild ? Slot : "button"
+  const ripple = useRipple()
 
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      onPointerDown={asChild ? onPointerDown : (e) => { ripple(e); onPointerDown?.(e) }}
       {...props}
     />
   )

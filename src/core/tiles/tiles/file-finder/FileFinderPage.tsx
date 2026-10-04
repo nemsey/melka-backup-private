@@ -753,3 +753,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     </div>
   );
 }
+
+
+/** P6549 — خروجی پیش‌فرض برای بارگذاری تنبل (lazyPage) */
+export default FileFinderPage;

@@ -111,23 +111,23 @@
   /* ============ نقشهٔ رنگ ۱۳ بخش (گام صفر — قاعده ۱) ============
      ابزارهای تولیدشده: bg-sec-{بخش}-{50|200|500|700} · text-sec-… ·
      border-sec-… · ring-sec-… · از-sec-…/N (آلفا) — دارک خودکار با قاعده ۴ */
-  --color-sec-login-50: var(--sec-login-50); --color-sec-login-200: var(--sec-login-200); --color-sec-login-500: var(--sec-login-500); --color-sec-login-700: var(--sec-login-700); --color-sec-login-fg: var(--sec-login-fg);
-  --color-sec-home-50: var(--sec-home-50); --color-sec-home-200: var(--sec-home-200); --color-sec-home-500: var(--sec-home-500); --color-sec-home-700: var(--sec-home-700); --color-sec-home-fg: var(--sec-home-fg);
-  --color-sec-finder-50: var(--sec-finder-50); --color-sec-finder-200: var(--sec-finder-200); --color-sec-finder-500: var(--sec-finder-500); --color-sec-finder-700: var(--sec-finder-700); --color-sec-finder-fg: var(--sec-finder-fg);
-  --color-sec-melka-listing-50: var(--sec-melka-listing-50); --color-sec-melka-listing-200: var(--sec-melka-listing-200); --color-sec-melka-listing-500: var(--sec-melka-listing-500); --color-sec-melka-listing-700: var(--sec-melka-listing-700); --color-sec-melka-listing-fg: var(--sec-melka-listing-fg);
-  --color-sec-melka-request-50: var(--sec-melka-request-50); --color-sec-melka-request-200: var(--sec-melka-request-200); --color-sec-melka-request-500: var(--sec-melka-request-500); --color-sec-melka-request-700: var(--sec-melka-request-700); --color-sec-melka-request-fg: var(--sec-melka-request-fg);
-  --color-sec-settings-50: var(--sec-settings-50); --color-sec-settings-200: var(--sec-settings-200); --color-sec-settings-500: var(--sec-settings-500); --color-sec-settings-700: var(--sec-settings-700); --color-sec-settings-fg: var(--sec-settings-fg);
-  --color-sec-mgmt-50: var(--sec-mgmt-50); --color-sec-mgmt-200: var(--sec-mgmt-200); --color-sec-mgmt-500: var(--sec-mgmt-500); --color-sec-mgmt-700: var(--sec-mgmt-700); --color-sec-mgmt-fg: var(--sec-mgmt-fg);
-  --color-sec-m1-50: var(--sec-m1-50); --color-sec-m1-200: var(--sec-m1-200); --color-sec-m1-500: var(--sec-m1-500); --color-sec-m1-700: var(--sec-m1-700); --color-sec-m1-fg: var(--sec-m1-fg);
+  --color-sec-login-50: var(--sec-login-50); --color-sec-login-100: var(--sec-login-100); --color-sec-login-200: var(--sec-login-200); --color-sec-login-300: var(--sec-login-300); --color-sec-login-500: var(--sec-login-500); --color-sec-login-700: var(--sec-login-700); --color-sec-login-fg: var(--sec-login-fg);
+  --color-sec-home-50: var(--sec-home-50); --color-sec-home-100: var(--sec-home-100); --color-sec-home-200: var(--sec-home-200); --color-sec-home-300: var(--sec-home-300); --color-sec-home-500: var(--sec-home-500); --color-sec-home-700: var(--sec-home-700); --color-sec-home-fg: var(--sec-home-fg);
+  --color-sec-finder-50: var(--sec-finder-50); --color-sec-finder-100: var(--sec-finder-100); --color-sec-finder-200: var(--sec-finder-200); --color-sec-finder-300: var(--sec-finder-300); --color-sec-finder-500: var(--sec-finder-500); --color-sec-finder-700: var(--sec-finder-700); --color-sec-finder-fg: var(--sec-finder-fg);
+  --color-sec-melka-listing-50: var(--sec-melka-listing-50); --color-sec-melka-listing-100: var(--sec-melka-listing-100); --color-sec-melka-listing-200: var(--sec-melka-listing-200); --color-sec-melka-listing-300: var(--sec-melka-listing-300); --color-sec-melka-listing-500: var(--sec-melka-listing-500); --color-sec-melka-listing-700: var(--sec-melka-listing-700); --color-sec-melka-listing-fg: var(--sec-melka-listing-fg);
+  --color-sec-melka-request-50: var(--sec-melka-request-50); --color-sec-melka-request-100: var(--sec-melka-request-100); --color-sec-melka-request-200: var(--sec-melka-request-200); --color-sec-melka-request-300: var(--sec-melka-request-300); --color-sec-melka-request-500: var(--sec-melka-request-500); --color-sec-melka-request-700: var(--sec-melka-request-700); --color-sec-melka-request-fg: var(--sec-melka-request-fg);
+  --color-sec-settings-50: var(--sec-settings-50); --color-sec-settings-100: var(--sec-settings-100); --color-sec-settings-200: var(--sec-settings-200); --color-sec-settings-300: var(--sec-settings-300); --color-sec-settings-500: var(--sec-settings-500); --color-sec-settings-700: var(--sec-settings-700); --color-sec-settings-fg: var(--sec-settings-fg);
+  --color-sec-mgmt-50: var(--sec-mgmt-50); --color-sec-mgmt-100: var(--sec-mgmt-100); --color-sec-mgmt-200: var(--sec-mgmt-200); --color-sec-mgmt-300: var(--sec-mgmt-300); --color-sec-mgmt-500: var(--sec-mgmt-500); --color-sec-mgmt-700: var(--sec-mgmt-700); --color-sec-mgmt-fg: var(--sec-mgmt-fg);
+  --color-sec-m1-50: var(--sec-m1-50); --color-sec-m1-100: var(--sec-m1-100); --color-sec-m1-200: var(--sec-m1-200); --color-sec-m1-300: var(--sec-m1-300); --color-sec-m1-500: var(--sec-m1-500); --color-sec-m1-700: var(--sec-m1-700); --color-sec-m1-fg: var(--sec-m1-fg);
   --color-sec-m5-50: var(--sec-m5-50); --color-sec-m5-200: var(--sec-m5-200); --color-sec-m5-500: var(--sec-m5-500); --color-sec-m5-700: var(--sec-m5-700); --color-sec-m5-fg: var(--sec-m5-fg);
   --color-sec-m6-50: var(--sec-m6-50); --color-sec-m6-200: var(--sec-m6-200); --color-sec-m6-500: var(--sec-m6-500); --color-sec-m6-700: var(--sec-m6-700); --color-sec-m6-fg: var(--sec-m6-fg);
   --color-sec-m7-50: var(--sec-m7-50); --color-sec-m7-200: var(--sec-m7-200); --color-sec-m7-500: var(--sec-m7-500); --color-sec-m7-700: var(--sec-m7-700); --color-sec-m7-fg: var(--sec-m7-fg);
   --color-sec-m8-50: var(--sec-m8-50); --color-sec-m8-200: var(--sec-m8-200); --color-sec-m8-500: var(--sec-m8-500); --color-sec-m8-700: var(--sec-m8-700); --color-sec-m8-fg: var(--sec-m8-fg);
-  --color-sec-m2-50: var(--sec-m2-50); --color-sec-m2-200: var(--sec-m2-200); --color-sec-m2-500: var(--sec-m2-500); --color-sec-m2-700: var(--sec-m2-700); --color-sec-m2-fg: var(--sec-m2-fg);
-  --color-sec-m3-50: var(--sec-m3-50); --color-sec-m3-200: var(--sec-m3-200); --color-sec-m3-500: var(--sec-m3-500); --color-sec-m3-700: var(--sec-m3-700); --color-sec-m3-fg: var(--sec-m3-fg);
-  --color-sec-m4-50: var(--sec-m4-50); --color-sec-m4-200: var(--sec-m4-200); --color-sec-m4-500: var(--sec-m4-500); --color-sec-m4-700: var(--sec-m4-700); --color-sec-m4-fg: var(--sec-m4-fg);
-  --color-sec-consultant-50: var(--sec-consultant-50); --color-sec-consultant-200: var(--sec-consultant-200); --color-sec-consultant-500: var(--sec-consultant-500); --color-sec-consultant-700: var(--sec-consultant-700); --color-sec-consultant-fg: var(--sec-consultant-fg);
-  --color-sec-ai-50: var(--sec-ai-50); --color-sec-ai-200: var(--sec-ai-200); --color-sec-ai-500: var(--sec-ai-500); --color-sec-ai-700: var(--sec-ai-700); --color-sec-ai-fg: var(--sec-ai-fg);
+  --color-sec-m2-50: var(--sec-m2-50); --color-sec-m2-100: var(--sec-m2-100); --color-sec-m2-200: var(--sec-m2-200); --color-sec-m2-300: var(--sec-m2-300); --color-sec-m2-500: var(--sec-m2-500); --color-sec-m2-700: var(--sec-m2-700); --color-sec-m2-fg: var(--sec-m2-fg);
+  --color-sec-m3-50: var(--sec-m3-50); --color-sec-m3-100: var(--sec-m3-100); --color-sec-m3-200: var(--sec-m3-200); --color-sec-m3-300: var(--sec-m3-300); --color-sec-m3-500: var(--sec-m3-500); --color-sec-m3-700: var(--sec-m3-700); --color-sec-m3-fg: var(--sec-m3-fg);
+  --color-sec-m4-50: var(--sec-m4-50); --color-sec-m4-100: var(--sec-m4-100); --color-sec-m4-200: var(--sec-m4-200); --color-sec-m4-300: var(--sec-m4-300); --color-sec-m4-500: var(--sec-m4-500); --color-sec-m4-700: var(--sec-m4-700); --color-sec-m4-fg: var(--sec-m4-fg);
+  --color-sec-consultant-50: var(--sec-consultant-50); --color-sec-consultant-100: var(--sec-consultant-100); --color-sec-consultant-200: var(--sec-consultant-200); --color-sec-consultant-300: var(--sec-consultant-300); --color-sec-consultant-500: var(--sec-consultant-500); --color-sec-consultant-700: var(--sec-consultant-700); --color-sec-consultant-fg: var(--sec-consultant-fg);
+  --color-sec-ai-50: var(--sec-ai-50); --color-sec-ai-100: var(--sec-ai-100); --color-sec-ai-200: var(--sec-ai-200); --color-sec-ai-300: var(--sec-ai-300); --color-sec-ai-500: var(--sec-ai-500); --color-sec-ai-700: var(--sec-ai-700); --color-sec-ai-fg: var(--sec-ai-fg);
 }
 
 /* ================================================================
@@ -228,31 +228,31 @@
 
 :root {
   /* ۱. صفحهٔ ورود — بنفش سلطنتی #6D28D9 */
-  --sec-login-50: #f5f0fc; --sec-login-200: #bfa0ee; --sec-login-500: #6d28d9; --sec-login-700: #3c1b7a; --sec-login-fg: #ffffff;
+  --sec-login-50: #f7f0ff; --sec-login-100: #eee2fe; --sec-login-200: #c2acdf; --sec-login-300: #c2acdf; --sec-login-500: #8758b9; --sec-login-700: #4f2e6f; --sec-login-fg: #FAFBFC;
   /* ۲. صفحهٔ هوم — آبی نفتی #0F172A */
-  --sec-home-50: #eeeff0; --sec-home-200: #9599a1; --sec-home-500: #0f172a; --sec-home-700: #0c1222; --sec-home-fg: #ffffff;
+  --sec-home-50: #e2f8ff; --sec-home-100: #cceffb; --sec-home-200: #80c3da; --sec-home-300: #80c3da; --sec-home-500: #0084b0; --sec-home-700: #004c6a; --sec-home-fg: #0A0E1A;
   /* ۳. فایل‌یابی ملکا — آبی روشن #0284C7 */
-  --sec-finder-50: #edf6fb; --sec-finder-200: #90c9e6; --sec-finder-500: #0284c7; --sec-finder-700: #064970; --sec-finder-fg: #0a0e1a;
+  --sec-finder-50: #e1f9f8; --sec-finder-100: #caf1f0; --sec-finder-200: #7cc7c5; --sec-finder-300: #7cc7c5; --sec-finder-500: #008c8c; --sec-finder-700: #005152; --sec-finder-fg: #0A0E1A;
   /* ۴. آگهی ملکا — سبز زمردی #059669 */
-  --sec-melka-listing-50: #eef8f4; --sec-melka-listing-200: #91d1bd; --sec-melka-listing-500: #059669; --sec-melka-listing-700: #085242; --sec-melka-listing-fg: #0a0e1a;
+  --sec-melka-listing-50: #f4f5e2; --sec-melka-listing-100: #e9ebcd; --sec-melka-listing-200: #b9bc84; --sec-melka-listing-300: #b9bc84; --sec-melka-listing-500: #747500; --sec-melka-listing-700: #424200; --sec-melka-listing-fg: #FAFBFC;
   /* ۵. درخواست ملکا — نارنجی مرجانی #EA580C */
-  --sec-melka-request-50: #fef3ee; --sec-melka-request-200: #f6b694; --sec-melka-request-500: #ea580c; --sec-melka-request-700: #7a3313; --sec-melka-request-fg: #0a0e1a;
+  --sec-melka-request-50: #ffeeea; --sec-melka-request-100: #ffded9; --sec-melka-request-200: #e4a69d; --sec-melka-request-300: #e4a69d; --sec-melka-request-500: #bb483f; --sec-melka-request-700: #70231e; --sec-melka-request-fg: #FAFBFC;
   /* ۶. تنظیمات عمومی — خاکستری فولادی #475569 */
-  --sec-settings-50: #f2f3f4; --sec-settings-200: #aeb4bd; --sec-settings-500: #475569; --sec-settings-700: #283242; --sec-settings-fg: #ffffff;
+  --sec-settings-50: #e7f5ff; --sec-settings-100: #d4ebff; --sec-settings-200: #92bce6; --sec-settings-300: #92bce6; --sec-settings-500: #0c76c6; --sec-settings-700: #004378; --sec-settings-fg: #FAFBFC;
   /* ۷. داشبورد مدیریتی — قهوه‌ای کهربایی #92400E */
-  --sec-mgmt-50: #f7f2ee; --sec-mgmt-200: #cfab95; --sec-mgmt-500: #92400e; --sec-mgmt-700: #4e2714; --sec-mgmt-fg: #ffffff;
+  --sec-mgmt-50: #fcf2e1; --sec-mgmt-100: #f5e6ca; --sec-mgmt-200: #cfb480; --sec-mgmt-300: #cfb480; --sec-mgmt-500: #9d6700; --sec-mgmt-700: #5d3900; --sec-mgmt-fg: #FAFBFC;
   /* ۸. M1 آگهی ملک تبریز — سبز یشمی #10B981 */
-  --sec-m1-50: #eefaf6; --sec-m1-200: #96e0c8; --sec-m1-500: #10b981; --sec-m1-700: #0d644e; --sec-m1-fg: #0f172a;
+  --sec-m1-50: #ebf8e8; --sec-m1-100: #dbefd5; --sec-m1-200: #a0c395; --sec-m1-300: #a0c395; --sec-m1-500: #3b821e; --sec-m1-700: #1b4b04; --sec-m1-fg: #FAFBFC;
   /* ۹. M2 درخواست ملک تبریز — کهربایی روشن #F59E0B */
-  --sec-m2-50: #fef8ee; --sec-m2-200: #fbd494; --sec-m2-500: #f59e0b; --sec-m2-700: #805612; --sec-m2-fg: #0f172a;
+  --sec-m2-50: #fff0e4; --sec-m2-100: #fee2cf; --sec-m2-200: #deab89; --sec-m2-300: #deab89; --sec-m2-500: #b35500; --sec-m2-700: #6b2c00; --sec-m2-fg: #FAFBFC;
   /* ۱۰. M3 معاملات ملک تبریز — قرمز یاقوتی #DC2626 */
-  --sec-m3-50: #fdf0f0; --sec-m3-200: #f0a0a0; --sec-m3-500: #dc2626; --sec-m3-700: #731a20; --sec-m3-fg: #ffffff;
+  --sec-m3-50: #ffedf3; --sec-m3-100: #ffdde7; --sec-m3-200: #e0a4b5; --sec-m3-300: #e0a4b5; --sec-m3-500: #b5466f; --sec-m3-700: #6d213f; --sec-m3-fg: #FAFBFC;
   /* ۱۱. M4 کارشناسان ملک تبریز — فیروزه‌ای #0891B2 */
-  --sec-m4-50: #eef7fa; --sec-m4-200: #92cfdd; --sec-m4-500: #0891b2; --sec-m4-700: #095066; --sec-m4-fg: #0a0e1a;
+  --sec-m4-50: #e5f9f0; --sec-m4-100: #d0f1e2; --sec-m4-200: #88c7ad; --sec-m4-300: #88c7ad; --sec-m4-500: #008d5e; --sec-m4-700: #005233; --sec-m4-fg: #0A0E1A;
   /* ۱۲. صفحهٔ مشاور (ایجنت) — صورتی ارغوانی #DB2777 */
-  --sec-consultant-50: #fcf0f5; --sec-consultant-200: #efa0c3; --sec-consultant-500: #db2777; --sec-consultant-700: #721a48; --sec-consultant-fg: #ffffff;
+  --sec-consultant-50: #feeefb; --sec-consultant-100: #f9dff4; --sec-consultant-200: #d5a6cd; --sec-consultant-300: #d5a6cd; --sec-consultant-500: #a44c99; --sec-consultant-700: #61265a; --sec-consultant-fg: #FAFBFC;
   /* ۱۳. هوش مصنوعی/گزارش‌ها — لاجوردی #4F46E5 */
-  --sec-ai-50: #f3f2fd; --sec-ai-200: #b2aef4; --sec-ai-500: #4f46e5; --sec-ai-700: #2c2a80; --sec-ai-fg: #ffffff;
+  --sec-ai-50: #eff2ff; --sec-ai-100: #e1e6ff; --sec-ai-200: #abb4e8; --sec-ai-300: #abb4e8; --sec-ai-500: #5f67c9; --sec-ai-700: #34387a; --sec-ai-fg: #FAFBFC;
   /* ۱۴. M5 تطبیق هوشمند — بنفش ارغوانی #7C3AED (P6545) */
   --sec-m5-50: #f5f3ff; --sec-m5-200: #c4b5fd; --sec-m5-500: #7c3aed; --sec-m5-700: #4c1d95; --sec-m5-fg: #ffffff;
   /* ۱۵. M6 شاخص بازار — سبز لیمویی #65A30D (P6545) */
@@ -265,19 +265,19 @@
 
 /* قاعده ۴ — دارک مود: ۵۰۰→۴۰۰ روشن‌تر · متن معکوس · هویت رنگی حفظ */
 .dark {
-  --sec-login-50: #221c43; --sec-login-200: #422d7b; --sec-login-500: #844adf; --sec-login-700: #aa82e9; --sec-login-fg: #ffffff;
-  --sec-home-50: #131a27; --sec-home-200: #1e2638; --sec-home-500: #353c4c; --sec-home-700: #898d96; --sec-home-fg: #ffffff;
-  --sec-finder-50: #112b40; --sec-finder-200: #195074; --sec-finder-500: #2a98d0; --sec-finder-700: #6cb8df; --sec-finder-fg: #0a0e1a;
-  --sec-melka-listing-50: #122e31; --sec-melka-listing-200: #1a5750; --sec-melka-listing-500: #2da781; --sec-melka-listing-700: #6ec2a8; --sec-melka-listing-fg: #0f172a;
-  --sec-melka-request-50: #362422; --sec-melka-request-200: #713f2d; --sec-melka-request-500: #ed7333; --sec-melka-request-700: #f39e72; --sec-melka-request-fg: #0f172a;
-  --sec-settings-50: #1c2331; --sec-settings-200: #333e50; --sec-settings-500: #647081; --sec-settings-700: #949ca8; --sec-settings-fg: #ffffff;
-  --sec-mgmt-50: #282022; --sec-mgmt-200: #50362e; --sec-mgmt-500: #a35f35; --sec-mgmt-700: #c09073; --sec-mgmt-fg: #ffffff;
-  --sec-m1-50: #133335; --sec-m1-200: #1e6459; --sec-m1-500: #36c495; --sec-m1-700: #74d6b6; --sec-m1-fg: #0f172a;
-  --sec-m2-50: #382f22; --sec-m2-200: #755a2c; --sec-m2-500: #f7ae32; --sec-m2-700: #f9c771; --sec-m2-fg: #0f172a;
-  --sec-m3-50: #341c26; --sec-m3-200: #6c2c37; --sec-m3-500: #e24949; --sec-m3-700: #eb8181; --sec-m3-fg: #ffffff;
-  --sec-m4-50: #122d3c; --sec-m4-200: #1b556c; --sec-m4-500: #30a3be; --sec-m4-700: #70bfd2; --sec-m4-fg: #0f172a;
-  --sec-consultant-50: #341c33; --sec-consultant-200: #6b2d56; --sec-consultant-500: #e14a8d; --sec-consultant-700: #ea82b0; --sec-consultant-fg: #ffffff;
-  --sec-ai-50: #1d2145; --sec-ai-200: #36387f; --sec-ai-500: #6b64e9; --sec-ai-700: #9994f0; --sec-ai-fg: #ffffff;
+  --sec-login-50: #2d2537; --sec-login-100: #3b2f4a; --sec-login-200: #5f4979; --sec-login-300: #5f4979; --sec-login-500: #b592df; --sec-login-700: #d0bee7; --sec-login-fg: #0F172A;
+  --sec-home-50: #132d35; --sec-home-100: #123b48; --sec-home-200: #095f75; --sec-home-300: #095f75; --sec-home-500: #3cb4d8; --sec-home-700: #9cd1e3; --sec-home-fg: #0F172A;
+  --sec-finder-50: #112e2e; --sec-finder-100: #0d3d3d; --sec-finder-200: #006362; --sec-finder-300: #006362; --sec-finder-500: #2abbb9; --sec-finder-700: #9ad4d2; --sec-finder-fg: #0F172A;
+  --sec-melka-listing-50: #2a2b16; --sec-melka-listing-100: #373818; --sec-melka-listing-200: #57591e; --sec-melka-listing-300: #57591e; --sec-melka-listing-500: #abae53; --sec-melka-listing-700: #cbcea1; --sec-melka-listing-fg: #0F172A;
+  --sec-melka-request-50: #38221f; --sec-melka-request-100: #4c2b27; --sec-melka-request-200: #7c433c; --sec-melka-request-300: #7c433c; --sec-melka-request-500: #e4877c; --sec-melka-request-700: #ecb9b2; --sec-melka-request-fg: #0F172A;
+  --sec-settings-50: #1b2a3a; --sec-settings-100: #20374e; --sec-settings-200: #2f5880; --sec-settings-300: #2f5880; --sec-settings-500: #69aaea; --sec-settings-700: #aacbed; --sec-settings-fg: #0F172A;
+  --sec-mgmt-50: #312714; --sec-mgmt-100: #423315; --sec-mgmt-200: #6b5118; --sec-mgmt-300: #6b5118; --sec-mgmt-500: #c79e47; --sec-mgmt-700: #dac49b; --sec-mgmt-fg: #0F172A;
+  --sec-m1-50: #202d1c; --sec-m1-100: #283c22; --sec-m1-200: #3e6033; --sec-m1-300: #3e6033; --sec-m1-500: #82b971; --sec-m1-700: #b7d4ae; --sec-m1-fg: #0F172A;
+  --sec-m2-50: #362418; --sec-m2-100: #492e1b; --sec-m2-200: #774826; --sec-m2-300: #774826; --sec-m2-500: #dc905b; --sec-m2-700: #e7bea3; --sec-m2-fg: #0F172A;
+  --sec-m3-50: #372228; --sec-m3-100: #4a2a34; --sec-m3-200: #794153; --sec-m3-300: #794153; --sec-m3-500: #df85a2; --sec-m3-700: #e9b8c6; --sec-m3-fg: #0F172A;
+  --sec-m4-50: #172e25; --sec-m4-100: #183e2f; --sec-m4-200: #1d634b; --sec-m4-300: #1d634b; --sec-m4-500: #51bb94; --sec-m4-700: #a3d4bf; --sec-m4-fg: #0F172A;
+  --sec-consultant-50: #332230; --sec-consultant-100: #452c41; --sec-consultant-200: #6f4469; --sec-consultant-300: #6f4469; --sec-consultant-500: #cf89c4; --sec-consultant-700: #e0bad9; --sec-consultant-fg: #0F172A;
+  --sec-ai-50: #24273a; --sec-ai-100: #2f334f; --sec-ai-200: #4a5181; --sec-ai-300: #4a5181; --sec-ai-500: #929dec; --sec-ai-700: #bdc5ef; --sec-ai-fg: #0F172A;
   --sec-m5-50: #221c43; --sec-m5-200: #42308a; --sec-m5-500: #8b5cf6; --sec-m5-700: #a78bfa; --sec-m5-fg: #ffffff;
   --sec-m6-50: #1d2a12; --sec-m6-200: #3c5220; --sec-m6-500: #84cc16; --sec-m6-700: #bef264; --sec-m6-fg: #0a0e1a;
   --sec-m7-50: #101f43; --sec-m7-200: #1c3a8a; --sec-m7-500: #3b82f6; --sec-m7-700: #7b9ff9; --sec-m7-fg: #ffffff;
@@ -437,3 +437,85 @@ button, a, [role="button"] {
   background-color: var(--sc-50);
   border: 1px solid var(--sc-200);
 }
+
+/* ================================================================
+   قانون ظاهر فاخر ملکا ۰۳۵-B — اجزای تازه (P6549)
+   ================================================================ */
+
+/* ۱) انتقال نرم تم — فقط حین تعویض (۳۰۰ms) + احترام به reduced-motion */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease,
+    fill 300ms ease,
+    stroke 300ms ease,
+    box-shadow 300ms ease !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition * { transition: none !important; }
+}
+
+/* ۲) ریپل — میکرو-اینتراکشن لمسی (بخش ج/۷) */
+.ripple-host { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.ripple-ink {
+  position: absolute;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.18;
+  transform: scale(0);
+  animation: ripple-grow 480ms ease-out forwards;
+  pointer-events: none;
+}
+@keyframes ripple-grow {
+  to { transform: scale(2.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ripple-ink { animation-duration: 1ms; }
+}
+
+/* ۳) Splash (بخش ج/۱) */
+@keyframes splash-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@keyframes splash-bar-move {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-220%); }
+}
+.splash-logo { animation: splash-pulse 1.4s ease-in-out infinite; }
+.splash-bar-fill { animation: splash-bar-move 900ms ease-in-out infinite; }
+.splash-fade { transition: opacity 300ms ease; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo, .splash-bar-fill { animation: none; }
+  .splash-fade { transition: none; }
+}
+
+/* ۴) نشانگر Pull-to-Refresh (بخش ج/۸) */
+.ptr-indicator {
+  opacity: 0;
+  transform: translateY(calc(var(--ptr-pull, 0px) - 44px));
+  transition: transform 80ms linear;
+  pointer-events: none;
+}
+.ptr-spinner {
+  transform: rotate(calc(var(--ptr-progress, 0) * 270deg));
+  transition: transform 120ms linear;
+}
+.ptr-indicator.ptr-spinning .ptr-spinner { animation: ptr-rotate 700ms linear infinite; }
+@keyframes ptr-rotate { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ptr-indicator { transition: none; }
+  .ptr-indicator.ptr-spinning .ptr-spinner { animation-duration: 1500ms; }
+}
+
+/* ۵) تودهٔ محتوا بالای ناوبری پایین موبایل — جلوگیری از پرش/پوشیده‌شدن (CLS) */
+.bottom-nav-spacer { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+@media (min-width: 768px) { .bottom-nav-spacer { padding-bottom: 0; } }
+
+/* ۶) هدر — احترام به ناحیهٔ امن بالای صفحه (ناچ/نوار iOS) */
+.safe-top { padding-top: env(safe-area-inset-top); }

@@ -33,7 +33,7 @@ describe("P6547/گام صفر — کدمستر و نام رسمی", () => {
 
   test("ص-۳: نام اختصاری «ملکا» در PWA manifest و appleWebApp", () => {
     const manifest = JSON.parse(read("public/manifest.json"));
-    expect(manifest.name).toBe("اکوسیستم هوشمند ملک ایران");
+    expect(manifest.name).toBe("اکوسیستم هوشمند ملک ایران (ملکا)"); // P6549/۰۳۵-B: نام رسمی کامل
     expect(manifest.short_name).toBe("ملکا");
     const layout = read("src/app/layout.tsx");
     expect(layout).toContain('title: "ملکا"');

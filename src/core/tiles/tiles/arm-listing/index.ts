@@ -9,9 +9,10 @@
  */
 
 import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { Building2 } from "lucide-react";
-import { ArmListingsPage } from "./ArmListingsPage";
 
 export const armListingTile = defineTile({
   id: "arm-listings",
@@ -22,7 +23,7 @@ export const armListingTile = defineTile({
     "همهٔ آگهی‌های ثبت‌شده در «سامانه مدیریت آگهی و درخواست» (آرم) ملک تبریز در یک لیست تک‌صفحه‌ای و بی‌نهایت: کد آگهی، نام و نام خانوادگی کارشناس مسؤول، نام و نام خانوادگی مالک ملک، شماره تماس مالک ملک و آدرس ملک. فیلتر بر اساس کد آگهی و نام کارشناس؛ استخراج و بروزرسانی مستقیم از خود سامانه (فهرست کامل + غنی‌سازی زنجیره‌ای اطلاعات تماس مالک و آدرس دقیق) و ایجنت هوشمند یادگیرندهٔ مولتی‌بینش با تحلیل حجم، کارشناسان پرآگهی، توزیع منطقه‌ای، پوشش اطلاعات و تازگی ثبت.",
   icon: Building2,
   accent: "m1",
-  component: ArmListingsPage,
+  component: lazyPage(() => import("./ArmListingsPage")),
   order: 1,
   container: "management-dashboard",
   agent: {

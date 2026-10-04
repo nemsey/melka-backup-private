@@ -31,6 +31,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+// P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
+import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
+import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RotateCcw, Search, Users, UserCheck, Phone, RefreshCw, Hash, CheckCircle2, Handshake,
@@ -187,8 +190,12 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
   const anyFilterActive = Object.values(applied).some((v) => v !== "" && v !== "all");
 
+  // قانون ۰۳۵-B/ج-۸ — کشیدن برای تازه‌سازی
+  const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void fetchExperts());
+
   return (
     <div className="space-y-6">
+      <PtrIndicator innerRef={ptrRef} spinning={ptrSpinning} />
       {/* ایجنت هوشمند */}
       <AgentPanel tileId="experts" />
 
@@ -408,14 +415,17 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
         </div>
       ) : rows.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="p-8 text-center space-y-3">
-            <Users className="w-10 h-10 text-muted-foreground mx-auto" aria-hidden />
-            <p className="text-sm font-bold">هیچ کارشناسی مطابق پیدا نشد</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {total === 0
-                ? "هنوز فهرست کارشناسان از سامانه‌های ملک تبریز استخراج نشده است — دکمه «بروزرسانی از سامانه» را بزنید."
-                : "فیلترها را تغییر دهید یا آن‌ها را پاک کنید."}
-            </p>
+          <CardContent className="p-0">
+            <EmptyState
+              hasFilters={Boolean(
+                applied.fullName || applied.personnelCode || applied.branch || applied.address ||
+                applied.saleFrom || applied.saleTo || applied.rentFrom || applied.rentTo || applied.active !== "all"
+              )}
+              onClearFilters={() => {
+                setFilters(EMPTY_FILTERS);
+                setApplied(EMPTY_FILTERS);
+              }}
+            />
           </CardContent>
         </Card>
       ) : (
@@ -587,3 +597,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
     </div>
   );
 }
+
+
+/** P6549 — خروجی پیش‌فرض برای بارگذاری تنبل (lazyPage) */
+export default ExpertsPage;
