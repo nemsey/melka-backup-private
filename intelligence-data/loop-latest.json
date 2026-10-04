@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-10-04T10:56:57.392Z",
+  "ranAt": "2026-10-04T12:56:12.386Z",
   "tileId": "arm-listing",
   "predictions": 0,
   "positiveOutcomes": 0,
@@ -10,7 +10,7 @@
     "windowDays": 3650,
     "sampleSize": 0,
     "verdict": "INSUFFICIENT_DATA",
-    "computedAt": "2026-10-04T10:56:57.392Z",
+    "computedAt": "2026-10-04T12:56:12.386Z",
     "unresolvablePairs": 0,
     "target": "probability"
   },
