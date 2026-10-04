@@ -1,0 +1,133 @@
+"use client";
+
+/**
+ * کلاینت API سمت مرورگر — نقطه اتصال واحد UI به مسیرهای داخلی
+ * ویژگی‌ها: تزریق خودکار توکن، مدیریت خطای یکسان، خروج خودکار در 401.
+ *
+ * P6530 / گام ۶ (نکتهٔ بسیار مهم ۳ — رفع 502/504):
+ *   مهلت پیش‌فرض ۹۰ ثانیه با AbortController — بروزرسانی‌های سنگین سامانهٔ
+ *   ملک تبریز (فهرست‌های بزرگ) دیگر مرورگر را بی‌پایان معلق نمی‌کنند؛
+ *   خطای 502/504 سامانه مبدأ با پیام فارسی شفاف و راهنمای ادامه (ازسرگیری
+ *   از آخرین نقطه) به کاربر می‌رسد، نه هنگ بی‌پایان.
+ *
+ * P6546 / گام پنجم-پ-۳ — تاب‌آوری بروزرسانی (رفع کامل 502/504/مهلت):
+ *   apiSync برای فراخوانی‌های بروزرسانیِ idempotent (برش‌های دارای checkpoint):
+ *   تا ۳ تلاش خودکار — هر تلاش از آخرین نقطهٔ کامل ادامه می‌یابد (checkpoint)
+ *   پس تلاش مجدد نه از صفر شروع می‌شود نه داده تکراری می‌سازد؛ خطای گذرای
+ *   502/504/مهلت به همین ترتیب خوددرمان می‌شود و کاربر پیام خطا نمی‌بیند.
+ */
+
+export class ApiClientError extends Error {
+  code: string;
+  status: number;
+  constructor(code: string, message: string, status: number) {
+    super(message);
+    this.code = code;
+    this.status = status;
+  }
+}
+
+let tokenHolder: (() => string | null) | null = null;
+let onUnauthorized: (() => void) | null = null;
+
+/** ثبت منبع توکن و رفتار خروج خودکار (توسط Store اصلی) */
+export function bindAuth(getToken: () => string | null, handle401: () => void): void {
+  tokenHolder = getToken;
+  onUnauthorized = handle401;
+}
+
+/** مهلت پیش‌فرض درخواست‌ها — میلی‌ثانیه (۹۰ ثانیه) */
+const DEFAULT_TIMEOUT_MS = 90_000;
+
+export async function api<T = unknown>(
+  path: string,
+  init: { method?: "GET" | "POST" | "PATCH" | "DELETE" | "PUT"; body?: unknown; auth?: boolean; timeoutMs?: number } = {}
+): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const useAuth = init.auth !== false;
+  const token = tokenHolder?.() ?? null;
+  if (useAuth && token) headers.Authorization = `Bearer ${token}`;
+
+  // P6530/گام ۶ — مهلت الزامی: هیچ درخواستی بی‌پایان معلق نمی‌ماند
+  const timeoutMs = init.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method: init.method ?? "GET",
+      headers,
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if ((err as Error)?.name === "AbortError") {
+      throw new ApiClientError(
+        "TIMEOUT",
+        "پاسخ سرور در مهلت مقرر دریافت نشد (مهلت ۹۰ ثانیه). بروزرسانی در پس‌زمینه ادامه دارد — دقایقی دیگر دوباره بروزرسانی را بزنید؛ عملیات از همان نقطهٔ قطع‌شده ادامه می‌یابد.",
+        504
+      );
+    }
+    throw new ApiClientError("NETWORK_ERROR", "ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.", 0);
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (res.status === 401 && useAuth) {
+    onUnauthorized?.();
+    throw new ApiClientError("UNAUTHORIZED", "نشست شما منقضی شده است.", 401);
+  }
+
+  // P6530/گام ۶ — 502/504 با پیام فارسی شفاف (خطای دروازه/سرور مبدأ)
+  if (res.status === 502 || res.status === 504) {
+    throw new ApiClientError(
+      "UPSTREAM_UNAVAILABLE",
+      `سامانه ملک تبریز موقتاً پاسخ نمی‌دهد (خطای ${res.status}). داده‌های فعلی نمایش داده می‌شوند؛ چند لحظه بعد دوباره بروزرسانی را بزنید — عملیات از همان نقطهٔ قطع‌شده ادامه می‌یابد.`,
+      res.status
+    );
+  }
+
+  let payload: unknown = null;
+  try {
+    payload = await res.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!res.ok) {
+    const p = payload as { code?: string; message?: string } | null;
+    throw new ApiClientError(p?.code ?? "UNKNOWN", p?.message ?? `خطای سرور (${res.status})`, res.status);
+  }
+  return payload as T;
+}
+
+/**
+ * P6546/گام پنجم-پ-۳ — فراخوانی بروزرسانیِ تاب‌آور (برش‌های idempotent دارای checkpoint).
+ * تا `maxAttempts` تلاش خودکار روی خطاهای گذرای TIMEOUT / UPSTREAM_UNAVAILABLE (502/504)
+ * با وقفهٔ نمایی؛ هر تلاش از آخرین نقطهٔ کامل ادامه می‌یابد (قانون داده اول، سپس checkpoint).
+ * خطای ۴xx (غیرقابل تلاش) و UNAUTHORIZED هرگز تلاش مجدد نمی‌شوند.
+ */
+export async function apiSync<T = unknown>(
+  path: string,
+  init: { method?: "GET" | "POST" | "PATCH" | "DELETE" | "PUT"; body?: unknown; timeoutMs?: number; maxAttempts?: number } = {},
+  onRetry?: (attempt: number, error: ApiClientError) => void
+): Promise<T> {
+  const maxAttempts = Math.min(Math.max(init.maxAttempts ?? 3, 1), 5);
+  let lastError: ApiClientError | null = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await api<T>(path, init);
+    } catch (err) {
+      const e = err as ApiClientError;
+      const transient = e.code === "TIMEOUT" || e.code === "UPSTREAM_UNAVAILABLE" || e.code === "NETWORK_ERROR";
+      if (!transient || attempt === maxAttempts) throw err;
+      lastError = e;
+      onRetry?.(attempt, e);
+      // وقفهٔ نمایی مهربان: ۳ث · ۸ث — سرور مبدأ در ساعت اوج نیاز به نفس دارد
+      await new Promise((r) => setTimeout(r, attempt === 1 ? 3000 : 8000));
+    }
+  }
+  throw lastError ?? new ApiClientError("UNKNOWN", "خطای نامشخص در بروزرسانی.", 0);
+}

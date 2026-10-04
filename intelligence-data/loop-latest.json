@@ -1,0 +1,25 @@
+{
+  "ranAt": "2026-10-04T10:46:47.767Z",
+  "tileId": "arm-listing",
+  "predictions": 0,
+  "positiveOutcomes": 0,
+  "negativeOutcomes": 0,
+  "linked": 0,
+  "evaluation": {
+    "tileId": "arm-listing",
+    "windowDays": 3650,
+    "sampleSize": 0,
+    "verdict": "INSUFFICIENT_DATA",
+    "computedAt": "2026-10-04T10:46:47.767Z",
+    "unresolvablePairs": 0,
+    "target": "probability"
+  },
+  "reproduction": {
+    "source": "arm.melketabriz.ir (PropertyRecord واقعی)",
+    "soldStatus": "معامله شده",
+    "controlStatus": "منتشر شده",
+    "ordering": "propertyCode صعودی",
+    "modelVersion": "unknown",
+    "note": "پیش‌بینی و پیامد روی یک snapshot واحد — سنجش قدرت افتراق، نه دقت زمانی (محدودیت افشاشده)"
+  }
+}

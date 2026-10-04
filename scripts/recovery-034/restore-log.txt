@@ -1,0 +1,574 @@
+[04:18:01Z] ════ BLOCK 2 شروع · HEAD=76ed3d4 · BACKUP=/home/z/my-project/backups/pre-recovery-034-20261004-040312
+[04:18:01Z] گام ۰: توقف سرور dev قدیمی
+[04:18:04Z] پروسه‌های next باقی‌مانده: 0
+0
+[04:18:04Z] حفاظت تکمیلی: loop-latest + dev.log + reflog در بکاپ
+[04:18:04Z] گام ۱: fetch باندل بقا → ff main
+From /home/z/my-project/upload/.survival/P6547cont-20261003/repo.bundle
+ * branch            main       -> FETCH_HEAD
+[04:18:19Z] TARGET از باندل: c61048e7aade5872cd924bdf05075b589764d544
+[04:18:20Z] untracked یکسان → حذف امن: upload/Pasted Content_1790757795075.txt
+[04:18:20Z] untracked یکسان → حذف امن: upload/Pasted Content_1790757889361.txt
+[04:18:20Z] untracked یکسان → حذف امن: upload/Pasted Content_1790899215016.txt
+[04:18:20Z] untracked یکسان → حذف امن: upload/Pasted Content_1790903823664.txt
+[04:18:20Z] untracked یکسان → حذف امن: upload/Pasted Content_1790921389583.txt
+[04:18:20Z] untracked یکسان → حذف امن: upload/Pasted Content_1790921599812.txt
+[04:18:20Z] untracked یکسان → حذف امن: upload/Pasted Content_1790921607156.txt
+[04:18:20Z] untracked یکسان → حذف امن: upload/ملکا-قانون-تثبیت-و-بقای-نسخه-۱۴۰۵-۰۳۱-v1.0.md
+Updating files:  97% (294/301)Updating files:  98% (295/301)Updating files:  99% (298/301)Updating files: 100% (301/301)Updating files: 100% (301/301), done.
+Updating 76ed3d4..c61048e
+Fast-forward
+ .env                                               |     2 +-
+ .gitignore                                         |     4 +
+ .zscripts/supervisor.pid                           |     2 +-
+ README.md                                          |     4 +-
+ backups/pre-repair-DIAG-MODEL-002-1791018450998.db |   Bin 0 -> 31608832 bytes
+ db/custom.db                                       |   Bin 31600640 -> 161189888 bytes
+ db/test-repository.db                              |   Bin 1155072 -> 1155072 bytes
+ db/test.db                                         |   Bin 3158016 -> 4603904 bytes
+ docs/INTELLIGENCE-CORE-SOUL.md                     |    48 +
+ docs/P10-SOUL.md                                   |    24 +
+ docs/P11-SOUL.md                                   |    24 +
+ docs/P6537-CLOSURE.md                              |    49 +
+ docs/P6546-ENDPOINT-MAP.md                         |    91 +
+ docs/P7-SOUL.md                                    |    32 +
+ docs/P8-SOUL.md                                    |    28 +
+ docs/P9-SOUL.md                                    |    23 +
+ download/p6537/MANIFEST.json                       |    43 +
+ download/p6537/REPORT.md                           |    21 +
+ download/p6537/blackboard.json                     |    82 +
+ download/p6537/p10-diagnosis.json                  |   174 +
+ download/p6537/p11-repairs.json                    |    62 +
+ download/p6537/p7-evaluation.json                  |   122 +
+ download/p6537/p8-decisions.json                   |   108 +
+ download/p6537/p9-policies.json                    |    75 +
+ download/p6537/screens/brain-card-p7-p11.png       |   Bin 0 -> 100586 bytes
+ download/p6537/screens/brain-card-problems.png     |   Bin 0 -> 100586 bytes
+ download/p6545/alerts-proof.json                   |   569 +
+ download/p6545/cleanup-proof.json                  |  1025 +
+ download/p6545/cross-tile-proof.json               |   208 +
+ download/p6545/final-stamp.json                    |    26 +
+ download/p6545/graphs-proof.json                   |   261 +
+ download/p6545/models-registry.json                |   112 +
+ download/p6545/recalibrate-proof.json              |   145 +
+ download/p6545/retrain-proof.json                  |    33 +
+ download/p6545/screens/m1-m8-dashboard.png         |   Bin 0 -> 146498 bytes
+ download/p6545/screens/m5-matching.png             |   Bin 0 -> 209490 bytes
+ download/p6545/screens/m6-market-index.png         |   Bin 0 -> 100298 bytes
+ download/p6545/screens/m7-coverage.png             |   Bin 0 -> 11679 bytes
+ download/p6545/screens/m8-learning-tier.png        |   Bin 0 -> 123172 bytes
+ download/p6545/sync-refresh.json                   |    94 +
+ download/p6546/brain-equipment-proof.json          |   170 +
+ download/p6546/gap-chunk-analysis.json             |    13 +
+ download/p6546/gap-usage-contexts.json             |     4 +
+ download/p6546/melk-public-sync-proof.json         |  2969 +++
+ download/p6546/pm-hire-date-proof.json             |    42 +
+ download/p6546/screens/m1-enriched.png             |   Bin 0 -> 92443 bytes
+ download/p6546/screens/m1-persistent-bar.png       |   Bin 0 -> 100564 bytes
+ download/p6546/screens/m3-fixed.png                |   Bin 0 -> 411627 bytes
+ download/p6546/screens/m4-sorted.png               |   Bin 0 -> 318659 bytes
+ download/p6546/screens/settings-unified.png        |   Bin 0 -> 618942 bytes
+ download/p6546/systems-discovery-deep.json         |   117 +
+ download/p6546/systems-discovery-focus.json        |    67 +
+ download/p6546/systems-discovery-shape.json        |    87 +
+ download/p6546/systems-discovery.json              |   113 +
+ download/p6547/pm-branch-backfill-proof.json       |    60 +
+ download/p6547/pm-employment-backfill-proof.json   |    53 +
+ download/p6547/request-area-backfill-proof.json    |    68 +
+ download/p6547/request-areas-state.json            |    68 +
+ download/p6547/screens/00-home-melka.png           |   Bin 0 -> 151147 bytes
+ download/p6547/screens/01-m1-insights.png          |   Bin 0 -> 79532 bytes
+ download/p6547/screens/02-m1-coverage-insight.png  |   Bin 0 -> 96130 bytes
+ download/p6547/screens/03-m1-coverage-table.png    |   Bin 0 -> 80702 bytes
+ download/p6547/screens/04-m1-list-branches.png     |   Bin 0 -> 74515 bytes
+ download/p6547/screens/05-m2-top.png               |   Bin 0 -> 75586 bytes
+ download/p6547/screens/06-m2-supply-poles.png      |   Bin 0 -> 74352 bytes
+ download/p6547/screens/07-m3-share-branch.png      |   Bin 0 -> 68633 bytes
+ download/p6547/screens/08-m4-experts-pm.png        |   Bin 0 -> 71474 bytes
+ download/p6547/type-registry-sync-proof.json       |    34 +
+ env.platform.json                                  |     4 +-
+ intelligence-data/blackboard.jsonl                 | 23625 +++++++++++++++++++
+ intelligence-data/calibration-map.json             |    37 +
+ intelligence-data/cross-tile-outcomes.jsonl        |  3675 +++
+ intelligence-data/loop-latest.json                 |    24 +-
+ intelligence-data/retrain-state.json               |    16 +
+ prisma/schema.prisma                               |   134 +
+ public/manifest.json                               |     6 +-
+ public/sw-v3.js                                    |     2 +-
+ public/sw-v4.js                                    |     2 +-
+ public/sw.js                                       |     2 +-
+ scripts/audit-graph-integrity.sh                   |    47 +
+ scripts/audit-job-state.sh                         |    23 +
+ scripts/audit-opportunity-alerts.sh                |    25 +
+ scripts/generate-evidence.ts                       |   140 +
+ scripts/mirror/build-snapshot.sh                   |    57 +
+ scripts/mirror/mirror-daemon.sh                    |   182 +
+ scripts/mirror/re-arm.sh                           |    80 +
+ scripts/p3-d3-e2e.py                               |     2 +-
+ scripts/p4-f2-e2e.py                               |     2 +-
+ scripts/p4-f2-retake.py                            |     2 +-
+ scripts/p5-d3-e2e.py                               |     2 +-
+ scripts/p6-d3-e2e.py                               |     2 +-
+ scripts/p6504i-live-smoke.sh                       |     2 +-
+ scripts/p6512-verify-live.ts                       |     2 +-
+ scripts/p6514-shot-mobile3.py                      |     2 +-
+ scripts/p6514-shot.py                              |     2 +-
+ scripts/p6515-filter-curl-tests.sh                 |     2 +-
+ scripts/p6515-filter-results.ts                    |     2 +-
+ scripts/p6515-filter-verify2.sh                    |     2 +-
+ scripts/p6515-trend-validation.ts                  |     2 +-
+ scripts/p6521-shot.py                              |     2 +-
+ scripts/p6545-addr-check.ts                        |    17 +
+ scripts/p6545-all-tables.ts                        |     9 +
+ scripts/p6545-build-infrastructure.ts              |   113 +
+ scripts/p6545-calibration-analysis.ts              |    62 +
+ scripts/p6545-check-new.ts                         |     8 +
+ scripts/p6545-db-counts.ts                         |    20 +
+ scripts/p6545-dead-data-analysis.ts                |    31 +
+ scripts/p6545-execute-approved-repairs.ts          |   264 +
+ scripts/p6545-fa-check.ts                          |     7 +
+ scripts/p6545-final-stamp.py                       |    29 +
+ scripts/p6545-req-coverage.ts                      |    23 +
+ scripts/p6545-req-full.ts                          |     7 +
+ scripts/p6545-req-sample.ts                        |    17 +
+ scripts/p6545-shadow-check.ts                      |     6 +
+ scripts/p6545-step3-brain.ts                       |   132 +
+ scripts/p6545-survival-package.sh                  |    72 +
+ scripts/p6545-sync-refresh.ts                      |   152 +
+ scripts/p6546-brain-equipment.ts                   |    60 +
+ scripts/p6546-probe-deep.ts                        |    89 +
+ scripts/p6546-probe-focus.ts                       |    76 +
+ scripts/p6546-probe-gap-chunks.ts                  |    52 +
+ scripts/p6546-probe-gap-context.ts                 |    43 +
+ scripts/p6546-probe-shape.ts                       |    88 +
+ scripts/p6546-probe-systems.ts                     |   112 +
+ scripts/p6546-run-melk-public.ts                   |    26 +
+ scripts/p6546-run-pm-hire.ts                       |    21 +
+ scripts/p6546-survival-package.sh                  |    58 +
+ scripts/p6547-areas-state-evidence.js              |    24 +
+ scripts/p6547-audit-db.js                          |    43 +
+ scripts/p6547-pm-branch-backfill.ts                |    86 +
+ scripts/p6547-pm-employment-backfill.ts            |   106 +
+ scripts/p6547-probe-count.ts                       |    18 +
+ scripts/p6547-probe-deep-page.ts                   |    22 +
+ scripts/p6547-probe-enums.ts                       |    23 +
+ scripts/p6547-probe-enums2.ts                      |    26 +
+ scripts/p6547-probe-list-speed.ts                  |    24 +
+ scripts/p6547-probe-pm-branch.ts                   |    57 +
+ scripts/p6547-probe-pm-branch2.ts                  |    24 +
+ scripts/p6547-probe-req-fields.ts                  |    24 +
+ scripts/p6547-probe-request-alt.ts                 |    51 +
+ scripts/p6547-probe-request-details.ts             |    51 +
+ scripts/p6547-probe-statics.ts                     |    29 +
+ scripts/p6547-publish-watch.sh                     |    18 +
+ scripts/p6547-request-area-backfill.ts             |    91 +
+ scripts/p6547-request-area-parallel-backfill.ts    |   149 +
+ scripts/p6547-session-verify.ts                    |    37 +
+ scripts/p6547-survival-package.sh                  |    48 +
+ scripts/p6547-sync-type-registries.ts              |    51 +
+ scripts/p6547-test-enrich.ts                       |    19 +
+ scripts/publish-watch-p6545.sh                     |    16 +
+ src/app/api/coverage/route.ts                      |   234 +
+ src/app/api/crm/arm-catalog/listings/route.ts      |    19 +-
+ src/app/api/crm/arm-catalog/requests/route.ts      |    10 +-
+ src/app/api/crm/arm-catalog/sync/route.ts          |    22 +-
+ src/app/api/crm/experts/route.ts                   |    12 +-
+ src/app/api/crm/transactions/route.ts              |    17 +-
+ src/app/api/crm/transactions/sync/route.ts         |   157 +
+ src/app/api/gap/connection/route.ts                |   195 +
+ src/app/api/graphs/route.ts                        |   125 +
+ src/app/api/intelligence/blackboard/route.ts       |    31 +
+ src/app/api/intelligence/status/route.ts           |    54 +-
+ src/app/api/listings/route.ts                      |    25 +
+ src/app/api/market-index/route.ts                  |   154 +
+ src/app/api/matching/route.ts                      |    41 +
+ src/app/api/melk-public/sync/route.ts              |    63 +
+ src/app/api/opportunity-alerts/route.ts            |    54 +
+ src/app/api/requests/route.ts                      |    16 +
+ src/app/api/sync/all/route.ts                      |     9 +-
+ src/app/api/sync/jobs/route.ts                     |    29 +
+ src/app/globals.css                                |    16 +
+ src/app/layout.tsx                                 |     9 +-
+ src/components/app/AppHeader.tsx                   |     4 +-
+ src/components/app/AuthScreen.tsx                  |     5 +-
+ src/components/app/ConnectionIndicators.tsx        |   128 +-
+ src/components/app/DashboardHome.tsx               |     4 +-
+ src/components/app/TileCard.tsx                    |    36 +
+ src/components/app/TileShell.tsx                   |     7 +
+ src/components/app/shared/coverage-table.tsx       |   149 +
+ src/components/app/shared/index.ts                 |     3 +
+ src/components/app/shared/top-ranking-table.tsx    |   110 +
+ src/core/agent/analyzers.ts                        |    25 -
+ src/core/agent/arm-listing-agent.ts                |    61 +-
+ src/core/agent/arm-request-agent.ts                |    43 +-
+ src/core/agent/coverage-insight.ts                 |    83 +
+ src/core/agent/expert-agent.ts                     |    80 +-
+ src/core/agent/transaction-agent.ts                |    17 +-
+ src/core/agent/transactions-contracts-agent.ts     |    38 +-
+ src/core/features/index.ts                         |     4 +
+ src/core/features/store.ts                         |   130 +
+ src/core/graphs/graph-builders.ts                  |   223 +
+ src/core/graphs/graph-service.ts                   |   356 +
+ src/core/graphs/index.ts                           |     5 +
+ src/core/intelligence/agents/domain-agents.ts      |   364 +
+ src/core/intelligence/agents/index.ts              |     4 +
+ .../intelligence/calibration/calibration-map.ts    |   197 +
+ src/core/intelligence/calibration/index.ts         |     5 +
+ src/core/intelligence/contracts-p7-p11.ts          |   480 +
+ src/core/intelligence/cross-tile.ts                |   176 +
+ src/core/intelligence/models/index.ts              |     4 +
+ src/core/intelligence/models/registry.ts           |   272 +
+ src/core/intelligence/p10-core.ts                  |   194 +
+ src/core/intelligence/p11-core.ts                  |   272 +
+ src/core/intelligence/p7-core.ts                   |   517 +
+ src/core/intelligence/p8-core.ts                   |   415 +
+ src/core/intelligence/p9-core.ts                   |   259 +
+ src/core/maintenance/cleanup.ts                    |   160 +
+ src/core/matching/index.ts                         |     5 +
+ src/core/matching/matching-engine.ts               |   410 +
+ src/core/matching/opportunity-listener.ts          |   148 +
+ .../interfaces/bulk-write.repository.ts            |    48 +
+ src/core/repositories/interfaces/dto.ts            |    27 +
+ .../interfaces/integration.repository.ts           |    10 +
+ .../repositories/prisma/integration.repository.ts  |    28 +
+ .../repositories/prisma/property.repository.ts     |    31 +
+ src/core/repositories/prisma/request.repository.ts |    33 +-
+ src/core/smart-update/smart-update.ts              |   153 +
+ src/core/tiles/bootstrap.ts                        |    10 +
+ src/core/tiles/tile-contract.ts                    |     2 +-
+ .../tiles/tiles/arm-listing/ArmListingsPage.tsx    |   272 +-
+ .../tiles/tiles/arm-request/ArmRequestsPage.tsx    |   238 +-
+ .../tiles/tiles/data-coverage/DataCoveragePage.tsx |   157 +
+ src/core/tiles/tiles/data-coverage/index.ts        |    33 +
+ src/core/tiles/tiles/experts/ExpertsPage.tsx       |   183 +-
+ .../tiles/tiles/learning-tier/LearningTierPage.tsx |   219 +
+ src/core/tiles/tiles/learning-tier/index.ts        |    33 +
+ .../ManagementDashboardPage.tsx                    |     4 +-
+ src/core/tiles/tiles/management-dashboard/index.ts |     4 +-
+ .../tiles/tiles/market-index/MarketIndexPage.tsx   |   180 +
+ src/core/tiles/tiles/market-index/index.ts         |    33 +
+ .../tiles/tiles/settings/AccountGeneralSection.tsx |   145 +
+ .../tiles/tiles/settings/ArmConnectionSection.tsx  |   261 +-
+ .../tiles/tiles/settings/BrainStatusSection.tsx    |    67 +-
+ .../tiles/tiles/settings/GapConnectionSection.tsx  |   250 +
+ .../tiles/settings/MelkTabrizConnectionSection.tsx |   387 +
+ .../tiles/settings/OpportunityJobsSection.tsx      |   147 +
+ .../tiles/tiles/settings/PmConnectionSection.tsx   |   181 +-
+ src/core/tiles/tiles/settings/SettingsPage.tsx     |   458 +-
+ .../tiles/smart-matching/SmartMatchingPage.tsx     |   192 +
+ src/core/tiles/tiles/smart-matching/index.ts       |    42 +
+ .../TransactionsContractsPage.tsx                  |   285 +-
+ .../transactions-contracts/TransactionsTab.tsx     |    58 +-
+ .../tiles/tiles/transactions-contracts/index.ts    |     2 +-
+ src/lib/auth/rate-limiter.ts                       |     4 +-
+ src/lib/branch-store.ts                            |    25 +
+ src/lib/branches.ts                                |    44 +-
+ src/lib/client/api.ts                              |    35 +
+ src/lib/indicators.ts                              |    79 +-
+ src/lib/intelligence/blackboard.ts                 |   148 +
+ src/lib/intelligence/core-cycle.ts                 |   363 +
+ src/lib/melk-api/arm-catalog.ts                    |   122 +-
+ src/lib/melk-api/catalog-daemon.ts                 |   139 +-
+ src/lib/melk-api/config.ts                         |    12 +
+ src/lib/melk-api/endpoints.ts                      |    31 +
+ src/lib/melk-api/expert-enrichment.ts              |    39 +-
+ src/lib/melk-api/job-state.ts                      |   123 +
+ src/lib/melk-api/melk-public.ts                    |   286 +
+ src/lib/melk-api/pm-acc-sync.ts                    |   171 +
+ src/lib/melk-api/provider.ts                       |    47 +
+ src/lib/melk-api/tx-enrichment.ts                  |    25 +-
+ src/lib/melk-api/type-registry.ts                  |   107 +
+ src/lib/melk-api/types.ts                          |     2 +-
+ src/lib/value-colors.ts                            |   121 +
+ tailwind.config.ts                                 |     6 +-
+ tests/analyzers.test.ts                            |    14 +-
+ tests/hotfix01-secrets.test.ts                     |     2 +-
+ tests/management-dashboard.test.ts                 |    10 +-
+ tests/new-tiles-2.test.ts                          |     6 +-
+ tests/p6511-merge-resume.test.ts                   |     4 +-
+ tests/p6512-cross-sync.test.ts                     |     5 +-
+ tests/p6530-architecture-guards.test.ts            |     9 +-
+ tests/p6530-m1-arm-listing.test.ts                 |     9 +-
+ tests/p6530-m2-arm-request.test.ts                 |     6 +-
+ tests/p6530-m3-transactions.test.ts                |    18 +-
+ tests/p6530-m4-experts.test.ts                     |     5 +
+ tests/p6530-settings-order.test.ts                 |   120 +-
+ tests/p6537-integration.test.ts                    |   265 +
+ tests/p6537-p10-core.test.ts                       |   196 +
+ tests/p6537-p11-core.test.ts                       |   308 +
+ tests/p6537-p7-core.test.ts                        |   564 +
+ tests/p6537-p8-core.test.ts                        |   380 +
+ tests/p6537-p9-core.test.ts                        |   199 +
+ tests/p6545-step1-infra.test.ts                    |   628 +
+ tests/p6545-step2-tiles.test.ts                    |   646 +
+ tests/p6545-step3-brain.test.ts                    |   597 +
+ tests/p6546-six-steps.test.ts                      |   532 +
+ tests/p6547-six-steps.test.ts                      |   495 +
+ tests/phase1-datasource.test.ts                    |    16 +-
+ tests/phase3-skeleton.test.ts                      |    11 +-
+ tests/phase65-arm-connection.test.ts               |     7 +-
+ tests/phase65-scope-audit.test.ts                  |     8 +-
+ tests/phase9-wiring-brain-daemon.test.ts           |     6 +-
+ tests/platform-env-fallback.test.ts                |     4 +-
+ upload/Pasted Content_1790757795075.txt            |  3219 +++
+ upload/Pasted Content_1790757889361.txt            |  3219 +++
+ upload/Pasted Content_1790899215016.txt            |  1722 ++
+ upload/Pasted Content_1790903823664.txt            |  1727 ++
+ upload/Pasted Content_1790921389583.txt            |  1728 ++
+ upload/Pasted Content_1790921599812.txt            |  1729 ++
+ upload/Pasted Content_1790921607156.txt            |  1729 ++
+ ...3\260\333\265-\333\260\333\263\333\261-v1.0.md" |   130 +
+ worklog.md                                         |   184 +
+ 301 files changed, 70031 insertions(+), 1309 deletions(-)
+ create mode 100644 backups/pre-repair-DIAG-MODEL-002-1791018450998.db
+ create mode 100644 docs/INTELLIGENCE-CORE-SOUL.md
+ create mode 100644 docs/P10-SOUL.md
+ create mode 100644 docs/P11-SOUL.md
+ create mode 100644 docs/P6537-CLOSURE.md
+ create mode 100644 docs/P6546-ENDPOINT-MAP.md
+ create mode 100644 docs/P7-SOUL.md
+ create mode 100644 docs/P8-SOUL.md
+ create mode 100644 docs/P9-SOUL.md
+ create mode 100644 download/p6537/MANIFEST.json
+ create mode 100644 download/p6537/REPORT.md
+ create mode 100644 download/p6537/blackboard.json
+ create mode 100644 download/p6537/p10-diagnosis.json
+ create mode 100644 download/p6537/p11-repairs.json
+ create mode 100644 download/p6537/p7-evaluation.json
+ create mode 100644 download/p6537/p8-decisions.json
+ create mode 100644 download/p6537/p9-policies.json
+ create mode 100644 download/p6537/screens/brain-card-p7-p11.png
+ create mode 100644 download/p6537/screens/brain-card-problems.png
+ create mode 100644 download/p6545/alerts-proof.json
+ create mode 100644 download/p6545/cleanup-proof.json
+ create mode 100644 download/p6545/cross-tile-proof.json
+ create mode 100644 download/p6545/final-stamp.json
+ create mode 100644 download/p6545/graphs-proof.json
+ create mode 100644 download/p6545/models-registry.json
+ create mode 100644 download/p6545/recalibrate-proof.json
+ create mode 100644 download/p6545/retrain-proof.json
+ create mode 100644 download/p6545/screens/m1-m8-dashboard.png
+ create mode 100644 download/p6545/screens/m5-matching.png
+ create mode 100644 download/p6545/screens/m6-market-index.png
+ create mode 100644 download/p6545/screens/m7-coverage.png
+ create mode 100644 download/p6545/screens/m8-learning-tier.png
+ create mode 100644 download/p6545/sync-refresh.json
+ create mode 100644 download/p6546/brain-equipment-proof.json
+ create mode 100644 download/p6546/gap-chunk-analysis.json
+ create mode 100644 download/p6546/gap-usage-contexts.json
+ create mode 100644 download/p6546/melk-public-sync-proof.json
+ create mode 100644 download/p6546/pm-hire-date-proof.json
+ create mode 100644 download/p6546/screens/m1-enriched.png
+ create mode 100644 download/p6546/screens/m1-persistent-bar.png
+ create mode 100644 download/p6546/screens/m3-fixed.png
+ create mode 100644 download/p6546/screens/m4-sorted.png
+ create mode 100644 download/p6546/screens/settings-unified.png
+ create mode 100644 download/p6546/systems-discovery-deep.json
+ create mode 100644 download/p6546/systems-discovery-focus.json
+ create mode 100644 download/p6546/systems-discovery-shape.json
+ create mode 100644 download/p6546/systems-discovery.json
+ create mode 100644 download/p6547/pm-branch-backfill-proof.json
+ create mode 100644 download/p6547/pm-employment-backfill-proof.json
+ create mode 100644 download/p6547/request-area-backfill-proof.json
+ create mode 100644 download/p6547/request-areas-state.json
+ create mode 100644 download/p6547/screens/00-home-melka.png
+ create mode 100644 download/p6547/screens/01-m1-insights.png
+ create mode 100644 download/p6547/screens/02-m1-coverage-insight.png
+ create mode 100644 download/p6547/screens/03-m1-coverage-table.png
+ create mode 100644 download/p6547/screens/04-m1-list-branches.png
+ create mode 100644 download/p6547/screens/05-m2-top.png
+ create mode 100644 download/p6547/screens/06-m2-supply-poles.png
+ create mode 100644 download/p6547/screens/07-m3-share-branch.png
+ create mode 100644 download/p6547/screens/08-m4-experts-pm.png
+ create mode 100644 download/p6547/type-registry-sync-proof.json
+ create mode 100644 intelligence-data/blackboard.jsonl
+ create mode 100644 intelligence-data/calibration-map.json
+ create mode 100644 intelligence-data/cross-tile-outcomes.jsonl
+ create mode 100644 intelligence-data/retrain-state.json
+ create mode 100644 scripts/audit-graph-integrity.sh
+ create mode 100644 scripts/audit-job-state.sh
+ create mode 100644 scripts/audit-opportunity-alerts.sh
+ create mode 100644 scripts/generate-evidence.ts
+ create mode 100644 scripts/mirror/build-snapshot.sh
+ create mode 100644 scripts/mirror/mirror-daemon.sh
+ create mode 100644 scripts/mirror/re-arm.sh
+ create mode 100644 scripts/p6545-addr-check.ts
+ create mode 100644 scripts/p6545-all-tables.ts
+ create mode 100644 scripts/p6545-build-infrastructure.ts
+ create mode 100644 scripts/p6545-calibration-analysis.ts
+ create mode 100644 scripts/p6545-check-new.ts
+ create mode 100644 scripts/p6545-db-counts.ts
+ create mode 100644 scripts/p6545-dead-data-analysis.ts
+ create mode 100644 scripts/p6545-execute-approved-repairs.ts
+ create mode 100644 scripts/p6545-fa-check.ts
+ create mode 100644 scripts/p6545-final-stamp.py
+ create mode 100644 scripts/p6545-req-coverage.ts
+ create mode 100644 scripts/p6545-req-full.ts
+ create mode 100644 scripts/p6545-req-sample.ts
+ create mode 100644 scripts/p6545-shadow-check.ts
+ create mode 100644 scripts/p6545-step3-brain.ts
+ create mode 100644 scripts/p6545-survival-package.sh
+ create mode 100644 scripts/p6545-sync-refresh.ts
+ create mode 100644 scripts/p6546-brain-equipment.ts
+ create mode 100644 scripts/p6546-probe-deep.ts
+ create mode 100644 scripts/p6546-probe-focus.ts
+ create mode 100644 scripts/p6546-probe-gap-chunks.ts
+ create mode 100644 scripts/p6546-probe-gap-context.ts
+ create mode 100644 scripts/p6546-probe-shape.ts
+ create mode 100644 scripts/p6546-probe-systems.ts
+ create mode 100644 scripts/p6546-run-melk-public.ts
+ create mode 100644 scripts/p6546-run-pm-hire.ts
+ create mode 100644 scripts/p6546-survival-package.sh
+ create mode 100644 scripts/p6547-areas-state-evidence.js
+ create mode 100644 scripts/p6547-audit-db.js
+ create mode 100644 scripts/p6547-pm-branch-backfill.ts
+ create mode 100644 scripts/p6547-pm-employment-backfill.ts
+ create mode 100644 scripts/p6547-probe-count.ts
+ create mode 100644 scripts/p6547-probe-deep-page.ts
+ create mode 100644 scripts/p6547-probe-enums.ts
+ create mode 100644 scripts/p6547-probe-enums2.ts
+ create mode 100644 scripts/p6547-probe-list-speed.ts
+ create mode 100644 scripts/p6547-probe-pm-branch.ts
+ create mode 100644 scripts/p6547-probe-pm-branch2.ts
+ create mode 100644 scripts/p6547-probe-req-fields.ts
+ create mode 100644 scripts/p6547-probe-request-alt.ts
+ create mode 100644 scripts/p6547-probe-request-details.ts
+ create mode 100644 scripts/p6547-probe-statics.ts
+ create mode 100644 scripts/p6547-publish-watch.sh
+ create mode 100644 scripts/p6547-request-area-backfill.ts
+ create mode 100644 scripts/p6547-request-area-parallel-backfill.ts
+ create mode 100644 scripts/p6547-session-verify.ts
+ create mode 100644 scripts/p6547-survival-package.sh
+ create mode 100644 scripts/p6547-sync-type-registries.ts
+ create mode 100644 scripts/p6547-test-enrich.ts
+ create mode 100644 scripts/publish-watch-p6545.sh
+ create mode 100644 src/app/api/coverage/route.ts
+ create mode 100644 src/app/api/crm/transactions/sync/route.ts
+ create mode 100644 src/app/api/gap/connection/route.ts
+ create mode 100644 src/app/api/graphs/route.ts
+ create mode 100644 src/app/api/intelligence/blackboard/route.ts
+ create mode 100644 src/app/api/market-index/route.ts
+ create mode 100644 src/app/api/matching/route.ts
+ create mode 100644 src/app/api/melk-public/sync/route.ts
+ create mode 100644 src/app/api/opportunity-alerts/route.ts
+ create mode 100644 src/app/api/sync/jobs/route.ts
+ create mode 100644 src/components/app/shared/coverage-table.tsx
+ create mode 100644 src/components/app/shared/top-ranking-table.tsx
+ create mode 100644 src/core/agent/coverage-insight.ts
+ create mode 100644 src/core/features/index.ts
+ create mode 100644 src/core/features/store.ts
+ create mode 100644 src/core/graphs/graph-builders.ts
+ create mode 100644 src/core/graphs/graph-service.ts
+ create mode 100644 src/core/graphs/index.ts
+ create mode 100644 src/core/intelligence/agents/domain-agents.ts
+ create mode 100644 src/core/intelligence/agents/index.ts
+ create mode 100644 src/core/intelligence/calibration/calibration-map.ts
+ create mode 100644 src/core/intelligence/calibration/index.ts
+ create mode 100644 src/core/intelligence/contracts-p7-p11.ts
+ create mode 100644 src/core/intelligence/cross-tile.ts
+ create mode 100644 src/core/intelligence/models/index.ts
+ create mode 100644 src/core/intelligence/models/registry.ts
+ create mode 100644 src/core/intelligence/p10-core.ts
+ create mode 100644 src/core/intelligence/p11-core.ts
+ create mode 100644 src/core/intelligence/p7-core.ts
+ create mode 100644 src/core/intelligence/p8-core.ts
+ create mode 100644 src/core/intelligence/p9-core.ts
+ create mode 100644 src/core/maintenance/cleanup.ts
+ create mode 100644 src/core/matching/index.ts
+ create mode 100644 src/core/matching/matching-engine.ts
+ create mode 100644 src/core/matching/opportunity-listener.ts
+ create mode 100644 src/core/smart-update/smart-update.ts
+ create mode 100644 src/core/tiles/tiles/data-coverage/DataCoveragePage.tsx
+ create mode 100644 src/core/tiles/tiles/data-coverage/index.ts
+ create mode 100644 src/core/tiles/tiles/learning-tier/LearningTierPage.tsx
+ create mode 100644 src/core/tiles/tiles/learning-tier/index.ts
+ create mode 100644 src/core/tiles/tiles/market-index/MarketIndexPage.tsx
+ create mode 100644 src/core/tiles/tiles/market-index/index.ts
+ create mode 100644 src/core/tiles/tiles/settings/AccountGeneralSection.tsx
+ create mode 100644 src/core/tiles/tiles/settings/GapConnectionSection.tsx
+ create mode 100644 src/core/tiles/tiles/settings/MelkTabrizConnectionSection.tsx
+ create mode 100644 src/core/tiles/tiles/settings/OpportunityJobsSection.tsx
+ create mode 100644 src/core/tiles/tiles/smart-matching/SmartMatchingPage.tsx
+ create mode 100644 src/core/tiles/tiles/smart-matching/index.ts
+ create mode 100644 src/lib/intelligence/blackboard.ts
+ create mode 100644 src/lib/intelligence/core-cycle.ts
+ create mode 100644 src/lib/melk-api/job-state.ts
+ create mode 100644 src/lib/melk-api/melk-public.ts
+ create mode 100644 src/lib/melk-api/type-registry.ts
+ create mode 100644 src/lib/value-colors.ts
+ create mode 100644 tests/p6537-integration.test.ts
+ create mode 100644 tests/p6537-p10-core.test.ts
+ create mode 100644 tests/p6537-p11-core.test.ts
+ create mode 100644 tests/p6537-p7-core.test.ts
+ create mode 100644 tests/p6537-p8-core.test.ts
+ create mode 100644 tests/p6537-p9-core.test.ts
+ create mode 100644 tests/p6545-step1-infra.test.ts
+ create mode 100644 tests/p6545-step2-tiles.test.ts
+ create mode 100644 tests/p6545-step3-brain.test.ts
+ create mode 100644 tests/p6546-six-steps.test.ts
+ create mode 100644 tests/p6547-six-steps.test.ts
+ create mode 100644 upload/Pasted Content_1790757795075.txt
+ create mode 100644 upload/Pasted Content_1790757889361.txt
+ create mode 100644 upload/Pasted Content_1790899215016.txt
+ create mode 100644 upload/Pasted Content_1790903823664.txt
+ create mode 100644 upload/Pasted Content_1790921389583.txt
+ create mode 100644 upload/Pasted Content_1790921599812.txt
+ create mode 100644 upload/Pasted Content_1790921607156.txt
+ create mode 100644 "upload/\331\205\331\204\332\251\330\247-\331\202\330\247\331\206\331\210\331\206-\330\252\330\253\330\250\333\214\330\252-\331\210-\330\250\331\202\330\247\333\214-\331\206\330\263\330\256\331\207-\333\261\333\264\333\260\333\265-\333\260\333\263\333\261-v1.0.md"
+[04:18:23Z] HEAD پس از ff: c61048e (انتظار c61048e)
+[04:18:23Z] گام ۲: re-arm ریموت + fetch survival/code
+From https://github.com/nemsey/melka-backup-private
+ * [new branch]      survival/code -> survival/code
+ * [new branch]      survival/code -> mirror/survival/code
+[04:18:26Z] survival/code = 373914f (انتظار 373914f)
+[04:18:26Z] گام ۳: وصلهٔ d79704a (diff اسنپ‌شات‌های 5005f2d→373914f)
+ .../p6547/screens-cont/00-preview-stamp-auth.png   | Bin 0 -> 72194 bytes
+ .../screens-cont/01-preview-dashboard-stamp.png    | Bin 0 -> 151878 bytes
+ .../p6547/screens-cont/02-preview-footer-stamp.png | Bin 0 -> 118740 bytes
+ intelligence-data/blackboard.jsonl                 |  11 +++
+ intelligence-data/loop-latest.json                 |  14 ++--
+ scripts/p6547-cont-survival-package.sh             |  74 +++++++++++++++++++++
+ worklog.md                                         |   1 +
+ 7 files changed, 93 insertions(+), 7 deletions(-)
+[04:18:26Z] وصله: 6666 خط
+[04:18:26Z] کامیت بازیابی(a): 48efac4
+[04:18:26Z] گام ۴: جایگزینی کامل DB از بستهٔ بقا
+[04:18:27Z] md5 بستهٔ DB: b597ef10042ebdb4e5d4162565c6b69e
+[04:18:27Z] db/custom.db ← بسته (161656832 bytes)
+[04:18:27Z] db/test.db ← بسته
+[04:18:27Z] .env == env.txt بسته ✓
+[04:18:27Z] گام ۶: prisma generate
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.2 -> 8.0.0-rc.19                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+
+✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 255ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+[04:18:29Z] گام ۷: پاکسازی .next + راه‌اندازی سرور (الگوی double-fork)
+[04:18:29Z] پورت ۳۰۰۰ اشغال بود — توقف دوباره
+[04:18:32Z] سرور راه‌اندازی شد — انتظار برای /api/version (تا ۱۸۰ ثانیه)
+[04:18:35Z] خروجی /api/version: {"buildId":"48efac4-20261004-0418","builtAt":"2026-10-04T04:18:33.330Z","gitSha":"48efac4","env":"development","source":"baked","runtime":"nodejs","serverTime":"2026-10-04T04:18:35.139Z"}
+[04:18:35Z] HEAD نهایی: 48efac4
+[04:18:35Z] ════ BLOCK 2 پایان ════
+48efac4 P6548-recovery(a): بازسازی کامل محتوای کامیت d79704a (پایان P6547-cont)
+c61048e docs(P6547-cont): الحاقیهٔ پایان جلسه — تکمیل پروسه + ۱۱ بند با شاهد + فعال‌سازی publish
+7d70927 chore(P6547-cont): اسکریپت مستقل build-snapshot.sh + تثبیت نگاشت ایندکس موقت
+ec2405d chore(P6547-cont): تکمیل پروسهٔ مرحلهٔ قبل — بقای آینهٔ برون‌پلتفرمی پس از عبور db از سقف ۱۰۰MB GitHub
+ab9ea31 223f2a66-9bf1-4ad7-80c8-7570d7161f3f
+e9e57e9 docs(P6547): ثبت کامل پروندهٔ — اجرای دستور شش‌گانه + بستهٔ بقا ۲۴۳MB chainIndex=5 + شواهد زندهٔ مرورگر
+ M db/custom.db
+?? backups/pre-recovery-034-20261004-040312/
+?? scripts/recovery-034/

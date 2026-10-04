@@ -1,0 +1,7 @@
+بستهٔ سورس کامل ملکا — melka-source v1.0 (2026-10-04)
+پرونده: P6550-skeleton-v2 (دستور ملکا-شورا-۱۴۰۵-۰۳۷)
+مبنای کد: HEAD ce284df (پس از کامیت BLOCK1 سند اسکلت)
+قیدها: صفر داده · صفر توکن · صفر رمز
+پالایش: کد مدیر فعلی → 00000000 · کد قدیمی → 11111111 (سازگار با تست‌های مقایسه‌ای)
+بدون: node_modules/ .next/ db/ prisma/db/ backups/ download/ upload/ .git/ logs/ *.png شواهد
+راهنمای بازسازی: REBUILD-LETTER.md + MELKA-SKELETON-COMPLETE-v1.0.md (فصل پیوست ۵)

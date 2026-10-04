@@ -1,0 +1,521 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============ فونت فارسی وزیرمتن (محلی — بدون وابستگی به CDN) ============ */
+
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-arabic-400.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-200B, U+200F-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-arabic-500.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-latin-500.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-200B, U+200F-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-arabic-700.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-latin-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-200B, U+200F-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-arabic-800.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/Vazirmatn-latin-800.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-200B, U+200F-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+  --font-mono: "Vazirmatn", ui-monospace, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  /* ============ نقشهٔ رنگ ۱۳ بخش (گام صفر — قاعده ۱) ============
+     ابزارهای تولیدشده: bg-sec-{بخش}-{50|200|500|700} · text-sec-… ·
+     border-sec-… · ring-sec-… · از-sec-…/N (آلفا) — دارک خودکار با قاعده ۴ */
+  --color-sec-login-50: var(--sec-login-50); --color-sec-login-100: var(--sec-login-100); --color-sec-login-200: var(--sec-login-200); --color-sec-login-300: var(--sec-login-300); --color-sec-login-500: var(--sec-login-500); --color-sec-login-700: var(--sec-login-700); --color-sec-login-fg: var(--sec-login-fg);
+  --color-sec-home-50: var(--sec-home-50); --color-sec-home-100: var(--sec-home-100); --color-sec-home-200: var(--sec-home-200); --color-sec-home-300: var(--sec-home-300); --color-sec-home-500: var(--sec-home-500); --color-sec-home-700: var(--sec-home-700); --color-sec-home-fg: var(--sec-home-fg);
+  --color-sec-finder-50: var(--sec-finder-50); --color-sec-finder-100: var(--sec-finder-100); --color-sec-finder-200: var(--sec-finder-200); --color-sec-finder-300: var(--sec-finder-300); --color-sec-finder-500: var(--sec-finder-500); --color-sec-finder-700: var(--sec-finder-700); --color-sec-finder-fg: var(--sec-finder-fg);
+  --color-sec-melka-listing-50: var(--sec-melka-listing-50); --color-sec-melka-listing-100: var(--sec-melka-listing-100); --color-sec-melka-listing-200: var(--sec-melka-listing-200); --color-sec-melka-listing-300: var(--sec-melka-listing-300); --color-sec-melka-listing-500: var(--sec-melka-listing-500); --color-sec-melka-listing-700: var(--sec-melka-listing-700); --color-sec-melka-listing-fg: var(--sec-melka-listing-fg);
+  --color-sec-melka-request-50: var(--sec-melka-request-50); --color-sec-melka-request-100: var(--sec-melka-request-100); --color-sec-melka-request-200: var(--sec-melka-request-200); --color-sec-melka-request-300: var(--sec-melka-request-300); --color-sec-melka-request-500: var(--sec-melka-request-500); --color-sec-melka-request-700: var(--sec-melka-request-700); --color-sec-melka-request-fg: var(--sec-melka-request-fg);
+  --color-sec-settings-50: var(--sec-settings-50); --color-sec-settings-100: var(--sec-settings-100); --color-sec-settings-200: var(--sec-settings-200); --color-sec-settings-300: var(--sec-settings-300); --color-sec-settings-500: var(--sec-settings-500); --color-sec-settings-700: var(--sec-settings-700); --color-sec-settings-fg: var(--sec-settings-fg);
+  --color-sec-mgmt-50: var(--sec-mgmt-50); --color-sec-mgmt-100: var(--sec-mgmt-100); --color-sec-mgmt-200: var(--sec-mgmt-200); --color-sec-mgmt-300: var(--sec-mgmt-300); --color-sec-mgmt-500: var(--sec-mgmt-500); --color-sec-mgmt-700: var(--sec-mgmt-700); --color-sec-mgmt-fg: var(--sec-mgmt-fg);
+  --color-sec-m1-50: var(--sec-m1-50); --color-sec-m1-100: var(--sec-m1-100); --color-sec-m1-200: var(--sec-m1-200); --color-sec-m1-300: var(--sec-m1-300); --color-sec-m1-500: var(--sec-m1-500); --color-sec-m1-700: var(--sec-m1-700); --color-sec-m1-fg: var(--sec-m1-fg);
+  --color-sec-m5-50: var(--sec-m5-50); --color-sec-m5-200: var(--sec-m5-200); --color-sec-m5-500: var(--sec-m5-500); --color-sec-m5-700: var(--sec-m5-700); --color-sec-m5-fg: var(--sec-m5-fg);
+  --color-sec-m6-50: var(--sec-m6-50); --color-sec-m6-200: var(--sec-m6-200); --color-sec-m6-500: var(--sec-m6-500); --color-sec-m6-700: var(--sec-m6-700); --color-sec-m6-fg: var(--sec-m6-fg);
+  --color-sec-m7-50: var(--sec-m7-50); --color-sec-m7-200: var(--sec-m7-200); --color-sec-m7-500: var(--sec-m7-500); --color-sec-m7-700: var(--sec-m7-700); --color-sec-m7-fg: var(--sec-m7-fg);
+  --color-sec-m8-50: var(--sec-m8-50); --color-sec-m8-200: var(--sec-m8-200); --color-sec-m8-500: var(--sec-m8-500); --color-sec-m8-700: var(--sec-m8-700); --color-sec-m8-fg: var(--sec-m8-fg);
+  --color-sec-m2-50: var(--sec-m2-50); --color-sec-m2-100: var(--sec-m2-100); --color-sec-m2-200: var(--sec-m2-200); --color-sec-m2-300: var(--sec-m2-300); --color-sec-m2-500: var(--sec-m2-500); --color-sec-m2-700: var(--sec-m2-700); --color-sec-m2-fg: var(--sec-m2-fg);
+  --color-sec-m3-50: var(--sec-m3-50); --color-sec-m3-100: var(--sec-m3-100); --color-sec-m3-200: var(--sec-m3-200); --color-sec-m3-300: var(--sec-m3-300); --color-sec-m3-500: var(--sec-m3-500); --color-sec-m3-700: var(--sec-m3-700); --color-sec-m3-fg: var(--sec-m3-fg);
+  --color-sec-m4-50: var(--sec-m4-50); --color-sec-m4-100: var(--sec-m4-100); --color-sec-m4-200: var(--sec-m4-200); --color-sec-m4-300: var(--sec-m4-300); --color-sec-m4-500: var(--sec-m4-500); --color-sec-m4-700: var(--sec-m4-700); --color-sec-m4-fg: var(--sec-m4-fg);
+  --color-sec-consultant-50: var(--sec-consultant-50); --color-sec-consultant-100: var(--sec-consultant-100); --color-sec-consultant-200: var(--sec-consultant-200); --color-sec-consultant-300: var(--sec-consultant-300); --color-sec-consultant-500: var(--sec-consultant-500); --color-sec-consultant-700: var(--sec-consultant-700); --color-sec-consultant-fg: var(--sec-consultant-fg);
+  --color-sec-ai-50: var(--sec-ai-50); --color-sec-ai-100: var(--sec-ai-100); --color-sec-ai-200: var(--sec-ai-200); --color-sec-ai-300: var(--sec-ai-300); --color-sec-ai-500: var(--sec-ai-500); --color-sec-ai-700: var(--sec-ai-700); --color-sec-ai-fg: var(--sec-ai-fg);
+}
+
+/* ================================================================
+   نظام طراحی «فیروزه تبریز» — نسخه ۱٫۷٫۰
+   ----------------------------------------------------------------
+   الهام: کاشی‌کاری فیروزه‌ای مسجد کبود تبریز + مس و برنز بازار تبریز
+   ساختار پالت:
+     • فیروزه عمیق (primary)  — رنگ برند، دکمه‌ها، پیوندها، حالت فعال
+     • مسِ گرم (accent)       — هاورها، برچسب مالک، تأکیدهای ثانویه
+     • شنیِ یخی (background)  — سطح‌ها با نفَس فیروزه‌ای بسیار ملایم
+     • شبِ نفتی (dark)        — پس‌زمینه تیره با ته‌رنگ سبزآبی
+   رنگ‌های معنایی ثابت: کهربایی = هشدار، رز = خطا، سبز = برقراری اتصال
+   ================================================================ */
+
+:root {
+  --radius: 1rem;
+  --background: oklch(0.978 0.005 190);
+  --foreground: oklch(0.25 0.028 200);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.028 200);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0.028 200);
+  /* فیروزه عمیق — h≈194 */
+  --primary: oklch(0.51 0.095 194);
+  --primary-foreground: oklch(0.985 0.01 190);
+  --secondary: oklch(0.955 0.012 190);
+  --secondary-foreground: oklch(0.36 0.045 195);
+  --muted: oklch(0.955 0.008 190);
+  --muted-foreground: oklch(0.5 0.025 200);
+  /* مسِ گرم — هاورها و تأکید ثانویه */
+  --accent: oklch(0.945 0.035 65);
+  --accent-foreground: oklch(0.4 0.075 55);
+  --destructive: oklch(0.577 0.245 27.32);
+  --border: oklch(0.905 0.012 190);
+  --input: oklch(0.905 0.012 190);
+  --ring: oklch(0.56 0.1 194);
+  /* نمودارها: فیروزه، مس، یشم، شنی، سفال */
+  --chart-1: oklch(0.6 0.105 185);
+  --chart-2: oklch(0.66 0.14 55);
+  --chart-3: oklch(0.62 0.09 160);
+  --chart-4: oklch(0.78 0.1 85);
+  --chart-5: oklch(0.64 0.15 30);
+  --sidebar: oklch(0.985 0.005 190);
+  --sidebar-foreground: oklch(0.25 0.028 200);
+  --sidebar-primary: oklch(0.51 0.095 194);
+  --sidebar-primary-foreground: oklch(0.985 0.01 190);
+  --sidebar-accent: oklch(0.945 0.035 65);
+  --sidebar-accent-foreground: oklch(0.4 0.075 55);
+  --sidebar-border: oklch(0.905 0.012 190);
+  --sidebar-ring: oklch(0.56 0.1 194);
+}
+
+.dark {
+  /* شب نفتی — عمق سبزآبی به‌جای خاکستری خالص */
+  --background: oklch(0.235 0.018 205);
+  --foreground: oklch(0.93 0.012 190);
+  --card: oklch(0.275 0.02 205);
+  --card-foreground: oklch(0.93 0.012 190);
+  --popover: oklch(0.275 0.02 205);
+  --popover-foreground: oklch(0.93 0.012 190);
+  --primary: oklch(0.77 0.115 188);
+  --primary-foreground: oklch(0.24 0.04 195);
+  --secondary: oklch(0.33 0.02 205);
+  --secondary-foreground: oklch(0.93 0.012 190);
+  --muted: oklch(0.315 0.018 205);
+  --muted-foreground: oklch(0.67 0.015 195);
+  --accent: oklch(0.36 0.045 60);
+  --accent-foreground: oklch(0.9 0.07 70);
+  --destructive: oklch(0.704 0.191 22.22);
+  --border: oklch(0.36 0.02 205);
+  --input: oklch(0.36 0.02 205);
+  --ring: oklch(0.68 0.115 188);
+  --chart-1: oklch(0.72 0.12 185);
+  --chart-2: oklch(0.75 0.12 60);
+  --chart-3: oklch(0.68 0.09 160);
+  --chart-4: oklch(0.8 0.09 85);
+  --chart-5: oklch(0.7 0.14 30);
+  --sidebar: oklch(0.275 0.02 205);
+  --sidebar-foreground: oklch(0.93 0.012 190);
+  --sidebar-primary: oklch(0.77 0.115 188);
+  --sidebar-primary-foreground: oklch(0.24 0.04 195);
+  --sidebar-accent: oklch(0.36 0.045 60);
+  --sidebar-accent-foreground: oklch(0.9 0.07 70);
+  --sidebar-border: oklch(0.36 0.02 205);
+  --sidebar-ring: oklch(0.68 0.115 188);
+}
+
+/* ================================================================
+   نظام رنگ ۱۳ بخش ملکا — قاعده ۱ گام صفر (دستور مالک ۱۴۰۵/۰۷/۹)
+   ----------------------------------------------------------------
+   اصل حاکم: «یک رنگ، یک بخش — نه تکرار، نه تضاد.»
+   هر بخش ۴ سایه دارد (قاعده ۲): ۵۰ پس‌زمینهٔ بسیار روشن · ۲۰۰ حاشیه ·
+   ۵۰۰ رنگ اصلی دکمه · ۷۰۰ متن تیره/تأکید؛ دارک (قاعده ۴): ۵۰۰→۴۰۰ روشن‌تر،
+   متن معکوس (fg ثابت AA) و معادل تیرهٔ ۵۰/۲۰۰/۷۰۰.
+   مولد مرجع: scripts/p6530/gen-palette.py → scripts/p6530/colors.json
+   کنتراست: همهٔ جفت‌های الزامی ≥ ۴٫۵:۱ (WCAG AA) — download/p6530/color-contrast-report.md
+   ================================================================ */
+
+:root {
+  /* ۱. صفحهٔ ورود — بنفش سلطنتی #6D28D9 */
+  --sec-login-50: #f7f0ff; --sec-login-100: #eee2fe; --sec-login-200: #c2acdf; --sec-login-300: #c2acdf; --sec-login-500: #8758b9; --sec-login-700: #4f2e6f; --sec-login-fg: #FAFBFC;
+  /* ۲. صفحهٔ هوم — آبی نفتی #0F172A */
+  --sec-home-50: #e2f8ff; --sec-home-100: #cceffb; --sec-home-200: #80c3da; --sec-home-300: #80c3da; --sec-home-500: #0084b0; --sec-home-700: #004c6a; --sec-home-fg: #0A0E1A;
+  /* ۳. فایل‌یابی ملکا — آبی روشن #0284C7 */
+  --sec-finder-50: #e1f9f8; --sec-finder-100: #caf1f0; --sec-finder-200: #7cc7c5; --sec-finder-300: #7cc7c5; --sec-finder-500: #008c8c; --sec-finder-700: #005152; --sec-finder-fg: #0A0E1A;
+  /* ۴. آگهی ملکا — سبز زمردی #059669 */
+  --sec-melka-listing-50: #f4f5e2; --sec-melka-listing-100: #e9ebcd; --sec-melka-listing-200: #b9bc84; --sec-melka-listing-300: #b9bc84; --sec-melka-listing-500: #747500; --sec-melka-listing-700: #424200; --sec-melka-listing-fg: #FAFBFC;
+  /* ۵. درخواست ملکا — نارنجی مرجانی #EA580C */
+  --sec-melka-request-50: #ffeeea; --sec-melka-request-100: #ffded9; --sec-melka-request-200: #e4a69d; --sec-melka-request-300: #e4a69d; --sec-melka-request-500: #bb483f; --sec-melka-request-700: #70231e; --sec-melka-request-fg: #FAFBFC;
+  /* ۶. تنظیمات عمومی — خاکستری فولادی #475569 */
+  --sec-settings-50: #e7f5ff; --sec-settings-100: #d4ebff; --sec-settings-200: #92bce6; --sec-settings-300: #92bce6; --sec-settings-500: #0c76c6; --sec-settings-700: #004378; --sec-settings-fg: #FAFBFC;
+  /* ۷. داشبورد مدیریتی — قهوه‌ای کهربایی #92400E */
+  --sec-mgmt-50: #fcf2e1; --sec-mgmt-100: #f5e6ca; --sec-mgmt-200: #cfb480; --sec-mgmt-300: #cfb480; --sec-mgmt-500: #9d6700; --sec-mgmt-700: #5d3900; --sec-mgmt-fg: #FAFBFC;
+  /* ۸. M1 آگهی ملک تبریز — سبز یشمی #10B981 */
+  --sec-m1-50: #ebf8e8; --sec-m1-100: #dbefd5; --sec-m1-200: #a0c395; --sec-m1-300: #a0c395; --sec-m1-500: #3b821e; --sec-m1-700: #1b4b04; --sec-m1-fg: #FAFBFC;
+  /* ۹. M2 درخواست ملک تبریز — کهربایی روشن #F59E0B */
+  --sec-m2-50: #fff0e4; --sec-m2-100: #fee2cf; --sec-m2-200: #deab89; --sec-m2-300: #deab89; --sec-m2-500: #b35500; --sec-m2-700: #6b2c00; --sec-m2-fg: #FAFBFC;
+  /* ۱۰. M3 معاملات ملک تبریز — قرمز یاقوتی #DC2626 */
+  --sec-m3-50: #ffedf3; --sec-m3-100: #ffdde7; --sec-m3-200: #e0a4b5; --sec-m3-300: #e0a4b5; --sec-m3-500: #b5466f; --sec-m3-700: #6d213f; --sec-m3-fg: #FAFBFC;
+  /* ۱۱. M4 کارشناسان ملک تبریز — فیروزه‌ای #0891B2 */
+  --sec-m4-50: #e5f9f0; --sec-m4-100: #d0f1e2; --sec-m4-200: #88c7ad; --sec-m4-300: #88c7ad; --sec-m4-500: #008d5e; --sec-m4-700: #005233; --sec-m4-fg: #0A0E1A;
+  /* ۱۲. صفحهٔ مشاور (ایجنت) — صورتی ارغوانی #DB2777 */
+  --sec-consultant-50: #feeefb; --sec-consultant-100: #f9dff4; --sec-consultant-200: #d5a6cd; --sec-consultant-300: #d5a6cd; --sec-consultant-500: #a44c99; --sec-consultant-700: #61265a; --sec-consultant-fg: #FAFBFC;
+  /* ۱۳. هوش مصنوعی/گزارش‌ها — لاجوردی #4F46E5 */
+  --sec-ai-50: #eff2ff; --sec-ai-100: #e1e6ff; --sec-ai-200: #abb4e8; --sec-ai-300: #abb4e8; --sec-ai-500: #5f67c9; --sec-ai-700: #34387a; --sec-ai-fg: #FAFBFC;
+  /* ۱۴. M5 تطبیق هوشمند — بنفش ارغوانی #7C3AED (P6545) */
+  --sec-m5-50: #f5f3ff; --sec-m5-200: #c4b5fd; --sec-m5-500: #7c3aed; --sec-m5-700: #4c1d95; --sec-m5-fg: #ffffff;
+  /* ۱۵. M6 شاخص بازار — سبز لیمویی #65A30D (P6545) */
+  --sec-m6-50: #f7fee7; --sec-m6-200: #d9f99d; --sec-m6-500: #65a30d; --sec-m6-700: #3f6212; --sec-m6-fg: #0a0e1a;
+  /* ۱۶. M7 پوشش داده — آبی #2563EB (P6545) */
+  --sec-m7-50: #eff6ff; --sec-m7-200: #bfdbfe; --sec-m7-500: #2563eb; --sec-m7-700: #1e40af; --sec-m7-fg: #ffffff;
+  /* ۱۷. M8 یادگیری و Tier — فیروزه‌ای تیره #0D9488 (P6545) */
+  --sec-m8-50: #f0fdfa; --sec-m8-200: #99f6e4; --sec-m8-500: #0d9488; --sec-m8-700: #134e4a; --sec-m8-fg: #0f172a;
+}
+
+/* قاعده ۴ — دارک مود: ۵۰۰→۴۰۰ روشن‌تر · متن معکوس · هویت رنگی حفظ */
+.dark {
+  --sec-login-50: #2d2537; --sec-login-100: #3b2f4a; --sec-login-200: #5f4979; --sec-login-300: #5f4979; --sec-login-500: #b592df; --sec-login-700: #d0bee7; --sec-login-fg: #0F172A;
+  --sec-home-50: #132d35; --sec-home-100: #123b48; --sec-home-200: #095f75; --sec-home-300: #095f75; --sec-home-500: #3cb4d8; --sec-home-700: #9cd1e3; --sec-home-fg: #0F172A;
+  --sec-finder-50: #112e2e; --sec-finder-100: #0d3d3d; --sec-finder-200: #006362; --sec-finder-300: #006362; --sec-finder-500: #2abbb9; --sec-finder-700: #9ad4d2; --sec-finder-fg: #0F172A;
+  --sec-melka-listing-50: #2a2b16; --sec-melka-listing-100: #373818; --sec-melka-listing-200: #57591e; --sec-melka-listing-300: #57591e; --sec-melka-listing-500: #abae53; --sec-melka-listing-700: #cbcea1; --sec-melka-listing-fg: #0F172A;
+  --sec-melka-request-50: #38221f; --sec-melka-request-100: #4c2b27; --sec-melka-request-200: #7c433c; --sec-melka-request-300: #7c433c; --sec-melka-request-500: #e4877c; --sec-melka-request-700: #ecb9b2; --sec-melka-request-fg: #0F172A;
+  --sec-settings-50: #1b2a3a; --sec-settings-100: #20374e; --sec-settings-200: #2f5880; --sec-settings-300: #2f5880; --sec-settings-500: #69aaea; --sec-settings-700: #aacbed; --sec-settings-fg: #0F172A;
+  --sec-mgmt-50: #312714; --sec-mgmt-100: #423315; --sec-mgmt-200: #6b5118; --sec-mgmt-300: #6b5118; --sec-mgmt-500: #c79e47; --sec-mgmt-700: #dac49b; --sec-mgmt-fg: #0F172A;
+  --sec-m1-50: #202d1c; --sec-m1-100: #283c22; --sec-m1-200: #3e6033; --sec-m1-300: #3e6033; --sec-m1-500: #82b971; --sec-m1-700: #b7d4ae; --sec-m1-fg: #0F172A;
+  --sec-m2-50: #362418; --sec-m2-100: #492e1b; --sec-m2-200: #774826; --sec-m2-300: #774826; --sec-m2-500: #dc905b; --sec-m2-700: #e7bea3; --sec-m2-fg: #0F172A;
+  --sec-m3-50: #372228; --sec-m3-100: #4a2a34; --sec-m3-200: #794153; --sec-m3-300: #794153; --sec-m3-500: #df85a2; --sec-m3-700: #e9b8c6; --sec-m3-fg: #0F172A;
+  --sec-m4-50: #172e25; --sec-m4-100: #183e2f; --sec-m4-200: #1d634b; --sec-m4-300: #1d634b; --sec-m4-500: #51bb94; --sec-m4-700: #a3d4bf; --sec-m4-fg: #0F172A;
+  --sec-consultant-50: #332230; --sec-consultant-100: #452c41; --sec-consultant-200: #6f4469; --sec-consultant-300: #6f4469; --sec-consultant-500: #cf89c4; --sec-consultant-700: #e0bad9; --sec-consultant-fg: #0F172A;
+  --sec-ai-50: #24273a; --sec-ai-100: #2f334f; --sec-ai-200: #4a5181; --sec-ai-300: #4a5181; --sec-ai-500: #929dec; --sec-ai-700: #bdc5ef; --sec-ai-fg: #0F172A;
+  --sec-m5-50: #221c43; --sec-m5-200: #42308a; --sec-m5-500: #8b5cf6; --sec-m5-700: #a78bfa; --sec-m5-fg: #ffffff;
+  --sec-m6-50: #1d2a12; --sec-m6-200: #3c5220; --sec-m6-500: #84cc16; --sec-m6-700: #bef264; --sec-m6-fg: #0a0e1a;
+  --sec-m7-50: #101f43; --sec-m7-200: #1c3a8a; --sec-m7-500: #3b82f6; --sec-m7-700: #7b9ff9; --sec-m7-fg: #ffffff;
+  --sec-m8-50: #0f2e2b; --sec-m8-200: #14524c; --sec-m8-500: #2dd4bf; --sec-m8-700: #5eead4; --sec-m8-fg: #0f172a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    direction: rtl;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+    letter-spacing: 0;
+    text-rendering: optimizeLegibility;
+    /* شفقاق فیروزه‌ای — دو هالهٔ بسیار ملایم ثابت در پس‌زمینه کل اپ */
+    background-image:
+      radial-gradient(1100px 520px at 88% -8%, color-mix(in oklch, var(--primary) 7%, transparent), transparent 62%),
+      radial-gradient(820px 420px at 4% -4%, color-mix(in oklch, var(--accent) 6%, transparent), transparent 58%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+  /* انتخاب متن با رنگ برند */
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 24%, transparent);
+  }
+}
+
+/* ============ اسکرول‌بار سفارشی (فیروزه) ============ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--primary) 35%, transparent);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--primary) 55%, transparent);
+}
+
+/* ============ نویسه‌های عددی فارسی در همه‌جا ============ */
+.fa-nums {
+  font-variant-numeric: normal;
+}
+
+/* ============ پشتیبانی لمسی (اندروید/تبلت) ============ */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* جلوگیری از انتخاب متن هنگام لمس سریع کاشی‌ها */
+.tile-press {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ============ ابزارهای برند ============ */
+
+/* متن گرادیانی برند: فیروزه ← مس */
+.brand-gradient-text {
+  background-image: linear-gradient(to left, oklch(0.51 0.095 194), oklch(0.58 0.1 188), oklch(0.66 0.14 55));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .brand-gradient-text {
+  background-image: linear-gradient(to left, oklch(0.77 0.115 188), oklch(0.72 0.11 185), oklch(0.75 0.12 60));
+}
+
+/* سطح شیشه‌ای — هدر و نوارهای شناور */
+.glass {
+  background: color-mix(in oklch, var(--background) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* انیمیشن کاشی‌ها */
+@keyframes tile-pop {
+  0% { transform: scale(0.96); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.tile-pop {
+  animation: tile-pop 0.25s ease-out both;
+}
+
+/* احترام به کاهش حرکت */
+@media (prefers-reduced-motion: reduce) {
+  .tile-pop { animation: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* نمودارها: جهت چپ‌به‌راست برای محور زمان (استاندارد داشبوردهای فارسی) */
+.chart-ltr {
+  direction: ltr;
+}
+
+/* P6.5-10 — رندر سبک لیست‌های تک‌صفحه‌ای بسیار بزرگ (کاتالوگ‌های ARM):
+   ردیف‌های خارج از دید رندر نمی‌شوند (content-visibility) — لیست‌های
+   ۱۱ تا ۲۰ هزار ردیفی با اسکرول روان مواجه می‌شوند؛ ارتفاع تخمینی هر
+   ردیف برای اسکرول‌بار پایدار: ۵۳ پیکسل */
+.cv-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 53px;
+}
+
+/* ================================================================
+   چهار اصل زیبایی (گام صفر — قاعده ۳)
+   ۱. تنفس: هر کارت ≥ ۱۶px پدینگ (کلاس کمکی sec-breath)
+   ۲. عمق: سایهٔ نرم ۰ ۴px ۱۲px — صفر سایهٔ سخت (sec-soft-shadow)
+   ۳. حرکت: ترنزیشن ۲۰۰ms — صفر پرش ناگهانی (sec-motion)
+   ۴. خوانایی: کنتراست ≥ ۴٫۵:۱ در پالت (گزارش کنتراست شاهد است)
+   ================================================================ */
+.sec-breath {
+  padding: 1rem; /* ۱۶px — حداقل قانون */
+}
+@media (min-width: 640px) {
+  .sec-breath { padding: 1.25rem; } /* ۲۰px روی صفحه‌های بزرگ‌تر */
+}
+.sec-soft-shadow {
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.08);
+}
+.dark .sec-soft-shadow {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+}
+.sec-soft-shadow-lg {
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.12);
+}
+.dark .sec-soft-shadow-lg {
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+}
+.sec-motion {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+/* احترام به کاهش حرکت — اصل حرکت هرگز اجباری نیست */
+@media (prefers-reduced-motion: reduce) {
+  .sec-motion { transition-duration: 0ms; }
+}
+
+/* سربرگ هویتی هر بخش — نوار گرادیانی ظریف با رنگ اختصاصی بخش (قاعده ۱) */
+.sec-hairline {
+  height: 0.25rem;
+  border-radius: 999px 999px 0 0;
+  background-image: linear-gradient(to left, var(--sc-500), var(--sc-200));
+}
+.sec-surface {
+  background-color: var(--sc-50);
+  border: 1px solid var(--sc-200);
+}
+
+/* ================================================================
+   قانون ظاهر فاخر ملکا ۰۳۵-B — اجزای تازه (P6549)
+   ================================================================ */
+
+/* ۱) انتقال نرم تم — فقط حین تعویض (۳۰۰ms) + احترام به reduced-motion */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease,
+    fill 300ms ease,
+    stroke 300ms ease,
+    box-shadow 300ms ease !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition * { transition: none !important; }
+}
+
+/* ۲) ریپل — میکرو-اینتراکشن لمسی (بخش ج/۷) */
+.ripple-host { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.ripple-ink {
+  position: absolute;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.18;
+  transform: scale(0);
+  animation: ripple-grow 480ms ease-out forwards;
+  pointer-events: none;
+}
+@keyframes ripple-grow {
+  to { transform: scale(2.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ripple-ink { animation-duration: 1ms; }
+}
+
+/* ۳) Splash (بخش ج/۱) */
+@keyframes splash-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@keyframes splash-bar-move {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-220%); }
+}
+.splash-logo { animation: splash-pulse 1.4s ease-in-out infinite; }
+.splash-bar-fill { animation: splash-bar-move 900ms ease-in-out infinite; }
+.splash-fade { transition: opacity 300ms ease; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo, .splash-bar-fill { animation: none; }
+  .splash-fade { transition: none; }
+}
+
+/* ۴) نشانگر Pull-to-Refresh (بخش ج/۸) */
+.ptr-indicator {
+  opacity: 0;
+  transform: translateY(calc(var(--ptr-pull, 0px) - 44px));
+  transition: transform 80ms linear;
+  pointer-events: none;
+}
+.ptr-spinner {
+  transform: rotate(calc(var(--ptr-progress, 0) * 270deg));
+  transition: transform 120ms linear;
+}
+.ptr-indicator.ptr-spinning .ptr-spinner { animation: ptr-rotate 700ms linear infinite; }
+@keyframes ptr-rotate { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ptr-indicator { transition: none; }
+  .ptr-indicator.ptr-spinning .ptr-spinner { animation-duration: 1500ms; }
+}
+
+/* ۵) تودهٔ محتوا بالای ناوبری پایین موبایل — جلوگیری از پرش/پوشیده‌شدن (CLS) */
+.bottom-nav-spacer { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+@media (min-width: 768px) { .bottom-nav-spacer { padding-bottom: 0; } }
+
+/* ۶) هدر — احترام به ناحیهٔ امن بالای صفحه (ناچ/نوار iOS) */
+.safe-top { padding-top: env(safe-area-inset-top); }

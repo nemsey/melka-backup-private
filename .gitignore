@@ -1,2 +1,75 @@
-skills/
-node_modules/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+local-*
+.claude
+.z-ai-config
+*.log
+dev.log
+dev.out.log
+test
+prompt
+
+server.log
+# Skills directory
+/skills/
+# Recon night artifacts (runtime, not committed)
+ABORT
+recon-night1*.jsonl
+tool-results/
+backups/pre-reset-*.db
+
+# P6544 (قانون تثبیت ۰۳۱) — اسرار آینه و بسته‌های بقا: هرگز به git نمی‌روند
+upload/.mirror/
+upload/.survival/
+
+# P6548-recovery — قرنطینهٔ شبیه‌سازی و بکاپ پیش‌بازیابی (حجیم — هرگز به git نمی‌روند)
+scripts/recovery-034/scratch/
+backups/pre-recovery-034-*/
+
+# P6549 — قانون ۰۳۵-A + بهداشت کامیت بوت پلتفرم: داده در upload، نه در git
+/db/custom.db
+/upload/
+/backups/*.db
+/backups/*.tar
+*.pid

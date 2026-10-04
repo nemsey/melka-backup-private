@@ -1,0 +1,44 @@
+/**
+ * ماژول کاشی «درخواست ملک تبریز» — تعریف و ثبت در رجیستری (P6.5-10 + P6526/الف — M2)
+ * ------------------------------------------------------
+ * کاتالوگ کامل درخواست‌های سامانه ARM ملک تبریز: لیست تک‌صفحه‌ای با فیلتر
+ * «کد درخواست» و «نام و نام خانوادگی کارشناس»؛ ستون‌های کد درخواست،
+ * کارشناس، درخواست‌دهنده (نام + شماره تماس) — با قابلیت استخراج زنده از
+ * خود سامانه و ایجنت یادگیرنده مولتی‌بینش.
+ */
+
+import { defineTile } from "@/core/tiles/tile-contract";
+// P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
+import { lazyPage } from "@/core/tiles/lazy-page";
+import { tileRegistry } from "@/core/tiles/tile-registry";
+import { ClipboardList } from "lucide-react";
+
+export const armRequestTile = defineTile({
+  id: "arm-requests",
+  version: "2.0.0",
+  title: "درخواست ملک تبریز",
+  tagline: "M2 — کاتالوگ کامل درخواست‌های سامانه ARM: کد درخواست، کارشناس، شعبه، متقاضی و تماس او، قیمت از/تا، مناطق، دسته‌بندی، وضعیت شش‌حالته — با فیلتر تمام ستون‌ها و بروزرسانی زنده از خود سامانه",
+  description:
+    "همهٔ درخواست‌های ثبت‌شده در «سامانه مدیریت آگهی و درخواست» (آرم) ملک تبریز در یک لیست تک‌صفحه‌ای و بی‌نهایت: کد درخواست، نام و نام خانوادگی کارشناس ثبت‌کننده، نام و نام خانوادگی درخواست‌دهنده و شماره تماس او. فیلتر بر اساس کد درخواست و نام کارشناس؛ استخراج و بروزرسانی مستقیم از خود سامانه (فهرست کامل + غنی‌سازی زنجیره‌ای نام کامل و موبایل درخواست‌دهنده) و ایجنت هوشمند یادگیرندهٔ مولتی‌بینش با تحلیل حجم، کارشناسان پرثبت، ترکیب وضعیت‌ها، پوشش اطلاعات و تازگی ثبت.",
+  icon: ClipboardList,
+  accent: "m2",
+  component: lazyPage(() => import("./ArmRequestsPage")),
+  order: 2,
+  container: "management-dashboard",
+  agent: {
+    tileId: "arm-requests",
+    insightDomains: ["VOLUME", "TOP_EXPERTS", "COMPOSITION", "COVERAGE", "FRESHNESS"],
+    capabilities: ["memory", "feedback", "policy-versions", "rollback"],
+  },
+  settings: [
+    {
+      key: "showTitles",
+      label: "نمایش عنوان درخواست زیر کد",
+      type: "switch",
+      defaultValue: true,
+      hint: "عنوان ثبت‌شدهٔ هر درخواست در سامانه ARM زیر کد درخواست نمایش داده شود",
+    },
+  ],
+});
+
+tileRegistry.register(armRequestTile);

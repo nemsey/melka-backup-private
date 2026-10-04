@@ -1,0 +1,5 @@
+# bunfig.toml — پیکربندی bun (PHASE 6.5)
+# محافظت: هر اجرای تست، پیش از کد، preload-guard را اجرا می‌کند تا
+# پایگاه production (custom.db) هرگز هدف تست‌ها نباشد (کشف P6.5-04).
+[test]
+preload = ["./tests/preload-guard.ts"]
