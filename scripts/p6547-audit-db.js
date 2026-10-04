@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports -- اسکریپت CJS کمکی P6547 (P6548-recovery: رفع ۳ خطای lint باقی‌مانده بدون تغییر رفتار) */
 /** p6547-audit-db.js — ممیزی داده برای گام‌های جدید (P6547) */
 const { PrismaClient } = require("@prisma/client");
 const p = new PrismaClient();
