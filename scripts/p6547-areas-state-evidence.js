@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports -- اسکریپت CJS کمکی P6547 (P6548-recovery: رفع خطای lint باقی‌مانده بدون تغییر رفتار) */
 /** p6547-areas-state-evidence.js — شاهد وضعیت انبار مناطق درخواست‌ها (گام دوم-۲) */
 const { PrismaClient } = require("@prisma/client");
 const { writeFileSync } = require("node:fs");

@@ -62,3 +62,7 @@ backups/pre-reset-*.db
 # P6544 (قانون تثبیت ۰۳۱) — اسرار آینه و بسته‌های بقا: هرگز به git نمی‌روند
 upload/.mirror/
 upload/.survival/
+
+# P6548-recovery — قرنطینهٔ شبیه‌سازی و بکاپ پیش‌بازیابی (حجیم — هرگز به git نمی‌روند)
+scripts/recovery-034/scratch/
+backups/pre-recovery-034-*/

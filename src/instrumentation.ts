@@ -11,6 +11,8 @@
  *    به‌طور خودکار استخراج و جایگزین می‌شود.
  */
 
+import { existsSync } from "node:fs";
+
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
@@ -104,6 +106,46 @@ export async function register(): Promise<void> {
     // به‌محض اتصال تازهٔ ARM، انتقال خودکار از آخرین نقطه ادامه می‌یابد.
     const { startCatalogDaemon } = await import("@/lib/melk-api/catalog-daemon");
     startCatalogDaemon(db);
+  }
+
+  // ---------- ۴) P6548-recovery: قلاب وارسی بازگشت در بوت (Tier 4) ----------
+  // ۲۰ ثانیه پس از هر بوت، وارسی «مهر زنده ↔ HEAD ↔ آینهٔ GitHub ↔ شمارش DB»
+  // را به‌صورت detached اجرا می‌کند؛ در صورت تشخیص بازگشت (بازیابی محیط از
+  // اسنپ‌شات کهنهٔ پلتفرم)، بازیابی خودکار آغاز می‌شود (docs/RECOVERY-POLICY.md).
+  // خاموشی: MELK_AUTO_RECOVERY=disabled · در تست‌ها (DATABASE_URL آزمایشی) غیرفعال.
+  // محدودیت صادقانه: این قلاب فقط در کدِ ≥P6548 هست؛ اسنپ‌شات‌های قدیمی‌تر
+  // فاقد آن‌اند ⇒ وارسی آغاز جلسه (بند و قانون ۰۳۱) همچنان خط اول دفاع است.
+  if (
+    process.env.MELK_AUTO_RECOVERY !== "disabled" &&
+    !(process.env.DATABASE_URL ?? "").includes("test") &&
+    existsSync("scripts/recovery/auto-recovery.sh")
+  ) {
+    const { spawn } = await import("node:child_process");
+    const { logEvent: logBootCheck } = await import("@/lib/logger");
+    setTimeout(() => {
+      try {
+        const child = spawn("bash", ["scripts/recovery/auto-recovery.sh", "check"], {
+          cwd: process.cwd(),
+          detached: true,
+          stdio: "ignore",
+        });
+        child.unref();
+        logBootCheck({
+          category: "system",
+          operation: "auto-recovery-boot-check",
+          status: "ok",
+          detail: { pid: child.pid ?? -1 },
+        });
+      } catch (e) {
+        logBootCheck({
+          level: "warn",
+          category: "system",
+          operation: "auto-recovery-boot-check",
+          status: "fail",
+          detail: { error: String(e) },
+        });
+      }
+    }, 20_000);
   }
 
   // ---------- ۳) حلقه همگام‌سازی پس‌زمینه — HOTFIX-02 (SEC-3) ----------
