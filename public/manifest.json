@@ -8,8 +8,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#f4f9f8",
+  "orientation": "portrait-primary",
+  "background_color": "#FAFBFC",
   "theme_color": "#007776",
   "icons": [
     {
@@ -39,28 +39,53 @@
   ],
   "shortcuts": [
     {
-      "name": "فایل یابی ملکا",
-      "short_name": "فایل یابی",
-      "url": "/?tile=file-finder",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "name": "آگهی ملک تبریز (M1)",
+      "short_name": "آگهی‌ها",
+      "url": "/?tile=arm-listings",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
-      "name": "آگهی ملکا",
-      "short_name": "آگهی",
-      "url": "/?tile=listings",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "درخواست ملکا",
-      "short_name": "درخواست",
-      "url": "/?tile=requests",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "name": "درخواست ملک تبریز (M2)",
+      "short_name": "درخواست‌ها",
+      "url": "/?tile=arm-requests",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "معاملات ملک تبریز (M3)",
       "short_name": "معاملات",
       "url": "/?tile=transactions-contracts",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile-home.png",
+      "sizes": "412x915",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "خانهٔ ملکا روی موبایل — پنج کاشی و ناوبری پایین"
+    },
+    {
+      "src": "/screenshots/desktop-m1.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "فهرست آگهی‌های ملک تبریز روی دسکتاپ"
     }
   ]
 }

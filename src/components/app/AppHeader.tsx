@@ -21,6 +21,10 @@ import { faDateTime } from "@/lib/format";
 import { InstallButton } from "@/components/app/InstallButton";
 // P6526/ث-۲ — باز کردن preview در صفحهٔ جدید (وقتی اپ داخل قاب گفت‌وگو است)
 import { OpenInNewTabButton } from "@/components/app/OpenInNewTabButton";
+// P6549/قانون ۰۳۵-B — نشان آفلاین (بخش ج/۵)
+import { OfflineBadge } from "@/components/app/OfflineBadge";
+// P6549/قانون ۰۳۵-B — انتقال نرم تم ۳۰۰ms (بخش ج-۲)
+import { switchThemeSoft } from "@/lib/theme-transition";
 
 export function AppHeader() {
   const { theme, setTheme } = useTheme();
@@ -28,7 +32,7 @@ export function AppHeader() {
   const logout = useAppStore((s) => s.logout);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-primary/10 glass">
+    <header className="sticky top-0 z-40 border-b border-primary/10 glass safe-top">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-lg shadow-teal-600/30 ring-4 ring-primary/10">
@@ -43,6 +47,8 @@ export function AppHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* قانون ۰۳۵-B/ج-۵: نشان آفلاین */}
+          <OfflineBadge />
           {/* P6526/ث-۲ — داخل قاب چت: باز کردن همین صفحه در برگهٔ تازهٔ مرورگر */}
           <OpenInNewTabButton />
           {/* P6525 — نصب اپلیکیشن (PWA): کروم/اندروید/ادج → دیالوگ بومی؛ iOS → راهنما */}
@@ -50,7 +56,7 @@ export function AppHeader() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={() => switchThemeSoft(theme === "dark" ? "light" : "dark", setTheme)}
             aria-label={theme === "dark" ? "روشن کردن تم" : "تاریک کردن تم"}
           >
             {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}

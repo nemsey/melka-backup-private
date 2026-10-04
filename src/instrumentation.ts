@@ -11,10 +11,13 @@
  *    به‌طور خودکار استخراج و جایگزین می‌شود.
  */
 
-import { existsSync } from "node:fs";
-
+// P6549 — import سطح‌بالا حذف شد: کامپایل Edge Runtime روی "node:fs" خطا می‌داد
+// (حتی با گارد NEXT_RUNTIME در زمان اجرا). الگوی امن: import پویا داخل مسیر nodejs.
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+
+  // فقط در رانتایم Node در دسترس است — تابع کمکی محلی
+  const { existsSync } = await import("node:fs");
 
   // ---------- ۰) P6.5-08: env جایگزین پلتفرم ----------
   // فرایند دیپلوی پلتفرم .env/.env.local را می‌زداید و سرور standalone هم

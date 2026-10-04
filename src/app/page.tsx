@@ -7,6 +7,7 @@
  */
 
 import { useEffect } from "react";
+import { MotionConfig } from "framer-motion";
 import { useAppStore } from "@/lib/client/store";
 import { AuthScreen } from "@/components/app/AuthScreen";
 import { OtpScreen } from "@/components/app/OtpScreen";
@@ -14,6 +15,9 @@ import { AppHeader } from "@/components/app/AppHeader";
 import { DashboardHome } from "@/components/app/DashboardHome";
 import { TileShell } from "@/components/app/TileShell";
 import { SwRegister } from "@/components/app/SwRegister";
+// P6549/قانون ۰۳۵-B — اسپلش + ناوبری پایین
+import { SplashScreen } from "@/components/app/SplashScreen";
+import { BottomNav } from "@/components/app/BottomNav";
 // P6526/ث-۲ — دکمهٔ «باز کردن در صفحهٔ جدید» برای پیش‌نمایش داخل قاب چت
 import { OpenInNewTabButton } from "@/components/app/OpenInNewTabButton";
 import { tileRegistry } from "@/core/tiles/tile-registry";
@@ -71,10 +75,17 @@ export default function Page() {
   const tile = activeTileId ? tileRegistry.get(activeTileId) : null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <SwRegister />
-      <AppHeader />
-      {stage === "tile" && tile ? <TileShell tile={tile} /> : <DashboardHome />}
-    </div>
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen flex flex-col bg-background">
+        {/* قانون ۰۳۵-B/ج-۱: اسپلش با آیکون برند — نخستین بارگذاری هر نشست */}
+        <SplashScreen />
+        <SwRegister />
+        <AppHeader />
+        {stage === "tile" && tile ? <TileShell tile={tile} /> : <DashboardHome />}
+        {/* قانون ۰۳۵-B/ج-۳: ناوبری پایین (موبایل) + فاصلهٔ محتوا (CLS صفر) */}
+        <div className="bottom-nav-spacer" aria-hidden />
+        <BottomNav />
+      </div>
+    </MotionConfig>
   );
 }

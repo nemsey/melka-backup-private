@@ -58,6 +58,10 @@ import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { ContractFileDialog, type ContractDocData } from "./ContractFileDialog";
+// P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
+import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
+import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
+
 
 /** برچسب فارسی سری‌های نمودار روند (B.۱ — ملکا-شورا-۱۴۰۵-۰۱۸) */
 const SERIES_FA: Record<string, string> = {
@@ -157,7 +161,10 @@ const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknow
 export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode }) {
   const isMobile = useIsMobile();
   // B.۱ (ملکا-شورا-۱۴۰۵-۰۱۷) — فیلترها در موبایل جمع‌شونده؛ در دسکتاپ همیشه باز
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(
+    // قانون ۰۳۵-B/ت-۵: آکاردئون در موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
+  );
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [contractDoc, setContractDoc] = useState<ContractDocData | null>(null);
@@ -298,8 +305,12 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
     setContractOpen(true);
   };
 
+  // قانون ۰۳۵-B/ج-۸ — کشیدن برای تازه‌سازی
+  const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void fetchTransactions());
+
   return (
     <div className="space-y-6">
+      <PtrIndicator innerRef={ptrRef} spinning={ptrSpinning} />
       {/* شاخص‌های چهارجانی — P6.5-15: کل / مبایعه‌نامه (با پیش‌فروش) / اجاره (با تمدید) / بدون قرارداد */}
       {rows && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -580,9 +591,20 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
               ))}
             </div>
           ) : rows.length === 0 ? (
-            // BLOCK F — حالت خالی با پیام شفاف
-            <div id="m3-empty-state" className="p-8 text-center text-muted-foreground text-sm leading-relaxed">
-              {loading ? "در حال جستجو…" : "هیچ معامله‌ای با این فیلتر یافت نشد"}
+            // BLOCK F — حالت خالی طراحی‌شده (قانون ۰۳۵-B/ج-۴)
+            <div id="m3-empty-state">
+              <EmptyState
+                hasFilters={Boolean(
+                  filters.dateFrom || filters.dateTo || filters.propertyCode || filters.requestCode ||
+                  filters.contractHolo || filters.expertName || filters.personnelCode ||
+                  filters.sellerName || filters.buyerName || filters.priceFrom || filters.priceTo ||
+                  filters.hasContract !== "all" || filters.contractTypes.length > 0
+                )}
+                onClearFilters={() => {
+                  setFilters(EMPTY_FILTERS);
+                  setApplied(EMPTY_FILTERS);
+                }}
+              />
             </div>
           ) : (
             <Table>

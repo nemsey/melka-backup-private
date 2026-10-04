@@ -437,3 +437,85 @@ button, a, [role="button"] {
   background-color: var(--sc-50);
   border: 1px solid var(--sc-200);
 }
+
+/* ================================================================
+   قانون ظاهر فاخر ملکا ۰۳۵-B — اجزای تازه (P6549)
+   ================================================================ */
+
+/* ۱) انتقال نرم تم — فقط حین تعویض (۳۰۰ms) + احترام به reduced-motion */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease,
+    fill 300ms ease,
+    stroke 300ms ease,
+    box-shadow 300ms ease !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition * { transition: none !important; }
+}
+
+/* ۲) ریپل — میکرو-اینتراکشن لمسی (بخش ج/۷) */
+.ripple-host { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.ripple-ink {
+  position: absolute;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.18;
+  transform: scale(0);
+  animation: ripple-grow 480ms ease-out forwards;
+  pointer-events: none;
+}
+@keyframes ripple-grow {
+  to { transform: scale(2.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ripple-ink { animation-duration: 1ms; }
+}
+
+/* ۳) Splash (بخش ج/۱) */
+@keyframes splash-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@keyframes splash-bar-move {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-220%); }
+}
+.splash-logo { animation: splash-pulse 1.4s ease-in-out infinite; }
+.splash-bar-fill { animation: splash-bar-move 900ms ease-in-out infinite; }
+.splash-fade { transition: opacity 300ms ease; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo, .splash-bar-fill { animation: none; }
+  .splash-fade { transition: none; }
+}
+
+/* ۴) نشانگر Pull-to-Refresh (بخش ج/۸) */
+.ptr-indicator {
+  opacity: 0;
+  transform: translateY(calc(var(--ptr-pull, 0px) - 44px));
+  transition: transform 80ms linear;
+  pointer-events: none;
+}
+.ptr-spinner {
+  transform: rotate(calc(var(--ptr-progress, 0) * 270deg));
+  transition: transform 120ms linear;
+}
+.ptr-indicator.ptr-spinning .ptr-spinner { animation: ptr-rotate 700ms linear infinite; }
+@keyframes ptr-rotate { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ptr-indicator { transition: none; }
+  .ptr-indicator.ptr-spinning .ptr-spinner { animation-duration: 1500ms; }
+}
+
+/* ۵) تودهٔ محتوا بالای ناوبری پایین موبایل — جلوگیری از پرش/پوشیده‌شدن (CLS) */
+.bottom-nav-spacer { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+@media (min-width: 768px) { .bottom-nav-spacer { padding-bottom: 0; } }
+
+/* ۶) هدر — احترام به ناحیهٔ امن بالای صفحه (ناچ/نوار iOS) */
+.safe-top { padding-top: env(safe-area-inset-top); }

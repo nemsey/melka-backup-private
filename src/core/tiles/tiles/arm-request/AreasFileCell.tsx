@@ -20,14 +20,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+// P6549/قانون ۰۳۵-B/ج-۹ — فایل مناطق در «صفحه‌گوشهٔ پایین» (الگوی موبایل؛ روی دسکتاپ هم از پایین)
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Badge } from "@/components/ui/badge";
 import { FileText, MapPin } from "lucide-react";
 import { faDigits, faNumber } from "@/lib/format";
@@ -53,38 +47,32 @@ export function AreasFileCell({ requestCode, areaNames }: { requestCode: string;
     );
   }
 
-  // تعداد زیاد — نمایش فایل‌گونه (دستور ب): چیپ + دیالوگ سند مناطق
+  // تعداد زیاد — نمایش فایل‌گونه (دستور ب): چیپ + صفحه‌گوشهٔ پایین سند مناطق
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 gap-1.5 px-2.5 text-xs font-bold"
-          data-testid="areas-file-button"
-          aria-label={`فایل مناطق درخواست کد ${faDigits(requestCode)} — ${faNumber(areaNames.length)} منطقه`}
-        >
-          <FileText className="w-3.5 h-3.5 text-teal-600 shrink-0" aria-hidden />
-          فایل مناطق
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 tabular-nums">
-            {faNumber(areaNames.length)}
-          </Badge>
-        </Button>
-      </DialogTrigger>
-      <DialogContent dir="rtl" className="max-w-md" data-testid="areas-file-dialog">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <FileText className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
-            فایل مناطق — درخواست کد {faDigits(requestCode)}
-          </DialogTitle>
-          <DialogDescription>
-            {faNumber(areaNames.length)} منطقهٔ منتخب این درخواست — عین دادهٔ سامانه ARM ملک تبریز؛
-            برای بستن فایل، دکمهٔ بستن یا کلید Esc را بزنید.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 gap-1.5 px-2.5 text-xs font-bold"
+        data-testid="areas-file-button"
+        aria-label={`فایل مناطق درخواست کد ${faDigits(requestCode)} — ${faNumber(areaNames.length)} منطقه`}
+        onClick={() => setOpen(true)}
+      >
+        <FileText className="w-3.5 h-3.5 text-teal-600 shrink-0" aria-hidden />
+        فایل مناطق
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 tabular-nums">
+          {faNumber(areaNames.length)}
+        </Badge>
+      </Button>
+      <BottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={`فایل مناطق — درخواست کد ${faDigits(requestCode)}`}
+        description={`${faNumber(areaNames.length)} منطقهٔ منتخب این درخواست — عین دادهٔ سامانه ARM ملک تبریز`}
+      >
         {/* سند مناطق — فهرست شماره‌دار با اسکرول داخلی (سند بلند، ردیف جدول را نمی‌کشد) */}
         <div
-          className="rounded-lg border bg-muted/20 max-h-[60vh] overflow-y-auto"
+          className="rounded-lg border bg-muted/20 overflow-y-auto"
           data-testid="areas-file-list"
           role="document"
           aria-label={`سند فهرست ${faNumber(areaNames.length)} منطقهٔ منتخب`}
@@ -104,10 +92,10 @@ export function AreasFileCell({ requestCode, areaNames }: { requestCode: string;
             ))}
           </ol>
         </div>
-        <p className="text-xs text-muted-foreground text-center border-t pt-2">
+        <p className="text-xs text-muted-foreground text-center border-t pt-2 mt-2">
           پایان فایل — {faNumber(areaNames.length)} منطقه در این سند ثبت شده است.
         </p>
-      </DialogContent>
-    </Dialog>
+      </BottomSheet>
+    </>
   );
 }
