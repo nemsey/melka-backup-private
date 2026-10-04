@@ -1026,6 +1026,8 @@ model PmPersonnelRecord {
   sharePercent   Float?
   /// P6547/گام چهارم — شماره داخلی تلفن سازمانی (voipInfo.extentionNumber از realtors/list)
   voipExtension  String?
+  /// P6549 — آدرس پرسنل از سامانهٔ PM (realtors/info/contactInfo → contactInfo.address — کشف زندهٔ ۱۴۰۵/۰۷/۱۲)
+  address        String?
   /// وضعیت فعال‌سازی پلتفرم‌ها — JSON {ps,acc,apm,chat}
   activationStatusJson String?
   /// کسب‌وکار — JSON {title,code}

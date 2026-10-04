@@ -233,7 +233,7 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
   async listPendingEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]> {
     const where: Prisma.PropertyRecordWhereInput =
       rowIds && rowIds.length > 0
-        ? { id: { in: rowIds }, extractionBatchId: null }
+        ? { id: { in: rowIds } }
         : { extractionBatchId: null };
     const records = await this.client.propertyRecord.findMany({
       where,

@@ -82,8 +82,9 @@ const M4_COLUMNS: ColumnSpec[] = [
   { key: "fullName", title: "نام کامل", fillPath: "همگام‌سازی کارشناسان ARM (realtors/list)" },
   { key: "mobile", title: "موبایل", fillPath: "همگام‌سازی کارشناسان ARM + پشتیبان PM" },
   { key: "personnelCode", title: "کد پرسنلی", fillPath: "رجیستری پرسنل PM (realtors/list — منبع حقیقت)" },
+  { key: "address", title: "آدرس", fillPath: "سامانهٔ PM (realtors/info/contactInfo — contactInfo.address) — کشف P6549" },
   { key: "businessTitle", title: "عنوان کسب‌وکار", fillPath: "همگام‌سازی کارشناسان ARM" },
-  { key: "branchId", title: "شعبه", fillPath: "زنجیرهٔ تفکیک شعبه (نقشهٔ مالک → کسب‌وکار)" },
+  { key: "__branch", title: "شعبه", fillPath: "زنجیرهٔ تفکیک شعبه (نقشهٔ مالک → کسب‌وکار)" },
   { key: "roleTitle", title: "نقش پرسنلی", fillPath: "سامانهٔ PM (realtors/list + personnelInfo)" },
   { key: "hireDate", title: "تاریخ استخدام", fillPath: "سامانهٔ PM (realtors/info/personnelInfo — کشف P6546)" },
   // P6547/گام چهارم — ستون‌های تازه از ساختار فراژرف PM

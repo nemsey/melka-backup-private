@@ -1,0 +1,506 @@
+{
+  "meta": {
+    "title": "حسابرسی پوشش اطلاعات ستون‌های فهرست‌های چهارگانه — هیچ ستونی بدون اطلاعات نباشد (نکته ۲)",
+    "auditedAt": "2026-10-04T06:56:11.165Z",
+    "source": "APIهای زندهٔ همان فهرست‌ها (نشست مدیر)",
+    "totalColumns": 52,
+    "columnsWithData": 47,
+    "columnsWithoutData": [
+      "M2 درخواست ملک تبریز — ۱۳ ستون → متقاضی — موبایل",
+      "M3 معاملات ملک تبریز — ۱۱ ستون → قیمت",
+      "M3 معاملات ملک تبریز — ۱۱ ستون → فایل قرارداد",
+      "M4 کارشناسان ملک تبریز — ۱۲ ستون → نقش پرسنلی",
+      "M4 کارشناسان ملک تبریز — ۱۲ ستون → آدرس"
+    ],
+    "apiSpeeds": [
+      {
+        "tile": "M1 آگهی ملک تبریز",
+        "ms": 547,
+        "rows": 3000,
+        "status": 200
+      },
+      {
+        "tile": "M2 درخواست ملک تبریز",
+        "ms": 1072,
+        "rows": 3000,
+        "status": 200
+      },
+      {
+        "tile": "M3 معاملات ملک تبریز",
+        "ms": 379,
+        "rows": 739,
+        "status": 200
+      },
+      {
+        "tile": "M4 کارشناسان ملک تبریز",
+        "ms": 211,
+        "rows": 291,
+        "status": 200
+      }
+    ],
+    "verdict": "ATTENTION — 5 ستون بدون داده: M2 درخواست ملک تبریز — ۱۳ ستون → متقاضی — موبایل | M3 معاملات ملک تبریز — ۱۱ ستون → قیمت | M3 معاملات ملک تبریز — ۱۱ ستون → فایل قرارداد | M4 کارشناسان ملک تبریز — ۱۲ ستون → نقش پرسنلی | M4 کارشناسان ملک تبریز — ۱۲ ستون → آدرس"
+  },
+  "lists": [
+    {
+      "tile": "M1 آگهی ملک تبریز — ۱۶ ستون",
+      "sampled": 3000,
+      "columns": [
+        {
+          "col": "ردیف",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "کد آگهی",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "کارشناس",
+          "filled": 2996,
+          "total": 3000,
+          "pct": 99.9
+        },
+        {
+          "col": "شعبه",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "مالک — نام",
+          "filled": 2985,
+          "total": 3000,
+          "pct": 99.5
+        },
+        {
+          "col": "مالک — موبایل",
+          "filled": 2986,
+          "total": 3000,
+          "pct": 99.5
+        },
+        {
+          "col": "قیمت",
+          "filled": 2915,
+          "total": 3000,
+          "pct": 97.2
+        },
+        {
+          "col": "آدرس — منطقه",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "آدرس — نشانی",
+          "filled": 1443,
+          "total": 3000,
+          "pct": 48.1
+        },
+        {
+          "col": "دسته‌بندی",
+          "filled": 2997,
+          "total": 3000,
+          "pct": 99.9
+        },
+        {
+          "col": "وضعیت",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "آخرین فعالیت",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "متراژ",
+          "filled": 2993,
+          "total": 3000,
+          "pct": 99.8
+        },
+        {
+          "col": "اتاق",
+          "filled": 2573,
+          "total": 3000,
+          "pct": 85.8
+        },
+        {
+          "col": "سال ساخت",
+          "filled": 2642,
+          "total": 3000,
+          "pct": 88.1
+        },
+        {
+          "col": "نوع ملک",
+          "filled": 2997,
+          "total": 3000,
+          "pct": 99.9
+        }
+      ]
+    },
+    {
+      "tile": "M2 درخواست ملک تبریز — ۱۳ ستون",
+      "sampled": 3000,
+      "columns": [
+        {
+          "col": "ردیف",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "کد درخواست",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "کارشناس",
+          "filled": 2983,
+          "total": 3000,
+          "pct": 99.4
+        },
+        {
+          "col": "شعبه",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "متقاضی — نام",
+          "filled": 2999,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "متقاضی — موبایل",
+          "filled": 0,
+          "total": 3000,
+          "pct": 0
+        },
+        {
+          "col": "مناطق",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "قیمت — از",
+          "filled": 2533,
+          "total": 3000,
+          "pct": 84.4
+        },
+        {
+          "col": "قیمت — تا",
+          "filled": 2533,
+          "total": 3000,
+          "pct": 84.4
+        },
+        {
+          "col": "دسته‌بندی",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "نوع ملک",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "نوع ساختمان",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        },
+        {
+          "col": "وضعیت",
+          "filled": 3000,
+          "total": 3000,
+          "pct": 100
+        }
+      ]
+    },
+    {
+      "tile": "M3 معاملات ملک تبریز — ۱۱ ستون",
+      "sampled": 739,
+      "columns": [
+        {
+          "col": "ردیف",
+          "filled": 739,
+          "total": 739,
+          "pct": 100
+        },
+        {
+          "col": "تاریخ معامله",
+          "filled": 739,
+          "total": 739,
+          "pct": 100
+        },
+        {
+          "col": "کد ملک",
+          "filled": 739,
+          "total": 739,
+          "pct": 100
+        },
+        {
+          "col": "فروشنده",
+          "filled": 739,
+          "total": 739,
+          "pct": 100
+        },
+        {
+          "col": "کد درخواست",
+          "filled": 739,
+          "total": 739,
+          "pct": 100
+        },
+        {
+          "col": "خریدار",
+          "filled": 739,
+          "total": 739,
+          "pct": 100
+        },
+        {
+          "col": "قیمت",
+          "filled": 0,
+          "total": 739,
+          "pct": 0
+        },
+        {
+          "col": "نوع قرارداد",
+          "filled": 739,
+          "total": 739,
+          "pct": 100
+        },
+        {
+          "col": "هولوگرام",
+          "filled": 739,
+          "total": 739,
+          "pct": 100
+        },
+        {
+          "col": "کارشناس",
+          "filled": 694,
+          "total": 739,
+          "pct": 93.9
+        },
+        {
+          "col": "فایل قرارداد",
+          "filled": 0,
+          "total": 739,
+          "pct": 0
+        }
+      ]
+    },
+    {
+      "tile": "M4 کارشناسان ملک تبریز — ۱۲ ستون",
+      "sampled": 291,
+      "columns": [
+        {
+          "col": "ردیف",
+          "filled": 291,
+          "total": 291,
+          "pct": 100
+        },
+        {
+          "col": "کارشناس — نام",
+          "filled": 291,
+          "total": 291,
+          "pct": 100
+        },
+        {
+          "col": "کارشناس — موبایل",
+          "filled": 291,
+          "total": 291,
+          "pct": 100
+        },
+        {
+          "col": "تاریخ استخدام",
+          "filled": 142,
+          "total": 291,
+          "pct": 48.8
+        },
+        {
+          "col": "کد پرسنلی",
+          "filled": 291,
+          "total": 291,
+          "pct": 100
+        },
+        {
+          "col": "شعبه",
+          "filled": 291,
+          "total": 291,
+          "pct": 100
+        },
+        {
+          "col": "نقش پرسنلی",
+          "filled": 0,
+          "total": 291,
+          "pct": 0
+        },
+        {
+          "col": "مبایعه‌نامه (خانواده)",
+          "filled": 291,
+          "total": 291,
+          "pct": 100
+        },
+        {
+          "col": "اجاره‌نامه (خانواده)",
+          "filled": 291,
+          "total": 291,
+          "pct": 100
+        },
+        {
+          "col": "آدرس",
+          "filled": 0,
+          "total": 291,
+          "pct": 0
+        },
+        {
+          "col": "وضعیت فعال",
+          "filled": 291,
+          "total": 291,
+          "pct": 100
+        },
+        {
+          "col": "نقش/عنوان",
+          "filled": 291,
+          "total": 291,
+          "pct": 100
+        }
+      ]
+    }
+  ],
+  "keyDiscovery": {
+    "M1 آگهی ملک تبریز — ۱۶ ستون": [
+      "id",
+      "propertyCode",
+      "title",
+      "status",
+      "realtorName",
+      "ownerName",
+      "ownerMobile",
+      "price",
+      "pricePerMeter",
+      "tradeTypeName",
+      "propertyTypeName",
+      "meterage",
+      "rooms",
+      "floor",
+      "buildYear",
+      "address",
+      "areaName",
+      "lineName",
+      "enrichedAt",
+      "createdAt",
+      "updatedAt",
+      "branch"
+    ],
+    "M2 درخواست ملک تبریز — ۱۳ ستون": [
+      "id",
+      "requestCode",
+      "title",
+      "status",
+      "actorName",
+      "customerName",
+      "customerMobile",
+      "areaNames",
+      "lineNames",
+      "tradeTypeName",
+      "propertyTypeName",
+      "buildingTypeName",
+      "priceFrom",
+      "priceTo",
+      "paymentMethodName",
+      "seriousnessName",
+      "urgent",
+      "luxury",
+      "changeable",
+      "enrichedAt",
+      "createdAt",
+      "updatedAt",
+      "branch"
+    ],
+    "M3 معاملات ملک تبریز — ۱۱ ستون": [
+      "id",
+      "contractDate",
+      "propertyCode",
+      "propertyCustomer",
+      "requestCode",
+      "requestCustomer",
+      "contractHolo",
+      "suggestedPropertyCount",
+      "eventsCount",
+      "syncedAt",
+      "ownerCode",
+      "branchId",
+      "tenantId",
+      "sourceRunId",
+      "rawDate",
+      "rawPropertyCustomer",
+      "rawRequestCustomer",
+      "rawSourceVersion",
+      "extractedAt",
+      "extractionBatchId",
+      "normalizationVersion",
+      "ownerName",
+      "ownerMobile",
+      "requesterName",
+      "requesterMobile",
+      "sellerName",
+      "sellerMobile",
+      "buyerName",
+      "buyerMobile",
+      "contractText",
+      "consultantsShareSummary",
+      "contractMatchBy",
+      "infoMatch",
+      "contractType",
+      "contractAmount",
+      "agency"
+    ],
+    "M4 کارشناسان ملک تبریز — ۱۲ ستون": [
+      "id",
+      "personnelCode",
+      "fullName",
+      "mobile",
+      "role",
+      "businessTitle",
+      "creator",
+      "active",
+      "createdAt",
+      "syncedAt",
+      "branchId",
+      "tenantId",
+      "sourceRunId",
+      "rawFullName",
+      "rawMobile",
+      "rawBusinessTitle",
+      "rawCreator",
+      "rawSourceVersion",
+      "extractedAt",
+      "extractionBatchId",
+      "normalizationVersion",
+      "interactionTotal",
+      "pmCode",
+      "saleCount",
+      "rentCount",
+      "accContractCount",
+      "hireDate",
+      "roleTitle",
+      "employmentType",
+      "sharePercent",
+      "voipExtension",
+      "pmBranchTitle",
+      "branch",
+      "address"
+    ]
+  }
+}
