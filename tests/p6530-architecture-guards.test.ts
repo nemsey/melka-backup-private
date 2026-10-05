@@ -70,7 +70,7 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
   });
 
   // P6545/گام۲ (جلسه ۰۳۳): چهار کاشی تازهٔ M5-M8 به داشبورد مدیریتی افزوده شدند
-  test("۰-۳) داشبورد مدیریتی — هشت کاشی M1 تا M8 با نام‌ها و ترتیب (P6545/جلسه ۰۳۳)", async () => {
+  test("۰-۳) داشبورد مدیریتی — هشت کاشی M1 تا M8 با نام‌ها و ترتیب (PN-003: m5 تطبیق + m6 یادگیری)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER");
     expect(children.map((t) => t.title)).toEqual([
@@ -79,9 +79,9 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
       "معاملات ملک تبریز",
       "کارشناسان ملک تبریز",
       "تطبیق هوشمند ملک تبریز",
+      "مغز ملکا — یادگیری و Tier",
       "شاخص بازار ملک تبریز",
       "پوشش اطلاعات ملک تبریز",
-      "مغز ملکا — یادگیری و Tier",
     ]);
     expect(children.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });

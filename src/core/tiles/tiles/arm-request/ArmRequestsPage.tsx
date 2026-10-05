@@ -42,7 +42,7 @@ import {
   Landmark, PieChart, Banknote, Tag, CalendarDays, Network, Filter, MapPinned, Award, Building2, Home,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TopRankingTable, TileCoverageTable } from "@/components/app/shared";
+import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
@@ -482,9 +482,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
           <div>
             <div className="flex items-center justify-between text-xs mb-1.5">
               <span className="text-muted-foreground">
-                تکمیل اطلاعات متقاضی، مناطق، قیمت و دسته‌بندی
+                {/* PN-003 گام ۴-۱ — توضیح متنی حذف شد؛ فقط وضعیت زندهٔ غنی‌سازی می‌ماند */}
                 {enriching && (
-                  <span className="inline-flex items-center gap-1 text-sec-m2-700 ms-2">
+                  <span className="inline-flex items-center gap-1 text-sec-m2-700">
                     <Loader2 className="w-3 h-3 animate-spin" aria-hidden /> در حال تکمیل خودکار…
                   </span>
                 )}
@@ -510,7 +510,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
             aria-expanded={filtersOpen}
           >
             <Filter className="w-4 h-4 text-sec-m2-700" aria-hidden />
-            فیلتر فهرست درخواست — بر اساس تمام ستون‌ها
+            فیلتر فهرست درخواست
             {anyFilterActive && <Badge variant="secondary" className="gap-1">فیلتر فعال</Badge>}
             <span className="text-muted-foreground text-xs me-auto">{filtersOpen ? "بستن" : "باز کردن"}</span>
           </button>
@@ -754,7 +754,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
         <Card>
           <CardHeader className="py-4 flex flex-col items-center gap-1">
             <div className="flex items-center gap-2 flex-wrap justify-center">
-              <CardTitle className="text-base text-center">فهرست درخواست‌ها — کاتالوگ سامانه ARM ملک تبریز</CardTitle>
+              <CardTitle className="text-base text-center">فهرست درخواست‌ها</CardTitle>
               {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
               <Button
                 variant="outline"
@@ -776,6 +776,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
               </Button>
+              {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
+              <ExcelImportButton entity="requests" compact onImported={() => void load()} />
             </div>
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>

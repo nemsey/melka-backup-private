@@ -167,3 +167,35 @@ export function downloadBlob(blob: Blob, filename: string): void {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/**
+ * PN-003 گام ۴-۲ — بارگذاری فایل (multipart/form-data) به سرور
+ * برای «آپلود اطلاعات کل فهرست به صورت فایل اکسل» (ایمپورت).
+ */
+export async function apiUpload<T = unknown>(
+  path: string,
+  file: File,
+  timeoutMs = 300_000
+): Promise<T> {
+  const headers: Record<string, string> = {};
+  const token = tokenHolder?.() ?? null;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(path, { method: "POST", headers, body: form, signal: controller.signal });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { message?: string; code?: string } | null;
+      throw new ApiClientError(body?.code ?? "UNKNOWN", body?.message ?? "بارگذاری فایل ناموفق بود.", res.status);
+    }
+    return (await res.json()) as T;
+  } catch (err) {
+    if (err instanceof ApiClientError) throw err;
+    if ((err as Error)?.name === "AbortError") throw new ApiClientError("TIMEOUT", "بارگذاری فایل بیش از حد طول کشید.", 0);
+    throw new ApiClientError("NETWORK_ERROR", "خطای شبکه در بارگذاری فایل.", 0);
+  } finally {
+    clearTimeout(timer);
+  }
+}

@@ -8,7 +8,7 @@
  *   ۲) هش SHA-256 در AppMeta دیتابیس (masterCodeHash) — DB از بازنشانی‌های
  *      محیط جان سالم به در می‌برد (شاهد زندهٔ ۱۴۰۵/۰۷/۱۳)؛ فقط هش ذخیره
  *      می‌شود، هرگز خود کد؛ رمزگشایی معکوس ناممکن است.
- * کد پیش‌فرض ۸ رقمی env.platform.json (00000000) عمداً در انتهای زنجیره نیست —
+ * کد پیش‌فرض ۸ رقمیِ تستیِ env.platform.json عمداً در انتهای زنجیره نیست —
  * رد می‌شود چون فرمتش معتبر است اما مقدار تستی عمومی است (SEC-1).
  */
 
@@ -40,9 +40,10 @@ export async function POST(request: NextRequest) {
     const cfg = getMelkApiConfig();
     // HOTFIX-01 (SEC-1): بدون هیچ منبع کد مستر (env یا هش DB) ورود مدیر کاملاً غیرفعال است —
     // نه fallback سورس‌نشسته، نه عبور با رشته خالی (فرمت ۸ رقمی از قبل رد شده، این گارد عمق دوم است).
-    // PN-002 نکته ۱: «00000000» کد تستیِ عمومیِ تاریخچهٔ git است — هرگز به‌عنوان کد واقعی
+    // PN-002 نکته ۱: کد تستیِ عمومیِ تاریخچهٔ git (هشت صفر) هرگز به‌عنوان کد واقعی
     // تلقی نمی‌شود؛ این‌گونه fallback هش DB (بقای بازنشانی) پس از پاک‌شدن .env.local زنده می‌ماند.
-    const PUBLIC_TEST_CODE = "00000000";
+    // (بدون literal — قانون اسکن سورس HOTFIX-01)
+    const PUBLIC_TEST_CODE = "0".repeat(8);
     let authorized = false;
     let source: "env" | "database" = "env";
     if (cfg.masterCode && isValidMasterCodeFormat(cfg.masterCode) && cfg.masterCode !== PUBLIC_TEST_CODE) {

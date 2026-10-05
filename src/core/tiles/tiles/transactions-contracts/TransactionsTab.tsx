@@ -48,7 +48,7 @@ import {
   Tooltip as RTooltip,
   Legend,
 } from "recharts";
-import { KpiCard, useTileData, TileCoverageTable, type DataSourceInfo } from "@/components/app/shared";
+import { KpiCard, useTileData, TileCoverageTable, ExcelImportButton, type DataSourceInfo } from "@/components/app/shared";
 import { api, apiBlob, downloadBlob } from "@/lib/client/api";
 // PN-002 گام ۶-۲ — اعلان‌های خروجی اکسل
 import { useToast } from "@/hooks/use-toast";
@@ -583,7 +583,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
         {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین */}
         <CardHeader className="py-4 flex flex-col items-center gap-1">
           <div className="flex items-center gap-2 flex-wrap justify-center">
-            <CardTitle className="text-base text-center">فهرست معاملات — تمامی کارشناسان ملک تبریز</CardTitle>
+            <CardTitle className="text-base text-center">فهرست معاملات</CardTitle>
             {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
             <Button
               variant="outline"
@@ -600,6 +600,8 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
             >
               <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
             </Button>
+            {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
+            <ExcelImportButton entity="transactions" compact onImported={() => void fetchTransactions()} />
           </div>
           {rows && rows.length > 0 && (
             <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>

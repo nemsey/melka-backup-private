@@ -25,8 +25,9 @@ const M4_SRC = readFileSync(`${TILES}/experts/ExpertsPage.tsx`, "utf8");
  * §۱ — مپر M1: ستون‌های تازه از ردیف فهرست ARM (عین شکل پروب زندهٔ PN-002)
  * ========================================================================== */
 
+import { mapArmPropertyListRow } from "@/lib/melk-api/arm-catalog";
+
 describe("PN-002 §۱ — مپر M1 (ستون‌های تازه از خود ردیف فهرست)", () => {
-  const { mapArmPropertyListRow } = require("@/lib/melk-api/arm-catalog");
 
   /** ردیف فروش — عین شکل زندهٔ properties/list (پروب ۱۴۰۵/۰۷/۱۳ code=59782) */
   const saleRow = {
@@ -102,9 +103,16 @@ describe("PN-002 §۱ — مپر M1 (ستون‌های تازه از خود رد
  * §۲ — مپر M2: inputs فرم پویای درخواست (شاهکار گام ۲)
  * ========================================================================== */
 
+import {
+  mapArmRequestListRow,
+  extractRequestInputs,
+  SANAD_LABELS,
+  CONSTRUCT_TYPE_LABELS,
+  SIDE_LABELS,
+  CHANGE_WITH_LABELS,
+} from "@/lib/melk-api/arm-catalog";
+
 describe("PN-002 §۲ — مپر M2 (inputs خود ردیف فهرست درخواست)", () => {
-  const { mapArmRequestListRow, extractRequestInputs, SANAD_LABELS, CONSTRUCT_TYPE_LABELS, SIDE_LABELS, CHANGE_WITH_LABELS } =
-    require("@/lib/melk-api/arm-catalog");
 
   /** عین ردیف زندهٔ requests/list (پروب code=53364) */
   const reqRow = {

@@ -1,5 +1,5 @@
 /**
- * ماژول کاشی M7 «پوشش اطلاعات ملک تبریز» — P6545/گام۲ BLOCK 2.3 (جلسه ۰۳۳)
+ * ماژول کاشی M8 «پوشش اطلاعات ملک تبریز» — P6545/گام۲ BLOCK 2.3 (جلسه ۰۳۳)
  * جدول پوشش هر ستون M1-M4 · نمودار درصد · رکوردهای ناقص · مسیر پر شدن ·
  * نمایش Tier — OWNER-gate · رنگ آبی (sec-m7)
  */
@@ -14,13 +14,13 @@ export const dataCoverageTile = defineTile({
   id: "data-coverage",
   version: "1.0.0",
   title: "پوشش اطلاعات ملک تبریز",
-  tagline: "M7 — درصد پر بودن هر ستون در کاشی‌های M1-M4 و مسیر پر شدن آن",
+  tagline: "M8 — درصد پر بودن هر ستون در کاشی‌های M1-M4 و مسیر پر شدن آن",
   description:
     "پوشش اطلاعات چهار کاشی مدیریتی: جدول درصد پوشش هر ستون، نمودار میله‌ای، فهرست رکوردهای ناقص با لینک مستقیم، پیشنهاد مسیر پر شدن هر ستون (همگام‌سازی/غنی‌سازی/کارشناس) و نمایش Tier فعلی برای بینش Tier-aware.",
   icon: Database,
   accent: "m7",
   component: lazyPage(() => import("./DataCoveragePage")),
-  order: 7,
+  order: 8,
   container: "management-dashboard",
   minRole: "OWNER",
   agent: {

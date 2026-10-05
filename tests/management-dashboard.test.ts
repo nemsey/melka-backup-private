@@ -22,9 +22,9 @@ const CHILDREN_EXPECTED = [
   "transactions-contracts", // M3 معاملات ملک تبریز
   "experts",             // M4 کارشناسان ملک تبریز
   "smart-matching",      // M5 تطبیق هوشمند (P6545)
-  "market-index",        // M6 شاخص بازار (P6545)
-  "data-coverage",       // M7 پوشش داده (P6545)
-  "learning-tier",       // M8 یادگیری و Tier (P6545)
+  "learning-tier",       // M6 یادگیری و Tier (PN-003 — نام‌گذاری مالک: m5 تطبیق + m6 یادگیری)
+  "market-index",        // M7 شاخص بازار
+  "data-coverage",       // M8 پوشش داده
 ];
 
 describe("معماری داشبورد مدیریتی", () => {
