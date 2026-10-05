@@ -131,3 +131,39 @@ export async function apiSync<T = unknown>(
   }
   throw lastError ?? new ApiClientError("UNKNOWN", "خطای نامشخص در بروزرسانی.", 0);
 }
+
+/**
+ * PN-002 گام ۶-۲ — دانلود فایل باینری احراز‌هویت‌شده (خروجی اکسل کل فهرست).
+ * هم‌کلاف api() از توکن سراسری استفاده می‌کند؛ خروجی Blob برای لینک دانلود.
+ */
+export async function apiBlob(path: string, timeoutMs = 120_000): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const token = tokenHolder?.() ?? null;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(path, { headers, signal: controller.signal });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { message?: string; code?: string } | null;
+      throw new ApiClientError(body?.code ?? "UNKNOWN", body?.message ?? "خطا در دریافت فایل.", res.status);
+    }
+    return await res.blob();
+  } catch (err) {
+    if (err instanceof ApiClientError) throw err;
+    if ((err as Error)?.name === "AbortError") throw new ApiClientError("TIMEOUT", "دریافت فایل بیش از حد طول کشید.", 0);
+    throw new ApiClientError("NETWORK_ERROR", "خطای شبکه در دریافت فایل.", 0);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** PN-002 گام ۶-۲ — راه‌انداز دانلود Blob به صورت فایل (کلاینت) */
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

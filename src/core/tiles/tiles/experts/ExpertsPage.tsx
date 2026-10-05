@@ -37,13 +37,13 @@ import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RotateCcw, Search, Users, UserCheck, Phone, RefreshCw, Hash, CheckCircle2, Handshake,
-  Network, Building2, Banknote, FileSignature, MapPin, Filter, History, IdCard, CalendarClock, BriefcaseBusiness,
+  Network, Building2, Banknote, FileSignature, MapPin, Filter, History, IdCard, CalendarClock, BriefcaseBusiness, FileSpreadsheet,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, DataSourceWarning, TileCoverageTable, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import { useTileFreshness } from "@/components/app/TileCard";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, apiSync, ApiClientError } from "@/lib/client/api";
+import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faNumber, faDateTime, faJalaliShort } from "@/lib/format";
 // P6547/گام پنجم — نظام رنگ متمایز شعبه‌ها (هارمونی فیلتر↔فهرست)
 import { branchBadgeClass } from "@/lib/value-colors";
@@ -220,9 +220,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               <Building2 className="w-5 h-5 shrink-0 mt-0.5 text-sec-m4-700" aria-hidden />
               <div className="min-w-0">
                 <p className="text-sm font-bold">بروزرسانی فهرست کارشناسان و کارکنان از سامانه‌های ملک تبریز</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  نام، موبایل، کد پرسنلی و وضعیت هر کارشناس و کارمند با زنجیرهٔ عین خود سامانه‌های ARM و PM بروزرسانی می‌شود؛ شمارش مبایعه نامه (با پیش‌فروش) و اجاره نامه (با تمدید) از صورت‌وضعیت‌های واقعی سامانه محاسبه می‌شود.
-                </p>
               </div>
             </div>
             <Button onClick={() => void doSync()} disabled={syncing} className="gap-2 shrink-0 bg-sec-m4-500 hover:bg-sec-m4-500/90 text-sec-m4-fg">
@@ -431,7 +428,25 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
       ) : (
         <Card>
           <CardHeader className="py-4 flex flex-col items-center gap-1">
-            <CardTitle className="text-base text-center">فهرست کارشناسان و کارکنان — رجیستری سامانه‌های ARM و PM ملک تبریز</CardTitle>
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              <CardTitle className="text-base text-center">فهرست کارشناسان و کارکنان — رجیستری سامانه‌های ARM و PM ملک تبریز</CardTitle>
+              {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-7 text-[11px]"
+                onClick={() => {
+                  apiBlob("/api/crm/export/experts")
+                    .then((blob) => {
+                      downloadBlob(blob, `melka-experts-${new Date().toISOString().slice(0, 10)}.xlsx`);
+                      toast({ title: "خروجی اکسل آماده شد", description: "کل فهرست کارشناسان و کارکنان دانلود شد." });
+                    })
+                    .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
+                }}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
+              </Button>
+            </div>
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
             )}

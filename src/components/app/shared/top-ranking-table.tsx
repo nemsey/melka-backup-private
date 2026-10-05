@@ -30,7 +30,8 @@ export function TopRankingTable({
   id,
 }: {
   title: string;
-  description: string;
+  /** PN-002 گام ۶-۱ — توضیح زیر عنوان حذف شد (دستور مالک)؛ فقط در صورت نیاز صریح */
+  description?: string;
   rows: RankRow[];
   countLabel: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -49,7 +50,7 @@ export function TopRankingTable({
           <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${accentClass}`} aria-hidden />
           <div className="min-w-0">
             <p className="text-sm font-bold">{title}</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+            {description ? <p className="text-xs text-muted-foreground leading-relaxed">{description}</p> : null}
           </div>
         </div>
 

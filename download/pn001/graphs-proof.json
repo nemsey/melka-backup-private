@@ -1,91 +1,103 @@
 {
   "case": "PN-001",
   "block": 1,
-  "generatedAt": "2026-10-04T13:36:52.350Z",
+  "generatedAt": "2026-10-05T12:56:16.085Z",
   "directive": "ملکا-شورا-ن۰۰۱-۱۴۰۵ — بخش ۱٫۲/۱٫۳/۱٫۴",
   "graphs": {
     "buildReports": [
       {
         "graph": "property",
-        "nodesWritten": 9773,
-        "edgesWritten": 21043,
+        "nodesWritten": 0,
+        "edgesWritten": 0,
         "sources": {
-          "properties": 9095,
-          "areas": 9095,
-          "owners": 8220,
-          "experts": 3728
+          "properties": 11501,
+          "areas": 11501,
+          "owners": 10129,
+          "experts": 0
         },
-        "builtAt": "2026-10-04T13:36:49.095Z"
+        "builtAt": "2026-10-05T12:56:13.950Z"
       },
       {
         "graph": "people",
-        "nodesWritten": 19636,
-        "edgesWritten": 14769,
+        "nodesWritten": 0,
+        "edgesWritten": 0,
         "sources": {
-          "experts": 0,
+          "experts": 293,
           "personnel": 0,
-          "owners": 8220,
-          "requesters": 6549,
-          "txParties": 0
+          "owners": 10129,
+          "requesters": 6401,
+          "txParties": 103
         },
-        "builtAt": "2026-10-04T13:36:50.682Z"
+        "builtAt": "2026-10-05T12:56:14.228Z"
       },
       {
         "graph": "transaction",
         "nodesWritten": 0,
         "edgesWritten": 0,
         "sources": {
-          "transactions": 0,
-          "propertyLinks": 0,
-          "requestLinks": 0,
-          "parties": 0,
+          "transactions": 764,
+          "propertyLinks": 764,
+          "requestLinks": 192,
+          "parties": 103,
           "brokers": 0
         },
-        "builtAt": "2026-10-04T13:36:50.686Z"
+        "builtAt": "2026-10-05T12:56:14.684Z"
       }
     ],
     "stats": {
       "property": {
         "graph": "property",
-        "nodes": 9773,
-        "edges": 21043,
+        "nodes": 12293,
+        "edges": 21630,
         "byNodeType": {
-          "area": 119,
-          "expert": 114,
-          "person": 445,
-          "property": 9095
+          "area": 13,
+          "person": 779,
+          "property": 11501
         },
         "byEdgeType": {
-          "listed_by": 3728,
-          "located_in": 9095,
-          "owned_by": 8220
+          "located_in": 11501,
+          "owned_by": 10129
         }
       },
       "people": {
         "graph": "people",
-        "nodes": 19636,
-        "edges": 14769,
+        "nodes": 21755,
+        "edges": 16633,
         "byNodeType": {
-          "person": 4867,
-          "property": 8220,
-          "request": 6549
+          "expert": 293,
+          "person": 4872,
+          "property": 10129,
+          "request": 6401,
+          "transaction": 60
         },
         "byEdgeType": {
-          "owns": 8220,
-          "requested": 6549
+          "bought": 51,
+          "owns": 10129,
+          "requested": 6401,
+          "sold": 52
         }
       },
       "transaction": {
         "graph": "transaction",
-        "nodes": 0,
-        "edges": 0,
-        "byNodeType": {},
-        "byEdgeType": {}
+        "nodes": 1814,
+        "edges": 1059,
+        "byNodeType": {
+          "person": 97,
+          "property": 761,
+          "request": 192,
+          "transaction": 764
+        },
+        "byEdgeType": {
+          "bought": 51,
+          "involves_property": 764,
+          "involves_request": 192,
+          "sold": 52
+        }
       }
     },
     "totals": {
-      "nodes": 29409,
-      "edges": 35812
+      "nodes": 35862,
+      "edges": 39322
     },
     "acceptance": {
       "requiredNodes": 1000,
@@ -104,7 +116,7 @@
   "traversalWitness": {
     "startNode": {
       "nodeType": "property",
-      "refId": "10169"
+      "refId": "10569"
     },
     "pathCount": 6,
     "samples": [
@@ -112,20 +124,20 @@
         "nodes": [
           {
             "nodeType": "property",
-            "refId": "10169",
-            "label": "فروش آپارتمان مسکونی 220 متری"
+            "refId": "10569",
+            "label": "فروش آپارتمان مسکونی 110 متری"
           },
           {
             "nodeType": "area",
-            "refId": "63e9f830b44615addb867683",
-            "label": "کوچه صدر"
+            "refId": "614f7fb1a50555f0a54c3aa6",
+            "label": "ولیعصر"
           }
         ],
         "edges": [
           {
             "edgeType": "located_in",
-            "fromRef": "10169",
-            "toRef": "63e9f830b44615addb867683"
+            "fromRef": "10569",
+            "toRef": "614f7fb1a50555f0a54c3aa6"
           }
         ],
         "depth": 1
@@ -134,20 +146,20 @@
         "nodes": [
           {
             "nodeType": "property",
-            "refId": "10169",
-            "label": "فروش آپارتمان مسکونی 220 متری"
+            "refId": "10569",
+            "label": "فروش آپارتمان مسکونی 110 متری"
           },
           {
             "nodeType": "person",
-            "refId": "name:رامین  نجفی",
-            "label": "رامین  نجفی"
+            "refId": "name:افراز دادور",
+            "label": "افراز دادور"
           }
         ],
         "edges": [
           {
             "edgeType": "owned_by",
-            "fromRef": "10169",
-            "toRef": "name:رامین  نجفی"
+            "fromRef": "10569",
+            "toRef": "name:افراز دادور"
           }
         ],
         "depth": 1
@@ -156,53 +168,63 @@
         "nodes": [
           {
             "nodeType": "property",
-            "refId": "10169",
-            "label": "فروش آپارتمان مسکونی 220 متری"
+            "refId": "10569",
+            "label": "فروش آپارتمان مسکونی 110 متری"
           },
           {
-            "nodeType": "expert",
-            "refId": "410031078",
-            "label": "رامین  نجفی"
+            "nodeType": "area",
+            "refId": "614f7fb1a50555f0a54c3aa6",
+            "label": "ولیعصر"
+          },
+          {
+            "nodeType": "property",
+            "refId": "59770",
+            "label": "فروش آپارتمان مسکونی 270 متری"
           }
         ],
         "edges": [
           {
-            "edgeType": "listed_by",
-            "fromRef": "10169",
-            "toRef": "410031078"
+            "edgeType": "located_in",
+            "fromRef": "10569",
+            "toRef": "614f7fb1a50555f0a54c3aa6"
+          },
+          {
+            "edgeType": "located_in",
+            "fromRef": "59770",
+            "toRef": "614f7fb1a50555f0a54c3aa6"
           }
         ],
-        "depth": 1
+        "depth": 2
       }
     ]
   },
   "findPathWitness": {
     "from": {
       "nodeType": "property",
-      "refId": "10169"
+      "refId": "10569"
     },
     "to": {
       "nodeType": "area",
-      "refId": "63e9f830b44615addb867683"
+      "refId": "614f7fb1a50555f0a54c3aa6"
     },
     "path": {
       "nodes": [
         {
           "nodeType": "property",
-          "refId": "10169",
+          "refId": "10569",
           "label": null
         },
         {
           "nodeType": "area",
-          "refId": "63e9f830b44615addb867683",
+          "refId": "614f7fb1a50555f0a54c3aa6",
           "label": null
         }
       ],
       "edges": [
         {
           "edgeType": "located_in",
-          "fromRef": "10169",
-          "toRef": "63e9f830b44615addb867683"
+          "fromRef": "10569",
+          "toRef": "614f7fb1a50555f0a54c3aa6"
         }
       ],
       "depth": 1
@@ -211,51 +233,51 @@
   "opportunityAlerts": {
     "backfillReport": {
       "source": "backfill",
-      "evaluated": 85,
-      "alertsCreated": 84,
+      "evaluated": 43,
+      "alertsCreated": 43,
       "topScores": [
-        0.9,
-        0.9,
-        0.9,
-        0.9,
-        0.9,
-        0.9,
-        0.9,
-        0.9,
-        0.9,
-        0.9
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95
       ]
     },
     "acceptance": {
       "required": 5,
-      "actual": 84,
+      "actual": 43,
       "ok": true
     },
     "topAlerts": [
       {
-        "id": "cmutv7e5o1ee0k5r9yl38zyiz",
+        "id": "cmuv970zf0012n2yovyfuwjqc",
         "direction": "request_to_listing",
-        "listingCode": "59089",
-        "requestId": "67a0ca451d0edf52b88163d5",
-        "matchScore": 0.9,
+        "listingCode": "57330",
+        "requestId": "6abb76229a95f61b89961708",
+        "matchScore": 0.95,
         "matchReasons": [
           {
             "factor": "فاصله قیمت",
             "value": 1,
             "weight": 0.25,
-            "note": "بازهٔ 30000000000-40000000000"
+            "note": "بازهٔ 14000000000-16000000000"
           },
           {
             "factor": "نزدیکی جغرافیایی",
             "value": 1,
             "weight": 0.15,
-            "note": "ولیعصر"
+            "note": "فرشته جنوبی"
           },
           {
             "factor": "تناسب متراژ",
             "value": 1,
             "weight": 0.2,
-            "note": "100-200 متر"
+            "note": "100-110 متر"
           },
           {
             "factor": "تازگی آگهی",
@@ -265,9 +287,9 @@
           },
           {
             "factor": "سابقه کارشناس",
-            "value": 0,
+            "value": 0.5,
             "weight": 0.1,
-            "note": "0 معامله"
+            "note": "بدون کد کارشناس (خنثی)"
           },
           {
             "factor": "تطابق نوع ملک",
@@ -277,32 +299,32 @@
           }
         ],
         "status": "new",
-        "emittedAt": "2026-10-04T13:36:52.333Z"
+        "emittedAt": "2026-10-05T12:56:16.060Z"
       },
       {
-        "id": "cmutv7e5n1edzk5r9skt0dmj9",
+        "id": "cmuv970yt000xn2yoo29gi7uj",
         "direction": "request_to_listing",
-        "listingCode": "25507",
-        "requestId": "67a0ca451d0edf52b88163d5",
-        "matchScore": 0.9,
+        "listingCode": "57330",
+        "requestId": "6abb75b9e323096e6505b7f8",
+        "matchScore": 0.95,
         "matchReasons": [
           {
             "factor": "فاصله قیمت",
             "value": 1,
             "weight": 0.25,
-            "note": "بازهٔ 30000000000-40000000000"
+            "note": "بازهٔ 15000000000-16000000000"
           },
           {
             "factor": "نزدیکی جغرافیایی",
             "value": 1,
             "weight": 0.15,
-            "note": "ولیعصر"
+            "note": "فرشته جنوبی"
           },
           {
             "factor": "تناسب متراژ",
             "value": 1,
             "weight": 0.2,
-            "note": "100-200 متر"
+            "note": "100-140 متر"
           },
           {
             "factor": "تازگی آگهی",
@@ -312,9 +334,9 @@
           },
           {
             "factor": "سابقه کارشناس",
-            "value": 0,
+            "value": 0.5,
             "weight": 0.1,
-            "note": "0 معامله"
+            "note": "بدون کد کارشناس (خنثی)"
           },
           {
             "factor": "تطابق نوع ملک",
@@ -324,32 +346,32 @@
           }
         ],
         "status": "new",
-        "emittedAt": "2026-10-04T13:36:52.332Z"
+        "emittedAt": "2026-10-05T12:56:16.037Z"
       },
       {
-        "id": "cmutv7e5m1edxk5r9go76e0u2",
+        "id": "cmuv970ya000wn2yot4ugx1va",
         "direction": "request_to_listing",
-        "listingCode": "56609",
-        "requestId": "67a0ca451d0edf52b88163d5",
-        "matchScore": 0.9,
+        "listingCode": "56756",
+        "requestId": "6abb5fede323096e6502cfcd",
+        "matchScore": 0.95,
         "matchReasons": [
           {
             "factor": "فاصله قیمت",
             "value": 1,
             "weight": 0.25,
-            "note": "بازهٔ 30000000000-40000000000"
+            "note": "بازهٔ 8000000000-9000000000"
           },
           {
             "factor": "نزدیکی جغرافیایی",
             "value": 1,
             "weight": 0.15,
-            "note": "ولیعصر"
+            "note": "گلکار"
           },
           {
             "factor": "تناسب متراژ",
             "value": 1,
             "weight": 0.2,
-            "note": "100-200 متر"
+            "note": "70-100 متر"
           },
           {
             "factor": "تازگی آگهی",
@@ -359,9 +381,9 @@
           },
           {
             "factor": "سابقه کارشناس",
-            "value": 0,
+            "value": 0.5,
             "weight": 0.1,
-            "note": "0 معامله"
+            "note": "بدون کد کارشناس (خنثی)"
           },
           {
             "factor": "تطابق نوع ملک",
@@ -371,32 +393,32 @@
           }
         ],
         "status": "new",
-        "emittedAt": "2026-10-04T13:36:52.331Z"
+        "emittedAt": "2026-10-05T12:56:16.018Z"
       },
       {
-        "id": "cmutv7e5n1edyk5r9xe3zn6c7",
+        "id": "cmuv970y9000vn2yoprvssnuw",
         "direction": "request_to_listing",
-        "listingCode": "51300",
-        "requestId": "67a0ca451d0edf52b88163d5",
-        "matchScore": 0.9,
+        "listingCode": "56439",
+        "requestId": "6abb5fede323096e6502cfcd",
+        "matchScore": 0.95,
         "matchReasons": [
           {
             "factor": "فاصله قیمت",
             "value": 1,
             "weight": 0.25,
-            "note": "بازهٔ 30000000000-40000000000"
+            "note": "بازهٔ 8000000000-9000000000"
           },
           {
             "factor": "نزدیکی جغرافیایی",
             "value": 1,
             "weight": 0.15,
-            "note": "ولیعصر"
+            "note": "گلکار"
           },
           {
             "factor": "تناسب متراژ",
             "value": 1,
             "weight": 0.2,
-            "note": "100-200 متر"
+            "note": "70-100 متر"
           },
           {
             "factor": "تازگی آگهی",
@@ -406,9 +428,9 @@
           },
           {
             "factor": "سابقه کارشناس",
-            "value": 0,
+            "value": 0.5,
             "weight": 0.1,
-            "note": "0 معامله"
+            "note": "بدون کد کارشناس (خنثی)"
           },
           {
             "factor": "تطابق نوع ملک",
@@ -418,32 +440,32 @@
           }
         ],
         "status": "new",
-        "emittedAt": "2026-10-04T13:36:52.331Z"
+        "emittedAt": "2026-10-05T12:56:16.017Z"
       },
       {
-        "id": "cmutv7e5l1edwk5r961ti0m2x",
+        "id": "cmuv970y8000un2yoe8m1zkyl",
         "direction": "request_to_listing",
-        "listingCode": "45764",
-        "requestId": "67a0ca451d0edf52b88163d5",
-        "matchScore": 0.9,
+        "listingCode": "55589",
+        "requestId": "6abb5fede323096e6502cfcd",
+        "matchScore": 0.95,
         "matchReasons": [
           {
             "factor": "فاصله قیمت",
             "value": 1,
             "weight": 0.25,
-            "note": "بازهٔ 30000000000-40000000000"
+            "note": "بازهٔ 8000000000-9000000000"
           },
           {
             "factor": "نزدیکی جغرافیایی",
             "value": 1,
             "weight": 0.15,
-            "note": "ولیعصر"
+            "note": "گلکار"
           },
           {
             "factor": "تناسب متراژ",
             "value": 1,
             "weight": 0.2,
-            "note": "100-200 متر"
+            "note": "70-100 متر"
           },
           {
             "factor": "تازگی آگهی",
@@ -453,9 +475,9 @@
           },
           {
             "factor": "سابقه کارشناس",
-            "value": 0,
+            "value": 0.5,
             "weight": 0.1,
-            "note": "0 معامله"
+            "note": "بدون کد کارشناس (خنثی)"
           },
           {
             "factor": "تطابق نوع ملک",
@@ -465,15 +487,15 @@
           }
         ],
         "status": "new",
-        "emittedAt": "2026-10-04T13:36:52.330Z"
+        "emittedAt": "2026-10-05T12:56:16.016Z"
       }
     ],
     "constraint": "صفر اجرای خودکار — فقط هشدار (آستانهٔ انتشار ≥ ۰٫۷)"
   },
   "cleanup": {
-    "found": 0,
+    "found": 1,
     "byPriority": {
-      "1": 0,
+      "1": 1,
       "2": 0,
       "3": 0
     },
@@ -482,5 +504,5 @@
     "deleted": 0,
     "sacredDataLaw": "صفر حذف — قانون دادهٔ مقدس رعایت شد"
   },
-  "durationMs": 4960
+  "durationMs": 2550
 }

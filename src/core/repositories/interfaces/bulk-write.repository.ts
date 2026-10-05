@@ -73,6 +73,21 @@ export interface PropertyBulkInput {
   extractedAt?: Date | null;
   extractionBatchId?: string | null;
   normalizationVersion?: string | null;
+  // ===================== PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM =====================
+  isRental?: boolean | null;
+  depositPrice?: number | null;
+  rentPrice?: number | null;
+  viewCount?: number | null;
+  imageCount?: number | null;
+  addedToDivar?: boolean | null;
+  addedToInsta?: boolean | null;
+  isReposted?: boolean | null;
+  isTarget?: boolean | null;
+  armBranchTitle?: string | null;
+  stateName?: string | null;
+  cityName?: string | null;
+  publicUrl?: string | null;
+  statusDate?: Date | null;
 }
 
 /** ورودی درج/به‌روزرسانی انبوه درخواست ARM — RequestRecord با source='arm' (کلید طبیعی: requestCode) */
@@ -122,6 +137,30 @@ export interface ArmRequestBulkRow {
   extractedAt?: Date | null;
   extractionBatchId?: string | null;
   normalizationVersion?: string | null;
+  // ===================== PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM =====================
+  spaceFrom?: number | null;
+  spaceTo?: number | null;
+  roomsFrom?: number | null;
+  roomsTo?: number | null;
+  floorFrom?: number | null;
+  floorTo?: number | null;
+  buildYearFrom?: number | null;
+  buildYearTo?: number | null;
+  sanadNames?: string | null;
+  constructTypeNames?: string | null;
+  sideNames?: string | null;
+  occasion?: boolean | null;
+  deposit?: boolean | null;
+  confirmSms?: boolean | null;
+  notifyMe?: boolean | null;
+  changeWithNames?: string | null;
+  armBranchTitle?: string | null;
+  countryName?: string | null;
+  stateName?: string | null;
+  cityName?: string | null;
+  platform?: string | null;
+  /** PN-002 گام ۲ — توضیحات مشتری (customerDescription خود ردیف — ۵٪ رکوردها) */
+  customerDescription?: string | null;
 }
 
 /** ردیف کاتالوگ آگهی‌های ARM — نمای نمایشی کاشی «آگهی ملک تبریز» (P6.5-10 + P6530/گام ۱)
@@ -165,6 +204,21 @@ export interface ArmListingCatalogRow {
   enrichedAt: Date | null;
   createdAt: Date | null;
   updatedAt: Date;
+  // ===================== PN-002 گام ۱ — ستون‌های نمایشی تازه =====================
+  isRental: boolean | null;
+  depositPrice: number | null;
+  rentPrice: number | null;
+  viewCount: number | null;
+  imageCount: number | null;
+  addedToDivar: boolean | null;
+  addedToInsta: boolean | null;
+  isReposted: boolean | null;
+  isTarget: boolean | null;
+  armBranchTitle: string | null;
+  stateName: string | null;
+  cityName: string | null;
+  publicUrl: string | null;
+  statusDate: Date | null;
 }
 
 /** ردیف کاتالوگ درخواست‌های ARM — نمای نمایشی کاشی «درخواست ملک تبریز» (P6.5-10 + P6530/گام ۲)
@@ -211,6 +265,28 @@ export interface ArmRequestCatalogRow {
   enrichedAt: Date | null;
   createdAt: Date | null;
   updatedAt: Date;
+  // ===================== PN-002 گام ۲ — ستون‌های نمایشی تازه =====================
+  spaceFrom: number | null;
+  spaceTo: number | null;
+  roomsFrom: number | null;
+  roomsTo: number | null;
+  floorFrom: number | null;
+  floorTo: number | null;
+  buildYearFrom: number | null;
+  buildYearTo: number | null;
+  sanadNames: string | null;
+  constructTypeNames: string | null;
+  sideNames: string | null;
+  occasion: boolean | null;
+  deposit: boolean | null;
+  confirmSms: boolean | null;
+  notifyMe: boolean | null;
+  changeWithNames: string | null;
+  armBranchTitle: string | null;
+  stateName: string | null;
+  cityName: string | null;
+  platform: string | null;
+  customerDescription: string | null;
 }
 
 /** فیلتر کاتالوگ آگهی‌های ARM — P6530/گام ۱: فیلتر بر اساس «تمام ستون‌های فهرست»
@@ -233,6 +309,28 @@ export interface ArmListingCatalogFilter {
   /** آخرین فعالیت — از / تا (ISO) */
   activityFrom?: string;
   activityTo?: string;
+  // ===================== PN-002 گام ۱ — فیلتر ستون‌های تازه (تمام ستون‌ها) =====================
+  /** نوع آگهی: خرید/فروش | رهن و اجاره (بر اساس isRental) */
+  rentalType?: "sale" | "rental";
+  /** بازدید — از / تا */
+  viewCountFrom?: number;
+  viewCountTo?: number;
+  /** متراژ — از / تا */
+  meterageFrom?: number;
+  meterageTo?: number;
+  /** تعداد اتاق — از / تا */
+  roomsFrom?: number;
+  roomsTo?: number;
+  /** منتشرشده در دیوار؟ */
+  addedToDivar?: boolean;
+  /** منتشرشده در اینستاگرام؟ */
+  addedToInsta?: boolean;
+  /** محله (contains نرمال‌شده روی lineName) */
+  lineName?: string;
+  /** استان */
+  stateName?: string;
+  /** نوع ملک (propertyTypeName) */
+  propertyTypes?: string[];
 }
 
 /** فیلتر کاتالوگ درخواست‌های ARM — P6530/گام ۲: فیلتر بر اساس «تمام ستون‌های فهرست»
@@ -259,6 +357,37 @@ export interface ArmRequestCatalogFilter {
   /** تاریخ ثبت — از / تا (ISO) */
   dateFrom?: string;
   dateTo?: string;
+  // ===================== PN-002 گام ۲ — فیلتر ستون‌های تازه (تمام ستون‌ها) =====================
+  /** متراژ متقاضی — از / تا (هم‌پوشانی با بازهٔ ردیف) */
+  spaceFrom?: number;
+  spaceTo?: number;
+  /** اتاق — از / تا */
+  roomsFrom?: number;
+  roomsTo?: number;
+  /** طبقه — از / تا */
+  floorFrom?: number;
+  floorTo?: number;
+  /** سال ساخت — از / تا (جلالی) */
+  buildYearFrom?: number;
+  buildYearTo?: number;
+  /** سند (مقادیر نمایشی مثل «شش‌دانگ») */
+  sanad?: string;
+  /** نوع ساخت */
+  constructType?: string;
+  /** جهت */
+  side?: string;
+  /** فوریت */
+  urgentOnly?: boolean;
+  /** لوکس */
+  luxuryOnly?: boolean;
+  /** فرصت */
+  occasionOnly?: boolean;
+  /** نوع ملک درخواستی */
+  propertyTypes?: string[];
+  /** نوع ساختمان */
+  buildingTypes?: string[];
+  /** محله (contains روی lineNames) */
+  lineName?: string;
 }
 
 /** شمارش وضعیت غنی‌سازی کاتالوگ */

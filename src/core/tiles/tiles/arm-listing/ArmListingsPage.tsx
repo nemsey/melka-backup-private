@@ -40,12 +40,12 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RotateCcw, Search, Home, Users, Phone, MapPin, RefreshCw, Hash, CheckCircle2, Clock,
   Landmark, Building2, PieChart, Banknote, Tag, History, Network, Filter, Ruler, BedDouble, Layers,
-  CalendarDays, TrendingUp, Award, MapPinned, Globe,
+  CalendarDays, TrendingUp, Award, MapPinned, Globe, FileSpreadsheet, Eye, Image as ImageIcon, ExternalLink,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, TopRankingTable, TileCoverageTable } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, apiSync, ApiClientError } from "@/lib/client/api";
+import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
@@ -85,6 +85,21 @@ interface ListingRow {
   enrichedAt: string | null;
   createdAt: string | null;
   updatedAt: string;
+  // ===================== PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM =====================
+  isRental: boolean | null;
+  depositPrice: number | null;
+  rentPrice: number | null;
+  viewCount: number | null;
+  imageCount: number | null;
+  addedToDivar: boolean | null;
+  addedToInsta: boolean | null;
+  isReposted: boolean | null;
+  isTarget: boolean | null;
+  armBranchTitle: string | null;
+  stateName: string | null;
+  cityName: string | null;
+  publicUrl: string | null;
+  statusDate: string | null;
 }
 
 interface Enrichment {
@@ -359,9 +374,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
             <PieChart className="w-5 h-5 text-sec-m1-700 shrink-0" aria-hidden />
             <div>
               <p className="text-sm font-bold">توزیع وضعیت آگهی‌ها (نظام ده‌حالته)</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                شمار و درصد آگهی‌های سامانه ARM بر پایهٔ وضعیت‌های ده‌گانهٔ دستور مالک — از کل {statusCounts ? faNumber(statusCounts.total) : faNumber(data?.total ?? 0)} آگهی رجیستری.
-              </p>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" id="arm-listing-states-insight">
@@ -402,7 +414,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
         <TopRankingTable
           id="m1-top-realtors"
           title="جدول ۱۰ کارشناسان پرآگهی ملک تبریز"
-          description="کارشناسانی که بیشترین آگهی در رجیستری سامانه ملک تبریز ثبت کرده‌اند — تجمیع زنده از فهرست همین کاشی."
           rows={topRealtors}
           countLabel="کارشناس"
           icon={Award}
@@ -412,7 +423,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
         <TopRankingTable
           id="m1-top-hubs"
           title="جدول ۱۰ قطب‌های عرضه آگه در مناطق تبریز"
-          description="مناطق و محله‌هایی که بیشترین آگهی در آن‌ها ثبت شده — قطب‌های عرضهٔ ملک تبریز."
           rows={topHubs}
           countLabel="منطقه"
           icon={MapPinned}
@@ -431,9 +441,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
               <Building2 className="w-5 h-5 text-sec-m1-700 shrink-0" aria-hidden />
               <div className="min-w-0">
                 <p className="text-sm font-bold">بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  فهرست کامل (کد، کارشناس، وضعیت، قیمت، دسته‌بندی، موقعیت) از لایهٔ ۱ سامانه ARM؛ نام و موبایل مالک و آدرس دقیق (منطقه، کوی، پلاک) و شعبهٔ کارشناس برش‌به‌برش با زنجیرهٔ عین خود سامانه‌های ARM و PM تکمیل می‌شود.
-                </p>
               </div>
             </div>
             <Button onClick={() => void doSync()} disabled={syncing} className="gap-2 shrink-0 bg-sec-m1-500 hover:bg-sec-m1-500/90 text-sec-m1-fg">
@@ -753,7 +760,30 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
         <Card>
           {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین (الگوی فهرست معاملات) */}
           <CardHeader className="py-4 flex flex-col items-center gap-1">
-            <CardTitle className="text-base text-center">فهرست آگهی‌ها — رجیستری سامانه ARM ملک تبریز</CardTitle>
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              <CardTitle className="text-base text-center">فهرست آگهی‌ها — رجیستری سامانه ARM ملک تبریز</CardTitle>
+              {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-7 text-[11px]"
+                onClick={() => {
+                  const p = new URLSearchParams();
+                  if (filters.code) p.set("code", filters.code);
+                  if (filters.realtorName) p.set("realtorName", filters.realtorName);
+                  if (filters.ownerName) p.set("ownerName", filters.ownerName);
+                  if (filters.address) p.set("address", filters.address);
+                  apiBlob(`/api/crm/export/listings?${p.toString()}`)
+                    .then((blob) => {
+                      downloadBlob(blob, `melka-listings-${new Date().toISOString().slice(0, 10)}.xlsx`);
+                      toast({ title: "خروجی اکسل آماده شد", description: "کل فهرست آگهی‌ها (با فیلترهای فعال) دانلود شد." });
+                    })
+                    .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
+                }}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
+              </Button>
+            </div>
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
             )}
@@ -781,6 +811,13 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-24">دسته‌بندی</TableHead>
                     <TableHead className="min-w-28">وضعیت</TableHead>
                     <TableHead className="min-w-28">آخرین فعالیت</TableHead>
+                    {/* PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM */}
+                    <TableHead className="min-w-20">رهن / اجاره</TableHead>
+                    <TableHead className="min-w-16">بازدید</TableHead>
+                    <TableHead className="min-w-16">تصاویر</TableHead>
+                    <TableHead className="min-w-20">انتشار</TableHead>
+                    <TableHead className="min-w-24">تاریخ وضعیت</TableHead>
+                    <TableHead className="min-w-16">لینک</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -962,6 +999,66 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <History className="w-3.5 h-3.5 shrink-0" aria-hidden />
                             {r.createdAt ? faDateTime(r.createdAt) : "—"}
                           </span>
+                        </TableCell>
+                        {/* PN-002 گام ۱ — ستون‌های تازه */}
+                        {/* ۱۱ — رهن / اجاره (آگهی‌های رهن‌واجاره‌ای) */}
+                        <TableCell className="whitespace-nowrap">
+                          {typeof r.depositPrice === "number" && r.depositPrice > 0 ? (
+                            <span className="inline-flex flex-col items-center gap-0.5 tabular-nums text-[10px]" title={`رهن: ${faAmountFull(r.depositPrice)}${typeof r.rentPrice === "number" && r.rentPrice > 0 ? ` — اجاره: ${faAmountFull(r.rentPrice)}` : ""} — تومان`}>
+                              <span className="font-bold">{faAmountFull(r.depositPrice, "")}</span>
+                              {typeof r.rentPrice === "number" && r.rentPrice > 0 && <span className="text-muted-foreground">اجاره {faAmountFull(r.rentPrice, "")}</span>}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">{r.isRental ? "اجاره‌ای" : "—"}</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۲ — بازدید */}
+                        <TableCell className="text-center">
+                          {typeof r.viewCount === "number" ? (
+                            <span className="inline-flex items-center gap-1 tabular-nums font-medium" title="تعداد بازدید آگهی در سامانه ARM">
+                              <Eye className="w-3 h-3 text-sec-m1-700" aria-hidden /> {faNumber(r.viewCount)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۳ — تصاویر */}
+                        <TableCell className="text-center">
+                          {typeof r.imageCount === "number" && r.imageCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium" title="تعداد تصاویر آگهی">
+                              <ImageIcon className="w-3 h-3 text-sec-m1-700" aria-hidden /> {faNumber(r.imageCount)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۴ — انتشار (دیوار/اینستا) */}
+                        <TableCell className="text-center">
+                          <span className="inline-flex items-center gap-1 justify-center" title="وضعیت انتشار در سامانه‌های بیرونی">
+                            {r.addedToDivar === true && <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-sec-m1-300 bg-sec-m1-50">دیوار</Badge>}
+                            {r.addedToInsta === true && <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-sec-m1-300 bg-sec-m1-50">اینستا</Badge>}
+                            {r.addedToDivar !== true && r.addedToInsta !== true && <span className="text-muted-foreground text-[10px]">—</span>}
+                          </span>
+                        </TableCell>
+                        {/* ۱۵ — تاریخ وضعیت */}
+                        <TableCell className="text-muted-foreground whitespace-nowrap text-[10px]">
+                          {r.statusDate ? faDateTime(r.statusDate) : "—"}
+                        </TableCell>
+                        {/* ۱۶ — لینک عمومی آگهی */}
+                        <TableCell className="text-center">
+                          {r.publicUrl ? (
+                            <a
+                              href={`https://www.melketabriz.com${r.publicUrl.startsWith("/") ? "" : "/"}${r.publicUrl}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="مشاهدهٔ آگهی در سامانهٔ عمومی ملک تبریز"
+                              className="inline-flex items-center gap-1 text-sec-m1-700 hover:underline text-[10px]"
+                            >
+                              <ExternalLink className="w-3 h-3" aria-hidden /> مشاهده
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     );

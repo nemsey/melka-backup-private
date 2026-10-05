@@ -34,20 +34,24 @@ import { syncMelkPublicCatalog } from "./melk-public";
 // P6547/گام دوم — همگام‌سازی ساعتی فهرست‌های مرجع انواع ARM (شناسه→نام)
 import { syncTypeRegistries } from "./type-registry";
 
-/** فاصلهٔ پیش‌فرض تیک‌ها — دقیقه */
-const DEFAULT_INTERVAL_MINUTES = 3;
-/** سقف صفحات فهرست در هر تیک (کار کوچک و سریع) */
-const PAGES_PER_TICK = 2;
-/** سقف ردیف غنی‌سازی هر موجودیت در هر تیک */
-const ENRICH_ROWS_PER_TICK = 25;
-/** P6549 — برش تکمیل ستون‌های ناقص M2 در هر تیک (غنی‌سازی هدفمند) */
-const COMPLETION_ROWS_PER_TICK = 60;
-/** P6546 — سقف ردیف غنی‌سازی صورت‌وضعیت معاملات در هر تیک */
-const TX_INFO_ROWS_PER_TICK = 10;
-/** P6546 — سقف پرسنل PM (استخدام) در هر تیک */
-const PM_INFO_ROWS_PER_TICK = 5;
-/** P6546 — هر چند تیک، یک چرخهٔ کامل سامانهٔ عمومی (۳ دقیقه × ۲۰ ≈ ساعتی) */
-const PUBLIC_EVERY_N_TICKS = 20;
+/** فاصلهٔ پیش‌فرض تیک‌ها — دقیقه (PN-002 نکته ۵: لغو محدودیت — ۳→۱) */
+const DEFAULT_INTERVAL_MINUTES = 1;
+/** سقف صفحات فهرست در هر تیک (نکته ۵: ۲→۱۲) */
+const PAGES_PER_TICK = 12;
+/** سقف ردیف غنی‌سازی هر موجودیت در هر تیک (نکته ۵: ۲۵→۱۲۰) */
+const ENRICH_ROWS_PER_TICK = 120;
+/** PN-002 — برش تکمیل ستون‌های ناقص M2 در هر تیک (نکته ۵: ۶۰→۲۴۰) */
+const COMPLETION_ROWS_PER_TICK = 240;
+/** P6546 — سقف ردیف غنی‌سازی صورت‌وضعیت معاملات در هر تیک (نکته ۵: ۱۰→۴۰) */
+const TX_INFO_ROWS_PER_TICK = 40;
+/** P6546 — سقف پرسنل PM (استخدام) در هر تیک (نکته ۵: ۵→۲۰) */
+const PM_INFO_ROWS_PER_TICK = 20;
+/** P6546 — هر چند تیک، یک چرخهٔ کامل سامانهٔ عمومی (نکته ۵: ۲۰→۱۰) */
+const PUBLIC_EVERY_N_TICKS = 10;
+/** PN-002 گام ۳ — هر چند تیک، همگام‌سازی کامل CRM (معاملات/کارشناسان/قراردادها/بازدیدها)
+ *  با توکن خزانهٔ ماندگار — ریشهٔ «بروزرسانی ناقص فهرست معاملات»: پیش از این sync معاملات
+ *  فقط دستی/نشست‌محور بود و هیچ‌گاه به‌صورت پیوسته اجرا نمی‌شد. */
+const CRM_SYNC_EVERY_N_TICKS = 5;
 /** P6546 — خنک‌ساز تطبیقی: پس از این تعداد شکست پیاپی، یک تیک استراحت */
 const CONSECUTIVE_FAIL_COOLDOWN = 3;
 
@@ -71,6 +75,8 @@ export interface CatalogDaemonStatus {
     /** P6547 — تعداد رجیستری‌های مرجع همگام‌شده در این تیک */
     typeRegistriesSynced?: number;
     cooldownSkip?: boolean;
+    /** PN-002 گام ۳ — نتیجهٔ همگام‌سازی CRM (معاملات/کارشناسان/...) با توکن خزانه */
+    crmSync?: { ok: boolean; transactions: number; experts: number; source: "vault" | "session" };
   } | null;
 }
 
@@ -111,6 +117,28 @@ export function catalogDaemonStatus(): CatalogDaemonStatus {
   return { ...state().status };
 }
 
+/**
+ * PN-002 گام ۳ — توکن ماندگار خزانه (ArmConnection): آخرین اتصالِ زندهٔ مالک.
+ * پیش از این، دیمن فقط با «نشست زندهٔ دارای توکن» کار می‌کرد و با خروج/انقضای نشست
+ * (یا بازنشانی محیط) کل خط لوله می‌خوابید. خزانه فراتر از چرخهٔ عمر نشست است
+ * (عین P6.5-11 بند ث) و این همان «تداوم و استمرار» است که مالک الزام کرده.
+ */
+async function getVaultArmTokens(db: PrismaClient): Promise<{ accessToken: string; refreshToken: string } | null> {
+  try {
+    const row = await db.armConnection.findFirst({
+      orderBy: { lastRefreshedAt: "desc" },
+    });
+    if (!row?.tokenEnc) return null;
+    const { decryptSecret } = await import("@/lib/auth/crypto");
+    const accessToken = decryptSecret(row.tokenEnc);
+    if (!accessToken) return null;
+    const refreshToken = row.refreshTokenEnc ? decryptSecret(row.refreshTokenEnc) ?? "" : "";
+    return { accessToken, refreshToken };
+  } catch {
+    return null;
+  }
+}
+
 /** تیک واحد دیمن — قابل فراخوانی مستقیم در تست */
 export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemonStatus> {
   const s = state();
@@ -122,7 +150,7 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
   s.status.running = true;
   s.status.lastTickAt = Date.now();
   s.status.ticks += 1;
-  const result = { listingsPages: 0, requestsPages: 0, listingsEnriched: 0, requestsEnriched: 0, txInfoEnriched: 0, pmInfoEnriched: 0, melkPublicNewCodes: 0, typeRegistriesSynced: 0, cooldownSkip: false };
+  const result: NonNullable<CatalogDaemonStatus["lastResult"]> = { listingsPages: 0, requestsPages: 0, listingsEnriched: 0, requestsEnriched: 0, txInfoEnriched: 0, pmInfoEnriched: 0, melkPublicNewCodes: 0, typeRegistriesSynced: 0, cooldownSkip: false };
   // P6545/BLOCK 1.1 — وضعیت کار در DB (پایدار در برابر ری‌استارت)
   const jobs = new JobStateService(db);
   try {
@@ -141,14 +169,83 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
       });
       return { ...s.status };
     }
-    // نشست زندهٔ دارای توکن ARM (اخیرترین)
+    // نشست زندهٔ دارای توکن ARM (اخیرترین) — و در نبودش، خزانهٔ ماندگار (PN-002 گام ۳)
     const live = await db.session.findFirst({
       where: { revoked: false, expiresAt: { gt: new Date() }, armTokenEnc: { not: null } },
       orderBy: { lastSeenAt: "desc" },
     });
+    let armAccessToken: string | null = null;
+    let crmSyncSource: "vault" | "session" = "vault";
     if (live) {
       const armTokens = sessionToArmTokens(live);
       if (armTokens?.accessToken) {
+        armAccessToken = armTokens.accessToken;
+        crmSyncSource = "session";
+      }
+    }
+    if (!armAccessToken) {
+      const vault = await getVaultArmTokens(db);
+      if (vault?.accessToken) armAccessToken = vault.accessToken;
+    }
+    if (armAccessToken) {
+      const armTokens = { accessToken: armAccessToken } as { accessToken: string; refreshToken?: string };
+      // PN-002 گام ۳ — همگام‌سازی پیوستهٔ CRM (معاملات/کارشناسان/قراردادها/بازدیدها/عرضه-تقاضا)
+      // هر CRM_SYNC_EVERY_N_TICKS تیک — ریشهٔ «بروزرسانی ناقص معاملات» که مالک گزارش کرد.
+      if (s.status.ticks > 0 && s.status.ticks % CRM_SYNC_EVERY_N_TICKS === 0) {
+        try {
+          const { syncWithRefresh } = await import("./sync");
+          const vaultForRefresh = await getVaultArmTokens(db);
+          const { sync, newArmToken } = await syncWithRefresh(
+            armAccessToken,
+            vaultForRefresh?.refreshToken ?? ""
+          );
+          result.crmSync = {
+            ok: sync.ok,
+            transactions: sync.transactions,
+            experts: sync.experts,
+            source: crmSyncSource,
+          };
+          // توکن تمدیدشده را در خزانه بنویس (زنجیرهٔ ماندگاری هرگز نمی‌شکند)
+          if (newArmToken && vaultForRefresh) {
+            try {
+              const { encryptSecret } = await import("@/lib/auth/crypto");
+              const latest = await db.armConnection.findFirst({ orderBy: { lastRefreshedAt: "desc" } });
+              if (latest) {
+                await db.armConnection.update({
+                  where: { id: latest.id },
+                  data: {
+                    tokenEnc: encryptSecret(newArmToken),
+                    lastRefreshedAt: new Date(),
+                    status: "connected",
+                    lastError: null,
+                  },
+                });
+              }
+            } catch {
+              /* بهترین-تلاش — توکن فعلی تا انقضا کار می‌کند */
+            }
+          }
+          await jobs.upsert({
+            jobId: "crm-sync",
+            jobKind: "sync",
+            status: sync.ok ? "done" : "failed",
+            detail: {
+              transactions: sync.transactions,
+              experts: sync.experts,
+              interactions: sync.interactions,
+              visits: sync.visits,
+              supplyDemand: sync.supplyDemand,
+              contracts: sync.contracts,
+              source: crmSyncSource,
+              ...(sync.errorCode ? { error: sync.errorCode } : {}),
+            },
+          }).catch(() => {});
+          if (!sync.ok) s.status.lastError = `CRM_SYNC_${sync.errorCode ?? "FAILED"}`;
+        } catch (e) {
+          s.status.lastError = (e as { code?: string })?.code ?? "CRM_SYNC_FAILED";
+          await jobs.upsert({ jobId: "crm-sync", jobKind: "sync", status: "failed", detail: { error: s.status.lastError } }).catch(() => {});
+        }
+      }
         // برش محدود فهرست آگهی‌ها + درخواست‌ها (هر دو checkpointدار — ازسرگیری خودکار)
         try {
           const lres = await syncArmListingsCatalog(armTokens.accessToken, { maxPages: PAGES_PER_TICK });
@@ -234,7 +331,6 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
         } catch {
           s.status.lastError = "TX_INFO_SLICE_FAILED"; // نرم — تیک بعدی ادامه می‌دهد
         }
-      }
     }
     // P6546/گام چهارم — برش استخدام پرسنل PM (توکن ماندگار PM؛ مستقل از نشست)
     try {
@@ -247,13 +343,11 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
       s.status.lastError = "PM_INFO_SLICE_FAILED"; // نرم
     }
     // P6547/گام دوم — چرخهٔ ساعتی فهرست‌های مرجع انواع ARM (tradeType/buildingType/propertyType/…)
-    if (s.status.ticks % PUBLIC_EVERY_N_TICKS === 0 && live) {
+    if (s.status.ticks % PUBLIC_EVERY_N_TICKS === 0 && armAccessToken) {
       try {
-        const armTokensForRegistries = sessionToArmTokens(live);
-        if (armTokensForRegistries?.accessToken) {
-          const reg = await syncTypeRegistries(armTokensForRegistries.accessToken);
-          result.typeRegistriesSynced = reg.synced.length;
-        }
+        // PN-002 گام ۳ — هم‌اکنون توکن خزانه/نشست مستقیماً در دسترس است (بدون نشست‌گرایی)
+        const reg = await syncTypeRegistries(armAccessToken);
+        result.typeRegistriesSynced = reg.synced.length;
       } catch {
         s.status.lastError = "TYPE_REGISTRIES_SYNC_FAILED"; // نرم — چرخهٔ بعدی
       }
