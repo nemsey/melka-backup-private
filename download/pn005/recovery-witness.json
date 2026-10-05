@@ -1,0 +1,139 @@
+{
+  "case": "PN-005",
+  "purpose": "recovery-rebuild-after-db-destruction",
+  "ranAt": "2026-10-05T20:38:45.709Z",
+  "graphs": {
+    "property": {
+      "graph": "property",
+      "nodes": 12523,
+      "edges": 21637,
+      "byNodeType": {
+        "area": 13,
+        "person": 1006,
+        "property": 11504
+      },
+      "byEdgeType": {
+        "located_in": 11504,
+        "owned_by": 10133
+      }
+    },
+    "people": {
+      "graph": "people",
+      "nodes": 29965,
+      "edges": 21926,
+      "byNodeType": {
+        "expert": 293,
+        "person": 7809,
+        "property": 10133,
+        "request": 11650,
+        "transaction": 80
+      },
+      "byEdgeType": {
+        "bought": 71,
+        "owns": 10133,
+        "requested": 11650,
+        "sold": 72
+      }
+    },
+    "transaction": {
+      "graph": "transaction",
+      "nodes": 1859,
+      "edges": 1106,
+      "byNodeType": {
+        "person": 135,
+        "property": 761,
+        "request": 199,
+        "transaction": 764
+      },
+      "byEdgeType": {
+        "bought": 71,
+        "involves_property": 764,
+        "involves_request": 199,
+        "sold": 72
+      }
+    },
+    "totals": {
+      "nodes": 44347,
+      "edges": 44669
+    },
+    "buildMs": 4606
+  },
+  "alerts": {
+    "backfill": {
+      "source": "backfill",
+      "evaluated": 133,
+      "alertsCreated": 130,
+      "topScores": [
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95
+      ]
+    },
+    "total": 130
+  },
+  "loop": {
+    "predictions": 386,
+    "outcomes": 386,
+    "summary": {
+      "ranAt": "2026-10-05T20:38:45.506Z",
+      "tileId": "arm-listing",
+      "predictions": 386,
+      "positiveOutcomes": 193,
+      "negativeOutcomes": 193,
+      "linked": 386,
+      "evaluation": {
+        "tileId": "arm-listing",
+        "windowDays": 3650,
+        "sampleSize": 386,
+        "verdict": "ABOVE_BASELINE",
+        "computedAt": "2026-10-05T20:38:45.506Z",
+        "unresolvablePairs": 0,
+        "target": "probability",
+        "brierScore": 0.2256,
+        "calibration": [
+          {
+            "bucket": "0.0-0.2",
+            "predicted": 0,
+            "observed": 0
+          },
+          {
+            "bucket": "0.2-0.4",
+            "predicted": 0.395,
+            "observed": 0.252
+          },
+          {
+            "bucket": "0.4-0.6",
+            "predicted": 0.492,
+            "observed": 1
+          },
+          {
+            "bucket": "0.6-0.8",
+            "predicted": 0,
+            "observed": 0
+          },
+          {
+            "bucket": "0.8-1.0",
+            "predicted": 0,
+            "observed": 0
+          }
+        ],
+        "lift": 0.0975
+      },
+      "reproduction": {
+        "source": "arm.melketabriz.ir (PropertyRecord واقعی)",
+        "soldStatus": "معامله شده",
+        "controlStatus": "منتشر شده",
+        "ordering": "propertyCode صعودی",
+        "modelVersion": "property-predictor-v0.1",
+        "note": "پیش‌بینی و پیامد روی یک snapshot واحد — سنجش قدرت افتراق، نه دقت زمانی (محدودیت افشاشده)"
+      }
+    }
+  }
+}

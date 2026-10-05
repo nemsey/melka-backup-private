@@ -263,9 +263,14 @@ describe("P11/بخش ۳ — Repair Executor (اجرا)", () => {
   });
   test("۳-۱۵ verifyOutcome از گزارش پس از ترمیم", () => {
     const e = exec();
-    e.execute(firstProposal(), ok());
+    // PN-005: رفع نژاع زمانی — شناسهٔ پیشنهاد شامل Date.now() است؛
+    // دو فراخوانی جداگانهٔ firstProposal() در میلی‌ثانیه‌های مختلف
+    // شناسه‌های متفاوت می‌سازند و تست به‌صورت شانسی می‌شکست.
+    // شیء واحد در هر دو مرحله (اجرا + بازبینی) استفاده می‌شود.
+    const p = firstProposal();
+    e.execute(p, ok());
     const post = diag(); // پس از ترمیم سالم
-    const r = e.verifyOutcome(firstProposal().id, post);
+    const r = e.verifyOutcome(p.id, post);
     expect(r.verified).toBe(true);
   });
   test("۳-۱۶ شناسهٔ حسابرسی در هر نتیجه هست", () => {
