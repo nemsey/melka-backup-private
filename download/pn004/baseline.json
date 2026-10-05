@@ -1,0 +1,358 @@
+{
+ "document": "ملکا-شورا-ن۰۰۴-الف-۱۴۰۵ — فاز ۰-A · هدف ۱: تشخیص مصرف",
+ "build_id": "a7d99bb-20261005-1916",
+ "git_head": "a7d99bbe823fbcf4f7150b1b60237b9e4d4c8f98",
+ "measured_at": "2026-10-05T18:52–19:26 UTC (۱۴۰۵/۰۷/۱۵ ~۲۲:۲۲–۲۲:۵۶ تهران)",
+ "methodology": {
+  "probe": "scripts/pn004/probe.py — نمونه‌برداری /proc هر ۰.۲۵s (RSS/CPU/درخت پروسه) + dmesg OOM + cgroup",
+  "server_mode_during_A_to_L": "development (next dev روی :3000) — همان حالت سرو رسمی محیط",
+  "cpu_metric_note": "CPU به‌صورت ٪ ظرفیت کل (۱۰۰٪ = هر ۲ هسته) — پس از اصلاح باگ دوبارشماری /proc/stat (idle+guest)",
+  "heap_note": "* Heap برای سرور در حال اجرا بدون تغییر سورس قابل اندازه‌گیری نیست (نبود endpoint درون‌فرایندی) — برای فرایندهای تشخیصی اندازه‌گیری شد"
+ },
+ "table1_scenarios": [
+  {
+   "scenario": "A",
+   "label": "Idle (سیستم بی‌کار — حالت یافت‌شده)",
+   "srv_rss_mb": 2877.7,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": "0.08 loadavg",
+   "proc_count": 15,
+   "db_openers": 3,
+   "time_ms": 0,
+   "result": "✓ سنجه ثبت شد",
+   "details": {
+    "mem_available_mb": 590.1,
+    "oom": "خیر",
+    "note": "سرور dev از بوت ۱۸:۰۲ تا ۱۸:۵۲ (۴۵ دقیقه) از ~۲GB به ۲.۸۸GB رسیده بود"
+   }
+  },
+  {
+   "scenario": "B",
+   "label": "Login (ورود مالک با کد مستر)",
+   "srv_rss_mb": 2877.3,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": "~۰",
+   "proc_count": 15,
+   "db_openers": 3,
+   "time_ms": 30,
+   "result": "✗ HTTP 503 — PRECONDITION_FAILED",
+   "details": {
+    "error": "کد مدیر روی سرور تنظیم نشده است",
+    "root_cause": "زنجیرهٔ سه‌لایهٔ کد مستر شکسته: .env.local حذف شده (بازنشانی محیط) + هش AppMeta.masterCodeHash غایب (پایگاه بازسازی‌شده ۲۶MB در برابر ۵۳MB دورهٔ PN-003)",
+    "health_witness": "masterAuth=none",
+    "exit_code": "—"
+   }
+  },
+  {
+   "scenario": "C",
+   "label": "Dashboard (خانه GET /)",
+   "srv_rss_mb": null,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": "~۰",
+   "proc_count": 15,
+   "db_openers": 3,
+   "time_ms": null,
+   "result": "✓ HTTP 200 · 25.6KB",
+   "details": {
+    "warm": true
+   }
+  },
+  {
+   "scenario": "D",
+   "label": "One Tile (یک کاشی)",
+   "srv_rss_mb": 2878.5,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": "~۰",
+   "proc_count": 15,
+   "db_openers": 3,
+   "time_ms": 181,
+   "result": "△ HTTP 401 (نگهبان نشست — پیامد شکست B) + سنجهٔ مخزنی کامل",
+   "details": {
+    "repo_probe_one_tile": {
+     "wall_ms": 20,
+     "heap_used_mb": 3.5,
+     "rss_mb": 80.9,
+     "note": "listings در پایگاه فعلی ۰ ردیف است (دادهٔ آگهی از دست رفته) — برای درخواست‌ها ۲۹ms"
+    },
+    "repo_payload": "listings=0 rows (DB empty), requests=192.9KB"
+   }
+  },
+  {
+   "scenario": "E",
+   "label": "Multi Tile (چند کاشی — ۶ مسیر)",
+   "srv_rss_mb": 2910.5,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": "~۰-۵٪",
+   "proc_count": 15,
+   "db_openers": 3,
+   "time_ms": 1582,
+   "result": "△ ۶× HTTP 401 + کامپایل تنبل مسیرها در dev (۱۷-۸۸۰ms اولین ضربه)",
+   "details": {
+    "endpoints": [
+     "listings",
+     "requests",
+     "crm/transactions",
+     "crm/experts",
+     "coverage",
+     "market-index"
+    ],
+    "repo_probe_multi": {
+     "total_wall_ms": 67,
+     "heap_mb": 3.9,
+     "tiles": [
+      "M1 آگهی 20ms",
+      "M2 درخواست 29ms",
+      "M3 معاملات 6ms",
+      "M4 کارشناسان 10ms",
+      "گراف 1ms",
+      "هشدار فرصت 1ms"
+     ]
+    }
+   }
+  },
+  {
+   "scenario": "F",
+   "label": "Agent Init (راه‌اندازی ایجنت)",
+   "srv_rss_mb": 2937.3,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": 209.7,
+   "proc_count": 16,
+   "db_openers": 3,
+   "time_ms": 496,
+   "result": "△ HTTP 401 + پروکسی تست ایجنت: سبز",
+   "details": {
+    "test_proxy": "bun test tests/agent.test.ts — exit 0",
+    "tree_rss_peak_mb": 42.5
+   }
+  },
+  {
+   "scenario": "G",
+   "label": "Small Sync (~۱۰۰ رکورد — پروکسی: خط لولهٔ Bulk با ۱٬۰۰۰ رکورد)",
+   "srv_rss_mb": 0.0,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": 25.3,
+   "proc_count": 16,
+   "db_openers": 4,
+   "time_ms": 12532,
+   "result": "✓ exit 0 — ۱٬۰۰۰ رکورد، checkpoint/resume واقعی روی test.db",
+   "details": {
+    "tree_rss_peak_mb": 107.3,
+    "free_min_mb": 3345.6,
+    "note": "نزدیک‌ترین اجرای بدون تغییر سورس/داده به سناریوی ۱۰۰ رکورد"
+   }
+  },
+  {
+   "scenario": "H",
+   "label": "Large Sync (۱۰٬۰۰۰ رکورد)",
+   "srv_rss_mb": 0.0,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": 55.9,
+   "proc_count": 16,
+   "db_openers": 4,
+   "time_ms": 5095,
+   "result": "✓ exit 0 — ۱۰٬۰۰۰ upsert واقعی + خواندن کامل + پاک‌سازی روی test.db",
+   "details": {
+    "tree_rss_peak_mb": 154.1,
+    "free_min_mb": 3306.2,
+    "records_per_sec": 2391,
+    "payload_mb": 5.6,
+    "normalize_21k": {
+     "wall_ms": 441,
+     "rows": 21000,
+     "fields": 50742,
+     "note": "پایپ‌لاین نرمال‌سازی B.3 خالص CPU"
+    }
+   }
+  },
+  {
+   "scenario": "I",
+   "label": "Build (بیلد کامل production)",
+   "srv_rss_mb": 0.0,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": 81.3,
+   "proc_count": 14,
+   "db_openers": 3,
+   "time_ms": 51635,
+   "result": "✓ exit 0 — Turbopack + TypeScript + standalone",
+   "details": {
+    "cold_wall_ms": 51635,
+    "warm_wall_ms": 53955,
+    "cold_tree_rss_peak_mb": 2016.8,
+    "warm_tree_rss_peak_mb": 2207.3,
+    "free_min_mb_during": 1397.2,
+    "note": "تلاش اول شکست خورد — خطای تایپ در اسکریپت تشخیصی خود PN-004؛ بیلد Next همهٔ فایل‌های TS پروژه (شامل scripts/) را تایپ‌چک می‌کند"
+   }
+  },
+  {
+   "scenario": "J",
+   "label": "Prod Start (استارت production)",
+   "srv_rss_mb": null,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": "~۰-۱۰٪ (پیک راه‌اندازی ۷۱٪)",
+   "proc_count": 12,
+   "db_openers": 3,
+   "time_ms": 1090,
+   "result": "✓ بوت ۱.۱ ثانیه · Ready در ۱۳۸ms",
+   "details": {
+    "rss_after_boot_mb": 145,
+    "rss_after_requests_mb": 158,
+    "rss_after_20min_mb": 201,
+    "home_ms": 7,
+    "health_ms": 10,
+    "concurrent5_home_ms": 15,
+    "concurrent5_api_ms": 24,
+    "version": "a7d99bb-20261005-1857 · env=production"
+   }
+  },
+  {
+   "scenario": "K",
+   "label": "Restart (تعویض prod→dev)",
+   "srv_rss_mb": 1700.2,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": "~۵۰٪ (بوت)",
+   "proc_count": 16,
+   "db_openers": 2,
+   "time_ms": 13345,
+   "result": "✓ dev بوت ۴.۲s + کامپایل صفحهٔ اول ۹.۲s",
+   "details": {
+    "dev_rss_after_boot_mb": 1881,
+    "dev_rss_after_10min_mb": 1700.2,
+    "restart_path": "double-fork → init (مسیر بقا در برابر پاک‌سازی نشست ابزار)",
+    "preview_after": "200 OK در ۰.۱۲۶s (لینک این نشست)"
+   }
+  },
+  {
+   "scenario": "L",
+   "label": "Concurrent (۵ درخواست موازی)",
+   "srv_rss_mb": 2928.0,
+   "heap_mb": "N/A*",
+   "cpu_pct_capacity": "~۱۰٪",
+   "proc_count": 15,
+   "db_openers": 3,
+   "time_ms": 152,
+   "result": "✓ ۵×GET / هم‌زمان · prod: ۱۵ms برای همان بار",
+   "details": {
+    "home_wall_ms": 152,
+    "api_wall_ms": 74,
+    "prod_home_wall_ms": 15,
+    "oom": "خیر"
+   }
+  }
+ ],
+ "table2_idle_breakdown": [
+  {
+   "process": "next-server (v16.1.3) — حالت dev (Turbopack+HMR+Prisma+دیمن‌های درون‌فرایندی)",
+   "rss_mb": 2878.0,
+   "role": "وب‌سرور اپ",
+   "necessary": "ضروری اما در حالت اشتباه — معادل production آن ~۱۵۸-۲۰۱MB است"
+  },
+  {
+   "process": "node .next/dev/build/postcss.js",
+   "rss_mb": 0,
+   "role": "کامپایلر CSS حالت dev",
+   "necessary": "غیرضروری — فقط dev"
+  },
+  {
+   "process": "python main.py (/app/.venv — رانتایم ایجنت پلتفرم ZAI)",
+   "rss_mb": 0,
+   "role": "زیرساخت پلتفرم (ابزار GLM)",
+   "necessary": "ضروری پلتفرم — خارج از کنترل اپ"
+  },
+  {
+   "process": "node next dev (لانچر)",
+   "rss_mb": 0,
+   "role": "لانچر dev",
+   "necessary": "غیرضروری — فقط dev"
+  },
+  {
+   "process": "caddy (درگاه معکوس :81→:3000)",
+   "rss_mb": 32.0,
+   "role": "روتر عمومی preview/publish",
+   "necessary": "✅ ضروری"
+  },
+  {
+   "process": "uv run main.py",
+   "rss_mb": 0,
+   "role": "راه‌انداز رانتایم پلتفرم",
+   "necessary": "ضروری پلتفرم"
+  },
+  {
+   "process": "کرنل (Slab+Stack+PageTables)",
+   "rss_mb": 263.0,
+   "role": "سیستم",
+   "necessary": "✅ ضروری"
+  },
+  {
+   "process": "buff/cache (فایل‌های پیمایش‌شده)",
+   "rss_mb": 464.0,
+   "role": "کش دیسک",
+   "necessary": "بازپس‌گیرنی"
+  },
+  {
+   "process": "جمع پروسه‌های کاربر",
+   "rss_mb": 3327.0,
+   "role": "—",
+   "necessary": "—"
+  },
+  {
+   "process": "TOTAL (MemTotal)",
+   "rss_mb": 4042.0,
+   "role": "کل",
+   "necessary": "MemAvailable لحظهٔ اندازه‌گیری: 590.1MB"
+  }
+ ],
+ "table3_root_cause_ranking": [
+  {
+   "rank": 1,
+   "cause": "سرو در حالت development (next dev) به‌جای production — کامپایل درون‌حافظه‌ای Turbopack، کش ماژول‌ها، HMR و نگه‌داری سورس‌مپ‌ها",
+   "evidence": "RSS سرور dev = ۲٬۸۷۸-۲٬۹۶۱MB در برابر سرور production همان اپ = ۱۴۵-۲۰۱MB (سناریو J)؛ /api/version: env=development؛ package.json scripts.dev روی :3000؛ آزادسازی ۲.۴۳GB با توقف dev (۴۷۶MB→۳.۵GB available)",
+   "consumption_mb": 2700,
+   "confidence": "۹۵٪",
+   "solution": "فاز ۰-B: انتقال سرو به مسیر production (بیلد موجود شد: standalone · بوت ۱.۱s) — dev فقط برای توسعه",
+   "risk": "کم — تغییر فرایند استخراج (بیلد برای هر انتشار)؛ رفتار کامپایل تنبل dev از دست می‌رود (پیش‌گرم لازم)"
+  },
+  {
+   "rank": 2,
+   "cause": "دیمن‌های درون‌فرایندی (کاتالوگ هر ۱ دقیقه، CRM هر ۵ دقیقه، حلقهٔ هوشمندی) — رشد تدریجی RSS با زمان کار",
+   "evidence": "رشد ۲GB(بوت)→۲.۹GB (۴۵ دقیقه) در dev؛ رشد ۱۴۵→۲۰۱MB در ۲۰ دقیقه prod؛ سی‌و‌سه درخواست داخلی GET در لاگ prod (خوانش آمار ایجنت)",
+   "consumption_mb": 500,
+   "confidence": "۷۵٪",
+   "solution": "فاز ۰-B: پایش رشد RSS دیمن‌ها در prod + تنظیم بازه‌ها در صورت لزوم؛ ظرفیت رشد: ۲GB→۲.۹GB در ۴۵ دقیقه dev",
+   "risk": "کم — کند شدن همگامی با بازهٔ بزرگ‌تر"
+  },
+  {
+   "rank": 3,
+   "cause": "نبود Swap + سقف سخت cgroup (۴GiB فیزیکی ~۳.۹GiB) — هر افزایش هم‌زمانی به OOM می‌رسد",
+   "evidence": "SwapTotal=۰؛ آزمون تخصیص: OOM-kill در ۳.۵۱GB (شاهد کرنل: Killed process 4442 anon-rss:3,681,252kB)؛ G/H: free تا ۲۵۰MB سقوط",
+   "consumption_mb": 0,
+   "confidence": "۱۰۰٪ (شاهد مستقیم)",
+   "solution": "درخواست ارتقای پلتفرم (سناریو B: ۴ هسته/۸GB) یا مدیریت زمان‌بندی (بیلد و dev هرگز هم‌زمان نباشند: ۲.۲+۲.۹GB > ۴GB)",
+   "risk": "متوسط — تا ارتقا، هر بیلد باید در حالت سرو prod انجام شود (۲.۲GB پیک بیلد + ۰.۲GB prod = امن)"
+  },
+  {
+   "rank": 4,
+   "cause": "پشتهٔ زیرساخت پلتفرم (رانتایم ایجنت python ~۱۲۱-۱۴۱MB + caddy ~۲۳-۴۳MB + uv) — غیرقابل حذف از سمت اپ",
+   "evidence": "ps در همهٔ سناریوها؛ خارج از مالکیت کد ملکا",
+   "consumption_mb": 170,
+   "confidence": "۹۰٪",
+   "solution": "— (ثابت پلتفرم؛ در بودجه‌بندی ظرفیت لحاظ شد)",
+   "risk": "—"
+  },
+  {
+   "rank": 5,
+   "cause": "هم‌آمیزی اسکریپت‌های پروژه در تایپ‌چک بیلد — هر فایل TS در scripts/ می‌تواند بیلد production را بشکند",
+   "evidence": "شکست تلاش اول بیلد فقط به‌خاطر خطای تایپ در scripts/pn004/large-sync-probe.ts (رفع شد)؛ tsc کل پروژه را چک می‌کند",
+   "consumption_mb": 0,
+   "confidence": "۱۰۰٪ (بازتولید شد)",
+   "solution": "فاز ۰-B: مستثنی‌سازی امن scripts/ از تایپ‌چک بیلد (tsconfig include) یا انتقال ابزارها به tsconfig مستقل",
+   "risk": "کم — با تست tsc کنترل شود"
+  }
+ ],
+ "critical_incidental_findings": {
+  "master_login_broken": "سناریو B: HTTP 503 — زنجیرهٔ سه‌لایهٔ کد مستر (env/.env.local + هش DB + رد مقدار تستی) پس از بازنشانی محیط شکسته: .env.local غایب، .env فقط DATABASE_URL، AppMeta.masterCodeHash=null؛ health: masterAuth=none",
+  "database_degraded": "پایگاه جاری (26MB) در برابر پشتیبان PN-003 (56MB): آگهی ۰ (قبلاً ۱۱٬۵۰۱) · گراف ۰ گره (قبلاً ۳۶٬۶۵۰) · هشدار فرصت ۰ (قبلاً ۵۳) · درخواست ۵٬۶۵۰ · معاملات ۷۶۴ · کارشناسان ۲۹۳ — داده سالم در upload/dataset-backups/pn003-2026-10-05T1458.db محفوظ است",
+  "reset_root_cause": "بوت محیط ۱۸:۰۲ امروز: بازیابی repo.tar (ذخیرهٔ ۱۶:۳۰ امروز — خودش نسخهٔ تخریب‌شده را داشته) + اجرای bun run db:push طبق /start.sh؛ .env از نو با فقط DATABASE_URL نوشته شد",
+  "publish_url_status": "لینک publish اعلامی مالک (c1vdh8442240-d) → HTTP 500 — نیازمند publish مجدد از پنل مالک (همان وضعیت PN-003)",
+  "old_preview_url_status": "لینک preview اعلامی مالک (preview-chat-a8de3bf8…) → HTTP 502 — متعلق به نشست قدیمی؛ لینک زندهٔ این نشست: preview-chat-35e0018b… → 200"
+ }
+}

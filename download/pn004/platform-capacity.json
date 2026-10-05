@@ -1,0 +1,173 @@
+{
+ "document": "ملکا-شورا-ن۰۰۴-الف-۱۴۰۵ — فاز ۰-A · هدف ۲: سقف ظرفیت پلتفرم",
+ "build_id": "a7d99bb-20261005-1916",
+ "measured_at": "2026-10-05T18:52–19:26 UTC (۱۴۰۵/۰۷/۱۵ ~۲۲:۲۲–۲۲:۵۶ تهران)",
+ "cpu": {
+  "physical_cores_visible": 2,
+  "logical_cores": 2,
+  "model": "Intel(R) Xeon(R) Processor",
+  "base_freq_mhz": 3200,
+  "turbo_freq": "در /proc/cpuinfo گزارش نشده (cpu MHz ثابت 3200)",
+  "sockets": 1,
+  "threads_per_core": 1,
+  "cgroup_cpu_quota_us": -1,
+  "cgroup_cpu_period_us": 100000,
+  "cpuset": "0-1",
+  "max_usable": "۲ هستهٔ منطقی — سهم کامل",
+  "load_tests": {
+   "1_worker_30s": {
+    "total_pct": 53.4,
+    "workers_pct": 49.1,
+    "other_pct": 4.3,
+    "verdict": "یک کارگر ~۹۸٪ یک هسته را می‌گیرد"
+   },
+   "2_workers_30s": {
+    "total_pct": 100.2,
+    "workers_pct": 72.8,
+    "other_pct": 27.4,
+    "verdict": "اشباع کامل ۲ هسته"
+   },
+   "4_workers_30s": {
+    "total_pct": 100.2,
+    "workers_pct": 72.7,
+    "other_pct": 27.5,
+    "verdict": "۴ کارگر همان ۲ کارگر — سقف ۲ هسته به‌طور تجربی اثبات شد (۴هسته نداریم؛ 'چرا فقط ۲' = تأمین ماشین مجازی، نه محدودیت نرم‌افزاری: quota=-1، cpuset=0-1)"
+   }
+  },
+  "answer_why_only_2": "پلتفرم جعبهٔ مجازی را با ۲ vCPU تأمین کرده (cpuset=0-1، سهمیهٔ cgroup نامحدود). هستهٔ فیزیکی میزبان بیشتر است اما به کانتینر اختصاص نیافته. آزمون ۴ کارگر: صفر بهرهٔ اضافه."
+ },
+ "ram": {
+  "system_total_gb": 3.9,
+  "cgroup_limit_gb": 4.0,
+  "swap_gb": 0,
+  "measured_available_mb_idle_dev": 590.1,
+  "measured_available_idle_prod": 3500,
+  "allocation_probe": {
+   "method": "تخصیص تدریجی ۲۵۰-۵۰۰MB با لمس هر صفحه (commit واقعی) تا شکست",
+   "result": "OOM-Kill کرنل در تخصیص ~۳.۵GB",
+   "kernel_witness": "Out of memory: Killed process 4442 (python3) total-vm:4234448kB anon-rss:3681252kB — constraint=CONSTRAINT_NONE (global_oom)",
+   "max_allocatable_to_app_gb": 3.5,
+   "confidence": "۹۵٪"
+  },
+  "top_consumers": {
+   "dev_server": "1.9-2.9GB",
+   "prod_server": "0.15-0.2GB",
+   "build_peak": "2.2GB",
+   "platform_stack": "~0.2GB"
+  }
+ },
+ "disk": {
+  "total_gb": 9.9,
+  "used_gb_at_start": 2.0,
+  "free_gb": 7.4,
+  "after_builds": {
+   ".next_gb": 0.935,
+   "node_modules_gb": 1.3,
+   "db_mb": 28,
+   "intelligence_data_mb": 5.4
+  },
+  "our_share": "کل ۹.۹GB متعلق به همین کانتینر (rootfs) — سهم ما = همهٔ آن"
+ },
+ "process_limits": {
+  "ulimit_open_files": 1024,
+  "ulimit_max_processes": 100000,
+  "ulimit_stack_kb": 8192,
+  "kernel_pid_max": 32768,
+  "fs_file_max": 100000,
+  "threads_max": 925,
+  "note": "باز بودن فایل ۱۰۲۴ برای سرور با اتصال‌های موازی زیاد کافی نیست — در فاز ۰-B بررسی شود"
+ },
+ "network": {
+  "external_ip": "47.57.242.119 (خروجی) / eth0 داخلی 21.0.12.71/32",
+  "download_mbps": 447,
+  "upload_mbps": 36,
+  "latency_local_ms": 14,
+  "latency_external_http_ms": 85,
+  "tcp_connect_external_ms": 7,
+  "tls_handshake_ms": 27,
+  "method": "Cloudflare speed endpoints · 25MB دانلود · 5MB آپلود · ۳ نمونه"
+ },
+ "platform_limits": {
+  "config_files": [
+   "env.platform.json (ریشهٔ پروژه — متغیرهای غیرسری: DATABASE_URL، MELK_SYNC_MODE؛ مقادیر تستی عمومی برای کد مستر و کلید توکن طبق قانون راز-در-گیت-ممنوع)",
+   "/tmp/my-project/env.platform.json (کپی پلتفرم)"
+  ],
+  "env_limit_vars": "هیچ متغیر محیطی limit/quota/max فعالی یافت نشد",
+  "max_execution": "ابزار Bash: ۱۰ دقیقه (۶۰۰s) هر فراخوانی — timeout سخت",
+  "process_lifetime": "پردازش‌های پس‌زمینه در پایان هر فراخوانی ابزار کشته می‌شوند (مگر از مسیر init/double-fork) — کشف و مستند شد",
+  "max_build_size": "محدودیت صریح یافت نشد؛ دیسک ۷.۴GB آزاد",
+  "db_connections": "SQLite (فایل‌محور) — شمارش FD باز: ۲-۳ — سقف عملی: باز شدن فایل",
+  "logs": "dev.log/server.log بدون چرخش (rotation) — رشد پیوسته"
+ },
+ "table4_capacity": {
+  "resource": [
+   "CPU هسته",
+   "RAM",
+   "Disk",
+   "Network دانلود",
+   "Network آپلود",
+   "Processes",
+   "DB Connections"
+  ],
+  "min": [
+   "۲ (فعلی)",
+   "۳.۹GB فعلی",
+   "۹.۹GB",
+   "—",
+   "—",
+   "۱۶ فعال",
+   "۲-۳"
+  ],
+  "max": [
+   "۴-۸ (قابل درخواست)",
+   "۸-۱۶GB (قابل درخواست)",
+   "۲۰-۵۰GB (قابل درخواست)",
+   "۴۴۷Mbps اندازه‌گیری‌شده",
+   "۳۶Mbps اندازه‌گیری‌شده",
+   "۹۲۵ threads-max کرنل",
+   "بر اساس FD"
+  ],
+  "our_share": [
+   "۲ (۱۰۰٪ فعلی)",
+   "۳.۵GB قابل تخصیص تجربی",
+   "۹.۹GB (کامل)",
+   "بدون سهمیهٔ مشخص",
+   "بدون سهمیهٔ مشخص",
+   "۱۶",
+   "۲-۳"
+  ],
+  "confidence": [
+   "۱۰۰٪",
+   "۹۵٪",
+   "۱۰۰٪",
+   "۹۰٪",
+   "۹۰٪",
+   "۱۰۰٪",
+   "۱۰۰٪"
+  ]
+ },
+ "allocation_scenarios": {
+  "A_conservative": {
+   "cpu": "۲ هسته",
+   "ram": "۴GB (وضعیت فعلی)",
+   "outcome": "فقط با سرو production پایدار: prod 0.2GB + بیلد 2.2GB + پلتفرم 0.2GB + حاشیهٔ 1.3GB — OK؛ dev+بیلد هم‌زمان = OOM تضمینی؛ همگامی بزرگ (H) تا آستانهٔ ۲۵۰MB آزاد پیش می‌رود"
+  },
+  "B_balanced": {
+   "cpu": "۴ هسته",
+   "ram": "۸GB",
+   "outcome": "بهترین تعادل: بیلد ~۲ برابر سریع‌تر (CPU-bound ۸۱٪)، dev+بیلد هم‌زمان ممکن (5.1GB مجموع)، رشد گراف/مغز/همگامی با حاشیهٔ امن — پیشنهاد GLM"
+  },
+  "C_maximum": {
+   "cpu": "۸ هسته",
+   "ram": "۱۶GB",
+   "outcome": "حداکثر سرعت برای گراف ۳۶هزارگره، مغز ۱۱موتوری، همگامی‌های موازی و چند کاربر هم‌زمان — ریسک هزینه/تأمین پلتفرم"
+  },
+  "glm_recommendation": "سناریو B (۴ هسته / ۸GB) — دلیل: بیلد CPU-bound است (۸۱٪ ظرفیت ۲ هسته)، سرور production فقط ۰.۲GB مصرف می‌کند، پس گلوگاه اصلی تعداد هسته است نه RAM؛ ۸GB برای همهٔ ترکیب‌های سنجه‌شده + رشد دادهٔ بازیابی‌شده (۵۳MB→دادهٔ کامل) کفایت می‌کند"
+ },
+ "phase_0b_max_requestable": {
+  "cpu": "۴-۸ vCPU (اندازه‌گیری‌شده: بیلد با ۲ هسته CPU-bound)",
+  "ram": "۸-۱۶GB (اثبات نیاز: بیلد 2.2GB + dev 2.9GB + پلتفرم 0.4GB > 4GB فعلی)",
+  "disk": "۲۰GB+ (DB فعلی 28MB؛ دادهٔ کامل 56MB؛ .next 935MB؛ node_modules 1.3GB؛ لاگ‌ها بدون چرخش)",
+  "network": "کفایت می‌کند (۴۴۷/۳۶Mbps) — برای همگامی ARM خارجی کافی"
+ }
+}

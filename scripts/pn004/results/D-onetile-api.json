@@ -1,0 +1,19 @@
+{
+ "scenario": "D-onetile-api",
+ "kind": "http",
+ "ts": "2026-10-05T18:52:39+0000",
+ "mem_available_before_mb": 576.2,
+ "next_server_rss_before_mb": 2878.5,
+ "method": "GET",
+ "url": "http://localhost:3000/api/listings",
+ "http_code": 401,
+ "resp_bytes": 130,
+ "wall_ms": 181,
+ "error": null,
+ "srv_rss_peak_mb": 2878.5,
+ "free_min_mb": 576.2,
+ "samples_n": 1,
+ "mem_available_after_mb": 584.7,
+ "next_server_rss_after_mb": 2870.1,
+ "db_openers_after": 3
+}
