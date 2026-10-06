@@ -1,19 +1,19 @@
 {
   "case": "PN-007-BLOCK2-RESTORE-TEST",
   "council": "ملکا-شورا-ن۰۰۷-۱۴۰۵",
-  "generatedAt": "2026-10-06T09:35:37.715626+00:00",
+  "generatedAt": "2026-10-06T09:51:15.908716+00:00",
   "question": "آیا از بستهٔ بقای استاندارد، کل سامانه در ≤ ۵ دقیقه زنده بازمی‌گردد؟",
   "package": "upload/.survival/PN-007-20261006 (chainIndex=8)",
   "steps": {
     "1_fresh_dir": "/tmp/restore-test — از صفر",
     "2_clone": {
-      "head": "33223ac28c8ea06af5b1723cfc88b0417e822371",
+      "head": "1bc66fa4e18bb0d01ec6ce5ea7105457a64dd49f",
       "branch": "main",
       "source": "git/repo.bundle"
     },
     "3_db_copy": {
       "file": "db/custom.db",
-      "md5": "e30f83730c4e8d8f5753cc7f68a26e2d",
+      "md5": "f30aa33c134fa436185326ea7e4884e6",
       "md5Verified": true
     },
     "4_env": ".env.example + ۳ مقدار لازم از محیط فعلی (DATABASE_URL/MASTER_ACCESS_CODE/MELK_SYNC_MODE)",
@@ -23,27 +23,27 @@
   },
   "verification": {
     "health": "ok:true",
-    "version_gitSha": "33223ac28c8ea06af5b1723cfc88b0417e822371",
-    "version_buildId": "33223ac-20261006-0934",
-    "fingerprintSource": "api-live",
+    "version_gitSha": "1bc66fa4e18bb0d01ec6ce5ea7105457a64dd49f",
+    "version_buildId": "1bc66fa-20261006-0950",
+    "fingerprintSource": "baked",
     "gitSha_matches_clone": true,
-    "owner_login": "{'ok': False, 'code': 'OTP_INVALID', 'message': 'کد مدیر نادرست است.', 'retryable': False}",
+    "owner_login": "OWNER",
     "wrong_code_http": "401",
     "db_counts": {
       "PropertyRecord": 14409,
-      "RequestRecord": 20748,
+      "RequestRecord": 20750,
       "GraphNode": 69557,
       "OpportunityAlert": 456,
       "masterCodeHash": "SET"
     },
-    "restored_build_vs_package_fingerprint": "فیلدها: 21 | قابل‌مقایسه: 19 | یکسان: 17 | exempt زمانی: computedAt, computedBy نسبت همانی: 89.5٪ (آستانهٔ شورا ≥ ۹۵٪) ✗ تفاوت‌های غیرمجاز (2):"
+    "restored_build_vs_package_fingerprint": "فیلدها: 21 | قابل‌مقایسه: 17 | یکسان: 17 | exempt زمانی: buildId, builtAt, computedAt, computedBy نسبت همانی: 100.0٪ (آستانهٔ شورا ≥ ۹۵٪) ✅ PASS — نوشته شد: /tmp/restore-test/clone-repro.json"
   },
-  "totalSeconds": 48,
+  "totalSeconds": 50,
   "acceptance": {
     "timeLimit": 300,
     "withinTimeLimit": true,
-    "ownerLoginWorks": false,
-    "verdict": "FAIL"
+    "ownerLoginWorks": true,
+    "verdict": "PASS"
   },
   "screenshots": [
     "01-restore-login-page.png",
