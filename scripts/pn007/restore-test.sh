@@ -84,12 +84,21 @@ step_time "build ✓ — /api/version آن از همین بیلد سرو خوا�
 [[ -f "$APP/.next/fingerprint.json" ]] && step_time "postbuild: .next/fingerprint.json نوشته شد ✓"
 
 echo "═══ ۷) اجرای سرور روی پورت $PORT ═══"
+# ن۰۰۷ (رفع باگ جدی): سرور آزمون قبلی اگر زنده مانده باشد، بیلد تازه EADDRINUSE می‌خورد
+# و «همه پاسخ‌ها از سرور کهنه» می‌آیند — شاهد آلوده! گارد پیش-بوت: پورت باید آزاد باشد.
+if ss -tln 2>/dev/null | grep -q ":$PORT "; then
+  echo "✗ پورت $PORT اشغال است (سرور آزمون قبلی زنده؟) — پاک‌سازی…"
+  fuser -k "${PORT}/tcp" 2>/dev/null || (lsof -t -i :$PORT 2>/dev/null | xargs -r kill -9)
+  sleep 3
+  ss -tln 2>/dev/null | grep -q ":$PORT " && { echo "✗ پورت $PORT همچنان اشغال — آزمون متوقف"; exit 1; }
+fi
 ( cd "$APP" && PORT=$PORT HOSTNAME=127.0.0.1 NODE_ENV=production REPO_DIR=$APP MELKA_REPO_DIR=$APP BASE_URL=http://localhost:$PORT nohup bun .next/standalone/server.js > "$LOGS/server.log" 2>&1 & echo $! > "$RESTORE/server.pid" )
 for i in $(seq 1 40); do
   sleep 1
   HEALTH=$(curl -s -m 3 "http://localhost:$PORT/api/health" 2>/dev/null || true)
   [[ "$HEALTH" == *'"ok":true'* ]] && break
 done
+grep -q EADDRINUSE "$LOGS/server.log" 2>/dev/null && { echo "✗ سرور نتوانست بند شود (EADDRINUSE)"; exit 1; }
 T_UP=$(date +%s)
 if [[ "$HEALTH" != *'"ok":true'* ]]; then echo "✗ سرور بالا نیامد"; tail -20 "$LOGS/server.log"; exit 1; fi
 step_time "سرور بالا آمد — health ok ✓ (boot: $((T_UP - T0 - 0))s از شروع کل فرایند)"
@@ -224,9 +233,11 @@ with open("/home/z/my-project/download/pn007/restore-test.json", "w", encoding="
 print("restore-test.json ✓")
 PYEOF
 
-echo "═══ پاک‌سازی سرور آزمون ═══"
-kill $(cat "$RESTORE/server.pid" 2>/dev/null) 2>/dev/null || true
+echo "═══ پاک‌سازی سرور آزمون (مطمئن — با پورت، نه فقط cmdline) ═══"
+kill $(cat "$RESTORE/server.pid" 2>/dev/null) 2>/dev/null
+fuser -k "${PORT}/tcp" 2>/dev/null || (lsof -t -i :$PORT 2>/dev/null | xargs -r kill -9) || true
 pkill -f "restore-test/app" 2>/dev/null || true
 sleep 2
+ss -tln 2>/dev/null | grep -q ":$PORT " && echo "⚠ پورت $PORT همچنان اشغال!" || echo "پورت $PORT آزاد ✓"
 echo "✅ آزمون بازیابی کامل شد — شاهد: download/pn007/restore-test.json (verdict=$VERDICT, ${TOTAL}s)"
 [[ "$VERDICT" == "PASS" ]] || exit 1

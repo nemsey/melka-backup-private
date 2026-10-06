@@ -26,15 +26,18 @@ const valOf = (f: string) => { const i = args.indexOf(f); return i >= 0 ? args[i
  * builtAt: mtime همان فایل (نزدیک‌ترین شاهد زمان بیلد).
  * buildMode: وجود .next/BUILD_ID + standalone/server.js = بستهٔ production
  *   (استنباط از محصول، نه از NODE_ENV شل — شل postbuild/verify آن را به ارث نمی‌برد).
+ * ن۰۰۷ (رفع باگ): مسیرها نسبت به «ریشهٔ همین پروژه» حل می‌شوند (محل خودِ اسکریپت)،
+ * نه مسیر هاردکد پروژهٔ اصلی — تا هر clone تازه buildId خودش را بخواند.
  */
+const PROJECT_ROOT = join(dirname(import.meta.dir));
 function authoritativeBuildIdentity(): { buildId?: string; builtAt?: string; buildMode?: "production" | "development" } {
   try {
-    const p = "/home/z/my-project/.next/BUILD_ID";
+    const p = join(PROJECT_ROOT, ".next/BUILD_ID");
     if (existsSync(p)) {
       return {
         buildId: readFileSync(p, "utf-8").trim(),
         builtAt: new Date(statSync(p).mtimeMs).toISOString(),
-        buildMode: existsSync("/home/z/my-project/.next/standalone/server.js") ? "production" : "development",
+        buildMode: existsSync(join(PROJECT_ROOT, ".next/standalone/server.js")) ? "production" : "development",
       };
     }
   } catch { /* نبود فایل — ادامه با env/زنده */ }
