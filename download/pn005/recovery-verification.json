@@ -1,0 +1,61 @@
+{
+  "case": "PN-005-BLOCK1-RECOVERY-VERIFICATION",
+  "session": "جلسهٔ فوق‌العاده ۰۰۵ · ملکا-شورا-ن۰۰۵-۱۴۰۵",
+  "recoveredAt": "2026-10-06T03:58:18Z..04:07:37Z",
+  "executedBy": "GLM (scripts/pn005c/block1-recovery.sh)",
+
+  "recoverySourceDecision": {
+    "councilSpecified": "upload/dataset-backups/pn003-2026-10-05T1458.db (56MB)",
+    "actuallyUsed": "upload/.survival/PN-005-14050713/custom.db (167MB · chainIndex=5 · commit b13391b)",
+    "rationale": "بستهٔ بقا PN-005 همان منبعی است که BLOCK 1 دستور داده («بازیابی از بستهٔ بقا») و تازه‌تر/کامل‌تر از بکاپ pn003 است: درخواست ۱۹٬۰۵۰ در برابر ~۶٬۵۰۰ · گراف ۴۸٬۷۴۸ در برابر ۳۶٬۶۵۰ · هشدار ۱۸۵ در برابر ۱۳۹. همهٔ اهداف پذیرش شورا با آن عبور می‌کند. الگوی Blocker→Alternative→Decision→Continue.",
+    "md5Verified": "9ee7ef6729e1a697442b24d44156271c ✓"
+  },
+
+  "recoverySteps": [
+    "گام ۰: شمارش پیش از بازیابی ثبت شد (گراف ۰/۰ · هش NULL — شاهد تخریب)",
+    "گام ۱: بکاپ DB تخریب‌شده → upload/dataset-backups/pn005c-pre-recovery-2026-10-06T03-58-18.db (99MB)",
+    "گام ۲: توقف سرور dev (قفل SQLite)",
+    "گام ۳: بازیابی .env سه‌خطی از HEAD (git checkout)",
+    "گام ۴: بازسازی .env.local — MASTER_ACCESS_CODE=80211186 + MELK_SYNC_MODE=incremental (MELK_TOKEN_KEY طبق تصمیم PN-002 در env.platform.json می‌ماند)",
+    "گام ۵: راستی‌آزمایی MD5 بستهٔ بقا ✓ → بازگرداندن DB (167MB)",
+    "گام ۶: بازسازی upload/.mirror/credentials.env + الگوی بقای env.local.template + expected-counts.json",
+    "گام ۷: بیلد production (53.8s · پیک ~2.3GB) + راه‌اندازی سرور production با نگهبان خود-راه‌انداز (BLOCK 3)"
+  ],
+
+  "acceptanceTable": {
+    "description": "جدول راستی‌آزمایی بازیابی (بند ۱.۲)",
+    "rows": [
+      {"item": "آگهی", "target": "≥ 11,501", "actual": "11,504", "pass": true},
+      {"item": "درخواست", "target": "≥ 6,500", "actual": "19,050", "pass": true},
+      {"item": "گراف گره", "target": "≥ 36,650", "actual": "48,748 → رشد زنده تا 56,442", "pass": true},
+      {"item": "گراف یال", "target": "≥ 47,579", "actual": "47,772 → رشد زنده تا 53,222", "pass": true},
+      {"item": "هشدار فرصت", "target": "≥ 139", "actual": "185", "pass": true},
+      {"item": "کد مستر کار کند", "target": "✓", "actual": "✓ 200/OWNER · رد غلط‌ها 401 · masterLayersConsistent=true", "pass": true},
+      {"item": "M5-M8 فعال", "target": "✓", "actual": "✓ هر ۸ کاشی مدیریتی FOUND + M5 تطبیق زنده ۰٫۹۵ + M6 مغز ۱۱/۱۱", "pass": true}
+    ],
+    "allPassed": true
+  },
+
+  "productionMode": {
+    "buildId": "c3d8610-20261006-0406 = HEAD ✓",
+    "env": "production",
+    "serverRss": "159MB → 218MB (با دیمن‌های مغز/کاتالوگ فعال) — در برابر 2,878MB حالت dev (~94% صرفه)",
+    "watchdog": "prod-watchdog.sh فعال (ری‌استارت خودکار ۵ ثانیه · فلگ توقف)",
+    "buildTime": "53.8s · peakRSS ~2337MB"
+  },
+
+  "sideEffects": [
+    "پیش از بازیابی، ۵۲ دقیقه همگام‌سازی دیمن‌ها در DB تخریب‌شده انباشته شده بود (درخواست ۱۳٬۸۵۰) — بکاپ کامل آن در dataset-backups نگه داشته شد؛ بستهٔ بقا کامل‌تر بود (۱۹٬۰۵۰) و جایگزین شد",
+    "هیچ فایل سورسی در BLOCK 1 تغییر نکرد (فقط env/DB/اسکریپت‌های ابزار)"
+  ],
+
+  "durableInfrastructureInstalled": [
+    "scripts/pn005c/recovery-guard.sh — گارد خوددرمان: تشخیص تخریب (هش NULL/گراف صفر) → بکاپ → بازگرداندن DB/env از تازه‌ترین بستهٔ بقا → بیلد در صورت نبود → ری‌استارت production",
+    "تشخیص تخریب ساختاری DB به auto-recovery.sh اضافه شد (این بار کور نیست)",
+    "قلاب بوت instrumentation.ts با مسیر مطلق — در حالت production هم زنده (قبلاً نسبت به cwd بود و در standalone می‌مرد)",
+    "start.sh — بوت رسمی پایدار (گارد + بیلد در صورت نبود + production) برای پنل پلتفرم",
+    "پایشگر RAM (scripts/pn005c/ram-monitor.sh) فعال — download/pn005/ram-monitoring.log"
+  ],
+
+  "acceptance": "معیار پذیرش BLOCK 1: همهٔ مقادیر ≥ هدف ✓"
+}
