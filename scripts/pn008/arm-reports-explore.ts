@@ -18,7 +18,7 @@ const out: any = { at: new Date().toISOString() };
 const arm = await db.armConnection.findFirst({ orderBy: { lastRefreshedAt: "desc" } });
 let armToken = decryptSecret(arm?.tokenEnc ?? "") ?? "";
 const armRefresh = decryptSecret(arm?.refreshTokenEnc ?? "") ?? "";
-out.armVault = { tokenChars: armToken.length, refreshChars: armRefresh.length, business: arm?.businessId ?? null };
+out.armVault = { tokenChars: armToken.length, refreshChars: armRefresh.length };
 
 // آزمون توکن فعلی
 async function testArm(t: string): Promise<string> {

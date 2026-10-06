@@ -30,7 +30,10 @@ async function makeSession(role: "OWNER" | "CONSULTANT", personnelCode = role ==
 }
 
 const hdr = (t: string) => ({ authorization: `Bearer ${t}` });
-const NR = async (u: string, init?: RequestInit) => (await import("next/server")).NextRequest ? new ((await import("next/server")).NextRequest)(`http://localhost${u}`, init) : (null as never);
+async function NR(u: string, init?: RequestInit): Promise<import("next/server").NextRequest> {
+  const { NextRequest } = await import("next/server");
+  return new NextRequest(`http://localhost${u}`, init as never);
+}
 
 beforeAll(async () => {
   await db.armConnection.deleteMany({}).catch(() => undefined);
