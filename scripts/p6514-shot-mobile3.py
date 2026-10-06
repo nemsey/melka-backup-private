@@ -16,7 +16,7 @@ for line in snap.split("\n"):
 if ref:
     print(ab("click", f"@{ref}"))
     time.sleep(1)
-    print(ab("fill", "#masterCode", "80211186"))
+    print(ab("fill", "#masterCode", "00000000"))
     print(ab("click", 'button[type="submit"]'))
     time.sleep(6)
 snap = ab("snapshot", "--name", "m-home")

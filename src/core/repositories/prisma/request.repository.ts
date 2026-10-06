@@ -81,6 +81,29 @@ export function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> 
     ...(r.extractedAt !== undefined ? { extractedAt: r.extractedAt } : {}),
     ...(r.extractionBatchId !== undefined ? { extractionBatchId: r.extractionBatchId } : {}),
     ...(r.normalizationVersion !== undefined ? { normalizationVersion: r.normalizationVersion } : {}),
+    // PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM
+    ...(r.spaceFrom !== undefined && r.spaceFrom !== null ? { spaceFrom: r.spaceFrom } : {}),
+    ...(r.spaceTo !== undefined && r.spaceTo !== null ? { spaceTo: r.spaceTo } : {}),
+    ...(r.roomsFrom !== undefined && r.roomsFrom !== null ? { roomsFrom: r.roomsFrom } : {}),
+    ...(r.roomsTo !== undefined && r.roomsTo !== null ? { roomsTo: r.roomsTo } : {}),
+    ...(r.floorFrom !== undefined && r.floorFrom !== null ? { floorFrom: r.floorFrom } : {}),
+    ...(r.floorTo !== undefined && r.floorTo !== null ? { floorTo: r.floorTo } : {}),
+    ...(r.buildYearFrom !== undefined && r.buildYearFrom !== null ? { buildYearFrom: r.buildYearFrom } : {}),
+    ...(r.buildYearTo !== undefined && r.buildYearTo !== null ? { buildYearTo: r.buildYearTo } : {}),
+    ...(r.sanadNames !== undefined && r.sanadNames !== null ? { sanadNames: r.sanadNames } : {}),
+    ...(r.constructTypeNames !== undefined && r.constructTypeNames !== null ? { constructTypeNames: r.constructTypeNames } : {}),
+    ...(r.sideNames !== undefined && r.sideNames !== null ? { sideNames: r.sideNames } : {}),
+    ...(r.occasion !== undefined && r.occasion !== null ? { occasion: r.occasion } : {}),
+    ...(r.deposit !== undefined && r.deposit !== null ? { deposit: r.deposit } : {}),
+    ...(r.confirmSms !== undefined && r.confirmSms !== null ? { confirmSms: r.confirmSms } : {}),
+    ...(r.notifyMe !== undefined && r.notifyMe !== null ? { notifyMe: r.notifyMe } : {}),
+    ...(r.changeWithNames !== undefined && r.changeWithNames !== null ? { changeWithNames: r.changeWithNames } : {}),
+    ...(r.armBranchTitle !== undefined && r.armBranchTitle !== null ? { armBranchTitle: r.armBranchTitle } : {}),
+    ...(r.countryName !== undefined && r.countryName !== null ? { countryName: r.countryName } : {}),
+    ...(r.stateName !== undefined && r.stateName !== null ? { stateName: r.stateName } : {}),
+    ...(r.cityName !== undefined && r.cityName !== null ? { cityName: r.cityName } : {}),
+    ...(r.platform !== undefined && r.platform !== null ? { platform: r.platform } : {}),
+    ...(r.customerDescription !== undefined && r.customerDescription !== null ? { customerDescription: r.customerDescription } : {}),
   };
 }
 
@@ -186,12 +209,46 @@ export class PrismaRequestRepository implements RequestRepository {
       where.AND = priceAnd;
     }
 
+    // ===================== PN-002 گام ۲ — فیلتر ستون‌های تازه (تمام ستون‌ها) =====================
+    const extraAnd: Prisma.RequestRecordWhereInput[] = [];
+    if (filter.spaceFrom !== undefined || filter.spaceTo !== undefined) {
+      const spaceAnd: Prisma.RequestRecordWhereInput[] = [{ OR: [{ spaceFrom: { not: null } }, { spaceTo: { not: null } }] }];
+      if (filter.spaceTo !== undefined) spaceAnd.push({ OR: [{ spaceFrom: null }, { spaceFrom: { lte: filter.spaceTo } }] });
+      if (filter.spaceFrom !== undefined) spaceAnd.push({ OR: [{ spaceTo: null }, { spaceTo: { gte: filter.spaceFrom } }] });
+      extraAnd.push(...spaceAnd);
+    }
+    if (filter.roomsFrom !== undefined || filter.roomsTo !== undefined) {
+      where.roomsFrom = {};
+      if (filter.roomsFrom !== undefined) where.roomsFrom.gte = filter.roomsFrom;
+      if (filter.roomsTo !== undefined) where.roomsFrom.lte = filter.roomsTo;
+    }
+    if (filter.floorFrom !== undefined || filter.floorTo !== undefined) {
+      where.floorFrom = {};
+      if (filter.floorFrom !== undefined) where.floorFrom.gte = filter.floorFrom;
+      if (filter.floorTo !== undefined) where.floorFrom.lte = filter.floorTo;
+    }
+    if (filter.buildYearFrom !== undefined || filter.buildYearTo !== undefined) {
+      where.buildYearFrom = {};
+      if (filter.buildYearFrom !== undefined) where.buildYearFrom.gte = filter.buildYearFrom;
+      if (filter.buildYearTo !== undefined) where.buildYearFrom.lte = filter.buildYearTo;
+    }
+    if (filter.urgentOnly) where.urgent = true;
+    if (filter.luxuryOnly) where.luxury = true;
+    if (filter.occasionOnly) where.occasion = true;
+    if (filter.propertyTypes && filter.propertyTypes.length > 0) where.propertyTypeName = { in: filter.propertyTypes };
+    if (filter.buildingTypes && filter.buildingTypes.length > 0) where.buildingTypeName = { in: filter.buildingTypes };
+    if (extraAnd.length > 0) where.AND = [...(Array.isArray(where.AND) ? where.AND : []), ...extraAnd];
+
     // P6525 — نرمال‌سازی ورودی فیلترهای کدی/متنی با منبع یگانه + P6530/گام ۲ (متقاضی/مناطق)
     const codeNorm = normalizeFilterInput(filter.code);
     const realtorNorm = normalizeFilterInput(filter.realtorName);
     const customerNorm = normalizeFilterInput(filter.customerName);
     const areaNorm = normalizeFilterInput(filter.areaName);
-    const needsJsFilter = codeNorm !== "" || realtorNorm !== "" || customerNorm !== "" || areaNorm !== "";
+    const lineNorm = normalizeFilterInput(filter.lineName);
+    const sanadNorm = normalizeFilterInput(filter.sanad);
+    const constructNorm = normalizeFilterInput(filter.constructType);
+    const sideNorm = normalizeFilterInput(filter.side);
+    const needsJsFilter = codeNorm !== "" || realtorNorm !== "" || customerNorm !== "" || areaNorm !== "" || lineNorm !== "" || sanadNorm !== "" || constructNorm !== "" || sideNorm !== "";
     const fetchTake = needsJsFilter ? LIST_SCAN_CAP : limit;
 
     const records = await this.client.requestRecord.findMany({
@@ -222,6 +279,28 @@ export class PrismaRequestRepository implements RequestRepository {
         extractedAt: true,
         createdAt: true,
         updatedAt: true,
+        // PN-002 گام ۲ — ستون‌های تازه
+        spaceFrom: true,
+        spaceTo: true,
+        roomsFrom: true,
+        roomsTo: true,
+        floorFrom: true,
+        floorTo: true,
+        buildYearFrom: true,
+        buildYearTo: true,
+        sanadNames: true,
+        constructTypeNames: true,
+        sideNames: true,
+        occasion: true,
+        deposit: true,
+        confirmSms: true,
+        notifyMe: true,
+        changeWithNames: true,
+        armBranchTitle: true,
+        stateName: true,
+        cityName: true,
+        platform: true,
+        customerDescription: true,
       },
     });
 
@@ -240,6 +319,13 @@ export class PrismaRequestRepository implements RequestRepository {
             const areas = parseAreaNamesJson(r.areaNamesJson).map((a) => normalizeFilterInput(a));
             if (!areas.some((a) => a.includes(areaNorm))) return false;
           }
+          if (lineNorm !== "") {
+            const lines = parseAreaNamesJson(r.lineNamesJson).map((a) => normalizeFilterInput(a));
+            if (!lines.some((a) => a.includes(lineNorm))) return false;
+          }
+          if (sanadNorm !== "" && !normalizeFilterInput(r.sanadNames).includes(sanadNorm)) return false;
+          if (constructNorm !== "" && !normalizeFilterInput(r.constructTypeNames).includes(constructNorm)) return false;
+          if (sideNorm !== "" && !normalizeFilterInput(r.sideNames).includes(sideNorm)) return false;
           return true;
         })
       : records;
@@ -271,6 +357,28 @@ export class PrismaRequestRepository implements RequestRepository {
       enrichedAt: r.extractedAt,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
+      // PN-002 گام ۲ — ستون‌های تازه
+      spaceFrom: r.spaceFrom,
+      spaceTo: r.spaceTo,
+      roomsFrom: r.roomsFrom,
+      roomsTo: r.roomsTo,
+      floorFrom: r.floorFrom,
+      floorTo: r.floorTo,
+      buildYearFrom: r.buildYearFrom,
+      buildYearTo: r.buildYearTo,
+      sanadNames: r.sanadNames,
+      constructTypeNames: r.constructTypeNames,
+      sideNames: r.sideNames,
+      occasion: r.occasion,
+      deposit: r.deposit,
+      confirmSms: r.confirmSms,
+      notifyMe: r.notifyMe,
+      changeWithNames: r.changeWithNames,
+      armBranchTitle: r.armBranchTitle,
+      stateName: r.stateName,
+      cityName: r.cityName,
+      platform: r.platform,
+      customerDescription: r.customerDescription,
     }));
     return { rows, total: matched.length };
   }

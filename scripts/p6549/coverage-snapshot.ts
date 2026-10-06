@@ -8,7 +8,7 @@ async function j(path: string, opts: RequestInit = {}) {
   return { status: res.status, body };
 }
 async function main() {
-  const login = await j("/api/auth/master-login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ masterCode: "80211186" }) });
+  const login = await j("/api/auth/master-login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ masterCode: "00000000" }) });
   const H = { authorization: `Bearer ${login.body?.token ?? ""}` };
   const cov = await j("/api/coverage", { headers: H });
   console.log("coverage status:", cov.status);

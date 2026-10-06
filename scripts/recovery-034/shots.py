@@ -40,13 +40,13 @@ print("۱) صفحهٔ ورود (شاهد نام تازهٔ اپ)")
 print("  title:", ab("get", "title"))
 shot("00-auth-stamp")
 
-print("۲) ورود با کد مدیر 80211186")
+print("۲) ورود با کد مدیر 00000000")
 print(" ", click_btn("ورود با کد مدیر"))
 time.sleep(2)
 has_master = eval_js("document.querySelector('#masterCode') ? 'yes' : ('ids:' + [...document.querySelectorAll('input')].map(i=>i.id||i.name||i.type).join(','))")
 print("  masterCode field:", has_master)
 if has_master == "yes":
-    print(" ", ab("fill", "#masterCode", "80211186"))
+    print(" ", ab("fill", "#masterCode", "00000000"))
     print(" ", ab("click", 'button[type="submit"]'))
     time.sleep(8)
 

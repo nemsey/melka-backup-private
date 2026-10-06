@@ -2,7 +2,7 @@
 # p6515-filter-verify2.sh — BLOCK D/F (ملکا-شورا-۱۴۰۵-۰۱۸) — موارد تکمیلی
 set -u
 BASE="http://localhost:3000"
-LOGIN=$(curl -s --max-time 10 -X POST "$BASE/api/auth/master-login" -H "Content-Type: application/json" -d '{"masterCode":"80211186"}')
+LOGIN=$(curl -s --max-time 10 -X POST "$BASE/api/auth/master-login" -H "Content-Type: application/json" -d '{"masterCode":"00000000"}')
 TOKEN=$(echo "$LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))")
 [ -z "$TOKEN" ] && { echo "LOGIN FAILED"; exit 1; }
 auth() { curl -s --max-time 20 -H "Authorization: Bearer $TOKEN" "$BASE$1"; }

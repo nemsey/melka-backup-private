@@ -130,7 +130,7 @@ async function main() {
   ];
 
   // ═══ سرعت APIها (گام ۴ — سرعت استخراج) ═══
-  const login = await fetch(`${BASE}/api/auth/master-login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ masterCode: "80211186" }) });
+  const login = await fetch(`${BASE}/api/auth/master-login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ masterCode: "00000000" }) });
   const token = (await login.json())?.token ?? "";
   const H = { authorization: `Bearer ${token}` };
   const speeds: any[] = [];

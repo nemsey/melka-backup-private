@@ -38,13 +38,13 @@ import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2, Zap,
+  Loader2, RotateCcw, Search, ClipboardList, Users, Phone, RefreshCw, Hash, CheckCircle2, Zap, FileSpreadsheet,
   Landmark, PieChart, Banknote, Tag, CalendarDays, Network, Filter, MapPinned, Award, Building2, Home,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TopRankingTable, TileCoverageTable } from "@/components/app/shared";
+import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, apiSync, ApiClientError } from "@/lib/client/api";
+import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
@@ -81,10 +81,36 @@ interface RequestRow {
   propertyTypeName: string | null;
   buildingTypeName: string | null;
   areaNames: string[];
+  lineNames: string[];
   branch: string;
   enrichedAt: string | null;
   createdAt: string | null;
   updatedAt: string;
+  // ===================== PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM =====================
+  spaceFrom: number | null;
+  spaceTo: number | null;
+  roomsFrom: number | null;
+  roomsTo: number | null;
+  floorFrom: number | null;
+  floorTo: number | null;
+  buildYearFrom: number | null;
+  buildYearTo: number | null;
+  sanadNames: string | null;
+  constructTypeNames: string | null;
+  sideNames: string | null;
+  occasion: boolean | null;
+  deposit: boolean | null;
+  confirmSms: boolean | null;
+  notifyMe: boolean | null;
+  changeWithNames: string | null;
+  armBranchTitle: string | null;
+  stateName: string | null;
+  cityName: string | null;
+  platform: string | null;
+  customerDescription: string | null;
+  luxury: boolean | null;
+  changeable: boolean | null;
+  paymentMethodName: string | null;
 }
 
 interface Enrichment {
@@ -361,9 +387,6 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
             <PieChart className="w-5 h-5 text-sec-m2-700 shrink-0" aria-hidden />
             <div>
               <p className="text-sm font-bold">توزیع وضعیت درخواست‌ها (نظام شش‌حالته)</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                شمار و درصد درخواست‌های سامانه ARM بر پایهٔ وضعیت‌های شش‌گانهٔ دستور مالک — از کل {statusCounts ? faNumber(statusCounts.total) : faNumber(data?.total ?? 0)} درخواست رجیستری.
-              </p>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" id="arm-request-states-insight">
@@ -397,7 +420,6 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
         <TopRankingTable
           id="m2-top-realtors"
           title="جدول ۱۰ کارشناسان پردرخواست ملک تبریز"
-          description="کارشناسانی که بیشترین درخواست در کاتالوگ سامانه ملک تبریز ثبت کرده‌اند — تجمیع زنده از فهرست همین کاشی."
           rows={topRealtors}
           countLabel="کارشناس"
           icon={Award}
@@ -407,7 +429,6 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
         <TopRankingTable
           id="m2-top-hubs"
           title="جدول ۱۰ قطب‌های درخواست در مناطق تبریز"
-          description="مناطق و محله‌هایی که بیشترین درخواست برای آن‌ها ثبت شده — قطب‌های تقاضای ملک تبریز."
           rows={topHubs}
           countLabel="منطقه"
           icon={MapPinned}
@@ -426,9 +447,6 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
               <ClipboardList className="w-5 h-5 text-sec-m2-700 shrink-0" aria-hidden />
               <div className="min-w-0">
                 <p className="text-sm font-bold">بروزرسانی درخواست‌ها از سامانه‌های ملک تبریز</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  فهرست کامل (کد، کارشناس، وضعیت، تاریخ ثبت) از لایهٔ ۱ سامانه ARM؛ نام و موبایل متقاضی و مناطق منتخب و بازهٔ قیمت و دسته‌بندی برش‌به‌برش با زنجیرهٔ عین خود سامانه‌های ARM و PM تکمیل می‌شود.
-                </p>
               </div>
             </div>
             <Button onClick={() => void doSync()} disabled={syncing} className="gap-2 shrink-0 bg-sec-m2-500 hover:bg-sec-m2-500/90 text-sec-m2-fg">
@@ -464,9 +482,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
           <div>
             <div className="flex items-center justify-between text-xs mb-1.5">
               <span className="text-muted-foreground">
-                تکمیل اطلاعات متقاضی، مناطق، قیمت و دسته‌بندی
+                {/* PN-003 گام ۴-۱ — توضیح متنی حذف شد؛ فقط وضعیت زندهٔ غنی‌سازی می‌ماند */}
                 {enriching && (
-                  <span className="inline-flex items-center gap-1 text-sec-m2-700 ms-2">
+                  <span className="inline-flex items-center gap-1 text-sec-m2-700">
                     <Loader2 className="w-3 h-3 animate-spin" aria-hidden /> در حال تکمیل خودکار…
                   </span>
                 )}
@@ -492,7 +510,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
             aria-expanded={filtersOpen}
           >
             <Filter className="w-4 h-4 text-sec-m2-700" aria-hidden />
-            فیلتر فهرست درخواست — بر اساس تمام ستون‌ها
+            فیلتر فهرست درخواست
             {anyFilterActive && <Badge variant="secondary" className="gap-1">فیلتر فعال</Badge>}
             <span className="text-muted-foreground text-xs me-auto">{filtersOpen ? "بستن" : "باز کردن"}</span>
           </button>
@@ -735,7 +753,32 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
       ) : (
         <Card>
           <CardHeader className="py-4 flex flex-col items-center gap-1">
-            <CardTitle className="text-base text-center">فهرست درخواست‌ها — کاتالوگ سامانه ARM ملک تبریز</CardTitle>
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              <CardTitle className="text-base text-center">فهرست درخواست‌ها</CardTitle>
+              {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-7 text-[11px]"
+                onClick={() => {
+                  const p = new URLSearchParams();
+                  if (applied.code) p.set("code", applied.code);
+                  if (applied.realtorName) p.set("realtorName", applied.realtorName);
+                  if (applied.customerName) p.set("customerName", applied.customerName);
+                  if (applied.areaName) p.set("areaName", applied.areaName);
+                  apiBlob(`/api/crm/export/requests?${p.toString()}`)
+                    .then((blob) => {
+                      downloadBlob(blob, `melka-requests-${new Date().toISOString().slice(0, 10)}.xlsx`);
+                      toast({ title: "خروجی اکسل آماده شد", description: "کل فهرست درخواست‌ها (با فیلترهای فعال) دانلود شد." });
+                    })
+                    .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
+                }}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
+              </Button>
+              {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
+              <ExcelImportButton entity="requests" compact onImported={() => void load()} />
+            </div>
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
             )}
@@ -761,6 +804,15 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     {/* P6547/گام دوم — ستون فوریت (urgent خود ردیف فهرست ARM) */}
                     <TableHead className="min-w-20">فوریت</TableHead>
                     <TableHead className="min-w-28">تاریخ ثبت</TableHead>
+                    {/* PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM */}
+                    <TableHead className="min-w-24">متراژ</TableHead>
+                    <TableHead className="min-w-20">اتاق</TableHead>
+                    <TableHead className="min-w-20">طبقه</TableHead>
+                    <TableHead className="min-w-24">ساخت</TableHead>
+                    <TableHead className="min-w-28">سند</TableHead>
+                    <TableHead className="min-w-24">نوع ساخت</TableHead>
+                    <TableHead className="min-w-28">جهت</TableHead>
+                    <TableHead className="min-w-24">معاوضه</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
@@ -897,6 +949,79 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <CalendarDays className="w-3.5 h-3.5 shrink-0" aria-hidden />
                             {r.createdAt ? faDateTime(r.createdAt) : "—"}
                           </span>
+                        </TableCell>
+                        {/* PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM */}
+                        {/* ۱۱ — متراژ (از/تا) */}
+                        <TableCell className="whitespace-nowrap text-[10px]">
+                          {r.spaceFrom !== null || r.spaceTo !== null ? (
+                            <span className="tabular-nums font-medium" title="متراژ درخواستی (از/تا) — عین فرم ثبت سامانه ARM">
+                              {r.spaceFrom !== null ? faNumber(r.spaceFrom) : "۰"} — {r.spaceTo !== null ? faNumber(r.spaceTo) : "∞"}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۲ — اتاق (از/تا) */}
+                        <TableCell className="whitespace-nowrap text-[10px]">
+                          {r.roomsFrom !== null || r.roomsTo !== null ? (
+                            <span className="tabular-nums">
+                              {r.roomsFrom !== null ? faNumber(r.roomsFrom) : "۰"} — {r.roomsTo !== null ? faNumber(r.roomsTo) : "∞"}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۳ — طبقه (از/تا) */}
+                        <TableCell className="whitespace-nowrap text-[10px]">
+                          {r.floorFrom !== null || r.floorTo !== null ? (
+                            <span className="tabular-nums">
+                              {r.floorFrom !== null ? faNumber(r.floorFrom) : "۰"} — {r.floorTo !== null ? faNumber(r.floorTo) : "∞"}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۴ — سال ساخت (از/تا — جلالی) */}
+                        <TableCell className="whitespace-nowrap text-[10px]">
+                          {r.buildYearFrom !== null || r.buildYearTo !== null ? (
+                            <span className="tabular-nums">
+                              {r.buildYearFrom !== null ? faNumber(r.buildYearFrom) : "—"} — {r.buildYearTo !== null ? faNumber(r.buildYearTo) : "∞"}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۵ — سند */}
+                        <TableCell className="whitespace-normal text-[10px] max-w-32">
+                          {r.sanadNames ? (
+                            <span className="font-medium" title="نوع سند درخواستی — عین فرم ثبت ARM">{r.sanadNames}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۶ — نوع ساخت */}
+                        <TableCell className="whitespace-normal text-[10px] max-w-24">
+                          {r.constructTypeNames ? (
+                            <span>{r.constructTypeNames}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۷ — جهت */}
+                        <TableCell className="whitespace-normal text-[10px] max-w-28">
+                          {r.sideNames ? (
+                            <span title="جهت‌های مورد پذیرش متقاضی">{r.sideNames}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۸ — معاوضه */}
+                        <TableCell className="whitespace-normal text-[10px] max-w-24">
+                          {r.changeWithNames && r.changeWithNames !== "مایل نیستم" ? (
+                            <span className="font-medium" title="مایل به معاوضه با">{r.changeWithNames}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     );

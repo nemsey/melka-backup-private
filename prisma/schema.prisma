@@ -624,6 +624,23 @@ model PropertyRecord {
   createdAt      DateTime?
   updatedAt      DateTime @updatedAt
 
+  // ===================== PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM =====================
+  // (بهینه‌ترین گزینهٔ استخراج: خود properties/list — صفر هزینهٔ API اضافه)
+  isRental        Boolean?   // نوع اجاره‌ای (isRental خود ردیف)
+  depositPrice    Float?     // رهن (deposite_price)
+  rentPrice       Float?     // اجاره (rent_price)
+  viewCount       Int?       // بازدید آگهی (viewCount)
+  imageCount      Int?       // تعداد تصویر (images.length)
+  addedToDivar    Boolean?   // منتشرشده در دیوار
+  addedToInsta    Boolean?   // منتشرشده در اینستاگرام
+  isReposted      Boolean?   // بازنشرشده
+  isTarget        Boolean?   // آگهی هدف
+  armBranchTitle  String?    // کسب‌وکار/شعبهٔ مستقیم ARM (businessId.title)
+  stateName       String?    // استان (state.name)
+  cityName        String?    // شهر (city.name)
+  publicUrl       String?    // لینک عمومی آگهی (link)
+  statusDate      DateTime?  // تاریخ آخرین وضعیت (status[0].date)
+
   @@index([cityId, areaId, propertyTypeId, tradeTypeId])   // ایندکس ۱ از §۴
   @@index([price, meterage])                               // ایندکس ۲ از §۴
   @@index([createdAt])                                     // ایندکس ۴ از §۴
@@ -1180,6 +1197,30 @@ model RequestRecord {
   extractionBatchId    String?
   normalizationVersion String?
 
+  // ===================== PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM =====================
+  // (بهینه‌ترین گزینهٔ استخراج: inputs خود requests/list — ۱۰۰٪ پر، صفر API اضافه)
+  spaceFrom          Float?    // متراژ از (inputs.space_from)
+  spaceTo            Float?    // متراژ تا (inputs.space_to)
+  roomsFrom          Int?      // اتاق از (inputs.room_whole_from)
+  roomsTo            Int?      // اتاق تا (inputs.room_whole_to)
+  floorFrom          Int?      // طبقه از (inputs.floor_from)
+  floorTo            Int?      // طبقه تا (inputs.floor_to)
+  buildYearFrom      Int?      // سال ساخت از — جلالی (inputs.year_from)
+  buildYearTo        Int?      // سال ساخت تا — جلالی (inputs.year_to)
+  sanadNames         String?   // سند (inputs.sanad[] → «شش‌دانگ، قولنامه…»)
+  constructTypeNames String?   // نوع ساخت (inputs.construct_type[] → «مجتمع، برج…»)
+  sideNames          String?   // جهت (inputs.side[] → «شمال، جنوب…»)
+  occasion           Boolean?  // فرصت (ocasion)
+  deposit            Boolean?  // رهنی (deposite)
+  confirmSms         Boolean?  // تایید پیامکی (confirmSMS)
+  notifyMe           Boolean?  // اطلاع‌رسانی (notifyMe)
+  changeWithNames    String?   // معاوضه با (changeWith[] → نام‌های رسمی enum)
+  armBranchTitle     String?   // کسب‌وکار/شعبهٔ مستقیم ARM (businessId.title)
+  countryName        String?   // کشور (country.name)
+  stateName          String?   // استان (state.name)
+  cityName           String?   // شهر (city.name)
+  platform           String?   // پلتفرم ثبت (platform)
+
   @@index([status])
   @@index([source])
   @@index([customerMobile])
@@ -1299,6 +1340,9 @@ model AppMeta {
   gitSha     String?
   /// development | production
   env        String?
+  /// PN-002 نکته ۱ — هش SHA-256 کد مستر مالک (بقای بازنشانی محیط: DB زنده می‌ماند؛
+  /// فقط هش — هرگز خود کد در DB نمی‌نشیند؛ fallback دومِ master-login پس از env)
+  masterCodeHash String?
   recordedAt DateTime @updatedAt
 }
 

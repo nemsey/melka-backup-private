@@ -76,6 +76,24 @@ export async function GET(request: NextRequest) {
       ? allFiveRaws.filter((v) => !(statuses ?? []).includes(v))
       : undefined;
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
+    // ===================== PN-002 گام ۲ — فیلتر ستون‌های تازه (تمام ستون‌ها) =====================
+    const lineName = normalizeFilterInput(sp.get("lineName")) || undefined;
+    const sanad = normalizeFilterInput(sp.get("sanad")) || undefined;
+    const constructType = normalizeFilterInput(sp.get("constructType")) || undefined;
+    const side = normalizeFilterInput(sp.get("side")) || undefined;
+    const spaceFrom = num(sp.get("spaceFrom"));
+    const spaceTo = num(sp.get("spaceTo"));
+    const roomsFrom = num(sp.get("roomsFrom"));
+    const roomsTo = num(sp.get("roomsTo"));
+    const floorFrom = num(sp.get("floorFrom"));
+    const floorTo = num(sp.get("floorTo"));
+    const buildYearFrom = num(sp.get("buildYearFrom"));
+    const buildYearTo = num(sp.get("buildYearTo"));
+    const urgentOnly = sp.get("urgentOnly") === "1" || sp.get("urgentOnly") === "true";
+    const luxuryOnly = sp.get("luxuryOnly") === "1" || sp.get("luxuryOnly") === "true";
+    const occasionOnly = sp.get("occasionOnly") === "1" || sp.get("occasionOnly") === "true";
+    const propertyTypes = (sp.getAll("propertyType") || []).map((t) => normalizeFilterInput(t)).filter(Boolean);
+    const buildingTypes = (sp.getAll("buildingType") || []).map((t) => normalizeFilterInput(t)).filter(Boolean);
 
     const repo = getRequestRepository();
 
@@ -94,7 +112,15 @@ export async function GET(request: NextRequest) {
 
     const access = resolveEntityAccess(guard, "arm-request");
     const { rows, total } = await repo.listArmCatalog(
-      { code, realtorName, customerName, areaName, priceFrom, priceTo, tradeTypes, statuses, statusesIncludesOther, statusesExcluded, dateFrom, dateTo },
+      {
+        code, realtorName, customerName, areaName, priceFrom, priceTo, tradeTypes, statuses, statusesIncludesOther, statusesExcluded, dateFrom, dateTo,
+        // PN-002 گام ۲ — ستون‌های تازه
+        lineName, sanad, constructType, side,
+        spaceFrom, spaceTo, roomsFrom, roomsTo, floorFrom, floorTo, buildYearFrom, buildYearTo,
+        urgentOnly, luxuryOnly, occasionOnly,
+        propertyTypes: propertyTypes.length > 0 ? propertyTypes : undefined,
+        buildingTypes: buildingTypes.length > 0 ? buildingTypes : undefined,
+      },
       limit
     );
 

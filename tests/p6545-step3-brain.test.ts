@@ -151,9 +151,9 @@ describe("گام۳/B3.2 — رجیستری مدل‌ها", () => {
     expect(modelRegistry.size).toBe(10); // P6546: idempotent با ده مدل
   });
 
-  test("م-۳-۲۰ شاهد models-registry.json با ۴ مدل", () => {
+  test("م-۳-۲۰ شاهد models-registry.json با مدل‌های ن۰۰۱ (≥ ۸)", () => {
     const proof = JSON.parse(readFileSync("download/p6545/models-registry.json", "utf8"));
-    expect(proof.models).toHaveLength(4);
+    expect(proof.models.length).toBeGreaterThanOrEqual(8); // ن۰۰۱ BLOCK 3.2: ۸ مدل الزامی (رجیستری فعلی: ۱۰)
     expect(proof.brain.engines).toBe(11);
     expect(proof.brain.changedEngines).toBe(0);
   });
@@ -560,9 +560,9 @@ describe("گام۳/B3.5 — پیامدهای بین‌کاشی (یک معامل�
     expect(outcomes.length).toBeGreaterThan(0);
   });
 
-  test("پ-۳-۷۷ شناسهٔ پیامدها از الگوی ct-m{1..4}", () => {
+  test("پ-۳-۷۷ شناسهٔ پیامدها از الگوی ct-m{1..5} (ن۰۰۱ — پیامد پنجم M5)", () => {
     const all = readCrossTileOutcomes();
-    expect(all.every((o) => /^ct-m[1-4]-/.test(o.id))).toBe(true);
+    expect(all.every((o) => /^ct-m[1-5]-/.test(o.id))).toBe(true);
   });
 
   test("پ-۳-۷۸ پیوند مدل M4 از مسیر درخواست→کارشناس ثبت‌شده", () => {

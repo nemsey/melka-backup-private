@@ -1,7 +1,7 @@
 /**
  * tests/p6547-six-steps.test.ts — سوئیت تست واقعی پروندهٔ P6547 (دستور شش‌گانهٔ مالک)
  * ==================================================================================
- * گام صفر: کدمستر 80211186 + نام «اکوسیستم هوشمند ملک ایران»/«ملکا»
+ * گام صفر: کدمستر 00000000 + نام «اکوسیستم هوشمند ملک ایران»/«ملکا»
  * گام یک (M1): حذف بینش کیفیت تماس مالکان + بینش پوشش تمام ستون‌ها + شعبه از PM
  * گام دوم (M2): استخراج کامل requests/list (مناطق/محله/قیمت/دسته‌بندی/فوریت) + رجیستری انواع
  * گام سوم (M3): حذف بینش ناهنجاری + شعبه در تجمیع حق‌السهم (قالب نام+شعبه+درصد)
@@ -19,10 +19,10 @@ const read = (p: string) => readFileSync(p, "utf8");
 
 // ═══════════════════ گام صفر — کدمستر + تغییر نام ═══════════════════
 describe("P6547/گام صفر — کدمستر و نام رسمی", () => {
-  test("ص-۱: کدمستر مالک 80211186 در .env ثبت شده (قدیمی 41372895 حذف)", () => {
+  test("ص-۱: کدمستر مالک 00000000 در .env ثبت شده (قدیمی 11111111 حذف)", () => {
     const env = read(".env");
-    expect(env).toContain("MASTER_ACCESS_CODE=80211186");
-    expect(env).not.toContain("MASTER_ACCESS_CODE=41372895");
+    expect(env).toContain("MASTER_ACCESS_CODE=00000000");
+    expect(env).not.toContain("MASTER_ACCESS_CODE=11111111");
   });
 
   test("ص-۲: عنوان رسمی اپ «اکوسیستم هوشمند ملک ایران» در metadata ریشه", () => {
@@ -420,11 +420,11 @@ describe("P6547/پروب زندهٔ شبکه — راستی‌آزمایی وا�
     } catch { /* بهترین-تلاش — در صورت شکست، تست ز-۱ صادقانه قرمز می‌شود */ }
   });
 
-  test("ز-۱: ورود مدیر با کدمستر تازه 80211186 (واقعی)", async () => {
+  test("ز-۱: ورود مدیر با کدمستر تازه 00000000 (واقعی)", async () => {
     const res = await fetch(`${BASE}/api/auth/master-login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ masterCode: "80211186" }),
+      body: JSON.stringify({ masterCode: "00000000" }),
     });
     const d = (await res.json()) as { ok: boolean; token?: string };
     expect(d.ok).toBe(true);
@@ -432,11 +432,11 @@ describe("P6547/پروب زندهٔ شبکه — راستی‌آزمایی وا�
     token = d.token ?? "";
   }, 20000);
 
-  test("ز-۲: کد قدیمی 41372895 هرگز ورود موفق نمی‌دهد (واقعی — 401 یا قفل نرخ)", async () => {
+  test("ز-۲: کد قدیمی 11111111 هرگز ورود موفق نمی‌دهد (واقعی — 401 یا قفل نرخ)", async () => {
     const res = await fetch(`${BASE}/api/auth/master-login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ masterCode: "41372895" }),
+      body: JSON.stringify({ masterCode: "11111111" }),
     });
     // 401 = رد مستقیم · 429 = قفل نرخ پس از تلاش‌های متوالی (هر دو = عدم ورود)
     expect([401, 429]).toContain(res.status);

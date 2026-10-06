@@ -37,7 +37,7 @@ def login():
         return True
     eval_js("(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').replace(/\\u200c/g,'').includes('ورود با کد مدیر'));if(b){b.click();return 'y'}return 'n'})()")
     time.sleep(2)
-    ab("fill", "#masterCode", "80211186")
+    ab("fill", "#masterCode", "00000000")
     time.sleep(1)
     eval_js("(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').trim()==='ورود'||(b.getAttribute('aria-label')||'').includes('ورود'));if(b){b.click();return 'y'}return 'n'})()")
     return wait_marker("خوش آمدید", 30)

@@ -23,3 +23,5 @@ export { useTileData, type UseTileDataOptions, type UseTileDataResult } from "./
 // P6546/گام پنجم — مؤلفه‌های مشترک کاشی‌های چهارگانه
 export { TileCoverageTable, type CoverageColumn } from "./coverage-table";
 export { TopRankingTable, type RankRow } from "./top-ranking-table";
+// PN-003 گام ۴-۲ — دکمهٔ بارگذاری اکسل (ایمپورت کل فهرست)
+export { ExcelImportButton } from "./excel-import-button";

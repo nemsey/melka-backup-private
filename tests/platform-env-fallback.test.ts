@@ -107,7 +107,7 @@ describe("P6.5-08 — applyPlatformEnvFallbacks (بارگذاری env.platform.j
     // این تست تضمین می‌کند هرگز مقدار واقعی/جدید در این فایل ننشیند.
     const raw = (await Bun.file("env.platform.json").json()) as Record<string, string>;
     expect(raw.MELK_TOKEN_KEY).toBe("test-only-key-not-a-real-secret");
-    expect(raw.MASTER_ACCESS_CODE).toBe("80211186");
+    expect(raw.MASTER_ACCESS_CODE).toBe("00000000");
   });
 
   test("۷) کلیدهای مستندسازی با پیشوند «_» نادیده گرفته می‌شوند", async () => {
@@ -130,7 +130,7 @@ describe("P6.5-08 — applyPlatformEnvFallbacks (بارگذاری env.platform.j
       if (file.includes("instrumentation")) continue; // فقط ارجاع متنی به نام متغیرها
       const text = await Bun.file(file).text();
       if (text.includes("melk-tabriz-fallback-key")) offenders.push(`${file}: melk-tabriz-fallback-key`);
-      if (/\b80211186\b/.test(text)) offenders.push(`${file}: 80211186`);
+      if (/\b00000000\b/.test(text)) offenders.push(`${file}: 00000000`);
     }
     expect(offenders).toEqual([]);
   });

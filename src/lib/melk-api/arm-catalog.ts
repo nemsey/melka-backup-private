@@ -138,6 +138,13 @@ export function mapArmPropertyListRow(row: RawRow): PropertyBulkInput | null {
   const price = totalPrice ?? deposit;
   const pricePerMeter = typeof row.pricePerMeter === "number" ? row.pricePerMeter : null;
 
+  // PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست (بهینه‌ترین گزینهٔ استخراج: صفر API اضافه)
+  const statusArr = Array.isArray(row.status) ? (row.status[0] as RawRow | undefined) : undefined;
+  const statusDateRaw = statusArr ? pickStr(statusArr, ["date"]) : null;
+  const statusDate = statusDateRaw ? new Date(statusDateRaw) : null;
+  const branchObj = row.businessId as RawRow | undefined;
+  const images = Array.isArray(row.images) ? row.images.length : 0;
+
   return {
     id: id ?? propertyCode!,
     propertyCode: propertyCode ?? id!,
@@ -156,6 +163,21 @@ export function mapArmPropertyListRow(row: RawRow): PropertyBulkInput | null {
     rawPrice: price !== null ? String(price) : rent !== null ? `اجاره: ${rent}` : null,
     rawPriceUnit: "ریال",
     createdAt: pickDate(row.updatedAt) ?? pickDate(row.createdAt),
+    // ---- PN-002 گام ۱ — ستون‌های تازه ----
+    ...(typeof row.isRental === "boolean" ? { isRental: row.isRental } : {}),
+    ...(deposit !== null ? { depositPrice: deposit } : {}),
+    ...(rent !== null ? { rentPrice: rent } : {}),
+    ...(typeof row.viewCount === "number" ? { viewCount: row.viewCount } : {}),
+    ...(images > 0 ? { imageCount: images } : {}),
+    ...(typeof row.addedToDivar === "boolean" ? { addedToDivar: row.addedToDivar } : {}),
+    ...(typeof row.addedToInsta === "boolean" ? { addedToInsta: row.addedToInsta } : {}),
+    ...(typeof row.isReposted === "boolean" ? { isReposted: row.isReposted } : {}),
+    ...(typeof row.isTarget === "boolean" ? { isTarget: row.isTarget } : {}),
+    ...(branchObj ? { armBranchTitle: pickStr(branchObj, ["title"]) } : {}),
+    stateName: pickNestedStr(row, "state.name"),
+    cityName: pickNestedStr(row, "city.name"),
+    ...(pickStr(row, ["link"]) ? { publicUrl: pickStr(row, ["link"]) } : {}),
+    ...(statusDate !== null && !Number.isNaN(statusDate.getTime()) ? { statusDate } : {}),
   };
 }
 
@@ -185,6 +207,104 @@ export function refName(v: unknown): string | null {
   if (!v || typeof v !== "object") return null;
   const name = (v as Record<string, unknown>)["name"] ?? (v as Record<string, unknown>)["title"];
   return typeof name === "string" && name.trim() ? name.trim() : null;
+}
+
+// ==========================================================================
+// PN-002 گام ۲ — نام‌های فارسی رسمی مقادیر enum فرم پویای درخواست (inputs)
+// ==========================================================================
+
+/** سند — inputs.sanad[] (مقادیر انگلیسی → نام نمایشی) */
+export const SANAD_LABELS: Record<string, string> = {
+  dardasteegdam: "در دست اقدام",
+  key: "قولنامه",
+  sixdong: "شش‌دانگ",
+  contractical: "قراردادی",
+};
+
+/** نوع ساخت — inputs.construct_type[] */
+export const CONSTRUCT_TYPE_LABELS: Record<string, string> = {
+  complex: "مجتمع",
+  personal: "شخصی",
+  tower: "برج",
+};
+
+/** جهت — inputs.side[] */
+export const SIDE_LABELS: Record<string, string> = {
+  north: "شمال",
+  south: "جنوب",
+  west: "غرب",
+  east: "شرق",
+  north_west: "شمال غربی",
+  north_east: "شمال شرقی",
+  south_west: "جنوب غربی",
+  south_east: "جنوب شرقی",
+  north_south: "شمالی-جنوبی",
+  east_west: "شرقی-غربی",
+  three_corners: "سه‌در",
+};
+
+/** معاوضه با — changeWith[] (نام‌های رسمی enum عمومی PROPERTY_CHANGEABLE_WITH) */
+export const CHANGE_WITH_LABELS: Record<string, string> = {
+  notChangeable: "مایل نیستم",
+  land: "زمین / ملک کلنگی",
+  office: "دفتر کار",
+  store: "مغازه",
+  villa: "ویلا",
+  factory: "کارخانه",
+  apartment: "واحد آپارتمان",
+  car: "خودرو",
+  others: "سایر",
+};
+
+/** ترجمهٔ آرایهٔ مقادیر انگلیسی به نام‌های فارسی جدا با «،» — نام‌های ناشناخته خام می‌مانند */
+function translateEnumList(v: unknown, labels: Record<string, string>): string | null {
+  if (!Array.isArray(v) || v.length === 0) return null;
+  const out: string[] = [];
+  for (const item of v) {
+    if (typeof item !== "string" || !item.trim()) continue;
+    const t = item.trim();
+    out.push(labels[t] ?? t);
+  }
+  return out.length > 0 ? out.join("، ") : null;
+}
+
+/** استخراج عدد با دامنهٔ معتبر per-field (فرم ARM برای «هر مقدار» از ۰ تا ۹۰ رزرو می‌کند) */
+function pickBounded(v: unknown, min: number, max: number): number | null {
+  if (typeof v !== "number" || !Number.isFinite(v)) return null;
+  if (v < min || v > max) return null;
+  return Math.round(v);
+}
+
+/** استخراج کامل inputs خود ردیف فهرست درخواست — شاهکار PN-002 گام ۲ (۱۰۰٪ پر)
+ *  دامنه‌ها: متراژ تا ۵٬۰۰۰ · اتاق تا ۳۰ · طبقه تا ۲۰۰ · سال جلالی ۱۳۰۰-۱۴۵۰
+ *  (از ۰ و ۹۰ = «هر مقدار» رزرو فرم → ذخیره نمی‌شود تا ستون معنادار بماند) */
+export function extractRequestInputs(inputs: unknown): Partial<ArmRequestBulkRow> {
+  if (!inputs || typeof inputs !== "object") return {};
+  const i = inputs as RawRow;
+  const out: Partial<ArmRequestBulkRow> = {};
+  const spaceFrom = pickBounded(i.space_from, 1, 5000);
+  const spaceTo = pickBounded(i.space_to, 1, 5000);
+  const roomsFrom = pickBounded(i.room_whole_from, 1, 30);
+  const roomsTo = pickBounded(i.room_whole_to, 1, 30);
+  const floorFrom = pickBounded(i.floor_from, 1, 200);
+  const floorTo = pickBounded(i.floor_to, 1, 200);
+  const yearFrom = pickBounded(i.year_from, 1300, 1450);
+  const yearTo = pickBounded(i.year_to, 1300, 1450);
+  const sanad = translateEnumList(i.sanad, SANAD_LABELS);
+  const construct = translateEnumList(i.construct_type, CONSTRUCT_TYPE_LABELS);
+  const side = translateEnumList(i.side, SIDE_LABELS);
+  if (spaceFrom !== null) out.spaceFrom = spaceFrom;
+  if (spaceTo !== null) out.spaceTo = spaceTo;
+  if (roomsFrom !== null) out.roomsFrom = roomsFrom;
+  if (roomsTo !== null) out.roomsTo = roomsTo;
+  if (floorFrom !== null) out.floorFrom = floorFrom;
+  if (floorTo !== null) out.floorTo = floorTo;
+  if (yearFrom !== null) out.buildYearFrom = yearFrom;
+  if (yearTo !== null) out.buildYearTo = yearTo;
+  if (sanad) out.sanadNames = sanad;
+  if (construct) out.constructTypeNames = construct;
+  if (side) out.sideNames = side;
+  return out;
 }
 
 /** P6547/گام دوم — تفکیک نام فیلد مرجع: {name} آبجکت یا شناسهٔ خام با نقشهٔ رجیستری
@@ -225,6 +345,11 @@ export function mapArmRequestListRow(row: RawRow, typeMaps?: TypeMaps): ArmReque
   const paymentMethodName = resolveRefName(row.userPaymentMethod, typeMaps?.paymentMethod);
   const seriousnessName = resolveRefName(row.userSeriousity, typeMaps?.seriousness);
 
+  // PN-002 گام ۲ — inputs خود ردیف (متراژ/طبقه/اتاق/سال/سند/نوع ساخت/جهت) + شعبه ARM + کشور/استان/شهر
+  const inputsExtras = extractRequestInputs(row.inputs);
+  const branchObj = row.businessId as RawRow | undefined;
+  const changeWithNames = translateEnumList(row.changeWith, CHANGE_WITH_LABELS);
+
   return {
     id: id ?? requestCode!,
     requestCode: requestCode ?? id!,
@@ -250,6 +375,19 @@ export function mapArmRequestListRow(row: RawRow, typeMaps?: TypeMaps): ArmReque
     ...(typeof row.urgent === "boolean" ? { urgent: row.urgent } : {}),
     ...(typeof row.luxury === "boolean" ? { luxury: row.luxury } : {}),
     ...(typeof row.changeable === "boolean" ? { changeable: row.changeable } : {}),
+    // ---- PN-002 گام ۲ — ستون‌های تازه ----
+    ...inputsExtras,
+    ...(typeof row.ocasion === "boolean" ? { occasion: row.ocasion } : {}),
+    ...(typeof row.deposite === "boolean" ? { deposit: row.deposite } : {}),
+    ...(typeof row.confirmSMS === "boolean" ? { confirmSms: row.confirmSMS } : {}),
+    ...(typeof row.notifyMe === "boolean" ? { notifyMe: row.notifyMe } : {}),
+    ...(changeWithNames ? { changeWithNames } : {}),
+    ...(branchObj ? { armBranchTitle: pickStr(branchObj, ["title"]) } : {}),
+    countryName: pickNestedStr(row, "country.name"),
+    stateName: pickNestedStr(row, "state.name"),
+    cityName: pickNestedStr(row, "city.name"),
+    ...(pickStr(row, ["platform"]) ? { platform: pickStr(row, ["platform"]) } : {}),
+    ...(pickStr(row, ["customerDescription"]) ? { customerDescription: pickStr(row, ["customerDescription"]) } : {}),
   };
 }
 

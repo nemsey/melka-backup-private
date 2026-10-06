@@ -13,7 +13,6 @@
  *   ۵. هشدار فرصت (تطبیق هوشمند)
  *   ۶. کارهای پس‌زمینه (پایدار در برابر ری‌استارت)
  *   ۷. حساب کاربری و تنظیمات کلی (ادغام حساب کاربری + تم نمایش + زبان + راهنما)
- *   ۸. بستهٔ انتقال ملکا (P6551 / جلسهٔ ۰۳۹ — سه‌گانهٔ قابل انتقال + دانلود چهارگانه)
  */
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,8 +27,6 @@ import { BrainStatusSection } from "./BrainStatusSection";
 import { OpportunityJobsSection } from "./OpportunityJobsSection";
 // P6546/گام صفر-۶ — حساب کاربری و تنظیمات کلی (ادغام چهار بخش)
 import { AccountGeneralSection } from "./AccountGeneralSection";
-// P6551 / جلسهٔ ۰۳۹ — بستهٔ انتقال ملکا (سه‌گانهٔ P6550 + دانلود OWNER-gate)
-import { SkeletonDeliverySection } from "./SkeletonDeliverySection";
 
 export function SettingsPage({ onBack }: TilePageProps) {
   void onBack; // بازگشت از پوستهٔ کاشی مدیریت می‌شود
@@ -62,9 +59,6 @@ export function SettingsPage({ onBack }: TilePageProps) {
 
       {/* ۷ — حساب کاربری و تنظیمات کلی (ادغام: حساب + تم + زبان + راهنما — گام صفر-۶) */}
       <AccountGeneralSection />
-
-      {/* 8 — P6551 (session 039 / BLOCK 2.2): Melka transfer package */}
-      <SkeletonDeliverySection />
 
       {/* اعتبار */}
       <Card>

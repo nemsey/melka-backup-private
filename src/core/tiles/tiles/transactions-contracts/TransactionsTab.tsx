@@ -36,6 +36,7 @@ import {
   Home,
   Inbox,
   ChevronDown,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -47,8 +48,10 @@ import {
   Tooltip as RTooltip,
   Legend,
 } from "recharts";
-import { KpiCard, useTileData, TileCoverageTable, type DataSourceInfo } from "@/components/app/shared";
-import { api } from "@/lib/client/api";
+import { KpiCard, useTileData, TileCoverageTable, ExcelImportButton, type DataSourceInfo } from "@/components/app/shared";
+import { api, apiBlob, downloadBlob } from "@/lib/client/api";
+// PN-002 گام ۶-۲ — اعلان‌های خروجی اکسل
+import { useToast } from "@/hooks/use-toast";
 import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/core/agent/analyzers";
 import { classifyContract, CONTRACT_KIND_FILTER_LABELS, CONTRACT_KIND_FILTER_VALUES } from "@/lib/contract-classify";
 import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull } from "@/lib/format";
@@ -159,6 +162,7 @@ interface TxResponse {
 const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
 
 export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode }) {
+  const { toast } = useToast();
   const isMobile = useIsMobile();
   // B.۱ (ملکا-شورا-۱۴۰۵-۰۱۷) — فیلترها در موبایل جمع‌شونده؛ در دسکتاپ همیشه باز
   const [filtersOpen, setFiltersOpen] = useState(
@@ -578,7 +582,27 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
       <Card>
         {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین */}
         <CardHeader className="py-4 flex flex-col items-center gap-1">
-          <CardTitle className="text-base text-center">فهرست معاملات — تمامی کارشناسان ملک تبریز</CardTitle>
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <CardTitle className="text-base text-center">فهرست معاملات</CardTitle>
+            {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 h-7 text-[11px]"
+              onClick={() => {
+                apiBlob("/api/crm/export/transactions")
+                  .then((blob) => {
+                    downloadBlob(blob, `melka-transactions-${new Date().toISOString().slice(0, 10)}.xlsx`);
+                    toast({ title: "خروجی اکسل آماده شد", description: "کل فهرست معاملات دانلود شد." });
+                  })
+                  .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
+              }}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
+            </Button>
+            {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
+            <ExcelImportButton entity="transactions" compact onImported={() => void fetchTransactions()} />
+          </div>
           {rows && rows.length > 0 && (
             <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
           )}
@@ -777,12 +801,6 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
 
       {/* دیالوگ فایل قرارداد (بند ت) */}
       <ContractFileDialog open={contractOpen} onOpenChange={setContractOpen} data={contractDoc} />
-
-      <p className="text-[11px] text-muted-foreground leading-relaxed">
-        داده‌ها عین «گزارش تطابق معاملات» سامانه ملک تبریز استخراج می‌شوند؛ «نوع قرارداد»، «مبلغ قرارداد» و «حق‌السهم مشاوران» از
-        صورت‌وضعیت‌های ثبت‌شده در خود سامانه (تطبیق هولوگرام &gt; کد ملک &gt; کد درخواست) و «فایل قرارداد» از داده‌های واقعی قرارداد و
-        کارگزاری‌های صادره تولید می‌شود — همان تکنیک چاپ اسناد خود سامانه ملک تبریز. هیچ دادهٔ خامی تغییر نمی‌کند (قانون دادهٔ مقدس).
-      </p>
     </div>
   );
 }

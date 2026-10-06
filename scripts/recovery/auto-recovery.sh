@@ -120,6 +120,31 @@ do_check() {
     fi
   fi
 
+  # ── ۳-ب) جلسهٔ ۰۰۵: تشخیص تخریب ساختاری DB (هش کدمستر/گراف) ──
+  # دیمن‌ها آگهی/درخواست ARM را برمی‌گردانند و وارسی شمارش را می‌گذرانند؛
+  # ولی گراف صفر/هش NULL فقط پس از تخریب محیط رخ می‌دهد — این وارسی کور نیست.
+  if [[ -f "$REPO/db/custom.db" ]]; then
+    wipe=$(REPO="$REPO" python3 - <<'PYW'
+import os, sqlite3
+try:
+    con = sqlite3.connect(os.path.join(os.environ.get('REPO','.'), 'db', 'custom.db'))
+    h = con.execute('SELECT masterCodeHash FROM AppMeta').fetchone()
+    g = con.execute('SELECT COUNT(*) FROM GraphNode').fetchone()[0]
+    con.close()
+    if not (h and h[0]): print('yes:master-hash-null')
+    elif g == 0: print('yes:graph-empty')
+    else: print('no')
+except Exception:
+    print('no')
+PYW
+)
+    if [[ "$wipe" == yes:* ]]; then
+      echo "[check] DB-WIPE-DETECTED: $wipe"
+      logr db-wipe-detected "\"cause\":\"${wipe#yes:}\""
+      verdict="ROLLBACK-DB-WIPE"
+    fi
+  fi
+
   # ۳) شمارش DB در برابر آخرین وضعیت معتبر پایدار
   if [[ -f "$EXPECTED" && -f "$REPO/db/custom.db" && -f "$REPO/scripts/recovery-034/db-counts.ts" ]]; then
     local exp_ads cur cur_ads
@@ -141,7 +166,12 @@ do_check() {
       echo "[check] نتیجه: بازگشت تشخیص داده شد — آغاز بازیابی خودکار"
       logr auto-recovery-start "\"verdict\":\"$verdict\""
       if [[ "${DRY_RUN:-0}" == "1" ]]; then
-        echo "[check] DRY_RUN: اقدام لازم بود اما انجام نشد (طرح: restore.sh از بستهٔ بقا + آینه)"; return 2
+        echo "[check] DRY_RUN: اقدام لازم بود اما انجام نشد (طرح: گارد بازیابی از بستهٔ بقا)"; return 2
+      fi
+      # جلسهٔ ۰۰۵ — گارد خوددرمان (بستهٔ تازه + env + بیلد در صورت نبود + ری‌استارت prod)
+      if [[ -f "$REPO/scripts/pn005c/recovery-guard.sh" ]]; then
+        bash "$REPO/scripts/pn005c/recovery-guard.sh"
+        return $?
       fi
       do_recover; return $? ;;
     *)

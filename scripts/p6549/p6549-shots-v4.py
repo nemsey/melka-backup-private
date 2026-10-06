@@ -54,7 +54,7 @@ print(f"27-login-dark {'✓' if ok else '⚠'}", flush=True)
 # ═══ ۲) ورود فقط همین‌جا ═══
 eval_js("(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').replace(/\\u200c/g,'').includes('ورود با کد مدیر'));if(b){b.click();return 'y'}return 'n'})()")
 time.sleep(2.5)
-ab("fill", "#masterCode", "80211186"); time.sleep(1.2)
+ab("fill", "#masterCode", "00000000"); time.sleep(1.2)
 eval_js("(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').trim()==='ورود');if(b){b.click();return 'y'}return 'n'})()")
 ok = wait_marker("خوش آمدید", 30)
 print("ورود:", "✓" if ok else "✗✗✗", flush=True)

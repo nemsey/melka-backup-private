@@ -44,7 +44,7 @@ if "home" not in str(state):
     r = ab("eval", "(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').replace(/\\u200c/g,'').includes('ورود با کد مدیر'));if(b){b.click();return 'y'}return 'n'})()")
     print("   دکمه:", r)
     time.sleep(2)
-    ab("fill", "#masterCode", "80211186")
+    ab("fill", "#masterCode", "00000000")
     time.sleep(1)
     ab("eval", "(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').includes('ورود'));if(b){b.click();return 'y'}return 'n'})()")
     time.sleep(10)

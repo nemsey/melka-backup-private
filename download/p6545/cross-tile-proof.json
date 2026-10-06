@@ -1,131 +1,130 @@
 {
   "case": "P6545-cross-tile-outcomes",
   "council": "جلسه ۰۳۳ — BLOCK 3.5: یک معامله = پیامد برای ۴ مدل",
-  "ranAt": "2026-10-03T09:34:03.194Z",
+  "ranAt": "2026-10-05T14:23:03.544Z",
   "batch": {
     "transactions": 10,
-    "outcomes": 37,
-    "events": 37,
+    "outcomes": 48,
+    "events": 48,
     "target": 10,
     "perTx": 4
   },
   "sampleOutcomes": [
     {
-      "id": "ct-m1-6ab24e3c609ed33e8fe20e9a",
+      "id": "ct-m1-6ac21f826646884023ccd5e5",
       "predictionType": "listing_deal",
       "observedValue": 1,
       "evidence": [
-        "TransactionRecord.id=6ab24e3c609ed33e8fe20e9a",
-        "TransactionEnrichment.txId=6ab24e3c609ed33e8fe20e9a"
+        "TransactionRecord.id=6ac21f826646884023ccd5e5",
+        "TransactionEnrichment.txId=6ac21f826646884023ccd5e5"
       ]
     },
     {
-      "id": "ct-m2-6ab24e3c609ed33e8fe20e9a",
+      "id": "ct-m2-6ac21f826646884023ccd5e5",
       "predictionType": "request_match",
       "observedValue": 1,
       "evidence": [
-        "TransactionRecord.requestCode=51831"
+        "TransactionRecord.requestCode=50289"
       ]
     },
     {
-      "id": "ct-m3-6ab24e3c609ed33e8fe20e9a",
+      "id": "ct-m3-6ac21f826646884023ccd5e5",
       "predictionType": "transaction_success",
       "observedValue": 1,
       "evidence": [
-        "TransactionRecord.id=6ab24e3c609ed33e8fe20e9a"
+        "TransactionRecord.id=6ac21f826646884023ccd5e5"
       ]
     },
     {
-      "id": "ct-m4-6ab24e3c609ed33e8fe20e9a",
+      "id": "ct-m4-6ac21f826646884023ccd5e5",
       "predictionType": "expert_performance",
       "observedValue": 1,
       "evidence": [
-        "TransactionRecord.id=6ab24e3c609ed33e8fe20e9a"
+        "TransactionRecord.id=6ac21f826646884023ccd5e5"
       ]
     },
     {
-      "id": "ct-m1-6ab233b8609ed33e8fe1f2b5",
+      "id": "ct-m5-6ac21f826646884023ccd5e5",
+      "predictionType": "match_accept",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ac21f826646884023ccd5e5"
+      ]
+    },
+    {
+      "id": "ct-m1-6ac21eb86646884023cccdc7",
       "predictionType": "listing_deal",
       "observedValue": 1,
       "evidence": [
-        "TransactionRecord.id=6ab233b8609ed33e8fe1f2b5",
-        "TransactionEnrichment.txId=6ab233b8609ed33e8fe1f2b5"
+        "TransactionRecord.id=6ac21eb86646884023cccdc7",
+        "TransactionEnrichment.txId=6ac21eb86646884023cccdc7"
       ]
     },
     {
-      "id": "ct-m2-6ab233b8609ed33e8fe1f2b5",
+      "id": "ct-m2-6ac21eb86646884023cccdc7",
       "predictionType": "request_match",
       "observedValue": 1,
       "evidence": [
-        "TransactionRecord.requestCode=52448"
+        "TransactionRecord.requestCode=52484"
       ]
     },
     {
-      "id": "ct-m3-6ab233b8609ed33e8fe1f2b5",
+      "id": "ct-m3-6ac21eb86646884023cccdc7",
       "predictionType": "transaction_success",
       "observedValue": 1,
       "evidence": [
-        "TransactionRecord.id=6ab233b8609ed33e8fe1f2b5"
+        "TransactionRecord.id=6ac21eb86646884023cccdc7"
       ]
     },
     {
-      "id": "ct-m1-6ab0e989609ed33e8fdf7add",
+      "id": "ct-m4-6ac21eb86646884023cccdc7",
+      "predictionType": "expert_performance",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ac21eb86646884023cccdc7"
+      ]
+    },
+    {
+      "id": "ct-m5-6ac21eb86646884023cccdc7",
+      "predictionType": "match_accept",
+      "observedValue": 1,
+      "evidence": [
+        "TransactionRecord.id=6ac21eb86646884023cccdc7"
+      ]
+    },
+    {
+      "id": "ct-m1-6ac21a2a651ca56505b3e43e",
       "predictionType": "listing_deal",
       "observedValue": 1,
       "evidence": [
-        "TransactionRecord.id=6ab0e989609ed33e8fdf7add",
-        "TransactionEnrichment.txId=6ab0e989609ed33e8fdf7add"
+        "TransactionRecord.id=6ac21a2a651ca56505b3e43e",
+        "TransactionEnrichment.txId=6ac21a2a651ca56505b3e43e"
       ]
     },
     {
-      "id": "ct-m2-6ab0e989609ed33e8fdf7add",
+      "id": "ct-m2-6ac21a2a651ca56505b3e43e",
       "predictionType": "request_match",
       "observedValue": 1,
       "evidence": [
-        "TransactionRecord.requestCode=38912"
-      ]
-    },
-    {
-      "id": "ct-m3-6ab0e989609ed33e8fdf7add",
-      "predictionType": "transaction_success",
-      "observedValue": 1,
-      "evidence": [
-        "TransactionRecord.id=6ab0e989609ed33e8fdf7add"
-      ]
-    },
-    {
-      "id": "ct-m1-6aae997bcbbc75bc76c92e49",
-      "predictionType": "listing_deal",
-      "observedValue": 1,
-      "evidence": [
-        "TransactionRecord.id=6aae997bcbbc75bc76c92e49",
-        "TransactionEnrichment.txId=6aae997bcbbc75bc76c92e49"
-      ]
-    },
-    {
-      "id": "ct-m2-6aae997bcbbc75bc76c92e49",
-      "predictionType": "request_match",
-      "observedValue": 1,
-      "evidence": [
-        "TransactionRecord.requestCode=52280"
+        "TransactionRecord.requestCode=53058"
       ]
     }
   ],
-  "totalPersisted": 37,
+  "totalPersisted": 987,
   "agents": [
     {
       "agent": "PropertyAgent",
       "model": "melka-property-v3",
-      "sample": "propertyCode=1105",
+      "sample": "propertyCode=54009",
       "result": {
         "probability": null,
-        "graphNeighbors": 2
+        "graphNeighbors": 3
       }
     },
     {
       "agent": "RequestAgent",
       "model": "melka-request-v1",
-      "sample": "requestId=6aaeb3e4b04b9d4babad4c51",
+      "sample": "requestId=6abcd542cb8971626e5cef7f",
       "result": {
         "probability": null
       }
@@ -133,12 +132,12 @@
     {
       "agent": "TransactionAgent",
       "model": "melka-transaction-v2",
-      "sample": "txId=6aa8fc819aff63cef5b78cd8",
+      "sample": "txId=6ac2707d6646884023ccf6b2",
       "result": {
         "ok": true,
-        "propertyCode": "57327",
-        "graphPaths": 3,
-        "contractType": "اجاره نامه",
+        "propertyCode": "57328",
+        "graphPaths": 1,
+        "contractType": null,
         "contractPriceMilionToman": null
       }
     },
@@ -153,18 +152,18 @@
   ],
   "featureStore": {
     "identity": {
-      "entityId": "59115",
+      "entityId": "59763",
       "viaAgent1": {
-        "areaId": "614f7eb2a50555f0a54c3a14",
-        "areaName": "خاوران",
-        "price": 100000000,
-        "pricePerMeter": 0,
-        "areaMedianPricePerMeter": 500000,
-        "underpriceRatio": 1,
-        "propertyType": "آپارتمان",
-        "tradeType": "رهن و اجاره",
-        "meterage": 200,
-        "rooms": 3,
+        "areaId": "614f7fb1a50555f0a54c3aa6",
+        "areaName": "ولیعصر",
+        "price": 2550000000,
+        "pricePerMeter": 33837579.6,
+        "areaMedianPricePerMeter": 33837579.6178344,
+        "underpriceRatio": 5.270588313832003e-10,
+        "propertyType": "دفترکار",
+        "tradeType": "فروش",
+        "meterage": 75.36,
+        "rooms": 1,
         "age": null,
         "hasElevator": false,
         "hasParking": false,
@@ -178,16 +177,16 @@
         "previousPriceDelta": 0
       },
       "viaSharedStore": {
-        "areaId": "614f7eb2a50555f0a54c3a14",
-        "areaName": "خاوران",
-        "price": 100000000,
-        "pricePerMeter": 0,
-        "areaMedianPricePerMeter": 500000,
-        "underpriceRatio": 1,
-        "propertyType": "آپارتمان",
-        "tradeType": "رهن و اجاره",
-        "meterage": 200,
-        "rooms": 3,
+        "areaId": "614f7fb1a50555f0a54c3aa6",
+        "areaName": "ولیعصر",
+        "price": 2550000000,
+        "pricePerMeter": 33837579.6,
+        "areaMedianPricePerMeter": 33837579.6178344,
+        "underpriceRatio": 5.270588313832003e-10,
+        "propertyType": "دفترکار",
+        "tradeType": "فروش",
+        "meterage": 75.36,
+        "rooms": 1,
         "age": null,
         "hasElevator": false,
         "hasParking": false,

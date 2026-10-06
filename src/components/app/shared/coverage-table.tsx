@@ -72,14 +72,8 @@ export function TileCoverageTable({ tileKey, accentClass = "text-primary" }: { t
           <div className="flex items-center gap-2.5 min-w-0">
             <Table2 className={`w-5 h-5 shrink-0 ${accentClass}`} aria-hidden />
             <div className="min-w-0">
+              {/* PN-003 گام ۴-۱ — توضیح زیر عنوان جدول حذف شد (دستور مالک) */}
               <p className="text-sm font-bold">جدول پوشش اطلاعات فهرست</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {loading
-                  ? "در حال محاسبهٔ پوشش تمام ستون‌های فهرست…"
-                  : block
-                    ? `پوشش تمام ${faNumber(block.columns.length)} ستون فهرست از ${faNumber(block.total)} رکورد — میانگین پوشش ${faNumber(overall)}٪`
-                    : "—"}
-              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -138,9 +132,7 @@ export function TileCoverageTable({ tileKey, accentClass = "text-primary" }: { t
                 </table>
               </div>
             </div>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
-              مسیر پر شدن هر ستون زیر نام آن آمده است — ستون‌های نارنجی/سرخ در اولویت غنی‌سازی بعدی‌اند. محاسبه: {data ? new Date(data.generatedAt).toLocaleString("fa-IR") : "—"}
-            </p>
+            {/* PN-003 گام ۴-۱ — پانوشت توضیحی زیر جدول حذف شد (دستور مالک) */}
           </>
         ) : null}
       </CardContent>

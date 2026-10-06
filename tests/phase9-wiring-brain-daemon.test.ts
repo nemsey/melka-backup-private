@@ -323,7 +323,7 @@ describe("PHASE 9 §۱۱ — داشبورد مدیریتی = دقیقاً M1 ت�
     ]);
   });
 
-  test("۱۱-۲) داشبورد مدیریتی = هشت کاشی M1-M8 (P6545/جلسه ۰۳۳) — به همین ترتیب", async () => {
+  test("۱۱-۲) داشبورد مدیریتی = هشت کاشی M1-M8 (PN-003: m5 تطبیق + m6 یادگیری — نام‌گذاری مالک)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER");
     expect(children.map((t) => t.title)).toEqual([
@@ -332,9 +332,9 @@ describe("PHASE 9 §۱۱ — داشبورد مدیریتی = دقیقاً M1 ت�
       "معاملات ملک تبریز",
       "کارشناسان ملک تبریز",
       "تطبیق هوشمند ملک تبریز",
+      "مغز ملکا — یادگیری و Tier",
       "شاخص بازار ملک تبریز",
       "پوشش اطلاعات ملک تبریز",
-      "مغز ملکا — یادگیری و Tier",
     ]);
   });
 

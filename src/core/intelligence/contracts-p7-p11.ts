@@ -113,7 +113,7 @@ export function tierProfile(tier: LearningTier): TierProfile {
  * P6545/گام۳ (BLOCK 3.5) — افزودنی: پیامد معامله برای مدل melka-transaction-v2.
  * افزودنی type-only؛ صفر تغییر در موتورها (BLOCK G-6).
  */
-export type PredictionType = "listing_deal" | "request_match" | "expert_performance" | "transaction_success";
+export type PredictionType = "listing_deal" | "request_match" | "expert_performance" | "transaction_success" | "match_accept";
 export type OutcomeResolution = "success" | "failure" | "cancelled" | "pending";
 
 /** §۲.۲.۱ — قرارداد OutcomeRecord */

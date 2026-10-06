@@ -46,21 +46,21 @@ console.log(`# تست عملکردی ۰۳۴ — ${new Date().toISOString()} — 
 const ver = await j('/api/version')
 ok(ver.status === 200 && !!ver.body?.gitSha, 'مهر نسخهٔ زنده', JSON.stringify(ver.body))
 
-// ═══ ورود مدیر (کدمستر 80211186 — گام صفر P6547) ═══
+// ═══ ورود مدیر (کدمستر 00000000 — گام صفر P6547) ═══
 const login = await j('/api/auth/master-login', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ masterCode: '80211186' }),
+  body: JSON.stringify({ masterCode: '00000000' }),
 })
-ok(login.status === 200 && !!login.body?.token, 'ورود مدیر با کدمستر 80211186', `user=${login.body?.user?.displayName ?? '-'} (${login.ms}ms)`)
+ok(login.status === 200 && !!login.body?.token, 'ورود مدیر با کدمستر 00000000', `user=${login.body?.user?.displayName ?? '-'} (${login.ms}ms)`)
 const H: Record<string, string> = { authorization: `Bearer ${login.body?.token ?? ''}` }
 
 const oldL = await j('/api/auth/master-login', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ masterCode: '41372895' }),
+  body: JSON.stringify({ masterCode: '11111111' }),
 })
-ok(oldL.status === 401, 'رد کد قدیمی 41372895', `status=${oldL.status}`)
+ok(oldL.status === 401, 'رد کد قدیمی 11111111', `status=${oldL.status}`)
 
 // ═══ M1 — آگهی ملک تبریز (۵ رکورد) ═══
 console.log('── M1 آگهی ملک تبریز ──')

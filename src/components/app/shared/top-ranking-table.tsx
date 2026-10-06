@@ -30,7 +30,8 @@ export function TopRankingTable({
   id,
 }: {
   title: string;
-  description: string;
+  /** PN-002 گام ۶-۱ — توضیح زیر عنوان حذف شد (دستور مالک)؛ فقط در صورت نیاز صریح */
+  description?: string;
   rows: RankRow[];
   countLabel: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -47,10 +48,10 @@ export function TopRankingTable({
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start gap-2.5">
           <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${accentClass}`} aria-hidden />
-          <div className="min-w-0">
-            <p className="text-sm font-bold">{title}</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
-          </div>
+            <div className="min-w-0">
+              {/* PN-003 گام ۴-۱ — توضیح زیر عنوان حذف شد (دستور مالک: هیچ توضیحی زیر عناوین نماند) */}
+              <p className="text-sm font-bold">{title}</p>
+            </div>
         </div>
 
         {top.length === 0 ? (
@@ -99,9 +100,7 @@ export function TopRankingTable({
                 </tbody>
               </table>
             </div>
-            <p className="text-[10px] text-muted-foreground">
-              {faNumber(top.length)} رتبهٔ برتر از مجموع {faNumber(rows.length)} مورد — محاسبه از دادهٔ زندهٔ فهرست همین کاشی.
-            </p>
+          {/* PN-003 گام ۴-۱ — پانوشت توضیحی زیر جدول حذف شد (دستور مالک) */}
           </>
         )}
       </CardContent>

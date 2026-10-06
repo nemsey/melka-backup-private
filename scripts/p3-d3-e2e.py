@@ -14,7 +14,7 @@ import time
 
 BASE_URL = "http://localhost:3000"
 OUT = "/home/z/my-project/download/delivery-p3"
-MASTER_CODE = "80211186"
+MASTER_CODE = "00000000"
 
 def evaljs(js):
     r = subprocess.run(["agent-browser", "eval", js, "--json"], capture_output=True, text=True, timeout=45)

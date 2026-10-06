@@ -44,6 +44,8 @@ export const JOB_IDS = {
   enrichListings: "catalog-enrich-listings",
   enrichRequests: "catalog-enrich-requests",
   mainSync: "main-sync",
+  /** PN-002 گام ۳ — همگام‌سازی پیوستهٔ CRM با توکن خزانه (معاملات/کارشناسان/قراردادها) */
+  crmSync: "crm-sync",
 } as const;
 
 export class JobStateService {

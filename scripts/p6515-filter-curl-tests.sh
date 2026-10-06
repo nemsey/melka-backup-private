@@ -5,7 +5,7 @@ set -u
 BASE="http://localhost:3000"
 
 echo "=== ورود مدیر ==="
-LOGIN=$(curl -s --max-time 10 -X POST "$BASE/api/auth/master-login" -H "Content-Type: application/json" -d '{"masterCode":"80211186"}')
+LOGIN=$(curl -s --max-time 10 -X POST "$BASE/api/auth/master-login" -H "Content-Type: application/json" -d '{"masterCode":"00000000"}')
 TOKEN=$(echo "$LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
 if [ -z "$TOKEN" ]; then echo "LOGIN FAILED:"; echo "$LOGIN" | head -3; exit 1; fi
 echo "login OK (token ${#TOKEN} chars)"

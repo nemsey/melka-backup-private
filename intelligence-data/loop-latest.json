@@ -1,54 +1,25 @@
 {
-  "ranAt": "2026-10-04T09:35:25.631Z",
+  "ranAt": "2026-10-06T03:06:28.681Z",
   "tileId": "arm-listing",
-  "predictions": 386,
-  "positiveOutcomes": 193,
-  "negativeOutcomes": 193,
-  "linked": 386,
+  "predictions": 0,
+  "positiveOutcomes": 0,
+  "negativeOutcomes": 0,
+  "linked": 0,
   "evaluation": {
     "tileId": "arm-listing",
     "windowDays": 3650,
-    "sampleSize": 386,
-    "verdict": "ABOVE_BASELINE",
-    "computedAt": "2026-10-04T09:35:25.631Z",
+    "sampleSize": 0,
+    "verdict": "INSUFFICIENT_DATA",
+    "computedAt": "2026-10-06T03:06:28.681Z",
     "unresolvablePairs": 0,
-    "target": "probability",
-    "brierScore": 0.237,
-    "calibration": [
-      {
-        "bucket": "0.0-0.2",
-        "predicted": 0,
-        "observed": 0
-      },
-      {
-        "bucket": "0.2-0.4",
-        "predicted": 0.395,
-        "observed": 0.328
-      },
-      {
-        "bucket": "0.4-0.6",
-        "predicted": 0.487,
-        "observed": 0.681
-      },
-      {
-        "bucket": "0.6-0.8",
-        "predicted": 0,
-        "observed": 0
-      },
-      {
-        "bucket": "0.8-1.0",
-        "predicted": 0,
-        "observed": 0
-      }
-    ],
-    "lift": 0.0521
+    "target": "probability"
   },
   "reproduction": {
     "source": "arm.melketabriz.ir (PropertyRecord واقعی)",
     "soldStatus": "معامله شده",
     "controlStatus": "منتشر شده",
     "ordering": "propertyCode صعودی",
-    "modelVersion": "property-predictor-v0.1",
+    "modelVersion": "unknown",
     "note": "پیش‌بینی و پیامد روی یک snapshot واحد — سنجش قدرت افتراق، نه دقت زمانی (محدودیت افشاشده)"
   }
 }

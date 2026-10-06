@@ -62,6 +62,21 @@ function toPropertyData(p: PropertyBulkInput): Record<string, unknown> {
     ...(p.extractedAt !== undefined ? { extractedAt: p.extractedAt } : {}),
     ...(p.extractionBatchId !== undefined ? { extractionBatchId: p.extractionBatchId } : {}),
     ...(p.normalizationVersion !== undefined ? { normalizationVersion: p.normalizationVersion } : {}),
+    // PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM
+    ...(p.isRental !== undefined && p.isRental !== null ? { isRental: p.isRental } : {}),
+    ...(p.depositPrice !== undefined && p.depositPrice !== null ? { depositPrice: p.depositPrice } : {}),
+    ...(p.rentPrice !== undefined && p.rentPrice !== null ? { rentPrice: p.rentPrice } : {}),
+    ...(p.viewCount !== undefined && p.viewCount !== null ? { viewCount: p.viewCount } : {}),
+    ...(p.imageCount !== undefined && p.imageCount !== null ? { imageCount: p.imageCount } : {}),
+    ...(p.addedToDivar !== undefined && p.addedToDivar !== null ? { addedToDivar: p.addedToDivar } : {}),
+    ...(p.addedToInsta !== undefined && p.addedToInsta !== null ? { addedToInsta: p.addedToInsta } : {}),
+    ...(p.isReposted !== undefined && p.isReposted !== null ? { isReposted: p.isReposted } : {}),
+    ...(p.isTarget !== undefined && p.isTarget !== null ? { isTarget: p.isTarget } : {}),
+    ...(p.armBranchTitle !== undefined && p.armBranchTitle !== null ? { armBranchTitle: p.armBranchTitle } : {}),
+    ...(p.stateName !== undefined && p.stateName !== null ? { stateName: p.stateName } : {}),
+    ...(p.cityName !== undefined && p.cityName !== null ? { cityName: p.cityName } : {}),
+    ...(p.publicUrl !== undefined && p.publicUrl !== null ? { publicUrl: p.publicUrl } : {}),
+    ...(p.statusDate !== undefined && p.statusDate !== null ? { statusDate: p.statusDate } : {}),
   };
 }
 
@@ -125,13 +140,36 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
         where.createdAt.lte = to;
       }
     }
+    // ===================== PN-002 گام ۱ — فیلتر ستون‌های تازه (تمام ستون‌ها) =====================
+    if (filter.rentalType === "rental") where.isRental = true;
+    if (filter.rentalType === "sale") where.isRental = false;
+    if (filter.viewCountFrom !== undefined || filter.viewCountTo !== undefined) {
+      where.viewCount = {};
+      if (filter.viewCountFrom !== undefined) where.viewCount.gte = filter.viewCountFrom;
+      if (filter.viewCountTo !== undefined) where.viewCount.lte = filter.viewCountTo;
+    }
+    if (filter.meterageFrom !== undefined || filter.meterageTo !== undefined) {
+      where.meterage = {};
+      if (filter.meterageFrom !== undefined) where.meterage.gte = filter.meterageFrom;
+      if (filter.meterageTo !== undefined) where.meterage.lte = filter.meterageTo;
+    }
+    if (filter.roomsFrom !== undefined || filter.roomsTo !== undefined) {
+      where.rooms = {};
+      if (filter.roomsFrom !== undefined) where.rooms.gte = filter.roomsFrom;
+      if (filter.roomsTo !== undefined) where.rooms.lte = filter.roomsTo;
+    }
+    if (filter.addedToDivar !== undefined) where.addedToDivar = filter.addedToDivar;
+    if (filter.addedToInsta !== undefined) where.addedToInsta = filter.addedToInsta;
+    if (filter.propertyTypes && filter.propertyTypes.length > 0) where.propertyTypeName = { in: filter.propertyTypes };
 
     // P6525 — نرمال‌سازی ورودی فیلترهای کدی/متنی با منبع یگانه
     const codeNorm = normalizeFilterInput(filter.code);
     const realtorNorm = normalizeFilterInput(filter.realtorName);
     const ownerNorm = normalizeFilterInput(filter.ownerName);
     const addrNorm = normalizeFilterInput(filter.address);
-    const needsJsFilter = codeNorm !== "" || realtorNorm !== "" || ownerNorm !== "" || addrNorm !== "";
+    const lineNorm = normalizeFilterInput(filter.lineName);
+    const stateNorm = normalizeFilterInput(filter.stateName);
+    const needsJsFilter = codeNorm !== "" || realtorNorm !== "" || ownerNorm !== "" || addrNorm !== "" || lineNorm !== "" || stateNorm !== "";
     // با فیلتر JS، کل کاتالوگ اسکن می‌شود (قانون فهرست: تمام ردیف‌ها؛ سقف = گارد ایمنی سرور)
     const fetchTake = needsJsFilter ? LIST_SCAN_CAP : limit;
 
@@ -161,6 +199,21 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
         extractedAt: true,
         createdAt: true,
         updatedAt: true,
+        // PN-002 گام ۱ — ستون‌های تازه
+        isRental: true,
+        depositPrice: true,
+        rentPrice: true,
+        viewCount: true,
+        imageCount: true,
+        addedToDivar: true,
+        addedToInsta: true,
+        isReposted: true,
+        isTarget: true,
+        armBranchTitle: true,
+        stateName: true,
+        cityName: true,
+        publicUrl: true,
+        statusDate: true,
       },
     });
 
@@ -181,6 +234,8 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
             const line = normalizeFilterInput(r.lineName);
             if (!addr.includes(addrNorm) && !area.includes(addrNorm) && !line.includes(addrNorm)) return false;
           }
+          if (lineNorm !== "" && !normalizeFilterInput(r.lineName).includes(lineNorm)) return false;
+          if (stateNorm !== "" && !normalizeFilterInput(r.stateName).includes(stateNorm)) return false;
           return true;
         })
       : records;
@@ -207,6 +262,21 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
       enrichedAt: r.extractedAt,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
+      // PN-002 گام ۱ — ستون‌های تازه
+      isRental: r.isRental,
+      depositPrice: typeof r.depositPrice === "number" ? r.depositPrice : null,
+      rentPrice: typeof r.rentPrice === "number" ? r.rentPrice : null,
+      viewCount: typeof r.viewCount === "number" ? r.viewCount : null,
+      imageCount: typeof r.imageCount === "number" ? r.imageCount : null,
+      addedToDivar: r.addedToDivar,
+      addedToInsta: r.addedToInsta,
+      isReposted: r.isReposted,
+      isTarget: r.isTarget,
+      armBranchTitle: r.armBranchTitle,
+      stateName: r.stateName,
+      cityName: r.cityName,
+      publicUrl: r.publicUrl,
+      statusDate: r.statusDate,
     }));
     return { rows, total: matched.length };
   }

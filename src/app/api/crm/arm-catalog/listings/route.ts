@@ -71,6 +71,19 @@ export async function GET(request: NextRequest) {
     const statuses = stateKeys.length > 0 ? listingStateRawValues(stateKeys) : undefined;
     // P6.5-10 — تک‌صفحه‌ای و بی‌نهایت: سقف سرور ۲۵٬۰۰۰ ردیف (کل کاتالوگ منبع ۱۱٬۴۵۶)
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
+    // ===================== PN-002 گام ۱ — فیلتر ستون‌های تازه (تمام ستون‌ها) =====================
+    const rentalType = sp.get("rentalType") === "rental" ? "rental" : sp.get("rentalType") === "sale" ? "sale" : undefined;
+    const viewCountFrom = num(sp.get("viewCountFrom"));
+    const viewCountTo = num(sp.get("viewCountTo"));
+    const meterageFrom = num(sp.get("meterageFrom"));
+    const meterageTo = num(sp.get("meterageTo"));
+    const roomsFrom = num(sp.get("roomsFrom"));
+    const roomsTo = num(sp.get("roomsTo"));
+    const addedToDivar = sp.get("addedToDivar") === "1" ? true : sp.get("addedToDivar") === "0" ? false : undefined;
+    const addedToInsta = sp.get("addedToInsta") === "1" ? true : sp.get("addedToInsta") === "0" ? false : undefined;
+    const lineName = normalizeFilterInput(sp.get("lineName")) || undefined;
+    const stateName = normalizeFilterInput(sp.get("stateName")) || undefined;
+    const propertyTypes = (sp.getAll("propertyType") || []).map((t) => normalizeFilterInput(t)).filter(Boolean);
 
     const repo = getPropertyRecordRepository();
 
@@ -90,7 +103,13 @@ export async function GET(request: NextRequest) {
     // P6.5-04-i — دامنه فقط از helper مرکزی (تجمیعی §۵.۳؛ مالک ⇒ شاهد owner.read)
     const access = resolveEntityAccess(guard, "property");
     const { rows, total } = await repo.listArmCatalog(
-      { code, realtorName, ownerName, priceFrom, priceTo, address, tradeTypes, statuses, activityFrom, activityTo },
+      {
+        code, realtorName, ownerName, priceFrom, priceTo, address, tradeTypes, statuses, activityFrom, activityTo,
+        // PN-002 گام ۱ — ستون‌های تازه
+        rentalType, viewCountFrom, viewCountTo, meterageFrom, meterageTo, roomsFrom, roomsTo,
+        addedToDivar, addedToInsta, lineName, stateName,
+        propertyTypes: propertyTypes.length > 0 ? propertyTypes : undefined,
+      },
       limit
     );
 

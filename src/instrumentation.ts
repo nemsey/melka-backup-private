@@ -120,15 +120,20 @@ export async function register(): Promise<void> {
   // فاقد آن‌اند ⇒ وارسی آغاز جلسه (بند و قانون ۰۳۱) همچنان خط اول دفاع است.
   if (
     process.env.MELK_AUTO_RECOVERY !== "disabled" &&
-    !(process.env.DATABASE_URL ?? "").includes("test") &&
-    existsSync("scripts/recovery/auto-recovery.sh")
+    !(process.env.DATABASE_URL ?? "").includes("test")
   ) {
+    // جلسهٔ ۰۰۵ — مسیر مطلق مخزن: در سرور standalone مقدار process.cwd() ریشهٔ
+    // پروژه نیست و قلاب نسبی در production خاموش می‌شد. ریشه با MELKA_REPO_DIR
+    // قابل بازتعریف است (پیش‌فرض مسیر رسمی مخزن).
+    const repoRoot = process.env.MELKA_REPO_DIR ?? "/home/z/my-project";
+    const hookPath = `${repoRoot}/scripts/recovery/auto-recovery.sh`;
+    if (existsSync(hookPath)) {
     const { spawn } = await import("node:child_process");
     const { logEvent: logBootCheck } = await import("@/lib/logger");
     setTimeout(() => {
       try {
-        const child = spawn("bash", ["scripts/recovery/auto-recovery.sh", "check"], {
-          cwd: process.cwd(),
+        const child = spawn("bash", [hookPath, "check"], {
+          cwd: repoRoot,
           detached: true,
           stdio: "ignore",
         });
@@ -149,6 +154,7 @@ export async function register(): Promise<void> {
         });
       }
     }, 20_000);
+    }
   }
 
   // ---------- ۳) حلقه همگام‌سازی پس‌زمینه — HOTFIX-02 (SEC-3) ----------

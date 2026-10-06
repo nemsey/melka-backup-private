@@ -106,15 +106,16 @@ export function LearningTierPage({ onBack }: TilePageProps) {
               <div className="grid gap-2 text-xs sm:grid-cols-3">
                 <div className="rounded border p-2">
                   <p className="text-muted-foreground">هدف Brier این Tier (تصمیم ۳ جلسه ۰۳۳)</p>
-                  <p className="font-bold">≤ {faDigits(cycle.p7.brierTarget.toFixed(2))}</p>
+                  <p className="font-bold">{cycle.p7.brierTarget != null ? `≤ ${faDigits(cycle.p7.brierTarget.toFixed(2))}` : "—"}</p>
                 </div>
                 <div className="rounded border p-2">
                   <p className="text-muted-foreground">Brier فعال {cycle.p7.calibration?.applied ? "(کالیبره)" : ""}</p>
-                  <p className="font-bold">{faDigits(cycle.p7.evaluation.metrics.brierScore.toFixed(4))}</p>
+                  {/* حالت خالی صادقانه: بدون پیامد کافی، سنجه تهی است (INSUFFICIENT_DATA) */}
+                  <p className="font-bold">{cycle.p7.evaluation.metrics.brierScore != null ? faDigits(cycle.p7.evaluation.metrics.brierScore.toFixed(4)) : "— دادهٔ کافی نیست"}</p>
                 </div>
                 <div className="rounded border p-2">
                   <p className="text-muted-foreground">Lift</p>
-                  <p className="font-bold">+{faDigits(cycle.p7.evaluation.metrics.lift.toFixed(1))}٪</p>
+                  <p className="font-bold">{cycle.p7.evaluation.metrics.lift != null ? `+${faDigits(cycle.p7.evaluation.metrics.lift.toFixed(1))}٪` : "—"}</p>
                 </div>
               </div>
             </CardContent>

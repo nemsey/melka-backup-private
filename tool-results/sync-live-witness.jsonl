@@ -1,3 +1,0 @@
-{"ts":"2026-09-19T08:20:47.281Z","event":"start","purpose":"B.1-live-witness","origin":"melka-shora-007"}
-{"ts":"2026-09-19T08:20:47.305Z","event":"before","lastError":"لطفا یک بازه تاریخی انتخاب کنید","lastErrorCode":"OTP_INVALID","attempts":7,"lastSuccessAt":"2026-09-19T01:07:57.663Z","tableCounts":{"transactions":0,"experts":0,"visits":0,"interactions":0,"supplyDemand":0,"contracts":0}}
-{"ts":"2026-09-19T08:20:47.307Z","event":"abort","reason":"NO_ACTIVE_ARM_SESSION"}

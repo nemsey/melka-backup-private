@@ -3,7 +3,7 @@
 import json, subprocess, time
 
 OUT = "/home/z/my-project/download/delivery-p4"
-MASTER_CODE = "80211186"
+MASTER_CODE = "00000000"
 
 def evaljs(js):
     r = subprocess.run(["agent-browser", "eval", js, "--json"], capture_output=True, text=True, timeout=45)

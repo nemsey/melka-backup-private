@@ -52,7 +52,7 @@ print("ورود...", flush=True)
 eval_js("(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').replace(/\\u200c/g,'').includes('ورود با کد مدیر'));if(b){b.click();return 'y'}return 'n'})()")
 time.sleep(2.5)
 # ۲) پرکردن کد
-ab("fill", "#masterCode", "80211186"); time.sleep(1.2)
+ab("fill", "#masterCode", "00000000"); time.sleep(1.2)
 # ۳) دکمهٔ «ورود به عنوان مدیر»
 eval_js("(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').includes('ورود به عنوان مدیر'));if(b){b.click();return 'y'}return 'n'})()")
 loggedin = wait_marker("خوش آمدید", 30)

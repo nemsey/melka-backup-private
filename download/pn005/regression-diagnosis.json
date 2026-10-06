@@ -1,0 +1,97 @@
+{
+  "case": "PN-005-BLOCK0-REGRESSION-DIAGNOSIS",
+  "session": "جلسهٔ فوق‌العاده ۰۰۵ · ملکا-شورا-ن۰۰۵-۱۴۰۵",
+  "date": "2026-10-06T04:20:00Z",
+  "council": "ملکا-شورا-ن۰۰۵-۱۴۰۵",
+
+  "tripleMatch": {
+    "description": "تطبیق سه‌گانهٔ وضعیت (بند ۰.۱)",
+    "sources": [
+      {
+        "source": "مخزن محلی",
+        "command": "git log -1",
+        "head": "c3d8610f4c951d8215fb8b178c1ce2b4316a9175",
+        "headShort": "c3d8610",
+        "md5OfCommitObject": "88aaa175d1a894e26daa3bc8980a3268",
+        "nature": "b13391b (کامیت بازیابی PN-005) + یک کامیت خودکار پلتفرم c3d8610 (فقط ۳ فایل: blackboard.jsonl + loop-latest.json + scripts/pn005-build-survival-package.sh)",
+        "consistent": true
+      },
+      {
+        "source": "آینهٔ GitHub (melka-backup → survival/code-pn001)",
+        "command": "git ls-remote melka-backup",
+        "head": "b13391b6a7739d4e6a3a2cf7221e515d10d0cf71",
+        "headShort": "b13391b",
+        "md5OfCommitObject": "36f47f6a63ff59d44d523597a3faa597",
+        "nature": "کامیت بازیابی PN-005 — یک کامیت عقبِ محلی (کامیت خودکار c3d8610 هنوز پوش نشده — در پایان همین جلسه پوش می‌شود)",
+        "consistent": true
+      },
+      {
+        "source": "بستهٔ بقای GLM (upload/.survival/PN-005-14050713)",
+        "command": "cat upload/.survival/PN-005-14050713/HEAD",
+        "head": "b13391b",
+        "chainIndex": 5,
+        "repoBundleMd5": "75294ae424ef6b4b9e7f86a153bcd156",
+        "customDbMd5": "9ee7ef6729e1a697442b24d44156271c",
+        "counts": {"listings": 11504, "requests": 19050, "transactions": 764, "experts": 293, "graphNodes": 48748, "graphEdges": 47772, "opportunityAlerts": 185},
+        "consistent": true
+      }
+    ],
+    "verdict": "سه‌گانه سازگار: محلی = آینه + بستهٔ بقا (با یک کامیت خودکارِ بدون اثر کاربردی جلوتر). هیچ «بازگشت کد» رخ نداده بود — کد در همهٔ منابع آخرین نسخه بود."
+  },
+
+  "preRecoveryState": {
+    "measuredAt": "2026-10-06T03:52:00Z..03:58:18Z",
+    "apiHealth": {"ok": true, "masterAuth": "none", "masterLayersConsistent": null, "mode": "real"},
+    "masterLogin": {"code80211186": "503 PRECONDITION_FAILED — کد مدیر روی سرور تنظیم نشده است", "code80221186": "503", "code00000000": "503"},
+    "dbCounts": {
+      "PropertyRecord": 11504, "RequestRecord": 13850, "TransactionRecord": 764, "ExpertRecord": 293,
+      "GraphNode": 0, "GraphEdge": 0, "OpportunityAlert": 0, "PmPersonnelRecord": 0, "CustomerRecord": 0,
+      "AppMeta_masterCodeHash": "NULL", "Session": 1
+    },
+    "env": {".env.local": "حذف‌شده", ".env": "فقط ۱ خط از ۳ خط (DATABASE_URL) — دو خط MASTER_ACCESS_CODE/MELK_SYNC_MODE حذف", "env.platform.json": "سالم (۴ کلید)"},
+    "build": {".next": "پاک‌شده (BUILD_ID خالی)", "devServerBooted": "2026-10-06T03:05:42Z با buildId=c3d8610-20261006-0305"}
+  },
+
+  "rootCause": {
+    "event": "بازنشانی محیط پلتفرم — سومین رخداد",
+    "resetAt": "2026-10-06T03:05:42Z",
+    "evidence": [
+      "uptime ماشین: ۴۵ دقیقه در لحظهٔ وارسی ۰۳:۵۱ (بوت ~۰۳:۰۶)",
+      "buildId سرور: c3d8610-20261006-0305 (مهر زمانی بوت ۰۳:۰۵:۴۲)",
+      "قلاب auto-recovery در ۰۳:۰۶:۰۴ اجرا شد (رجیستری recovery-log.jsonl) ولی حکم UNKNOWN داد — تشخیص کور بود",
+      ".env.local حذف شده (همان الگوی بازنشانی‌های ۱۶:۳۰ و ۱۹:۲۲ روز قبل)",
+      ".env دو خط خود را از دست داد (شاهد: git diff — کامیت سه‌خطی، فایل فعلی یک‌خطی)",
+      "GraphNode=0 · GraphEdge=0 · OpportunityAlert=0 · masterCodeHash=NULL (تخریب db:push در بوت)",
+      "دیمن‌های کاتالوگ/CRM دادهٔ ARM را برمی‌گرداندند (آگهی ۱۱٬۵۰۴ کامل، درخواست در حال پرشدن ۱۳٬۸۵۰ از ۱۹٬۰۵۰ در ۵۲ دقیقه) — گراف/هش محلی‌اند و دیمنی بازسازی‌شان نمی‌کند"
+    ],
+    "whyOwnerSawOldVersion": [
+      "مالک اصلاً وارد نمی‌شد (503 کد مستر) — عین ریشهٔ گام ۵ PN-003: «نمی‌دید» نه «نبود»",
+      "M5-M8 و گراف‌ها و مغز در کد HEAD موجود بودند (bootstrap رجیستر شده) اما با نشست مهمان دیده نمی‌شدند",
+      "کد کهنه نبود؛ داده و محیط سوخته بود"
+    ],
+    "whyAutoRecoveryWasBlind": [
+      "وارسی آینه: upload/.mirror/credentials.env حذف شده بود → مرحلهٔ آینه رد شد",
+      "وارسی شمارش: upload/.survival/expected-counts.json وجود نداشت → مرحلهٔ DB رد شد",
+      "هیچ وارسی مستقیمی روی گراف/هش کدمستر وجود نداشت — و دیمن‌ها آگهی‌ها را برگردانده بودند و شمارش ظاهری سالم بود",
+      "در همین جلسه رفع شد: تشخیص تخریب ساختاری (هش NULL/گراف صفر) به auto-recovery اضافه شد + گارد خوددرمان recovery-guard.sh نصب شد"
+    ],
+    "frequency": "الگوی تکرارشونده: (۱) ۲۰۲۵-۱۰-۰۵ ~۱۶:۳۰ (۲) ۲۰۲۵-۱۰-۰۵ ~۱۹:۲۲ (۳) ۲۰۲۵-۱۰-۰۶ ~۰۳:۰۶ — ری‌استارت محیط پلتفرم"
+  },
+
+  "tileVerification": {
+    "measuredAt": "2026-10-06T04:07..04:13Z (روی سرور production پس از بازیابی)",
+    "masterCode": {"expected": "کار کند", "actual": "✓ 200 OWNER + رد 80221186 (401) + رد 00000000 (401) + masterAuth=env + masterLayersConsistent=true"},
+    "M1": {"expected": "فعال", "actual": "✓ ARM catalog API زنده — ۱۱٬۵۰۴ آگهی؛ شاهد بصری 04-management-dashboard-prod.png"},
+    "M2": {"expected": "فعال", "actual": "✓ ۱۹٬۰۵۰ درخواست در DB (پس از بازیابی؛ پیش از آن ۱۳٬۸۵۰ در حال همگام‌سازی)"},
+    "M3": {"expected": "فعال", "actual": "✓ ۷۶۴ معامله"},
+    "M4": {"expected": "فعال", "actual": "✓ ۲۹۳ کارشناس"},
+    "M5": {"expected": "فعال", "actual": "✓ کاشی زنده + تطبیق واقعی: ۵ کاندید با امتیاز ۰٫۹۵ + تجزیهٔ ۵ عامل (فاصله قیمت/جغرافیا/متراژ/تازگی/سابقه)؛ شاهد 05-m5-matching-prod.png"},
+    "M6": {"expected": "فعال", "actual": "✓ مغز ملکا — ۱۱/۱۱ موتور بدنه‌دار + تختهٔ سیاه زنده (۱۱٬۹۲۸ مدخل، brier=0.2256، tier=3، coverage=100%)؛ شاهد 06-m6-brain-prod.png"},
+    "M7": {"expected": "فعال", "actual": "✓ شاخص بازار (در داشبورد مدیریتی FOUND)"},
+    "M8": {"expected": "فعال", "actual": "✓ پوشش داده (در داشبورد مدیریتی FOUND)"},
+    "graphs": {"expected": "سه گراف فعال", "actual": "✓ property/people/transaction — بازیابی ۴۸٬۷۴۸ گره/۴۷٬۷۷۲ یال → رشد زندهٔ دیمن‌ها تا ۵۶٬۴۴۲ گره/۵۳٬۲۲۲ یال در ۱۵ دقیقه؛ صفر یال معلق"},
+    "engines11": {"expected": "۱۱ موتور فعال", "actual": "✓ context·memory·retrieval·feature·prediction·outcome·action-planner·safety·evaluation·learning·decision — همه hasBody=true"}
+  },
+
+  "acceptance": "معیار پذیرش BLOCK 0 (سه‌گانه + کاشی‌ها + تشخیص علت) برآورده شد"
+}
