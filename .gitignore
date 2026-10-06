@@ -80,3 +80,7 @@ backups/pre-recovery-034-*/
 # PN-006 BLOCK 3 — قرق آزمون خوددرمانی (تجهیزات تست، هرگز کامیت نمی‌شوند)
 /recovery-drill/
 /test-recovery/
+
+# PN-008: فایل‌های جانبی WAL هرگز در گیت نیستند (گذرا + متغیر حین هش)
+db/custom.db-wal
+db/custom.db-shm
