@@ -43,6 +43,19 @@ DB_MD5_NOW=$(md5sum "$APP/db/custom.db" | cut -d' ' -f1)
 DB_MD5_WANT=$(head -c 32 "$PKG/db/custom.db.md5")
 [[ "$DB_MD5_NOW" == "$DB_MD5_WANT" ]] && step_time "DB کپی شد — MD5 ✓ ($DB_MD5_NOW)" || { echo "✗ MD5 ناهمسان"; exit 1; }
 
+# ایزوله‌سازی آزمون (نه بسته، نه تولید): نرخ‌سنج ورود DB-backed است (OtpAttempt —
+# ویژگی امنیتی درست که از ری‌استارت هم جان سالم به در می‌برد) و تلاش‌های ورودِ
+# CI اخیر (سنجه‌های مرورگری perf-budget) در snapshot آمده‌اند که در پنجرهٔ ۱۵دقیقه‌ای
+# تلاش آزمون را می‌بندند. در «نسخهٔ آزمون» وضعیت MASTER_LOGIN پاک می‌شود —
+# همان نقش test-db در تست‌های واحد. تلاش‌های ناموفق واقعی همچنان در DB می‌مانند.
+bun -e "
+const { PrismaClient } = require('@prisma/client');
+const p = new PrismaClient({ datasources: { db: { url: 'file:$APP/db/custom.db' } } });
+p.otpAttempt.deleteMany({ where: { kind: 'MASTER_LOGIN' } })
+  .then(r => { console.log('rate-state-cleared:', r.count); return p.\$disconnect(); })
+  .catch(e => { console.error('clear-fail', e.message); process.exit(1); });
+" 2>&1 | grep -E "rate-state|clear-fail" || { echo "✗ پاک‌سازی نرخ‌سنج نسخهٔ آزمون شکست"; exit 1; }
+
 echo "═══ ۴) ساخت .env (نام‌ها از بسته، مقادیر از محیط فعلی) ═══"
 cp "$PKG/env/.env.example" "$APP/.env"
 {
