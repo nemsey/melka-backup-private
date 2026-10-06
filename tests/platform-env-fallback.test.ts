@@ -102,12 +102,18 @@ describe("P6.5-08 — applyPlatformEnvFallbacks (بارگذاری env.platform.j
     }
   });
 
-  test("۶) مقادیر فایل همان مقادیر تستیِ عمومیِ تاریخچهٔ git‌اند (بدون راز جدید)", async () => {
-    // این رازها از ابتدا عمومی‌اند (کامیت fdf65dd، worklog، README).
-    // این تست تضمین می‌کند هرگز مقدار واقعی/جدید در این فایل ننشیند.
+  test("۶) PN-008 BLOCK 2 — env.platform.json دیگر در گیت نیست و کلیدش از رشتهٔ تست عمومی چرخیده", async () => {
+    // واقعیت پس از فاز ۱: فایل از ردیابی گیت خارج شد (قانون راز-در-گیت-ممنوع)؛
+    // MELK_TOKEN_KEY با openssl rand تازه شد (اثر انگشت ≠ رشتهٔ تست عمومی)؛
+    // کد مستر فایل همچنان تستی عمومی است (کد واقعی فقط در .env.local).
+    const { execSync } = await import("node:child_process");
+    const tracked = execSync("git ls-files", { cwd: "/home/z/my-project" }).toString().split("\n");
+    expect(tracked).not.toContain("env.platform.json");
+    expect(tracked).not.toContain(".env");
+    expect(tracked).toContain("env.platform.json.example");
     const raw = (await Bun.file("env.platform.json").json()) as Record<string, string>;
-    expect(raw.MELK_TOKEN_KEY).toBe("test-only-key-not-a-real-secret");
-    expect(raw.MASTER_ACCESS_CODE).toBe("00000000");
+    expect(raw.MELK_TOKEN_KEY).not.toBe("test-only-key-not-a-real-secret"); // چرخیده ✓
+    expect(raw.MASTER_ACCESS_CODE).toBe("00000000"); // تستی عمومی (کد واقعی در .env.local)
   });
 
   test("۷) کلیدهای مستندسازی با پیشوند «_» نادیده گرفته می‌شوند", async () => {

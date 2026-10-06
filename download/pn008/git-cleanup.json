@@ -1,0 +1,17 @@
+{
+  "task": "PN-008 BLOCK 2 بند ۲.۳ + ۲.۴ — حذف رازها از ردیابی گیت + نمونه‌های امن",
+  "at": "2026-10-06T13:45:00Z",
+  "actions": [
+    "git rm --cached .env — فایل محلی حفظ شد، از ردیابی خارج شد",
+    "git rm --cached env.platform.json — فایل محلی (کلید تازه) حفظ شد، از ردیابی خارج شد",
+    ".gitignore: افزودن صریح env.platform.json + استثنای env.platform.json.example",
+    "ایجاد env.platform.json.example بدون مقدار حقیقی (MELK_TOKEN_KEY تولیدی openssl rand -hex 32)",
+    ".env.example از قبل موجود بود (HOTFIX-01) — بدون تغییر محتوای راز"
+  ],
+  "b202_note": "بند ۲.۲ (تصمیم دربارهٔ MASTER_ACCESS_CODE در تاریخچهٔ گیت) طبق قید شورا بدون تأیید مالک اجرا نمی‌شود — دو گزینه در گزارش نهایی ارائه شد: الف) تغییر کد (پیشنهاد شورا) · ب) بازنویسی تاریخچه",
+  "historyExposure": {
+    "realMasterCodeInHistory": ["0fc5b0d", "6b4f52a"],
+    "tokenKeyInHistory": "تا کامیت HEAD~ پیش از این کامیت — env.platform.json با کلید تست عمومی",
+    "important": "تاریخچهٔ گیت همچنان حاوی رازهاست — پاک‌سازی کامل نیازمند بازنویسی تاریخچه (تصمیم مالک، گزینهٔ ب) است؛ تا آن زمان کلید چرخیده و کد از .env.local می‌آید"
+  }
+}

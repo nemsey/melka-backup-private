@@ -1077,6 +1077,23 @@ model ExpertProfile {
   @@index([fullName])
 }
 
+/// PN-008 BLOCK 7 — مدیریت دسترسی کدپرسنلی‌ها به داشبورد (تنظیمات عمومی مالک)
+/// سه سطح (دستور مالک ۱۴۰۵/۰۷/۱۶): full = همهٔ کاشی‌ها · limited = کاشی‌های انتخابی · none = هیچ
+/// قید حیاتی (قانون هویت دوگانهٔ مالک): کد در OWNER_PERSONNEL_CODES همیشه full — حتی اگر رکورد داشته باشد.
+model PersonnelAccess {
+  /// کد پرسنلی (مثال: 410031320)
+  personnelCode String   @id
+  /// 'full' | 'limited' | 'none'
+  level         String
+  /// کاشی‌های مجاز — JSON آرایه (مثال: ["arm-listings","experts"]) — فقط برای limited
+  allowedTiles  String?
+  grantedAt     DateTime @default(now())
+  /// ثبت‌کننده (کد مالک)
+  grantedBy     String
+  notes         String?
+  updatedAt     DateTime @updatedAt
+}
+
 /// P6.5-12 — رجیستری کارگزاری‌های صادره (special-properties سامانه ARM).
 /// هر «کارگزاری» = قرارداد نمایندگی میان مشاور و مالک برای یک ملک؛
 /// فایل PDF آن در خود سامانه ARM هم «تولیدی از همین داده» است (چاپ کارگزاری صادر شده).

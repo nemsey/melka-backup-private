@@ -32,6 +32,8 @@ interface AppState {
   tileReturnTo: string | null;
   /** تنظیمات اختصاصی کاشی‌ها: { [tileId]: { key: value } } */
   tileSettings: Record<string, Record<string, string | number | boolean>>;
+  /** PN-008 BLOCK 7 — کاشی‌های مجاز از PersonnelAccess (null = OWNER/بی‌محدودیت) */
+  tileAccess: { level: string; tiles: string[] } | null;
 
   setStage: (s: AppStage) => void;
   setPendingPersonnelCode: (code: string | null) => void;
@@ -65,6 +67,7 @@ export const useAppStore = create<AppState>()(
         activeTileId: null,
         tileReturnTo: null,
         tileSettings: {},
+        tileAccess: null,
 
         setStage: (s) => set({ stage: s }),
         setPendingPersonnelCode: (code) => set({ pendingPersonnelCode: code }),
@@ -107,7 +110,7 @@ export const useAppStore = create<AppState>()(
             }
           }
           await secureClear();
-          set({ token: null, user: null, stage: "auth", activeTileId: null, tileReturnTo: null, pendingPersonnelCode: null });
+          set({ token: null, user: null, stage: "auth", activeTileId: null, tileReturnTo: null, pendingPersonnelCode: null, tileAccess: null });
         },
 
         boot: async () => {
@@ -125,9 +128,9 @@ export const useAppStore = create<AppState>()(
                 },
               });
               // اعتبارسنجی نشست روی سرور
-              const res = await api<{ ok: boolean; user: AuthUser }>("/api/auth/session");
+              const res = await api<{ ok: boolean; user: AuthUser; tileAccess?: { level: string; tiles: string[] } | null }>("/api/auth/session");
               if (res.ok) {
-                set({ user: res.user, stage: "home" });
+                set({ user: res.user, stage: "home", tileAccess: res.tileAccess ?? null });
                 // P6526/ث — پیوند عمیق ?tile=<id> (میان‌برهای PWA اندروید + باز کردن مستقیم کاشی)
                 const wanted = new URLSearchParams(window.location.search).get("tile");
                 if (wanted) {

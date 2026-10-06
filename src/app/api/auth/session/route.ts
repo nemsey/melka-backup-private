@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
   try {
     const guard = await requireSessionAsync(request);
     if (guard instanceof MelkApiError) return errorResponse(guard);
-    return Response.json({ ok: true, user: guard });
+    // PN-008 BLOCK 7 (بند ۷.۴) — دسترسی کاشی‌ها در هر خواندن نشست تازه resolve می‌شود
+    // (تغییر دسترسی از تنظیمات بلافاصله اعمال می‌شود؛ OWNER همیشه full)
+    const { resolveAllowedTiles } = await import("@/lib/access/personnel-access");
+    const tileAccess = await resolveAllowedTiles(guard.role, guard.personnelCode).catch(() => null);
+    return Response.json({ ok: true, user: guard, tileAccess });
   } catch {
     return errorResponse(new MelkApiError("UNKNOWN", "خطای غیرمنتظره در خواندن نشست. لطفاً دوباره تلاش کنید.", 500, false));
   }

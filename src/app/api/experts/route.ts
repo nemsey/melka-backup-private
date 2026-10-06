@@ -12,6 +12,7 @@
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { normalizeFilterInput } from "@/lib/normalize-input";
 import { listExpertProfiles, expertFilterOptions, type ExpertProfileFilter } from "@/lib/experts/profile-store";
 
@@ -28,6 +29,9 @@ function str(v: string | null): string | undefined {
 export async function GET(request: NextRequest) {
   const guard = await requireSessionAsync(request);
   if (guard instanceof MelkApiError) return errorResponse(guard);
+  // PN-008 BLOCK 7 (بند ۷.۴) — دسترسی کاشی («experts») از PersonnelAccess
+  const tileErr = await requireTileAccessFor(guard, "experts");
+  if (tileErr) return errorResponse(tileErr);
 
   try {
     const sp = request.nextUrl.searchParams;

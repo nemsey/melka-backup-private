@@ -33,6 +33,7 @@ import { findExpertNameByPersonnelCode } from "@/lib/experts/profile-store";
 // P6547/گام سوم-۴ — شعبهٔ مشاوران از سامانهٔ PM برای ستون تجمیع حق‌السهم
 import { readPmBranchMap } from "@/lib/branch-store";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { requireTileAccessFor } from "@/lib/access/personnel-access";
 // P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
@@ -72,6 +73,9 @@ function parseContractTypeFilter(values: string[]): { kinds: Set<ContractKind>; 
 export async function GET(request: NextRequest) {
   const guard = await requireSessionAsync(request);
   if (guard instanceof MelkApiError) return errorResponse(guard);
+  // PN-008 BLOCK 7 (بند ۷.۴) — دسترسی کاشی («transactions-contracts») از PersonnelAccess
+  const tileErr = await requireTileAccessFor(guard, "transactions-contracts");
+  if (tileErr) return errorResponse(tileErr);
 
   try {
     // تلاش برای استخراج زنده در صورت خالی‌بودن کش (فقط داده واقعی)

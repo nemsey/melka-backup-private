@@ -23,6 +23,7 @@ import { classifySmsSendFailure } from "@/lib/melk-api/sms";
 import { armCall } from "@/lib/melk-api/client";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { MELK_ENDPOINTS } from "@/lib/melk-api/endpoints";
+import { clientIp } from "@/lib/auth/client-ip";
 
 /** وضعیت اتصال GAP + آدرس‌های سامانه */
 async function getStatus() {
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
   }
 
   const cfg = getMelkApiConfig();
-  const ip = request.headers.get("x-forwarded-for") ?? undefined;
+  const ip = clientIp(request); // PN-008 BLOCK 3 — Trusted Proxy (تک‌نقطه تصمیم)
 
   switch (body.action) {
     // ---------- شروع: ارسال پیامک GAP ----------

@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+# PN-008 BLOCK 2: راز-در-گیت-ممنوع — env.platform.json حامل MELK_TOKEN_KEY است
+env.platform.json
+!env.platform.json.example
 
 # vercel
 .vercel

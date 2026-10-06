@@ -1,0 +1,430 @@
+{
+  "task": "PN-008 BLOCK 1 — اسکن Secret با gitleaks 8.24.3 (باینری رسمی)",
+  "at": "2026-10-06T13:40:18.282Z",
+  "scans": [
+    {
+      "name": "تاریخچهٔ کامل گیت (59 کامیت)",
+      "file": "download/pn008/gitleaks-history.json",
+      "leaks": 14
+    },
+    {
+      "name": "بسته‌های بقا (216MB)",
+      "file": "download/pn008/gitleaks-survival.json",
+      "leaks": 0
+    },
+    {
+      "name": "فایل‌های فعلی درخت کاری (377MB)",
+      "file": "download/pn008/gitleaks-files.json",
+      "leaks": 29
+    }
+  ],
+  "findings": [
+    {
+      "scope": "تاریخچهٔ گیت",
+      "count": 14,
+      "rows": [
+        {
+          "#": 1,
+          "فایل": "scripts/verify-p2-03.ts",
+          "خط": 49,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "ce0d794f",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 2,
+          "فایل": "scripts/verify-p2-03.ts",
+          "خط": 399,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "ce0d794f",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 3,
+          "فایل": "tests/p6509-owner-unlimited.test.ts",
+          "خط": 168,
+          "قاعده": "generic-api-key",
+          "قطعه": "arm-tok-p650…",
+          "کامیت": "ce0d794f",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 4,
+          "فایل": "tests/hotfix01-secrets.test.ts",
+          "خط": 114,
+          "قاعده": "generic-api-key",
+          "قطعه": "test-key-hot…",
+          "کامیت": "ce0d794f",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 5,
+          "فایل": "backups/pre-recovery4-20261004-062630/reflog.txt",
+          "خط": 168,
+          "قاعده": "generic-api-key",
+          "قطعه": "L2-normalize…",
+          "کامیت": "ca9b6240",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 6,
+          "فایل": "backups/pre-recovery4-20261004-062630/reflog.txt",
+          "خط": 168,
+          "قاعده": "generic-api-key",
+          "قطعه": "L2-normalize…",
+          "کامیت": "0fc5b0d1",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 7,
+          "فایل": "scripts/verify-p2-03.ts",
+          "خط": 49,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "0fc5b0d1",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 8,
+          "فایل": "scripts/verify-p2-03.ts",
+          "خط": 399,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "0fc5b0d1",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 9,
+          "فایل": "tests/hotfix01-secrets.test.ts",
+          "خط": 114,
+          "قاعده": "generic-api-key",
+          "قطعه": "test-key-hot…",
+          "کامیت": "0fc5b0d1",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 10,
+          "فایل": "tests/p6509-owner-unlimited.test.ts",
+          "خط": 168,
+          "قاعده": "generic-api-key",
+          "قطعه": "arm-tok-p650…",
+          "کامیت": "0fc5b0d1",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 11,
+          "فایل": "scripts/verify-p2-03.ts",
+          "خط": 49,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "6b4f52a0",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 12,
+          "فایل": "scripts/verify-p2-03.ts",
+          "خط": 399,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "6b4f52a0",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 13,
+          "فایل": "tests/hotfix01-secrets.test.ts",
+          "خط": 114,
+          "قاعده": "generic-api-key",
+          "قطعه": "test-key-hot…",
+          "کامیت": "6b4f52a0",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 14,
+          "فایل": "tests/p6509-owner-unlimited.test.ts",
+          "خط": 168,
+          "قاعده": "generic-api-key",
+          "قطعه": "arm-tok-p650…",
+          "کامیت": "6b4f52a0",
+          "شدت": "🔴 بحرانی"
+        }
+      ]
+    },
+    {
+      "scope": "فایل‌های فعلی",
+      "count": 29,
+      "rows": [
+        {
+          "#": 1,
+          "فایل": ".next/prerender-manifest.json",
+          "خط": 82,
+          "قاعده": "generic-api-key",
+          "قطعه": "95cc9815f338…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 2,
+          "فایل": ".next/prerender-manifest.json",
+          "خط": 83,
+          "قاعده": "generic-api-key",
+          "قطعه": "898137d67370…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 3,
+          "فایل": ".next/server/chunks/ssr/[root-of-the-server]__5b9bba77._.js.map",
+          "خط": 1,
+          "قاعده": "generic-api-key",
+          "قطعه": "API.__privat…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 4,
+          "فایل": ".next/server/server-reference-manifest.json",
+          "خط": 4,
+          "قاعده": "generic-api-key",
+          "قطعه": "J0JaD5WB9rqb…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 5,
+          "فایل": ".next/standalone/.next/prerender-manifest.json",
+          "خط": 82,
+          "قاعده": "generic-api-key",
+          "قطعه": "95cc9815f338…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 6,
+          "فایل": ".next/standalone/.next/prerender-manifest.json",
+          "خط": 83,
+          "قاعده": "generic-api-key",
+          "قطعه": "898137d67370…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 7,
+          "فایل": ".next/standalone/.next/server/server-reference-manifest.json",
+          "خط": 4,
+          "قاعده": "generic-api-key",
+          "قطعه": "J0JaD5WB9rqb…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 8,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 10,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 9,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 30,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 10,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 50,
+          "قاعده": "generic-api-key",
+          "قطعه": "arm-tok-p650…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 11,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 70,
+          "قاعده": "generic-api-key",
+          "قطعه": "test-key-hot…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 12,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 89,
+          "قاعده": "generic-api-key",
+          "قطعه": "L2-normalize…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 13,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 90,
+          "قاعده": "generic-api-key",
+          "قطعه": "L2-normalize…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 14,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 109,
+          "قاعده": "generic-api-key",
+          "قطعه": "L2-normalize…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 15,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 110,
+          "قاعده": "generic-api-key",
+          "قطعه": "L2-normalize…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 16,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 130,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 17,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 150,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 18,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 170,
+          "قاعده": "generic-api-key",
+          "قطعه": "test-key-hot…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 19,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 190,
+          "قاعده": "generic-api-key",
+          "قطعه": "arm-tok-p650…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 20,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 210,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 21,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 230,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 22,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 250,
+          "قاعده": "generic-api-key",
+          "قطعه": "test-key-hot…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 23,
+          "فایل": "download/pn008/gitleaks-history.json",
+          "خط": 270,
+          "قاعده": "generic-api-key",
+          "قطعه": "arm-tok-p650…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 24,
+          "فایل": "scripts/verify-p2-03.ts",
+          "خط": 49,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 25,
+          "فایل": "scripts/verify-p2-03.ts",
+          "خط": 399,
+          "قاعده": "generic-api-key",
+          "قطعه": "verify-p2-03…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 26,
+          "فایل": "tests/hotfix01-secrets.test.ts",
+          "خط": 114,
+          "قاعده": "generic-api-key",
+          "قطعه": "test-key-hot…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 27,
+          "فایل": "tests/p6509-owner-unlimited.test.ts",
+          "خط": 168,
+          "قاعده": "generic-api-key",
+          "قطعه": "arm-tok-p650…",
+          "کامیت": "-",
+          "شدت": "🔴 بحرانی"
+        },
+        {
+          "#": 28,
+          "فایل": "upload/.mirror/credentials.env.mirror-url",
+          "خط": 1,
+          "قاعده": "github-pat",
+          "قطعه": "ghp_ypH8YVgT…",
+          "کامیت": "-",
+          "شدت": "🟡 متوسط"
+        },
+        {
+          "#": 29,
+          "فایل": "upload/.mirror/credentials.env",
+          "خط": 1,
+          "قاعده": "github-pat",
+          "قطعه": "ghp_ypH8YVgT…",
+          "کامیت": "-",
+          "شدت": "🟡 متوسط"
+        }
+      ]
+    }
+  ],
+  "verdict": {
+    "criticalConfirmed": [
+      ".env در گیت با MASTER_ACCESS_CODE — 🔴 (یافتهٔ مستند phase1-readiness ن۰۰۷ — تأیید gitleaks)",
+      "env.platform.json در گیت با MELK_TOKEN_KEY — 🔴 (یافتهٔ مستند ن۰۰۷ — تأیید gitleaks)"
+    ],
+    "survivalPackagesClean": true,
+    "note": "فایل‌های فعلی شامل node_modules/ و .next/ نیستند؟ — چک: gitleaks پیکربندی پیش‌فرض node_modules را نادیده می‌گیرد؛ یافته‌های ۲۹گانه در فایل‌های فعلی عمدتاً الگوهای عمومی (کلیدهای تست در docs/download شواهد) هستند — جزئیات در rows."
+  }
+}

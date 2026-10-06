@@ -27,6 +27,8 @@ import { BrainStatusSection } from "./BrainStatusSection";
 import { OpportunityJobsSection } from "./OpportunityJobsSection";
 // P6546/گام صفر-۶ — حساب کاربری و تنظیمات کلی (ادغام چهار بخش)
 import { AccountGeneralSection } from "./AccountGeneralSection";
+// PN-008 BLOCK 7 — مدیریت دسترسی کدپرسنلی‌ها (تنظیمات عمومی — فقط مالک)
+import { PersonnelAccessSection } from "./PersonnelAccessSection";
 
 export function SettingsPage({ onBack }: TilePageProps) {
   void onBack; // بازگشت از پوستهٔ کاشی مدیریت می‌شود
@@ -59,6 +61,9 @@ export function SettingsPage({ onBack }: TilePageProps) {
 
       {/* ۷ — حساب کاربری و تنظیمات کلی (ادغام: حساب + تم + زبان + راهنما — گام صفر-۶) */}
       <AccountGeneralSection />
+
+      {/* ۸ — PN-008 BLOCK 7: مدیریت دسترسی کارشناسان (فقط مالک) */}
+      <PersonnelAccessSection />
 
       {/* اعتبار */}
       <Card>
