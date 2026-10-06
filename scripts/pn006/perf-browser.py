@@ -36,11 +36,15 @@ out = {"measuredAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "base":
 
 with sync_playwright() as p:
     browser = p.chromium.launch()
+    # ن۰۰۷ BLOCK 3 (رفع باگ سنجه — بازاعمال پس از گم‌شدن در پاک‌سازی mode):
+    # کش SW در حین لود فعال می‌شد و Initial JS را آلوده می‌کرد (۲۹۰KB واقعی ↔ ۱۰۳۸KB).
+    # با block، سنجه قطعی و تکرارپذیر می‌شود.
     ctx = browser.new_context(
         viewport={"width": 390, "height": 844},
         is_mobile=True, has_touch=True,
         user_agent="Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36",
         device_scale_factor=2,
+        service_workers="block",
     )
     page = ctx.new_page()
     page.add_init_script(INIT_JS)
@@ -55,7 +59,7 @@ with sync_playwright() as p:
     # JS واقعیِ بار اول (لحظهٔ ورود — بودجهٔ Initial JS)
     out["initialJs"] = page.evaluate("""
     () => {
-      const s = performance.getEntriesByType('resource').filter(r => r.name.endsWith('.js') || r.name.includes('/chunks/') || r.name.includes('/_next/'));
+      const s = performance.getEntriesByType('resource').filter(r => r.name.endsWith('.js'));
       return { count: s.length, encodedKB: Math.round(s.reduce((a, r) => a + (r.encodedBodySize || r.transferSize || 0), 0) / 1024) };
     }
     """)
@@ -117,7 +121,7 @@ with sync_playwright() as p:
     # ── ۶) JS بارگذاری‌شدهٔ این سفر (شمارش + بایت خام) ──
     out["jsResources"] = page.evaluate("""
     () => {
-      const s = performance.getEntriesByType('resource').filter(r => r.name.endsWith('.js') || r.name.includes('/chunks/') || r.name.includes('/_next/'));
+      const s = performance.getEntriesByType('resource').filter(r => r.name.endsWith('.js'));
       return { count: s.length, encodedBodyKB: Math.round(s.reduce((a, r) => a + (r.encodedBodySize || r.transferSize || 0), 0) / 1024) };
     }
     """)
