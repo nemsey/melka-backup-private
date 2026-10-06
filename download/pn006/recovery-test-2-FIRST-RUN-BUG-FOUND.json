@@ -1,0 +1,45 @@
+{
+  "test": "3.2.2 — آزمون قلاب بوت: بوت سرور با DB تخریب‌شدهٔ قرق",
+  "executedAt": "2026-10-06T05:58:16.364340+00:00",
+  "setup": {
+    "server": "بوت production واقعی (bun .next/standalone/server.js) روی پورت 3100",
+    "env": "DATABASE_URL=recovery-drill/db/custom.db · MELKA_REPO_DIR=recovery-drill · دیمن‌ها خاموش (MELK_INTELLIGENCE/CATALOG_DAEMON=disabled)",
+    "note": "مسیر test-recovery دقیقِ دستور شامل واژهٔ test است که قلاب بوت عمداً خود را روی آن خاموش می‌کند (گارد تست‌های خود پروژه) — قرق recovery-drill با همان نقش ساخته شد"
+  },
+  "beforeBoot": {
+    "masterCodeHashNull": true,
+    "graphNodes": 0,
+    "graphEdges": 0
+  },
+  "afterHook": {
+    "masterCodeHashNull": true,
+    "graphNodes": 0,
+    "graphEdges": 0
+  },
+  "recoveryTotalSec": 121,
+  "drillServerVersion": "{\"buildId\":\"7d50985-20261006-0548\",\"builtAt\":\"2026-10-06T05:48:47.701Z\",\"gitSha\":\"7d50985\",\"env\":\"production\",\"source\":\"baked\",\"runtime\":\"nodejs\",\"serverTime\":\"2026-10-06T05:58:14.300Z\"}",
+  "bootCheckLogLines": 1,
+  "recoveryLogTail": "{\"at\":\"2026-10-06T05:56:34Z\",\"kind\":\"db-wipe-detected\",\"cause\":\"master-hash-null\"}\n{\"at\":\"2026-10-06T05:56:34Z\",\"kind\":\"check\",\"verdict\":\"ROLLBACK-DB-WIPE\",\"head\":\"7d50985\"}\n{\"at\":\"2026-10-06T05:56:34Z\",\"kind\":\"auto-recovery-start\",\"verdict\":\"ROLLBACK-DB-WIPE\"}\n{\"at\":\"2026-10-06T05:56:34Z\",\"kind\":\"guard-recovery-start\",\"cause\":\"yes:master-hash-null\"}\n{\"at\":\"2026-10-06T05:56:34Z\",\"kind\":\"guard-recovery-fail\",\"cause\":\"no-survival-package\"}",
+  "drillMarkers": "[2026-10-06T05:56:34Z] guard-detect:yes:master-hash-null\n[2026-10-06T05:56:34Z] guard-fail:no-survival-package",
+  "drillServerLogTail": "{\"ts\":\"2026-10-06T05:56:13.847Z\",\"level\":\"info\",\"category\":\"system\",\"operation\":\"platform-env\",\"status\":\"ok\",\"requestId\":\"6b9daf5c-b4e2-41ff-803d-80de4932e053\",\"traceId\":\"6b9daf5c-b4e2-41ff-803d-80de4932e053\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"applied\":[\"MELK_TOKEN_KEY\"],\"source\":\"/home/z/my-project/.next/standalone/env.platform.json\",\"note\":\"platform deploy strips .env/.env.local; real env always takes precedence\"}}\n{\"ts\":\"2026-10-06T05:56:13.910Z\",\"level\":\"info\",\"category\":\"system\",\"operation\":\"build-witness\",\"status\":\"ok\",\"requestId\":\"71cf9ac6-fc37-489f-ae42-d174cf14d9fe\",\"traceId\":\"71cf9ac6-fc37-489f-ae42-d174cf14d9fe\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"buildId\":\"7d50985-20261006-0548\",\"gitSha\":\"7d50985\",\"env\":\"production\",\"source\":\"baked\",\"builtAt\":\"2026-10-06T05:48:47.701Z\"}}\n{\"ts\":\"2026-10-06T05:56:33.928Z\",\"level\":\"info\",\"category\":\"system\",\"operation\":\"auto-recovery-boot-check\",\"status\":\"ok\",\"requestId\":\"d5a413a7-aa07-4991-9d8d-988bf3cdc257\",\"traceId\":\"d5a413a7-aa07-4991-9d8d-988bf3cdc257\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"pid\":11520}}\n{\"ts\":\"2026-10-06T05:56:33.972Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/version\",\"status\":\"start\",\"requestId\":\"139c8100-c91c-4d5a-a050-a246bcf782ac\",\"traceId\":\"139c8100-c91c-4d5a-a050-a246bcf782ac\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"httpStatus\":null}}\n{\"ts\":\"2026-10-06T05:58:14.297Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/version\",\"status\":\"start\",\"requestId\":\"24f44f6f-d6a7-4498-bfe1-12917a1c26ef\",\"traceId\":\"24f44f6f-d6a7-4498-bfe1-12917a1c26ef\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"httpStatus\":null}}",
+  "checks": {
+    "قلاب_بوت_اجرا_شد": true,
+    "تشخیص_تخریب": true,
+    "بازیابی_خودکار_هش": false,
+    "بازیابی_خودکار_گراف": false,
+    "سرور_قرق_بالا_آمد": true
+  },
+  "verdict": "FAIL",
+  "bugFound": {
+    "title": "الگوی کشف بستهٔ بقا (P[0-9]*) به بسته‌های PN-XXX کور بود",
+    "evidence": "guard-recovery-fail: no-survival-package — در حالی که PN-DRILL-01 با custom.db موجود بود",
+    "rootCause": "glob کاراکتری [0-9] پس از P؛ نام بسته‌ها PN-001 تا PN-005C با N شروع می‌شود",
+    "impact": "گارد تولیدی در تخریب واقعی بعدی، بسته‌های PN-XXX را پیدا نمی‌کرد (بازیابی PN-005C دستی بود و این مسیر هرگز اجرا نشده بود)",
+    "fixApplied": [
+      "scripts/pn005c/recovery-guard.sh (تولید)",
+      "scripts/recovery/auto-recovery.sh (تولید)",
+      "scripts/pn006/recovery-guard-drill.sh (قرق)"
+    ],
+    "fixPattern": "ls -d upload/.survival/P*/ | sort -V → آخرین دایرکتوری دارای custom.db"
+  }
+}

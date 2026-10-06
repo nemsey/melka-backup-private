@@ -1,0 +1,116 @@
+{
+  "probeAt": "2026-10-06T06:13:36.754Z",
+  "gap": {
+    "root": {
+      "url": "https://gap.melketabriz.ir",
+      "error": "The operation was aborted.",
+      "latencyMs": 15001
+    },
+    "scripts": [],
+    "probe:/api": {
+      "url": "https://gap.melketabriz.ir/api",
+      "httpStatus": 404,
+      "contentType": "text/html; charset=utf-8",
+      "latencyMs": 785,
+      "bodyHead": "<!DOCTYPE html><!--7xIpReegEzoxGvE7JPsSm--><html lang=\"fa-IR\" dir=\"rtl\" class=\"light\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/e856e244f91c58ae.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/5afbb1f033c71a2e.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/4d650f3276705f17.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/63b56f08f4d04630.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3621912ce3cd4516.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/06584d045f5f71ba.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3f6b8c39bd84c42a.css\" data-precedence=\"next\"/><link rel=\"preload\" as=\"scr",
+      "bodyLength": 14159
+    },
+    "probe:/api/": {
+      "url": "https://gap.melketabriz.ir/api/",
+      "httpStatus": 404,
+      "contentType": "text/html; charset=utf-8",
+      "latencyMs": 1384,
+      "bodyHead": "<!DOCTYPE html><!--7xIpReegEzoxGvE7JPsSm--><html lang=\"fa-IR\" dir=\"rtl\" class=\"light\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/e856e244f91c58ae.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/5afbb1f033c71a2e.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/4d650f3276705f17.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/63b56f08f4d04630.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3621912ce3cd4516.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/06584d045f5f71ba.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3f6b8c39bd84c42a.css\" data-precedence=\"next\"/><link rel=\"preload\" as=\"scr",
+      "bodyLength": 14159
+    },
+    "probe:/api/public/portalInfo": {
+      "url": "https://gap.melketabriz.ir/api/public/portalInfo",
+      "httpStatus": 404,
+      "contentType": "text/html; charset=utf-8",
+      "latencyMs": 271,
+      "bodyHead": "<!DOCTYPE html><!--7xIpReegEzoxGvE7JPsSm--><html lang=\"fa-IR\" dir=\"rtl\" class=\"light\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/e856e244f91c58ae.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/5afbb1f033c71a2e.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/4d650f3276705f17.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/63b56f08f4d04630.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3621912ce3cd4516.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/06584d045f5f71ba.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3f6b8c39bd84c42a.css\" data-precedence=\"next\"/><link rel=\"preload\" as=\"scr",
+      "bodyLength": 14159
+    },
+    "probe:/swagger": {
+      "url": "https://gap.melketabriz.ir/swagger",
+      "httpStatus": 404,
+      "contentType": "text/html; charset=utf-8",
+      "latencyMs": 271,
+      "bodyHead": "<!DOCTYPE html><!--7xIpReegEzoxGvE7JPsSm--><html lang=\"fa-IR\" dir=\"rtl\" class=\"light\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/e856e244f91c58ae.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/5afbb1f033c71a2e.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/4d650f3276705f17.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/63b56f08f4d04630.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3621912ce3cd4516.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/06584d045f5f71ba.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3f6b8c39bd84c42a.css\" data-precedence=\"next\"/><link rel=\"preload\" as=\"scr",
+      "bodyLength": 14159
+    },
+    "probe:/api/docs": {
+      "url": "https://gap.melketabriz.ir/api/docs",
+      "httpStatus": 404,
+      "contentType": "text/html; charset=utf-8",
+      "latencyMs": 274,
+      "bodyHead": "<!DOCTYPE html><!--7xIpReegEzoxGvE7JPsSm--><html lang=\"fa-IR\" dir=\"rtl\" class=\"light\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/e856e244f91c58ae.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/5afbb1f033c71a2e.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/4d650f3276705f17.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/63b56f08f4d04630.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3621912ce3cd4516.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/06584d045f5f71ba.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3f6b8c39bd84c42a.css\" data-precedence=\"next\"/><link rel=\"preload\" as=\"scr",
+      "bodyLength": 14159
+    },
+    "probe:/favicon.ico": {
+      "url": "https://gap.melketabriz.ir/favicon.ico",
+      "httpStatus": 404,
+      "contentType": "text/html; charset=utf-8",
+      "latencyMs": 271,
+      "bodyHead": "<!DOCTYPE html><!--7xIpReegEzoxGvE7JPsSm--><html lang=\"fa-IR\" dir=\"rtl\" class=\"light\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/e856e244f91c58ae.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/5afbb1f033c71a2e.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/4d650f3276705f17.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/63b56f08f4d04630.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3621912ce3cd4516.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/06584d045f5f71ba.css\" data-precedence=\"next\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/3f6b8c39bd84c42a.css\" data-precedence=\"next\"/><link rel=\"preload\" as=\"scr",
+      "bodyLength": 14159
+    }
+  },
+  "melkPublic": {
+    "root": {
+      "url": "https://melketabriz.com",
+      "httpStatus": 200,
+      "contentType": "text/html; charset=utf-8",
+      "latencyMs": 5780,
+      "bodyHead": "<!doctype html>\n  <meta name=\"referrer\" content=\"unsafe-url\">\n  <meta charset=\"utf-8\">\n  <title>Redirecting…</title>\n  <script>\n    // تنها برای fallback -- در حالت عادی سرور Set-Cookie را نیز می‌فرستد\n    // location.replace(\"https://www.melketabriz.com/android\");\n    // از replace استفاده می‌کنیم تا سابقه مرورگر تمیز بماند\n    window.location.replace(\"https://www.melketabriz.com/android\");\n  </script>\n  <noscript>\n    <meta http-equiv=\"refresh\" content=\"0;url=https://www.melketabriz.com/android\">\n  </noscript>",
+      "bodyLength": 517
+    },
+    "scripts": [],
+    "probe:/wp-json/wp/v2/posts?per_page=5": {
+      "url": "https://melketabriz.com/wp-json/wp/v2/posts?per_page=5",
+      "httpStatus": 404,
+      "contentType": "text/html; charset=utf-8",
+      "latencyMs": 13679,
+      "bodyHead": "<!DOCTYPE html><html lang=\"fa\" dir=\"rtl\" data-type=\"mt_melk\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover\"/><style data-precedence=\"next\" data-href=\"/_next/static/chunks/3syvenzjloom0.css /_next/static/chunks/0b4zcm33ucg_g.css /_next/static/chunks/0cskk9n_9g0_f.css /_next/static/chunks/0d228f3te8dvv.css\">@layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-animation-delay:0s;--tw-animation-direction:normal;--tw-animation-duration:initial;--tw-animation-fill-mode:none;--tw-animation-iteration-count:1;--tw-enter-blur:0;--tw-enter-opacity:1;--tw-enter-rotate:0;--tw-enter-scale:1;--tw-enter-translate-x:0;--tw-enter-translate-y:0;--tw-exit-blur:0;--tw-exit-opacity:1;--tw-exit-ro",
+      "bodyLength": 790305
+    },
+    "probe:/wp-json/wp/v2/pages?per_page=3": {
+      "url": "https://melketabriz.com/wp-json/wp/v2/pages?per_page=3",
+      "error": "The operation was aborted.",
+      "latencyMs": 15002
+    },
+    "probe:/wp-json/wp/v2/categories?per_page=20": {
+      "url": "https://melketabriz.com/wp-json/wp/v2/categories?per_page=20",
+      "error": "The operation was aborted.",
+      "latencyMs": 15001
+    },
+    "probe:/wp-json": {
+      "url": "https://melketabriz.com/wp-json",
+      "error": "The operation was aborted.",
+      "latencyMs": 15001
+    },
+    "probe:/api": {
+      "url": "https://melketabriz.com/api",
+      "httpStatus": 404,
+      "contentType": "text/html; charset=utf-8",
+      "latencyMs": 12796,
+      "bodyHead": "<!DOCTYPE html><html lang=\"fa\" dir=\"rtl\" data-type=\"mt_melk\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover\"/><style data-precedence=\"next\" data-href=\"/_next/static/chunks/3syvenzjloom0.css /_next/static/chunks/0b4zcm33ucg_g.css /_next/static/chunks/0cskk9n_9g0_f.css /_next/static/chunks/0d228f3te8dvv.css\">@layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-animation-delay:0s;--tw-animation-direction:normal;--tw-animation-duration:initial;--tw-animation-fill-mode:none;--tw-animation-iteration-count:1;--tw-enter-blur:0;--tw-enter-opacity:1;--tw-enter-rotate:0;--tw-enter-scale:1;--tw-enter-translate-x:0;--tw-enter-translate-y:0;--tw-exit-blur:0;--tw-exit-opacity:1;--tw-exit-ro",
+      "bodyLength": 790305
+    },
+    "probe:/api/posts": {
+      "url": "https://melketabriz.com/api/posts",
+      "error": "The operation was aborted.",
+      "latencyMs": 15001
+    },
+    "probe:/sitemap.xml": {
+      "url": "https://melketabriz.com/sitemap.xml",
+      "error": "The operation was aborted.",
+      "latencyMs": 15000
+    },
+    "probe:/feed": {
+      "url": "https://melketabriz.com/feed",
+      "error": "The operation was aborted.",
+      "latencyMs": 15000
+    }
+  }
+}

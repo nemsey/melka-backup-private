@@ -1,0 +1,14 @@
+{
+  "ranAt": "2026-10-06T06:22:03.103Z",
+  "attempted": 0,
+  "ok": 0,
+  "fail": 0,
+  "noBranch": 0,
+  "durationMs": 3,
+  "after": {
+    "total": 0,
+    "withBranch": 0,
+    "byBranch": {}
+  },
+  "samples": []
+}

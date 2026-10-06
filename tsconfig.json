@@ -43,6 +43,8 @@
     "node_modules",
     "examples",
     "skills",
-    "capacitor.config.ts"
+    "capacitor.config.ts",
+    "scripts"
   ]
 }
+

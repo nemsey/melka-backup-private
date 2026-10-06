@@ -1,0 +1,212 @@
+{
+  "probeAt": "2026-10-06T06:08:50.330Z",
+  "apuListEnvelope": {
+    "statusCode": 200,
+    "topKeys": [
+      "statusCode",
+      "status",
+      "data",
+      "message"
+    ],
+    "dataKeys": [
+      "list",
+      "count",
+      "totalPages",
+      "page",
+      "limit"
+    ]
+  },
+  "apuListMeta": {
+    "count": 3662,
+    "totalPages": 1831,
+    "page": 1,
+    "limit": 2
+  },
+  "apuFirstRecord": {
+    "_id": "6ac3e3a6c33434a44fee9eca",
+    "listOfRealtors": [
+      {
+        "_id": "619e0de0cf7795ceacaaac68",
+        "voipInfo": [
+          {
+            "extentionNumber": "1107",
+            "id": null
+          }
+        ],
+        "role": {
+          "_id": "6866aeb63cd797341266cbe3",
+          "title": "مدیر فایل و crm"
+        },
+        "code": 410031078,
+        "mobileNumber": 9147818870,
+        "imageCover": "uploads/documents/business_41003/realtorsDocuments/realtor_410031078/imageCover_657f96e7-b0fc-4e01-a324-54dba492bbe1.webp",
+        "fullName": "رامین  نجفی"
+      }
+    ],
+    "hidePrice": false,
+    "isRental": false,
+    "tradeType": {
+      "_id": "614ed63aa50555f0a54c1ed3",
+      "name": "پیش فروش"
+    },
+    "propertyType": {
+      "_id": "614ee704a50555f0a54c227d",
+      "name": "آپارتمان"
+    },
+    "businessId": {
+      "_id": "6447c45e0bcf236f1e3e25bb",
+      "logo": "uploads/documents/business_41003/business_logo_14338391-3357-4fe0-a5f4-f773d1e86c44.webp",
+      "title": "ملک تبریز",
+      "code": 41003
+    },
+    "images": [
+      {
+        "image": "images/41003/melketabriz-ملک تبریز-پیش فروش-مسکونی-آپارتمان-تبریز-منصور-QuSFUZbPR6rn-1.webp",
+        "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-پیش فروش-مسکونی-آپارتمان-تبریز-منصور-QuSFUZbPR6rn-1.webp"
+      }
+    ],
+    "city": {
+      "_id": "614ed19700cace6eac4f9df2",
+      "name": "تبریز"
+    },
+    "area": {
+      "_id": "615814506cd8d114dcd00ddb",
+      "name": "منصور"
+    },
+    "viewCount": 1,
+    "createdAt": "2026-10-05T17:51:34.063Z",
+    "updatedAt": "2026-10-05T17:51:49.776Z",
+    "code": 59823,
+    "title": "پیش فروش آپارتمان مسکونی 195 متری",
+    "totalPrice": 28300000000,
+    "pricePerMeter": 145128205,
+    "relatedRealtor": "رامین  نجفی",
+    "relatedRealtorId": {
+      "_id": "619e0de0cf7795ceacaaac68",
+      "voipInfo": [
+        {
+          "extentionNumber": "1107",
+          "id": null
+        }
+      ],
+      "role": {
+        "_id": "6866aeb63cd797341266cbe3",
+        "title": "مدیر فایل و crm"
+      },
+      "code": 410031078,
+      "mobileNumber": 9147818870,
+      "imageCover": "uploads/documents/business_41003/realtorsDocuments/realtor_410031078/imageCover_657f96e7-b0fc-4e01-a324-54dba492bbe1.webp",
+      "fullName": "رامین  نجفی",
+      "realtorPhoneNumber": "09147818870"
+    },
+    "changeable": false,
+    "hasVideo": false,
+    "hasImage": true,
+    "videoCount": 0,
+    "imageCount": 1,
+    "currentStatus": {
+      "_id": "650ea7f76b1dfc297633c85d",
+      "name": "منتشر شده",
+      "endColor": {
+        "r": 77,
+        "g": 208,
+        "b": 225,
+        "a": 1,
+        "_id": "65113f0cc73e0ae71b6c3c38"
+      },
+      "startColor": {
+        "r": 77,
+        "g": 208,
+        "b": 225,
+        "a": 1,
+        "_id": "65113f0cc73e0ae71b6c3c39"
+      }
+    },
+    "link": "/properties/تبریز/منصور/59823-پیش-فروش-آپارتمان-مسکونی-195-متری-ملک-تبریز",
+    "isLikedByUser": false
+  },
+  "apu:properties/info/by-code/58398": {
+    "status": 200,
+    "head": "{\"statusCode\":200,\"status\":true,\"data\":{\"_id\":\"6a96f5da53326239569dd208\",\"inputs\":{\"space\":68,\"totalPrice\":8750000000,\"floor\":1,\"room_whole\":1,\"floor_whole\":4,\"unit\":2,\"year\":{\"label\":1385,\"value\":1385},\"side\":{\"label\":\"جنوبی\",\"value\":\"south\"},\"construct_type\":{\"label\":\"مجتمع\",\"value\":\"complex\"},\"sanad\":{\"label\":\"شش دانگ\",\"value\":\"sixdong\"},\"elevator\":true,\"parking\":true},\"details\":[{\"label\":\"کد آگهی\",\"name\":\"code\",\"value\":\"58398\",\"isSpecial\":true},{\"label\":\"متراژ\",\"name\":\"space\",\"value\":68,\"uni"
+  },
+  "apu:properties/details/635945ee6975593b2e7c071b": {
+    "status": 404,
+    "head": "{\"statusCode\":404,\"status\":false,\"data\":{\"error\":\"PageNotFoundError\",\"stack\":null},\"message\":\"صفحه مورد نظر یافت نشد\"}"
+  },
+  "apu:requests/list?page=1&limit=2": {
+    "status": 401,
+    "head": "{\"statusCode\":401,\"status\":false,\"data\":{\"error\":\"UnAuthorizedError\"},\"message\":\"عدم احراز هویت! لطفا مجددا لاگین بفرمایید.\"}"
+  },
+  "gap:api/v1": {
+    "status": 0,
+    "ct": "",
+    "head": "The operation was aborted."
+  },
+  "gap:api/v1/": {
+    "status": 0,
+    "ct": "",
+    "head": "The operation was aborted."
+  },
+  "gap:api/health": {
+    "status": 0,
+    "ct": "",
+    "head": "The operation was aborted."
+  },
+  "gap:api/auth": {
+    "status": 0,
+    "ct": "",
+    "head": "The operation was aborted."
+  },
+  "gap:api/auth/login": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/auth/login</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/authentication/otp/login": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/authentication/otp/login</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/v1/auth/otp": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/v1/auth/otp</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/chats": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/chats</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/v1/chats": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/v1/chats</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/rooms": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/rooms</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/messages": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/messages</pre>\n</body>\n</html>\n"
+  },
+  "gap:api-docs": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api-docs</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/swagger": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/swagger</pre>\n</body>\n</html>\n"
+  },
+  "gap:api/v1/api-service/subscribe": {
+    "status": 404,
+    "ct": "text/html; charset=utf-8",
+    "head": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/v1/api-service/subscribe</pre>\n</body>\n</html>\n"
+  },
+  "gapRootHrefs": [],
+  "mpRootHrefs": []
+}

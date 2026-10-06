@@ -1,0 +1,41 @@
+{
+  "test": "3.2.1 — شبیه‌سازی تخریب در قرق + بازیابی خودکار",
+  "executedAt": "2026-10-06T06:00:07.924321+00:00",
+  "command": "REPO_DIR=recovery-drill bash scripts/recovery/auto-recovery.sh check  (فرمان تولیدی دست‌نخورده)",
+  "before": {
+    "masterCodeHashNull": false,
+    "graphNodes": 56442,
+    "graphEdges": 53222,
+    "propertyRecords": 11504
+  },
+  "afterCorruption": {
+    "masterCodeHashNull": true,
+    "graphNodes": 0,
+    "graphEdges": 0,
+    "propertyRecords": 11504
+  },
+  "afterRecovery": {
+    "masterCodeHashNull": false,
+    "graphNodes": 56442,
+    "graphEdges": 53222,
+    "propertyRecords": 11504
+  },
+  "exitCode": 0,
+  "durationSec": 0.4,
+  "checks": {
+    "تشخیص_تخریب": true,
+    "بازیابی_هش": true,
+    "بازیابی_گراف": true,
+    "زمان_معقول": true,
+    "صفر_خطا": true
+  },
+  "guardOutput": "[check] 2026-10-06T06:00:07Z REPO=/home/z/my-project/recovery-drill HEAD=7d50985\n[check] سرور در دسترس نیست (در بوت/ری‌استارت طبیعی است)\n[check] DB-WIPE-DETECTED: yes:master-hash-null\n[check] نتیجه: بازگشت تشخیص داده شد — آغاز بازیابی خودکار\n[drill-guard] تخریب تشخیص داده شد: yes:master-hash-null — آغاز بازیابی (قرق)\n[drill-guard] بازیابی کامل شد از PN-DRILL-01 (قرق — بدون بیلد/ری‌استارت واقعی)",
+  "recoveryLogTail": "{\"at\":\"2026-10-06T06:00:07Z\",\"kind\":\"db-wipe-detected\",\"cause\":\"master-hash-null\"}\n{\"at\":\"2026-10-06T06:00:07Z\",\"kind\":\"check\",\"verdict\":\"ROLLBACK-DB-WIPE\",\"head\":\"7d50985\"}\n{\"at\":\"2026-10-06T06:00:07Z\",\"kind\":\"auto-recovery-start\",\"verdict\":\"ROLLBACK-DB-WIPE\"}\n{\"at\":\"2026-10-06T06:00:07Z\",\"kind\":\"guard-recovery-start\",\"cause\":\"yes:master-hash-null\"}\n{\"at\":\"2026-10-06T06:00:07Z\",\"kind\":\"guard-recovery-ok\",\"via\":\"PN-DRILL-01\",\"cause\":\"yes:master-hash-null\",\"mode\":\"drill\"}",
+  "drillMarkers": "[2026-10-06T06:00:07Z] guard-detect:yes:master-hash-null\n[2026-10-06T06:00:07Z] would-stop-servers (در تولید: pkill watchdog+server)\n[2026-10-06T06:00:07Z] backup-taken:guard-pre-recovery-2026-10-06T06-00-07.db\n[2026-10-06T06:00:07Z] db-restored-from:PN-DRILL-01\n[2026-10-06T06:00:07Z] env-restored-if-missing:yes\n[2026-10-06T06:00:07Z] would-build-if-missing (در تولید: bun run build)\n[2026-10-06T06:00:07Z] would-restart-prod (در تولید: start-prod-daemon.py)\n[2026-10-06T06:00:07Z] guard-recovery-ok",
+  "backupsTaken": 2,
+  "notes": [
+    "گارد قرق: منطق عین تولید؛ فقط گام‌های pkill/بیلد/ری‌استارت سرور واقعی با نشانگر جایگزین شد (واحد آزمون: تشخیص+بازگرداندن+ضدحلقه)",
+    "بکاپ پیش از بازیابی در قرق گرفته شد و سپس DB از بستهٔ بقا قرق بازگردانده شد"
+  ],
+  "verdict": "PASS"
+}

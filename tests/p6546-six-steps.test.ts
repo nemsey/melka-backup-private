@@ -392,8 +392,8 @@ describe("P6546/گام پنجم-الف — پوشش تمام ستون‌ها + �
   test("الف-۳) ترتیب الزامی بخش‌ها در هر چهار کاشی: بینش ← جداول ← پوشش ← بروزرسانی ← فیلتر ← فهرست", () => {
     // لنگرها دقیقاً بخش JSX اند (نه متن توست/توضیح که بالاتر در فایل است)
     const checks: Array<[string, string[]]> = [
-      ["arm-listing/ArmListingsPage.tsx", ['tileId="arm-listings"', 'id="m1-tables-section"', 'tileKey="m1"', 'id="arm-listing-last-update"', 'id="arm-listing-trades-filter"', 'فهرست آگهی‌ها — رجیستری']],
-      ["arm-request/ArmRequestsPage.tsx", ['tileId="arm-requests"', 'id="m2-tables-section"', 'tileKey="m2"', 'id="arm-request-last-update"', 'id="arm-request-trades-filter"', 'فهرست درخواست‌ها — کاتالوگ']],
+      ["arm-listing/ArmListingsPage.tsx", ['tileId="arm-listings"', 'id="m1-tables-section"', 'tileKey="m1"', 'id="arm-listing-last-update"', 'id="arm-listing-trades-filter"', 'فهرست آگهی‌ها</CardTitle>']],
+      ["arm-request/ArmRequestsPage.tsx", ['tileId="arm-requests"', 'id="m2-tables-section"', 'tileKey="m2"', 'id="arm-request-last-update"', 'id="arm-request-trades-filter"', 'فهرست درخواست‌ها</CardTitle>']],
     ];
     for (const [file, anchors] of checks) {
       const s = readFileSync(`${TILES}/${file}`, "utf8");
@@ -403,12 +403,12 @@ describe("P6546/گام پنجم-الف — پوشش تمام ستون‌ها + �
     }
     // M3: KPI/نمودار ← پوشش ← بروزرسانی ← فیلتر ← فهرست (داخل TransactionsTab)
     const tab = readFileSync(`${TILES}/transactions-contracts/TransactionsTab.tsx`, "utf8");
-    const order = [tab.indexOf("<KpiCard"), tab.indexOf('tileKey="m3"'), tab.indexOf("{updateSection}"), tab.indexOf('id="m3-filters-card"'), tab.indexOf("فهرست معاملات — تمامی کارشناسان")];
+    const order = [tab.indexOf("<KpiCard"), tab.indexOf('tileKey="m3"'), tab.indexOf("{updateSection}"), tab.indexOf('id="m3-filters-card"'), tab.indexOf("فهرست معاملات</CardTitle>")]; // PN-003: پسوند عنوان حذف شد
     for (let i = 0; i < order.length; i += 1) expect(order[i], `M3 لنگر ${i}`).toBeGreaterThan(-1);
     for (let i = 1; i < order.length; i += 1) expect(order[i]).toBeGreaterThan(order[i - 1]);
     // M4: بینش‌ها ← پوشش ← بروزرسانی ← فیلتر ← فهرست
     const m4s = readFileSync(`${TILES}/experts/ExpertsPage.tsx`, "utf8");
-    const order4 = [m4s.indexOf('tileId="experts"'), m4s.indexOf('tileKey="m4"'), m4s.indexOf('id="m4-update-section"'), m4s.indexOf("فیلتر فهرست کارشناسان"), m4s.indexOf("فهرست کارشناسان و کارکنان —")];
+    const order4 = [m4s.indexOf('tileId="experts"'), m4s.indexOf('tileKey="m4"'), m4s.indexOf('id="m4-update-section"'), m4s.indexOf("فیلتر فهرست کارشناسان"), m4s.indexOf("فهرست کارشناسان و کارکنان</CardTitle>")] // PN-003: پسوند حذف شد;
     for (let i = 0; i < order4.length; i += 1) expect(order4[i], `M4 لنگر ${i}`).toBeGreaterThan(-1);
     for (let i = 1; i < order4.length; i += 1) expect(order4[i]).toBeGreaterThan(order4[i - 1]);
   });

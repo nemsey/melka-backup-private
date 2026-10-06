@@ -11,7 +11,7 @@ const globals = read("src/app/globals.css");
 const manifest = JSON.parse(read("public/manifest.json"));
 const layout = read("src/app/layout.tsx");
 const page = read("src/app/page.tsx");
-const swV5 = read("public/sw-v5.js");
+// PN-006 BLOCK 7.1: sw-v5 به public/archive منتقل شد — مرجع تست حذف شد (قفل رسمی روی sw.js نسخهٔ ۷)
 
 describe("۰۳۵-B/الف — پالت رنگ ۱۳بخش×۵سایه", () => {
   test("۱۳ بخش یکتا با کلیدهای رسمی", () => {
@@ -145,7 +145,7 @@ describe("۰۳۵-B/ج — اجزای ظاهری اجبارشده", () => {
     const swr = read("src/components/app/SwRegister.tsx");
     expect(swr).toContain("نسخهٔ جدید آماده است");
     expect(swr).toContain("SKIP_WAITING");
-    expect(swr).toContain("/sw-v5.js");
+    expect(swr).toContain("/sw.js"); // PN-006 BLOCK 7.1: قفل روی sw.js (نسخهٔ ۷) — طبق مصوبهٔ P6519
     expect(read("src/components/app/AppHeader.tsx")).toContain("<OfflineBadge />");
   });
   test("۶. Safe Area Support (notch + iOS) + viewport-fit", () => {
@@ -242,9 +242,12 @@ describe("۰۳۵-B/ج-۲ + چ + ح — تم‌ها، دسترس‌پذیری، �
 });
 
 describe("۰۳۵-B/خ — راستی‌آزمایی SW و مهر", () => {
-  test("sw-v5: skipWaiting پیام‌محور (نه خودکار در install)", () => {
-    expect(swV5).toContain('"SKIP_WAITING"');
-    expect(swV5.split("addEventListener(\"install\"")[1]?.split(");")[0]).not.toContain("skipWaiting()");
+  test("sw.js v7: به‌روزرسانی خودکار (skipWaiting در install) — مصوبهٔ P6519 جایگزین پیام‌محوری v5 شد", () => {
+    const sw = read("public/sw.js");
+    expect(sw).toContain("melk-dash-v7");
+    // PN-006 BLOCK 7.1: نسخه‌های v3/v4/v5 به public/archive منتقل شدند — فقط sw.js فعال است
+    expect(existsSync("public/archive/sw-v5.js")).toBe(true);
+    expect(existsSync("public/sw-v3.js")).toBe(false);
   });
   test("فایل شواهد رنگ موجود (palette-evidence.json)", () => {
     const ev = JSON.parse(read("download/p6549/palette-evidence.json"));

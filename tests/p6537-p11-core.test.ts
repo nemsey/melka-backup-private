@@ -255,9 +255,14 @@ describe("P11/بخش ۳ — Repair Executor (اجرا)", () => {
     expect(r.reason).toContain("پرریسک");
   });
   test("۳-۱۴ rollback صریح با نقطهٔ بازگشت", () => {
+    // PN-006: رفع نژاع زمانی (عین اصلاح ۳-۱۵ در PN-005) — شناسهٔ پیشنهاد شامل
+    // Date.now() است؛ دو فراخوانی جداگانهٔ firstProposal() در میلی‌ثانیه‌های
+    // مختلف شناسه‌های متفاوت می‌سازند و rollback بکاپ را نمی‌یافت.
+    // شیء واحد در هر دو مرحله (اجرا + بازگشت) استفاده می‌شود.
     const e = exec();
-    e.execute(firstProposal(), ok());
-    const r = e.rollback(firstProposal(), "شورا");
+    const p = firstProposal();
+    e.execute(p, ok());
+    const r = e.rollback(p, "شورا");
     expect(r.rolledBack).toBe(true);
     expect(r.from).toContain("pre-repair-");
   });

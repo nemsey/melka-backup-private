@@ -1,0 +1,8 @@
+{"at":"2026-10-06T06:00:07Z","kind":"db-wipe-detected","cause":"master-hash-null"}
+{"at":"2026-10-06T06:00:07Z","kind":"check","verdict":"ROLLBACK-DB-WIPE","head":"7d50985"}
+{"at":"2026-10-06T06:00:07Z","kind":"auto-recovery-start","verdict":"ROLLBACK-DB-WIPE"}
+{"at":"2026-10-06T06:00:07Z","kind":"guard-recovery-start","cause":"yes:master-hash-null"}
+{"at":"2026-10-06T06:00:07Z","kind":"guard-recovery-ok","via":"PN-DRILL-01","cause":"yes:master-hash-null","mode":"drill"}
+{"at":"2026-10-06T06:00:11Z","kind":"db-wipe-detected","cause":"master-hash-null"}
+{"at":"2026-10-06T06:00:11Z","kind":"check","verdict":"ROLLBACK-DB-WIPE","head":"7d50985"}
+{"at":"2026-10-06T06:00:11Z","kind":"auto-recovery-start","verdict":"ROLLBACK-DB-WIPE"}

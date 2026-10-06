@@ -32,7 +32,12 @@ logr() { printf '{"at":"%s","kind":"%s",%s}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" 
 
 newest_pkg() {
   if [[ -n "${PKG_DIR:-}" ]]; then echo "$PKG_DIR"; return; fi
-  ls -d "$REPO"/upload/.survival/P[0-9]* 2>/dev/null | sort -V | tail -1
+  # PN-006 BLOCK 3: الگوی P[0-9]* به بسته‌های PN-XXX کور بود (کشف آزمون قرق)
+  local best=""
+  for d in $(ls -d "$REPO"/upload/.survival/P*/ 2>/dev/null | sort -V); do
+    [[ -f "${d%/}/custom.db" ]] && best="${d%/}"
+  done
+  echo "$best"
 }
 
 # درخت HEAD منهای فایل‌های بالای ۹۹MB — همان منطق build-snapshot.sh

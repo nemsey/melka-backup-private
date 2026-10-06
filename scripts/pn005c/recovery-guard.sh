@@ -55,8 +55,13 @@ logr guard-recovery-start "\"cause\":\"$NEEDS\""
 echo "[guard] تخریب تشخیص داده شد: $NEEDS — آغاز بازیابی"
 
 # ── گام ۲: تازه‌ترین بستهٔ بقا ──
-PKG=$(ls -d upload/.survival/P[0-9]* 2>/dev/null | sort -V | tail -1)
-if [[ -z "$PKG" || ! -f "$PKG/custom.db" ]]; then
+# PN-006 BLOCK 3: الگوی P[0-9]* به بسته‌های PN-XXX کور بود (کشف آزمون قرق)
+# الگوی تازه: همهٔ دایرکتوری‌های P* با custom.db — نسخه‌مرتب، آخرین = تازه‌ترین
+PKG=""
+for d in $(ls -d upload/.survival/P*/ 2>/dev/null | sort -V); do
+  [[ -f "${d%/}/custom.db" ]] && PKG="${d%/}"
+done
+if [[ -z "$PKG" ]]; then
   logr guard-recovery-fail '"cause":"no-survival-package"'
   echo "[guard] بستهٔ بقا یافت نشد"; exit 1
 fi

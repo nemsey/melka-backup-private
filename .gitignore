@@ -73,3 +73,7 @@ backups/pre-recovery-034-*/
 /backups/*.db
 /backups/*.tar
 *.pid
+
+# PN-006 BLOCK 3 — قرق آزمون خوددرمانی (تجهیزات تست، هرگز کامیت نمی‌شوند)
+/recovery-drill/
+/test-recovery/

@@ -1,0 +1,16 @@
+{
+  "ranAt": "2026-10-06T06:22:03.214Z",
+  "voipOk": 0,
+  "attempted": 0,
+  "ok": 0,
+  "fail": 0,
+  "got": 0,
+  "after": {
+    "total": 0,
+    "withEmpType": 0,
+    "withShare": 0,
+    "withVoip": 0
+  },
+  "employmentDist": {},
+  "samples": []
+}

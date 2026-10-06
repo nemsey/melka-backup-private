@@ -1,0 +1,33 @@
+{
+  "case": "P6545-retrain",
+  "councilDecision": "جلسه ۰۳۳ — تصمیم ۲: تأیید retrain با قید Tier 3+ و گارد Lift",
+  "council": {
+    "source": "شورای عالی ملکا — جلسه راهبردی ۰۳۳ (ملکا-شورا-۱۴۰۵-۰۳۳)",
+    "approvedBy": "شورای عالی ملکا (دبیر: ف۱)",
+    "approvedAt": "2026-10-03T00:00:00.000Z"
+  },
+  "tier": 3,
+  "tierGate": {
+    "required": 3,
+    "current": 3,
+    "allowed": true
+  },
+  "before": {
+    "liftPercent": 9.76,
+    "brier": 0.2256
+  },
+  "after": {
+    "liftPercent": 51.8,
+    "brierHoldout": 0.1205
+  },
+  "result": {
+    "learned": true,
+    "kept": true,
+    "reason": "Lift پس از آموزش 51.8% ≥ پیش از آموزش 9.76% — نتیجه نگه داشته شد",
+    "liftBefore": 9.76,
+    "liftAfter": 51.8,
+    "weightUpdates": []
+  },
+  "autoRollbackPolicy": "اگر Lift پس از آموزش < پیش از آموزش → rollback خودکار + عدم ذخیرهٔ وزن‌ها",
+  "artifact": "intelligence-data/retrain-state.json"
+}

@@ -420,11 +420,16 @@ describe("P6547/پروب زندهٔ شبکه — راستی‌آزمایی وا�
     } catch { /* بهترین-تلاش — در صورت شکست، تست ز-۱ صادقانه قرمز می‌شود */ }
   });
 
-  test("ز-۱: ورود مدیر با کدمستر تازه 00000000 (واقعی)", async () => {
+  test("ز-۱: ورود مدیر با کدمستر فعال (واقعی — خواندن از محیط اجرا، هرگز literal در سورس)", async () => {
+    // PN-006: کد ۰۰۰۰۰۰۰۰ قدیمی پس از چرخش کد رد می‌شود؛ کد فعال از .env.local خوانده می‌شود
+    // (HOTFIX-01: هرگز literal کد در سورس/گیت نمی‌نشیند — خواندن زمان-اجراست)
+    const { readFileSync } = await import("node:fs");
+    const code = (readFileSync("/home/z/my-project/.env.local", "utf8").match(/^MASTER_ACCESS_CODE=(.+)$/m)?.[1] ?? "").trim();
+    if (!code) { console.warn("[ز-۱] MASTER_ACCESS_CODE در محیط نیست — تست صادقانه قرمز می‌ماند"); }
     const res = await fetch(`${BASE}/api/auth/master-login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ masterCode: "00000000" }),
+      body: JSON.stringify({ masterCode: code }),
     });
     const d = (await res.json()) as { ok: boolean; token?: string };
     expect(d.ok).toBe(true);
