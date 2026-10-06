@@ -279,7 +279,12 @@ export async function runIntelligenceCoreCycle(opts: CoreCycleOptions = {}): Pro
   const worstGap = Math.max(...evaluation.metrics.calibration.filter((b) => b.count > 0).map((b) => Math.abs(b.observed - b.predicted)), 0);
   const newestOutcome = records.reduce((a, r) => (r.observedAt > a ? r.observedAt : a), "1970-01-01");
   const dataAgeHours = Math.round((Date.now() - new Date(newestOutcome).getTime()) / 3600000);
-  const backupFiles = existsSync(path.join(process.cwd(), "backups")) ? readdirSync(path.join(process.cwd(), "backups")).filter((f) => f.endsWith(".db")).length : 0;
+  // PN-010/BLOCK 1 — ریشهٔ دومِ قرمزی DIAG-DATA-005: سرور standalone با process.chdir
+  // به ‎.next/standalone می‌رود (پوشهٔ backups آن در بیلد حذف می‌شود) → شمارش همیشه صفر.
+  // قرارداد یکسان با قلاب خوددرمانی instrumentation: ریشهٔ مخزن با MELKA_REPO_DIR لنگر می‌شود.
+  const repoRoot = process.env.MELKA_REPO_DIR ?? "/home/z/my-project";
+  const backupsDir = path.join(repoRoot, "backups");
+  const backupFiles = existsSync(backupsDir) ? readdirSync(backupsDir).filter((f) => f.endsWith(".db")).length : 0;
   const snapshot: SystemSnapshot = {
     ...healthySnapshot(tier),
     brierScore: evaluation.metrics.brierScore,

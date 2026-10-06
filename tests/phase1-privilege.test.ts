@@ -193,6 +193,9 @@ describe("BLOCK 6 — قانون هویت دوگانهٔ مالک", () => {
     expect(resolveDashboardRole("410031310", { type: "realtor" }, "")).toBe("CONSULTANT");
   });
 
+  // PN-010: timeout ارتقا یافت (۵→۳۰ ثانیه) — این روت با OTP درست-شکل به ARM زنده
+  // تماس می‌گیرد؛ تأخیر شبکهٔ واقعی (شبکهٔ مالک/VPN) گاهی از ۵ ثانیهٔ پیش‌فرض
+  // bun:test فراتر می‌رفت (flake دوسبزشکن). ادعای تست دست‌نخورده: هرگز 200 بدون احراز.
   test("۶-ج: روت personnel-login — گارد ورودی سخت‌گیر (فرمت نامعتبر بدون فراخوانی شبکه → 400)", async () => {
     const route = await import("@/app/api/auth/personnel-login/route");
     // OTP سه‌رقمی → 400 پیش از هر فراخوانی شبکه‌ای (قواعد سخت‌گیر ورودی)
@@ -204,7 +207,7 @@ describe("BLOCK 6 — قانون هویت دوگانهٔ مالک", () => {
     // OTP درست-شکل ولی شبکهٔ ARM در محیط تست قطع است → هرگز 200 بدون احراز واقعی
     const res3 = await route.POST(await NR("/api/auth/personnel-login", { method: "POST", body: JSON.stringify({ personnelCode: "410099950", otp: "9999" }) }));
     expect(res3.status).not.toBe(200);
-  });
+  }, 30_000);
 });
 
 /* ═══════ BLOCK 7 — مدیریت دسترسی کدپرسنلی‌ها ═══════ */

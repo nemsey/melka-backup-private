@@ -1,0 +1,71 @@
+{
+  "pn": "PN-010",
+  "block": "BLOCK 2 — JobLock با Heartbeat",
+  "generatedAt": "2026-10-06T23:30:57.102Z",
+  "schema": {
+    "model": "JobLock (prisma/schema.prisma)",
+    "fields": [
+      "jobId @id",
+      "instanceId",
+      "acquiredAt",
+      "lastHeartbeat",
+      "expiresAt",
+      "metadata?"
+    ],
+    "index": "expiresAt",
+    "pushed": [
+      "db/custom.db (production)",
+      "db/test.db (تست)"
+    ],
+    "selfHealing": "ensureJobLockTable — DDL یکسان با prisma db push؛ بازیابی از بسته‌های بقای پیش-PN-010 هرگز به‌خاطر جدول مفقود نمی‌میرد (آزمون ۲-۱۵)"
+  },
+  "api": {
+    "acquire": "تلاش تصاحب — ردیف منقضی = متروکه (قابل تصرف)؛ برندهٔ constraint یکتایی = دارنده",
+    "heartbeat": "تمدید انقضا هر ۳۰ ثانیه (بند ۲.۳) — فقط با instanceId دارنده",
+    "release": "آزادسازی در پایان کار (موفق یا خطا) — فقط با instanceId دارنده",
+    "cleanup": "جاروی دوره‌ای قفل‌های منقضی (هر ~۲ دقیقه توسط دیسپچر)",
+    "withLock": "الگوی امن: قفل → ضربان → اجرا → رهاسازی"
+  },
+  "liveLocks": [
+    {
+      "jobId": "job:catalog-cycle",
+      "instanceId": "worker:25546:muxavfci-pkkxoh",
+      "acquiredAt": "2026-10-06T23:19:46.699Z",
+      "lastHeartbeat": "2026-10-06T23:30:46.839Z",
+      "expiresAt": "2026-10-06T23:32:16.839Z",
+      "heartbeatAgeSec": 10,
+      "metadata": {
+        "pid": 25546
+      }
+    },
+    {
+      "jobId": "runtime:worker",
+      "instanceId": "worker:25546:muxavfci-pkkxoh",
+      "acquiredAt": "2026-10-06T23:18:46.393Z",
+      "lastHeartbeat": "2026-10-06T23:30:46.497Z",
+      "expiresAt": "2026-10-06T23:32:16.497Z",
+      "heartbeatAgeSec": 11,
+      "metadata": {
+        "pid": 25546,
+        "startedAt": "2026-10-06T23:18:46.386Z",
+        "architecture": "1-web-1-worker"
+      }
+    }
+  ],
+  "liveVerdict": {
+    "runtimeWorkerLockHeld": true,
+    "note": "قفل runtime:worker با ضربان ۳۰ ثانیه‌ای Worker تازه می‌ماند؛ قفل‌های job:* فقط حین اجرای کار وجود دارند و در پایان آزاد می‌شوند"
+  },
+  "tests": {
+    "file": "tests/pn010-joblock.test.ts",
+    "suite": "PN-010 BLOCK 2 — JobLock با ضربان قلب",
+    "pass": 15,
+    "fail": 0,
+    "required": 15
+  },
+  "twoGreen": {
+    "total": 1842,
+    "pass": 1842,
+    "fail": 0
+  }
+}

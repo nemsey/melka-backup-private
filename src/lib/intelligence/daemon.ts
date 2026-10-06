@@ -22,6 +22,8 @@ import { mkdirSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { runOutcomeLoop, type OutcomeLoopSummary, type OutcomeLoopResult } from "./outcome-loop";
+// PN-010 — کانال وضعیت مشترک Worker (فقط fs/path — بدون چرخهٔ وابستگی)
+import { readWorkerStatus, isWorkerAlive } from "@/core/runtime/worker-status";
 
 /** دایرکتوری شاهدهای مغز — نسبت به cwd فعلی (تنبل؛ قابل‌ایزوله‌سازی در تست) */
 export function intelligenceDataDir(): string {
@@ -128,9 +130,28 @@ function persistEvidence(result: OutcomeLoopResult): void {
   writeFileSync(paths.latest, `${JSON.stringify(result.summary, null, 2)}\n`, "utf8");
 }
 
-// ===================== دیمن v2 =====================
+// ===================== دیمن v2 (PN-010: Worker) =====================
 
-/** اجرای دوره‌ای — از instrumentation.ts فراخوانده می‌شود */
+/**
+ * تیک واحد دیمن هوشمندی — PN-010 فاز ۲ (BLOCK 4: Intelligence → Worker).
+ * همان بدنهٔ تایمر قبلی instrumentation، اکنون از صف کار Worker اجرا می‌شود؛
+ * رفتار و ترتیب عیناً حفظ شده (داده تازه → یادگیری بهترین-تلاش).
+ */
+export async function runIntelligenceDaemonTick(db: PrismaClient): Promise<void> {
+  try {
+    await ensureBrainData(db);
+  } catch {
+    // خطای پس‌زمینه بی‌صدا — تیک بعدی دوباره تلاش می‌کند (الگوی sync daemon)
+  }
+  // فاز ۸ — یادگیری حلقه‌بسته پس از هر تیک دادهٔ تازه (بهترین-تلاش)
+  try {
+    await runLearningTick(db);
+  } catch {
+    // یادگیری هرگز دیمن را نمی‌شکند
+  }
+}
+
+/** اجرای دوره‌ای — میراث PN-۰۰۵؛ از فاز ۲ به Worker منتقل شد (اینجا فقط برای سازگاری تست‌ها) */
 export function startIntelligenceDaemon(db: PrismaClient): void {
   if (process.env.MELK_INTELLIGENCE_DAEMON === "disabled") return;
   const intervalMinutes = Math.max(
@@ -139,22 +160,53 @@ export function startIntelligenceDaemon(db: PrismaClient): void {
   );
 
   const tick = async () => {
-    try {
-      await ensureBrainData(db);
-    } catch {
-      // خطای پس‌زمینه بی‌صدا — تیک بعدی دوباره تلاش می‌کند (الگوی sync daemon)
-    }
-    // فاز ۸ — یادگیری حلقه‌بسته پس از هر تیک دادهٔ تازه (بهترین-تلاش)
-    try {
-      await runLearningTick(db);
-    } catch {
-      // یادگیری هرگز دیمن را نمی‌شکند
-    }
+    await runIntelligenceDaemonTick(db);
   };
 
   // نخستین اجرا پس از ۴۵ ثانیه (پس از آماده‌شدن کامل سرور)؛ سپس دوره‌ای
   setTimeout(() => void tick(), 45_000);
   setInterval(() => void tick(), intervalMinutes * 60 * 1000);
+}
+
+/** گزارش سلامت دیمن برای endpoint وضعیت — PN-010: منبع حقیقت = Worker */
+export function daemonHealth(): { alive: boolean; runs: number; lastRunAt: string | null; lastError: string | null; intervalMinutes: number } {
+  const intervalMinutes = Math.max(
+    5,
+    Number.parseInt(process.env.MELK_INTELLIGENCE_INTERVAL_MINUTES ?? "60", 10) || 60,
+  );
+  // ۱) کانال مشترک Worker (معماری فاز ۲) — اگر Worker زنده است، وضعیت او مبناست
+  try {
+    const status = readWorkerStatus();
+    if (status && status.jobs["intelligence-cycle"]) {
+      const j = status.jobs["intelligence-cycle"];
+      return {
+        alive: isWorkerAlive(),
+        runs: j.runs,
+        lastRunAt: j.lastRunAt,
+        lastError: j.lastError,
+        intervalMinutes,
+      };
+    }
+  } catch {
+    // کانال در دسترس نیست (مثلاً محیط ایزوله تست) → مسیر قدیمی
+  }
+  // ۲) میراث: درون‌حافظه‌ای (اجرای در-جا Web با ensureBrainData)
+  const s = state();
+  return {
+    alive: process.env.MELK_INTELLIGENCE_DAEMON !== "disabled",
+    runs: s.runs,
+    lastRunAt: s.summary ? s.summary.ranAt : null,
+    lastError: s.lastError,
+    intervalMinutes,
+  };
+}
+
+// ===================== دروازهٔ امن روت (P2-03 — روت‌ها هرگز مستقیم @/lib/db) =====================
+
+/** تضمین دادهٔ مغز با db خودِ اپ — برای روت /api/intelligence/status */
+export async function ensureBrainStatus(): Promise<OutcomeLoopSummary> {
+  const { db } = await import("@/lib/db");
+  return ensureBrainData(db);
 }
 
 /** یک چرخهٔ یادگیری (فاز ۸) — محرک: دستهٔ پیامد (OUTCOME_BATCH) */
@@ -170,29 +222,6 @@ export async function runLearningTick(db: PrismaClient): Promise<{ updated: bool
     defaultDomain: LEARNING_DOMAIN,
   });
   return engine.learn({ tileId: "arm-listing", trigger: "OUTCOME_BATCH" });
-}
-
-/** گزارش سلامت دیمن برای endpoint وضعیت */
-export function daemonHealth(): { alive: boolean; runs: number; lastRunAt: string | null; lastError: string | null; intervalMinutes: number } {
-  const s = state();
-  return {
-    alive: process.env.MELK_INTELLIGENCE_DAEMON !== "disabled",
-    runs: s.runs,
-    lastRunAt: s.summary ? s.summary.ranAt : null,
-    lastError: s.lastError,
-    intervalMinutes: Math.max(
-      5,
-      Number.parseInt(process.env.MELK_INTELLIGENCE_INTERVAL_MINUTES ?? "60", 10) || 60,
-    ),
-  };
-}
-
-// ===================== دروازهٔ امن روت (P2-03 — روت‌ها هرگز مستقیم @/lib/db) =====================
-
-/** تضمین دادهٔ مغز با db خودِ اپ — برای روت /api/intelligence/status */
-export async function ensureBrainStatus(): Promise<OutcomeLoopSummary> {
-  const { db } = await import("@/lib/db");
-  return ensureBrainData(db);
 }
 
 /** آخرین نسخهٔ سیاست ایجنت M1 — نمای مطمئن روت (بدون دسترسی مستقیم db در روت) */

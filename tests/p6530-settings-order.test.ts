@@ -119,9 +119,14 @@ describe("گام ۶ §۲ — دیمون پایدار اتصال", () => {
     expect(s).toContain("catalogDaemonTick");
   });
 
-  test("۲-۲) instrumentation دیمن کاتالوگ را در بوت سرور راه می‌اندازد", async () => {
+  test("۲-۲) PN-010 فاز ۲: چرخهٔ کاتالوگ در Worker اجرا می‌شود (instrumentation → Supervisor → Worker)", async () => {
     const s = readFileSync(`${SRC}/instrumentation.ts`, "utf8");
-    expect(s).toContain("startCatalogDaemon");
+    expect(s).toContain("RuntimeSupervisor"); // نقطهٔ اتصال Web
+    expect(s).toContain("supervisor.start()");
+    // رجیستری کارهای Worker — چرخهٔ کاتالوگ با همان فاصلهٔ قبلی
+    const jobs = readFileSync(`${SRC}/core/runtime/jobs.ts`, "utf8");
+    expect(jobs).toContain("catalog-cycle");
+    expect(jobs).toContain("catalogDaemonTick"); // همان تیک واحدِ دیمن قبلی
   });
 
   test("۲-۳) دیمن: برش‌های محدود + ازسرگیری checkpoint + قفل هم‌پوشانی", async () => {
