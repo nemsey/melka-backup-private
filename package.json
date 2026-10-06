@@ -13,7 +13,10 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "test": "DATABASE_URL=file:/home/z/my-project/db/test.db MELK_TOKEN_KEY=test-only-key-not-a-real-secret bun test tests/",
-    "test:db:push": "DATABASE_URL=file:/home/z/my-project/db/test.db prisma db push --accept-data-loss"
+    "test:db:push": "DATABASE_URL=file:/home/z/my-project/db/test.db prisma db push --accept-data-loss",
+    "postbuild": "bun run scripts/fingerprint.ts --write-next",
+    "postinstall": "prisma generate",
+    "ci": "bash scripts/ci.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

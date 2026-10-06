@@ -33,9 +33,10 @@ logr() { printf '{"at":"%s","kind":"%s",%s}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" 
 newest_pkg() {
   if [[ -n "${PKG_DIR:-}" ]]; then echo "$PKG_DIR"; return; fi
   # PN-006 BLOCK 3: الگوی P[0-9]* به بسته‌های PN-XXX کور بود (کشف آزمون قرق)
+  # PN-007 BLOCK 2: ساختار استاندارد ن۰۰۷ — DB در زیرپوشهٔ db/؛ هر دو چیدمان پشتیبانی می‌شود
   local best=""
   for d in $(ls -d "$REPO"/upload/.survival/P*/ 2>/dev/null | sort -V); do
-    [[ -f "${d%/}/custom.db" ]] && best="${d%/}"
+    if [[ -f "${d%/}/db/custom.db" || -f "${d%/}/custom.db" ]]; then best="${d%/}"; fi
   done
   echo "$best"
 }

@@ -143,9 +143,14 @@ describe("P11/بخش ۲ — Repair Approval Gate (دروازهٔ شورا)", () 
     expect(r.rejected).toBe(true);
   });
   test("۲-۱۱ تصمیم ثبت و بازخوانی می‌شود", () => {
+    // ن۰۰۷ (الگوی مصوب ۳-۱۴/۳-۱۵ — رفع نوسان): firstProposal() هر بار موتور را
+    // از نو اجرا می‌کند و id زمان‌محور می‌سازد؛ دو فراخوانی = دو id متفاوت
+    // (رقابت زمانی: پاس فقط وقتی هر دو در یک میلی‌ثانیه بیفتند).
+    // الگوی درست: یک‌بار بساز، همان نمونه را تأیید و بازخوانی کن.
     const g = gate();
-    g.approve(firstProposal(), "شورا", true, 4);
-    expect(g.decisionOf(firstProposal().id)?.approved).toBe(true);
+    const p = firstProposal();
+    g.approve(p, "شورا", true, 4);
+    expect(g.decisionOf(p.id)?.approved).toBe(true);
   });
   test("۲-۱۲ رد هم ثبت می‌شود", () => {
     const g = gate();

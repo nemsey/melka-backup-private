@@ -1,0 +1,69 @@
+{
+  "case": "PN-007-BLOCK0-BASELINE",
+  "phase": "0.5 — Reproducible Build & Deploy (بازتولیدپذیری)",
+  "council": "ملکا-شورا-ن۰۰۷-۱۴۰۵",
+  "generatedAt": "2026-10-06T08:43:41.441Z",
+  "threeSources": {
+    "localHead": "a074507285d64b7350a634ed5cda124599a4c75d",
+    "localHeadShort": "a074507",
+    "localHeadSubject": "9ccc3c37-0b69-43ca-b616-4a375debd50b",
+    "declaredStartHead": "50d7403",
+    "mirrorHead": "50d7403c31b7dc4350281684dc5e79c562d0ff82",
+    "survivalPackageHead": {
+      "chainIndex": 7,
+      "commit": "f4bae3a"
+    }
+  },
+  "threeSourceVerdict": {
+    "local_vs_mirror": "DIFF: local=a074507 mirror=50d7403 — یک کامیت خودکار (فقط لاگ بیلد stamp) روی محلی",
+    "mirror_vs_declared": "MATCH (آینه = HEAD اعلامی PN-007)",
+    "survival_chainIndex": 7,
+    "note": "محلی a074507 = 50d7403 + ۱ کامیت خودکار (فایل‌های scripts/pn006/results/build-final-stamp.* — بدون تغییر سورس)"
+  },
+  "backup": {
+    "path": "/home/z/my-project/backups/pre-pn007-2026-10-06T08-43-38.db",
+    "md5": "e79a3782609eeb2ed588648834508971",
+    "bytes": 197537792
+  },
+  "server": {
+    "mode": "production",
+    "pid": "1265",
+    "rssMB": 311,
+    "buildId": "a074507-20261006-0818",
+    "buildIdMatchesHead": true,
+    "env": "production",
+    "gitShaServed": "a074507",
+    "health": {
+      "ok": true,
+      "masterAuth": "env",
+      "masterLayersConsistent": true
+    }
+  },
+  "dbCounts": {
+    "PropertyRecord": 14409,
+    "RequestRecord": 20748,
+    "TransactionRecord": 764,
+    "ExpertRecord": 293,
+    "GraphNode": 68060,
+    "GraphEdge": 71351,
+    "OpportunityAlert": 356,
+    "Prediction": -1,
+    "AgentMemory": 50,
+    "TransactionEnrichment": 764,
+    "Session": 38,
+    "AppMeta": 1
+  },
+  "masterCodeHashState": "SET",
+  "masterCodeHashPrefix": "56c008c2145829b4…",
+  "versions": {
+    "bun": "1.3.14",
+    "node": "v24.21.0",
+    "prisma": "6.19.2",
+    "next": "^16.1.1"
+  },
+  "acceptanceCriteria": {
+    "threeSources": true,
+    "backupDone": true,
+    "baselineWritten": true
+  }
+}

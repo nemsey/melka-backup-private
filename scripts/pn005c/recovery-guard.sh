@@ -57,9 +57,16 @@ echo "[guard] تخریب تشخیص داده شد: $NEEDS — آغاز بازی�
 # ── گام ۲: تازه‌ترین بستهٔ بقا ──
 # PN-006 BLOCK 3: الگوی P[0-9]* به بسته‌های PN-XXX کور بود (کشف آزمون قرق)
 # الگوی تازه: همهٔ دایرکتوری‌های P* با custom.db — نسخه‌مرتب، آخرین = تازه‌ترین
+# PN-007 BLOCK 2: ساختار استاندارد ن۰۰۷ — DB در زیرپوشهٔ db/ قرار می‌گیرد؛
+# هر دو چیدمان پشتیبانی می‌شود (تخت قدیمی + db/ استاندارد) تا زنجیرهٔ بقا هرگز نشکند.
 PKG=""
+PKG_DB=""
 for d in $(ls -d upload/.survival/P*/ 2>/dev/null | sort -V); do
-  [[ -f "${d%/}/custom.db" ]] && PKG="${d%/}"
+  if [[ -f "${d%/}/db/custom.db" ]]; then
+    PKG="${d%/}"; PKG_DB="${d%/}/db/custom.db"
+  elif [[ -f "${d%/}/custom.db" ]]; then
+    PKG="${d%/}"; PKG_DB="${d%/}/custom.db"
+  fi
 done
 if [[ -z "$PKG" ]]; then
   logr guard-recovery-fail '"cause":"no-survival-package"'
@@ -83,7 +90,7 @@ TS=$(date -u +%Y-%m-%dT%H-%M-%S)
 [[ -f db/custom.db ]] && cp db/custom.db "upload/dataset-backups/guard-pre-recovery-${TS}.db" 2>/dev/null || true
 
 # ── گام ۵: بازگرداندن DB + env ──
-if ! cp "$PKG/custom.db" db/custom.db; then
+if ! cp "$PKG_DB" db/custom.db; then
   logr guard-recovery-fail '"cause":"db-copy-failed"'
   exit 1
 fi
