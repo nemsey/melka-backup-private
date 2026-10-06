@@ -1,0 +1,171 @@
+{
+  "pn": "PN-010",
+  "block": "BLOCK 4 — انتقال Daemonها به Worker",
+  "generatedAt": "2026-10-06T23:38:56.226Z",
+  "councilDecision": "جدول بند ۴.۲ جلسهٔ ۰۱۰ (مصوب): هر دیمن به محل نهایی خود",
+  "table": [
+    {
+      "daemon": "Intelligence Daemon (مغز هوشمند)",
+      "previousHome": "درون‌فرایندی در Web — setInterval در instrumentation.ts",
+      "finalHome": "Worker — کار intelligence-cycle",
+      "evidence": {
+        "jobsTsContains": "runIntelligenceDaemonTick (همان بدنهٔ تایمر قبلی)",
+        "firstRunDelayPreservedMs": 45000,
+        "intervalPreserved": "MELK_INTELLIGENCE_INTERVAL_MINUTES (پیش‌فرض ۶۰ دقیقه)",
+        "killSwitchPreserved": "MELK_INTELLIGENCE_DAEMON=disabled",
+        "live": {
+          "runs": 1,
+          "lastRunAt": "2026-10-06T23:19:31.720Z",
+          "lastError": null,
+          "durationMs": 353
+        },
+        "statusEndpointChannel": "/api/intelligence/status → daemon از کانال Worker (شاهد UI: «دیمن v2 زنده — ۱ اجرا»)"
+      }
+    },
+    {
+      "daemon": "Catalog Daemon (پایدارساز بروزرسانی)",
+      "previousHome": "درون‌فرایندی در Web — setInterval در instrumentation.ts",
+      "finalHome": "Worker — کار catalog-cycle",
+      "evidence": {
+        "jobsTsContains": "catalogDaemonTick (از قبل صادر بود — قابل تست مستقیم)",
+        "firstRunDelayPreservedMs": 60000,
+        "intervalPreserved": "MELK_CATALOG_DAEMON_INTERVAL_MINUTES (پیش‌فرض ۱ دقیقه)",
+        "killSwitchPreserved": "MELK_CATALOG_DAEMON=disabled",
+        "live": {
+          "runs": 1,
+          "running": true,
+          "lastError": null
+        },
+        "statusEndpointChannel": "catalogDaemonStatus از کانال Worker (domain snapshot پس از هر تیک)"
+      }
+    },
+    {
+      "daemon": "Auto-Recovery Daemon (خوددرمانی)",
+      "previousHome": "قلاب بوت یک‌باره در instrumentation.ts (۲۰ ثانیه پس از بوت)",
+      "finalHome": "Boot Hook — همان‌جا ماند (مصوبهٔ بند ۴.۲)",
+      "evidence": {
+        "instrumentationContains": "auto-recovery.sh + MELK_AUTO_RECOVERY (آزمون ۴-۳)",
+        "reason": "وارسی بازیابی باید پیش از راه‌اندازی کارهای دوره‌ای انجام شود — بوت‌هوک صحیح‌ترین محل است"
+      }
+    },
+    {
+      "daemon": "Mirror Daemon (آینهٔ GitHub)",
+      "previousHome": "دیمن مستقل ۶ساعته bash — با ریست محیط می‌مرد و re-arm دستی می‌خواست",
+      "finalHome": "Worker — کار mirror-cycle هر ۶ ساعت (اسکریپت چرخهٔ واحد استخراج‌شده)",
+      "evidence": {
+        "newScript": "scripts/mirror/mirror-cycle.sh (چرخهٔ واحد: build_snapshot + do_push + do_verify + do_weekly)",
+        "oldDaemonNowWrapper": "mirror-daemon.sh → فقط حلقهٔ خواب دور mirror-cycle.sh (دیگر مسیر تولیدی نیست)",
+        "reArmNoLongerNeeded": "Supervisor Worker را در هر بوت خودش می‌فروشد — وابستگی re-arm دستی حذف شد",
+        "live": {
+          "cycles": 1,
+          "lastPush": {
+            "at": "2026-10-06T23:23:53Z",
+            "kind": "push",
+            "result": "ok",
+            "main": "ok",
+            "survivalCode": "ok",
+            "head": "5a1f77461ca95053f9ce437ddc0fad52287f8036",
+            "durationSec": 6
+          }
+        },
+        "firstCycleFromWorker": "۲۳:۲۳:۴۶ — دقیقاً +۵ دقیقه پس از بوت Worker ۲۳:۱۸:۴۶ (firstRunDelayMs طراحی‌شده) · پوش ok (main+survivalCode)"
+      }
+    },
+    {
+      "daemon": "Log Rotator (چرخش لاگ)",
+      "previousHome": "اسکریپت یک‌بارهٔ ن۰۰۶ — وابسته به حلقهٔ پایشگر RAM (خاموش پس از ریست‌ها)",
+      "finalHome": "Worker — کار log-rotate هر ۳۰ دقیقه",
+      "evidence": {
+        "scriptUnchanged": "scripts/log-rotate.sh (همان ن۰۰۶ — سقف ۱۰MB · ۳ نسل)",
+        "live": {
+          "runs": 1,
+          "lastError": null
+        },
+        "firstRun": "۲۳:۲۸:۴۶ — دقیقاً +۱۰ دقیقه پس از بوت Worker (firstRunDelayMs طراحی‌شده)"
+      }
+    },
+    {
+      "daemon": "Backup Rotation (تازه — PN-010 BLOCK 1)",
+      "previousHome": "وجود نداشت — ریشهٔ قرمزی DIAG-DATA-005",
+      "finalHome": "Worker — کار backup-rotation هر ۶ ساعت (VACUUM + هرس ۳ نسل + integrity)",
+      "evidence": {
+        "live": {
+          "runs": 1,
+          "lastError": null
+        },
+        "firstBackup": "backup-2026-10-06T23-20-16-755.db (۲۵۷٫۸MB) — +۹۰ ثانیه پس از بوت Worker",
+        "keepsDiagData005Green": "backups/ اکنون ۳ فایل تازه دارد → DIAG-DATA-005 = pass"
+      }
+    }
+  ],
+  "migrationPrinciples": {
+    "گام‌به‌گام": "هر دیمن → کار مجزا با شناسهٔ ثابت در رجیستری jobs.ts",
+    "هر انتقال با آزمون": "۱۰ آزمون مهاجرت (۴-۱ تا ۴-۱۰): حذف wiring قدیمی · نصب Supervisor · رجیستری ۵+۱ کار · فاصله‌ها/تاخیرها عین قبل · کلیدهای خاموشی · اسکریپت‌های استخراج‌شده",
+    "صفر قطع خدمت": "سرور در تمام طول مهاجرت ۲۰۰ ماند (شاهد: سلامت پیوسته حین بازنویسی) · زمان‌بندی و رفتار دیمن‌ها عیناً حفظ شد",
+    "processIsolationProof": "ری‌استارت Web (۲۳:۲۴) → Worker بدون وقفه ادامه داد (۲۳:۱۹→اکنون) — دو فرایند مستقل"
+  },
+  "workerSnapshot": {
+    "pid": 25546,
+    "instanceId": "worker:25546:muxavfci-pkkxoh",
+    "startedAt": "2026-10-06T23:18:46.401Z",
+    "dispatcherTicks": 241,
+    "jobs": {
+      "intelligence-cycle": {
+        "runs": 1,
+        "running": false,
+        "lastError": null
+      },
+      "catalog-cycle": {
+        "runs": 1,
+        "running": true,
+        "lastError": null
+      },
+      "mirror-cycle": {
+        "runs": 1,
+        "running": false,
+        "lastError": null
+      },
+      "log-rotate": {
+        "runs": 1,
+        "running": false,
+        "lastError": null
+      },
+      "backup-rotation": {
+        "runs": 1,
+        "running": false,
+        "lastError": null
+      }
+    }
+  },
+  "tests": {
+    "file": "tests/pn010-migration.test.ts",
+    "suite": "PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker",
+    "pass": 10,
+    "fail": 0,
+    "required": 10
+  },
+  "files": {
+    "runtimeCore": [
+      "src/core/runtime/joblock.ts",
+      "src/core/runtime/job-queue.ts",
+      "src/core/runtime/jobs.ts",
+      "src/core/runtime/supervisor.ts",
+      "src/core/runtime/worker.ts",
+      "src/core/runtime/worker-status.ts"
+    ],
+    "entry": "scripts/runtime/worker.ts",
+    "wiring": "src/instrumentation.ts (RuntimeSupervisor جای دو start*Daemon)",
+    "scripts": [
+      "scripts/mirror/mirror-cycle.sh (تازه)",
+      "scripts/mirror/mirror-daemon.sh (پوشش‌دهنده)",
+      "scripts/log-rotate.ts (بدون تغییر)"
+    ],
+    "api": "src/app/api/runtime/health/route.ts (OWNER-only · تازه)",
+    "db": "prisma/schema.prisma + JobLock (تازه)",
+    "existChecks": {
+      "workerEntry": true,
+      "mirrorCycle": true,
+      "runtimeHealthRoute": true
+    }
+  }
+}

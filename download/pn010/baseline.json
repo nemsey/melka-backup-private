@@ -1,0 +1,76 @@
+{
+  "pn": "PN-010",
+  "block": "BLOCK 0 — حفاظت و وارسی",
+  "generatedAt": "2026-10-06T22:27:46.027Z",
+  "tripleCheck": {
+    "local": {
+      "head": "5a1f77461ca95053f9ce437ddc0fad52287f8036",
+      "headShort": "5a1f774",
+      "branch": "main",
+      "dirtyFiles": 1
+    },
+    "mirror": {
+      "remote": "auto-mirror (github.com/nemsey/melka-backup-private.git)",
+      "survivalCodePn001": "d4bc4097bde2b3b499b28429eeba75b575b9381e",
+      "note": "main=0fc5b0d قدیمی (GH001 سقف ۱۰۰MB) — طبق پروتکل شاخهٔ یتیم survival/code*"
+    },
+    "survivalPackage": {
+      "chainIndex": 10,
+      "package": "PN-009-20261006",
+      "commit": "90431a458808001d2e94b0ac8686c525a6124f52",
+      "manifestMd5Anchored": true
+    },
+    "verdict": "OK — محلی (5a1f774 = d4bc409 + ۱ کامیت خودکار شواهد هوشمندی) · آینه survival/code-pn001 = d4bc409 · بستهٔ بقا ۱۰"
+  },
+  "backup": {
+    "path": "/home/z/my-project/backups/pre-pn010-2026-10-06T22-27-43.db",
+    "bytes": 255156224,
+    "md5": "4a6f91aefa5faa52b89e5fe518bac8b2",
+    "vacuumMs": 382,
+    "integrity": "ok"
+  },
+  "buildWitness": {
+    "buildId": "d4bc409-20261006-2109",
+    "runningServerGitSha": "d4bc409",
+    "note": "سرور production از بیلد d4bc409-20261006-2109 زنده است"
+  },
+  "dbCounts": {
+    "PropertyRecord": 27677,
+    "RequestRecord": 25482,
+    "GraphNode": 107062,
+    "GraphEdge": 119908,
+    "OpportunityAlert": 677,
+    "ExpertProfile": 143,
+    "ExpertRecord": 293,
+    "Session": 81,
+    "SyncJobState": 3,
+    "AppMeta": 1,
+    "AuditLog": 605,
+    "AgentMemory": 133,
+    "AgentPolicyVersion": 7,
+    "PersonnelAccess": 0
+  },
+  "versions": {
+    "package": "1.7.0",
+    "bun": "1.3.14",
+    "node": "v24.21.0"
+  },
+  "backupsDirBefore": [
+    {
+      "file": "pre-pn010-2026-10-06T22-27-43.db",
+      "bytes": 255156224,
+      "mtime": "2026-10-06T22:27:43.742Z"
+    }
+  ],
+  "glmSchedule": {
+    "declaredBy": "GLM (قانون زمان‌بندی — خوداعلانی)",
+    "plan": "اجرای پیوستهٔ تک‌نشست با ایست وارسی پس از هر بلوک؛ هر بلوک پیش از گذر به بعدی شاهد می‌سازد؛ تست کامل ×۲ (دو-سبز) در BLOCK 6؛ کامیت‌ها در پایان بلوک‌های اصلی؛ هیچ گام زمان‌بندی‌شدهٔ خارجی وجود ندارد.",
+    "sessionStart": "2026-10-06T22:27:46.027Z"
+  },
+  "laws": {
+    "fileLawV2": "اجباری — All Tasks",
+    "completeOrderApplication": "بند‌به‌بند",
+    "stabilization031": "همه‌جا",
+    "autoExecute": false
+  }
+}

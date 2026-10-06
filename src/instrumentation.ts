@@ -4,11 +4,10 @@
  * ۱) HOTFIX-01: اعتبارسنجی fail-fast رازهای اجباری (SEC-1/SEC-2) —
  *    در production نبود MASTER_ACCESS_CODE یا MELK_TOKEN_KEY = عدم بوت.
  * ۲) HOTFIX-01: چرخش کلید رمزنگاری در startup فقط اگر ROTATION_PENDING=true.
- * ۳) حلقه همگام‌سازی خودکار: هر MELK_SYNC_INTERVAL_MINUTES دقیقه،
- *    داده واقعی از arus-api.melketabriz.ir استخراج می‌شود (با توکن ARM
- *    ذخیره‌شده‌ی آخرین ورود موفق). این حلقه برای مواقعی که سامانه ملک
- *    تبریز موقتاً قطع است حیاتی است — به‌محض بازگشت سرور، داده واقعی
- *    به‌طور خودکار استخراج و جایگزین می‌شود.
+ * ۳) PN-010 فاز ۲: RuntimeSupervisor — معماری «یک Web + یک Worker»؛
+ *    دیمن‌های قبلی (مغز/کاتالوگ/آینه/چرخش لاگ) اکنون کارهای صف Worker اند.
+ * ۴) P6548-recovery: قلاب خوددرمانی در بوت (Auto-Recovery — Boot Hook).
+ * ۵) حلقه همگام‌سازی خودکار (خاموش پیش‌فرض — MELK_BACKGROUND_SYNC=enabled).
  */
 
 // P6549 — import سطح‌بالا حذف شد: کامپایل Edge Runtime روی "node:fs" خطا می‌داد
@@ -94,21 +93,27 @@ export async function register(): Promise<void> {
     }
   }
 
-  // ---------- ۳-ب) دیمن مغز هوشمند v2 (فازهای ۷/۸/۹ — بازسازی) ----------
-  // حلقهٔ پس‌زمینهٔ سرنوشت: پیش‌بینی روی دادهٔ واقعی ARM + پیامد واقعی +
-  // ارزیابی صادقانه + یادگیری حلقه‌بسته. فقط خواندن از DB محلی و نوشتن
-  // شاهد در intelligence-data/ — بدون تماس خارجی؛ خاموشی با
-  // MELK_INTELLIGENCE_DAEMON=disabled.
-  {
-    const { startIntelligenceDaemon } = await import("@/lib/intelligence/daemon");
+  // ---------- ۳-ب) PN-010 فاز ۲: معماری Runtime «یک Web + یک Worker» ----------
+  // دیمن‌های درون‌فرایندی (مغز هوشمند + پایدارساز کاتالوگ) به فرایند Worker
+  // منتقل شدند (BLOCK 4) — اینجا فقط RuntimeSupervisor سبک (BLOCK 3):
+  //   • Worker را می‌فروشد اگر زنده نیست (idempotent)
+  //   • بازرسی ۶۰ ثانیه‌ای + احیای Worker در صورت مرگ
+  //   • خاموشی کامل: MELK_WORKER=disabled · خاموشی احیا: MELK_SUPERVISOR_RESPAWN=disabled
+  // کارهای Worker (با همان فاصله/کلیدهای خاموشی قبلی — صفر قطع خدمت):
+  //   intelligence-cycle (۶۰m) · catalog-cycle (۱m) · mirror-cycle (۶h)
+  //   log-rotate (۳۰m) · backup-rotation (۶h — ترمیم پایدار DIAG-DATA-005)
+  if (process.env.MELK_WORKER !== "disabled" && !(process.env.DATABASE_URL ?? "").includes("test")) {
+    const { RuntimeSupervisor } = await import("@/core/runtime/supervisor");
     const { db } = await import("@/lib/db");
-    startIntelligenceDaemon(db);
-
-    // P6530/گام ۶ (نکتهٔ بسیار مهم ۱) — دیمن پایدار اتصال و انتقال داده:
-    // برش‌های کوچک checkpointدار کاتالوگ آگهی‌ها/درخواست‌ها + غنی‌سازی؛
-    // به‌محض اتصال تازهٔ ARM، انتقال خودکار از آخرین نقطه ادامه می‌یابد.
-    const { startCatalogDaemon } = await import("@/lib/melk-api/catalog-daemon");
-    startCatalogDaemon(db);
+    const supervisor = RuntimeSupervisor.getInstance(db);
+    const result = supervisor.start();
+    const { logEvent: logRuntime } = await import("@/lib/logger");
+    logRuntime({
+      category: "system",
+      operation: "runtime-supervisor",
+      status: result.ok ? "ok" : "fail",
+      detail: { action: result.action, detail: result.detail ?? null, architecture: "1-web-1-worker" },
+    });
   }
 
   // ---------- ۴) P6548-recovery: قلاب وارسی بازگشت در بوت (Tier 4) ----------

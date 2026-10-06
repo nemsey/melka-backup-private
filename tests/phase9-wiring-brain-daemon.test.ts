@@ -295,11 +295,14 @@ describe("PHASE 9 §۱۰ — شفافیت مغز هوشمند", () => {
     expect(card).toContain("/api/intelligence/status");
   });
 
-  test("۱۰-۴) دیمن v2 در instrumentation راه‌اندازی می‌شود (قابل‌غیرفعال‌سازی با env)", async () => {
+  test("۱۰-۴) PN-010 فاز ۲: چرخهٔ مغز در Worker اجرا می‌شود (instrumentation → Supervisor → Worker؛ قابل‌غیرفعال‌سازی با env)", async () => {
     const source = readFileSync("src/instrumentation.ts", "utf8");
-    expect(source).toContain("startIntelligenceDaemon");
+    expect(source).toContain("RuntimeSupervisor"); // Web فقط Supervisor را نصب می‌کند
+    const jobs = readFileSync("src/core/runtime/jobs.ts", "utf8");
+    expect(jobs).toContain("intelligence-cycle"); // چرخهٔ مغز در صف Worker
+    expect(jobs).toContain("runIntelligenceDaemonTick"); // همان تیک واحد دیمن قبلی
     const daemon = readFileSync("src/lib/intelligence/daemon.ts", "utf8");
-    expect(daemon).toContain("MELK_INTELLIGENCE_DAEMON");
+    expect(daemon).toContain("MELK_INTELLIGENCE_DAEMON"); // کلید خاموشی عین قبل
   });
 });
 

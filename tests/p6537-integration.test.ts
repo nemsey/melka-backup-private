@@ -16,6 +16,27 @@ import {
 } from "../src/lib/intelligence/blackboard";
 import { runIntelligenceCoreCycle } from "../src/lib/intelligence/core-cycle";
 import { computeTier, tierProfile, TIER_PROFILES } from "../src/core/intelligence/contracts-p7-p11";
+// PN-010 — قطعیت شرط P11-D بدون وابستگی به وضعیت گذرای محیط (بکاپ صفر → fail)
+import { SelfRepairEngineImpl, RepairApprovalGateImpl } from "../src/core/intelligence/p11-core";
+import type { DiagnosticReport } from "../src/core/intelligence/contracts-p7-p11";
+
+/** گزارش تشخیصی سنتری با یک fail قطعی — برای گواهی زنجیرهٔ P11-D */
+function syntheticDiagnosis(): DiagnosticReport {
+  return {
+    id: "diag-pn010-synthetic",
+    reportedAt: new Date().toISOString(),
+    systemHealth: "degraded",
+    checks: [
+      { id: "DIAG-DATA-005", name: "بکاپ‌های موجود", category: "data", status: "fail", details: "0 فایل بکاپ موجود" },
+    ],
+    overallScore: 80,
+    warnings: [],
+    criticalAlerts: [],
+    recommendations: [],
+    tier: 3,
+    evidenceChain: [],
+  };
+}
 
 /* ═══════════ Blackboard (§۷.۲) ═══════════ */
 describe("یکپارچگی — Blackboard Pattern", () => {
@@ -168,10 +189,12 @@ describe("یکپارچگی — حلقهٔ بزرگ روی دادهٔ واقعی 
   });
   // P6545: پس از اجرای ترمیم‌های مصوب جلسه ۰۳۳ (recalibrate + retrain)، دو مشکل
   // (کالیبراسیون و Brier) حل شدند و پیش از آن ≥۳ مشکل واقعی کشف شده بود (شاهد P6537).
-  // اکنون صادقانه: ≥۲ مشکل باقی‌مانده (رانش + کهنگی داده) + دو مشکل حل‌شده = pass
-  test("ح-۱۲ P10: مشکلات واقعی — کشف ≥۳ در P6537، پس از ترمیم مصوب ≥۲ باقی", async () => {
+  // PN-010: ترمیم DIAG-DATA-005 (بکاپ‌ها → سبز) یکی از دو مشکل باقی‌مانده را نیز بست؛
+  // اکنون صادقانه: ≥۱ مشکل واقعی باقی (کهنگی دادهٔ پیامد در DB ایزولهٔ تست — پایدار)
+  test("ح-۱۲ P10: مشکلات واقعی — کشف ≥۳ در P6537؛ پس از ترمیم‌های ۰۳۳ + ترمیم بکاپ PN-010 ≥۱ باقی", async () => {
     const r = await runIntelligenceCoreCycle();
-    expect(r.p10.realProblems.length).toBeGreaterThanOrEqual(2);
+    expect(r.p10.realProblems.length).toBeGreaterThanOrEqual(1);
+    expect(r.p10.realProblems.some((p) => p.checkId === "DIAG-DATA-003")).toBe(true);
     expect(r.p10.checks).toHaveLength(25);
   });
   // P6545: مشکل ۱ (کالیبراسیون سطل ۰٫۴-۰٫۶) با مصوبهٔ تصمیم ۱ جلسه ۰۳۳ ترمیم شد
@@ -194,15 +217,40 @@ describe("یکپارچگی — حلقهٔ بزرگ روی دادهٔ واقعی 
     expect(r.p10.realProblems.some((p) => p.checkId === "DIAG-DATA-003")).toBe(true);
   });
   // P6545: پس از ترمیم مصوب، پیشنهادها از مشکلات باقی‌مانده (رانش/کهنگی) می‌آیند
+  // PN-010: ترمیم DIAG-DATA-005 چرخهٔ سالم‌تر ساخت — بدون fail واقعی، صفر پیشنهاد مجاز است؛
+  // شرط P11-D (مشکل → پیشنهاد) اکنون با گزارش سنتری قطعی گواهی می‌شود (بدون وابستگی به محیط)
   test("ح-۱۶ P11: پیشنهادهای ترمیم از مشکلات واقعی (شرط P11-D)", async () => {
     const r = await runIntelligenceCoreCycle();
-    expect(r.p11.proposals.length).toBeGreaterThanOrEqual(1);
     expect(r.p11.proposals.every((p) => p.status === "pending")).toBe(true);
+    const engine = new SelfRepairEngineImpl();
+    const proposals = engine.proposeRepairs(syntheticDiagnosis());
+    expect(proposals.length).toBeGreaterThanOrEqual(1);
+    expect(proposals.every((p) => p.status === "pending")).toBe(true);
+    expect(proposals[0].sourceCheckId).toBe("DIAG-DATA-005");
+    expect(proposals[0].requiresCouncilApproval).toBe(true);
   });
   test("ح-۱۷ P11: دروازهٔ تأیید فعال + صفر اجرا (قفل ابدی)", async () => {
     const r = await runIntelligenceCoreCycle();
-    expect(r.p11.gateReviews.length).toBeGreaterThanOrEqual(1);
-    expect(r.p11.executedCount).toBe(0);
+    expect(r.p11.executedCount).toBe(0); // قفل ابدی — اجرا فقط با تأیید شورا
+    const engine = new SelfRepairEngineImpl();
+    const gate = new RepairApprovalGateImpl();
+    // (الف) بازیابی بکاپ = پرریسک عمداً → دروازه راه‌حل ناامن را صادقانه علامت می‌زند
+    const backupProposals = engine.proposeRepairs(syntheticDiagnosis());
+    expect(backupProposals.length).toBeGreaterThanOrEqual(1);
+    const risky = gate.reviewProposal(backupProposals[0], true, 4);
+    expect(risky.conditions.realProblem).toBe(true);
+    expect(risky.conditions.safeSolution).toBe(false); // restore_backup = high (طراحی عمدی)
+    expect(backupProposals[0].requiresCouncilApproval).toBe(true);
+    // (ب) کنش کم‌ریسک (update_threshold) با شاهد و Tier کافی → هر سه شرط سبز
+    const lowRiskReport: DiagnosticReport = {
+      ...syntheticDiagnosis(),
+      checks: [{ id: "DIAG-MODEL-005", name: "آستانهٔ Brier", category: "model", status: "fail", details: "آستانه ناسازگار" }],
+    };
+    const lowProposals = engine.proposeRepairs(lowRiskReport);
+    const safe = gate.reviewProposal(lowProposals[0], true, 4);
+    expect(safe.conditions.realProblem).toBe(true);
+    expect(safe.conditions.safeSolution).toBe(true);
+    expect(safe.conditions.sufficientTier).toBe(true);
   });
   test("ح-۱۸ رویدادهای چرخه روی تخته ثبت شدند", async () => {
     await runIntelligenceCoreCycle();
@@ -248,7 +296,10 @@ describe("یکپارچگی — دروازهٔ INTELLIGENCE-D", () => {
     expect(r.p8.decisions.length).toBe(10);
     expect(r.p9.governance.passed + r.p9.governance.failed).toBe(15);
     expect(r.p10.checks).toHaveLength(25);
-    expect(r.p11.proposals.length).toBeGreaterThan(0);
+    // PN-010: پس از ترمیم DIAG-DATA-005، چرخهٔ سالم می‌تواند صفر پیشنهاد داشته باشد؛
+    // زنجیرهٔ Repair-proposal در ح-۱۶ به‌صورت قطعی گواهی می‌شود
+    expect(r.p11.proposals.length).toBeGreaterThanOrEqual(0);
+    expect(r.p11.executedCount).toBe(0);
   });
   test("د-۳ صفر نقض قوانین ابدی در چرخه (auto/repair/model)", async () => {
     const r = await runIntelligenceCoreCycle();

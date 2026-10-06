@@ -34,6 +34,8 @@ import { syncExpertDeepInfo } from "@/lib/experts/profile-store";
 import { syncMelkPublicCatalog } from "./melk-public";
 // P6547/گام دوم — همگام‌سازی ساعتی فهرست‌های مرجع انواع ARM (شناسه→نام)
 import { syncTypeRegistries } from "./type-registry";
+// PN-010 — کانال وضعیت مشترک Worker (فقط fs/path — بدون چرخهٔ وابستگی)
+import { readWorkerStatus } from "@/core/runtime/worker-status";
 
 /** فاصلهٔ پیش‌فرض تیک‌ها — دقیقه (PN-002 نکته ۵: لغو محدودیت — ۳→۱) */
 const DEFAULT_INTERVAL_MINUTES = 1;
@@ -113,8 +115,30 @@ function state() {
   return g.__melkCatalogDaemon;
 }
 
-/** وضعیت فعلی دیمن (برای endpoint شفافیت) */
+/** وضعیت فعلی دیمن (برای endpoint شفافیت) — PN-010: منبع حقیقت = Worker */
 export function catalogDaemonStatus(): CatalogDaemonStatus {
+  // ۱) کانال مشترک Worker — اگر چرخهٔ کاتالوگ آنجا اجرا می‌شود، وضعیت او مبناست
+  try {
+    const status = readWorkerStatus();
+    const entry = status?.jobs?.["catalog-cycle"];
+    if (entry) {
+      const d = (entry.domain ?? {}) as Partial<CatalogDaemonStatus>;
+      const fallback = { ...state().status };
+      return {
+        enabled: d.enabled ?? fallback.enabled,
+        // حین اجرای اول (قبل از نخستین domain) هم «در حال اجرا» صادقانه گزارش شود
+        running: entry.running || (d.running ?? false),
+        lastTickAt: d.lastTickAt ?? (entry.lastRunAt ? new Date(entry.lastRunAt).getTime() : fallback.lastTickAt),
+        lastSuccessAt: d.lastSuccessAt ?? fallback.lastSuccessAt,
+        lastError: entry.lastError ?? d.lastError ?? fallback.lastError,
+        ticks: d.ticks ?? fallback.ticks,
+        lastResult: (d.lastResult as CatalogDaemonStatus["lastResult"]) ?? fallback.lastResult,
+      };
+    }
+  } catch {
+    // کانال در دسترس نیست → مسیر قدیمی
+  }
+  // ۲) میراث: درون‌حافظه‌ای (اجرای در-جا در همین فرایند)
   return { ...state().status };
 }
 

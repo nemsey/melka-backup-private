@@ -2496,3 +2496,28 @@ Stage Summary:
 - Semantic Color Registry حالا منبع یگانهٔ حقیقت: مقدار → خانهٔ پالت → {Light, Dark} → Filter/List/Chart/Badge/KPI — تغییر «فروش» از سبز به فیروزه‌ای از این پس یک‌نقطه‌ای است
 - حکم گیت: UI_VISUAL_REFINEMENT_COMPLETE
 - شواهد: download/pn009/ (UI-AUDIT.md + ۱۲ اسکرین‌شات) · کامیت + بستهٔ بقا chainIndex=10
+
+---
+Task ID: PN-010
+Agent: main (Super Z / GLM)
+Task: ملکا-شورا-ن۰۱۰-۱۴۰۵ — فاز ۲: معماری Runtime پایدار (BLOCK 0-7 + قانون فایل نسخهٔ ۲)
+
+Work Log:
+- **BLOCK 0 (حفاظت):** سه‌گانه سازگار (محلی 5a1f774 = d4bc409 + ۱ خودکار · آینه survival/code-pn001 = d4bc409 · بستهٔ بقا ۱۰) · بکاپ VACUUM 243.3MB (md5 4a6f91ae · integrity ok) · baseline.json · زمان‌بندی GLM خوداعلانی
+- **BLOCK 1 (ترمیم DIAG-DATA-005):** دو ریشهٔ قرمزی کشف شد: (۱) بازنشانی چهارم محیط backups/ را خالی کرد + هیچ چرخش پایداری نبود (۲) سرور standalone با process.chdir به .next/standalone می‌رود → شمارشگر همیشه صفر می‌شمرد (حتی وقتی بکاپ بود!) · ترمیم: بکاپ دوم VACUUM + انتقال به بستهٔ PN-010 + CHAIN.json زنجیرهٔ ۱۱ + رفع نقطهٔ شمارش (MELKA_REPO_DIR — عین قرارداد قلاب خوددرمانی) + کار backup-rotation در Worker (۶ ساعت · ۳ نسل) · راستی‌آزمایی: PASS «۳ فایل بکاپ» · قرق integrity ok · شمارش کلیدی کامل · شاهد diag-data-005-repair.json
+- **BLOCK 2 (JobLock با Heartbeat):** مدل JobLock در schema (jobId @id · instanceId · acquiredAt · lastHeartbeat · expiresAt · metadata + ایندکس expiresAt) · push به custom.db + test.db · سرویس acquire/heartbeat/release/cleanup + withLock (ضربان ۳۰ ثانیه · TTL ۹۰=۳ ضربان · بند ۲.۳) · خودترمیمی ensureJobLockTable (DDL یکسان با prisma — DB بازیابی‌شده از بستهٔ قدیم هرگز به‌خاطر جدول مفقود نمی‌میرد) · ۱۵/۱۵ تست + شاهد زندهٔ قفل‌ها
+- **BLOCK 3 (RuntimeSupervisor سبک):** src/core/runtime/supervisor.ts — ساختار دقیق مصوب (Web Health + Worker Health → صف داخلی · حداکثر دو فرایند) · start (spawn مستقل + idempotent + بازرسی ۶۰ ثانیه‌ای) · stop (توقف تدریجی با درخواست DB) · health (کانال مشترک) · restart (run-request) · روت OWNER-only /api/runtime/health · ۱۵/۱۵ تست + شاهد زنده
+- **BLOCK 4 (مهاجرت دیمن‌ها):** Intelligence→Worker (intelligence-cycle · تاخیر ۴۵s و فاصله ۶۰m عین قبل) · Catalog→Worker (catalog-cycle · ۶۰s/۱m عین قبل) · Auto-Recovery→Boot Hook (ماند — مصوب) · Mirror→Worker (mirror-cycle.sh چرخهٔ واحد استخراج‌شده · دیمن قدیم پوشش‌دهنده · وابستگی re-arm دستی حذف شد) · LogRotator→Worker (۳۰m) · +Backup Rotation تازه · کلیدهای خاموشی همه محترم · ۱۰/۱۰ تست · شاهد daemon-migration.json
+- **BLOCK 5 (مرز هوشمندی):** هر ۲ فایل PN-007 (cross-tile.ts · domain-agents.ts) از قبل import type داشتند (مجاز) — گارد اصلاح‌شدهٔ ن۰۰۷ · audit --strict = PASS · شاهد intelligence-boundary-audit.log (+نسخهٔ .log طبق قانون فایل)
+- **BLOCK 6 (CI + تست):** ≥۵۰ تست تازه: JobLock ۱۵ + Supervisor ۱۵ + Migration ۱۰ + DIAG-DATA-005 ۱۰ = ۵۰ · CI هشت‌گامی ×۲ (پس از هر اصلاح) PASS کامل — مجموعهٔ کامل: ۱۸۴۲/۰ × ۲ یکسان (رکورد جدید — ۱۷۹۲ + ۵۰ تازه) · tsc دوسپر صفر · lint صفر خطا (۱ هشدار مبنا) · ۳ audit سبز · روت‌ها ۴۶ ≤ قرقرهٔ ۴۷ · بودجه: فقط پیک Build = PARTIAL مستند ۰۰۶
+- **تست‌های اصلاح‌شده (اصلاح تست، نه کد):** ۲ تست wiring قدیمی → گارد wiring جدید (Supervisor→Worker) · ۳ تست P10/P11 که ناخواسته به «بکاپ صفر = fail» تکیه داشتند → قطعی با گزارش سنتری (سیستم سالم‌تر از تست قدیمی — عین درس ن۰۰۶) · ح-۱۲ صادقانه ≥۱ + DATA-003 پایدار · flake زندهٔ ۶-ج (تأخیر شبکهٔ ARM در VPN مالک) → timeout ۳۰s
+- **سه باگ واقعی از دل اجرای زنده (شاهد هر یک):** (۱) تایمر دیسپچر unref → مرگ بی‌سروصدا Worker بلافاصله پس از بوت — رفع + احیای خودکار Supervisor اثبات شد (۲۳:۱۸) (۲) rename مرورگر-چند-تایی در acquire موازی → اصلاح تست به XOR (۳) هرس بکاپ در تساوی میلی‌ثانیه فایل تازه را قربانی می‌کرد — رفع با تضمین بقای فایل همین چرخش (۴) chunks ناهمگون پس از ری‌استارت watchdog حین build → ری‌استارت تمیز
+- **Cutover زنده:** بیلد تازه + ری‌استارت → معماری ۱+۱ برقرار: Web (server.js) + Worker (bun scripts/runtime/worker.ts) · ۵ کار هرکدام در زمان‌بندی طراحی‌شدهٔ دقیق اجرا شد (مغز +۴۵s · کاتالوگ +۶۰s · بکاپ +۹۰s · آینه +۵m · لاگ +۱۰m) · استقلال فرایندها: ری‌استارت Web → Worker بی‌وقفه ادامه داد · آینه: پوش ok (main + survival/code)
+- **کانال وضعیت مشترک:** upload/.runtime/runtime-status.json (gitignored · پایدار) — UI تنظیمات «دیمن v2 زنده — ۱ اجرا · آخرین اجرای حلقه ۲۳:۱۹» از Worker می‌خواند
+
+Stage Summary:
+- حکم فاز: RUNTIME_ARCHITECTURE_COMPLETE — شعار برآورده شد: «یک Web، یک Worker، یک قفل هوشمند — پایدار برای فردا.»
+- DIAG-DATA-005 برای نخستین بار در تاریخ پروژه سبز زنده است (۲۴ pass/۱ warn/۰ fail) با سازوکار پایدار چرخشی
+- معماری: Web ۱ + Worker ۱ + JobLock با ضربان + Supervisor سبک با احیای خودکار — دیمن‌های موازی برای همیشه بازنشینی شدند
+- هر ۷ بلوک با شاهد: baseline · diag-data-005-repair · joblock-test · supervisor-test · daemon-migration · intelligence-boundary(-audit).log · tests-run1/2 + ci-eight-steps + ۶ اسکرین‌شات
+- انتظار مالک: publish از پنل (در صورت نیاز) · تصمیم LFS برای main (GH001) با مالک

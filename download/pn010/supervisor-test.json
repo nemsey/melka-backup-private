@@ -1,0 +1,83 @@
+{
+  "pn": "PN-010",
+  "block": "BLOCK 3 — RuntimeSupervisor (سبک)",
+  "generatedAt": "2026-10-06T23:30:57.102Z",
+  "code": "src/core/runtime/supervisor.ts (بدون منطق دامنه — قید بند ۳.۳)",
+  "structure": {
+    "architecture": "1-web-1-worker",
+    "constraint": "حداکثر دو فرایند — نه بیشتر (قید کمیسیون متخصص: خودش Daemon Monster نشود)",
+    "tree": [
+      "RuntimeSupervisor",
+      "├── Web Process Health (pid/uptime/memory/buildId)",
+      "└── Worker Process Health → Internal Job Queue (۵ کار + ضربان ۳۰ ثانیه)"
+    ]
+  },
+  "api": {
+    "start": "spawn مستقل Worker اگر زنده نیست (idempotent) + بازرسی ۶۰ ثانیه‌ای + احیا",
+    "stop": "درخواست توقف تدریجی (ردیف DB) — کار جاری تمام شود سپس خروج",
+    "health": "Web + Worker + صف کار داخلی از کانال وضعیت مشترک",
+    "restart": "درخواست اجرای فوری یک کار خاص (run-request در DB)"
+  },
+  "live": {
+    "web": {
+      "pid": 25932,
+      "startedAt": "Tue Oct  6 23:25:38 2026",
+      "buildId": "5a1f774-20261006-2329"
+    },
+    "worker": {
+      "pid": 25546,
+      "instanceId": "worker:25546:muxavfci-pkkxoh",
+      "startedAt": "2026-10-06T23:18:46.401Z",
+      "lastHeartbeatAt": "2026-10-06T23:30:46.541Z",
+      "stopping": false,
+      "heartbeatFresh": true
+    },
+    "dispatcherTicks": 146,
+    "jobs": {
+      "intelligence-cycle": {
+        "runs": 1,
+        "running": false,
+        "lastError": null
+      },
+      "catalog-cycle": {
+        "runs": 1,
+        "running": true,
+        "lastError": null
+      },
+      "mirror-cycle": {
+        "runs": 1,
+        "running": false,
+        "lastError": null
+      },
+      "log-rotate": {
+        "runs": 1,
+        "running": false,
+        "lastError": null
+      },
+      "backup-rotation": {
+        "runs": 1,
+        "running": false,
+        "lastError": null
+      }
+    },
+    "psEvidence": [
+      "25546 /usr/local/bin/bun /home/z/my-project/scripts/runtime/worker.ts",
+      "25932 bun /home/z/my-project/.next/standalone/server.js"
+    ],
+    "selfHealingProven": "رویداد ۲۳:۱۸ — مرگ Worker اول (باگ unref کشف‌شده) → بازرسی ۶۰ ثانیه‌ای Supervisor → احیای خودکار Worker جدید (PID 25546)",
+    "independenceProven": "ری‌استارت Web (23:24) → Worker بدون وقفه ادامه داد (فرایندهای مستقل)"
+  },
+  "healthEndpoint": "GET /api/runtime/health — OWNER-only (شفافیت مالک)",
+  "tests": {
+    "file": "tests/pn010-supervisor.test.ts",
+    "suite": "PN-010 BLOCK 3 — RuntimeSupervisor سبک",
+    "pass": 15,
+    "fail": 0,
+    "required": 15
+  },
+  "twoGreen": {
+    "total": 1842,
+    "pass": 1842,
+    "fail": 0
+  }
+}

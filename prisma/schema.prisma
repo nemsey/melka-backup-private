@@ -1468,3 +1468,20 @@ model OpportunityAlert {
   @@index([listingCode])
   @@index([requestId])
 }
+
+/// PN-010 (BLOCK 2) — قفل کار توزیع‌شده با ضربان قلب:
+/// جلوگیری از اجرای تکراری یک کار وقتی چند نمونه از Worker/سرور زنده‌اند.
+/// acquire → heartbeat (۳۰ ثانیه) → release / انقضا خودکار (cleanup).
+model JobLock {
+  jobId         String   @id
+  /// شناسهٔ نمونهٔ دارندهٔ قفل (مثلاً worker:<pid>:<boot-id>)
+  instanceId    String
+  acquiredAt    DateTime @default(now())
+  lastHeartbeat DateTime @default(now())
+  /// زمان انقضا — قفل منقضی = متروکه؛ قابل تصرف توسط نمونهٔ دیگر
+  expiresAt     DateTime
+  /// JSON آزاد (pid، وضعیت کار، …) — هرگز راز
+  metadata      String?
+
+  @@index([expiresAt])
+}
