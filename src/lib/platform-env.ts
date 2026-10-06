@@ -49,6 +49,10 @@ export interface PlatformEnvResult {
 const CANDIDATE_PATHS: Array<() => string> = [
   () => path.join(process.cwd(), "env.platform.json"),
   () => path.join(process.cwd(), "..", "env.platform.json"),
+  // PN-008 BLOCK 2: سرور standalone با cwd=.next/standalone بالا می‌آید —
+  // دو سطح بالاتر = ریشهٔ پروژه (جایی که env.platform.json واقعی است)
+  () => path.join(process.cwd(), "..", "..", "env.platform.json"),
+  () => path.join(process.cwd(), "..", "..", "..", "env.platform.json"),
 ];
 
 /**

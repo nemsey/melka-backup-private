@@ -19,6 +19,7 @@ import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { audit, createSession, OWNER_DISPLAY_NAME } from "@/lib/auth/session";
+import { clientIp } from "@/lib/auth/client-ip";
 
 const MASTER_PERSONNEL = "000000000";
 
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
       throw new MelkApiError("OTP_INVALID", "کد مدیر باید ۸ رقم باشد.", 400, false);
     }
 
-    const ip = request.headers.get("x-forwarded-for") ?? undefined;
+    const ip = clientIp(request); // PN-008 BLOCK 3 — Trusted Proxy (تک‌نقطه تصمیم)
     const rate = await checkRate(MASTER_PERSONNEL, "MASTER_LOGIN", ip);
     if (!rate.allowed) {
       throw new MelkApiError("RATE_LIMITED", rate.reason ?? "تلاش بیش از حد مجاز.", 429, false);

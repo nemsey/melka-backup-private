@@ -1,0 +1,33 @@
+{
+  "test": "3.2.2 — آزمون قلاب بوت: بوت سرور با DB تخریب‌شدهٔ قرق",
+  "executedAt": "2026-10-06T05:59:59.946620+00:00",
+  "setup": {
+    "server": "بوت production واقعی (bun .next/standalone/server.js) روی پورت 3100",
+    "env": "DATABASE_URL=recovery-drill/db/custom.db · MELKA_REPO_DIR=recovery-drill · دیمن‌ها خاموش (MELK_INTELLIGENCE/CATALOG_DAEMON=disabled)",
+    "note": "مسیر test-recovery دقیقِ دستور شامل واژهٔ test است که قلاب بوت عمداً خود را روی آن خاموش می‌کند (گارد تست‌های خود پروژه) — قرق recovery-drill با همان نقش ساخته شد"
+  },
+  "beforeBoot": {
+    "masterCodeHashNull": true,
+    "graphNodes": 0,
+    "graphEdges": 0
+  },
+  "afterHook": {
+    "masterCodeHashNull": false,
+    "graphNodes": 56442,
+    "graphEdges": 53222
+  },
+  "recoveryTotalSec": 25,
+  "drillServerVersion": "{\"buildId\":\"7d50985-20261006-0548\",\"builtAt\":\"2026-10-06T05:48:47.701Z\",\"gitSha\":\"7d50985\",\"env\":\"production\",\"source\":\"baked\",\"runtime\":\"nodejs\",\"serverTime\":\"2026-10-06T05:59:57.887Z\"}",
+  "bootCheckLogLines": 2,
+  "recoveryLogTail": "{\"at\":\"2026-10-06T05:59:53Z\",\"kind\":\"db-wipe-detected\",\"cause\":\"master-hash-null\"}\n{\"at\":\"2026-10-06T05:59:53Z\",\"kind\":\"check\",\"verdict\":\"ROLLBACK-DB-WIPE\",\"head\":\"7d50985\"}\n{\"at\":\"2026-10-06T05:59:53Z\",\"kind\":\"auto-recovery-start\",\"verdict\":\"ROLLBACK-DB-WIPE\"}\n{\"at\":\"2026-10-06T05:59:53Z\",\"kind\":\"guard-recovery-start\",\"cause\":\"yes:master-hash-null\"}\n{\"at\":\"2026-10-06T05:59:53Z\",\"kind\":\"guard-recovery-ok\",\"via\":\"PN-DRILL-01\",\"cause\":\"yes:master-hash-null\",\"mode\":\"drill\"}",
+  "drillMarkers": "[2026-10-06T05:59:53Z] guard-detect:yes:master-hash-null\n[2026-10-06T05:59:53Z] would-stop-servers (در تولید: pkill watchdog+server)\n[2026-10-06T05:59:53Z] backup-taken:guard-pre-recovery-2026-10-06T05-59-53.db\n[2026-10-06T05:59:53Z] db-restored-from:PN-DRILL-01\n[2026-10-06T05:59:53Z] env-restored-if-missing:yes\n[2026-10-06T05:59:53Z] would-build-if-missing (در تولید: bun run build)\n[2026-10-06T05:59:53Z] would-restart-prod (در تولید: start-prod-daemon.py)\n[2026-10-06T05:59:53Z] guard-recovery-ok",
+  "drillServerLogTail": "{\"ts\":\"2026-10-06T05:59:32.995Z\",\"level\":\"info\",\"category\":\"system\",\"operation\":\"platform-env\",\"status\":\"ok\",\"requestId\":\"71fdc092-9f0f-4e5e-879d-1d3153852a63\",\"traceId\":\"71fdc092-9f0f-4e5e-879d-1d3153852a63\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"applied\":[\"MELK_TOKEN_KEY\"],\"source\":\"/home/z/my-project/.next/standalone/env.platform.json\",\"note\":\"platform deploy strips .env/.env.local; real env always takes precedence\"}}\n{\"ts\":\"2026-10-06T05:59:33.053Z\",\"level\":\"info\",\"category\":\"system\",\"operation\":\"build-witness\",\"status\":\"ok\",\"requestId\":\"aab64cb3-c561-4436-a7a1-7e679f02ceff\",\"traceId\":\"aab64cb3-c561-4436-a7a1-7e679f02ceff\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"buildId\":\"7d50985-20261006-0548\",\"gitSha\":\"7d50985\",\"env\":\"production\",\"source\":\"baked\",\"builtAt\":\"2026-10-06T05:48:47.701Z\"}}\n{\"ts\":\"2026-10-06T05:59:53.070Z\",\"level\":\"info\",\"category\":\"system\",\"operation\":\"auto-recovery-boot-check\",\"status\":\"ok\",\"requestId\":\"644390bf-39f6-4e4c-9737-202e2f8f16e1\",\"traceId\":\"644390bf-39f6-4e4c-9737-202e2f8f16e1\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"pid\":11880}}\n{\"ts\":\"2026-10-06T05:59:53.113Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/version\",\"status\":\"start\",\"requestId\":\"777457e3-f33a-40af-9ea4-cd7efcf230c2\",\"traceId\":\"777457e3-f33a-40af-9ea4-cd7efcf230c2\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"httpStatus\":null}}\n{\"ts\":\"2026-10-06T05:59:57.884Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/version\",\"status\":\"start\",\"requestId\":\"977af71d-1fef-4c5a-8dc4-c79e2cfc1e22\",\"traceId\":\"977af71d-1fef-4c5a-8dc4-c79e2cfc1e22\",\"userId\":null,\"tenantId\":\"melk-tabriz\",\"agentId\":null,\"tileId\":null,\"duration\":null,\"errorCode\":null,\"detail\":{\"httpStatus\":null}}",
+  "checks": {
+    "قلاب_بوت_اجرا_شد": true,
+    "تشخیص_تخریب": true,
+    "بازیابی_خودکار_هش": true,
+    "بازیابی_خودکار_گراف": true,
+    "سرور_قرق_بالا_آمد": true
+  },
+  "verdict": "PASS"
+}

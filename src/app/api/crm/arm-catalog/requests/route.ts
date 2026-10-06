@@ -21,6 +21,7 @@
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
 import { getRequestRepository, getIntegrationRepository, getExpertRepository } from "@/core/repositories";
@@ -51,6 +52,9 @@ function num(v: string | null): number | undefined {
 export async function GET(request: NextRequest) {
   const guard = await requireSessionAsync(request);
   if (guard instanceof MelkApiError) return errorResponse(guard);
+  // PN-008 BLOCK 7 (بند ۷.۴) — دسترسی کاشی («arm-requests») از PersonnelAccess
+  const tileErr = await requireTileAccessFor(guard, "arm-requests");
+  if (tileErr) return errorResponse(tileErr);
 
   try {
     const sp = request.nextUrl.searchParams;

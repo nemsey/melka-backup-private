@@ -1,0 +1,21 @@
+{
+  "task": "PN-008 BLOCK 3 — آزمون جعل IP + Trusted Proxy",
+  "at": "2026-10-06T13:46:00Z",
+  "tests": [
+    {
+      "test": "جعل X-Forwarded-For: 5.6.7.8 از مسیر عمومی preview (پشت Caddy پلتفرم)",
+      "method": "POST https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/auth/master-login",
+      "result": "رد شد — IP ثبت‌شده: 21.0.0.1 (واقعی) — Caddy هدر جعل‌شده را بازنویسی کرد",
+      "verdict": "مسیر عمومی مطمئن است"
+    },
+    {
+      "test": "جعل X-Forwarded-For: 1.2.3.4 مستقیم به localhost:3000 (درون کانتینر)",
+      "method": "POST http://localhost:3000/api/auth/master-login",
+      "result": "ثبت شد به‌عنوان 1.2.3.4 — قابل جعل فقط از درون کانتینر",
+      "verdict": "پذیرفته و مستند — پورت 3000 به بیرون اکسپوز نیست؛ نرخ‌سنج اصلی کدپرسنلی‌محور است"
+    }
+  ],
+  "caddyfile": "خواندن /app/Caddyfile برای کاربر z مجاز نیست (Permission denied — root:root) — الگوی رفتاری از آزمون تجربی استنتاج شد",
+  "fix": "src/lib/auth/client-ip.ts — تک‌نقطه تصمیم: X-Real-IP مطلق → نخستین مدخل XFFِ معتبر → undefined؛ ۶ روت مهاجرت کردند",
+  "docs": "docs/SECURITY-NOTES.md"
+}

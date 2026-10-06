@@ -1,0 +1,71 @@
+{
+  "case": "PN-006-BLOCK0-BASELINE",
+  "generatedAt": "2026-10-06T05:33:48.480Z",
+  "directive": "ملکا-شورا-ن۰۰۶-۱۴۰۵ (فاز ۰-B)",
+  "tripleMatch": {
+    "localHEAD": "7d50985ef3ddd3f810842aeec09bdda64aacf721",
+    "expectedStartHEAD": "7d50985",
+    "match": true,
+    "gitHubMirror_survival_code_pn001": "7d50985ef3ddd3f810842aeec09bdda64aacf721 (verified via git ls-remote auto-mirror)",
+    "survivalPackage": "upload/.survival/PN-005C-20261006 → commit 7d50985, chainIndex=6"
+  },
+  "server": {
+    "mode": "production",
+    "buildId": "7d50985-20261006-0422",
+    "buildIdEqualsHEAD": true,
+    "rssMB": 241.1,
+    "process": "bun .next/standalone/server.js (production)",
+    "health": {
+      "ok": true,
+      "mode": "real",
+      "armApiBase": "https://arus-api.melketabriz.ir/api/apm/",
+      "pmApiBase": "https://pm-api.melketabriz.ir/api/",
+      "masterAuth": "env",
+      "masterLayersConsistent": true,
+      "time": "2026-10-06T05:33:48.446Z"
+    }
+  },
+  "db": {
+    "counts": {
+      "ListingRecord": 0,
+      "RequestRecord": 20740,
+      "TransactionRecord": 764,
+      "ExpertRecord": 293,
+      "GraphNode": 56442,
+      "GraphEdge": 53222,
+      "OpportunityAlert": 215,
+      "AppMeta": 1,
+      "Prediction": -1,
+      "CustomerRecord": 0,
+      "PropertyRecord": 11504,
+      "listings_ads": 11504
+    },
+    "masterCodeHashPresent": true,
+    "masterCodeHashPrefix": "56c008c21458…",
+    "note": "آگهی=PropertyRecord (نام مدل Prisma: Property)"
+  },
+  "autoRecovery": {
+    "recoveryGuardScript": true,
+    "watchdogRunning": true,
+    "ramMonitorRunning": true,
+    "recoveryLog": true,
+    "lastRecoveryEntries": [
+      "{\"at\":\"2026-10-06T04:21:38Z\",\"kind\":\"check\",\"verdict\":\"WARN-UNSNAPSHOTTED\",\"head\":\"ee68a6c\"}",
+      "{\"at\":\"2026-10-06T04:24:15Z\",\"kind\":\"check\",\"verdict\":\"HEALTHY\",\"head\":\"7d50985\"}",
+      "{\"at\":\"2026-10-06T04:24:39Z\",\"kind\":\"check\",\"verdict\":\"HEALTHY\",\"head\":\"7d50985\"}"
+    ]
+  },
+  "acceptanceTargets": {
+    "listings": 11501,
+    "requests": 6500,
+    "graphNodes": 36650,
+    "graphEdges": 47579,
+    "alerts": 139
+  },
+  "backup": {
+    "path": "/home/z/my-project/backups/pre-pn006-2026-10-06T05-33-48.db",
+    "method": "VACUUM INTO (Prisma raw, live-safe)",
+    "sizeMB": 171.6,
+    "md5": "b1e92ef5dc599d058500d8b1622f0c41"
+  }
+}

@@ -29,7 +29,8 @@ import { JobStateService, JOB_IDS } from "./job-state";
 import { emitEvent } from "@/lib/intelligence/blackboard";
 // P6546/گام پنجم-پ-۴ و گام ششم-۲ — پایدارساز بروزرسانی جامع
 import { enrichTransactionsInfo } from "./tx-info-enrichment";
-import { getPmSyncToken, syncPmPersonnelInfo } from "./pm-acc-sync";
+import { getPmSyncToken } from "./pm-acc-sync";
+import { syncExpertDeepInfo } from "@/lib/experts/profile-store";
 import { syncMelkPublicCatalog } from "./melk-public";
 // P6547/گام دوم — همگام‌سازی ساعتی فهرست‌های مرجع انواع ARM (شناسه→نام)
 import { syncTypeRegistries } from "./type-registry";
@@ -332,11 +333,11 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
           s.status.lastError = "TX_INFO_SLICE_FAILED"; // نرم — تیک بعدی ادامه می‌دهد
         }
     }
-    // P6546/گام چهارم — برش استخدام پرسنل PM (توکن ماندگار PM؛ مستقل از نشست)
+    // PN-008 (ثانیاً) — برش عمق پروفایل کارشناسان PM (توکن ماندگار PM؛ مستقل از نشست)
     try {
       const pmToken = await getPmSyncToken();
       if (pmToken) {
-        const pm = await syncPmPersonnelInfo(pmToken, { maxRows: PM_INFO_ROWS_PER_TICK });
+        const pm = await syncExpertDeepInfo(pmToken, { maxRows: PM_INFO_ROWS_PER_TICK });
         result.pmInfoEnriched = pm.enriched;
       }
     } catch {

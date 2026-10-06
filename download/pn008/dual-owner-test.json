@@ -1,0 +1,22 @@
+{
+  "task": "PN-008 BLOCK 6 — دسترسی دوگانهٔ مالک (کد مستر + کد پرسنلی → OWNER)",
+  "at": "2026-10-06T14:05:00Z",
+  "law": "قانون هویت دوگانهٔ مالک — ملکا-شورا-ن۰۰۸-۱۴۰۵",
+  "implementation": {
+    "ownerPersonnelCodes": "OWNER_PERSONNEL_CODES=410031320 در .env.local + الگوی بقای env.local.template",
+    "roleResolution": "src/lib/access/owner-codes.ts (خالص) + resolveDashboardRole در provider (هردو مسیر ورود پرسنلی) + تضمین نهایی در روت personnel-login",
+    "routes": {
+      "pathA": "POST /api/auth/master-login {masterCode} → OWNER (مسیر موجود)",
+      "pathB": "POST /api/auth/personnel-login {personnelCode, otp} → در OWNER_PERSONNEL_CODES ⇒ OWNER (روت تازه بند ۶.۲)",
+      "pathB_others": "سایر کدها ⇒ CONSULTANT (دسترسی طبق PersonnelAccess بلاک ۷)"
+    }
+  },
+  "tests": {
+    "file": "tests/phase1-privilege.test.ts — describe «BLOCK 6»",
+    "case6a": "کد 410099950 (در OWNER_PERSONNEL_CODES تست) + user.type=realtor → resolveDashboardRole = OWNER ✓",
+    "case6b": "کد 410031310 (غیرمالک) → CONSULTANT ✓",
+    "case6c": "روت personnel-login: OTP سه‌رقمی → 400 (گارد فرمت پیش از شبکه) · کد پرسنلی کوتاه → 400 · هرگز 200 بدون احراز ✓",
+    "note": "تست E2E کامل مسیر B نیازمند پیامک واقعی به مالک است — عمداً触发 نشد (احترام به مالک)؛ نقش OWNER در این مسیر با تست واحد resolveDashboardRole + تضمین روت پوشش داده شد"
+  },
+  "ownerCombinationLaw": "رکورد PersonnelAccess برای کد مالک (حتی level=none) بی‌اثر است — resolveAllowedTiles نقش OWNER را پیش از رکورد برمی‌گرداند (تست ۷-د سبز)"
+}

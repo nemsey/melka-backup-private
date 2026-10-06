@@ -41,7 +41,7 @@ export function AreasFileCell({ requestCode, areaNames }: { requestCode: string;
   if (areaNames.length <= AREAS_FILE_THRESHOLD) {
     return (
       <span className="inline-flex items-start gap-1.5 leading-relaxed">
-        <MapPin className="w-3.5 h-3.5 text-rose-500 mt-0.5 shrink-0" aria-hidden />
+        <MapPin className="w-3.5 h-3.5 text-sec-m2-700 mt-0.5 shrink-0" aria-hidden />
         {areaNames.join("، ")}
       </span>
     );
@@ -58,7 +58,7 @@ export function AreasFileCell({ requestCode, areaNames }: { requestCode: string;
         aria-label={`فایل مناطق درخواست کد ${faDigits(requestCode)} — ${faNumber(areaNames.length)} منطقه`}
         onClick={() => setOpen(true)}
       >
-        <FileText className="w-3.5 h-3.5 text-teal-600 shrink-0" aria-hidden />
+        <FileText className="w-3.5 h-3.5 text-sec-m2-700 shrink-0" aria-hidden />
         فایل مناطق
         <Badge variant="secondary" className="text-[10px] px-1.5 py-0 tabular-nums">
           {faNumber(areaNames.length)}
@@ -87,7 +87,7 @@ export function AreasFileCell({ requestCode, areaNames }: { requestCode: string;
                   {faNumber(i + 1)}
                 </span>
                 <span className="font-medium leading-relaxed">{name}</span>
-                <MapPin className="w-3 h-3 text-rose-500 ms-auto shrink-0" aria-hidden />
+                <MapPin className="w-3 h-3 text-sec-m2-700 ms-auto shrink-0" aria-hidden />
               </li>
             ))}
           </ol>

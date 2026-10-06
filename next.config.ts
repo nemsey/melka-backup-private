@@ -43,6 +43,12 @@ const nextConfig: NextConfig = {
   output: "standalone",
   generateBuildId: () => buildId,
   /* =============================================================================
+   * PN-006 BLOCK 2.2.4 — خاموشی صریح source map های مرورگر در production
+   * (پیش‌فرض Next هم false است؛ اینجا صریح شد تا در بازبینی‌های آینده
+   *  پیک Build و حجم بستهٔ استقرار قابل اتکا باشد.)
+   * ========================================================================== */
+  productionBrowserSourceMaps: false,
+  /* =============================================================================
    * P6528 — لاغرسازی بستهٔ استقرار (ریشهٔ واقعی «Failed» دامنهٔ publish)
    * -----------------------------------------------------------------------------
    * file-tracing خروجی standalone، فهرست‌های غیرعملیاتی پروژه را هم ردیابی و
@@ -89,13 +95,6 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/sw.js",
-        headers: [
-          { key: "Cache-Control", value: "no-store, must-revalidate" },
-          { key: "Service-Worker-Allowed", value: "/" },
-        ],
-      },
-      {
-        source: "/sw-v3.js",
         headers: [
           { key: "Cache-Control", value: "no-store, must-revalidate" },
           { key: "Service-Worker-Allowed", value: "/" },

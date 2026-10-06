@@ -1,0 +1,28 @@
+{
+  "case": "PN-006-BLOCK6-WORKER-TEST",
+  "source": "آزمون فشار CPU فاز ۰-A (PN-004) — ۲ کارگر در برابر ۴ کارگر روی ۲ هستهٔ فیزیکی",
+  "tests": [
+    {
+      "test": "۲ کارگر (میلهٔ مرجع)",
+      "workers": 2,
+      "duration_s": 30,
+      "avg_total_cpu_pct": 100.2,
+      "avg_workers_cpu_pct": 72.8,
+      "conclusion": "CPU کل ~۱۰۰٪ (۲ هسته) — افزودن کارگر سرعت را بالا نبرد"
+    },
+    {
+      "test": "۴ کارگر",
+      "workers": 4,
+      "duration_s": 30,
+      "avg_total_cpu_pct": 100.2,
+      "avg_workers_cpu_pct": 72.7,
+      "conclusion": "CPU کل ~۱۰۰٪ (۲ هسته) — افزودن کارگر سرعت را بالا نبرد"
+    }
+  ],
+  "conclusion": "با ۲ کارگر و ۴ کارگر، مصرف کل CPU همان ~۱۰۰٪ (معادل ۲ هستهٔ کامل) است — یعنی فقط ۲ هستهٔ مؤثر در تخصیص فعلی موجود است؛ درخواست ما: ۴ هسته.",
+  "cgroup_evidence": {
+    "memory_limit": "4GiB (سقف نرم cgroup)",
+    "cpuset": "0-1",
+    "cpu_quota": "-1 (بدون سهمیهٔ اضافی)"
+  }
+}

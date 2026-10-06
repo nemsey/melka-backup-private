@@ -89,11 +89,12 @@ export async function buildPeopleGraph(db: PrismaClient, service = new GraphServ
   }
   sources.experts = experts.length;
 
-  const personnel = await db.pmPersonnelRecord.findMany({ select: { code: true, fullName: true, businessTitle: true, mobileNumber: true } });
+  // PN-008 (ثانیاً) — پرسنل PM از ExpertProfile (منبع یگانهٔ فهرست تازه)
+  const personnel = await db.expertProfile.findMany({ select: { personnelCode: true, fullName: true, businessTitle: true, mobile: true } });
   for (const p of personnel) {
-    if (!p.code) continue;
+    if (!p.personnelCode) continue;
     // اگر همان کارشناس هست، فقط نقش PM را به ویژگی‌ها می‌افزاییم (کلید یکتا)
-    nodes.push({ nodeType: "expert", refId: p.code, label: p.fullName ?? p.code, props: { businessTitle: p.businessTitle, mobile: p.mobileNumber, source: "pm" } });
+    nodes.push({ nodeType: "expert", refId: p.personnelCode, label: p.fullName ?? p.personnelCode, props: { businessTitle: p.businessTitle, mobile: p.mobile, source: "pm" } });
   }
   sources.personnel = personnel.length;
 

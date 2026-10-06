@@ -12,6 +12,7 @@ import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse } from "@/lib/auth/guard";
 import { audit } from "@/lib/auth/session";
+import { clientIp } from "@/lib/auth/client-ip";
 
 export async function POST(request: NextRequest) {
   let personnelCode = "";
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       throw new MelkApiError("INVALID_PERSONNEL_CODE", "قالب کد پرسنلی نامعتبر است (۶ تا ۱۲ رقم).", 400, false);
     }
 
-    const ip = request.headers.get("x-forwarded-for") ?? undefined;
+    const ip = clientIp(request); // PN-008 BLOCK 3 — Trusted Proxy (تک‌نقطه تصمیم)
     const rate = await checkRate(personnelCode, "REQUEST_OTP", ip);
     if (!rate.allowed) {
       throw new MelkApiError("RATE_LIMITED", rate.reason ?? "درخواست بیش از حد مجاز.", 429, false);

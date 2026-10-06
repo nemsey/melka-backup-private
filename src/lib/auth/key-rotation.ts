@@ -120,13 +120,32 @@ export async function rotateEncryptionKeys(oldSecret: string, newSecret: string)
       if (!v) continue;
       const plain = decryptWith(v, oldKey);
       if (plain !== null) {
-        if (oldKey.equals(newKey)) bump("PmConnection", "already");
+        if (oldKey.equals(newKey)) bump("PmConnection", "already")
         else {
           await db.pmConnection.update({ where: { id: p.id }, data: { [col]: encryptWith(plain, newKey) } });
           bump("PmConnection", "rotated");
         }
       } else if (decryptWith(v, newKey) !== null) bump("PmConnection", "already");
       else bump("PmConnection", "unreadable");
+    }
+  }
+
+  // ---------- ۲-ب) ArmConnection — خزانهٔ ماندگار ARM (PN-008 BLOCK 2: شکاف پوشش رفع شد) ----------
+  const ac = await db.armConnection.findMany();
+  for (const a of ac) {
+    for (const col of ["tokenEnc", "refreshTokenEnc"] as const) {
+      const v = a[col] as string | null;
+      bump("ArmConnection", "scanned");
+      if (!v) continue;
+      const plain = decryptWith(v, oldKey);
+      if (plain !== null) {
+        if (oldKey.equals(newKey)) bump("ArmConnection", "already");
+        else {
+          await db.armConnection.update({ where: { id: a.id }, data: { [col]: encryptWith(plain, newKey) } });
+          bump("ArmConnection", "rotated");
+        }
+      } else if (decryptWith(v, newKey) !== null) bump("ArmConnection", "already");
+      else bump("ArmConnection", "unreadable");
     }
   }
 

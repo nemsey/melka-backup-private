@@ -1,0 +1,90 @@
+{
+  "task": "PN-008 ثانیاً — پرکردن اولیهٔ فهرست تازهٔ کارشناسان از PM",
+  "at": "2026-10-06T13:23:42.761Z",
+  "durationS": 176,
+  "registry": {
+    "rows": 143,
+    "error": null
+  },
+  "deep": {
+    "totalPending": 143,
+    "enriched": 139,
+    "failed": 4,
+    "emptyAtSource": 0
+  },
+  "counts": {
+    "sale": 179,
+    "rent": 63,
+    "attributedTx": 275,
+    "contracts": 1
+  },
+  "fillRates": {
+    "fullName": "143/143",
+    "mobile": "143/143",
+    "personnelCode": "143/143",
+    "branchTitle": "137/143",
+    "hireDate": "139/143",
+    "address": "139/143",
+    "roleTitle": "143/143",
+    "employmentType": "139/143",
+    "headManager": "138/143",
+    "telephone": "139/143",
+    "postalCode": "139/143",
+    "voipExtension": "133/143",
+    "city": "139/143",
+    "saleCountPositive": "59/143 (اصلاح سنجهٔ شاهد — ردیف‌های با شمار ≥۱)",
+    "rentCountPositive": "26/143 (اصلاح سنجهٔ شاهد — ردیف‌های با شمار ≥۱)"
+  },
+  "samples": [
+    {
+      "fullName": "آرمین طاهرفر",
+      "personnelCode": "410031310",
+      "branch": "باغلارباغی",
+      "hireDate": "2026-05-10",
+      "address": "منجم کوی پروردگاری بن بست شهید با فتوت پ",
+      "saleCount": 0,
+      "rentCount": 0
+    },
+    {
+      "fullName": "آرمین یاری",
+      "personnelCode": "410031175",
+      "branch": null,
+      "address": "",
+      "saleCount": 1,
+      "rentCount": 2
+    },
+    {
+      "fullName": "آیدین  امجدی",
+      "personnelCode": "410031321",
+      "branch": null,
+      "address": "",
+      "saleCount": 0,
+      "rentCount": 0
+    },
+    {
+      "fullName": "ابراهیم سوار",
+      "personnelCode": "410031269",
+      "branch": "ارتش",
+      "hireDate": "2025-09-20",
+      "address": "خیابان آخونی کوی شهید علومی پلاک 25 طبقه",
+      "saleCount": 1,
+      "rentCount": 0
+    },
+    {
+      "fullName": "احد انصاری",
+      "personnelCode": "410031337",
+      "branch": "ارتش",
+      "hireDate": "2026-07-26",
+      "address": "حافظ خیابان باروقی",
+      "saleCount": 0,
+      "rentCount": 0
+    }
+  ],
+  "verification": {
+    "rowsWithAll7MandatoryColumns": 137,
+    "expertsWithSale": 59,
+    "expertsWithRent": 26,
+    "requirementMinimum10": "PASS",
+    "note": "سنجهٔ salePos/rentPos پیش از این در اسکریپت به‌اشتباه false را «پر» می‌شمرد — اصلاح شد"
+  }
+}

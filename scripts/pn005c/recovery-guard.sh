@@ -55,8 +55,20 @@ logr guard-recovery-start "\"cause\":\"$NEEDS\""
 echo "[guard] تخریب تشخیص داده شد: $NEEDS — آغاز بازیابی"
 
 # ── گام ۲: تازه‌ترین بستهٔ بقا ──
-PKG=$(ls -d upload/.survival/P[0-9]* 2>/dev/null | sort -V | tail -1)
-if [[ -z "$PKG" || ! -f "$PKG/custom.db" ]]; then
+# PN-006 BLOCK 3: الگوی P[0-9]* به بسته‌های PN-XXX کور بود (کشف آزمون قرق)
+# الگوی تازه: همهٔ دایرکتوری‌های P* با custom.db — نسخه‌مرتب، آخرین = تازه‌ترین
+# PN-007 BLOCK 2: ساختار استاندارد ن۰۰۷ — DB در زیرپوشهٔ db/ قرار می‌گیرد؛
+# هر دو چیدمان پشتیبانی می‌شود (تخت قدیمی + db/ استاندارد) تا زنجیرهٔ بقا هرگز نشکند.
+PKG=""
+PKG_DB=""
+for d in $(ls -d upload/.survival/P*/ 2>/dev/null | sort -V); do
+  if [[ -f "${d%/}/db/custom.db" ]]; then
+    PKG="${d%/}"; PKG_DB="${d%/}/db/custom.db"
+  elif [[ -f "${d%/}/custom.db" ]]; then
+    PKG="${d%/}"; PKG_DB="${d%/}/custom.db"
+  fi
+done
+if [[ -z "$PKG" ]]; then
   logr guard-recovery-fail '"cause":"no-survival-package"'
   echo "[guard] بستهٔ بقا یافت نشد"; exit 1
 fi
@@ -73,12 +85,17 @@ if pgrep -f 'next-server|standalone/server.js' >/dev/null 2>&1; then
   sleep 2
 fi
 
-# ── گام ۴: بکاپ وضعیت فعلی (هرگز بدون بکاپ) ──
+# ── گام ۴: بکاپ وضعیت فعلی (هرگز بدون بکاپ — با WAL: هر سه فایل) ──
 TS=$(date -u +%Y-%m-%dT%H-%M-%S)
-[[ -f db/custom.db ]] && cp db/custom.db "upload/dataset-backups/guard-pre-recovery-${TS}.db" 2>/dev/null || true
+# PN-008: DB در حالت WAL است — بدون -wal/-shm، کامیت‌های اخیر گم می‌شوند
+for _f in "" "-wal" "-shm"; do
+  [[ -f "db/custom.db${_f}" ]] && cp "db/custom.db${_f}" "upload/dataset-backups/guard-pre-recovery-${TS}.db${_f}" 2>/dev/null || true
+done
 
 # ── گام ۵: بازگرداندن DB + env ──
-if ! cp "$PKG/custom.db" db/custom.db; then
+# PN-008: پیش از جایگزینی، WAL/SHM کهنهٔ DB قبلی حذف شود (خطر آلودگی/خرابی)
+rm -f db/custom.db-wal db/custom.db-shm
+if ! cp "$PKG_DB" db/custom.db; then
   logr guard-recovery-fail '"cause":"db-copy-failed"'
   exit 1
 fi

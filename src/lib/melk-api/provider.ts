@@ -24,6 +24,7 @@ import {
   mapArmTradedRow,
   mapArmVisitRow,
 } from "./adapters";
+import { isOwnerPersonnelCode } from "@/lib/access/owner-codes";
 import {
   MelkApiError,
   type ArmServiceStatus,
@@ -130,6 +131,9 @@ export function resolveDashboardRole(
   managerPersonnelCode: string
 ): UserRole {
   if (managerPersonnelCode && personnelCode === managerPersonnelCode) return "OWNER";
+  // PN-008 BLOCK 6 — قانون هویت دوگانهٔ مالک: کدپرسنلی مالک (OWNER_PERSONNEL_CODES)
+  // از هر مسیر ورود (verify-otp یا personnel-login) ⇒ نقش OWNER با دسترسی کامل.
+  if (isOwnerPersonnelCode(personnelCode)) return "OWNER";
   const type = String(user?.type ?? "").toLowerCase();
   // realtor = کارشناس املاک؛ انواع مدیریتی → در داشبورد همان مشاور با دسترسی داده کامل است
   return "CONSULTANT";

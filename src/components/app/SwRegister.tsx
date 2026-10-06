@@ -29,7 +29,7 @@ export function SwRegister() {
     };
     const register = async () => {
       try {
-        const registration = await navigator.serviceWorker.register("/sw-v5.js");
+        const registration = await navigator.serviceWorker.register("/sw.js");
         await registration.update().catch(() => {});
         if (registration.waiting) setWaiting(registration.waiting);
         registration.addEventListener("updatefound", () => {

@@ -1,0 +1,27 @@
+{
+  "task": "PN-008 BLOCK 7 — مدیریت دسترسی کدپرسنلی‌ها به داشبورد",
+  "at": "2026-10-06T14:05:00Z",
+  "levels": { "full": "همهٔ کاشی‌ها", "limited": "کاشی‌های انتخابی", "none": "هیچ کاشی" },
+  "schema": "PersonnelAccess { personnelCode @id, level, allowedTiles JSON, grantedAt, grantedBy, notes }",
+  "api": {
+    "GET /api/admin/personnel-access": "فهرست + رجیستری ۱۰ کاشی + کدهای مالک — فقط OWNER",
+    "POST /api/admin/personnel-access": "ثبت/ویرایش {personnelCode, level, allowedTiles} — فقط OWNER",
+    "DELETE /api/admin/personnel-access/[code]": "حذف رکورد — فقط OWNER"
+  },
+  "ui": "کارت «مدیریت دسترسی کارشناسان» در تنظیمات عمومی (PersonnelAccessSection) — فرم کد + سه رادیو + چک‌باکس کاشی‌ها + فهرست رکوردها + حذف؛ فقط مالک رender می‌کند",
+  "enforcement": {
+    "guard": "requireTileAccessFor (تک‌نقطه تصمیم) در روت‌های داده: arm-listings · arm-requests · transactions-contracts · experts · agent insight/feedback (tileId پویا)",
+    "sessionGET": "tileAccess تازه resolve می‌شود (تغییر دسترسی بلافاصله اعمال می‌شود)",
+    "dashboardHome": "فیلتر کاشی‌ها بر اساس tileAccess (OWNER همیشه همه؛ settings همیشه مجاز)",
+    "default": "CONSULTANT بدون رکورد = none (امنیت پیش‌فرض)"
+  },
+  "tests": {
+    "file": "tests/phase1-privilege.test.ts — describe «BLOCK 7»",
+    "7a": "بدون رکورد → none/[] ✓",
+    "7b": "limited با دو کاشی → فقط همان دو ✓",
+    "7c": "full → همهٔ ۱۰ کاشی ✓",
+    "7d": "قانون ترکیب: OWNER با رکورد none → باز هم full ✓",
+    "7e": "گارد در عمل: مشاور limited(فقط آگهی) → کاشی کارشناسان 403 + کاشی آگهی 200 ✓",
+    "7f": "API ادمین ثبت/حذف ✓"
+  }
+}

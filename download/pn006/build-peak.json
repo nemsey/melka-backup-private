@@ -1,0 +1,93 @@
+{
+  "case": "PN-006-BLOCK2-BUILD-PEAK",
+  "directive": "ملکا-شورا-ن۰۰۶-۱۴۰۵ BLOCK 2 — کاهش پیک Build RAM",
+  "generatedAt": "2026-10-06T05:50:00Z",
+  "method": "tree-sampler: مجموع RSS کل درخت فرایند بیلد، نمونه‌برداری ۱ ثانیه‌ای (scripts/pn006/tree-peak.py). نکتهٔ صادقانه: /usr/bin/time در کانتینر موجود نیست (exit 127) — پیک‌سنج درختی دقیق‌تر از time -v برای درخت چندفرایندی است.",
+  "experiments": [
+    {
+      "label": "baseline",
+      "desc": "بیلد تکی پیش‌فرض (next build) — پیکربندی آغاز جلسه",
+      "exitCode": 0, "wallSec": 56, "treePeakMB": 2135.1, "processes": 5,
+      "top": [
+        {"proc": "next build (main)", "rssMB": 986.1},
+        {"proc": "jest-worker processChild (تایپ‌چک)", "rssMB": 973.1},
+        {"proc": "postcss.js", "rssMB": 165.1}
+      ]
+    },
+    {
+      "label": "optimized1",
+      "desc": "پس از حذف scripts/** از tsconfig بیلد (بند ۲.۲.۱) + productionBrowserSourceMaps:false صریح (بند ۲.۲.۴)",
+      "exitCode": 0, "wallSec": 51, "treePeakMB": 2200.3, "processes": 5,
+      "top": [
+        {"proc": "next build (main)", "rssMB": 1854.7},
+        {"proc": "postcss.js", "rssMB": 173.3},
+        {"proc": "jest-worker (تایپ‌چک)", "rssMB": 161.2}
+      ],
+      "note": "اثر ساختاری ۲.۲.۱: worker تایپ‌چک ۹۷۳MB → ۱۶۱MB (−۸۱۲MB)؛ اما فرایند اصلی Turbopack به ۱۸۵۵MB رسید (جابه‌جایی فاز، نه کاهش خالص در این اجرا)"
+    },
+    {
+      "label": "cap1200",
+      "desc": "بند ۲.۲.۳ — سقف V8: NODE_OPTIONS=--max-old-space-size=1200 روی فاز compile",
+      "exitCode": 0, "wallSec": 33, "treePeakMB": 2020.7,
+      "top": [{"proc": "next build (main)", "rssMB": 1850.2}],
+      "verdict": "بی‌اثر — حافظهٔ غالب Native (Rust/Turbopack) است نه heap V8؛ سقف V8 رد شد"
+    },
+    {
+      "label": "split-compile",
+      "desc": "بند ۲.۲.۳ — تقسیم بیلد، فاز ۱: next build --experimental-build-mode compile",
+      "exitCode": 0, "wallSec": 36, "treePeakMB": 2035.7,
+      "top": [{"proc": "next build (compile)", "rssMB": 1859.4}]
+    },
+    {
+      "label": "rayon1",
+      "desc": "RAYON_NUM_THREADS=1 (رشتهٔ واحد کامپایل راست) روی فاز compile — گرم‌کش",
+      "exitCode": 0, "wallSec": 33, "treePeakMB": 1742.9,
+      "top": [{"proc": "next build (compile)", "rssMB": 1570.0}]
+    },
+    {
+      "label": "split-generate",
+      "desc": "بند ۲.۲.۳ — تقسیم بیلد، فاز ۲: --experimental-build-mode generate",
+      "exitCode": 0, "wallSec": 5, "treePeakMB": 277.5,
+      "top": [{"proc": "next build (generate)", "rssMB": 203.7}],
+      "note": "پیک کل تقسیم‌شده = max(compile, generate) نه مجموع — جداسازی فازها موفق"
+    },
+    {
+      "label": "webpack",
+      "desc": "آزمون مسیر جایگزین webpack — خروج ۱ (خطای نوع خروجی مسیر در src/app/api/intelligence/status/route.ts: «ENGINES is not a valid Route export field»)",
+      "exitCode": 1, "wallSec": 52, "treePeakMB": 1550.0,
+      "verdict": "BLOCKED — بیلد webpack روی این درخت کد شکست می‌خورد؛ مسیر رد شد (Blocker→Alternative→Decision→Continue)"
+    },
+    {
+      "label": "final",
+      "desc": "دستور رسمی نهایی در package.json: RAYON_NUM_THREADS=1 + تقسیم compile→generate (پس از invalidate کش توسط اجرای webpack)",
+      "exitCode": 0, "wallSec": 38, "treePeakMB": 1978.9, "processes": 4,
+      "top": [
+        {"proc": "next build (compile)", "rssMB": 1798.1},
+        {"proc": "postcss.js", "rssMB": 169.2}
+      ],
+      "note": "اجرای نسبتاً سرد (پس از شکست webpack)؛ در اجرای گرم‌کش ۱۷۴۳MB — دامنهٔ واقعی ۱.۷-۲.۰GB"
+    }
+  ],
+  "appliedChanges": [
+    "tsconfig.json: exclude += scripts/** (بند ۲.۲.۱) — خطای TS در scripts دیگر Build را نمی‌شکند؛ worker تایپ‌چک ۸۱۲MB لاغر شد",
+    "tsconfig.scripts.json: پیکربندی جداگانهٔ ابزارهای scripts/ (برای ویرایشگر و بررسی اختیاری)",
+    "next.config.ts: productionBrowserSourceMaps: false صریح (بند ۲.۲.۴)",
+    "package.json build: RAYON_NUM_THREADS=1 + تقسیم بیلد compile→generate (بند ۲.۲.۳)",
+    "skipLibCheck و incremental از قبل فعال بودند (بند ۲.۲.۲ — تأیید شد، تغییری لازم نبود)"
+  ],
+  "metrics": {
+    "پیکRSSبیلد_قبل_MB": 2135.1,
+    "پیکRSSبیلد_بعد_MB_best": 1742.9,
+    "پیکRSSبیلد_بعد_MB_final_cold": 1978.9,
+    "زمانBuild_قبل_s": 56,
+    "زمانBuild_بعد_s": 38,
+    "خطایTSدرScripts_بیلد_را_می‌شکند": false,
+    "هدف_پیک_MB": 1500,
+    "حکم": "PARTIAL — هدف ۱.۵GB محقق نشد؛ کف حافظهٔ Native راست‌گرای Turbopack ~۱.۶-۱.۸GB است. کاهش از ۲۱۳۵ به ۱۷۴۳-۱۹۷۹MB (−۸٪ تا −۱۸٪) + صرفهٔ ساختاری ۸۱۲MB در worker تایپ‌چک + Build سبز و سرور production با بیلد تازه بالا آمد."
+  },
+  "serverVerification": {
+    "apiVersion": {"buildId": "7d50985-20261006-0548", "env": "production", "gitSha": "7d50985"},
+    "rssMB_after_boot": 144,
+    "health": "ok=true, masterLayersConsistent=true"
+  }
+}

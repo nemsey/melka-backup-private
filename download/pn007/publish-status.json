@@ -1,0 +1,15 @@
+{
+  "case": "PN-007-BLOCK5-PUBLISH-HEALTH",
+  "probedAt": "2026-10-06T14:27:41.243192+00:00",
+  "publish": {
+    "url": "https://c1vdh8442240-d.space-z.ai/",
+    "http": 500
+  },
+  "preview": {
+    "url": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/",
+    "http": 200
+  },
+  "verdict": "PUBLISH_BROKEN_PREVIEW_ALIVE",
+  "note": "پایش پیوسته — پروب 1",
+  "ownerAction": "از پنل Z.AI دوباره Publish کنید — راهنما: docs/PUBLISH-TROUBLESHOOTING.md"
+}

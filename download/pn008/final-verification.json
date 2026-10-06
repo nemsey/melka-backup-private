@@ -1,0 +1,18 @@
+{
+  "task": "PN-008 — وارسی نهایی زندهٔ پس از بوت قطعی",
+  "at": "2026-10-06T14:33:00Z",
+  "build": { "buildId": "996b353-20261006-1433", "gitSha": "996b353", "env": "production", "source": "baked", "buildIdEqualsHEAD": true },
+  "health": { "ok": true, "masterAuth": "env", "masterLayersConsistent": true },
+  "live": {
+    "expertsList": "GET /api/experts → 143 ردیف با ستون‌های الزامی (شعبه/کدپرسنلی/استخدام/آدرس)",
+    "expertsSync": "POST /api/experts/sync → رجیستری 143 + عمق + شمارش (مبایعه 179/اجاره 63) در 9s",
+    "combinedFilter": "شعبه×بازهٔ مبایعه×بازهٔ استخدام — زنده سبز",
+    "sessionTileAccess": "مالک → full/10 کاشی",
+    "ipSpoofPublicPath": "XFF جعلی 9.8.7.6 → ثبت 21.0.0.1 واقعی (جعل رد شد)",
+    "visuals": ["01-home-owner.png", "02-experts-new-list.png", "03-experts-table.png", "04-personnel-access-settings.png"]
+  },
+  "tests": { "total": 1792, "pass": 1787, "fail": 5, "failClass": "کلاس مستند داده‌محور intelligence (پیش‌موجود)", "twoGreens": "ایده‌نت ×۲", "securitySuite": "22/22", "expertsSuite": "25/25" },
+  "ci": "CI PASS هشت‌گامی + audit-reproducibility 6/6 REPRODUCIBLE",
+  "survival": { "package": "upload/.survival/PN-008-20261006", "chainIndex": 9, "sizeMB": 293, "files": 16 },
+  "commits": ["ca80e37 (اولاً+ثانیاً)", "218745b (فاز ۱ امنیت)", "8877eab (CI)", "9f0b204 (بقا)", "996b353 (گزارش+ورک‌لاگ+WAL-ردیابی‌رفع)"]
+}

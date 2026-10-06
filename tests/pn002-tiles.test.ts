@@ -375,7 +375,7 @@ describe("PN-002 §۴ — گام ۶ (حذف توضیحات + ستون‌ها + �
   });
 
   test("۴-۷) M4 — کد پرسنلی خالی «-» نمایش داده می‌شود (بند ۲ گام ۴)", () => {
-    expect(M4_SRC).toContain("این رکورد در سامانهٔ PM کد پرسنلی ندارد");
+    expect(M4_SRC).toContain('<span className="text-muted-foreground font-bold">-</span>'); // PN-008: قاعدهٔ «-» لاغیر
   });
 });
 

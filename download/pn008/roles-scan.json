@@ -1,0 +1,542 @@
+{
+ "task": "PN-008 BLOCK 4 — اسکن ایستای نقش‌ها",
+ "at": "2026-10-06T13:46:57.958280",
+ "totalRoutes": 64,
+ "routes": [
+  {
+   "route": "/agent/[tileId]/feedback",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/agent/[tileId]/insight",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/agent/[tileId]/policy",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/agent/[tileId]/stats",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/arm/connection",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/auth/master-login",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/auth/request-otp",
+   "methods": [
+    "POST"
+   ],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/auth/session",
+   "methods": [
+    "GET",
+    "PATCH",
+    "DELETE"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/auth/verify-otp",
+   "methods": [
+    "POST"
+   ],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/connection/reset",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/connection/status",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/coverage",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/arm-catalog/listings",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/arm-catalog/requests",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/arm-catalog/sync",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/branches",
+   "methods": [
+    "GET",
+    "PUT",
+    "DELETE"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/contracts",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/customer-club",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/data-freshness",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/export/[entity: listings|requests|transactions|experts]",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/finance/commission",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/finance",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/import/[entity: listings|requests|transactions|experts]",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/interactions",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/meta",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/transactions",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/crm/transactions/sync",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/divar/ads/[token]/register",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/divar/ads/[token]/reject",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/divar/ads/[token]",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/divar/ads",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/divar/connection",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/divar/locations",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/divar/scan",
+   "methods": [
+    "POST",
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/divar/settings",
+   "methods": [
+    "GET",
+    "PUT"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/experts/export",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/experts",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/experts/sync",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/gap/connection",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/graphs",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/health",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/indicators",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/instagram/connection",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/intelligence/blackboard",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/intelligence/status",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/listings/{id}/instagram",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/listings/{id}",
+   "methods": [
+    "GET",
+    "PATCH"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/listings/{id}/transfer-crm",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/listings",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/market-index",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/matching",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/melk-public/sync",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/opportunity-alerts",
+   "methods": [
+    "GET",
+    "PATCH"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/pm/connection",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/requests/{id}/events",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/requests/{id}/register",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/requests/{id}",
+   "methods": [
+    "GET",
+    "PATCH"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/requests/meta/form",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/requests",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/sync/all",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/sync/jobs",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/sync",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/users/lookup",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/version",
+   "methods": [
+    "GET"
+   ],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  }
+ ]
+}

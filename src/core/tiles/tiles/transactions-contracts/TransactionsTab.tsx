@@ -48,7 +48,7 @@ import {
   Tooltip as RTooltip,
   Legend,
 } from "recharts";
-import { KpiCard, useTileData, TileCoverageTable, ExcelImportButton, type DataSourceInfo } from "@/components/app/shared";
+import { KpiCard, useTileData, TileCoverageTable, ExcelImportButton, FilterChip, type DataSourceInfo } from "@/components/app/shared";
 import { api, apiBlob, downloadBlob } from "@/lib/client/api";
 // PN-002 گام ۶-۲ — اعلان‌های خروجی اکسل
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +56,8 @@ import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/cor
 import { classifyContract, CONTRACT_KIND_FILTER_LABELS, CONTRACT_KIND_FILTER_VALUES } from "@/lib/contract-classify";
 import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull } from "@/lib/format";
 // P6547/گام پنجم — نظام رنگ مشترک فیلتر↔فهرست (هارمونی تضمینی) + شعبهٔ PM در حق‌السهم
-import { branchBadgeClass, valueSoftClass, valueSolidClass } from "@/lib/value-colors";
+// PN-009 مرحله E — رنگ KPI/چارت/سرستون‌ها نیز از رجیستری یگانه (قانون ۱۲/۱۴ دستور)
+import { branchBadgeClass, valueSoftClass, valueSolidClass, valueIconPair, valueChartVar } from "@/lib/value-colors";
 import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
@@ -162,6 +163,11 @@ interface TxResponse {
 const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
 
 export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode }) {
+  // PN-009 مرحله E — لحن‌های معنایی از رجیستری: مبایعه‌نامه=سبز، اجاره=بنفش (هم‌خانوادهٔ چیپ/ستون)
+  const saleTone = valueIconPair("مبایعه‌نامه");
+  const rentTone = valueIconPair("اجاره");
+  const saleChartVar = valueChartVar("مبایعه‌نامه");
+  const rentChartVar = valueChartVar("اجاره");
   const { toast } = useToast();
   const isMobile = useIsMobile();
   // B.۱ (ملکا-شورا-۱۴۰۵-۰۱۷) — فیلترها در موبایل جمع‌شونده؛ در دسکتاپ همیشه باز
@@ -331,16 +337,16 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
             value={faNumber(typeCounts.sale)}
             icon={Home}
             iconAs="div"
-            iconWrapperClassName="bg-teal-100 dark:bg-teal-950"
-            iconColorClassName="text-teal-600 dark:text-teal-400"
+            iconWrapperClassName={saleTone.wrapper}
+            iconColorClassName={saleTone.icon}
           />
           <KpiCard
             label="اجاره (شامل تمدید)"
             value={faNumber(typeCounts.rent)}
             icon={TrendingUp}
             iconAs="div"
-            iconWrapperClassName="bg-amber-100 dark:bg-amber-950"
-            iconColorClassName="text-amber-600"
+            iconWrapperClassName={rentTone.wrapper}
+            iconColorClassName={rentTone.icon}
           />
           <KpiCard
             label="بدون قرارداد ثبت‌شده"
@@ -370,9 +376,9 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                   <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={32} />
                   <RTooltip formatter={(value: number, name: string) => [faNumber(value), SERIES_FA[name as "sale" | "rent" | "total"] ?? name]} contentStyle={{ direction: "rtl", borderRadius: 12, fontSize: 12 }} />
                   <Legend formatter={(v: string) => SERIES_FA[v as "sale" | "rent" | "total"] ?? v} wrapperStyle={{ direction: "rtl", fontSize: 12 }} />
-                  <Line type="monotone" dataKey="sale" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 2.5, fill: "var(--chart-1)" }} />
-                  <Line type="monotone" dataKey="rent" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 2.5, fill: "var(--chart-2)" }} />
-                  <Line type="monotone" dataKey="total" stroke="var(--chart-3)" strokeWidth={3.5} dot={{ r: 3.5, fill: "var(--chart-3)" }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="sale" stroke={saleChartVar} strokeWidth={2} dot={{ r: 2.5, fill: saleChartVar }} />
+                  <Line type="monotone" dataKey="rent" stroke={rentChartVar} strokeWidth={2} dot={{ r: 2.5, fill: rentChartVar }} />
+                  <Line type="monotone" dataKey="total" stroke="var(--primary)" strokeWidth={3.5} dot={{ r: 3.5, fill: "var(--primary)" }} activeDot={{ r: 6 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </CardContent>
@@ -387,12 +393,12 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
             <CardContent>
               <div className="grid grid-cols-3 gap-3 text-xs">
                 {([
-                  ["مبایعه‌نامه", topExperts.sale],
-                  ["اجاره", topExperts.rent],
-                  ["مجموع", topExperts.total],
-                ] as const).map(([title, list]) => (
+                  ["مبایعه‌نامه", topExperts.sale, `${saleTone.wrapper} ${saleTone.icon}`],
+                  ["اجاره", topExperts.rent, `${rentTone.wrapper} ${rentTone.icon}`],
+                  ["مجموع", topExperts.total, "bg-primary/10 text-primary"],
+                ] as const).map(([title, list, toneClass]) => (
                   <div key={title} className="min-w-0">
-                    <div className="text-center text-[11px] font-bold rounded-md bg-primary/10 text-primary py-1 mb-2">۱۰ برتر — {title}</div>
+                    <div className={`text-center text-[11px] font-bold rounded-md py-1 mb-2 ${toneClass}`}>۱۰ برتر — {title}</div>
                     {list.length === 0 ? (
                       <p className="text-[10px] text-muted-foreground text-center leading-relaxed">معامله‌ای با مشاور ثبت‌شده نیست</p>
                     ) : (
@@ -511,8 +517,8 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
             <div className="space-y-1.5">
               <Label>قیمت (تومان)</Label>
               <div className="grid grid-cols-2 gap-2">
-                <Input id="f-priceFrom" aria-label="قیمت از (تومان)" inputMode="numeric" placeholder="از ۹٬۰۰۰٬۰۰۰٬۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", e.target.value)} className="text-[11px] font-bold" />
-                <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲٬۰۰۰٬۰۰۰٬۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", e.target.value)} className="text-[11px] font-bold" />
+                <Input id="f-priceFrom" aria-label="قیمت از (تومان)" inputMode="numeric" placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", e.target.value)} className="text-[11px] font-bold" />
+                <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", e.target.value)} className="text-[11px] font-bold" />
               </div>
             </div>
             {/* P6530/گام ۳ — فایل قرارداد (ستون ۱۱): دارد/ندارد */}
@@ -529,28 +535,20 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                 </SelectContent>
               </Select>
             </div>
-            {/* BLOCK D — نوع قرارداد: دقیقاً ۵ گزینهٔ چندانتخابی (۴ نوع + بدون قرارداد) */}
-            <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
-              <Label id="m3-contract-kind-label">نوع قرارداد (چندانتخابی)</Label>
+            {/* BLOCK D — نوع قرارداد: دقیقاً ۵ گزینهٔ چندانتخابی (۴ نوع + بدون قرارداد) — PN-009: چیپ یکدست مشترک */}
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
+              <span id="m3-contract-kind-label" className="text-xs font-bold text-foreground/80">نوع قرارداد (چندانتخابی)</span>
               <div id="m3-contract-kind-filters" role="group" aria-labelledby="m3-contract-kind-label" className="flex flex-wrap gap-1.5">
-                {CONTRACT_KIND_FILTER_VALUES.map((value) => {
-                  const active = filters.contractTypes.includes(value);
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={active}
-                      // P6547/گام پنجم-ب — رنگ متمایز هر نوع قرارداد (هارمونی با ستون فهرست)
-                      className={`h-8 px-3 rounded-full text-[11px] font-medium transition-colors ${
-                        active ? valueSolidClass(value) : `${valueSoftClass(value)} opacity-80 hover:opacity-100`
-                      }`}
-                      onClick={() => toggleContractKind(value)}
-                    >
-                      {active ? "✓ " : ""}
-                      {CONTRACT_KIND_FILTER_LABELS[value]}
-                    </button>
-                  );
-                })}
+                {CONTRACT_KIND_FILTER_VALUES.map((value) => (
+                  <FilterChip
+                    key={value}
+                    label={CONTRACT_KIND_FILTER_LABELS[value]}
+                    active={filters.contractTypes.includes(value)}
+                    onToggle={() => toggleContractKind(value)}
+                    softClass={valueSoftClass(value)}
+                    solidClass={valueSolidClass(value)}
+                  />
+                ))}
               </div>
               {filters.contractTypes.length > 0 ? (
                 <p className="text-[10px] text-muted-foreground">{faNumber(filters.contractTypes.length)} گزینهٔ فعال — اعمال خودکار</p>
@@ -686,7 +684,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                           <div className="flex flex-col items-center gap-0.5">
                             <span className="truncate max-w-40 font-medium" title={t.sellerName}>{t.sellerName}</span>
                             {t.sellerMobile ? (
-                              <a href={`tel:${t.sellerMobile}`} dir="ltr" className="font-mono text-[11px] text-teal-700 dark:text-teal-300 hover:underline w-fit" title={`تماس با فروشنده: ${t.sellerMobile}`}>
+                              <a href={`tel:${t.sellerMobile}`} dir="ltr" className="font-mono text-[11px] text-primary hover:underline w-fit" title={`تماس با فروشنده: ${t.sellerMobile}`}>
                                 {faDigits(t.sellerMobile)}
                               </a>
                             ) : (
@@ -712,7 +710,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                           <div className="flex flex-col items-center gap-0.5">
                             <span className="truncate max-w-40 font-medium" title={t.buyerName}>{t.buyerName}</span>
                             {t.buyerMobile ? (
-                              <a href={`tel:${t.buyerMobile}`} dir="ltr" className="font-mono text-[11px] text-teal-700 dark:text-teal-300 hover:underline w-fit" title={`تماس با خریدار: ${t.buyerMobile}`}>
+                              <a href={`tel:${t.buyerMobile}`} dir="ltr" className="font-mono text-[11px] text-primary hover:underline w-fit" title={`تماس با خریدار: ${t.buyerMobile}`}>
                                 {faDigits(t.buyerMobile)}
                               </a>
                             ) : (
@@ -743,7 +741,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                       <TableCell className="whitespace-normal">
                         {t.consultantsShareSummary && t.consultantsShareSummary.shares.length > 0 ? (
                           <div className="flex flex-col items-center gap-1 min-w-44">
-                            <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 text-[11px] gap-1 w-fit">
+                            <Badge className="bg-muted/70 text-foreground text-[11px] gap-1 w-fit border border-border">
                               <Users className="w-3 h-3" aria-hidden /> {faNumber(t.consultantsShareSummary.count)} مشاور — {faPercent(t.consultantsShareSummary.totalPercent)}
                             </Badge>
                             <ul className="text-muted-foreground text-[10px] leading-relaxed space-y-0.5">
@@ -770,7 +768,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                       <TableCell className="text-xs font-mono whitespace-nowrap" dir="rtl">
                         {t.contractHolo ? (
                           <span className="inline-flex items-center gap-1.5">
-                            <FileCheck2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden />
+                            <FileCheck2 className="w-3.5 h-3.5 text-primary" aria-hidden />
                             {faDigits(t.contractHolo)}
                           </span>
                         ) : (
@@ -786,7 +784,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                           onClick={() => openContractDoc(t)}
                           title="مشاهده و دانلود فایل قرارداد (تولیدی از داده‌های سامانه ملک تبریز)"
                         >
-                          <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden />
+                          <FileText className="w-3.5 h-3.5 text-primary" aria-hidden />
                           {t.contractType || t.agency ? "مشاهده و دانلود" : "مشاهده سند"}
                         </Button>
                       </TableCell>

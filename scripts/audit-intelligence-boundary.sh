@@ -22,8 +22,20 @@ MODE="${1:-}"
 INTEL="src/core/intelligence"
 
 # ---------- ۱) اسکن مستقیم ----------
-DIRECT_PRISMA=$(grep -rlE "from ['\"]@prisma/client['\"]" $INTEL --include='*.ts' 2>/dev/null | grep -c . || true)
-DIRECT_DB=$(grep -rlE "from ['\"]@/lib/db['\"]" $INTEL --include='*.ts' 2>/dev/null | grep -c . || true)
+# ن۰۰۷ BLOCK 3 (رفع باگ گارد): سند گارد می‌گوید «به‌طور ارزشی» — اما grep قبلی
+# «import type» را هم نقض می‌شمرد (مثال واقعی: cross-tile.ts و domain-agents.ts
+# که فقط PrismaClient تایپی دارند). اکنون فقط import ارزشی شمرده می‌شود.
+count_value_imports() {
+  local pattern="$1" n=0 f
+  for f in $(grep -rlE "from ['\"]${pattern}['\"]" $INTEL --include='*.ts' 2>/dev/null); do
+    if grep -E "^\s*import" "$f" | grep "'${pattern}'\|\"${pattern}\"" | grep -qvE "^\s*import\s+type\b"; then
+      n=$((n+1))
+    fi
+  done
+  echo "$n"
+}
+DIRECT_PRISMA=$(count_value_imports "@/prisma/client")
+DIRECT_DB=$(count_value_imports "@/lib/db")
 DIRECT_FETCH=$(grep -rlE '\bfetch\s*\(' $INTEL --include='*.ts' 2>/dev/null | grep -c . || true)
 DIRECT_REACT=$(grep -rlE "from ['\"]react['\"]" $INTEL --include='*.ts' 2>/dev/null | grep -c . || true)
 

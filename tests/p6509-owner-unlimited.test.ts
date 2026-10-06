@@ -243,7 +243,7 @@ describe("P6.5-09 بند ۴ — لیست‌های بدون صفحه‌بندی (
   });
 
   test("E6) کارشناسان: سقف سرور ۵۰۰۰ و درخواست کامل (تک‌صفحه‌ای) — P6.5-11: کاشی بازدیدها حذف شد", () => {
-    expect(read("src/app/api/crm/experts/route.ts")).toContain(", 5000)");
+    expect(read("src/lib/experts/profile-store.ts")).toContain("5000"); // سقف تک‌صفحه‌ای PN-008
     expect(read("src/core/tiles/tiles/experts/ExpertsPage.tsx")).toContain('"limit", "5000"');
   });
 });

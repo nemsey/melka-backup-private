@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun-types"]
+  },
+  "include": [
+    "scripts/**/*.ts",
+    "scripts/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "examples",
+    "skills"
+  ]
+}

@@ -467,23 +467,26 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
     }
   });
 
-  test("RequestRecordDTO — ۴۹ کلید (P6547: +urgent/luxury/changeable)؛ ستون‌های P6.5-02/03/04/10 + P6530/گام ۲ + خام‌های B.3 در دنباله", async () => {
+  test("RequestRecordDTO — ۷۱ کلید (P6547 + PN-002/گام۲: +۲۱ ستون M2)؛ ستون‌های P6.5-02/03/04/10 + P6530/گام ۲ + خام‌های B.3 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
       const r = await c.requestRecord.findFirst({ where: { id: "p6502-RA" } });
       const keys = Object.keys(r!);
       // P6530/گام ۲ — دو ستون تازهٔ بازهٔ قیمت متقاضی (بعد از inputsJson)
-      // P6547/گام دوم — سه ستون تازه: urgent/luxury/changeable (پایان مدل)
-      expect(keys.length).toBe(49);
+      // P6547/گام دوم — سه ستون تازه: urgent/luxury/changeable (پس از جدیت مشتری)
+      // PN-002/گام ۲ — ۲۱ ستون تازهٔ M2 در دنبالهٔ مدل (پس از normalizationVersion)
+      expect(keys.length).toBe(70); // events رابطه است — در findFirst نمی‌آید
       // P6547 — سه ستون تازه بلافاصله پس از جدیت مشتری (userSeriousityName)
       const ui = keys.indexOf("urgent");
       expect(keys.slice(ui - 1, ui + 3)).toEqual(["userSeriousityName", "urgent", "luxury", "changeable"]);
       expect(keys.slice(18, 21)).toEqual(["inputsJson", "priceFrom", "priceTo"]);
-      expect(keys.slice(-10)).toEqual([
-        "branchId", "tenantId", "requestCode", "sourceRunId",
-        "rawCustomerName", "rawCustomerMobile",
-        "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
+      // PN-002/گام ۲ — ۲۱ ستون M2 در انتهای مدل
+      expect(keys.slice(-21)).toEqual([
+        "spaceFrom", "spaceTo", "roomsFrom", "roomsTo", "floorFrom", "floorTo",
+        "buildYearFrom", "buildYearTo", "sanadNames", "constructTypeNames", "sideNames",
+        "occasion", "deposit", "confirmSms", "notifyMe", "changeWithNames",
+        "armBranchTitle", "countryName", "stateName", "cityName", "platform",
       ]);
       // P6.5-10 — ستون‌های افزودنی کاتالوگ ARM (نام کارشناس + عنوان درخواست)
       expect(keys).toContain("actorName");
@@ -506,7 +509,7 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
     }
   });
 
-  test("PropertyRecordDTO — ۳۸ کلید؛ CustomerRecordDTO — ۱۳ کلید (مدل‌های جدید)", async () => {
+  test("PropertyRecordDTO — ۵۴ کلید (PN-002/گام۱: +۱۴ ستون M1)؛ CustomerRecordDTO — ۱۳ کلید (مدل‌های جدید)", async () => {
     const c = await getTestClient();
     await c.propertyRecord.deleteMany({ where: { id: "p6502-PR1" } });
     await c.customerRecord.deleteMany({ where: { mobile: "09140009999" } });
@@ -523,6 +526,10 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
         "rawPrice", "rawPriceUnit", "rawArea", "rawOwnerName", "rawOwnerMobile",
         "rawSourceVersion", "extractedAt", "extractionBatchId", "normalizationVersion",
         "syncedAt", "createdAt", "updatedAt",
+        // PN-002/گام ۱ — ۱۴ ستون تازهٔ M1 (رهن/اجاره، بازدید، انتشار، شعبه ARM، …)
+        "isRental", "depositPrice", "rentPrice", "viewCount", "imageCount",
+        "addedToDivar", "addedToInsta", "isReposted", "isTarget", "armBranchTitle",
+        "stateName", "cityName", "publicUrl", "statusDate",
       ]);
       expect(p.tenantId).toBe("melk-tabriz"); // default
 

@@ -222,7 +222,7 @@ describe("گام ۶ §۳ — مرتب‌سازی فارسی فهرست‌ها", 
     expect(s).not.toContain("faSortBy");
     expect(s).toContain("b.saleCount - a.saleCount"); // اولویت ۱
     expect(s).toContain("b.rentCount - a.rentCount"); // اولویت ۲
-    expect(s).toContain("a.pmCode && a.branch !== BRANCH_UNSET ? 1 : 0"); // اولویت ۳
+    expect(s).toContain("a.personnelCode && a.branchTitle ? 1 : 0"); // اولویت ۳ — فیلدهای نسل تازهٔ PN-008
   });
 
   test("۳-۷) فیلترها از قبل هم‌ارزند (شاهد به‌روز): normalizeFilterInput منبع یگانه", async () => {

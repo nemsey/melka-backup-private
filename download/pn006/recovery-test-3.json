@@ -1,0 +1,35 @@
+{
+  "test": "3.2.3 — آزمون ضدحلقه: تخریب متوالی (۲ بار در پنجرهٔ ۱۰ دقیقه)",
+  "executedAt": "2026-10-06T06:00:13.572684+00:00",
+  "lastSuccessfulRecovery": "2026-10-06T06:00:07Z",
+  "afterSecondCorruption": {
+    "masterCodeHashNull": true,
+    "graphNodes": 0
+  },
+  "afterSecondCheck": {
+    "masterCodeHashNull": true,
+    "graphNodes": 0
+  },
+  "exitCode": 0,
+  "okCount": {
+    "before": 1,
+    "after": 1
+  },
+  "backupCount": {
+    "before": 2,
+    "after": 2
+  },
+  "antiLoopRejections": 1,
+  "checkOutput": "[check] 2026-10-06T06:00:11Z REPO=/home/z/my-project/recovery-drill HEAD=7d50985\n[check] سرور در دسترس نیست (در بوت/ری‌استارت طبیعی است)\n[check] DB-WIPE-DETECTED: yes:master-hash-null\n[check] نتیجه: بازگشت تشخیص داده شد — آغاز بازیابی خودکار\n[drill-guard] بازیابی موفق تازه (≤۱۰ دقیقه پیش) — رد شد (ضدحلقه)",
+  "recoveryLogTail": "{\"at\":\"2026-10-06T06:00:07Z\",\"kind\":\"guard-recovery-start\",\"cause\":\"yes:master-hash-null\"}\n{\"at\":\"2026-10-06T06:00:07Z\",\"kind\":\"guard-recovery-ok\",\"via\":\"PN-DRILL-01\",\"cause\":\"yes:master-hash-null\",\"mode\":\"drill\"}\n{\"at\":\"2026-10-06T06:00:11Z\",\"kind\":\"db-wipe-detected\",\"cause\":\"master-hash-null\"}\n{\"at\":\"2026-10-06T06:00:11Z\",\"kind\":\"check\",\"verdict\":\"ROLLBACK-DB-WIPE\",\"head\":\"7d50985\"}\n{\"at\":\"2026-10-06T06:00:11Z\",\"kind\":\"auto-recovery-start\",\"verdict\":\"ROLLBACK-DB-WIPE\"}",
+  "checks": {
+    "پیش‌شرط_بازیابی_تازه_موجود": true,
+    "تخریب_دوم_اعمال_شد": true,
+    "ضدحلقه_رد_کرد": true,
+    "بازیابی_مجدد_رخ_نداد": true,
+    "بکاپ_تازه_نگرفته_شد": true,
+    "DB_تخریب‌شده_ماند": true
+  },
+  "note": "رفتار صحیح: پنجرهٔ ضدحلقه ۱۰ دقیقه‌ای رد می‌کند؛ پس از انقضای پنجره، بوت/تیک بعدی دوباره بازیابی می‌کند (سازوکار عمدی ضد طوفانِ بازنشانی‌های پیاپی پلتفرم)",
+  "verdict": "PASS"
+}

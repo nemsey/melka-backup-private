@@ -1,0 +1,1434 @@
+{
+  "task": "ثانیاً-۲ — کاوش سرد PM",
+  "at": "2026-10-06T12:47:06.533Z",
+  "dimensions": {
+    "A_token": {
+      "vaultPersonnelCode": "410031320",
+      "tokenChars": 171,
+      "tokenTest": "OK"
+    },
+    "B_public": {
+      "portalInfoShape": {
+        "portalTelephoneNumber": {
+          "cityCode": "041",
+          "phone": "4101"
+        },
+        "platformsBaseUrl": {
+          "ps": {
+            "version": "3.5.0"
+          },
+          "armPmMobile": {
+            "version": "1.1.18"
+          }
+        },
+        "slogan": "مشاور املاکی به وُسعت شهر",
+        "portalName": "مِلک تبریز",
+        "version": "3.0.0"
+      }
+    },
+    "C_personnelRegistry": {
+      "pages": [
+        {
+          "page": 1,
+          "count": 30,
+          "total": null,
+          "totalPages": 5
+        },
+        {
+          "page": 2,
+          "count": 30,
+          "total": null,
+          "totalPages": 5
+        },
+        {
+          "page": 3,
+          "count": 30,
+          "total": null,
+          "totalPages": 5
+        },
+        {
+          "page": 4,
+          "count": 30,
+          "total": null,
+          "totalPages": 5
+        },
+        {
+          "page": 5,
+          "count": 23,
+          "total": null,
+          "totalPages": 5
+        }
+      ],
+      "fieldInventory": {
+        "_id": {
+          "type": "string",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": "6a004d1b85adf7f6f1a3879e"
+        },
+        "activationStatus": {
+          "type": "object",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": {
+            "ps": true,
+            "acc": false,
+            "apm": true,
+            "chat": true
+          }
+        },
+        "businessId": {
+          "type": "object",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز",
+            "code": 41003
+          }
+        },
+        "code": {
+          "type": "number",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": "410031310"
+        },
+        "imageCover": {
+          "type": "string",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": "public/images/default_realtor_image.jpg"
+        },
+        "registerStep": {
+          "type": "number",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": "6"
+        },
+        "isRegisteredCompleted": {
+          "type": "boolean",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": "true"
+        },
+        "voipInfo": {
+          "type": "array",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": [
+            {
+              "extentionNumber": "1587"
+            }
+          ]
+        },
+        "permission": {
+          "type": "array",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": [
+            {
+              "title": "دسترسی یکم ( منطقه )",
+              "_id": "6a004e6c85adf7f6f1a38aa3"
+            },
+            {
+              "title": "دسترسی دوم ( منطقه )",
+              "_id": "6a004e7585adf7f6f1a38b0f"
+            },
+            {
+              "title": "دسترسی سوم ( منطقه )",
+              "_id": "6a004e8885adf7f6f1a38bc8"
+            }
+          ]
+        },
+        "fullName": {
+          "type": "string",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": "آرمین طاهرفر"
+        },
+        "mobileNumber": {
+          "type": "number",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": 9145817006
+        },
+        "role": {
+          "type": "object",
+          "filled": 143,
+          "pct": "100.0%",
+          "sample": {
+            "_id": "64f0bc405f71ee55c5a3d7e2",
+            "title": "مشاور فروش"
+          }
+        }
+      },
+      "totalRows": 143,
+      "firstRowMasked": {
+        "_id": "6a004d1b85adf7f6f1a3879e",
+        "activationStatus": {
+          "ps": true,
+          "acc": false,
+          "apm": true,
+          "chat": true
+        },
+        "businessId": {
+          "_id": "6447c45e0bcf236f1e3e25bb",
+          "title": "ملک تبریز",
+          "code": 41003
+        },
+        "code": 410031310,
+        "imageCover": "public/images/default_realtor_image.jpg",
+        "registerStep": 6,
+        "isRegisteredCompleted": true,
+        "voipInfo": [
+          {
+            "extentionNumber": "1587"
+          }
+        ],
+        "permission": [
+          {
+            "title": "دسترسی یکم ( منطقه )",
+            "_id": "6a004e6c85adf7f6f1a38aa3"
+          },
+          {
+            "title": "دسترسی دوم ( منطقه )",
+            "_id": "6a004e7585adf7f6f1a38b0f"
+          },
+          {
+            "title": "دسترسی سوم ( منطقه )",
+            "_id": "6a004e8885adf7f6f1a38bc8"
+          }
+        ],
+        "fullName": "آرمین طاهرفر",
+        "mobileNumber": 9145817006,
+        "role": {
+          "_id": "64f0bc405f71ee55c5a3d7e2",
+          "title": "مشاور فروش"
+        }
+      }
+    },
+    "D_deepDive": {
+      "sampled": [
+        {
+          "id": "6a004d1b85adf7f6f1a3879e",
+          "fullName": "آرمین طاهرفر",
+          "personnelInfo": {
+            "_id": "6a004d1b85adf7f6f1a3879e",
+            "employeementInfo": {
+              "date": "2026-05-10T00:00:00.000Z",
+              "type": 1,
+              "baseSalary": 0,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "cbEmployeeAmount": 0,
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "6176cdfd15bcf012cb292fb9",
+              "role": {
+                "_id": "63cea0df2936a6bdc12ba6dd",
+                "title": "مدیر بازرگانی"
+              },
+              "fullName": "حسین احمدی"
+            },
+            "type": "realtor",
+            "registerStep": 6,
+            "branchId": {
+              "_id": "6447c45e0bcf236f1e3e25bf",
+              "title": "باغلارباغی"
+            },
+            "role": {
+              "_id": "64f0bc405f71ee55c5a3d7e2",
+              "title": "مشاور فروش"
+            }
+          },
+          "contactInfo": {
+            "_id": "6a004d1b85adf7f6f1a3879e",
+            "registerStep": 6,
+            "voipInfo": [
+              {
+                "extentionNumber": "1587",
+                "extentionName": "Taherfar-Armin",
+                "extentionPassword": "1363508121",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "6a004f1785adf7f6f1a38cfb"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04132821148",
+              "mobileNumber": "0914***006",
+              "whatsapp": "09145817006",
+              "address": "منجم کوی پروردگاری بن بست شهید با فتوت پ 149",
+              "postalCode": "515000000",
+              "instagram": ""
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "6a004d1b85adf7f6f1a3879e",
+            "imageCover": "public/images/default_realtor_image.jpg",
+            "registerStep": 6,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "654b540cd44240e7e3b8ed1c",
+          "fullName": "آرمین یاری",
+          "personnelInfo": {
+            "_id": "654b540cd44240e7e3b8ed1c",
+            "employeementInfo": {
+              "date": "2023-10-29T00:00:00.000Z",
+              "type": 1,
+              "baseSalary": 0,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "6176cdfd15bcf012cb292fb9",
+              "role": {
+                "_id": "63cea0df2936a6bdc12ba6dd",
+                "title": "مدیر بازرگانی"
+              },
+              "fullName": "حسین احمدی"
+            },
+            "type": "realtor",
+            "registerStep": 6,
+            "role": {
+              "_id": "6411dbb2e95b3458e6b7503f",
+              "title": "کارشناس و مشاور فروش"
+            },
+            "branchId": {
+              "_id": "6447c45e0bcf236f1e3e25bf",
+              "title": "باغلارباغی"
+            }
+          },
+          "contactInfo": {
+            "_id": "654b540cd44240e7e3b8ed1c",
+            "registerStep": 6,
+            "voipInfo": [
+              {
+                "extentionNumber": "1527",
+                "extentionName": "Yari-Armin",
+                "extentionPassword": "1490550003",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "696ca1ae2de01b21f8767205"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04132344459",
+              "mobileNumber": "0912***845",
+              "whatsapp": "9143506369",
+              "address": "خیابان شمس تبریزی کوی گرو پلاک 145/1",
+              "postalCode": "5150000000",
+              "instagram": ""
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "654b540cd44240e7e3b8ed1c",
+            "imageCover": "uploads/documents/business_41003/realtorsDocuments/realtor_410031175/imageCover_8d8d9eee-a3ba-4a71-b81a-6e002ea086a2.webp",
+            "registerStep": 6,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "6a2fa3a602eb57f832f76b96",
+          "fullName": "آیدین  امجدی",
+          "personnelInfo": {
+            "_id": "6a2fa3a602eb57f832f76b96",
+            "employeementInfo": {
+              "date": "2026-06-15T00:00:00.000Z",
+              "type": 1,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "6176cdfd15bcf012cb292fb9",
+              "role": {
+                "_id": "63cea0df2936a6bdc12ba6dd",
+                "title": "مدیر بازرگانی"
+              },
+              "fullName": "حسین احمدی"
+            },
+            "type": "realtor",
+            "registerStep": 6,
+            "role": {
+              "_id": "64f0bc405f71ee55c5a3d7e2",
+              "title": "مشاور فروش"
+            },
+            "branchId": {
+              "_id": "6447c45e0bcf236f1e3e25bf",
+              "title": "باغلارباغی"
+            }
+          },
+          "contactInfo": {
+            "_id": "6a2fa3a602eb57f832f76b96",
+            "registerStep": 6,
+            "voipInfo": [
+              {
+                "extentionNumber": "1598",
+                "extentionName": "Amjadi-Aydin",
+                "extentionPassword": "1364083590",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "6a2fa70c02eb57f832f77230"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04104136623235",
+              "mobileNumber": "0914***473",
+              "whatsapp": "09146305473",
+              "address": "تبریز.ولی امر",
+              "postalCode": "515000000",
+              "instagram": ""
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "6a2fa3a602eb57f832f76b96",
+            "imageCover": "public/images/default_realtor_image.jpg",
+            "registerStep": 6,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "68ce5866fe7a065eef1a6d55",
+          "fullName": "ابراهیم سوار",
+          "personnelInfo": {
+            "_id": "68ce5866fe7a065eef1a6d55",
+            "employeementInfo": {
+              "date": "2025-09-20T00:00:00.000Z",
+              "type": 1,
+              "baseSalary": 0,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "cbEmployeeAmount": 0,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "6191890fc88839e4346380cf",
+              "role": {
+                "_id": "645d1fb46ac05d1a6dd955a9",
+                "title": "مدیر شعبه"
+              },
+              "fullName": "وحید حیدری"
+            },
+            "type": "realtor",
+            "registerStep": 7,
+            "branchId": {
+              "_id": "64536357f3e92f2060f1e15e",
+              "title": "ارتش"
+            },
+            "role": {
+              "_id": "6411dbb2e95b3458e6b7503f",
+              "title": "کارشناس و مشاور فروش"
+            }
+          },
+          "contactInfo": {
+            "_id": "68ce5866fe7a065eef1a6d55",
+            "registerStep": 7,
+            "voipInfo": [
+              {
+                "extentionNumber": "1542",
+                "extentionName": "Ebrahim-Savar",
+                "extentionPassword": "1380907012",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "6aba7c5abccbe050e1217e47"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04134423118",
+              "mobileNumber": "9147***066",
+              "whatsapp": "",
+              "address": "خیابان آخونی کوی شهید علومی پلاک 25 طبقه دوم غربی",
+              "postalCode": "5150000000",
+              "instagram": ""
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "68ce5866fe7a065eef1a6d55",
+            "imageCover": "uploads/documents/business_4101/realtorsDocuments/realtor_410031269/imageCover_95832e88-cb26-49a0-93ff-f09489d16051.webp",
+            "registerStep": 7,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "6a65d21da8c204a046ec3c96",
+          "fullName": "احد انصاری",
+          "personnelInfo": {
+            "_id": "6a65d21da8c204a046ec3c96",
+            "employeementInfo": {
+              "date": "2026-07-26T00:00:00.000Z",
+              "type": 1,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "cbEmployeeAmount": 0,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "6191890fc88839e4346380cf",
+              "role": {
+                "_id": "645d1fb46ac05d1a6dd955a9",
+                "title": "مدیر شعبه"
+              },
+              "fullName": "وحید حیدری"
+            },
+            "type": "realtor",
+            "registerStep": 6,
+            "branchId": {
+              "_id": "64536357f3e92f2060f1e15e",
+              "title": "ارتش"
+            },
+            "role": {
+              "_id": "64f0bc405f71ee55c5a3d7e2",
+              "title": "مشاور فروش"
+            }
+          },
+          "contactInfo": {
+            "_id": "6a65d21da8c204a046ec3c96",
+            "registerStep": 6,
+            "voipInfo": [
+              {
+                "extentionNumber": "1619",
+                "extentionName": "Ahad-Ansari",
+                "extentionPassword": "1719836094",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "6a65d51ca8c204a046ec4545"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04136676701",
+              "mobileNumber": "9143***645",
+              "whatsapp": "",
+              "address": "حافظ خیابان باروقی",
+              "postalCode": "515000000",
+              "instagram": ""
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "6a65d21da8c204a046ec3c96",
+            "imageCover": "public/images/default_realtor_image.jpg",
+            "registerStep": 6,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "670f621b994833e86063581f",
+          "fullName": "اسماعیل رزمی",
+          "personnelInfo": {
+            "_id": "670f621b994833e86063581f",
+            "employeementInfo": {
+              "date": "2024-10-10T00:00:00.000Z",
+              "type": 0,
+              "baseSalary": 18000000,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "cbEmployeeAmount": 0,
+              "benefits": {
+                "housingAllowance": true,
+                "childrenAllowance": true,
+                "workerBen": true,
+                "workerInsurance": true,
+                "employerInsurance": true,
+                "salaryTax": true,
+                "newYearGiftTax": true,
+                "reward": true,
+                "newYearGift": true,
+                "yearsOfWork": true,
+                "endOfWork": true,
+                "tip": true
+              },
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": 18000000
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "6191890fc88839e4346380cf",
+              "role": {
+                "_id": "645d1fb46ac05d1a6dd955a9",
+                "title": "مدیر شعبه"
+              },
+              "fullName": "وحید حیدری"
+            },
+            "type": "realtor",
+            "registerStep": 6,
+            "branchId": {
+              "_id": "64536357f3e92f2060f1e15e",
+              "title": "ارتش"
+            },
+            "role": {
+              "_id": "640f2fb014d343ca7967c0c1",
+              "title": "مسئول خدمات"
+            }
+          },
+          "contactInfo": {
+            "_id": "670f621b994833e86063581f",
+            "registerStep": 6,
+            "voipInfo": [
+              {
+                "extentionNumber": "1567",
+                "extentionName": "Rzmi-Esmael",
+                "extentionPassword": "1708909591",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "6999804b862f9ddbc67e8cdb"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04136671153",
+              "mobileNumber": "9143***211",
+              "whatsapp": "9023186211",
+              "address": "تبریز توانیر آپارتمان امین واحد 5",
+              "postalCode": "515996567"
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "670f621b994833e86063581f",
+            "imageCover": "public/images/default_realtor_image.jpg",
+            "registerStep": 6,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "6a0a01650bf364441b26f8fd",
+          "fullName": "اسماعیل لطفی",
+          "personnelInfo": {
+            "_id": "6a0a01650bf364441b26f8fd",
+            "employeementInfo": {
+              "date": "2026-05-17T00:00:00.000Z",
+              "type": 1,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "cbEmployeeAmount": 0,
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "6191890fc88839e4346380cf",
+              "role": {
+                "_id": "645d1fb46ac05d1a6dd955a9",
+                "title": "مدیر شعبه"
+              },
+              "fullName": "وحید حیدری"
+            },
+            "type": "realtor",
+            "registerStep": 6,
+            "branchId": {
+              "_id": "64536357f3e92f2060f1e15e",
+              "title": "ارتش"
+            },
+            "role": {
+              "_id": "6411dbb2e95b3458e6b7503f",
+              "title": "کارشناس و مشاور فروش"
+            }
+          },
+          "contactInfo": {
+            "_id": "6a0a01650bf364441b26f8fd",
+            "registerStep": 6,
+            "voipInfo": [
+              {
+                "extentionNumber": "1590",
+                "extentionName": "Lotfi-Esmael",
+                "extentionPassword": "1552066738",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "6a0a072b0bf364441b270ace"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04132641738",
+              "mobileNumber": "0914***192",
+              "whatsapp": "09141776192",
+              "address": "پایگاه هوایی",
+              "postalCode": "515000000",
+              "instagram": ""
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "6a0a01650bf364441b26f8fd",
+            "imageCover": "public/images/default_realtor_image.jpg",
+            "registerStep": 6,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "67975990f326d32a46934fcb",
+          "fullName": "افراز دادور",
+          "personnelInfo": {
+            "_id": "67975990f326d32a46934fcb",
+            "employeementInfo": {
+              "date": "2025-01-27T00:00:00.000Z",
+              "type": 1,
+              "baseSalary": 0,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "cbEmployeeAmount": 0,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "617a59ec596ce43d24d671ae",
+              "role": {
+                "_id": "645d1fb46ac05d1a6dd955a9",
+                "title": "مدیر شعبه"
+              },
+              "fullName": "کوروش لطفی وند"
+            },
+            "type": "realtor",
+            "registerStep": 7,
+            "branchId": {
+              "_id": "644fd899aa793e48112648ff",
+              "title": "ملکی تبریزی"
+            },
+            "role": {
+              "_id": "6867aeb33cd797341267e505",
+              "title": "مشاور ارشد فروش"
+            }
+          },
+          "contactInfo": {
+            "_id": "67975990f326d32a46934fcb",
+            "registerStep": 7,
+            "voipInfo": [
+              {
+                "extentionNumber": "1491",
+                "extentionName": "Dadvar-Afraz",
+                "extentionPassword": "1361810629",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "687dfec65cc5c003c7e1aa83"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04133286162",
+              "mobileNumber": "0919***717",
+              "whatsapp": "09193179717",
+              "address": "توانیر گلپارک کوی بهشت ده متری 5 شرق پلاک 9 طبقه 3",
+              "postalCode": "5156974356",
+              "instagram": ""
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "67975990f326d32a46934fcb",
+            "imageCover": "uploads/documents/business_4101/realtorsDocuments/realtor_410031226/imageCover_741a830e-e2f7-4976-a3b1-cdf03294d9e7.webp",
+            "registerStep": 7,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "6627553b9c26e98ec824d4aa",
+          "fullName": "افسون پورشهناز",
+          "personnelInfo": {
+            "_id": "6627553b9c26e98ec824d4aa",
+            "employeementInfo": {
+              "date": "2024-04-22T00:00:00.000Z",
+              "type": 1,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "6176cdfd15bcf012cb292fb9",
+              "role": {
+                "_id": "63cea0df2936a6bdc12ba6dd",
+                "title": "مدیر بازرگانی"
+              },
+              "fullName": "حسین احمدی"
+            },
+            "type": "realtor",
+            "registerStep": 6,
+            "branchId": {
+              "_id": "6447c45e0bcf236f1e3e25bf",
+              "title": "باغلارباغی"
+            },
+            "role": {
+              "_id": "6411dbb2e95b3458e6b7503f",
+              "title": "کارشناس و مشاور فروش"
+            }
+          },
+          "contactInfo": {
+            "_id": "6627553b9c26e98ec824d4aa",
+            "registerStep": 6,
+            "voipInfo": [
+              {
+                "extentionNumber": "1456",
+                "extentionName": "Porshahnaz-Afson",
+                "extentionPassword": "1552232700",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "6627687ad8fba8e5538ea133"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04133287538",
+              "mobileNumber": "0938***380",
+              "whatsapp": "09384594380",
+              "address": "توانیر ولیعصر خیابان بعثت پلاک 54 طبقه 5",
+              "postalCode": "5156984169"
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "6627553b9c26e98ec824d4aa",
+            "imageCover": "public/images/default_realtor_image.jpg",
+            "registerStep": 6,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "69e88ea7cf69a39eb00df1f9",
+          "fullName": "الهام ولی زاده",
+          "personnelInfo": {
+            "_id": "69e88ea7cf69a39eb00df1f9",
+            "employeementInfo": {
+              "date": "2026-04-22T00:00:00.000Z",
+              "type": 1,
+              "baseSalary": 0,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "headRealtor": {
+              "_id": "617a59ec596ce43d24d671ae",
+              "role": {
+                "_id": "645d1fb46ac05d1a6dd955a9",
+                "title": "مدیر شعبه"
+              },
+              "fullName": "کوروش لطفی وند"
+            },
+            "type": "realtor",
+            "registerStep": 6,
+            "branchId": {
+              "_id": "644fd899aa793e48112648ff",
+              "title": "ملکی تبریزی"
+            },
+            "role": {
+              "_id": "64f0bc405f71ee55c5a3d7e2",
+              "title": "مشاور فروش"
+            }
+          },
+          "contactInfo": {
+            "_id": "69e88ea7cf69a39eb00df1f9",
+            "registerStep": 6,
+            "voipInfo": [
+              {
+                "extentionNumber": "1577",
+                "extentionName": "Valizadeh-Elham",
+                "extentionPassword": "2919088521",
+                "status": true,
+                "nat": true,
+                "record": true,
+                "_id": "69e8929fcf69a39eb00dfff7"
+              }
+            ],
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "contactInfo": {
+              "telephoneNumber": "04133864679",
+              "mobileNumber": "0991***981",
+              "whatsapp": "",
+              "address": "یاغچیان خیابان نور دوازده متری سما واحد 23 ط همکف",
+              "postalCode": "51500000000",
+              "instagram": ""
+            },
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            }
+          },
+          "uploadedDocuments": {
+            "_id": "69e88ea7cf69a39eb00df1f9",
+            "imageCover": "public/images/default_realtor_image.jpg",
+            "registerStep": 6,
+            "copyOfBirthCertificate": null,
+            "copyOfNationalCard": null,
+            "copyOfEmploymentForm": null,
+            "copyOfDegreeOfEducation": null
+          }
+        },
+        {
+          "id": "628b46b342af0cd000f40aca",
+          "fullName": "الهه احمدی",
+          "personnelInfo": {
+            "_id": "628b46b342af0cd000f40aca",
+            "employeementInfo": {
+              "date": "2020-03-19T20:30:00.000Z",
+              "type": 0,
+              "baseSalary": 50000000,
+              "shareHolderPercentage": 0,
+              "cbEmployeePercentage": 0,
+              "benefits": {
+                "housingAllowance": true,
+                "childrenAllowance": true,
+                "workerBen": true,
+                "workerInsurance": true,
+                "employerInsurance": true,
+                "salaryTax": true,
+                "newYearGiftTax": true,
+                "reward": true,
+                "newYearGift": true,
+                "yearsOfWork": true,
+                "endOfWork": true,
+                "tip": false
+              },
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": null
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": 50000000
+                }
+              ]
+            },
+            "role": {
+              "_id": "640f2f3814d343ca7967bfdf",
+              "title": "مدیر مالی"
+            },
+            "headRealtor": {
+              "_id": "6187e0a949f9d91f47e039fa",
+              "role": {
+                "_id": "63ce918a2936a6bdc12ba4ca",
+                "title": "مدیر املاک"
+              },
+              "fullName": "هوشنگ احمدی"
+            },
+            "type": "realtor",
+            "registerStep": 7,
+            "branchId": {
+              "_id": "6447c45e0bcf236f1e3e25bf",
+              "title": "باغلارباغی"
+            }
+          },
+          "contactInfo": {
+            "_id": "628b46b342af0cd000f40aca",
+            "contactInfo": {
+              "telephoneNumber": "4142420000",
+              "mobileNumber": "9141***925",
+              "whatsapp": "9141167925",
+              "address": "زعفرانیه خیابان اول غربی پلاک 15",
+              "postalCode": "5164251642"
+            },
+            "voipInfo": [
+              {
+                "extentionNumber": "0012",
+                "extentionName": "Ahmadi-Elaheh",
+                "extentionPassword": "1360489150",
+                "status": true,
+                "nat": false,
+                "record": true,
+                "_id": "653fc279c9d55aa9854767b5"
+              }
+            ],
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            },
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "registerStep": 7
+          },
+          "uploadedDocuments": {
+            "_id": "628b46b342af0cd000f40aca",
+            "registerStep": 7,
+            "imageCover": "public/images/default_realtor_image.jpg",
+            "copyOfBirthCertificate": null,
+            "copyOfDegreeOfEducation": null,
+            "copyOfEmploymentForm": null,
+            "copyOfNationalCard": null
+          }
+        },
+        {
+          "id": "6187e13449f9d91f47e03b16",
+          "fullName": "الیار حسامی",
+          "personnelInfo": {
+            "_id": "6187e13449f9d91f47e03b16",
+            "employeementInfo": {
+              "date": "2016-11-21T09:22:01.657Z",
+              "type": 2,
+              "baseSalary": 0,
+              "shareHolderPercentage": 5,
+              "benefits": {
+                "housingAllowance": false,
+                "childrenAllowance": false,
+                "workerBen": false,
+                "workerInsurance": false,
+                "employerInsurance": false,
+                "salaryTax": false,
+                "newYearGiftTax": false,
+                "reward": false,
+                "newYearGift": false,
+                "yearsOfWork": false,
+                "endOfWork": false,
+                "tip": false
+              },
+              "cbEmployeePercentage": 0,
+              "typeFa": [
+                {
+                  "label": "حق السهم (درصد)",
+                  "value": 5
+                },
+                {
+                  "label": "حقوق ماهیانه",
+                  "value": null
+                }
+              ]
+            },
+            "role": {
+              "_id": "642e923f98b0e3a0f6448427",
+              "title": "مدیر فناوری"
+            },
+            "headRealtor": {
+              "_id": "6187e0a949f9d91f47e039fa",
+              "role": {
+                "_id": "63ce918a2936a6bdc12ba4ca",
+                "title": "مدیر املاک"
+              },
+              "fullName": "هوشنگ احمدی"
+            },
+            "type": "realtor",
+            "registerStep": 7,
+            "branchId": {
+              "_id": "6630b6fb1c35408075eb8c39",
+              "title": "هتل مرمر"
+            }
+          },
+          "contactInfo": {
+            "_id": "6187e13449f9d91f47e03b16",
+            "contactInfo": {
+              "telephoneNumber": "4133299578",
+              "mobileNumber": "9145***507",
+              "whatsapp": "9145060507",
+              "address": "زعفرانیه، ۱۰متری اول غربی، پ۱۵، ط۱",
+              "postalCode": "5166746554"
+            },
+            "voipInfo": [
+              {
+                "extentionNumber": "1489",
+                "extentionName": "Hesami_Elyar",
+                "extentionPassword": "1360108661",
+                "status": true,
+                "nat": true,
+                "record": true,
+                "_id": "683b32ff283426b92c598d40"
+              }
+            ],
+            "country": {
+              "_id": "614ed19700cace6eac4f9ded",
+              "name": "ایران"
+            },
+            "state": {
+              "_id": "614ed19700cace6eac4f9df0",
+              "name": "آذربایجان شرقی"
+            },
+            "city": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "registerStep": 7
+          },
+          "uploadedDocuments": {
+            "_id": "6187e13449f9d91f47e03b16",
+            "registerStep": 7,
+            "imageCover": "uploads/documents/business_41003/realtorsDocuments/realtor_410031091/imageCover_fbed0847-0eba-4189-a3df-494a8216bd17.webp",
+            "copyOfBirthCertificate": null,
+            "copyOfDegreeOfEducation": null,
+            "copyOfEmploymentForm": null,
+            "copyOfNationalCard": "uploads/documents/business_41003/realtorsDocuments/realtor_410031091/copyOfNationalCard_28aede9c-53c7-4e2b-bc98-a57ce96866c7.webp"
+          }
+        }
+      ],
+      "errors": []
+    },
+    "E_armReports": {
+      "armVaultToken": true,
+      "tradedCountTotal": {
+        "error": "TIMEOUT"
+      },
+      "tradedCount": {
+        "error": "TIMEOUT"
+      },
+      "realtorInteractions": {
+        "error": "OTP_INVALID"
+      }
+    },
+    "F_spaDiscovery": {
+      "bundles": 1,
+      "downloadedMB": 0,
+      "allPathCount": 0,
+      "relevantCount": 0,
+      "relevantSample": []
+    }
+  },
+  "durationMs": 160571
+}

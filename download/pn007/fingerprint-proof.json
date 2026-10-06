@@ -1,0 +1,23 @@
+{
+  "case": "PN-007-BLOCK1-REPRODUCIBILITY-PROOF",
+  "council": "ملکا-شورا-ن۰۰۷-۱۴۰۵",
+  "generatedAt": "2026-10-06T08:55:05.141Z",
+  "question": "آیا دو Build متوالی از همان کد، همان اثر انگشت را تولید می‌کنند؟ (مگر فیلدهای زمانی)",
+  "method": "۱) bun run build (بیلد ۱) → .next/fingerprint.json\n۲) rm -rf .next (پاک‌سازی کامل خروجی)\n۳) bun run build (بیلد ۲ — از صفر) → .next/fingerprint.json\n۴) مقایسهٔ فیلد‌به‌فیلد؛ فیلدهای زمانی (builtAt/buildId/computedAt/computedBy) از طرح exempt هستند",
+  "buildId1": "a074507-20261006-0853",
+  "buildId2": "a074507-20261006-0854",
+  "comparison": {
+    "totalFields": 21,
+    "comparedFields": 18,
+    "identicalFields": 18,
+    "exemptFields": [
+      "buildId",
+      "builtAt",
+      "computedAt"
+    ],
+    "diffs": [],
+    "identicalRatio": 1,
+    "reproducible": true
+  },
+  "verdict": "REPRODUCIBLE — دو بیلد متوالی از همان کد، هویت یکسان تولید کردند (۱۰۰٪ فیلدهای قابل‌مقایسه)"
+}

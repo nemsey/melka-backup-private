@@ -143,9 +143,14 @@ describe("P11/بخش ۲ — Repair Approval Gate (دروازهٔ شورا)", () 
     expect(r.rejected).toBe(true);
   });
   test("۲-۱۱ تصمیم ثبت و بازخوانی می‌شود", () => {
+    // ن۰۰۷ (الگوی مصوب ۳-۱۴/۳-۱۵ — رفع نوسان): firstProposal() هر بار موتور را
+    // از نو اجرا می‌کند و id زمان‌محور می‌سازد؛ دو فراخوانی = دو id متفاوت
+    // (رقابت زمانی: پاس فقط وقتی هر دو در یک میلی‌ثانیه بیفتند).
+    // الگوی درست: یک‌بار بساز، همان نمونه را تأیید و بازخوانی کن.
     const g = gate();
-    g.approve(firstProposal(), "شورا", true, 4);
-    expect(g.decisionOf(firstProposal().id)?.approved).toBe(true);
+    const p = firstProposal();
+    g.approve(p, "شورا", true, 4);
+    expect(g.decisionOf(p.id)?.approved).toBe(true);
   });
   test("۲-۱۲ رد هم ثبت می‌شود", () => {
     const g = gate();
@@ -255,9 +260,14 @@ describe("P11/بخش ۳ — Repair Executor (اجرا)", () => {
     expect(r.reason).toContain("پرریسک");
   });
   test("۳-۱۴ rollback صریح با نقطهٔ بازگشت", () => {
+    // PN-006: رفع نژاع زمانی (عین اصلاح ۳-۱۵ در PN-005) — شناسهٔ پیشنهاد شامل
+    // Date.now() است؛ دو فراخوانی جداگانهٔ firstProposal() در میلی‌ثانیه‌های
+    // مختلف شناسه‌های متفاوت می‌سازند و rollback بکاپ را نمی‌یافت.
+    // شیء واحد در هر دو مرحله (اجرا + بازگشت) استفاده می‌شود.
     const e = exec();
-    e.execute(firstProposal(), ok());
-    const r = e.rollback(firstProposal(), "شورا");
+    const p = firstProposal();
+    e.execute(p, ok());
+    const r = e.rollback(p, "شورا");
     expect(r.rolledBack).toBe(true);
     expect(r.from).toContain("pre-repair-");
   });

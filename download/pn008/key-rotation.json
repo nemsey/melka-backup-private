@@ -1,0 +1,10 @@
+{
+  "task": "PN-008 BLOCK 2 — چرخش MELK_TOKEN_KEY",
+  "at": "2026-10-06T13:43:21.979Z",
+  "pmVaultDecrypts": true,
+  "armVaultDecrypts": true,
+  "pmProbeWithRotatedToken": "OK",
+  "activeSessions": 58,
+  "newKeyFingerprint": "a9f717796a5c2d3f",
+  "oldKeyWasPublicTestString": true
+}

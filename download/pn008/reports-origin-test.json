@@ -1,0 +1,41 @@
+{
+  "at": "2026-10-06T12:52:55.417Z",
+  "tries": [
+    {
+      "label": "traded-count-total@PM",
+      "base": "PM",
+      "ok": false,
+      "error": "TIMEOUT"
+    },
+    {
+      "label": "traded-count@PM",
+      "base": "PM",
+      "ok": false,
+      "error": "OTP_INVALID"
+    },
+    {
+      "label": "realtor-interactions@PM",
+      "base": "PM",
+      "ok": false,
+      "error": "OTP_INVALID"
+    },
+    {
+      "label": "traded-count-total@PM+armToken",
+      "base": "PM",
+      "ok": false,
+      "error": "OTP_INVALID"
+    },
+    {
+      "label": "real-estates/contracts@PM",
+      "base": "PM",
+      "ok": false,
+      "error": "OTP_INVALID"
+    },
+    {
+      "label": "contracts@PM",
+      "base": "PM",
+      "ok": false,
+      "error": "OTP_INVALID"
+    }
+  ]
+}

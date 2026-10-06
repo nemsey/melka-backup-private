@@ -24,10 +24,13 @@ import { VersionBadge } from "./VersionBadge";
 
 export function DashboardHome() {
   const userRole = useAppStore((s) => s.user?.role ?? "CONSULTANT");
+  // PN-008 BLOCK 7 — کاشی‌های مجاز از PersonnelAccess (OWNER همیشه همه)
+  const tileAccess = useAppStore((s) => s.tileAccess);
   const openTile = useAppStore((s) => s.openTile);
   const displayName = useAppStore((s) => s.user?.displayName);
-  const tiles = tileRegistry.listRoot(userRole);
-  const managementChildren = tileRegistry.listChildren("management-dashboard", userRole);
+  const allowed = (id: string) => userRole === "OWNER" || !tileAccess || tileAccess.tiles.includes(id) || id === "settings";
+  const tiles = tileRegistry.listRoot(userRole).filter((t) => allowed(t.id));
+  const managementChildren = tileRegistry.listChildren("management-dashboard", userRole).filter((t) => allowed(t.id));
 
   return (
     <main className="flex-1 mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 flex flex-col">

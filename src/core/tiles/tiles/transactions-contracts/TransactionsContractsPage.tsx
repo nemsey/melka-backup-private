@@ -20,7 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Server, CheckCircle2, AlertTriangle, History } from "lucide-react";
+import { Loader2, RefreshCw, Server, CheckCircle2, AlertTriangle } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { useTileFreshness } from "@/components/app/TileCard";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
@@ -149,15 +149,11 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
     <Card className="border-sec-m3-200 bg-sec-m3-50" id="m3-update-section">
       <CardContent className="p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-start gap-2.5 min-w-0">
-            <Server className="w-5 h-5 shrink-0 mt-0.5 text-sec-m3-700" aria-hidden />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Server className="w-5 h-5 shrink-0 text-sec-m3-700" aria-hidden />
             <div className="min-w-0">
-              <p className="text-sm font-medium leading-relaxed">
-                بروزرسانی معاملات از سامانه‌های ملک تبریز — اجرای پس‌زمینه‌ای پایدار با پیشرفت مرحله‌به‌مرحله و ازسرگیری از نقطهٔ قطع
-              </p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                گزارش تطابق معاملات، جزئیات قراردادها (نوع، مبلغ، طرفین) و کارگزاری‌های صادره از زنجیرهٔ عین سامانه‌های ARM و PM؛ پاسخ فوری و بدون مهلت ۹۰ ثانیه — در صورت قطعی، ادامه از همان نقطه.
-              </p>
+              {/* PN-009 مرحله E (بند ۱۳ دستور): توضیحات زیر عنوان حذف شد — فقط عنوان + دکمه/وضعیت زنده */}
+              <p className="text-sm font-bold">بروزرسانی معاملات از سامانه‌های ملک تبریز</p>
             </div>
           </div>
           <Button className="gap-2 shrink-0 bg-sec-m3-500 hover:bg-sec-m3-500/90 text-sec-m3-fg" onClick={() => void syncAll()} disabled={syncing}>
@@ -171,7 +167,7 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
           <div className="rounded-lg border bg-card p-3 space-y-2" data-testid="m3-sync-progress">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-bold flex items-center gap-1.5">
-                {job.status === "running" ? <Loader2 className="w-3.5 h-3.5 animate-spin text-sec-m3-700" aria-hidden /> : job.status === "done" ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" aria-hidden /> : <AlertTriangle className="w-3.5 h-3.5 text-amber-600" aria-hidden />}
+                {job.status === "running" ? <Loader2 className="w-3.5 h-3.5 animate-spin text-sec-m3-700" aria-hidden /> : job.status === "done" ? <CheckCircle2 className="w-3.5 h-3.5 text-sec-m3-700" aria-hidden /> : <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" aria-hidden />}
                 {stageLabel ?? job.status}
               </span>
               <span className="tabular-nums font-bold">{faDigits(String(job.progressPercent))}٪</span>
@@ -212,15 +208,6 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
             <p className="text-muted-foreground">منبع داده</p>
             <p className="font-bold mt-0.5">{freshness?.sourceLabel ?? "سامانه ملک تبریز (ARM)"}</p>
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant="outline" className="gap-1 text-[10px]">
-            <History className="w-3 h-3" aria-hidden /> ازسرگیری از آخرین نقطهٔ کامل
-          </Badge>
-          <Badge variant="outline" className="gap-1 text-[10px]">
-            پاسخ فوری — بدون مهلت ۹۰ ثانیه
-          </Badge>
         </div>
       </CardContent>
     </Card>

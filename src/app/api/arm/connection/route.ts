@@ -41,6 +41,7 @@ import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { audit, clearSessionArmTokens, updateSessionArmTokens } from "@/lib/auth/session";
 import { getArmVaultStatus, vaultKeyForSession } from "@/lib/auth/arm-vault";
 import { getSyncState } from "@/lib/melk-api/sync";
+import { clientIp } from "@/lib/auth/client-ip";
 
 /** نرمال‌سازی ارقام فارسی/عربی به لاتین */
 function toLatinDigits(s: string): string {
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     return errorResponse(new MelkApiError("UNKNOWN", "بدنه درخواست نامعتبر است.", 400, false));
   }
 
-  const ip = request.headers.get("x-forwarded-for") ?? undefined;
+  const ip = clientIp(request); // PN-008 BLOCK 3 — Trusted Proxy (تک‌نقطه تصمیم)
 
   switch (body.action) {
     // ---------- ۱) ارسال پیامک ARM (عین GET authentication/otp/{code}) ----------

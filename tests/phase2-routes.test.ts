@@ -130,27 +130,28 @@ describe("P2-03 integration — crm/transactions", () => {
 });
 
 // ==========================================================================
-// ۳) crm/experts — فهرست + مجموع تعاملات
+// ۳) /api/experts — فهرست تازهٔ کارشناسان (PN-008 ثانیاً)
 // ==========================================================================
 
-describe("P2-03 integration — crm/experts", () => {
-  test("GET → 200 + ردیف‌های غنی‌شده با interactionTotal", async () => {
+describe("P2-03 integration — /api/experts", () => {
+  test("GET → 200 + ردیف‌های پروفایل PM با ستون‌های الزامی", async () => {
     const { NextRequest } = await import("next/server");
-    const route = await import("@/app/api/crm/experts/route");
+    const route = await import("@/app/api/experts/route");
     const token = await makeSession();
 
-    const req = new NextRequest("http://localhost/api/crm/experts?limit=5", { headers: authHeader(token) });
+    const req = new NextRequest("http://localhost/api/experts?limit=5", { headers: authHeader(token) });
     const res = await route.GET(req);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(Array.isArray(body.rows)).toBe(true);
     expect(typeof body.total).toBe("number");
+    expect(body.filterOptions).toHaveProperty("branches");
     for (const row of body.rows) {
-      expect(row).toHaveProperty("interactionTotal");
-      expect(typeof row.interactionTotal).toBe("number");
-      expect(row).toHaveProperty("personnelCode");
-      expect(row).toHaveProperty("fullName");
+      // ستون‌های الزامی مالک همیشه در قرارداد پاسخ حاضرند (تهی = null → UI «-»)
+      for (const k of ["personnelCode", "fullName", "mobile", "branchTitle", "saleCount", "rentCount", "hireDate", "address"]) {
+        expect(row).toHaveProperty(k);
+      }
     }
     expect(body.dataSource).toHaveProperty("real", true);
   });
