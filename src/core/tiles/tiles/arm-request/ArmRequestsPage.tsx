@@ -42,13 +42,13 @@ import {
   Landmark, PieChart, Banknote, Tag, CalendarDays, Network, Filter, MapPinned, Award, Building2, Home,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton } from "@/components/app/shared";
+import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
-import { valueSoftClass, valueSolidClass, branchBadgeClass } from "@/lib/value-colors";
+import { valueSoftClass, valueSolidClass, branchBadgeClass, requestStateBadgeClass } from "@/lib/value-colors";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانه
 import { normalizeFilterInput } from "@/lib/normalize-input";
 // P6530/گام ۲ — وضعیت شش‌حالتهٔ درخواست‌ها
@@ -161,16 +161,6 @@ const EMPTY_FILTERS = {
 };
 
 type Filters = typeof EMPTY_FILTERS;
-
-/** رنگ Badge هر حالت — کلیدواژهٔ بصری ثابت در فیلتر/ستون/بینش */
-const STATE_BADGE_CLASS: Record<RequestStateKey, string> = {
-  traded: "bg-teal-500/15 text-teal-700 dark:text-teal-400 border-teal-500/30",
-  pendingTrade: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
-  lead: "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30",
-  pendingApproval: "bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-500/30",
-  lostToCompetitors: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30",
-  other: "bg-stone-500/15 text-stone-700 dark:text-stone-400 border-stone-500/30",
-};
 
 /** دسته‌بندی درخواست‌های ملک تبریز — عین نکته ۴ دستور مالک */
 const TRADE_CATEGORIES: readonly string[] = ["خرید", "پیش خرید", "رهن و اجاره", "مشارکت در ساخت"];
@@ -326,6 +316,11 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     stateFilterActive ||
     selectedTrades.length > 0 ||
     Object.values(applied).some((v) => v !== "");
+  // PN-009 مرحله D — شمارندهٔ فیلترهای فعال برای سربرگ آکاردئون موبایل (الگوی [فیلترها ۵] دستور بند ۶.۱)
+  const activeFilterCount =
+    selectedStates.length +
+    selectedTrades.length +
+    Object.values(applied).filter((v) => v !== "").length;
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
 
@@ -353,14 +348,16 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "fa"));
   }, [rows]);
 
-  /** نمایش بازهٔ قیمت متقاضی (P6546/گام پنجم-ت-۴): «از ۹،۰۰۰،۰۰۰،۰۰۰ / تا ۱۲،۰۰۰،۰۰۰،۰۰۰» */
-  const priceRangeLabel = (r: RequestRow): string | null => {
-    if (r.priceFrom === null && r.priceTo === null) return null;
-    if (r.priceFrom !== null && r.priceTo !== null) {
-      return `از ${faAmountFull(r.priceFrom, "")} / تا ${faAmountFull(r.priceTo, "")}`;
-    }
-    if (r.priceFrom !== null) return `از ${faAmountFull(r.priceFrom, "")}`;
-    return `تا ${faAmountFull(r.priceTo!, "")}`;
+  /** نمایش بازهٔ قیمت متقاضی — PN-009 مرحله D (بند ۹ دستور): دوخطی «از X» / «تا Y» — نه تک‌خط با خط تیره/اسلش */
+  const priceRange = (r: RequestRow): { from: string | null; to: string | null } => ({
+    from: r.priceFrom !== null ? faAmountFull(r.priceFrom, "") : null,
+    to: r.priceTo !== null ? faAmountFull(r.priceTo, "") : null,
+  });
+  const hasPriceRange = (r: RequestRow): boolean => r.priceFrom !== null || r.priceTo !== null;
+  const priceRangeTooltip = (r: RequestRow): string => {
+    if (r.priceFrom !== null && r.priceTo !== null) return `از ${faAmountFull(r.priceFrom, "")} تا ${faAmountFull(r.priceTo, "")} — تومان`;
+    if (r.priceFrom !== null) return `از ${faAmountFull(r.priceFrom, "")} — تومان`;
+    return `تا ${faAmountFull(r.priceTo!, "")} — تومان`;
   };
 
   // قانون ۰۳۵-B/ج-۸ — کشیدن برای تازه‌سازی
@@ -400,7 +397,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                   onClick={() => toggleState(s.key)}
                   aria-pressed={selectedStates.includes(s.key)}
                   title={s.hint}
-                  className={`rounded-xl border p-2.5 text-start sec-motion ${STATE_BADGE_CLASS[s.key]} ${
+                  className={`rounded-xl border p-2.5 text-start sec-motion ${requestStateBadgeClass(s.key)} ${
                     selectedStates.includes(s.key) ? "ring-2 ring-offset-1 ring-offset-background ring-current" : "opacity-90 hover:opacity-100"
                   }`}
                 >
@@ -455,7 +452,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
             </Button>
           </div>
 
-          {/* بند ۴.۲ — تاریخ و ساعت دقیق آخرین بروزرسانی + پوشش منبع (مهم ۳: شفافیت ۲۰٬۳۹۲) */}
+          {/* بند ۴.۲ — تاریخ و ساعت دقیق آخرین بروزرسانی + پوشش منبع (مهم ۳: شفافیت ۲۰،۳۹۲) */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs" id="arm-request-last-update">
             <div className="rounded-lg border bg-card p-2.5">
               <p className="text-muted-foreground">آخرین بروزرسانی فهرست</p>
@@ -511,80 +508,76 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
           >
             <Filter className="w-4 h-4 text-sec-m2-700" aria-hidden />
             فیلتر فهرست درخواست
-            {anyFilterActive && <Badge variant="secondary" className="gap-1">فیلتر فعال</Badge>}
+            {anyFilterActive && <Badge variant="secondary" className="gap-1">فیلترها ({faNumber(activeFilterCount)})</Badge>}
             <span className="text-muted-foreground text-xs me-auto">{filtersOpen ? "بستن" : "باز کردن"}</span>
           </button>
 
           {filtersOpen && (
             <>
-              {/* وضعیت شش‌حالته — چندانتخابی */}
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Label>وضعیت درخواست (چندانتخابی — شش‌حالته)</Label>
-                  {stateFilterActive && (
-                    <span className="text-xs text-muted-foreground">
-                      {faNumber(selectedStates.length)} حالت انتخاب شده — {faNumber(rows.length)} درخواست مطابق
-                    </span>
-                  )}
+              {/* PN-009 مرحله D — گروه‌بندی منطقی فیلترها (قانون ۶.۱): وضعیت → دسته‌بندی → شناسه و اشخاص → قیمت و بازه */}
+              <FilterGroup
+                label="وضعیت درخواست (چندانتخابی — شش‌حالته)"
+                hint={stateFilterActive ? `${faNumber(selectedStates.length)} حالت انتخاب شده — ${faNumber(rows.length)} درخواست مطابق` : undefined}
+                action={
+                  stateFilterActive ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 gap-1 px-2 text-[10px] text-muted-foreground"
+                      onClick={() => setSelectedStates([])}
+                      aria-label="پاک کردن فیلتر وضعیت"
+                    >
+                      <RotateCcw className="w-3 h-3" aria-hidden /> پاک کردن وضعیت
+                    </Button>
+                  ) : undefined
+                }
+              >
+                <div className="flex flex-wrap gap-1.5" id="arm-request-states-filter">
+                  {REQUEST_STATES.map((s) => (
+                    <FilterChip
+                      key={s.key}
+                      label={s.label}
+                      active={selectedStates.includes(s.key)}
+                      onToggle={() => toggleState(s.key)}
+                      title={s.hint}
+                      softClass={requestStateBadgeClass(s.key)}
+                      solidClass={requestStateBadgeClass(s.key)}
+                    />
+                  ))}
                 </div>
-                <div className="flex flex-wrap gap-2" id="arm-request-states-filter">
-                  {REQUEST_STATES.map((s) => {
-                    const active = selectedStates.includes(s.key);
-                    return (
-                      <button
-                        key={s.key}
-                        type="button"
-                        onClick={() => toggleState(s.key)}
-                        aria-pressed={active}
-                        title={s.hint}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-bold sec-motion ${STATE_BADGE_CLASS[s.key]} ${
-                          active ? "ring-2 ring-offset-1 ring-offset-background ring-current" : "opacity-80 hover:opacity-100"
-                        }`}
-                      >
-                        {active ? "✓ " : ""}{s.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              </FilterGroup>
 
               {/* دسته‌بندی — چندانتخابی (نکته ۴) */}
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Label>دسته‌بندی درخواست (چندانتخابی)</Label>
-                  {selectedTrades.length > 0 && (
-                    <span className="text-xs text-muted-foreground">{faNumber(selectedTrades.length)} دسته انتخاب شده</span>
-                  )}
+              <FilterGroup
+                label="دسته‌بندی درخواست (چندانتخابی)"
+                hint={selectedTrades.length > 0 ? `${faNumber(selectedTrades.length)} دسته انتخاب شده` : undefined}
+              >
+                <div className="flex flex-wrap gap-1.5" id="arm-request-trades-filter">
+                  {/* P6547/گام پنجم-ب — رنگ متمایز هر دسته از رجیستری (خرید=سبز روشن، پیش خرید=آبی، رهن و اجاره=بنفش، مشارکت=کهربایی) */}
+                  {TRADE_CATEGORIES.map((t) => (
+                    <FilterChip
+                      key={t}
+                      label={t}
+                      active={selectedTrades.includes(t)}
+                      onToggle={() => toggleTrade(t)}
+                      softClass={valueSoftClass(t)}
+                      solidClass={valueSolidClass(t)}
+                    />
+                  ))}
                 </div>
-                <div className="flex flex-wrap gap-2" id="arm-request-trades-filter">
-                  {TRADE_CATEGORIES.map((t) => {
-                    const active = selectedTrades.includes(t);
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => toggleTrade(t)}
-                        aria-pressed={active}
-                        // P6547/گام پنجم-ب — رنگ متمایز هر دسته (خرید=سبز روشن، پیش خرید=آبی، رهن و اجاره=بنفش، مشارکت=کهربایی)
-                        className={`rounded-full px-3 py-1.5 text-xs font-bold sec-motion ${
-                          active ? valueSolidClass(t) : `${valueSoftClass(t)} opacity-80 hover:opacity-100`
-                        }`}
-                      >
-                        {active ? "✓ " : ""}{t}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              </FilterGroup>
 
               {/* فیلترهای متنی/عددی تمام ستون‌ها — P6546/گام پنجم-ب: چیدمان جمع‌وجور + بازه‌های روبروهم */}
               <form
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end"
+                className="space-y-3"
                 onSubmit={(e) => {
                   e.preventDefault();
                   setApplied({ ...filters });
                 }}
               >
+              <FilterGroup label="شناسه، اشخاص و مناطق">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
                 <div className="space-y-1.5">
                   <Label htmlFor="arm-request-code">کد درخواست</Label>
                   <Input
@@ -639,32 +632,6 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     className="font-bold"
                   />
                 </div>
-                {/* P6546/گام پنجم-ب-۲ — فیلد دوعاملی بازه‌ای روبروهم: قیمت: از … تا … */}
-                <div className="space-y-1.5">
-                  <Label>قیمت (تومان)</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      id="arm-request-price-from"
-                      aria-label="قیمت از (تومان)"
-                      value={filters.priceFrom}
-                      onChange={(e) => setF("priceFrom", e.target.value)}
-                      placeholder="از ۹٬۰۰۰٬۰۰۰٬۰۰۰"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      className="font-bold text-[11px]"
-                    />
-                    <Input
-                      id="arm-request-price-to"
-                      aria-label="قیمت تا (تومان)"
-                      value={filters.priceTo}
-                      onChange={(e) => setF("priceTo", e.target.value)}
-                      placeholder="تا ۱۲٬۰۰۰٬۰۰۰٬۰۰۰"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      className="font-bold text-[11px]"
-                    />
-                  </div>
-                </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="arm-request-area">مناطق</Label>
                   <Input
@@ -675,6 +642,36 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     autoComplete="off"
                     className="font-bold"
                   />
+                </div>
+                </div>
+              </FilterGroup>
+              {/* P6546/گام پنجم-ب-۲ — فیلد دوعاملی بازه‌ای روبروهم: قیمت: از … تا … */}
+              <FilterGroup label="قیمت و بازهٔ ثبت">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                <div className="space-y-1.5">
+                  <Label>قیمت (تومان)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      id="arm-request-price-from"
+                      aria-label="قیمت از (تومان)"
+                      value={filters.priceFrom}
+                      onChange={(e) => setF("priceFrom", e.target.value)}
+                      placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      className="font-bold text-[11px]"
+                    />
+                    <Input
+                      id="arm-request-price-to"
+                      aria-label="قیمت تا (تومان)"
+                      value={filters.priceTo}
+                      onChange={(e) => setF("priceTo", e.target.value)}
+                      placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      className="font-bold text-[11px]"
+                    />
+                  </div>
                 </div>
                 {/* بازهٔ تاریخ ثبت — روبروهم */}
                 <div className="space-y-1.5">
@@ -694,7 +691,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     />
                   </div>
                 </div>
-                <div className="flex gap-2 lg:col-span-3">
+                </div>
+              </FilterGroup>
+                <div className="flex gap-2">
                   <Button type="submit" className="gap-2 flex-1 bg-sec-m2-500 hover:bg-sec-m2-500/90 text-sec-m2-fg">
                     <Search className="w-4 h-4" aria-hidden /> اعمال فیلتر
                   </Button>
@@ -873,13 +872,15 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             </span>
                           )}
                         </TableCell>
-                        {/* ۶ — قیمت (P6546/گام پنجم-ت-۴: «از ۹،۰۰۰،۰۰۰،۰۰۰ / تا ۱۲،۰۰۰،۰۰۰،۰۰۰») */}
-                        <TableCell className="whitespace-nowrap">
-                          {priceRangeLabel(r) ? (
-                            <span className="inline-flex items-center gap-1 font-bold tabular-nums text-[11px]" title={priceRangeLabel(r)!}>
-                              <Banknote className="w-3 h-3 text-sec-m2-700 shrink-0" aria-hidden />
-                              {priceRangeLabel(r)}
+                        {/* ۶ — قیمت — PN-009 مرحله D (بند ۹ دستور): نمایش دوخطی «از X» / «تا Y» */}
+                        <TableCell>
+                          {hasPriceRange(r) ? (
+                            (() => { const pr = priceRange(r); return (
+                            <span className="inline-flex flex-col items-start leading-tight font-bold tabular-nums text-[11px]" title={priceRangeTooltip(r)}>
+                              {pr.from !== null && <span>از {pr.from}</span>}
+                              {pr.to !== null && <span>تا {pr.to}</span>}
                             </span>
+                            ); })()
                           ) : (
                             <span className="text-muted-foreground text-[10px]">در نوبت تکمیل</span>
                           )}
@@ -921,7 +922,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                         {/* ۹ — وضعیت (شش‌حالته) */}
                         <TableCell>
                           {r.status ? (
-                            <Badge variant="secondary" className={`text-[11px] border ${STATE_BADGE_CLASS[stateKey]}`} title={REQUEST_STATE_BY_KEY.get(stateKey)?.hint}>
+                            <Badge variant="secondary" className={`text-[11px] border ${requestStateBadgeClass(stateKey)}`} title={REQUEST_STATE_BY_KEY.get(stateKey)?.hint}>
                               {requestStatusLabel(r.status)}
                             </Badge>
                           ) : (

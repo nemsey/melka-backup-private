@@ -43,13 +43,14 @@ import {
   CalendarDays, TrendingUp, Award, MapPinned, Globe, FileSpreadsheet, Eye, Image as ImageIcon, ExternalLink,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton } from "@/components/app/shared";
+import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
-import { valueSoftClass, valueSolidClass, branchBadgeClass } from "@/lib/value-colors";
+// PN-009 مرحله C — رنگ وضعیت‌ها هم از رجیستری یگانه (منبع حقیقت واحد)
+import { valueSoftClass, valueSolidClass, branchBadgeClass, listingStateBadgeClass } from "@/lib/value-colors";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانه (رفع باگ تاریخی ۴/۵ در این صفحه)
 import { normalizeFilterInput } from "@/lib/normalize-input";
 import {
@@ -155,20 +156,6 @@ const EMPTY_FILTERS = {
 };
 
 type Filters = typeof EMPTY_FILTERS;
-
-/** رنگ Badge هر حالت — کلیدواژهٔ بصری ثابت در فیلتر/ستون/بینش (semantic — مستقل از رنگ بخش) */
-const STATE_BADGE_CLASS: Record<ListingStateKey, string> = {
-  traded: "bg-teal-500/15 text-teal-700 dark:text-teal-400 border-teal-500/30",
-  published: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-  private: "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-500/30",
-  expired: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
-  rejectedByAdmin: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30",
-  pendingAdmin: "bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-500/30",
-  pendingConsultant: "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30",
-  pendingReview: "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30",
-  recoverable: "bg-lime-500/15 text-lime-700 dark:text-lime-400 border-lime-500/30",
-  unrecoverable: "bg-stone-500/15 text-stone-700 dark:text-stone-400 border-stone-500/30",
-};
 
 /** دسته‌بندی آگهی ملک تبریز — عین نکته ۴ دستور مالک */
 const TRADE_CATEGORIES: readonly string[] = ["فروش", "پیش فروش", "رهن و اجاره", "مشارکت در ساخت"];
@@ -300,7 +287,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
       toast({
         title: "بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز انجام شد",
         description: list
-          ? `${faNumber(list.fetched)} آگهی از مجموع ${faNumber(list.totalAtSource)} آگهی سامانه ARM در این برش (حدود ۵٬۰۰۰ رکورد) خوانده شد و برش تکمیل جزئیات (حدود ۵۰۰ رکورد: مالک، آدرس، متراژ، اتاق، طبقه، سال ساخت، نوع ملک) هم اجرا شد. ادامهٔ بروزرسانی از همان صفحه‌ای که تمام شده بود، ازسر گرفته می‌شود.`
+          ? `${faNumber(list.fetched)} آگهی از مجموع ${faNumber(list.totalAtSource)} آگهی سامانه ARM در این برش (حدود ۵،۰۰۰ رکورد) خوانده شد و برش تکمیل جزئیات (حدود ۵۰۰ رکورد: مالک، آدرس، متراژ، اتاق، طبقه، سال ساخت، نوع ملک) هم اجرا شد. ادامهٔ بروزرسانی از همان صفحه‌ای که تمام شده بود، ازسر گرفته می‌شود.`
           : "بروزرسانی اجرا شد.",
       });
       await load();
@@ -324,6 +311,11 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
     stateFilterActive ||
     selectedTrades.length > 0 ||
     Object.values(applied).some((v) => v !== "");
+  // PN-009 مرحله C — شمارندهٔ فیلترهای فعال برای سربرگ آکاردئون موبایل (الگوی [فیلترها ۵] دستور بند ۶.۱)
+  const activeFilterCount =
+    selectedStates.length +
+    selectedTrades.length +
+    Object.values(applied).filter((v) => v !== "").length;
 
   // P6546/گام یک-۲ — بینش ۱۰ کارشناس پرآگهی (تجمیع زندهٔ فهرست)
   const topRealtors = useMemo(() => {
@@ -387,7 +379,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                   onClick={() => toggleState(s.key)}
                   aria-pressed={selectedStates.includes(s.key)}
                   title={s.hint}
-                  className={`rounded-xl border p-2.5 text-start sec-motion ${STATE_BADGE_CLASS[s.key]} ${
+                  className={`rounded-xl border p-2.5 text-start sec-motion ${listingStateBadgeClass(s.key)} ${
                     selectedStates.includes(s.key) ? "ring-2 ring-offset-1 ring-offset-background ring-current" : "opacity-90 hover:opacity-100"
                   }`}
                 >
@@ -505,92 +497,76 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
           >
             <Filter className="w-4 h-4 text-sec-m1-700" aria-hidden />
             فیلتر فهرست آگهی
-            {anyFilterActive && <Badge variant="secondary" className="gap-1">فیلتر فعال</Badge>}
+            {anyFilterActive && <Badge variant="secondary" className="gap-1">فیلترها ({faNumber(activeFilterCount)})</Badge>}
             <span className="text-muted-foreground text-xs me-auto">{filtersOpen ? "بستن" : "باز کردن"}</span>
           </button>
 
           {filtersOpen && (
             <>
-              {/* وضعیت ده‌حالته — چندانتخابی */}
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Label>وضعیت آگهی (چندانتخابی — ده‌حالته)</Label>
-                  {stateFilterActive && (
-                    <span className="text-xs text-muted-foreground">
-                      {faNumber(selectedStates.length)} حالت انتخاب شده — {faNumber(rows.length)} آگهی مطابق
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2" id="arm-listing-states-filter">
-                  {LISTING_STATES.map((s) => {
-                    const active = selectedStates.includes(s.key);
-                    return (
-                      <button
-                        key={s.key}
-                        type="button"
-                        onClick={() => toggleState(s.key)}
-                        aria-pressed={active}
-                        title={s.hint}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-bold sec-motion ${STATE_BADGE_CLASS[s.key]} ${
-                          active ? "ring-2 ring-offset-1 ring-offset-background ring-current" : "opacity-80 hover:opacity-100"
-                        }`}
-                      >
-                        {active ? "✓ " : ""}{s.label}
-                      </button>
-                    );
-                  })}
-                  {stateFilterActive && (
+              {/* PN-009 مرحله C — گروه‌بندی منطقی فیلترها (قانون ۶.۱): وضعیت → دسته‌بندی → شناسه و اشخاص → قیمت و بازه */}
+              <FilterGroup
+                label="وضعیت آگهی (چندانتخابی — ده‌حالته)"
+                hint={stateFilterActive ? `${faNumber(selectedStates.length)} حالت انتخاب شده — ${faNumber(rows.length)} آگهی مطابق` : undefined}
+                action={
+                  stateFilterActive ? (
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="gap-1 text-muted-foreground"
+                      className="h-6 gap-1 px-2 text-[10px] text-muted-foreground"
                       onClick={() => setSelectedStates([])}
                       aria-label="پاک کردن فیلتر وضعیت"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" aria-hidden /> پاک کردن وضعیت
+                      <RotateCcw className="w-3 h-3" aria-hidden /> پاک کردن وضعیت
                     </Button>
-                  )}
+                  ) : undefined
+                }
+              >
+                <div className="flex flex-wrap gap-1.5" id="arm-listing-states-filter">
+                  {LISTING_STATES.map((s) => (
+                    <FilterChip
+                      key={s.key}
+                      label={s.label}
+                      active={selectedStates.includes(s.key)}
+                      onToggle={() => toggleState(s.key)}
+                      title={s.hint}
+                      softClass={listingStateBadgeClass(s.key)}
+                      solidClass={listingStateBadgeClass(s.key)}
+                    />
+                  ))}
                 </div>
-              </div>
+              </FilterGroup>
 
               {/* دسته‌بندی — چندانتخابی (نکته ۴) */}
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Label>دسته‌بندی آگهی (چندانتخابی)</Label>
-                  {selectedTrades.length > 0 && (
-                    <span className="text-xs text-muted-foreground">{faNumber(selectedTrades.length)} دسته انتخاب شده</span>
-                  )}
+              <FilterGroup
+                label="دسته‌بندی آگهی (چندانتخابی)"
+                hint={selectedTrades.length > 0 ? `${faNumber(selectedTrades.length)} دسته انتخاب شده` : undefined}
+              >
+                <div className="flex flex-wrap gap-1.5" id="arm-listing-trades-filter">
+                  {/* P6547/گام پنجم-ب-نکته ۱ — رنگ متمایز هر دسته از رجیستری (فروش=سبز روشن، پیش فروش=آبی، رهن و اجاره=بنفش، مشارکت=کهربایی) */}
+                  {TRADE_CATEGORIES.map((t) => (
+                    <FilterChip
+                      key={t}
+                      label={t}
+                      active={selectedTrades.includes(t)}
+                      onToggle={() => toggleTrade(t)}
+                      softClass={valueSoftClass(t)}
+                      solidClass={valueSolidClass(t)}
+                    />
+                  ))}
                 </div>
-                <div className="flex flex-wrap gap-2" id="arm-listing-trades-filter">
-                  {TRADE_CATEGORIES.map((t) => {
-                    const active = selectedTrades.includes(t);
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => toggleTrade(t)}
-                        aria-pressed={active}
-                        // P6547/گام پنجم-ب-نکته ۱ — رنگ متمایز هر دسته (فروش=سبز روشن، پیش فروش=آبی، رهن و اجاره=بنفش، مشارکت=کهربایی)
-                        className={`rounded-full px-3 py-1.5 text-xs font-bold sec-motion ${
-                          active ? valueSolidClass(t) : `${valueSoftClass(t)} opacity-80 hover:opacity-100`
-                        }`}
-                      >
-                        {active ? "✓ " : ""}{t}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              </FilterGroup>
 
               {/* فیلترهای متنی/عددی تمام ستون‌ها — P6546/گام پنجم-ب: چیدمان جمع‌وجور + بازه‌های روبروهم */}
               <form
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end"
+                className="space-y-3"
                 onSubmit={(e) => {
                   e.preventDefault();
                   setApplied({ ...filters });
                 }}
               >
+              <FilterGroup label="شناسه و اشخاص">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
                 <div className="space-y-1.5">
                   <Label htmlFor="arm-listing-code">کد آگهی</Label>
                   <Input
@@ -656,16 +632,20 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     className="font-bold"
                   />
                 </div>
-                {/* P6546/گام پنجم-ب-۲ — فیلد دوعاملی بازه‌ای روبروهم: قیمت: از … تا … */}
-                <div className="space-y-1.5">
-                  <Label>قیمت (تومان)</Label>
-                  <div className="grid grid-cols-2 gap-2">
+                </div>
+              </FilterGroup>
+              {/* P6546/گام پنجم-ب-۲ — فیلد دوعاملی بازه‌ای روبروهم: قیمت: از … تا … */}
+              <FilterGroup label="قیمت و بازهٔ فعالیت">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                  <div className="space-y-1.5">
+                    <Label>قیمت (تومان)</Label>
+                    <div className="grid grid-cols-2 gap-2">
                     <Input
                       id="arm-listing-price-from"
                       aria-label="قیمت از (تومان)"
                       value={filters.priceFrom}
                       onChange={(e) => setF("priceFrom", e.target.value)}
-                      placeholder="از ۹٬۰۰۰٬۰۰۰٬۰۰۰"
+                      placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰"
                       inputMode="numeric"
                       autoComplete="off"
                       className="font-bold text-[11px]"
@@ -675,13 +655,13 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                       aria-label="قیمت تا (تومان)"
                       value={filters.priceTo}
                       onChange={(e) => setF("priceTo", e.target.value)}
-                      placeholder="تا ۱۲٬۰۰۰٬۰۰۰٬۰۰۰"
+                      placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰"
                       inputMode="numeric"
                       autoComplete="off"
                       className="font-bold text-[11px]"
                     />
+                    </div>
                   </div>
-                </div>
                 {/* بازهٔ آخرین فعالیت — روبروهم */}
                 <div className="space-y-1.5">
                   <Label>آخرین فعالیت</Label>
@@ -700,7 +680,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     />
                   </div>
                 </div>
-                <div className="flex gap-2 lg:col-span-3">
+                </div>
+              </FilterGroup>
+                <div className="flex gap-2">
                   <Button type="submit" className="gap-2 flex-1 bg-sec-m1-500 hover:bg-sec-m1-500/90 text-sec-m1-fg">
                     <Search className="w-4 h-4" aria-hidden /> اعمال فیلتر
                   </Button>
@@ -983,7 +965,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                         <TableCell>
                           {r.status ? (
                             stateKey ? (
-                              <Badge variant="secondary" className={`text-[11px] border ${STATE_BADGE_CLASS[stateKey]}`} title={LISTING_STATE_BY_KEY.get(stateKey)?.hint}>
+                              <Badge variant="secondary" className={`text-[11px] border ${listingStateBadgeClass(stateKey)}`} title={LISTING_STATE_BY_KEY.get(stateKey)?.hint}>
                                 {LISTING_STATE_BY_KEY.get(stateKey)!.label}
                               </Badge>
                             ) : (

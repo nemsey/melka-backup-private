@@ -170,6 +170,19 @@
   --chart-3: oklch(0.62 0.09 160);
   --chart-4: oklch(0.78 0.1 85);
   --chart-5: oklch(0.64 0.15 30);
+  /* رنگ معنایی چارت/نماد — رجیستری value-colors (PN-009 مرحله B) · Light = سایهٔ ۶۰۰/۷۰۰ (AA) */
+  --sem-emerald: oklch(0.508 0.118 165);
+  --sem-sky: oklch(0.554 0.135 237);
+  --sem-violet: oklch(0.541 0.238 293);
+  --sem-amber: oklch(0.573 0.14 58);
+  --sem-rose: oklch(0.545 0.223 15);
+  --sem-teal: oklch(0.514 0.096 180);
+  --sem-indigo: oklch(0.511 0.215 269);
+  --sem-lime: oklch(0.545 0.15 118);
+  --sem-orange: oklch(0.562 0.181 35);
+  --sem-cyan: oklch(0.52 0.115 200);
+  --sem-fuchsia: oklch(0.523 0.241 313);
+  --sem-stone: oklch(0.443 0.011 73);
   --sidebar: oklch(0.985 0.005 190);
   --sidebar-foreground: oklch(0.25 0.028 200);
   --sidebar-primary: oklch(0.51 0.095 194);
@@ -205,6 +218,19 @@
   --chart-3: oklch(0.68 0.09 160);
   --chart-4: oklch(0.8 0.09 85);
   --chart-5: oklch(0.7 0.14 30);
+  /* رنگ معنایی چارت/نماد — Dark = سایهٔ ۳۰۰ (روشن فقط به اندازهٔ خوانایی) */
+  --sem-emerald: oklch(0.795 0.135 166);
+  --sem-sky: oklch(0.828 0.111 230);
+  --sem-violet: oklch(0.785 0.167 293);
+  --sem-amber: oklch(0.871 0.156 89);
+  --sem-rose: oklch(0.812 0.128 18);
+  --sem-teal: oklch(0.855 0.121 180);
+  --sem-indigo: oklch(0.797 0.15 271);
+  --sem-lime: oklch(0.884 0.175 121);
+  --sem-orange: oklch(0.847 0.145 45);
+  --sem-cyan: oklch(0.825 0.102 215);
+  --sem-fuchsia: oklch(0.84 0.171 320);
+  --sem-stone: oklch(0.86 0.008 75);
   --sidebar: oklch(0.275 0.02 205);
   --sidebar-foreground: oklch(0.93 0.012 190);
   --sidebar-primary: oklch(0.77 0.115 188);

@@ -37,7 +37,7 @@ import {
   RefreshCw, CheckCircle2, IdCard, CalendarClock, BriefcaseBusiness, FileSpreadsheet, UserCheck, Phone,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TileCoverageTable, useTileData, type DataSourceInfo } from "@/components/app/shared";
+import { KpiCard, TileCoverageTable, useTileData, FilterGroup, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob } from "@/lib/client/api";
 import { faNumber, faJalaliShort } from "@/lib/format";
@@ -123,6 +123,10 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [syncing, setSyncing] = useState(false);
   const [syncStage, setSyncStage] = useState<SyncStage | null>(null);
+  // PN-009 مرحله F — آکاردئون موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ — الگوی مشترک M1/M2 (قانون ۶.۱)
+  const [filtersOpen, setFiltersOpen] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
+  );
   const viewMode = String(settings.viewMode ?? "table");
 
   const fetchExperts = useCallback(async (): Promise<ExResponse> => {
@@ -178,6 +182,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   );
   const options = data?.filterOptions ?? { branches: [], employmentTypes: [], managers: [], roles: [], cities: [] };
   const anyFilterActive = Object.values(applied).some((v) => v !== "" && v !== "all");
+  // PN-009 مرحله F — شمارندهٔ فیلترهای فعال برای سربرگ آکاردئون (الگوی [فیلترها ۵] بند ۶.۱)
+  const activeFilterCount = Object.values(applied).filter((v) => v !== "" && v !== "all").length;
 
   /** بروزرسانی فهرست — زنجیرهٔ سه‌مرحله‌ای PM با گزارش صادقانهٔ هر مرحله */
   const doSync = useCallback(async () => {
@@ -234,7 +240,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                 <p className="text-sm font-bold">بروزرسانی فهرست کارشناسان از سامانهٔ پرسنلی ملک تبریز</p>
               </div>
             </div>
-            <Button onClick={() => void doSync()} disabled={syncing} className="gap-1.5">
+            <Button onClick={() => void doSync()} disabled={syncing} className="gap-1.5 shrink-0 bg-sec-m4-500 hover:bg-sec-m4-500/90 text-sec-m4-fg">
               {syncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
               {syncing ? "در حال بروزرسانی…" : "بروزرسانی فهرست"}
             </Button>
@@ -254,150 +260,169 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
         </CardContent>
       </Card>
 
-      {/* ─── فیلتر فهرست (تمام ستون‌ها) ─── */}
+      {/* ─── فیلتر فهرست (تمام ستون‌ها) — PN-009 مرحله F: گروه‌بندی منطقی + آکاردئون موبایل ─── */}
       <Card className="border-sec-m4-200" id="m4-filter-section">
         <CardHeader className="py-4">
-          <CardTitle className="text-base flex items-center gap-2"><Filter className="w-4 h-4 text-sec-m4-700" aria-hidden /> فیلتر فهرست کارشناسان و کارکنان</CardTitle>
+          <button
+            type="button"
+            className="flex items-center gap-2 text-base font-bold w-full"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+          >
+            <Filter className="w-4 h-4 text-sec-m4-700" aria-hidden />
+            فیلتر فهرست کارشناسان و کارکنان
+            {anyFilterActive && <Badge variant="secondary" className="gap-1">فیلترها ({faNumber(activeFilterCount)})</Badge>}
+            <span className="text-muted-foreground text-xs me-auto">{filtersOpen ? "بستن" : "باز کردن"}</span>
+          </button>
         </CardHeader>
+        {filtersOpen && (
         <CardContent className="p-4 pt-0 space-y-4">
-          {/* جستجوی آزاد + متن‌ها */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5 col-span-2">
-              <Label htmlFor="exf-q">جستجو در همهٔ ستون‌ها</Label>
-              <div className="relative">
-                <Search className="w-4 h-4 absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
-                <Input id="exf-q" value={filters.q} onChange={(e) => setF("q", e.target.value)} placeholder="نام، موبایل، کدپرسنلی، آدرس…" className="ps-8" />
+          {/* جستجوی آزاد — گروه مستقل با عرض کامل */}
+          <FilterGroup label="جستجو">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
+              <Input id="exf-q" value={filters.q} onChange={(e) => setF("q", e.target.value)} placeholder="نام، موبایل، کدپرسنلی، آدرس…" className="ps-8" />
+            </div>
+          </FilterGroup>
+          {/* هویت پرسنلی */}
+          <FilterGroup label="هویت پرسنلی">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="exf-name">کارشناس (نام)</Label>
+                <Input id="exf-name" value={filters.fullName} onChange={(e) => setF("fullName", e.target.value)} placeholder="نام کارشناس" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="exf-mobile">موبایل</Label>
+                <Input id="exf-mobile" value={filters.mobile} onChange={(e) => setF("mobile", e.target.value)} placeholder="موبایل" dir="ltr" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="exf-code">کدپرسنلی</Label>
+                <Input id="exf-code" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} placeholder="مثل 410031320" dir="ltr" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="exf-voip">شماره داخلی</Label>
+                <Input id="exf-voip" value={filters.voipExtension} onChange={(e) => setF("voipExtension", e.target.value)} placeholder="داخلی" dir="ltr" />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-name">کارشناس (نام)</Label>
-              <Input id="exf-name" value={filters.fullName} onChange={(e) => setF("fullName", e.target.value)} placeholder="نام کارشناس" />
+          </FilterGroup>
+          {/* سازمانی */}
+          <FilterGroup label="سازمانی">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>شعبه</Label>
+                <Select value={filters.branchTitle || "all"} onValueChange={(v) => setF("branchTitle", v === "all" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="همهٔ شعب" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همهٔ شعب</SelectItem>
+                    {options.branches.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>سمت پرسنلی</Label>
+                <Select value={filters.roleTitle || "all"} onValueChange={(v) => setF("roleTitle", v === "all" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="همهٔ سمت‌ها" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همهٔ سمت‌ها</SelectItem>
+                    {options.roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>نوع همکاری</Label>
+                <Select value={filters.employmentType} onValueChange={(v) => setF("employmentType", v)}>
+                  <SelectTrigger><SelectValue placeholder="همهٔ انواع" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همهٔ انواع</SelectItem>
+                    {options.employmentTypes.map((e) => <SelectItem key={e.value} value={String(e.value)}>{e.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>مدیر</Label>
+                <Select value={filters.headManager || "all"} onValueChange={(v) => setF("headManager", v === "all" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="همهٔ مدیران" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همهٔ مدیران</SelectItem>
+                    {options.managers.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>شهر</Label>
+                <Select value={filters.city || "all"} onValueChange={(v) => setF("city", v === "all" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="همهٔ شهرها" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همهٔ شهرها</SelectItem>
+                    {options.cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>وضعیت</Label>
+                <Select value={filters.active} onValueChange={(v) => setF("active", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همه</SelectItem>
+                    <SelectItem value="true">فعال</SelectItem>
+                    <SelectItem value="false">غیرفعال</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-mobile">موبایل</Label>
-              <Input id="exf-mobile" value={filters.mobile} onChange={(e) => setF("mobile", e.target.value)} placeholder="موبایل" dir="ltr" />
+          </FilterGroup>
+          {/* تماس و نشانی */}
+          <FilterGroup label="تماس و نشانی">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="exf-address">آدرس</Label>
+                <Input id="exf-address" value={filters.address} onChange={(e) => setF("address", e.target.value)} placeholder="بخشی از آدرس" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="exf-tel">تلفن ثابت</Label>
+                <Input id="exf-tel" value={filters.telephone} onChange={(e) => setF("telephone", e.target.value)} placeholder="تلفن" dir="ltr" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="exf-postal">کد پستی</Label>
+                <Input id="exf-postal" value={filters.postalCode} onChange={(e) => setF("postalCode", e.target.value)} placeholder="کد پستی" dir="ltr" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-code">کدپرسنلی</Label>
-              <Input id="exf-code" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} placeholder="مثل 410031320" dir="ltr" />
+          </FilterGroup>
+          {/* بازهٔ استخدام + شمارش قرارداد */}
+          <FilterGroup label="بازهٔ استخدام و شمارش قرارداد">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>استخدام</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input id="exf-hire-from" type="date" value={filters.hireFrom} onChange={(e) => setF("hireFrom", e.target.value)} dir="ltr" aria-label="استخدام از" />
+                  <Input id="exf-hire-to" type="date" value={filters.hireTo} onChange={(e) => setF("hireTo", e.target.value)} dir="ltr" aria-label="استخدام تا" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>مبایعه‌نامه</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input id="exf-sale-from" inputMode="numeric" value={filters.saleFrom} onChange={(e) => setF("saleFrom", e.target.value)} placeholder="از" dir="ltr" aria-label="مبایعه‌نامه از" />
+                  <Input id="exf-sale-to" inputMode="numeric" value={filters.saleTo} onChange={(e) => setF("saleTo", e.target.value)} placeholder="تا" dir="ltr" aria-label="مبایعه‌نامه تا" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>اجاره‌نامه</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input id="exf-rent-from" inputMode="numeric" value={filters.rentFrom} onChange={(e) => setF("rentFrom", e.target.value)} placeholder="از" dir="ltr" aria-label="اجاره‌نامه از" />
+                  <Input id="exf-rent-to" inputMode="numeric" value={filters.rentTo} onChange={(e) => setF("rentTo", e.target.value)} placeholder="تا" dir="ltr" aria-label="اجاره‌نامه تا" />
+                </div>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-address">آدرس</Label>
-              <Input id="exf-address" value={filters.address} onChange={(e) => setF("address", e.target.value)} placeholder="بخشی از آدرس" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-tel">تلفن ثابت</Label>
-              <Input id="exf-tel" value={filters.telephone} onChange={(e) => setF("telephone", e.target.value)} placeholder="تلفن" dir="ltr" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-postal">کد پستی</Label>
-              <Input id="exf-postal" value={filters.postalCode} onChange={(e) => setF("postalCode", e.target.value)} placeholder="کد پستی" dir="ltr" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-voip">شماره داخلی</Label>
-              <Input id="exf-voip" value={filters.voipExtension} onChange={(e) => setF("voipExtension", e.target.value)} placeholder="داخلی" dir="ltr" />
-            </div>
-          </div>
-          {/* انتخابی‌ها از دادهٔ زندهٔ ستون‌ها */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
-              <Label>شعبه</Label>
-              <Select value={filters.branchTitle || "all"} onValueChange={(v) => setF("branchTitle", v === "all" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="همهٔ شعب" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همهٔ شعب</SelectItem>
-                  {options.branches.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>سمت پرسنلی</Label>
-              <Select value={filters.roleTitle || "all"} onValueChange={(v) => setF("roleTitle", v === "all" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="همهٔ سمت‌ها" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همهٔ سمت‌ها</SelectItem>
-                  {options.roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>نوع همکاری</Label>
-              <Select value={filters.employmentType} onValueChange={(v) => setF("employmentType", v)}>
-                <SelectTrigger><SelectValue placeholder="همهٔ انواع" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همهٔ انواع</SelectItem>
-                  {options.employmentTypes.map((e) => <SelectItem key={e.value} value={String(e.value)}>{e.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>مدیر</Label>
-              <Select value={filters.headManager || "all"} onValueChange={(v) => setF("headManager", v === "all" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="همهٔ مدیران" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همهٔ مدیران</SelectItem>
-                  {options.managers.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>شهر</Label>
-              <Select value={filters.city || "all"} onValueChange={(v) => setF("city", v === "all" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="همهٔ شهرها" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همهٔ شهرها</SelectItem>
-                  {options.cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>وضعیت</Label>
-              <Select value={filters.active} onValueChange={(v) => setF("active", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همه</SelectItem>
-                  <SelectItem value="true">فعال</SelectItem>
-                  <SelectItem value="false">غیرفعال</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {/* بازهٔ تاریخ استخدام */}
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-hire-from">استخدام از</Label>
-              <Input id="exf-hire-from" type="date" value={filters.hireFrom} onChange={(e) => setF("hireFrom", e.target.value)} dir="ltr" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-hire-to">استخدام تا</Label>
-              <Input id="exf-hire-to" type="date" value={filters.hireTo} onChange={(e) => setF("hireTo", e.target.value)} dir="ltr" />
-            </div>
-          </div>
-          {/* بازهٔ شمارش‌ها */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-sale-from">مبایعه‌نامه از</Label>
-              <Input id="exf-sale-from" inputMode="numeric" value={filters.saleFrom} onChange={(e) => setF("saleFrom", e.target.value)} placeholder="حداقل" dir="ltr" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-sale-to">مبایعه‌نامه تا</Label>
-              <Input id="exf-sale-to" inputMode="numeric" value={filters.saleTo} onChange={(e) => setF("saleTo", e.target.value)} placeholder="حداکثر" dir="ltr" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-rent-from">اجاره‌نامه از</Label>
-              <Input id="exf-rent-from" inputMode="numeric" value={filters.rentFrom} onChange={(e) => setF("rentFrom", e.target.value)} placeholder="حداقل" dir="ltr" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exf-rent-to">اجاره‌نامه تا</Label>
-              <Input id="exf-rent-to" inputMode="numeric" value={filters.rentTo} onChange={(e) => setF("rentTo", e.target.value)} placeholder="حداکثر" dir="ltr" />
-            </div>
-          </div>
+          </FilterGroup>
           <div className="flex items-center gap-2">
-            <Button size="sm" onClick={applyFilters} className="gap-1.5"><Search className="w-3.5 h-3.5" aria-hidden /> اعمال فیلتر</Button>
+            <Button size="sm" onClick={applyFilters} className="gap-1.5 bg-sec-m4-500 hover:bg-sec-m4-500/90 text-sec-m4-fg"><Search className="w-3.5 h-3.5" aria-hidden /> اعمال فیلتر</Button>
             <Button size="sm" variant="outline" onClick={clearFilters} className="gap-1.5" disabled={!anyFilterActive}>
               <RotateCcw className="w-3.5 h-3.5" aria-hidden /> پاک‌کردن
             </Button>
             <span className="text-xs text-muted-foreground">{anyFilterActive ? `نمایش ${faNumber(rows.length)} از ${faNumber(total)} ردیف` : `${faNumber(total)} ردیف`}</span>
           </div>
         </CardContent>
+        )}
       </Card>
 
       {/* ─── فهرست کارشناسان ─── */}
