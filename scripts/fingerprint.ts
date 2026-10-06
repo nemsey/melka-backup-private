@@ -11,7 +11,7 @@
  * خروجی verify: exit 0 = بازتولیدپذیر ✓ / exit 1 = تفاوت غیرمجاز ✗
  */
 import { writeFileSync, mkdirSync, copyFileSync, readFileSync, statSync, existsSync } from "fs";
-import { dirname } from "path";
+import { dirname, join } from "path";
 import {
   computeFingerprint, readBakedFingerprint, compareFingerprints, bakedFingerprintPath,
 } from "../src/lib/version-fingerprint";
@@ -66,10 +66,15 @@ async function main() {
     fp.computedBy = "postbuild";
     writeFileSync(bakedFingerprintPath(), JSON.stringify(fp, null, 2));
     console.log(`✅ fingerprint → ${bakedFingerprintPath()}`);
-    // رونوشت داخل بستهٔ standalone تا سرورِ مستقل هم شاهد پخته داشته باشد
+    // رونوشت داخل بستهٔ standalone تا سرورِ مستقل هم شاهد پخته داشته باشد.
+    // ن۰۰۷ (رفع باگ): مسیر قبلی هاردکد /home/z/my-project بود — بیلدِ هر clone
+    // تازه (آزمون بازیابی) اثر انگشت خود را در پروژهٔ اصلی می‌نوشت (آلودگی متقابل!)
+    // اکنون نسبت به محل خودِ اسکریپت حل می‌شود: <root>/scripts/../.next/standalone
     try {
-      copyFileSync(bakedFingerprintPath(), "/home/z/my-project/.next/standalone/.next/fingerprint.json");
-      console.log("✅ fingerprint → .next/standalone/.next/fingerprint.json (رونوشت سرور مستقل)");
+      const standaloneCopy = join(dirname(import.meta.dir), ".next/standalone/.next/fingerprint.json");
+      mkdirSync(dirname(standaloneCopy), { recursive: true });
+      copyFileSync(bakedFingerprintPath(), standaloneCopy);
+      console.log(`✅ fingerprint → ${standaloneCopy} (رونوشت سرور مستقل)`);
     } catch { /* standalone هنوز ساخته نشده — بی‌خطر */ }
     return;
   }

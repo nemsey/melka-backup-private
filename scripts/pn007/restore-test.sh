@@ -49,15 +49,17 @@ cp "$PKG/env/.env.example" "$APP/.env"
   echo ""
   echo "# --- مقادیر لازم از محیط فعلی (گام ۴ دستور شورا) ---"
   echo "DATABASE_URL=file:$APP/db/custom.db"
-  echo "MASTER_ACCESS_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env | cut -d= -f2-)"
+  # ن۰۰۷: منبع اصلی کد مالک .env.local است؛ مقدار .env (=00000000) کد تستی عمومی است
+  # که مسیر ورود عمداً ردش می‌کند (SEC-1). زنجیره: .env.local → هش DB.
+  MASTER_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env.local 2>/dev/null | tail -1 | cut -d= -f2-)
+  if [[ -z "${MASTER_CODE:-}" ]]; then MASTER_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env | tail -1 | cut -d= -f2-); fi
+  echo "MASTER_ACCESS_CODE=$MASTER_CODE"
   echo "MELK_SYNC_MODE=incremental"
-  echo ""
-  echo "# --- ایزوله‌سازی آزمون (قلاب بوت و وارسی به همین نسخهٔ بازگردانده اشاره کنند) ---"
-  echo "REPO_DIR=$APP"
-  echo "MELKA_REPO_DIR=$APP"
-  echo "BASE_URL=http://localhost:$PORT"
+  # نکته: کلیدهای ایزوله‌سازی آزمون (REPO_DIR/MELKA_REPO_DIR/BASE_URL) عمداً
+  # در .env نوشته نمی‌شوند — .env بخشی از اثر انگشت envFingerprint است و کلید اضافه =
+  # ناهمانی با FINGERPRINT بسته. آنها به‌صورت env فرایندی هنگام start تزریق می‌شوند.
 } >> "$APP/.env"
-step_time ".env ساخته شد (۳ مقدار لازم + ایزوله‌سازی آزمون)"
+step_time ".env ساخته شد (۳ مقدار لازم — بی‌کلیدهای آزمون)"
 
 echo "═══ ۵) bun install ═══"
 ( cd "$APP" && bun install --frozen-lockfile > "$LOGS/install.log" 2>&1 ) || { echo "✗ install شکست"; tail -5 "$LOGS/install.log"; exit 1; }
@@ -70,7 +72,7 @@ step_time "build ✓ — /api/version آن از همین بیلد سرو خوا�
 [[ -f "$APP/.next/fingerprint.json" ]] && step_time "postbuild: .next/fingerprint.json نوشته شد ✓"
 
 echo "═══ ۷) اجرای سرور روی پورت $PORT ═══"
-( cd "$APP" && PORT=$PORT HOSTNAME=127.0.0.1 NODE_ENV=production nohup bun .next/standalone/server.js > "$LOGS/server.log" 2>&1 & echo $! > "$RESTORE/server.pid" )
+( cd "$APP" && PORT=$PORT HOSTNAME=127.0.0.1 NODE_ENV=production REPO_DIR=$APP MELKA_REPO_DIR=$APP BASE_URL=http://localhost:$PORT nohup bun .next/standalone/server.js > "$LOGS/server.log" 2>&1 & echo $! > "$RESTORE/server.pid" )
 for i in $(seq 1 40); do
   sleep 1
   HEALTH=$(curl -s -m 3 "http://localhost:$PORT/api/health" 2>/dev/null || true)
@@ -87,8 +89,9 @@ RESTORED_BUILDID=$(echo "$VERSION_JSON" | python3 -c "import json,sys; print(jso
 FP_SRC=$(echo "$VERSION_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['fingerprintSource'])" 2>/dev/null)
 step_time "version: gitSha=$RESTORED_SHA buildId=$RESTORED_BUILDID fpSource=$FP_SRC"
 
-# ورود مالک (کد از محیط فعلی — همان زنجیرهٔ سه‌لایه)
-MASTER_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env | cut -d= -f2-)
+# ورود مالک (کد از زنجیرهٔ سه‌لایه: .env.local → هش DB)
+MASTER_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env.local 2>/dev/null | tail -1 | cut -d= -f2-)
+[[ -z "${MASTER_CODE:-}" ]] && MASTER_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env | tail -1 | cut -d= -f2-)
 LOGIN=$(curl -s -m 8 -X POST "http://localhost:$PORT/api/auth/master-login" -H 'Content-Type: application/json' -d "{\"masterCode\":\"$MASTER_CODE\"}" -c "$LOGS/cookies.txt")
 LOGIN_STATUS=$(echo "$LOGIN" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('role') or d.get('user',{}).get('role') or ('ok' if d.get('ok') else d))" 2>/dev/null || echo "$LOGIN")
 step_time "ورود مالک: $LOGIN_STATUS"
@@ -127,9 +130,11 @@ echo "═══ نتیجه: $VERDICT — کل فرایند: ${TOTAL}s (سقف ش
 
 # ── شواهد بصری (agent-browser) ──
 echo "═══ ۹) شواهد بصری ═══"
+export RESTORE_MASTER_CODE="$MASTER_CODE"
 python3 - <<'PYSHOT' > "$LOGS/shots.log" 2>&1
 import subprocess, time, os
 BASE = "http://localhost:3999"
+CODE = os.environ.get("RESTORE_MASTER_CODE", "")
 SHOT = "/home/z/my-project/upload/.survival/PN-007-20261006/screens"
 os.makedirs(SHOT, exist_ok=True)
 def ab(*args, timeout=90):
@@ -152,7 +157,7 @@ def click_text(needle):
 ab("open", BASE, timeout=60); time.sleep(4)
 shot("01-restore-login-page")
 print("  switch:", click_text("ورود با کد مدیر")); time.sleep(1.5)
-ab("fill", "#masterCode", "80211186"); time.sleep(0.8)
+ab("fill", "#masterCode", CODE); time.sleep(0.8)
 shot("02-restore-master-code-entered")
 click_text("ورود"); time.sleep(5)
 shot("03-restore-after-owner-login")
