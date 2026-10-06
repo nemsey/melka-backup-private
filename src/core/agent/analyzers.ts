@@ -660,6 +660,11 @@ function parseShareNames(json: string | null | undefined): string[] {
 
 /** P6530/گام ۴ — آمار خانواده‌ای فهرست کارشناسان (مبایعه نامه با پیش‌فروش · اجاره نامه با تمدید)
  *  محاسبهٔ خالص برای صفحهٔ M4 — صفحات فقط فرمت می‌کنند (قانون معماری P1-02) */
+/** PN-008 (ثانیاً) — شمار کارشناسان دارای شعبهٔ مشخص (فهرست تازهٔ PM) */
+export function expertWithBranchCount(rows: Array<{ branchTitle: string | null }>): number {
+  return rows.filter((r) => r.branchTitle && r.branchTitle !== "نامشخص در سامانه PM").length;
+}
+
 export function expertFamilyStats(
   rows: Array<{ active: boolean; saleCount: number; rentCount: number }>
 ): { count: number; active: number; saleTotal: number; rentTotal: number } {

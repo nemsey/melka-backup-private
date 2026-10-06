@@ -29,7 +29,7 @@ import { getContractRepository, getExpertRepository, getPropertyRecordRepository
 import { ensureSeeded, getSyncState } from "@/lib/melk-api/sync";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { enrichTransactionRows, type ContractLookup, type AgencyLookup } from "@/lib/melk-api/tx-enrichment";
-import { findPmNameByCode } from "@/lib/melk-api/pm-acc-sync";
+import { findExpertNameByPersonnelCode } from "@/lib/experts/profile-store";
 // P6547/گام سوم-۴ — شعبهٔ مشاوران از سامانهٔ PM برای ستون تجمیع حق‌السهم
 import { readPmBranchMap } from "@/lib/branch-store";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
     let codeNames: Set<string> | null = null;
     if (personnelCode) {
       codeNames = new Set<string>();
-      const pmName = await findPmNameByCode(personnelCode);
+      const pmName = await findExpertNameByPersonnelCode(personnelCode);
       if (pmName) codeNames.add(pmName.replace(/\s+/g, " ").trim());
       const expertByCode = await getExpertRepository().findAll();
       for (const e of expertByCode) {

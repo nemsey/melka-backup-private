@@ -28,6 +28,11 @@ else
   echo "[dev-entry] پیش‌فرض production — $(date -u +%FT%TZ)"
   mkdir -p upload/.survival
 
+  # ═══ PN-008 اولاً: ارتقای منابع در حد امکان کانتینر ═══
+  ulimit -n 100000 2>/dev/null || true
+  export UV_THREADPOOL_SIZE="${UV_THREADPOOL_SIZE:-4}"
+  bun scripts/pn008/ensure-wal.ts 2>/dev/null || true
+
   # ۱) گارد بازیابی محیط — اگر تخریب ساختاری دیده شد، از بستهٔ بقا برمی‌گرداند
   if [[ -f scripts/pn005c/recovery-guard.sh ]]; then
     bash scripts/pn005c/recovery-guard.sh || true

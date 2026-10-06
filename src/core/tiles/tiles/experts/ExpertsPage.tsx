@@ -1,28 +1,26 @@
 "use client";
 
 /**
- * کاشی «کارشناسان ملک تبریز» — صفحه داخلی (P6530/گام ۴ + P6546/گام چهارم)
- * ------------------------------------------------------
- * فهرست — عین دستور مالک (P6546/گام چهارم):
- *   ردیف · کارشناس (نام + موبایل زیر نام) · تاریخ استخدام (بلافاصله پس از نام —
- *   بند ۲) · کد پرسنلی (بدون کد = «-» — بند ۳) · شعبه · نقش پرسنلی ·
- *   مبایعه نامه (مجموع مبایعه‌نامه + پیش‌فروش) · اجاره نامه (اجاره + تمدید) ·
- *   آدرس کارشناس · وضعیت (فعال/غیرفعال)
+ * کاشی «کارشناسان ملک تبریز» — صفحهٔ تازه (PN-008 ثانیاً — بازنویسی کامل ۱۴۰۵/۰۷/۱۶)
+ * ---------------------------------------------------------------------------
+ * نسل قدیمی (فهرست/فیلتر/بروزرسانی وابسته به کد ۰۰۰۰۰۰۰۰) حذف شد.
+ * این صفحه عین کشف سرد سامانهٔ PM ساخته شد (شاهد: download/pn008/pm-exploration.json):
  *
- * اولویت ترتیب قرارگیری (P6546/گام چهارم-۱):
- *   ۱. تعداد بالای معاملات مبایعه‌نامه (مجموع مبایعه‌نامه + پیش‌فروش)
- *   ۲. تعداد بالای معاملات اجاره‌نامه (مجموع اجاره‌نامه + تمدید اجاره)
- *   ۳. دارای کد پرسنلی و شعبه
+ * ستون‌های الزامی مالک:
+ *   کارشناس (موبایل زیر نام) · کدپرسنلی (مثل 410031320) · شعبه ·
+ *   مبایعه نامه (تعداد + پیش‌فروش) · اجاره نامه (تعداد + تمدید) ·
+ *   تاریخ استخدام · آدرس دقیق
+ * ستون‌های کشف‌شده از PM: سمت پرسنلی · نوع همکاری · مدیر · تلفن ثابت ·
+ *   کد پستی · شماره داخلی · شهر · وضعیت
  *
- * حذف‌های P6546/گام چهارم (بند ۶):
- *   · بینش «فعال‌ترین کارشناسان مبایعه‌نامه (۲۰ نفر برتر)»
- *   · بینش «شاهد سامانهٔ مالی — بیشترین قرارداد ثبت‌شده (کل کسب‌وکار)»
- *
- * فیلتر بر اساس تمام ستون‌ها + جدول پوشش تمام ستون‌ها (گام پنجم)
- * رنگ بخش: فیروزه‌ای #0891B2 (گام صفر — sec-m4)
+ * قواعد:
+ *   · رکورد فاقد داده = «-» (لاغیر)
+ *   · فیلتر بر اساس تمام ستون‌ها
+ *   · بروزرسانی فهرست: زنجیرهٔ سه‌مرحله‌ای PM (رجیستری → عمق → شمارش) با گزارش صادقانه
+ * رنگ بخش: فیروزه‌ای (sec-m4)
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,78 +29,91 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-// P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
 import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
-import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
+import { EmptyState } from "@/components/app/shared/list-states";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, RotateCcw, Search, Users, UserCheck, Phone, RefreshCw, Hash, CheckCircle2, Handshake,
-  Network, Building2, Banknote, FileSignature, MapPin, Filter, History, IdCard, CalendarClock, BriefcaseBusiness, FileSpreadsheet,
+  Loader2, RotateCcw, Search, Users, Network, Building2, Banknote, FileSignature, MapPin, Filter,
+  RefreshCw, CheckCircle2, IdCard, CalendarClock, BriefcaseBusiness, FileSpreadsheet, UserCheck, Phone,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, DataSourceWarning, TileCoverageTable, useTileData, ExcelImportButton, type DataSourceInfo } from "@/components/app/shared";
-import { useTileFreshness } from "@/components/app/TileCard";
+import { KpiCard, TileCoverageTable, useTileData, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
-import { faNumber, faDateTime, faJalaliShort } from "@/lib/format";
-// P6547/گام پنجم — نظام رنگ متمایز شعبه‌ها (هارمونی فیلتر↔فهرست)
+import { api, apiSync, apiBlob, downloadBlob } from "@/lib/client/api";
+import { faNumber, faJalaliShort } from "@/lib/format";
 import { branchBadgeClass } from "@/lib/value-colors";
 import { faDigits } from "@/lib/jalali";
-import { TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
-import { expertFamilyStats } from "@/core/agent/analyzers";
+import { expertFamilyStats, expertWithBranchCount } from "@/core/agent/analyzers";
 
+/** ردیف فهرست تازه — عین ExpertProfileRow سرور */
 interface ExRow {
   id: string;
-  personnelCode: string;
-  fullName: string;
-  mobile: string;
-  role: string;
-  businessTitle: string;
-  creator: string | null;
-  active: boolean;
-  createdAt: string;
-  /** P6.5-12 — کد پرسنلی واقعی از سامانهٔ PM (منبع حقیقت) */
-  pmCode: string | null;
-  /** مبایعه نامه = مجموع مبایعه‌نامه + پیش‌فروش (نکته ۳) */
-  saleCount: number;
-  /** اجاره نامه = مجموع اجاره + تمدید اجاره (نکته ۴) */
-  rentCount: number;
-  /** P6530/گام ۴ — شعبهٔ کارشناس (زنجیرهٔ تفکیک) */
-  branch: string;
-  /** P6530/گام ۴ — آدرس کارشناس */
-  address: string | null;
-  /** P6546/گام چهارم-۲ — تاریخ استخدام از سامانهٔ PM (personnelInfo) */
-  hireDate: string | null;
-  /** P6546/گام چهارم-۴ — نقش/عنوان شغلی پرسنلی از سامانهٔ PM */
+  personnelCode: string | null;
+  fullName: string | null;
+  mobile: string | null;
   roleTitle: string | null;
-  /** P6547/گام چهارم — نوع همکاری پرسنلی از سامانهٔ PM (employeementInfo.typeFa) */
-  employmentType: string | null;
-  /** P6547/گام چهارم — درصد سهام پرسنل از سامانهٔ PM (shareHolderPercentage) */
-  sharePercent: number | null;
-  /** P6547/گام چهارم — شماره داخلی تلفن سازمانی از سامانهٔ PM (voipInfo) */
+  branchTitle: string | null;
+  hireDate: string | null;
+  employmentType: number | null;
+  employmentTypeFa: string | null;
+  headManager: string | null;
+  address: string | null;
+  telephone: string | null;
+  postalCode: string | null;
   voipExtension: string | null;
-  /** P6547/گام چهارم — شعبهٔ عین سامانهٔ PM (branchId.title از personnelInfo) */
-  pmBranchTitle: string | null;
+  city: string | null;
+  state: string | null;
+  businessTitle: string | null;
+  active: boolean;
+  saleCount: number;
+  rentCount: number;
+  syncedAt: string;
 }
 
 interface ExResponse {
   rows: ExRow[];
   total: number;
-  branches?: { registry: string[]; resolvedCount: number };
-  dataSource: DataSourceInfo;
-  lastUpdate?: { lastSuccessAt: string | null; lastSyncedAt: string | null; attempts: number } | null;
+  filterOptions: { branches: string[]; employmentTypes: Array<{ value: number; label: string }>; managers: string[]; roles: string[]; cities: string[] };
+  dataSource: DataSourceInfo & { coverage?: Record<string, string> };
 }
 
+interface SyncStage {
+  registryRows: number;
+  registryError: string | null;
+  deepAttempted: number;
+  deepEnriched: number;
+  deepFailed: number;
+  deepRemaining: number;
+  counts: { sale: number; rent: number; attributedTx: number; contracts: number } | null;
+  countsError: string | null;
+  durationMs: number;
+}
+
+/** «-» — قاعدهٔ مالک: رکورد فاقد اطلاعات به صورت «-» درج گردد و لاغیر */
+const dash = (v: string | number | null | undefined): string =>
+  v === null || v === undefined || v === "" ? "-" : typeof v === "string" ? faDigits(v) : faNumber(v);
+
 const EMPTY_FILTERS = {
+  q: "",
   fullName: "",
+  mobile: "",
   personnelCode: "",
-  branch: "",
+  branchTitle: "",
+  roleTitle: "",
+  employmentType: "all",
+  headManager: "",
+  address: "",
+  telephone: "",
+  postalCode: "",
+  voipExtension: "",
+  city: "",
+  active: "all",
+  hireFrom: "",
+  hireTo: "",
   saleFrom: "",
   saleTo: "",
   rentFrom: "",
   rentTo: "",
-  address: "",
-  active: "all",
 };
 type Filters = typeof EMPTY_FILTERS;
 
@@ -111,87 +122,90 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [syncing, setSyncing] = useState(false);
-  const viewMode = String(settings.viewMode ?? "cards");
+  const [syncStage, setSyncStage] = useState<SyncStage | null>(null);
+  const viewMode = String(settings.viewMode ?? "table");
 
   const fetchExperts = useCallback(async (): Promise<ExResponse> => {
     const params = new URLSearchParams();
-    if (applied.fullName) params.set("fullName", applied.fullName);
-    if (applied.personnelCode) params.set("personnelCode", applied.personnelCode);
-    if (applied.branch) params.set("branch", applied.branch);
-    if (applied.address) params.set("address", applied.address);
-    if (applied.saleFrom) params.set("saleFrom", applied.saleFrom);
-    if (applied.saleTo) params.set("saleTo", applied.saleTo);
-    if (applied.rentFrom) params.set("rentFrom", applied.rentFrom);
-    if (applied.rentTo) params.set("rentTo", applied.rentTo);
-    if (applied.active !== "all") params.set("active", applied.active);
-    // بدون صفحه‌بندی: همهٔ کارشناسان در یک صفحه (سقف سرور ۵۰۰۰)
+    const set = (k: keyof Filters, v: string) => { if (v && v !== "all") params.set(k, v); };
+    set("q", applied.q);
+    set("fullName", applied.fullName);
+    set("mobile", applied.mobile);
+    set("personnelCode", applied.personnelCode);
+    set("branchTitle", applied.branchTitle);
+    set("roleTitle", applied.roleTitle);
+    set("employmentType", applied.employmentType);
+    set("headManager", applied.headManager);
+    set("address", applied.address);
+    set("telephone", applied.telephone);
+    set("postalCode", applied.postalCode);
+    set("voipExtension", applied.voipExtension);
+    set("city", applied.city);
+    set("active", applied.active);
+    set("hireFrom", applied.hireFrom);
+    set("hireTo", applied.hireTo);
+    set("saleFrom", applied.saleFrom);
+    set("saleTo", applied.saleTo);
+    set("rentFrom", applied.rentFrom);
+    set("rentTo", applied.rentTo);
     params.set("limit", "5000");
-    return api<ExResponse>(`/api/crm/experts?${params.toString()}`);
+    return api<ExResponse>(`/api/experts?${params.toString()}`);
   }, [applied]);
 
   const { data, loading, reload } = useTileData(fetchExperts, {
-    errorTitle: "خطا در دریافت کارشناسان",
-    errorValue: (prev) => (prev ? { ...prev, rows: [] } : ({ rows: [], total: 0, dataSource: null } as unknown as ExResponse)),
+    errorTitle: "خطا در دریافت فهرست کارشناسان",
+    errorValue: (prev) => (prev ? { ...prev, rows: [] } : ({ rows: [], total: 0, filterOptions: { branches: [], employmentTypes: [], managers: [], roles: [], cities: [] }, dataSource: null } as unknown as ExResponse)),
   });
 
-  // P6546/گام چهارم-۱ — اولویت ترتیب عین دستور مالک:
-  //   ۱) مبایعه‌نامه (مجموع مبایعه‌نامه + پیش‌فروش) نزولی
-  //   ۲) اجاره‌نامه (مجموع اجاره + تمدید) نزولی
-  //   ۳) دارای کد پرسنلی و شعبه (سپس الفبای فارسی برای ثبات)
+  /** اولویت ترتیب عین دستور پیشین مالک: مبایعه ↓ · اجاره ↓ · دارای کدپرسنلی+شعبه · نام */
   const rows = useMemo(() => {
     const list = [...(data?.rows ?? [])];
     list.sort((a, b) => {
-      if (b.saleCount !== a.saleCount) return b.saleCount - a.saleCount; // اولویت ۱
-      if (b.rentCount !== a.rentCount) return b.rentCount - a.rentCount; // اولویت ۲
-      const aHas = a.pmCode && a.branch !== BRANCH_UNSET ? 1 : 0; // اولویت ۳
-      const bHas = b.pmCode && b.branch !== BRANCH_UNSET ? 1 : 0;
+      if (b.saleCount !== a.saleCount) return b.saleCount - a.saleCount;
+      if (b.rentCount !== a.rentCount) return b.rentCount - a.rentCount;
+      const aHas = a.personnelCode && a.branchTitle ? 1 : 0;
+      const bHas = b.personnelCode && b.branchTitle ? 1 : 0;
       if (bHas !== aHas) return bHas - aHas;
-      return a.fullName.localeCompare(b.fullName, "fa"); // ثبات نمایش
+      return (a.fullName ?? "").localeCompare(b.fullName ?? "", "fa");
     });
     return list;
-  }, [data]);
+  }, [data?.rows]);
+
   const total = data?.total ?? 0;
-  const lastUpdate = data?.lastUpdate ?? null;
-  const freshness = useTileFreshness("experts");
+  const kpis = useMemo(
+    () => ({ ...expertFamilyStats(rows), withBranch: expertWithBranchCount(rows) }),
+    [rows]
+  );
+  const options = data?.filterOptions ?? { branches: [], employmentTypes: [], managers: [], roles: [], cities: [] };
+  const anyFilterActive = Object.values(applied).some((v) => v !== "" && v !== "all");
 
-  // P6530/گام ۴ — محاسبهٔ خالص در analyzers (صفحه فقط فرمت می‌کند — قانون P1-02)
-  const kpis = useMemo(() => expertFamilyStats(rows), [rows]);
-  // P6546/گام سوم-۳ — بنر خطای استخراج زنده حذف شد؛ دادهٔ کش‌شدهٔ سالم سرو می‌شود
-
-  /** بروزرسانی فهرست کارشناسان و کارکنان (بند ۴) — زنجیرهٔ ARM و PM */
+  /** بروزرسانی فهرست — زنجیرهٔ سه‌مرحله‌ای PM با گزارش صادقانهٔ هر مرحله */
   const doSync = useCallback(async () => {
     setSyncing(true);
+    setSyncStage(null);
     try {
-      // P6546/گام پنجم-پ-۳ — تاب‌آور: تا ۳ تلاش خودکار روی 502/504/مهلت (همهٔ مراحل دارای checkpoint‌اند)
-      const res = await apiSync<{ ok: boolean; busy?: boolean; main?: { ok: boolean; experts?: number; error?: string } }>(
-        "/api/sync/all",
-        { method: "POST" },
-        (attempt) => toast({ title: `ادامهٔ بروزرسانی از نقطهٔ قطع (تلاش ${attempt + 1} از ۳)`, description: "سرور ملک تبریز لحظه‌ای کند بود؛ همان نقطهٔ قبلی ازسرگیری شد." })
-      );
-      if (res.busy) {
-        toast({ title: "انتقال در حال اجراست", description: "پس از پایان اجرای جاری دوباره بزنید." });
-        return;
-      }
+      const res = await apiSync<{ ok: boolean; stage: SyncStage }>("/api/experts/sync", { method: "POST" });
+      setSyncStage(res.stage);
+      const s = res.stage;
       toast({
         title: "بروزرسانی فهرست کارشناسان انجام شد",
-        description: res.main?.ok
-          ? `${faNumber(res.main.experts ?? 0)} کارشناس و کارمند از سامانه‌های ARM و PM خوانده شد — ادامه از آخرین نقطهٔ بروزرسانی قبلی.`
-          : "خلاصه‌ای برای گزارش نیست — جزئیات در شاهد انتقال.",
+        description: s.registryError
+          ? `رجیستری PM خطا داد: ${s.registryError.slice(0, 90)}`
+          : `رجیستری: ${faNumber(s.registryRows)} نفر · عمق تازه: ${faNumber(s.deepEnriched)} نفر (باقی‌مانده: ${faNumber(s.deepRemaining)}) · شمارش: مبایعه ${faNumber(s.counts?.sale ?? 0)} / اجاره ${faNumber(s.counts?.rent ?? 0)}`,
       });
       await reload();
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "بروزرسانی ناموفق", description: e.message, variant: "destructive" });
+    } catch (e) {
+      toast({ title: "بروزرسانی ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" });
     } finally {
       setSyncing(false);
     }
   }, [toast, reload]);
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
-  const anyFilterActive = Object.values(applied).some((v) => v !== "" && v !== "all");
+  const applyFilters = () => setApplied(filters);
+  const clearFilters = () => { setFilters(EMPTY_FILTERS); setApplied(EMPTY_FILTERS); };
 
-  // قانون ۰۳۵-B/ج-۸ — کشیدن برای تازه‌سازی
-  const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void fetchExperts());
+  const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void reload());
 
   return (
     <div className="space-y-6">
@@ -202,120 +216,144 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
       {/* شاخص‌ها — رنگ بخش M4 (فیروزه‌ای) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard label="کل کارشناسان و کارکنان" value={loading ? undefined : faNumber(total)} icon={Users} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
-        <KpiCard label="فعال" value={loading ? undefined : faNumber(kpis.active)} icon={UserCheck} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+        <KpiCard label="دارای شعبه" value={loading ? undefined : faNumber(kpis.withBranch)} icon={Network} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
         <KpiCard label="مجموع مبایعه نامه" value={loading ? undefined : faNumber(kpis.saleTotal)} sub="شامل پیش‌فروش" icon={FileSignature} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
         <KpiCard label="مجموع اجاره نامه" value={loading ? undefined : faNumber(kpis.rentTotal)} sub="شامل تمدید اجاره" icon={Banknote} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
       </div>
 
-      {/* شفافیت منبع داده — P6546/گام سوم-۳: بنر خطای زنده حذف شد؛ کش سالم سرو می‌شود */}
-
-      {/* P6546/گام پنجم-الف-۲ — جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
+      {/* جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
       <TileCoverageTable tileKey="m4" accentClass="text-sec-m4-700" />
 
-      {/* بخش بروزرسانی فهرست کارشناسان و کارکنان (بند ۴) */}
+      {/* ─── بروزرسانی فهرست (زنجیرهٔ سه‌مرحله‌ای PM) ─── */}
       <Card className="border-sec-m4-200 bg-sec-m4-50" id="m4-update-section">
         <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-start gap-2.5 min-w-0">
               <Building2 className="w-5 h-5 shrink-0 mt-0.5 text-sec-m4-700" aria-hidden />
               <div className="min-w-0">
-                <p className="text-sm font-bold">بروزرسانی فهرست کارشناسان و کارکنان از سامانه‌های ملک تبریز</p>
+                <p className="text-sm font-bold">بروزرسانی فهرست کارشناسان از سامانهٔ پرسنلی ملک تبریز</p>
               </div>
             </div>
-            <Button onClick={() => void doSync()} disabled={syncing} className="gap-2 shrink-0 bg-sec-m4-500 hover:bg-sec-m4-500/90 text-sec-m4-fg">
+            <Button onClick={() => void doSync()} disabled={syncing} className="gap-1.5">
               {syncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
-              بروزرسانی از سامانه
+              {syncing ? "در حال بروزرسانی…" : "بروزرسانی فهرست"}
             </Button>
           </div>
-          {/* بند ۴.۲ — تاریخ و ساعت دقیق آخرین بروزرسانی */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs" id="m4-last-update">
-            <div className="rounded-lg border bg-card p-2.5">
-              <p className="text-muted-foreground">آخرین بروزرسانی موفق</p>
-              <p className="font-bold mt-0.5">
-                {lastUpdate?.lastSuccessAt || freshness?.lastUpdatedAt
-                  ? faDateTime((lastUpdate?.lastSuccessAt ?? freshness!.lastUpdatedAt) as string)
-                  : "هنوز انجام نشده"}
-              </p>
+          {syncStage && (
+            <div className="rounded-md border border-sec-m4-200 bg-card p-3 text-xs space-y-1.5" data-testid="m4-sync-stage">
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                <span>رجیستری PM: <b>{faNumber(syncStage.registryRows)} نفر</b>{syncStage.registryError ? <span className="text-destructive"> — خطا: {syncStage.registryError}</span> : null}</span>
+                <span>عمق تازه (استخدام/شعبه/آدرس): <b>{faNumber(syncStage.deepEnriched)}</b> از {faNumber(syncStage.deepAttempted)} — باقی‌مانده: <b>{faNumber(syncStage.deepRemaining)}</b></span>
+                <span>شمارش: مبایعه <b>{faNumber(syncStage.counts?.sale ?? 0)}</b> · اجاره <b>{faNumber(syncStage.counts?.rent ?? 0)}</b></span>
+                <span>مدت: <b>{faNumber(Math.round(syncStage.durationMs / 100) / 10)} ثانیه</b></span>
+              </div>
+              {syncStage.deepFailed > 0 && <p className="text-muted-foreground">{faNumber(syncStage.deepFailed)} ردیف در این برش پاسخ نداد — برش بعدی خودکار دوباره تلاش می‌کند.</p>}
+              {syncStage.countsError && <p className="text-destructive">خطای شمارش: {syncStage.countsError}</p>}
             </div>
-            <div className="rounded-lg border bg-card p-2.5">
-              <p className="text-muted-foreground">رکوردهای کش‌شدهٔ کارشناسان</p>
-              <p className="font-bold mt-0.5 tabular-nums">{freshness ? faNumber(freshness.recordCount) : "—"}</p>
-            </div>
-            <div className="rounded-lg border bg-card p-2.5">
-              <p className="text-muted-foreground">منبع داده</p>
-              <p className="font-bold mt-0.5">{freshness?.sourceLabel ?? "سامانه‌های ملک تبریز (ARM و PM)"}</p>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* فیلترها — تمام ستون‌های فهرست (بند ۲) */}
-      <Card>
-        <CardContent className="p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm font-bold">
-              <Filter className="w-4 h-4 text-sec-m4-700" aria-hidden />
-              فیلتر فهرست کارشناسان و کارکنان
-              {anyFilterActive && <Badge variant="secondary" className="gap-1">فیلتر فعال</Badge>}
+      {/* ─── فیلتر فهرست (تمام ستون‌ها) ─── */}
+      <Card className="border-sec-m4-200" id="m4-filter-section">
+        <CardHeader className="py-4">
+          <CardTitle className="text-base flex items-center gap-2"><Filter className="w-4 h-4 text-sec-m4-700" aria-hidden /> فیلتر فهرست کارشناسان و کارکنان</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 space-y-4">
+          {/* جستجوی آزاد + متن‌ها */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="space-y-1.5 col-span-2">
+              <Label htmlFor="exf-q">جستجو در همهٔ ستون‌ها</Label>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                <Input id="exf-q" value={filters.q} onChange={(e) => setF("q", e.target.value)} placeholder="نام، موبایل، کدپرسنلی، آدرس…" className="ps-8" />
+              </div>
             </div>
-            <span className="text-xs text-muted-foreground">{faNumber(rows.length)} ردیف</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="exf-name">کارشناس (نام)</Label>
+              <Input id="exf-name" value={filters.fullName} onChange={(e) => setF("fullName", e.target.value)} placeholder="نام کارشناس" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="exf-mobile">موبایل</Label>
+              <Input id="exf-mobile" value={filters.mobile} onChange={(e) => setF("mobile", e.target.value)} placeholder="موبایل" dir="ltr" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="exf-code">کدپرسنلی</Label>
+              <Input id="exf-code" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} placeholder="مثل 410031320" dir="ltr" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="exf-address">آدرس</Label>
+              <Input id="exf-address" value={filters.address} onChange={(e) => setF("address", e.target.value)} placeholder="بخشی از آدرس" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="exf-tel">تلفن ثابت</Label>
+              <Input id="exf-tel" value={filters.telephone} onChange={(e) => setF("telephone", e.target.value)} placeholder="تلفن" dir="ltr" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="exf-postal">کد پستی</Label>
+              <Input id="exf-postal" value={filters.postalCode} onChange={(e) => setF("postalCode", e.target.value)} placeholder="کد پستی" dir="ltr" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="exf-voip">شماره داخلی</Label>
+              <Input id="exf-voip" value={filters.voipExtension} onChange={(e) => setF("voipExtension", e.target.value)} placeholder="داخلی" dir="ltr" />
+            </div>
           </div>
-          <form
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setApplied({ ...filters });
-            }}
-          >
-            <div className="space-y-1.5">
-              <Label htmlFor="m4-fullName">کارشناس (نام یا موبایل)</Label>
-              <Input
-                id="m4-fullName"
-                value={filters.fullName}
-                onChange={(e) => setF("fullName", e.target.value)}
-                placeholder="نمونه: شهریار بابایان یا ۰۹۱۴…"
-                autoComplete="off"
-                className="font-bold"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="m4-personnelCode">کد پرسنلی</Label>
-              <Input
-                id="m4-personnelCode"
-                value={filters.personnelCode}
-                onChange={(e) => setF("personnelCode", e.target.value)}
-                placeholder="نمونه: ۴۱۰۰۳۱۳۲۰"
-                inputMode="numeric"
-                autoComplete="off"
-                className="font-bold"
-              />
-            </div>
+          {/* انتخابی‌ها از دادهٔ زندهٔ ستون‌ها */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-1.5">
               <Label>شعبه</Label>
-              <Select value={filters.branch || "all"} onValueChange={(v) => setF("branch", v === "all" ? "" : v)}>
-                <SelectTrigger aria-label="فیلتر شعبه">
-                  <SelectValue placeholder="همهٔ شعب" />
-                </SelectTrigger>
+              <Select value={filters.branchTitle || "all"} onValueChange={(v) => setF("branchTitle", v === "all" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="همهٔ شعب" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">همهٔ شعب</SelectItem>
-                  {TABRIZ_BRANCHES.map((b) => (
-                    <SelectItem key={b} value={b}>
-                      <span className="inline-flex items-center gap-2">
-                        <span className={`inline-block size-2.5 rounded-full ${branchBadgeClass(b)}`} aria-hidden />
-                        {b}
-                      </span>
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="unset">{BRANCH_UNSET}</SelectItem>
+                  {options.branches.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>سمت پرسنلی</Label>
+              <Select value={filters.roleTitle || "all"} onValueChange={(v) => setF("roleTitle", v === "all" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="همهٔ سمت‌ها" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">همهٔ سمت‌ها</SelectItem>
+                  {options.roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>نوع همکاری</Label>
+              <Select value={filters.employmentType} onValueChange={(v) => setF("employmentType", v)}>
+                <SelectTrigger><SelectValue placeholder="همهٔ انواع" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">همهٔ انواع</SelectItem>
+                  {options.employmentTypes.map((e) => <SelectItem key={e.value} value={String(e.value)}>{e.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>مدیر</Label>
+              <Select value={filters.headManager || "all"} onValueChange={(v) => setF("headManager", v === "all" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="همهٔ مدیران" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">همهٔ مدیران</SelectItem>
+                  {options.managers.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>شهر</Label>
+              <Select value={filters.city || "all"} onValueChange={(v) => setF("city", v === "all" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="همهٔ شهرها" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">همهٔ شهرها</SelectItem>
+                  {options.cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>وضعیت</Label>
               <Select value={filters.active} onValueChange={(v) => setF("active", v)}>
-                <SelectTrigger aria-label="فیلتر وضعیت">
-                  <SelectValue placeholder="همه" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">همه</SelectItem>
                   <SelectItem value="true">فعال</SelectItem>
@@ -323,298 +361,203 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                 </SelectContent>
               </Select>
             </div>
+            {/* بازهٔ تاریخ استخدام */}
             <div className="space-y-1.5">
-              <Label htmlFor="m4-sale-from">مبایعه نامه از (تعداد)</Label>
-              <Input
-                id="m4-sale-from"
-                value={filters.saleFrom}
-                onChange={(e) => setF("saleFrom", e.target.value)}
-                placeholder="نمونه: ۵"
-                inputMode="numeric"
-                autoComplete="off"
-                className="font-bold"
-              />
+              <Label htmlFor="exf-hire-from">استخدام از</Label>
+              <Input id="exf-hire-from" type="date" value={filters.hireFrom} onChange={(e) => setF("hireFrom", e.target.value)} dir="ltr" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="m4-sale-to">مبایعه نامه تا (تعداد)</Label>
-              <Input
-                id="m4-sale-to"
-                value={filters.saleTo}
-                onChange={(e) => setF("saleTo", e.target.value)}
-                placeholder="نمونه: ۵۰"
-                inputMode="numeric"
-                autoComplete="off"
-                className="font-bold"
-              />
+              <Label htmlFor="exf-hire-to">استخدام تا</Label>
+              <Input id="exf-hire-to" type="date" value={filters.hireTo} onChange={(e) => setF("hireTo", e.target.value)} dir="ltr" />
+            </div>
+          </div>
+          {/* بازهٔ شمارش‌ها */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="exf-sale-from">مبایعه‌نامه از</Label>
+              <Input id="exf-sale-from" inputMode="numeric" value={filters.saleFrom} onChange={(e) => setF("saleFrom", e.target.value)} placeholder="حداقل" dir="ltr" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="m4-rent-from">اجاره نامه از (تعداد)</Label>
-              <Input
-                id="m4-rent-from"
-                value={filters.rentFrom}
-                onChange={(e) => setF("rentFrom", e.target.value)}
-                placeholder="نمونه: ۲"
-                inputMode="numeric"
-                autoComplete="off"
-                className="font-bold"
-              />
+              <Label htmlFor="exf-sale-to">مبایعه‌نامه تا</Label>
+              <Input id="exf-sale-to" inputMode="numeric" value={filters.saleTo} onChange={(e) => setF("saleTo", e.target.value)} placeholder="حداکثر" dir="ltr" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="m4-rent-to">اجاره نامه تا (تعداد)</Label>
-              <Input
-                id="m4-rent-to"
-                value={filters.rentTo}
-                onChange={(e) => setF("rentTo", e.target.value)}
-                placeholder="نمونه: ۳۰"
-                inputMode="numeric"
-                autoComplete="off"
-                className="font-bold"
-              />
+              <Label htmlFor="exf-rent-from">اجاره‌نامه از</Label>
+              <Input id="exf-rent-from" inputMode="numeric" value={filters.rentFrom} onChange={(e) => setF("rentFrom", e.target.value)} placeholder="حداقل" dir="ltr" />
             </div>
-            <div className="space-y-1.5 lg:col-span-2">
-              <Label htmlFor="m4-address">آدرس کارشناس</Label>
-              <Input
-                id="m4-address"
-                value={filters.address}
-                onChange={(e) => setF("address", e.target.value)}
-                placeholder="نمونه: خیابان ارتش"
-                autoComplete="off"
-                className="font-bold"
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="exf-rent-to">اجاره‌نامه تا</Label>
+              <Input id="exf-rent-to" inputMode="numeric" value={filters.rentTo} onChange={(e) => setF("rentTo", e.target.value)} placeholder="حداکثر" dir="ltr" />
             </div>
-            <div className="flex gap-2 lg:col-span-2">
-              <Button type="submit" className="gap-2 flex-1 bg-sec-m4-500 hover:bg-sec-m4-500/90 text-sec-m4-fg">
-                <Search className="w-4 h-4" aria-hidden /> اعمال فیلتر
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setFilters(EMPTY_FILTERS);
-                  setApplied(EMPTY_FILTERS);
-                }}
-                className="gap-2"
-                aria-label="پاک کردن فیلترها"
-              >
-                <RotateCcw className="w-4 h-4" aria-hidden /> پاک کردن
-              </Button>
-            </div>
-          </form>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={applyFilters} className="gap-1.5"><Search className="w-3.5 h-3.5" aria-hidden /> اعمال فیلتر</Button>
+            <Button size="sm" variant="outline" onClick={clearFilters} className="gap-1.5" disabled={!anyFilterActive}>
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden /> پاک‌کردن
+            </Button>
+            <span className="text-xs text-muted-foreground">{anyFilterActive ? `نمایش ${faNumber(rows.length)} از ${faNumber(total)} ردیف` : `${faNumber(total)} ردیف`}</span>
+          </div>
         </CardContent>
       </Card>
 
-      {/* فهرست هشت‌ستونی — تک‌صفحه‌ای */}
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="p-0">
-            <EmptyState
-              hasFilters={Boolean(
-                applied.fullName || applied.personnelCode || applied.branch || applied.address ||
-                applied.saleFrom || applied.saleTo || applied.rentFrom || applied.rentTo || applied.active !== "all"
-              )}
-              onClearFilters={() => {
-                setFilters(EMPTY_FILTERS);
-                setApplied(EMPTY_FILTERS);
+      {/* ─── فهرست کارشناسان ─── */}
+      <Card>
+        <CardHeader className="py-4 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <CardTitle className="text-base text-center">فهرست کارشناسان و کارکنان</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 h-7 text-[11px]"
+              onClick={() => {
+                const params = new URLSearchParams();
+                const set = (k: string, v: string) => { if (v && v !== "all") params.set(k, v); };
+                set("q", applied.q); set("fullName", applied.fullName); set("mobile", applied.mobile);
+                set("personnelCode", applied.personnelCode); set("branchTitle", applied.branchTitle);
+                set("roleTitle", applied.roleTitle); set("headManager", applied.headManager);
+                set("address", applied.address); set("active", applied.active);
+                apiBlob(`/api/experts/export?${params.toString()}`)
+                  .then((blob) => {
+                    downloadBlob(blob, `melka-experts-${new Date().toISOString().slice(0, 10)}.xlsx`);
+                    toast({ title: "خروجی اکسل آماده شد", description: "فهرست کارشناسان با تمام ستون‌ها دانلود شد." });
+                  })
+                  .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
               }}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader className="py-4 flex flex-col items-center gap-1">
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-              <CardTitle className="text-base text-center">فهرست کارشناسان و کارکنان</CardTitle>
-              {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 h-7 text-[11px]"
-                onClick={() => {
-                  apiBlob("/api/crm/export/experts")
-                    .then((blob) => {
-                      downloadBlob(blob, `melka-experts-${new Date().toISOString().slice(0, 10)}.xlsx`);
-                      toast({ title: "خروجی اکسل آماده شد", description: "کل فهرست کارشناسان و کارکنان دانلود شد." });
-                    })
-                    .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
-                }}
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
-              </Button>
-              {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
-              <ExcelImportButton entity="experts" compact onImported={() => void fetchExperts()} />
-            </div>
-            {rows.length > 0 && (
-              <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
-            )}
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10">ردیف</TableHead>
-                    <TableHead className="min-w-40">کارشناس</TableHead>
-                    {/* P6546/گام چهارم-۲ — تاریخ استخدام بلافاصله پس از نام کارشناس */}
-                    <TableHead className="min-w-24">تاریخ استخدام</TableHead>
-                    <TableHead className="min-w-24">کد پرسنلی</TableHead>
-                    <TableHead className="min-w-24">شعبه</TableHead>
-                    {/* P6546/گام چهارم-۴ — نقش پرسنلی از ساختار سامانهٔ PM */}
-                    <TableHead className="min-w-24">نقش پرسنلی</TableHead>
-                    {/* P6547/گام چهارم — نوع همکاری (employeementInfo.typeFa از PM) */}
-                    <TableHead className="min-w-24">نوع همکاری</TableHead>
-                    {/* P6547/گام چهارم — شماره داخلی تلفن سازمانی (voipInfo از PM) */}
-                    <TableHead className="min-w-20">شماره داخلی</TableHead>
-                    <TableHead className="min-w-24">مبایعه نامه</TableHead>
-                    <TableHead className="min-w-24">اجاره نامه</TableHead>
-                    <TableHead className="min-w-36">آدرس کارشناس</TableHead>
-                    <TableHead className="min-w-20">وضعیت</TableHead>
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
+            </Button>
+          </div>
+          {rows.length > 0 && <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>}
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">ردیف</TableHead>
+                  <TableHead className="min-w-40">کارشناس</TableHead>
+                  <TableHead className="min-w-24">کد پرسنلی</TableHead>
+                  <TableHead className="min-w-24">شعبه</TableHead>
+                  <TableHead className="min-w-24">مبایعه نامه</TableHead>
+                  <TableHead className="min-w-24">اجاره نامه</TableHead>
+                  <TableHead className="min-w-24">تاریخ استخدام</TableHead>
+                  <TableHead className="min-w-36">آدرس کارشناس</TableHead>
+                  <TableHead className="min-w-24">سمت پرسنلی</TableHead>
+                  <TableHead className="min-w-24">نوع همکاری</TableHead>
+                  <TableHead className="min-w-24">مدیر</TableHead>
+                  <TableHead className="min-w-24">تلفن ثابت</TableHead>
+                  <TableHead className="min-w-20">کد پستی</TableHead>
+                  <TableHead className="min-w-16">داخلی</TableHead>
+                  <TableHead className="min-w-20">وضعیت</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
+                {(r, i) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="text-muted-foreground tabular-nums">{faNumber(i + 1)}</TableCell>
+                    {/* کارشناس — نام + موبایل زیر نام (الزامی مالک) */}
+                    <TableCell className="whitespace-normal">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="inline-flex items-center gap-1.5 truncate max-w-44 font-bold" title={r.fullName ?? undefined}>
+                          {r.active ? <CheckCircle2 className="w-3.5 h-3.5 text-sec-m4-700 shrink-0" aria-hidden /> : <UserCheck className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden />} {dash(r.fullName)}
+                        </span>
+                        {r.mobile ? (
+                          <a href={`tel:${r.mobile}`} dir="ltr" className="font-mono text-[11px] text-sec-m4-700 hover:underline w-fit tabular-nums" title={`تماس با کارشناس: ${faDigits(r.mobile)}`}>
+                            {faDigits(r.mobile)}
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">-</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    {/* کدپرسنلی (الزامی مالک — مثل 410031320) */}
+                    <TableCell className="whitespace-nowrap">
+                      {r.personnelCode ? (
+                        <span className="inline-flex items-center gap-1 font-bold tabular-nums" dir="ltr" title="کد پرسنلی از سامانهٔ PM (realtors/list — code)">
+                          <IdCard className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden /> {faDigits(r.personnelCode)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground font-bold">-</span>
+                      )}
+                    </TableCell>
+                    {/* شعبه (الزامی مالک — عین PM personnelInfo.branchId.title) */}
+                    <TableCell>
+                      {r.branchTitle ? (
+                        <Badge variant="outline" className={`gap-1 text-[11px] border-0 ${branchBadgeClass(r.branchTitle)}`} title="شعبهٔ عین سامانهٔ PM (personnelInfo.branchId.title)">
+                          <Network className="w-3 h-3" aria-hidden /> {r.branchTitle}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground font-bold">-</span>
+                      )}
+                    </TableCell>
+                    {/* مبایعه نامه = تعداد + پیش‌فروش (الزامی مالک) */}
+                    <TableCell className="text-center font-bold tabular-nums">
+                      <span className={r.saleCount > 0 ? "text-sec-m4-700" : "text-muted-foreground"}>{faNumber(r.saleCount)}</span>
+                    </TableCell>
+                    {/* اجاره نامه = تعداد + تمدید (الزامی مالک) */}
+                    <TableCell className="text-center font-bold tabular-nums">
+                      <span className={r.rentCount > 0 ? "text-sec-m4-700" : "text-muted-foreground"}>{faNumber(r.rentCount)}</span>
+                    </TableCell>
+                    {/* تاریخ استخدام (الزامی مالک) */}
+                    <TableCell className="whitespace-nowrap">
+                      {r.hireDate && /\d{4}-\d{2}-\d{2}/.test(r.hireDate) ? (
+                        <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium" title={r.hireDate}>
+                          <CalendarClock className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden /> {faJalaliShort(r.hireDate)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground font-bold">-</span>
+                      )}
+                    </TableCell>
+                    {/* آدرس (الزامی مالک — دقیق) */}
+                    <TableCell className="whitespace-normal text-xs max-w-52">
+                      {r.address ? (
+                        <span className="inline-flex items-start gap-1" title={r.address}>
+                          <MapPin className="w-3 h-3 mt-0.5 text-sec-m4-700 shrink-0" aria-hidden /> <span className="line-clamp-2">{r.address}</span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground font-bold">-</span>
+                      )}
+                    </TableCell>
+                    {/* سمت پرسنلی */}
+                    <TableCell className="whitespace-nowrap">
+                      {r.roleTitle ? (
+                        <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m4-200 bg-sec-m4-50 text-sec-m4-700">
+                          <BriefcaseBusiness className="w-2.5 h-2.5" aria-hidden /> {r.roleTitle}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground font-bold">-</span>
+                      )}
+                    </TableCell>
+                    {/* نوع همکاری */}
+                    <TableCell className="whitespace-nowrap text-[11px]">{dash(r.employmentTypeFa)}</TableCell>
+                    {/* مدیر */}
+                    <TableCell className="whitespace-nowrap text-xs">{dash(r.headManager)}</TableCell>
+                    {/* تلفن ثابت */}
+                    <TableCell className="whitespace-nowrap text-xs tabular-nums" dir="ltr">{dash(r.telephone)}</TableCell>
+                    {/* کد پستی */}
+                    <TableCell className="whitespace-nowrap text-xs tabular-nums" dir="ltr">{dash(r.postalCode)}</TableCell>
+                    {/* داخلی */}
+                    <TableCell className="whitespace-nowrap text-xs tabular-nums" dir="ltr">{dash(r.voipExtension)}</TableCell>
+                    {/* وضعیت */}
+                    <TableCell>
+                      <Badge variant={r.active ? "default" : "secondary"} className="text-[10px]">{r.active ? "فعال" : "غیرفعال"}</Badge>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
-                  {(r, i) => (
-                    <TableRow key={r.id}>
-                      {/* ۱ — ردیف */}
-                      <TableCell className="text-muted-foreground tabular-nums">{faNumber(i + 1)}</TableCell>
-                      {/* ۲ — کارشناس: نام + موبایل زیر نام (نکته ۱ + مهم ۱ — عین الگوی فروشنده/خریدار M3) */}
-                      <TableCell className="whitespace-normal">
-                        <div className="flex flex-col items-center gap-0.5">
-                          <span className="inline-flex items-center gap-1.5 truncate max-w-44 font-bold" title={r.fullName}>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-sec-m4-700 shrink-0" aria-hidden /> {r.fullName}
-                          </span>
-                          {r.mobile ? (
-                            <a
-                              href={`tel:${r.mobile}`}
-                              dir="ltr"
-                              className="font-mono text-[11px] text-sec-m4-700 hover:underline w-fit tabular-nums"
-                              title={`تماس با کارشناس: ${faDigits(r.mobile)}`}
-                            >
-                              {faDigits(r.mobile)}
-                            </a>
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground">موبایل ثبت‌نشده</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      {/* ۳ — تاریخ استخدام (P6546/گام چهارم-۲ — بلافاصله پس از نام؛ از PM personnelInfo) */}
-                      <TableCell className="whitespace-nowrap">
-                        {r.hireDate ? (
-                          <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium" title={r.hireDate}>
-                            <CalendarClock className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden />
-                            {/\d{4}-\d{2}-\d{2}/.test(r.hireDate) ? faJalaliShort(r.hireDate) : faDigits(r.hireDate)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-[10px]">—</span>
-                        )}
-                      </TableCell>
-                      {/* ۴ — کد پرسنلی (منبع حقیقت: PM — بدون کد = «-» بند ۳) */}
-                      <TableCell className="whitespace-nowrap">
-                        {r.pmCode ?? r.personnelCode ? (
-                          <span className="inline-flex items-center gap-1 font-bold tabular-nums" dir="ltr" title={r.pmCode ? `کد پرسنلی از سامانهٔ PM: ${faDigits(r.pmCode)}` : "کد پرسنلی از رجیستری کارشناسان ARM"}>
-                            <IdCard className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden />
-                            {faDigits(r.pmCode ?? r.personnelCode)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground font-bold" title="این رکورد در سامانهٔ PM کد پرسنلی ندارد">-</span>
-                        )}
-                      </TableCell>
-                      {/* ۵ — شعبه (P6547: رنگ متمایز هر شعبه + منبع PM) */}
-                      <TableCell>
-                        {r.branch && r.branch !== BRANCH_UNSET ? (
-                          <Badge variant="outline" className={`gap-1 text-[11px] border-0 ${branchBadgeClass(r.branch)}`} title={r.pmBranchTitle === r.branch ? "شعبهٔ عین سامانهٔ PM (personnelInfo.branchId)" : "زنجیرهٔ تفکیک شعبه (PM ← نقشهٔ مالک ← کسب‌وکار)"}>
-                            <Network className="w-3 h-3" aria-hidden /> {r.branch}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-[11px]">{BRANCH_UNSET}</span>
-                        )}
-                      </TableCell>
-                      {/* ۵-ب — نقش پرسنلی (P6546/گام چهارم-۴ — از ساختار سامانهٔ PM) */}
-                      <TableCell className="whitespace-nowrap">
-                        {r.roleTitle ? (
-                          <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m4-200 bg-sec-m4-50 text-sec-m4-700">
-                            <BriefcaseBusiness className="w-2.5 h-2.5" aria-hidden /> {r.roleTitle}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-[10px]">—</span>
-                        )}
-                      </TableCell>
-                      {/* P6547/گام چهارم — نوع همکاری + درصد سهام (employeementInfo از PM) */}
-                      <TableCell className="whitespace-nowrap">
-                        {r.employmentType ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium" title={r.sharePercent ? `نوع همکاری از سامانهٔ PM — درصد سهام: ${r.sharePercent}٪` : "نوع همکاری از سامانهٔ PM (employeementInfo)"}>
-                            <Handshake className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden />
-                            {r.employmentType}
-                            {r.sharePercent ? <span className="font-bold text-sec-m4-700">({faNumber(r.sharePercent)}٪)</span> : null}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-[10px]">—</span>
-                        )}
-                      </TableCell>
-                      {/* P6547/گام چهارم — شماره داخلی تلفن سازمانی (voipInfo از PM) */}
-                      <TableCell className="whitespace-nowrap">
-                        {r.voipExtension ? (
-                          <span className="inline-flex items-center gap-1 font-mono tabular-nums text-[11px] font-bold" dir="ltr" title="شماره داخلی تلفن سازمانی از سامانهٔ PM (voipInfo)">
-                            <Phone className="w-3 h-3 text-sec-m4-700 shrink-0" aria-hidden />
-                            {faDigits(r.voipExtension)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-[10px]">—</span>
-                        )}
-                      </TableCell>
-                      {/* ۵ — مبایعه نامه = مبایعه‌نامه + پیش‌فروش (نکته ۳) */}
-                      <TableCell className="whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 font-extrabold tabular-nums" title="مجموع معاملات مبایعه‌نامه و پیش‌فروش">
-                          <FileSignature className="w-3.5 h-3.5 text-sec-m4-700 shrink-0" aria-hidden />
-                          {faNumber(r.saleCount)}
-                        </span>
-                      </TableCell>
-                      {/* ۶ — اجاره نامه = اجاره + تمدید اجاره (نکته ۴) */}
-                      <TableCell className="whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 font-extrabold tabular-nums" title="مجموع معاملات اجاره و تمدید اجاره">
-                          <Banknote className="w-3.5 h-3.5 text-sec-m4-700 shrink-0" aria-hidden />
-                          {faNumber(r.rentCount)}
-                        </span>
-                      </TableCell>
-                      {/* ۷ — آدرس کارشناس */}
-                      <TableCell className="whitespace-normal">
-                        <span className="inline-flex items-start gap-1.5 leading-relaxed">
-                          <MapPin className="w-3.5 h-3.5 text-sec-m4-700 mt-0.5 shrink-0" aria-hidden />
-                          <span className="text-xs">{r.address ?? "ثبت نشده در سامانه"}</span>
-                        </span>
-                      </TableCell>
-                      {/* ۸ — وضعیت (فعال/غیرفعال — نکته ۵) */}
-                      <TableCell>
-                        {r.active ? (
-                          <Badge className="gap-1 text-[11px] bg-teal-500/15 text-teal-700 dark:text-teal-400 border border-teal-500/30" variant="secondary">
-                            <UserCheck className="w-3 h-3" aria-hidden /> فعال
-                          </Badge>
-                        ) : (
-                          <Badge className="gap-1 text-[11px] bg-stone-500/15 text-stone-700 dark:text-stone-400 border border-stone-500/30" variant="secondary">
-                            غیرفعال
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBodyVirtual>
-              </Table>
-            </div>
-            <p className="p-3 text-xs text-muted-foreground text-center border-t">
-              {faNumber(rows.length)} کارشناس و کارمند در یک صفحه — لیست تک‌صفحه‌ای و بی‌نهایت (بدون صفحه‌بندی)
-              {" · مبایعه نامه = مبایعه‌نامه + پیش‌فروش · اجاره نامه = اجاره + تمدید اجاره"}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+                )}
+              </TableBodyVirtual>
+            </Table>
+          </div>
+          {loading && rows.length === 0 && (
+            <div className="p-4 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+          )}
+          {!loading && rows.length === 0 && <EmptyState hasFilters={anyFilterActive} onClearFilters={clearFilters} />}
+          {viewMode === "cards" && rows.length > 0 && (
+            <p className="text-[10px] text-muted-foreground text-center pt-2">{faNumber(rows.length)} ردیف — نمایش جدولی</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-
-/** P6549 — خروجی پیش‌فرض برای بارگذاری تنبل (lazyPage) */
 export default ExpertsPage;

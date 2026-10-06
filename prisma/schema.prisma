@@ -1012,53 +1012,68 @@ model TransactionEnrichment {
   @@index([extractionBatchId])
 }
 
-/// P6.5-12 — رجیستری پرسنل سامانه PM (سامانه مدیریت پرسنلی ملک تبریز).
-/// منبع: pm-api.melketabriz.ir/api/realtors/list — کلید = همان _id مشترک با ARM
-/// (شاهد پروب زندهٔ ۱۴۰۵/۰۷/۰۱: تطبیق ۳۰/۳۰ = ۱۰۰٪ میان PM و ARM).
-/// این جدول «لایهٔ خام مقدس» است — داده عین منبع؛ حذف/تغییر ممنوع (بند الف P6.5-11).
-model PmPersonnelRecord {
-  /// شناسهٔ مشترک با ExpertRecord.id (همان _id کاربر در هر دو سامانه)
+/// PN-008 (ثانیاً) — پروفایل کارشناس از سامانهٔ PM (منبع یگانهٔ فهرست تازهٔ کارشناسان).
+/// جایگزین کامل PmPersonnelRecord نسل قدیمی (حذف‌شده طبق دستور مالک ۱۴۰۵/۰۷/۱۶).
+/// کشف سرد بی‌پیش‌فرض ۱۴۰۵/۰۷/۱۶ (شاهد: download/pn008/pm-exploration.json):
+///   رجیستری realtors/list: code (کدپرسنلی) + fullName + mobileNumber + role + voipInfo + activationStatus — 100٪ پر (۱۴۳ پرسنل)
+///   عمق personnelInfo: employeementInfo.date (استخدام) + branchId.title (شعبه) + headRealtor + role — نمونهٔ ۱۲/۱۲ پر
+///   عمق contactInfo: contactInfo.address + telephoneNumber + postalCode + voip + city/state — نمونهٔ ۱۲/۱۲ پر
+/// ستون‌های الزامی مالک + ستون‌های کشف‌شده، همگی در این یک مدل.
+model ExpertProfile {
+  /// شناسهٔ مشترک با ExpertRecord.id و سامانه PM/ARM (_id)
   id            String   @id
-  /// کد پرسنلی (منبع حقیقت — عین فیلد code سامانه PM)
-  code          String?
+  /// کدپرسنلی (مثال: 410031320) — عین فیلد code رجیستری PM
+  personnelCode String?
+  /// نام کارشناس
   fullName      String?
-  mobileNumber  String?
-  /// نقش پرسنلی — JSON [{title,_id}] یا رشته
-  roleJson      String?
+  /// موبایل (زیر نام در فهرست نمایش داده می‌شود)
+  mobile        String?
+  /// سمت پرسنلی (personnelInfo.role.title — «مشاور فروش»)
   roleTitle     String?
-  /// P6546/گامچهارم — تاریخ استخدام (از realtors/info/personnelInfo سامانه PM)
-  hireDate      String?
-  /// P6546/گامچهارم — عنوان شغلی/سمت پرسنلی (از personnelInfo)
-  jobTitle      String?
-  /// P6546/گامچهارم — شماره قرارداد/شماره پرسنلی سامانه PM (از personnelInfo)
-  contractNo    String?
-  /// P6547/گام‌های ۱و۳و۴ — شعبهٔ پرسنل از سامانه PM (branchId.title از personnelInfo — کشف زندهٔ ۱۴۰۵/۰۷/۱۲)
-  /// شاهد کشف: سراج میزانی → ملکی تبریزی · توحید میزانی → باغلارباغی (چهار شعبهٔ رسمی ملک تبریز)
+  /// شعبه (personnelInfo.branchId.title — «باغلارباغی»/«ارتش»/…)
   branchTitle   String?
-  /// شناسهٔ شعبه در سامانه PM (branchId._id)
+  /// شناسهٔ شعبه (personnelInfo.branchId._id)
   branchCode    String?
-  /// P6547/گام چهارم — نوع همکاری پرسنلی (employeementInfo.typeFa از personnelInfo: «حق السهم (درصد)» / «حقوق ماهیانه»)
-  employmentType String?
-  /// P6547/گام چهارم — درصد سهام پرسنل (employeementInfo.shareHolderPercentage از personnelInfo)
-  sharePercent   Float?
-  /// P6547/گام چهارم — شماره داخلی تلفن سازمانی (voipInfo.extentionNumber از realtors/list)
-  voipExtension  String?
-  /// P6549 — آدرس پرسنل از سامانهٔ PM (realtors/info/contactInfo → contactInfo.address — کشف زندهٔ ۱۴۰۵/۰۷/۱۲)
-  address        String?
-  /// وضعیت فعال‌سازی پلتفرم‌ها — JSON {ps,acc,apm,chat}
-  activationStatusJson String?
-  /// کسب‌وکار — JSON {title,code}
-  businessJson  String?
+  /// تاریخ استخدام خام PM (ISO — employeementInfo.date)
+  hireDate      String?
+  /// نوع همکاری: 1 = حق السهم (درصد) · 3 = حقوق ماهیانه (employeementInfo.type)
+  employmentType Int?
+  /// مدیر مستقیم (personnelInfo.headRealtor.fullName)
+  headManager   String?
+  /// آدرس دقیق کارشناس (contactInfo.contactInfo.address)
+  address       String?
+  /// تلفن ثابت (contactInfo.contactInfo.telephoneNumber)
+  telephone     String?
+  /// کد پستی (contactInfo.contactInfo.postalCode)
+  postalCode    String?
+  /// شماره داخلی تلفن سازمانی (voipInfo.extentionNumber)
+  voipExtension String?
+  /// شهر (contactInfo.city.name)
+  city          String?
+  /// استان (contactInfo.state.name)
+  state         String?
+  /// کسب‌وکار (businessId.title — «ملک تبریز»)
   businessTitle String?
-  /// مسیر تصویر پروفایل روی CDN (cdn.obizim.ir)
-  imageCover    String?
-  /// کل ردیف خام عین منبع (قانون دادهٔ مقدس)
-  rawJson       String?
+  /// وضعیت فعال‌سازی پلتفرم‌ها — JSON {ps,acc,apm,chat}
+  activationJson String?
+  /// فعال بودن (isRegisteredCompleted + activationStatus)
+  active        Boolean  @default(true)
+  /// شمار مبایعه‌نامه + پیش‌فروش — محاسبه از دادهٔ ARM (قرارداد + گزارش تطابق)
+  saleCount     Int      @default(0)
+  /// شمار اجاره‌نامه + تمدید اجاره — محاسبه از دادهٔ ARM
+  rentCount     Int      @default(0)
+  /// لایهٔ خام رجیستری (قانون دادهٔ مقدس — عین منبع)
+  rawRegistryJson  String?
+  /// لایهٔ خام personnelInfo
+  rawPersonnelJson String?
+  /// لایهٔ خام contactInfo
+  rawContactJson   String?
   syncedAt      DateTime @default(now())
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@index([code])
+  @@index([personnelCode])
+  @@index([branchTitle])
   @@index([fullName])
 }
 

@@ -85,11 +85,16 @@ if pgrep -f 'next-server|standalone/server.js' >/dev/null 2>&1; then
   sleep 2
 fi
 
-# ── گام ۴: بکاپ وضعیت فعلی (هرگز بدون بکاپ) ──
+# ── گام ۴: بکاپ وضعیت فعلی (هرگز بدون بکاپ — با WAL: هر سه فایل) ──
 TS=$(date -u +%Y-%m-%dT%H-%M-%S)
-[[ -f db/custom.db ]] && cp db/custom.db "upload/dataset-backups/guard-pre-recovery-${TS}.db" 2>/dev/null || true
+# PN-008: DB در حالت WAL است — بدون -wal/-shm، کامیت‌های اخیر گم می‌شوند
+for _f in "" "-wal" "-shm"; do
+  [[ -f "db/custom.db${_f}" ]] && cp "db/custom.db${_f}" "upload/dataset-backups/guard-pre-recovery-${TS}.db${_f}" 2>/dev/null || true
+done
 
 # ── گام ۵: بازگرداندن DB + env ──
+# PN-008: پیش از جایگزینی، WAL/SHM کهنهٔ DB قبلی حذف شود (خطر آلودگی/خرابی)
+rm -f db/custom.db-wal db/custom.db-shm
 if ! cp "$PKG_DB" db/custom.db; then
   logr guard-recovery-fail '"cause":"db-copy-failed"'
   exit 1

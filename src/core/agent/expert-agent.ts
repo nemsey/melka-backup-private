@@ -3,7 +3,10 @@
  * ------------------------------------------------------
  * تخصص: تحلیل «فهرست کاربران/مشاوران» و «تعاملات مشاوران با یکدیگر»
  * سامانه ملک تبریز — توزیع نقش‌ها، وضعیت فعال/غیرفعال، رشد عضویت
- * (هجری شمسی)، شبکه همکاری — با یادگیری از بازخورد. (دو بینش ترکیب نقش‌ها و منزوی‌ها: حذف گام ۴)
+ * (هجری شمسی)، شبکه همکاری — با یادگیری از بازخورد.
+ *
+ * PN-008 (ثانیاً): داده‌های مبایعه/اجاره/شعبه/استخدام از منبع تازهٔ
+ * ExpertProfile (کشف سرد PM) خوانده می‌شود — وابستگی به نسل قدیمی حذف شد.
  */
 
 import { getExpertRepository, getVisitRepository, type ExpertRepository, type VisitRepository } from "@/core/repositories";
@@ -19,10 +22,9 @@ import {
   topPairs,
 } from "./analyzers";
 import { faNumber, faMonthLabel } from "@/lib/format";
-import { enrichExpertRows, buildTopExpertsInsight } from "@/lib/melk-api/expert-enrichment";
-// P6547/گام چهارم-۴ — بینش پوشش اطلاعات فهرست (تمام ستون‌ها)
+import { listExpertProfiles, type ExpertProfileRow } from "@/lib/experts/profile-store";
+// پوشش اطلاعات فهرست (تمام ستون‌ها)
 import { buildCoverageInsight, type CoverageColumnInput } from "./coverage-insight";
-import { readPmBranchMap } from "@/lib/branch-store";
 
 /** وابستگی‌های تزریق‌پذیر ایجنت کارشناسان */
 export interface ExpertAgentDeps {
@@ -33,8 +35,6 @@ export interface ExpertAgentDeps {
 export class ExpertAgent extends BaseLearningAgent {
   readonly tileId = "experts";
   readonly name = "ایجنت تحلیل کارشناسان";
-  /** P6.5-11 (بند ج) — VISIT_LEADERSHIP از کاشی حذف‌شدهٔ بازدیدها مهاجرت کرد
-   *  P6.5-12 (بند پ) — DEAL_ACTIVITY: فعال‌ترین کارشناسان بر اساس تعداد معامله */
   readonly insightDomains = ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK", "VISIT_LEADERSHIP", "DEAL_ACTIVITY", "COVERAGE"] as const;
 
   private readonly expertsRepo: ExpertRepository;
@@ -55,72 +55,66 @@ export class ExpertAgent extends BaseLearningAgent {
     const cards: InsightCard[] = [];
     if (experts.length === 0) return cards;
 
-    // ---- P6.5-12 (بند پ): DEAL_ACTIVITY — فعال‌ترین کارشناسان بر اساس تعداد معامله ----
+    // پروفایل تازهٔ PM (منبع فهرست جدید) — در نبودش بینش‌های وابسته حذف می‌شوند، نه کل ایجنت
+    let profiles: ExpertProfileRow[] = [];
     try {
-      const listRows = experts.map((e) => ({
-        id: e.id,
-        personnelCode: e.personnelCode,
-        fullName: e.fullName,
-        mobile: e.mobile,
-        role: e.role,
-        businessTitle: e.businessTitle,
-        creator: e.creator,
-        active: e.active,
-        createdAt: e.createdAt,
-        interactionTotal: 0,
-      }));
-      const enriched = await enrichExpertRows(listRows, null);
-      const top = buildTopExpertsInsight(enriched.rows, enriched.attribution);
-      // P6546/گام چهارم-۶ — دو بینش حذف‌شده بنا بر دستور مالک:
-      //   · «فعال‌ترین کارشناسان — مبایعه‌نامه (۲۰ نفر برتر)» (فهرست اصلی اکنون
-      //     دقیقاً به همین اولویت مرتب می‌شود — گام چهارم-۱)
-      //   · شاهد شمارش قراردادهای کل کسب‌وکار از دید سامانهٔ مالی
-      if (top.topRent.length > 0) {
-        const rentTop3 = top.topRent.slice(0, 3).map((r) => `${r.name} (${faNumber(r.count)})`).join("، ");
+      profiles = (await listExpertProfiles({ limit: 5000 })).rows;
+    } catch {
+      profiles = [];
+    }
+
+    // ---- DEAL_ACTIVITY — فعال‌ترین کارشناسان اجاره‌نامه (۲۰ نفر برتر) ----
+    try {
+      const topRent = [...profiles]
+        .filter((r) => r.rentCount > 0)
+        .sort((a, b) => b.rentCount - a.rentCount || (a.fullName ?? "").localeCompare(b.fullName ?? "", "fa"))
+        .slice(0, 20);
+      if (topRent.length > 0) {
+        const rentTop3 = topRent.slice(0, 3).map((r) => `${r.fullName} (${faNumber(r.rentCount)})`).join("، ");
         cards.push({
           key: "ex-deal-activity-top-rent",
           domain: "DEAL_ACTIVITY",
           title: "فعال‌ترین کارشناسان — اجاره‌نامه (۲۰ نفر برتر)",
-          body: `بر اساس تعداد معامله اجاره‌نامه، پیشتازان: ${rentTop3}. این شمارش از صورت‌وضعیت‌های ثبت‌شده در سامانه (نوع اجاره‌نامه) استخراج می‌شود.`,
+          body: `بر اساس تعداد اجاره‌نامه (شامل تمدید اجاره)، پیشتازان: ${rentTop3}. این شمارش از قراردادهای ثبت‌شدهٔ سامانه استخراج می‌شود و با هر بروزرسانی فهرست تازه می‌شود.`,
           severity: "info",
-          metrics: top.topRent.slice(0, 20).map((r, i) => ({
-            label: `${faNumber(i + 1)}. ${r.name}${r.pmCode ? ` (${r.pmCode})` : ""}`,
-            value: `${faNumber(r.count)} اجاره‌نامه`,
+          metrics: topRent.map((r, i) => ({
+            label: `${faNumber(i + 1)}. ${r.fullName}${r.personnelCode ? ` (${r.personnelCode})` : ""}`,
+            value: `${faNumber(r.rentCount)} اجاره‌نامه`,
           })),
         });
       }
     } catch {
-      // غنی‌سازی بین‌سامانه‌ای در دسترس نیست — بینش حذف می‌شود، نه کل ایجنت
+      // پروفایل در دسترس نیست — بینش حذف می‌شود، نه کل ایجنت
     }
 
-    // ---- P6547/گام چهارم-۴: پوشش اطلاعات فهرست کارشناسان (تمام ستون‌ها) ----
+    // ---- پوشش اطلاعات فهرست کارشناسان (تمام ستون‌های کشف‌شده از PM) ----
     try {
-      const listRows = experts.map((e) => ({
-        id: e.id, personnelCode: e.personnelCode, fullName: e.fullName, mobile: e.mobile, role: e.role,
-        businessTitle: e.businessTitle, creator: e.creator, active: e.active, createdAt: e.createdAt, interactionTotal: 0,
-      }));
-      const [enriched, pmBranchMap] = await Promise.all([enrichExpertRows(listRows, null), readPmBranchMap()]);
-      const n = enriched.rows.length;
-      const covCols: CoverageColumnInput[] = [
-        { title: "نام کامل", filled: enriched.rows.filter((r) => r.fullName?.trim()).length, total: n, fillPath: "رجیستری ARM (realtors/list)" },
-        { title: "موبایل", filled: enriched.rows.filter((r) => r.mobile?.trim()).length, total: n, fillPath: "رجیستری ARM + پشتیبان PM" },
-        { title: "کد پرسنلی", filled: enriched.rows.filter((r) => r.pmCode ?? r.personnelCode).length, total: n, fillPath: "سامانهٔ PM (realtors/list — code)" },
-        { title: "شعبه", filled: enriched.rows.filter((r) => Boolean(pmBranchMap[r.fullName])).length, total: n, fillPath: "سامانهٔ PM (personnelInfo.branchId)" },
-        { title: "نقش پرسنلی", filled: enriched.rows.filter((r) => r.roleTitle?.trim()).length, total: n, fillPath: "سامانهٔ PM (personnelInfo — jobTitle)" },
-        { title: "تاریخ استخدام", filled: enriched.rows.filter((r) => r.hireDate?.trim()).length, total: n, fillPath: "سامانهٔ PM (personnelInfo.employeementInfo.date)" },
-        { title: "نوع همکاری", filled: enriched.rows.filter((r) => r.employmentType?.trim()).length, total: n, fillPath: "سامانهٔ PM (employeementInfo.typeFa)" },
-        { title: "شماره داخلی", filled: enriched.rows.filter((r) => r.voipExtension?.trim()).length, total: n, fillPath: "سامانهٔ PM (voipInfo.extentionNumber)" },
-        { title: "مبایعه‌نامه", filled: enriched.rows.filter((r) => r.saleCount > 0).length, total: n, fillPath: "صورت‌وضعیت‌های ARM (تطبیق هولوگرام/کد)" },
-        { title: "اجاره‌نامه", filled: enriched.rows.filter((r) => r.rentCount > 0).length, total: n, fillPath: "صورت‌وضعیت‌های ARM (تطبیق هولوگرام/کد)" },
-        { title: "وضعیت فعال", filled: enriched.rows.filter((r) => typeof r.active === "boolean").length, total: n, fillPath: "رجیستری ARM" },
-      ];
-      const covCard = buildCoverageInsight("کارشناسان ملک تبریز", "ex-list-coverage", covCols);
-      if (covCard) cards.push(covCard);
+      const n = profiles.length;
+      if (n > 0) {
+        const filled = (get: (r: ExpertProfileRow) => unknown) => profiles.filter((r) => get(r) !== null && get(r) !== "").length;
+        const covCols: CoverageColumnInput[] = [
+          { title: "نام کامل", filled: filled((r) => r.fullName), total: n, fillPath: "رجیستری PM (realtors/list)" },
+          { title: "موبایل", filled: filled((r) => r.mobile), total: n, fillPath: "رجیستری PM (realtors/list — mobileNumber)" },
+          { title: "کد پرسنلی", filled: filled((r) => r.personnelCode), total: n, fillPath: "رجیستری PM (realtors/list — code)" },
+          { title: "شعبه", filled: filled((r) => r.branchTitle), total: n, fillPath: "سامانهٔ PM (personnelInfo.branchId.title)" },
+          { title: "سمت پرسنلی", filled: filled((r) => r.roleTitle), total: n, fillPath: "سامانهٔ PM (personnelInfo.role.title)" },
+          { title: "تاریخ استخدام", filled: filled((r) => r.hireDate), total: n, fillPath: "سامانهٔ PM (employeementInfo.date)" },
+          { title: "نوع همکاری", filled: filled((r) => r.employmentTypeFa), total: n, fillPath: "سامانهٔ PM (employeementInfo.type)" },
+          { title: "آدرس", filled: filled((r) => r.address), total: n, fillPath: "سامانهٔ PM (contactInfo.contactInfo.address)" },
+          { title: "تلفن ثابت", filled: filled((r) => r.telephone), total: n, fillPath: "سامانهٔ PM (contactInfo.contactInfo.telephoneNumber)" },
+          { title: "شماره داخلی", filled: filled((r) => r.voipExtension), total: n, fillPath: "رجیستری PM (voipInfo.extentionNumber)" },
+          { title: "مبایعه‌نامه", filled: filled((r) => r.saleCount > 0), total: n, fillPath: "قراردادهای ARM (تایپ مبایعه/پیش‌فروش + گزارش تطابق)" },
+          { title: "اجاره‌نامه", filled: filled((r) => r.rentCount > 0), total: n, fillPath: "قراردادهای ARM (تایپ اجاره/تمدید + گزارش تطابق)" },
+          { title: "وضعیت فعال", filled: filled((r) => typeof r.active === "boolean"), total: n, fillPath: "رجیستری PM (isRegisteredCompleted)" },
+        ];
+        const covCard = buildCoverageInsight("کارشناسان ملک تبریز", "ex-list-coverage", covCols);
+        if (covCard) cards.push(covCard);
+      }
     } catch {
-      // غنی‌سازی در دسترس نیست — بینش پوشش حذف می‌شود، نه کل ایجنت
+      // پوشش در دسترس نیست — بینش حذف می‌شود، نه کل ایجنت
     }
 
-    // ---- P6.5-11 (بند ج): VISIT_LEADERSHIP — بررسی‌کنندگان پیشرو (مهاجرت از کاشی بازدیدها) ----
+    // ---- VISIT_LEADERSHIP — بررسی‌کنندگان پیشرو (مهاجرت از کاشی بازدیدها) ----
     if (visits.length > 0) {
       const leaders = checkerLeaderboard(visits, 3);
       if (leaders.length > 0 && leaders[0].count > 0) {
@@ -138,8 +132,6 @@ export class ExpertAgent extends BaseLearningAgent {
     const base = expertBaseStats(experts);
     const degrees = realtorDegrees(interactions);
 
-    // ---- P6530/گام ۴ (بند ۵): کارت بینش ترکیب نقش‌ها حذف شد (دستور مالک) ----
-
     // ---- ACTIVITY: وضعیت فعال/غیرفعال ----
     cards.push({
       key: "ex-activity",
@@ -154,7 +146,7 @@ export class ExpertAgent extends BaseLearningAgent {
       ],
     });
 
-    // ---- GROWTH: رشد عضویت ماهانه ----
+    // ---- GROWTH: رشد عضویت ماهانه (بر اساس تاریخ استخدام PM در صورت وجود) ----
     const joiners = joinerSeries(experts);
     const jGrowth = growthRate(joiners);
     if (joiners.length >= 2) {
@@ -194,8 +186,6 @@ export class ExpertAgent extends BaseLearningAgent {
         })),
       });
     }
-
-    // ---- P6530/گام ۴ (بند ۵): کارت بینش مشاوران بدون تعامل حذف شد (دستور مالک) ----
 
     // ---- کسب‌وکارهای بزرگ (تکمیل تصویر ساختار) ----
     const businesses = businessDistribution(experts);

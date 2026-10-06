@@ -68,15 +68,14 @@ export async function branchesOverview(): Promise<{
 }
 
 /**
- * P6547/گام یک-۵ + گام چهارم-۱ — نقشهٔ شعبه از رجیستری پرسنل سامانهٔ PM.
- * «اطلاعات ستون شعبه از سامانه pm استخراج گردد» — branchId.title واقعی هر پرسنل
- * از realtors/info/personnelInfo (کشف زندهٔ ۱۴۰۵/۰۷/۱۲: ملکی تبریزی · باغلارباغی · …)
- * در PmPersonnelRecord.branchTitle ذخیره شده و اینجا به نقشهٔ نام→شعبه تبدیل می‌شود.
+ * PN-008 (ثانیاً) — نقشهٔ شعبه از پروفایل کارشناسان (ExpertProfile — رجیستری+عمق PM).
+ * «اطلاعات ستون شعبه از سامانه pm استخراج گردد» — branchTitle واقعی هر پرسنل
+ * از realtors/info/personnelInfo (کشف زندهٔ ۱۴۰۵/۰۷/۱۶: باغلارباغی · ارتش · …)
  * خروجی: شیء خالص — قابل تست؛ شکست DB = نقشهٔ خالی (زنجیره به منبع بعدی می‌رود).
  */
 export async function readPmBranchMap(): Promise<Record<string, string>> {
   try {
-    const rows = await db.pmPersonnelRecord.findMany({
+    const rows = await db.expertProfile.findMany({
       where: { branchTitle: { not: null } },
       select: { fullName: true, branchTitle: true },
     });

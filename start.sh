@@ -11,6 +11,12 @@ mkdir -p upload/.survival
 
 echo "[start.sh] بوت رسمی ملکا — $(date -u +%FT%TZ)"
 
+# ═══ PN-008 اولاً: ارتقای منابع در حد امکان کانتینر ═══
+ulimit -n 100000 2>/dev/null || true          # فایل‌های باز هم‌زمان: 1024 → 100000
+export UV_THREADPOOL_SIZE="${UV_THREADPOOL_SIZE:-4}"  # ThreadPool I/O (کریپتو نشست/فایل)
+bun scripts/pn008/ensure-wal.ts 2>/dev/null || true  # SQLite WAL — هم‌زمانی بهتر روی ۲ vCPU
+
+
 # ۱) گارد بازیابی محیط (در صورت تخریب: DB/env از بستهٔ بقا برمی‌گردد)
 #    بی‌اثر و بدون ریسک اگر محیط سالم باشد.
 if [[ -f scripts/pn005c/recovery-guard.sh ]]; then

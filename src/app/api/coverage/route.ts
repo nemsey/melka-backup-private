@@ -79,18 +79,18 @@ const M3_COLUMNS: ColumnSpec[] = [
 ];
 // P6546/گام چهارم + گام پنجم — پوشش تمام ستون‌های فهرست کارشناسان
 const M4_COLUMNS: ColumnSpec[] = [
-  { key: "fullName", title: "نام کامل", fillPath: "همگام‌سازی کارشناسان ARM (realtors/list)" },
-  { key: "mobile", title: "موبایل", fillPath: "همگام‌سازی کارشناسان ARM + پشتیبان PM" },
-  { key: "personnelCode", title: "کد پرسنلی", fillPath: "رجیستری پرسنل PM (realtors/list — منبع حقیقت)" },
+  { key: "fullName", title: "نام کامل", fillPath: "رجیستری PM (realtors/list)" },
+  { key: "mobile", title: "موبایل", fillPath: "رجیستری PM (realtors/list — mobileNumber)" },
+  { key: "personnelCode", title: "کد پرسنلی", fillPath: "رجیستری PM (realtors/list — code)" },
   { key: "address", title: "آدرس", fillPath: "سامانهٔ PM (realtors/info/contactInfo — contactInfo.address) — کشف P6549" },
-  { key: "businessTitle", title: "عنوان کسب‌وکار", fillPath: "همگام‌سازی کارشناسان ARM" },
+  { key: "businessTitle", title: "کسب‌وکار", fillPath: "رجیستری PM (businessId.title)" },
   { key: "__branchM4", title: "شعبه", fillPath: "سامانهٔ PM (personnelInfo.branchId.title — تفکیک نام کارشناس)" },
   { key: "roleTitle", title: "نقش پرسنلی", fillPath: "سامانهٔ PM (realtors/list + personnelInfo)" },
   { key: "hireDate", title: "تاریخ استخدام", fillPath: "سامانهٔ PM (realtors/info/personnelInfo — کشف P6546)" },
   // P6547/گام چهارم — ستون‌های تازه از ساختار فراژرف PM
   { key: "__employmentType", title: "نوع همکاری", fillPath: "سامانهٔ PM (employeementInfo.typeFa)" },
   { key: "__voip", title: "شماره داخلی", fillPath: "سامانهٔ PM (voipInfo.extentionNumber)" },
-  { key: "active", title: "وضعیت فعال", fillPath: "همگام‌سازی کارشناسان ARM" },
+  { key: "active", title: "وضعیت فعال", fillPath: "رجیستری PM (isRegisteredCompleted)" },
 ];
 
 /** P6547 — شمارش امن پوشش یک فیلد: فیلدهای non-nullable در Prisma «not: null» نمی‌پذیرند
@@ -120,8 +120,8 @@ export async function GET(request: NextRequest) {
     const m1Total = await db.propertyRecord.count();
     // P6547 — نقشهٔ شعبه‌های PM (برای ستون شعبهٔ M1/M2) + نقشهٔ اشتغال/داخلی (M4)
     const [pmBranchRows, pmEmploymentRows] = await Promise.all([
-      db.pmPersonnelRecord.findMany({ where: { branchTitle: { not: null } }, select: { fullName: true, branchTitle: true } }),
-      db.pmPersonnelRecord.findMany({ select: { id: true, employmentType: true, voipExtension: true } }),
+      db.expertProfile.findMany({ where: { branchTitle: { not: null } }, select: { fullName: true, branchTitle: true } }),
+      db.expertProfile.findMany({ select: { id: true, employmentType: true, voipExtension: true } }),
     ]);
     const pmBranchSet = new Set(pmBranchRows.map((r) => r.fullName));
     const m1RealtorNames = await db.propertyRecord.findMany({ select: { ownerName: true }, take: 25000 });
@@ -162,28 +162,24 @@ export async function GET(request: NextRequest) {
       contractHolo: await db.transactionRecord.count({ where: { contractHolo: { not: null } } }),
       realtorSharesJson: enrichments.filter((e) => e.realtorSharesJson).length,
     };
-    /* ── M4: کارشناسان — P6546: پوشش تمام ستون‌ها (تلفیق ARM + PM) ── */
-    const m4Total = await db.expertRecord.count();
-    const m4Filled: Record<string, number> = {};
-    for (const c of M4_COLUMNS) {
-      if (["roleTitle", "hireDate", "__employmentType", "__voip", "__branchM4", "address"].includes(c.key)) continue; // از PM محاسبه می‌شود — پایین‌تر (address: ExpertRecord فاقد فیلد است)
-      m4Filled[c.key] = await safeCount(db, "expertRecord", c.key);
-    }
-    // نقش پرسنلی و تاریخ استخدام از رجیستری PM (تطبیق با _id مشترک)
-    const pmPersonnel = await db.pmPersonnelRecord.findMany({ select: { id: true, code: true, roleTitle: true, hireDate: true, address: true, branchTitle: true } });
-    const expertIds = new Set((await db.expertRecord.findMany({ select: { id: true } })).map((e) => e.id));
-    const pmMatched = pmPersonnel.filter((p) => expertIds.has(p.id));
-    m4Filled.roleTitle = pmMatched.filter((p) => p.roleTitle).length;
-    m4Filled.hireDate = pmMatched.filter((p) => p.hireDate).length;
-    m4Filled.personnelCode = pmMatched.filter((p) => p.code).length;
-    // P6549 — آدرس (contactInfo.address) و شعبه (branchTitle) از همان کوئری PM بالا
-    const pmExtraById = new Map(pmPersonnel.map((r) => [r.id, r]));
-    m4Filled.address = m4Total > 0 ? [...expertIds].filter((id) => pmExtraById.get(id)?.address).length : 0;
-    m4Filled.__branchM4 = m4Total > 0 ? [...expertIds].filter((id) => pmExtraById.get(id)?.branchTitle).length : 0;
-    // P6547 — نوع همکاری + شماره داخلی از رجیستری PM (تطبیق با _id مشترک)
-    const pmById = new Map(pmEmploymentRows.map((r) => [r.id, r]));
-    m4Filled.__employmentType = m4Total > 0 ? [...new Set(expertIds)].filter((id) => pmById.get(id)?.employmentType).length : 0;
-    m4Filled.__voip = m4Total > 0 ? [...new Set(expertIds)].filter((id) => pmById.get(id)?.voipExtension).length : 0;
+    /* ── M4: کارشناسان — PN-008 (ثانیاً): منبع یگانهٔ ExpertProfile (PM) ── */
+    const m4Total = await db.expertProfile.count();
+    const m4Profiles = await db.expertProfile.findMany({
+      select: { id: true, personnelCode: true, fullName: true, mobile: true, roleTitle: true, hireDate: true, address: true, branchTitle: true, employmentType: true, voipExtension: true, active: true, businessTitle: true },
+    });
+    const m4Filled: Record<string, number> = {
+      fullName: m4Profiles.filter((p) => p.fullName).length,
+      mobile: m4Profiles.filter((p) => p.mobile).length,
+      personnelCode: m4Profiles.filter((p) => p.personnelCode).length,
+      address: m4Profiles.filter((p) => p.address).length,
+      businessTitle: m4Profiles.filter((p) => p.businessTitle).length,
+      __branchM4: m4Profiles.filter((p) => p.branchTitle).length,
+      roleTitle: m4Profiles.filter((p) => p.roleTitle).length,
+      hireDate: m4Profiles.filter((p) => p.hireDate).length,
+      __employmentType: m4Profiles.filter((p) => p.employmentType !== null).length,
+      __voip: m4Profiles.filter((p) => p.voipExtension).length,
+      active: m4Profiles.filter((p) => typeof p.active === "boolean").length,
+    };
 
     const toTable = (cols: ColumnSpec[], filled: Record<string, number>, total: number) =>
       cols.map((c) => ({

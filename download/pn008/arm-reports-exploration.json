@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-06T12:51:09.639Z",
+  "armVault": {
+    "tokenChars": 171,
+    "refreshChars": 171,
+    "business": null
+  },
+  "tokenTest": "OK",
+  "tradedCountTotal": {
+    "error": "OTP_INVALID"
+  },
+  "tradedCount": {
+    "error": "OTP_INVALID"
+  },
+  "realtorInteractions": {
+    "error": "OTP_INVALID"
+  }
+}
