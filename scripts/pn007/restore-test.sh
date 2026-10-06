@@ -58,21 +58,20 @@ p.otpAttempt.deleteMany({ where: { kind: 'MASTER_LOGIN' } })
 
 echo "═══ ۴) ساخت .env (نام‌ها از بسته، مقادیر از محیط فعلی) ═══"
 cp "$PKG/env/.env.example" "$APP/.env"
+# ن۰۰۷ (رفع باگ جدی): .env.example خودش DATABASE_URL فعال دارد — الحاق مقدار تازه
+# = دو خط متضاد و bun «اولین» را برمی‌گزیند → سرور آزمون به DB اصلی وصل می‌شد!
+# (شاهد: RATE_LIMITED با وجود پاک‌سازی نسخهٔ آزمون؛ کوئری env نشان داد مسیر اصلی).
+# راه درست: «جایگزینی» خط DATABASE_URL، سپس افزودن فقط کلید مفقود (کد مالک).
+MASTER_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env.local 2>/dev/null | tail -1 | cut -d= -f2-)
+if [[ -z "${MASTER_CODE:-}" ]]; then MASTER_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env | tail -1 | cut -d= -f2-); fi
+sed -i "s|^DATABASE_URL=.*|DATABASE_URL=file:$APP/db/custom.db|" "$APP/.env"
 {
   echo ""
   echo "# --- مقادیر لازم از محیط فعلی (گام ۴ دستور شورا) ---"
-  echo "DATABASE_URL=file:$APP/db/custom.db"
-  # ن۰۰۷: منبع اصلی کد مالک .env.local است؛ مقدار .env (=00000000) کد تستی عمومی است
-  # که مسیر ورود عمداً ردش می‌کند (SEC-1). زنجیره: .env.local → هش DB.
-  MASTER_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env.local 2>/dev/null | tail -1 | cut -d= -f2-)
-  if [[ -z "${MASTER_CODE:-}" ]]; then MASTER_CODE=$(grep -E '^MASTER_ACCESS_CODE=' .env | tail -1 | cut -d= -f2-); fi
   echo "MASTER_ACCESS_CODE=$MASTER_CODE"
-  echo "MELK_SYNC_MODE=incremental"
-  # نکته: کلیدهای ایزوله‌سازی آزمون (REPO_DIR/MELKA_REPO_DIR/BASE_URL) عمداً
-  # در .env نوشته نمی‌شوند — .env بخشی از اثر انگشت envFingerprint است و کلید اضافه =
-  # ناهمانی با FINGERPRINT بسته. آنها به‌صورت env فرایندی هنگام start تزریق می‌شوند.
 } >> "$APP/.env"
-step_time ".env ساخته شد (۳ مقدار لازم — بی‌کلیدهای آزمون)"
+grep -c "^DATABASE_URL=" "$APP/.env" | grep -q "^1$" || { echo "✗ .env بیش از یک DATABASE_URL دارد"; exit 1; }
+step_time ".env ساخته شد (DATABASE_URL جایگزین‌شده + کد مالک — تک‌خط قطعی)"
 
 echo "═══ ۵) bun install ═══"
 ( cd "$APP" && bun install --frozen-lockfile > "$LOGS/install.log" 2>&1 ) || { echo "✗ install شکست"; tail -5 "$LOGS/install.log"; exit 1; }
