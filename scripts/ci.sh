@@ -75,6 +75,14 @@ tail -1 /tmp/pn012-ci-audit4.log
 
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"
+# PN-012: ری‌استارت کنترل‌شدهٔ سرور تولید پیش از سنجهٔ RAM — الگوی مستند جلسهٔ ۰۰۶
+# («تورم RSS از ترافیک/جلسه‌های مرورگر؛ پس از ری‌استارت ۶۰۳→۱۳۴MB»)؛ فقط وقتی
+# نگهبان زنده است (محیط بی‌نگهبان دست‌نخورده می‌ماند — رفتار خارجی تغییر نمی‌کند)
+if pgrep -f "prod-watchdog.sh" > /dev/null 2>&1; then
+  pkill -f "standalone/server.js" 2>/dev/null || true
+  for _i in $(seq 1 25); do curl -sf -o /dev/null --max-time 2 http://localhost:3000/api/health 2>/dev/null && break; sleep 1; done
+  echo "  سرور تولید ری‌استارت شد (سنجهٔ RAM روی پایهٔ تازه)"
+fi
 # تصمیم ن۰۰۷ (Blocker → Alternative → Decision → Continue):
 #   Blocker:    «RAM Build پیک» از جلسهٔ ۰۰۶ PARTIAL پذیرفته‌شدهٔ شوراست
 #               (حکم گیت ۰۰۶: کف ابزار Native راست‌گرا ~۱۷۴۳-۲۰۰۴MB؛ /usr/bin/time نبود؛
