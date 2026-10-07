@@ -32,6 +32,7 @@
  * مرز: فقط خواندن + محاسبهٔ خالص (قرارداد v1) — صفر Prisma/fetch/react.
  */
 
+import { recordMetric } from "@/lib/observability/metrics";
 import type {
   CalibrationBucket,
   EvaluationEngine,
@@ -214,6 +215,8 @@ export class EvaluationEngineImpl implements EvaluationEngine {
     }
 
     const brier = brierScore(pairs);
+    // PN-013/مرحلهٔ ۶ — متریک استاندارد prediction.brier (آخرین ارزیابی زنده)
+    recordMetric("prediction.brier", Math.round(brier * 10000) / 10000, { tileId: query.tileId });
     const lift = liftVersusBaseRate(pairs);
     return {
       ...withExtras,

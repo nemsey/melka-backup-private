@@ -1,0 +1,43 @@
+{
+  "schema": "melka-pn013-phase4-observability",
+  "generatedAt": "2026-10-07T13:45:00Z",
+  "threeLayers": {
+    "logs": "logger ن۰۰۲ — یک خط JSON در هر رویداد با requestId/traceId (از قبل) — اکنون با شناسهٔ کلاینت هم‌ارز",
+    "metrics": "رجیستری درون‌حافظه‌ای تازه src/lib/observability/metrics.ts — حلقهٔ ۵۰۰ نمونه، صفر وابستگی، singleton روی globalThis",
+    "traces": "Correlation ID سرتاسری x-request-id: UI (api کلاینت) → proxy → withRouteLog → لاگ/متریک → پاسخ"
+  },
+  "correlationId": {
+    "client": "src/lib/client/api.ts — هر فراخوانی شناسهٔ randomUUID در هدر x-request-id",
+    "proxy": "src/proxy.ts — شناسهٔ کلاینت را می‌خواند (یا می‌سازد)، به پایین‌دست می‌رساند و در پاسخ برمی‌گرداند",
+    "route": "withRouteLog — همان شناسه در لاگ start/ok/fail + متریک + هدر پاسخ",
+    "liveProof": "curl -H 'x-request-id: pn013-e2e-42' /api/health → پاسخ همان شناسه + دو خط لاگ (start proxy + start route) + خط ok با duration:5 همه با همان شناسه — شاهد در server.log",
+    "e2eTest": "پاسخ 401 متریک نیز شناسهٔ e2e-789 را برگرداند (تست ۱۷)"
+  },
+  "standardMetrics": {
+    "api.latency": "withRouteLog — برچسب: مسیر (خانوادهٔ زنده: /api/health n=2 p95=5ms · /api/v1/runtime/metrics n=2 p95=0ms)",
+    "sync.duration": "logSync — برچسب: حالت/وضعیت (زنده پس از اولین همگام‌سازی فرایند Web؛ سنجه‌های Worker از فایل وضعیت)",
+    "agent.latency": "logAgentCall — برچسب: کاشی/عملیات (زنده: operation=render-insights tileId=listings n=1 p95=26ms — از همین نشست مرورگر)",
+    "prediction.brier": "evaluation-engine — برچسب: کاشی (زنده پس از ارزیابی بعدی؛ محاسبهٔ Worker از فایل وضعیت قابل رؤیت)"
+  },
+  "panelRoute": {
+    "path": "/api/runtime/metrics + /api/v1/runtime/metrics (آینه — نامتغیر ۶۹=۶۹ حفظ شد)",
+    "auth": "OWNER-only (requireRole) — 401 بدون نشست (تست‌های ۱۵-۱۷ + زنده)",
+    "returns": "فرایند Web (pid/uptime/RSS/heap) + چهار خانوادهٔ متریک با شمارش/میانگین/p50/p95/max/آخرین + وضعیت زندهٔ Worker (ضربان/۵ کار با شمارش و مدت) + قرارداد خانواده‌ها",
+    "liveWitness": "download/pn013/observability-live.json — 200 با توکن نشست واقعی؛ worker: pid 1896 · ضربان ۱۳:۴۳:۳۲ · ۵ کار (intelligence n=6/310ms · catalog n=7 در حال اجرا · mirror · log-rotate n=11 · backup n=1)"
+  },
+  "honestLimitation": "متریک‌های درون‌حافظه‌ای فقط فرایند خود را می‌بینند — سنجه‌های Worker (sync/هوشمندی) از فایل وضعیت مشترک runtime-status.json در همان پانل سرو می‌شوند؛ بدون OTLP خارجی (تک‌جعبه — انتخاب معماری)",
+  "tests": "۱۷/۱۷ سبز (tests/pn013-observability.test.ts) — رجیستری (۵) + همبستگی (۵) + دامنه‌ای (۳) + بریه (۱) + گارد 401 (۳)",
+  "changedFiles": [
+    "src/lib/observability/metrics.ts (تازه)",
+    "src/lib/logger/index.ts",
+    "src/proxy.ts",
+    "src/core/intelligence/evaluation/evaluation-engine.ts",
+    "src/lib/client/api.ts",
+    "src/app/api/runtime/metrics/route.ts (تازه)",
+    "src/app/api/v1/runtime/metrics/route.ts (تازه)",
+    "tests/pn013-observability.test.ts (تازه)"
+  ],
+  "correlationIdActive": true,
+  "metricsCount": 4,
+  "traceWorking": true
+}
