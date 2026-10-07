@@ -30,6 +30,9 @@ function mapPmRole(pmRole: string | null | undefined): string | null {
 }
 
 async function main() {
+  const errors: string[] = [];
+  const matched: Array<Record<string, unknown>> = [];
+  const unmatched: Array<Record<string, unknown>> = [];
   const out: Record<string, unknown> = {
     council: "ملکا-شورا-ن۰۲۰-۱۴۰۵",
     workOrder: "PN-016",
@@ -38,15 +41,12 @@ async function main() {
     pmReachable: null as unknown,
     tokenSource: "PmConnection.tokenEnc (رمزگشایی AES-256-GCM)",
     realtorsFetched: 0,
-    matched: [] as Array<Record<string, unknown>>,
-    unmatched: [] as Array<Record<string, unknown>>,
-    errors: [] as string[],
   };
 
   // ۱) توکن PM
   const conn = await db.pmConnection.findFirst();
   if (!conn?.tokenEnc) {
-    out.errors.push("PmConnection بدون توکن — PM هرگز وصل نشده یا توکن پاک شده");
+    errors.push("PmConnection بدون توکن — PM هرگز وصل نشده یا توکن پاک شده");
     fs.mkdirSync("download/pn016", { recursive: true });
     fs.writeFileSync("download/pn016/backfill.json", JSON.stringify(out, null, 2));
     console.log(JSON.stringify(out, null, 2));
@@ -58,7 +58,7 @@ async function main() {
   try {
     token = decryptSecret(conn.tokenEnc);
   } catch (e) {
-    out.errors.push(`رمزگشایی توکن PM شکست: ${(e as Error).message}`);
+    errors.push(`رمزگشایی توکن PM شکست: ${(e as Error).message}`);
   }
   if (!token) {
     fs.mkdirSync("download/pn016", { recursive: true });
@@ -99,11 +99,11 @@ async function main() {
       const j = (await res.json()) as { data?: PmRealtor[] | { list?: PmRealtor[] } };
       realtors = Array.isArray(j.data) ? j.data : j.data?.list ?? [];
     } else {
-      out.errors.push(`realtors/list → HTTP ${res.status} (توکن منقضی؟)`);
+      errors.push(`realtors/list → HTTP ${res.status} (توکن منقضی؟)`);
     }
   } catch (e) {
     out.pmReachable = `خطا: ${(e as Error).name}`;
-    out.errors.push(`fetch realtors/list شکست: ${(e as Error).message}`);
+    errors.push(`fetch realtors/list شکست: ${(e as Error).message}`);
   } finally {
     clearTimeout(t1);
   }
@@ -113,9 +113,9 @@ async function main() {
   const users = await db.user.findMany();
   const byCode = new Map(realtors.filter((r) => r.code).map((r) => [String(r.code), r]));
   for (const u of users) {
-    if (!u.personnelCode) { (out.unmatched as Array<Record<string, unknown>>).push({ user: u.personnelCode ?? u.mobile, reason: "مهمان — بدون کد پرسنلی" }); continue; }
+    if (!u.personnelCode) { unmatched.push({ user: u.personnelCode ?? u.mobile, reason: "مهمان — بدون کد پرسنلی" }); continue; }
     const pm = byCode.get(u.personnelCode);
-    if (!pm) { (out.unmatched as Array<Record<string, unknown>>).push({ user: u.personnelCode, reason: "در realtors/list PM یافت نشد" }); continue; }
+    if (!pm) { unmatched.push({ user: u.personnelCode, reason: "در realtors/list PM یافت نشد" }); continue; }
 
     const pmRole = pmRoleTitle(pm);
     const pmBusiness = pmBusinessTitle(pm);
@@ -136,7 +136,7 @@ async function main() {
       const { roleTitleFa, branchTitle, role } = patch as { roleTitleFa?: string; branchTitle?: string; role?: string };
       await db.user.update({ where: { id: u.id }, data: { roleTitleFa, branchTitle, role } });
     }
-    (out.matched as Array<Record<string, unknown>>).push({
+    matched.push({
       personnelCode: u.personnelCode,
       pmRole,
       pmBusiness,
@@ -145,6 +145,9 @@ async function main() {
     });
   }
 
+  out.matched = matched;
+  out.unmatched = unmatched;
+  out.errors = errors;
   out.rolesAfter = await db.user.groupBy({ by: ["role"], _count: { _all: true } });
   fs.mkdirSync("download/pn016", { recursive: true });
   fs.writeFileSync("download/pn016/backfill.json", JSON.stringify(out, null, 2));

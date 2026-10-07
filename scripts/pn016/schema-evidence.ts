@@ -10,6 +10,8 @@ const db = new PrismaClient();
 
 async function main() {
   const models = ["User", "UserPermission", "UserActivity", "UserSession"];
+  const newModels: Record<string, unknown> = {};
+  const dataIntegrity: Record<string, unknown> = { integrityCheck: "ok", propertyRecords: 0, requestRecords: 0, graphNodes: 0 };
   const out: Record<string, unknown> = {
     council: "ملکا-شورا-ن۰۲۰-۱۴۰۵",
     workOrder: "PN-016",
@@ -26,13 +28,8 @@ async function main() {
       "UserSession.token (طرح شورا) → tokenHash (توکن خام هرگز در DB — انضباط امنیتی پروژه از PN-001)",
       "migrate dev --name pn016_users → db push (اول test.db سپس production — الگوی PHASE-6.5-DESIGN)",
     ],
-    newModels: {} as Record<string, unknown>,
-    dataIntegrity: {
-      integrityCheck: "ok",
-      propertyRecords: 0,
-      requestRecords: 0,
-      graphNodes: 0,
-    },
+    newModels,
+    dataIntegrity,
   };
 
   const counts = {
@@ -43,14 +40,14 @@ async function main() {
   };
   for (const m of models) {
     const cols = await db.$queryRawUnsafe(`SELECT name FROM pragma_table_info('${m}')`) as Array<{ name: string }>;
-    out.newModels[m] = { count: counts[m as keyof typeof counts], columns: cols.map((c) => c.name) };
+    newModels[m] = { count: counts[m as keyof typeof counts], columns: cols.map((c) => c.name) };
   }
 
   const pi = await db.$queryRawUnsafe("SELECT * FROM pragma_integrity_check()") as Array<Record<string, unknown>>;
-  out.dataIntegrity.integrityCheck = String(pi[0]?.["integrity_check"] ?? "unknown");
-  out.dataIntegrity.propertyRecords = await db.propertyRecord.count();
-  out.dataIntegrity.requestRecords = await db.requestRecord.count();
-  out.dataIntegrity.graphNodes = await db.graphNode.count();
+  dataIntegrity.integrityCheck = String(pi[0]?.["integrity_check"] ?? "unknown");
+  dataIntegrity.propertyRecords = await db.propertyRecord.count();
+  dataIntegrity.requestRecords = await db.requestRecord.count();
+  dataIntegrity.graphNodes = await db.graphNode.count();
 
   const tables = await db.$queryRawUnsafe("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name") as Array<{ name: string }>;
   out.allTables = tables.map((t) => t.name);

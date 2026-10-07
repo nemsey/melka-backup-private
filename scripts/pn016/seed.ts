@@ -28,7 +28,8 @@ const MANAGEABLE = [
   "arm-listings", "arm-requests", "transactions-contracts", "experts", "smart-matching",
   "learning-tier", "market-index", "data-coverage", "file-finder", "management-dashboard",
 ];
-const ROLE_OPS: Record<string, { canRead: boolean; canWrite: boolean; canDelete: boolean; canExport: boolean; canSync: boolean }> = {
+interface RoleOps { canRead: boolean; canWrite: boolean; canDelete: boolean; canExport: boolean; canSync: boolean }
+const ROLE_OPS: Record<string, RoleOps> = {
   OWNER: { canRead: true, canWrite: true, canDelete: true, canExport: true, canSync: true },
   MANAGER: { canRead: true, canWrite: true, canDelete: false, canExport: true, canSync: true },
   EXPERT: { canRead: true, canWrite: true, canDelete: false, canExport: true, canSync: false },
@@ -48,6 +49,9 @@ function permsFor(role: string) {
 }
 
 async function main() {
+  const sources = { sessions: 0, personnelAccessLegacy: 0 };
+  const createdRows: Array<Record<string, unknown>> = [];
+  const skipped: Array<Record<string, unknown>> = [];
   const report: Record<string, unknown> = {
     council: "ملکا-شورا-ن۰۲۰-۱۴۰۵",
     workOrder: "PN-016",
@@ -75,14 +79,13 @@ async function main() {
       byCode.set(s.personnelCode, { displayName: s.displayName, lastIp: s.ip, lastAt: s.createdAt, expiresAt: s.expiresAt });
     }
   }
-  report.sources.sessions = byCode.size;
+  sources.sessions = byCode.size;
 
   // ۲) PersonnelAccess قدیمی → UserPermission (امروز: خالی)
   const legacyPA = await db.personnelAccess.findMany();
-  report.sources.personnelAccessLegacy = legacyPA.length;
+  sources.personnelAccessLegacy = legacyPA.length;
 
   let permsCreated = 0;
-  const created: Array<Record<string, unknown>> = [];
 
   // ۳) ساخت/همگام‌سازی کاربران
   for (const [code, info] of byCode) {
@@ -105,9 +108,9 @@ async function main() {
         const r = await db.userPermission.createMany({ data: permsFor(role).map((p) => ({ userId: u.id, ...p })) });
         permsCreated += r.count;
       }
-      created.push({ personnelCode: code, fullName: u.fullName, role, permissions: role === "OWNER" ? "bypass" : permsFor(role).length });
+      createdRows.push({ personnelCode: code, fullName: u.fullName, role, permissions: role === "OWNER" ? "bypass" : permsFor(role).length });
     } else {
-      (report.skipped as Array<Record<string, unknown>>).push({ personnelCode: code, reason: "already-exists" });
+      skipped.push({ personnelCode: code, reason: "already-exists" });
     }
   }
 
@@ -125,10 +128,10 @@ async function main() {
           metadata: JSON.stringify({ source: "env-owner-code" }),
         },
       });
-      created.push({ personnelCode: code, fullName: u.fullName, role: "OWNER", permissions: "bypass" });
+      createdRows.push({ personnelCode: code, fullName: u.fullName, role: "OWNER", permissions: "bypass" });
     } else if (existing.role !== "OWNER") {
       await db.user.update({ where: { id: existing.id }, data: { role: "OWNER" } });
-      created.push({ personnelCode: code, fullName: existing.fullName, role: "OWNER", permissions: "bypass", note: "role-corrected-to-OWNER" });
+      createdRows.push({ personnelCode: code, fullName: existing.fullName, role: "OWNER", permissions: "bypass", note: "role-corrected-to-OWNER" });
     }
   }
 
@@ -137,16 +140,20 @@ async function main() {
   for (const pa of legacyPA) {
     const u = await db.user.findUnique({ where: { personnelCode: pa.personnelCode } });
     if (!u) continue;
-    const tiles = pa.level === "full" ? MANAGEABLE : pa.level === "limited" ? JSON.parse(pa.allowedTiles ?? "[]") : [];
-    const ops = ROLE_OPS[u.role] ?? ROLE_OPS.VIEWER;
-    const r = await db.userPermission.createMany({
-      data: tiles.filter((t: string) => MANAGEABLE.includes(t)).map((tileId: string) => ({ userId: u.id, tileId, ...ops })),
-      skipDuplicates: true,
-    });
+    const tiles: string[] = pa.level === "full" ? MANAGEABLE : pa.level === "limited" ? (JSON.parse(pa.allowedTiles ?? "[]") as string[]) : [];
+    const ops: RoleOps = ROLE_OPS[u.role] ?? ROLE_OPS.VIEWER!;
+    // نکتهٔ SQLite/Prisma: skipDuplicates پشتیبانی نمی‌شود (نوع never) → فیلتر دستی تکراری‌ها
+    const existing = new Set((await db.userPermission.findMany({ where: { userId: u.id }, select: { tileId: true } })).map((p) => p.tileId));
+    const rows: Array<{ userId: string; tileId: string; canRead: boolean; canWrite: boolean; canDelete: boolean; canExport: boolean; canSync: boolean }> = [];
+    for (const tileId of tiles) {
+      if (!MANAGEABLE.includes(tileId) || existing.has(tileId)) continue;
+      rows.push({ userId: u.id, tileId, canRead: ops.canRead, canWrite: ops.canWrite, canDelete: ops.canDelete, canExport: ops.canExport, canSync: ops.canSync });
+    }
+    const r = rows.length > 0 ? await db.userPermission.createMany({ data: rows }) : { count: 0 };
     migratedLegacy += r.count;
   }
 
-  report.created = created;
+  report.created = createdRows;
   report.permissionsCreated = permsCreated;
   report.legacyPermissionsMigrated = migratedLegacy;
   report.userCountBefore = userCount0;

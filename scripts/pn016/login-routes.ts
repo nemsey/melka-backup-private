@@ -13,6 +13,7 @@ process.env.DATABASE_URL = "file:/home/z/my-project/db/test.db";
 const db = new PrismaClient();
 
 async function main() {
+  const route2: Record<string, unknown> = { route: "POST /api/auth/personnel-login", cases: [] as Array<Record<string, unknown>>, sessionMapProof: null as unknown };
   const out: Record<string, unknown> = {
     council: "ملکا-شورا-ن۰۲۰-۱۴۰۵",
     workOrder: "PN-016",
@@ -56,16 +57,13 @@ async function main() {
   const r3 = await resolvePersonnelLoginUser("410088777", "کاربر ناشناس تازه"); // خودساخت VIEWER
   const r4 = await resolvePersonnelLoginUser("410099999", "کاربر غیرفعال تست"); // غیرفعال
 
-  out.route2_personnel = {
-    route: "POST /api/auth/personnel-login",
-    cases: [
-      { case: "کد مالک env", resolution: { legacyRole: r1.legacyRole, effectiveRole: r1.effectiveRole, isActive: r1.user.isActive } },
-      { case: "EXPERT موجود", resolution: { legacyRole: r2.legacyRole, effectiveRole: r2.effectiveRole, isActive: r2.user.isActive } },
-      { case: "بدون رکورد (خودساخت)", resolution: { legacyRole: r3.legacyRole, effectiveRole: r3.effectiveRole, isActive: r3.user.isActive, isNewlyProvisioned: r3.isNewlyProvisioned } },
-      { case: "کاربر غیرفعال", resolution: { effectiveRole: r4.effectiveRole, isActive: r4.user.isActive, expectedHttp: 403 } },
-    ],
-    sessionMapProof: null as unknown,
-  };
+  route2.cases = [
+    { case: "کد مالک env", resolution: { legacyRole: r1.legacyRole, effectiveRole: r1.effectiveRole, isActive: r1.user.isActive } },
+    { case: "EXPERT موجود", resolution: { legacyRole: r2.legacyRole, effectiveRole: r2.effectiveRole, isActive: r2.user.isActive } },
+    { case: "بدون رکورد (خودساخت)", resolution: { legacyRole: r3.legacyRole, effectiveRole: r3.effectiveRole, isActive: r3.user.isActive, isNewlyProvisioned: r3.isNewlyProvisioned } },
+    { case: "کاربر غیرفعال", resolution: { effectiveRole: r4.effectiveRole, isActive: r4.user.isActive, expectedHttp: 403 } },
+  ];
+  out.route2_personnel = route2;
 
   // نقشهٔ نشست: recordLoginSession + بازخوانی + بستن از راه دور
   const tokenHash = hashToken("test-token-pn016-a".padEnd(32, "x"));
@@ -76,7 +74,7 @@ async function main() {
   const mapped = await db.userSession.findUnique({ where: { tokenHash } });
   const closed = await revokeUserSessions(am.id);
   const sessionAfter = await db.session.findUnique({ where: { tokenHash } });
-  out.route2_personnel.sessionMapProof = {
+  route2.sessionMapProof = {
     userSessionRow: mapped ? { userId: mapped.userId, isActive: mapped.isActive, ip: mapped.ip } : null,
     remoteCloseCount: closed,
     authSessionRevokedAfterClose: sessionAfter?.revoked === true,
@@ -125,8 +123,8 @@ async function main() {
   fs.mkdirSync("download/pn016", { recursive: true });
   fs.writeFileSync("download/pn016/login-routes.json", JSON.stringify(out, null, 2));
   console.log(JSON.stringify(out.verdict, null, 2));
-  console.log("route2 cases:", JSON.stringify((out.route2_personnel as { cases: unknown[] }).cases, null, 1));
-  console.log("sessionMap:", JSON.stringify(out.route2_personnel.sessionMapProof, null, 1));
+  console.log("route2 cases:", JSON.stringify(route2.cases, null, 1));
+  console.log("sessionMap:", JSON.stringify(route2.sessionMapProof, null, 1));
   console.log("guest otp:", JSON.stringify((out.route3_guest as { cases: { otpMechanism: unknown } }).cases.otpMechanism, null, 1));
 }
 
