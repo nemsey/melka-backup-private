@@ -30,10 +30,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 // P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
 import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
+// PN-011 خامسا-۲ — پیوند عمیق از کاشی تطبیق (M5): بار یک‌بارمصرف کد از پیش‌جست‌وجوشده
+import { useAppStore } from "@/lib/client/store";
 import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +44,7 @@ import {
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup } from "@/components/app/shared";
+// PN-011 ثالثاً — شعبه چندانتخابی چیپی؛ Select تک‌انتخابی حذف شد
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
@@ -171,12 +173,21 @@ const AUTO_SLICE_ROWS = 25;
 
 export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
   const { toast } = useToast();
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  // PN-011 خامسا-۲ — بار کاشی از M5 (کد درخواست) یک‌بار در ساخت مقصد مصرف می‌شود؛
+  // فیلتر و اعمال هر دو از همان ابتدا پر می‌شوند ⇒ اولین واکشی خودش جست‌وجو است.
+  const initialDeepCode = useRef<string | null>(null);
+  if (initialDeepCode.current === null) {
+    const p = useAppStore.getState().consumeTileParams("arm-requests");
+    initialDeepCode.current = typeof p?.code === "string" && p.code.trim() ? p.code.trim() : "";
+  }
+  const [filters, setFilters] = useState<Filters>(() => ({ ...EMPTY_FILTERS, code: initialDeepCode.current ?? "" }));
+  const [applied, setApplied] = useState<Filters>(() => ({ ...EMPTY_FILTERS, code: initialDeepCode.current ?? "" }));
   /** وضعیت‌های انتخاب‌شدهٔ فیلتر چندانتخابی (کلیدهای canonical شش‌حالته) */
   const [selectedStates, setSelectedStates] = useState<RequestStateKey[]>([]);
   /** دسته‌بندی‌های انتخاب‌شدهٔ فیلتر چندانتخابی */
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  /** شعبه‌های انتخاب‌شدهٔ فیلتر چندانتخابی (PN-011 ثالثاً — چیپ همانند دسته‌بندی) */
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(
     // قانون ۰۳۵-B/ت-۵: آکاردئون در موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
@@ -205,6 +216,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     // فیلترهای چندانتخابی — اعمال خودکار
     if (selectedStates.length > 0) params.set("states", selectedStates.join(","));
     for (const t of selectedTrades) params.append("tradeType", t);
+    // PN-011 ثالثاً — شعبه چندانتخابی (چیپ): چند مقدار هم‌زمان
+    for (const b of selectedBranches) params.append("branch", b);
     try {
       const res = await api<RequestsResponse>(`/api/crm/arm-catalog/requests?${params.toString()}`);
       setData(res);
@@ -215,7 +228,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     } finally {
       setLoading(false);
     }
-  }, [applied, selectedStates, selectedTrades]);
+  }, [applied, selectedStates, selectedTrades, selectedBranches]);
 
   useEffect(() => {
     setLoading(true);
@@ -278,6 +291,11 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     setSelectedTrades((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   }, []);
 
+  /** تاگل یک شعبه در فیلتر چندانتخابی (اعمال خودکار — PN-011 ثالثاً) */
+  const toggleBranch = useCallback((b: string) => {
+    setSelectedBranches((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
+  }, []);
+
   const doSync = useCallback(async () => {
     setSyncing(true);
     try {
@@ -315,11 +333,13 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
   const anyFilterActive =
     stateFilterActive ||
     selectedTrades.length > 0 ||
+    selectedBranches.length > 0 ||
     Object.values(applied).some((v) => v !== "");
   // PN-009 مرحله D — شمارندهٔ فیلترهای فعال برای سربرگ آکاردئون موبایل (الگوی [فیلترها ۵] دستور بند ۶.۱)
   const activeFilterCount =
     selectedStates.length +
     selectedTrades.length +
+    selectedBranches.length +
     Object.values(applied).filter((v) => v !== "").length;
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
@@ -568,6 +588,48 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                 </div>
               </FilterGroup>
 
+              {/* شعبه — PN-011 ثالثاً: فیلتر چندانتخابی چیپی (همانند دسته‌بندی — دستور مالک) */}
+              <FilterGroup
+                label="شعبهٔ ثبت‌کننده (چندانتخابی)"
+                hint={selectedBranches.length > 0 ? `${faNumber(selectedBranches.length)} شعبه انتخاب شده` : undefined}
+                action={
+                  selectedBranches.length > 0 ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 gap-1 px-2 text-[10px] text-muted-foreground"
+                      onClick={() => setSelectedBranches([])}
+                      aria-label="پاک کردن فیلتر شعبه"
+                    >
+                      <RotateCcw className="w-3 h-3" aria-hidden /> پاک کردن شعبه
+                    </Button>
+                  ) : undefined
+                }
+              >
+                <div className="flex flex-wrap gap-1.5" id="arm-request-branches-filter">
+                  {TABRIZ_BRANCHES.map((b) => (
+                    <FilterChip
+                      key={b}
+                      label={b}
+                      active={selectedBranches.includes(b)}
+                      onToggle={() => toggleBranch(b)}
+                      title={`شعبهٔ ${b}`}
+                      softClass={branchBadgeClass(b)}
+                      solidClass={valueSolidClass(b)}
+                    />
+                  ))}
+                  <FilterChip
+                    label={BRANCH_UNSET}
+                    active={selectedBranches.includes("unset")}
+                    onToggle={() => toggleBranch("unset")}
+                    title="درخواست‌های بدون شعبهٔ مشخص"
+                    softClass={branchBadgeClass(BRANCH_UNSET)}
+                    solidClass={valueSolidClass(BRANCH_UNSET)}
+                  />
+                </div>
+              </FilterGroup>
+
               {/* فیلترهای متنی/عددی تمام ستون‌ها — P6546/گام پنجم-ب: چیدمان جمع‌وجور + بازه‌های روبروهم */}
               <form
                 className="space-y-3"
@@ -600,26 +662,6 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     autoComplete="off"
                     className="font-bold"
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>شعبه</Label>
-                  <Select value={filters.branch || "all"} onValueChange={(v) => setF("branch", v === "all" ? "" : v)}>
-                    <SelectTrigger aria-label="فیلتر شعبه">
-                      <SelectValue placeholder="همهٔ شعب" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">همهٔ شعب</SelectItem>
-                      {TABRIZ_BRANCHES.map((b) => (
-                        <SelectItem key={b} value={b}>
-                          <span className="inline-flex items-center gap-2">
-                            <span className={`inline-block size-2.5 rounded-full ${branchBadgeClass(b)}`} aria-hidden />
-                            {b}
-                          </span>
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="unset">{BRANCH_UNSET}</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="arm-request-customer">متقاضی (نام یا موبایل)</Label>
@@ -705,6 +747,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                       setApplied(EMPTY_FILTERS);
                       setSelectedStates([]);
                       setSelectedTrades([]);
+                      setSelectedBranches([]);
                     }}
                     className="gap-2"
                     aria-label="پاک کردن فیلترها"
@@ -745,6 +788,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                 setApplied(EMPTY_FILTERS);
                 setSelectedStates([]);
                 setSelectedTrades([]);
+                setSelectedBranches([]);
               }}
             />
           </CardContent>
@@ -890,19 +934,20 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                           <AreasFileCell requestCode={r.requestCode} areaNames={r.areaNames} />
                         </TableCell>
                         {/* ۷-ب — نوع ملک درخواستی (P6546/گام دوم — از جزئیات ARM) */}
+                        {/* PN-011 ثانیاً — رنگ از رجیستری (قانون ۱۲): هر مقدار نوع ملک رنگ یکتای خود را دارد */}
                         <TableCell className="whitespace-nowrap">
                           {r.propertyTypeName ? (
-                            <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m2-200 bg-sec-m2-50 text-sec-m2-700">
+                            <Badge variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(r.propertyTypeName)}`}>
                               <Building2 className="w-2.5 h-2.5" aria-hidden /> {r.propertyTypeName}
                             </Badge>
                           ) : (
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۷-پ — نوع ساختمان (P6546/گام دوم) */}
+                        {/* ۷-پ — نوع ساختمان (P6546/گام دوم — PN-011 ثانیاً: رنگ از رجیستری) */}
                         <TableCell className="whitespace-nowrap">
                           {r.buildingTypeName ? (
-                            <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m2-200 bg-sec-m2-50 text-sec-m2-700">
+                            <Badge variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(r.buildingTypeName)}`}>
                               <Home className="w-2.5 h-2.5" aria-hidden /> {r.buildingTypeName}
                             </Badge>
                           ) : (

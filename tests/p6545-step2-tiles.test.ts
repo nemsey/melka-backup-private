@@ -214,7 +214,11 @@ describe("گام۲/M5 — تطبیق هوشمند دوجهته", () => {
     const page = readFileSync(`${TILES_DIR}/smart-matching/SmartMatchingPage.tsx`, "utf8");
     expect(page).toContain("پذیرش");
     expect(page).toContain("رد");
-    expect(page).toContain("/api/agent/feedback");
+    // PN-011 خامسا-۲ — مسیر صحیح روت واقعی [/api/agent/[tileId]/feedback]؛
+    // مسیر قدیمی /api/agent/feedback یک باگ 404 بود که هرگز ثبت نمی‌کرد (اصلاح تست، عین درس ن۰۰۶)
+    expect(page).toContain("/api/agent/smart-matching/feedback");
+    // سوخت یادگیری: عوامل امتیاز همراه بازخورد ثبت می‌شود
+    expect(page).toContain("context: { factors");
   });
 
   test("م-۵-۳۰ مسیر API تطبیق موجود است (اسکن منبع)", () => {
@@ -322,7 +326,7 @@ describe("گام۲/M6 — شاخص بازار ملک تبریز", () => {
   });
 
   test("م-۶-۱۶ مسیر API شاخص موجود است", () => {
-    const route = readFileSync("src/app/api/market-index/route.ts", "utf8");
+    const route = readFileSync("src/lib/services/market-index.ts", "utf8");
     expect(route).toContain("monthlyTrend");
     expect(route).toContain("byArea");
     expect(route).toContain("byType");
@@ -360,7 +364,7 @@ describe("گام۲/M6 — شاخص بازار ملک تبریز", () => {
   });
 
   test("م-۶-۲۲ آگهی بدون قیمت از شاخص حذف می‌شود (فیلتر منبع)", () => {
-    const route = readFileSync("src/app/api/market-index/route.ts", "utf8");
+    const route = readFileSync("src/lib/services/market-index.ts", "utf8");
     expect(route).toContain("price: { not: null }");
   });
 
@@ -456,7 +460,7 @@ describe("گام۲/M7 — پوشش اطلاعات", () => {
   });
 
   test("م-۷-۱۳ مسیر API پوشش موجود است", () => {
-    const route = readFileSync("src/app/api/coverage/route.ts", "utf8");
+    const route = readFileSync("src/lib/services/coverage.ts", "utf8");
     expect(route).toContain("fillPath");
     expect(route).toContain("incompleteRecords");
   });
@@ -472,7 +476,7 @@ describe("گام۲/M7 — پوشش اطلاعات", () => {
   });
 
   test("م-۷-۱۶ چهار کاشی در پاسخ پوشش (اسکن منبع)", () => {
-    const route = readFileSync("src/app/api/coverage/route.ts", "utf8");
+    const route = readFileSync("src/lib/services/coverage.ts", "utf8");
     expect(route).toContain("M1_COLUMNS");
     expect(route).toContain("M2_COLUMNS");
     expect(route).toContain("M3_COLUMNS");
@@ -480,7 +484,7 @@ describe("گام۲/M7 — پوشش اطلاعات", () => {
   });
 
   test("م-۷-۱۷ مسیر پر شدن ستون‌ها فارسی و راهنماست (P6546: نقشهٔ endpointهای کشف‌شده)", () => {
-    const route = readFileSync("src/app/api/coverage/route.ts", "utf8");
+    const route = readFileSync("src/lib/services/coverage.ts", "utf8");
     // P6546/گام ششم — مسیرها اکنون endpointهای واقعی کشف‌شده را نام می‌برند
     expect(route).toContain("properties/owner");
     expect(route).toContain("trade-overviews/info");
@@ -489,12 +493,12 @@ describe("گام۲/M7 — پوشش اطلاعات", () => {
   });
 
   test("م-۷-۱۸ لینک مستقیم رکوردهای ناقص در API هست", () => {
-    const route = readFileSync("src/app/api/coverage/route.ts", "utf8");
+    const route = readFileSync("src/lib/services/coverage.ts", "utf8");
     expect(route).toContain("link:");
   });
 
   test("م-۷-۱۹ Tier از دادهٔ واقعی حلقه خوانده می‌شود", () => {
-    const route = readFileSync("src/app/api/coverage/route.ts", "utf8");
+    const route = readFileSync("src/lib/services/coverage.ts", "utf8");
     expect(route).toContain("tierFromRealData");
   });
 

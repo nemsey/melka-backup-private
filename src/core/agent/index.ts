@@ -26,6 +26,9 @@ import { requestAgent } from "./request-agent";
 import { armListingAgent } from "./arm-listing-agent";
 import { armRequestAgent } from "./arm-request-agent";
 import { transactionsContractsAgent } from "./transactions-contracts-agent";
+// PN-011 خامسا-۲ — ایجنت کاشی تطبیق هوشمند (M5): بدون آن، روت بازخورد تطبیق 404 می‌داد
+// و حلقهٔ یادگیری وزن‌ها هرگز تغذیه نمی‌شد (کشف زندهٔ PN-011 — شکاف نهفته از P6545).
+import { smartMatchingAgent } from "./smart-matching-agent";
 import type { BaseLearningAgent as Agent } from "./base-agent";
 
 const agents = new Map<string, Agent>([
@@ -38,6 +41,7 @@ const agents = new Map<string, Agent>([
   [requestAgent.tileId, requestAgent],
   [armListingAgent.tileId, armListingAgent],
   [armRequestAgent.tileId, armRequestAgent],
+  [smartMatchingAgent.tileId, smartMatchingAgent],
   // P6.5-12: کاشی مشتریان حذف شد (بند ب مرحلهٔ قبل) — ایجنت در رجیستری می‌ماند
   // تا حافظه/بازخورد/نسخه‌های سیاستش از مسیر API در دسترس بماند (نکتهٔ ۲)
   // ایجنت‌های کاشی‌های ادغام‌شده — حفظ‌شده برای دسترسی تاریخچهٔ یادگیری (نکتهٔ ۲)

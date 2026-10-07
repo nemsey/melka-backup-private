@@ -34,10 +34,16 @@ interface AppState {
   tileSettings: Record<string, Record<string, string | number | boolean>>;
   /** PN-008 BLOCK 7 — کاشی‌های مجاز از PersonnelAccess (null = OWNER/بی‌محدودیت) */
   tileAccess: { level: string; tiles: string[] } | null;
+  /** PN-011 خامسا — بار کاشی مقصد: پارامترهای یک‌بارمصرف هنگام گشودن کاشی
+   *  (پیوند عمیق بین‌کاشی؛ مثل M5 → M1 با کد ملک از پیش پرشده) */
+  tileParams: Record<string, unknown> | null;
+  tileParamsFor: string | null;
 
   setStage: (s: AppStage) => void;
   setPendingPersonnelCode: (code: string | null) => void;
-  openTile: (tileId: string, returnTo?: string | null) => void;
+  openTile: (tileId: string, returnTo?: string | null, params?: Record<string, unknown> | null) => void;
+  /** خواندن یک‌بارهٔ بار کاشی — فقط نخستین فراخوان مقصد آن را می‌بیند */
+  consumeTileParams: (tileId: string) => Record<string, unknown> | null;
   goHome: () => void;
   /** بازگشت هوشمند: اگر کاشی از داخل یک ظرف (مثل داشبورد مدیریتی) باز شده باشد،
    *  به همان ظرف برمی‌گردد؛ وگرنه به صفحه خانه */
@@ -68,10 +74,22 @@ export const useAppStore = create<AppState>()(
         tileReturnTo: null,
         tileSettings: {},
         tileAccess: null,
+        tileParams: null,
+        tileParamsFor: null,
 
         setStage: (s) => set({ stage: s }),
         setPendingPersonnelCode: (code) => set({ pendingPersonnelCode: code }),
-        openTile: (tileId, returnTo = null) => set({ activeTileId: tileId, stage: "tile", tileReturnTo: returnTo }),
+        // PN-011 خامسا — گشودن کاشی با بار اختیاری (پیوند عمیق بین‌کاشی)
+        openTile: (tileId, returnTo = null, params = null) =>
+          set({ activeTileId: tileId, stage: "tile", tileReturnTo: returnTo, tileParams: params, tileParamsFor: params ? tileId : null }),
+        consumeTileParams: (tileId) => {
+          const { tileParams, tileParamsFor } = get();
+          if (tileParams && tileParamsFor === tileId) {
+            set({ tileParams: null, tileParamsFor: null });
+            return tileParams;
+          }
+          return null;
+        },
         goHome: () => set({ activeTileId: null, stage: "home", tileReturnTo: null }),
         goBack: () => {
           const { tileReturnTo, activeTileId } = get();
@@ -97,7 +115,7 @@ export const useAppStore = create<AppState>()(
             expiresAt: user.expiresAt,
             savedAt: new Date().toISOString(),
           });
-          set({ token, user, stage: "home", pendingPersonnelCode: null, activeTileId: null, tileReturnTo: null });
+          set({ token, user, stage: "home", pendingPersonnelCode: null, activeTileId: null, tileReturnTo: null, tileParams: null, tileParamsFor: null });
         },
 
         logout: async () => {
@@ -110,7 +128,7 @@ export const useAppStore = create<AppState>()(
             }
           }
           await secureClear();
-          set({ token: null, user: null, stage: "auth", activeTileId: null, tileReturnTo: null, pendingPersonnelCode: null, tileAccess: null });
+          set({ token: null, user: null, stage: "auth", activeTileId: null, tileReturnTo: null, pendingPersonnelCode: null, tileAccess: null, tileParams: null, tileParamsFor: null });
         },
 
         boot: async () => {
@@ -156,7 +174,7 @@ export const useAppStore = create<AppState>()(
     {
       name: "melk-app-state",
       storage: createJSONStorage(() => localStorage),
-      // فقط تنظیمات کاشی‌ها ماندگار می‌شوند؛ توکن/مرحله هرگز
+      // فقط تنظیمات کاشی‌ها ماندگار می‌شوند؛ توکن/مرحله/بار کاشی هرگز
       partialize: (state) => ({ tileSettings: state.tileSettings }) as AppState,
     }
   )
