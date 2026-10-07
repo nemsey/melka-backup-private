@@ -114,9 +114,10 @@ export function TileCoverageTable({ tileKey, accentClass = "text-primary" }: { t
                   <tbody>
                     {block.columns.map((c) => (
                       <tr key={c.key} className="border-t hover:bg-muted/30" title={c.fillPath}>
+                        {/* PN-011 رابعاً — توضیحات (مسیر پر شدن) زیر هر عنوان حذف شد (دستور مالک:
+                            حفظ زیبایی بصری جدول) — مسیر همچنان با اشاره‌گر روی سطر قابل مشاهده است */}
                         <td className="p-2 font-medium">
                           {c.column}
-                          <span className="block text-[10px] text-muted-foreground leading-4 mt-0.5">{c.fillPath}</span>
                         </td>
                         <td className="p-2 text-center tabular-nums">{faNumber(c.filled)}</td>
                         <td className="p-2 text-center tabular-nums text-muted-foreground">{faNumber(c.total)}</td>

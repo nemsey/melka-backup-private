@@ -37,6 +37,13 @@ export async function GET(request: NextRequest) {
     const sp = request.nextUrl.searchParams;
     const activeRaw = sp.get("active");
     const empRaw = num(sp.get("employmentType"));
+    // PN-011 ثالثاً — فیلترهای چندانتخابی چیپی: پارامتر تکرارشونده ← آرایه
+    const branchTitles = (sp.getAll("branchTitle") || []).map((v) => normalizeFilterInput(v)).filter(Boolean);
+    const roleTitles = (sp.getAll("roleTitle") || []).map((v) => normalizeFilterInput(v)).filter(Boolean);
+    const employmentTypes = (sp.getAll("employmentType") || []).map((v) => num(v)).filter((v): v is number => v !== undefined);
+    const headManagers = (sp.getAll("headManager") || []).map((v) => normalizeFilterInput(v)).filter(Boolean);
+    const cities = (sp.getAll("city") || []).map((v) => normalizeFilterInput(v)).filter(Boolean);
+    const actives = (sp.getAll("active") || []).filter((v) => v === "true" || v === "false").map((v) => v === "true");
     const filter: ExpertProfileFilter = {
       q: str(sp.get("q")),
       fullName: str(sp.get("fullName")),
@@ -52,6 +59,12 @@ export async function GET(request: NextRequest) {
       voipExtension: str(sp.get("voipExtension")),
       city: str(sp.get("city")),
       active: activeRaw === "true" || activeRaw === "false" ? activeRaw === "true" : undefined,
+      branchTitles: branchTitles.length > 0 ? branchTitles : undefined,
+      roleTitles: roleTitles.length > 0 ? roleTitles : undefined,
+      employmentTypes: employmentTypes.length > 0 ? employmentTypes : undefined,
+      headManagers: headManagers.length > 0 ? headManagers : undefined,
+      cities: cities.length > 0 ? cities : undefined,
+      actives: actives.length > 0 ? actives : undefined,
       hireFrom: str(sp.get("hireFrom")),
       hireTo: str(sp.get("hireTo")),
       saleFrom: num(sp.get("saleFrom")),

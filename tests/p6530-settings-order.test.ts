@@ -6,7 +6,9 @@
  * §۳ مرتب‌سازی ارقام ۰-۹ و حروف فارسی/عربی در فهرست‌ها (نکتهٔ بسیار مهم ۲)
  * §۴ رفع خطای 502/504 در بروزرسانی فهرست‌ها (نکتهٔ بسیار مهم ۳)
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 const SRC = "/home/z/my-project/src";
@@ -147,19 +149,33 @@ describe("گام ۶ §۲ — دیمون پایدار اتصال", () => {
   });
 
   test("۲-۵) رفتار تیک: بدون نشست دارای توکن → بدون انتقال (heartbeat فقط)", async () => {
-    const { catalogDaemonTick, catalogDaemonStatus } = await import("@/lib/melk-api/catalog-daemon");
-    // مخزن ساختگی: هیچ نشست زنده‌ای ندارد
-    const fakeDb = {
-      session: {
-        findFirst: async () => null,
-      },
-    } as never;
-    const before = catalogDaemonStatus();
-    const after = await catalogDaemonTick(fakeDb);
-    expect(after.ticks).toBe(before.ticks + 1);
-    expect(after.lastError).toBeNull();
-    // P6546/گام پنجم-پ-۴ — پایدارساز: سه برش تازه (tx-info + PM + سامانهٔ عمومی) + خنک‌ساز
-    expect(after.lastResult).toMatchObject({ listingsPages: 0, requestsPages: 0, listingsEnriched: 0, requestsEnriched: 0, txInfoEnriched: 0, pmInfoEnriched: 0, melkPublicNewCodes: 0 });
+    // PN-011 اولاً — ایزوله‌سازی از Worker زندهٔ تولیدی: catalogDaemonStatus ابتدا
+    // کانال مشترک Worker (upload/.runtime/runtime-status.json — مقیم MELKA_REPO_DIR)
+    // را می‌خواند؛ بدون این ایزولاسیون «قبل» از فایلِ زنده و «بعد» از state
+    // درون‌فرایندی می‌آمد و هر بار که Worker تولیدی تیک زده باشد تست می‌شکست
+    // (شکست محیطی مستند — نه کد؛ عین درس ن۰۰۶: اصلاح تست).
+    const savedRepoDir = process.env.MELKA_REPO_DIR;
+    const isolatedDir = mkdtempSync(join(tmpdir(), "p6530-daemon-"));
+    process.env.MELKA_REPO_DIR = isolatedDir;
+    try {
+      const { catalogDaemonTick, catalogDaemonStatus } = await import("@/lib/melk-api/catalog-daemon");
+      // مخزن ساختگی: هیچ نشست زنده‌ای ندارد
+      const fakeDb = {
+        session: {
+          findFirst: async () => null,
+        },
+      } as never;
+      const before = catalogDaemonStatus();
+      const after = await catalogDaemonTick(fakeDb);
+      expect(after.ticks).toBe(before.ticks + 1);
+      expect(after.lastError).toBeNull();
+      // P6546/گام پنجم-پ-۴ — پایدارساز: سه برش تازه (tx-info + PM + سامانهٔ عمومی) + خنک‌ساز
+      expect(after.lastResult).toMatchObject({ listingsPages: 0, requestsPages: 0, listingsEnriched: 0, requestsEnriched: 0, txInfoEnriched: 0, pmInfoEnriched: 0, melkPublicNewCodes: 0 });
+    } finally {
+      if (savedRepoDir === undefined) delete process.env.MELKA_REPO_DIR;
+      else process.env.MELKA_REPO_DIR = savedRepoDir;
+      rmSync(isolatedDir, { recursive: true, force: true });
+    }
   });
 
   test("۲-۶) قفل هم‌پوشانی: تیک هم‌زمان دوم رد می‌شود (running اولی)", async () => {

@@ -7,14 +7,25 @@
  */
 
 import { describe, expect, test, beforeAll, afterAll, beforeEach } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, copyFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, copyFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+// PN-011 اولاً — ایزولاسیون کامل از Worker زندهٔ تولیدی:
+// این تست قبلاً فایل وضعیت «واقعی» (upload/.runtime) را پشتیبان/بازنویسی می‌کرد و
+// در اجرای کامل، Worker زندهٔ تولیدی وسط پنجرهٔ تست آن را بازنویسی می‌کرد (ریس
+// مستند: شکست تناوبی ۳-۸). با MELKA_REPO_DIR موقت، همهٔ خواندن/نوشتن به دایرکتوری
+// ایزوله می‌رود — فایل تولیدی هرگز لمس نمی‌شود.
+const ISOLATED_REPO = mkdtempSync(join(tmpdir(), "pn010-supervisor-"));
+process.env.MELKA_REPO_DIR = ISOLATED_REPO;
 
 const { db } = await import("@/lib/db");
 const { RuntimeSupervisor, __resetSupervisorForTests } = await import("@/core/runtime/supervisor");
-const { readWorkerStatus, writeWorkerStatus, isWorkerAlive, RUNTIME_STATUS_DIR } = await import("@/core/runtime/worker-status");
+const { readWorkerStatus, writeWorkerStatus, isWorkerAlive } = await import("@/core/runtime/worker-status");
+const RUNTIME_STATUS_DIR = join(ISOLATED_REPO, "upload/.runtime");
 const { STOP_REQUEST_ID, runRequestId } = await import("@/core/runtime/job-queue");
 
-/** مسیر واقعی فایل وضعیت — ذخیره/بازگردانی در اطراف تست‌ها */
+/** مسیر فایل وضعیت در دایرکتوری ایزوله — بدون تماس با محیط تولیدی */
 const STATUS_FILE = `${RUNTIME_STATUS_DIR}/runtime-status.json`;
 const BACKUP = `${RUNTIME_STATUS_DIR}/runtime-status.json.pn010-test-bak`;
 let hadOriginal = false;
@@ -38,10 +49,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // بازگردانی وضعیت اصلی runtime
-  if (hadOriginal) copyFileSync(BACKUP, STATUS_FILE);
-  else if (existsSync(STATUS_FILE)) rmSync(STATUS_FILE);
+  // بازگردانی محیط ایزوله — فایل تولیدی هرگز لمس نشده است
+  if (existsSync(STATUS_FILE)) rmSync(STATUS_FILE);
   if (existsSync(BACKUP)) rmSync(BACKUP);
+  rmSync(ISOLATED_REPO, { recursive: true, force: true });
+  delete process.env.MELKA_REPO_DIR;
   await db.jobLock.deleteMany({ where: { OR: [{ jobId: { startsWith: "run-request:" } }, { jobId: STOP_REQUEST_ID }] } });
   await db.$disconnect();
 });

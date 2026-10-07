@@ -1,0 +1,64 @@
+{
+  "schema": "melka-pn012-baseline",
+  "generatedAt": "2026-10-07T08:38:55.825613+00:00",
+  "doc": "ملکا-شورا-ن۰۱۲-۱۴۰۵ · BLOCK 0",
+  "timing": "زمان‌بندی GLM خوداعلانی — بلافاصله پس از رفع قطعی بحران ششم (قانون زمان‌بندی GLM)",
+  "triple": {
+    "local_HEAD": "fb77eb7bffa9bc870b9a0613e76727b994888203",
+    "mirror": "آینه GitHub — پوش در BLOCK 7 (الگوی PN-010)",
+    "survival_package": "download/PN-010-chainIndex=11.tar.gz (chainIndex=11 · ۹۵MB · لنگر زنجیرهٔ ۱۱)",
+    "survival_chainIndex": 11
+  },
+  "backup": {
+    "vacuum_backup": "backups/backup-2026-10-07T08-40.db",
+    "md5": "fa44c397a1789760cfe65cfc410e85ab",
+    "size_bytes": 261582848,
+    "worker_backup_08_24": "backups/backup-2026-10-07T08-24-32-265.db (خودکار توسط Worker پس از احیا — گواه بازگشت چرخهٔ بکاپ)",
+    "integrity": "ok"
+  },
+  "runtime": {
+    "health": "200",
+    "home": "200",
+    "watchdog_alive": true,
+    "worker_alive": true,
+    "memory_rss": "145760 /usr/local/bin/bun /home/z/my-project/scripts/runtime/worker.ts\n165828 bun /home/z/my-project/.next/standalone/server.js\n304",
+    "env": "production",
+    "BUILD_ID": "fb77eb7-20261007-0801"
+  },
+  "escrow_three_locations": {
+    "db/.runtime": {
+      "alive": true,
+      "keyFp": "a669dfac711a99d8",
+      "mtime": "2026-10-07T08:36:53.754Z"
+    },
+    "upload/.runtime": {
+      "alive": true,
+      "keyFp": "a669dfac711a99d8",
+      "mtime": "2026-10-07T08:36:53.561Z"
+    },
+    "env.escrow.enc": {
+      "filesExist": true,
+      "decrypts": true,
+      "keyFp": "a669dfac711a99d8"
+    },
+    "consistent": true,
+    "keyFp16": "a669dfac711a99d8"
+  },
+  "data": {
+    "PropertyRecord": 27677,
+    "RequestRecord": 25483,
+    "TransactionRecord": 765,
+    "GraphNode": 112378,
+    "GraphEdge": 127598,
+    "ExpertProfile": 143,
+    "OpportunityAlert": 802,
+    "Session": 102
+  },
+  "file_law_v3_checklist_BLOCK7": {
+    "بند-۱_بستهٔ_ALL": "ساخت PN-012-ALL.zip در public/deliver/ — در BLOCK 7",
+    "بند-۲_اندازه": "بررسی >۱۰۰MB → تقسیم ≤۵۰MB — در BLOCK 7",
+    "بند-۳_BLOCKED_صریح": "[BLOCKED: پلتفرم امکان آپلود مستقیم فایل به بخش All Tasks را به CLI نمی‌دهد — فقط رابط وب مالک] → جایگزین بند-۶",
+    "بند-۴_آزمون_مالک": "لینک قابل‌کلیک از دامنهٔ preview — در BLOCK 7",
+    "بند-۶_جایگزین": "public/deliver/PN-012-ALL.zip + لینک https://preview.../deliver/PN-012-ALL.zip — در BLOCK 7"
+  }
+}
