@@ -1,0 +1,17 @@
+{
+ "shots": [
+  "01-matching-tile-entry.png",
+  "02-smart-search-suggestions.png",
+  "03-match-results-buckets.png",
+  "04-details-analysis-top.png",
+  "05-details-rejection-prediction.png",
+  "06-matching-desktop.png"
+ ],
+ "errors": [],
+ "consoleErrors": 3,
+ "consoleSample": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ]
+}

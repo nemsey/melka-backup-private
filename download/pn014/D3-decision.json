@@ -1,0 +1,44 @@
+{
+  "schema": "melka-pn014-d3-decision",
+  "order": "ملکا-شورا-ن۰۱۸-۱۴۰۵ · PN-014 · مرحلهٔ ۳ (D3 — بستن با احترام)",
+  "date": "1405/07/18 (2026-10-07)",
+  "debt": {
+    "id": "D3",
+    "origin": "PN-008 · انبار بدهی PN-013 (🟠 · مالک‌سو)",
+    "subject": "کد مستر در تاریخچهٔ کامیت‌های 0fc5b0d/6b4f52a (بند ۲.۲ ن۰۰۸)"
+  },
+  "ownerDecision": {
+    "decision": "بستن با احترام — «کد تغییر نمی‌کند»",
+    "optionsConsidered": {
+      "الف": "بازنویسی تاریخچهٔ گیت — رد شد (ریسک شکست زنجیرهٔ بقا/آینه)",
+      "ب": "ریپو تازه از پایه — رد شد (هزینهٔ بازیابی کامل زنجیرهٔ ۱۴ بستهٔ بقا)",
+      "منتخب": "نگه‌داشتن تاریخچه با سه قید کنترلی"
+    },
+    "riskAccepted": true,
+    "council": "جلسهٔ ۰۱۸ · مصوب ن۰۱۶ + اصلاح ساختاری ن۰۱۸"
+  },
+  "conditionsImplemented": {
+    "private": {
+      "verified": true,
+      "method": "curl بدون احراز → api.github.com/repos/nemsey/melka-backup-private = 403 · git ls-remote احرازشده = موفق",
+      "verifiedAt": "2026-10-07T15:39Z (قفل ورود PN-014)"
+    },
+    "scryptEncryption": {
+      "verified": true,
+      "witness": "scripts/pn012/escrow-manager.ts — scryptSync(masterCode, salt, 32, {N: 2^15, r: 8, p: 1, maxmem: 128MB}) + AES-256-GCM",
+      "kdfNote": "سختِ حافظه — هر تلاش بروت‌فورس ~۱۰۰ms و پرهزینهٔ RAM (خط ۵۳ و ۱۵ همان فایل)",
+      "liveStatus": "escrow-manager status → consistent:true · keyFp یکسان در هر سه مکان"
+    },
+    "accessMonitoring": {
+      "implemented": "گارد privacy-guard در رجیستری کارهای Worker",
+      "mechanism": "هر ۶ ساعت پروب ناشناس api.github.com/repos/<repo> — بدون توکن (شبیه‌سازی چشم غریبه). ۴۰۳/۴۰۴ = خصوصی (PASS) · ۲۰۰ = عمومی شده (ALERT)",
+      "alertChannel": "رد AuditLog با action=INFRA_ALERT · actor=worker:privacy-guard · accessScope=OWNER (قابل کوئری مالک)",
+      "env": "MELKA_GITHUB_REPO (نام مخزن قابل override) · MELKA_PRIVACY_GUARD=disabled برای خاموشی اضطراری",
+      "code": "src/core/runtime/guards.ts (runPrivacyGuard) + ثبت در src/core/runtime/jobs.ts",
+      "tests": "tests/pn014-debt-guards.test.ts — ۶ تست D3: ۴۰۳ PASS · ۴۰۴ PASS · ۲۰۰ ALERT+رد · ۵۰۰ ERROR · قطع شبکه ERROR بدون کرش · env override"
+    }
+  },
+  "recorded": "docs/DEBT-DECISIONS.md — بخش D3 (دفتر تصمیم‌های بدهی از این پرونده رسمیت یافت)",
+  "liveWitness": "Worker زنده با ۷ کار از جمله privacy-guard (اولین اجرا ۲ دقیقه پس از بوت — نتیجه در upload/.runtime/runtime-status.json و پانل /api/v1/runtime/metrics)",
+  "status": "CLOSED_WITH_RESPECT"
+}

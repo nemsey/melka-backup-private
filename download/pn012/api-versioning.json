@@ -2,7 +2,7 @@
   "schema": "melka-pn012-api-versioning",
   "generatedAt": "2026-10-07T09:09:02.271Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 69,
+  "totalRoutes": 70,
   "created": 68,
   "routes": [
     {
@@ -280,15 +280,20 @@
     {
       "aliasOf": "/api/runtime/metrics",
       "v1": "/api/v1/runtime/metrics"
+    },
+    {
+      "aliasOf": "/api/matching/search",
+      "v1": "/api/v1/matching/search",
+      "note": "PN-014 — جست‌وجوی هوشمند ورودی تطبیق (الگوریتم نرمال‌سازی فایل‌یابی)"
     }
   ],
   "amendedBy": {
-    "workOrder": "PN-013 مرحلهٔ ۶ (Observability)",
+    "workOrder": "PN-014 (کاشی تطبیق هوشمند)",
     "date": "2026-10-07",
-    "change": "افزودن runtime/metrics + آینهٔ v1 (۶۸→۶۹) — نامتغیر تعدادی با گارد boot-secrets (۶۹=۶۹) حفظ شد",
+    "change": "افزودن matching/search + آینهٔ v1 (۶۹→۷۰) — جست‌وجوی هوشمند ورودی تطبیق",
     "added": [
-      "/api/runtime/metrics"
+      "/api/matching/search"
     ],
-    "originalManifest": "upload/.survival/PN-012-20261007/docs/pn012/api-versioning.json (۶۸ — سند تاریخی دست‌نخورده)"
+    "previousAmendment": "PN-013 مرحلهٔ ۶ (runtime/metrics ۶۸→۶۹) — سابقهٔ کامل در بسته‌های بقا"
   }
 }
