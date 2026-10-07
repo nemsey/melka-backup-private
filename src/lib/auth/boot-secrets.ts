@@ -35,7 +35,7 @@
 
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync, chmodSync, statSync } from "node:fs";
 import path from "node:path";
-import { createHash, randomBytes, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 /** کلیدهای مدیریت‌شده — نام‌ها عمداً صریح‌اند (مستند در KEYS.md بستهٔ بقا) */
 export const BOOT_SECRET_KEYS = [
@@ -116,24 +116,10 @@ interface EscrowData {
   [key: string]: string;
 }
 
-/** PN-012-B — سه مکان escrow با سه سطح بقای متفاوت (ترتیب خواندن):
- *  ۱) db/.runtime/boot-secrets.json — db/ در هر ۶ بحران زنده ماند
- *  ۲) upload/.runtime/boot-secrets.json — upload/ هرگز پاک نشد (طرح PN-011)
- *  ۳) env.escrow.enc — رمزنگاری‌شده با کلید مشتق از کد مستر (scrypt) — در گیت/آینه؛
- *     فقط نابودی کامل مخزن (و آینه) آن را می‌کشد (مجاز صریح بند راه‌حل ۱/۳ شورای ۰۱۲).
- */
-const ESCROW_RELATIVE_PATHS = [
-  path.join("db", ".runtime", "boot-secrets.json"),
-  path.join("upload", ".runtime", "boot-secrets.json"),
-] as const;
-
-const ENC_ESCROW_REL = "env.escrow.enc";
-const ENC_META_REL = "env.escrow.meta.json";
-
 function readEscrow(escrowPath: string): EscrowData | null {
   try {
     if (!existsSync(escrowPath)) return null;
-    const parsed = JSON.parse(readFileSync(escrowPath, "utf8" as never) as unknown as string) as Record<string, unknown>;
+    const parsed = JSON.parse(readFileSync(escrowPath, "utf8")) as Record<string, unknown>;
     const out: EscrowData = {};
     for (const k of BOOT_SECRET_KEYS) {
       const v = parsed[k];
@@ -145,111 +131,24 @@ function readEscrow(escrowPath: string): EscrowData | null {
   }
 }
 
-/** رمزگشایی escrow رمزنگاری‌شدهٔ گیت — AES-256-GCM با کلید scrypt(کد مستر)
- *  سازگار با scripts/pn012/escrow-manager.ts (قالب یکسان — iv|tag|ct در base64) */
-function readEncryptedEscrow(repoRoot: string): EscrowData | null {
-  try {
-    const encPath = path.join(repoRoot, ENC_ESCROW_REL);
-    const metaPath = path.join(repoRoot, ENC_META_REL);
-    if (!existsSync(encPath) || !existsSync(metaPath)) return null;
-    const masterCode = (process.env.MASTER_ACCESS_CODE ?? "").trim();
-    if (!masterCode) return null; // بدون کد مستر، رمزگشایی ممکن نیست
-    const meta = JSON.parse(readFileSync(metaPath, "utf8") as unknown as string) as {
-      saltB64?: string;
-      kdf?: { N?: number; r?: number; p?: number };
-    };
-    if (!meta.saltB64) return null;
-    const kdf = meta.kdf ?? { N: 32768, r: 8, p: 1 };
-    const salt = Buffer.from(meta.saltB64, "base64");
-    const key = scryptSync(masterCode, salt, 32, {
-      N: kdf.N ?? 32768, r: kdf.r ?? 8, p: kdf.p ?? 1, maxmem: 128 * 1024 * 1024,
-    });
-    const blob = Buffer.from(
-      (readFileSync(encPath, "utf8") as unknown as string).trim(),
-      "base64"
-    );
-    const iv = blob.subarray(0, 12);
-    const tag = blob.subarray(12, 28);
-    const ct = blob.subarray(28);
-    const decipher = createDecipheriv("aes-256-gcm", key, iv);
-    decipher.setAuthTag(tag);
-    const pt = Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
-    const parsed = JSON.parse(pt) as Record<string, unknown>;
-    const out: EscrowData = {};
-    for (const k of BOOT_SECRET_KEYS) {
-      const v = parsed[k];
-      if (typeof v === "string" && v.trim().length > 0) out[k] = v.trim();
-    }
-    return out;
-  } catch {
-    return null; // GCM auth fail = کد مستر متفاوت یا دستکاری — مثل نبود
-  }
-}
-
-/** نوشتن اتمیک escrow — tmp + rename + 0600 (عین PN-011) */
-function writeEscrow(escrowPath: string, data: EscrowData, note: string): void {
+/** نوشتن اتمیک escrow — tmp + rename + 0600 */
+function writeEscrow(escrowPath: string, data: EscrowData): void {
   const dir = path.dirname(escrowPath);
   mkdirSync(dir, { recursive: true });
+  const payload = {
+    _note:
+      "PN-011 escrow بادوام — فقط در دیسک محلی (gitignored از طریق /upload/)؛ هرگز وارد git یا بستهٔ بقا نمی‌شود.",
+    updatedAt: new Date().toISOString(),
+    ...data,
+  };
   const tmp = `${escrowPath}.tmp`;
-  writeFileSync(tmp, JSON.stringify({ _note: note, updatedAt: new Date().toISOString(), ...data }, null, 2) + "\n", { encoding: "utf8", mode: 0o600 });
+  writeFileSync(tmp, JSON.stringify(payload, null, 2) + "\n", { encoding: "utf8", mode: 0o600 });
   try {
     chmodSync(tmp, 0o600);
   } catch {
     // فایل‌سیستم بدون chmod — غیرمهلک
   }
   renameSync(tmp, escrowPath);
-}
-
-/** PN-012-B — نوشتن همزمان در هر سه مکان (triple-redundant) + رمزنگاری‌شدهٔ گیت */
-function writeAllEscrows(repoRoot: string, data: EscrowData): void {
-  const notes = [
-    "PN-012 escrow v1 — db/.runtime (پایدارترین محل: db/ در ۶ بحران زنده ماند)",
-    "PN-011/012 escrow v1 — upload/.runtime (زنده در همهٔ بحران‌ها)",
-  ];
-  ESCROW_RELATIVE_PATHS.forEach((rel, i) => {
-    try {
-      writeEscrow(path.join(repoRoot, rel), data, notes[i] ?? "PN-012 escrow");
-    } catch {
-      // نوشتن در یک مکان نباید بقیه را متوقف کند
-    }
-  });
-  // نسخهٔ رمزنگاری‌شدهٔ گیت — فقط اگر کد مستر در دسترس است
-  try {
-    const masterCode = (process.env.MASTER_ACCESS_CODE ?? "").trim();
-    const tokenKey = data.MELK_TOKEN_KEY;
-    if (masterCode && tokenKey) {
-      const salt = randomBytes(16);
-      const key = scryptSync(masterCode, salt, 32, { N: 32768, r: 8, p: 1, maxmem: 128 * 1024 * 1024 });
-      const iv = randomBytes(12);
-      const cipher = createCipheriv("aes-256-gcm", key, iv);
-      const ct = Buffer.concat([cipher.update(JSON.stringify(data, null, 2), "utf8"), cipher.final()]);
-      const tag = cipher.getAuthTag();
-      writeFileSync(
-        path.join(repoRoot, ENC_ESCROW_REL),
-        Buffer.concat([iv, tag, ct]).toString("base64") + "\n",
-        { encoding: "utf8" }
-      );
-      writeFileSync(
-        path.join(repoRoot, ENC_META_REL),
-        JSON.stringify(
-          {
-            version: 2,
-            doc: "PN-012-B — escrow رمزنگاری‌شدهٔ راز بوت برای مخزن گیت/آینه (سازگار با scripts/pn012/escrow-manager.ts).",
-            kdf: { name: "scrypt", N: 32768, r: 8, p: 1 },
-            cipher: "aes-256-gcm",
-            saltB64: salt.toString("base64"),
-            keyFp16: createHash("sha256").update(tokenKey).digest("hex").slice(0, 16),
-            updatedAt: new Date().toISOString(),
-          },
-          null,
-          2
-        ) + "\n",
-        { encoding: "utf8" }
-      );
-    }
-  } catch {
-    // رمزنگاری اختیاری است — شکستش نباید بوت را متوقف کند
-  }
 }
 
 /** env.platform.json ریشه — فقط کلیدهای غایب را merge می‌کند (سایر کلیدها دست‌نخورده)
@@ -318,23 +217,8 @@ export async function ensureBootSecrets(opts?: {
     errors: [],
   };
 
-  // PN-012-B — زنجیرهٔ سه‌مکانی با ادغام per-key: db → upload → رمزنگاری‌شدهٔ گیت
-  // (هر مکان هر کلیدی که دارد را می‌دهد؛ اولویت با مکان پایدارتر — عین منطق
-  // تست ۶ PN-011: escrow با تنها یک کلید هم منبع معتبر است)
-  const escrow: EscrowData = {};
-  let escrowExisted = false;
-  for (const rel of ESCROW_RELATIVE_PATHS) {
-    const found = readEscrow(path.join(repoRoot, rel));
-    if (found) {
-      escrowExisted = true;
-      for (const [k, v] of Object.entries(found)) if (!escrow[k]) escrow[k] = v;
-    }
-  }
-  const enc = readEncryptedEscrow(repoRoot);
-  if (enc) {
-    escrowExisted = true;
-    for (const [k, v] of Object.entries(enc)) if (!escrow[k]) escrow[k] = v;
-  }
+  const escrow = readEscrow(escrowPath) ?? {};
+  const escrowExisted = existsSync(escrowPath);
   let escrowDirty = false;
 
   for (const key of BOOT_SECRET_KEYS) {
@@ -383,14 +267,9 @@ export async function ensureBootSecrets(opts?: {
     report.actions.push({ key, action: "env-kept" });
   }
 
-  // PN-012-B — هرگونه خوددرمانی (بازیابی/تولید) یا کثیفی → هر سه مکان تازه
-  // می‌شوند: بازیابی از یک مکان باید مکان‌های دیگر را نیز همگام کند (triple)
-  const anyHeal = report.actions.some(
-    (a) => a.action === "restored-from-escrow" || a.action === "generated",
-  );
-  if (escrowDirty || !escrowExisted || anyHeal) {
+  if (escrowDirty || !escrowExisted) {
     try {
-      writeAllEscrows(repoRoot, escrow);
+      writeEscrow(escrowPath, escrow);
     } catch (e) {
       report.errors.push(`escrow write failed: ${(e as Error).message}`);
     }

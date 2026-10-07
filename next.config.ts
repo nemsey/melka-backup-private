@@ -80,19 +80,6 @@ const nextConfig: NextConfig = {
       "./dev.log",
       "./server.log",
       "./worklog.md",
-      /* PN-014/D2 — ریشهٔ بازگشت «Failed» دامنهٔ publish: بستهٔ استقرار دوباره متورم شد
-       * (P6528 دوباره — این بار با فهرست‌های تازه):
-       *   · upload/dataset-backups (۳۸۸MB سرد) + اسنپ‌شات tar.gz — .runtime باید بماند
-       *     (boot-secrets + runtime-status در زمان اجرا خوانده می‌شوند — مسیر مطلق)
-       *   · deliver-store (~۶۰۰MB) — قانون فایل v3 از مسیر /deliver (route) سرو
-       *     می‌شود؛ کپی داخل standalone صرفاً تورم بسته بود.
-       *   · intelligence-data — هیچ ارجاعی از src/ ندارد (مصرف‌کننده: Worker از
-       *     ریشهٔ پروژه با مسیر مطلق) — کپی ردیابی‌شده صرفاً ۲۶MB تورم بود. */
-      "./upload/dataset-backups/**",
-      "./upload/*.tar.gz",
-      "./upload/*.md",
-      "./deliver-store/**",
-      "./intelligence-data/**",
     ],
   },
   env: {

@@ -15,7 +15,7 @@ const tables = [
   'RequestRecord',
   'TransactionRecord',
   'ExpertRecord',
-  'ExpertProfile',
+  'PmPersonnelRecord',
   'Session',
   'AuditLog',
 ]

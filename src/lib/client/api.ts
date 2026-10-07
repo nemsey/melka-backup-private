@@ -39,22 +39,11 @@ export function bindAuth(getToken: () => string | null, handle401: () => void): 
 /** مهلت پیش‌فرض درخواست‌ها — میلی‌ثانیه (۹۰ ثانیه) */
 const DEFAULT_TIMEOUT_MS = 90_000;
 
-/** PN-013/مرحلهٔ ۶ — شناسهٔ همبستگی درخواست: هر فراخوانی UI یک شناسهٔ
- *  ‎x-request-id‎ می‌سازد؛ سرور همان را در لاگ/متریک و پاسخ برمی‌گرداند
- *  ⇒ ردیابی سرتاسری UI → proxy → روت → سرویس → لاگ. */
-function correlationId(): string {
-  const c = globalThis.crypto as Crypto | undefined;
-  if (c?.randomUUID) return c.randomUUID();
-  return `req-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
-}
-
 export async function api<T = unknown>(
   path: string,
   init: { method?: "GET" | "POST" | "PATCH" | "DELETE" | "PUT"; body?: unknown; auth?: boolean; timeoutMs?: number } = {}
 ): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  // PN-013/مرحلهٔ ۶ — شناسهٔ همبستگی UI (ردیابی سرتاسری همین فراخوانی)
-  headers["x-request-id"] = correlationId();
   const useAuth = init.auth !== false;
   const token = tokenHolder?.() ?? null;
   if (useAuth && token) headers.Authorization = `Bearer ${token}`;

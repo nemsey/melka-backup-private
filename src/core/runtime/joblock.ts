@@ -1,5 +1,5 @@
 /**
- * JobLock — قفل کار توزیع‌شده با ضربان قلب + تمدید اجازهٔ صریح (PN-010 BLOCK 2 · PN-012 BLOCK 2)
+ * JobLock — قفل کار توزیع‌شده با ضربان قلب (PN-010 / BLOCK 2)
  * ---------------------------------------------------------------------------
  * مسئله: پس از فاز ۲، Worker و Web دو فرایند جدا هستند؛ اگر هر دو (یا دو
  * نمونه Worker) همزمان زنده باشند، یک کار (مثلاً چرخهٔ کاتالوگ یا آینه)
@@ -7,18 +7,12 @@
  *
  * راه‌حل: قفل ردیفی در جدول JobLock (SQLite → constraint یکتایی jobId):
  *   acquire(jobId)     — تلاش برای تصاحب؛ ردیفِ منقضی = متروکه (قابل تصرف)
- *   heartbeat(jobId)   — ضربان (پیش‌فرض = تمدید با TTL کامل)
- *   renew(jobId, ms)   — PN-012 بند ۲.۲: تمدید صریح اجاره با مقدار دلخواه؛
- *                         برگشت false = مالکیت از دست رفته (قفل دزدیده شد)
+ *   heartbeat(jobId)   — تمدید انقضا (فقط با instanceId خودِ دارنده)
  *   release(jobId)     — آزادسازی (فقط با instanceId خودِ دارنده)
  *   cleanup()          — حذف قفل‌های منقضی (جاروی دوره‌ای)
- *   withLock(jobId,fn) — الگوی امن: قفل → تمدید هر ۳۰s با تشخیص از‌دست‌رفتن
- *                         اجاره (leaseLost) → اجرا → رهاسازی
+ *   withLock(jobId,fn) — الگوی امن: قفل → ضربان ۳۰ ثانیه → اجرا → رهاسازی
  *
  * قید شورا (جلسهٔ ۰۱۰، بند ۲.۳): ضربان قلب هر ۳۰ ثانیه؛ کار تمام‌شده = رهاسازی.
- * قید شورا (جلسهٔ ۰۱۲، بند ۲.۲): هر ۳۰ ثانیه — اگر هنوز کار می‌کند: renew
- * با +۹۰ ثانیه؛ اگر اجاره از دست رفت: علامت‌گذاری leaseLost (اجرای موازی قطع
- * طرح تشخیص می‌شود — صفر Duplicate).
  *
  * خودترمیمی: بسته‌های بقا (پیش از PN-010) جدول JobLock ندارند؛ پس از بازیابی
  * محیط، ensureJobLockTable() جدول را در نخستین دسترسی می‌سازد (DDL یکسان با
@@ -130,31 +124,13 @@ export class JobLockService {
     }
   }
 
-  /** بند ۲.۲ جلسهٔ ۰۱۰ — ضربان قلب (تمدید با TTL پیش‌فرض — سازگار نگه‌داشته)
-   *  PN-012: هم‌اکنون روی بنیان renew() پیاده شده — برگشت false = اجاره رفته */
+  /** بند ۲.۲ — تمدید قفل (فقط دارندهٔ واقعی) */
   async heartbeat(jobId: string, options?: { ttlMs?: number; now?: Date }): Promise<boolean> {
     const now = options?.now ?? new Date();
     const ttl = options?.ttlMs ?? LOCK_TTL_MS_DEFAULT;
-    return this.renew(jobId, ttl, { now });
-  }
-
-  /**
-   * PN-012 · BLOCK 2 · بند ۲.۲ — تمدید صریح اجاره (Lease Renewal)
-   * ------------------------------------------------------------------
-   * مشکلی که حل می‌کند: کار طولانی‌تر از TTL. ضربان کور قبلی شکست را می‌بلعید و
-   * کار ادامه می‌یافت؛ قفل منقضی می‌شد و نمونهٔ دوم کار را دوباره شروع می‌کرد →
-   * Duplicate. اکنون:
-   *   · تمدید موفق → true (expiresAt = now + extensionMs؛ فقط دارندهٔ واقعی)
-   *   · مالکیت از دست رفته (ردیف حذف/متعلق به دیگری) → false — فراخواننده
-   *     می‌تواند اجرا را قطع کند یا آن را علامت بزند → صفر Duplicate
-   *   · قفلِ منقضیِ هنوز‌متعلق‌به‌خود (کسی نبرداشته) → تمدید می‌شود (خوددرمانی)
-   */
-  async renew(jobId: string, extensionMs: number = LOCK_TTL_MS_DEFAULT, options?: { now?: Date }): Promise<boolean> {
-    await ensureJobLockTable(this.db);
-    const now = options?.now ?? new Date();
     const res = await this.db.jobLock.updateMany({
       where: { jobId, instanceId: this.instanceId },
-      data: { lastHeartbeat: now, expiresAt: new Date(now.getTime() + extensionMs) },
+      data: { lastHeartbeat: now, expiresAt: new Date(now.getTime() + ttl) },
     });
     return res.count > 0;
   }
@@ -190,91 +166,34 @@ export class JobLockService {
 
 export interface WithLockOptions extends AcquireOptions {
   heartbeatIntervalMs?: number;
-  /**
-   * PN-012 · بند ۲.۲ — مقدار تمدید صریح در هر ضربان (پیش‌فرض: TTL کامل = ۹۰s).
-   * کارِ طولانی‌تر از TTL با این تمدیدها هرگز منقضی نمی‌شود.
-   */
-  renewExtensionMs?: number;
-  /**
-   * PN-012 — از دست رفتن اجاره در میانهٔ کار (قفل توسط نمونهٔ دیگر تصرف شد).
-   * فراخواننده می‌تواند اجرای fn را خودش قطع کند (coop) یا تنها ثبت کند.
-   */
-  onLeaseLost?: (info: { jobId: string; lostAt: Date }) => void;
-}
-
-/** وضعیت اجاره برای fn در حال اجرا — گارد تعاونی قطع کار (coop) */
-export interface LeaseGuard {
-  /** true از لحظه‌ای که تمدید شکست خورد (مالکیت رفته) */
-  readonly lost: boolean;
-  /** تمدید دستی فوری — برای کارهای گران که بین ضربان‌ها طول می‌کشند */
-  renewNow(): Promise<boolean>;
-}
-
-export interface WithLockResult<T> {
-  ran: boolean;
-  result?: T;
-  reason?: string;
-  /** PN-012 — آیا اجاره در میانهٔ اجرا از دست رفت؟ (هشدار اجرای موازی) */
-  leaseLost: boolean;
 }
 
 /**
- * بند ۲.۳ (جلسهٔ ۰۱۰) + بند ۲.۲ (جلسهٔ ۰۱۲) — الگوی اجرای امن کار:
- *   قفل بگیر → هر ۳۰ ثانیه renew با +۹۰s (یا extension دلخواه) → کار را اجرا کن
- *   → (موفق یا خطا) قفل را رها کن.
+ * بند ۲.۳ — الگوی اجرای امن کار:
+ *   قفل بگیر → هر ۳۰ ثانیه ضربان بزن → کار را اجرا کن → (موفق یا خطا) قفل را رها کن.
  * اگر قفل تصاحب نشد → کار اجرا نمی‌شود (نمونهٔ دیگر در حال اجراست).
- * اگر تمدید در میانه شکست بخورد (مالکیت رفته) → fn با LeaseGuard می‌تواند
- * اجرا را قطع کند؛ نتیجه leaseLost=true برمی‌گردد و onLeaseLost صدا می‌شود.
  */
 export async function withLock<T>(
   db: PrismaClient,
   jobId: string,
-  fn: (lease?: LeaseGuard) => Promise<T>,
+  fn: () => Promise<T>,
   options?: WithLockOptions & { service?: JobLockService },
-): Promise<WithLockResult<T>> {
+): Promise<{ ran: boolean; result?: T; reason?: string }> {
   const svc = options?.service ?? new JobLockService(db);
   const acq = await svc.acquire(jobId, { ttlMs: options?.ttlMs, metadata: options?.metadata });
-  if (!acq.acquired) return { ran: false, reason: acq.reason ?? "held", leaseLost: false };
+  if (!acq.acquired) return { ran: false, reason: acq.reason ?? "held" };
 
   const hbMs = options?.heartbeatIntervalMs ?? HEARTBEAT_INTERVAL_MS_DEFAULT;
-  const extensionMs = options?.renewExtensionMs ?? options?.ttlMs ?? LOCK_TTL_MS_DEFAULT;
-  const lease = {
-    _lost: false,
-    get lost() {
-      return this._lost;
-    },
-    async renewNow(): Promise<boolean> {
-      const ok = await svc.renew(jobId, extensionMs).catch(() => false);
-      if (!ok) markLost();
-      return ok;
-    },
-  };
-  const markLost = () => {
-    if (lease._lost) return;
-    lease._lost = true;
-    try {
-      options?.onLeaseLost?.({ jobId, lostAt: new Date() });
-    } catch {
-      // callback فراخواننده نباید حلقهٔ قفل را بشکند
-    }
-  };
   const timer = setInterval(() => {
-    void svc.renew(jobId, extensionMs).then(
-      (ok) => {
-        // تمدید صریح: موفق = مالکیت پابرجا؛ ناموفق = مالکیت از دست رفته —
-        // برخلاف ضربان کورِ قدیمی، از این پس علامت می‌خورد و Duplicate طرح تشخیص می‌شود
-        if (!ok) markLost();
-      },
-      () => {
-        // خطای گذرای DB ≠ از دست رفتن قطعی — ضربان بعدی دوباره می‌کوشد.
-        // (سه ضربان پیاپی لازم است تا TTL بگذرد — پنجرهٔ خطای گذرا)
-      },
-    );
+    void svc.heartbeat(jobId, { ttlMs: options?.ttlMs }).catch(() => {
+      // ضربان شکست‌خورده = قفل ممکن است منقضی شود؛ کار ادامه می‌یابد
+      // (خطر اجرای موازی ناچیز است — TTL سه ضربان طول می‌کشد)
+    });
   }, hbMs);
 
   try {
-    const result = await fn(lease);
-    return { ran: true, result, leaseLost: lease._lost };
+    const result = await fn();
+    return { ran: true, result };
   } finally {
     clearInterval(timer);
     await svc.release(jobId).catch(() => undefined);

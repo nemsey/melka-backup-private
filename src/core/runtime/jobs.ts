@@ -47,8 +47,6 @@ export const WORKER_JOB_IDS = {
   mirrorCycle: "mirror-cycle",
   logRotate: "log-rotate",
   backupRotation: "backup-rotation",
-  privacyGuard: "privacy-guard",
-  sizeGuard: "size-guard",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -179,46 +177,6 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       intervalMs: 6 * 60 * 60_000,
       firstRunDelayMs: 90_000, // نخستین بکاپِ چرخشی زودهنگام
       run: async (database) => runBackupRotation(database),
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── Privacy Guard → Worker (تازه — PN-014/D3: بستن با احترام + پایش) ──
-  // شرط مالک در نگه‌داشتن کد مستر در تاریخچه: مخزن باید خصوصی بماند.
-  // هر ۶ ساعت پروب ناشناس — ۲۰۰ یعنی افشا: هشدار فوری در AuditLog.
-  if (process.env.MELK_PRIVACY_GUARD !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.privacyGuard,
-      title: "گارد محرمانگی مخزن آینه (PN-014/D3)",
-      intervalMs: 6 * 60 * 60_000,
-      firstRunDelayMs: 2 * 60_000,
-      run: async (database) => {
-        const { runPrivacyGuard } = await import("@/core/runtime/guards");
-        return runPrivacyGuard(database);
-      },
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── Size Guard → Worker (تازه — PN-014/D4: تعویق + پایش) ──
-  // محرک‌های عددی تصمیم LFS/ارتقا: DB>500MB · بقا>1GB · دیسک آزاد<۱۵٪
-  // هر ساعت سنجش — عبور از آستانه = هشدار خودکار AuditLog.
-  if (process.env.MELK_SIZE_GUARD !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.sizeGuard,
-      title: "گارد رشد حجم (PN-014/D4)",
-      intervalMs: 60 * 60_000,
-      firstRunDelayMs: 3 * 60_000,
-      run: async (database) => {
-        const { runSizeGuard } = await import("@/core/runtime/guards");
-        return runSizeGuard(database);
-      },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
         return {};

@@ -84,15 +84,3 @@ backups/pre-recovery-034-*/
 # PN-008: فایل‌های جانبی WAL هرگز در گیت نیستند (گذرا + متغیر حین هش)
 db/custom.db-wal
 db/custom.db-shm
-
-# PN-012-B — escrowهای plaintext هرگز در گیت نیستند (SEC-1؛ فقط env.escrow.enc رمزنگاری‌شده مجاز است)
-db/.runtime/
-
-# PN-012 — قانون فایل v3: قطعات تحویل و بسته‌های حجیم هرگز در گیت نیستند
-# (منبع حقیقت: upload/.survival + download — بستهٔ بزرگ از طریق public/deliver سرو می‌شود)
-public/deliver/
-download/*.tar.gz
-
-# PN-014/D2 — مخزن سرو تحویل‌ها (قانون فایل v3 از مسیر /deliver سرو می‌شود، نه public ایستا)
-# عمداً خارج از public تا خط لولهٔ انتشار پلتفرم آن را داخل بستهٔ استقرار نکشد (P6528)
-/deliver-store/

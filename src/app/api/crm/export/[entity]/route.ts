@@ -21,7 +21,6 @@ import {
   getTransactionRepository,
 } from "@/core/repositories";
 import { resolveExpertBranch, BRANCH_UNSET } from "@/lib/branches";
-import { expertListingCounts } from "@/lib/services/master-auth";
 import { readOwnerBranchMap, readPmBranchMap } from "@/lib/branch-store";
 
 function num(v: string | null): number | undefined {
@@ -187,8 +186,11 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
     } else if (entity === "experts") {
       const repo = getExpertRepository();
       const rows = await repo.findAll();
-      // شمارش متقاطع آگهی (شاهکار M4) — PN-012 BLOCK 1: از سرویس
-      const listingCount = await expertListingCounts();
+      // شمارش متقاطع آگهی از DB (شاهکار M4 — تعداد آگهی‌های هر کارشناس)
+      const { db } = await import("@/lib/db");
+      const grouped = await db.propertyRecord.groupBy({ by: ["ownerName"], _count: { _all: true } });
+      const listingCount = new Map<string, number>();
+      for (const g of grouped) if (g.ownerName) listingCount.set(g.ownerName, g._count._all);
 
       buffer = await buildXlsx(
         "کارشناسان ملک تبریز",

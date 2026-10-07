@@ -1,6 +1,0 @@
-/**
- * /api/v1/crm/arm-catalog/requests — نسخهٔ v1 (PN-012 · BLOCK 4 · بند ۴.۲)
- * آینهٔ سبک مسیر اصلی ‎/api/crm/arm-catalog/requests‎ — همهٔ handlerها و configها re-export می‌شوند.
- * صفر تغییر رفتار · تک‌منبع حقیقت در مسیر اصلی · مسیر قدیمی = alias زنده.
- */
-export * from "../../../../crm/arm-catalog/requests/route";

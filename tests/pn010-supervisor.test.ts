@@ -117,17 +117,6 @@ describe("PN-010 BLOCK 3 — RuntimeSupervisor سبک", () => {
     expect(calls.length).toBe(0);
   });
 
-  test("۳-۴ب (PN-014) boot در حالِ already-alive هم تایمر احیا را نصب می‌کند — مرگ خاموش بعدها دیده می‌شود", () => {
-    fakeStatusFile({ "catalog-cycle": { runs: 3 } }, 0); // ضربان تازه = زنده
-    const { calls, fake } = makeFakeSpawner();
-    const sup = RuntimeSupervisor.getInstance(db);
-    const r = sup.start({ spawnFn: fake, livenessIntervalMs: 60_000 });
-    expect(r.action).toBe("already-alive");
-    expect(calls.length).toBe(0); // همان لحظه spawn نمی‌کند (زنده است)
-    expect(sup.stats().livenessActive).toBe(true); // اما تایمر احیا نصب شد — درس مرگ خاموش
-    // پاک‌سازی: beforeEach هر تست تک‌نما را ریست می‌کند (بدون نوشتن رد توقف در DB)
-  });
-
   test("۳-۵ start دوباره پس از مرگ Worker (ضربان کهنه) → respawn", () => {
     fakeStatusFile({ "catalog-cycle": {} }, 10 * 60_000); // ۱۰ دقیقه پیش = مرده
     const { calls, fake } = makeFakeSpawner();

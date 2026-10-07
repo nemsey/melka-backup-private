@@ -10,10 +10,7 @@ const palette = JSON.parse(read("src/lib/palette13.json"));
 const globals = read("src/app/globals.css");
 const manifest = JSON.parse(read("public/manifest.json"));
 const layout = read("src/app/layout.tsx");
-// PN-013 فاز ۴: عناصر پوستهٔ داشبورد به جزیرهٔ DashboardShell مهاجرت کردند
-// (Server Shell + Client Islands) — تضمین عملکردی همان است، مکان جدید:
 const page = read("src/app/page.tsx");
-const dashShell = read("src/components/app/islands/DashboardShell.tsx");
 // PN-006 BLOCK 7.1: sw-v5 به public/archive منتقل شد — مرجع تست حذف شد (قفل رسمی روی sw.js نسخهٔ ۷)
 
 describe("۰۳۵-B/الف — پالت رنگ ۱۳بخش×۵سایه", () => {
@@ -115,11 +112,11 @@ describe("۰۳۵-B/ج — اجزای ظاهری اجبارشده", () => {
     const splash = read("src/components/app/SplashScreen.tsx");
     expect(splash).toContain("SplashScreen");
     expect(splash).toContain("prefers-reduced-motion");
-    expect(dashShell).toContain("<SplashScreen />");
+    expect(page).toContain("<SplashScreen />");
   });
   test("۲. App Shell: هدر + محتوا + فوتر + ناوبری پایین", () => {
-    expect(dashShell).toContain("<AppHeader />");
-    expect(dashShell).toContain("<BottomNav />");
+    expect(page).toContain("<AppHeader />");
+    expect(page).toContain("<BottomNav />");
     const home = read("src/components/app/DashboardHome.tsx");
     expect(home).toContain("<footer");
   });
@@ -231,20 +228,8 @@ describe("۰۳۵-B/ج-۲ + چ + ح — تم‌ها، دسترس‌پذیری، �
     expect(existsSync("src/lib/theme-transition.ts")).toBe(true);
   });
   test("دسترس‌پذیری: ARIA + focus ring + reduced-motion سراسری (MotionConfig)", () => {
-    expect(dashShell).toContain('reducedMotion="user"');
+    expect(page).toContain('reducedMotion="user"');
     expect(globals).toContain("outline-ring/50");
-  });
-  test("PN-013 فاز ۴: Server Shell + جزیره‌ها — ریشه بدون use client + سه جزیرهٔ پویا", () => {
-    // پوستهٔ سرور: دایرکتیو کلاینت ندارد (کامنت مجاز است؛ دایرکتیو فقط خط اول است)
-    expect(page.startsWith('"use client"')).toBe(false);
-    expect(page).toContain("MelkaApp");
-    const app = read("src/components/app/MelkaApp.tsx");
-    expect(app).toContain('import("./islands/AuthFlow")');
-    expect(app).toContain('import("./islands/DashboardShell")');
-    expect(app).toContain('import("./islands/UpdateController")');
-    expect(existsSync("src/components/app/islands/AuthFlow.tsx")).toBe(true);
-    expect(existsSync("src/components/app/islands/DashboardShell.tsx")).toBe(true);
-    expect(existsSync("src/components/app/islands/UpdateController.tsx")).toBe(true);
   });
   test("عملکرد: اسکلتون به‌جای اسپینر + lazy-load تصاویر", () => {
     expect(read("src/core/tiles/tiles/listing/ListingDetailsDialog.tsx")).toContain('loading="lazy"');

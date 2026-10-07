@@ -23,12 +23,6 @@ if [[ -f scripts/pn005c/recovery-guard.sh ]]; then
   bash scripts/pn005c/recovery-guard.sh || true
 fi
 
-# ═══ PN-012-B (بحران ششم): بازیابی راز بوت از escrow سه‌مکانی ═══
-# .env.local → db/.runtime → upload/.runtime → env.escrow.enc (رمزنگاری‌شدهٔ گیت)
-if [[ -f scripts/pn012/escrow-manager.ts ]]; then
-  bun scripts/pn012/escrow-manager.ts restore 2>&1 || true
-fi
-
 # ۲) سرور production با نگهبان خود-راه‌انداز
 #    (بیلد در صورت نبود داخل گارد/دیمن انجام می‌شود؛ دوباره چک می‌کنیم)
 if [[ ! -f .next/standalone/server.js ]]; then

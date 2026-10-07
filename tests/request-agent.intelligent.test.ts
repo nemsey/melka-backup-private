@@ -16,17 +16,12 @@
 import { describe, expect, test, mock } from "bun:test";
 
 // ---------- خنثی‌سازی موتور مدیریت مشتری (پیش از بارگذاری زنجیره ایجنت) ----------
-// PN-012 ترمیم: mock قبلاً «کل ماژول» را با دو خروجی جایگزین می‌کرد و
-// computeStage/matchRequestToListings/computeHealth را حذف می‌کرد → هر فایل
-// تست دیگری که بعد از این فایل در همان worker اجرا می‌شد با
-// «Export named 'computeStage' not found» می‌مرد (آلودگی بین فایل‌ها —
-// بسته به زمان‌بندی موازی bun، شعله‌ور یا خاموش). اکنون: همهٔ خروجی‌های
-// واقعی حفظ و «فقط» buildCustomerManagement خنثی می‌شود.
-const realCustomerMgmt = await import("@/lib/request/customer-mgmt");
 mock.module("@/lib/request/customer-mgmt", () => ({
-  ...realCustomerMgmt,
   buildCustomerManagement: async () => null,
-  LIFECYCLE_FA: realCustomerMgmt.LIFECYCLE_FA,
+  LIFECYCLE_FA: {
+    NEW: "جدید", ENGAGED: "در تعامل", SERIOUS: "جدی",
+    READY_TO_DEAL: "آماده معامله", CONVERTED: "معامله‌شده", DORMANT: "راکد",
+  },
 }));
 
 // ---------- بارگذاری زنجیره ایجنت پس از mock ----------

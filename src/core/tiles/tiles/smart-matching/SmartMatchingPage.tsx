@@ -1,51 +1,81 @@
 "use client";
 
 /**
- * کاشی M5 «تطبیق هوشمند ملک تبریز» — P6545 → PN-011 خامسا → PN-014 ارتقای هوشمند
+ * کاشی M5 «تطبیق هوشمند ملک تبریز» — P6545/گام۲ BLOCK 2.1 (جلسه ۰۳۰ سؤال ۱۰)
  * ---------------------------------------------------------------------------
- * PN-014 (دستور مالک — هم‌ارزی کامل با کاشی فایل‌یابی):
- *   ۱) جست‌وجوی هوشمند ورودی — همان الگوریتم نرمال‌سازی فارسی فایل‌یابی
- *      (ارقام فارسی/عربی، آ←ا، حذف فاصله/نیم‌فاصله): عبارت آزاد یا کد؛
- *      نتایج جست‌وجو برای انتخاب فهرست می‌شوند و سپس تطبیق اجرا می‌شود.
- *   ۲) بندبندی سه‌گانهٔ نتایج — «شکار / پیگیری / بررسی» عین سطل‌های فایل‌یابی
- *      با شمارش و تب‌های رنگی + کارت‌های هم‌ظاهر AdCard (MatchCard).
- *   ۳) دو بخش هوشمند عین فایل‌یابی در جزئیات هر گزینه: «تحلیل هوشمند
- *      امتیازدهی» و «پیش‌بینی هوشمند دلایل احتمالی رد» + «پیشنهاد تصمیم».
- *   ۴) هوشمندی سرتاسری: خلاصهٔ ایجنت، پانل ایجنت، حلقهٔ یادگیری وزن‌ها
- *      (پذیرش/رد)، پیوند بین‌کاشی، پیش‌بینی رد روی خود کارت‌ها.
+ * تب ۱ — آگهی → درخواست: ورودی کدملک، خروجی ۵ درخواست برتر با امتیاز و دلیل
+ * تب ۲ — درخواست → آگهی: ورودی کد درخواست، خروجی ۵ آگهی برتر
+ * فیلتر سخت + امتیاز نرم (۵ عامل) + پوشش سیگنال + حلقهٔ یادگیری (پذیرش/رد)
+ * Tier-aware · صفر اجرای خودکار — پیشنهاد فقط؛ تصمیم با مالک
+ * رنگ: بنفش ارغوانی #7C3AED (sec-m5)
  *
- * Tier-aware · صفر اجرای خودکار — پیشنهاد فقط؛ تصمیم با مالک.
- * رنگ: بنفش ارغوانی #7C3AED (sec-m5).
+ * PN-011 خامسا (دستور مالک — توسعهٔ کاشی):
+ *   ۱) توضیحات هر گزینهٔ تطبیق توسعه یافت: کارشناس + شعبهٔ سطر مقابل دوطرفه
+ *      (تب ۱: کارشناس/شعبهٔ ثبت‌کنندهٔ درخواست · تب ۲: کارشناس/شعبهٔ آگهی) + شناسنامهٔ سطر ورودی.
+ *   ۲) هوشمندی و ارتباط با کاشی‌ها:
+ *      · وزن عوامل از بازخوردهای پذیرش/رد می‌آید (weightsSource=learned) — نشان زنده روی کارت وزن‌ها
+ *      · بازخورد پذیرش/رد حالا با «عوامل امتیاز» ثبت می‌شود (context.factors) — سوخت حلقهٔ یادگیری
+ *      · دکمهٔ «مشاهده در کاشی آگهی/درخواست» روی هر گزینه — پرش با کد از پیش‌جست‌وجوشده (پیوند بین‌کاشی)
+ *      · ورودی تب ۲ «کد درخواست» از M2 پذیرفته می‌شود (پیش‌تر فقط id دیتابیسی)
+ *      · تنظیم «نمایش دلایل امتیاز» (showReasons) که پیش‌تر مرده بود فعال شد
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import {
-  ArrowLeftRight, Building2, ClipboardList, ExternalLink, Loader2, Search, Sparkles, Gauge, ListFilter, Brain, UserRound, Crosshair, Lightbulb,
-} from "lucide-react";
+import { ArrowLeftRight, Building2, ClipboardList, ExternalLink, Loader2, Search, Sparkles, ThumbsDown, ThumbsUp, UserRound } from "lucide-react";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
-import { faDigits } from "@/lib/format";
+import { faDigits, faAmountFull, faRelative } from "@/lib/format";
 import { useAppStore } from "@/lib/client/store";
-import { AgentPanel } from "@/components/app/AgentPanel";
-import type { EnrichedCandidate, MatchSummary } from "@/core/matching/match-analysis";
-import { bucketOf, type MatchBucket } from "@/core/matching/match-analysis";
-import { MatchCard, matchPriceLabel } from "./MatchCard";
-import { MatchDetailsDialog } from "./MatchDetailsDialog";
+import { branchBadgeClass } from "@/lib/value-colors";
 
-/* ───────── انواع پاسخ ───────── */
+const faPct = (n: number) => `${faDigits(n)}٪`;
 
-interface MatchResultEnriched {
+/** قیمت گزینه — عدد یا بازهٔ از/تا (گام پنجم ن۰۰۱) */
+function priceLabel(info: MatchOptionInfo): string {
+  if (info.priceFrom == null && info.priceTo == null) return "—";
+  if (info.priceFrom != null && info.priceTo != null && info.priceFrom !== info.priceTo) {
+    return `${faAmountFull(info.priceFrom, "")} تا ${faAmountFull(info.priceTo, "")}`;
+  }
+  return faAmountFull(info.priceFrom ?? info.priceTo);
+}
+
+interface MatchReason { factor: string; value: number; weight: number; note: string }
+/** الزام گام پنجم ن۰۰۱ + PN-011 خامسا-۱ — اطلاعات کامل هر گزینهٔ پیشنهادی (با کارشناس و شعبه) */
+interface MatchOptionInfo {
+  code: string;
+  ownerName: string | null;
+  mobile: string | null;
+  region: string | null;
+  priceFrom: number | null;
+  priceTo: number | null;
+  lastSeenAt: string | null;
+  expertName: string | null;
+  expertBranch: string | null;
+}
+interface MatchCandidate {
+  requestId: string;
+  listingCode?: string;
+  requestLabel?: string;
+  score: number;
+  hardPassed: boolean;
+  reasons: MatchReason[];
+  hardFilterNotes: string[];
+  signalCoverage: number;
+  info?: MatchOptionInfo;
+}
+interface MatchResult {
   direction: "listing_to_request" | "request_to_listing";
   listingCode: string | null;
   requestId: string | null;
-  candidates: EnrichedCandidate[];
+  candidates: MatchCandidate[];
   weightsUsed: Record<string, number>;
   tier: number;
   weightsSource?: "base" | "learned";
@@ -59,119 +89,41 @@ interface MatchResultEnriched {
   };
 }
 
-interface SearchRow {
-  code: string;
-  title: string | null;
-  customerName: string | null;
-  region: string | null;
-  price?: number | null;
-  priceFrom?: number | null;
-  priceTo?: number | null;
-  updatedAt: string | null;
-}
-
-/* ───────── نرمال‌سازی جست‌وجو — عین الگوریتم فایل‌یابی ───────── */
-
-function normFa(s: string): string {
-  return s
-    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
-    .replace(/[آأإ]/g, "ا")
-    .replace(/[\u200c\s]/g, "")
-    .trim();
-}
-
 export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
   const { toast } = useToast();
   const openTile = useAppStore((s) => s.openTile);
-  const [tab, setTab] = useState<"listing" | "request">("listing");
-  // ورودی هوشمند: متن آزاد یا کد
-  const [query, setQuery] = useState("");
-  const [searchRows, setSearchRows] = useState<SearchRow[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [tab, setTab] = useState("listing");
+  const [listingCode, setListingCode] = useState("");
+  const [requestId, setRequestId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<MatchResultEnriched | null>(null);
-  const [summary, setSummary] = useState<MatchSummary | null>(null);
-  const [bucket, setBucket] = useState<MatchBucket>("hunt");
+  const [result, setResult] = useState<MatchResult | null>(null);
   const [feedback, setFeedback] = useState<Record<string, "accepted" | "rejected">>({});
-  const [details, setDetails] = useState<EnrichedCandidate | null>(null);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const showScores = settings.showReasons !== false;
+  // PN-011 خامسا-۲ — تنظیم مردهٔ showReasons فعال شد (پیش‌فرض: روشن)
+  const showReasons = settings.showReasons !== false;
 
-  /* ── جست‌وجوی هوشمند ورودی (debounce ۳۵۰ms — حداقل ۲ نویسه) ── */
-  useEffect(() => {
-    const q = query.trim();
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (q.length < 2) {
-      setSearchRows([]);
-      setSearchOpen(false);
-      return;
-    }
-    searchTimer.current = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const res = await api<{ ok: boolean; rows: SearchRow[] }>(`/api/matching/search?direction=${tab}&q=${encodeURIComponent(q)}`);
-        setSearchRows(res.rows);
-        setSearchOpen(true);
-      } catch {
-        setSearchRows([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 350);
-    return () => {
-      if (searchTimer.current) clearTimeout(searchTimer.current);
-    };
-  }, [query, tab]);
-
-  /** فیلتر سمت کلاینت روی نتایج سرور — همان الگوریتم نرمال‌سازی (دوباره‌فیلتری محلی) */
-  const visibleSearchRows = useMemo(() => {
-    const q = normFa(query.trim());
-    if (!q) return searchRows;
-    return searchRows.filter(
-      (r) =>
-        normFa(r.code).includes(q) ||
-        normFa(r.title ?? "").includes(q) ||
-        normFa(r.customerName ?? "").includes(q) ||
-        normFa(r.region ?? "").includes(q),
-    );
-  }, [searchRows, query]);
-
-  const run = useCallback(async (code?: string) => {
-    const q = (code ?? query).trim();
+  const run = useCallback(async () => {
+    const q = tab === "listing" ? listingCode.trim() : requestId.trim();
     if (!q) return;
-    setSearchOpen(false);
     setLoading(true);
     setResult(null);
-    setSummary(null);
     try {
-      const url = tab === "listing"
-        ? `/api/matching?listingCode=${encodeURIComponent(q)}`
-        : `/api/matching?requestId=${encodeURIComponent(q)}`;
-      const res = await api<{ ok: boolean; result: MatchResultEnriched; summary: MatchSummary }>(url);
+      const url = tab === "listing" ? `/api/matching?listingCode=${encodeURIComponent(q)}` : `/api/matching?requestId=${encodeURIComponent(q)}`;
+      const res = await api<{ ok: boolean; result: MatchResult }>(url);
       setResult(res.result);
-      setSummary(res.summary);
-      // بند پیش‌فرض: اولین بند پرشده از بالا
-      setBucket(res.result.candidates.length > 0 ? bucketOf(res.result.candidates[0].score) : "hunt");
       if (res.result.candidates.length === 0) {
-        toast({
-          title: "نتیجه‌ای یافت نشد",
-          description: tab === "listing"
-            ? "هیچ درخواست فعالی فیلترهای سخت را نگذراند یا کدملک موجود نیست."
-            : "هیچ آگهی منتشرشده‌ای فیلترهای سخت را نگذراند یا کد درخواست موجود نیست.",
-        });
+        toast({ title: "نتیجه‌ای یافت نشد", description: tab === "listing" ? "هیچ درخواست فعالی فیلترهای سخت را نگذراند یا کدملک موجود نیست." : "هیچ آگهی منتشرشده‌ای فیلترهای سخت را نگذراند یا کد درخواست موجود نیست." });
       }
     } catch (e) {
       toast({ title: "خطا", description: e instanceof ApiClientError ? e.message : "خطای نامشخص", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [tab, query, toast]);
+  }, [tab, listingCode, requestId, toast]);
 
-  const sendFeedback = useCallback(async (candidate: EnrichedCandidate, kind: "accepted" | "rejected") => {
+  const sendFeedback = useCallback(async (candidate: MatchCandidate, kind: "accepted" | "rejected") => {
     setFeedback((f) => ({ ...f, [candidate.requestId]: kind }));
     try {
+      // PN-011 خامسا-۲ — مسیر صحیح روت بازخورد + عوامل امتیاز به‌عنوان سوخت یادگیری وزن‌ها
       await api(`/api/agent/smart-matching/feedback`, {
         method: "POST",
         body: {
@@ -179,8 +131,8 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
           insightTitle: `تطبیق ${candidate.listingCode ? `ملک ${candidate.listingCode}` : "درخواست"} — امتیاز ${candidate.score}`,
           domain: "MATCH",
           rating: kind === "accepted" ? 1 : -1,
-          comment: `امتیاز ${candidate.score} · بند ${candidate.bucket} · پوشش سیگنال ${candidate.signalCoverage}`,
-          context: { factors: candidate.analysis.map((a) => ({ factor: a.label, value: a.value })) },
+          comment: `امتیاز ${candidate.score} · پوشش سیگنال ${candidate.signalCoverage}`,
+          context: { factors: candidate.reasons.map((r) => ({ factor: r.factor, value: r.value })) },
         },
       });
       toast({
@@ -192,30 +144,21 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
     }
   }, [toast]);
 
+  /** PN-011 خامسا-۲ — پیوند عمیق به کاشی M1/M2 با کد از پیش‌جست‌وجوشده */
   const openInTile = useCallback(
     (code: string) => {
       const tileId = tab === "listing" ? "arm-requests" : "arm-listings";
       openTile(tileId, "management-dashboard", { code });
     },
-    [tab, openTile],
+    [tab, openTile]
   );
 
   const openSourceInTile = useCallback(() => {
-    if (!result?.sourceInfo) return;
+    if (!result) return;
     const tileId = result.direction === "listing_to_request" ? "arm-listings" : "arm-requests";
-    openTile(tileId, "management-dashboard", { code: result.sourceInfo.code });
+    const code = result.direction === "listing_to_request" ? result.listingCode : result.requestId;
+    if (code) openTile(tileId, "management-dashboard", { code });
   }, [result, openTile]);
-
-  const candidatesInBucket = useMemo(
-    () => (result ? result.candidates.filter((c) => bucketOf(c.score) === bucket) : []),
-    [result, bucket],
-  );
-  const globalIndexOf = useCallback(
-    (c: EnrichedCandidate) => (result ? result.candidates.findIndex((x) => x.requestId === c.requestId && x.listingCode === c.listingCode) + 1 : 1),
-    [result],
-  );
-
-  const inputLabel = tab === "listing" ? "کد ملک یا عبارت جست‌وجو (مثلاً ولیعصر یا 59115)" : "کد درخواست یا عبارت جست‌وجو (مثلاً خرید آپارتمان)";
 
   return (
     <div className="space-y-4 p-4 md:p-6">
@@ -223,80 +166,43 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
         {onBack ? <Button variant="outline" size="sm" onClick={onBack}>بازگشت</Button> : null}
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2"><Sparkles className="size-5 text-sec-m5-500" /> تطبیق هوشمند ملک تبریز</h2>
-          <p className="text-xs text-muted-foreground">تطبیق دوجهتهٔ آگهی ↔ درخواست با جست‌وجوی هوشمند، بندبندی سه‌گانه و تحلیل کامل — پیشنهاد فقط؛ تصمیم و اجرا با مالک</p>
+          <p className="text-xs text-muted-foreground">تطبیق دوجهتهٔ آگهی ↔ درخواست با فیلتر سخت و امتیاز نرم — پیشنهاد فقط؛ تصمیم و اجرا با مالک</p>
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => { setTab(v as "listing" | "request"); setResult(null); setSummary(null); setQuery(""); }}>
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="grid w-full max-w-lg grid-cols-2">
           <TabsTrigger value="listing" className="gap-1"><Building2 className="size-4" /> آگهی ← درخواست</TabsTrigger>
           <TabsTrigger value="request" className="gap-1"><ClipboardList className="size-4" /> درخواست ← آگهی</TabsTrigger>
         </TabsList>
 
-        {(["listing", "request"] as const).map((t) => (
-          <TabsContent key={t} value={t} className="space-y-3">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">
-                  {t === "listing" ? "کد ملک را وارد یا جست‌وجو کنید" : "کد درخواست را وارد یا جست‌وجو کنید"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex gap-2 relative">
-                  <div className="relative grow max-w-md">
-                    <Search className="size-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
-                    <Input
-                      dir="auto"
-                      placeholder={inputLabel}
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && run()}
-                      className="pr-8"
-                      aria-label={t === "listing" ? "جست‌وجوی هوشمند ملک" : "جست‌وجوی هوشمند درخواست"}
-                    />
-                    {searching ? <Loader2 className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" aria-hidden /> : null}
-                  </div>
-                  <Button onClick={() => run()} disabled={loading || !query.trim()} className="gap-1">
-                    {loading ? <Loader2 className="size-4 animate-spin" /> : <Crosshair className="size-4" />} جستجوی تطبیق
-                  </Button>
-                </div>
-                {/* نتایج جست‌وجوی هوشمند — انتخاب سطر مقدم بر اجرای تطبیق */}
-                {searchOpen && visibleSearchRows.length > 0 && !loading ? (
-                  <div className="max-w-2xl max-h-64 overflow-y-auto rounded-lg border divide-y" role="listbox" aria-label="نتایج جست‌وجوی هوشمند">
-                    {visibleSearchRows.map((r) => (
-                      <button
-                        key={r.code}
-                        role="option"
-                        aria-selected={false}
-                        className="w-full text-right p-2.5 hover:bg-muted/50 flex items-center justify-between gap-2 text-xs"
-                        onClick={() => { setQuery(r.code); run(r.code); }}
-                      >
-                        <span className="min-w-0">
-                          <b className="text-foreground">{faDigits(r.code)}</b>
-                          {r.title ? <span className="ms-2 text-muted-foreground line-clamp-1 inline">{r.title}</span> : null}
-                          <span className="block text-[10px] text-muted-foreground mt-0.5">
-                            {r.customerName ?? "—"}{r.region ? ` · ${r.region}` : ""} · {matchPriceLabel({ priceFrom: r.price ?? r.priceFrom ?? null, priceTo: r.price ?? r.priceTo ?? null })}
-                          </span>
-                        </span>
-                        <Badge variant="outline" className="text-[10px] shrink-0">اجرا</Badge>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-                {searchOpen && !searching && query.trim().length >= 2 && visibleSearchRows.length === 0 && !result && !loading ? (
-                  <p className="text-[11px] text-muted-foreground">چیزی با این عبارت یافت نشد — کد دقیق را وارد کنید یا عبارت دیگری بیازمایید.</p>
-                ) : null}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
+        <TabsContent value="listing" className="space-y-3">
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-sm">کد ملک را وارد کنید</CardTitle></CardHeader>
+            <CardContent className="flex gap-2">
+              <Input dir="ltr" placeholder="مثلاً 59115" value={listingCode} onChange={(e) => setListingCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && run()} className="max-w-xs" />
+              <Button onClick={run} disabled={loading || !listingCode.trim()} className="gap-1">{loading ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />} جستجوی تطبیق</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="request" className="space-y-3">
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-sm">کد درخواست را وارد کنید</CardTitle></CardHeader>
+            <CardContent className="flex gap-2">
+              {/* PN-011 خامسا-۲ — ورودی «کد درخواست» عین ستون M2 (نه id دیتابیسی) */}
+              <Input dir="ltr" placeholder="کد درخواست (عین ستون کد درخواست کاشی M2)" value={requestId} onChange={(e) => setRequestId(e.target.value)} onKeyDown={(e) => e.key === "Enter" && run()} className="max-w-xs" />
+              <Button onClick={run} disabled={loading || !requestId.trim()} className="gap-1">{loading ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />} جستجوی تطبیق</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {loading ? <Skeleton className="h-64 w-full" /> : null}
 
-      {result && summary ? (
+      {result && result.candidates.length > 0 ? (
         <>
-          {/* شناسنامهٔ سطر ورودی */}
+          {/* شناسنامهٔ سطر ورودی — PN-011 خامسا-۱: همان چیزی که M1/M2 برای این کد نشان می‌دهد */}
           {result.sourceInfo ? (
             <Card>
               <CardHeader className="pb-2">
@@ -304,6 +210,11 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
                   <UserRound className="size-4 text-sec-m5-500" />
                   {result.direction === "listing_to_request" ? `شناسنامهٔ ملک ${faDigits(result.sourceInfo.code)}` : `شناسنامهٔ درخواست ${faDigits(result.sourceInfo.code)}`}
                   {result.sourceInfo.customerName ? <Badge variant="outline" className="text-[10px]">{result.direction === "listing_to_request" ? "مالک" : "متقاضی"}: {result.sourceInfo.customerName}</Badge> : null}
+                  {result.sourceInfo.expertBranch && result.sourceInfo.expertBranch !== "تعیین نشده" ? (
+                    <Badge variant="outline" className={`text-[10px] border-0 ${branchBadgeClass(result.sourceInfo.expertBranch)}`} title="شعبه — عین ستون شعبهٔ فهرست">
+                      {result.sourceInfo.expertBranch}
+                    </Badge>
+                  ) : null}
                   <Button size="sm" variant="ghost" className="h-6 gap-1 px-2 text-[10px] text-sec-m5-600" onClick={openSourceInTile}>
                     <ExternalLink className="size-3" aria-hidden /> مشاهده در کاشی {result.direction === "listing_to_request" ? "آگهی" : "درخواست"}
                   </Button>
@@ -318,116 +229,109 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
             </Card>
           ) : null}
 
-          {/* خلاصهٔ هوشمند ایجنت — PN-014 */}
-          <Card className="border-sec-m5-200 bg-sec-m5-50/50">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="flex flex-wrap items-center gap-2 text-sm">
-                <Brain className="size-4 text-sec-m5-500" aria-hidden />
-                خلاصهٔ هوشمند ایجنت
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <ArrowLeftRight className="size-4 text-sec-m5-500" />
+                {result.direction === "listing_to_request" ? `۵ درخواست برتر برای ملک ${faDigits(result.listingCode ?? "")}` : "۵ آگهی برتر برای این درخواست"}
                 <Badge variant="outline" className="text-[10px]">Tier {faDigits(result.tier)}</Badge>
+                {/* PN-011 خامسا-۲ — منشأ وزن‌ها: پایه یا آموخته از بازخورد مالک */}
                 {result.weightsSource === "learned" ? (
-                  <Badge className="bg-sec-m5-500 text-white text-[10px]" title={summary.weightsHint}>
+                  <Badge className="bg-sec-m5-500 text-white text-[10px]" title={`وزن‌ها از ${faDigits(result.weightsFeedbackCount ?? 0)} بازخورد پذیرش/رد شما آموخته شده`}>
                     <Sparkles className="size-3" aria-hidden /> وزن‌های آموخته ({faDigits(result.weightsFeedbackCount ?? 0)} بازخورد)
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[10px]" title={summary.weightsHint}>وزن‌های پایه</Badge>
+                  <Badge variant="outline" className="text-[10px]" title="هنوز بازخورد کافی نیست — با هر پذیرش/رد، وزن عوامل تدریجاً شخصی می‌شود">وزن‌های پایه</Badge>
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-xs leading-6 text-foreground">
-                <Lightbulb className="size-3.5 inline text-sec-m5-500" aria-hidden /> {summary.headline}
-              </p>
-              <p className="text-[10px] text-muted-foreground">{summary.weightsHint} — {Object.entries(result.weightsUsed).map(([k, v]) => `${k} ${faDigits(Math.round(v * 100))}٪`).join(" · ")}</p>
+            <CardContent className="text-xs text-muted-foreground">
+              وزن‌ها: {Object.entries(result.weightsUsed).map(([k, v]) => `${k} ${faPct(Math.round(v * 100))}`).join(" · ")}
             </CardContent>
           </Card>
 
-          {result.candidates.length > 0 ? (
-            <>
-              {/* بندبندی سه‌گانه — عین سطل‌های فایل‌یابی */}
-              <Tabs value={bucket} onValueChange={(v) => setBucket(v as MatchBucket)}>
-                <TabsList className="w-full grid grid-cols-3 h-auto p-1">
-                  <TabsTrigger value="hunt" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-600 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
-                    <Sparkles className="w-3.5 h-3.5" aria-hidden /> شکار ({faDigits(summary.buckets.hunt)})
-                  </TabsTrigger>
-                  <TabsTrigger value="follow" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-amber-600 data-[state=active]:to-amber-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
-                    <Gauge className="w-3.5 h-3.5" aria-hidden /> پیگیری ({faDigits(summary.buckets.follow)})
-                  </TabsTrigger>
-                  <TabsTrigger value="review" className="gap-1.5 text-xs py-1.5">
-                    <ListFilter className="w-3.5 h-3.5" aria-hidden /> بررسی ({faDigits(summary.buckets.review)})
-                  </TabsTrigger>
-                </TabsList>
-
-                {(["hunt", "follow", "review"] as const).map((b) => (
-                  <TabsContent key={b} value={b} className="mt-4">
-                    {candidatesInBucket.length === 0 ? (
-                      <Card>
-                        <CardContent className="py-8 text-center space-y-2">
-                          <ArrowLeftRight className="w-10 h-10 mx-auto text-muted-foreground/40" aria-hidden />
-                          <p className="text-sm font-bold">گزینه‌ای در این بند نیست</p>
-                          <p className="text-xs text-muted-foreground">
-                            {b === "hunt" && summary.buckets.follow + summary.buckets.review > 0
-                              ? "هیچ گزینه‌ای به آستانهٔ فرصت (۰٫۷) نرسید — بند پیگیری را ببینید."
-                              : "این بند در نتیجهٔ فعلی خالی است — بندهای دیگر را بررسی کنید."}
-                          </p>
-                        </CardContent>
-                      </Card>
+          {result.candidates.map((c, i) => (
+            <Card key={`${c.requestId}:${c.listingCode ?? i}`} className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-sm leading-6">
+                    <Badge className="ml-1 bg-sec-m5-500 text-white">{faDigits(i + 1)}</Badge>
+                    {c.listingCode ? `ملک ${faDigits(c.listingCode)}` : (c.requestLabel ?? c.requestId)}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge className={c.score >= 0.7 ? "bg-emerald-600 text-white" : "bg-amber-500 text-white"}>امتیاز {faDigits(c.score.toFixed(2))}</Badge>
+                    {feedback[c.requestId] ? (
+                      <Badge variant="outline">{feedback[c.requestId] === "accepted" ? "پذیرفته شد ✓" : "رد شد ✗"}</Badge>
                     ) : (
-                      <div className="space-y-3">
-                        {candidatesInBucket.map((c) => (
-                          <MatchCard
-                            key={`${c.requestId}:${c.listingCode ?? ""}`}
-                            candidate={c}
-                            index={globalIndexOf(c)}
-                            direction={result.direction}
-                            showScores={showScores}
-                            feedbackState={feedback[c.requestId]}
-                            onDetails={setDetails}
-                            onAccept={(x) => void sendFeedback(x, "accepted")}
-                            onReject={(x) => void sendFeedback(x, "rejected")}
-                            onOpenInTile={openInTile}
-                          />
-                        ))}
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" className="h-7 gap-1 text-emerald-600" onClick={() => sendFeedback(c, "accepted")}><ThumbsUp className="size-3" /> پذیرش</Button>
+                        <Button size="sm" variant="outline" className="h-7 gap-1 text-red-600" onClick={() => sendFeedback(c, "rejected")}><ThumbsDown className="size-3" /> رد</Button>
                       </div>
                     )}
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </>
-          ) : (
-            <Card>
-              <CardContent className="py-10 text-center space-y-2">
-                <Crosshair className="w-10 h-10 mx-auto text-muted-foreground/40" aria-hidden />
-                <p className="text-sm font-bold">هیچ تطبیقی از فیلترهای سخت نگذشت</p>
-                <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
-                  فیلترهای سخت (معکوس نوع معامله · تلاقی قیمت و منطقه · نوع ملک) گزینه‌ای باقی نگذاشتند — سطر ورودی دیگری را امتحان کنید یا منتظر همگام‌سازی تازه بمانید.
-                </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {c.info ? (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-sec-m5-200 bg-sec-m5-50/60 p-2 text-xs sm:grid-cols-3">
+                    <span className="text-muted-foreground">کد: <b className="text-foreground">{faDigits(c.info.code)}</b></span>
+                    <span className="text-muted-foreground">{result.direction === "listing_to_request" ? "مشتری" : "مالک"}: <b className="text-foreground">{c.info.ownerName ?? "—"}</b></span>
+                    <span dir="ltr" className="text-muted-foreground">{c.info.mobile ?? "—"}</span>
+                    <span className="text-muted-foreground">منطقه: <b className="text-foreground">{c.info.region ?? "—"}</b></span>
+                    <span className="text-muted-foreground">قیمت: <b className="text-foreground">{priceLabel(c.info)}</b></span>
+                    <span className="text-muted-foreground">تازگی: <b className="text-foreground">{c.info.lastSeenAt ? faRelative(c.info.lastSeenAt) : "—"}</b></span>
+                    {/* PN-011 خامسا-۱ — کارشناس و شعبهٔ سطر مقابل (دوطرفه — عین فهرست‌های M1/M2) */}
+                    <span className="text-muted-foreground">کارشناس: <b className="text-foreground">{c.info.expertName ?? "—"}</b></span>
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      شعبه:
+                      {c.info.expertBranch && c.info.expertBranch !== "تعیین نشده" ? (
+                        <Badge variant="outline" className={`text-[10px] border-0 ${branchBadgeClass(c.info.expertBranch)}`} title="شعبهٔ کارشناس — از سامانهٔ PM">{c.info.expertBranch}</Badge>
+                      ) : (
+                        <b className="text-foreground">—</b>
+                      )}
+                    </span>
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-5 gap-1 px-1.5 text-[10px] text-sec-m5-600"
+                        onClick={() => openInTile(c.info!.code)}
+                        title={`گشودن این ${result.direction === "listing_to_request" ? "درخواست" : "آگهی"} در کاشی ${result.direction === "listing_to_request" ? "درخواست ملک تبریز" : "آگهی ملک تبریز"} با کد از پیش‌جست‌وجوشده`}
+                      >
+                        <ExternalLink className="size-3" aria-hidden /> مشاهده در کاشی {result.direction === "listing_to_request" ? "درخواست" : "آگهی"}
+                      </Button>
+                    </span>
+                  </div>
+                ) : null}
+                {c.hardFilterNotes.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {c.hardFilterNotes.map((n) => <Badge key={n} variant="outline" className="text-[10px] text-emerald-700 border-emerald-300">{n}</Badge>)}
+                  </div>
+                ) : null}
+                {showReasons ? (
+                  <div className="space-y-1.5">
+                    {c.reasons.map((r) => (
+                      <div key={r.factor} className="flex items-center gap-2 text-xs">
+                        <span className="w-28 shrink-0 text-muted-foreground">{r.factor}</span>
+                        <Progress value={r.value * 100} className="h-1.5 flex-1" />
+                        <span className="w-10 text-left tabular-nums">{faDigits(r.value.toFixed(2))}</span>
+                        <span className="w-44 shrink-0 truncate text-muted-foreground" dir="rtl">{r.note}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">دلایل امتیاز پنهان است — از تنظیمات کاشی روشن کنید (نمایش دلایل امتیاز هر تطبیق)</p>
+                )}
+                <p className="text-[10px] text-muted-foreground">پوشش سیگنال واقعی: {faPct(Math.round(c.signalCoverage * 100))} — عوامل بدون داده خنثی (۰٫۵) ارزیابی شده‌اند، نه صفر</p>
               </CardContent>
             </Card>
-          )}
+          ))}
         </>
       ) : null}
-
-      {/* پانل ایجنت — بینش‌ها و آمار یادگیری همین کاشی (عین فایل‌یابی) */}
-      <AgentPanel tileId="smart-matching" />
-
-      {/* جزئیات تحلیل — تحلیل هوشمند امتیازدهی + پیش‌بینی دلایل رد + پیشنهاد تصمیم */}
-      <MatchDetailsDialog
-        candidate={details}
-        index={details && result ? globalIndexOf(details) : 1}
-        direction={result?.direction ?? "listing_to_request"}
-        weightsSource={result?.weightsSource}
-        weightsFeedbackCount={result?.weightsFeedbackCount}
-        weightsUsed={result?.weightsUsed ?? {}}
-        feedbackState={details ? feedback[details.requestId] : undefined}
-        onAccept={(c) => { void sendFeedback(c, "accepted"); }}
-        onReject={(c) => { void sendFeedback(c, "rejected"); }}
-        onOpenInTile={openInTile}
-        onClose={() => setDetails(null)}
-      />
     </div>
   );
 }
+
 
 /** P6549 — خروجی پیش‌فرض برای بارگذاری تنبل (lazyPage) */
 export default SmartMatchingPage;

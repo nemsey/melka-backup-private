@@ -62,10 +62,10 @@ refresh_expected_counts() {
   req=$(echo "$out" | sed -n 's/^RequestRecord: \([0-9]*\)/\1/p')
   tx=$(echo "$out"  | sed -n 's/^TransactionRecord: \([0-9]*\)/\1/p')
   ex=$(echo "$out"  | sed -n 's/^ExpertRecord: \([0-9]*\)/\1/p')
-  ep=$(echo "$out"  | sed -n 's/^ExpertProfile: \([0-9]*\)/\1/p')
+  pm=$(echo "$out"  | sed -n 's/^PmPersonnelRecord: \([0-9]*\)/\1/p')
   [[ -n "$ads" ]] || return 0
-  printf '{"PropertyRecord":%s,"RequestRecord":%s,"TransactionRecord":%s,"ExpertRecord":%s,"ExpertProfile":%s,"updatedAt":"%s"}\n' \
-    "$ads" "$req" "$tx" "$ex" "$ep" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$EXPECTED"
+  printf '{"PropertyRecord":%s,"RequestRecord":%s,"TransactionRecord":%s,"ExpertRecord":%s,"PmPersonnelRecord":%s,"updatedAt":"%s"}\n' \
+    "$ads" "$req" "$tx" "$ex" "$pm" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$EXPECTED"
 }
 
 # ───────────────────────── وارسی ─────────────────────────
