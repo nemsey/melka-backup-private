@@ -84,3 +84,6 @@ backups/pre-recovery-034-*/
 # PN-008: فایل‌های جانبی WAL هرگز در گیت نیستند (گذرا + متغیر حین هش)
 db/custom.db-wal
 db/custom.db-shm
+
+# PN-012-B — escrowهای plaintext هرگز در گیت نیستند (SEC-1؛ فقط env.escrow.enc رمزنگاری‌شده مجاز است)
+db/.runtime/

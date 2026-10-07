@@ -38,6 +38,13 @@ else
     bash scripts/pn005c/recovery-guard.sh || true
   fi
 
+  # ═══ PN-012-B (بحران ششم): بازیابی راز بوت از escrow سه‌مکانی ═══
+  # ریست پلتفرم MELK_TOKEN_KEY را از .env.local پاک می‌کرد → fail-fast → 500.
+  # زنجیرهٔ بازیابی: .env.local → db/.runtime → upload/.runtime → env.escrow.enc (رمزنگاری‌شدهٔ گیت)
+  if [[ -f scripts/pn012/escrow-manager.ts ]]; then
+    bun scripts/pn012/escrow-manager.ts restore 2>&1 | tee -a dev-recovery.log || true
+  fi
+
   # ۲) بیلد در صورت نبود
   if [[ ! -f .next/standalone/server.js ]]; then
     echo "[dev-entry] بیلد production…"
