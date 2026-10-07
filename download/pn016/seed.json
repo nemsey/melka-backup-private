@@ -2,37 +2,18 @@
   "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
   "workOrder": "PN-016",
   "stage": "۳ — Migration + Seed",
-  "at": "2026-10-07T22:37:40.071Z",
+  "at": "2026-10-07T23:21:16.893Z",
   "sources": {
-    "sessions": 3,
+    "sessions": 0,
     "personnelAccessLegacy": 0
   },
-  "created": [
-    {
-      "personnelCode": "410031338",
-      "fullName": "سید امیرمحمد سیدی",
-      "role": "EXPERT",
-      "permissions": 8
-    },
-    {
-      "personnelCode": "410031319",
-      "fullName": "نرگس یاوری",
-      "role": "EXPERT",
-      "permissions": 8
-    },
-    {
-      "personnelCode": "410031320",
-      "fullName": "سید نعمت اله سیدی",
-      "role": "OWNER",
-      "permissions": "bypass"
-    }
-  ],
+  "created": [],
   "skipped": [],
-  "permissionsCreated": 16,
+  "permissionsCreated": 0,
   "legacyPermissionsMigrated": 0,
-  "userCountBefore": 0,
+  "userCountBefore": 3,
   "userCountAfter": 3,
-  "permissionRows": 16,
+  "permissionRows": 12,
   "fixProof": [
     {
       "code": "410031338",
