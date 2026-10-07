@@ -1,0 +1,168 @@
+{
+  "testedAt": "2026-10-07T20:54:05.462105Z",
+  "total": 40,
+  "ok": 40,
+  "fail": 0,
+  "rows": [
+    {
+      "path": "/deliver/PN-014-ALL.zip",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-FINAL-REPORT.md",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-SHA256SUMS.txt",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-REJOIN.txt",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/lock-in.json",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/D1-ticket.md",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/D2-publish-fix.json",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/D3-decision.json",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/D4-decision.json",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/fixes.json",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/phase5.json",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/end-gate.json",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-survival-part00.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-survival-part01.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-survival-part02.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-survival-part03.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-survival-part04.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-survival-part05.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-survival-part06.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-survival-part07.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-014-survival-part08.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/screens/01-matching-tile-entry.png",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/screens/02-smart-search-suggestions.png",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/screens/03-match-results-buckets.png",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/screens/04-details-analysis-top.png",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/screens/05-details-rejection-prediction.png",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn014/screens/06-matching-desktop.png",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-013-ALL.zip",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-013-SHA256SUMS.txt",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-013-REJOIN.txt",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-013-FINAL-REPORT.md",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-013-survival-part00.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn013/end-gate.json",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-012-ALL.zip",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-012-SHA256SUMS.txt",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-012-REJOIN.txt",
+      "status": 200
+    },
+    {
+      "path": "/deliver/PN-012-survival-part00.bin",
+      "status": 200
+    },
+    {
+      "path": "/deliver/pn012/diagnosis.json",
+      "status": 200
+    },
+    {
+      "path": "/deliver/test-minimal.zip",
+      "status": 200
+    },
+    {
+      "path": "/deliver/archive/PN-009-20261006/CHAIN.json",
+      "status": 200
+    }
+  ]
+}

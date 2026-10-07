@@ -41,7 +41,7 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     expect(INSTRUMENTATION).toContain("MELK_AUTO_RECOVERY");
   });
 
-  test("۴-۴ رجیستری: پنج کار اصلی + دو گارد بدهی PN-014 در Worker", () => {
+  test("۴-۴ رجیستری: پنج کار اصلی + دو گارد بدهی PN-014 + دو گارد PN-015 در Worker", () => {
     const jobs = buildWorkerJobs(null as never); // رجیستری خالص — db فقط به run پاس می‌شود
     const ids = jobs.map((j) => j.id);
     expect(ids).toContain(WORKER_JOB_IDS.intelligenceCycle);
@@ -52,7 +52,10 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     // PN-014/D3+D4 — دو گارد تازه (فاصله‌ها در تست‌های همان پرونده)
     expect(ids).toContain(WORKER_JOB_IDS.privacyGuard);
     expect(ids).toContain(WORKER_JOB_IDS.sizeGuard);
-    expect(ids.length).toBe(7);
+    // PN-015/K2+K3 — دو گارد تازه: تازگی preview + بازنشانی پلتفرم
+    expect(ids).toContain(WORKER_JOB_IDS.previewGuard);
+    expect(ids).toContain(WORKER_JOB_IDS.resetGuard);
+    expect(ids.length).toBe(9);
   });
 
   test("۴-۵ فاصله‌ها عین دیمن‌های قبلی (صفر قطع خدمت در رفتار زمانی)", () => {
@@ -91,7 +94,8 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
       expect(ids).not.toContain(WORKER_JOB_IDS.backupRotation);
       expect(ids).not.toContain(WORKER_JOB_IDS.privacyGuard);
       expect(ids).not.toContain(WORKER_JOB_IDS.sizeGuard);
-      expect(ids).toEqual([WORKER_JOB_IDS.logRotate]); // چرخش لاگ همیشه فعال
+      // PN-015: دو گارد تازه از خاموشی این شش env پیروی نمی‌کنند (کلید خاموشی خودشان: MELK_PREVIEW_GUARD / MELK_RESET_GUARD)
+      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard]);
     } finally {
       for (const [k, v] of saved) {
         if (v === undefined) delete process.env[k];
