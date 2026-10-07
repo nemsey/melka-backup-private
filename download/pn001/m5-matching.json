@@ -2,60 +2,60 @@
   "case": "PN-001",
   "block": "2.1",
   "witness": "گام پنجم — اطلاعات کامل گزینه‌ها",
-  "generatedAt": "2026-10-07T13:52:04.583Z",
+  "generatedAt": "2026-10-07T16:48:11.023Z",
   "realMatches": [
     {
       "listingCode": "1095",
       "top": [
         {
-          "code": "14566",
+          "code": "28948",
           "score": 0.9,
-          "ownerName": "جعفری",
+          "ownerName": "ولی پور",
           "mobile": null,
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": 20000000000,
-          "priceTo": 60000000000,
-          "freshness": "2026-10-07T13:48:23.577Z"
-        },
-        {
-          "code": "16082",
-          "score": 0.9,
-          "ownerName": "سجودی",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 8000000000,
-          "priceTo": 50000000000,
-          "freshness": "2026-10-07T13:43:21.090Z"
-        },
-        {
-          "code": "16433",
-          "score": 0.9,
-          "ownerName": "غلامی",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 10000000000,
-          "priceTo": 50000000000,
-          "freshness": "2026-10-07T13:43:07.968Z"
-        },
-        {
-          "code": "16648",
-          "score": 0.9,
-          "ownerName": "ابراهیمی",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 20000000000,
-          "priceTo": 400000000000,
-          "freshness": "2026-10-07T13:42:52.065Z"
-        },
-        {
-          "code": "17488",
-          "score": 0.9,
-          "ownerName": "احسان دست رنج آزادی",
-          "mobile": "09144146529",
           "region": "ولیعصر",
           "priceFrom": 40000000000,
-          "priceTo": 70000000000,
-          "freshness": "2026-10-07T13:42:13.915Z"
+          "priceTo": 50000000000,
+          "freshness": "2026-10-07T16:30:58.663Z"
+        },
+        {
+          "code": "38598",
+          "score": 0.9,
+          "ownerName": "رضایی",
+          "mobile": "09141034514",
+          "region": "ولیعصر",
+          "priceFrom": 10000000000,
+          "priceTo": 130000000000,
+          "freshness": "2026-10-07T16:30:21.476Z"
+        },
+        {
+          "code": "29178",
+          "score": 0.9,
+          "ownerName": "بیاضی",
+          "mobile": null,
+          "region": "زعفرانیه، یاغچیان، باغچه بان",
+          "priceFrom": 30000000000,
+          "priceTo": 100000000000,
+          "freshness": "2026-10-07T16:28:25.223Z"
+        },
+        {
+          "code": "37592",
+          "score": 0.89,
+          "ownerName": "قاسم طلوعی",
+          "mobile": "09143151816",
+          "region": "ایل گلی، گلشهر، پرواز",
+          "priceFrom": 20000000000,
+          "priceTo": 60000000000,
+          "freshness": "2026-10-07T16:39:52.806Z"
+        },
+        {
+          "code": "37686",
+          "score": 0.89,
+          "ownerName": "عدنانی",
+          "mobile": "09144101923",
+          "region": "رشدیه، ولیعصر، ولیعصر 2",
+          "priceFrom": 10000000000,
+          "priceTo": 60000000000,
+          "freshness": "2026-10-07T16:38:54.188Z"
         }
       ]
     },
@@ -63,54 +63,54 @@
       "listingCode": "1105",
       "top": [
         {
-          "code": "14540",
+          "code": "31245",
           "score": 0.9,
-          "ownerName": "حسنی",
+          "ownerName": "سیف زاده",
           "mobile": null,
-          "region": "ولیعصر، الهی پرست",
+          "region": "ولیعصر",
           "priceFrom": 100000000000,
-          "priceTo": 300000000000,
-          "freshness": "2026-10-07T13:48:23.637Z"
-        },
-        {
-          "code": "16648",
-          "score": 0.9,
-          "ownerName": "ابراهیمی",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 20000000000,
-          "priceTo": 400000000000,
-          "freshness": "2026-10-07T13:42:52.065Z"
-        },
-        {
-          "code": "17551",
-          "score": 0.9,
-          "ownerName": "موسی پور",
-          "mobile": "09141153837",
-          "region": "ولیعصر",
-          "priceFrom": 10000000000,
           "priceTo": 200000000000,
-          "freshness": "2026-10-07T13:42:08.116Z"
+          "freshness": "2026-10-07T16:26:51.938Z"
         },
         {
-          "code": "16153",
+          "code": "32306",
           "score": 0.89,
-          "ownerName": "بهنام بشیرزاده",
+          "ownerName": "اورندی",
           "mobile": null,
-          "region": "ولیعصر، ایل گلی، الهی پرست",
+          "region": "ایل گلی، دادگستری (ایل گلی)، نصر",
           "priceFrom": 100000000000,
-          "priceTo": 200000000000,
-          "freshness": "2026-10-07T13:43:17.992Z"
+          "priceTo": 180000000000,
+          "freshness": "2026-10-07T16:25:51.796Z"
         },
         {
-          "code": "16250",
-          "score": 0.87,
-          "ownerName": "حسین اکبر زاده",
+          "code": "26619",
+          "score": 0.86,
+          "ownerName": "ظفروند",
           "mobile": null,
-          "region": "35 متری سینا، ایل گلی، ولیعصر",
-          "priceFrom": 100000000000,
-          "priceTo": 200000000000,
-          "freshness": "2026-10-07T13:43:13.570Z"
+          "region": "ولیعصر",
+          "priceFrom": 150000000000,
+          "priceTo": 220000000000,
+          "freshness": "2026-10-07T16:34:07.094Z"
+        },
+        {
+          "code": "31754",
+          "score": 0.81,
+          "ownerName": "دکتر سیامک محمدی",
+          "mobile": null,
+          "region": "ولیعصر",
+          "priceFrom": 50000000,
+          "priceTo": 600000000000,
+          "freshness": "2026-10-07T16:26:09.094Z"
+        },
+        {
+          "code": "38915",
+          "score": 0.7,
+          "ownerName": "مرتضی  ف",
+          "mobile": "09055705354",
+          "region": "آبرسان، ابوریحان، ارتش",
+          "priceFrom": 3000000000,
+          "priceTo": 4250000000000,
+          "freshness": "2026-10-07T16:27:49.981Z"
         }
       ]
     },
@@ -118,54 +118,54 @@
       "listingCode": "1630",
       "top": [
         {
-          "code": "14414",
+          "code": "28433",
           "score": 0.9,
-          "ownerName": "موسوی",
+          "ownerName": "سلطانی",
           "mobile": null,
           "region": "ولیعصر",
-          "priceFrom": 70000000000,
+          "priceFrom": 65000000000,
           "priceTo": 100000000000,
-          "freshness": "2026-10-07T13:48:33.584Z"
+          "freshness": "2026-10-07T16:31:48.957Z"
         },
         {
-          "code": "14420",
+          "code": "29178",
           "score": 0.9,
-          "ownerName": "خانوم موسوی",
+          "ownerName": "بیاضی",
+          "mobile": null,
+          "region": "زعفرانیه، یاغچیان، باغچه بان",
+          "priceFrom": 30000000000,
+          "priceTo": 100000000000,
+          "freshness": "2026-10-07T16:28:25.223Z"
+        },
+        {
+          "code": "30306",
+          "score": 0.9,
+          "ownerName": "اسماعیلی موسوی",
           "mobile": null,
           "region": "ولیعصر",
           "priceFrom": 50000000000,
-          "priceTo": 100000000000,
-          "freshness": "2026-10-07T13:48:33.571Z"
-        },
-        {
-          "code": "15043",
-          "score": 0.9,
-          "ownerName": "امیر عزتی",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 80000000000,
           "priceTo": 120000000000,
-          "freshness": "2026-10-07T13:46:52.215Z"
+          "freshness": "2026-10-07T16:27:41.379Z"
         },
         {
-          "code": "15328",
+          "code": "31108",
           "score": 0.9,
-          "ownerName": "بهنام بشیرزاده",
-          "mobile": null,
-          "region": "ولیعصر، الهی پرست، پرواز",
-          "priceFrom": 50000000000,
-          "priceTo": 100000000000,
-          "freshness": "2026-10-07T13:44:03.736Z"
-        },
-        {
-          "code": "15363",
-          "score": 0.9,
-          "ownerName": "پرهیزکار",
+          "ownerName": "بهروز عافیت",
           "mobile": null,
           "region": "ولیعصر",
-          "priceFrom": 20000000000,
+          "priceFrom": 60000000000,
           "priceTo": 100000000000,
-          "freshness": "2026-10-07T13:44:03.665Z"
+          "freshness": "2026-10-07T16:27:01.760Z"
+        },
+        {
+          "code": "31310",
+          "score": 0.9,
+          "ownerName": "فرونچی",
+          "mobile": null,
+          "region": "35 متری سینا، آبرسان، استانداری",
+          "priceFrom": 60000000000,
+          "priceTo": 130000000000,
+          "freshness": "2026-10-07T16:26:51.882Z"
         }
       ]
     },
@@ -173,54 +173,54 @@
       "listingCode": "1843",
       "top": [
         {
-          "code": "14988",
+          "code": "24879",
           "score": 0.9,
-          "ownerName": "احد ضیایی",
+          "ownerName": "محبت",
           "mobile": null,
-          "region": "ولیعصر، پرواز، ایل گلی",
-          "priceFrom": 20000000000,
-          "priceTo": 45000000000,
-          "freshness": "2026-10-07T13:47:12.840Z"
+          "region": "زعفرانیه، یاغچیان، باغچه بان",
+          "priceFrom": 10000000000,
+          "priceTo": 25000000000,
+          "freshness": "2026-10-07T16:39:25.277Z"
         },
         {
-          "code": "15337",
+          "code": "25473",
           "score": 0.9,
-          "ownerName": "قربانی",
+          "ownerName": "ملکی",
           "mobile": null,
-          "region": "ولیعصر، رشدیه، ایل گلی",
-          "priceFrom": 20000000000,
-          "priceTo": 35000000000,
-          "freshness": "2026-10-07T13:44:03.717Z"
+          "region": "ولیعصر جنوبی، ولیعصر، توانیر",
+          "priceFrom": 25000000000,
+          "priceTo": 32000000000,
+          "freshness": "2026-10-07T16:38:54.387Z"
         },
         {
-          "code": "15696",
+          "code": "28254",
           "score": 0.9,
-          "ownerName": "محمد علینژاد",
+          "ownerName": "علی فطرت",
           "mobile": null,
-          "region": "زعفرانیه، ولیعصر، ایل گلی",
-          "priceFrom": 20000000000,
-          "priceTo": 30000000000,
-          "freshness": "2026-10-07T13:43:48.427Z"
+          "region": "زعفرانیه، یاغچیان، باغچه بان",
+          "priceFrom": 18000000000,
+          "priceTo": 25000000000,
+          "freshness": "2026-10-07T16:32:12.817Z"
         },
         {
-          "code": "16082",
+          "code": "28974",
           "score": 0.9,
-          "ownerName": "سجودی",
+          "ownerName": "میلانی",
           "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 8000000000,
-          "priceTo": 50000000000,
-          "freshness": "2026-10-07T13:43:21.090Z"
+          "region": "زعفرانیه، یاغچیان، باغچه بان",
+          "priceFrom": 10000000000,
+          "priceTo": 26000000000,
+          "freshness": "2026-10-07T16:30:58.623Z"
         },
         {
-          "code": "16269",
+          "code": "38598",
           "score": 0.9,
-          "ownerName": "حسن اوغلی",
-          "mobile": null,
+          "ownerName": "رضایی",
+          "mobile": "09141034514",
           "region": "ولیعصر",
           "priceFrom": 10000000000,
-          "priceTo": 35000000000,
-          "freshness": "2026-10-07T13:43:13.546Z"
+          "priceTo": 130000000000,
+          "freshness": "2026-10-07T16:30:21.476Z"
         }
       ]
     },
@@ -228,54 +228,54 @@
       "listingCode": "2594",
       "top": [
         {
-          "code": "14540",
-          "score": 0.9,
-          "ownerName": "حسنی",
-          "mobile": null,
-          "region": "ولیعصر، الهی پرست",
-          "priceFrom": 100000000000,
-          "priceTo": 300000000000,
-          "freshness": "2026-10-07T13:48:23.637Z"
-        },
-        {
-          "code": "15388",
-          "score": 0.9,
-          "ownerName": "احد شاهین",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 100000000000,
-          "priceTo": 150000000000,
-          "freshness": "2026-10-07T13:43:58.701Z"
-        },
-        {
-          "code": "16648",
-          "score": 0.9,
-          "ownerName": "ابراهیمی",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 20000000000,
-          "priceTo": 400000000000,
-          "freshness": "2026-10-07T13:42:52.065Z"
-        },
-        {
-          "code": "16741",
-          "score": 0.9,
-          "ownerName": "محمدرضا جباری",
-          "mobile": "09358980433",
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": 20000000000,
-          "priceTo": 150000000000,
-          "freshness": "2026-10-07T13:42:46.851Z"
-        },
-        {
-          "code": "17551",
+          "code": "28275",
           "score": 0.9,
           "ownerName": "موسی پور",
-          "mobile": "09141153837",
+          "mobile": null,
           "region": "ولیعصر",
-          "priceFrom": 10000000000,
+          "priceFrom": 30000000000,
+          "priceTo": 120000000000,
+          "freshness": "2026-10-07T16:31:57.028Z"
+        },
+        {
+          "code": "30058",
+          "score": 0.9,
+          "ownerName": "حسام منیری",
+          "mobile": null,
+          "region": "ولیعصر",
+          "priceFrom": 90000000000,
+          "priceTo": 140000000000,
+          "freshness": "2026-10-07T16:27:50.436Z"
+        },
+        {
+          "code": "30306",
+          "score": 0.9,
+          "ownerName": "اسماعیلی موسوی",
+          "mobile": null,
+          "region": "ولیعصر",
+          "priceFrom": 50000000000,
+          "priceTo": 120000000000,
+          "freshness": "2026-10-07T16:27:41.379Z"
+        },
+        {
+          "code": "31245",
+          "score": 0.9,
+          "ownerName": "سیف زاده",
+          "mobile": null,
+          "region": "ولیعصر",
+          "priceFrom": 100000000000,
           "priceTo": 200000000000,
-          "freshness": "2026-10-07T13:42:08.116Z"
+          "freshness": "2026-10-07T16:26:51.938Z"
+        },
+        {
+          "code": "31310",
+          "score": 0.9,
+          "ownerName": "فرونچی",
+          "mobile": null,
+          "region": "35 متری سینا، آبرسان، استانداری",
+          "priceFrom": 60000000000,
+          "priceTo": 130000000000,
+          "freshness": "2026-10-07T16:26:51.882Z"
         }
       ]
     }

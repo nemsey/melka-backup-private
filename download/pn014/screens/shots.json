@@ -8,10 +8,6 @@
   "06-matching-desktop.png"
  ],
  "errors": [],
- "consoleErrors": 3,
- "consoleSample": [
-  "Failed to load resource: the server responded with a status of 404 (Not Found)",
-  "Failed to load resource: the server responded with a status of 404 (Not Found)",
-  "Failed to load resource: the server responded with a status of 404 (Not Found)"
- ]
+ "consoleErrors": 0,
+ "consoleSample": []
 }
