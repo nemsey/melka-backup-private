@@ -1,98 +1,22 @@
-"use client";
-
 /**
- * صفحه اصلی — پوسته SPA (تک‌صفحه‌ای)
- * ماشین وضعیت: boot → auth → otp → home ⇄ tile
- * کل چرخه در همین فایل هدایت می‌شود؛ کاشی‌ها از رجیستری بارگذاری می‌شوند.
+ * صفحهٔ اصلی — Server Shell + Client Islands (PN-013 فاز ۴)
+ * ---------------------------------------------------------------------------
+ * این فایل دیگر «use client» نیست: پوستهٔ سبکِ سرور است که تنها ریشهٔ
+ * جزیرهٔ کلاینت را رندر می‌کند. HTML نخستین رنگ (اسپلش برند) بدون انتظار
+ * برای هیچ JS به مرورگر می‌رسد؛ سپس هیدراته شدن، ماشین وضعیت
+ * (boot → auth → otp → home ⇄ tile) را در MelkaApp زنده می‌کند.
+ *
+ * جزیره‌ها (dynamic، بدون SSR):
+ *   · islands/AuthFlow        — فقط برای کاربرِ وارد‌نشده
+ *   · islands/DashboardShell  — فقط پس از ورود (framer-motion + رجیستری کاشی)
+ *   · islands/UpdateController— ثبت Service Worker (غیرمسدودکننده)
+ *
+ * کاشی‌ها: صفحهٔ هر کاشی از قبل تنبل است (lazyPage — قانون ۰۳۵-B-ح) و
+ * فقط با باز شدن همان کاشی بارگذاری می‌شود.
  */
 
-import { useEffect } from "react";
-import { MotionConfig } from "framer-motion";
-import { useAppStore } from "@/lib/client/store";
-import { AuthScreen } from "@/components/app/AuthScreen";
-import { OtpScreen } from "@/components/app/OtpScreen";
-import { AppHeader } from "@/components/app/AppHeader";
-import { DashboardHome } from "@/components/app/DashboardHome";
-import { TileShell } from "@/components/app/TileShell";
-import { SwRegister } from "@/components/app/SwRegister";
-// P6549/قانون ۰۳۵-B — اسپلش + ناوبری پایین
-import { SplashScreen } from "@/components/app/SplashScreen";
-import { BottomNav } from "@/components/app/BottomNav";
-// P6526/ث-۲ — دکمهٔ «باز کردن در صفحهٔ جدید» برای پیش‌نمایش داخل قاب چت
-import { OpenInNewTabButton } from "@/components/app/OpenInNewTabButton";
-import { tileRegistry } from "@/core/tiles/tile-registry";
-import "@/core/tiles/bootstrap";
-import { Loader2 } from "lucide-react";
+import { MelkaApp } from "@/components/app/MelkaApp";
 
 export default function Page() {
-  const stage = useAppStore((s) => s.stage);
-  const boot = useAppStore((s) => s.boot);
-  const activeTileId = useAppStore((s) => s.activeTileId);
-
-  useEffect(() => {
-    void boot();
-  }, [boot]);
-
-  // مرحله راه‌اندازی: بازیابی نشست رمزنگاری‌شده
-  if (stage === "boot") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background relative">
-        <SwRegister />
-        <div className="absolute top-3 start-3 z-50">
-          <OpenInNewTabButton />
-        </div>
-        {/* P6549/۰۳۵-B-ح: هویت برند در نخستین رنگ — LCP همان FCP می‌شود (بدون پرش محتوا) */}
-        <div className="flex flex-col items-center gap-3" role="status" aria-label="ملکا در حال راه‌اندازی">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 flex items-center justify-center shadow-xl shadow-primary/25">
-            <Loader2 className="w-8 h-8 animate-spin text-white" aria-hidden />
-          </div>
-          <h1 className="text-2xl font-extrabold text-primary">ملکا</h1>
-          <p className="text-sm text-muted-foreground">اکوسیستم هوشمند ملک ایران</p>
-          <p className="text-xs text-muted-foreground/80">در حال بازیابی نشست امن…</p>
-        </div>
-      </div>
-    );
-  }
-
-  // مراحل ورود
-  if (stage === "auth") {
-    return (
-      <>
-        <SwRegister />
-        <div className="fixed top-3 start-3 z-50">
-          <OpenInNewTabButton />
-        </div>
-        <AuthScreen />
-      </>
-    );
-  }
-  if (stage === "otp") {
-    return (
-      <>
-        <SwRegister />
-        <div className="fixed top-3 start-3 z-50">
-          <OpenInNewTabButton />
-        </div>
-        <OtpScreen />
-      </>
-    );
-  }
-
-  // داشبورد اصلی
-  const tile = activeTileId ? tileRegistry.get(activeTileId) : null;
-
-  return (
-    <MotionConfig reducedMotion="user">
-      <div className="min-h-screen flex flex-col bg-background">
-        {/* قانون ۰۳۵-B/ج-۱: اسپلش با آیکون برند — نخستین بارگذاری هر نشست */}
-        <SplashScreen />
-        <SwRegister />
-        <AppHeader />
-        {stage === "tile" && tile ? <TileShell tile={tile} /> : <DashboardHome />}
-        {/* قانون ۰۳۵-B/ج-۳: ناوبری پایین (موبایل) + فاصلهٔ محتوا (CLS صفر) */}
-        <div className="bottom-nav-spacer" aria-hidden />
-        <BottomNav />
-      </div>
-    </MotionConfig>
-  );
+  return <MelkaApp />;
 }

@@ -1,0 +1,81 @@
+{
+  "schema": "melka-pn013-phase4-budget",
+  "generatedAt": "2026-10-07T13:30:00Z",
+  "method": "سه اجرای کامل scripts/perf-budget.sh (فاصلهٔ ۴۵ ثانیه‌ای برای پنجرهٔ نرخ ورود) + سنجهٔ مستقیم API P95 و RAM",
+  "runs": {
+    "ramProductionMB": [
+      173,
+      198,
+      209
+    ],
+    "ramAvg": 193.3,
+    "note": "مقادیر مرورگر هر سه اجرا هم‌روند بودند (LCP ۵۵۶-۶۲۰ · CLS ۰ · INP ۷۷-۸۶)؛ فایل رسمی اجرای سوم"
+  },
+  "table": [
+    {
+      "metric": "Initial JS",
+      "target": "< 300KB",
+      "value": "281KB (سنجهٔ رسمی مرورگر، شامل پیش‌واکشی) · 192KB (فایل‌های ورودی مسیر /)",
+      "pass": true,
+      "evidence": "قبل: 299.5KB → بعد: 192.1KB (−۳۶٪)"
+    },
+    {
+      "metric": "LCP",
+      "target": "< 2.5s",
+      "value": "556ms",
+      "pass": true
+    },
+    {
+      "metric": "INP",
+      "target": "< 200ms",
+      "value": "81ms",
+      "pass": true
+    },
+    {
+      "metric": "CLS",
+      "target": "< 0.1",
+      "value": "0",
+      "pass": true
+    },
+    {
+      "metric": "API P95",
+      "target": "< 500ms",
+      "value": "3-12ms (سه نقطهٔ پایانی × ۲۰ درخواست × دو سنجهٔ مستقل)",
+      "pass": true
+    },
+    {
+      "metric": "Tile open",
+      "target": "< 1s",
+      "value": "73-89ms",
+      "pass": true
+    },
+    {
+      "metric": "Login→Dashboard",
+      "target": "< 2s (قرارداد اسکریپت)",
+      "value": "909ms",
+      "pass": true,
+      "note": "مبنا ۲۹۳ms — مبادلهٔ مستند با ورودی سبک‌تر؛ تجزیهٔ کامل در phase4-shell.json"
+    },
+    {
+      "metric": "Tile→First Insight",
+      "target": "< 2s",
+      "value": "6-8ms",
+      "pass": true
+    },
+    {
+      "metric": "RAM production",
+      "target": "< 500MB",
+      "value": "193MB میانگین سه اجرا (173/198/209)",
+      "pass": true
+    },
+    {
+      "metric": "RAM Build پیک",
+      "target": "< 1.5GB",
+      "value": "1873MB",
+      "pass": false,
+      "note": "همان PARTIAL مستند PN-006 BLOCK 2 — کف ابزار روی ۲vCPU/3.9GB (بدهی D1 سمت مالک: تیکت 4c/8GB ارسال نشده)"
+    }
+  ],
+  "verdict": "۱۱/۱۲ سبز · ۱ PARTIAL مستند (D1) — عین نتیجهٔ PN-006 با پس‌رفت صفر در هر سنجهٔ رسمی پس از جزیره‌سازی",
+  "officialFile": "download/pn006/perf-budget.json (اجرای سوم — خروجی رسمی گارد)"
+}

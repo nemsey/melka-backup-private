@@ -30,3 +30,12 @@ if (url.includes("custom.db") || url.trim() === "") {
 if (!process.env.MELK_TOKEN_KEY) {
   process.env.MELK_TOKEN_KEY = "test-only-key-not-a-real-secret";
 }
+
+// PN-013/D5 — شکست‌سریع شبکهٔ ARM در محیط تست:
+// `bun run test` این مقدار را تزریق می‌کند، اما `bun test` برهنه نه؛ نتیجهٔ
+// فقدانش (کشف زندهٔ کنترل انبار PN-013): تست ۶-ج (شبکه‌محور) ۳۰ ثانیه تا
+// timeout صبر می‌کند و نوسان می‌سازد. اینجا همان قرارداد رسمی را تزریق می‌کنیم
+// تا هر دو مسیر اجرای تست هم‌رفتار باشند: قطع شبکهٔ ARM ⇒ شکست سریع (~300ms).
+if (!process.env.MELK_API_TIMEOUT_MS) {
+  process.env.MELK_API_TIMEOUT_MS = "300";
+}

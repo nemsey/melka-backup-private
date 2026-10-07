@@ -2,7 +2,7 @@
   "schema": "melka-pn012-api-versioning",
   "generatedAt": "2026-10-07T09:09:02.271Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 68,
+  "totalRoutes": 69,
   "created": 68,
   "routes": [
     {
@@ -276,6 +276,19 @@
     {
       "aliasOf": "/api/users/lookup",
       "v1": "/api/v1/users/lookup"
+    },
+    {
+      "aliasOf": "/api/runtime/metrics",
+      "v1": "/api/v1/runtime/metrics"
     }
-  ]
+  ],
+  "amendedBy": {
+    "workOrder": "PN-013 مرحلهٔ ۶ (Observability)",
+    "date": "2026-10-07",
+    "change": "افزودن runtime/metrics + آینهٔ v1 (۶۸→۶۹) — نامتغیر تعدادی با گارد boot-secrets (۶۹=۶۹) حفظ شد",
+    "added": [
+      "/api/runtime/metrics"
+    ],
+    "originalManifest": "upload/.survival/PN-012-20261007/docs/pn012/api-versioning.json (۶۸ — سند تاریخی دست‌نخورده)"
+  }
 }
