@@ -1,0 +1,53 @@
+{
+  "schema": "melka-pn014-end-gate",
+  "order": "ملکا-شورا-ن۰۱۸-۱۴۰۵ · PN-014 · مرحلهٔ ۱۱",
+  "date": "2026-10-07T17:12Z",
+  "tests": {
+    "run1": { "pass": 1989, "fail": 0, "expect": 95684, "time": "45.44s" },
+    "run2": { "pass": 1989, "fail": 0, "expect": 96357, "time": "44.73s" },
+    "identical": true,
+    "record": "رکورد جدید پروژه: ۱۹۸۹/۰ ×۲ (قبلی ۱۹۵۳ — پنال: +۶ مسیر تحویل + ۱۳ گارد بدهی + ۱ تایمر احیا + ۱۶ هوشمندی تطبیق)"
+  },
+  "guards": {
+    "audit-repository-boundary --strict": "PASS — صفر فراخوانی db.* در روت‌ها (شامل روت تازهٔ search لاغر)",
+    "audit-intelligence-boundary --strict": "PASS — هیچ ریشهٔ خالصی از مسیر ارزشی به Prisma/lib-db نمی‌رسد",
+    "audit-log-safety": "PASS — صفر کلید حساس/موبایل خام در لاگ",
+    "audit-reproducibility --strict": "PASS ۶/۶ — پس از بیلد نهایی روی HEAD 5c530fa + ری‌استارت (پیش از آن: ۴سبز/۲قرمزِ مورد انتظار D7-الگو — BUILD_ID≠HEAD تا بیلد پایانی؛ پس از بیلد ۶/۶)",
+    "audit-boot-secrets ساختاری": "PASS",
+    "audit-boot-secrets --live": "PASS — سازگاری سه‌لایه با اثر انگشت یکسان"
+  },
+  "ci": "پیش از دروازه، کل زنجیرهٔ کیفیت سبز بود: tsc صفر خطا ×۲ · lint صفر خطا (۱ هشدار مبنا) · تست ×۲ یکسان",
+  "survivalPackage": {
+    "chainIndex": 15,
+    "package": "PN-014-20261007",
+    "files": 118,
+    "sizeMB": 427,
+    "dbVacuum": { "sizeMB": 257, "md5": "d637a2d7…" },
+    "anchor": "MANIFEST بستهٔ ۱۴ (md5 6c6c03ed2712…)",
+    "chainVerified": "۱۴ وارسی در ۵ بستهٔ زنجیره‌دار — سبز"
+  },
+  "versionStamp": {
+    "api": "5c530fa-20261007-1709",
+    "metaTag": "5c530fa",
+    "footer": "همان /api/version زنده (VersionBadge)",
+    "head": "5c530fa",
+    "fingerprint": "5c530fa171d4…",
+    "identical": true
+  },
+  "mirror": {
+    "main": "5c530fa171d4695a862cf50f43293b38e9616b76 = HEAD ✓ (push زنده + راستی‌آزمایی ls-remote)",
+    "privacyGuard": "PASS زنده (پروب ناشناس 403) — شرط D3"
+  },
+  "worker": {
+    "jobs": 7,
+    "new": ["privacy-guard (D3)", "size-guard (D4)"],
+    "supervisorFix": "تایمر احیا هم‌اکنون همیشه نصب می‌شود — درس مرگ خاموش بسته شد",
+    "liveWitness": "privacy-guard: PASS/403 · size-guard: ALERT واقعی (بقا 3201.8MB > 1GB)"
+  },
+  "publishFix": {
+    "standaloneMB": "177 (از 1200)",
+    "packageTarGzMB": "95 (شبیه‌سازی کامل خط لوله)",
+    "deliverLinks": "همه 200 از مسیر تازهٔ /deliver (route)"
+  },
+  "verdict": "END_GATE_PASS"
+}
