@@ -1,0 +1,34 @@
+{
+ "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+ "workOrder": "PN-016",
+ "stage": "۷ — سه گارد کاربران",
+ "at": "2026-10-07T23:02:31.203667+00:00",
+ "guards": {
+  "audit-user-roles.sh": {
+   "exit": 0,
+   "stdout": [
+    "کاربران: 3 | نقض: 0 | PASS"
+   ]
+  },
+  "audit-permission-boundary.sh": {
+   "exit": 0,
+   "stdout": [
+    "کاربران: 3 | سطر مجوز: 12 | نقض: 0 | PASS"
+   ]
+  },
+  "audit-activity-log.sh": {
+   "exit": 0,
+   "stdout": [
+    "نقض: 0 | PASS"
+   ]
+  }
+ },
+ "ciIntegration": "گام ۵-ه / ۵-و / ۵-ز در scripts/ci.sh",
+ "liveExits": {
+  "G1": 0,
+  "G2": 0,
+  "G3": 0
+ },
+ "verdict": "PASS 3/3",
+ "tests": "۲۳ تست تازه در tests/pn016-users.test.ts — مجموع ۲۰۲۹/۰ (رکورد جدید)"
+}

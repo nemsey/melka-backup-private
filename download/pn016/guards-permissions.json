@@ -1,0 +1,32 @@
+{
+ "task": "PN-016 — گارد audit-permission-boundary",
+ "at": "2026-10-07T23:02:14.188475+00:00",
+ "checks": [
+  {
+   "check": "tileId در رجیستری + مالک مجاز",
+   "permissionRows": 12
+  },
+  {
+   "check": "OWNER بدون سطر مجوز"
+  },
+  {
+   "check": "یگانگی (user, tile)",
+   "unique": 12
+  },
+  {
+   "check": "GUEST بدون کاشی"
+  },
+  {
+   "check": "غیرفعال با مجوز باقی‌مانده",
+   "count": 0
+  },
+  {
+   "check": "واکاوی زندهٔ resolveAllowedTiles",
+   "probed": 3
+  }
+ ],
+ "users": 3,
+ "permissionRows": 12,
+ "violations": [],
+ "verdict": "PASS"
+}

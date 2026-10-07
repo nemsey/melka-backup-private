@@ -1,0 +1,33 @@
+{
+ "task": "PN-016 — گارد audit-activity-log",
+ "at": "2026-10-07T23:02:14.234441+00:00",
+ "checks": [
+  {
+   "check": "بدون فعالیت یتیم",
+   "orphans": 0
+  },
+  {
+   "check": "action در واژه‌نامه",
+   "sampled": 0,
+   "invalid": 0
+  },
+  {
+   "check": "ورودهای اخیر ثبت‌شده",
+   "usersWithRecentLogin": 0
+  },
+  {
+   "check": "UserSession ↔ Session پیوند",
+   "orphans": 0
+  },
+  {
+   "check": "هم‌خوانی ابطال",
+   "mismatches": 0
+  },
+  {
+   "check": "تک‌نقطهٔ نوشتن UserActivity (recordUserActivity)",
+   "directWriters": 0
+  }
+ ],
+ "violations": [],
+ "verdict": "PASS"
+}

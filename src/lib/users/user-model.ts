@@ -65,7 +65,8 @@ const ROLE_OPS: Record<UserRole, Pick<TilePermission, "canRead" | "canWrite" | "
 const ROLE_TILES: Record<UserRole, string[]> = {
   OWNER: ALL_TILE_IDS,
   MANAGER: ALL_TILE_IDS,
-  EXPERT: ["arm-listings", "arm-requests", "transactions-contracts", "experts", "smart-matching", "file-finder", "listing", "request"],
+  // EXPERT: شش کاشی قابل‌مدیریت + دو کاشی آزاد (listing/request از PN-008 در دسترس همهٔ واردشده‌هاست — سطر مجوز لازم ندارد)
+  EXPERT: ["arm-listings", "arm-requests", "transactions-contracts", "experts", "smart-matching", "file-finder"],
   VIEWER: ALL_TILE_IDS,
   GUEST: [], // «فقط خانه» — بند ۵.۲.۲
 };
