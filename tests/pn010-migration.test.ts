@@ -41,7 +41,7 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     expect(INSTRUMENTATION).toContain("MELK_AUTO_RECOVERY");
   });
 
-  test("۴-۴ رجیستری: پنج کار + ترمیم DIAG-DATA-005 در Worker", () => {
+  test("۴-۴ رجیستری: پنج کار اصلی + دو گارد بدهی PN-014 در Worker", () => {
     const jobs = buildWorkerJobs(null as never); // رجیستری خالص — db فقط به run پاس می‌شود
     const ids = jobs.map((j) => j.id);
     expect(ids).toContain(WORKER_JOB_IDS.intelligenceCycle);
@@ -49,7 +49,10 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     expect(ids).toContain(WORKER_JOB_IDS.mirrorCycle);
     expect(ids).toContain(WORKER_JOB_IDS.logRotate);
     expect(ids).toContain(WORKER_JOB_IDS.backupRotation);
-    expect(ids.length).toBe(5);
+    // PN-014/D3+D4 — دو گارد تازه (فاصله‌ها در تست‌های همان پرونده)
+    expect(ids).toContain(WORKER_JOB_IDS.privacyGuard);
+    expect(ids).toContain(WORKER_JOB_IDS.sizeGuard);
+    expect(ids.length).toBe(7);
   });
 
   test("۴-۵ فاصله‌ها عین دیمن‌های قبلی (صفر قطع خدمت در رفتار زمانی)", () => {
@@ -69,12 +72,16 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     process.env.MELK_CATALOG_DAEMON = "disabled";
     process.env.MELK_MIRROR_JOB = "disabled";
     process.env.MELK_BACKUP_ROTATION = "disabled";
+    process.env.MELK_PRIVACY_GUARD = "disabled";
+    process.env.MELK_SIZE_GUARD = "disabled";
     const jobs = buildWorkerJobs(null as never);
     const ids = jobs.map((j) => j.id);
     expect(ids).not.toContain(WORKER_JOB_IDS.intelligenceCycle);
     expect(ids).not.toContain(WORKER_JOB_IDS.catalogCycle);
     expect(ids).not.toContain(WORKER_JOB_IDS.mirrorCycle);
     expect(ids).not.toContain(WORKER_JOB_IDS.backupRotation);
+    expect(ids).not.toContain(WORKER_JOB_IDS.privacyGuard);
+    expect(ids).not.toContain(WORKER_JOB_IDS.sizeGuard);
     expect(ids).toEqual([WORKER_JOB_IDS.logRotate]); // چرخش لاگ همیشه فعال
   });
 

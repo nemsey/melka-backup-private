@@ -211,11 +211,16 @@ describe("PN-011 خامسا — کاشی تطبیق: توضیحات توسعه�
   });
 
   test("۲۸) صفحهٔ M5: کارشناس + شعبه + دکمهٔ مشاهده در کاشی دیگر", () => {
+    // PN-014 — عملکرد به کارت/گفت‌وگو مهاجرت کرد (همان تضمین، مسیر تازه):
+    // صفحه + MatchCard + MatchDetailsDialog با هم «کاشی تطبیق» را می‌سازند.
     const page = readFileSync(path.join(ROOT, TILES, "smart-matching/SmartMatchingPage.tsx"), "utf8");
-    expect(page).toContain("c.info.expertName");
-    expect(page).toContain("c.info.expertBranch");
-    expect(page).toContain("مشاهده در کاشی");
-    expect(page).toContain("openTile(tileId, \"management-dashboard\", { code })");
+    const card = readFileSync(path.join(ROOT, TILES, "smart-matching/MatchCard.tsx"), "utf8");
+    const dialog = readFileSync(path.join(ROOT, TILES, "smart-matching/MatchDetailsDialog.tsx"), "utf8");
+    const tileWhole = page + card + dialog;
+    expect(tileWhole).toContain("info?.expertName");
+    expect(tileWhole).toContain("info.expertBranch");
+    expect(tileWhole).toContain("مشاهده در کاشی");
+    expect(page).toContain('openTile(tileId, "management-dashboard", { code })');
   });
 
   test("۲۹) صفحهٔ M5: تنظیم showReasons فعال شد (تنظیم مرده زنده شد)", () => {

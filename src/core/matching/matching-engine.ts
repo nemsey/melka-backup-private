@@ -225,16 +225,20 @@ export interface MatchingEngineOptions {
   weights?: Partial<MatchWeights>;
   /** سقف کاندیدای بررسی‌شده در هر جهت (کارایی) */
   candidateLimit?: number;
+  /** PN-014 — سقف خروجی (پیش‌فرض TOP_N=5 برای سازگاری؛ کاشی جدید = ۲۰ برای بندبندی سه‌گانه) */
+  topN?: number;
 }
 
 export class MatchingEngine {
   private readonly db: PrismaClient;
   readonly tier: LearningTier;
   readonly weights: MatchWeights;
+  private readonly topN: number;
 
   constructor(opts: MatchingEngineOptions) {
     this.db = opts.db;
     this.tier = opts.tier ?? 3;
+    this.topN = opts.topN ?? TOP_N;
     const w = { ...BASE_MATCH_WEIGHTS };
     if (opts.weights) Object.assign(w, opts.weights);
     // نرمال‌سازی مجموع روی ۱
@@ -326,7 +330,7 @@ export class MatchingEngine {
       direction: "listing_to_request",
       listingCode,
       requestId: null,
-      candidates: scored.slice(0, TOP_N),
+      candidates: scored.slice(0, this.topN),
       weightsUsed: this.weights,
       tier: this.tier,
       evaluatedAt: new Date().toISOString(),
@@ -401,7 +405,7 @@ export class MatchingEngine {
       direction: "request_to_listing",
       listingCode: null,
       requestId: r.requestCode ?? r.id,
-      candidates: scored.slice(0, TOP_N),
+      candidates: scored.slice(0, this.topN),
       weightsUsed: this.weights,
       tier: this.tier,
       evaluatedAt: new Date().toISOString(),
