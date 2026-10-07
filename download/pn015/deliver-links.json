@@ -1,0 +1,260 @@
+{
+  "schema": "melka-pn015-file-law-v3",
+  "testedAt": "2026-10-07T21:02:13.098265Z",
+  "previewDomain": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+  "total": 50,
+  "ok": 50,
+  "fail": 0,
+  "rows": [
+    {
+      "scope": "local",
+      "path": "/deliver/PN-015-ALL.zip",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-015-SHA256SUMS.txt",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-015-REJOIN.txt",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-015-survival-part00.bin",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-015-survival-part08.bin",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn015/baseline.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn015/recovery.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn015/chunk-audit.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn015/preview-verify.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn015/reset-guard.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn015/pruning.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn015/K4-result.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn015/deliver-links-local.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn015/screens/05-preview-home-owner.png",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-014-ALL.zip",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-014-FINAL-REPORT.md",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-014-survival-part00.bin",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn014/phase5.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-013-ALL.zip",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-013-FINAL-REPORT.md",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn013/end-gate.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/PN-012-ALL.zip",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/pn012/diagnosis.json",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/test-minimal.zip",
+      "status": 200
+    },
+    {
+      "scope": "local",
+      "path": "/deliver/archive/PN-009-20261006/CHAIN.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-015-ALL.zip",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-015-SHA256SUMS.txt",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-015-REJOIN.txt",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-015-survival-part00.bin",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-015-survival-part08.bin",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn015/baseline.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn015/recovery.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn015/chunk-audit.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn015/preview-verify.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn015/reset-guard.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn015/pruning.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn015/K4-result.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn015/deliver-links-local.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn015/screens/05-preview-home-owner.png",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-014-ALL.zip",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-014-FINAL-REPORT.md",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-014-survival-part00.bin",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn014/phase5.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-013-ALL.zip",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-013-FINAL-REPORT.md",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn013/end-gate.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/PN-012-ALL.zip",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/pn012/diagnosis.json",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/test-minimal.zip",
+      "status": 200
+    },
+    {
+      "scope": "preview",
+      "path": "/deliver/archive/PN-009-20261006/CHAIN.json",
+      "status": 200
+    }
+  ]
+}
