@@ -128,29 +128,10 @@ export class RuntimeSupervisor {
     if (process.env.MELK_WORKER === "disabled") {
       return { ok: true, action: "no-op", detail: "MELK_WORKER=disabled — معماری تک‌فرایندی (Web)" };
     }
-    // ۱) Worker زنده است؟ (ضربان تازه) — idempotent
-    if (isWorkerAlive()) {
-      return { ok: true, action: "already-alive" };
-    }
-    // ۲) فروش Worker — مستقل + بدون نگهداشتن والد (بقای دون‌والد؛ درس PN-004)
-    const spawnFn = options?.spawnFn ?? ((entry: string) =>
-      spawn(bunBinary(), [entry], {
-        cwd: REPO_ROOT,
-        detached: true,
-        stdio: "ignore",
-        env: { ...process.env, MELKA_REPO_DIR: REPO_ROOT, MELK_ROLE: "worker" },
-      }));
-    try {
-      const child = spawnFn(WORKER_ENTRY);
-      child.unref?.();
-      if (g.__melkSupervisor) {
-        g.__melkSupervisor.child = child;
-        g.__melkSupervisor.spawns += 1;
-      }
-    } catch (e) {
-      return { ok: false, action: "no-op", detail: `spawn failed: ${String(e)}` };
-    }
-    // ۳) بازرسی سبک دوره‌ای — احیای Worker در صورت مرگ (فقط یک تایمر؛ نه دیمن)
+    // ── نصب بازرسی دوره‌ای — PN-014: همیشه، حتی وقتی Worker همین حالا زنده است.
+    // درس زندهٔ این پرونده: boot سرور در حالِ «already-alive» با return زودهنگان
+    // تایمر احیا را نصب نمی‌کرد → مرگ خاموش Worker بعدها هیچ‌کس را وادار به
+    // احیا نمی‌کرد (worker ساعت‌ها مرده می‌ماند بدون کسی که ببیند).
     if (!g.__melkSupervisor?.livenessTimer && options?.livenessIntervalMs !== 0 && process.env.MELK_SUPERVISOR_RESPAWN !== "disabled") {
       const intervalMs = options?.livenessIntervalMs ?? LIVENESS_INTERVAL_MS_DEFAULT;
       const t = setInterval(() => {
@@ -172,6 +153,28 @@ export class RuntimeSupervisor {
       }, intervalMs);
       t.unref?.();
       if (g.__melkSupervisor) g.__melkSupervisor.livenessTimer = t;
+    }
+    // ۱) Worker زنده است؟ (ضربان تازه) — idempotent
+    if (isWorkerAlive()) {
+      return { ok: true, action: "already-alive" };
+    }
+    // ۲) فروش Worker — مستقل + بدون نگهداشتن والد (بقای دون‌والد؛ درس PN-004)
+    const spawnFn = options?.spawnFn ?? ((entry: string) =>
+      spawn(bunBinary(), [entry], {
+        cwd: REPO_ROOT,
+        detached: true,
+        stdio: "ignore",
+        env: { ...process.env, MELKA_REPO_DIR: REPO_ROOT, MELK_ROLE: "worker" },
+      }));
+    try {
+      const child = spawnFn(WORKER_ENTRY);
+      child.unref?.();
+      if (g.__melkSupervisor) {
+        g.__melkSupervisor.child = child;
+        g.__melkSupervisor.spawns += 1;
+      }
+    } catch (e) {
+      return { ok: false, action: "no-op", detail: `spawn failed: ${String(e)}` };
     }
     return { ok: true, action: "spawned" };
   }
