@@ -1094,6 +1094,96 @@ model PersonnelAccess {
   updatedAt     DateTime @updatedAt
 }
 
+/// PN-016 — سیستم مدیریت کاربران پیشرفته (شورا-ن۰۲۰ بند ۵.۲.۱).
+/// User = منبع یکتای هویت هر انسانِ سامانه (پرسنل با personnelCode، مهمان با mobile).
+/// نکته: Prisma روی SQLite از enum پشتیبانی نمی‌کند → role به‌صورت String با
+/// اعتبارسنجی سطح-اپ (USER_ROLES در src/lib/users/user-model.ts).
+model User {
+  id             String    @id @default(cuid())
+  /// کد پرسنلی (یکتا؛ فقط برای کاربران پرسنلی — مهمان null)
+  personnelCode  String?   @unique
+  /// موبایل (یکتا؛ فقط برای مهمان‌ها — پرسنل می‌تواند null باشد)
+  mobile         String?   @unique
+  fullName       String
+  /// OWNER | MANAGER | EXPERT | VIEWER | GUEST (اعتبارسنجی سطح-اپ)
+  role           String    @default("VIEWER")
+  /// شعبه (از PM/businesses)
+  branchTitle    String?
+  /// سمت فارسی (از PM/roleTitle — مثال: «مشاور املاک»)
+  roleTitleFa    String?
+  /// غیرفعال = ورود ممنوع؛ نشست‌های فعال باقی می‌مانند تا انقضا/بستن دستی
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  /// چه کسی ساخت (personnelCode مالک یا userId)
+  createdBy      String?
+  lastLoginAt    DateTime?
+  lastLoginIp    String?
+  failedAttempts Int       @default(0)
+  /// قفل حساب تا این لحظه (نرخ‌سنج ورود)
+  lockedUntil    DateTime?
+  /// JSON آزاد (مثال: منبع ساخت: seed|pm-backfill|self-provision)
+  metadata       String?
+
+  permissions UserPermission[]
+  activityLog UserActivity[]
+  sessions     UserSession[]
+}
+
+/// PN-016 — مجوزهای دقیق هر کاربر روی هر کاشی (ماتریس کاشی × عملیات).
+/// OWNER از این جدول عبور می‌کند (دسترسی کامل، بدون محدودیت — بند ۵.۲.۲).
+model UserPermission {
+  id        String  @id @default(cuid())
+  userId    String
+  /// شناسهٔ کاشی از MANAGEABLE_TILES (مثال: arm-listings)
+  tileId    String
+  canRead   Boolean @default(false)
+  canWrite  Boolean @default(false)
+  canDelete Boolean @default(false)
+  canExport Boolean @default(false)
+  canSync   Boolean @default(false)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tileId])
+}
+
+/// PN-016 — سیاههٔ فعالیت هر کاربر (مکمل AuditLog امنیتی؛ این‌جا کاربر-محور است).
+/// action: login | logout | view | edit | delete | export | sync | role-change | permission-change
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  tileId    String?
+  /// شناسهٔ منبع (مثال: کد آگهی/درخواست/نشست)
+  resourceId String?
+  details   String?
+  ip        String?
+  userAgent String?
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@index([action, timestamp])
+}
+
+/// PN-016 — نقشهٔ نشست‌های هر کاربر (برای UI بستن از راه دور).
+/// توکن خام هرگز ذخیره نمی‌شود — tokenHash عین Session اصلی (SHA-256).
+/// بستن از راه دور = revoke در Session اصلی + isActive=false این‌جا.
+model UserSession {
+  id             String   @id @default(cuid())
+  userId         String
+  /// هش توکن نشست = همان tokenHash جدول Session (پیوند منطقی)
+  tokenHash      String   @unique
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+  lastActivityAt DateTime @default(now())
+  isActive       Boolean  @default(true)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+}
+
 /// P6.5-12 — رجیستری کارگزاری‌های صادره (special-properties سامانه ARM).
 /// هر «کارگزاری» = قرارداد نمایندگی میان مشاور و مالک برای یک ملک؛
 /// فایل PDF آن در خود سامانه ARM هم «تولیدی از همین داده» است (چاپ کارگزاری صادر شده).

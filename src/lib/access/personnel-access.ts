@@ -110,14 +110,36 @@ export async function deletePersonnelAccess(personnelCode: string): Promise<bool
 }
 
 /**
- * کاشی‌های مجاز یک کاربر — تک‌نقطهٔ تصمیم (بند ۷.۴):
+ * کاشی‌های مجاز یک کاربر — تک‌نقطهٔ تصمیم (بند ۷.۴ + PN-016):
  *   OWNER → همهٔ کاشی‌ها (بی‌محدودیت، بدون استثنا)
- *   CONSULTANT + رکورد full → همه
- *   CONSULTANT + رکورد limited → فقط allowedTiles
- *   CONSULTANT + رکورد none یا بدون رکورد → [] (تنظیمات جداگانه است — همیشه مجاز)
+ *   ── PN-016 (سلسله‌مراتب جدید؛ اولویت با رجیستری User) ──
+ *   User موجود + فعال + نقش OWNER → همه
+ *   User موجود + فعال + GUEST → [] («فقط خانه» — بند ۵.۲.۲)
+ *   User موجود + فعال + سایر نقش‌ها → کاشی‌های دارای canRead در UserPermission
+ *   User غیرفعال → [] (دفاع عمقی؛ ورود همان‌جا رد می‌شود)
+ *   ── مسیر قدیمی (سازگاری) ──
+ *   بدون رکورد User → PersonnelAccess (full/limited/none) — بدون رکورد = none
  */
 export async function resolveAllowedTiles(role: "OWNER" | "CONSULTANT", personnelCode: string): Promise<{ level: AccessLevel; tiles: string[] }> {
   if (role === "OWNER") return { level: "full", tiles: MANAGEABLE_TILES.map((t) => t.id) };
+
+  // PN-016 — رجیستری کاربران (منبع جدید حقیقت؛ PersonnelAccess فقط fallback)
+  try {
+    const { db } = await import("@/lib/db");
+    const user = await db.user.findUnique({ where: { personnelCode } }).catch(() => null);
+    if (user) {
+      if (!user.isActive) return { level: "none", tiles: [] };
+      if (user.role === "OWNER") return { level: "full", tiles: MANAGEABLE_TILES.map((t) => t.id) };
+      if (user.role === "GUEST") return { level: "none", tiles: [] }; // «فقط خانه»
+      const perms = await db.userPermission.findMany({ where: { userId: user.id } });
+      const tiles = MANAGEABLE_TILES.map((t) => t.id).filter((id) => perms.some((p) => p.tileId === id && p.canRead));
+      const level: AccessLevel = tiles.length === 0 ? "none" : tiles.length === MANAGEABLE_TILES.length ? "full" : "limited";
+      return { level, tiles };
+    }
+  } catch {
+    // DB در دسترس نیست → افت به مسیر قدیمی (رفتار PN-008 دست‌نخورده)
+  }
+
   const row = await db.personnelAccess.findUnique({ where: { personnelCode } }).catch(() => null);
   if (!row) return { level: "none", tiles: [] };
   const lvl = row.level as AccessLevel;

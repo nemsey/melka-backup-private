@@ -1,0 +1,151 @@
+{
+  "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+  "workOrder": "PN-016",
+  "stage": "۱ — تشخیص دقیق خطای کاربران",
+  "at": "2026-10-07T22:29:56.478Z",
+  "personnelAccessRows": 0,
+  "personnelAccessRecords": [],
+  "nonOwnerSessions": [
+    {
+      "personnelCode": "410031338",
+      "displayName": "سید امیرمحمد سیدی",
+      "role": "CONSULTANT",
+      "createdAt": "2026-10-06T14:26:52.819Z",
+      "revoked": false
+    },
+    {
+      "personnelCode": "410031338",
+      "displayName": "سید امیرمحمد سیدی",
+      "role": "CONSULTANT",
+      "createdAt": "2026-10-06T10:15:45.766Z",
+      "revoked": false
+    },
+    {
+      "personnelCode": "410031319",
+      "displayName": "نرگس یاوری",
+      "role": "CONSULTANT",
+      "createdAt": "2026-10-06T10:00:55.619Z",
+      "revoked": false
+    },
+    {
+      "personnelCode": "410031320",
+      "displayName": "سید نعمت اله سیدی",
+      "role": "CONSULTANT",
+      "createdAt": "2026-10-05T19:31:08.465Z",
+      "revoked": false
+    },
+    {
+      "personnelCode": "410031320",
+      "displayName": "سید نعمت اله سیدی",
+      "role": "CONSULTANT",
+      "createdAt": "2026-10-05T18:12:06.830Z",
+      "revoked": true
+    }
+  ],
+  "accessDenied": [
+    {
+      "actor": "410031320",
+      "detail": "route=POST /api/pm/connection; requiredRole=OWNER; actualRole=CONSULTANT",
+      "createdAt": "2026-10-06T05:32:05.909Z"
+    },
+    {
+      "actor": "410031320",
+      "detail": "route=POST /api/pm/connection; requiredRole=OWNER; actualRole=CONSULTANT",
+      "createdAt": "2026-10-06T05:32:00.832Z"
+    },
+    {
+      "actor": "410031320",
+      "detail": "route=POST /api/pm/connection; requiredRole=OWNER; actualRole=CONSULTANT",
+      "createdAt": "2026-10-05T19:29:19.311Z"
+    },
+    {
+      "actor": "410031320",
+      "detail": "route=POST /api/pm/connection; requiredRole=OWNER; actualRole=CONSULTANT",
+      "createdAt": "2026-10-05T19:20:29.866Z"
+    },
+    {
+      "actor": "410031320",
+      "detail": "route=POST /api/pm/connection; requiredRole=OWNER; actualRole=CONSULTANT",
+      "createdAt": "2026-10-05T19:20:21.387Z"
+    }
+  ],
+  "personnelLogins": [
+    {
+      "actor": "410031338",
+      "detail": "role=CONSULTANT; armUserType=realtor",
+      "createdAt": "2026-10-06T14:26:52.820Z"
+    },
+    {
+      "actor": "410031338",
+      "detail": "role=CONSULTANT; armUserType=realtor",
+      "createdAt": "2026-10-06T10:15:45.767Z"
+    },
+    {
+      "actor": "410031319",
+      "detail": "role=CONSULTANT; armUserType=realtor",
+      "createdAt": "2026-10-06T10:00:55.620Z"
+    },
+    {
+      "actor": "410031320",
+      "detail": "role=CONSULTANT; armUserType=realtor",
+      "createdAt": "2026-10-05T19:31:08.466Z"
+    },
+    {
+      "actor": "410031320",
+      "detail": "role=CONSULTANT; armUserType=realtor",
+      "createdAt": "2026-10-05T18:12:06.831Z"
+    }
+  ],
+  "liveSimulation": {
+    "description": "فراخوانی مستقیم resolveAllowedTiles با نقش CONSULTANT (عین /api/auth/session خط ۲۳) برای هر کاربر واقعی",
+    "results": [
+      {
+        "personnelCode": "410031338",
+        "displayName": "سید امیرمحمد سیدی",
+        "resolveResult": {
+          "level": "none",
+          "tiles": []
+        }
+      },
+      {
+        "personnelCode": "410031319",
+        "displayName": "نرگس یاوری",
+        "resolveResult": {
+          "level": "none",
+          "tiles": []
+        }
+      },
+      {
+        "personnelCode": "410031320",
+        "displayName": "سید نعمت اله سیدی",
+        "resolveResult": {
+          "level": "none",
+          "tiles": []
+        }
+      }
+    ]
+  },
+  "rootCause": {
+    "hypothesis": "فرضیهٔ ۱ (نبود PersonnelAccess) — تأیید شد",
+    "chain": [
+      "کاربر با کد پرسنلی + OTP واقعی ARM وارد می‌شود (LOGIN_SUCCESS در AuditLog)",
+      "نقش = CONSULTANT (سیستم فعلی فقط OWNER/CONSULTANT دارد)",
+      "resolveAllowedTiles(CONSULTANT, code) → جدول PersonnelAccess خالی (۰ رکورد) → {level:'none', tiles:[]}",
+      "DashboardHome: tiles.length === 0 → سه اسکلتون ابدی — کاربر داشبورد خالی/خطا می‌بیند"
+    ],
+    "secondaryFinding": "۵ رویداد ACCESS_DENIED با actor=410031320 (کد پرسنلی خود مالک) — مربوط به دورهٔ پیش از تنظیم OWNER_PERSONNEL_CODES؛ اکنون env=410031320 تنظیم است و حل شده",
+    "affectedUsers": [
+      {
+        "code": "410031338",
+        "name": "سید امیرمحمد سیدی",
+        "evidence": "۲ نشست CONSULTANT + LOGIN_SUCCESS×2 (armUserType=realtor)"
+      },
+      {
+        "code": "410031319",
+        "name": "نرگس یاوری",
+        "evidence": "۱ نشست CONSULTANT"
+      }
+    ],
+    "emptyStateBehavior": "DashboardHome خط ۷۸: tiles.length===0 → Skeleton دائمی (نه پیام خطا، نه داشبورد) — علامت گزارش‌شدهٔ مالک"
+  }
+}

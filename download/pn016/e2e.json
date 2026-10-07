@@ -1,0 +1,49 @@
+{
+  "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+  "workOrder": "PN-016",
+  "stage": "۸ — آزمون E2E دو کاربر پرسنلی",
+  "at": "2026-10-07T23:05:44.840Z",
+  "server": "http://localhost:3000",
+  "honestBoundary": "پیامک واقعی به کاربران انسانی در سندباکس ارسال نمی‌شود؛ زنجیرهٔ پس-تأیید-ARM کامل اثبات و مسیر ARM با OTP غلط زنده راستی‌آزمایی شد (OTP_INVALID از سامانهٔ واقعی)",
+  "users": [
+    {
+      "personnelCode": "410031338",
+      "fullName": "سید امیرمحمد سیدی",
+      "registryRole": "EXPERT",
+      "sessionRole": "CONSULTANT",
+      "sessionHttp": 200,
+      "tileLevel": "limited",
+      "tileCount": 6,
+      "tilesMatchExpertSet": true,
+      "forbiddenTilesLeaked": [],
+      "adminRouteWithConsultant": 403,
+      "activityRows": 1,
+      "userSessionRow": true,
+      "fixProof": "قبلاً: level=none, tiles=[] → اکنون: {\"level\":\"limited\",\"count\":6}"
+    },
+    {
+      "personnelCode": "410031319",
+      "fullName": "نرگس یاوری",
+      "registryRole": "EXPERT",
+      "sessionRole": "CONSULTANT",
+      "sessionHttp": 200,
+      "tileLevel": "limited",
+      "tileCount": 6,
+      "tilesMatchExpertSet": true,
+      "forbiddenTilesLeaked": [],
+      "adminRouteWithConsultant": 403,
+      "activityRows": 1,
+      "userSessionRow": true,
+      "fixProof": "قبلاً: level=none, tiles=[] → اکنون: {\"level\":\"limited\",\"count\":6}"
+    }
+  ],
+  "ownerAdminRoute": {
+    "http": 200,
+    "totalUsers": 3,
+    "byRole": {
+      "EXPERT": 2,
+      "OWNER": 1
+    }
+  },
+  "verdict": "E2E_PASS — هر دو کاربر: نقش صریح + ۶ کاشی EXPERT + مرز /settings برقرار + سیاههٔ فعالیت ثبت"
+}

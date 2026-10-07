@@ -74,12 +74,18 @@ export function DashboardHome() {
         ))}
       </div>
 
-      {/* اسکلت‌ن نمایشی برای بار اول */}
+      {/* حالت خالی صادقانه — PN-016: اسکلتون ابدی جای پیام روشن (رفع تجربهٔ کاربران بی‌دسترسی) */}
       {tiles.length === 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-56 rounded-xl" />
-          ))}
+        <div
+          className="rounded-2xl border border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center space-y-2"
+          data-testid="home-empty-access"
+        >
+          <p className="text-sm font-bold">هنوز کاشی‌ای برای شما فعال نشده است</p>
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
+            {userRole === "OWNER"
+              ? "کاشی‌ها در حال بارگذاری‌اند — اگر ماندگار شد، اتصال را از «تنظیمات عمومی» بررسی کنید."
+              : "برای فعال‌سازی دسترسی با مدیر سامانه (مالک) تماس بگیرید — از بخش «تنظیمات عمومی ← مدیریت کاربران» نقش و کاشی‌های شما تعیین می‌شود."}
+          </p>
         </div>
       )}
 

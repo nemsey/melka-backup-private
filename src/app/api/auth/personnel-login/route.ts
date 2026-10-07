@@ -1,10 +1,12 @@
 /**
- * POST /api/auth/personnel-login — PN-008 BLOCK 6 (بند ۶.۲)
+ * POST /api/auth/personnel-login — PN-008 BLOCK 6 (بند ۶.۲) + PN-016 گسترش با رجیستری User
  * ---------------------------------------------------------------------------
  * مسیر ورود با کد پرسنلی + کد پیامکی (عین verify-otp، با قرارداد نام‌گذاری شورا):
  *   ورودی: {personnelCode, otp}
  *   · personnelCode ∈ OWNER_PERSONNEL_CODES ⇒ نقش OWNER — دسترسی کامل بی‌محدودیت
- *   · سایر کدها ⇒ نقش CONSULTANT — دسترسی طبق PersonnelAccess (BLOCK 7)
+ *   · سایر کدها ⇒ رجیستری User (PN-016): نقش از User.role؛ بدون User →
+ *     ساخت خودکار VIEWER (کمترین امتیاز — بند ۵.۲.۳ مسیر ۲)
+ *   · User غیرفعال ⇒ رد ورود 403 (دفاع عمقی)
  * نرخ‌سنج: همان سبد VERIFY_OTP (هر دو مسیر ورود پرسنلی سهمیهٔ واحد دارند — ضد بروت‌فورس).
  */
 
@@ -15,9 +17,12 @@ import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse } from "@/lib/auth/guard";
 import { createSession, audit } from "@/lib/auth/session";
+import { hashToken } from "@/lib/auth/crypto";
 import { logAuth } from "@/lib/logger";
 import { clientIp } from "@/lib/auth/client-ip";
 import { isOwnerPersonnelCode } from "@/lib/access/owner-codes";
+import { resolvePersonnelLoginUser, recordLoginSession } from "@/lib/services/users-service";
+import { recordUserActivity } from "@/lib/users/user-model";
 
 export async function POST(request: NextRequest) {
   let personnelCode = "";
@@ -44,18 +49,42 @@ export async function POST(request: NextRequest) {
     const result = await provider.verifyOtp(personnelCode, otp);
     await recordAttempt(personnelCode, "VERIFY_OTP", true, ip);
 
-    // قانون هویت دوگانهٔ مالک — تضمین نهایی سمت روت (حتی اگر لایه provider عوض شد):
-    // کد پرسنلی مالک از این مسیر هم ⇒ OWNER با دسترسی کامل.
+    // ── PN-016 — رجیستری کاربران (بند ۵.۲.۳ مسیر ۲) ─────────────────────
+    const resolution = await resolvePersonnelLoginUser(personnelCode, result.user.displayName ?? null);
+    if (!resolution.user.isActive) {
+      await audit("PERSONNEL_LOGIN_BLOCKED", personnelCode, "user-deactivated");
+      throw new MelkApiError("FORBIDDEN", "حساب کاربری شما غیرفعال شده است. با مدیر سامانه تماس بگیرید.", 403, false);
+    }
+    const effectiveRole = resolution.effectiveRole; // OWNER | MANAGER | EXPERT | VIEWER | GUEST
+    const displayName = result.user.displayName || resolution.user.fullName;
+
     const user = isOwnerPersonnelCode(personnelCode)
-      ? { ...result.user, role: "OWNER" as const, displayName: result.user.displayName || "مالک سامانه" }
-      : { ...result.user, role: "CONSULTANT" as const };
+      ? { ...result.user, role: "OWNER" as const, displayName: displayName || "مالک سامانه" }
+      : { ...result.user, role: resolution.legacyRole as "OWNER" | "CONSULTANT", displayName: displayName || resolution.user.fullName };
 
     const { token, context } = await createSession(
       user,
       { ip, userAgent: request.headers.get("user-agent") ?? undefined },
       result.armTokens
     );
-    await audit("PERSONNEL_LOGIN_SUCCESS", personnelCode, `role=${user.role}; path=personnel-login; armUserType=${result.armTokens.userType ?? "-"}`);
+
+    // نقشهٔ نشست + سیاههٔ فعالیت + آخرین ورود (PN-016)
+    await recordLoginSession({
+      userId: resolution.user.id,
+      tokenHash: hashToken(token),
+      ip,
+      userAgent: request.headers.get("user-agent") ?? undefined,
+      expiresAt: new Date(context.expiresAt),
+    });
+    await recordUserActivity({
+      userId: resolution.user.id,
+      action: "login",
+      details: JSON.stringify({ path: "personnel-login", effectiveRole, newlyProvisioned: resolution.isNewlyProvisioned, armUserType: result.armTokens.userType ?? null }),
+      ip,
+      userAgent: request.headers.get("user-agent") ?? undefined,
+    });
+
+    await audit("PERSONNEL_LOGIN_SUCCESS", personnelCode, `role=${user.role}; effectiveRole=${effectiveRole}; path=personnel-login; armUserType=${result.armTokens.userType ?? "-"}${resolution.isNewlyProvisioned ? "; auto-provisioned=VIEWER" : ""}`);
 
     return Response.json({
       ok: true,
@@ -65,6 +94,7 @@ export async function POST(request: NextRequest) {
         personnelCode: context.personnelCode,
         displayName: context.displayName,
         role: context.role,
+        effectiveRole, // نقش پنج‌سطحی PN-016 (نمایش و UI)
         expiresAt: context.expiresAt,
       },
     });

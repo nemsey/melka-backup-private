@@ -72,6 +72,13 @@ tail -1 /tmp/pn007-ci-audit3.log
 # PN-012 BLOCK 5 گارد تازه — بحران‌های ۴/۵/۶ هرگز بازنگردند:
 bash scripts/audit-boot-secrets.sh > /tmp/pn012-ci-audit4.log 2>&1 || { echo "✗ گام ۵-د: boot-secrets (سازوکار بازیابی راز)"; tail -8 /tmp/pn012-ci-audit4.log; exit 1; }
 tail -1 /tmp/pn012-ci-audit4.log
+# PN-016 سه گارد کاربران — نقش معتبر / مرز مجوز / سیاههٔ فعالیت:
+bash scripts/audit-user-roles.sh > /tmp/pn016-ci-audit5.log 2>&1 || { echo "✗ گام ۵-ه: user-roles (رجیستری نقش‌ها)"; tail -8 /tmp/pn016-ci-audit5.log; exit 1; }
+tail -1 /tmp/pn016-ci-audit5.log
+bash scripts/audit-permission-boundary.sh > /tmp/pn016-ci-audit6.log 2>&1 || { echo "✗ گام ۵-و: permission-boundary (مرز مجوزها)"; tail -8 /tmp/pn016-ci-audit6.log; exit 1; }
+tail -1 /tmp/pn016-ci-audit6.log
+bash scripts/audit-activity-log.sh > /tmp/pn016-ci-audit7.log 2>&1 || { echo "✗ گام ۵-ز: activity-log (سیاههٔ فعالیت)"; tail -8 /tmp/pn016-ci-audit7.log; exit 1; }
+tail -1 /tmp/pn016-ci-audit7.log
 
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"

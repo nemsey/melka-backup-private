@@ -1,0 +1,24 @@
+{
+ "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+ "workOrder": "PN-016",
+ "stage": "۹ — ادامهٔ فاز ۶",
+ "at": "2026-10-07T23:14:12.433409+00:00",
+ "featureFactory": {
+  "status": "بدنه‌دار از فاز ۶ — در PN-014 تکمیل و اعتبارسنجی شد",
+  "evidence": "phase5.json از PN-014: Feature ۲۵×۱۷ ویژگی روی داده واقعی · ۱۱/۱۱ موتور VALIDATED · Brier=0.2354",
+  "pn016Addition": "رجیستری کاربران به‌عنوان زیرساخت تولید (نقش/MANAGEABLETiles برای کاشی‌های آینده)"
+ },
+ "crmContractTests": {
+  "file": "tests/pn016-crm-contracts.test.ts",
+  "count": 13,
+  "status": "PASS 13/13",
+  "coverage": "احراز 401 ×۶ روت · شکل پاسخ (meta/transactions/contracts/data-freshness) · فیلتر 400 شفاف · قرارداد 412 مستند sync · gzip موبایل"
+ },
+ "offlineMode": {
+  "file": "public/offline.html + sw.js (نسخهٔ ۷ + پوستهٔ آفلاین)",
+  "real": "ناوبری آفلاین → پوستهٔ برنددار فارسی (نه 503 خالی) + بازگشت خودکار آنلاین + پرس‌وجوی ۱۵ث",
+  "lawPreserved": "HTML اپ هرگز کش نمی‌شود (P6519) — تنها HTML کش‌شونده = offline.html استاتیک",
+  "tests": "tests/pn016-offline-mode.test.ts — 8/8 PASS"
+ },
+ "testRecord": "۲۰۵۰/۰ (رکورد جدید — قبلی ۲۰۰۶ در PN-015)"
+}

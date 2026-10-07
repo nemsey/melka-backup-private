@@ -2,7 +2,7 @@
   "schema": "melka-pn012-api-versioning",
   "generatedAt": "2026-10-07T09:09:02.271Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 70,
+  "totalRoutes": 78,
   "created": 68,
   "routes": [
     {
@@ -285,6 +285,38 @@
       "aliasOf": "/api/matching/search",
       "v1": "/api/v1/matching/search",
       "note": "PN-014 — جست‌وجوی هوشمند ورودی تطبیق (الگوریتم نرمال‌سازی فایل‌یابی)"
+    },
+    {
+      "original": "/api/admin/users",
+      "v1": "/api/v1/admin/users"
+    },
+    {
+      "original": "/api/admin/users/[id]",
+      "v1": "/api/v1/admin/users/[id]"
+    },
+    {
+      "original": "/api/admin/users/[id]/permissions",
+      "v1": "/api/v1/admin/users/[id]/permissions"
+    },
+    {
+      "original": "/api/admin/users/[id]/activity",
+      "v1": "/api/v1/admin/users/[id]/activity"
+    },
+    {
+      "original": "/api/admin/users/[id]/sessions",
+      "v1": "/api/v1/admin/users/[id]/sessions"
+    },
+    {
+      "original": "/api/admin/users/[id]/unlock",
+      "v1": "/api/v1/admin/users/[id]/unlock"
+    },
+    {
+      "original": "/api/auth/guest-request-otp",
+      "v1": "/api/v1/auth/guest-request-otp"
+    },
+    {
+      "original": "/api/auth/guest-login",
+      "v1": "/api/v1/auth/guest-login"
     }
   ],
   "amendedBy": {
@@ -295,5 +327,6 @@
       "/api/matching/search"
     ],
     "previousAmendment": "PN-013 مرحلهٔ ۶ (runtime/metrics ۶۸→۶۹) — سابقهٔ کامل در بسته‌های بقا"
-  }
+  },
+  "note": " | PN-016: +6 مسیر مدیریت کاربران (admin/users) · +۲ مسیر مهمان (guest-login/guest-request-otp)"
 }

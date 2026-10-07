@@ -1,0 +1,65 @@
+{
+  "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+  "workOrder": "PN-016",
+  "stage": "۳ — Migration + Seed",
+  "at": "2026-10-07T23:21:16.893Z",
+  "sources": {
+    "sessions": 0,
+    "personnelAccessLegacy": 0
+  },
+  "created": [],
+  "skipped": [],
+  "permissionsCreated": 0,
+  "legacyPermissionsMigrated": 0,
+  "userCountBefore": 3,
+  "userCountAfter": 3,
+  "permissionRows": 12,
+  "fixProof": [
+    {
+      "code": "410031338",
+      "resolve": {
+        "level": "limited",
+        "tiles": [
+          "arm-listings",
+          "arm-requests",
+          "transactions-contracts",
+          "experts",
+          "smart-matching",
+          "file-finder"
+        ]
+      }
+    },
+    {
+      "code": "410031319",
+      "resolve": {
+        "level": "limited",
+        "tiles": [
+          "arm-listings",
+          "arm-requests",
+          "transactions-contracts",
+          "experts",
+          "smart-matching",
+          "file-finder"
+        ]
+      }
+    },
+    {
+      "code": "410031320",
+      "resolve": {
+        "level": "full",
+        "tiles": [
+          "arm-listings",
+          "arm-requests",
+          "transactions-contracts",
+          "experts",
+          "smart-matching",
+          "learning-tier",
+          "market-index",
+          "data-coverage",
+          "file-finder",
+          "management-dashboard"
+        ]
+      }
+    }
+  ]
+}
