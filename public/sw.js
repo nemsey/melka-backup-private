@@ -40,6 +40,7 @@ function ensureVersionResolved() {
 
 /* فقط دارایی‌های واقعاً تغییرناپذیر — بدون HTML و بدون چانک‌های Next */
 const IMMUTABLE_ASSETS = [
+  "/offline.html", /* PN-016: پوستهٔ آفلاین استاتیک — بدون چانک/داده (HTML اپ هرگز کش نمی‌شود) */
   "/manifest.json",
   "/icons/icon.svg",
   "/icons/icon-192.png",
@@ -141,15 +142,21 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(request)
       .then((res) => {
-        /* HTML هرگز کش نمی‌شود تا چانک‌های کهنه Serve نشوند */
+        /* HTML هرگز کش نمی‌شود تا چانک‌های کهنه Serve نشود */
         return res;
       })
       .catch(() =>
-        caches.match(request).then(
-          (cached) =>
-            cached ||
-            caches.match("/").then((root) => root || new Response("", { status: 503 }))
-        )
+        caches.match(request).then((cached) => {
+          if (cached) return cached;
+          /* PN-016 — Offline Mode واقعی: ناوبری آفلاین → پوستهٔ آفلاین برنددار
+             (HTML اپ همچنان هرگز کش نمی‌شود؛ این صفحه استاتیک بدون چانک/داده است) */
+          if (request.mode === "navigate") {
+            return caches.match("/offline.html").then(
+              (shell) => shell || new Response("", { status: 503 })
+            );
+          }
+          return caches.match("/").then((root) => root || new Response("", { status: 503 }));
+        })
       )
   );
 });
