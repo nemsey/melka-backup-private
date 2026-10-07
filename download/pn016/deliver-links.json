@@ -1,0 +1,65 @@
+{
+ "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+ "workOrder": "PN-016",
+ "stage": "۱۱ — قانون فایل v3",
+ "at": "2026-10-07T23:36:44.583556+00:00",
+ "allZip": {
+  "name": "pn016-ALL.zip",
+  "bytes": 652162
+ },
+ "parts": [
+  {
+   "name": "pn016-survival-part00.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn016-survival-part01.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn016-survival-part02.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn016-survival-part03.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn016-survival-part04.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn016-survival-part05.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn016-survival-part06.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn016-survival-part07.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn016-survival-part08.bin",
+   "bytes": 45275136,
+   "mb": 43.2
+  }
+ ],
+ "partCount": 9,
+ "linkTest": {
+  "localBase": "/deliver",
+  "previewBase": "دامنهٔ preview",
+  "pass": 26,
+  "fail": 0
+ },
+ "rejoinVerified": true
+}
