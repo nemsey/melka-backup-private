@@ -1,0 +1,137 @@
+{
+  "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+  "workOrder": "PN-016",
+  "stage": "۲ — Schema کاربران",
+  "at": "2026-10-07T22:36:32.750Z",
+  "migrationMethod": "prisma db push (الگوی مستند پروژه از P6.5 — migrate dev ریست DB می‌خواست؛ ممنوع)",
+  "backup": {
+    "path": "backups/pn016-pre-schema-2026-10-07T22-30.db",
+    "md5": "0c76eec9b8be58ec02bdd1031d8e0fd5",
+    "sizeMB": 263
+  },
+  "deviations": [
+    "enum UserRole → String + اعتبارسنجی سطح-اپ (Prisma+SQLite از enum پشتیبانی نمی‌کند)",
+    "UserSession.token (طرح شورا) → tokenHash (توکن خام هرگز در DB — انضباط امنیتی پروژه از PN-001)",
+    "migrate dev --name pn016_users → db push (اول test.db سپس production — الگوی PHASE-6.5-DESIGN)"
+  ],
+  "newModels": {
+    "User": {
+      "count": 0,
+      "columns": [
+        "id",
+        "personnelCode",
+        "mobile",
+        "fullName",
+        "role",
+        "branchTitle",
+        "roleTitleFa",
+        "isActive",
+        "createdAt",
+        "createdBy",
+        "lastLoginAt",
+        "lastLoginIp",
+        "failedAttempts",
+        "lockedUntil",
+        "metadata"
+      ]
+    },
+    "UserPermission": {
+      "count": 0,
+      "columns": [
+        "id",
+        "userId",
+        "tileId",
+        "canRead",
+        "canWrite",
+        "canDelete",
+        "canExport",
+        "canSync"
+      ]
+    },
+    "UserActivity": {
+      "count": 0,
+      "columns": [
+        "id",
+        "userId",
+        "action",
+        "tileId",
+        "resourceId",
+        "details",
+        "ip",
+        "userAgent",
+        "timestamp"
+      ]
+    },
+    "UserSession": {
+      "count": 0,
+      "columns": [
+        "id",
+        "userId",
+        "tokenHash",
+        "ip",
+        "userAgent",
+        "createdAt",
+        "expiresAt",
+        "lastActivityAt",
+        "isActive"
+      ]
+    }
+  },
+  "dataIntegrity": {
+    "integrityCheck": "ok",
+    "propertyRecords": 27688,
+    "requestRecords": 25504,
+    "graphNodes": 119051
+  },
+  "allTables": [
+    "AgentFeedback",
+    "AgentMemory",
+    "AgentPolicyVersion",
+    "AppMeta",
+    "ArmConnection",
+    "AuditLog",
+    "CommissionCalcLog",
+    "ContractRecord",
+    "CustomerRecord",
+    "DivarAd",
+    "DivarConnection",
+    "DivarRejectLog",
+    "DivarScanLog",
+    "DivarSetting",
+    "ExpertProfile",
+    "ExpertRecord",
+    "GapConnection",
+    "GraphEdge",
+    "GraphNode",
+    "InstagramConnection",
+    "InstagramPostLog",
+    "InteractionRecord",
+    "JobLock",
+    "ListingRecord",
+    "LookupLog",
+    "MarketPriceStat",
+    "OpportunityAlert",
+    "OtpAttempt",
+    "PersonnelAccess",
+    "PmConnection",
+    "PriceIndexHistory",
+    "PropertyRecord",
+    "RefListCache",
+    "RequestEventRecord",
+    "RequestRecord",
+    "Session",
+    "SpecialPropertyRecord",
+    "SupplyDemandRecord",
+    "SyncCheckpoint",
+    "SyncDeadLetter",
+    "SyncJobState",
+    "SyncState",
+    "TransactionEnrichment",
+    "TransactionRecord",
+    "User",
+    "UserActivity",
+    "UserPermission",
+    "UserSession",
+    "VisitRecord"
+  ]
+}
