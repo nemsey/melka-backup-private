@@ -110,6 +110,13 @@ BUILD_TAIL=$(grep -E "✓ Compiled|Compiled successfully" /tmp/pn007-ci-build.lo
 echo "  $BUILD_TAIL"
 [[ -f .next/fingerprint.json ]] && echo "  .next/fingerprint.json نوشته شد ✓" || { echo "✗ گام ۷: postbuild اثر انگشت ننوشت"; exit 1; }
 
+# ── ۷-ب) یکپارچگی chunk بیلد تازه (PN-015/K1) ──
+# هر ارجاع /_next/static در مانیفست/HTML باید فایل روی دیسک داشته باشد —
+# دقیقاً همان چیزی که شب chunk-404 را دید و باید هرگز بازنگردد.
+bash scripts/audit-chunk-integrity.sh --witness /tmp/pn015-ci-chunk.json \
+  || { echo "✗ گام ۷-ب: بیلد تازه chunk مفقود دارد (خطر 404)"; cat /tmp/pn015-ci-chunk.json 2>/dev/null; exit 1; }
+echo "  chunk-integrity ✓"
+
 # ── ۸) Fingerprint verify ──
 pass "Fingerprint verify (بازتولیدپذیری همان HEAD)"
 bun run scripts/fingerprint.ts --verify || { echo "✗ گام ۸: اثر انگشت کد ≠ اثر انگشت بیلد"; exit 1; }

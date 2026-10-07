@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-07T20:28:14.740644Z",
+  "guard": "verify-preview-version (PN-015/K2)",
+  "previewUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+  "localHead": "7a54a98",
+  "localBuildId": "7a54a98-20261007-2006",
+  "remoteGitSha": "7a54a98",
+  "remoteBuildId": "7a54a98-20261007-2006",
+  "remoteBuiltAt": "2026-10-07T20:06:08.088Z",
+  "http": "200",
+  "healthLatencyS": "0.095516",
+  "verdict": "MATCH"
+}

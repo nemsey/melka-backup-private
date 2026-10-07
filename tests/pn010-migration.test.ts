@@ -41,7 +41,7 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     expect(INSTRUMENTATION).toContain("MELK_AUTO_RECOVERY");
   });
 
-  test("۴-۴ رجیستری: پنج کار اصلی + دو گارد بدهی PN-014 در Worker", () => {
+  test("۴-۴ رجیستری: پنج کار اصلی + دو گارد بدهی PN-014 + دو گارد PN-015 در Worker", () => {
     const jobs = buildWorkerJobs(null as never); // رجیستری خالص — db فقط به run پاس می‌شود
     const ids = jobs.map((j) => j.id);
     expect(ids).toContain(WORKER_JOB_IDS.intelligenceCycle);
@@ -52,7 +52,10 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     // PN-014/D3+D4 — دو گارد تازه (فاصله‌ها در تست‌های همان پرونده)
     expect(ids).toContain(WORKER_JOB_IDS.privacyGuard);
     expect(ids).toContain(WORKER_JOB_IDS.sizeGuard);
-    expect(ids.length).toBe(7);
+    // PN-015/K2+K3 — دو گارد تازه: تازگی preview + بازنشانی پلتفرم
+    expect(ids).toContain(WORKER_JOB_IDS.previewGuard);
+    expect(ids).toContain(WORKER_JOB_IDS.resetGuard);
+    expect(ids.length).toBe(9);
   });
 
   test("۴-۵ فاصله‌ها عین دیمن‌های قبلی (صفر قطع خدمت در رفتار زمانی)", () => {
@@ -68,21 +71,37 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
   });
 
   test("۴-۶ کلیدهای خاموشی محترم: حذف انتخابی کارها با env های قبلی", () => {
-    process.env.MELK_INTELLIGENCE_DAEMON = "disabled";
-    process.env.MELK_CATALOG_DAEMON = "disabled";
-    process.env.MELK_MIRROR_JOB = "disabled";
-    process.env.MELK_BACKUP_ROTATION = "disabled";
-    process.env.MELK_PRIVACY_GUARD = "disabled";
-    process.env.MELK_SIZE_GUARD = "disabled";
-    const jobs = buildWorkerJobs(null as never);
-    const ids = jobs.map((j) => j.id);
-    expect(ids).not.toContain(WORKER_JOB_IDS.intelligenceCycle);
-    expect(ids).not.toContain(WORKER_JOB_IDS.catalogCycle);
-    expect(ids).not.toContain(WORKER_JOB_IDS.mirrorCycle);
-    expect(ids).not.toContain(WORKER_JOB_IDS.backupRotation);
-    expect(ids).not.toContain(WORKER_JOB_IDS.privacyGuard);
-    expect(ids).not.toContain(WORKER_JOB_IDS.sizeGuard);
-    expect(ids).toEqual([WORKER_JOB_IDS.logRotate]); // چرخش لاگ همیشه فعال
+    // PN-015 (احیا): ترمیم بهداشت ایزوله‌سازی — این شش env پیش‌تر بدون بازگردانی
+    // نشت می‌کردند و تست ۱۲ pn014-debt-guards (ثبت پیش‌فرض گاردها) را در ترتیبِ
+    // «migration قبل از debt-guards» می‌شکست؛ بازنشانی هفتم ترتیب شمارش فایل‌ها را
+    // عوض کرد و ریشهٔ نهفته را آشکار کرد (عین درس سه‌گانهٔ نوسان PN-012).
+    const keys = [
+      "MELK_INTELLIGENCE_DAEMON",
+      "MELK_CATALOG_DAEMON",
+      "MELK_MIRROR_JOB",
+      "MELK_BACKUP_ROTATION",
+      "MELK_PRIVACY_GUARD",
+      "MELK_SIZE_GUARD",
+    ] as const;
+    const saved = keys.map((k) => [k, process.env[k]] as const);
+    try {
+      for (const k of keys) process.env[k] = "disabled";
+      const jobs = buildWorkerJobs(null as never);
+      const ids = jobs.map((j) => j.id);
+      expect(ids).not.toContain(WORKER_JOB_IDS.intelligenceCycle);
+      expect(ids).not.toContain(WORKER_JOB_IDS.catalogCycle);
+      expect(ids).not.toContain(WORKER_JOB_IDS.mirrorCycle);
+      expect(ids).not.toContain(WORKER_JOB_IDS.backupRotation);
+      expect(ids).not.toContain(WORKER_JOB_IDS.privacyGuard);
+      expect(ids).not.toContain(WORKER_JOB_IDS.sizeGuard);
+      // PN-015: دو گارد تازه از خاموشی این شش env پیروی نمی‌کنند (کلید خاموشی خودشان: MELK_PREVIEW_GUARD / MELK_RESET_GUARD)
+      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard]);
+    } finally {
+      for (const [k, v] of saved) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
   });
 
   test("۴-۷ آینه: چرخهٔ واحد استخراج شد + دیمن پوشش‌دهنده به آن واگذار کرد", () => {

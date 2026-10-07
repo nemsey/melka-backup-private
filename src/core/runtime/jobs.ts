@@ -49,6 +49,8 @@ export const WORKER_JOB_IDS = {
   backupRotation: "backup-rotation",
   privacyGuard: "privacy-guard",
   sizeGuard: "size-guard",
+  previewGuard: "preview-guard",
+  resetGuard: "reset-guard",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -218,6 +220,51 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       run: async (database) => {
         const { runSizeGuard } = await import("@/core/runtime/guards");
         return runSizeGuard(database);
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Preview Guard → Worker (تازه — PN-015/K2: Preview Stale) ──
+  // «200 سالم» کافی نیست: دامنه ممکن است کامیتِ کهنه سرو کند.
+  // هر ۱۵ دقیقه مقایسهٔ gitSha دامنه با HEAD محلی — ناهم‌خوانی = هشدار.
+  if (process.env.MELK_PREVIEW_GUARD !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.previewGuard,
+      title: "گارد تازگی نسخهٔ preview (PN-015/K2)",
+      intervalMs: 15 * 60_000,
+      firstRunDelayMs: 90_000,
+      run: async (database) => {
+        const { runPreviewGuard } = await import("@/core/runtime/guards");
+        return runPreviewGuard(database);
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Reset Guard → Worker (تازه — PN-015/K3: بازنشانی پلتفرم) ──
+  // درس بازنشانی هفتم: پلتفرم درخت را به اسنپ‌شات خودش برمی‌گرداند؛ داوری
+  // با شاخهٔ main آینه (تبار مرجع) — جدِّ اکیدِ main = درخت برگشته.
+  // تشخیص → recover نرخ‌محدود (بازگردانی + بیلد + ری‌استارت + مهر).
+  if (process.env.MELK_RESET_GUARD !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.resetGuard,
+      title: "گارد بازنشانی پلتفرم (PN-015/K3)",
+      intervalMs: 15 * 60_000,
+      firstRunDelayMs: 5 * 60_000,
+      run: async () => {
+        const check = await runShell(join(REPO_ROOT, "scripts/recovery/reset-guard.sh"), ["check"], 5 * 60_000);
+        if (check.code === 2) {
+          const rec = await runShell(join(REPO_ROOT, "scripts/recovery/reset-guard.sh"), ["recover"], 20 * 60_000);
+          return { code: check.code, verdict: "RESET-DETECTED", recoveryCode: rec.code, recoveryStderr: rec.stderr.slice(0, 400) };
+        }
+        return { code: check.code, verdict: check.code === 0 ? "HEALTHY" : "ERROR" };
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

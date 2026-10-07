@@ -146,6 +146,26 @@ while true; do
     set +a
   fi
 
+  # ─── PN-015/مرحلهٔ ۶: گارد یکپارچگی chunk پیش از هر اسپاون ───
+  # درس شب chunk-404 (PN-014): سرور هرگز با بیلد ناقص بالا نمی‌آید.
+  # اگر ارجاعی مفقود بود → بیلد مجدد (خروجی به لاگ — هرگز head-pipe نمی‌شود)
+  # → وارسی دوباره → اگر باز هم ناقص بود، هشدار ثبت و ادامهٔ بهترین-تلاش.
+  if [ -x /home/z/my-project/scripts/audit-chunk-integrity.sh ]; then
+    if ! bash /home/z/my-project/scripts/audit-chunk-integrity.sh \
+        --root /home/z/my-project \
+        --witness /home/z/my-project/upload/.runtime/chunk-audit.json --quiet >> "$LOG" 2>&1; then
+      echo "[chunk-guard] $(date '+%F %T') بیلد ناقص (خطر chunk 404) — بازسازی می‌کنم" >> "$LOG"
+      (cd /home/z/my-project && bun run build) >> "$LOG" 2>&1
+      if ! bash /home/z/my-project/scripts/audit-chunk-integrity.sh \
+          --root /home/z/my-project \
+          --witness /home/z/my-project/upload/.runtime/chunk-audit.json >> "$LOG" 2>&1; then
+        echo "[chunk-guard] $(date '+%F %T') هشدار: بازسازی هم ناقص — سرور بالا می‌آید اما ناقص است (پیگیری فوری لازم)" >> "$LOG"
+      else
+        echo "[chunk-guard] $(date '+%F %T') بازسازی موفق — یکپارچگی برقرار" >> "$LOG"
+      fi
+    fi
+  fi
+
   PORT=3000 HOSTNAME=0.0.0.0 NODE_ENV=production \
     DATABASE_URL="file:/home/z/my-project/db/custom.db" \
     MELKA_REPO_DIR="/home/z/my-project" \

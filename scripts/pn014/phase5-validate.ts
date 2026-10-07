@@ -78,7 +78,7 @@ async function main(): Promise<void> {
       metric: {
         buildContextMs: buildMs,
         tileId: ctx.tileId,
-        contractVersion: ctx.contractVersion,
+        contractVersion: engine.contractVersion,
         realMemoriesAvailable: mem.length,
         assembleSupported: Boolean(assembled),
         realAgentMemoryRows: await db.agentMemory.count().catch(() => 0),
@@ -228,7 +228,7 @@ async function main(): Promise<void> {
           publisherType: "unknown",
         }, market);
         built += 1;
-        featureCount += Object.keys(fs).filter((k) => typeof (fs as Record<string, unknown>)[k] === "number" || typeof (fs as Record<string, unknown>)[k] === "boolean").length;
+        featureCount += Object.keys(fs).filter((k) => typeof (fs as unknown as Record<string, unknown>)[k] === "number" || typeof (fs as unknown as Record<string, unknown>)[k] === "boolean").length;
       } catch { /* ردیف نامنقص — شمارش صادقانه در evidence */ }
     }
     const fMs = Date.now() - t0;
@@ -420,7 +420,7 @@ async function main(): Promise<void> {
       metadata: { direction: a.direction, listingCode: a.listingCode },
     }));
     const res = await engine.decide({
-      context: { tileId: "smart-matching", generatedAt: new Date().toISOString(), purpose: "DECISION_SUPPORT" as never, contractVersion: 1 },
+      context: { tileId: "smart-matching", generatedAt: new Date().toISOString(), purpose: "DECISION_SUPPORT" as never, contractVersion: 1 } as never,
       candidates,
       policy: { weights: { MATCH: 1 } } as never,
     });
@@ -450,7 +450,7 @@ async function main(): Promise<void> {
     const { createActionPlannerEngine } = await import("@/core/intelligence/action/action-planner-engine");
     const engine = createActionPlannerEngine();
     const plan = await engine.plan({
-      context: { tileId: "smart-matching", generatedAt: new Date().toISOString(), purpose: "DECISION_SUPPORT" as never, contractVersion: 1 },
+      context: { tileId: "smart-matching", generatedAt: new Date().toISOString(), purpose: "DECISION_SUPPORT" as never, contractVersion: 1 } as never,
       decision: {
         ranked: [{ key: "alert:top", score: 0.92, rationale: "بهترین انطباق", requiresApproval: true }],
         topKey: "alert:top",

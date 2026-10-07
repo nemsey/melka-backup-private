@@ -1,0 +1,87 @@
+{
+  "at": "2026-10-07T20:41:44.031309Z",
+  "workOrder": "PN-015 · K5 — هرس بسته‌های بقا (مصوبهٔ نگه‌داری ۵ بستهٔ آخر)",
+  "before": {
+    "packages": 15,
+    "sizeMB": 3629
+  },
+  "after": {
+    "packages": 5,
+    "sizeMB": 1948
+  },
+  "archived": {
+    "packages": 10,
+    "sizeMB": 1681,
+    "location": "upload/.survival-archive (ossfs ابری — ریست‌پذیر، خارج از دیسک ظرف)"
+  },
+  "method": "mv اتمیک روی همان فایل‌سیستم ossfs — صفر کپی، صفر حذف، صفر دست‌زدن به داده",
+  "pathContract": "deliver-store/archive → symlink → upload/.survival-archive (مسیر قراردادی سفارش برقرار)",
+  "chain": {
+    "anchoredLinksGreen": 2,
+    "preConventionLinks": 6,
+    "brokenLinks": 0,
+    "links": [
+      {
+        "from": 8,
+        "to": 7,
+        "status": "pre-convention (لنگر ثبت نشده — قرارداد از بستهٔ ۱۴)"
+      },
+      {
+        "from": 9,
+        "to": 8,
+        "status": "pre-convention (لنگر ثبت نشده — قرارداد از بستهٔ ۱۴)"
+      },
+      {
+        "from": 10,
+        "to": 9,
+        "status": "pre-convention (لنگر ثبت نشده — قرارداد از بستهٔ ۱۴)"
+      },
+      {
+        "from": 11,
+        "to": 10,
+        "status": "pre-convention (لنگر ثبت نشده — قرارداد از بستهٔ ۱۴)"
+      },
+      {
+        "from": 12,
+        "to": 11,
+        "status": "pre-convention (لنگر ثبت نشده — قرارداد از بستهٔ ۱۴)"
+      },
+      {
+        "from": 13,
+        "to": 12,
+        "status": "pre-convention (لنگر ثبت نشده — قرارداد از بستهٔ ۱۴)"
+      },
+      {
+        "from": 14,
+        "to": 13,
+        "status": "GREEN"
+      },
+      {
+        "from": 15,
+        "to": 14,
+        "status": "GREEN"
+      }
+    ],
+    "note": "قرارداد لنگرگذاری (anchorPreviousManifest) از بستهٔ ۱۴ آغاز شد (جلسهٔ PN-013)؛ ۱۴→۱۳ و ۱۵→۱۴ سبز؛ بسته‌های ۸-۱۳ پیش از قراردادند (بدون لنگر، نه شکسته)",
+    "verdict": "INTACT — هر لنگر ثبت‌شده سبز"
+  },
+  "kept": [
+    "PN-010-20261006",
+    "PN-011-20261007",
+    "PN-012-20261007",
+    "PN-013-20261007",
+    "PN-014-20261007"
+  ],
+  "archivedList": [
+    "P6550-R-14050712",
+    "PN-001-14050712",
+    "PN-002-14050713",
+    "PN-003-14050714",
+    "PN-005-14050713",
+    "PN-005C-20261006",
+    "PN-006-20261006",
+    "PN-007-20261006",
+    "PN-008-20261006",
+    "PN-009-20261006"
+  ]
+}

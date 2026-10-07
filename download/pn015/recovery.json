@@ -1,0 +1,30 @@
+{
+  "council": "ملکا-شورا-ن۰۱۹-۱۴۰۵",
+  "workOrder": "PN-015",
+  "phase": "احیای مبنای سفارش (پیش‌گام بر مرحلهٔ ۱ — عین دکترین PN-005-C/PN-009/PN-012)",
+  "at": "2026-10-07T20:17:00Z",
+  "steps": [
+    { "step": "بکاپ ایمنی DB پیش از هر تغییری", "result": "backups/pn015-pre-recovery-2026-10-07T20-05-21.db (269MB · VACUUM INTO · integrity ok)" },
+    { "step": "git reset --hard melka-backup/main", "result": "4817ed2 → 7a54a98 (= 5c530fa + 62bc91c تحویل + 7f4021a ورک‌لاگ + 7a54a98 خودکار) — کل کد PN-012/013/014 (~۲۷هزار خط) بازگشت" },
+    { "step": "وارسی درخت بازیافتی", "result": "worklog=2636 خط (تا PN-014) · page.tsx=Server Shell · deliver route ✓ · escrow-manager ✓ · تست‌های pn012/13/14 (۸ فایل) ✓ · env.escrow.enc+meta ✓" },
+    { "step": "bun install --frozen-lockfile", "result": "964 installs، بدون تغییر (2.22s)" },
+    { "step": "بیلد production (منضبط: خروجی به فایل — هرگز head-pipe)", "result": "BUILD_EXIT=0 · buildId=7a54a98-20261007-2006 · fingerprint در standalone ✓" },
+    { "step": "توقف کنترل‌شدهٔ زنجیرهٔ کهنه", "result": "watchdog(1333)+server(1345)+worker(1345-فرزند) — توقف کامل تأیید شد" },
+    { "step": "بوت رسمی start.sh", "result": "escrow RESTORED از upload/.runtime + write-back هر سه مکان (db/.runtime ✓ upload/.runtime ✓ env.escrow.enc ✓) · دیمن نگهبان double-fork (PID 3201) · سرور آماده در 92ms" },
+    { "step": "احیای Worker", "result": "spawn دستی detached → قفل runtime:worker در 20:14:10Z · ضربان تازه · ۷ کار: intelligence/catalog/mirror/log-rotate/backup-rotation + privacy-guard + size-guard (گاردهای D3/D4 زنده)" },
+    { "step": "دریل ضمنی گارد احیا", "result": "تایمر احیای Supervisor یک Worker دوم ساخت که به‌درستی و بی‌صدا خارج شد (قفل انحصاری برقرار) — شاهد زندهٔ طراحی «۱Web+۱Worker»" }
+  ],
+  "verification": {
+    "health": "200 (localhost:3000/api/health)",
+    "version": "buildId=7a54a98-20261007-2006 · gitSha=7a54a98 · source=baked · production",
+    "previewDomain": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai → 200 · همان buildId تازه (پیش‌نمایش کهنه رفع شد)",
+    "db": "integrity ok · PropertyRecord=27688 · Request=25499 · GraphNode=118502 · AppMeta.masterCodeHash ✓ · دادهٔ محلی (حافظهٔ ایجنت ۲۱۷ · سیاست ۸ · بازخورد ۴ · سیاههٔ حسابرسی ۹۷۲) زنده"
+  },
+  "lockReverification": {
+    "row1_headLocal": "PASS — 7a54a98 ≥ 5c530fa",
+    "row2_mirror": "PASS — melka-backup/main = 7a54a98 = HEAD محلی",
+    "row3_chain15": "PASS — upload/.survival/PN-014-20261007 (CHAIN.json: chainIndex=15 · commit=5c530fa · buildId=5c530fa-20261007-1709)",
+    "row4_buildId": "PASS — 7a54a98-20261007-2006 = HEAD",
+    "verdict": "۴/۴ — ورود مجاز به ۹ مرحلهٔ سفارش"
+  }
+}

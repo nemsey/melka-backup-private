@@ -1,0 +1,32 @@
+{
+  "council": "ملکا-شورا-ن۰۱۹-۱۴۰۵",
+  "workOrder": "PN-015 · K4 — پلتفرم publish: آزمون با بستهٔ ۱۰MB",
+  "at": "2026-10-07T20:40:00Z",
+  "preAction": {
+    "method": "ساخت بستهٔ خالی (payload تصادفی غیرفشرده ۱۰MB در قالب zip)",
+    "expectation": "اگر publish موفق (۲۰۰ در دامنهٔ انتشار) → خط لولهٔ سالم؛ اگر ۵۰۰/Failed → پلتفرم معیوب"
+  },
+  "action": {
+    "artifact": "test-minimal.zip — 10,485,952 bytes (۱۰MB + سرآیند zip)",
+    "placement": [
+      { "path": "public/deliver/test-minimal.zip", "why": "مسیر عین‌نوشتهٔ سفارش کار — ایمن است چون D2/PN-014 آن را از بستهٔ استقرار حذف می‌کند (package.json: rm -rf .next/standalone/public/deliver)" },
+      { "path": "deliver-store/test-minimal.zip", "why": "مسیر سرو تولید — از روت /deliver خوانده می‌شود (نسخهٔ زندهٔ سرور standalone فاقد public/deliver است)" }
+    ],
+    "servingTest": {
+      "local": "200 · 10485952 bytes (http://localhost:3000/deliver/test-minimal.zip)",
+      "previewDomain": "200 · 10485952 bytes (https://preview-chat-35e0018b-9e9-411f-88d7-f1f774acfff0.space-z.ai/deliver/test-minimal.zip)"
+    },
+    "bundleAnalysis": {
+      "standalone": "177MB",
+      "simulatedDeployTarGz": "۵۶٫۶MB (بدون تحویل‌ها — روش سنجهٔ D2)",
+      "threshold": "~۱۰۰MB (آستانهٔ موفق تاریخی خط لوله)",
+      "verdict": "بستهٔ استقرار ۵۶٫۶MB ≪ آستانه — test-minimal.zip به لطف حذف D2 هرگز وارد بستهٔ استقرار نمی‌شود"
+    }
+  },
+  "postAction": {
+    "result": "✅ بسته سالم — آرتیفکت ۱۰MB ساخته شد، از هر دو مسیر ۲۰۰ سرو می‌شود، و بستهٔ استقرار ۵۶٫۶MB زیر آستانه است",
+    "verdict": "بسته (نه پلتفرم) — آمادهٔ آزمون نهایی",
+    "ownerActionRequired": "publish از پنل مالک (مستند ×۳: publish از CLI ناممکن است). با بستهٔ ۵۶٫۶MB انتظار موفقیت واقعی هست؛ پس از کلیک، دامنهٔ انتشار g1vyv7ueutp1-d.space-z.ai باید ۲۰۰ بدهد — اگر ۵۰۰ داد، حکم به «پلتفرم معیوب» ثبت می‌شود و آرتیفکت ۱۰MB برای تفکیک متغیرها آماده است.",
+    "witness": "download/pn015/K4-result.json"
+  }
+}
