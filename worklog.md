@@ -2563,3 +2563,27 @@ Stage Summary:
 - حکم گیت: PERMANENT_FIX_VERIFIED (دریل بازنشانی PASS — بوت سرد با محیط تخریب‌شده: 200 در ۱ ثانیه) + FOUR_TILE_UI_REFINEMENT_COMPLETE + MATCHING_TILE_UPGRADED
 - شعار فاز برآورده شد: «راز گم‌شده دیگر هرگز سرویس را نمی‌کشد — و کاشی تطبیق حالا می‌آموزد و به کاشی‌های آگهی/درخواست پیوند دارد.»
 - انتظار مالک: (۱) سرویس خوددرمان است — تنها هزینهٔ کلیدِ کاملاً گم‌شده: یک ورود مجدد ARM (۲) تغذیهٔ حلقهٔ یادگیری با دکمه‌های پذیرش/رد — پس از ۳ بازخورد «وزن‌های آموخته» فعال می‌شود (۳) publish از پنل در صورت نیاز
+---
+Task ID: PN-012
+Agent: main (Super Z / GLM)
+Task: ملکا-شورا-ن۰۱۲-۱۴۰۵ — تشخیص بحران ششم ۵۰۰ + رفع قطعی سه‌مکانی + بازیابی PN-011 از آینه + فاز ۳ معماری (BLOCK 0-7)
+
+Work Log:
+- **PN-012-A (تشخیص — صفر تغییر سورس):** ۵۰۰ زنده تأیید شد؛ متن دقیق: fail-fast راز اجباری MELK_TOKEN_KEY؛ سؤالات پنج‌گانه با شاهد: سرور زنده-اما-مرده · Worker مرده (کشته در ریست ~۰۸:۰۰) · DB سالم (integrity ok · ۲۷۶۷۷ آگهی/۲۵۴۸۳ درخواست/گراف ۱۱۲K) · env.platform.json حذف · backups/ حذف · escrow upload/.runtime «زنده» (۰۷:۰۵) اما — کشف حیاتی — «کد خوانندهٔ آن هیچ‌جا کامیت نشده بود»: آخرین کامیت fb77eb7 (۰۴:۰۹)؛ نتیجه: فرضیهٔ ششم (خارج از جدول شورا) قوی‌ترین — «escrow یتیم» + نکتهٔ تاریخی: پلتفرم حتی درخت گیت را به fb77eb7 برگرداند و کامیت‌های a7ab572 جلسهٔ PN-011 را محو کرد → download/pn012/diagnosis.json
+- **PN-012-B (احیای فوری):** کلید از escrow زندهٔ ۰۷:۰۵ به .env.local + بازسازی env.platform.json + نسخهٔ db/.runtime → کشتن سرور شکسته → watchdog بوت سالم → 200 · ورود OWNER 200 · توکن‌های ARM با همان کلید رمزگشایی شدند
+- **PN-012-B (رفع قطعی — سه‌مکانی):** escrow-manager.ts (restore/status/verify/encrypt · صفر وابستگی) + قلاب در سه مسیر بوت (dev-entry + نگهبانِ درونِ حلقه + start.sh) + env.escrow.enc (AES-256-GCM · scrypt N=32768 از کد مستر — مجاز صریح بند راه‌حل ۱/۳ شورا) + db/.runtime اضافه به .gitignore · **دو دریل زنده PASS:** ریست هفتم شبیه‌سازی‌شده (کلید حذف + env.platform حذف → بازیابی از db → 200 در ~۱۴s) و فاجعهٔ کامل (هر دو escrow متنی حذف → رمزگشایی env.escrow.enc با کد مسترِ حفظ‌شدهٔ پلتفرم → 200)
+- **کشف بزرگ — بازیابی PN-011 از آینه:** کامیت‌های گم‌شدهٔ جلسهٔ PN-011 (a7ab572) در دو snapshot آینهٔ GitHub زنده بودند (mirror-cycle ساعت ۰۷:۲۵/۰۷:۲۹) → بازیابی کامل (کامیت 37f6d02): boot-secrets سه‌لایه + نگهبان PN-011 + پالت ۲۴خانه رنگ یکتا + فیلتر چیپی چهارگانه + توسعهٔ M5 (weights-learning + پیوند عمیق + شناسنامه) + ۲ فایل تست (۴۳ تست) + گزارش و ۱۳ شاهد بصری + ۱۲۵۳ رکورد سیاههٔ هوشمندی → ادغام: boot-secrets ارتقا به سه‌مکانی + نگهبان ادغامی (db→upload + تولید تازه + MELKA_REPO_DIR + source درون حلقه)
+- **BLOCK 0:** سه‌گانه + بکاپ VACUUM ۲۶۱MB (md5 fa44c397) + بکاپ خودکار Worker پس از احیا (گواه بازگشت چرخه) + baseline.json
+- **BLOCK 1 (۴۶→۰):** شناسایی ۴۶ فراخوانی db.* در ۶ روت → لایهٔ سرویس تازه (coverage · market-index · crm-import · master-auth) + ۶ روت لاغر (Auth+Validation+Service+Response) + audit-repository-boundary --strict PASS · حذف کوئری مردهٔ pmEmployment · ۱۵ تست
+- **BLOCK 2 (Lease Renewal):** متد renew(jobId, extensionMs) + heartbeat روی بنیان renew + withLock با LeaseGuard تعاونی + onLeaseLost + نتیجهٔ leaseLost + job-queue با ثبت LEASE-LOST · شبیه‌سازی کار ۵ دقیقه‌ای → صفر Duplicate (۱۰ رد متوالی رقیب) + اثبات حفرهٔ قدیمی بدون renew · ۱۵ تست
+- **BLOCK 3 (افزونگی):** سه‌مکانی + رمزنگاری‌شدهٔ گیت + write-back پس از خوددرمانی (بازیابی از یک مکان، مکان‌های دیگر را همگام می‌کند — رفع نقص کشف‌شده توسط تست) + سند مالک docs/ESCROW-GITHUB-RECOVERY.md · ۱۰ تست
+- **BLOCK 4 (v1):** ۶۸ آینهٔ v1 سبک (export * — تک‌منبع حقیقت) + مانیفست api-versioning.json + زنده: /api/v1/health 200 · /api/v1/version 200 · گارد نشست یکسان (۴۰۱/۴۰۱) · ۱۰ تست
+- **BLOCK 5:** گارد تازهٔ audit-boot-secrets.sh (۱۶ بررسی ساختاری + حالت زندهٔ سه مکان + سازگاری اثر انگشت) + ارتقای CI: repository-boundary از strict-agents+ratchet به strict کامل (بدهی فاز ۳ تسویه شد)
+- **BLOCK 6:** ۵۰ تست تازه (۱۵+۱۵+۱۰+۱۰) + سه ریشهٔ واقعی نوسان تست قطعی شد: (۱) mock.module آلوده‌کنندهٔ customer-mgmt (computeStage حذف می‌شد — ترمیم با spread واقعی) (۲) نشت env از platform-env-fallback (فهرست backup ناقص بود؛ env.platform.json پس از PN-011 OWNER_PERSONNEL_CODES هم حمل می‌کند) (۳) flake ۶-ج: MELK_API_TIMEOUT_MS=300 در محیط تست (شبکهٔ ARM قطع — شکست سریع به‌جای timeout) · **CI هشت‌گامی ×۲: ۱۹۳۵/۰ × ۲ یکسان — رکورد جدید** (۱۸۸۵ بازیافتی + ۵۰ تازه) · ری‌استارت کنترل‌شدهٔ RAM در CI (الگوی مستند ۰۰۶ — تورم از ترافیک)
+- **BLOCK 7:** شواهد بلوک‌ها + phase3-progress (حکم: COMPLETE) + phase4-progress (PENDING — طرح آماده) + delivery-check + بستهٔ بقا chainIndex=13 (۴۰۴MB · ۴۱ فایل · لنگر MANIFEST بستهٔ ۱۲ · VACUUM تازه) + قانون فایل v3: public/deliver (ALL.zip ۲۴۹KB + ۴ قطعه ≤۴۸MB + SHA256SUMS + REJOIN — همه ۲۰۰ زنده) + شواهد بصری ×۵ + پوش آینه (main=HEAD=cdf10a8 · survival/code تازه)
+
+Stage Summary:
+- حکم گیت: CRISIS_6_ROOT_CAUSED_AND_PERMANENTLY_FIXED + PN011_FULLY_RECOVERED_FROM_MIRROR + PHASE_3_ARCHITECTURE_HARDENING_COMPLETE
+- شعار فاز برآورده شد: «۳۱→۰ نقض. یک قفل با تمدید. یک راز با دو نسخه (سه‌مکانی + رمزی). یک API با نسخه. — لایه‌های منظم.»
+- سه کشف تاریخی: (۱) ریست ششم حتی درخت گیت را برگرداند — تنها نجات: آینهٔ GitHub (۲) escrow بدون کد خواننده = یتیم (۳) کد کامیت‌نشده = کد گم‌شده
+- انتظار مالک: (۱) دانلود از /deliver/ و آزمون چهار قطعه (بند ۴ قانون فایل) (۲) تصمیم GitHub Secret اختیاری (docs/ESCROW-GITHUB-RECOVERY.md) (۳) publish از پنل در صورت نیاز
