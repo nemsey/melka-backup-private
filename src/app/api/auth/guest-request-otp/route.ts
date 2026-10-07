@@ -41,9 +41,8 @@ export async function POST(request: NextRequest) {
     }
 
     const { expiresInSeconds } = issueGuestOtp(mobile);
-    // کانال ارسال فعلی: لاگ سرور (ماسک موبایل) — کد خام در هیچ DB/AuditLog نمی‌نشیند
-    logAuth("otp-failed", { userId: `guest:${mobile.slice(-4)}`, status: "ok", detail: { phase: "issued", expiresInSeconds, channel: "server-log" } });
-    console.info(`[GUEST_OTP] mobile=****${mobile.slice(-4)} code issued (expires ${expiresInSeconds}s) — پیوند درگاه پیامک: فاز ۶`);
+    // کانال ارسال فعلی: لاگ ساختارمندِ لایهٔ logger (ماسک موبایل) — کد خام در هیچ DB/AuditLog نمی‌نشیند
+    logAuth("otp-failed", { userId: `guest:${mobile.slice(-4)}`, status: "ok", detail: { phase: "issued", channel: "server-log", expiresInSeconds } });
 
     await recordAttempt(mobile, "GUEST_REQUEST_OTP", true, ip);
     await audit("GUEST_OTP_REQUESTED", `guest:${mobile.slice(-4)}`, "channel=server-log");
