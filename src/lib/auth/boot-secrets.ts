@@ -35,7 +35,7 @@
 
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync, chmodSync, statSync } from "node:fs";
 import path from "node:path";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
 
 /** کلیدهای مدیریت‌شده — نام‌ها عمداً صریح‌اند (مستند در KEYS.md بستهٔ بقا) */
 export const BOOT_SECRET_KEYS = [
@@ -160,7 +160,6 @@ function readEncryptedEscrow(repoRoot: string): EscrowData | null {
     };
     if (!meta.saltB64) return null;
     const kdf = meta.kdf ?? { N: 32768, r: 8, p: 1 };
-    const { createDecipheriv, scryptSync } = require("node:crypto") as typeof import("node:crypto");
     const salt = Buffer.from(meta.saltB64, "base64");
     const key = scryptSync(masterCode, salt, 32, {
       N: kdf.N ?? 32768, r: kdf.r ?? 8, p: kdf.p ?? 1, maxmem: 128 * 1024 * 1024,
@@ -219,7 +218,6 @@ function writeAllEscrows(repoRoot: string, data: EscrowData): void {
     const masterCode = (process.env.MASTER_ACCESS_CODE ?? "").trim();
     const tokenKey = data.MELK_TOKEN_KEY;
     if (masterCode && tokenKey) {
-      const { randomBytes, scryptSync, createCipheriv, createHash } = require("node:crypto") as typeof import("node:crypto");
       const salt = randomBytes(16);
       const key = scryptSync(masterCode, salt, 32, { N: 32768, r: 8, p: 1, maxmem: 128 * 1024 * 1024 });
       const iv = randomBytes(12);
