@@ -1,6 +1,6 @@
 {
   "case": "PN-006-BLOCK5-PERF-BUDGET",
-  "measuredAt": "2026-10-07T13:28:18.926492+00:00",
+  "measuredAt": "2026-10-07T13:52:27.644780+00:00",
   "budgets": [
     {
       "metric": "Initial JS (بار اول — سنجهٔ مرورگر)",
@@ -12,13 +12,13 @@
     {
       "metric": "LCP (صفحهٔ ورود، موبایل شبیه‌سازی)",
       "target": "< 2500ms",
-      "value": "556ms",
+      "value": "568ms",
       "pass": true
     },
     {
       "metric": "INP proxy (تأخیر تعامل)",
       "target": "< 200ms",
-      "value": "81ms",
+      "value": "85ms",
       "pass": true,
       "note": "INP واقعی نیازمند تعامل کاربر واقعی است — این proxy کلیک→فریم بعدی است"
     },
@@ -31,31 +31,31 @@
     {
       "metric": "Login → Dashboard",
       "target": "< 2000ms",
-      "value": "909ms",
+      "value": "901ms",
       "pass": true
     },
     {
       "metric": "Dashboard → Tile (M1)",
       "target": "< 1000ms",
-      "value": "89ms",
+      "value": "96ms",
       "pass": true
     },
     {
       "metric": "Tile → First Insight",
       "target": "< 2000ms",
-      "value": "6ms",
+      "value": "10ms",
       "pass": true
     },
     {
       "metric": "API P95 /api/version",
       "target": "< 500ms",
-      "value": "5ms",
+      "value": "8ms",
       "pass": true
     },
     {
       "metric": "API P95 /api/health",
       "target": "< 500ms",
-      "value": "6ms",
+      "value": "7ms",
       "pass": true
     },
     {
@@ -67,7 +67,7 @@
     {
       "metric": "RAM production",
       "target": "< 500MB",
-      "value": "209MB",
+      "value": "205MB",
       "pass": true
     },
     {
@@ -79,13 +79,13 @@
     }
   ],
   "browserJourney": {
-    "measuredAt": "2026-10-07T13:28:09Z",
+    "measuredAt": "2026-10-07T13:52:18Z",
     "base": "http://localhost:3000",
     "loginFirstPaint": {
-      "loadToInputMs": 572
+      "loadToInputMs": 588
     },
     "loginPage": {
-      "lcp": 556,
+      "lcp": 568,
       "cls": 0,
       "lcpUrl": ""
     },
@@ -93,22 +93,22 @@
       "count": 15,
       "encodedKB": 281
     },
-    "loginToDashboardMs": 909,
+    "loginToDashboardMs": 901,
     "dashboard": {
-      "lcp": 556,
+      "lcp": 568,
       "cls": 0,
       "lcpUrl": ""
     },
-    "dashboardToTileMs": 89,
+    "dashboardToTileMs": 96,
     "tilePage": {
-      "lcp": 556,
+      "lcp": 568,
       "cls": 0,
       "lcpUrl": ""
     },
     "tileBodySample": "اکوسیستم هوشمند ملک ایران\nسی\nآگهی ملکا\n\nدفتر مرکزی فایل‌های آگهی: ثبت دستی و خودکار، انتقال گام‌به‌گام به CRM ملک تبریز و انتشار هوشمند در اینستاگرام\n\nوضعیت اتصال‌ها\n۰ از ۱۰\n…\n…\n…\n…\n…\n…\n…\n…\n…\n…\nدفتر فایل‌های آگهی\n\nثبت دستی (۵ گامی عین فرم آرم)، ثبت خودکار فایل‌های تأییدشده فایل‌یابی، انتقال گام‌به‌گ",
-    "tileToFirstInsightMs": 6,
+    "tileToFirstInsightMs": 10,
     "insightFound": true,
-    "interactionLatencyMs": 81,
+    "interactionLatencyMs": 85,
     "jsResources": {
       "count": 19,
       "encodedBodyKB": 323

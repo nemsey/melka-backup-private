@@ -2587,3 +2587,25 @@ Stage Summary:
 - شعار فاز برآورده شد: «۳۱→۰ نقض. یک قفل با تمدید. یک راز با دو نسخه (سه‌مکانی + رمزی). یک API با نسخه. — لایه‌های منظم.»
 - سه کشف تاریخی: (۱) ریست ششم حتی درخت گیت را برگرداند — تنها نجات: آینهٔ GitHub (۲) escrow بدون کد خواننده = یتیم (۳) کد کامیت‌نشده = کد گم‌شده
 - انتظار مالک: (۱) دانلود از /deliver/ و آزمون چهار قطعه (بند ۴ قانون فایل) (۲) تصمیم GitHub Secret اختیاری (docs/ESCROW-GITHUB-RECOVERY.md) (۳) publish از پنل در صورت نیاز
+
+---
+Task ID: PN-013
+Agent: main (Super Z / GLM)
+Task: ملکا-شورا-ن۰۱۵-۱۴۰۵ — کنترل انبار ۱۲ پرونده + بستن انبار بدهی + فاز ۴ کارایی (Server Shell + Client Islands + Performance Budget + Observability)
+
+Work Log:
+- **قفل ورود:** ۴/۴ نسخه (HEAD=145a739 · آینه GitHub = همان · بستهٔ بقا chainIndex=13 · BUILD_ID=5ad0c25 مجاز طبق سند) + ۵/۵ پیش‌شرط (health ok · integrity ok · escrow سه‌مکانی consistent با keyFp a669dfac · Worker+watchdog زنده · هر سه کلید env) → ورود مجاز
+- **مرحلهٔ ۱ (کنترل انبار ۱۲ پرونده):** هر ۱۲ پرونده PN-001→PN-012 با شاهد امروز راستی‌آزمایی شد (کد/DB/تست/گارد/لینک) — هیچ ادعای دروغین؛ داده‌ها رشد کرده (آگهی ۱۱,۵۰۱→۲۷,۶۸۲ · گراف ۳۶,۶۵۰→۱۱۲,۹۹۹ · هشدار ۵۳→۹۷۷)؛ ۳ مغایرت کشف: M1=BUILD_ID≠HEAD (۲ کامیت مستنداتی) · M2=`bun test` برهنه تست ۶-ج را timeout می‌کند (MELK_API_TIMEOUT_MS فقط در `bun run test`) · M3=expected-counts.json جدول مردهٔ PmPersonnelRecord را ارجاع می‌داد؛ تست رسمی همان روز: ۱۹۳۵/۰ ✓ · شاهد: control-report.json
+- **مرحلهٔ ۲ (انبار بدهی):** ۸ بدهی ثبت (۴ قابل‌بستن با GLM · ۴ مالک‌سو: تیکت 4c/8GB · publish · تصمیم الف/ب کد مستر در تاریخچه · LFS) — debt-register.json
+- **مرحلهٔ ۳ (بستن):** D5 بسته (تزریق MELK_API_TIMEOUT_MS به preload-guard — قبلاً `bun test` برهنه ۶-ج را ۳۰s می‌شکست؛ اکنون ۲۲/۲۲ در ۳٫۷s) · D6 بسته (حذف ارجاع جدول مرده از هر سه مولد شمارش + بازتولید expected-counts معتبر) · D9 تازه کشف و بسته (۴۰۴ فونت Vazirmatn-latin-800 — زیرمجموعهٔ رسمی ExtraBold با fontTools: وزن واقعی ۸۰۰ · ۱۰۰ گلیف) · D8 با اجرای فاز ۴ بسته · D7 به دروازه موکول (بسته شد)
+- **مرحلهٔ ۴ (Server Shell + Client Islands):** page.tsx از ۹۸ خط تماماً-کلاینت به Server Component ۲۶ خطی + MelkaApp (روتر جزیره) + ۳ جزیرهٔ پویا (AuthFlow · DashboardShell با framer-motion+رجیستری کاشی · UpdateController) + پیش‌بارگذاری موازی جزیرهٔ ورود + پیش‌واکشی داشبورد در بیکاری صفحهٔ ورود — Initial JS مسیر /: ۲۹۹٫۵→۱۹۲٫۱KB (−۳۶٪ · gzip-6 مانیفست‌محور) · LCP ۵۵۶ms · CLS ۰ · INP ۸۰ · Tile-open ۷۳-۸۹ms · loginToDashboard ۲۹۳→۹۰۲ms صادقانه تجزیه و مستند شد (API=۲۲-۳۰ms · شبکه=صفر با پیش‌واکشی · ~۸۴۰ms رندر کلاینت روی ۲vCPU سندباکس — قربان مبادلهٔ آگاهانه؛ زیر بودجهٔ ۲s) · تست قانون ۰۳۵-B به مکان جدید عناصر به‌روز + تست تازهٔ ساختار جزیره‌ای (۳۴/۳۴) · کامیت‌ها: 0383937 · a654bb3 · 3cbe38e
+- **مرحلهٔ ۵ (Performance Budget):** سه اجرای کامل perf-budget.sh — ۱۱/۱۲ سبز (تنها قرمز: پیک Build 1873MB = همان PARTIAL مستند D1 سخت‌افزاری) · RAM تولید ۱۷۳/۱۹۸/۲۰۹MB · API P95 ۳-۱۲ms · phase4-budget.json (کامیت 955652e)
+- **مرحلهٔ ۶ (Observability کامل):** Correlation ID سرتاسری x-request-id (کلاینت api() → proxy → withRouteLog → لاگ/متریک → پاسخ — اثبات زنده با curl و server.log: همان شناسه در start/ok/duration) + رجیستری متریک درون‌حافظه‌ای (api.latency · sync.duration · agent.latency · prediction.brier — حلقهٔ ۵۰۰ نمونه · صفر وابستگی) + پانل OWNER-only /api/runtime/metrics + آینهٔ v1 (نامتغیر ۶۹=۶۹ حفظ) + پانل زنده: ۲۰۰ با نشست واقعی (Worker زنده · ۵ کار با شمارش/مدت · متریک ایجنت واقعی ۲۶ms از همین نشست) + ۱۷/۱۷ تست — phase4-observability.json (کامیت 80f829e)
+- **مرحلهٔ ۷ (دروازهٔ پایانی):** تست ×۲: **۱۹۵۳/۰ ×۲ یکسان — رکورد جدید پروژه** (+۱۷ تست Observability + ۱ جزیره‌ای) · CI هشت‌گامی کامل PASS (fingerprint · tsc×۲ · lint · تست×۲ · ۴ گارد · بودجه · build 34.3s · verify 100٪) · ۶/۶ گارد سبز (پس از بیلد تازه D7 بسته شد — REPRODUCIBLE) · بستهٔ بقا chainIndex=14 (۱۰۵ فایل · ۴۰۸MB · VACUUM ۲۵۳MB md5 c9a1bf45 · لنگر MANIFEST بستهٔ ۱۳) · زنجیرهٔ هش ۱۳ وارسی سبز · آینه GitHub: main=5b7daa5=HEAD + survival/code اسنپ‌شات تازه (bdfd329) + اصلاح حداقلی مانیفست api-versioning ۶۸→۶۹ (اصل تاریکی در بستهٔ ۱۳) · مهر سه‌مسیره یکسان
+- **مرحلهٔ ۸:** گزارش هفت‌بخشی + قانون فایل نسخهٔ ۳ (ALL.zip + قطعات ≤۵۰MB + SHA256SUMS + REJOIN + آزمون لینک ۲۰۰)
+
+Stage Summary:
+- حکم گیت: INVENTORY_CONTROLLED + DEBT_LEDGER_CLOSED + PHASE_4_PERFORMANCE_ARCHITECTURE_COMPLETE
+- سه دستاورد محوری: (۱) انبار ۱۲ پرونده برای نخستین بار راستی‌آزمایی مستقل شد — صفر ادعای دروغین، ۳ مغایرت بسته شد (۲) Initial JS مسیر اصلی −۳۶٪ با پوستهٔ سرور + جزیره‌ها (۳) Correlation ID سرتاسری + ۴ متریک استاندارد + پانل OWNER-only
+- رکورد تست: ۱۹۵۳/۰ ×۲ (قبلی ۱۹۳۵)
+- انتظار مالک: (۱) آزمون لینک‌های تحویل از دامنهٔ preview (۲) تصمیم‌های باز: تیکت 4c/8GB · publish از پنل · الف/ب کد مستر در تاریخچه · GitHub Secret اختیاری (۳) پانل متریک: تنظیمات → یا مستقیم /api/v1/runtime/metrics با نشست OWNER

@@ -2,11 +2,21 @@
   "case": "PN-001",
   "block": "2.1",
   "witness": "گام پنجم — اطلاعات کامل گزینه‌ها",
-  "generatedAt": "2026-10-07T13:47:16.294Z",
+  "generatedAt": "2026-10-07T13:52:04.583Z",
   "realMatches": [
     {
       "listingCode": "1095",
       "top": [
+        {
+          "code": "14566",
+          "score": 0.9,
+          "ownerName": "جعفری",
+          "mobile": null,
+          "region": "زعفرانیه، یاغچیان، باغچه بان",
+          "priceFrom": 20000000000,
+          "priceTo": 60000000000,
+          "freshness": "2026-10-07T13:48:23.577Z"
+        },
         {
           "code": "16082",
           "score": 0.9,
@@ -46,22 +56,22 @@
           "priceFrom": 40000000000,
           "priceTo": 70000000000,
           "freshness": "2026-10-07T13:42:13.915Z"
-        },
-        {
-          "code": "17551",
-          "score": 0.9,
-          "ownerName": "موسی پور",
-          "mobile": "09141153837",
-          "region": "ولیعصر",
-          "priceFrom": 10000000000,
-          "priceTo": 200000000000,
-          "freshness": "2026-10-07T13:42:08.116Z"
         }
       ]
     },
     {
       "listingCode": "1105",
       "top": [
+        {
+          "code": "14540",
+          "score": 0.9,
+          "ownerName": "حسنی",
+          "mobile": null,
+          "region": "ولیعصر، الهی پرست",
+          "priceFrom": 100000000000,
+          "priceTo": 300000000000,
+          "freshness": "2026-10-07T13:48:23.637Z"
+        },
         {
           "code": "16648",
           "score": 0.9,
@@ -101,22 +111,32 @@
           "priceFrom": 100000000000,
           "priceTo": 200000000000,
           "freshness": "2026-10-07T13:43:13.570Z"
-        },
-        {
-          "code": "15388",
-          "score": 0.78,
-          "ownerName": "احد شاهین",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 100000000000,
-          "priceTo": 150000000000,
-          "freshness": "2026-10-07T13:43:58.701Z"
         }
       ]
     },
     {
       "listingCode": "1630",
       "top": [
+        {
+          "code": "14414",
+          "score": 0.9,
+          "ownerName": "موسوی",
+          "mobile": null,
+          "region": "ولیعصر",
+          "priceFrom": 70000000000,
+          "priceTo": 100000000000,
+          "freshness": "2026-10-07T13:48:33.584Z"
+        },
+        {
+          "code": "14420",
+          "score": 0.9,
+          "ownerName": "خانوم موسوی",
+          "mobile": null,
+          "region": "ولیعصر",
+          "priceFrom": 50000000000,
+          "priceTo": 100000000000,
+          "freshness": "2026-10-07T13:48:33.571Z"
+        },
         {
           "code": "15043",
           "score": 0.9,
@@ -146,26 +166,6 @@
           "priceFrom": 20000000000,
           "priceTo": 100000000000,
           "freshness": "2026-10-07T13:44:03.665Z"
-        },
-        {
-          "code": "15390",
-          "score": 0.9,
-          "ownerName": "پرهیزکار",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 80000000000,
-          "priceTo": 100000000000,
-          "freshness": "2026-10-07T13:43:58.696Z"
-        },
-        {
-          "code": "16648",
-          "score": 0.9,
-          "ownerName": "ابراهیمی",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 20000000000,
-          "priceTo": 400000000000,
-          "freshness": "2026-10-07T13:42:52.065Z"
         }
       ]
     },
@@ -228,6 +228,16 @@
       "listingCode": "2594",
       "top": [
         {
+          "code": "14540",
+          "score": 0.9,
+          "ownerName": "حسنی",
+          "mobile": null,
+          "region": "ولیعصر، الهی پرست",
+          "priceFrom": 100000000000,
+          "priceTo": 300000000000,
+          "freshness": "2026-10-07T13:48:23.637Z"
+        },
+        {
           "code": "15388",
           "score": 0.9,
           "ownerName": "احد شاهین",
@@ -266,16 +276,6 @@
           "priceFrom": 10000000000,
           "priceTo": 200000000000,
           "freshness": "2026-10-07T13:42:08.116Z"
-        },
-        {
-          "code": "18164",
-          "score": 0.9,
-          "ownerName": "نجفی",
-          "mobile": null,
-          "region": "ولیعصر",
-          "priceFrom": 80000000000,
-          "priceTo": 120000000000,
-          "freshness": "2026-10-07T13:41:44.204Z"
         }
       ]
     }
