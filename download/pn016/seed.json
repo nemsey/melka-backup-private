@@ -1,0 +1,84 @@
+{
+  "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+  "workOrder": "PN-016",
+  "stage": "۳ — Migration + Seed",
+  "at": "2026-10-07T22:37:40.071Z",
+  "sources": {
+    "sessions": 3,
+    "personnelAccessLegacy": 0
+  },
+  "created": [
+    {
+      "personnelCode": "410031338",
+      "fullName": "سید امیرمحمد سیدی",
+      "role": "EXPERT",
+      "permissions": 8
+    },
+    {
+      "personnelCode": "410031319",
+      "fullName": "نرگس یاوری",
+      "role": "EXPERT",
+      "permissions": 8
+    },
+    {
+      "personnelCode": "410031320",
+      "fullName": "سید نعمت اله سیدی",
+      "role": "OWNER",
+      "permissions": "bypass"
+    }
+  ],
+  "skipped": [],
+  "permissionsCreated": 16,
+  "legacyPermissionsMigrated": 0,
+  "userCountBefore": 0,
+  "userCountAfter": 3,
+  "permissionRows": 16,
+  "fixProof": [
+    {
+      "code": "410031338",
+      "resolve": {
+        "level": "limited",
+        "tiles": [
+          "arm-listings",
+          "arm-requests",
+          "transactions-contracts",
+          "experts",
+          "smart-matching",
+          "file-finder"
+        ]
+      }
+    },
+    {
+      "code": "410031319",
+      "resolve": {
+        "level": "limited",
+        "tiles": [
+          "arm-listings",
+          "arm-requests",
+          "transactions-contracts",
+          "experts",
+          "smart-matching",
+          "file-finder"
+        ]
+      }
+    },
+    {
+      "code": "410031320",
+      "resolve": {
+        "level": "full",
+        "tiles": [
+          "arm-listings",
+          "arm-requests",
+          "transactions-contracts",
+          "experts",
+          "smart-matching",
+          "learning-tier",
+          "market-index",
+          "data-coverage",
+          "file-finder",
+          "management-dashboard"
+        ]
+      }
+    }
+  ]
+}
