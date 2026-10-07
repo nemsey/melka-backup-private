@@ -278,7 +278,7 @@ export async function revokeUserSession(userId: string, sessionId: string): Prom
 // ─────────────────────────────────────────────────────────────────────────
 
 export interface LoginUserResolution {
-  user: { id: string; role: UserRole; fullName: string; isActive: boolean } | null;
+  user: { id: string; role: UserRole; fullName: string; isActive: boolean };
   /** نقش قدیمی که روت ورود باید در Session بنویسد */
   legacyRole: LegacyRole;
   /** نقش نهایی نمایش داده می‌شود (پس از قانون مالک) */

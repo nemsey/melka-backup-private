@@ -29,6 +29,8 @@ export type RateKind =
   | "REQUEST_OTP"
   | "VERIFY_OTP"
   | "MASTER_LOGIN"
+  | "GUEST_REQUEST_OTP" // PN-016 مسیر ۳
+  | "GUEST_LOGIN" // PN-016 مسیر ۳
   | "REQUEST_OTP_PM"
   | "VERIFY_OTP_PM"
   | "REQUEST_OTP_ARM"

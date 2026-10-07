@@ -561,6 +561,8 @@ export type MelkErrorCode =
   | "PRECONDITION_FAILED"
   | "RATE_LIMITED"
   | "SMS_LIMIT_REMOTE" // P6.5-09: سقف ارسال پیامک سمت خود سامانه ملک تبریز (429 — قابل انتظار، نه قفل محلی)
+  | "INVALID_MOBILE" // PN-016 مسیر ۳: قالب موبایل مهمان
+  | "OTP_ALREADY_SENT" // PN-016 مسیر ۳: کد فعال موجود
   | "NETWORK_ERROR"
   | "TIMEOUT"
   | "UNAUTHORIZED"

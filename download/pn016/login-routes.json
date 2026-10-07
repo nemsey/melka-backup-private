@@ -1,0 +1,89 @@
+{
+  "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+  "workOrder": "PN-016",
+  "stage": "۴ — سه مسیر ورود",
+  "at": "2026-10-07T22:43:04.173Z",
+  "db": "db/test.db (پایگاه تست — الگوی P6.5)",
+  "route1_master": {
+    "route": "POST /api/auth/master-login",
+    "changedInStage4": false,
+    "masterLayersConsistent": null,
+    "note": "حفظ شد (سند: مسیر ۱ — حفظ). گواهی زندهٔ ورود مالک در مرحلهٔ ۸ (E2E)."
+  },
+  "route2_personnel": {
+    "route": "POST /api/auth/personnel-login",
+    "cases": [
+      {
+        "case": "کد مالک env",
+        "resolution": {
+          "legacyRole": "OWNER",
+          "effectiveRole": "OWNER",
+          "isActive": true
+        }
+      },
+      {
+        "case": "EXPERT موجود",
+        "resolution": {
+          "legacyRole": "CONSULTANT",
+          "effectiveRole": "EXPERT",
+          "isActive": true
+        }
+      },
+      {
+        "case": "بدون رکورد (خودساخت)",
+        "resolution": {
+          "legacyRole": "CONSULTANT",
+          "effectiveRole": "VIEWER",
+          "isActive": true,
+          "isNewlyProvisioned": true
+        }
+      },
+      {
+        "case": "کاربر غیرفعال",
+        "resolution": {
+          "effectiveRole": "EXPERT",
+          "isActive": false,
+          "expectedHttp": 403
+        }
+      }
+    ],
+    "sessionMapProof": {
+      "userSessionRow": {
+        "userId": "cmuyp1d3j0001nksp7eh1cla9",
+        "isActive": true,
+        "ip": "10.0.0.9"
+      },
+      "remoteCloseCount": 1,
+      "authSessionRevokedAfterClose": true,
+      "revokedReason": "USER_MGMT_REMOTE_CLOSE"
+    }
+  },
+  "route3_guest": {
+    "route": "POST /api/auth/guest-request-otp + POST /api/auth/guest-login",
+    "cases": {
+      "provisioning": {
+        "firstTime": {
+          "effectiveRole": "GUEST",
+          "isNewlyProvisioned": true
+        },
+        "secondTime": {
+          "isNewlyProvisioned": false
+        }
+      },
+      "otpMechanism": {
+        "ttlSeconds": 300,
+        "formatValid": true,
+        "wrongCodeRejected": true,
+        "rightCodeAccepted": true,
+        "replayRejected": true,
+        "activeOtpCheck": true
+      },
+      "remoteClose": 0
+    }
+  },
+  "verdict": {
+    "route1_master": "PRESERVED",
+    "route2_personnel": "EXTENDED_WITH_USER_REGISTRY (نقش از User + غیرفعال=403 + نقشهٔ نشست + سیاهه)",
+    "route3_guest": "NEW (OTP هش + TTL + یک‌بارمصرف + GUEST)"
+  }
+}
