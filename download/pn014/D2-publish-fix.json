@@ -1,0 +1,81 @@
+{
+  "schema": "melka-pn014-d2-publish-fix",
+  "order": "ملکا-شورا-ن۰۱۸-۱۴۰۵ · PN-014 · مرحلهٔ ۲ (D2)",
+  "date": "1405/07/18 (2026-10-07)",
+  "hypothesis": {
+    "stated": "DB ۲۶۵MB در repo (فرضیهٔ سند سفارش)",
+    "verdict": "رد شد — با شاهد",
+    "evidence": [
+      "git ls-files db/ → فقط db/test.db و db/test-repository.db (تست، کوچک)",
+      "git log --all -- db/custom.db → خالی (هرگز کامیت نشده)",
+      ".gitignore شامل /db/custom.db از P6549 + db/custom.db-wal/shm از PN-008",
+      "اندازهٔ واقعی: ۲۵۸MB (نه ۲۶۵MB)"
+    ]
+  },
+  "rootCause": {
+    "finding": "تورم دوبارهٔ بستهٔ استقرار پس از رفع P6528 — این بار با فهرست‌های تازه",
+    "mechanism": "خط لولهٔ انتشار (.zscripts/build.sh) سه کپی می‌سازد: standalone (کامل) + public (کامل) + db — و پیش از PN-014 فهرست‌های زیر داخل بسته بودند:",
+    "contents": {
+      "public/deliver": "۵۹۴MB — تحویل‌های قانون فایل v3 از PN-012/013 (ALL.zip + ۱۳ قطعه بقا) — هم داخل standalone (cp -r public) هم کپی مستقیم دوم build.sh → دوبار!",
+      "upload/dataset-backups": "۳۸۸MB — پشتیبان‌های سرد داده (file-tracing داخل standalone کشیده بود)",
+      "intelligence-data": "۲۶MB — هیچ ارجاعی از src/ ندارد (مصرف‌کنندهٔ واقعی: Worker از ریشهٔ پروژه با مسیر مطلق)"
+    },
+    "estimatedPackageBefore": "خام ~۲٫۷GB · tar.gz ~۶۰۰-۸۰۰MB — بسیار فراتر از سقف خط لوله (آخرین موفق ~۱۰۰MB · ناموفق مستند ۱۸۴MB — P6528)"
+  },
+  "fix": {
+    "approach": "تحویل‌ها از public جدا شدند و با مسیر اختصاصی سرو می‌شوند — بدون تغییر تجربهٔ مالک",
+    "changes": [
+      "public/deliver → deliver-store/ (ریشهٔ پروژه، gitignored) — ۵۹۴MB از دو کپی بسته خارج شد",
+      "src/app/deliver/[...path]/route.ts (تازه) — همان URLهای همیشگی: /deliver/… · GET+HEAD · پیمایش مسیر ممنوع · Content-Length صریح · no-store · فایل کوچک یک‌جا / بزرگ (~۴۸MB) جریانی",
+      "next.config.ts outputFileTracingExcludes += upload/dataset-backups/** · upload/*.tar.gz · upload/*.md · deliver-store/** · intelligence-data/**",
+      "package.json build پاک‌سازی += همان فهرست‌ها (هرم دومی — الگوی P6528)",
+      "upload/.runtime عمداً حفظ شد — boot-secrets + runtime-status با مسیر مطلق در زمان اجرا خوانده می‌شوند (کانتینر منتشرشده به نسخهٔ cwd آن نیازمند است)"
+    ],
+    "keptIntact": [
+      "next.config.ts output: standalone (بررسی شد — از قبل درست بود)",
+      "تجربهٔ مالک: همهٔ پیوندهای /deliver روی دامنهٔ preview همان ۲۰۰ پیشین (آزمون زنده پایین)"
+    ]
+  },
+  "measured": {
+    "standaloneBefore": "1.2GB",
+    "standaloneAfter": "177MB (−۸۵٪ · node_modules 149MB = قلب باقی‌مانده)",
+    "packageSimulation": {
+      "method": "شبیه‌سازی دقیق .zscripts/build.sh (P6528 الگو): standalone + static + public + db → tar -czf",
+      "raw": "~۴۴۵MB (standalone 177MB + db 268MB + static/public)",
+      "tarGz": "۹۵MB",
+      "referencePoints": "آخرین استقرار موفق ~۱۰۰MB · ناموفق مستند ۱۸۴MB — بستهٔ جدید زیر آستانهٔ موفق تاریخی"
+    }
+  },
+  "buildAndRestart": {
+    "executed": "بله — بیلد تازه + ری‌استارت کنترل‌شده (kill سرور → بازگشت خودکار نگهبان ۵ ثانیه‌ای)",
+    "newServerPid": 10629,
+    "health": "200 ok:true mode:real",
+    "buildId": "cb4d880-20261007-1554 (روی HEAD زمان بیلد — مهر نهایی در دروازهٔ پایانی روی HEAD پایانی)",
+    "deliverLinksLive": [
+      "200 /deliver/PN-013-ALL.zip",
+      "200 /deliver/PN-013-SHA256SUMS.txt",
+      "200 /deliver/PN-013-FINAL-REPORT.md",
+      "200 /deliver/pn013/lock-in.json",
+      "200 /deliver/pn013/end-gate.json",
+      "200 /deliver/pn013/screens/01-splash-server-html.png",
+      "200 https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/deliver/PN-013-ALL.zip",
+      "200 https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/deliver/pn013/lock-in.json"
+    ]
+  },
+  "publishAttempt": {
+    "fromCli": "غیرممکن — مستند ×۳ (PN-005/006/007): دکمهٔ انتشار فقط در پنل وب مالک",
+    "currentDomainStatus": "publish=500 · preview=200 (پروب زنده امروز)",
+    "ownerAction": "۱) Publish از پنل (راهنمای گام‌به‌گام: docs/PUBLISH-TROUBLESHOOTING.md) · ۲) اگر پنل دکمه نداشت: متن پشتیبانی آمادهٔ همان سند",
+    "expectation": "با بستهٔ ۹۵MB، خط لوله دیگر به سقف نمی‌خورد — احتمال موفقیت انتشار برای نخستین‌بار از PN-007 واقعی است"
+  },
+  "backup": {
+    "path": "backups/pre-pn014-20261007T154236Z.db",
+    "md5": "264944c92f6a35bca9bc141cf45100c7",
+    "matchesLive": true
+  },
+  "tests": {
+    "new": "tests/pn014-deliver-route.test.ts — ۶/۶ سبز (سرو · تودرتو · پیمایش ممنوع · ۴۰۴ · HEAD · ساختار تاریخی)",
+    "tsc": "صفر خطا"
+  },
+  "commit": "اِعمال شد (feat(PN-014/D2))"
+}

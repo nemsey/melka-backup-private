@@ -21,7 +21,18 @@
 import { describe, expect, test, beforeAll, afterAll } from "bun:test";
 
 const ENV_BACKUP: Record<string, string | undefined> = {};
-const WATCHED_KEYS = ["NODE_ENV", "MELK_TOKEN_KEY", "MASTER_ACCESS_CODE", "DATABASE_URL"] as const;
+// PN-012 ترمیم: env.platform.json پس از PN-011 «کاشِ بوت از escrow» است و
+// OWNER_PERSONNEL_CODES/MELK_SYNC_MODE هم حمل می‌کند — هر کلیدی که
+// applyPlatformEnvFallbacks می‌تواند بنشاند باید backup/restore شود؛ وگرنه
+// به فایل‌های تست بعدی در همان worker نشت می‌کند (شاهد: شکست ۷-p6504i).
+const WATCHED_KEYS = [
+  "NODE_ENV",
+  "MELK_TOKEN_KEY",
+  "MASTER_ACCESS_CODE",
+  "DATABASE_URL",
+  "OWNER_PERSONNEL_CODES",
+  "MELK_SYNC_MODE",
+] as const;
 
 function setEnv(key: string, value: string | undefined) {
   if (!(key in ENV_BACKUP)) ENV_BACKUP[key] = process.env[key];

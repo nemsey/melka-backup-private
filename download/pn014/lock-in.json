@@ -1,0 +1,70 @@
+{
+  "schema": "melka-pn014-lock-in",
+  "order": "ملکا-شورا-ن۰۱۸-۱۴۰۵ · PN-014",
+  "date": "1405/07/18 (2026-10-07)",
+  "section01": {
+    "expected": {
+      "head": "38ad6ce یا جدیدتر",
+      "mirror": "همان HEAD",
+      "chainIndex": 14,
+      "buildIdEqualsHead": true
+    },
+    "observed": {
+      "headLocal": "cb4d88041f270be362004db6f4ecda109ce9833b",
+      "headNote": "38ad6ce (تحویل نهایی PN-013) + یک کامیت صرفاً چرخش لاگ server.log.20261007T140348Z.gz — صفر تغییر کد (git show cb4d880 --stat: فقط دو فایل .gz)",
+      "mirrorMain": "cb4d88041f270be362004db6f4ecda109ce9833b (git ls-remote auto-mirror main)",
+      "survivalChainIndex": 14,
+      "survivalPackage": "upload/.survival/PN-013-20261007/CHAIN.json",
+      "serverBuildId": "38ad6ce-20261007-1402 (stamped) · fingerprint پس از بیلد: cb4d880-20261007-1434",
+      "serverBuildIdNote": "کد اجرایی سرور = کد HEAD (دلتای cb4d880 فقط دو فایل لاگ gz است، بدون هیچ تغییر سورس). fingerprint.json پس از بیلد با HEAD cb4d880 بازمحاسبه شده و در همان پاسخ /api/version سرو می‌شود.",
+      "versionStampFourWay": "api = metaTag = VersionBadge (فوتر) — هر سه از همان /api/version زنده؛ مقادیر یکسان"
+    },
+    "verdict": {
+      "row1": "✅ HEAD محلی cb4d880 ≥ 38ad6ce",
+      "row2": "✅ آینه GitHub = cb4d880 = HEAD محلی (تطابق کامل)",
+      "row3": "✅ بستهٔ بقا chainIndex=14",
+      "row4": "✅ BUILD_ID سرور = کد HEAD (stamped 38ad6ce؛ دلتای پس از بیلد فقط چرخش لاگ — اثر انگشت پسابیلد cb4d880 سرو می‌شود)",
+      "decision": "گذر — قفل ورود باز شد"
+    }
+  },
+  "section02": {
+    "health": {
+      "command": "curl /api/health",
+      "result": "200 · ok:true · mode:real · masterAuth:env · masterLayersConsistent:true · time:2026-10-07T15:36:09Z",
+      "pass": true
+    },
+    "dbIntegrity": {
+      "command": "python3 sqlite3 PRAGMA integrity_check (db/custom.db)",
+      "result": "ok · ۲۰+ جدول زنده (Session…MarketPriceStat)",
+      "pass": true
+    },
+    "escrowThree": {
+      "command": "bun scripts/pn012/escrow-manager.ts status",
+      "result": "consistent:true · envLocal + escrowDb + escrowUpload + encrypted همه alive · keyFp یکسان a669dfac711a99d8",
+      "pass": true
+    },
+    "workerWatchdog": {
+      "command": "ps aux | grep -E 'worker|watchdog'",
+      "result": "worker.ts PID 1896 (08:23، ضربان فعال) · prod-watchdog.sh PID 22236 (09:39)",
+      "pass": true
+    },
+    "envKeys": {
+      "command": "بررسی نام کلیدها در .env.local (بدون چاپ مقادیر)",
+      "result": "MELK_TOKEN_KEY ✓ · MASTER_ACCESS_CODE ✓ · OWNER_PERSONNEL_CODES ✓ (+ MELK_SYNC_MODE) · DATABASE_URL در .env",
+      "pass": true
+    },
+    "githubPrivate": {
+      "command": "curl بدون احراز api.github.com/repos/nemsey/melka-backup-private → 403 · git ls-remote احرازشده → موفق",
+      "result": "مخزن خصوصی تأیید شد",
+      "pass": true
+    }
+  },
+  "section03": {
+    "ownerStatement": "«من، سیدنعمت‌اله سیدی، سفارش PN-014 را صادر می‌کنم. این سفارش شامل: (الف) تصمیم‌های چهار بدهی D1-D4، (ب) پنج مورد اصلاح PN-013، (ج) آغاز فاز ۵ — اعتبارسنجی هوش.» — دریافت و ثبت شد.",
+    "glmAddendum": "افزون بر سفارش شورا، مالک پیش از سند، چهار بهینه‌سازی صریح برای کاشی تطبیق (هوشمند جستجو + هم‌ظاهری فایل‌یابی + تحلیل امتیازدهی/پیش‌بینی رد + هوشمندی سرتاسری) سفارش داد — به‌عنوان مرحلهٔ مکمل ۹-ب در همین PN-014 اجرا و مستند می‌شود."
+  },
+  "timing": {
+    "selfDeclared": "برآورد GLM: کل اجرا ~۳۰۰-۳۶۰ دقیقه (D1-D4: ~۴۰′ · C1-C5: ~۶۰′ · کاشی تطبیق: ~۹۰′ · فاز ۵: ~۶۰′ · دروازه+تحویل: ~۵۰′) · نقطه‌های سلامت هر ۳۰ دقیقه",
+    "startedAt": "2026-10-07T15:40Z"
+  }
+}

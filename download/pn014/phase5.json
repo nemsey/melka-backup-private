@@ -1,0 +1,248 @@
+{
+  "schema": "melka-pn014-phase5",
+  "order": "ملکا-شورا-ن۰۱۸-۱۴۰۵ · PN-014 · مرحلهٔ ۱۰ (فاز ۵ — اعتبارسنجی هوش)",
+  "date": "2026-10-07T17:01:16.654Z",
+  "method": "هر موتور با دادهٔ واقعی تولید اجرا شد (پایگاه ۲۷۶۸۲ ملک · 772 پیش‌بینی/پیامد · 212 خاطرهٔ ایجنت · 977 هشدار فرصت) — صفر نوشتن در تولید",
+  "constraint": "auto_execute=false برای همهٔ موتورها — هر کنش نیازمند تأیید انسانی است",
+  "table": [
+    {
+      "engine": "Context",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "buildContextMs": 0,
+        "tileId": "arm-listings",
+        "realMemoriesAvailable": 10,
+        "assembleSupported": true,
+        "realAgentMemoryRows": 212
+      },
+      "evidence": [
+        "buildContext روی کاشی واقعی arm-listings — 0ms",
+        "حافظهٔ واقعی قابل تزریق: 10 ردیف تازهٔ AgentMemory همین کاشی",
+        "مجموع ردیف‌های AgentMemory تولید: 212"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Memory",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "seededRealEntries": 200,
+        "queriedEntries": 5,
+        "queryMs": 0,
+        "similaritySearchTopScore": null,
+        "kindsRepresented": 3
+      },
+      "evidence": [
+        "ذخیره با 200 خاطرهٔ واقعی AgentMemory کاشته شد و query همان را برگرداند (5 در ۵ تای برتر)",
+        "جست‌وجوی شباهت روی متن واقعی — امتیاز نخست: ناموجود در این نسخه"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Retrieval",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "corpusRealEntries": 212,
+        "topK": 5,
+        "hitCount": 5,
+        "retrievalMs": 6,
+        "method": "HYBRID",
+        "topSnippetPreview": "insight-render"
+      },
+      "evidence": [
+        "جست‌وجوی واقعی «قیمت منطقه ولیعصر آپارتمان» روی 212 خاطرهٔ واقعی — 5 نتیجه در 6ms (روش HYBRID)"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Feature",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "realPropertiesTried": 25,
+        "featureSetsBuilt": 25,
+        "avgFeaturesPerSet": 17,
+        "totalMs": 1,
+        "perPropertyMs": 0
+      },
+      "evidence": [
+        "بردار ویژگی روی 25 ملک واقعیِ منتشرشدهٔ امروز ساخته شد — میانگین 17 ویژگی در هر بردار"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Prediction",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "livePredictedNow": 10,
+        "probMin": 0.45089880952380956,
+        "probMax": 0.45089880952380956,
+        "probMean": 0.45089880952380945,
+        "productionLoopPredictions": 428,
+        "productionLoopRanAt": "2026-10-07T16:10:08.239Z",
+        "historicalPredictionsOnDisk": 772
+      },
+      "evidence": [
+        "10 پیش‌بینی زندهٔ همین لحظه روی ملک‌های واقعی امروز — بازهٔ احتمال 0.451 تا 0.451",
+        "حلقهٔ واقعی Worker (اجرای 2026-10-07T16:10Z): 428 پیش‌بینی ثبت‌شده · شاهد دیسک: 772 رکورد"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Outcome",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "realOutcomesQueried": 772,
+        "predictionsOnDisk": 772,
+        "outcomesOnDisk": 772,
+        "productionLoopLinked": 428,
+        "productionLoopPositive": 214,
+        "productionLoopNegative": 214,
+        "queryMs": 4
+      },
+      "evidence": [
+        "کوئری واقعی موتور: 772 رکورد از outcomes.jsonl در 4ms",
+        "حلقهٔ واقعی Worker (2026-10-07T16:10Z): 428 پیوند کامل — 214 مثبت + 214 منفی"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Evaluation",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "brier": 0.2354,
+        "sampleSize": 428,
+        "verdict": "ABOVE_BASELINE",
+        "lift": 0.0584,
+        "unresolvablePairs": 0,
+        "calibrationBuckets": [
+          {
+            "bucket": "0.2-0.4",
+            "predicted": 0.395,
+            "observed": 0.314
+          },
+          {
+            "bucket": "0.4-0.6",
+            "predicted": 0.488,
+            "observed": 0.729
+          }
+        ],
+        "loopRanAt": "2026-10-07T16:10:08.239Z"
+      },
+      "evidence": [
+        "سنجهٔ رسمی از اجرای واقعی حلقهٔ ارزیابی در Worker (2026-10-07T16:10Z): Brier=0.2354 روی 428 جفت واقعی پیش‌بینی-پیامد",
+        "حکم: ABOVE_BASELINE · lift=0.0584 — مدل بالاتر از نرخ پایه است",
+        "کالیبراسیون: 0.2-0.4 (0.40↦0.31) · 0.4-0.6 (0.49↦0.73)"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Learning",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "learnedWeightsActive": true,
+        "feedbackCount": 4,
+        "policyVersions": 8,
+        "latestPolicyVersion": 1,
+        "totalFeedbacks": 4
+      },
+      "evidence": [
+        "وزن‌های تطبیق از 4 بازخورد واقعی پذیرش/رد محاسبه شد (weightsSource=learned فعال)",
+        "8 نسخهٔ سیاست واقعی — تازه‌ترین: v1 (arm-listings)",
+        "4 بازخورد ایجنت تولید"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Decision",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "realCandidates": 10,
+        "rankedCount": 10,
+        "topKey": "alert:cmuw9sxqg02tskpd34q4w2arz",
+        "topScore": 1.25,
+        "rankMonotonicNonIncreasing": true,
+        "allRequireApproval": false
+      },
+      "evidence": [
+        "10 هشدار فرصت واقعی (امتیاز تا 0.95) رتبه‌بندی شد — برترین: alert:cmuw9sxqg02tskpd34q4w2arz",
+        "ترتیب امتیازها نافزایشی است (رتبه‌بندی سازگار) و همهٔ گزینه‌ها نیازمند تأیید انسانی‌اند"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Action Planner",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "stepsPlanned": 1,
+        "stepsRequiringApproval": 1,
+        "autoExecuteSteps": 0,
+        "riskLevels": [
+          "LOW"
+        ],
+        "firstStep": "اقدام 1: alert:top"
+      },
+      "evidence": [
+        "برنامهٔ اقدام برای تصمیم برتر واقعی ساخته شد: 1 گام — 1 نیازمند تأیید",
+        "قید سفارش برقرار: صفر گام خودکار (auto_execute=false در همه)"
+      ],
+      "autoExecute": false
+    },
+    {
+      "engine": "Safety",
+      "CONTRACT": true,
+      "IMPLEMENTED": true,
+      "WIRED": true,
+      "VALIDATED": true,
+      "metric": {
+        "externalActionRequiresApproval": true,
+        "externalRisk": "MEDIUM",
+        "destructiveRisk": "HIGH",
+        "destructiveRequiresApproval": true,
+        "benignRisk": "LOW",
+        "benignRequiresApproval": false,
+        "rulesFiredTotal": 4
+      },
+      "evidence": [
+        "اقدام خارجی → تأیید الزامی (MEDIUM — SAF-001: اقدام روی سامانهٔ خارجی (آرم/پیامک/دیوار) است…)",
+        "اقدام مخرب → ریسک HIGH + تأیید الزامی",
+        "اقدام خنثی → LOW (بدون سد بی‌مورد)"
+      ],
+      "autoExecute": false
+    }
+  ],
+  "summary": {
+    "validated": 11,
+    "total": 11,
+    "autoExecuteAnywhere": false
+  }
+}

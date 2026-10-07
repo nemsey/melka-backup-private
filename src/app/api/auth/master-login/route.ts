@@ -20,6 +20,7 @@ import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { audit, createSession, OWNER_DISPLAY_NAME } from "@/lib/auth/session";
 import { clientIp } from "@/lib/auth/client-ip";
+import { getMasterCodeHash } from "@/lib/services/master-auth";
 
 const MASTER_PERSONNEL = "000000000";
 
@@ -52,11 +53,10 @@ export async function POST(request: NextRequest) {
       source = "env";
     } else {
       // PN-002 نکته ۱ — fallback دیتابیس: هش SHA-256 در AppMeta (بقای بازنشانی محیط)
-      const { db } = await import("@/lib/db");
-      const { createHash } = await import("crypto");
-      const meta = await db.appMeta.findUnique({ where: { id: "singleton" } });
-      const storedHash = meta?.masterCodeHash ?? null;
-      if (storedHash && /^[0-9a-f]{64}$/.test(storedHash)) {
+      // PN-012 · BLOCK 1 — خواندن هش از سرویس (صفر db.* در روت)
+      const storedHash = await getMasterCodeHash();
+      if (storedHash) {
+        const { createHash } = await import("crypto");
         const candidate = createHash("sha256").update(masterCode, "utf8").digest("hex");
         authorized = safeEqual(candidate, storedHash);
         source = "database";

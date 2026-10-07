@@ -114,7 +114,7 @@ def c(t):
 print(json.dumps({
   'PropertyRecord': c('PropertyRecord'), 'RequestRecord': c('RequestRecord'),
   'TransactionRecord': c('TransactionRecord'), 'ExpertRecord': c('ExpertRecord'),
-  'PmPersonnelRecord': c('PmPersonnelRecord'),
+  'ExpertProfile': c('ExpertProfile'),
   'updatedAt': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 }))
 con.close()

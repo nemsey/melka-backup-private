@@ -125,6 +125,8 @@ export function setMinLogLevel(level: LogLevel): void {
 // پوشش‌های رایی برای رویدادهای الزامی P2-05
 // ==========================================================================
 
+import { recordMetric } from "@/lib/observability/metrics";
+
 /** رویداد احراز هویت — ورود/خروج/شکست OTP (بدون داده حساس) */
 export function logAuth(operation: "login" | "logout" | "otp-failed", opts: { userId?: string | null; status: LogStatus; errorCode?: string | null; requestId?: string; detail?: Record<string, unknown> } & Partial<LogEventInput> = { status: "ok" }): void {
   logEvent({
@@ -142,6 +144,10 @@ export function logAuth(operation: "login" | "logout" | "otp-failed", opts: { us
 
 /** رویداد همگام‌سازی — آغاز/پایان/شکست (روی هر دو مسیر legacy و incremental) */
 export function logSync(operation: "sync-run", opts: { status: LogStatus; mode: "legacy" | "incremental"; duration?: number | null; errorCode?: string | null; detail?: Record<string, unknown> } & Partial<LogEventInput>): void {
+  // PN-013/مرحلهٔ ۶ — متریک استاندارد sync.duration (فقط رویدادهای دارای مدت)
+  if (typeof opts.duration === "number" && Number.isFinite(opts.duration)) {
+    recordMetric("sync.duration", opts.duration, { mode: opts.mode, status: opts.status });
+  }
   logEvent({
     category: "sync",
     operation,
@@ -157,6 +163,10 @@ export function logSync(operation: "sync-run", opts: { status: LogStatus; mode: 
 
 /** رویداد فراخوانی ایجنت — شروع/پایان/شکست با کاشی و مدت */
 export function logAgentCall(opts: { tileId: string; agentName?: string; operation: string; status: LogStatus; duration?: number | null; errorCode?: string | null; userId?: string | null } & Partial<LogEventInput>): void {
+  // PN-013/مرحلهٔ ۶ — متریک استاندارد agent.latency (فقط رویدادهای دارای مدت)
+  if (typeof opts.duration === "number" && Number.isFinite(opts.duration)) {
+    recordMetric("agent.latency", opts.duration, { tileId: opts.tileId, operation: opts.operation });
+  }
   logEvent({
     category: "agent",
     operation: opts.operation,
@@ -195,36 +205,61 @@ export function logRoute(opts: { method: string; path: string; status: LogStatus
 /**
  * بسته‌بندی handler روت با لاگ کامل: start → ok|fail + duration واقعی.
  * پاسخ HTTP عیناً عبور داده می‌شود (صفر تغییر در قرارداد).
+ *
+ * PN-013/مرحلهٔ ۶ — Correlation ID سرتاسری + متریک api.latency:
+ *   · شناسهٔ درخواست = هدر ‎x-request-id‎ کلاینت (اگر فرستاده شده) یا تازه؛
+ *     همین شناسه در پاسخ به‌عنوان هدر برگردانده می‌شود (ردیابی UI → روت → لاگ).
+ *   · مدت هر فراخوانی در متریک استاندارد api.latency ثبت می‌شود (برچسب: مسیر).
  */
 export function withRouteLog<Ctx = unknown>(
   operation: string,
   handler: (request: Request, ctx: Ctx) => Promise<Response>
 ): (request: Request, ctx: Ctx) => Promise<Response> {
   return async (request: Request, ctx: Ctx): Promise<Response> => {
-    const requestId = newLogId();
+    // Correlation ID — از UI می‌آید یا همین‌جا ساخته می‌شود
+    const requestId = request.headers.get("x-request-id") ?? newLogId();
     const startedAt = Date.now();
     const url = new URL(request.url);
     logRoute({ method: request.method, path: url.pathname, status: "start", requestId });
 
+    // پاسخ با هدر شناسه — بدون دست‌کوردن بدنه/وضعیت (رونوشت تازهٔ سرصفحه‌ها)
+    const withCorrelationHeader = (response: Response): Response => {
+      try {
+        const headers = new Headers(response.headers);
+        headers.set("x-request-id", requestId);
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
+        });
+      } catch {
+        return response; // اگر بدنهٔ جریانی قابل رونوشت نبود — همان پاسخ خام
+      }
+    };
+
     try {
       const response = await handler(request, ctx);
+      const duration = Date.now() - startedAt;
+      recordMetric("api.latency", duration, { path: url.pathname });
       logRoute({
         method: request.method,
         path: url.pathname,
         status: response.status >= 500 ? "fail" : "ok",
         httpStatus: response.status,
-        duration: Date.now() - startedAt,
+        duration,
         requestId,
         errorCode: response.status >= 500 ? "HTTP_" + response.status : null,
       });
-      return response;
+      return withCorrelationHeader(response);
     } catch (err) {
+      const duration = Date.now() - startedAt;
+      recordMetric("api.latency", duration, { path: url.pathname, status: "fail" });
       logRoute({
         method: request.method,
         path: url.pathname,
         status: "fail",
         httpStatus: 500,
-        duration: Date.now() - startedAt,
+        duration,
         requestId,
         errorCode: "ROUTE_THROW",
       });
