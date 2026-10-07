@@ -1,0 +1,48 @@
+{
+  "schema": "melka-pn012-phase3-progress",
+  "generatedAt": "2026-10-07T09:36:03.531968+00:00",
+  "goal": "بستن بدهی‌های معماری فاز ۳ — ملکا-شورا-ن۰۱۲-۱۴۰۵",
+  "items": {
+    "31_نقض_Repository_Boundary": {
+      "target": 0,
+      "actual": 0,
+      "status": "DONE",
+      "witness": "repository-boundary-fix در گزارش نهایی + audit --strict PASS"
+    },
+    "2_نقض_Intelligence_Boundary": {
+      "target": 0,
+      "actual": 0,
+      "status": "DONE (از PN-010/011 باقی‌مانده)",
+      "witness": "audit-intelligence-boundary --strict PASS در CI"
+    },
+    "JobLock_Lease_Renewal": {
+      "target": "متد renew + heartbeat پیشرفته",
+      "actual": "renew + LeaseGuard + onLeaseLost + شبیه‌سازی ۵ دقیقه → صفر Duplicate",
+      "status": "DONE",
+      "witness": "tests/pn012-joblock-renewal.test.ts (۱۵/۱۵)"
+    },
+    "Escrow_نسخه_دوم": {
+      "target": "backup برای راز بوت",
+      "actual": "سه‌مکانی + رمزنگاری‌شدهٔ گیت + دو دریل زنده PASS",
+      "status": "DONE",
+      "witness": "tests/pn012-escrow-redundancy.test.ts (۱۰/۱۰) + fix-permanent.json"
+    },
+    "Domain_API_Versioning_v1": {
+      "target": "نسخه‌گذاری v1",
+      "actual": "۶۸ آینهٔ v1 سبک + alias زنده",
+      "status": "DONE",
+      "witness": "tests/pn012-api-versioning.test.ts (۱۰/۱۰) + api-versioning.json"
+    },
+    "CI_ضد_رگرسیون": {
+      "target": "گاردهای جدید در هر کامیت",
+      "actual": "۴ گارد (۳ موجود strict + boot-secrets تازه)",
+      "status": "DONE",
+      "witness": "ci-eight-steps.log ×۲ PASS"
+    }
+  },
+  "extra_deliveries": {
+    "بازیابی_PN-011": "کار کامل جلسهٔ گم‌شده از آینهٔ GitHub بازیابی و ادغام شد (۱۸۸۵ تست همان جلسه زنده شد)",
+    "تسویه_نوسان‌های_تست": "سه ریشهٔ واقعی نوسان (mock آلوده + نشت env + timeout شبکه) قطعی شدند"
+  },
+  "gate_verdict": "PHASE_3_ARCHITECTURE_HARDENING_COMPLETE"
+}
