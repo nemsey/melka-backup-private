@@ -88,6 +88,64 @@ const PALETTE: readonly PaletteEntry[] = [
   { hue: "stone",
     soft: "bg-stone-500/15 text-stone-700 dark:text-stone-300 border border-stone-500/30", solid: "bg-stone-500 text-white border border-stone-600",
     wrapper: "bg-stone-500/15", icon: "text-stone-700 dark:text-stone-300", chartVar: "var(--sem-stone)" },
+  // ═══════════════════════════════════════════════════════════════════
+  // PN-011 ثانیاً — لایهٔ دومِ خانواده‌های رنگی (۱۲-۲۳): همان خاندان رنگی با
+  // تُن پررنگ‌تر (سایه‌های ۶۰۰/۷۰۰). دلیل: قانون مالک «هیچ ستونی دارای موارد
+  // تکراری تک‌رنگ نباشد» — ستون «نوع ملک» به‌تنهایی ۲۳ مقدار واقعی دارد
+  // (کشف زندهٔ DB) و پالت ۱۲خانه‌ای ریاضیاتِ تمایز کامل را نداشت. تُن دوم
+  // اختلاف چشمی واضح می‌دهد (مثلاً emerald-500/15 در برابر emerald-700/20)
+  // و ساختار ۱۲متغیرهٔ --sem-* چارت‌ها دست‌نخورده می‌ماند.
+  // محدودیت مستند: chartVar تُن‌دوم همان متغیرِ خاندان است؛ اگر روزی دو مقدار
+  // هم‌خانواده در «یک نمودار» سری شوند، تمایز چارت نیاز به متغیر تازه دارد.
+  // ═══════════════════════════════════════════════════════════════════
+  // ۱۲ — سبز تُند (emerald-2)
+  { hue: "emerald",
+    soft: "bg-emerald-700/20 text-emerald-800 dark:text-emerald-300 border border-emerald-700/40", solid: "bg-emerald-700 text-white border border-emerald-800",
+    wrapper: "bg-emerald-700/20", icon: "text-emerald-800 dark:text-emerald-300", chartVar: "var(--sem-emerald)" },
+  // ۱۳ — آبی تُند (sky-2)
+  { hue: "sky",
+    soft: "bg-sky-700/20 text-sky-800 dark:text-sky-300 border border-sky-700/40", solid: "bg-sky-700 text-white border border-sky-800",
+    wrapper: "bg-sky-700/20", icon: "text-sky-800 dark:text-sky-300", chartVar: "var(--sem-sky)" },
+  // ۱۴ — بنفش تُند (violet-2)
+  { hue: "violet",
+    soft: "bg-violet-700/20 text-violet-800 dark:text-violet-300 border border-violet-700/40", solid: "bg-violet-700 text-white border border-violet-800",
+    wrapper: "bg-violet-700/20", icon: "text-violet-800 dark:text-violet-300", chartVar: "var(--sem-violet)" },
+  // ۱۵ — کهربایی تُند (amber-2)
+  { hue: "amber",
+    soft: "bg-amber-600/25 text-amber-900 dark:text-amber-300 border border-amber-600/45", solid: "bg-amber-600 text-amber-950 border border-amber-700",
+    wrapper: "bg-amber-600/25", icon: "text-amber-900 dark:text-amber-300", chartVar: "var(--sem-amber)" },
+  // ۱۶ — سرخ تُند (rose-2)
+  { hue: "rose",
+    soft: "bg-rose-700/20 text-rose-800 dark:text-rose-300 border border-rose-700/40", solid: "bg-rose-700 text-white border border-rose-800",
+    wrapper: "bg-rose-700/20", icon: "text-rose-800 dark:text-rose-300", chartVar: "var(--sem-rose)" },
+  // ۱۷ — فیروزه‌ای تُند (teal-2)
+  { hue: "teal",
+    soft: "bg-teal-700/20 text-teal-800 dark:text-teal-300 border border-teal-700/40", solid: "bg-teal-700 text-white border border-teal-800",
+    wrapper: "bg-teal-700/20", icon: "text-teal-800 dark:text-teal-300", chartVar: "var(--sem-teal)" },
+  // ۱۸ — نیلی تُند (indigo-2)
+  { hue: "indigo",
+    soft: "bg-indigo-700/20 text-indigo-800 dark:text-indigo-300 border border-indigo-700/40", solid: "bg-indigo-700 text-white border border-indigo-800",
+    wrapper: "bg-indigo-700/20", icon: "text-indigo-800 dark:text-indigo-300", chartVar: "var(--sem-indigo)" },
+  // ۱۹ — لیمویی تُند (lime-2)
+  { hue: "lime",
+    soft: "bg-lime-600/25 text-lime-900 dark:text-lime-300 border border-lime-600/45", solid: "bg-lime-600 text-lime-950 border border-lime-700",
+    wrapper: "bg-lime-600/25", icon: "text-lime-900 dark:text-lime-300", chartVar: "var(--sem-lime)" },
+  // ۲۰ — نارنجی تُند (orange-2)
+  { hue: "orange",
+    soft: "bg-orange-700/20 text-orange-800 dark:text-orange-300 border border-orange-700/40", solid: "bg-orange-700 text-white border border-orange-800",
+    wrapper: "bg-orange-700/20", icon: "text-orange-800 dark:text-orange-300", chartVar: "var(--sem-orange)" },
+  // ۲۱ — فیروزه‌ای آبی تُند (cyan-2)
+  { hue: "cyan",
+    soft: "bg-cyan-700/20 text-cyan-800 dark:text-cyan-300 border border-cyan-700/40", solid: "bg-cyan-700 text-white border border-cyan-800",
+    wrapper: "bg-cyan-700/20", icon: "text-cyan-800 dark:text-cyan-300", chartVar: "var(--sem-cyan)" },
+  // ۲۲ — سرخابی تُند (fuchsia-2)
+  { hue: "fuchsia",
+    soft: "bg-fuchsia-700/20 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-700/40", solid: "bg-fuchsia-700 text-white border border-fuchsia-800",
+    wrapper: "bg-fuchsia-700/20", icon: "text-fuchsia-800 dark:text-fuchsia-300", chartVar: "var(--sem-fuchsia)" },
+  // ۲۳ — خاکستری تُند (stone-2)
+  { hue: "stone",
+    soft: "bg-stone-700/20 text-stone-800 dark:text-stone-300 border border-stone-700/40", solid: "bg-stone-700 text-white border border-stone-800",
+    wrapper: "bg-stone-700/20", icon: "text-stone-800 dark:text-stone-300", chartVar: "var(--sem-stone)" },
 ];
 
 /**
@@ -96,8 +154,9 @@ const PALETTE: readonly PaletteEntry[] = [
  *   · خانوادهٔ آبی: پیش فروش · پیش خرید · پیش‌فروش
  *   · خانوادهٔ بنفش: رهن و اجاره · اجاره
  *   · شعبه‌های چهارگانه (از سامانهٔ PM): ارتش=سرخ · باغلارباغی=فیروزه‌ای · ملکی تبریزی=نیلی · هتل مرمر=لیمویی
- *   · انواع ملک پرتکرار و انواع ساختمان — هر یک رنگ خود
- * قانون تنوع درون‌آیتمی (نکته ۳) با ریاضیات پالت برقرار است — گارد hasDistinctColors تستش می‌کند.
+ *   · انواع ملک (۲۳ مقدار واقعی DB — کشف زندهٔ PN-011) و انواع ساختمان و سمت‌های
+ *     پرسنلی (۱۸ مقدار واقعی) — «هر مقدار در ستون خود رنگ یکتا دارد» (قانون عدم
+ *     تکرار تک‌رنگ در ستون). گارد: tests/pn011-value-colors.test.ts با همین مجموعه‌ها.
  */
 const CANONICAL: Readonly<Record<string, number>> = {
   // دسته‌بندی‌های آگهی (M1) و درخواست (M2) + انواع قرارداد (M3)
@@ -108,21 +167,64 @@ const CANONICAL: Readonly<Record<string, number>> = {
   "تمدید اجاره": 9,
   // شعبه‌های چهارگانهٔ ملک تبریز (branchId.title سامانهٔ PM)
   "ارتش": 4, "باغلارباغی": 5, "ملکی تبریزی": 6, "هتل مرمر": 7,
-  // انواع ملک پرتکرار (ستون نوع ملک M1/M2)
-  "آپارتمان": 5, "زمین": 8, "کلنگی": 10, "کلنگی (تبدیل)": 10, "تجاری": 4, "دفترکار": 6, "دفتر کار": 6, "ویلا": 7, "باغ": 8, "باغچه": 9, "مغازه": 4,
-  // انواع ساختمان (M2)
+  // ═══════════════════════════════════════════════════════════════════
+  // PN-011 ثانیاً — انواع ملک (ستون نوع ملک M1/M2 — ۲۳ مقدار واقعی DB؛
+  // خانه‌ها دوتایی‌شده تا «هیچ دو مقدار هم‌رنگ در یک ستون» نباشد):
+  //   پرمتداول‌ها (۹۹٪ ردیف‌ها) همه در خاندان‌های چشمی «متفاوت» — بدون جفتِ
+  //   تُن-۱/تُن-۲ در میان پرمتداول‌ها؛ دنبالهٔ کمیاب در خانه‌های تُن‌دوم.
+  // ═══════════════════════════════════════════════════════════════════
+  "آپارتمان": 5, // ۲۸٬۰۰۰+ ردیف — فیروزه‌ای
+  "خانه،حیاط،ویلایی": 8, // ۱٬۹۰۰ — نارنجی
+  "مغازه": 4, // ۷۷۰ — سرخ
+  "زمین یا ملک کلنگی": 10, // ۱٬۳۵۰ — سرخابی
+  "دفترکار": 6, "دفتر کار": 6, // ۴۹۰ — نیلی
+  "ساختمان": 9, // ۲۳۰ — فیروزه‌ای آبی
+  "خانه،حیاط": 13, // ۶۸ — آبی تُند
+  "زیرزمین": 23, // ۶۱ — خاکستری تُند
+  "ویلا": 7, // ۲۶ — لیمویی
+  "زمین": 12, // ۴۲ (با نرمال‌سازی فاصله) — سبز تُند
+  "زمین تجاری": 16, "زمین های تجاری": 16, // سرخ تُند
+  "زمین خدماتی تجاری": 21, // فیروزه‌ای آبی تُند
+  "کارخانه": 18, // نیلی تُند
+  "زمین خدماتی": 22, // سرخابی تُند
+  "کارگاه": 19, // لیمویی تُند
+  "سوله": 17, // فیروزه‌ای تُند
+  "باغ": 20, // نارنجی تُند
+  "پاساژ": 14, // بنفش تُند
+  "هتل": 15, // کهربایی تُند
+  "انباری": 11, // خاکستری
+  "گلخانه": 0, // سبز (شعری: گلخانه=سبز)
+  "پرورش ماهی": 2, // بنفش
+  "جایگاه سوخت": 3, // کهربایی
+  // انواع ساختمان (ستون نوع ساختمان M2 — مقادیر واقعی DB)
   "مسکونی": 0, "اداری": 1, "مسکونی-اداری": 3,
+  "تجاری-خدماتی": 4, "مسکونی با تجاری": 12, "باغ و ویلا": 7, "صنعتی": 18, "مزروعی-کشاورزی": 19, "دامداری-شیلات": 21,
+  // ═══════════════════════════════════════════════════════════════════
+  // PN-011 ثانیاً — سمت‌های پرسنلی (ستون سمت M4 — ۱۸ مقدار واقعی DB؛
+  // خانه‌ها دوتایی درون همین ستون)
+  // ═══════════════════════════════════════════════════════════════════
+  "کارشناس و مشاور فروش": 5, "مشاور فروش": 0, "مشاور ارشد فروش": 8,
+  "کارشناس فروش": 1, "مدیر فایل و crm": 6, "کارشناس برنامه نویس": 9,
+  "مدیر قرارداد": 2, "مسئول خدمات": 10, "کارشناس نظارت بر سیستم": 7,
+  "مدیر شعبه": 16, "کارشناس شبکه های مجـازی": 13, "کارشناس تولید محتوا": 17,
+  "مسئول پشتیبانی": 14, "مسئول هماهنگی": 19, "مسئول امور قراردادها": 22,
+  "مدیر مالی": 18, "مدیر فناوری": 20, "مدیر بازرگانی": 15,
   // سایر
   "ثبت‌نشده": 11, "تعیین نشده": 11,
 };
 
-/** اندیس پالت برای مقدار — قانون‌مند؛ ناشناخته: هش پایدار FNV-1a */
+/**
+ * اندیس پالت برای مقدار — قانون‌مند؛ ناشناخته: هش پایدار FNV-1a.
+ * PN-011: نرمال‌سازی فاصله‌های ابتدا/انتها (دادهٔ واقعی DB دارای «زمین » و
+ * «ساختمان » است — بدون trim دو مقدارِ یکی دو رنگ می‌گرفتند).
+ */
 function paletteIndexFor(value: string): number {
-  const known = CANONICAL[value];
+  const v = value.trim();
+  const known = CANONICAL[v];
   if (typeof known === "number") return known;
   let h = 0x811c9dc5;
-  for (let i = 0; i < value.length; i++) {
-    h ^= value.charCodeAt(i);
+  for (let i = 0; i < v.length; i++) {
+    h ^= v.charCodeAt(i);
     h = Math.imul(h, 0x01000193);
   }
   return Math.abs(h) % PALETTE.length;

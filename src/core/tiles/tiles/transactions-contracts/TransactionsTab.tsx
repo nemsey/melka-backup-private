@@ -15,7 +15,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -146,7 +145,8 @@ const EMPTY_FILTERS = {
   buyerName: "",
   priceFrom: "",
   priceTo: "",
-  hasContract: "all",
+  // PN-011 ثالثاً — فایل قرارداد چندانتخابی چیپی (همانند دسته‌بندی): [] = همه · ["yes"] = دارد · ["no"] = ندارد
+  hasContracts: [] as string[],
   contractTypes: [] as string[],
 };
 
@@ -194,7 +194,8 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
     if (applied.buyerName) params.set("buyerName", applied.buyerName);
     if (applied.priceFrom) params.set("priceFrom", applied.priceFrom);
     if (applied.priceTo) params.set("priceTo", applied.priceTo);
-    if (applied.hasContract && applied.hasContract !== "all") params.set("hasContract", applied.hasContract);
+    // PN-011 ثالثاً — فایل قرارداد چیپی: فقط وقتی «دقیقاً یک» گزینه انتخاب شده فیلتر می‌شود (هر دو = همه)
+    if (applied.hasContracts.length === 1) params.set("hasContract", applied.hasContracts[0]);
     // BLOCK D — نوع قرارداد چندگانه: ?contractType=…&contractType=… (تهی = همه)
     for (const t of applied.contractTypes) params.append("contractType", t);
     // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت (سقف گارد ایمنی سرور)
@@ -521,19 +522,27 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                 <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", e.target.value)} className="text-[11px] font-bold" />
               </div>
             </div>
-            {/* P6530/گام ۳ — فایل قرارداد (ستون ۱۱): دارد/ندارد */}
+            {/* فایل قرارداد — PN-011 ثالثاً: چیپ چندانتخابی (همانند دسته‌بندی — دستور مالک) */}
             <div className="space-y-1.5">
-              <Label htmlFor="f-hasContract">فایل قرارداد</Label>
-              <Select value={filters.hasContract} onValueChange={(v) => setF("hasContract", v)}>
-                <SelectTrigger id="f-hasContract" aria-label="فیلتر فایل قرارداد">
-                  <SelectValue placeholder="همه" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همه</SelectItem>
-                  <SelectItem value="yes">دارد</SelectItem>
-                  <SelectItem value="no">ندارد</SelectItem>
-                </SelectContent>
-              </Select>
+              <span id="f-hasContract-label" className="text-xs font-bold text-foreground/80">فایل قرارداد (چندانتخابی)</span>
+              <div role="group" aria-labelledby="f-hasContract-label" className="flex flex-wrap gap-1.5">
+                <FilterChip
+                  label="دارد"
+                  active={filters.hasContracts.includes("yes")}
+                  onToggle={() => setFilters((f) => ({ ...f, hasContracts: f.hasContracts.includes("yes") ? f.hasContracts.filter((v) => v !== "yes") : [...f.hasContracts, "yes"] }))}
+                  title="معامله‌های دارای فایل/متن قرارداد"
+                  softClass={valueSoftClass("مبایعه‌نامه")}
+                  solidClass={valueSolidClass("مبایعه‌نامه")}
+                />
+                <FilterChip
+                  label="ندارد"
+                  active={filters.hasContracts.includes("no")}
+                  onToggle={() => setFilters((f) => ({ ...f, hasContracts: f.hasContracts.includes("no") ? f.hasContracts.filter((v) => v !== "no") : [...f.hasContracts, "no"] }))}
+                  title="معامله‌های بدون فایل قرارداد"
+                  softClass={valueSoftClass("تعیین نشده")}
+                  solidClass={valueSolidClass("تعیین نشده")}
+                />
+              </div>
             </div>
             {/* BLOCK D — نوع قرارداد: دقیقاً ۵ گزینهٔ چندانتخابی (۴ نوع + بدون قرارداد) — PN-009: چیپ یکدست مشترک */}
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
@@ -620,7 +629,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                   filters.dateFrom || filters.dateTo || filters.propertyCode || filters.requestCode ||
                   filters.contractHolo || filters.expertName || filters.personnelCode ||
                   filters.sellerName || filters.buyerName || filters.priceFrom || filters.priceTo ||
-                  filters.hasContract !== "all" || filters.contractTypes.length > 0
+                  filters.hasContracts.length > 0 || filters.contractTypes.length > 0
                 )}
                 onClearFilters={() => {
                   setFilters(EMPTY_FILTERS);

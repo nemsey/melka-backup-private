@@ -69,7 +69,12 @@ export async function GET(request: NextRequest) {
       .filter(Boolean);
     const activityFrom = sp.get("activityFrom") || undefined;
     const activityTo = sp.get("activityTo") || undefined;
-    const branchFilter = normalizeFilterInput(sp.get("branch")) || undefined;
+    // PN-011 ثالثاً — شعبه چندانتخابی (چیپ): branch تکرارشونده؛ سازگار با branch تک‌مقداری قبلی
+    const branchFilters = (sp.getAll("branch") || [])
+      .map((b) => normalizeFilterInput(b))
+      .filter(Boolean);
+    const branchFilter = branchFilters.length > 0 ? branchFilters[0] : normalizeFilterInput(sp.get("branch")) || undefined;
+    const branchFilterSet = branchFilters.length > 0 ? new Set(branchFilters) : null;
     // P6521/M1 + P6530 — فیلتر ده‌حالتهٔ چندانتخابی: کلیدهای canonical → مقادیر خام قانون‌مند
     const stateKeys = parseListingStateFilter(sp.get("states"));
     const statuses = stateKeys.length > 0 ? listingStateRawValues(stateKeys) : undefined;
@@ -134,13 +139,20 @@ export async function GET(request: NextRequest) {
         : BRANCH_UNSET;
 
     // فیلتر شعبه (نکته ۲) — بعد از تفکیک، روی ستون شعبه
+    // PN-011 ثالثاً — چندانتخابی: عضویت در مجموعهٔ شعبه‌های انتخاب‌شده (unset = تعیین‌نشده)
     const rowsWithBranch = rows.map((r) => ({ ...r, branch: branchOf(r.realtorName) }));
-    const filtered = branchFilter
-      ? rowsWithBranch.filter((r) => {
-          if (branchFilter === "unset") return r.branch === BRANCH_UNSET;
-          return r.branch === branchFilter;
-        })
-      : rowsWithBranch;
+    const filtered = branchFilterSet
+      ? rowsWithBranch.filter((r) =>
+          branchFilterSet.has("unset") && r.branch === BRANCH_UNSET
+            ? true
+            : branchFilterSet.has(r.branch)
+        )
+      : branchFilter
+        ? rowsWithBranch.filter((r) => {
+            if (branchFilter === "unset") return r.branch === BRANCH_UNSET;
+            return r.branch === branchFilter;
+          })
+        : rowsWithBranch;
 
     await witnessScopedRead(guard, "property", total, access.isOwnerRead, ownerLoginPath(guard));
 

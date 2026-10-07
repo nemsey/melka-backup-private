@@ -27,7 +27,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBodyVirtual, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
 import { EmptyState } from "@/components/app/shared/list-states";
@@ -37,11 +36,11 @@ import {
   RefreshCw, CheckCircle2, IdCard, CalendarClock, BriefcaseBusiness, FileSpreadsheet, UserCheck, Phone,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TileCoverageTable, useTileData, FilterGroup, type DataSourceInfo } from "@/components/app/shared";
+import { KpiCard, TileCoverageTable, useTileData, FilterGroup, FilterChip, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob } from "@/lib/client/api";
 import { faNumber, faJalaliShort } from "@/lib/format";
-import { branchBadgeClass } from "@/lib/value-colors";
+import { branchBadgeClass, valueSoftClass, valueSolidClass } from "@/lib/value-colors";
 import { faDigits } from "@/lib/jalali";
 import { expertFamilyStats, expertWithBranchCount } from "@/core/agent/analyzers";
 
@@ -98,16 +97,10 @@ const EMPTY_FILTERS = {
   fullName: "",
   mobile: "",
   personnelCode: "",
-  branchTitle: "",
-  roleTitle: "",
-  employmentType: "all",
-  headManager: "",
+  voipExtension: "",
   address: "",
   telephone: "",
   postalCode: "",
-  voipExtension: "",
-  city: "",
-  active: "all",
   hireFrom: "",
   hireTo: "",
   saleFrom: "",
@@ -117,10 +110,33 @@ const EMPTY_FILTERS = {
 };
 type Filters = typeof EMPTY_FILTERS;
 
+/** فیلترهای چندانتخابی چیپی — PN-011 ثالثاً (همانند دسته‌بندی؛ اعمال خودکار) */
+interface ChipFilters {
+  branchTitle: string[];
+  roleTitle: string[];
+  employmentType: string[];
+  active: string[];
+  headManager: string[];
+  city: string[];
+}
+const EMPTY_CHIPS: ChipFilters = {
+  branchTitle: [],
+  roleTitle: [],
+  employmentType: [],
+  active: [],
+  headManager: [],
+  city: [],
+};
+
 export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
   const { toast } = useToast();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
+  // PN-011 ثالثاً — فیلترهای چندانتخابی چیپی (اعمال خودکار با هر کلیک)
+  const [chips, setChips] = useState<ChipFilters>(EMPTY_CHIPS);
+  const toggleChip = useCallback((k: keyof ChipFilters, v: string) => {
+    setChips((prev) => ({ ...prev, [k]: prev[k].includes(v) ? prev[k].filter((x) => x !== v) : [...prev[k], v] }));
+  }, []);
   const [syncing, setSyncing] = useState(false);
   const [syncStage, setSyncStage] = useState<SyncStage | null>(null);
   // PN-009 مرحله F — آکاردئون موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ — الگوی مشترک M1/M2 (قانون ۶.۱)
@@ -131,30 +147,31 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
 
   const fetchExperts = useCallback(async (): Promise<ExResponse> => {
     const params = new URLSearchParams();
-    const set = (k: keyof Filters, v: string) => { if (v && v !== "all") params.set(k, v); };
+    const set = (k: keyof Filters, v: string) => { if (v) params.set(k, v); };
     set("q", applied.q);
     set("fullName", applied.fullName);
     set("mobile", applied.mobile);
     set("personnelCode", applied.personnelCode);
-    set("branchTitle", applied.branchTitle);
-    set("roleTitle", applied.roleTitle);
-    set("employmentType", applied.employmentType);
-    set("headManager", applied.headManager);
     set("address", applied.address);
     set("telephone", applied.telephone);
     set("postalCode", applied.postalCode);
     set("voipExtension", applied.voipExtension);
-    set("city", applied.city);
-    set("active", applied.active);
     set("hireFrom", applied.hireFrom);
     set("hireTo", applied.hireTo);
     set("saleFrom", applied.saleFrom);
     set("saleTo", applied.saleTo);
     set("rentFrom", applied.rentFrom);
     set("rentTo", applied.rentTo);
+    // PN-011 ثالثاً — فیلترهای چندانتخابی چیپی (تکرار پارامتر = OR درون گروه)
+    for (const b of chips.branchTitle) params.append("branchTitle", b);
+    for (const r of chips.roleTitle) params.append("roleTitle", r);
+    for (const e of chips.employmentType) params.append("employmentType", e);
+    for (const a of chips.active) params.append("active", a);
+    for (const m of chips.headManager) params.append("headManager", m);
+    for (const c of chips.city) params.append("city", c);
     params.set("limit", "5000");
     return api<ExResponse>(`/api/experts?${params.toString()}`);
-  }, [applied]);
+  }, [applied, chips]);
 
   const { data, loading, reload } = useTileData(fetchExperts, {
     errorTitle: "خطا در دریافت فهرست کارشناسان",
@@ -181,9 +198,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
     [rows]
   );
   const options = data?.filterOptions ?? { branches: [], employmentTypes: [], managers: [], roles: [], cities: [] };
-  const anyFilterActive = Object.values(applied).some((v) => v !== "" && v !== "all");
-  // PN-009 مرحله F — شمارندهٔ فیلترهای فعال برای سربرگ آکاردئون (الگوی [فیلترها ۵] بند ۶.۱)
-  const activeFilterCount = Object.values(applied).filter((v) => v !== "" && v !== "all").length;
+  const anyFilterActive = Object.values(applied).some((v) => v !== "") || Object.values(chips).some((a) => a.length > 0);
+  // PN-009 مرحله F — شمارندهٔ فیلترهای فعال (الگوی [فیلترها ۵] بند ۶.۱) + چیپ‌های PN-011
+  const activeFilterCount = Object.values(applied).filter((v) => v !== "").length + Object.values(chips).reduce((s, a) => s + a.length, 0);
 
   /** بروزرسانی فهرست — زنجیرهٔ سه‌مرحله‌ای PM با گزارش صادقانهٔ هر مرحله */
   const doSync = useCallback(async () => {
@@ -209,7 +226,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
   const applyFilters = () => setApplied(filters);
-  const clearFilters = () => { setFilters(EMPTY_FILTERS); setApplied(EMPTY_FILTERS); };
+  const clearFilters = () => { setFilters(EMPTY_FILTERS); setApplied(EMPTY_FILTERS); setChips(EMPTY_CHIPS); };
 
   const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void reload());
 
@@ -305,70 +322,95 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               </div>
             </div>
           </FilterGroup>
-          {/* سازمانی */}
-          <FilterGroup label="سازمانی">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label>شعبه</Label>
-                <Select value={filters.branchTitle || "all"} onValueChange={(v) => setF("branchTitle", v === "all" ? "" : v)}>
-                  <SelectTrigger><SelectValue placeholder="همهٔ شعب" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">همهٔ شعب</SelectItem>
-                    {options.branches.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+          {/* سازمانی — PN-011 ثالثاً: فیلترهای چندگانه به شکل چیپ (همانند دسته‌بندی — دستور مالک) */}
+          <FilterGroup
+            label="سازمانی (چندانتخابی)"
+            hint={chips.branchTitle.length + chips.roleTitle.length + chips.employmentType.length > 0 ? "اعمال خودکار با هر کلیک" : undefined}
+          >
+            <div className="space-y-2" id="exf-org-chips">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">شعبه:</span>
+                {options.branches.map((b) => (
+                  <FilterChip
+                    key={`b:${b}`}
+                    label={b}
+                    active={chips.branchTitle.includes(b)}
+                    onToggle={() => toggleChip("branchTitle", b)}
+                    softClass={branchBadgeClass(b)}
+                    solidClass={valueSolidClass(b)}
+                  />
+                ))}
               </div>
-              <div className="space-y-1.5">
-                <Label>سمت پرسنلی</Label>
-                <Select value={filters.roleTitle || "all"} onValueChange={(v) => setF("roleTitle", v === "all" ? "" : v)}>
-                  <SelectTrigger><SelectValue placeholder="همهٔ سمت‌ها" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">همهٔ سمت‌ها</SelectItem>
-                    {options.roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">سمت:</span>
+                {options.roles.map((r) => (
+                  <FilterChip
+                    key={`r:${r}`}
+                    label={r}
+                    active={chips.roleTitle.includes(r)}
+                    onToggle={() => toggleChip("roleTitle", r)}
+                    softClass={valueSoftClass(r)}
+                    solidClass={valueSolidClass(r)}
+                  />
+                ))}
               </div>
-              <div className="space-y-1.5">
-                <Label>نوع همکاری</Label>
-                <Select value={filters.employmentType} onValueChange={(v) => setF("employmentType", v)}>
-                  <SelectTrigger><SelectValue placeholder="همهٔ انواع" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">همهٔ انواع</SelectItem>
-                    {options.employmentTypes.map((e) => <SelectItem key={e.value} value={String(e.value)}>{e.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">همکاری:</span>
+                {options.employmentTypes.map((e) => (
+                  <FilterChip
+                    key={`e:${e.value}`}
+                    label={e.label}
+                    active={chips.employmentType.includes(String(e.value))}
+                    onToggle={() => toggleChip("employmentType", String(e.value))}
+                    softClass={valueSoftClass(e.label)}
+                    solidClass={valueSolidClass(e.label)}
+                  />
+                ))}
+                <FilterChip
+                  label="فعال"
+                  active={chips.active.includes("true")}
+                  onToggle={() => toggleChip("active", "true")}
+                  softClass={valueSoftClass("فروش")}
+                  solidClass={valueSolidClass("فروش")}
+                />
+                <FilterChip
+                  label="غیرفعال"
+                  active={chips.active.includes("false")}
+                  onToggle={() => toggleChip("active", "false")}
+                  softClass={valueSoftClass("تعیین نشده")}
+                  solidClass={valueSolidClass("تعیین نشده")}
+                />
               </div>
-              <div className="space-y-1.5">
-                <Label>مدیر</Label>
-                <Select value={filters.headManager || "all"} onValueChange={(v) => setF("headManager", v === "all" ? "" : v)}>
-                  <SelectTrigger><SelectValue placeholder="همهٔ مدیران" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">همهٔ مدیران</SelectItem>
-                    {options.managers.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>شهر</Label>
-                <Select value={filters.city || "all"} onValueChange={(v) => setF("city", v === "all" ? "" : v)}>
-                  <SelectTrigger><SelectValue placeholder="همهٔ شهرها" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">همهٔ شهرها</SelectItem>
-                    {options.cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>وضعیت</Label>
-                <Select value={filters.active} onValueChange={(v) => setF("active", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">همه</SelectItem>
-                    <SelectItem value="true">فعال</SelectItem>
-                    <SelectItem value="false">غیرفعال</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {options.managers.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">مدیر:</span>
+                  {options.managers.map((m) => (
+                    <FilterChip
+                      key={`m:${m}`}
+                      label={m}
+                      active={chips.headManager.includes(m)}
+                      onToggle={() => toggleChip("headManager", m)}
+                      softClass={valueSoftClass(m)}
+                      solidClass={valueSolidClass(m)}
+                    />
+                  ))}
+                </div>
+              ) : null}
+              {options.cities.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">شهر:</span>
+                  {options.cities.map((c) => (
+                    <FilterChip
+                      key={`c:${c}`}
+                      label={c}
+                      active={chips.city.includes(c)}
+                      onToggle={() => toggleChip("city", c)}
+                      softClass={valueSoftClass(c)}
+                      solidClass={valueSolidClass(c)}
+                    />
+                  ))}
+                </div>
+              ) : null}
             </div>
           </FilterGroup>
           {/* تماس و نشانی */}
@@ -438,9 +480,15 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                 const params = new URLSearchParams();
                 const set = (k: string, v: string) => { if (v && v !== "all") params.set(k, v); };
                 set("q", applied.q); set("fullName", applied.fullName); set("mobile", applied.mobile);
-                set("personnelCode", applied.personnelCode); set("branchTitle", applied.branchTitle);
-                set("roleTitle", applied.roleTitle); set("headManager", applied.headManager);
-                set("address", applied.address); set("active", applied.active);
+                set("personnelCode", applied.personnelCode);
+                set("address", applied.address);
+                // PN-011 ثالثاً — خروجی اکسل نیز فیلترهای چیپی فعال را رعایت می‌کند
+                for (const b of chips.branchTitle) params.append("branchTitle", b);
+                for (const r of chips.roleTitle) params.append("roleTitle", r);
+                for (const a of chips.active) params.append("active", a);
+                for (const m of chips.headManager) params.append("headManager", m);
+                for (const e of chips.employmentType) params.append("employmentType", e);
+                for (const c of chips.city) params.append("city", c);
                 apiBlob(`/api/experts/export?${params.toString()}`)
                   .then((blob) => {
                     downloadBlob(blob, `melka-experts-${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -543,10 +591,10 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         <span className="text-muted-foreground font-bold">-</span>
                       )}
                     </TableCell>
-                    {/* سمت پرسنلی */}
+                    {/* سمت پرسنلی — PN-011 ثانیاً: رنگ از رجیستری (قانون ۱۲: هر سمت رنگ یکتا در ستون) */}
                     <TableCell className="whitespace-nowrap">
                       {r.roleTitle ? (
-                        <Badge variant="secondary" className="gap-1 text-[10px] border border-sec-m4-200 bg-sec-m4-50 text-sec-m4-700">
+                        <Badge variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(r.roleTitle)}`}>
                           <BriefcaseBusiness className="w-2.5 h-2.5" aria-hidden /> {r.roleTitle}
                         </Badge>
                       ) : (

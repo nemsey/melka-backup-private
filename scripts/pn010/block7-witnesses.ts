@@ -111,7 +111,13 @@ async function main() {
         heartbeatFresh: Date.now() - new Date(statusFile.worker.lastHeartbeatAt).getTime() < 90_000,
       },
       dispatcherTicks: statusFile.dispatcher.ticks,
-      jobs: Object.fromEntries(Object.entries(statusFile.jobs).map(([id, j]) => [id, { runs: j.runs, running: j.running, lastError: j.lastError }])),
+      // PN-011 — ترمیم خطای تایپ از پیش موجود (کامیت ن۰۱۰ بدون tsc-scripts نهایی): j دارای تایپ صریح
+      jobs: Object.fromEntries(
+        Object.entries(statusFile.jobs).map(([id, j]) => {
+          const job = j as { runs: number; running: boolean; lastError: string | null };
+          return [id, { runs: job.runs, running: job.running, lastError: job.lastError }];
+        })
+      ),
       psEvidence: processes.split("\n"),
       selfHealingProven: "رویداد ۲۳:۱۸ — مرگ Worker اول (باگ unref کشف‌شده) → بازرسی ۶۰ ثانیه‌ای Supervisor → احیای خودکار Worker جدید (PID 25546)",
       independenceProven: "ری‌استارت Web (23:24) → Worker بدون وقفه ادامه داد (فرایندهای مستقل)",
