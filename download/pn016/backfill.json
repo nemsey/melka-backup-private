@@ -1,0 +1,57 @@
+{
+  "council": "ملکا-شورا-ن۰۲۰-۱۴۰۵",
+  "workOrder": "PN-016",
+  "stage": "۵ — Backfill از PM",
+  "at": "2026-10-07T22:46:46.333Z",
+  "pmReachable": 200,
+  "tokenSource": "PmConnection.tokenEnc (رمزگشایی AES-256-GCM)",
+  "realtorsFetched": 143,
+  "matched": [
+    {
+      "personnelCode": "410031338",
+      "pmRole": "مشاور فروش",
+      "pmBusiness": "ملک تبریز",
+      "pmActivation": "ps,apm,chat",
+      "applied": {
+        "roleTitleFa": "مشاور فروش",
+        "branchTitle": "ملک تبریز"
+      }
+    },
+    {
+      "personnelCode": "410031319",
+      "pmRole": "مشاور فروش",
+      "pmBusiness": "ملک تبریز",
+      "pmActivation": "ps,apm,chat",
+      "applied": {
+        "roleTitleFa": "مشاور فروش",
+        "branchTitle": "ملک تبریز"
+      }
+    },
+    {
+      "personnelCode": "410031320",
+      "pmRole": "مشاور فروش",
+      "pmBusiness": "ملک تبریز",
+      "pmActivation": "ps,apm,chat",
+      "applied": {
+        "roleTitleFa": "مشاور فروش",
+        "branchTitle": "ملک تبریز"
+      }
+    }
+  ],
+  "unmatched": [],
+  "errors": [],
+  "rolesAfter": [
+    {
+      "_count": {
+        "_all": 2
+      },
+      "role": "EXPERT"
+    },
+    {
+      "_count": {
+        "_all": 1
+      },
+      "role": "OWNER"
+    }
+  ]
+}
