@@ -61,10 +61,6 @@ export type TradeIntent = "buy" | "rent" | "unknown";
  * اطلاعات کامل هر گزینهٔ پیشنهادی — الزام گام پنجم (ن۰۰۱ BLOCK 2.1):
  * وقتی کد آگهی داده می‌شود، گزینه‌های کد درخواست با اطلاعات کامل عرضه شوند — و بالعکس.
  * یعنی هر گزینهٔ پیشنهادی شامل: کد، نام مالک، موبایل، منطقه، قیمت، تازگی.
- * PN-011 خامسا-۱ (توسعهٔ توضیحات تطبیق — دستور مالک): نام کارشناس و شعبهٔ
- * سطر مقابل نیز دوطرفه عرضه می‌شود — عین نمایش فهرست‌های M1/M2:
- *   تب ۱ (آگهی→درخواست): کارشناس/شعبهٔ «ثبت‌کنندهٔ درخواست» از RequestRecord.actorName
- *   تب ۲ (درخواست→آگهی): کارشناس/شعبهٔ «کارشناس آگهی» از PropertyRecord.ownerName (نقش کارشناس)
  */
 export interface MatchOptionInfo {
   /** کد درخواست (تب ۱) یا کد ملک (تب ۲) */
@@ -80,10 +76,6 @@ export interface MatchOptionInfo {
   priceTo: number | null;
   /** تازگی — زمان مرجع (آخرین بروزرسانی/همگام‌سازی) برای نمایش نسبی */
   lastSeenAt: string | null;
-  /** PN-011 خامسا-۱ — کارشناس ثبت‌کنندهٔ سطر مقابل (نام کامل) */
-  expertName: string | null;
-  /** PN-011 خامسا-۱ — شعبهٔ کارشناس سطر مقابل (همان زنجیرهٔ تفکیک M1/M2) */
-  expertBranch: string | null;
 }
 
 export interface MatchCandidate {
@@ -106,18 +98,6 @@ export interface MatchResult {
   weightsUsed: MatchWeights;
   tier: LearningTier;
   evaluatedAt: string;
-  /** PN-011 خامسا-۱ — شناسنامهٔ سطر ورودی (کارشناس/شعبه/مشتری) — همان چیزی که M1/M2 برای آن کد نشان می‌دهد */
-  sourceInfo?: {
-    code: string;
-    title: string | null;
-    customerName: string | null;
-    expertName: string | null;
-    expertBranch: string | null;
-  };
-  /** PN-011 خامسا-۲ — منشأ وزن‌ها: پایه یا آموخته از بازخوردها */
-  weightsSource?: "base" | "learned";
-  /** تعداد بازخوردهای تغذیه‌کنندهٔ وزن‌های آموخته (۰ = پایه) */
-  weightsFeedbackCount?: number;
 }
 
 /* ───────────────────────── وزن‌ها (Tier-aware + شخصی‌سازی‌پذیر) ───────────────────────── */
@@ -213,11 +193,6 @@ export const ACTIVE_REQUEST_STATUSES = ["سرنخ", "فرصت", "در انتظا
 
 /* ───────────────────────── موتور تطبیق ───────────────────────── */
 
-/** زمینهٔ تفکیک شعبه — PN-011 خامسا-۱: همان زنجیرهٔ M1/M2 (PM ← مالک ← کسب‌وکار) */
-export interface MatchContext {
-  branchOf: (expertName: string) => string;
-}
-
 export interface MatchingEngineOptions {
   db: PrismaClient;
   tier?: LearningTier;
@@ -247,40 +222,23 @@ export class MatchingEngine {
     id: string; requestCode: string | null; title: string | null; customerName: string | null;
     status: string; tradeTypeName: string | null; propertyTypeName: string | null;
     priceFrom: number | null; priceTo: number | null; areaNamesJson: string | null;
-    inputsJson?: string | null;
   }): RequestProfile {
     const parsed = parseRequestTitle(r.title);
     let areaNames: string[] = [];
     if (r.areaNamesJson) {
       try { const v = JSON.parse(r.areaNamesJson); if (Array.isArray(v)) areaNames = v.filter((x) => typeof x === "string"); } catch { /* لایهٔ خام */ }
     }
-    // PN-011 خامسا-۲ — متراژ از فرم پویای ARM (inputsJson): «متراژ از/تا» دقیق‌تر از حدس عنوان
-    let meterageFrom = parsed.meterageFrom;
-    let meterageTo = parsed.meterageTo;
-    if (r.inputsJson) {
-      try {
-        const inputs = JSON.parse(r.inputsJson) as Record<string, unknown>;
-        const faToEn = (v: string) => v.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[,،]/g, "");
-        const from = inputs["متراژ از"] ?? inputs["متراژ"];
-        const to = inputs["متراژ تا"] ?? inputs["متراژ"];
-        const pf = typeof from === "string" ? Number(faToEn(from)) : typeof from === "number" ? from : null;
-        const pt = typeof to === "string" ? Number(faToEn(to)) : typeof to === "number" ? to : null;
-        if (pf !== null && Number.isFinite(pf) && pf > 0) meterageFrom = pf;
-        if (pt !== null && Number.isFinite(pt) && pt > 0) meterageTo = pt;
-        if (meterageFrom != null && meterageTo != null && meterageTo < meterageFrom) [meterageFrom, meterageTo] = [meterageTo, meterageFrom];
-      } catch { /* لایهٔ خام */ }
-    }
     return {
       id: r.id, requestCode: r.requestCode, title: r.title, customerName: r.customerName,
       status: r.status, tradeTypeName: r.tradeTypeName, propertyTypeName: r.propertyTypeName,
       priceFrom: r.priceFrom, priceTo: r.priceTo, areaNames,
-      meterageFrom, meterageTo,
+      meterageFrom: parsed.meterageFrom, meterageTo: parsed.meterageTo,
       tradeIntent: parsed.tradeIntent, wantedPropertyTypes: parsed.wantedPropertyTypes,
     };
   }
 
   /** تب ۱ — آگهی → ۵ درخواست برتر */
-  async matchListingToRequests(listingCode: string, ctx?: MatchContext): Promise<MatchResult> {
+  async matchListingToRequests(listingCode: string): Promise<MatchResult> {
     const listing = await this.db.propertyRecord.findFirst({ where: { propertyCode: listingCode } });
     if (!listing) {
       return { direction: "listing_to_request", listingCode, requestId: null, candidates: [], weightsUsed: this.weights, tier: this.tier, evaluatedAt: new Date().toISOString() };
@@ -294,7 +252,7 @@ export class MatchingEngine {
     // کاندیداها: درخواست‌های فعال
     const rows = await this.db.requestRecord.findMany({
       where: { status: { in: ACTIVE_REQUEST_STATUSES } },
-      select: { id: true, requestCode: true, title: true, customerName: true, customerMobile: true, status: true, tradeTypeName: true, propertyTypeName: true, priceFrom: true, priceTo: true, areaNamesJson: true, inputsJson: true, updatedAt: true, actorName: true },
+      select: { id: true, requestCode: true, title: true, customerName: true, customerMobile: true, status: true, tradeTypeName: true, propertyTypeName: true, priceFrom: true, priceTo: true, areaNamesJson: true, updatedAt: true },
       take: this.candidateLimit ?? 3000,
       orderBy: { updatedAt: "desc" },
     });
@@ -307,7 +265,7 @@ export class MatchingEngine {
     for (const r of rows) {
       const req = this.toRequestProfile(r);
       const s = this.score(profile, req, ownerTx);
-      // گام پنجم ن۰۰۱ + خامسا-۱ — گزینهٔ درخواست با اطلاعات کامل + کارشناس/شعبهٔ ثبت‌کننده
+      // گام پنجم ن۰۰۱ — گزینهٔ درخواست با اطلاعات کامل: کد، نام مشتری، موبایل، مناطق، بازهٔ قیمت، تازگی
       const info: MatchOptionInfo = {
         code: r.requestCode ?? r.id,
         ownerName: r.customerName,
@@ -316,8 +274,6 @@ export class MatchingEngine {
         priceFrom: r.priceFrom,
         priceTo: r.priceTo,
         lastSeenAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : null,
-        expertName: r.actorName ?? null,
-        expertBranch: r.actorName && ctx ? ctx.branchOf(r.actorName) : null,
       };
       if (s.hardPassed) scored.push({ ...s, requestId: req.id, requestLabel: req.title ?? req.id, info });
     }
@@ -330,33 +286,19 @@ export class MatchingEngine {
       weightsUsed: this.weights,
       tier: this.tier,
       evaluatedAt: new Date().toISOString(),
-      sourceInfo: {
-        code: listing.propertyCode,
-        title: listing.title ?? null,
-        customerName: listing.rawOwnerName ?? null,
-        expertName: listing.ownerName ?? null,
-        expertBranch: listing.ownerName && ctx ? ctx.branchOf(listing.ownerName) : null,
-      },
     };
   }
 
-  /** تب ۲ — درخواست → ۵ آگهی برتر
-   *  PN-011 خامسا-۲: ورودی «کد درخواست» از کاشی M2 پذیرفته می‌شود (requestCode) —
-   *  پیش‌تر فقط id دیتابیسی کار می‌کرد (ناسازگاری با آنچه M2 نمایش می‌دهد). id نیز هنوز معتبر است.
-   */
-  async matchRequestToListings(requestIdOrCode: string, ctx?: MatchContext): Promise<MatchResult> {
-    let r = await this.db.requestRecord.findFirst({ where: { requestCode: requestIdOrCode } });
-    if (!r && /^[a-z0-9]{20,}$/i.test(requestIdOrCode)) {
-      r = await this.db.requestRecord.findFirst({ where: { id: requestIdOrCode } });
-    }
+  /** تب ۲ — درخواست → ۵ آگهی برتر */
+  async matchRequestToListings(requestId: string): Promise<MatchResult> {
+    const r = await this.db.requestRecord.findFirst({ where: { id: requestId } });
     if (!r) {
-      return { direction: "request_to_listing", listingCode: null, requestId: requestIdOrCode, candidates: [], weightsUsed: this.weights, tier: this.tier, evaluatedAt: new Date().toISOString() };
+      return { direction: "request_to_listing", listingCode: null, requestId, candidates: [], weightsUsed: this.weights, tier: this.tier, evaluatedAt: new Date().toISOString() };
     }
     const req = this.toRequestProfile({
       id: r.id, requestCode: r.requestCode, title: r.title, customerName: r.customerName,
       status: r.status, tradeTypeName: r.tradeTypeName, propertyTypeName: r.propertyTypeName,
       priceFrom: r.priceFrom, priceTo: r.priceTo, areaNamesJson: r.areaNamesJson,
-      inputsJson: r.inputsJson,
     });
     // کاندیداها: آگهی‌های منتشرشده
     const rows = await this.db.propertyRecord.findMany({
@@ -381,8 +323,7 @@ export class MatchingEngine {
       };
       const ownerTx = row.ownerCode ? txByOwner.get(row.ownerCode) ?? 0 : 0;
       const s = this.score(profile, req, ownerTx);
-      // گام پنجم ن۰۰۱ + خامسا-۱ — گزینهٔ آگهی با اطلاعات کامل + کارشناس/شعبهٔ آگهی
-      // (نکتهٔ نگاشت: PropertyRecord.ownerName در فهرست M1 نقش «کارشناس» را دارد)
+      // گام پنجم ن۰۰۱ — گزینهٔ آگهی با اطلاعات کامل: کد، نام مالک، موبایل، منطقه، قیمت، تازگی
       const info: MatchOptionInfo = {
         code: row.propertyCode,
         ownerName: row.ownerName,
@@ -391,8 +332,6 @@ export class MatchingEngine {
         priceFrom: row.price,
         priceTo: row.price,
         lastSeenAt: row.syncedAt instanceof Date ? row.syncedAt.toISOString() : null,
-        expertName: row.ownerName ?? null,
-        expertBranch: row.ownerName && ctx ? ctx.branchOf(row.ownerName) : null,
       };
       if (s.hardPassed) scored.push({ ...s, requestId: req.id, listingCode: row.propertyCode, info });
     }
@@ -400,18 +339,11 @@ export class MatchingEngine {
     return {
       direction: "request_to_listing",
       listingCode: null,
-      requestId: r.requestCode ?? r.id,
+      requestId,
       candidates: scored.slice(0, TOP_N),
       weightsUsed: this.weights,
       tier: this.tier,
       evaluatedAt: new Date().toISOString(),
-      sourceInfo: {
-        code: r.requestCode ?? r.id,
-        title: r.title ?? null,
-        customerName: r.customerName ?? null,
-        expertName: r.actorName ?? null,
-        expertBranch: r.actorName && ctx ? ctx.branchOf(r.actorName) : null,
-      },
     };
   }
 

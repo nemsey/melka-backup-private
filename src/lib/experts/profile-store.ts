@@ -69,13 +69,6 @@ export interface ExpertProfileFilter {
   voipExtension?: string;
   city?: string;
   active?: boolean;
-  // PN-011 ثالثاً — فیلترهای چندانتخابی چیپی (تکرار پارامتر در API ← آرایه اینجا؛ OR درون گروه)
-  branchTitles?: string[];
-  roleTitles?: string[];
-  employmentTypes?: number[];
-  headManagers?: string[];
-  cities?: string[];
-  actives?: boolean[];
   hireFrom?: string;
   hireTo?: string;
   saleFrom?: number;
@@ -439,23 +432,16 @@ export async function listExpertProfiles(filter: ExpertProfileFilter): Promise<{
   if (filter.fullName) where.fullName = { contains: filter.fullName };
   if (filter.mobile) where.mobile = { contains: filter.mobile };
   if (filter.personnelCode) where.personnelCode = { contains: filter.personnelCode };
-  // PN-011 ثالثاً — چندانتخابی چیپی: OR درون هر گروه؛ حالت تک‌مقداری قبلی محفوظ
-  if (filter.branchTitles && filter.branchTitles.length > 0) where.branchTitle = { in: filter.branchTitles };
-  else if (filter.branchTitle) where.branchTitle = filter.branchTitle;
-  if (filter.roleTitles && filter.roleTitles.length > 0) where.roleTitle = { in: filter.roleTitles };
-  else if (filter.roleTitle) where.roleTitle = { contains: filter.roleTitle };
-  if (filter.employmentTypes && filter.employmentTypes.length > 0) where.employmentType = { in: filter.employmentTypes };
-  else if (filter.employmentType !== undefined) where.employmentType = filter.employmentType;
-  if (filter.headManagers && filter.headManagers.length > 0) where.headManager = { in: filter.headManagers };
-  else if (filter.headManager) where.headManager = { contains: filter.headManager };
-  if (filter.cities && filter.cities.length > 0) where.city = { in: filter.cities };
-  else if (filter.city) where.city = { contains: filter.city };
-  if (filter.actives && filter.actives.length > 0) where.active = { in: filter.actives };
-  else if (filter.active !== undefined) where.active = filter.active;
+  if (filter.branchTitle) where.branchTitle = filter.branchTitle;
+  if (filter.roleTitle) where.roleTitle = { contains: filter.roleTitle };
+  if (filter.employmentType !== undefined) where.employmentType = filter.employmentType;
+  if (filter.headManager) where.headManager = { contains: filter.headManager };
   if (filter.address) where.address = { contains: filter.address };
   if (filter.telephone) where.telephone = { contains: filter.telephone };
   if (filter.postalCode) where.postalCode = { contains: filter.postalCode };
   if (filter.voipExtension) where.voipExtension = { contains: filter.voipExtension };
+  if (filter.city) where.city = { contains: filter.city };
+  if (filter.active !== undefined) where.active = filter.active;
   if (filter.saleFrom !== undefined || filter.saleTo !== undefined) {
     where.saleCount = { ...(filter.saleFrom !== undefined ? { gte: filter.saleFrom } : {}), ...(filter.saleTo !== undefined ? { lte: filter.saleTo } : {}) };
   }

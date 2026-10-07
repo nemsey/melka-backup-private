@@ -102,13 +102,10 @@ describe("P6.5-08 — applyPlatformEnvFallbacks (بارگذاری env.platform.j
     }
   });
 
-  test("۶) env.platform.json خارج از گیت است و مقادیرش واقعی/چرخیده‌اند (قرارداد PN-011)", async () => {
-    // PN-011 اولاً — قرارداد جدید این فایل:
-    //   پس از پنج بازنشانی محیط، این فایل «کاشِ بادوامِ بوت» است که توسط گارد
-    //   خوددرمانی راز (upload/.runtime/boot-secrets.json) بازسازی/همگام می‌شود؛
-    //   مقادیر واقعی در آن می‌نشیند چون gitignored + 0600 است و هرگز وارد
-    //   git/بستهٔ بقا نمی‌شود (سنت قدیمی «فقط مقادیر تستی» منسوخ شد — دلیل:
-    //   بقا سرویس عمومی به آن وابسته بود و ۵ بار شکست).
+  test("۶) PN-008 BLOCK 2 — env.platform.json دیگر در گیت نیست و کلیدش از رشتهٔ تست عمومی چرخیده", async () => {
+    // واقعیت پس از فاز ۱: فایل از ردیابی گیت خارج شد (قانون راز-در-گیت-ممنوع)؛
+    // MELK_TOKEN_KEY با openssl rand تازه شد (اثر انگشت ≠ رشتهٔ تست عمومی)؛
+    // کد مستر فایل همچنان تستی عمومی است (کد واقعی فقط در .env.local).
     const { execSync } = await import("node:child_process");
     const tracked = execSync("git ls-files", { cwd: "/home/z/my-project" }).toString().split("\n");
     expect(tracked).not.toContain("env.platform.json");
@@ -116,13 +113,11 @@ describe("P6.5-08 — applyPlatformEnvFallbacks (بارگذاری env.platform.j
     expect(tracked).toContain("env.platform.json.example");
     const raw = (await Bun.file("env.platform.json").json()) as Record<string, string>;
     expect(raw.MELK_TOKEN_KEY).not.toBe("test-only-key-not-a-real-secret"); // چرخیده ✓
-    // کد مستر: ۸ رقمی معتبر (مقدار واقعی مالک — فقط در فایل gitignored)
-    expect(raw.MASTER_ACCESS_CODE).toMatch(/^\d{8}$/);
+    expect(raw.MASTER_ACCESS_CODE).toBe("00000000"); // تستی عمومی (کد واقعی در .env.local)
   });
 
   test("۷) کلیدهای مستندسازی با پیشوند «_» نادیده گرفته می‌شوند", async () => {
     const raw = (await Bun.file("env.platform.json").json()) as Record<string, unknown>;
-    // PN-011 — گارد خوددرمانی کلید مستندسازی را «_comment» می‌نویسد (قرارداد واحد)
     expect("_comment" in raw).toBe(true);
 
     setEnv("NODE_ENV", "production");

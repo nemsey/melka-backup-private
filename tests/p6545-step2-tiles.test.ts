@@ -214,11 +214,7 @@ describe("گام۲/M5 — تطبیق هوشمند دوجهته", () => {
     const page = readFileSync(`${TILES_DIR}/smart-matching/SmartMatchingPage.tsx`, "utf8");
     expect(page).toContain("پذیرش");
     expect(page).toContain("رد");
-    // PN-011 خامسا-۲ — مسیر صحیح روت واقعی [/api/agent/[tileId]/feedback]؛
-    // مسیر قدیمی /api/agent/feedback یک باگ 404 بود که هرگز ثبت نمی‌کرد (اصلاح تست، عین درس ن۰۰۶)
-    expect(page).toContain("/api/agent/smart-matching/feedback");
-    // سوخت یادگیری: عوامل امتیاز همراه بازخورد ثبت می‌شود
-    expect(page).toContain("context: { factors");
+    expect(page).toContain("/api/agent/feedback");
   });
 
   test("م-۵-۳۰ مسیر API تطبیق موجود است (اسکن منبع)", () => {

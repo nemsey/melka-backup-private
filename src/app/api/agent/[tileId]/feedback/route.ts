@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   try {
     const body = (await request.json().catch(() => null)) as
-      | { insightKey?: string; insightTitle?: string; domain?: string; rating?: number; comment?: string; context?: Record<string, unknown> }
+      | { insightKey?: string; insightTitle?: string; domain?: string; rating?: number; comment?: string }
       | null;
 
     const rating = body?.rating;
@@ -40,8 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       domain: body.domain ?? "UNKNOWN",
       rating,
       comment: body.comment?.slice(0, 500),
-      // PN-011 خامسا-۲ — زمینهٔ افزودهٔ کلاینت (مثل عوامل امتیاز تطبیق) با زمینهٔ امنتی نگهبان merge می‌شود
-      contextSnapshot: { by: guard.personnelCode, role: guard.role, ...(body.context ?? {}) },
+      contextSnapshot: { by: guard.personnelCode, role: guard.role },
     });
 
     const policy = await agent.getActivePolicy();

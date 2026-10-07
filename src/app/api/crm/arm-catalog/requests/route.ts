@@ -69,12 +69,7 @@ export async function GET(request: NextRequest) {
     const tradeTypes = (sp.getAll("tradeType") || []).map((t) => normalizeFilterInput(t)).filter(Boolean);
     const dateFrom = sp.get("dateFrom") || undefined;
     const dateTo = sp.get("dateTo") || undefined;
-    // PN-011 ثالثاً — شعبه چندانتخابی (چیپ): branch تکرارشونده؛ سازگار با branch تک‌مقداری قبلی
-    const branchFilters = (sp.getAll("branch") || [])
-      .map((b) => normalizeFilterInput(b))
-      .filter(Boolean);
-    const branchFilter = branchFilters.length > 0 ? branchFilters[0] : normalizeFilterInput(sp.get("branch")) || undefined;
-    const branchFilterSet = branchFilters.length > 0 ? new Set(branchFilters) : null;
+    const branchFilter = normalizeFilterInput(sp.get("branch")) || undefined;
     // P6530/گام ۲ — فیلتر شش‌حالته + «سایر» (NOT IN):
     // «سایر» = نقیض پنج‌گانهٔ اصلی؛ فهرست مستثنی‌شده‌ها = پنج‌گانهٔ کامل منهای انتخاب‌شده‌ها
     const stateKeys = parseRequestStateFilter(sp.get("states"));
@@ -150,16 +145,9 @@ export async function GET(request: NextRequest) {
         : BRANCH_UNSET;
 
     const rowsWithBranch = rows.map((r) => ({ ...r, branch: branchOf(r.actorName) }));
-    // PN-011 ثالثاً — چندانتخابی: عضویت در مجموعهٔ شعبه‌های انتخاب‌شده (unset = تعیین‌نشده)
-    const filtered = branchFilterSet
-      ? rowsWithBranch.filter((r) =>
-          branchFilterSet.has("unset") && r.branch === BRANCH_UNSET
-            ? true
-            : branchFilterSet.has(r.branch)
-        )
-      : branchFilter
-        ? rowsWithBranch.filter((r) => (branchFilter === "unset" ? r.branch === BRANCH_UNSET : r.branch === branchFilter))
-        : rowsWithBranch;
+    const filtered = branchFilter
+      ? rowsWithBranch.filter((r) => (branchFilter === "unset" ? r.branch === BRANCH_UNSET : r.branch === branchFilter))
+      : rowsWithBranch;
 
     await witnessScopedRead(guard, "arm-request", total, access.isOwnerRead, ownerLoginPath(guard));
 

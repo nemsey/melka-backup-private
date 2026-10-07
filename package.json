@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "bash scripts/pn006/dev-entry.sh",
     "dev:real": "next dev -p 3000 2>&1 | tee dev.log",
-    "build": "RAYON_NUM_THREADS=1 next build --experimental-build-mode compile && RAYON_NUM_THREADS=1 next build --experimental-build-mode generate && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/ && (cp env.platform.json .next/standalone/ 2>/dev/null || true) && rm -rf .next/standalone/backups .next/standalone/db .next/standalone/prisma/db .next/standalone/download .next/standalone/skills .next/standalone/scripts .next/standalone/tool-results .next/standalone/docs .next/standalone/examples .next/standalone/tests .next/standalone/bun.lock .next/standalone/dev.log .next/standalone/server.log .next/standalone/worklog.md",
+    "build": "RAYON_NUM_THREADS=1 next build --experimental-build-mode compile && RAYON_NUM_THREADS=1 next build --experimental-build-mode generate && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/ && cp env.platform.json .next/standalone/ && rm -rf .next/standalone/backups .next/standalone/db .next/standalone/prisma/db .next/standalone/download .next/standalone/skills .next/standalone/scripts .next/standalone/tool-results .next/standalone/docs .next/standalone/examples .next/standalone/tests .next/standalone/bun.lock .next/standalone/dev.log .next/standalone/server.log .next/standalone/worklog.md",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "db:push": "prisma db push --accept-data-loss",

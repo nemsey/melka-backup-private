@@ -48,39 +48,6 @@ export async function register(): Promise<void> {
     });
   }
 
-  // ---------- ۱-الف) PN-011 اولاً: خوددرمانی رازهای اجباری ----------
-  // مصوبهٔ مالک پس از پنجمین بازنشانی محیط: «این مشکل با تکرار مجدد را به هر
-  // طریق ممکن برای همیشه رفع گردد». راز غایب ← بازیابی از escrow بادوام
-  // (upload/.runtime/boot-secrets.json — زنده‌مانده در هر پنج بازنشانی) ← در
-  // فقدان کامل، تولید کلید رمزنگاری تازه. env واقعی همیشه برنده است؛ سپس
-  // assertProductionSecrets فقط برای فقدان‌های غیرقابل‌خوددرمانی می‌ماند.
-  {
-    const { ensureBootSecrets } = await import("@/lib/auth/boot-secrets");
-    const heal = await ensureBootSecrets();
-    const healed = heal.actions.filter(
-      (a) => a.action === "restored-from-escrow" || a.action === "generated"
-    );
-    if (healed.length > 0 || heal.errors.length > 0) {
-      logEvent({
-        level: heal.errors.length > 0 ? "warn" : "info",
-        category: "system",
-        operation: "boot-secrets-heal",
-        status: heal.errors.length > 0 ? "fail" : "ok",
-        detail: {
-          actions: heal.actions,
-          envPlatformRegenerated: heal.envPlatformRegenerated,
-          errors: heal.errors,
-          note:
-            "healed=" +
-            healed.map((a) => `${a.key}:${a.action}`).join(",") +
-            (healed.some((a) => a.key === "MELK_TOKEN_KEY" && a.action === "generated")
-              ? " | کلید تازه تولید شد — نشست‌های ARM قبلی نامعتبر؛ مالک یک‌بار وارد ARM شود"
-              : ""),
-        },
-      });
-    }
-  }
-
   // ---------- ۱) fail-fast رازهای اجباری (HOTFIX-01 / SEC-1, SEC-2) ----------
   const { assertProductionSecrets } = await import("@/lib/melk-api/config");
   assertProductionSecrets(); // در production نبود راز = throw → بوت نمی‌شود
