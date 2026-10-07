@@ -409,6 +409,14 @@ export async function touchUserSession(tokenHash: string): Promise<void> {
   }).catch(() => {});
 }
 
+/** بازنشانی قفل حساب — صفر کردن failedAttempts + lockedUntil (بند ۵.۲.۴-۵) */
+export async function unlockUser(userId: string, actor: string): Promise<void> {
+  const user = await db.user.findUnique({ where: { id: userId } });
+  if (!user) throw new MelkApiError("UNKNOWN", "کاربر یافت نشد.", 404, false);
+  await db.user.update({ where: { id: userId }, data: { failedAttempts: 0, lockedUntil: null } });
+  await recordUserActivity({ userId, action: "edit", details: JSON.stringify({ by: actor, unlocked: true }) });
+}
+
 /** شمار کلی برای داشبورد مدیریتی */
 export async function usersOverview(): Promise<{
   total: number; active: number; byRole: Record<string, number>; guests: number; sessionsActive: number;

@@ -29,6 +29,8 @@ import { OpportunityJobsSection } from "./OpportunityJobsSection";
 import { AccountGeneralSection } from "./AccountGeneralSection";
 // PN-008 BLOCK 7 — مدیریت دسترسی کدپرسنلی‌ها (تنظیمات عمومی — فقط مالک)
 import { PersonnelAccessSection } from "./PersonnelAccessSection";
+// PN-016 — مدیریت کاربران پیشرفته (شورا-ن۰۲۰ بند ۵.۲.۴ — فقط مالک)
+import { UsersManagementSection } from "./UsersManagementSection";
 
 export function SettingsPage({ onBack }: TilePageProps) {
   void onBack; // بازگشت از پوستهٔ کاشی مدیریت می‌شود
@@ -62,8 +64,11 @@ export function SettingsPage({ onBack }: TilePageProps) {
       {/* ۷ — حساب کاربری و تنظیمات کلی (ادغام: حساب + تم + زبان + راهنما — گام صفر-۶) */}
       <AccountGeneralSection />
 
-      {/* ۸ — PN-008 BLOCK 7: مدیریت دسترسی کارشناسان (فقط مالک) */}
+      {/* ۸ — PN-008 BLOCK 7: مدیریت دسترسی کارشناسان (فقط مالک — لایهٔ قدیمی) */}
       <PersonnelAccessSection />
+
+      {/* ۹ — PN-016: مدیریت کاربران پیشرفته (چهار نقش + مهمان — فقط مالک) */}
+      <UsersManagementSection />
 
       {/* اعتبار */}
       <Card>
