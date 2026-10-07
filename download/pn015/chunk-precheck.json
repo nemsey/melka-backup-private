@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-07T20:04:27Z",
+  "purpose": "بخش ۰.۲ ردیف ۵ — وارسی دستی یکپارچگی chunk بیلد جاری (پیش از ساخت گارد K1)",
+  "build": { "dir": ".next/standalone/.next", "buildId": "n/a" },
+  "checked": 13,
+  "missing": 0,
+  "missingList": []
+[],
+  "verdict": "PASS"
+}

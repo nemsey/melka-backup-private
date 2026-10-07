@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-07T20:24:51.805818Z",
+  "guard": "audit-chunk-integrity (PN-015/K1)",
+  "root": "/home/z/my-project",
+  "checked": 12,
+  "missing": 0,
+  "missingList": [],
+  "chunksOnDisk": 56,
+  "buildIdCoherence": "match",
+  "verdict": "PASS"
+}

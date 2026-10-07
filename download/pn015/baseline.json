@@ -1,0 +1,38 @@
+{
+  "council": "ملکا-شورا-ن۰۱۹-۱۴۰۵",
+  "workOrder": "PN-015",
+  "date": "2026-10-07",
+  "at": "2026-10-07T19:58:00Z",
+  "section0": {
+    "versionTable": {
+      "expectedHead": "5c530fa+",
+      "actualLocalHead": "4817ed2 (کامیت خودکار پلتفرم ۰۸:۰۱Z — درخت PN-011)",
+      "actualMirrorMain": "7a54a98 = 5c530fa + 62bc91c (تحویل) + 7f4021a (ورک‌لاگ) + 7a54a98 (خودکار ۱۷:۱۶Z)",
+      "expectedChainIndex": 15,
+      "actualChainIndex": "15 — زنده در upload/.survival/PN-014-20261007 (ossfs ابری — از بازنشانی جان به در برد)",
+      "actualBuildId": "4817ed2-20261007-1915 (= HEAD محلی کهنه)"
+    },
+    "rowVerdicts": { "head": "FAIL", "mirror": "FAIL(local≠mirror اما آینهٔ سالم و کامل)", "chain15": "PASS", "buildId": "PASS(=HEAD محلی)" },
+    "prerequisites": {
+      "health": "PASS 200 (buildId=4817ed2-20261007-1915 · source=baked · production)",
+      "dbIntegrity": "PASS ok (PropertyRecord=27688 · Request=25499 · GraphNode=118502 · GraphEdge=136018 · Alert=1172 · ExpertProfile=143 · آخرین گره 17:07Z = عصر PN-014)",
+      "escrow": "PARTIAL: upload/.runtime/boot-secrets.json زنده (۱۹:۱۵) · db/.runtime حذف‌شده در بازنشانی · env.escrow.enc فقط در گیت (با reset بازیابی می‌شود)",
+      "workerWatchdog": "PASS (PID 1357 worker.ts · PID 1333 prod-watchdog.sh · ضربان تازه ۱۹:۴۹Z · ۶ کار در چرخه)",
+      "chunkIntegrity": "PASS دستی (۱۳ ارجاع · ۰ مفقود — chunk-precheck.json)",
+      "previewVersionMatch": "FAIL — دامنهٔ preview همان بیلد کهنه 4817ed2-1915 را سرو می‌کند (پیش‌نمایش کهنه = مسئلهٔ دلخواه سفارش)"
+    },
+    "resetDiagnosis": {
+      "event": "هفتمین بازنشانی محیط پلتفرم",
+      "window": "2026-10-07 بین 17:37Z (آخرین اسنپ‌شات سالم آینه) و 18:18Z (آخرین سینک آگهی) تا 19:14Z (بازسازی /home/z)",
+      "evidence": [
+        "آینه GitHub در 7a54a98 جلوتر از HEAD محلی 4817ed2 است — درخت به اسنپ‌شات ۰۸:۰۱Z پلتفرم برگردانده شد (عین الگوی مستند PN-012 برای بازنشانی ششم)",
+        "پکیج‌های بقا ۱۳/۱۴/۱۵ و deliver-store/ و db/.runtime از درخت پروژه حذف شدند",
+        "upload/ (ossfs) و db/custom.db و /tmp/my-project (PolarFS) زنده ماندند — کل اعاده بر پایهٔ همین‌ها",
+        "ورک‌لاگ محلی در ۲۵۶۵ خط (PN-011) قطع است؛ نسخهٔ کامل ۲۶۳۶ خطی در آینه (تا PN-014) موجود است",
+        "recovery-log.jsonl: guard-recovery-ok via PN-014-20261007 در 19:15:45Z (هش مالک از بستهٔ ۱۵ بازگردانده شد) + بیلد ۱۹:۱۵ با BUILD_ID=4817ed2-20261007-1915"
+      ],
+      "impact": "کد PN-012/013/014 (~۲۷ هزار خط) از درخت کاری حذف شد اما تماماً در آینه GitHub حاضر است؛ دادهٔ DB زنده است؛ هر ۱۵ بستهٔ بقا در ossfs سالم‌اند"
+    },
+    "recoveryPlan": "عین دکترین PN-005-C/PN-009/PN-012: احیای مبنای سفارش از آینه (reset--hard به 7a54a98 = 5c530fa یا جدیدتر) → بیلد تازه → ری‌استارت تمیز → تکرار قفل ورود → سپس ۹ مرحلهٔ سفارش"
+  }
+}

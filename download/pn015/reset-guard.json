@@ -1,0 +1,35 @@
+{
+  "council": "ملکا-شورا-ن۰۱۹-۱۴۰۵",
+  "workOrder": "PN-015 · K3 — platform-reset-guard",
+  "at": "2026-10-07T20:45:00Z",
+  "rootCauseOfThisGuard": {
+    "event": "بازنشانی هفتم محیط (۱۴۰۵-۰۷-۱۸ بین 17:37Z و 18:18Z)",
+    "mechanism": "پلتفرم درخت کاری را از repo.tar خودش (اسنپ‌شات ۰۸:۰۱Z = 4817ed2) بازمی‌گرداند؛ بسته‌های ۱۳/۱۴/۱۵ و deliver-store و db/.runtime حذف شدند؛ آینهٔ GitHub و upload (ossfs) و db/custom.db زنده ماندند",
+    "blindSpotFound": "وارسی بوتِ موجود (auto-recovery.sh) فقط survival/code آینه را می‌سنجد — پس از بازنشانی، نخستین چرخهٔ آینه اسنپ‌شاتِ درختِ برگشته را پوش می‌کند و وارسی «HEALTHY» دروغین می‌گیرد (شاهد زنده: 19:16:12Z در recovery-log.jsonl با HEAD=4817ed2 در حالی که main آینه 7a54a98 بود)",
+    "fix": "داوری با شاخهٔ main آینه — تبار مرجع کد که هرگز عقب نمی‌رود: جدِّ اکیدِ main = درخت برگشته"
+  },
+  "liveCheck": {
+    "at": "2026-10-07T20:40:41Z",
+    "command": "bash scripts/recovery/reset-guard.sh check",
+    "verdict": "HEALTHY equal (HEAD محلی = main آینه = 7a54a98)",
+    "exitCode": 0
+  },
+  "liveValidation": "بازیابی دستی همین شب (download/pn015/recovery.json) دقیقاً همان مسیرِ خودکار گارد است: fetch آینه → reset --hard → بیلد → گارد chunk → ری‌استارت → مهر یکسان — با نتیجهٔ 200 و preview تازه. گارد این مسیر را خودکار و نرخ‌محدود (۳۰ دقیقه) تکرار می‌کند.",
+  "drill": {
+    "fixture": "مخزن ساختگی سه-کامیتی + آینهٔ محلی bare؛ درخت با git reset --hard HEAD~2 عین رفتار repo.tar پلتفرم برگردانده شد",
+    "results": [
+      { "test": "هم‌نسخهٔ آینه → HEALTHY (خروج ۰)", "pass": true },
+      { "test": "درخت برگشته → RESET-DETECTED (خروج ۲) + شاهد JSON", "pass": true },
+      { "test": "دریل بازیابی: fetch + reset --hard به main آینه + مهر drill-git-recovered (بدون build در دریل)", "pass": true },
+      { "test": "نرخ‌حد: بازیابی اخیر → صرف نظر (خروج ۴)", "pass": true },
+      { "test": "ثبت کار در رجیستری Worker با شناسهٔ reset-guard و فاصلهٔ ۱۵ دقیقه + خاموشی MELK_RESET_GUARD=disabled", "pass": true },
+      { "test": "اسکریپت سالم (bash -n)", "pass": true }
+    ],
+    "verdict": "۶/۶ سبز"
+  },
+  "integration": {
+    "workerJob": "reset-guard · هر ۱۵ دقیقه · اولین اجرا +۵ دقیقه · check → در صورت خروج ۲ → recover (fetch/reset/install/build/chunk-guard/restart/verify مهر)",
+    "safetyValves": "نرخ‌حد ۳۰ دقیقه · خاموشی MELK_RESET_GUARD=disabled · DRILL=1 برای دریل · هیچ head-pipe روی خروجی بیلد (درس PN-014) · rebuild فقط پس از عبور گارد chunk (K1)",
+    "log": "upload/.survival/recovery-log.jsonl (عبورکننده از بازنشانی) · شاهد پایدار: upload/.runtime/reset-guard.json"
+  }
+}

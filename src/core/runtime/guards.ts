@@ -18,6 +18,7 @@
  */
 
 import { existsSync, statSync, readdirSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { join } from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { REPO_ROOT } from "./jobs";
@@ -228,5 +229,78 @@ export async function runSizeGuard(
       message: `خطای گارد حجم: ${e instanceof Error ? e.message : String(e)}`,
       checkedAt,
     };
+  }
+}
+
+/** ─── PN-015 · K2 — گارد تازگی نسخهٔ دامنهٔ preview ───
+ * «Preview Stale»: دامنه ممکن است 200ِ سالم بدهد اما کامیتِ کهنه سرو کند —
+ * فقط مقایسهٔ هویت نسخه آن را می‌بیند. هر ۱۵ دقیقه در Worker می‌سنجد؛
+ * STALE/DOWN = هشدار INFRA_ALERT (عین الگوی D3/D4).
+ */
+export interface PreviewGuardResult {
+  job: "preview-guard";
+  previewUrl: string;
+  localHead: string;
+  remoteGitSha: string | null;
+  remoteBuildId: string | null;
+  http: number | null;
+  status: "PASS" | "STALE" | "ERROR";
+  message: string;
+  checkedAt: string;
+}
+
+/** دامنهٔ preview — قابل override با env (پیش‌فرض: دامنهٔ مستند پروژه) */
+export function previewUrl(): string {
+  return (process.env.MELKA_PREVIEW_URL ?? "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai").replace(/\/$/, "");
+}
+
+/** HEAD محلی — تزریقی برای آزمون */
+export function localGitHead(execFn: (cmd: string, cwd: string) => string = (c, w) => execSync(c, { cwd: w, encoding: "utf8" }).trim()): string {
+  try {
+    return execFn("git rev-parse --short HEAD", REPO_ROOT);
+  } catch {
+    return "";
+  }
+}
+
+export async function runPreviewGuard(
+  db: PrismaClient,
+  options?: { fetcher?: FetchLike; url?: string; head?: string },
+): Promise<PreviewGuardResult> {
+  const url = options?.url ?? previewUrl();
+  const fetcher = options?.fetcher ?? ((u: string, i?: RequestInit) => fetch(u, i));
+  const localHead = options?.head ?? localGitHead();
+  const checkedAt = new Date().toISOString();
+  const base: Omit<PreviewGuardResult, "status" | "message"> = {
+    job: "preview-guard", previewUrl: url, localHead,
+    remoteGitSha: null, remoteBuildId: null, http: null, checkedAt,
+  };
+  try {
+    const res = await fetcher(`${url}/api/version`, { signal: AbortSignal.timeout(20_000) });
+    if (res.status !== 200) {
+      const message = `دامنهٔ preview پاسخ ${res.status} داد (انتظار ۲۰۰) — preview از دسترس خارج یا ناقص.`;
+      await writeAlert(db, "worker:preview-guard", message);
+      return { ...base, http: res.status, status: "ERROR", message, checkedAt };
+    }
+    const d = (await res.json()) as { buildId?: string; fingerprint?: { gitShortSha?: string } };
+    const remoteGitSha = d.fingerprint?.gitShortSha ?? null;
+    const remoteBuildId = d.buildId ?? null;
+    if (!remoteGitSha) {
+      const message = "پاسخ /api/version فاقد هویت نسخه است — بدنهٔ غیرمنتظره.";
+      await writeAlert(db, "worker:preview-guard", message);
+      return { ...base, http: 200, remoteGitSha, remoteBuildId, status: "ERROR", message, checkedAt };
+    }
+    if (remoteGitSha === localHead) {
+      return {
+        ...base, http: 200, remoteGitSha, remoteBuildId, status: "PASS",
+        message: `preview تازه است — دامنه = HEAD محلی (${localHead}).`, checkedAt,
+      };
+    }
+    const message = `preview کهنه است: دامنه ${remoteGitSha} سرو می‌کند اما HEAD محلی ${localHead || "?"} است — بازانتشار/بازبینی لازم (مسئلهٔ «Preview Stale» سفارش PN-015).`;
+    await writeAlert(db, "worker:preview-guard", message);
+    return { ...base, http: 200, remoteGitSha, remoteBuildId, status: "STALE", message, checkedAt };
+  } catch (e) {
+    const message = `شبکهٔ گارد preview شکست خورد: ${e instanceof Error ? e.message : String(e)} — قضاوت به چرخهٔ بعد.`;
+    return { ...base, status: "ERROR", message, checkedAt };
   }
 }
