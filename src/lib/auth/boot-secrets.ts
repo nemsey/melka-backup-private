@@ -385,7 +385,12 @@ export async function ensureBootSecrets(opts?: {
     report.actions.push({ key, action: "env-kept" });
   }
 
-  if (escrowDirty || !escrowExisted) {
+  // PN-012-B — هرگونه خوددرمانی (بازیابی/تولید) یا کثیفی → هر سه مکان تازه
+  // می‌شوند: بازیابی از یک مکان باید مکان‌های دیگر را نیز همگام کند (triple)
+  const anyHeal = report.actions.some(
+    (a) => a.action === "restored-from-escrow" || a.action === "generated",
+  );
+  if (escrowDirty || !escrowExisted || anyHeal) {
     try {
       writeAllEscrows(repoRoot, escrow);
     } catch (e) {

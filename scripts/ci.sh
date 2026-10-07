@@ -59,25 +59,19 @@ if [[ "${FAILS1:-0}" -gt 15 ]]; then
 fi
 echo "  شکست‌ها: ${FAILS1} (کلاس مستند داده‌محور — سقف ۱۵)"
 
-# ── ۵) Audit باغ (مرزها + امنیت لاگ) ──
-pass "Audit باغ (repository/intelligence/log-safety)"
-# تصمیم ن۰۰۷ (الگوی Blocker → Alternative → Decision → Continue):
-#   Blocker:    audit-repository-boundary --strict کامل، هدفِ فاز ۳ است (روت‌ها 47 فراخوانی db.* — هدف 0).
-#   Alternative: حاکمیت روی بخش تحقق‌یافته (ایجنت‌ها = 0) + قرقرهٔ ضدبازگشت روت‌ها (≤ 47).
-#   Decision:   تا فاز ۳، CI با --strict-agents + ratchet سبز می‌ماند و هر افزایش شمار روت‌ها = قرمز.
-#   Continue:   بدون توقف.
-bash scripts/audit-repository-boundary.sh --strict-agents > /tmp/pn007-ci-audit1.log 2>&1 || { echo "✗ گام ۵-الف: repository-boundary (agents)"; tail -8 /tmp/pn007-ci-audit1.log; exit 1; }
+# ── ۵) Audit باغ (مرزها + امنیت لاگ + راز بوت) — PN-012 · BLOCK 5 ──
+pass "Audit باغ (repository/intelligence/log-safety/boot-secrets)"
+# ✅ PN-012 فاز ۳: بدهی تسویه شد — 46→0 فراخوانی db.* در روت‌ها (BLOCK 1).
+# از این پس گارد سخت‌گیر کامل: هر بازگشت db.* به هر روت = قرمز فوری.
+bash scripts/audit-repository-boundary.sh --strict > /tmp/pn007-ci-audit1.log 2>&1 || { echo "✗ گام ۵-الف: repository-boundary --strict (فاز ۳ تسویه شد — صفر تحمل)"; tail -8 /tmp/pn007-ci-audit1.log; exit 1; }
 tail -1 /tmp/pn007-ci-audit1.log
-ROUTE_DB_CALLS=$(grep -oE "routes \(src/app/api\): +[0-9]+" /tmp/pn007-ci-audit1.log | grep -oE "[0-9]+$" || echo 99)
-if [[ "${ROUTE_DB_CALLS:-99}" -gt 47 ]]; then
-  echo "✗ گام ۵-الف: شمار فراخوانی db.* در روت‌ها به ${ROUTE_DB_CALLS} رسید (قرقرهٔ ن۰۰۷: ≤ 47 — بدهی فاز ۳)"
-  exit 1
-fi
-echo "  روت‌ها: ${ROUTE_DB_CALLS} فراخوانی db.* (قرقره ≤ 47 ✓ — هدف فاز ۳: صفر)"
-bash scripts/audit-intelligence-boundary.sh --strict > /tmp/pn007-ci-audit2.log 2>&1 || { echo "✗ گام ۵-ب: intelligence-boundary"; tail -8 /tmp/pn007-ci-audit2.log; exit 1; }
+bash scripts/audit-intelligence-boundary.sh --strict > /tmp/pn007-ci-audit2.log 2>&1 || { echo "✗ گام ۵-ب: intelligence-boundary --strict"; tail -8 /tmp/pn007-ci-audit2.log; exit 1; }
 tail -1 /tmp/pn007-ci-audit2.log
 bash scripts/audit-log-safety.sh > /tmp/pn007-ci-audit3.log 2>&1 || { echo "✗ گام ۵-ج: log-safety"; tail -8 /tmp/pn007-ci-audit3.log; exit 1; }
 tail -1 /tmp/pn007-ci-audit3.log
+# PN-012 BLOCK 5 گارد تازه — بحران‌های ۴/۵/۶ هرگز بازنگردند:
+bash scripts/audit-boot-secrets.sh > /tmp/pn012-ci-audit4.log 2>&1 || { echo "✗ گام ۵-د: boot-secrets (سازوکار بازیابی راز)"; tail -8 /tmp/pn012-ci-audit4.log; exit 1; }
+tail -1 /tmp/pn012-ci-audit4.log
 
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"

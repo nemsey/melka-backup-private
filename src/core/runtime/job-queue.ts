@@ -140,15 +140,36 @@ export function startJobQueue(db: PrismaClient, defs: WorkerJobDef[], options?: 
     }
   };
 
-  /** اجرای یک کار با قفل توزیع‌شده — اگر نمونهٔ دیگری دارد، رد می‌شود */
+  /** اجرای یک کار با قفل توزیع‌شده — اگر نمونهٔ دیگری دارد، رد می‌شود
+   *  PN-012 · BLOCK 2: تمدید صریح اجاره + ثبت از‌دست‌رفت (صفر Duplicate) */
   const runJobLocked = async (j: { def: WorkerJobDef; entry: WorkerJobStatusEntry; lastCompletedAt: number; firstRunAt: number | null }) => {
     const lockId = `${JOB_LOCK_PREFIX}${j.def.id}`;
     const svc = state.lockService;
     const acq = await svc.acquire(lockId, { ttlMs: LOCK_TTL_MS_DEFAULT, metadata: { pid: process.pid } });
     if (!acq.acquired) return; // نمونهٔ دیگر در حال اجرا (بند ۲.۴)
-    const hb = setInterval(() => void svc.heartbeat(lockId).catch(() => undefined), options?.heartbeatMs ?? HEARTBEAT_INTERVAL_MS_DEFAULT);
+    let leaseLost = false;
+    const hb = setInterval(
+      () =>
+        void svc.renew(lockId, LOCK_TTL_MS_DEFAULT).then(
+          (ok) => {
+            // تمدید صریح — ناموفق = مالکیت رفته؛ هشدار ثبت می‌شود تا اجرای
+            // موازی (Duplicate) در وضعیت Worker قابل ردیابی باشد
+            if (!ok) {
+              leaseLost = true;
+              j.entry.lastError = `LEASE-LOST ${new Date().toISOString()} — قفل ${lockId} در میانهٔ اجرا از دست رفت (تمدید ناموفق)`;
+              flush();
+            }
+          },
+          () => undefined, // خطای گذرا — ضربان بعدی
+        ),
+      options?.heartbeatMs ?? HEARTBEAT_INTERVAL_MS_DEFAULT,
+    );
     try {
       await runJob(j);
+      if (leaseLost && !j.entry.lastError) {
+        j.entry.lastError = `LEASE-LOST (بازیابی‌شده) — کار ${lockId} با اجارهٔ گم‌شده تمام شد`;
+        flush();
+      }
     } finally {
       clearInterval(hb);
       await svc.release(lockId).catch(() => undefined);
