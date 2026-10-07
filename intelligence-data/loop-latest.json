@@ -1,19 +1,19 @@
 {
-  "ranAt": "2026-10-07T12:24:03.727Z",
+  "ranAt": "2026-10-07T13:24:08.986Z",
   "tileId": "arm-listing",
-  "predictions": 416,
-  "positiveOutcomes": 208,
-  "negativeOutcomes": 208,
-  "linked": 416,
+  "predictions": 420,
+  "positiveOutcomes": 210,
+  "negativeOutcomes": 210,
+  "linked": 420,
   "evaluation": {
     "tileId": "arm-listing",
     "windowDays": 3650,
-    "sampleSize": 416,
+    "sampleSize": 420,
     "verdict": "ABOVE_BASELINE",
-    "computedAt": "2026-10-07T12:24:03.727Z",
+    "computedAt": "2026-10-07T13:24:08.986Z",
     "unresolvablePairs": 0,
     "target": "probability",
-    "brierScore": 0.2356,
+    "brierScore": 0.2355,
     "calibration": [
       {
         "bucket": "0.0-0.2",
@@ -23,12 +23,12 @@
       {
         "bucket": "0.2-0.4",
         "predicted": 0.395,
-        "observed": 0.319
+        "observed": 0.317
       },
       {
         "bucket": "0.4-0.6",
         "predicted": 0.487,
-        "observed": 0.716
+        "observed": 0.715
       },
       {
         "bucket": "0.6-0.8",
@@ -41,7 +41,7 @@
         "observed": 0
       }
     ],
-    "lift": 0.0575
+    "lift": 0.058
   },
   "reproduction": {
     "source": "arm.melketabriz.ir (PropertyRecord واقعی)",

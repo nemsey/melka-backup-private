@@ -1,24 +1,24 @@
 {
   "case": "PN-006-BLOCK5-PERF-BUDGET",
-  "measuredAt": "2026-10-07T09:34:03.865040+00:00",
+  "measuredAt": "2026-10-07T13:28:18.926492+00:00",
   "budgets": [
     {
       "metric": "Initial JS (بار اول — سنجهٔ مرورگر)",
       "target": "< 300KB",
-      "value": "263KB",
+      "value": "281KB",
       "pass": true,
-      "note": "انتقال واقعی JS در بار اول صفحهٔ ورود (12 چانک — encodedBodySize)"
+      "note": "انتقال واقعی JS در بار اول صفحهٔ ورود (15 چانک — encodedBodySize)"
     },
     {
       "metric": "LCP (صفحهٔ ورود، موبایل شبیه‌سازی)",
       "target": "< 2500ms",
-      "value": "288ms",
+      "value": "556ms",
       "pass": true
     },
     {
       "metric": "INP proxy (تأخیر تعامل)",
       "target": "< 200ms",
-      "value": "76ms",
+      "value": "81ms",
       "pass": true,
       "note": "INP واقعی نیازمند تعامل کاربر واقعی است — این proxy کلیک→فریم بعدی است"
     },
@@ -31,31 +31,31 @@
     {
       "metric": "Login → Dashboard",
       "target": "< 2000ms",
-      "value": "222ms",
+      "value": "909ms",
       "pass": true
     },
     {
       "metric": "Dashboard → Tile (M1)",
       "target": "< 1000ms",
-      "value": "97ms",
+      "value": "89ms",
       "pass": true
     },
     {
       "metric": "Tile → First Insight",
       "target": "< 2000ms",
-      "value": "7ms",
+      "value": "6ms",
       "pass": true
     },
     {
       "metric": "API P95 /api/version",
       "target": "< 500ms",
-      "value": "6ms",
+      "value": "5ms",
       "pass": true
     },
     {
       "metric": "API P95 /api/health",
       "target": "< 500ms",
-      "value": "7ms",
+      "value": "6ms",
       "pass": true
     },
     {
@@ -67,7 +67,7 @@
     {
       "metric": "RAM production",
       "target": "< 500MB",
-      "value": "162MB",
+      "value": "209MB",
       "pass": true
     },
     {
@@ -79,39 +79,39 @@
     }
   ],
   "browserJourney": {
-    "measuredAt": "2026-10-07T09:33:55Z",
+    "measuredAt": "2026-10-07T13:28:09Z",
     "base": "http://localhost:3000",
     "loginFirstPaint": {
-      "loadToInputMs": 299
+      "loadToInputMs": 572
     },
     "loginPage": {
-      "lcp": 288,
+      "lcp": 556,
       "cls": 0,
       "lcpUrl": ""
     },
     "initialJs": {
-      "count": 12,
-      "encodedKB": 263
+      "count": 15,
+      "encodedKB": 281
     },
-    "loginToDashboardMs": 222,
+    "loginToDashboardMs": 909,
     "dashboard": {
-      "lcp": 288,
+      "lcp": 556,
       "cls": 0,
       "lcpUrl": ""
     },
-    "dashboardToTileMs": 97,
+    "dashboardToTileMs": 89,
     "tilePage": {
-      "lcp": 288,
+      "lcp": 556,
       "cls": 0,
       "lcpUrl": ""
     },
     "tileBodySample": "اکوسیستم هوشمند ملک ایران\nسی\nآگهی ملکا\n\nدفتر مرکزی فایل‌های آگهی: ثبت دستی و خودکار، انتقال گام‌به‌گام به CRM ملک تبریز و انتشار هوشمند در اینستاگرام\n\nوضعیت اتصال‌ها\n۰ از ۱۰\n…\n…\n…\n…\n…\n…\n…\n…\n…\n…\nدفتر فایل‌های آگهی\n\nثبت دستی (۵ گامی عین فرم آرم)، ثبت خودکار فایل‌های تأییدشده فایل‌یابی، انتقال گام‌به‌گ",
-    "tileToFirstInsightMs": 7,
+    "tileToFirstInsightMs": 6,
     "insightFound": true,
-    "interactionLatencyMs": 76,
+    "interactionLatencyMs": 81,
     "jsResources": {
-      "count": 15,
-      "encodedBodyKB": 295
+      "count": 19,
+      "encodedBodyKB": 323
     }
   },
   "method": "playwright chromium (موبایل شبیه‌سازی‌شده 390×844) + curl P95 (۲۰ نمونه) + gzip چانک‌ها + ps RSS",
