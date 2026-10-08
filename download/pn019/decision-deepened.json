@@ -1,0 +1,169 @@
+{
+  "council": "ملکا-شورا-ن۰۲۳-۱۴۰۵",
+  "stage": "فاز ۸ — تعمیق موتور تصمیم",
+  "ranAt": "2026-10-08T11:56:50.228Z",
+  "recordCount": 16,
+  "createdThisRun": 5,
+  "fields15": [
+    {
+      "field": "id",
+      "value": "cmuzhe5lg0001nkh0iudlm4ck"
+    },
+    {
+      "field": "predictionId",
+      "value": "74d5c4cc-0c1e-4df9-ae4c-a82de537ddb8"
+    },
+    {
+      "field": "decisionType",
+      "value": "investigate"
+    },
+    {
+      "field": "proposedAction",
+      "value": "پیگیری هفتگی وضعیت ملک"
+    },
+    {
+      "field": "confidence",
+      "value": 0.395
+    },
+    {
+      "field": "rationale",
+      "value": "پیش‌بینی 40٪ — بررسی بیشتر — تماس برای اطلاعات. اثر موردانتظار: +3.5٪ شانس موفقیت در افق 21 روز (listing). نوع نهایی: investigate. اجرا فقط با تأیید انسان (requ…"
+    },
+    {
+      "field": "expectedImpact",
+      "value": {
+        "liftPercent": 3.5,
+        "reach": "listing",
+        "horizonDays": 21,
+        "basis": "جدول پایهٔ فاز ۸ §۸.۲ (5٪ پایه × ضریب اطمینان 0.70) — قاعدهٔ دامنهٔ فعال لحظهٔ تصمیم"
+      }
+    },
+    {
+      "field": "alternatives",
+      "value": [
+        {
+          "action": "پیگیری هفتگی وضعیت ملک",
+          "whyRejected": "",
+          "expectedValue": 0.395,
+          "rank": 1
+        },
+        {
+          "action": "انتظار هوشمند هفت روزه و بازبینی مجدد",
+          "whyRejected": "گزینهٔ معتبر اما کنش اصلی نیست",
+          "expectedValue": 23.7,
+          "rank": 2
+        },
+        {
+          "action": "ثبت در صف بازبینی چرخهٔ بعد و پایش خودکار ریسک‌ها",
+          "whyRejected": "بدون کنش امروز — پایش مداوم جایگزین واکنش است",
+          "expectedValue": 11.85,
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "field": "requiredResources",
+      "value": [
+        "دسترسی به فهرست ملک",
+        "دفترچهٔ یادداشت"
+      ]
+    },
+    {
+      "field": "safetyReport",
+      "value": {
+        "passed": true,
+        "blockedBy": [],
+        "warnings": [],
+        "checkedRules": [
+          "SAF-001",
+          "SAF-002",
+          "SAF-003",
+          "SAF-004",
+          "SAF-005",
+          "SAF-006",
+          "SAF-007"
+        ]
+      }
+    },
+    {
+      "field": "status",
+      "value": "active"
+    },
+    {
+      "field": "expiresAt",
+      "value": "2026-10-15T11:56:50.259Z"
+    },
+    {
+      "field": "createdAt",
+      "value": "2026-10-08T11:56:50.260Z"
+    },
+    {
+      "field": "tierAtCreation",
+      "value": 3
+    },
+    {
+      "field": "modelVersionId",
+      "value": null
+    }
+  ],
+  "fieldCount": 15,
+  "guarantees": {
+    "minAlternatives": {
+      "rule": "≥۳",
+      "actual": 3
+    },
+    "expectedImpactQuantitative": {
+      "liftPercent": 3.5,
+      "reach": "listing",
+      "horizonDays": 21,
+      "basis": "جدول پایهٔ فاز ۸ §۸.۲ (5٪ پایه × ضریب اطمینان 0.70) — قاعدهٔ دامنهٔ فعال لحظهٔ تصمیم"
+    },
+    "expiration": {
+      "expiresAt": "2026-10-15T11:56:50.259Z",
+      "ttl": "۷ روز (env)",
+      "isExpired": false
+    },
+    "autoExecute": false,
+    "requiresApproval": true
+  },
+  "expectedImpactTable": {
+    "wait": {
+      "liftPercent": 0,
+      "reach": "listing",
+      "horizonDays": 30
+    },
+    "investigate": {
+      "liftPercent": 5,
+      "reach": "listing",
+      "horizonDays": 21
+    },
+    "contact_owner": {
+      "liftPercent": 15,
+      "reach": "listing",
+      "horizonDays": 14
+    },
+    "assign_expert": {
+      "liftPercent": 18,
+      "reach": "listing",
+      "horizonDays": 30
+    },
+    "adjust_price": {
+      "liftPercent": 25,
+      "reach": "listing",
+      "horizonDays": 45
+    },
+    "schedule_visit": {
+      "liftPercent": 20,
+      "reach": "listing",
+      "horizonDays": 30
+    },
+    "priority_action": {
+      "liftPercent": 15,
+      "reach": "listing",
+      "horizonDays": 7
+    }
+  },
+  "statusBreakdown": {
+    "investigate": 16
+  }
+}

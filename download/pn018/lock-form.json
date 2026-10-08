@@ -1,0 +1,30 @@
+{
+  "council": "ملکا-شورا-ن۰۲۲-۱۴۰۵",
+  "workOrder": "PN-018 — چهار بند دستور مالک: راستی‌آزمایی PN-016/017 + رفع دو خطای زنده + فاز ۷ Outcome Learning",
+  "date": "1405/07/20",
+  "lockForm": {
+    "versions": {
+      "headAtStart": "dc53cae",
+      "mirror": "dc53cae (match)",
+      "survivalChainIndex": 18,
+      "buildIdAtStart": "dc53cae-20261008-0813 (= HEAD)",
+      "verdict": "4/4 — ورود مجاز"
+    },
+    "preconditions": {
+      "health": "200",
+      "dbIntegrity": "quick_check ok",
+      "escrowThreePlace": "audit-boot-secrets PASS",
+      "worker": "زنده · ۹ کار (در پایان جلسه: ۱۰ کار با drift-guard)",
+      "chunkIntegrity": "PASS — ۱۲ ارجاع · ۰ مفقود · هویت match",
+      "preview": "= HEAD"
+    }
+  },
+  "finalStamps": {
+    "codeCommit": "eef6da7 (T2/T3 + گارد int-overflow)",
+    "phase7Commit": "ee91c43",
+    "buildId": "ee91c43-20261008-1021 = HEAD = آینه = preview",
+    "survivalChainIndex": 19,
+    "tests": "2102/0 ×2",
+    "guards": 11
+  }
+}

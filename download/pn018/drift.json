@@ -1,0 +1,72 @@
+{
+  "stage": "مرحلهٔ ۴ شورا — Drift Detection کامل (سه نوع · دادهٔ واقعی)",
+  "at": "2026-10-08T09:52:56.938Z",
+  "modelId": "arm-listing-v0",
+  "realPairs": 772,
+  "windowSplit": {
+    "baseline": 540,
+    "recent": 232
+  },
+  "windowBriers": {
+    "baseline": 0.248,
+    "recent": 0.1736
+  },
+  "reports": [
+    {
+      "magnitude": 0.074,
+      "action": "retrain",
+      "rationale": "Brier خط پایه 0.248 → پنجرهٔ اخیر 0.1736 (اختلاف -0.074). کنش: retrain.",
+      "driftType": "performance"
+    },
+    {
+      "magnitude": 0.474,
+      "action": "retrain",
+      "rationale": "نرخ وقوع واقعی: خط پایه 0.643 → اخیر 0.168.",
+      "driftType": "concept"
+    },
+    {
+      "driftType": "data",
+      "magnitude": 0.029,
+      "action": "alert",
+      "rationale": "میانگین 1 ویژگی بیش از ۰٫۱ جابه‌جا شده: contact.underpriceProbability"
+    }
+  ],
+  "persistedRows": [
+    {
+      "type": "data",
+      "action": "alert",
+      "magnitude": 0.029,
+      "at": "2026-10-08T09:52:56.901Z"
+    },
+    {
+      "type": "concept",
+      "action": "retrain",
+      "magnitude": 0.474,
+      "at": "2026-10-08T09:52:56.900Z"
+    },
+    {
+      "type": "performance",
+      "action": "retrain",
+      "magnitude": 0.074,
+      "at": "2026-10-08T09:52:56.897Z"
+    }
+  ],
+  "thresholds": {
+    "alert": 0.02,
+    "retrain": 0.05,
+    "escalate": 0.1,
+    "source": "پیوست ج سند طراحی + env قابل‌تنظیم"
+  },
+  "workerIntegration": {
+    "jobId": "drift-guard",
+    "intervalHours": 6,
+    "disableKey": "MELK_DRIFT_GUARD",
+    "alerting": "کنش alert+ → AuditLog (operation=DRIFT_DETECTED · دستهٔ هوشمندی)"
+  },
+  "liveFindings": {
+    "performance": "Brier خط پایه ۰٫۲۴۸ → اخیر ۰٫۱۷۳۶ (مدل روی دادهٔ اخیر بهتر عمل می‌کند)",
+    "concept": "نرخ وقوع واقعی ۰٫۶۴۳ → ۰٫۱۶۸ — رانش مفهوم واقعی و بزرگ در پنجرهٔ اخیر داده",
+    "data": "یک ویژگی (contact.underpriceProbability) بیش از ۰٫۱ جابه‌جا شده",
+    "verdict": "هر سه آشکارساز روی دادهٔ واقعی زنده‌اند و رانش واقعی را دیدند — کنش retrain×2 + alert×1 صادر و پایدار شد"
+  }
+}

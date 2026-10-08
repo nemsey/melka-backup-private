@@ -1,0 +1,139 @@
+{
+  "generatedAt": "2026-10-08T10:30:00Z",
+  "total": 26,
+  "ok": 26,
+  "failed": [],
+  "rows": [
+    {
+      "path": "/deliver/pn018/PN-018-FINAL-REPORT.md",
+      "status": 200,
+      "bytes": 12993
+    },
+    {
+      "path": "/deliver/pn018/int-overflow-repair.json",
+      "status": 200,
+      "bytes": 1229
+    },
+    {
+      "path": "/deliver/pn018/champion-challenger.json",
+      "status": 200,
+      "bytes": 5619
+    },
+    {
+      "path": "/deliver/pn018/drift.json",
+      "status": 200,
+      "bytes": 2382
+    },
+    {
+      "path": "/deliver/pn018/full-loop.json",
+      "status": 200,
+      "bytes": 4749
+    },
+    {
+      "path": "/deliver/pn018/park-state.json",
+      "status": 200,
+      "bytes": 287
+    },
+    {
+      "path": "/deliver/pn018/screens/01-m1-listing-fixed.png",
+      "status": 200,
+      "bytes": 87357
+    },
+    {
+      "path": "/deliver/pn018/screens/02-m1-insights.png",
+      "status": 200,
+      "bytes": 65346
+    },
+    {
+      "path": "/deliver/pn018/screens/03-brain-fixed.png",
+      "status": 200,
+      "bytes": 112195
+    },
+    {
+      "path": "/deliver/pn018-ALL.zip",
+      "status": 200,
+      "bytes": 11842
+    },
+    {
+      "path": "/deliver/pn018-REJOIN.txt",
+      "status": 200,
+      "bytes": 231
+    },
+    {
+      "path": "/deliver/pn018-SHA256SUMS.txt",
+      "status": 200,
+      "bytes": 1000
+    },
+    {
+      "path": "/deliver/pn018-survival-part00.bin",
+      "status": 200,
+      "bytes": 50331648
+    },
+    {
+      "path": "/deliver/pn018-survival-part01.bin",
+      "status": 200,
+      "bytes": 50331648
+    },
+    {
+      "path": "/deliver/pn018-survival-part02.bin",
+      "status": 200,
+      "bytes": 50331648
+    },
+    {
+      "path": "/deliver/pn018-survival-part03.bin",
+      "status": 200,
+      "bytes": 50331648
+    },
+    {
+      "path": "/deliver/pn018-survival-part04.bin",
+      "status": 200,
+      "bytes": 50331648
+    },
+    {
+      "path": "/deliver/pn018-survival-part05.bin",
+      "status": 200,
+      "bytes": 50331648
+    },
+    {
+      "path": "/deliver/pn018-survival-part06.bin",
+      "status": 200,
+      "bytes": 50331648
+    },
+    {
+      "path": "/deliver/pn018-survival-part07.bin",
+      "status": 200,
+      "bytes": 50331648
+    },
+    {
+      "path": "/deliver/pn018-survival-part08.bin",
+      "status": 200,
+      "bytes": 50331648
+    },
+    {
+      "path": "/deliver/pn018-survival-part09.bin",
+      "status": 200,
+      "bytes": 5982208
+    },
+    {
+      "path": "/deliver/pn017/e2e.json",
+      "status": 200,
+      "bytes": 4570
+    },
+    {
+      "path": "/deliver/pn016/deliver-links.json",
+      "status": 200,
+      "bytes": 1163
+    },
+    {
+      "path": "/deliver/PN-015-FINAL-REPORT.md",
+      "status": 200,
+      "bytes": 14023
+    },
+    {
+      "path": "/deliver/PN-012-ALL.zip",
+      "status": 200,
+      "bytes": 81774
+    }
+  ],
+  "verdict": "PASS — همه ۲۰۰"
+}

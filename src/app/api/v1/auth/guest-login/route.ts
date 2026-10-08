@@ -1,5 +1,6 @@
 /**
- * نسخهٔ v1 (PN-016) — آینهٔ سبک مسیر اصلی ‎/auth/guest-login‎
- * همهٔ handlerها و configها re-export می‌شوند — صفر تغییر رفتار · تک‌منبع حقیقت در مسیر اصلی.
+ * /api/v1/auth/guest-login — نسخهٔ v1 (PN-012 · BLOCK 4 · بند ۴.۲)
+ * آینهٔ سبک مسیر اصلی ‎/api/auth/guest-login‎ — همهٔ handlerها و configها re-export می‌شوند.
+ * صفر تغییر رفتار · تک‌منبع حقیقت در مسیر اصلی · مسیر قدیمی = alias زنده.
  */
 export * from "../../../auth/guest-login/route";

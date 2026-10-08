@@ -234,6 +234,18 @@ export interface DecisionAlternative {
   expectedValue: number;
 }
 
+/** PN-019 فاز ۸ — تحلیل اثر کمی سه‌مؤلفه‌ای (§۸ سند طراحی DES8) */
+export interface ExpectedImpact {
+  /** برآورد بهبود احتمال موفقیت — کلمپ ۰..۴۰ */
+  liftPercent: number;
+  /** دامنهٔ اثر */
+  reach: "listing" | "owner" | "branch" | "market";
+  /** افق تحقق بر حسب روز */
+  horizonDays: number;
+  /** مبنای برآورد — قابل‌ممیزی */
+  basis: string;
+}
+
 /** §۳.۲.۱ — قرارداد DecisionRecord (دو قفل نوعی) */
 export interface DecisionRecord {
   id: string;
@@ -244,6 +256,8 @@ export interface DecisionRecord {
   rationale: string;
   alternatives: DecisionAlternative[];
   expectedOutcome: string;
+  /** PN-019 فاز ۸ — اثر کمی (در رکورد ثبت‌شده الزامی؛ در قرارداد اختیاری تا سازگاری پیشین) */
+  expectedImpact?: ExpectedImpact;
   requiredResources: string[];
   requiresApproval: true;
   autoExecute: false;
@@ -314,7 +328,7 @@ export interface SafetyPolicy {
 /* ─────────────────────────── §۴ PHASE 9 ─────────────────────────── */
 
 /** §۴.۲.۱ — قرارداد PolicyEvaluation */
-export type PolicyType = "learning" | "governance" | "safety" | "tier";
+export type PolicyType = "learning" | "governance" | "safety" | "tier" | "access"; // PN-019: "access" افزودنی (سیاست‌های دسترسی فاز ۹)
 export type PolicyVerdict = "keep" | "adjust" | "retire";
 
 export interface PolicyEvaluation {

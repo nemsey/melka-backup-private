@@ -1,0 +1,100 @@
+{
+  "council": "ملکا-شورا-ن۰۲۳-۱۴۰۵",
+  "stage": "فاز ۹ — Policy Evaluation (۵ سیاست × ۴ متریک × ۳ حکم)",
+  "ranAt": "2026-10-08T11:56:50.228Z",
+  "windowDays": 90,
+  "evaluations": [
+    {
+      "id": "cmuzhe5nk000rnkh0rabdr451",
+      "policyId": "champion-gate-v1",
+      "policyType": "learning",
+      "windowFrom": "2026-07-10T11:56:50.328Z",
+      "windowTo": "2026-10-08T11:56:50.328Z",
+      "metrics": {
+        "effectiveness": 1,
+        "stability": 1,
+        "compliance": 0.33,
+        "costImpact": 0.1
+      },
+      "verdict": "keep",
+      "rationale": "اثربخشی 1 / پایبندی 0.33 در محدودهٔ اصلاح است — سیاست champion-gate-v1 نیازمند تنظیم مجدد. — دادهٔ ناکافی (1 < 10): حکم تمدید مشروط تا چرخهٔ بعد.",
+      "insufficientData": true,
+      "eventCount": 1,
+      "tierAtEvaluation": 3
+    },
+    {
+      "id": "cmuzhe5np000snkh0fsy0rn2c",
+      "policyId": "drift-alert-v1",
+      "policyType": "learning",
+      "windowFrom": "2026-07-10T11:56:50.328Z",
+      "windowTo": "2026-10-08T11:56:50.328Z",
+      "metrics": {
+        "effectiveness": 1,
+        "stability": 1,
+        "compliance": 0.33,
+        "costImpact": 0.6
+      },
+      "verdict": "keep",
+      "rationale": "اثربخشی 1 / پایبندی 0.33 در محدودهٔ اصلاح است — سیاست drift-alert-v1 نیازمند تنظیم مجدد. — دادهٔ ناکافی (6 < 10): حکم تمدید مشروط تا چرخهٔ بعد.",
+      "insufficientData": true,
+      "eventCount": 6,
+      "tierAtEvaluation": 3
+    },
+    {
+      "id": "cmuzhe5nt000tnkh0alo8pcwy",
+      "policyId": "decision-safety-v1",
+      "policyType": "safety",
+      "windowFrom": "2026-07-10T11:56:50.328Z",
+      "windowTo": "2026-10-08T11:56:50.328Z",
+      "metrics": {
+        "effectiveness": 1,
+        "stability": 1,
+        "compliance": 0.33,
+        "costImpact": 1.6
+      },
+      "verdict": "adjust",
+      "rationale": "اثربخشی 1 / پایبندی 0.33 در محدودهٔ اصلاح است — سیاست decision-safety-v1 نیازمند تنظیم مجدد.",
+      "insufficientData": false,
+      "eventCount": 16,
+      "tierAtEvaluation": 3
+    },
+    {
+      "id": "cmuzhe5nx000vnkh0595u9l7l",
+      "policyId": "governance-strict-v1",
+      "policyType": "governance",
+      "windowFrom": "2026-07-10T11:56:50.328Z",
+      "windowTo": "2026-10-08T11:56:50.328Z",
+      "metrics": {
+        "effectiveness": -0.33,
+        "stability": 1,
+        "compliance": 0.33,
+        "costImpact": 0.3
+      },
+      "verdict": "keep",
+      "rationale": "اثربخشی -0.33 زیر ۰٫۳ است — سیاست governance-strict-v1 بازنشسته می‌شود (منابع آزاد می‌شود). — دادهٔ ناکافی (3 < 10): حکم تمدید مشروط تا چرخهٔ بعد.",
+      "insufficientData": true,
+      "eventCount": 3,
+      "tierAtEvaluation": 3
+    },
+    {
+      "id": "cmuzhe5o6000wnkh0g9kxwa5f",
+      "policyId": "session-30d-v1",
+      "policyType": "access",
+      "windowFrom": "2026-07-10T11:56:50.328Z",
+      "windowTo": "2026-10-08T11:56:50.328Z",
+      "metrics": {
+        "effectiveness": 0,
+        "stability": 1,
+        "compliance": 0.33,
+        "costImpact": 0
+      },
+      "verdict": "keep",
+      "rationale": "اثربخشی 0 زیر ۰٫۳ است — سیاست session-30d-v1 بازنشسته می‌شود (منابع آزاد می‌شود). — دادهٔ ناکافی (0 < 10): حکم تمدید مشروط تا چرخهٔ بعد.",
+      "insufficientData": true,
+      "eventCount": 0,
+      "tierAtEvaluation": 3
+    }
+  ],
+  "constraint": "حکم فقط توصیه است — اعمال هر تغییر سیاست نیازمند تأیید شوراست (قید مطلق)",
+  "workerCycle": "هر ۹۰ روز (کار policy-eval — Worker دوازدهم)"
+}

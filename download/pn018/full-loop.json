@@ -1,0 +1,119 @@
+{
+  "stage": "مرحلهٔ ۵ شورا — حلقهٔ کامل یادگیری (هفت گام · دادهٔ واقعی)",
+  "at": "2026-10-08T09:52:56.938Z",
+  "modelId": "arm-listing-v0",
+  "loop": {
+    "modelId": "arm-listing-v0",
+    "ranAt": "2026-10-08T09:52:56.904Z",
+    "step1_collectPairs": {
+      "pairs": 772
+    },
+    "step2_evaluateChampion": {
+      "championVersion": 1,
+      "brier": 0.2256,
+      "tier": 3
+    },
+    "step3_learn": {
+      "learned": true,
+      "reason": "Tier 3 — یادگیری وزن‌های سراسری با نرخ 0.05.",
+      "weightUpdates": 0
+    },
+    "step4_ensureChallenger": {
+      "version": 2,
+      "id": "cmuzcytzx0006nke0s76kmuqb"
+    },
+    "step5_shadow": {
+      "verdict": "keep_primary",
+      "championBrier": 0.2256,
+      "challengerBrier": 0.2313,
+      "sampleSize": 772,
+      "windowDays": 1,
+      "criteria": {
+        "enoughSamples": true,
+        "enoughWindow": false,
+        "enoughBetter": false
+      },
+      "rationale": "قهرمان Brier=0.2256 · چالشگر Brier=0.2313 (Δ=0.0057). نمونه کافی · پنجره ناکافی (<7 روز)."
+    },
+    "step6_promote": {
+      "attempted": true,
+      "promoted": false,
+      "reason": "پنجرهٔ ارزیابی ناکافی: 1 < 7 روز."
+    },
+    "step7_newPrediction": {
+      "predictionId": "pred-fullloop-1a5f9aff",
+      "modelVersionId": "cmuzcy66p0000nkb4bp8w20gg",
+      "probability": 0.5
+    },
+    "loopClosed": true
+  },
+  "versionsAfter": [
+    {
+      "version": 1,
+      "status": "champion",
+      "brier": null,
+      "sample": 0,
+      "windowDays": 0,
+      "councilApproved": true,
+      "approvalSource": "PN-018/مرحلهٔ ۳ — ثبت خط پایه (عدم-ارتقا)"
+    },
+    {
+      "version": 2,
+      "status": "challenger",
+      "brier": 0.2313,
+      "sample": 772,
+      "windowDays": 1,
+      "councilApproved": false
+    }
+  ],
+  "auditTrail": [
+    {
+      "action": "MODEL_CHALLENGER_CREATED",
+      "actor": "pn018-witness-script",
+      "detail": "{\"modelId\":\"arm-listing-v0\",\"version\":2,\"id\":\"cmuzcytzx0006nke0s76kmuqb\"}",
+      "at": "2026-10-08T09:52:56.926Z"
+    },
+    {
+      "action": "DRIFT_DETECTED",
+      "actor": "worker:drift-guard",
+      "detail": "{\"modelId\":\"arm-listing-v0\",\"driftType\":\"data\",\"action\":\"alert\",\"magnitude\":0.029,\"rationale\":\"میانگ",
+      "at": "2026-10-08T09:52:56.902Z"
+    },
+    {
+      "action": "DRIFT_DETECTED",
+      "actor": "worker:drift-guard",
+      "detail": "{\"modelId\":\"arm-listing-v0\",\"driftType\":\"concept\",\"action\":\"retrain\",\"magnitude\":0.474,\"rationale\":\"",
+      "at": "2026-10-08T09:52:56.900Z"
+    },
+    {
+      "action": "DRIFT_DETECTED",
+      "actor": "worker:drift-guard",
+      "detail": "{\"modelId\":\"arm-listing-v0\",\"driftType\":\"performance\",\"action\":\"retrain\",\"magnitude\":0.074,\"rational",
+      "at": "2026-10-08T09:52:56.899Z"
+    },
+    {
+      "action": "DRIFT_DETECTED",
+      "actor": "worker:drift-guard",
+      "detail": "{\"modelId\":\"arm-listing-v0\",\"driftType\":\"data\",\"action\":\"alert\",\"magnitude\":0.029,\"rationale\":\"میانگ",
+      "at": "2026-10-08T09:52:37.803Z"
+    },
+    {
+      "action": "DRIFT_DETECTED",
+      "actor": "worker:drift-guard",
+      "detail": "{\"modelId\":\"arm-listing-v0\",\"driftType\":\"concept\",\"action\":\"retrain\",\"magnitude\":0.474,\"rationale\":\"",
+      "at": "2026-10-08T09:52:37.802Z"
+    },
+    {
+      "action": "DRIFT_DETECTED",
+      "actor": "worker:drift-guard",
+      "detail": "{\"modelId\":\"arm-listing-v0\",\"driftType\":\"performance\",\"action\":\"retrain\",\"magnitude\":0.074,\"rational",
+      "at": "2026-10-08T09:52:37.801Z"
+    }
+  ],
+  "honestInterpretation": {
+    "loopClosed": true,
+    "promoteOutcome": "ارتقا درخواست شد (attempted=true با تأیید سند ۰۲۲) اما دروازهٔ معیارها آن را به‌درستی رد کرد: پنجرهٔ واقعی داده ۱ روز است و پیش‌شرط §۲.۴ حداقل ۷ روز می‌خواهد. همچنین چالشگر v2 (Brier ۰٫۲۳۱۳) از قهرمان v1 (۰٫۲۲۵۶) بدتر بود — رد ارتقا، رفتار صحیح سیستم است نه شکست آن.",
+    "gateVerified": "دروازهٔ شورا در آزمون منفی مستقل هم رد صریح داد (COUNCIL_APPROVAL_REQUIRED) — مکانیک ارتقای موفق/rollback در تست‌های خودکار با پنجرهٔ معتبر اثبات می‌شود.",
+    "step7": "پیش‌بینی تازه با مهر نسخهٔ قهرمان فعال ثبت شد — حلقه از پیش‌بینی تا پیش‌بینیِ مهرشده بسته شد."
+  }
+}

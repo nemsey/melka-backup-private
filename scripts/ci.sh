@@ -79,6 +79,23 @@ bash scripts/audit-permission-boundary.sh > /tmp/pn016-ci-audit6.log 2>&1 || { e
 tail -1 /tmp/pn016-ci-audit6.log
 bash scripts/audit-activity-log.sh > /tmp/pn016-ci-audit7.log 2>&1 || { echo "✗ گام ۵-ز: activity-log (سیاههٔ فعالیت)"; tail -8 /tmp/pn016-ci-audit7.log; exit 1; }
 tail -1 /tmp/pn016-ci-audit7.log
+# PN-018/T3b گارد تازه — سرریز Int32 در ستون‌های Int (ریشهٔ زندهٔ دو خطای گزارش‌شدهٔ مالک):
+bash scripts/audit-int-overflow.sh > /tmp/pn018-ci-audit8.log 2>&1 || { echo "✗ گام ۵-ح: int-overflow (سرریز Int32)"; tail -8 /tmp/pn018-ci-audit8.log; exit 1; }
+tail -1 /tmp/pn018-ci-audit8.log
+# PN-018 فاز ۷ — سه گارد شورا (نسخهٔ مدل / رانش / حلقهٔ یادگیری):
+bash scripts/audit-champion-challenger.sh > /tmp/pn018-ci-audit9.log 2>&1 || { echo "✗ گام ۵-ط: champion-challenger (چرخهٔ عمر نسخه)"; tail -8 /tmp/pn018-ci-audit9.log; exit 1; }
+tail -1 /tmp/pn018-ci-audit9.log
+bash scripts/audit-drift-detection.sh > /tmp/pn018-ci-audit10.log 2>&1 || { echo "✗ گام ۵-ی: drift-detection (آشکارساز رانش)"; tail -8 /tmp/pn018-ci-audit10.log; exit 1; }
+tail -1 /tmp/pn018-ci-audit10.log
+bash scripts/audit-learning-loop.sh > /tmp/pn018-ci-audit11.log 2>&1 || { echo "✗ گام ۵-ک: learning-loop (حلقهٔ کامل)"; tail -8 /tmp/pn018-ci-audit11.log; exit 1; }
+tail -1 /tmp/pn018-ci-audit11.log
+# PN-019 فاز ۸+۹ — سه گارد شورا-ن۰۲۳ (ایمنی تصمیم / حاکمیت / ارزیابی سیاست):
+bash scripts/audit-decision-safety.sh > /tmp/pn019-ci-audit12.log 2>&1 || { echo "✗ گام ۵-ل: decision-safety (ایمنی چرخهٔ تصمیم)"; tail -8 /tmp/pn019-ci-audit12.log; exit 1; }
+tail -1 /tmp/pn019-ci-audit12.log
+bash scripts/audit-governance.sh > /tmp/pn019-ci-audit13.log 2>&1 || { echo "✗ گام ۵-م: governance (حاکمیت ۱۵قاعده‌ای)"; tail -8 /tmp/pn019-ci-audit13.log; exit 1; }
+tail -1 /tmp/pn019-ci-audit13.log
+bash scripts/audit-policy-evaluation.sh > /tmp/pn019-ci-audit14.log 2>&1 || { echo "✗ گام ۵-ن: policy-evaluation (ارزیابی سیاست)"; tail -8 /tmp/pn019-ci-audit14.log; exit 1; }
+tail -1 /tmp/pn019-ci-audit14.log
 
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"
@@ -87,7 +104,10 @@ pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"
 # نگهبان زنده است (محیط بی‌نگهبان دست‌نخورده می‌ماند — رفتار خارجی تغییر نمی‌کند)
 if pgrep -f "prod-watchdog.sh" > /dev/null 2>&1; then
   pkill -f "standalone/server.js" 2>/dev/null || true
-  for _i in $(seq 1 25); do curl -sf -o /dev/null --max-time 2 http://localhost:3000/api/health 2>/dev/null && break; sleep 1; done
+  # PN-018: پنجرهٔ ۲۵→۱۲۰ثانیه — اگر standalone حذف شده باشد (الگوی پارک/ENOSPC)،
+  # نگهبان chunk-guard بیلد کامل (~۴۰ث) می‌کند و سرور دیرتر بالا می‌آید؛ کاوشگر مرورگر
+  # بدون سرور None برمی‌گرداند و بودجه به‌نادرست قرمز می‌شود (حادثهٔ زندهٔ CI نخستِ PN-018).
+  for _i in $(seq 1 120); do curl -sf -o /dev/null --max-time 2 http://localhost:3000/api/health 2>/dev/null && break; sleep 1; done
   echo "  سرور تولید ری‌استارت شد (سنجهٔ RAM روی پایهٔ تازه)"
 fi
 # تصمیم ن۰۰۷ (Blocker → Alternative → Decision → Continue):

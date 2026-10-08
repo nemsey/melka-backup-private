@@ -1,7 +1,11 @@
 /**
  * PN-017 — آزمون قانون فایل v3: همهٔ لینک‌های تحویل باید ۲۰۰ باشند
  * (محلی + مسیر سرو /deliver — عهد عدم-شکست تاریخی نیز وارسی می‌شود)
+ * PN-018: export {} — ماژول‌سازی (فایل global-script با mainِ runtime/worker.ts تضاد TS2393 داشت؛
+ * link-test پس از CI آخرین PN-017 ساخته شده بود و تضاد در CI نخستِ پس از آن آشکار شد)
  */
+export {};
+
 const BASE = "http://localhost:3000";
 
 const pn017Links = [

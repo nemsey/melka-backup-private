@@ -15,21 +15,21 @@ datasource db {
 /// نشست‌های کاربری — توکن به‌صورت هش‌شده ذخیره می‌شود (هرگز متن ساده)
 /// توکن‌های ARM (دریافت‌شده از سامانه واقعی ملک تبریز) رمزنگاری‌شده AES-256-GCM نگهداری می‌شوند
 model Session {
-  id                 String   @id @default(cuid())
-  tokenHash          String   @unique
+  id                 String    @id @default(cuid())
+  tokenHash          String    @unique
   personnelCode      String
   displayName        String
-  role               String   @default("CONSULTANT") // OWNER | CONSULTANT
+  role               String    @default("CONSULTANT") // OWNER | CONSULTANT
   /// توکن دسترسی ARM — رمزنگاری‌شده (اختیاری؛ ورود مدیر محلی ندارد)
   armTokenEnc        String?
   /// توکن تمدید ARM — رمزنگاری‌شده
   armRefreshTokenEnc String?
   /// نوع کاربر در سامانه ARM (مثلاً realtor)
   armUserType        String?
-  createdAt          DateTime @default(now())
+  createdAt          DateTime  @default(now())
   expiresAt          DateTime
-  lastSeenAt         DateTime @default(now())
-  revoked            Boolean  @default(false)
+  lastSeenAt         DateTime  @default(now())
+  revoked            Boolean   @default(false)
   revokedReason      String?
   userAgent          String?
   ip                 String?
@@ -37,7 +37,7 @@ model Session {
   branchId           String?
   /// P6.5-02 (ConsultantScope §۵.۱) — دامنه دسترسی داده: OWNER | BRANCH | CONSULTANT
   /// default امن: نشست‌های موجود و ورود مدیر = OWNER (رفتار فعلی صفر-تغییر)
-  accessScope        String   @default("OWNER")
+  accessScope        String    @default("OWNER")
   /// P6545/گام۱ (BLOCK 1.3) — آرشیو دادهٔ مرده: صفر حذف؛ فقط برچسب (قانون دادهٔ مقدس)
   archivedAt         DateTime?
 }
@@ -57,11 +57,11 @@ model OtpAttempt {
 /// رد حسابرسی امنیتی — P6.5-02: پسوندهای حسابرسی دسترسی (§۶ طراحی) افزودنی شد؛
 /// action حفظ شد (سازگاری v1)؛ operation تمایز خواندن/نوشتن را صریح می‌کند.
 model AuditLog {
-  id        String   @id @default(cuid())
-  action    String
-  actor     String?
-  detail    String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  action      String
+  actor       String?
+  detail      String?
+  createdAt   DateTime @default(now())
   /// P6.5-02 (§۶.۱) — نوع عملیات: READ | WRITE | DELETE
   operation   String?
   /// P6.5-02 (§۶.۱) — موجودیت درگیر: transaction | customer | listing | request | visit | contract | property
@@ -82,23 +82,23 @@ model AuditLog {
 /// HOTFIX-02 (SEC-3): ستون armTokenEnc حذف شد — توکن ARM فقط per-user در Session
 /// نگهداری می‌شود؛ این جدول دیگر هیچ رازی ذخیره نمی‌کند.
 model SyncState {
-  id             String    @id // "singleton"
-  lastSyncedAt   DateTime?
-  lastSuccessAt  DateTime?
-  lastError      String?
-  lastErrorCode  String?
-  attempts       Int       @default(0)
+  id                   String    @id // "singleton"
+  lastSyncedAt         DateTime?
+  lastSuccessAt        DateTime?
+  lastError            String?
+  lastErrorCode        String?
+  attempts             Int       @default(0)
   /// خلاصه چهارگانه گزارش تطابق سامانه ARM (JSON)
-  summaryJson    String?
+  summaryJson          String?
   /// P2-04 — نقطهٔ ازسرگیری: خانواده‌های تکمیل‌شدهٔ آخرین اجرا (JSON {runId, families})
-  lastSyncCursor  String?
+  lastSyncCursor       String?
   /// P2-04 — علامت آب: زمان آخرین دادهٔ تازهٔ دیده‌شده از سامانه ARM
-  lastWatermark   DateTime?
+  lastWatermark        DateTime?
   /// P2-04 — شناسه اجرای جاری (idempotency — upsertها با کلید طبیعی بی‌اثر از نو اجرا می‌شوند)
-  syncRunId       String?
+  syncRunId            String?
   /// P6.5-03 (§۱.۵) — checkpoint یکپارچه Bulk Import (JSON)؛ جدا از فیلدهای sync منظم
   bulkImportCheckpoint String?
-  updatedAt      DateTime  @updatedAt
+  updatedAt            DateTime  @updatedAt
 }
 
 /// P2-04 — نامهٔ مردهٔ همگام‌سازی: ردیفی که ۳ بار پیاپی ناموفق مانده است.
@@ -129,48 +129,48 @@ model SyncDeadLetter {
 /// معاملات (گزارش تطابق معاملات) — عین ساختار خود سامانه ARM:
 /// هر معامله = تطبیق آگهی ملک با درخواست خرید + اطلاعات قرارداد
 model TransactionRecord {
-  id                    String   @id
+  id                     String   @id
   /// تاریخ معامله/قرارداد — از contractDate سامانه (ISO داخلی)
-  contractDate          DateTime
+  contractDate           DateTime
   /// کد ملک (آگهی فروشنده)
-  propertyCode          String
+  propertyCode           String
   /// نام مالک/مشتریِ طرف ملک
-  propertyCustomer      String?
+  propertyCustomer       String?
   /// کد درخواست خرید (اگر از مسیر درخواست رسیده باشد)
-  requestCode           String?
+  requestCode            String?
   /// نام درخواست‌دهنده طرف درخواست
-  requestCustomer       String?
+  requestCustomer        String?
   /// شماره هولوگرام قرارداد (شناسه رسمی سند)
-  contractHolo          String?
+  contractHolo           String?
   /// تعداد آگهی‌های پیشنهادی سیستم برای این تطبیق
-  suggestedPropertyCount Int     @default(0)
+  suggestedPropertyCount Int      @default(0)
   /// تعداد رویدادهای ثبت‌شده (تعامل کارشناس با درخواست)
-  eventsCount           Int      @default(0)
-  syncedAt              DateTime @default(now())
+  eventsCount            Int      @default(0)
+  syncedAt               DateTime @default(now())
 
   /// P6.5-02 (§۵.۳) — کد کارشناس صاحب رکورد (انتساب Scope؛ در ماتریس فعلی تجمیعی)
-  ownerCode             String?
+  ownerCode   String?
   /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
-  branchId              String?
+  branchId    String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
-  tenantId              String?  @default("melk-tabriz")
+  tenantId    String? @default("melk-tabriz")
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
-  sourceRunId           String?
+  sourceRunId String?
 
   /// P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (پیش از تبدیل جلالی؛ هرگز توسط نرمال‌سازی تغییر نمی‌کند)
-  rawDate               String?
+  rawDate              String?
   /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام خام طرف ملک عین منبع (پیش از normalizeName)
-  rawPropertyCustomer   String?
+  rawPropertyCustomer  String?
   /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام خام طرف درخواست عین منبع
-  rawRequestCustomer    String?
+  rawRequestCustomer   String?
   /// P6.5-04-e-v2 — نسخه داده منبع (ARM فعلاً نسخه منتشر نمی‌کند — تهی تا کشف در Reconnaissance)
-  rawSourceVersion      String?
+  rawSourceVersion     String?
   /// P6.5-04-e-v2 — زمان استخراج (شروع اجرای bulk که این ردیف را نوشت)
-  extractedAt           DateTime?
+  extractedAt          DateTime?
   /// P6.5-04-e-v2 — شناسه دسته استخراج (= runId اجرای bulk)
-  extractionBatchId     String?
+  extractionBatchId    String?
   /// P6.5-04-e-v2 — نسخه موتور نرمال‌سازی که مقادیر نرمال‌شده را نوشت
-  normalizationVersion  String?
+  normalizationVersion String?
 
   @@index([contractDate])
   @@index([propertyCode])
@@ -195,16 +195,16 @@ model ExpertRecord {
   syncedAt      DateTime @default(now())
 
   /// P6.5-02 (§۵.۳) — شعبه انتساب Scope (از PM/businesses)
-  branchId      String?
+  branchId             String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
-  tenantId      String? @default("melk-tabriz")
+  tenantId             String?   @default("melk-tabriz")
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
-  sourceRunId   String?
+  sourceRunId          String?
   /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل/کسب‌وکار/ثبت‌کننده خام عین منبع
-  rawFullName           String?
-  rawMobile             String?
-  rawBusinessTitle      String?
-  rawCreator            String?
+  rawFullName          String?
+  rawMobile            String?
+  rawBusinessTitle     String?
+  rawCreator           String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
   rawSourceVersion     String?
   extractedAt          DateTime?
@@ -219,21 +219,21 @@ model ExpertRecord {
 /// تعاملات مشاوران با یکدیگر — عین ساختار realtor-interactions سامانه ARM:
 /// مشاور درخواست × مشاور آگهی × تعداد همکاری‌های منجر به تطبیق
 model InteractionRecord {
-  id                 String   @id
-  requestRealtorName String
-  propertyRealtorName String
-  count              Int      @default(0)
-  syncedAt           DateTime @default(now())
+  id                     String    @id
+  requestRealtorName     String
+  propertyRealtorName    String
+  count                  Int       @default(0)
+  syncedAt               DateTime  @default(now())
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
-  sourceRunId        String?
+  sourceRunId            String?
   /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع (کلید طبیعی این جدول)
   rawRequestRealtorName  String?
   rawPropertyRealtorName String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
-  rawSourceVersion     String?
-  extractedAt          DateTime?
-  extractionBatchId    String?
-  normalizationVersion String?
+  rawSourceVersion       String?
+  extractedAt            DateTime?
+  extractionBatchId      String?
+  normalizationVersion   String?
 
   @@index([requestRealtorName])
   @@index([propertyRealtorName])
@@ -260,22 +260,22 @@ model VisitRecord {
   syncedAt            DateTime  @default(now())
 
   /// P6.5-02 (§۵.۳) — کد کارشناس بررسی‌کننده (انتساب Scope از checker؛ fail-closed: تهی = فقط OWNER)
-  ownerCode           String?
+  ownerCode              String?
   /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
-  branchId            String?
+  branchId               String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
-  tenantId            String?  @default("melk-tabriz")
+  tenantId               String?   @default("melk-tabriz")
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
-  sourceRunId         String?
+  sourceRunId            String?
   /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام عین منبع
   rawRequesterName       String?
   rawCheckerName         String?
   rawPropertyRealtorName String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
-  rawSourceVersion     String?
-  extractedAt          DateTime?
-  extractionBatchId    String?
-  normalizationVersion String?
+  rawSourceVersion       String?
+  extractedAt            DateTime?
+  extractionBatchId      String?
+  normalizationVersion   String?
 
   @@index([propertyCode])
   @@index([createdAt])
@@ -298,10 +298,10 @@ model SupplyDemandRecord {
 
   /// B.3 (P6.5-04-v2) — provenance سه‌لایه حقیقت (نوشتهٔ مسیر sync — این جدول مسیر Bulk ندارد)
   /// rawSourceVersion تهی صادقانه (ARM نسخه منتشر نمی‌کند) · normalizationVersion تهی (موتور نرمال‌سازی روی این جدول اجرا نمی‌شود — عناوین بازه عین منبع می‌مانند)
-  rawSourceVersion      String?
-  extractedAt           DateTime?
-  extractionBatchId     String?
-  normalizationVersion  String?
+  rawSourceVersion     String?
+  extractedAt          DateTime?
+  extractionBatchId    String?
+  normalizationVersion String?
 
   @@index([rangeTitle])
 }
@@ -310,24 +310,24 @@ model SupplyDemandRecord {
 /// هر استعلام کدآگهی/کددرخواست با نتیجه واقعی از سامانه ARM ثبت می‌شود؛
 /// منبع حافظه و بینش ایجنت استخراج اطلاعات + رد حسابرسی امنیتی.
 model LookupLog {
-  id          String   @id @default(cuid())
+  id           String   @id @default(cuid())
   /// نوع استعلام: PROPERTY (کدآگهی) | REQUEST (کددرخواست)
-  kind        String
+  kind         String
   /// کد واردشده توسط کاربر
-  code        String
+  code         String
   /// آیا رکورد در سامانه پیدا شد؟
-  found       Boolean  @default(false)
+  found        Boolean  @default(false)
   /// نام و نام خانوادگی مالک/درخواست‌دهنده
-  personName  String?
+  personName   String?
   /// شماره تماس مالک/درخواست‌دهنده
   personMobile String?
   /// آدرس ملک (فقط برای کدآگهی)
-  address     String?
+  address      String?
   /// کد پرسنلی استعلام‌کننده
-  actorCode   String
+  actorCode    String
   /// پیام خطا (در صورت عدم موفقیت)
-  errorNote   String?
-  createdAt   DateTime @default(now())
+  errorNote    String?
+  createdAt    DateTime @default(now())
 
   @@index([kind, code])
   @@index([createdAt])
@@ -358,78 +358,78 @@ model DivarConnection {
 
 /// تنظیمات ایجنت فایل‌یابی — تک‌رکورد (singleton)
 model DivarSetting {
-  id        String   @id // "singleton"
+  id            String   @id // "singleton"
   /// JSON کامل تنظیمات (وزن‌ها، آستانه‌ها، بازه زمانی، دسته‌ها، مناطق/محله‌ها)
-  dataJson  String
+  dataJson      String
   /// پرچم مهاجرت یک‌باره فیلتر مکان (اعمال ۱۷ منطقه پیش‌فرض مالک روی نصب‌های قدیمی)
-  locFilterInit Boolean @default(false)
-  updatedAt DateTime @updatedAt
+  locFilterInit Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
 }
 
 /// آگهی دیوار (فایل) — فقط آگهی‌های داخل بازه زمانی و در حالت فعال ذخیره می‌شوند.
 /// آگهی ردشده (سیستم یا کاربر) هرگز آرشیو نمی‌شود — رکورد حذف و فقط سیگنال یادگیری می‌ماند.
 model DivarAd {
   /// توکن آگهی دیوار (شناسه یکتا)
-  token          String   @id
+  token           String    @id
   /// دسته دیوار (apartment-sell و …)
-  category       String
-  title          String
-  description    String?
+  category        String
+  title           String
+  description     String?
   /// متن خام قیمت
-  priceText      String?
+  priceText       String?
   /// قیمت کل (تومان)
-  price          Float?
+  price           Float?
   /// قیمت هر متر (تومان)
-  pricePerMeter  Float?
+  pricePerMeter   Float?
   /// متراژ
-  meterage       Float?
+  meterage        Float?
   /// تعداد اتاق
-  rooms          Int?
+  rooms           Int?
   /// طبقه
-  floor          Int?
+  floor           Int?
   /// سال ساخت
-  buildYear      Int?
+  buildYear       Int?
   /// زمان واقعی انتشار آگهی (از «انتشار آگهی» جزئیات دیوار)
-  publishedAt    DateTime?
+  publishedAt     DateTime?
   /// آخرین نردبان/به‌روزرسانی
-  bumpedAt       DateTime?
-  firstSeenAt    DateTime @default(now())
-  lastSeenAt     DateTime @default(now())
+  bumpedAt        DateTime?
+  firstSeenAt     DateTime  @default(now())
+  lastSeenAt      DateTime  @default(now())
   /// متن مکان دیوار («۳ روز پیش در تبریز، خ …»)
-  locationText   String?
-  latitude       Float?
-  longitude      Float?
+  locationText    String?
+  latitude        Float?
+  longitude       Float?
   /// تطبیق با سامانه آرم
-  matchedAreaId  String?
+  matchedAreaId   String?
   matchedAreaName String?
-  matchedLineId  String?
+  matchedLineId   String?
   matchedLineName String?
   /// امتیازها ۰..۱۰۰
-  personalScore  Float    @default(0)
-  underpriceScore Float   @default(0)
-  locationScore  Float    @default(0)
+  personalScore   Float     @default(0)
+  underpriceScore Float     @default(0)
+  locationScore   Float     @default(0)
   /// امتیاز «سایر فاکتورهای فایل بهینه» — شاهکار ایجنت (۰..۱۰۰)
-  otherScore     Float    @default(0)
-  totalScore     Float    @default(0)
+  otherScore      Float     @default(0)
+  totalScore      Float     @default(0)
   /// hunt | follow | review
-  bucket         String   @default("review")
+  bucket          String    @default("review")
   /// active | registered | rejected
-  status         String   @default("active")
+  status          String    @default("active")
   /// تحلیل JSON: سیگنال‌های شخصی/زیرقیمت/مکان + دلایل
-  analysisJson   String?
+  analysisJson    String?
   /// تصاویر (آرایه URL)
-  imagesJson     String?
+  imagesJson      String?
   /// مشخصات خام (specها)
-  specsJson      String?
+  specsJson       String?
   /// کلید تغییر (token+price) برای تشخیص تغییر مهم در اسکن‌های بعدی
-  changeKey      String?
+  changeKey       String?
 
   /// نوع آگهی‌دهنده — برچسب زیر نقشه دیوار (personal | agent | department | business)
-  publisherType  String?
+  publisherType     String?
   /// نام کسب‌وکار املاک («گروه مشاورین املاک طاهری») — شخصی: null
-  publisherName  String?
+  publisherName     String?
   /// تعداد آگهی فعال کسب‌وکار («۸ آگهی فعال» → 8)
-  publisherAdCount Int?
+  publisherAdCount  Int?
   /// پل به صفحه برند کسب‌وکار در دیوار (divar.ir/pro/…)
   publisherBrandUrl String?
 
@@ -442,19 +442,19 @@ model DivarAd {
 
 /// سیگنال یادگیری از رد آگهی — فقط افزودنی؛ خود آگهی هرگز آرشیو نمی‌شود
 model DivarRejectLog {
-  id          String   @id @default(cuid())
+  id                  String   @id @default(cuid())
   /// توکن آگهی ردشده
-  token       String
+  token               String
   /// دلایل انتخابی کاربر (JSON آرایه کلیدها)
-  reasons     String
+  reasons             String
   /// توضیحات دلخواه کاربر
-  note        String?
+  note                String?
   /// تصویر لحظه‌ای امتیازها هنگام رد (JSON) — مبنای یادگیری
-  scoreSnapshotJson String?
+  scoreSnapshotJson   String?
   /// ویژگی‌های متنی آگهی برای یادگیری (عنوان/دسته/محله/قیمت) — بدون آرشیو آگهی
   featureSnapshotJson String?
-  actorCode   String
-  createdAt   DateTime @default(now())
+  actorCode           String
+  createdAt           DateTime @default(now())
 
   @@index([createdAt])
   @@index([token])
@@ -479,24 +479,24 @@ model MarketPriceStat {
 
 /// گزارش اجرای اسکن دیوار
 model DivarScanLog {
-  id          String   @id @default(cuid())
-  startedAt   DateTime @default(now())
-  durationMs  Int      @default(0)
+  id           String   @id @default(cuid())
+  startedAt    DateTime @default(now())
+  durationMs   Int      @default(0)
   /// آگهی‌های دیده‌شده در صفحات جستجو
-  scanned     Int      @default(0)
+  scanned      Int      @default(0)
   /// جزئیات تازه گرفته‌شده
-  fetched     Int      @default(0)
+  fetched      Int      @default(0)
   /// داخل بازه زمانی انتشار
-  inWindow    Int      @default(0)
+  inWindow     Int      @default(0)
   /// آگهی‌های درون بازه که بیرون از مناطق انتخابی مالک بودند و ذخیره نشدند
-  outOfArea   Int      @default(0)
+  outOfArea    Int      @default(0)
   /// آگهی‌های غیرشخصی (مشاور/دپارتمان املاک) که به‌موجب قانون مالک خودکار رد شدند
-  autoRejected Int     @default(0)
-  newAds      Int      @default(0)
-  updatedAds  Int      @default(0)
+  autoRejected Int      @default(0)
+  newAds       Int      @default(0)
+  updatedAds   Int      @default(0)
   /// منبع: web | kenar
-  source      String   @default("web")
-  error       String?
+  source       String   @default("web")
+  error        String?
 
   @@index([startedAt])
 }
@@ -506,64 +506,64 @@ model DivarScanLog {
 /// قرارداد (صورت وضعیت) — عین ساختار trade-overviews خود سامانه ARM:
 /// چرخه کامل عمر از «پیش‌نویس» تا «در انتظار تنظیم سند» با وضعیت‌های واقعی سامانه.
 model ContractRecord {
-  id            String    @id
+  id                   String    @id
   /// وضعیت واقعی سامانه: preDefined | waitingForAddRealtors | waitingForRealtors |
   /// waitingForFinance | confirmedByFinance | rejectedByFinance | waitingForDocument |
   /// rejected | finished | payed | rescission | deletedByFinance
-  status        String
+  status               String
   /// شماره هولوگرام قرارداد (شناسه رسمی سند)
-  contractHolo  String?
+  contractHolo         String?
   /// کد آگهی ملک
-  propertyCode  String?
+  propertyCode         String?
   /// کد درخواست خرید
-  requestCode   String?
+  requestCode          String?
   /// نوع قرارداد (مبایعه‌نامه / اجاره‌نامه / تمدید اجاره)
-  contractType  String?
+  contractType         String?
   /// ثبت‌کننده قرارداد
-  creatorName   String?
+  creatorName          String?
   /// تاریخ ثبت
-  createdAt     DateTime?
+  createdAt            DateTime?
   /// تاریخ قرارداد
-  contractDate  DateTime?
+  contractDate         DateTime?
   /// تاریخ سند (تنظیم سند رسمی)
-  documentDate  DateTime?
+  documentDate         DateTime?
   /// تاریخ تحویل ملک
-  deliveryDate  DateTime?
+  deliveryDate         DateTime?
   /// عنوان ملک
-  propertyTitle String?
+  propertyTitle        String?
   /// آدرس ملک
-  propertyAddress String?
+  propertyAddress      String?
   /// خریداران — JSON [{fullName, mobileNumber}]
-  buyerListJson     String?
+  buyerListJson        String?
   /// فروشندگان — JSON [{fullName, mobileNumber}]
-  sellerListJson    String?
+  sellerListJson       String?
   /// مشاوران و حق‌السهم — JSON [{name, unitPercent, confirmation, description, role}]
-  realtorListJson   String?
+  realtorListJson      String?
   /// آیا امکان افزودن مشاور دارد (مرحله در انتظار افزودن مشاور)
-  canAddRealtor  Boolean  @default(false)
+  canAddRealtor        Boolean   @default(false)
   /// P6.5-12 — مبلغ قرارداد (ریال — از contractPrice رشته‌ای سامانه)
-  contractPrice       Float?
+  contractPrice        Float?
   /// P6.5-12 — لایه ۱ حقیقت: مبلغ خام عین منبع (رشته)
-  rawContractPrice    String?
+  rawContractPrice     String?
   /// P6.5-12 — کمیسیون قرارداد (ریال)
-  comisionOfContract  Float?
+  comisionOfContract   Float?
   /// P6.5-12 — مالیات قرارداد (ریال)
-  taxOfContract       Float?
+  taxOfContract        Float?
   /// P6.5-12 — شناسهٔ کسب‌وکار (از trade-overviews/info — کلید مشترک سامانه‌ها)
-  businessId          String?
-  syncedAt      DateTime @default(now())
+  businessId           String?
+  syncedAt             DateTime  @default(now())
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
-  sourceRunId   String?
+  sourceRunId          String?
   /// P6.5-04-e-v2 — لایه ۱ حقیقت: تاریخ خام عین منبع (پیش از تبدیل جلالی؛ هرگز توسط نرمال‌سازی تغییر نمی‌کند)
-  rawDate               String?
+  rawDate              String?
   /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام ثبت‌کننده و عنوان ملک خام عین منبع
-  rawCreatorName        String?
-  rawPropertyTitle      String?
+  rawCreatorName       String?
+  rawPropertyTitle     String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
-  rawSourceVersion      String?
-  extractedAt           DateTime?
-  extractionBatchId     String?
-  normalizationVersion  String?
+  rawSourceVersion     String?
+  extractedAt          DateTime?
+  extractionBatchId    String?
+  normalizationVersion String?
 
   @@index([status])
   @@index([contractHolo])
@@ -576,94 +576,94 @@ model ContractRecord {
 /// مدل جدید افزودنی: جدول خالی در این گام — زیرساخت Bulk Import (P6.5-03)؛
 /// ListingRecord داخلی (فرم ۵ گامی) دست‌نخورده — پل آینده: ListingRecord.armPropertyId.
 model PropertyRecord {
-  id            String   @id                 // شناسه ARM (objectId)
-  propertyCode  String   @unique            // کدآگهی ARM — کلید طبیعی
-  title         String?
-  status        String?
+  id                   String    @id // شناسه ARM (objectId)
+  propertyCode         String    @unique // کدآگهی ARM — کلید طبیعی
+  title                String?
+  status               String?
   // انتساب Scope (§۵)
-  ownerCode     String?                     // relatedRealtor → personnelCode
-  ownerName     String?
-  branchId      String?
+  ownerCode            String? // relatedRealtor → personnelCode
+  ownerName            String?
+  branchId             String?
   // مکان (تطبیق‌یافته با رجیستری ۹۲۶ محله — §۳ طراحی)
-  cityId        String?
-  areaId        String?
-  areaName      String?
-  lineId        String?
-  lineName      String?
-  address       String?
+  cityId               String?
+  areaId               String?
+  areaName             String?
+  lineId               String?
+  lineName             String?
+  address              String?
   // مشخصات
-  propertyTypeId   String?
-  propertyTypeName String?
-  tradeTypeId      String?
-  tradeTypeName    String?
-  price            Float?                   // ریال — عدد پایه (§۳.۵ مرز واحد پول)
-  pricePerMeter    Float?                   // ریال
-  meterage         Float?
-  rooms            Int?
-  floor            Int?
-  buildYear        Int?
+  propertyTypeId       String?
+  propertyTypeName     String?
+  tradeTypeId          String?
+  tradeTypeName        String?
+  price                Float? // ریال — عدد پایه (§۳.۵ مرز واحد پول)
+  pricePerMeter        Float? // ریال
+  meterage             Float?
+  rooms                Int?
+  floor                Int?
+  buildYear            Int?
   // متن و خام
-  description   String?
-  detailsJson    String?                    // [{label, value}] عین ARM
-  ownerMobile    String?                    // نرمال‌شده 09xxxxxxxxx
-  tenantId       String?  @default("melk-tabriz")   // §۱۴ مصوبه شورا — آماده، غیرفعال
-  sourceRunId    String?                    // آخرین bulk-run که رکورد را نوشت
+  description          String?
+  detailsJson          String? // [{label, value}] عین ARM
+  ownerMobile          String? // نرمال‌شده 09xxxxxxxxx
+  tenantId             String?   @default("melk-tabriz") // §۱۴ مصوبه شورا — آماده، غیرفعال
+  sourceRunId          String? // آخرین bulk-run که رکورد را نوشت
   // P6.5-04-e-v2 — لایه ۱ حقیقت (Raw): مقادیر عین منبع؛ هرگز توسط نرمال‌سازی تغییر نمی‌کنند
-  rawPrice          String?                 // متن/عدد خام مبلغ (پیش از parseAmount)
-  rawPriceUnit      String?                 // واحد جدا اگر منبع جدا کرده باشد (تومان/میلیارد…)
-  rawArea           String?                 // متن/عدد خام متراژ (پیش از parse)
+  rawPrice             String? // متن/عدد خام مبلغ (پیش از parseAmount)
+  rawPriceUnit         String? // واحد جدا اگر منبع جدا کرده باشد (تومان/میلیارد…)
+  rawArea              String? // متن/عدد خام متراژ (پیش از parse)
   // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مالک خام عین منبع
-  rawOwnerName      String?
-  rawOwnerMobile    String?
+  rawOwnerName         String?
+  rawOwnerMobile       String?
   // P6.5-04-e-v2 — provenance سه‌لایه
-  rawSourceVersion  String?                 // نسخه داده منبع (ARM فعلاً منتشر نمی‌کند — تهی تا کشف Reconnaissance)
-  extractedAt       DateTime?               // زمان استخراج
-  extractionBatchId String?                 // شناسه دسته استخراج (= runId)
-  normalizationVersion String?              // نسخه موتور نرمال‌سازی
-  syncedAt       DateTime @default(now())
-  createdAt      DateTime?
-  updatedAt      DateTime @updatedAt
+  rawSourceVersion     String? // نسخه داده منبع (ARM فعلاً منتشر نمی‌کند — تهی تا کشف Reconnaissance)
+  extractedAt          DateTime? // زمان استخراج
+  extractionBatchId    String? // شناسه دسته استخراج (= runId)
+  normalizationVersion String? // نسخه موتور نرمال‌سازی
+  syncedAt             DateTime  @default(now())
+  createdAt            DateTime?
+  updatedAt            DateTime  @updatedAt
 
   // ===================== PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM =====================
   // (بهینه‌ترین گزینهٔ استخراج: خود properties/list — صفر هزینهٔ API اضافه)
-  isRental        Boolean?   // نوع اجاره‌ای (isRental خود ردیف)
-  depositPrice    Float?     // رهن (deposite_price)
-  rentPrice       Float?     // اجاره (rent_price)
-  viewCount       Int?       // بازدید آگهی (viewCount)
-  imageCount      Int?       // تعداد تصویر (images.length)
-  addedToDivar    Boolean?   // منتشرشده در دیوار
-  addedToInsta    Boolean?   // منتشرشده در اینستاگرام
-  isReposted      Boolean?   // بازنشرشده
-  isTarget        Boolean?   // آگهی هدف
-  armBranchTitle  String?    // کسب‌وکار/شعبهٔ مستقیم ARM (businessId.title)
-  stateName       String?    // استان (state.name)
-  cityName        String?    // شهر (city.name)
-  publicUrl       String?    // لینک عمومی آگهی (link)
-  statusDate      DateTime?  // تاریخ آخرین وضعیت (status[0].date)
+  isRental       Boolean? // نوع اجاره‌ای (isRental خود ردیف)
+  depositPrice   Float? // رهن (deposite_price)
+  rentPrice      Float? // اجاره (rent_price)
+  viewCount      Int? // بازدید آگهی (viewCount)
+  imageCount     Int? // تعداد تصویر (images.length)
+  addedToDivar   Boolean? // منتشرشده در دیوار
+  addedToInsta   Boolean? // منتشرشده در اینستاگرام
+  isReposted     Boolean? // بازنشرشده
+  isTarget       Boolean? // آگهی هدف
+  armBranchTitle String? // کسب‌وکار/شعبهٔ مستقیم ARM (businessId.title)
+  stateName      String? // استان (state.name)
+  cityName       String? // شهر (city.name)
+  publicUrl      String? // لینک عمومی آگهی (link)
+  statusDate     DateTime? // تاریخ آخرین وضعیت (status[0].date)
 
-  @@index([cityId, areaId, propertyTypeId, tradeTypeId])   // ایندکس ۱ از §۴
-  @@index([price, meterage])                               // ایندکس ۲ از §۴
-  @@index([createdAt])                                     // ایندکس ۴ از §۴
-  @@index([ownerCode])                                     // پشتیبان ConsultantScope
+  @@index([cityId, areaId, propertyTypeId, tradeTypeId]) // ایندکس ۱ از §۴
+  @@index([price, meterage]) // ایندکس ۲ از §۴
+  @@index([createdAt]) // ایندکس ۴ از §۴
+  @@index([ownerCode]) // پشتیبان ConsultantScope
   @@index([tenantId])
 }
 
 /// P6.5-02 (§۲.۳ طراحی) — رجیستری مشتریان مشتق (خریدار/فروشنده/درخواست‌دهنده/مالک)؛ افزودنی.
 /// جدول خالی در این گام — پرشدگی در Bulk Import (P6.5-03) با کلید منطقی mobile ?? "pc:"+personnelCode.
 model CustomerRecord {
-  id             String   @id @default(cuid())
-  mobile         String?                    // کلید طبیعی اول — نرمال‌شده
-  personnelCode  String?                    // fallback (کاربر پرسنلی)
-  fullName       String                     // نرمال‌شده نام (§۳.۲)
-  rolesJson      String?                    // ["buyer","seller","requester","owner"]
-  sourceCountsJson String?                  // {contract: n, request: n, property: n, visit: n}
-  ownerCode      String?                    // کارشناس مرتبط (انتساب Scope — §۵)
-  branchId       String?
-  firstSeenAt    DateTime?                  // قدیمی‌ترین تاریخ رکورد منبع
-  lastSeenAt     DateTime?
-  tenantId       String?  @default("melk-tabriz")   // §۱۴ مصوبه شورا — آماده، غیرفعال
-  sourceRunId    String?
-  updatedAt      DateTime @updatedAt
+  id               String    @id @default(cuid())
+  mobile           String? // کلید طبیعی اول — نرمال‌شده
+  personnelCode    String? // fallback (کاربر پرسنلی)
+  fullName         String // نرمال‌شده نام (§۳.۲)
+  rolesJson        String? // ["buyer","seller","requester","owner"]
+  sourceCountsJson String? // {contract: n, request: n, property: n, visit: n}
+  ownerCode        String? // کارشناس مرتبط (انتساب Scope — §۵)
+  branchId         String?
+  firstSeenAt      DateTime? // قدیمی‌ترین تاریخ رکورد منبع
+  lastSeenAt       DateTime?
+  tenantId         String?   @default("melk-tabriz") // §۱۴ مصوبه شورا — آماده، غیرفعال
+  sourceRunId      String?
+  updatedAt        DateTime  @updatedAt
 
   @@index([fullName])
   @@index([ownerCode])
@@ -678,10 +678,10 @@ model CustomerRecord {
 model RefListCache {
   /// کلید یکتا: user-characters | user-jobs | user-roles | user-seriousness |
   /// price-indices | commission-config
-  key        String   @id
+  key       String   @id
   /// JSON کامل فهرست (عین پاسخ سامانه)
-  dataJson   String
-  fetchedAt  DateTime @updatedAt
+  dataJson  String
+  fetchedAt DateTime @updatedAt
 }
 
 // ===================== شاخص قیمت روز مناطق =====================
@@ -741,29 +741,29 @@ model CommissionCalcLog {
 /// دو منبع ثبت: دستی (مالک حضوری) و خودکار (فایل‌های تأییدشده کاشی فایل‌یابی)
 /// دو مقصد انتقال: سامانه ARM (کلید انتقال به CRM) و اینستاگرام (کلید انتقال به اینستاگرام)
 model ListingRecord {
-  id          String   @id @default(cuid())
+  id         String  @id @default(cuid())
   /// manual | divar — منبع ثبت فایل آگهی
-  source      String   @default("manual")
+  source     String  @default("manual")
   /// توکن آگهی دیوار (برای منبع divar — پیوند به DivarAd)
-  divarToken  String?
+  divarToken String?
 
   // ---------- گام ۱: اطلاعات مالک ----------
   /// نام و نام‌خانوادگی مالک
-  customerName    String?
+  customerName   String?
   /// شماره موبایل مالک (۱۱ رقم با ۰۹)
-  customerMobile  String?
+  customerMobile String?
   /// شناسه کاربر آرم (پس از جستجو/ایجاد در فرآیند انتقال به CRM)
-  armCustomerId   String?
+  armCustomerId  String?
 
   // ---------- گام ۲: اطلاعات مکانی ملک ----------
-  areaId      String?
-  areaName    String?
-  lineId      String?
-  lineName    String?
-  postalCode  String?
-  address     String?
-  latitude    Float?
-  longitude   Float?
+  areaId     String?
+  areaName   String?
+  lineId     String?
+  lineName   String?
+  postalCode String?
+  address    String?
+  latitude   Float?
+  longitude  Float?
 
   // ---------- گام ۳: اطلاعات معامله ----------
   tradeTypeId      String?
@@ -779,11 +779,11 @@ model ListingRecord {
 
   // ---------- گام ۴: تصاویر و اسناد ----------
   /// تصاویر — JSON آرایه URL (اولین = تصویر اصلی)
-  imagesJson     String?
+  imagesJson    String?
   /// ویدیوها — JSON آرایه URL
-  videosJson     String?
+  videosJson    String?
   /// اسناد — JSON آرایه URL
-  documentsJson  String?
+  documentsJson String?
 
   // ---------- گام ۵: توضیحات مشاوران ----------
   /// قیمت فایل (تومان — رشته عددی)
@@ -801,20 +801,20 @@ model ListingRecord {
   /// توضیحات مشاوران
   description       String?
   /// برچسب‌های فایل (عین فرم آرم)
-  isLuxury     Boolean  @default(false)
-  isVacation   Boolean  @default(false)
-  isUrgent     Boolean  @default(false)
+  isLuxury          Boolean @default(false)
+  isVacation        Boolean @default(false)
+  isUrgent          Boolean @default(false)
   /// اطلاع‌رسانی با پیامک (عین فرم آرم)
-  notifyBySms  Boolean  @default(false)
+  notifyBySms       Boolean @default(false)
 
   /// چرخه عمر: draft (در تکمیل) | ready (آماده) | archived
-  status      String   @default("draft")
+  status String @default("draft")
 
   /// نتیجه انتقال به CRM — JSON {steps:[{key,title,status,detail}], armId, at}
-  crmTransferJson    String?
-  crmTransferredAt   DateTime?
+  crmTransferJson  String?
+  crmTransferredAt DateTime?
   /// شناسه آگهی ثبت‌شده در آرم
-  armPropertyId      String?
+  armPropertyId    String?
 
   /// آخرین محتوای اینستاگرام — JSON {kind, caption, media, tone}
   instagramPostJson    String?
@@ -823,14 +823,14 @@ model ListingRecord {
   instagramMediaId     String?
 
   /// کد پرسنلی ثبت‌کننده
-  actorCode   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  actorCode String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
-  branchId    String?
+  branchId String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
-  tenantId    String? @default("melk-tabriz")
+  tenantId String? @default("melk-tabriz")
 
   @@index([status])
   @@index([source])
@@ -883,37 +883,37 @@ model InstagramPostLog {
 
 /// اتصال حساب شخصی سامانه پرسنلی PM — تک‌رکورد (کد پرسنلی + پیامک، عین خود سامانه pm)
 model PmConnection {
-  id            String    @id @default(cuid())
+  id              String    @id @default(cuid())
   /// connected | disconnected | pending | error
-  status        String    @default("disconnected")
-  personnelCode String?
-  displayName   String?
+  status          String    @default("disconnected")
+  personnelCode   String?
+  displayName     String?
   /// توکن دسترسی PM — رمزنگاری‌شده
-  tokenEnc      String?
+  tokenEnc        String?
   /// توکن تمدید PM — رمزنگاری‌شده
   refreshTokenEnc String?
-  lastCheckedAt DateTime?
-  lastError     String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  lastCheckedAt   DateTime?
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 /// P6546/گام صفر — اتصال به سامانه GAP (سامانه گفت‌وگوی آنلاین ملک تبریز)
 /// همان الگوی PmConnection: ردیف یگانه با وضعیت و توکن رمزنگاری‌شده
 model GapConnection {
-  id            String    @id @default(cuid())
+  id              String    @id @default(cuid())
   /// connected | disconnected | pending | error
-  status        String    @default("disconnected")
-  personnelCode String?
-  displayName   String?
+  status          String    @default("disconnected")
+  personnelCode   String?
+  displayName     String?
   /// توکن دسترسی GAP — رمزنگاری‌شده
-  tokenEnc      String?
+  tokenEnc        String?
   /// توکن تمدید GAP — رمزنگاری‌شده
   refreshTokenEnc String?
-  lastCheckedAt DateTime?
-  lastError     String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  lastCheckedAt   DateTime?
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 /// P6.5-11 (بند ث) — صندوقچهٔ ماندگار توکن‌های ARM — جدا از چرخهٔ عمر نشست.
@@ -924,24 +924,24 @@ model GapConnection {
 /// SEC-3 حفظ می‌شود: بازیابی فقط برای همان کد پرسنلی؛ نشست OWNER (کد مستر)
 /// فقط جدیدترین رکورد مالک را برمی‌گرداند.
 model ArmConnection {
-  id             String   @id @default(cuid())
+  id              String    @id @default(cuid())
   /// کد پرسنلی SAM که توکن با آن گرفته شده (کلید بازیابی OTP) — برای کد مستر: «master»
-  ownerKey       String   @unique
+  ownerKey        String    @unique
   /// کد پرسنلی واقعی ARM که پیامک آن گرفته شد (اطلاعاتی)
-  personnelCode  String?
-  displayName    String?
-  userType       String?
+  personnelCode   String?
+  displayName     String?
+  userType        String?
   /// توکن دسترسی ARM — رمزنگاری‌شده AES-256-GCM (عین Session.armTokenEnc)
-  tokenEnc       String?
+  tokenEnc        String?
   /// توکن تمدید ARM — رمزنگاری‌شده
   refreshTokenEnc String?
   /// connected | disconnected | error
-  status         String   @default("connected")
+  status          String    @default("connected")
   lastRefreshedAt DateTime?
   lastRestoredAt  DateTime?
-  lastError      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 /// P6.5-11 (بند ب) — نقطهٔ ازسرگیری خط لولهٔ کاتالوگ ARM — «ادامه از جاییکه قطع شد».
@@ -949,19 +949,19 @@ model ArmConnection {
 /// هرگز از صفر شروع نمی‌شود مگر چرخهٔ قبلی کامل شده باشد (بروزرسانی = چرخهٔ تازه).
 model SyncCheckpoint {
   /// کلید موجودیت: listings | requests | enrich-listings | enrich-requests | main-sync | tx-info-enrich
-  id        String   @id
+  id                String    @id
   /// شناسهٔ چرخهٔ جاری (هر چرخهٔ کامل = runId تازه)
-  cycleId   String
-  pageSize  Int      @default(50)
+  cycleId           String
+  pageSize          Int       @default(50)
   /// آخرین صفحهٔ «کامل-ذخیره‌شده» (ادامه = lastCompletedPage + 1)
-  lastCompletedPage Int  @default(0)
-  totalPages        Int  @default(0)
-  totalAtSource     Int  @default(0)
+  lastCompletedPage Int       @default(0)
+  totalPages        Int       @default(0)
+  totalAtSource     Int       @default(0)
   /// in-progress | complete
-  phase     String   @default("in-progress")
-  completedAt DateTime?
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  phase             String    @default("in-progress")
+  completedAt       DateTime?
+  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime  @default(now())
 }
 
 /// P6.5-14 (ملکا-شورا-۱۴۰۵-۰۱۷ — BLOCK C) — غنی‌سازی معامله‌محور معاملات.
@@ -970,43 +970,43 @@ model SyncCheckpoint {
 /// (deleteMany+createMany هرگز این جدول را لمس نمی‌کند — قانون دادهٔ مقدس).
 model TransactionEnrichment {
   /// = TransactionRecord.id (شناسهٔARM صورت‌وضعیت)
-  txId              String   @id
+  txId               String    @id
   /// نوع قرارداد — برچسب فارسی عین منبع (مبایعه نامه / اجاره نامه / تمدید اجاره)
-  contractType      String?
+  contractType       String?
   /// مبلغ قرارداد (ریال — از contractPrice رشته‌ای منبع)
-  contractPrice     Float?
+  contractPrice      Float?
   /// لایه ۱ حقیقت: مبلغ خام عین منبع (رشته)
-  rawContractPrice  String?
+  rawContractPrice   String?
   /// نام خریدار (اولین طرف دارای نام از buyerList)
-  buyerName         String?
+  buyerName          String?
   /// موبایل خریدار (نرمال‌شده: ۰۹…)
-  buyerMobile       String?
+  buyerMobile        String?
   /// نام فروشنده (اولین طرف دارای نام از sellerList)
-  sellerName        String?
+  sellerName         String?
   /// موبایل فروشنده (نرمال‌شده: ۰۹…)
-  sellerMobile      String?
+  sellerMobile       String?
   /// کل خریداران عین منبع — JSON [{fullName, mobileNumber}]
-  buyerListJson     String?
+  buyerListJson      String?
   /// کل فروشندگان عین منبع — JSON [{fullName, mobileNumber}]
-  sellerListJson    String?
+  sellerListJson     String?
   /// مشاوران و حق‌السهم — JSON [{name, unitPercent, confirmation, role}]
-  realtorSharesJson String?
+  realtorSharesJson  String?
   /// عنوان ملک (property.title)
-  propertyTitle     String?
+  propertyTitle      String?
   /// آدرس ملک (property.address)
-  propertyAddress   String?
+  propertyAddress    String?
   /// وضعیت صورت‌وضعیت عین منبع
-  status            String?
-  documentDate      DateTime?
-  deliveryDate      DateTime?
-  businessId        String?
+  status             String?
+  documentDate       DateTime?
+  deliveryDate       DateTime?
+  businessId         String?
   comisionOfContract Float?
-  taxOfContract     Float?
+  taxOfContract      Float?
   /// لایه ۱ حقیقت: کل پاسخ info عین منبع (پژوهش/ممیزی آینده)
-  rawInfoJson       String?
-  syncedAt          DateTime @default(now())
+  rawInfoJson        String?
+  syncedAt           DateTime  @default(now())
   /// شناسهٔ دستهٔ غنی‌سازی (P6.5-14)
-  extractionBatchId String?
+  extractionBatchId  String?
 
   @@index([contractType])
   @@index([extractionBatchId])
@@ -1021,56 +1021,56 @@ model TransactionEnrichment {
 /// ستون‌های الزامی مالک + ستون‌های کشف‌شده، همگی در این یک مدل.
 model ExpertProfile {
   /// شناسهٔ مشترک با ExpertRecord.id و سامانه PM/ARM (_id)
-  id            String   @id
+  id               String   @id
   /// کدپرسنلی (مثال: 410031320) — عین فیلد code رجیستری PM
-  personnelCode String?
+  personnelCode    String?
   /// نام کارشناس
-  fullName      String?
+  fullName         String?
   /// موبایل (زیر نام در فهرست نمایش داده می‌شود)
-  mobile        String?
+  mobile           String?
   /// سمت پرسنلی (personnelInfo.role.title — «مشاور فروش»)
-  roleTitle     String?
+  roleTitle        String?
   /// شعبه (personnelInfo.branchId.title — «باغلارباغی»/«ارتش»/…)
-  branchTitle   String?
+  branchTitle      String?
   /// شناسهٔ شعبه (personnelInfo.branchId._id)
-  branchCode    String?
+  branchCode       String?
   /// تاریخ استخدام خام PM (ISO — employeementInfo.date)
-  hireDate      String?
+  hireDate         String?
   /// نوع همکاری: 1 = حق السهم (درصد) · 3 = حقوق ماهیانه (employeementInfo.type)
-  employmentType Int?
+  employmentType   Int?
   /// مدیر مستقیم (personnelInfo.headRealtor.fullName)
-  headManager   String?
+  headManager      String?
   /// آدرس دقیق کارشناس (contactInfo.contactInfo.address)
-  address       String?
+  address          String?
   /// تلفن ثابت (contactInfo.contactInfo.telephoneNumber)
-  telephone     String?
+  telephone        String?
   /// کد پستی (contactInfo.contactInfo.postalCode)
-  postalCode    String?
+  postalCode       String?
   /// شماره داخلی تلفن سازمانی (voipInfo.extentionNumber)
-  voipExtension String?
+  voipExtension    String?
   /// شهر (contactInfo.city.name)
-  city          String?
+  city             String?
   /// استان (contactInfo.state.name)
-  state         String?
+  state            String?
   /// کسب‌وکار (businessId.title — «ملک تبریز»)
-  businessTitle String?
+  businessTitle    String?
   /// وضعیت فعال‌سازی پلتفرم‌ها — JSON {ps,acc,apm,chat}
-  activationJson String?
+  activationJson   String?
   /// فعال بودن (isRegisteredCompleted + activationStatus)
-  active        Boolean  @default(true)
+  active           Boolean  @default(true)
   /// شمار مبایعه‌نامه + پیش‌فروش — محاسبه از دادهٔ ARM (قرارداد + گزارش تطابق)
-  saleCount     Int      @default(0)
+  saleCount        Int      @default(0)
   /// شمار اجاره‌نامه + تمدید اجاره — محاسبه از دادهٔ ARM
-  rentCount     Int      @default(0)
+  rentCount        Int      @default(0)
   /// لایهٔ خام رجیستری (قانون دادهٔ مقدس — عین منبع)
   rawRegistryJson  String?
   /// لایهٔ خام personnelInfo
   rawPersonnelJson String?
   /// لایهٔ خام contactInfo
   rawContactJson   String?
-  syncedAt      DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  syncedAt         DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([personnelCode])
   @@index([branchTitle])
@@ -1126,7 +1126,7 @@ model User {
 
   permissions UserPermission[]
   activityLog UserActivity[]
-  sessions     UserSession[]
+  sessions    UserSession[]
 }
 
 /// PN-016 — مجوزهای دقیق هر کاربر روی هر کاشی (ماتریس کاشی × عملیات).
@@ -1149,17 +1149,17 @@ model UserPermission {
 /// PN-016 — سیاههٔ فعالیت هر کاربر (مکمل AuditLog امنیتی؛ این‌جا کاربر-محور است).
 /// action: login | logout | view | edit | delete | export | sync | role-change | permission-change
 model UserActivity {
-  id        String   @id @default(cuid())
-  userId    String
-  action    String
-  tileId    String?
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  tileId     String?
   /// شناسهٔ منبع (مثال: کد آگهی/درخواست/نشست)
   resourceId String?
-  details   String?
-  ip        String?
-  userAgent String?
-  timestamp DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  details    String?
+  ip         String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, timestamp])
   @@index([action, timestamp])
@@ -1184,71 +1184,126 @@ model UserSession {
   @@index([userId, isActive])
 }
 
+/// PN-018 (فاز ۷ — شورا-ن۰۲۲) — رجیستری نسخه‌های مدل: Champion/Challenger.
+/// هر مدل دامنه‌ای چند نسخه دارد؛ در هر لحظه حداکثر یک champion.
+/// ارتقا (promote) و بازگشت (rollback) فقط با تأیید شورا (سند ۰۲۷ §۲.۴).
+model ModelVersion {
+  id              String    @id @default(cuid())
+  /// شناسهٔ پایدار مدل (مثل melka-property-v3 — از رجیستری مدل‌ها)
+  modelId         String
+  /// شمارهٔ نسخه — یکتا در دامنهٔ مدل
+  version         Int
+  /// champion | challenger | retired | rejected (اعتبارسنجی سطح-اپ)
+  status          String    @default("challenger")
+  /// امتیاز Brier ارزیابی سایه (null = هنوز ارزیابی نشده)
+  brierScore      Float?
+  /// نمونه‌های ارزیابی‌شده (پیش‌شرط §۲.۴: ≥۵۰)
+  sampleSize      Int       @default(0)
+  /// طول پنجرهٔ ارزیابی به روز (پیش‌شرط §۲.۴: ≥۷)
+  windowDays      Int       @default(0)
+  /// وزن‌های آموخته — عین خروجی LearningEngine (فقط اعداد)
+  weightsJson     String?
+  /// آیا Brier از نقشهٔ کالیبراسیون مصوب گذشته است؟
+  calibrated      Boolean   @default(false)
+  /// دروازهٔ شورا — ارتقای بدون تأیید ممنوع (قید مطلق)
+  councilApproved Boolean   @default(false)
+  /// منبع تأیید (شماره سند/جلسهٔ شورا)
+  approvalSource  String?
+  promotedAt      DateTime?
+  retiredAt       DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([modelId, version])
+  @@index([modelId, status])
+}
+
+/// PN-018 (فاز ۷) — تاریخ آشکارسازی رانش سه‌گانه (داده/مفهوم/عملکرد).
+/// append-only: هر اجرای ۶ساعتهٔ Worker حداکثر سه ردیف تازه — تاریخ روند حفظ می‌شود.
+model DriftCheck {
+  id            String   @id @default(cuid())
+  modelId       String
+  /// performance | data | concept
+  driftType     String
+  /// ۰..۱
+  magnitude     Float
+  /// monitor | alert | retrain | escalate
+  action        String
+  rationale     String
+  pairsBaseline Int      @default(0)
+  pairsRecent   Int      @default(0)
+  /// زنجیرهٔ شاهد عین موتور
+  evidenceJson  String?
+  checkedAt     DateTime @default(now())
+
+  @@index([modelId, checkedAt])
+}
+
 /// P6.5-12 — رجیستری کارگزاری‌های صادره (special-properties سامانه ARM).
 /// هر «کارگزاری» = قرارداد نمایندگی میان مشاور و مالک برای یک ملک؛
 /// فایل PDF آن در خود سامانه ARM هم «تولیدی از همین داده» است (چاپ کارگزاری صادر شده).
 model SpecialPropertyRecord {
-  id              String   @id
+  id           String    @id
   /// مشاورِ کارگزاری — JSON {id, fullName}
-  realtorId       String?
-  realtorName     String?
+  realtorId    String?
+  realtorName  String?
   /// ثبت‌کننده — JSON {id, fullName}
-  creatorId       String?
-  creatorName     String?
+  creatorId    String?
+  creatorName  String?
   /// درصد حق‌الزحمه توافق‌شده
-  payPercent      Float?
+  payPercent   Float?
   /// قیمت توافقی مبنای درصد
-  sellPrice       Float?
+  sellPrice    Float?
   /// بندهای کارگزاری — HTML عین منبع
-  detailsJson     String?
+  detailsJson  String?
   /// ملک مرتبط — شناسه ARM (از special-properties/info)
-  propertyId      String?
-  propertyCode    String?
+  propertyId   String?
+  propertyCode String?
   /// کل ردیف خام info عین منبع (قانون دادهٔ مقدس)
-  rawJson         String?
-  syncedAt        DateTime @default(now())
-  createdAt       DateTime?
-  updatedAt       DateTime @updatedAt
+  rawJson      String?
+  syncedAt     DateTime  @default(now())
+  createdAt    DateTime?
+  updatedAt    DateTime  @updatedAt
 
   @@index([propertyId])
   @@index([realtorId])
   @@index([propertyCode])
 }
 
-
 // ===================== لایه ایجنت هوشمند (فقط افزودنی / Append-only) =====================
 
 /// رکورد درخواست ملک — عین ساختار ۴ گامی فرم ثبت درخواست سامانه ARM (new-request-page)
 /// گام‌ها: ۱. اطلاعات مشتری ۲. اطلاعات مکانی درخواست ۳. جزییات درخواست ۴. اطلاعات تکمیلی درخواست
 model RequestRecord {
-  id        String   @id @default(cuid())
+  id     String @id @default(cuid())
   /// manual — ثبت دستی (مالک حضوری) | auto — ثبت اتوماتیک (فرم پرشونده ← ثبت مستقیم در آرم)
-  source    String   @default("manual")
+  source String @default("manual")
 
   // ---------- گام ۱: اطلاعات مشتری (عین owner-info-step سامانه) ----------
   /// نام و نام خانوادگی درخواست‌دهنده (مشتری)
-  customerName    String?
+  customerName   String?
   /// شماره موبایل مشتری (۱۱ رقم با ۰۹ — عین فرم آرم)
-  customerMobile  String?
+  customerMobile String?
   /// شناسه کاربر آرم (پس از جستجو/ایجاد در فرآیند ثبت در سامانه)
-  armCustomerId   String?
+  armCustomerId  String?
 
   // ---------- گام ۲: اطلاعات مکانی درخواست ----------
   /// کشور/استان/شهر — پیش‌فرض ایران/آذربایجان شرقی/تبریز (عین خود سامانه)
-  countryId    String?
-  stateId      String?
-  cityId       String?
+  countryId     String?
+  stateId       String?
+  cityId        String?
   /// مناطق منتخب — JSON آرایه شناسه‌های منطقه آرم
-  areaIdsJson    String?
-  areaNamesJson  String?
+  areaIdsJson   String?
+  areaNamesJson String?
   /// محله‌های منتخب — JSON آرایه شناسه‌های محله آرم
-  lineIdsJson    String?
-  lineNamesJson  String?
+  lineIdsJson   String?
+  lineNamesJson String?
 
   // ---------- گام ۳: جزییات درخواست ----------
   /// نوع معامله (برچسب درخواستی: خرید/پیش خرید/رهن و اجاره — nameRequest خود سامانه)
-  tradeTypeId      String?
-  tradeTypeName    String?
+  tradeTypeId         String?
+  tradeTypeName       String?
   /// نوع کاربری
   buildingTypeId      String?
   buildingTypeName    String?
@@ -1256,63 +1311,63 @@ model RequestRecord {
   propertyTypeId      String?
   propertyTypeName    String?
   /// فرم پویای دسته‌بندی — JSON {createName: value} (متراژ از/تا، قیمت کل از/تا، امکانات…)
-  inputsJson       String?
+  inputsJson          String?
   /// P6530/گام ۲ — بازهٔ قیمت متقاضی (تومان) از جزئیات ARM (ستون فهرست M2)
-  priceFrom        Float?
+  priceFrom           Float?
   /// P6530/گام ۲ — سقف قیمت متقاضی (تومان) از جزئیات ARM (ستون فهرست M2)
-  priceTo          Float?
+  priceTo             Float?
   /// توضیحات مشتری (عین خود سامانه)
-  customerDescription  String?
+  customerDescription String?
 
   // ---------- گام ۴: اطلاعات تکمیلی درخواست ----------
   /// نحوه پرداخت مشتری (پول مشتری — user-payment-methods خود سامانه)
-  userPaymentMethod      String?
-  userPaymentMethodName  String?
+  userPaymentMethod     String?
+  userPaymentMethodName String?
   /// جدیت مشتری (user-seriousness خود سامانه)
-  userSeriousity      String?
-  userSeriousityName  String?
+  userSeriousity        String?
+  userSeriousityName    String?
   /// P6547/گام دوم — فوریت درخواست (urgent خود ردیف فهرست ARM)
-  urgent              Boolean?
+  urgent                Boolean?
   /// P6547/گام دوم — درخواست لوکس (luxury خود ردیف فهرست ARM)
-  luxury              Boolean?
+  luxury                Boolean?
   /// P6547/گام دوم — قابل معاوضه (changeable خود ردیف فهرست ARM)
-  changeable          Boolean?
+  changeable            Boolean?
   /// توضیحات مشاور
-  realtorDescription  String?
+  realtorDescription    String?
 
   /// چرخه عمر: draft (در تکمیل) | ready (کامل)
-  status      String   @default("draft")
+  status String @default("draft")
 
   /// نتیجه ثبت در سامانه ARM — JSON {steps:[{key,title,status,detail}], at}
-  armRegistrationJson    String?
-  armRegisteredAt        DateTime?
+  armRegistrationJson String?
+  armRegisteredAt     DateTime?
   /// شناسه درخواست ثبت‌شده در آرم
-  armRequestId           String?
+  armRequestId        String?
 
   /// کد پرسنلی ثبت‌کننده
-  actorCode   String
+  actorCode String
   /// P6.5-10 — نام و نام خانوادگی کارشناس ثبت‌کننده عین سامانه ARM
   /// (relatedRealtor ردیف درخواست — برای کاشی «درخواست‌های ملک تبریز»؛ افزودنی)
-  actorName   String?
+  actorName String?
   /// P6.5-10 — عنوان درخواست عین سامانه ARM (مثل «خرید زمین یا ملک کلنگی...»)؛ افزودنی
-  title       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   /// رویدادهای درخواست (ثبت رویداد — عین request-events سامانه)
-  events  RequestEventRecord[]
+  events RequestEventRecord[]
 
   /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
-  branchId  String?
+  branchId             String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
-  tenantId  String? @default("melk-tabriz")
+  tenantId             String?   @default("melk-tabriz")
   /// P6.5-03 (§۱.۲) — کد درخواست ARM — کلید طبیعی رکوردهای Bulk (source='arm')
-  requestCode  String?  @unique
+  requestCode          String?   @unique
   /// P6.5-03 — شناسه آخرین اجرای Bulk که این رکورد را نوشت (محافظت از جاروی sync — §۱.۹)
-  sourceRunId  String?
+  sourceRunId          String?
   /// B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام/موبایل مشتری خام عین منبع
-  rawCustomerName       String?
-  rawCustomerMobile     String?
+  rawCustomerName      String?
+  rawCustomerMobile    String?
   /// P6.5-04-e-v2 — ستون‌های سه‌لایه حقیقت (provenance؛ ARM فعلاً نسخه منتشر نمی‌کند)
   rawSourceVersion     String?
   extractedAt          DateTime?
@@ -1321,27 +1376,27 @@ model RequestRecord {
 
   // ===================== PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM =====================
   // (بهینه‌ترین گزینهٔ استخراج: inputs خود requests/list — ۱۰۰٪ پر، صفر API اضافه)
-  spaceFrom          Float?    // متراژ از (inputs.space_from)
-  spaceTo            Float?    // متراژ تا (inputs.space_to)
-  roomsFrom          Int?      // اتاق از (inputs.room_whole_from)
-  roomsTo            Int?      // اتاق تا (inputs.room_whole_to)
-  floorFrom          Int?      // طبقه از (inputs.floor_from)
-  floorTo            Int?      // طبقه تا (inputs.floor_to)
-  buildYearFrom      Int?      // سال ساخت از — جلالی (inputs.year_from)
-  buildYearTo        Int?      // سال ساخت تا — جلالی (inputs.year_to)
-  sanadNames         String?   // سند (inputs.sanad[] → «شش‌دانگ، قولنامه…»)
-  constructTypeNames String?   // نوع ساخت (inputs.construct_type[] → «مجتمع، برج…»)
-  sideNames          String?   // جهت (inputs.side[] → «شمال، جنوب…»)
-  occasion           Boolean?  // فرصت (ocasion)
-  deposit            Boolean?  // رهنی (deposite)
-  confirmSms         Boolean?  // تایید پیامکی (confirmSMS)
-  notifyMe           Boolean?  // اطلاع‌رسانی (notifyMe)
-  changeWithNames    String?   // معاوضه با (changeWith[] → نام‌های رسمی enum)
-  armBranchTitle     String?   // کسب‌وکار/شعبهٔ مستقیم ARM (businessId.title)
-  countryName        String?   // کشور (country.name)
-  stateName          String?   // استان (state.name)
-  cityName           String?   // شهر (city.name)
-  platform           String?   // پلتفرم ثبت (platform)
+  spaceFrom          Float? // متراژ از (inputs.space_from)
+  spaceTo            Float? // متراژ تا (inputs.space_to)
+  roomsFrom          Int? // اتاق از (inputs.room_whole_from)
+  roomsTo            Int? // اتاق تا (inputs.room_whole_to)
+  floorFrom          Int? // طبقه از (inputs.floor_from)
+  floorTo            Int? // طبقه تا (inputs.floor_to)
+  buildYearFrom      Int? // سال ساخت از — جلالی (inputs.year_from)
+  buildYearTo        Int? // سال ساخت تا — جلالی (inputs.year_to)
+  sanadNames         String? // سند (inputs.sanad[] → «شش‌دانگ، قولنامه…»)
+  constructTypeNames String? // نوع ساخت (inputs.construct_type[] → «مجتمع، برج…»)
+  sideNames          String? // جهت (inputs.side[] → «شمال، جنوب…»)
+  occasion           Boolean? // فرصت (ocasion)
+  deposit            Boolean? // رهنی (deposite)
+  confirmSms         Boolean? // تایید پیامکی (confirmSMS)
+  notifyMe           Boolean? // اطلاع‌رسانی (notifyMe)
+  changeWithNames    String? // معاوضه با (changeWith[] → نام‌های رسمی enum)
+  armBranchTitle     String? // کسب‌وکار/شعبهٔ مستقیم ARM (businessId.title)
+  countryName        String? // کشور (country.name)
+  stateName          String? // استان (state.name)
+  cityName           String? // شهر (city.name)
+  platform           String? // پلتفرم ثبت (platform)
 
   @@index([status])
   @@index([source])
@@ -1353,34 +1408,34 @@ model RequestRecord {
 /// رویداد درخواست — «ثبت رویداد» عین خود سامانه (request-events/create):
 /// نوع رویداد + تاریخ + ساعت + آگهی مرتبط (کدآگهی) + پیام
 model RequestEventRecord {
-  id          String   @id @default(cuid())
-  requestId   String
-  request     RequestRecord @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  id        String        @id @default(cuid())
+  requestId String
+  request   RequestRecord @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   /// نوع رویداد — شناسه و نام (از request-event-types خود سامانه)
-  eventTypeId   String
-  eventTypeName String
+  eventTypeId        String
+  eventTypeName      String
   /// پرچم‌های نوع رویداد — JSON {needTime,needHour,needMessage,needProperty}
-  eventTypeFlagsJson  String?
+  eventTypeFlagsJson String?
 
   /// تاریخ رویداد (تاریخ شمسی به‌صورت رشته YYYY/MM/DD)
-  date    String?
+  date          String?
   /// ساعت رویداد (HH:mm)
-  hour    String?
+  hour          String?
   /// آگهی مرتبط — کدآگهی واردشده و شناسه آرم کشفشده
   propertyCode  String?
   armPropertyId String?
   /// پیام (اختیاری)
-  message   String?
+  message       String?
 
   /// نتیجه ثبت در سامانه ARM — JSON
-  armSyncJson  String?
-  armSyncedAt  DateTime?
+  armSyncJson String?
+  armSyncedAt DateTime?
   /// شناسه رویداد ثبت‌شده در آرم
-  armEventId   String?
+  armEventId  String?
 
-  actorCode   String
-  createdAt   DateTime @default(now())
+  actorCode String
+  createdAt DateTime @default(now())
 
   @@index([requestId])
   @@index([createdAt])
@@ -1389,61 +1444,61 @@ model RequestEventRecord {
 
 /// حافظه ساخت‌یافته هر کاشی — هرگز Overwrite نمی‌شود
 model AgentMemory {
-  id            String   @id @default(cuid())
-  tileId        String
-  kind          String // INTERACTION | INSIGHT_RENDER | POLICY_CHANGE
-  payload       String // JSON
-  createdAt     DateTime @default(now())
+  id        String   @id @default(cuid())
+  tileId    String
+  kind      String // INTERACTION | INSIGHT_RENDER | POLICY_CHANGE
+  payload   String // JSON
+  createdAt DateTime @default(now())
 
   @@index([tileId, createdAt])
 }
 
 /// بازخورد کاربر روی بینش‌های هر کاشی — فقط افزودنی
 model AgentFeedback {
-  id         String   @id @default(cuid())
-  tileId     String
-  insightKey String
+  id           String   @id @default(cuid())
+  tileId       String
+  insightKey   String
   insightTitle String
-  rating     Int // +1 مفید | -1 غیرمفید
-  comment    String?
-  context    String // JSON snapshot
-  createdAt  DateTime @default(now())
+  rating       Int // +1 مفید | -1 غیرمفید
+  comment      String?
+  context      String // JSON snapshot
+  createdAt    DateTime @default(now())
 
   @@index([tileId, createdAt])
 }
 
 /// نسخه‌های سیاست ایجنت — نسخه قبلی هرگز حذف نمی‌شود (قابلیت Rollback)
 model AgentPolicyVersion {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   tileId      String
   version     Int
   content     String // JSON سیاست فعال
   rationale   String // دلیل این نسخه
-  active      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  active      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
   activatedAt DateTime?
 
   // ---------- P2-06: متادیتای نسخه سیاست (فقط افزودنی — استفاده در PHASE 6/9) ----------
   // اصل: ستون‌های active قدیمی حذف نمی‌شوند — «دو‌راهه» تا PHASE 9.
   // در PHASE 2 فقط ساخته/برگشت داده می‌شوند؛ منطق یادگیری صفر تغییر.
   /// نسخه مدل یادگیری که این سیاست را ساخته (مثل "feedback-weighted-v1")
-  modelVersion       String?
+  modelVersion     String?
   /// نسخه مجموعه ویژگی‌های ورودی (مثل "tf-cosine-v1")
-  featureVersion     String?
+  featureVersion   String?
   /// پنجره داده آموزش (ISO 8601 duration، مثل "P90D")
-  trainingWindow     String?
+  trainingWindow   String?
   /// پنجره داده ارزیابی (ISO 8601 duration)
-  evaluationWindow   String?
+  evaluationWindow String?
   /// سنجه‌های ارزیابی این نسخه (JSON — precision/recall/…)
-  metricsJson        String?
+  metricsJson      String?
   /// کد پرسنلی سازنده
-  createdBy           String?
+  createdBy        String?
   /// کد پرسنلی تأییدکننده (گردش کار PHASE 9)
-  approvedBy          String?
+  approvedBy       String?
   /// چرخه عمر نسخه: active | retired | draft | archived — دو‌راهه با active
-  status              String?  @default("active")
+  status           String? @default("active")
   /// هدف بازگشت در صورت لغو این نسخه (نسخه‌ای که باید فعال شود)
-  rollbackTarget      Int?
+  rollbackTarget   Int?
 
   @@unique([tileId, version])
 }
@@ -1453,19 +1508,19 @@ model AgentPolicyVersion {
 /// instrumentation در هر بوت upsert می‌کند؛ صفر رابطه با سایر جداول (قانون حرمت داده — افزودنی خالص).
 model AppMeta {
   /// همیشه "singleton" — تنها یک رکورد در کل جدول
-  id         String   @id
+  id             String   @id
   /// "<gitSha8>-<yyyymmdd>-<hhmm>" (production) یا "dev-<sha>-<stamp>" (dev)
-  buildId    String?
+  buildId        String?
   /// ISO 8601 — زمان build (یا بوت سرور در dev)
-  builtAt    String?
+  builtAt        String?
   /// ۸ نویسهٔ کامیت گیت
-  gitSha     String?
+  gitSha         String?
   /// development | production
-  env        String?
+  env            String?
   /// PN-002 نکته ۱ — هش SHA-256 کد مستر مالک (بقای بازنشانی محیط: DB زنده می‌ماند؛
   /// فقط هش — هرگز خود کد در DB نمی‌نشیند؛ fallback دومِ master-login پس از env)
   masterCodeHash String?
-  recordedAt DateTime @updatedAt
+  recordedAt     DateTime @updatedAt
 }
 
 /// P6545/گام۱ (BLOCK 1.1) — پایدارسازی وضعیت کار پس‌زمینه در DB (جلسه ۰۳۰ سؤال ۹)
@@ -1473,22 +1528,22 @@ model AppMeta {
 /// الگوی الزامی جلسه ۰۳۳: jobId, lastCompletedPage, resumedFrom, updatedAt.
 model SyncJobState {
   /// شناسهٔ کار — مثل catalog-listings | catalog-requests | catalog-enrich-listings | main-sync
-  jobId            String   @id
+  jobId             String   @id
   /// خانوادهٔ کار: catalog | enrichment | sync
-  jobKind          String
+  jobKind           String
   /// idle | running | paused | done | failed
-  status           String   @default("idle")
+  status            String   @default("idle")
   /// آخرین صفحهٔ کامل-ذخیره‌شده (داده اول، سپس چک‌پوینت)
-  lastCompletedPage Int     @default(0)
+  lastCompletedPage Int      @default(0)
   /// نقطهٔ ازسرگیری (ادامه — هرگز شروع از صفر)
-  resumedFrom      Int      @default(1)
-  totalPages       Int      @default(0)
+  resumedFrom       Int      @default(1)
+  totalPages        Int      @default(0)
   /// ۰ تا ۱۰۰ — شفافیت UI
-  progressPercent  Float    @default(0)
+  progressPercent   Float    @default(0)
   /// جزئیات آخرین برش (JSON) — شفافیت کامل
-  detailJson       String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  detailJson        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([jobKind, status])
 }
@@ -1538,21 +1593,21 @@ model GraphEdge {
 /// P6545/گام۱ (BLOCK 1.4) — هشدار فرصت: تطبیق آگهی↔درخواست (جلسه ۰۳۰ سؤال ۱۰)
 /// قید مطلق: صفر اجرای خودکار — فقط هشدار.
 model OpportunityAlert {
-  id          String   @id @default(cuid())
+  id           String    @id @default(cuid())
   /// listing_to_request | request_to_listing
-  direction   String
+  direction    String
   /// کدآگهی (PropertyRecord.propertyCode)
-  listingCode String?
+  listingCode  String?
   /// شناسهٔ درخواست (RequestRecord.id)
-  requestId   String?
+  requestId    String?
   /// امتیاز تطبیق (۰ تا ۱) — آستانهٔ انتشار: ≥ ۰٫۷
-  matchScore  Float
+  matchScore   Float
   /// دلایل تطبیق — JSON [{factor, value, weight}]
   matchReasons String
   /// new | seen | dismissed
-  status      String   @default("new")
-  emittedAt   DateTime @default(now())
-  seenAt      DateTime?
+  status       String    @default("new")
+  emittedAt    DateTime  @default(now())
+  seenAt       DateTime?
 
   @@index([direction, status])
   @@index([listingCode])
@@ -1574,4 +1629,142 @@ model JobLock {
   metadata      String?
 
   @@index([expiresAt])
+}
+
+/// PN-019 فاز ۸ — رکورد تصمیم پایدار (۱۵ فیلد پندرگانه + قید autoExecute=false در سطح DB)
+/// دکترین: append-mostly — فقط تغییر وضعیت (active→expired→superseded)؛ حذف فیزیکی ممنوع.
+model DecisionRecord {
+  id                    String   @id @default(cuid())
+  /// ارجاع به پیش‌بینی مبدأ (SAF-001: صفر تصمیم بدون پیش‌بینی)
+  predictionId          String
+  /// wait | investigate | contact_owner | assign_expert | adjust_price | schedule_visit | priority_action
+  decisionType          String
+  /// کنش پیشنهادی نخست (فارسی)
+  proposedAction        String
+  /// اطمینان ۰..۱ (SAF-002: ≥۰٫۳)
+  confidence            Float
+  /// دلیل کامل فارسی (SAF-003)
+  rationale             String
+  /// اثر کمی سه‌مؤلفه‌ای {liftPercent, reach, horizonDays, basis} — §۸ سند طراحی
+  expectedImpact        String
+  /// ≥۳ گزینهٔ رتبه‌بندی‌شده [{action, whyRejected, expectedValue, rank}] — §۹
+  alternativesJson      String
+  /// فهرست منابع لازم
+  requiredResourcesJson String
+  /// گزارش هفت‌قاعده‌ای SAF عین SafetyReport موتور
+  safetyReportJson      String
+  /// active | expired | superseded
+  status                String   @default("active")
+  /// انقضای تصمیم (پیش‌فرض ۷ روز — §۱۰)
+  expiresAt             DateTime
+  createdAt             DateTime @default(now())
+  /// Tier لحظهٔ ساخت
+  tierAtCreation        Int      @default(0)
+  /// مهر نسخهٔ قهرمان لحظهٔ تصمیم (قابلیت ردیابی)
+  modelVersionId        String?
+  /// قید سازندهٔ فاز ۸ — همیشه true
+  requiresApproval      Boolean  @default(true)
+  /// قید سازندهٔ فاز ۸ — همیشه false (GOV-DECISION-001)
+  autoExecute           Boolean  @default(false)
+
+  @@index([status, expiresAt])
+  @@index([predictionId])
+  @@index([createdAt])
+}
+
+/// PN-019 فاز ۸ — برنامهٔ اقدام پایدار (rollback برای هر ۵ الگو — §۱۱)
+model ActionPlanRecord {
+  id                       String   @id @default(cuid())
+  decisionId               String
+  /// direct_call | property_visit | price_adjust | expert_assign | smart_wait
+  pattern                  String
+  /// گام‌ها [{order, action, owner, estimatedMinutes, dependencies}]
+  stepsJson                String
+  /// طرح بازگشت — همیشه غیر-null پس از فاز ۸
+  rollbackPlan             String
+  /// خروجی simulate() {totalMinutes, criticalPath, bottlenecks}
+  simulationJson           String
+  /// خروجی estimateImpact() {liftPercent, rationale}
+  impactJson               String
+  estimatedDurationMinutes Int
+  /// low | medium | high
+  riskLevel                String
+  /// قید مطلق — همیشه false
+  autoExecute              Boolean  @default(false)
+  createdAt                DateTime @default(now())
+
+  @@index([decisionId])
+  @@index([createdAt])
+}
+
+/// PN-019 فاز ۸ — شاهد پایدار هر بررسی ایمنی (SAF-006: تغییر داده بدون audit ممنوع)
+model SafetyCheckRecord {
+  id               String   @id @default(cuid())
+  decisionId       String
+  passed           Boolean
+  blockedByJson    String
+  warningsJson     String
+  checkedRulesJson String
+  checkedAt        DateTime @default(now())
+
+  @@index([decisionId])
+  @@index([checkedAt])
+}
+
+/// PN-019 فاز ۸ — جریان سایه: تصمیم فقط ثبت، صفر اجرا (executedSteps همیشه ۰ — §۱۴)
+model ShadowDecisionRun {
+  id                 String   @id @default(cuid())
+  /// predictionId مبدأ
+  sourcePredictionId String
+  decisionId         String
+  /// قید لفظی — صفر گام اجراشده
+  executedSteps      Int      @default(0)
+  /// ثبت شد | ایمنی بلاک کرد | خطا
+  verdict            String
+  ranAt              DateTime @default(now())
+
+  @@index([ranAt])
+  @@index([decisionId])
+}
+
+/// PN-019 فاز ۹ — تاریخچهٔ بررسی ۱۵قاعده‌ای حاکمیت (append-only — سابقهٔ تغییرناپذیر)
+model GovernanceCheckRecord {
+  id                     String   @id @default(cuid())
+  passed                 Int
+  failed                 Int
+  /// critical نقض‌شده (ruleIdها)
+  criticalViolationsJson String
+  /// آرایهٔ ۱۵تایی [{ruleId, passed, severity, details}]
+  resultsJson            String
+  /// زمینهٔ ۱۷فیلدی زنده که بررسی رویش اجرا شد (شاهد ممیزی)
+  contextJson            String
+  /// strict | audit-only | disabled
+  enforcement            String
+  /// worker | manual
+  triggerSource          String
+  checkedAt              DateTime @default(now())
+
+  @@index([checkedAt])
+}
+
+/// PN-019 فاز ۹ — ارزیابی دوره‌ای سیاست‌ها (هر ۹۰ روز — §۱۲)
+model PolicyEvaluationRecord {
+  id               String   @id @default(cuid())
+  policyId         String
+  /// learning | safety | governance | access
+  policyType       String
+  windowFrom       DateTime
+  windowTo         DateTime
+  /// ۴ متریک {effectiveness, stability, compliance, costImpact}
+  metricsJson      String
+  /// keep | adjust | retire
+  verdict          String
+  rationale        String
+  /// شمارش رویدادها/بازرسی‌ها + insufficientData
+  evidenceJson     String
+  tierAtEvaluation Int      @default(0)
+  evaluatedAt      DateTime @default(now())
+
+  @@index([policyId, evaluatedAt])
+  @@index([evaluatedAt])
 }

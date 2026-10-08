@@ -1,0 +1,9 @@
+{
+  "state": "unparked",
+  "at": "2026-10-08T12:25:42.342217",
+  "movedMB": 2984,
+  "moveMs": 0,
+  "freeGBAfter": "3",
+  "note": "پارک بیرون از ریشهٔ tracing — بیلد لاغر؛ پس از بیلد فوراً unpark + آزمون لینک",
+  "linkTest": "PASS-30/30"
+}

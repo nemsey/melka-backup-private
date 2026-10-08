@@ -752,8 +752,9 @@ export async function syncArmRequestsCatalog(
 // لایه ۲ — غنی‌سازی تماس/آدرس (برش‌برش با نرخ‌محدود)
 // ==========================================================================
 
-/** جزئیات آگهی → افزودنی‌های ساختاری (آدرس دقیق + متراژ/اتاق/طبقه + دسته‌بندی) */
-function detailsToPropertyExtras(
+/** جزئیات آگهی → افزودنی‌های ساختاری (آدرس دقیق + متراژ/اتاق/طبقه + دسته‌بندی)
+ * PN-018: صادر شد برای تست نرمال‌ساز دامنه‌دار (ریشهٔ سرریز Int32) */
+export function detailsToPropertyExtras(
   detailsPayload: unknown
 ): Partial<PropertyBulkInput> & { detailsJson?: string | null } {
   const extras: Partial<PropertyBulkInput> & { detailsJson?: string | null } = {};
@@ -786,17 +787,31 @@ function detailsToPropertyExtras(
       if (name && value) byName.set(name, value);
     }
   }
+  // دامنه‌های معتبر per-field (عین extractRequestInputs بند ۲۷۸) — سناریوی زندهٔ PN-018/T2+T3:
+  // آگهی ۴۸۸۱۳ خود سامانهٔ ARM برچسب «طبقه» را با ارزش قیمتی ۱۶٬۵۰۰٬۰۰۰٬۰۰۰ پر کرده بود؛
+  // مقدار خام در detailsJson/rawArea محفوظ می‌ماند (دادهٔ مقدس) اما ستون تایپ‌دار Int
+  // فقط دامنهٔ معنادار می‌پذیرد — وگرنه یک ردیف کثیف همهٔ findManyها را می‌کشد (سرریز Int32 پریدا).
   const meterage = byName.get("space");
   if (meterage && /^\d+([.,]\d+)?$/.test(meterage)) {
-    extras.rawArea = meterage;
-    extras.meterage = Number(meterage.replace(",", "."));
+    extras.rawArea = meterage; // لایهٔ خام عین منبع — حتی خارج از دامنه
+    const m = Number(meterage.replace(",", "."));
+    if (m >= 1 && m <= 5000) extras.meterage = m;
   }
   const rooms = byName.get("room_whole");
-  if (rooms && /^\d+$/.test(rooms)) extras.rooms = Number(rooms);
+  if (rooms && /^\d+$/.test(rooms)) {
+    const r = Number(rooms);
+    if (r >= 0 && r <= 30) extras.rooms = r;
+  }
   const floor = byName.get("floor");
-  if (floor && /^\d+$/.test(floor)) extras.floor = Number(floor);
+  if (floor && /^\d+$/.test(floor)) {
+    const f = Number(floor);
+    if (f >= 0 && f <= 200) extras.floor = f;
+  }
   const year = byName.get("year");
-  if (year && /^\d{4}$/.test(year)) extras.buildYear = Number(year);
+  if (year && /^\d{4}$/.test(year)) {
+    const y = Number(year);
+    if (y >= 1300 && y <= 1450) extras.buildYear = y;
+  }
 
   const category = raw.propertyCategory as RawRow | undefined;
   if (category && typeof category === "object") {

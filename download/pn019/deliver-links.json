@@ -1,0 +1,70 @@
+{
+ "council": "ملکا-شورا-ن۰۲۳-۱۴۰۵",
+ "workOrder": "PN-019",
+ "stage": "۱۱ — قانون فایل v3",
+ "at": "2026-10-08T12:31:20.730880+00:00",
+ "allZip": {
+  "name": "pn019-ALL.zip",
+  "bytes": 21228
+ },
+ "parts": [
+  {
+   "name": "pn019-survival-part00.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn019-survival-part01.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn019-survival-part02.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn019-survival-part03.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn019-survival-part04.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn019-survival-part05.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn019-survival-part06.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn019-survival-part07.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn019-survival-part08.bin",
+   "bytes": 50331648,
+   "mb": 48.0
+  },
+  {
+   "name": "pn019-survival-part09.bin",
+   "bytes": 7231488,
+   "mb": 6.9
+  }
+ ],
+ "partCount": 10,
+ "linkTest": {
+  "localBase": "/deliver",
+  "previewBase": "دامنهٔ preview",
+  "pass": 28,
+  "fail": 0
+ },
+ "rejoinVerified": true
+}

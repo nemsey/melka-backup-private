@@ -1,0 +1,48 @@
+{
+  "council": "ملکا-شورا-ن۰۲۳-۱۴۰۵",
+  "stage": "فاز ۸ — Safety هفت‌قاعده‌ای fail-closed",
+  "ranAt": "2026-10-08T11:56:50.228Z",
+  "sevenRules": [
+    "SAF-001 صفر تصمیم بدون prediction",
+    "SAF-002 صفر تصمیم با confidence<۰٫۳",
+    "SAF-003 صفر تصمیم بدون rationale",
+    "SAF-004 صفر اقدام مالی خودکار",
+    "SAF-005 صفر تماس بدون تأیید",
+    "SAF-006 صفر تغییر داده بدون audit",
+    "SAF-007 صفر LLM در production"
+  ],
+  "witnessCounts": {
+    "safetyChecks": 16,
+    "passed": 16,
+    "blocked": 0,
+    "shadowRuns": 16,
+    "zeroExecutionViolations": 0
+  },
+  "negativeTests": {
+    "lowConfidence_0_2": {
+      "passed": false,
+      "blockedBy": [
+        "SAF-002"
+      ],
+      "expectation": "SAF-002 بلاک",
+      "ok": true
+    },
+    "emptyRationale": {
+      "passed": false,
+      "blockedBy": [
+        "SAF-003"
+      ],
+      "expectation": "SAF-003 بلاک",
+      "ok": true
+    },
+    "financialAuto": {
+      "passed": false,
+      "blockedBy": [
+        "SAF-004"
+      ],
+      "expectation": "SAF-004 بلاک",
+      "ok": true
+    }
+  },
+  "failClosed": "هر استثنای ناشناخته در مسیر ارزیابی → passed=false با blockedBy=[SAF-000]"
+}

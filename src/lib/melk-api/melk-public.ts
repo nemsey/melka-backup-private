@@ -70,6 +70,13 @@ function pickNumber(row: RawRow, keys: string[]): number | null {
   return null;
 }
 
+/** PN-018/T2+T3 — pickNumber با دامنهٔ معتبر (خارج دامنه = منبع کثیف → تهی) */
+function pickBoundedNumber(row: RawRow, key: string, min: number, max: number): number | null {
+  const v = row[key];
+  if (typeof v === "number" && Number.isFinite(v) && v >= min && v <= max) return v;
+  return null;
+}
+
 function pickDate(v: unknown): Date | null {
   if (typeof v !== "string" || v.length < 8) return null;
   const d = new Date(v);
@@ -137,15 +144,25 @@ export function extractApuDetails(payload: RawRow): {
   };
   const num = (s: string | null): number | null => {
     if (!s) return null;
-    const m = s.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).match(/\d+/);
+    // PN-018: جداساز ارقام (٬ ، ٫ ,) پیش از استخراج — وگرنه «۱۶٬۵۰۰…» فقط ۱۶ خوانده می‌شد
+    const m = s
+      .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/[\u066C\u066B,٬\s]/g, "")
+      .match(/\d+/);
     return m ? Number(m[0]) : null;
+  };
+  // PN-018/T2+T3 — دامنهٔ معتبر per-field: مقدار خارج از دامنه (منبع کثیف) → تهی؛
+  // لایهٔ خام (rawJson/details) دست‌نخورده می‌ماند (دادهٔ مقدس). دامنه‌ها عین extractRequestInputs.
+  const numB = (s: string | null, min: number, max: number): number | null => {
+    const v = num(s);
+    return v !== null && v >= min && v <= max ? v : null;
   };
   const inputs = (payload.inputs ?? null) as RawRow | null;
   return {
-    meterage: num(find("space")) ?? (inputs ? pickNumber(inputs, ["space"]) : null) ?? num(find("متراژ")),
-    rooms: num(find("room_whole")) ?? num(find("اتاق")),
-    floor: num(find("floor")) ?? num(find("طبقه")),
-    buildYear: num(find("year")) ?? num(find("سال ساخت")),
+    meterage: numB(find("space"), 1, 5000) ?? (inputs ? pickBoundedNumber(inputs, "space", 1, 5000) : null) ?? numB(find("متراژ"), 1, 5000),
+    rooms: numB(find("room_whole"), 0, 30) ?? numB(find("اتاق"), 0, 30),
+    floor: numB(find("floor"), 0, 200) ?? numB(find("طبقه"), 0, 200),
+    buildYear: numB(find("year"), 1300, 1450) ?? numB(find("سال ساخت"), 1300, 1450),
     areaName: pickNestedStr(payload, "area.name"),
     lineName: pickNestedStr(payload, "line.name"),
   };

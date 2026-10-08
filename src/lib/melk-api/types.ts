@@ -572,6 +572,14 @@ export type MelkErrorCode =
   | "DB_DOWN"
   | "NOT_FOUND"
   | "CONNECTION_RESET"
+  // PN-018 فاز ۷ — دروازهٔ شورا و چرخهٔ عمر نسخهٔ مدل
+  | "NOT_A_CHALLENGER"
+  | "COUNCIL_APPROVAL_REQUIRED"
+  | "SHADOW_CRITERIA_NOT_MET"
+  // PN-019 فاز ۸+۹ — تصمیم سایه + حاکمیت
+  | "ALTERNATIVES_MIN" // فاز ۸ — نقض سازندهٔ حداقل بدیل (fail-loud)
+  | "DECISION_EXPIRED" // فاز ۸ — تصمیم منقضی (۴۰۹)
+  | "GOVERNANCE_BLOCKED" // فاز ۹ — نقض قاعدهٔ بحرانی حاکمیت (۵۰۳)
   | "UNKNOWN";
 
 export class MelkApiError extends Error {

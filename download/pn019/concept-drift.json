@@ -1,0 +1,197 @@
+{
+  "council": "ملکا-شورا-ن۰۲۳-۱۴۰۵",
+  "workOrder": "PN-019 مرحلهٔ ۱ — رفع G5 (تحلیل رانش مفهوم سه‌بازه‌ای)",
+  "ranAt": "2026-10-08T12:17:08.994Z",
+  "dataSources": {
+    "primary": "PropertyRecord واقعی ARM (status + statusDate + createdAt)",
+    "pairs": "intelligence-data/outcomes.jsonl (۷۷۲ جفت — جرم‌شناسی)"
+  },
+  "method": {
+    "window": "۳ × ۳۰ روز (برش زمانی statusDate)",
+    "transactionRate": "معامله‌شده / (معامله + منقضی + غیرقابل‌احیا + رد‌شده + قابل‌احیا)",
+    "terminalStatuses": [
+      "معامله شده",
+      "منقضی شده",
+      "فایل غیر قابل احیا",
+      "رد شده توسط مدیر",
+      " فایل قابل احیا"
+    ]
+  },
+  "windows": [
+    {
+      "label": "W1",
+      "from": "2026-07-10",
+      "to": "2026-08-09",
+      "statusChanges": 999,
+      "resolved": 798,
+      "transacted": 12,
+      "transactionRate": 0.015
+    },
+    {
+      "label": "W2",
+      "from": "2026-08-09",
+      "to": "2026-09-08",
+      "statusChanges": 2270,
+      "resolved": 1635,
+      "transacted": 16,
+      "transactionRate": 0.0098
+    },
+    {
+      "label": "W3",
+      "from": "2026-09-08",
+      "to": "2026-10-08",
+      "statusChanges": 2685,
+      "resolved": 1651,
+      "transacted": 23,
+      "transactionRate": 0.0139
+    }
+  ],
+  "cohorts": [
+    {
+      "cohortFrom": "2022-10",
+      "cohortTo": "2023-04",
+      "resolved": 1161,
+      "transacted": 38,
+      "transactionRate": 0.0327,
+      "censored": false
+    },
+    {
+      "cohortFrom": "2023-04",
+      "cohortTo": "2023-10",
+      "resolved": 1692,
+      "transacted": 24,
+      "transactionRate": 0.0142,
+      "censored": false
+    },
+    {
+      "cohortFrom": "2023-10",
+      "cohortTo": "2024-04",
+      "resolved": 801,
+      "transacted": 40,
+      "transactionRate": 0.0499,
+      "censored": false
+    },
+    {
+      "cohortFrom": "2024-04",
+      "cohortTo": "2024-10",
+      "resolved": 1203,
+      "transacted": 61,
+      "transactionRate": 0.0507,
+      "censored": false
+    },
+    {
+      "cohortFrom": "2024-10",
+      "cohortTo": "2025-04",
+      "resolved": 1223,
+      "transacted": 85,
+      "transactionRate": 0.0695,
+      "censored": false
+    },
+    {
+      "cohortFrom": "2025-04",
+      "cohortTo": "2025-10",
+      "resolved": 2448,
+      "transacted": 93,
+      "transactionRate": 0.038,
+      "censored": false
+    },
+    {
+      "cohortFrom": "2025-10",
+      "cohortTo": "2026-04",
+      "resolved": 3330,
+      "transacted": 99,
+      "transactionRate": 0.0297,
+      "censored": false
+    },
+    {
+      "cohortFrom": "2026-04",
+      "cohortTo": "2026-10",
+      "resolved": 7097,
+      "transacted": 82,
+      "transactionRate": 0.0116,
+      "censored": true
+    }
+  ],
+  "ageCohorts": [
+    {
+      "ageBand": "under30d",
+      "resolved": 548,
+      "transacted": 260,
+      "transactionRate": 0.4745
+    },
+    {
+      "ageBand": "30to90d",
+      "resolved": 376,
+      "transacted": 149,
+      "transactionRate": 0.3963
+    },
+    {
+      "ageBand": "90to180d",
+      "resolved": 221,
+      "transacted": 25,
+      "transactionRate": 0.1131
+    },
+    {
+      "ageBand": "180to365d",
+      "resolved": 132,
+      "transacted": 16,
+      "transactionRate": 0.1212
+    },
+    {
+      "ageBand": "over365d",
+      "resolved": 43,
+      "transacted": 5,
+      "transactionRate": 0.1163
+    }
+  ],
+  "pairForensics": {
+    "pairs": 772,
+    "baseline": {
+      "n": 540,
+      "transacted": 347,
+      "rate": 0.6426,
+      "distinctDates": [
+        "2026-10-05"
+      ]
+    },
+    "recent": {
+      "n": 232,
+      "transacted": 39,
+      "rate": 0.1681,
+      "distinctDates": [
+        "2026-10-05"
+      ]
+    },
+    "onesMedianPos": 386,
+    "cutIndex": 540
+  },
+  "verdict": {
+    "pn018Signal": {
+      "conceptDriftMagnitude": 0.474,
+      "claimedShift": "0.643 → 0.168",
+      "rootCause": "شکاف ۷۰/۳۰ به ترتیبِ فایل پیامدها — فایل به‌ترتیب دولایه (معامله‌شده‌ها، سپس منتشرشده‌ها) نوشته شده و مرز برش دقیقاً با مرز نوع پیامد هم‌افتاده است؛ ضمناً هر ۷۷۲ پیامد در یک روز (اسنپ‌شات ۱۴۰۵-۰۷-۱۴) ثبت شده‌اند — یعنی شکاف زمانی حقیقی در داده وجود ندارد.",
+      "fileOrderArtifactConfirmed": true,
+      "snapshotDay": "2026-10-05"
+    },
+    "realTimeBased": {
+      "threeWindowRates": [
+        0.015,
+        0.0098,
+        0.0139
+      ],
+      "windowSwing": 0.0052,
+      "interpretation": "نرخ معاملهٔ آگهی‌های تعیین‌تکلیف‌شده در سه بازهٔ اخیر حدود ۱-۱٫۵٪ و نوسان بین‌بازه ≤ ۰٫۵۲ واحد درصد — هیچ پرش ۶۴→۱۷ درصدی در برش زمانی واقعی وجود ندارد."
+    },
+    "cohortTrend": {
+      "yearAgoRate": 0.0507,
+      "latestCompleteRate": 0.0297,
+      "realDecline": 0.021,
+      "interpretation": "یک افت واقعی اما ملایم در نرخ معاملهٔ کوهورت‌های ثبت (سال‌به‌سال حدود ۳-۴ واحد درصد) دیده می‌شود — قابل پیگیری اما نه در مقیاس سیگنال ۰٫۴۷۴."
+    },
+    "ageMechanism": {
+      "interpretation": "مکانیزم: آگهی‌های جوان (<۹۰ روز) با نرخ ۴۰-۴۷٪ معامله می‌شوند و آگهی‌های کهنه تقریباً همیشه منقضی (~۱۱٪). هر نمونه‌گیری بدون کنترل سن/زمان، نرخ را جعل می‌کند."
+    },
+    "finalVerdict": "خوش‌بینانه برای شدت سیگنال (آرتیفکت ترتیب فایل) · با یک هشدار واقعی ملایم (افت کوهورتی ~۳-۴ واحد درصد) برای بررسی میدانی مالک",
+    "remediation": "برش پنجرهٔ رانش باید زمان‌محور (occurredAt) شود نه ترتیب فایل — در همین PN-019 ترمیم می‌شود (splitWindowsByTime)."
+  }
+}
