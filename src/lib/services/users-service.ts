@@ -432,3 +432,136 @@ export async function usersOverview(): Promise<{
   for (const r of byRoleRows) byRole[r.role] = r._count._all;
   return { total, active, byRole, guests, sessionsActive };
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// PN-017 — دفترچهٔ یکپارچهٔ «مدیریت کاربران ملک تبریز» (شاهکار)
+// جابه‌جایی دو بخش تنظیمات به دستور مالک (شورا-ن۰۲۱):
+// تجمیع چندوجهی پرسنل PM (سامانهٔ ملک تبریز) + کاربران اپ + پیوند + وضعیت.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** یک ردیف پرسنل دپارتمان ملک تبریز (از PM) با پیوند حساب اپ */
+export interface MelkTabrizPersonnelRow {
+  personnelCode: string | null;
+  fullName: string | null;
+  mobile: string | null;
+  roleTitle: string | null;
+  branchTitle: string | null;
+  headManager: string | null;
+  hireDate: string | null;
+  employmentType: number | null;
+  voipExtension: string | null;
+  active: boolean;
+  saleCount: number;
+  rentCount: number;
+  /** آیا برای این پرسنل حساب کاربری اپ ساخته شده؟ */
+  hasAccount: boolean;
+  accountRole: string | null;
+  accountActive: boolean | null;
+}
+
+export interface MelkUsersDirectoryOptions {
+  q?: string;
+  branch?: string;
+  role?: string;
+  onlyWithoutAccount?: boolean;
+}
+
+/** دفترچهٔ چندوجهی: پرسنل PM + پیوند کاربران + آمار + وضعیت اتصال (فقط مالک) */
+export async function melkUsersDirectory(opts: MelkUsersDirectoryOptions = {}): Promise<{
+  rows: MelkTabrizPersonnelRow[];
+  stats: {
+    pmTotal: number; pmActive: number; linkedAccounts: number; withoutAccount: number;
+    byBranch: Record<string, number>; byRoleTitle: Record<string, number>;
+    lastSyncedAt: string | null;
+  };
+  filterOptions: { branches: string[]; roleTitles: string[]; managers: string[] };
+  pmConnection: { status: string; displayName: string | null; lastCheckedAt: string | null } | null;
+  overview: Awaited<ReturnType<typeof usersOverview>>;
+}> {
+  // پرسنل PM (آینهٔ محلی رجیستری/عمق PM — دادهٔ مقدس، upsert-only)
+  const experts = await db.expertProfile.findMany({
+    select: {
+      personnelCode: true, fullName: true, mobile: true, roleTitle: true, branchTitle: true,
+      headManager: true, hireDate: true, employmentType: true, voipExtension: true,
+      active: true, saleCount: true, rentCount: true, syncedAt: true,
+    },
+    orderBy: { fullName: "asc" },
+  });
+
+  // حساب‌های اپ موجود (برای پیوند)
+  const users = await db.user.findMany({
+    select: { personnelCode: true, role: true, isActive: true },
+  });
+  const byCode = new Map(users.filter((u) => u.personnelCode).map((u) => [u.personnelCode as string, u]));
+
+  let rows: MelkTabrizPersonnelRow[] = experts.map((e) => {
+    const acc = e.personnelCode ? byCode.get(e.personnelCode) ?? null : null;
+    return {
+      personnelCode: e.personnelCode,
+      fullName: e.fullName,
+      mobile: e.mobile,
+      roleTitle: e.roleTitle,
+      branchTitle: e.branchTitle,
+      headManager: e.headManager,
+      hireDate: e.hireDate,
+      employmentType: e.employmentType,
+      voipExtension: e.voipExtension,
+      active: e.active,
+      saleCount: e.saleCount,
+      rentCount: e.rentCount,
+      hasAccount: Boolean(acc),
+      accountRole: acc?.role ?? null,
+      accountActive: acc ? acc.isActive : null,
+    };
+  });
+
+  // فیلترهای حافظه‌ای (۱۴۳ ردیف — بدون نیاز به کوئری اضافه)
+  const q = (opts.q ?? "").trim();
+  if (q) {
+    const needle = q.toLowerCase();
+    rows = rows.filter((r) =>
+      [r.fullName, r.personnelCode, r.mobile, r.branchTitle, r.roleTitle, r.headManager, r.voipExtension]
+        .some((f) => f && String(f).toLowerCase().includes(needle))
+    );
+  }
+  if (opts.branch && opts.branch !== "all") rows = rows.filter((r) => r.branchTitle === opts.branch);
+  if (opts.role && opts.role !== "all") rows = rows.filter((r) => r.roleTitle === opts.role);
+  if (opts.onlyWithoutAccount) rows = rows.filter((r) => !r.hasAccount);
+
+  // آمار چندوجهی روی کل دفترچه (پیش از فیلتر — نمای واقعی دپارتمان)
+  const byBranch: Record<string, number> = {};
+  const byRoleTitle: Record<string, number> = {};
+  let lastSyncedAt: string | null = null;
+  for (const e of experts) {
+    if (e.branchTitle) byBranch[e.branchTitle] = (byBranch[e.branchTitle] ?? 0) + 1;
+    if (e.roleTitle) byRoleTitle[e.roleTitle] = (byRoleTitle[e.roleTitle] ?? 0) + 1;
+    const iso = e.syncedAt.toISOString();
+    if (iso > (lastSyncedAt ?? "")) lastSyncedAt = iso;
+  }
+  const linkedAccounts = experts.filter((e) => e.personnelCode && byCode.has(e.personnelCode)).length;
+
+  // وضعیت اتصال PM (برای همگام‌سازی)
+  const pm = await db.pmConnection.findFirst({
+    select: { status: true, displayName: true, lastCheckedAt: true },
+  });
+
+  return {
+    rows,
+    stats: {
+      pmTotal: experts.length,
+      pmActive: experts.filter((e) => e.active).length,
+      linkedAccounts,
+      withoutAccount: experts.length - linkedAccounts,
+      byBranch,
+      byRoleTitle,
+      lastSyncedAt,
+    },
+    filterOptions: {
+      branches: [...new Set(experts.map((e) => e.branchTitle).filter((b): b is string => Boolean(b)))].sort((a, b) => a.localeCompare(b, "fa")),
+      roleTitles: [...new Set(experts.map((e) => e.roleTitle).filter((r): r is string => Boolean(r)))].sort((a, b) => a.localeCompare(b, "fa")),
+      managers: [...new Set(experts.map((e) => e.headManager).filter((m): m is string => Boolean(m)))].sort((a, b) => a.localeCompare(b, "fa")),
+    },
+    pmConnection: pm ? { status: pm.status, displayName: pm.displayName, lastCheckedAt: pm.lastCheckedAt?.toISOString() ?? null } : null,
+    overview: await usersOverview(),
+  };
+}

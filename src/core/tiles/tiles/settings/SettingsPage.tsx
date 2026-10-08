@@ -27,10 +27,10 @@ import { BrainStatusSection } from "./BrainStatusSection";
 import { OpportunityJobsSection } from "./OpportunityJobsSection";
 // P6546/گام صفر-۶ — حساب کاربری و تنظیمات کلی (ادغام چهار بخش)
 import { AccountGeneralSection } from "./AccountGeneralSection";
-// PN-008 BLOCK 7 — مدیریت دسترسی کدپرسنلی‌ها (تنظیمات عمومی — فقط مالک)
+// PN-017 (شورا-ن۰۲۱ الف): بخش شاهکار «مدیریت کاربران ملک تبریز» — جایگاه ۸ (جابه‌جایی با دسترسی کارشناسان)
+import { MelkTabrizUsersSection } from "./MelkTabrizUsersSection";
+// PN-017 (شورا-ن۰۲۱ ب): «مدیریت دسترسی کارشناسان ملکا» — جایگاه ۹ (لایهٔ قدیمی PN-008 BLOCK 7)
 import { PersonnelAccessSection } from "./PersonnelAccessSection";
-// PN-016 — مدیریت کاربران پیشرفته (شورا-ن۰۲۰ بند ۵.۲.۴ — فقط مالک)
-import { UsersManagementSection } from "./UsersManagementSection";
 
 export function SettingsPage({ onBack }: TilePageProps) {
   void onBack; // بازگشت از پوستهٔ کاشی مدیریت می‌شود
@@ -64,11 +64,11 @@ export function SettingsPage({ onBack }: TilePageProps) {
       {/* ۷ — حساب کاربری و تنظیمات کلی (ادغام: حساب + تم + زبان + راهنما — گام صفر-۶) */}
       <AccountGeneralSection />
 
-      {/* ۸ — PN-008 BLOCK 7: مدیریت دسترسی کارشناسان (فقط مالک — لایهٔ قدیمی) */}
-      <PersonnelAccessSection />
+      {/* ۸ — PN-017 (دستور مالک ۱۴۰۵/۰۷/۱۹): شاهکار «مدیریت کاربران ملک تبریز» (جایگاه پیشین دسترسی کارشناسان — جابه‌جایی کامل) */}
+      <MelkTabrizUsersSection />
 
-      {/* ۹ — PN-016: مدیریت کاربران پیشرفته (چهار نقش + مهمان — فقط مالک) */}
-      <UsersManagementSection />
+      {/* ۹ — PN-017 (دستور مالک ۱۴۰۵/۰۷/۱۹): «مدیریت دسترسی کارشناسان ملکا» (جایگاه پیشین مدیریت کاربران — جابه‌جایی کامل) */}
+      <PersonnelAccessSection />
 
       {/* اعتبار */}
       <Card>

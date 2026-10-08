@@ -1,0 +1,162 @@
+{
+  "users": {
+    "total": 3,
+    "byRole": {
+      "EXPERT": 2,
+      "OWNER": 1
+    },
+    "rows": [
+      {
+        "personnelCode": "410031338",
+        "mobile": null,
+        "fullName": "سید امیرمحمد سیدی",
+        "role": "EXPERT",
+        "branchTitle": "ملک تبریز",
+        "roleTitleFa": "مشاور فروش",
+        "isActive": true,
+        "lastLoginAt": "2026-10-07T23:05:44.919Z",
+        "permCount": 6,
+        "sessCount": 0,
+        "actCount": 3,
+        "metadata": "{\"source\":\"seed-from-sessions\",\"lastSessionAt\":\"2026-10-06T14:26:52.819Z\"}"
+      },
+      {
+        "personnelCode": "410031319",
+        "mobile": null,
+        "fullName": "نرگس یاوری",
+        "role": "EXPERT",
+        "branchTitle": "ملک تبریز",
+        "roleTitleFa": "مشاور فروش",
+        "isActive": true,
+        "lastLoginAt": "2026-10-07T23:05:44.960Z",
+        "permCount": 6,
+        "sessCount": 0,
+        "actCount": 3,
+        "metadata": "{\"source\":\"seed-from-sessions\",\"lastSessionAt\":\"2026-10-06T10:00:55.619Z\"}"
+      },
+      {
+        "personnelCode": "410031320",
+        "mobile": null,
+        "fullName": "سید نعمت اله سیدی",
+        "role": "OWNER",
+        "branchTitle": "ملک تبریز",
+        "roleTitleFa": "مشاور فروش",
+        "isActive": true,
+        "lastLoginAt": null,
+        "permCount": 0,
+        "sessCount": 0,
+        "actCount": 0,
+        "metadata": "{\"source\":\"seed-from-sessions\",\"lastSessionAt\":\"2026-10-05T19:31:08.465Z\"}"
+      }
+    ]
+  },
+  "pmPersonnel": {
+    "total": 143,
+    "active": 143,
+    "byBranch": {
+      "باغلارباغی": 68,
+      "ارتش": 36,
+      "ملکی تبریزی": 30,
+      "هتل مرمر": 7
+    },
+    "byRoleTitle": {
+      "مشاور فروش": 38,
+      "کارشناس و مشاور فروش": 52,
+      "مسئول خدمات": 3,
+      "مشاور ارشد فروش": 15,
+      "مدیر مالی": 1,
+      "مدیر فناوری": 1,
+      "کارشناس برنامه نویس": 5,
+      "مسئول پشتیبانی": 1,
+      "مدیر فایل و crm": 6,
+      "مدیر قرارداد": 5,
+      "مدیر بازرگانی": 1,
+      "کارشناس نظارت بر سیستم": 2,
+      "کارشناس تولید محتوا": 1,
+      "کارشناس فروش": 6,
+      "مسئول امور قراردادها": 1,
+      "کارشناس شبکه های مجـازی": 1,
+      "مسئول هماهنگی": 1,
+      "مدیر املاک": 1,
+      "مدیر شعبه": 2
+    },
+    "byManager": {
+      "حسین احمدی": 67,
+      "وحید حیدری": 32,
+      "کوروش لطفی وند": 20,
+      "هوشنگ احمدی": 7,
+      "الیار حسامی": 5,
+      "الهه احمدی": 1,
+      "علیرضا قاسمی فر": 6,
+      "تیم بی": 2,
+      "سید احمد سیدحسینی": 1,
+      "رحمان مقدسی": 1
+    },
+    "lastSyncedAt": "2026-10-06T14:24:33.229Z",
+    "sample": [
+      {
+        "personnelCode": "410031310",
+        "fullName": "آرمین طاهرفر",
+        "branchTitle": "باغلارباغی",
+        "roleTitle": "مشاور فروش"
+      },
+      {
+        "personnelCode": "410031175",
+        "fullName": "آرمین یاری",
+        "branchTitle": "باغلارباغی",
+        "roleTitle": "کارشناس و مشاور فروش"
+      },
+      {
+        "personnelCode": "410031321",
+        "fullName": "آیدین  امجدی",
+        "branchTitle": "باغلارباغی",
+        "roleTitle": "مشاور فروش"
+      },
+      {
+        "personnelCode": "410031269",
+        "fullName": "ابراهیم سوار",
+        "branchTitle": "ارتش",
+        "roleTitle": "کارشناس و مشاور فروش"
+      },
+      {
+        "personnelCode": "410031337",
+        "fullName": "احد انصاری",
+        "branchTitle": "ارتش",
+        "roleTitle": "مشاور فروش"
+      }
+    ]
+  },
+  "linkage": {
+    "usersWithPmRecord": [
+      {
+        "code": "410031338",
+        "name": "سید امیرمحمد سیدی"
+      },
+      {
+        "code": "410031319",
+        "name": "نرگس یاوری"
+      },
+      {
+        "code": "410031320",
+        "name": "سید نعمت اله سیدی"
+      }
+    ],
+    "usersWithoutPmRecord": [],
+    "pmPersonnelWithoutUser": 140
+  },
+  "personnelAccess": {
+    "total": 0,
+    "rows": []
+  },
+  "sessions": {
+    "active": 0
+  },
+  "pmConnection": {
+    "connected": true,
+    "status": "connected",
+    "displayName": "سید نعمت اله سیدی",
+    "tokenPresent": true,
+    "lastCheckAt": "2026-10-07T06:06:51.570Z"
+  },
+  "generatedAt": "2026-10-08T07:22:57.584Z"
+}
