@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
   try {
-    const seed = await ensureSeeded(guard.armTokens?.accessToken);
+    const seed = await ensureSeeded(guard.armTokens?.accessToken, { background: true });
     const syncState = await getSyncState();
     const sp = request.nextUrl.searchParams;
 

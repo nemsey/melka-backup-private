@@ -51,6 +51,21 @@ export interface ContractDocData {
     createdAt: string | null;
   } | null;
   property: { title: string | null; address: string | null } | null;
+  // ═══ PN-020/گام اول-ج — شاهکار: شرایط مالی قرارداد فی‌مابین طرفین ═══
+  /** تاریخ سند رسمی (contractSanadDate) */
+  sanadDate?: string | null;
+  /** برچسب فارسی وضعیت معامله (finished/فسخ/…) */
+  txStatusLabel?: string | null;
+  /** جدول کامل پرداخت‌ها + مبالغ جانبی از صورت‌وضعیت خام ARM */
+  paymentSchedule?: {
+    buyerCash: { amount: number; date: string | null; trackingNumber: string | null }[];
+    sellerCash: { amount: number; date: string | null; trackingNumber: string | null }[];
+    buyerChequeCount: number;
+    sellerChequeCount: number;
+    janebiPrice: number | null;
+    edariPrice: number | null;
+    serviceDong: number | null;
+  } | null;
 }
 
 function PartyRow({ label, party }: { label: string; party: ContractDocParty }) {
@@ -61,6 +76,42 @@ function PartyRow({ label, party }: { label: string; party: ContractDocParty }) 
       {party.mobile ? (
         <p className="text-xs text-muted-foreground mt-0.5 font-mono" dir="ltr">{faDigits(party.mobile)}</p>
       ) : null}
+    </div>
+  );
+}
+
+/** PN-020/گام اول-ج — جدول پرداخت‌های یک طرف (نقدی: مبلغ + تاریخ + شماره پیگیری + چک) */
+function PaymentSideTable({
+  title,
+  cash,
+  chequeCount,
+}: {
+  title: string;
+  cash: { amount: number; date: string | null; trackingNumber: string | null }[];
+  chequeCount: number;
+}) {
+  if (cash.length === 0 && chequeCount === 0) return null;
+  const total = cash.reduce((s, p) => s + p.amount, 0);
+  return (
+    <div className="flex-1 border border-neutral-300 rounded-lg p-3">
+      <p className="font-semibold mb-1.5">{title}</p>
+      <table className="w-full text-[11.5px]">
+        <tbody>
+          {cash.map((p, i) => (
+            <tr key={i} className="border-b border-neutral-100 last:border-0">
+              <td className="py-1 font-semibold tabular-nums">{faAmountFull(p.amount, "")}</td>
+              <td className="py-1 text-center text-neutral-700">{p.date ? faDate(p.date) : "—"}</td>
+              <td className="py-1 text-left font-mono text-[10px] text-neutral-600">{p.trackingNumber ? faDigits(p.trackingNumber) : ""}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {chequeCount > 0 && (
+        <p className="text-[11px] mt-1">+ {faNumber(chequeCount)} فقره چک (مجموعه‌شده در سامانه)</p>
+      )}
+      {cash.length > 0 && (
+        <p className="text-[11px] mt-1 font-semibold">جمع نقدی: {faAmountFull(total)}</p>
+      )}
     </div>
   );
 }
@@ -168,6 +219,13 @@ export function ContractFileDialog({
                 <td className="py-1.5 pl-2 font-semibold">نوع قرارداد</td>
                 <td className="py-1.5">{data.contractType ?? "—"}</td>
               </tr>
+              {/* PN-020/گام اول-ج — تاریخ سند + وضعیت معامله (از صورت‌وضعیت خام) */}
+              <tr className="border-b border-neutral-200">
+                <td className="py-1.5 pl-2 font-semibold">تاریخ سند</td>
+                <td className="py-1.5">{data.sanadDate ? faDate(data.sanadDate) : "—"}</td>
+                <td className="py-1.5 pl-2 font-semibold">وضعیت معامله</td>
+                <td className="py-1.5">{data.txStatusLabel ?? "—"}</td>
+              </tr>
               <tr className="border-b border-neutral-200">
                 <td className="py-1.5 pl-2 font-semibold">مبلغ قرارداد</td>
                 <td className="py-1.5 font-bold">{faAmountFull(data.contractAmount)}</td>
@@ -205,6 +263,42 @@ export function ContractFileDialog({
               <p className="font-semibold mb-1">مشخصات ملک</p>
               {data.property.title ? <p>{data.property.title}</p> : null}
               {data.property.address ? <p className="text-xs mt-0.5 text-neutral-700">{data.property.address}</p> : null}
+            </div>
+          )}
+
+          {/* ═══ PN-020/گام اول-ج — شاهکار: شرایط مالی و تعهدات قرارداد فی‌مابین طرفین ═══ */}
+          {data.paymentSchedule && (
+            <div className="mt-3 border-2 border-teal-700 rounded-lg p-3">
+              <p className="font-bold mb-2 text-teal-900">شرایط مالی و تعهدات قرارداد (فی‌مابین خریدار و فروشنده)</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <PaymentSideTable title="پرداخت‌های خریدار" cash={data.paymentSchedule.buyerCash} chequeCount={data.paymentSchedule.buyerChequeCount} />
+                <PaymentSideTable title="پرداخت‌های فروشنده" cash={data.paymentSchedule.sellerCash} chequeCount={data.paymentSchedule.sellerChequeCount} />
+              </div>
+              {/* مبالغ جانبی — عین فیلدهای سامانه مبدأ */}
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[12px]">
+                {(data.paymentSchedule.janebiPrice ?? 0) > 0 && (
+                  <div className="border border-neutral-300 rounded p-2">
+                    <span className="text-neutral-600">قیمت جنبی: </span>
+                    <span className="font-semibold">{faAmountFull(data.paymentSchedule.janebiPrice!)}</span>
+                  </div>
+                )}
+                {(data.paymentSchedule.edariPrice ?? 0) > 0 && (
+                  <div className="border border-neutral-300 rounded p-2">
+                    <span className="text-neutral-600">هزینهٔ اداری: </span>
+                    <span className="font-semibold">{faAmountFull(data.paymentSchedule.edariPrice!)}</span>
+                  </div>
+                )}
+                {(data.paymentSchedule.serviceDong ?? 0) > 0 && (
+                  <div className="border border-neutral-300 rounded p-2">
+                    <span className="text-neutral-600">دنگ خدمات: </span>
+                    <span className="font-semibold">{faAmountFull(data.paymentSchedule.serviceDong!)}</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[10.5px] text-neutral-600 mt-2 leading-5">
+                این شرایط عین فیلدهای ثبت‌شدهٔ «صورت‌وضعیت» معامله در سامانه ملک تبریز است (پرداخت‌های نقدی با تاریخ و شماره پیگیری، چک‌ها،
+                مبالغ جنبی/اداری/دنگ خدمات) — هیچ عددی ساخته یا تغییر نمی‌کند.
+              </p>
             </div>
           )}
 

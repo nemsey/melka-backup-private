@@ -60,6 +60,10 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
   const { toast } = useToast();
   const [syncing, setSyncing] = useState(false);
   const [job, setJob] = useState<TxSyncResponse["job"]>(null);
+  // PN-020/گام اول-ج۲ — سیگنال پایان سنک برای بارگذاری خودکار فهرست
+  // (ریشه‌یابی «تاخیر در بروزرسانی فهرست»: پیش از این پس از پایان کار پس‌زمینه،
+  // فهرست خودش تازه نمی‌شد و مالک باید دستی رفرش می‌کرد)
+  const [syncDoneSignal, setSyncDoneSignal] = useState(0);
   // P6530/گام ۳ (بند ۴.۲) — تاریخ و ساعت دقیق آخرین بروزرسانی داده‌های معاملات
   const freshness = useTileFreshness("transactions-contracts");
   const [lastSuccessAt, setLastSuccessAt] = useState<string | null>(null);
@@ -92,6 +96,8 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
             pollTimer.current = null;
             setSyncing(false);
             void loadLastUpdate();
+            // PN-020/گام اول-ج۲ — فهرست بلافاصله پس از پایان موفق/توقف کار تازه می‌شود
+            setSyncDoneSignal((n) => n + 1);
             toast({
               title: res.job.status === "done" ? "بروزرسانی معاملات کامل شد" : "بروزرسانی متوقف شد",
               description:
@@ -219,7 +225,7 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
       <AgentPanel tileId="transactions-contracts" />
 
       {/* تک‌نمای فهرست معاملات — بخش بروزرسانی به‌عنوان prop (ترتیب الزامی: بینش‌ها → جداول → پوشش → بروزرسانی → فیلتر → فهرست) */}
-      <TransactionsTab sortBy={sortBy} showCharts={showCharts} updateSection={updateSection} />
+      <TransactionsTab sortBy={sortBy} showCharts={showCharts} updateSection={updateSection} syncDoneSignal={syncDoneSignal} />
     </div>
   );
 };

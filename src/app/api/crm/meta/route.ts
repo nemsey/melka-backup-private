@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // کش فقط با داده واقعی سامانه ملک تبریز پر می‌شود
-    await ensureSeeded(guard.armTokens?.accessToken);
+    await ensureSeeded(guard.armTokens?.accessToken, { background: true });
     const { roles, businesses, creators } = await getExpertRepository().distinctFilterFields();
 
     return Response.json({

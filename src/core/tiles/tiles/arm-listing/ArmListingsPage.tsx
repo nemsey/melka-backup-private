@@ -3,11 +3,14 @@
 /**
  * کاشی «آگهی ملک تبریز» — صفحه داخلی (P6.5-10 + P6521/M1 + P6530/گام ۱)
  * ------------------------------------------------------
- * فهرست ده‌ستونی عین دستور مالک (گام ۱ — بند الف):
+ * فهرست ستون‌ها (PN-020/گام اول-الف — سه ستون به دستور مالک حذف شد:
+ *   آخرین وضعیت (status ده‌حالتهٔ ARM) + تصاویر + انتشار؛ بینش توزیع وضعیت
+ *   و فیلتر وضعیت بالای فهرست باقی است — داده حذف نمی‌شود، فقط ستون):
  *   ردیف · کد آگهی · کارشناس · شعبه · مالک (نام + موبایل زیر نام) ·
- *   قیمت ملک (کاما + تومان — نکته ۳) · آدرس ملک (منطقه، کوی، پلاک) ·
+ *   قیمت ملک (کاما + تومان — نکته ۳) · قیمت هر متر · آدرس ملک (منطقه، کوی، پلاک) ·
+ *   نوع ملک · متراژ · اتاق · طبقه · ساخت (سال — PN-020: بدون کاما) ·
  *   دسته‌بندی (فروش/پیش فروش/رهن و اجاره/مشارکت در ساخت — نکته ۴) ·
- *   وضعیت (ده‌حالته — نکته ۳) · آخرین فعالیت
+ *   آخرین فعالیت · رهن/اجاره · بازدید · تاریخ وضعیت · لینک
  *
  * فیلتر بر اساس تمام ستون‌های فهرست (بند ۲): کد · کارشناس · شعبه ·
  * مالک (نام/موبایل) · قیمت از/تا · آدرس/منطقه · دسته‌بندی · وضعیت ·
@@ -41,7 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RotateCcw, Search, Home, Users, Phone, MapPin, RefreshCw, Hash, CheckCircle2, Clock,
   Landmark, Building2, PieChart, Banknote, Tag, History, Network, Filter, Ruler, BedDouble, Layers,
-  CalendarDays, TrendingUp, Award, MapPinned, Globe, FileSpreadsheet, Eye, Image as ImageIcon, ExternalLink,
+  CalendarDays, TrendingUp, Award, MapPinned, Globe, FileSpreadsheet, Eye, ExternalLink,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup } from "@/components/app/shared";
@@ -57,8 +60,6 @@ import { normalizeFilterInput } from "@/lib/normalize-input";
 import {
   LISTING_STATES,
   LISTING_STATE_BY_KEY,
-  classifyListingStatus,
-  listingStatusLabel,
   type ListingStateKey,
 } from "@/lib/listing-status";
 import { TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
@@ -836,13 +837,11 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-16">طبقه</TableHead>
                     <TableHead className="min-w-20">ساخت</TableHead>
                     <TableHead className="min-w-24">دسته‌بندی</TableHead>
-                    <TableHead className="min-w-28">وضعیت</TableHead>
                     <TableHead className="min-w-28">آخرین فعالیت</TableHead>
                     {/* PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM */}
                     <TableHead className="min-w-20">رهن / اجاره</TableHead>
                     <TableHead className="min-w-16">بازدید</TableHead>
-                    <TableHead className="min-w-16">تصاویر</TableHead>
-                    <TableHead className="min-w-20">انتشار</TableHead>
+                    {/* PN-020/گام اول-الف — ستون‌های «تصاویر» و «انتشار» و «آخرین وضعیت» به دستور مالک حذف شدند */}
                     <TableHead className="min-w-24">تاریخ وضعیت</TableHead>
                     <TableHead className="min-w-16">لینک</TableHead>
                   </TableRow>
@@ -850,7 +849,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
                 <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
                   {(r, i) => {
-                    const stateKey = classifyListingStatus(r.status);
+                    // PN-020/گام اول-الف — stateKey/ستون وضعیت حذف شد؛ classify فقط در فیلتر/بینش (بالای فهرست) کار دارد
                     return (
                       <TableRow key={r.id}>
                         {/* ۱ — ردیف */}
@@ -984,18 +983,19 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۷-ج — سال ساخت */}
+                        {/* ۷-ج — سال ساخت (PN-020/گام اول-الف: بدون کاما — سال با جداکنندهٔ هزارگان «۱،۴۰۳» غلط است) */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.buildYear === "number" && r.buildYear > 0 ? (
                             <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium">
                               <CalendarDays className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
-                              {faNumber(r.buildYear)}
+                              {faDigits(r.buildYear)}
                             </span>
                           ) : (
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۸ — دسته‌بندی (نکته ۴) */}
+                        {/* ۸ — دسته‌بندی (نکته ۴) — PN-020/گام اول-الف: ستون «آخرین وضعیت» (status ده‌حالتهٔ ARM) به دستور مالک حذف شد؛
+                            بینش توزیع وضعیت + فیلتر وضعیت بالای فهرست باقی است و دادهٔ status در API/خروجی اکسل دست‌نخورده است */}
                         <TableCell className="whitespace-nowrap">
                           {r.tradeTypeName ? (
                             <Badge variant="secondary" className={`gap-1 text-[11px] border-0 ${valueSoftClass(r.tradeTypeName)}`}>
@@ -1003,22 +1003,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             </Badge>
                           ) : (
                             <span className="text-muted-foreground text-[11px]">در نوبت تکمیل</span>
-                          )}
-                        </TableCell>
-                        {/* ۹ — وضعیت (ده‌حالته) */}
-                        <TableCell>
-                          {r.status ? (
-                            stateKey ? (
-                              <Badge variant="secondary" className={`text-[11px] border ${listingStateBadgeClass(stateKey)}`} title={LISTING_STATE_BY_KEY.get(stateKey)?.hint}>
-                                {LISTING_STATE_BY_KEY.get(stateKey)!.label}
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-[11px]" title="خارج از ده‌حالتهٔ اصلی — عین متن سامانه ARM">
-                                {listingStatusLabel(r.status)}
-                              </Badge>
-                            )
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
                         {/* ۱۰ — آخرین فعالیت */}
@@ -1040,7 +1024,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">{r.isRental ? "اجاره‌ای" : "—"}</span>
                           )}
                         </TableCell>
-                        {/* ۱۲ — بازدید */}
+                        {/* ۱۳-ب — بازدید (PN-020/گام اول-الف: ستون‌های «تصاویر» و «انتشار» پس از این حذف شدند) */}
                         <TableCell className="text-center">
                           {typeof r.viewCount === "number" ? (
                             <span className="inline-flex items-center gap-1 tabular-nums font-medium" title="تعداد بازدید آگهی در سامانه ARM">
@@ -1049,24 +1033,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                           ) : (
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
-                        </TableCell>
-                        {/* ۱۳ — تصاویر */}
-                        <TableCell className="text-center">
-                          {typeof r.imageCount === "number" && r.imageCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium" title="تعداد تصاویر آگهی">
-                              <ImageIcon className="w-3 h-3 text-sec-m1-700" aria-hidden /> {faNumber(r.imageCount)}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">—</span>
-                          )}
-                        </TableCell>
-                        {/* ۱۴ — انتشار (دیوار/اینستا) */}
-                        <TableCell className="text-center">
-                          <span className="inline-flex items-center gap-1 justify-center" title="وضعیت انتشار در سامانه‌های بیرونی">
-                            {r.addedToDivar === true && <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-sec-m1-300 bg-sec-m1-50">دیوار</Badge>}
-                            {r.addedToInsta === true && <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-sec-m1-300 bg-sec-m1-50">اینستا</Badge>}
-                            {r.addedToDivar !== true && r.addedToInsta !== true && <span className="text-muted-foreground text-[10px]">—</span>}
-                          </span>
                         </TableCell>
                         {/* ۱۵ — تاریخ وضعیت */}
                         <TableCell className="text-muted-foreground whitespace-nowrap text-[10px]">

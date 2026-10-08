@@ -12,7 +12,7 @@
  * تک‌صفحه‌ای و بی‌نهایت (P6.5-09) — همهٔ ردیف‌ها در یک پاسخ واحد.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,8 @@ import {
   Inbox,
   ChevronDown,
   FileSpreadsheet,
+  // PN-020/گام اول-ج — آیکون ستون شرایط پرداخت
+  Banknote,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -61,6 +63,8 @@ import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { ContractFileDialog, type ContractDocData } from "./ContractFileDialog";
+// PN-020/گام اول-ج۱ — برچسب فارسی وضعیت معامله از لایهٔ غنی‌سازی
+import { txStatusLabel } from "@/lib/melk-api/tx-enrichment";
 // P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
 import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
 import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
@@ -117,6 +121,38 @@ interface TxRow {
     createdAt: string | null;
   } | null;
   contractMatchBy: "holo" | "propertyCode" | "requestCode" | null;
+  // ---- PN-020/گام اول-ج۱ — ستون‌های تازه از صورت‌وضعیت خام ARM ----
+  /** عنوان ملک معامله‌شده (property.title — پوشش ۱۰۰٪) */
+  propertyTitle: string | null;
+  /** آدرس ملک (tooltip ستون عنوان ملک) */
+  propertyAddress: string | null;
+  /** وضعیت معامله در مبدأ (کلید خام — برچسب/رنگ در UI از txStatusLabel/valueSoftClass) */
+  txStatus: string | null;
+  /** تاریخ سند رسمی (contractSanadDate — ISO) */
+  sanadDate: string | null;
+  /** حق‌الزحمه (کمیسیون) کل قرارداد — تومان */
+  comisionOfContract: number | null;
+  /** مالیات قرارداد — تومان (tooltip ستون حق‌الزحمه) */
+  taxOfContract: number | null;
+  /** خلاصهٔ شرایط پرداخت (نقد/چک طرفین) */
+  paymentTerms: {
+    buyerCashCount: number;
+    buyerCashTotal: number;
+    sellerCashCount: number;
+    sellerCashTotal: number;
+    buyerChequeCount: number;
+    sellerChequeCount: number;
+  } | null;
+  /** جدول کامل پرداخت‌ها برای سند قرارداد */
+  paymentSchedule: {
+    buyerCash: { amount: number; date: string | null; trackingNumber: string | null }[];
+    sellerCash: { amount: number; date: string | null; trackingNumber: string | null }[];
+    buyerChequeCount: number;
+    sellerChequeCount: number;
+    janebiPrice: number | null;
+    edariPrice: number | null;
+    serviceDong: number | null;
+  } | null;
 }
 
 interface Summary {
@@ -162,7 +198,7 @@ interface TxResponse {
 
 const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
 
-export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode }) {
+export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSignal }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode; syncDoneSignal?: number }) {
   // PN-009 مرحله E — لحن‌های معنایی از رجیستری: مبایعه‌نامه=سبز، اجاره=بنفش (هم‌خانوادهٔ چیپ/ستون)
   const saleTone = valueIconPair("مبایعه‌نامه");
   const rentTone = valueIconPair("اجاره");
@@ -212,6 +248,15 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
     errorTitle: "خطا در دریافت معاملات",
     errorValue: (prev) => (prev ? { ...prev, rows: [] } : { ...EMPTY_RESPONSE }),
   });
+
+  // PN-020/گام اول-ج۲ — بارگذاری خودکار پس از پایان بروزرسانی پس‌زمینه:
+  // سیگنال شمارنده‌ای از والد (صفحهٔ کاشی) — هر تغییر (۱→۲→…) فهرست را تازه می‌کند.
+  // مقدار ۰ اولیه نادیده گرفته می‌شود (بار اول خود useTileData می‌کشد).
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+  useEffect(() => {
+    if (syncDoneSignal && syncDoneSignal > 0) void reloadRef.current();
+  }, [syncDoneSignal]);
 
   const rows = data?.rows ?? null;
   const summary = data?.summary ?? null;
@@ -311,7 +356,13 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
             createdAt: t.agency.createdAt,
           }
         : null,
-      property: null,
+      // PN-020/گام اول-ج — مشخصات ملک + شرایط مالی قرارداد (شاهکار)
+      property: { title: t.propertyTitle, address: t.propertyAddress },
+      sanadDate: t.sanadDate,
+      txStatusLabel: txStatusLabel(t.txStatus),
+      comisionOfContract: t.comisionOfContract,
+      taxOfContract: t.taxOfContract,
+      paymentSchedule: t.paymentSchedule,
     });
     setContractOpen(true);
   };
@@ -641,13 +692,15 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
             <Table>
                 <TableHeader>
                   <TableRow>
-                    {/* ترتیب الزامی E.۱ — ۱۱ ستون */}
+                    {/* ترتیب الزامی E.۱ — ۱۶ ستون (۱۱ اصلی + ۵ تازهٔ PN-020/گام اول-ج) */}
                     <TableHead className="w-12">ردیف</TableHead>
                     <TableHead>تاریخ معامله</TableHead>
                     {/* ۳ — کد ملک: فقط کد (E.۲ — دستور ۱ مالک) */}
                     <TableHead className="min-w-24">
                       <span className="inline-flex items-center gap-1"><Home className="w-3.5 h-3.5" aria-hidden /> کد ملک</span>
                     </TableHead>
+                    {/* ۳-ب — عنوان ملک (PN-020/گام اول-ج — property.title صورت‌وضعیت، پوشش ۱۰۰٪) */}
+                    <TableHead className="min-w-40">عنوان ملک</TableHead>
                     {/* ۴ — فروشنده: نام + موبایل زیر نام (E.۴) */}
                     <TableHead className="min-w-40">فروشنده</TableHead>
                     {/* ۵ — کد درخواست: فقط کد (E.۳ — دستور ۲ مالک) */}
@@ -660,8 +713,16 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                     <TableHead>نوع قرارداد</TableHead>
                     {/* ۸ — مبلغ قرارداد (با کاما) */}
                     <TableHead className="min-w-40">قیمت</TableHead>
+                    {/* ۸-ب — شرایط پرداخت (PN-020/گام اول-ج — شاهکار: نقد/چک طرفین) */}
+                    <TableHead className="min-w-36">شرایط پرداخت</TableHead>
+                    {/* ۸-پ — تاریخ سند (contractSanadDate — پوشش ۱۰۰٪) */}
+                    <TableHead>تاریخ سند</TableHead>
+                    {/* ۸-ت — وضعیت معامله (رنگی از رجیستری) */}
+                    <TableHead className="min-w-28">وضعیت معامله</TableHead>
                     {/* ۹ — تجمیع حق‌السهم مشاوران (نام + درصد) */}
                     <TableHead className="min-w-48">تجمیع حق‌السهم مشاوران</TableHead>
+                    {/* ۹-ب — حق‌الزحمه (کمیسیون + مالیات در tooltip) */}
+                    <TableHead className="min-w-32">حق‌الزحمه</TableHead>
                     {/* ۱۰ — شماره هولوگرام */}
                     <TableHead>شماره هولوگرام</TableHead>
                     {/* ۱۱ — فایل قرارداد */}
@@ -686,6 +747,19 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                           مالک = فروشنده و در ستون فروشنده می‌آید) */}
                       <TableCell className="text-xs whitespace-nowrap">
                         <code className="font-mono font-semibold" dir="ltr">{faDigits(t.propertyCode)}</code>
+                      </TableCell>
+                      {/* ۳-ب — عنوان ملک (PN-020/گام اول-ج — عین عنوان ثبت‌شده در سامانه؛ آدرس کامل در tooltip) */}
+                      <TableCell className="whitespace-normal max-w-48">
+                        {t.propertyTitle ? (
+                          <span
+                            className="text-[11px] font-medium leading-relaxed"
+                            title={t.propertyAddress ? `${t.propertyTitle}\n${t.propertyAddress}` : t.propertyTitle}
+                          >
+                            {t.propertyTitle}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">—</span>
+                        )}
                       </TableCell>
                       {/* ۴ — فروشنده: نام + موبایل زیر نام (E.۴ — fallback به مالک در لایهٔ غنی‌سازی) */}
                       <TableCell className="whitespace-normal">
@@ -746,6 +820,55 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                           <span className="text-muted-foreground font-normal">—</span>
                         )}
                       </TableCell>
+                      {/* ۸-ب — شرایط پرداخت (PN-020/گام اول-ج — شاهکار ستون تازه):
+                          خلاصهٔ نقد/چک طرفین از صورت‌وضعیت خام؛ جزئیات کامل در فایل قرارداد */}
+                      <TableCell className="whitespace-nowrap">
+                        {t.paymentTerms ? (
+                          <span
+                            className="inline-flex flex-col items-center gap-0.5 text-[10px] leading-tight"
+                            title={[
+                              t.paymentTerms.buyerCashCount > 0 ? `نقدی خریدار: ${faNumber(t.paymentTerms.buyerCashCount)} فقره — ${faAmountFull(t.paymentTerms.buyerCashTotal)}` : null,
+                              t.paymentTerms.sellerCashCount > 0 ? `نقدی فروشنده: ${faNumber(t.paymentTerms.sellerCashCount)} فقره — ${faAmountFull(t.paymentTerms.sellerCashTotal)}` : null,
+                              t.paymentTerms.buyerChequeCount > 0 ? `چک خریدار: ${faNumber(t.paymentTerms.buyerChequeCount)} فقره` : null,
+                              t.paymentTerms.sellerChequeCount > 0 ? `چک فروشنده: ${faNumber(t.paymentTerms.sellerChequeCount)} فقره` : null,
+                              (t.paymentSchedule?.janebiPrice ?? 0) > 0 ? `قیمت جنبی: ${faAmountFull(t.paymentSchedule!.janebiPrice!)}` : null,
+                              (t.paymentSchedule?.serviceDong ?? 0) > 0 ? `دنگ خدمات: ${faAmountFull(t.paymentSchedule!.serviceDong!)}` : null,
+                            ].filter(Boolean).join("\n")}
+                          >
+                            {t.paymentTerms.buyerCashCount > 0 && (
+                              <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300" title="پرداخت‌های نقدی خریدار">
+                                <Banknote className="w-3 h-3" aria-hidden /> خریدار {faNumber(t.paymentTerms.buyerCashCount)} فقره
+                              </span>
+                            )}
+                            {t.paymentTerms.sellerCashCount > 0 && (
+                              <span className="inline-flex items-center gap-1 text-violet-700 dark:text-violet-300" title="پرداخت‌های نقدی فروشنده">
+                                <Banknote className="w-3 h-3" aria-hidden /> فروشنده {faNumber(t.paymentTerms.sellerCashCount)} فقره
+                              </span>
+                            )}
+                            {(t.paymentTerms.buyerChequeCount > 0 || t.paymentTerms.sellerChequeCount > 0) && (
+                              <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300" title="چک‌های صادره طرفین">
+                                <FileCheck2 className="w-3 h-3" aria-hidden /> چک {faNumber(t.paymentTerms.buyerChequeCount + t.paymentTerms.sellerChequeCount)} فقره
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">ثبت نشده</span>
+                        )}
+                      </TableCell>
+                      {/* ۸-پ — تاریخ سند (contractSanadDate — تاریخ تنظیم سند رسمی) */}
+                      <TableCell className="text-xs whitespace-nowrap font-medium">
+                        {t.sanadDate ? faJalaliShort(t.sanadDate) : <span className="text-muted-foreground font-normal">—</span>}
+                      </TableCell>
+                      {/* ۸-ت — وضعیت معامله (رنگی از رجیستری — تکمیل=سبز · فسخ=سرخ · انتظار=کهربایی) */}
+                      <TableCell className="whitespace-nowrap">
+                        {(() => { const label = txStatusLabel(t.txStatus); return label ? (
+                          <Badge variant="secondary" className={`text-[10px] border-0 ${valueSoftClass(label)}`} title={`وضعیت در سامانه ملک تبریز: ${t.txStatus}`}>
+                            {label}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">—</span>
+                        ); })()}
+                      </TableCell>
                       {/* ۹ — تجمیع حق‌السهم مشاوران — نام + شعبه + درصد (P6547/گام سوم-۴: قالب «سراج میزانی ارتش ۲۵٪») */}
                       <TableCell className="whitespace-normal">
                         {t.consultantsShareSummary && t.consultantsShareSummary.shares.length > 0 ? (
@@ -771,6 +894,21 @@ export function TransactionsTab({ sortBy, showCharts, updateSection }: { sortBy:
                           </div>
                         ) : (
                           <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      {/* ۹-ب — حق‌الزحمه (PN-020/گام اول-ج — comisionOfContract؛ مالیات در tooltip) */}
+                      <TableCell className="text-xs whitespace-nowrap font-semibold">
+                        {t.comisionOfContract !== null && t.comisionOfContract > 0 ? (
+                          <span
+                            title={[
+                              `حق‌الزحمه (کمیسیون) قرارداد: ${faAmountFull(t.comisionOfContract)}`,
+                              t.taxOfContract !== null && t.taxOfContract > 0 ? `مالیات قرارداد: ${faAmountFull(t.taxOfContract)}` : null,
+                            ].filter(Boolean).join("\n")}
+                          >
+                            {faAmountFull(t.comisionOfContract, "")}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground font-normal">—</span>
                         )}
                       </TableCell>
                       {/* ۱۰ — شماره هولوگرام (متن) */}
