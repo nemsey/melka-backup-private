@@ -118,10 +118,14 @@ describe("PN-018/T2+T3 · نرمال‌ساز دامنه‌دار سامانهٔ
 
 /* ═══════ C) گارد سرریز Int32 ═══════ */
 describe("PN-018/T2+T3 · گارد audit-int-overflow.sh", () => {
-  test("روی دادهٔ ترمیم‌شده: PASS (خروج ۰)", () => {
+  test("روی دادهٔ ترمیم‌شده: PASS (خروج ۰) با پوشش کامل ستون‌ها", () => {
     const out = execSync("bash scripts/audit-int-overflow.sh", { encoding: "utf8" });
     expect(out).toContain("PASS");
-    expect(out).toContain("46 ستون Int"); // پوشش کامل پس از ترمیم regex (قبلاً ۳۳ ناقص بود)
+    // پوشش کامل: ≥۴۶ ستون (۴۶ در زمان نوشتن تست؛ با مدل‌های تازهٔ PN-018: ۵۱) — حداقل تضمینی
+    const m = out.match(/بررسی شد: (\d+) ستون Int از (\d+) مدل/);
+    expect(m).not.toBeNull();
+    expect(Number(m![1])).toBeGreaterThanOrEqual(46);
+    expect(Number(m![2])).toBeGreaterThanOrEqual(18);
   });
 
   test("دریل منفی: تزریق ۹۹٬۹۹۹٬۹۹۹٬۹۹۹ در floor → FAIL (خروج ۱)", () => {

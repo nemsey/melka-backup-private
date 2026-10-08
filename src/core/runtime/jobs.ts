@@ -51,6 +51,7 @@ export const WORKER_JOB_IDS = {
   sizeGuard: "size-guard",
   previewGuard: "preview-guard",
   resetGuard: "reset-guard",
+  driftGuard: "drift-guard",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -265,6 +266,27 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
           return { code: check.code, verdict: "RESET-DETECTED", recoveryCode: rec.code, recoveryStderr: rec.stderr.slice(0, 400) };
         }
         return { code: check.code, verdict: check.code === 0 ? "HEALTHY" : "ERROR" };
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Drift Guard → Worker (تازه — PN-018 فاز ۷: آشکارساز رانش سه‌گانه) ──
+  // هر ۶ ساعت برای هر مدل قهرمان: رانش عملکرد/داده/مفهوم روی دادهٔ واقعی؛
+  // کنش alert+ هشدار AuditLog می‌گیرد (روت drift-service). اگر مدل قهرمانی
+  // نباشد، اجرا «بدون مدل» خاتمه می‌یابد (عین سایر گاردها — شکست = لاگ نه کرش).
+  if (process.env.MELK_DRIFT_GUARD !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.driftGuard,
+      title: "گارد رانش سه‌گانه (PN-018 فاز ۷)",
+      intervalMs: Number(process.env.MELK_DRIFT_INTERVAL_H ?? 6) * 60 * 60_000,
+      firstRunDelayMs: 60_000,
+      run: async () => {
+        const { driftGuardTick } = await import("@/lib/services/learning-loop-service");
+        return driftGuardTick();
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

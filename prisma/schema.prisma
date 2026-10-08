@@ -1184,6 +1184,62 @@ model UserSession {
   @@index([userId, isActive])
 }
 
+/// PN-018 (فاز ۷ — شورا-ن۰۲۲) — رجیستری نسخه‌های مدل: Champion/Challenger.
+/// هر مدل دامنه‌ای چند نسخه دارد؛ در هر لحظه حداکثر یک champion.
+/// ارتقا (promote) و بازگشت (rollback) فقط با تأیید شورا (سند ۰۲۷ §۲.۴).
+model ModelVersion {
+  id              String    @id @default(cuid())
+  /// شناسهٔ پایدار مدل (مثل melka-property-v3 — از رجیستری مدل‌ها)
+  modelId         String
+  /// شمارهٔ نسخه — یکتا در دامنهٔ مدل
+  version         Int
+  /// champion | challenger | retired | rejected (اعتبارسنجی سطح-اپ)
+  status          String    @default("challenger")
+  /// امتیاز Brier ارزیابی سایه (null = هنوز ارزیابی نشده)
+  brierScore      Float?
+  /// نمونه‌های ارزیابی‌شده (پیش‌شرط §۲.۴: ≥۵۰)
+  sampleSize      Int       @default(0)
+  /// طول پنجرهٔ ارزیابی به روز (پیش‌شرط §۲.۴: ≥۷)
+  windowDays      Int       @default(0)
+  /// وزن‌های آموخته — عین خروجی LearningEngine (فقط اعداد)
+  weightsJson     String?
+  /// آیا Brier از نقشهٔ کالیبراسیون مصوب گذشته است؟
+  calibrated      Boolean   @default(false)
+  /// دروازهٔ شورا — ارتقای بدون تأیید ممنوع (قید مطلق)
+  councilApproved Boolean   @default(false)
+  /// منبع تأیید (شماره سند/جلسهٔ شورا)
+  approvalSource  String?
+  promotedAt      DateTime?
+  retiredAt       DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([modelId, version])
+  @@index([modelId, status])
+}
+
+/// PN-018 (فاز ۷) — تاریخ آشکارسازی رانش سه‌گانه (داده/مفهوم/عملکرد).
+/// append-only: هر اجرای ۶ساعتهٔ Worker حداکثر سه ردیف تازه — تاریخ روند حفظ می‌شود.
+model DriftCheck {
+  id            String   @id @default(cuid())
+  modelId       String
+  /// performance | data | concept
+  driftType     String
+  /// ۰..۱
+  magnitude     Float
+  /// monitor | alert | retrain | escalate
+  action        String
+  rationale     String
+  pairsBaseline Int      @default(0)
+  pairsRecent   Int      @default(0)
+  /// زنجیرهٔ شاهد عین موتور
+  evidenceJson  String?
+  checkedAt     DateTime @default(now())
+
+  @@index([modelId, checkedAt])
+}
+
 /// P6.5-12 — رجیستری کارگزاری‌های صادره (special-properties سامانه ARM).
 /// هر «کارگزاری» = قرارداد نمایندگی میان مشاور و مالک برای یک ملک؛
 /// فایل PDF آن در خود سامانه ARM هم «تولیدی از همین داده» است (چاپ کارگزاری صادر شده).

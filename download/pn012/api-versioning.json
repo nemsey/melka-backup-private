@@ -1,13 +1,33 @@
 {
   "schema": "melka-pn012-api-versioning",
-  "generatedAt": "2026-10-08T07:40:00.000Z",
+  "generatedAt": "2026-10-08T10:10:00.000Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 79,
-  "created": 69,
+  "totalRoutes": 84,
+  "created": 74,
   "routes": [
+    {
+      "aliasOf": "/api/admin/drift-checks",
+      "v1": "/api/v1/admin/drift-checks"
+    },
     {
       "aliasOf": "/api/admin/melk-users",
       "v1": "/api/v1/admin/melk-users"
+    },
+    {
+      "aliasOf": "/api/admin/model-versions",
+      "v1": "/api/v1/admin/model-versions"
+    },
+    {
+      "aliasOf": "/api/admin/model-versions/[id]/promote",
+      "v1": "/api/v1/admin/model-versions/[id]/promote"
+    },
+    {
+      "aliasOf": "/api/admin/model-versions/[id]/reject",
+      "v1": "/api/v1/admin/model-versions/[id]/reject"
+    },
+    {
+      "aliasOf": "/api/admin/model-versions/[id]/rollback",
+      "v1": "/api/v1/admin/model-versions/[id]/rollback"
     },
     {
       "aliasOf": "/api/admin/personnel-access",
@@ -332,5 +352,5 @@
     ],
     "previousAmendment": "PN-013 مرحلهٔ ۶ (runtime/metrics ۶۸→۶۹) — سابقهٔ کامل در بسته‌های بقا"
   },
-  "note": "PN-017: +/api/admin/melk-users (دفترچهٔ چندوجهی مدیریت کاربران ملک تبریز) — 78→79"
+  "note": "PN-018 فاز ۷: +۵ مسیر نسخه‌بندی مدل/رانش — ۷۹→۸۴"
 }

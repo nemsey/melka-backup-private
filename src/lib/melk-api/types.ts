@@ -572,6 +572,10 @@ export type MelkErrorCode =
   | "DB_DOWN"
   | "NOT_FOUND"
   | "CONNECTION_RESET"
+  // PN-018 فاز ۷ — دروازهٔ شورا و چرخهٔ عمر نسخهٔ مدل
+  | "NOT_A_CHALLENGER"
+  | "COUNCIL_APPROVAL_REQUIRED"
+  | "SHADOW_CRITERIA_NOT_MET"
   | "UNKNOWN";
 
 export class MelkApiError extends Error {
