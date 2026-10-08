@@ -189,12 +189,13 @@ describe("P8/بخش ۲ — Action Planner", () => {
     expect(sim.bottlenecks.length).toBeGreaterThan(0);
     expect(sim.bottlenecks[0]).toContain("مالک");
   });
-  test("۲-۱۷ estimateImpact: تعدیل قیمت بیشترین اثر", () => {
+  test("۲-۱۷ estimateImpact: تعدیل قیمت بیشترین اثر (PN-020/H3 — با ضریب اطمینان تصمیم)", () => {
     const pl = planner();
     const d = makeRecord({ decisionType: "adjust_price" });
     const imp = pl.estimateImpact(pl.plan(d), d);
-    expect(imp.liftPercent).toBe(25);
-    expect(imp.rationale).toContain("25٪");
+    // منبع یگانه: پایهٔ ۲۵ × ضریب (۰.۵ + ۰.۷/۲) = ۲۱.۳ (قبلاً ثابت ۲۵ بود — H3)
+    expect(imp.liftPercent).toBe(21.3);
+    expect(imp.rationale).toContain("21.3٪");
   });
   test("۲-۱۸ estimateImpact: انتظار هوشمند اثر صفر صادقانه", () => {
     const pl = planner();

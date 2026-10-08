@@ -96,6 +96,9 @@ bash scripts/audit-governance.sh > /tmp/pn019-ci-audit13.log 2>&1 || { echo "✗
 tail -1 /tmp/pn019-ci-audit13.log
 bash scripts/audit-policy-evaluation.sh > /tmp/pn019-ci-audit14.log 2>&1 || { echo "✗ گام ۵-ن: policy-evaluation (ارزیابی سیاست)"; tail -8 /tmp/pn019-ci-audit14.log; exit 1; }
 tail -1 /tmp/pn019-ci-audit14.log
+# PN-020/H2 — گارد فضای دیسک (راه‌حل ساختاری چهارمین ENOSPC — هرس واقعی + داوری):
+bash scripts/audit-disk-space.sh > /tmp/pn020-ci-audit15.log 2>&1 || { echo "✗ گام ۵-س: disk-space (فضای دیسک + هرس نسل‌ها)"; tail -8 /tmp/pn020-ci-audit15.log; exit 1; }
+tail -2 /tmp/pn020-ci-audit15.log
 
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"

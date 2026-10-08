@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-10-09T00:00:00Z",
+  "workOrder": "PN-020/مرحلهٔ ۱ — H2: گارد فضای دیسک + هرس خودکار (راه‌حل ساختاری چهارمین ENOSPC — مصوبهٔ جلسهٔ شورای ۰۲۴)",
+  "before": {
+    "diskFreePercent": 23.1,
+    "diskFreeGB": 2.3,
+    "survivalStagingGenerations": 10,
+    "deliverPartGenerations": 10,
+    "totalFlatPartSizeGB": 3.4
+  },
+  "actions": [
+    { "item": "۱. گارد Worker (هر ۱ ساعت)", "implementation": "کار سیزدهم disk-guard در رجیستری Worker — سنجش statfs + هشدار <۲۰٪ + بحرانی <۱۰٪ + ثبت INFRA_ALERT" },
+    { "item": "۲. هرس خودکار بستهٔ بقا — نگه‌داشت ۵ نسل آخر", "implementation": "هر دو مکان: پوشه‌های کار upload/.survival + قطعات deliver-store/*-survival-part*.bin — فراداده‌های سبک (ALL.zip/SHA256SUMS/REJOIN/REPORT/MANIFEST) همیشه می‌مانند" },
+    { "item": "۳. هرس خودکار download/ — نگه‌داشت ۳ نسل آخر", "implementation": "فقط فایل‌های ردیابی‌نشدهٔ git — قید صفر-شکست تاریخچه: شواهد ردیابی‌شده (۲۹۰ فایل) هرگز حذف نمی‌شوند" },
+    { "item": "۴. حذف خودکار .next/standalone قدیمی قبل از بیلد", "implementation": "scripts/park-deliver.sh park — پاک‌سازی standalone کهنه + پارک deliver-store در یک گام" },
+    { "item": "۵. الگوی پارک استاندارد در همهٔ بیلدها", "implementation": "scripts/park-deliver.sh park|restore — الگوی مستند درس چهارم به اسکریپت رسمی تبدیل شد + درس پنجم در BUILD-DISCIPLINE.md" }
+  ],
+  "firstRunLiveResult": {
+    "prunedSurvivalStagingDirs": ["PN-010-20261006", "PN-011-20261007", "PN-012-20261007", "PN-013-20261007"],
+    "prunedDeliverPartFiles": 27,
+    "prunedDownloadDirs": 0,
+    "freedMB": 2758.6,
+    "afterDiskFreePercent": 35.3,
+    "afterDiskFreeGB": 3.5,
+    "keptSurvivalGenerations": ["PN-015", "pn016", "pn017", "pn018", "pn019"],
+    "keptMetadata": "همهٔ ALL.zip + SHA256SUMS + REJOIN + گزارش‌ها + پوشه‌های شاهد deliver-store/pnXXX دست‌نخورده",
+    "downloadNote": "پوشه‌های download/pnXXX همگی git-ردیابی‌شده‌اند → هرس نکرد (قید صفر-شکست تاریخچه) — گزارش کامل در خروجی گارد"
+  },
+  "guardScript": "scripts/audit-disk-space.sh (گام ۵-س CI · پیش‌فرض=هرس واقعی · check=خشک)",
+  "workerLive": "Worker ری‌استارت شد با ۱۳ کار — خروجی زنده: «...policy-eval · disk-guard» ✓",
+  "tests": {
+    "file": "tests/pn020-h2-disk-guard.test.ts",
+    "count": 8,
+    "coverage": ["آستانه‌های مصوب", "سنجش واقعی statfs", "دریل منفی ۸→۵ نسل + فراداده محفوظ + idempotent", "وضعیت PASS/WARN/CRITICAL", "سلوک محافظه‌کار download غیر-git", "ثبت DISK_PRUNE در AuditLog", "کار سیزدهم Worker با چرخهٔ ۱ ساعته", "اسکریپت CI حالت check"]
+  },
+  "auditTrail": "هر حذف در AuditLog با action=DISK_PRUNE + actor=worker:disk-guard — رد append-only قابل بازرسی مالک"
+}

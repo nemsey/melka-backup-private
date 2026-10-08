@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-10-09T00:00:00Z",
+  "workOrder": "PN-020 (فاز ۱۰ خودآگاهی + فاز ۱۱ خودترمیمی) — ملکا-شورا-ن۰۲۴-۱۴۰۵ — تأیید مالک",
+  "phase0_identity": {
+    "expectedHeadAtEntry": "fae2024+",
+    "actualHeadAtEntry": "fae2024",
+    "currentHead": "dca8ef0",
+    "delta": "گام اول همین جلسه (اصلاحات سه فهرست M1/M2/M3 + شاهکار شرایط مالی + ریشه‌یابی ۵۰۴) — کامیت dca8ef0 با ۲۱۹۲/۰ ×۲ تست و بازانتشار تولید پیش از شروع فازهای ۱۰/۱۱",
+    "mirrorEqualsHead": true,
+    "mirrorPush": "fae2024..dca8ef0 main -> main ✓",
+    "chainIndex": 20,
+    "buildId": "fae2024-20261008-1818 — دلتای مستند: بیلدِ گام اول یک دقیقه پیش از کامیت مهر خورد؛ کد گام اول در تولید زنده است (شاهد API پنج ستون تازه ✓)؛ دروازهٔ پایانی با HEAD نهایی PN-020 دوباره مهر می‌خورد"
+  },
+  "phase0_preconditions": {
+    "health": "200 — 0.07s (پس از ری‌استارت تولید با کد گام اول)",
+    "dbIntegrity": "PRAGMA quick_check = ok",
+    "escrow": "سه‌مکانی حاضر ✓ (db/.runtime/boot-secrets.json · upload/.runtime/boot-secrets.json · env.escrow.enc + meta)",
+    "worker": "زنده — pid 18271 (runtime/worker.ts · ۱۲ کار از PN-019)",
+    "mirror": "GitHub main = HEAD = dca8ef0 ✓",
+    "ownerStatement": "«سفارش PN-020 — فاز ۱۰ (خودآگاهی) + فاز ۱۱ (خودترمیمی). این دو فاز، مغز ملکا را کامل می‌کنند: سیستم خودش را می‌شناسد و با تأیید شورا خودش را ترمیم می‌کند.» + گام اول همین جلسه: اصلاحات سه فهرست چهارگانه"
+  },
+  "workOrderStages": [
+    "۱ — H2: گارد فضای دیسک + هرس خودکار (بحرانی — چهارمین ENOSPC)",
+    "۲ — H3+H4: بهبودهای کارایی (consistencyWarning + insufficientData)",
+    "۳ — سند طراحی فاز ۱۰ (≥۵۰۰ خط)",
+    "۴ — Self-Diagnosis: ۲۵ بررسی + نمرهٔ سلامت + DiagnosticRecord",
+    "۵ — سند طراحی فاز ۱۱ (≥۵۰۰ خط)",
+    "۶ — Self-Repair: Proposal + ApprovalGate + Executor (صفر ترمیم بدون تأیید شورا)",
+    "۷ — سه گارد تازه (audit-self-diagnosis / audit-repair-gate / audit-disk-space)",
+    "۸ — تست ≥۶۰ (دروازه: ≥۲۲۸۸ = ۲۱۹۲ فعلی + ۹۶)",
+    "۹ — دروازه + گزارش هشت‌بخشی + chainIndex=21"
+  ]
+}
