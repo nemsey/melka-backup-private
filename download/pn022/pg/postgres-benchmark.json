@@ -1,0 +1,160 @@
+{
+  "workOrder": "PN-022-A/مرحلهٔ۳ — بنچمارک PostgreSQL (پایگاه تست)",
+  "ranAt": "2026-10-08T22:34:49.264Z",
+  "method": "میانهٔ ۳ اجرا برای هر سنجه — اعداد خام هر دو موتور بدون حذف",
+  "environment": {
+    "sqlite": "db/custom.db (تولیت — فقط-خواندن در سنجه‌های خواندن؛ نوشتن محدود به رکوردهای آزمایشی)",
+    "postgres": "PostgreSQL 18.4 embedded — خوشهٔ تست localhost:5433/melka_pg_test (عین دادهٔ ۳۵۵k ردیف از pg-migrate)"
+  },
+  "results": [
+    {
+      "measure": "فهرست M1 صفحه‌بندی ۵۰تایی",
+      "note": "findMany take:50 + count روی PropertyRecord (۲۷٬۷xx ردیف)",
+      "sqliteMs": 4,
+      "pgMs": 5,
+      "ratioPgOverSqlite": 1.25,
+      "sqliteRuns": [
+        3,
+        4,
+        36
+      ],
+      "pgRuns": [
+        5,
+        5,
+        31
+      ]
+    },
+    {
+      "measure": "جستجوی contains نام کارشناس",
+      "note": "ExpertRecord fullName contains «سید» (۱۴۳ رکورد)",
+      "sqliteMs": 1,
+      "pgMs": 1,
+      "ratioPgOverSqlite": 1,
+      "sqliteRuns": [
+        1,
+        1,
+        1
+      ],
+      "pgRuns": [
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "measure": "تجمیع groupBy دامنه",
+      "note": "PropertyRecord groupBy areaId (شمارش هر منطقه)",
+      "sqliteMs": 7,
+      "pgMs": 6,
+      "ratioPgOverSqlite": 0.86,
+      "sqliteRuns": [
+        6,
+        7,
+        13
+      ],
+      "pgRuns": [
+        5,
+        6,
+        6
+      ]
+    },
+    {
+      "measure": "کوئری سنگین گراف",
+      "note": "GraphEdge findMany where type + orderBy createdAt desc take 200 (۱۶۰k یال)",
+      "sqliteMs": 14,
+      "pgMs": 1,
+      "ratioPgOverSqlite": 0.07,
+      "sqliteRuns": [
+        13,
+        14,
+        15
+      ],
+      "pgRuns": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "measure": "خواندن ۵۰ رکورد JSON سنگین",
+      "note": "TransactionEnrichment findMany take 50 (rawInfoJson)",
+      "sqliteMs": 4,
+      "pgMs": 5,
+      "ratioPgOverSqlite": 1.25,
+      "sqliteRuns": [
+        4,
+        4,
+        4
+      ],
+      "pgRuns": [
+        4,
+        5,
+        5
+      ]
+    },
+    {
+      "measure": "درج آرایه‌ای ۱۰۰ ردیف AuditLog",
+      "note": "createMany ۱۰۰ ردیف + حذف (چرخهٔ کامل، هر تکرار پاک می‌کند)",
+      "sqliteMs": 3,
+      "pgMs": 4,
+      "ratioPgOverSqlite": 1.33,
+      "sqliteRuns": [
+        3,
+        3,
+        6
+      ],
+      "pgRuns": [
+        4,
+        4,
+        6
+      ]
+    },
+    {
+      "measure": "upsert ۲۰ تراکنش (کلید طبیعی)",
+      "note": "۲۰ upsert موجود TransactionRecord (مسیر افزایشی سنک)",
+      "sqliteMs": 12,
+      "pgMs": 17,
+      "ratioPgOverSqlite": 1.42,
+      "sqliteRuns": [
+        11,
+        12,
+        14
+      ],
+      "pgRuns": [
+        15,
+        17,
+        18
+      ]
+    },
+    {
+      "measure": "شمارش شرطی چندگانه",
+      "note": "TransactionRecord count با where دوگانه + range تاریخ",
+      "sqliteMs": 1,
+      "pgMs": 1,
+      "ratioPgOverSqlite": 1,
+      "sqliteRuns": [
+        1,
+        1,
+        14
+      ],
+      "pgRuns": [
+        1,
+        1,
+        2
+      ]
+    }
+  ],
+  "verdict": {
+    "pgWins": [
+      "تجمیع groupBy دامنه",
+      "کوئری سنگین گراف"
+    ],
+    "sqliteWins": [
+      "فهرست M1 صفحه‌بندی ۵۰تایی",
+      "خواندن ۵۰ رکورد JSON سنگین",
+      "درج آرایه‌ای ۱۰۰ ردیف AuditLog",
+      "upsert ۲۰ تراکنش (کلید طبیعی)"
+    ],
+    "honestNote": "هدف PG تک‌کوئریِ سریع‌تر نیست — هم‌زمانی چند-نویسنده و شبکهٔ چند-شهری است (سند طراحی فصل ۲.۳)؛ اعداد خام این‌جا صادقانه گزارش می‌شوند"
+  }
+}

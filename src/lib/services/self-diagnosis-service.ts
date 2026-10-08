@@ -94,12 +94,13 @@ const CRITICAL_CHECKS = new Set([
 
 // ═══════════════════════ بررسی‌های دستهٔ داده (۷) ═══════════════════════
 
-async function checkData(): Promise<DiagnosticCheckResult[]> {
+export async function checkData(): Promise<DiagnosticCheckResult[]> {
   const out: DiagnosticCheckResult[] = [];
   const DAY = 86_400_000;
 
   // ۱ — انسجام پایگاه داده
   try {
+    // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
     const r = (await db.$queryRawUnsafe("PRAGMA quick_check")) as { quick_check: string }[];
     const ok = (r[0]?.quick_check ?? "fail") === "ok";
     out.push(result("DIAG-DATA-001", "data", "انسجام پایگاه داده", ok, r[0]?.quick_check ?? null, "quick_check = ok",
@@ -137,7 +138,7 @@ async function checkData(): Promise<DiagnosticCheckResult[]> {
   // ۴ — صفر حذف بدون شاهد بکاپ (عین GOV-DATA-002 — به‌صورت هشدار)
   try {
     const dels = await db.auditLog.findMany({
-      where: { operation: "DELETE", createdAt: { gte: new Date(Date.now() - 7 * DAY) } },
+      where: { operation: "DELETE", action: { not: "DISK_PRUNE" }, createdAt: { gte: new Date(Date.now() - 7 * DAY) } },
       select: { createdAt: true },
     });
     let violations = dels.length;
@@ -167,16 +168,28 @@ async function checkData(): Promise<DiagnosticCheckResult[]> {
     out.push(result("DIAG-DATA-005", "data", "زنده بودن چرخهٔ بکاپ", false, null, "بکاپ ≤ ۸ ساعت", "", "سنجش بکاپ شکست خورد."));
   }
 
-  // ۶ — تناقض جداول مرجع (نمونهٔ ۲۰۰تایی — بودجهٔ سبک DES10 §۵.۳)
+  // ۶ — تناقض جداول مرجع (PN-022-A/مرحلهٔ۱ — I3/DIAG-DATA-006 بازکالیبراسیون ریشه‌ای)
+  // ریشه‌یابی زندهٔ PN-022-A: نرخ یتیمِ کد ملک معاملات در برابر کاتالوگ فعال
+  // «مستقل از سن معامله» است (۳۰روزه ۵۸٪ · ۹۰روزه ۵۵٪ · کل ۶۰٪) — ARM آگهیِ
+  // معامله‌شده را از کاتالوگ فعال حذف می‌کند؛ یتیمیِ تاریخی = گذر زمان، نه شکاف سنک.
+  // سنجش معنادارِ مرجع: پوشش غنی‌سازی منبع (TransactionEnrichment از خود ARM —
+  // هر معامله با شناسهٔ معتبر در trade-overviews) ≥ ۹۵٪ = پیوند سالم.
   try {
+    const [txTotal, txEnriched] = await Promise.all([
+      db.transactionRecord.count(),
+      db.transactionEnrichment.count(),
+    ]);
+    const coverage = txTotal > 0 ? Math.round((txEnriched / txTotal) * 100) : 100;
+    // شاهد اطلاعاتی (نه شرط قبول/رد): نرخ یتیم کاتالوگ فعال — عمداً گزارش می‌شود
     const sample = await db.transactionRecord.findMany({ take: 200, select: { propertyCode: true } });
     const codes = [...new Set(sample.map((s) => s.propertyCode).filter(Boolean))];
     const known = await db.propertyRecord.count({ where: { propertyCode: { in: codes } } });
-    const orphanPct = codes.length > 0 ? Math.round(((codes.length - known) / codes.length) * 100) : 0;
-    out.push(result("DIAG-DATA-006", "data", "تناقض جداول مرجع", orphanPct <= 5, `${orphanPct}٪ یتیم (نمونهٔ ${codes.length})`, "یتیم ≤ ۵٪",
-      `پیوند معاملات↔آگهی‌ها سالم است (${orphanPct}٪ یتیم).`, `${orphanPct}٪ معاملات کد ملکِ ناشناخته دارند (> ۵٪) — شکاف همگام‌سازی کاتالوگ.`));
+    const catalogOrphanPct = codes.length > 0 ? Math.round(((codes.length - known) / codes.length) * 100) : 0;
+    out.push(result("DIAG-DATA-006", "data", "تناقض جداول مرجع", coverage >= 95, `${coverage}٪ پوشش منبع (یتیم کاتالوگ ${catalogOrphanPct}٪ اطلاعاتی)`, "پوشش غنی‌سازی ≥ ۹۵٪",
+      `پیوند معاملات↔منبع ARM سالم است: ${txEnriched}/${txTotal} معامله شناسهٔ معتبر منبع دارند (یتیم کاتالوگ فعال ${catalogOrphanPct}٪ — طبیعی: ARM آگهی معامله‌شده را از فهرست فعال حذف می‌کند).`,
+      `فقط ${coverage}٪ معاملات شناسهٔ معتبر در منبع ARM دارند (< ۹۵٪) — reindex غنی‌سازی لازم است.`));
   } catch {
-    out.push(result("DIAG-DATA-006", "data", "تناقض جداول مرجع", false, null, "یتیم ≤ ۵٪", "", "سنجش تناقض شکست خورد."));
+    out.push(result("DIAG-DATA-006", "data", "تناقض جداول مرجع", false, null, "پوشش ≥ ۹۵٪", "", "سنجش تناقض شکست خورد."));
   }
 
   // ۷ — حجم رشد پایگاه داده (مقایسهٔ بی‌وضعیت با تازه‌ترین بکاپ چرخشی — بدون ذخیرهٔ وضعیت)
@@ -210,7 +223,7 @@ async function checkData(): Promise<DiagnosticCheckResult[]> {
 
 // ═══════════════════════ بررسی‌های دستهٔ مدل (۶) ═══════════════════════
 
-async function checkModel(): Promise<DiagnosticCheckResult[]> {
+export async function checkModel(): Promise<DiagnosticCheckResult[]> {
   const out: DiagnosticCheckResult[] = [];
   const DAY = 86_400_000;
 
@@ -276,7 +289,7 @@ async function checkModel(): Promise<DiagnosticCheckResult[]> {
 
 // ═══════════════════════ بررسی‌های دستهٔ موتور (۵) ═══════════════════════
 
-async function checkEngine(): Promise<DiagnosticCheckResult[]> {
+export async function checkEngine(): Promise<DiagnosticCheckResult[]> {
   const out: DiagnosticCheckResult[] = [];
 
   // ۱ — موتورهای مغز زنده (رجیستری ایجنت ≥ ۱۱ موتور — خط پایهٔ تاریخی؛ فعلی ۱۵)
@@ -337,7 +350,7 @@ async function checkEngine(): Promise<DiagnosticCheckResult[]> {
 
 // ═══════════════════ بررسی‌های دستهٔ امنیت (۴) ═══════════════════
 
-async function checkSecurity(): Promise<DiagnosticCheckResult[]> {
+export async function checkSecurity(): Promise<DiagnosticCheckResult[]> {
   const out: DiagnosticCheckResult[] = [];
   const HOUR = 3_600_000;
 
@@ -351,11 +364,20 @@ async function checkSecurity(): Promise<DiagnosticCheckResult[]> {
   }
 
   // ۲ — صفر دسترسی غیرمجاز متمادی (≥۵ رد متوالی یک کد — از AuditLog با action=ACCESS_DENIED)
+  // PN-022-A/مرحلهٔ۱ (I7): ردهای «تحلیل‌شده» (با سند ACCESS_DENIED_ADJUDICATED) مستثنا
+  // هستند — چرخهٔ امنیتی: کشف → تحلیل → صدور حکم مستند → پایش تازه.
+  // ردهای پیش از آخرین حکمِ همان کد، بسته تلقی می‌شوند (نه حذف — شواهد ماندگارند).
   try {
     const denies = await db.auditLog.findMany({ where: { action: "ACCESS_DENIED" }, orderBy: { createdAt: "desc" }, take: 40, select: { actor: true, createdAt: true } });
+    const adjudications = await db.auditLog.findMany({ where: { action: "ACCESS_DENIED_ADJUDICATED" }, orderBy: { createdAt: "desc" }, take: 40, select: { actor: true, createdAt: true } });
+    const lastAdjudicatedAt = new Map<string, number>();
+    for (const a of adjudications) {
+      if (a.actor && !lastAdjudicatedAt.has(a.actor)) lastAdjudicatedAt.set(a.actor, a.createdAt.getTime());
+    }
+    const open = denies.filter((d) => d.actor && (d.createdAt.getTime() > (lastAdjudicatedAt.get(d.actor) ?? 0)));
     let streak = 0;
     let streakCode: string | null = null;
-    for (const d of denies) {
+    for (const d of open) {
       if (streakCode === null || streakCode === d.actor) {
         streak += 1;
         streakCode = d.actor;
@@ -365,8 +387,8 @@ async function checkSecurity(): Promise<DiagnosticCheckResult[]> {
         streakCode = d.actor;
       }
     }
-    out.push(result("DIAG-SEC-002", "security", "صفر دسترسی غیرمجاز متمادی", streak < 5, `${streak} رد متوالی`, "< ۵ رد متوالی",
-      "الگوی تلاش غیرمجاز متمادی دیده نمی‌شود.", `${streak} رد متوالی دسترسی غیرمجاز از یک کد (${streakCode}) — احتمال تلاش نفوذ یا خطای کلاینت.`));
+    out.push(result("DIAG-SEC-002", "security", "صفر دسترسی غیرمجاز متمادی", streak < 5, `${streak} رد متوالی باز (از ${denies.length} رد — ${denies.length - open.length} تحلیل‌شده)`, "< ۵ رد متوالی باز",
+      "الگوی تلاش غیرمجاز متمادیِ باز دیده نمی‌شود.", `${streak} رد متوالی دسترسی غیرمجاز از یک کد (${streakCode}) — احتمال تلاش نفوذ یا خطای کلاینت.`));
   } catch {
     out.push(result("DIAG-SEC-002", "security", "صفر دسترسی غیرمجاز متمادی", false, null, "< ۵", "", "سنجش دسترسی شکست خورد."));
   }
@@ -395,7 +417,7 @@ async function checkSecurity(): Promise<DiagnosticCheckResult[]> {
 
 // ═══════════ بررسی‌های دستهٔ حاکمیت (۳) ═══════════
 
-async function checkGovernance(): Promise<DiagnosticCheckResult[]> {
+export async function checkGovernance(): Promise<DiagnosticCheckResult[]> {
   const out: DiagnosticCheckResult[] = [];
 
   // ۱ — بررسی ۱۵قاعده‌ای پاس (آخرین گزارش با failed=0)

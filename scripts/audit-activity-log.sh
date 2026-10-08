@@ -15,7 +15,7 @@ from datetime import datetime, timezone, timedelta
 out_path = sys.argv[1]
 os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
-VALID_ACTIONS = {"login", "logout", "view", "edit", "delete", "export", "sync", "role-change", "permission-change"}
+VALID_ACTIONS = {"login", "logout", "view", "edit", "delete", "export", "sync", "role-change", "permission-change", "stealth-create", "stealth-hide", "stealth-reveal"}
 violations = []
 checks = []
 

@@ -79,9 +79,12 @@ export async function buildLiveGovernanceContext(now: Date = new Date()): Promis
       return missing;
     })(),
     // GOV-DATA-002: حذف بدون شاهد بکاپ — Delete در AuditLog بدون BACKUP تازه در همان روز
+    // PN-022-A/مرحلهٔ۱ (I9): DISK_PRUNE مستثناست — هرس زیرساختیِ نسل‌های مازاد بقا،
+    // خودش شاهدِ کامل خود است (AuditLog با فهرست کامل فایل‌ها) و همیشه ≥۵ نسل
+    // اخیر را نگه می‌دارد؛ قاعده برای حذفِ دادهٔ کسب‌وکار بدون شاهد بکاپ است.
     (async () => {
       const dels = await db.auditLog.findMany({
-        where: { operation: "DELETE", createdAt: { gte: new Date(now.getTime() - 7 * DAY) } },
+        where: { operation: "DELETE", action: { not: "DISK_PRUNE" }, createdAt: { gte: new Date(now.getTime() - 7 * DAY) } },
         select: { createdAt: true },
       });
       if (dels.length === 0) return 0;

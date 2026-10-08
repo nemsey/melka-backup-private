@@ -1,0 +1,65 @@
+{
+  "workOrder": "PN-022-A/مرحلهٔ۵ — گارد postgres-compat (گام ۵-ر)",
+  "ranAt": "2026-10-08T23:02:02.008521+00:00",
+  "checks": [
+    {
+      "check": "وجود schema.postgres.prisma",
+      "ok": true
+    },
+    {
+      "check": "prisma validate — prisma/schema.prisma",
+      "ok": true,
+      "tail": "The schema at prisma/schema.prisma is valid 🚀"
+    },
+    {
+      "check": "prisma validate — prisma/schema.postgres.prisma",
+      "ok": true,
+      "tail": "The schema at prisma/schema.postgres.prisma is valid 🚀"
+    },
+    {
+      "check": "توازن مدل‌ها",
+      "sqlite": 59,
+      "postgres": 59,
+      "ok": true
+    },
+    {
+      "check": "نقاط موتور-ویژه مهر خورده",
+      "sites": 4,
+      "unmarked": 0
+    },
+    {
+      "check": "گواه مهاجرت",
+      "ok": true,
+      "models": 59,
+      "rows": 355021
+    }
+  ],
+  "engineSites": [
+    {
+      "file": "src/lib/melk-api/sync.ts",
+      "line": 1108,
+      "marked": true,
+      "code": "await db.$executeRawUnsafe(`VACUUM INTO '${backupFile}'`);"
+    },
+    {
+      "file": "src/lib/services/self-diagnosis-service.ts",
+      "line": 104,
+      "marked": true,
+      "code": "const r = (await db.$queryRawUnsafe(\"PRAGMA quick_check\")) as { quick_check: str"
+    },
+    {
+      "file": "src/core/runtime/jobs.ts",
+      "line": 96,
+      "marked": true,
+      "code": "await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, \"''\")}'`);"
+    },
+    {
+      "file": "src/core/runtime/jobs.ts",
+      "line": 102,
+      "marked": true,
+      "code": "const r = await probe.$queryRawUnsafe(\"PRAGMA integrity_check\") as { integrity_c"
+    }
+  ],
+  "violations": [],
+  "verdict": "PASS"
+}

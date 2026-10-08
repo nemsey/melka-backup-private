@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-10-09T00:00:00Z",
+  "workOrder": "PN-022-A (فاز ۱۲-الف — زیرساخت مقیاس ملی) — ملکا-شورا-ن۰۲۵-۱۴۰۵ — تأیید مالک (اولاً: سه بند + ثانیاً: سفارش کامل)",
+  "phase0_identity": {
+    "expectedHeadAtEntry": "346274a+",
+    "actualHeadAtEntry": "6f6242b",
+    "delta": "دلتای مستند سه‌کامیت پس از مهر چهارراهی PN-021 (346274a): d230fd0 (ورک‌لاگ مستندات) + 6f6242b (چک‌پوینت خودکار پلتفرم b652de33 — صفر تغییر src/؛ تغییرات = DB دوتایی + شواهد runtime + intelligence-data + scripts/pn021/e2e-cleanup.ts ابزار پاک‌سازی) — راستی‌آمایی diff 346274a..HEAD: هیچ فایلی در src/ لمس نشده",
+    "mirrorEqualsHead": true,
+    "mirrorPosition": "auto-mirror/main = d230fd0 (زنجیرهٔ همان کامیت‌ها؛ چک‌پوینت پلتفرم محلی است و آینه را نمی‌شکند)",
+    "chainIndex": 21,
+    "survivalPackage": "upload/.survival/PN-020-20261008 + قطعات deliver-store/pn020 (لنگر c43d8f25 → MANIFEST بستهٔ PN-019)",
+    "buildId": "346274a-20261008-2046 = مهر چهارراهی نهایی PN-021 (HEAD=آینه=BUILD_ID=preview در لحظهٔ تحویل)"
+  },
+  "phase0_preconditions": {
+    "health": "200 — 0.010s",
+    "dbQuickCheck": "ok (custom.db)",
+    "escrowThreePlace": "env.escrow.enc + env.escrow.meta.json حاضر + کپی بقا",
+    "workerAlive": "PID 26441 — بوت 20:23 — ۱۴ کار زنده",
+    "chunkServing": "چانک‌های بیلد جاری 200 (سرو از standalone مهر 346274a)",
+    "previewEqualsBuildId": "BUILD_ID=346274a-20261008-2046 — health 200 + home 200"
+  },
+  "ownerStatement": "سفارش PN-022-A — زیرساخت مقیاس ملی (رفع ۹ هشدار diagnosis + سند طراحی + PostgreSQL تست + Feature Factory + سه گارد + ≥۶۰ تست + دروازه chainIndex=22). اولاً مالک: پاک‌سازی رانش ۰.۴۷۴ تاریخی + ثبت brierScore قهرمان + سنک صفحه‌ای (checkpoint) برای رفع تأخیرهای مکرر ARM.",
+  "entry": "مجاز — ۴/۴ + ۶/۶"
+}

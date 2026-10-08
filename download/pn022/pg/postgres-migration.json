@@ -1,0 +1,500 @@
+{
+  "workOrder": "PN-022-A/مرحلهٔ۳ — مهاجرت PostgreSQL (فقط تست)",
+  "ranAt": "2026-10-08T22:34:15.239Z",
+  "engine": {
+    "source": "SQLite (db/custom.db — تولید، فقط-خواندنی)",
+    "target": "PostgreSQL 18.4 (db/postgres-test — خوشهٔ embedded تست)"
+  },
+  "schema": {
+    "file": "prisma/schema.postgres.prisma",
+    "models": 59,
+    "validation": "prisma validate ✓ + db push 168ms ✓"
+  },
+  "totals": {
+    "models": 59,
+    "ok": 59,
+    "mismatch": 0,
+    "totalRows": 355021,
+    "durationMs": 60834
+  },
+  "perModel": [
+    {
+      "model": "session",
+      "source": 162,
+      "target": 162,
+      "diff": 0,
+      "durationMs": 86,
+      "status": "OK"
+    },
+    {
+      "model": "otpAttempt",
+      "source": 102,
+      "target": 102,
+      "diff": 0,
+      "durationMs": 9,
+      "status": "OK"
+    },
+    {
+      "model": "auditLog",
+      "source": 1540,
+      "target": 1540,
+      "diff": 0,
+      "durationMs": 103,
+      "status": "OK"
+    },
+    {
+      "model": "appMeta",
+      "source": 1,
+      "target": 1,
+      "diff": 0,
+      "durationMs": 4,
+      "status": "OK"
+    },
+    {
+      "model": "jobLock",
+      "source": 2,
+      "target": 2,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "user",
+      "source": 4,
+      "target": 4,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "userPermission",
+      "source": 18,
+      "target": 18,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "userActivity",
+      "source": 15,
+      "target": 15,
+      "diff": 0,
+      "durationMs": 7,
+      "status": "OK"
+    },
+    {
+      "model": "userSession",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 3,
+      "status": "OK"
+    },
+    {
+      "model": "armConnection",
+      "source": 4,
+      "target": 4,
+      "diff": 0,
+      "durationMs": 4,
+      "status": "OK"
+    },
+    {
+      "model": "pmConnection",
+      "source": 1,
+      "target": 1,
+      "diff": 0,
+      "durationMs": 3,
+      "status": "OK"
+    },
+    {
+      "model": "gapConnection",
+      "source": 1,
+      "target": 1,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "divarConnection",
+      "source": 1,
+      "target": 1,
+      "diff": 0,
+      "durationMs": 3,
+      "status": "OK"
+    },
+    {
+      "model": "divarSetting",
+      "source": 1,
+      "target": 1,
+      "diff": 0,
+      "durationMs": 4,
+      "status": "OK"
+    },
+    {
+      "model": "instagramConnection",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "refListCache",
+      "source": 2,
+      "target": 2,
+      "diff": 0,
+      "durationMs": 7,
+      "status": "OK"
+    },
+    {
+      "model": "lookupLog",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 3,
+      "status": "OK"
+    },
+    {
+      "model": "syncState",
+      "source": 1,
+      "target": 1,
+      "diff": 0,
+      "durationMs": 3,
+      "status": "OK"
+    },
+    {
+      "model": "syncDeadLetter",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 3,
+      "status": "OK"
+    },
+    {
+      "model": "syncJobState",
+      "source": 4,
+      "target": 4,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "syncCheckpoint",
+      "source": 3,
+      "target": 3,
+      "diff": 0,
+      "durationMs": 4,
+      "status": "OK"
+    },
+    {
+      "model": "expertRecord",
+      "source": 293,
+      "target": 293,
+      "diff": 0,
+      "durationMs": 60,
+      "status": "OK"
+    },
+    {
+      "model": "transactionRecord",
+      "source": 768,
+      "target": 768,
+      "diff": 0,
+      "durationMs": 105,
+      "status": "OK"
+    },
+    {
+      "model": "interactionRecord",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 2,
+      "status": "OK"
+    },
+    {
+      "model": "visitRecord",
+      "source": 2,
+      "target": 2,
+      "diff": 0,
+      "durationMs": 3,
+      "status": "OK"
+    },
+    {
+      "model": "supplyDemandRecord",
+      "source": 5,
+      "target": 5,
+      "diff": 0,
+      "durationMs": 3,
+      "status": "OK"
+    },
+    {
+      "model": "contractRecord",
+      "source": 1,
+      "target": 1,
+      "diff": 0,
+      "durationMs": 4,
+      "status": "OK"
+    },
+    {
+      "model": "propertyRecord",
+      "source": 27774,
+      "target": 27774,
+      "diff": 0,
+      "durationMs": 11467,
+      "status": "OK"
+    },
+    {
+      "model": "requestRecord",
+      "source": 25526,
+      "target": 25526,
+      "diff": 0,
+      "durationMs": 24381,
+      "status": "OK"
+    },
+    {
+      "model": "requestEventRecord",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 6,
+      "status": "OK"
+    },
+    {
+      "model": "specialPropertyRecord",
+      "source": 77,
+      "target": 77,
+      "diff": 0,
+      "durationMs": 90,
+      "status": "OK"
+    },
+    {
+      "model": "transactionEnrichment",
+      "source": 768,
+      "target": 768,
+      "diff": 0,
+      "durationMs": 406,
+      "status": "OK"
+    },
+    {
+      "model": "marketPriceStat",
+      "source": 19,
+      "target": 19,
+      "diff": 0,
+      "durationMs": 11,
+      "status": "OK"
+    },
+    {
+      "model": "priceIndexHistory",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 7,
+      "status": "OK"
+    },
+    {
+      "model": "commissionCalcLog",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 30,
+      "status": "OK"
+    },
+    {
+      "model": "listingRecord",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 6,
+      "status": "OK"
+    },
+    {
+      "model": "divarAd",
+      "source": 15,
+      "target": 15,
+      "diff": 0,
+      "durationMs": 24,
+      "status": "OK"
+    },
+    {
+      "model": "divarRejectLog",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "divarScanLog",
+      "source": 9,
+      "target": 9,
+      "diff": 0,
+      "durationMs": 7,
+      "status": "OK"
+    },
+    {
+      "model": "instagramPostLog",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 4,
+      "status": "OK"
+    },
+    {
+      "model": "customerRecord",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 6,
+      "status": "OK"
+    },
+    {
+      "model": "expertProfile",
+      "source": 143,
+      "target": 143,
+      "diff": 0,
+      "durationMs": 109,
+      "status": "OK"
+    },
+    {
+      "model": "personnelAccess",
+      "source": 0,
+      "target": 0,
+      "diff": 0,
+      "durationMs": 7,
+      "status": "OK"
+    },
+    {
+      "model": "graphNode",
+      "source": 134870,
+      "target": 134870,
+      "diff": 0,
+      "durationMs": 11545,
+      "status": "OK"
+    },
+    {
+      "model": "graphEdge",
+      "source": 160744,
+      "target": 160744,
+      "diff": 0,
+      "durationMs": 11971,
+      "status": "OK"
+    },
+    {
+      "model": "opportunityAlert",
+      "source": 1678,
+      "target": 1678,
+      "diff": 0,
+      "durationMs": 195,
+      "status": "OK"
+    },
+    {
+      "model": "agentMemory",
+      "source": 299,
+      "target": 299,
+      "diff": 0,
+      "durationMs": 18,
+      "status": "OK"
+    },
+    {
+      "model": "agentFeedback",
+      "source": 6,
+      "target": 6,
+      "diff": 0,
+      "durationMs": 6,
+      "status": "OK"
+    },
+    {
+      "model": "agentPolicyVersion",
+      "source": 9,
+      "target": 9,
+      "diff": 0,
+      "durationMs": 4,
+      "status": "OK"
+    },
+    {
+      "model": "modelVersion",
+      "source": 2,
+      "target": 2,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "driftCheck",
+      "source": 18,
+      "target": 18,
+      "diff": 0,
+      "durationMs": 8,
+      "status": "OK"
+    },
+    {
+      "model": "decisionRecord",
+      "source": 19,
+      "target": 19,
+      "diff": 0,
+      "durationMs": 10,
+      "status": "OK"
+    },
+    {
+      "model": "actionPlanRecord",
+      "source": 19,
+      "target": 19,
+      "diff": 0,
+      "durationMs": 7,
+      "status": "OK"
+    },
+    {
+      "model": "safetyCheckRecord",
+      "source": 19,
+      "target": 19,
+      "diff": 0,
+      "durationMs": 7,
+      "status": "OK"
+    },
+    {
+      "model": "shadowDecisionRun",
+      "source": 19,
+      "target": 19,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "governanceCheckRecord",
+      "source": 8,
+      "target": 8,
+      "diff": 0,
+      "durationMs": 5,
+      "status": "OK"
+    },
+    {
+      "model": "policyEvaluationRecord",
+      "source": 26,
+      "target": 26,
+      "diff": 0,
+      "durationMs": 8,
+      "status": "OK"
+    },
+    {
+      "model": "diagnosticReport",
+      "source": 7,
+      "target": 7,
+      "diff": 0,
+      "durationMs": 10,
+      "status": "OK"
+    },
+    {
+      "model": "repairProposalRecord",
+      "source": 16,
+      "target": 16,
+      "diff": 0,
+      "durationMs": 8,
+      "status": "OK"
+    }
+  ],
+  "guarantees": {
+    "zeroSilentFailure": "شکست هر صفحه = توقف سخت (قید صفر-سکوت)",
+    "idempotentRerun": "deleteMany + createMany بر کلید طبیعی",
+    "explicitFieldConversion": "صفر تبدیل ضمنی — تایپ مشترک Prisma با گواه دوطرفه",
+    "productionUntouched": "تولید روی SQLite ماند — این آزمایش خوشهٔ embedded جدا است"
+  }
+}

@@ -418,4 +418,19 @@ describe("PN-021 · ساختار بخش مدیریت کاربران (UI)", () =>
     const srcId = await Bun.file("src/app/api/admin/users/[id]/route.ts").text();
     expect(srcId).toContain("isUserVisibility");
   });
+
+  test("رجression زندهٔ E2E: فرم‌های تنظیمات هرگز body را دوبار سریال نمی‌کنند (درس JSON.stringify دوگانه)", async () => {
+    // کشف زندهٔ E2E (۲۰۲۶-۱۰-۰۸): کلاینت api خودش JSON.stringify می‌کند؛ فرم‌هایی که
+    // body: JSON.stringify(...) می‌فرستادند رشتهٔ کوتیت‌شده به سرور می‌رساندند → 400.
+    // این باگ از PN-016 در تمام فرم‌های نوشتاری دو بخش تنظیمات بود و فقط کلیک واقعی
+    // مرورگر آن را آشکار کرد (تست‌های خودکار از کلاینت عبور نمی‌کنند).
+    const files = [
+      "src/core/tiles/tiles/settings/MelkTabrizUsersSection.tsx",
+      "src/core/tiles/tiles/settings/PersonnelAccessSection.tsx",
+    ];
+    for (const f of files) {
+      const src = await Bun.file(f).text();
+      expect(src.includes("body: JSON.stringify(")).toBe(false);
+    }
+  });
 });

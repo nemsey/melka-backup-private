@@ -109,6 +109,14 @@ tail -1 /tmp/pn020-ci-audit17.log
 bash scripts/audit-stealth-users.sh > /tmp/pn021-ci-audit18.log 2>&1 || { echo "✗ گام ۵-ق: stealth-users (کارشناس فروش پنهان)"; tail -8 /tmp/pn021-ci-audit18.log; exit 1; }
 tail -1 /tmp/pn021-ci-audit18.log
 
+# PN-022-A (شورا-ن۰۲۵): سه گارد تازه — زیرساخت فاز ۱۲
+bash scripts/audit-postgres-compat.sh > /tmp/pn022-ci-audit19.log 2>&1 || { echo "✗ گام ۵-ر: postgres-compat (سازگاری مهاجرت PostgreSQL)"; tail -8 /tmp/pn022-ci-audit19.log; exit 1; }
+tail -1 /tmp/pn022-ci-audit19.log
+bash scripts/audit-tile-contract.sh > /tmp/pn022-ci-audit20.log 2>&1 || { echo "✗ گام ۵-ش: tile-contract (قرارداد کاشی)"; tail -8 /tmp/pn022-ci-audit20.log; exit 1; }
+tail -1 /tmp/pn022-ci-audit20.log
+bash scripts/audit-feature-factory.sh > /tmp/pn022-ci-audit21.log 2>&1 || { echo "✗ گام ۵-ص: feature-factory (کارخانهٔ کاشی)"; tail -8 /tmp/pn022-ci-audit21.log; exit 1; }
+tail -1 /tmp/pn022-ci-audit21.log
+
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"
 # PN-012: ری‌استارت کنترل‌شدهٔ سرور تولید پیش از سنجهٔ RAM — الگوی مستند جلسهٔ ۰۰۶

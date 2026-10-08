@@ -329,7 +329,7 @@ describe("PN-019/فاز۸ · Shadow Mode + Worker", () => {
 
 /* ═══════ ۷) ترمیم G5 — شکاف زمان‌محور پنجره‌های رانش ═══════ */
 describe("PN-019/مرحلهٔ۱ · شکاف زمان‌محور رانش (ترمیم G5)", () => {
-  test("اسنپ‌شات یک‌روزه → عقب‌افت صادقانه به ترتیب فایل با مهر سازوکار", async () => {
+  test("اسنپ‌شات یک‌روزه → شکاف همگن لایه‌ای با مهر سازوکار (ارتقای PN-022-A/مرحلهٔ۱)", async () => {
     const { splitWindowsByTime } = await import("@/lib/services/drift-service");
     const day = "2026-10-05";
     const outcomes = Array.from({ length: 10 }, (_, i) => ({
@@ -337,9 +337,13 @@ describe("PN-019/مرحلهٔ۱ · شکاف زمان‌محور رانش (ترم
     }));
     const predictions = outcomes.map((o, i) => ({ predictionId: o.predictionId, probability: 0.3 + i * 0.04 }));
     const r = splitWindowsByTime(outcomes, predictions);
-    expect(r.splitBy).toBe("file-order");
+    expect(r.splitBy).toBe("homogeneous");
     expect(r.rationale).toContain("اسنپ‌شات");
     expect(r.baseline.length + r.recent.length).toBe(10);
+    expect(Math.abs(r.baseline.length - r.recent.length)).toBeLessThanOrEqual(2);
+    // توازن دقیق نرخ وقوع — تضمین ریاضی شکاف همگن لایه‌ای (اختلاف ≤ یک واحد در هر لایهٔ فرد)
+    const rate = (xs: typeof r.baseline) => xs.reduce((a, p) => a + p.observedValue, 0) / Math.max(1, xs.length);
+    expect(Math.abs(rate(r.baseline) - rate(r.recent))).toBeLessThanOrEqual(1 / Math.max(r.baseline.length, r.recent.length) + 1e-9);
   });
 
   test("پیامدهای چندروزه → برش زمانی حقیقی با پنجرهٔ اخیر", async () => {

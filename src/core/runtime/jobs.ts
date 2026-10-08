@@ -92,11 +92,13 @@ export async function runBackupRotation(db: PrismaClient, options?: { keep?: num
   const tsBase = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 23);
   let target = join(dir, `backup-${tsBase}.db`);
   for (let i = 1; existsSync(target); i++) target = join(dir, `backup-${tsBase}-${i}.db`);
+  // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
   await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, "''")}'`);
   // سلامت: integrity_check روی فایل تازه (بازکردن مستقیم — بدون ردِ Prisma اضافی)
   const probe = new (await import("@prisma/client")).PrismaClient({ datasources: { db: { url: `file:${target}` } } });
   let integrity = "unknown";
   try {
+    // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
     const r = await probe.$queryRawUnsafe("PRAGMA integrity_check") as { integrity_check: string }[];
     integrity = r[0]?.integrity_check ?? "unknown";
   } finally {
@@ -114,6 +116,17 @@ export async function runBackupRotation(db: PrismaClient, options?: { keep?: num
     if (i < keep || files[i].f === createdName) kept.push(files[i].f);
     else { unlinkSync(join(dir, files[i].f)); pruned.push(files[i].f); }
   }
+  // PN-022-A/مرحلهٔ۱ (I9 — ریشهٔ GOV-DATA-002): شاهد حسابرسی چرخش بکاپ.
+  // کشف ریشه‌ای: بکاپ‌ها هر ۶ ساعت ساخته می‌شدند ولی هرگز در AuditLog ثبت
+  // نمی‌شدند ⇒ قاعدهٔ GOV-DATA-002 (و DIAG-DATA-004) «آخرین BACKUP» را نمی‌دید
+  // و همهٔ حذف‌های هفته را «بدون شاهد بکاپ» می‌شمرد — نقض بحرانی بازِ کاذب.
+  await db.auditLog.create({
+    data: {
+      action: "BACKUP_ROTATION",
+      actor: "worker:backup-rotation",
+      detail: JSON.stringify({ created: createdName, kept: kept.length, pruned: pruned.length, integrity }),
+    },
+  }).catch(() => undefined); // ثبت شاهد بهترین-تلاش است — چرخش بکاپ هرگز به‌خاطر آن نمی‌شکند
   return { created: target, kept, pruned, integrity };
 }
 
