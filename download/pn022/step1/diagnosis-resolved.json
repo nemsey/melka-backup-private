@@ -1,0 +1,214 @@
+{
+  "workOrder": "PN-022-A/مرحلهٔ۱ — رفع ۹ هشدار diagnosis (ملکا-شورا-ن۰۲۵-۱۴۰۵)",
+  "ranAt": "2026-10-08T22:24:57.883Z",
+  "fixes": {
+    "I3": {
+      "check": "DIAG-DATA-006",
+      "action": "reindex + بازکالیبراسیون معنای بررسی (کد در self-diagnosis-service)",
+      "rootCause": "ARM آگهیِ معامله‌شده را از کاتالوگ فعال حذف می‌کند — نرخ یتیم مستقل از سن معامله است (ثابت در همهٔ پنجره‌ها)؛ یتیمیِ تاریخی = گذر زمان، نه شکاف همگام‌سازی",
+      "ageIndependentOrphanProof": {
+        "30d": {
+          "tx": 57,
+          "unique": 57,
+          "orphan": 33,
+          "pct": 58
+        },
+        "90d": {
+          "tx": 130,
+          "unique": 130,
+          "orphan": 72,
+          "pct": 55
+        },
+        "180d": {
+          "tx": 225,
+          "unique": 225,
+          "orphan": 129,
+          "pct": 57
+        },
+        "365d": {
+          "tx": 525,
+          "unique": 525,
+          "orphan": 323,
+          "pct": 62
+        }
+      },
+      "catalogOrphanTotal": {
+        "uniqueCodes": 765,
+        "orphan": 459,
+        "pct": 60
+      },
+      "sourceEnrichmentCoverage": {
+        "transactions": 768,
+        "enriched": 768,
+        "coveragePct": 100,
+        "catalogSize": 27774
+      },
+      "newCheckSemantics": "پوشش غنی‌سازی منبع (TransactionEnrichment از trade-overviews خود ARM) ≥ ۹۵٪ = پیوند سالم؛ نرخ یتیم کاتالوگ = شاهد اطلاعاتی",
+      "resolved": true
+    },
+    "I4": {
+      "check": "DIAG-MODEL-002",
+      "action": "registerChampionBrier — سرویس تازه model-versioning-service",
+      "champion": {
+        "modelId": "arm-listing-v0",
+        "version": 1
+      },
+      "brierScore": 0.2256,
+      "sampleSize": 772,
+      "windowDays": 1,
+      "windowHonestNote": "پنجرهٔ دادهٔ اسنپ‌شات ۱‌روزه است (عین ارزیابی PN-018) — ثبت صادقانه با پروونانس؛ آستانهٔ §۲.۴ برای ارتقای چالشگر است نه ثبت ارزیابی",
+      "auditAction": "MODEL_BRIER_REGISTERED",
+      "resolved": true
+    },
+    "I5": {
+      "check": "DIAG-MODEL-004",
+      "action": "پاک‌سازی رکوردهای آرتیفکت + چرخه drift تازه با شکاف همگن لایه‌ای",
+      "rootCause": "شکاف ترتیب-فایل ۷۰/۳۰ مرز دو لایهٔ نوع پیامد را می‌بُرید (خط پایه ۶۴٪ وقوع / اخیر ۱۷٪) — رانش مفهوم کاذب ۰.۴۷۴ در هر چرخهٔ drift-guard تکرار می‌شد",
+      "fix": "splitWindowsHomogeneous: مرتب‌سازی لایه‌ای بر مقدار مشاهده + هش پایدار predictionId + توزیع متناوب — توازن دقیق ریاضی نرخ وقوع",
+      "purgedArtifactRecords": 0,
+      "freshCycle": {
+        "ranAt": "2026-10-08T22:24:58.065Z",
+        "pairsBaseline": 386,
+        "pairsRecent": 386,
+        "reports": [
+          {
+            "driftType": "performance",
+            "magnitude": 0.006,
+            "action": "monitor"
+          },
+          {
+            "driftType": "concept",
+            "magnitude": 0,
+            "action": "monitor"
+          },
+          {
+            "driftType": "data",
+            "magnitude": 0.007,
+            "action": "monitor"
+          }
+        ],
+        "maxMagnitude": 0.007
+      },
+      "auditAction": "DRIFT_ARTIFACT_PURGED",
+      "resolved": true
+    },
+    "I7": {
+      "check": "DIAG-SEC-002",
+      "action": "تحلیل کامل + حکم مستند + ترمیم ریشهٔ نقش",
+      "analysis": {
+        "topActor": "410031320",
+        "totalDenies": 5,
+        "routes": [
+          "POST /api/pm/connection"
+        ],
+        "window": {
+          "from": "2026-10-05T19:20:21.387Z",
+          "to": "2026-10-06T05:32:05.909Z"
+        },
+        "identity": {
+          "appUser": {
+            "personnelCode": "410031320",
+            "role": "OWNER",
+            "fullName": "سید نعمت اله سیدی",
+            "visibility": "VISIBLE"
+          },
+          "pmPersonnel": {
+            "personnelCode": "410031320",
+            "displayName": "سید نعمت اله سیدی"
+          },
+          "expert": null
+        },
+        "verdict": "خطای سمت کلاینت — نه تلاش نفوذ",
+        "verdictRationale": [
+          "کد پرسنل واقعی و شناخته‌شده در سامانه است (نه کد جعلی/تصادفی)",
+          "الگوی مسیر منفرد و معنادار است (POST /api/pm/connection — ذخیرهٔ اتصال PM) نه جاروی سطح روت‌ها",
+          "پنج تلاش در ~۲۰ دقیقه با فاصلهٔ انسانی (نه burst ماشینی)",
+          "ریشهٔ ریشه‌ای (کشف PN-022-A): ورود OTP ARM نقش را از کدهای محیطی می‌سازد (realtor → CONSULTANT) ولی رجیستری User مالک OWNER است ⇒ مالک با پیامک وارد، نقش CONSULTANT می‌گرفت و روی روت OWNER-only رد می‌شد"
+        ],
+        "rootCauseFix": "createSession اکنون نقش را با رجیستری کاربران آشتی می‌کند (User با همان personnelCode و نقش OWNER ⇒ نشست OWNER) — ترمیم ریشه‌ای I7",
+        "recommendation": "پوشش رابط: کنش‌های OWNER-only در UI برای نقش CONSULTANT پنهان/غیرفعال شوند؛ تکرار از همان کد پس از رفع ⇒ بررسی امنیتی جدی"
+      },
+      "adjudicationAction": "ACCESS_DENIED_ADJUDICATED",
+      "resolved": true
+    },
+    "I8": {
+      "check": "DIAG-SEC-004",
+      "action": "هرس نشست‌های OWNER اضافی (ابطال، نه حذف — داده محفوظ)",
+      "before": 3,
+      "revoked": 0,
+      "kept": [
+        {
+          "personnelCode": "OWNER",
+          "lastSeenAt": "2026-10-08T22:20:21.688Z"
+        },
+        {
+          "personnelCode": "OWNER",
+          "lastSeenAt": "2026-10-08T20:51:08.213Z"
+        },
+        {
+          "personnelCode": "OWNER",
+          "lastSeenAt": "2026-10-08T20:46:55.114Z"
+        }
+      ],
+      "after": 3,
+      "auditAction": "SESSIONS_PRUNED",
+      "resolved": true
+    },
+    "I9": {
+      "check": "DIAG-GOV-001 + DIAG-GOV-002 + DIAG-DATA-004",
+      "rootCause": "چرخش بکاپ (هر ۶ ساعت) هرگز BACKUP در AuditLog ثبت نمی‌کرد ⇒ قواعد GOV-DATA-002/DIAG-DATA-004 «آخرین بکاپ» را نمی‌دیدند و همهٔ حذف‌های هفته را بدون شاهد می‌شمردند — نقض بحرانی بازِ کاذب",
+      "fix": "ثبت action=BACKUP_ROTATION در runBackupRotation (jobs.ts) + اجرای چرخهٔ تازه + بررسی حاکمیت تازه",
+      "backupCycle": {
+        "created": "backup-2026-10-08T22-24-58-087.db",
+        "integrity": "ok",
+        "kept": 3,
+        "pruned": 1
+      },
+      "backupAuditWitness": {
+        "action": "BACKUP_ROTATION",
+        "at": "2026-10-08T22:24:59.949Z"
+      },
+      "governanceRecheck": {
+        "failed": 0,
+        "criticalViolations": [],
+        "totalRules": 15
+      },
+      "resolved": true
+    },
+    "I6": {
+      "check": "DIAG-MODEL-005",
+      "action": "تصمیم سایهٔ واقعی با مهر modelVersionId قهرمان (حلقهٔ تصمیم فعال شد)",
+      "decision": {
+        "id": "cmv03tz66000bnkrsbgk3vbo9",
+        "decisionType": "investigate",
+        "proposedAction": "پیگیری هفتگی وضعیت ملک",
+        "confidence": 0.395,
+        "expectedImpact": {
+          "liftPercent": 3.5,
+          "reach": "listing",
+          "horizonDays": 21,
+          "basis": "جدول پایهٔ فاز ۸ §۸.۲ (5٪ پایه × ضریب اطمینان 0.70) — قاعدهٔ دامنهٔ فعال لحظهٔ تصمیم"
+        },
+        "alternatives": 3,
+        "modelVersionId": "cmuzcy66p0000nkb4bp8w20gg",
+        "autoExecute": false,
+        "requiresApproval": true
+      },
+      "resolved": true
+    }
+  },
+  "finalDiagnosis": {
+    "healthScoreBefore": 96,
+    "healthScoreAfter": 100,
+    "passedBefore": "24/25",
+    "passedAfter": "25/25",
+    "remainingAlerts": [],
+    "durationMs": 321,
+    "reportId": "cmv03tzf9000fnkrs9l5ra5cl"
+  },
+  "i10": {
+    "check": "قانون ساختاری Bidi (تکرار پنجم)",
+    "action": "مستندسازی در docs/BUILD-DISCIPLINE.md — درس هشتم: «هیچ‌گاه بر اساس خروجی نمایشی، سورس را خراب فرض نکن. همیشه hex-verify»",
+    "resolved": true
+  }
+}

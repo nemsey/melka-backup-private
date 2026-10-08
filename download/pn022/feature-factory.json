@@ -1,0 +1,42 @@
+{
+  "workOrder": "PN-022-A/مرحلهٔ۴ — Feature Factory",
+  "ranAt": "2026-10-08T22:37:28.779Z",
+  "command": "bun run tile:new --name=contracts --target=/home/z/my-project/tool-results/tile-factory-witness",
+  "ok": true,
+  "name": "contracts",
+  "pascal": "Contracts",
+  "files": [
+    {
+      "path": "src/core/tiles/tiles/contracts/index.ts",
+      "lines": 32
+    },
+    {
+      "path": "src/core/tiles/tiles/contracts/ContractsPage.tsx",
+      "lines": 19
+    },
+    {
+      "path": "src/core/agent/contracts-agent.ts",
+      "lines": 17
+    },
+    {
+      "path": "src/core/repositories/interfaces/contracts.repository.ts",
+      "lines": 28
+    },
+    {
+      "path": "src/app/api/contracts/route.ts",
+      "lines": 19
+    },
+    {
+      "path": "tests/pn022-tile-contracts.test.ts",
+      "lines": 25
+    }
+  ],
+  "register": false,
+  "totalLines": 140,
+  "guarantees": {
+    "failLoudSkeleton": "همهٔ بدنه‌های منطق TILE_SKELETON پرتاب می‌کنند",
+    "noRegistryLeak": "ثبت رجیستری فقط با --register (کاشی نیمه‌بند در UI نمی‌آید)",
+    "zeroOverwrite": "نام موجود = خطای صریح",
+    "auditTrail": "TILE_GENERATED در AuditLog (بهترین-تلاش)"
+  }
+}

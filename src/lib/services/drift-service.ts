@@ -77,6 +77,43 @@ export function splitWindows(pairs: Pair[]): { baseline: Pair[]; recent: Pair[] 
   return { baseline: pairs.slice(0, cut), recent: pairs.slice(cut) };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// PN-022-A/مرحلهٔ۱ (اولاً-۱) — پاک‌سازی رانش ۰.۴۷۴ تاریخی
+// ─────────────────────────────────────────────────────────────────────────
+
+/** هش پایدار رشته (djb2) — تعیین‌پذیر بین اجراها؛ هیچ تصادفی در سنجش نیست */
+export function stableHash(s: string): number {
+  let h = 5381;
+  for (let i = 0; i < s.length; i += 1) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+/**
+ * PN-022-A/مرحلهٔ۱ — شکاف همگنِ لایه‌ای برای دادهٔ بدون بُعد زمان.
+ *
+ * ریشهٔ رانش ۰.۴۷۴ (تحلیل G5 + شاهد زندهٔ PN-022-A): فایل پیامدها دولایه
+ * نوشته می‌شود (۳۸۶ معامله + ۳۸۶ تعیین‌تکلیف‌نشده در دو لایهٔ مجزا) و شکاف
+ * ترتیب-فایل ۷۰/۳۰ دقیقاً مرز نوع پیامد را می‌بُرید: خط پایه ۶۴٪ وقوع،
+ * اخیر ۱۷٪ — رانش مفهومِ کاذب ۰.۴۷۴ در هر چرخهٔ drift-guard تکرار می‌شد.
+ *
+ * راه‌حل صادقانه: برای دادهٔ بدون بُعد زمان (اسنپ‌شات)، پنجره‌ها را «هم‌توزیع»
+ * می‌سازیم — مرتب‌سازی لایه‌ای بر مقدار مشاهده‌شده (تضمین ریاضی توازن دقیق
+ * نرخ وقوع هر دو پنجره؛ اختلاف حداکثر یک واحد در هر لایهٔ فرد) + هش پایدار
+ * predictionId درون هر لایه (پراکندگی بدون تصادف) + توزیع متناوب زوج/فرد.
+ * رانش زمانیِ معنادار تنها از جریان زندهٔ predictions-live می‌آید — اسنپ‌شات
+ * با ادعای رانش زمانی صادق نیست.
+ */
+export function splitWindowsHomogeneous(pairs: Pair[]): { baseline: Pair[]; recent: Pair[] } {
+  if (pairs.length < 4) return { baseline: pairs, recent: [] };
+  const sorted = [...pairs].sort(
+    (a, b) => a.observedValue - b.observedValue || stableHash(a.predictionId) - stableHash(b.predictionId)
+  );
+  const baseline: Pair[] = [];
+  const recent: Pair[] = [];
+  sorted.forEach((p, i) => (i % 2 === 0 ? baseline : recent).push(p));
+  return { baseline, recent };
+}
+
 /**
  * PN-019 (مرحلهٔ ۱ — ترمیم G5): شکاف زمان‌محور پنجره‌ها.
  * کشف ریشه‌ای: شکاف ترتیب فایل، مرز نوع پیامد را می‌بُرید (فایل پیامدها دولایه
@@ -88,14 +125,16 @@ export function splitWindowsByTime(
   outcomes: Array<{ predictionId: string; occurredAt?: string; evidence?: { observed?: number } }>,
   predictions: Array<{ predictionId: string; probability: number }>,
   opts: { recentDays?: number } = {},
-): { baseline: Pair[]; recent: Pair[]; splitBy: "time" | "file-order"; rationale: string } {
+): { baseline: Pair[]; recent: Pair[]; splitBy: "time" | "homogeneous"; rationale: string } {
   const recentDays = opts.recentDays ?? 30;
   const byPrediction = new Map(predictions.map((p) => [p.predictionId, p]));
   const dates = outcomes.map((o) => (o.occurredAt ?? "").slice(0, 10)).filter(Boolean);
   const distinctDays = new Set(dates).size;
 
   if (distinctDays <= 1) {
-    // اسنپ‌شات یک‌روزه — برش زمانی ممکن نیست؛ عقب‌افت صادقانه با مهر سازوکار
+    // اسنپ‌شات یک‌روزه — بُعد زمان موجود نیست؛ پنجره‌های هم‌توزیع لایه‌ای
+    // (PN-022-A/مرحلهٔ۱ — رفع ریشه‌ای رانش کاذب ۰.۴۷۴: شکاف ترتیب-فایل
+    // مرز دو لایهٔ نوع پیامد را می‌بُرید؛ شکاف همگن توزیع را عیناً متوازن می‌کند)
     const pairs: Pair[] = [];
     for (const o of outcomes) {
       const p = byPrediction.get(o.predictionId);
@@ -103,11 +142,10 @@ export function splitWindowsByTime(
       if (!p || obs === undefined) continue;
       pairs.push({ predictionId: o.predictionId, predictedValue: p.probability, observedValue: obs });
     }
-    const legacy = splitWindows(pairs);
     return {
-      ...legacy,
-      splitBy: "file-order",
-      rationale: `هر ${outcomes.length} پیامد در یک روز (${dates[0] ?? "?"}) ثبت شده‌اند — پیوند اسنپ‌شات تاریخی؛ برش زمانی ممکن نیست، ترتیب فایل با هشدار صریح (کشف PN-019 مرحلهٔ ۱).`,
+      ...splitWindowsHomogeneous(pairs),
+      splitBy: "homogeneous",
+      rationale: `هر ${outcomes.length} پیامد در یک روز (${dates[0] ?? "?"}) ثبت شده‌اند — پیوند اسنپ‌شات تاریخی؛ بُعد زمان موجود نیست. پنجره‌ها با شکاف همگن لایه‌ای ساخته شدند (مرتب‌سازی بر مقدار مشاهده + هش پایدار + توزیع متناوب) — هر دو پنجره هم‌توزیع‌اند؛ رانش زمانیِ معنادار تنها با جریان زندهٔ predictions-live (PN-022-A/مرحلهٔ۱).`,
     };
   }
 
@@ -122,14 +160,14 @@ export function splitWindowsByTime(
     const pair: Pair = { predictionId: o.predictionId, predictedValue: p.probability, observedValue: obs };
     (new Date(o.occurredAt).getTime() >= cutoff ? recent : baseline).push(pair);
   }
-  // پنجرهٔ خالی → عقب‌افت به ترتیب فایل (نردبان تنزل صادقانه — آشکارسازها پنجرهٔ خالی نمی‌فهمند)
+  // پنجرهٔ خالی → عقب‌افت به شکاف همگن (نردبان تنزل صادقانه — آشکارسازها پنجرهٔ خالی نمی‌فهمند؛
+  // شکاف ترتیب-فایل همان رانش کاذب دو لایه را می‌سازد — PN-022-A/مرحلهٔ۱)
   if (baseline.length === 0 || recent.length === 0) {
     const pairs: Pair[] = [...baseline, ...recent];
-    const legacy = splitWindows(pairs);
     return {
-      ...legacy,
-      splitBy: "file-order",
-      rationale: `برش زمانی همهٔ ${pairs.length} جفت را در یک پنجره انداخت (baseline=${baseline.length} · recent=${recent.length}) — عقب‌افت به ترتیب فایل ۷۰/۳۰ تا هر دو پنجره ساکن باشند (PN-019 مرحلهٔ ۱).`,
+      ...splitWindowsHomogeneous(pairs),
+      splitBy: "homogeneous",
+      rationale: `برش زمانی همهٔ ${pairs.length} جفت را در یک پنجره انداخت (baseline=${baseline.length} · recent=${recent.length}) — عقب‌افت به شکاف همگن لایه‌ای تا هر دو پنجره هم‌توزیع بمانند (PN-022-A/مرحلهٔ۱).`,
     };
   }
   return {
@@ -171,11 +209,13 @@ export interface DriftRunResult {
 
 export async function runDriftDetection(modelId: string, opts: { pairs?: Pair[] } = {}): Promise<DriftRunResult> {
   // PN-019 مرحلهٔ ۱: شکاف زمان‌محور هرجا ممکن شود — با مهر سازوکار در شاهد.
+  // PN-022-A/مرحلهٔ۱: اسنپ‌شات بدون بُعد زمان → شکاف همگن لایه‌ای (رفع ۰.۴۷۴).
   // اگر جفت‌های آماده تزریق شده (تست)، همان شکاف کلاسیک (تست‌ها گارانتی می‌کنند).
   let baseline: Pair[];
   let recent: Pair[];
-  let splitBy: "time" | "file-order" = "file-order";
+  let splitBy: "time" | "homogeneous" | "file-order" = "file-order";
   let splitRationale = "جفت‌های تزریقی تست — شکاف کلاسیک ۷۰/۳۰.";
+  let windowMembership: Map<string, "baseline" | "recent"> | null = null;
   if (opts.pairs) {
     const s = splitWindows(opts.pairs);
     baseline = s.baseline;
@@ -188,6 +228,10 @@ export async function runDriftDetection(modelId: string, opts: { pairs?: Pair[] 
     recent = timed.recent;
     splitBy = timed.splitBy;
     splitRationale = timed.rationale;
+    // عضویت هر جفت در پنجره — رانش داده هم از همان تقسیم پیروی می‌کند (هم‌نهیتی پنجره‌ها)
+    windowMembership = new Map();
+    for (const p of baseline) windowMembership.set(p.predictionId, "baseline");
+    for (const p of recent) windowMembership.set(p.predictionId, "recent");
   }
   const detector = new DriftDetector();
   const ranAt = new Date().toISOString();
@@ -210,12 +254,14 @@ export async function runDriftDetection(modelId: string, opts: { pairs?: Pair[] 
   reports.push(concept);
 
   // ۳) رانش داده — میانگین ویژگی‌ها از drivers (اگر موجود)
+  // PN-022-A/مرحلهٔ۱: پنجره‌های ویژگی از همان عضویت پنجرهٔ جفت‌ها پیروی می‌کنند
+  // (عین شکاف هم‌نهیت؛ پیش‌بینی‌های بدون پیامد با هش پایدار متوازن می‌شوند)
   const featBaseline: Record<string, number[]> = {};
   const featRecent: Record<string, number[]> = {};
   const predictions = await loadJsonl<RawPrediction>("predictions.jsonl");
-  const recStart = Math.floor(predictions.length * 0.7);
-  predictions.forEach((p, i) => {
-    const target = i < recStart ? featBaseline : featRecent;
+  predictions.forEach((p) => {
+    const win = windowMembership?.get(p.predictionId) ?? (stableHash(p.predictionId) % 2 === 0 ? "baseline" : "recent");
+    const target = win === "baseline" ? featBaseline : featRecent;
     for (const d of p.drivers ?? []) {
       (target[d.feature] ??= []).push(d.value);
     }

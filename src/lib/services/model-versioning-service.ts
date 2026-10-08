@@ -97,6 +97,59 @@ export async function championedModelIds(): Promise<string[]> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// PN-022-A/مرحلهٔ۱ (اولاً-۲ — DIAG-MODEL-002): ثبت امتیاز Brier قهرمان
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface RegisterBrierInput {
+  modelId: string;
+  /** امتیاز Brier اندازه‌گیری‌شده روی جفت‌های واقعی (۰..۱) */
+  brierScore: number;
+  sampleSize: number;
+  windowDays: number;
+  /** منبع اندازه‌گیری (مستند در notes و AuditLog) */
+  source: string;
+  actor: string;
+}
+
+/**
+ * ثبت امتیاز Brier قهرمان — رفع DIAG-MODEL-002.
+ * ارزیابی حلقهٔ کامل PN-018 روی ۷۷۲ جفت واقعی انجام شده بود (قهرمان v1 =
+ * Brier ۰٫۲۲۵۶) ولی هرگز در ModelVersion ثبت نشد و خودتشخیصی فاز ۱۰ آن را
+ * کشف کرد. این تابع مقدار اندازه‌گیری‌شده را با پروونانس کامل ثبت می‌کند —
+ * صفر جعل: مقدار باید از EvaluationEngine روی همان جفت‌ها محاسجه شده باشد.
+ */
+export async function registerChampionBrier(input: RegisterBrierInput): Promise<ModelVersionRow> {
+  if (!input.modelId || input.modelId.trim().length < 3) {
+    throw new MelkApiError("UNKNOWN", "شناسهٔ مدل نامعتبر است.", 400, false);
+  }
+  if (!Number.isFinite(input.brierScore) || input.brierScore < 0 || input.brierScore > 1) {
+    throw new MelkApiError("UNKNOWN", "امتیاز Brier باید در بازهٔ ۰..۱ باشد.", 400, false);
+  }
+  const champion = await db.modelVersion.findFirst({ where: { modelId: input.modelId, status: "champion" }, orderBy: { version: "desc" } });
+  if (!champion) throw new MelkApiError("UNKNOWN", "قهرمانی برای این مدل ثبت نشده است.", 404, false);
+  const row = await db.modelVersion.update({
+    where: { id: champion.id },
+    data: {
+      brierScore: input.brierScore,
+      sampleSize: input.sampleSize,
+      windowDays: input.windowDays,
+      notes: `ثبت Brier قهرمان — ${input.source} (PN-022-A/مرحلهٔ۱ · DIAG-MODEL-002)`,
+    },
+  });
+  await db.auditLog.create({
+    data: {
+      action: "MODEL_BRIER_REGISTERED",
+      actor: input.actor,
+      detail: JSON.stringify({
+        modelId: input.modelId, version: champion.version, brierScore: input.brierScore,
+        sampleSize: input.sampleSize, windowDays: input.windowDays, source: input.source,
+      }),
+    },
+  }).catch(() => undefined);
+  return toRow(row);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // ساخت چالشگر (§۶.۲ سند طراحی)
 // ─────────────────────────────────────────────────────────────────────────
 

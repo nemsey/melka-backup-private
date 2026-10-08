@@ -64,6 +64,9 @@ const nextConfig: NextConfig = {
     "*": [
       "./backups/**",
       "./db/**",
+      "./node_modules/@embedded-postgres/**",
+      "./node_modules/.pg-client/**",
+      "./node_modules/embedded-postgres/**",
       "./prisma/db/**",
       "./download/**",
       "./skills/**",

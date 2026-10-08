@@ -40,6 +40,7 @@ import { getMelkProvider } from "./provider";
 import { logSync } from "@/lib/logger";
 import { syncMode } from "./sync-mode";
 import { MELK_ENDPOINTS } from "./endpoints";
+import { getIntegrationRepository } from "@/core/repositories";
 import type {
   CommissionCityConfig,
   CrmContract,
@@ -104,6 +105,64 @@ export interface SyncStateInfo {
 }
 
 const SYNC_STATE_ID = "singleton";
+
+// ==========================================================================
+// PN-022-A/مرحلهٔ۱ (اولاً-۳) — سنک صفحه‌ای (checkpoint) برای سنک اصلی ARM
+// ==========================================================================
+// ریشه (شاهد F4 گزارش PN-020/گام اول): بالادستی ARM پشت nginx است و خطاهای
+// گذرای ۵۰۲/۵۰۴ وسط سنک، کل زنجیرهٔ ۷۰ثانیه‌ای را می‌کشت؛ تلاش بعدی از صفحهٔ ۱
+// شروع می‌شد — «تأخیرهای مکرر». سه ترمیم:
+//   ۱) تلاش مجدد گذرا درون حلقهٔ صفحه‌بندی (۵۰۲/۵۰۳/۵۰۴/تایم‌اوت — بک‌آف ۸۰۰ms×۲)
+//   ۲) checkpoint صفحه‌ای (عین الگوی P6.5-11 بند ب): دادهٔ صفحه نوشته شد ⇒ مهر پیشروی؛
+//      قطع برق/شبکه هیچ‌گاه حفرهٔ داده نمی‌سازد
+//   ۳) ازسرگیری: اجرای بعدی از «آخرین صفحهٔ کامل + ۱» ادامه می‌یابد، نه از صفحهٔ ۱
+// موجودیت‌های checkpoint سنک اصلی (افزوده بر قرارداد مدل SyncCheckpoint):
+
+export const MAIN_SYNC_CHECKPOINT_IDS = {
+  transactions: "main-sync:transactions",
+  experts: "main-sync:experts",
+  interactions: "main-sync:interactions",
+  visits: "main-sync:visits",
+  supplyDemand: "main-sync:supply-demand",
+} as const;
+
+/** نتیجهٔ واکشی صفحه‌بندی‌شده با شواهد checkpoint */
+export interface PagedFetchOutcome {
+  resumed: boolean;
+  pagesFetched: number;
+  startPage: number;
+  totalPages: number;
+  totalAtSource: number;
+}
+
+/** پیشبرد checkpoint سنک اصلی — پس از نوشتن دادهٔ صفحه (ترتیب حیاتی) */
+async function advanceMainSyncCheckpoint(
+  checkpointId: string,
+  cp: { cycleId: string; pageSize: number; lastCompletedPage: number; totalPages: number; totalAtSource: number },
+  phase: "in-progress" | "complete"
+): Promise<void> {
+  await getIntegrationRepository().upsertSyncCheckpoint({
+    id: checkpointId,
+    cycleId: cp.cycleId,
+    pageSize: cp.pageSize,
+    lastCompletedPage: cp.lastCompletedPage,
+    totalPages: cp.totalPages,
+    totalAtSource: cp.totalAtSource,
+    phase,
+    ...(phase === "complete" ? { completedAt: new Date() } : { completedAt: null }),
+  });
+}
+
+/** تصمیم نقطهٔ شروع چرخهٔ خانوادهٔ سنک اصلی (عین resolveCycleStart کاتالوگ) */
+export function resolveMainSyncStart(
+  saved: { phase: string; pageSize: number; lastCompletedPage: number; cycleId: string } | null,
+  pageLimit: number
+): { startPage: number; cycleId: string; resumed: boolean } {
+  if (saved && saved.phase === "in-progress" && saved.pageSize === pageLimit && saved.lastCompletedPage > 0) {
+    return { startPage: saved.lastCompletedPage + 1, cycleId: saved.cycleId, resumed: true };
+  }
+  return { startPage: 1, cycleId: `msync-${randomUUID().slice(0, 8)}`, resumed: false };
+}
 
 // ==========================================================================
 // قفل همزمانی sync — HOTFIX-05 (B6)
@@ -259,6 +318,13 @@ async function fetchTradedSummary(
 /**
  * خواندن یک گزارش صفحه‌بندی‌شده تا انتها (با سقف ایمن صفحات).
  * baseQuery = پارامترهای الزامی گزارش (مثل بازهٔ تاریخی) که در همهٔ صفحات تکرار می‌شوند.
+ *
+ * PN-022-A/مرحلهٔ۱ (اولاً-۳) — سه قابلیت تازه:
+ *   opts.checkpointId → سنک صفحه‌ای با ازسرگیری (چرخهٔ ناتمام از آخرین صفحهٔ
+ *   کامل + ۱ ادامه می‌یابد — عین الگوی P6.5-11 بند ب؛ ترتیب: داده نوشته شد ⇒ مهر پیشروی)
+ *   opts.onPage → اعمال بلافاصلهٔ هر صفحه (مسیر افزایشی — پیشروی نجات‌پذیر)
+ *   تلاش مجدد گذرا (maxRetries=۲) — ریشهٔ «تأخیرهای مکرر»: قبلاً maxRetries=۰
+ *   بود و یک لرزش ۵۰۲/۵۰۴ nginx کل زنجیرهٔ ۷۰ثانیه‌ای را می‌کشت.
  */
 async function fetchAllPages<T>(
   path: string,
@@ -266,34 +332,64 @@ async function fetchAllPages<T>(
   maxPages: number,
   pageLimit: number,
   mapRow: (row: Record<string, unknown>, index: number, page: number, limit: number) => T | null,
-  baseQuery: Record<string, string | number> = {}
-): Promise<{ rows: T[] }> {
+  baseQuery: Record<string, string | number> = {},
+  opts: { checkpointId?: string; onPage?: (rows: T[]) => Promise<void> } = {}
+): Promise<{ rows: T[] } & PagedFetchOutcome> {
   const cfg = getMelkApiConfig();
   const rows: T[] = [];
-  for (let page = 1; page <= maxPages; page++) {
+  // ---- checkpoint: تصمیم نقطهٔ شروع (چرخهٔ ناتمام → ازسرگیری) ----
+  const savedCp = opts.checkpointId ? await getIntegrationRepository().getSyncCheckpoint(opts.checkpointId) : null;
+  const cycle = resolveMainSyncStart(savedCp, pageLimit);
+  // بودجهٔ صفحات = در هر اجرا؛ چرخهٔ ناتمام در اجراهای بعدی ادامه می‌یابد
+  const endPageExclusive = cycle.startPage + Math.max(1, maxPages);
+  let totalPages = savedCp?.totalPages ?? 0;
+  let totalAtSource = savedCp?.totalAtSource ?? 0;
+  let pagesFetched = 0;
+  let page = cycle.startPage;
+  for (; page < endPageExclusive; page++) {
     const res = await armCall<unknown>({
       path,
       baseUrl: cfg.armApiBase,
       token: armToken,
       query: { ...baseQuery, page, limit: pageLimit },
       timeoutMs: cfg.timeoutMs,
-      maxRetries: 0, // در حلقه صفحه‌بندی تلاش مجدد نمی‌کنیم (صفحه بعدی خودش تازه می‌شود)
+      // PN-022-A/مرحلهٔ۱ — خطاهای گذرای ۵۰۲/۵۰۳/۵۰۴/تایم‌اوت (retryable) با
+      // بک‌آف ۸۰۰/۱۶۰۰ms دوباره پرسیده می‌شوند؛ ۴xx هرگز تلاش مجدد نمی‌شود
+      maxRetries: 2,
     });
-    const { rows: pageRows, total, totalPages } = extractPagedList(res.data, (row, i) => mapRow(row, i, page, pageLimit));
+    const { rows: pageRows, total, totalPages: tp } = extractPagedList(res.data, (row, i) => mapRow(row, i, page, pageLimit));
     rows.push(...pageRows);
-    const pages = totalPages ?? (total > 0 ? Math.ceil(total / pageLimit) : 1);
-    if (page >= pages || pageRows.length === 0) break;
+    totalPages = tp ?? 0;
+    totalAtSource = total ?? 0;
+    pagesFetched += 1;
+    const pages = tp || (total > 0 ? Math.ceil(total / pageLimit) : 1);
+    const isLast = page >= pages || pageRows.length === 0;
+    // اعمال بلافاصلهٔ صفحه (مسیر افزایشی) — پیش از مهر checkpoint (ترتیب حیاتی)
+    if (opts.onPage && pageRows.length > 0) await opts.onPage(pageRows);
+    if (opts.checkpointId) {
+      await advanceMainSyncCheckpoint(
+        opts.checkpointId,
+        { cycleId: cycle.cycleId, pageSize: pageLimit, lastCompletedPage: page, totalPages: pages, totalAtSource: total },
+        isLast ? "complete" : "in-progress"
+      );
+    }
+    if (isLast) break;
     // احتیاط توصیه‌شدهٔ ملکا-شورا-۰۰۷ — فاصلهٔ کوتاه بین صفحات: rate آزاد، ولی
     // بدون burst (پیک صبح شنبهٔ شب ۱ نشان داد لبهٔ مبدأ در فشار لحظه‌ای سیاه‌چاله می‌شود)
     await new Promise((r) => setTimeout(r, 400));
   }
-  return { rows };
+  return { rows, resumed: cycle.resumed, pagesFetched, startPage: cycle.startPage, totalPages, totalAtSource };
 }
 
 /**
  * استخراج کامل معاملات، کارشناسان، تعاملات، بازدیدها و عرضه/تقاضا از سامانه ARM
  * با توکن ARM. صفحه‌بندی به‌طور خودکار طی می‌شود (تا سقف ایمن صفحات).
  * (پیاده‌سازی داخلی — همیشه از syncFromArm استفاده کنید تا قفل همزمانی اعمال شود)
+ *
+ * PN-022-A/مرحلهٔ۱ (اولاً-۳) — در مسیر افزایشی هر خانواده «صفحه‌به-صفحه» اعمال
+ * می‌شود (onPage) و checkpoint همان‌جا جلو می‌رود؛ شکستِ میانی، پیشرویِ
+ * نجات‌پذیر می‌سازد و اجرای بعدی از همان صفحه ادامه می‌یابد. جاروی
+ * سنگ‌قبرها فقط با کلیدهای کاملِ چرخهٔ کامل اجرا می‌شود (ازسرگیری ⇒ تعویق).
  */
 async function doSyncFromArm(armToken: string): Promise<SyncResult> {
   const now = new Date();
@@ -309,66 +405,95 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
   const rangeForLog = buildReportDateRange();
   logSync("sync-run", { status: "start", mode: incremental ? "incremental" : "legacy", detail: { runId, reportRange: rangeForLog } });
 
+  // PN-022-A/مرحلهٔ۱ — اعمال صفحه‌به-صفحه (فقط مسیر افزایشی؛ legacy عین قبل)
+  const pageApplier = <T>(entity: MainSyncFamilyEntity) => {
+    if (!incremental) return undefined;
+    return async (rows: T[]) => {
+      await applyMainSyncFamily(runId, buildMainSyncFamily(entity, rows as never[], runId, { fetched: true }));
+    };
+  };
+  // وضعیت هر خانواده برای جارو (تنها چرخهٔ کاملِ تازه جارو می‌شود)
+  const familyCycle: Partial<Record<MainSyncFamilyEntity, { resumed: boolean; fetched: boolean }>> = {};
+  const noteCycle = (entity: MainSyncFamilyEntity, o: { resumed: boolean; fetched: boolean }) => {
+    familyCycle[entity] = o;
+  };
+
   try {
     // ---------------- ۱) گزارش تطابق معاملات + خلاصه ----------------
     // رفع B.1: بازهٔ الزامی ارسال می‌شود و «لیست» از traded-count می‌آید
     // (traded-count-total فقط خلاصهٔ چهارگانه است — کشف شب ۱).
     const range = buildReportDateRange();
-    const { rows: transactions } = await fetchAllPages(
+    const txFetch = await fetchAllPages(
       MELK_ENDPOINTS.arm.tradedCount,
       armToken,
       50,
       100,
       mapArmTradedRow,
-      range
+      range,
+      { checkpointId: incremental ? MAIN_SYNC_CHECKPOINT_IDS.transactions : undefined, onPage: pageApplier<CrmTransaction>("transactions") }
     );
+    const transactions = txFetch.rows;
+    noteCycle("transactions", { resumed: txFetch.resumed, fetched: true });
     const endpointSummary = await fetchTradedSummary(armToken, range);
     const summary = resolveTradedSummary(endpointSummary, transactions);
 
     // ---------------- ۲) فهرست کاربران/مشاوران ----------------
-    const { rows: experts } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorsList, armToken, 30, 100, mapArmRealtorRow);
+    const exFetch = await fetchAllPages(MELK_ENDPOINTS.arm.realtorsList, armToken, 30, 100, mapArmRealtorRow, {}, {
+      checkpointId: incremental ? MAIN_SYNC_CHECKPOINT_IDS.experts : undefined, onPage: pageApplier<CrmExpert>("experts"),
+    });
+    const experts = exFetch.rows;
+    noteCycle("experts", { resumed: exFetch.resumed, fetched: true });
 
     // ---------------- ۳) تعاملات مشاوران با یکدیگر ----------------
     let interactions: CrmInteraction[] = [];
-    let interactionsFetched = false;
     try {
       // B.4-استاتیک: صفحهٔ خود سامانه کوئری را فقط با (startDate && endDate) || realtor
       // فعال می‌کند ⇒ بازهٔ گزارش مانند خانوادهٔ realtor-reports ارسال می‌شود
-      const { rows: inRows } = await fetchAllPages(MELK_ENDPOINTS.arm.realtorInteractions, armToken, 20, 200, mapArmInteractionRow, range);
-      interactions = inRows;
-      interactionsFetched = true;
+      const inFetch = await fetchAllPages(MELK_ENDPOINTS.arm.realtorInteractions, armToken, 20, 200, mapArmInteractionRow, range, {
+        checkpointId: incremental ? MAIN_SYNC_CHECKPOINT_IDS.interactions : undefined, onPage: pageApplier<CrmInteraction>("interactions"),
+      });
+      interactions = inFetch.rows;
+      noteCycle("interactions", { resumed: inFetch.resumed, fetched: true });
     } catch {
       // تعاملات گزارش مکمل است — نبودش نباید کل همگام‌سازی را شکست بدهد
+      // (صفحات اعمال‌شدهٔ پیشروی نجات‌پذیرند؛ چرخه در checkpoint باز می‌ماند)
       interactions = [];
+      noteCycle("interactions", { resumed: true, fetched: false });
     }
 
     // ---------------- ۴) بازدیدها و پیگیری‌ها (غیربحرانی) ----------------
     let visits: CrmVisit[] = [];
-    let visitsFetched = false;
     try {
-      const { rows: viRows } = await fetchAllPages(MELK_ENDPOINTS.arm.visitsList, armToken, 20, 100, mapArmVisitRow);
-      visits = viRows;
-      visitsFetched = true;
+      const viFetch = await fetchAllPages(MELK_ENDPOINTS.arm.visitsList, armToken, 20, 100, mapArmVisitRow, {}, {
+        checkpointId: incremental ? MAIN_SYNC_CHECKPOINT_IDS.visits : undefined, onPage: pageApplier<CrmVisit>("visits"),
+      });
+      visits = viFetch.rows;
+      noteCycle("visits", { resumed: viFetch.resumed, fetched: true });
     } catch {
       visits = [];
+      noteCycle("visits", { resumed: true, fetched: false });
     }
 
     // ---------------- ۵) گزارش عرضه و تقاضا (غیربحرانی) ----------------
     let supplyDemand: CrmSupplyDemand[] = [];
-    let supplyDemandFetched = false;
     try {
       // supply-demand هم‌خانوادهٔ realtor-reports است ⇒ بازهٔ الزامی می‌گیرد
       // (حدس مستندشدهٔ B.1 — اگر سرور پارامتر اضافی را نادیده بگیرد بی‌ضرر است؛
       // بدون بازه این خانواده 400 می‌دهد. شکست همچنان ساکت-fail غیربحرانی است.)
-      const { rows: sdRows } = await fetchAllPages(MELK_ENDPOINTS.armReports.supplyDemand, armToken, 10, 100, mapArmSupplyDemandRow, range);
-      supplyDemand = sdRows;
-      supplyDemandFetched = true;
+      const sdFetch = await fetchAllPages(MELK_ENDPOINTS.armReports.supplyDemand, armToken, 10, 100, mapArmSupplyDemandRow, range, {
+        checkpointId: incremental ? MAIN_SYNC_CHECKPOINT_IDS.supplyDemand : undefined, onPage: pageApplier<CrmSupplyDemand>("supplyDemand"),
+      });
+      supplyDemand = sdFetch.rows;
+      noteCycle("supplyDemand", { resumed: sdFetch.resumed, fetched: true });
     } catch {
       supplyDemand = [];
+      noteCycle("supplyDemand", { resumed: true, fetched: false });
     }
 
     // ---------------- ۶) قراردادها و اسناد (صورت وضعیت‌ها) (غیربحرانی) ----------------
     // لیست + جزئیات هر قرارداد (خریداران، فروشندگان، حق‌السهم مشاوران)
+    // (این خانواده واکشی دو مرحله‌ای دارد — checkpoint صفحه‌ای ندارد؛
+    // اعمال خانواده‌ای + جاروی کامل همان‌جا انجام می‌شود)
     let contracts: CrmContract[] = [];
     let contractsFetched = false;
     try {
@@ -380,10 +505,31 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
 
     // ---------------- ذخیره در پایگاه محلی ----------------
     if (incremental) {
-      // P2-04 — مسیر افزایشی: upsert بر کلید طبیعی + نقطه ازسرگیری + نامه مرده
-      await applyIncrementalSync(runId, {
-        transactions, experts, interactions, visits, supplyDemand, contracts,
-        interactionsFetched, visitsFetched, supplyDemandFetched, contractsFetched,
+      // P2-04 — مسیر افزایشی: upsert بر کلید طبیعی + نامه مرده
+      // PN-022-A/مرحلهٔ۱ — ردیف‌های خانواده‌های صفحه‌ای هم‌اکنون اعمال شده‌اند؛
+      // اینجا: قراردادها + جاروی سنگ‌قبرهای چرخه‌های کامل تازه
+      const ctFamily = buildMainSyncFamily("contracts", contracts as never[], runId, { fetched: contractsFetched });
+      await applyMainSyncFamily(runId, ctFamily);
+      const done: Array<{ entity: string; count: number; failed: number }> = [
+        { entity: "transactions", count: transactions.length, failed: 0 },
+        { entity: "experts", count: experts.length, failed: 0 },
+        { entity: "interactions", count: interactions.length, failed: familyCycle.interactions?.fetched ? 0 : -1 },
+        { entity: "visits", count: visits.length, failed: familyCycle.visits?.fetched ? 0 : -1 },
+        { entity: "supplyDemand", count: supplyDemand.length, failed: familyCycle.supplyDemand?.fetched ? 0 : -1 },
+      ];
+      // جارو — تنها چرخهٔ کاملِ تازه (نه ازسرگیری‌شده): کلیدهای این اجرا کامل‌اند
+      const sweepable: Array<[MainSyncFamilyEntity, unknown[]]> = [
+        ["transactions", transactions], ["experts", experts], ["interactions", interactions],
+        ["visits", visits], ["supplyDemand", supplyDemand], ["contracts", contracts],
+      ];
+      for (const [entity, rows] of sweepable) {
+        const c = familyCycle[entity];
+        const fullFreshCycle = entity === "contracts" ? contractsFetched : c?.fetched === true && c?.resumed === false;
+        if (!fullFreshCycle || rows.length === 0) continue;
+        await sweepFamilyStale(buildMainSyncFamily(entity, rows as never[], runId, { fetched: true }));
+      }
+      await writeSyncState({
+        lastSyncCursor: JSON.stringify({ runId, done: done.map((d) => d.entity), detail: done }),
       });
     } else {
       // مسیر legacy — عین کد قبلی: پاک‌سازی کامل + درج اتمیک
@@ -651,7 +797,7 @@ async function openDeadLetterKeys(entity: string): Promise<Set<string>> {
 
 /** مشخصات یک خانواده داده برای مسیر افزایشی */
 interface IncrementalFamily<T> {
-  entity: "transactions" | "experts" | "interactions" | "visits" | "supplyDemand" | "contracts";
+  entity: MainSyncFamilyEntity;
   rows: T[];
   /** واکشی این خانواده موفق بوده؟ (شکست واکشی ⇒ خانواده دست‌نخورده می‌ماند — تفاوت عمدی با legacy) */
   fetched: boolean;
@@ -660,6 +806,142 @@ interface IncrementalFamily<T> {
   /** کلیدهای موجود در پایگاه (برای جاروی سنگ‌قبرها) */
   listExistingKeys: () => Promise<string[]>;
   deleteByKeys: (keys: string[]) => Promise<unknown>;
+}
+
+/** موجودیت‌های خانوادهٔ سنک اصلی (کلید نقطهٔ ازسرگیری داده) */
+type MainSyncFamilyEntity = "transactions" | "experts" | "interactions" | "visits" | "supplyDemand" | "contracts";
+
+/**
+ * PN-022-A/مرحلهٔ۱ (اولاً-۳) — کارخانهٔ خانوادهٔ افزایشی.
+ * نگاشت ردیف‌های خام CRM → ورودی upsert همان‌جا انجام می‌شود تا هر دو مسیر
+ * (اعمال صفحه‌به-صفحه درون fetchAllPages و اعمال خانواده‌ای applyIncrementalSync)
+ * عین هم باشند — صفر انشعاب منطق.
+ */
+export function buildMainSyncFamily(
+  entity: MainSyncFamilyEntity,
+  crmRows: never[],
+  runId: string,
+  opts: { fetched: boolean }
+): IncrementalFamily<never> {
+  const txRepo = getTransactionRepository();
+  const exRepo = getExpertRepository();
+  const mkRepo = getMarketRepository();
+  const ctRepo = getContractRepository();
+  const viRepo = getVisitRepository();
+  switch (entity) {
+    case "transactions":
+      return {
+        entity,
+        rows: (crmRows as unknown as CrmTransaction[]).map(toTxUpsert) as never[],
+        fetched: opts.fetched,
+        keyOf: (t) => (t as unknown as TransactionUpsertInput).id,
+        upsert: (rows) => txRepo.upsertBatch(rows as unknown as TransactionUpsertInput[]),
+        listExistingKeys: async () => (await db.transactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
+        deleteByKeys: (keys) => db.transactionRecord.deleteMany({ where: { id: { in: keys } } }),
+      };
+    case "experts":
+      return {
+        entity,
+        rows: (crmRows as unknown as CrmExpert[]).map(toExUpsert) as never[],
+        fetched: opts.fetched,
+        keyOf: (e) => (e as unknown as ExpertUpsertInput).personnelCode,
+        upsert: (rows) => exRepo.upsertBatch(rows as unknown as ExpertUpsertInput[]),
+        listExistingKeys: async () => (await db.expertRecord.findMany({ where: { sourceRunId: null }, select: { personnelCode: true } })).map((r) => r.personnelCode),
+        deleteByKeys: (keys) => db.expertRecord.deleteMany({ where: { personnelCode: { in: keys } } }),
+      };
+    case "interactions":
+      return {
+        entity,
+        rows: (crmRows as unknown as CrmInteraction[]).map(toInUpsert) as never[],
+        fetched: opts.fetched,
+        keyOf: (i) => (i as unknown as InteractionUpsertInput).id,
+        upsert: (rows) => exRepo.upsertInteractionsBatch(rows as unknown as InteractionUpsertInput[]),
+        listExistingKeys: async () => (await db.interactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
+        deleteByKeys: (keys) => db.interactionRecord.deleteMany({ where: { id: { in: keys } } }),
+      };
+    case "visits":
+      return {
+        entity,
+        rows: (crmRows as unknown as CrmVisit[]).map(toViUpsert) as never[],
+        fetched: opts.fetched,
+        keyOf: (v) => (v as unknown as VisitUpsertInput).id,
+        upsert: (rows) => viRepo.upsertBatch(rows as unknown as VisitUpsertInput[]),
+        listExistingKeys: async () => (await db.visitRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
+        deleteByKeys: (keys) => db.visitRecord.deleteMany({ where: { id: { in: keys } } }),
+      };
+    case "supplyDemand":
+      return {
+        entity,
+        rows: (crmRows as unknown as CrmSupplyDemand[]).map((s) => toSdUpsert(s, runId)) as never[],
+        fetched: opts.fetched,
+        keyOf: (s) => (s as unknown as SupplyDemandUpsertInput).id,
+        upsert: (rows) => mkRepo.upsertSupplyDemandBatch(rows as unknown as SupplyDemandUpsertInput[]),
+        listExistingKeys: async () => (await db.supplyDemandRecord.findMany({ select: { id: true } })).map((r) => r.id),
+        deleteByKeys: (keys) => db.supplyDemandRecord.deleteMany({ where: { id: { in: keys } } }),
+      };
+    case "contracts":
+    default:
+      return {
+        entity: "contracts",
+        rows: (crmRows as unknown as CrmContract[]).map(toContractUpsert) as never[],
+        fetched: opts.fetched,
+        keyOf: (c) => (c as unknown as ContractUpsertInput).id,
+        upsert: (rows) => ctRepo.upsertBatch(rows as unknown as ContractUpsertInput[]),
+        listExistingKeys: async () => (await db.contractRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
+        deleteByKeys: (keys) => db.contractRecord.deleteMany({ where: { id: { in: keys } } }),
+      };
+  }
+}
+
+/**
+ * اعمال یک خانواده: تلاش دسته‌ای → تک‌تک در شکست (نامهٔ مرده) → حل نامه‌های موفق.
+ * (بدون جارو — جارو فقط با کلیدهای کامل چرخهٔ کامل اجرا می‌شود: sweepFamilyStale)
+ */
+export async function applyMainSyncFamily(runId: string, family: IncrementalFamily<never>): Promise<{ count: number; failed: number }> {
+  if (!family.fetched) return { count: 0, failed: -1 }; // -1 = skipped
+  const keys = family.rows.map(family.keyOf);
+  const failedKeys: string[] = [];
+  try {
+    // تلاش دسته‌ای (مسیر سریع — اکثر اجراها موفق‌اند)
+    await family.upsert(family.rows);
+  } catch {
+    // شکست دسته‌ای ⇒ تک‌تک برای ایزوله کردن ردیف‌های خراب (upsertها idempotentند)
+    for (let i = 0; i < family.rows.length; i++) {
+      try {
+        await family.upsert([family.rows[i]]);
+      } catch (err) {
+        failedKeys.push(keys[i]);
+        await recordDeadLetter(runId, family.entity, keys[i], err);
+      }
+    }
+  }
+  // ردیف‌های موفق این خانواده که قبلاً نامه مرده بودند → حل‌شده
+  await resolveDeadLetters(family.entity, keys.filter((k) => !failedKeys.includes(k)));
+  return { count: family.rows.length, failed: failedKeys.length };
+}
+
+/**
+ * جاروی سنگ‌قبرها: ردیف‌هایی که دیگر در سامانه نیستند (به‌جز نامه‌های مرده باز).
+ * P6.5-03 — رکوردهای Bulk (sourceRunId غیرتهی) از جارو محافظت می‌شوند:
+ * داده تاریخیِ خارج از پوشش واکشی sync است؛ حذفش = حفره داده غیرقابل ترمیم (کشف §۱.۹).
+ *
+ * PN-022-A/مرحلهٔ۱ — قید صحت: تنها با «کلیدهای کامل یک چرخهٔ کاملِ تازه» صدا
+ * زده می‌شود؛ چرخهٔ ازسرگیری‌شده کلیدهای ناقص دارد و جارو تا چرخهٔ کامل بعد تعویق
+ * می‌خورد (حذف نادرست = حفرهٔ داده).
+ */
+export async function sweepFamilyStale(family: IncrementalFamily<never>): Promise<number> {
+  try {
+    const keys = family.rows.map(family.keyOf);
+    const existing = await family.listExistingKeys();
+    const fetchedSet = new Set(keys);
+    const openDead = await openDeadLetterKeys(family.entity);
+    const stale = existing.filter((k) => !fetchedSet.has(k) && !openDead.has(k));
+    if (stale.length > 0) await family.deleteByKeys(stale);
+    return stale.length;
+  } catch {
+    // جارو شکست خورد ⇒ اجرا همچنان موفق است؛ دفع بعد تمیز می‌کند
+    return 0;
+  }
 }
 
 /**
@@ -683,67 +965,13 @@ export async function applyIncrementalSync(
     contractsFetched: boolean;
   }
 ): Promise<void> {
-  const txRepo = getTransactionRepository();
-  const exRepo = getExpertRepository();
-  const mkRepo = getMarketRepository();
-  const ctRepo = getContractRepository();
-  const viRepo = getVisitRepository();
-
   const families: IncrementalFamily<never>[] = [
-    {
-      entity: "transactions",
-      rows: data.transactions.map(toTxUpsert) as never[],
-      fetched: true,
-      keyOf: (t) => (t as unknown as TransactionUpsertInput).id,
-      upsert: (rows) => txRepo.upsertBatch(rows as unknown as TransactionUpsertInput[]),
-      listExistingKeys: async () => (await db.transactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
-      deleteByKeys: (keys) => db.transactionRecord.deleteMany({ where: { id: { in: keys } } }),
-    },
-    {
-      entity: "experts",
-      rows: data.experts.map(toExUpsert) as never[],
-      fetched: true,
-      keyOf: (e) => (e as unknown as ExpertUpsertInput).personnelCode,
-      upsert: (rows) => exRepo.upsertBatch(rows as unknown as ExpertUpsertInput[]),
-      listExistingKeys: async () => (await db.expertRecord.findMany({ where: { sourceRunId: null }, select: { personnelCode: true } })).map((r) => r.personnelCode),
-      deleteByKeys: (keys) => db.expertRecord.deleteMany({ where: { personnelCode: { in: keys } } }),
-    },
-    {
-      entity: "interactions",
-      rows: data.interactions.map(toInUpsert) as never[],
-      fetched: data.interactionsFetched,
-      keyOf: (i) => (i as unknown as InteractionUpsertInput).id,
-      upsert: (rows) => exRepo.upsertInteractionsBatch(rows as unknown as InteractionUpsertInput[]),
-      listExistingKeys: async () => (await db.interactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
-      deleteByKeys: (keys) => db.interactionRecord.deleteMany({ where: { id: { in: keys } } }),
-    },
-    {
-      entity: "visits",
-      rows: data.visits.map(toViUpsert) as never[],
-      fetched: data.visitsFetched,
-      keyOf: (v) => (v as unknown as VisitUpsertInput).id,
-      upsert: (rows) => viRepo.upsertBatch(rows as unknown as VisitUpsertInput[]),
-      listExistingKeys: async () => (await db.visitRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
-      deleteByKeys: (keys) => db.visitRecord.deleteMany({ where: { id: { in: keys } } }),
-    },
-    {
-      entity: "supplyDemand",
-      rows: data.supplyDemand.map((s) => toSdUpsert(s, runId)) as never[],
-      fetched: data.supplyDemandFetched,
-      keyOf: (s) => (s as unknown as SupplyDemandUpsertInput).id,
-      upsert: (rows) => mkRepo.upsertSupplyDemandBatch(rows as unknown as SupplyDemandUpsertInput[]),
-      listExistingKeys: async () => (await db.supplyDemandRecord.findMany({ select: { id: true } })).map((r) => r.id),
-      deleteByKeys: (keys) => db.supplyDemandRecord.deleteMany({ where: { id: { in: keys } } }),
-    },
-    {
-      entity: "contracts",
-      rows: data.contracts.map(toContractUpsert) as never[],
-      fetched: data.contractsFetched,
-      keyOf: (c) => (c as unknown as ContractUpsertInput).id,
-      upsert: (rows) => ctRepo.upsertBatch(rows as unknown as ContractUpsertInput[]),
-      listExistingKeys: async () => (await db.contractRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
-      deleteByKeys: (keys) => db.contractRecord.deleteMany({ where: { id: { in: keys } } }),
-    },
+    buildMainSyncFamily("transactions", data.transactions as never[], runId, { fetched: true }),
+    buildMainSyncFamily("experts", data.experts as never[], runId, { fetched: true }),
+    buildMainSyncFamily("interactions", data.interactions as never[], runId, { fetched: data.interactionsFetched }),
+    buildMainSyncFamily("visits", data.visits as never[], runId, { fetched: data.visitsFetched }),
+    buildMainSyncFamily("supplyDemand", data.supplyDemand as never[], runId, { fetched: data.supplyDemandFetched }),
+    buildMainSyncFamily("contracts", data.contracts as never[], runId, { fetched: data.contractsFetched }),
   ];
 
   const done: Array<{ entity: string; count: number; failed: number }> = [];
@@ -757,43 +985,10 @@ export async function applyIncrementalSync(
       done.push({ entity: family.entity, count: 0, failed: -1 }); // -1 = skipped
       continue;
     }
-
-    const keys = family.rows.map(family.keyOf);
-    let failedKeys: string[] = [];
-
-    try {
-      // تلاش دسته‌ای (مسیر سریع — اکثر اجراها موفق‌اند)
-      await family.upsert(family.rows);
-    } catch {
-      // شکست دسته‌ای ⇒ تک‌تک برای ایزوله کردن ردیف‌های خراب (upsertها idempotentند)
-      for (let i = 0; i < family.rows.length; i++) {
-        try {
-          await family.upsert([family.rows[i]]);
-        } catch (err) {
-          failedKeys.push(keys[i]);
-          await recordDeadLetter(runId, family.entity, keys[i], err);
-        }
-      }
-    }
-
-    // ردیف‌های موفق این خانواده که قبلاً نامه مرده بودند → حل‌شده
-    await resolveDeadLetters(family.entity, keys.filter((k) => !failedKeys.includes(k)));
-
-    // جاروی سنگ‌قبرها: ردیف‌هایی که دیگر در سامانه نیستند (به‌جز نامه‌های مرده باز)
-    // P6.5-03 — رکوردهای Bulk (sourceRunId غیرتهی) از جارو محافظت می‌شوند:
-    // داده تاریخیِ خارج از پوشش واکشی sync است؛ حذفش = حفره داده غیرقابل ترمیم (کشف §۱.۹).
-    try {
-      const existing = await family.listExistingKeys();
-      const fetchedSet = new Set(keys);
-      const openDead = await openDeadLetterKeys(family.entity);
-      const stale = existing.filter((k) => !fetchedSet.has(k) && !openDead.has(k));
-      if (stale.length > 0) await family.deleteByKeys(stale);
-    } catch {
-      // جارو شکست خورد ⇒ اجرا همچنان موفق است؛ دفع بعد تمیز می‌کند
-    }
-
+    const applied = await applyMainSyncFamily(runId, family);
+    await sweepFamilyStale(family);
     // نقطه ازسرگیری — پس از هر خانواده به‌روزرسانی می‌شود
-    done.push({ entity: family.entity, count: family.rows.length, failed: failedKeys.length });
+    done.push({ entity: family.entity, count: applied.count, failed: applied.failed });
     await writeSyncState({
       lastSyncCursor: JSON.stringify({ runId, done: done.map((d) => d.entity), detail: done }),
     });
@@ -909,6 +1104,7 @@ export async function clearCrmCacheTables(): Promise<ClearCrmResult> {
       const dir = resolveBackupsDir();
       mkdirSync(dir, { recursive: true });
       backupFile = `${dir}/pre-reset-${stamp}-${suffix}.db`;
+      // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
       await db.$executeRawUnsafe(`VACUUM INTO '${backupFile}'`);
     } catch {
       // بکاپ بهترین-تلاش است — پاک‌سازی درخواست‌شده همچنان اجرا می‌شود

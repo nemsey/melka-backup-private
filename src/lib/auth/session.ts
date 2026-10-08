@@ -36,6 +36,20 @@ export async function createSession(
   const token = generateSessionToken();
   const expiresAt = new Date(Date.now() + cfg.sessionTtlHours * 3600 * 1000);
 
+  // PN-022-A/مرحلهٔ۱ (I7 — ریشهٔ ۵ رد متوالی ACCESS_DENIED مالک): آشتی نقش با
+  // رجیستری کاربران. ورود OTP ARM نقش را از کدهای محیطی می‌سازد (realtor →
+  // CONSULTANT)؛ اما رجیستری User (مدیریت کاربران PN-016) منبع رسمی نقش است —
+  // کاربرِ ثبت‌شده با همین کد پرسنلی و نقش OWNER ⇒ نشست OWNER. مالک با پیامک
+  // ARM وارد می‌شد ولی نقش CONSULTANT می‌گرفت و روی روت‌های OWNER-only رد می‌شد.
+  let role = user.role;
+  try {
+    const registered = await db.user.findFirst({ where: { personnelCode: user.personnelCode }, select: { role: true } });
+    if (registered?.role === "OWNER" && role !== "OWNER") role = "OWNER";
+  } catch {
+    // رجیستری در دسترس نیست — نقش حل‌شده از مسیر ورود معتبر می‌ماند
+  }
+  const sessionUser: AuthUserInfo = { ...user, role };
+
   // ---- P6.5-11 (بند ث) — اتصال ماندگار ARM: در هر ورود، بدون پیامک ----
   // ۱) ورود OTP: توکن تازه در دست است ⇒ علاوه بر نشست، در صندوقچه هم ماندگار می‌شود
   //    (نشست OWNER که با MANAGER_CODE آمده = مالک ⇒ آینه به کلید master)
@@ -44,26 +58,26 @@ export async function createSession(
   let effectiveTokens = armTokens ?? null;
   let restoredFromVault = false;
   if (effectiveTokens) {
-    const vaultKey = vaultKeyForSession(user.personnelCode, user.role);
+    const vaultKey = vaultKeyForSession(sessionUser.personnelCode, sessionUser.role);
     await persistArmTokensToVault({
       ownerKey: vaultKey,
       armTokens: effectiveTokens,
-      personnelCode: user.personnelCode,
-      displayName: user.displayName,
+      personnelCode: sessionUser.personnelCode,
+      displayName: sessionUser.displayName,
     }).catch(() => undefined);
     // مالک با کد پرسنلی MANAGER_CODE وارد شده (نقش OWNER) ⇒ آینهٔ همان توکن روی master
-    if (user.role === "OWNER" && vaultKey !== "master") {
+    if (sessionUser.role === "OWNER" && vaultKey !== "master") {
       await persistArmTokensToVault({
         ownerKey: "master",
         armTokens: effectiveTokens,
-        personnelCode: user.personnelCode,
-        displayName: user.displayName,
+        personnelCode: sessionUser.personnelCode,
+        displayName: sessionUser.displayName,
       }).catch(() => undefined);
     }
   } else {
     // Fail-safe: هر خطای صندوقچه (مثلاً جدول ناموجود) هرگز ورود را نمی‌شکند
     try {
-      const restored = await restoreArmTokensFromVault(user.personnelCode, user.role);
+      const restored = await restoreArmTokensFromVault(sessionUser.personnelCode, sessionUser.role);
       if (restored) {
         effectiveTokens = restored;
         restoredFromVault = true;
@@ -76,13 +90,13 @@ export async function createSession(
   const session = await db.session.create({
     data: {
       tokenHash: hashToken(token),
-      personnelCode: user.personnelCode,
-      displayName: user.displayName,
-      role: user.role,
+      personnelCode: sessionUser.personnelCode,
+      displayName: sessionUser.displayName,
+      role: sessionUser.role,
       // P6.5-02 (§۵.۱ ConsultantScope) — دامنه دسترسی داده:
       // ورود مدیر = OWNER (رفتار فعلی) · ورود OTP مشاور = CONSULTANT.
       // ستون default اسکیما نیز OWNER است ⇒ نشست‌های موجود همه OWNER ماندند.
-      accessScope: defaultAccessScopeForRole(user.role),
+      accessScope: defaultAccessScopeForRole(sessionUser.role),
       expiresAt,
       ip: meta.ip,
       userAgent: meta.userAgent,
@@ -98,18 +112,18 @@ export async function createSession(
 
   // P2-05 — رویداد الزامی ورود (بدون هیچ داده حساس)
   logAuth("login", {
-    userId: user.personnelCode,
+    userId: sessionUser.personnelCode,
     status: "ok",
-    detail: { role: user.role, armSession: Boolean(effectiveTokens?.accessToken), restoredFromVault },
+    detail: { role: sessionUser.role, loginRole: user.role, armSession: Boolean(effectiveTokens?.accessToken), restoredFromVault },
   });
 
   return {
     token,
     context: {
       sessionId: session.id,
-      personnelCode: user.personnelCode,
-      displayName: user.displayName,
-      role: user.role,
+      personnelCode: sessionUser.personnelCode,
+      displayName: sessionUser.displayName,
+      role: sessionUser.role,
       expiresAt: expiresAt.toISOString(),
       armTokens: effectiveTokens ?? null,
       // P6.5-04-i — دامنهٔ داده در زمینهٔ نشست تازه (عین ستون ذخیره‌شده)

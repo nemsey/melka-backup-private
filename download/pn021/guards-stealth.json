@@ -1,11 +1,11 @@
 {
  "task": "PN-021 — گارد audit-stealth-users (کارشناس فروش پنهان)",
- "at": "2026-10-08T20:45:39.869929+00:00",
+ "at": "2026-10-08T23:01:58.704016+00:00",
  "checks": [
   {
    "check": "قواعد دیده‌شدن در DB",
    "users": 4,
-   "hidden": 1
+   "hidden": 2
   },
   {
    "check": "سازوکار فیلتر سرویس",
@@ -26,7 +26,7 @@
   }
  ],
  "totalUsers": 4,
- "hiddenUsers": 1,
+ "hiddenUsers": 2,
  "violations": [],
  "verdict": "PASS"
 }

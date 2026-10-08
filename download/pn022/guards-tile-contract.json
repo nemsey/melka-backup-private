@@ -1,0 +1,58 @@
+{
+  "workOrder": "PN-022-A/مرحلهٔ۵ — گارد tile-contract (گام ۵-ش)",
+  "ranAt": "2026-10-08T23:02:02.037696+00:00",
+  "checks": [
+    {
+      "check": "قرارداد TileDefinition در سورس",
+      "ok": true
+    },
+    {
+      "check": "کاشی‌های موجود",
+      "tiles": 14,
+      "ids": 14,
+      "uniqueIds": 14,
+      "idFolderMismatches": [
+        {
+          "folder": "arm-listing",
+          "id": "arm-listings"
+        },
+        {
+          "folder": "arm-request",
+          "id": "arm-requests"
+        },
+        {
+          "folder": "listing",
+          "id": "listings"
+        },
+        {
+          "folder": "request",
+          "id": "requests"
+        }
+      ],
+      "note": "نابرابری id/پوشه = نام‌گذاری موروثیِ پایدار (id عمومی است) — اطلاعاتی، نه نقض"
+    },
+    {
+      "check": "ثبت رجیستری",
+      "registered": 14,
+      "skeletons": 0
+    }
+  ],
+  "tiles": [
+    "arm-listing",
+    "arm-request",
+    "customer-club",
+    "data-coverage",
+    "experts",
+    "file-finder",
+    "learning-tier",
+    "listing",
+    "management-dashboard",
+    "market-index",
+    "request",
+    "settings",
+    "smart-matching",
+    "transactions-contracts"
+  ],
+  "violations": [],
+  "verdict": "PASS"
+}
