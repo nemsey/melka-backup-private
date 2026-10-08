@@ -26,7 +26,7 @@ describe("PN-020 §H3 — یکسان‌سازی جدول اثر تصمیم و ب
       status: "active", expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
       createdAt: new Date().toISOString(), tierAtCreation: 0, modelVersionId: null,
     };
-    const plan = await planner.plan({ context: {}, decision: decision as never });
+    const plan = planner.plan(decision as never);
     const impact = planner.estimateImpact(plan, decision as never);
     // همان فرمول تصمیم: پایهٔ investigate (۵) × ضریب (۰.۵ + ۰.۴/۲) = ۳.۵ — و نه ۱۵ ثابت
     expect(impact.liftPercent).toBe(expectedImpactFor("investigate", 0.4).liftPercent);
@@ -52,7 +52,7 @@ describe("PN-020 §H3 — یکسان‌سازی جدول اثر تصمیم و ب
       status: "active", expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
       createdAt: new Date().toISOString(), tierAtCreation: 0, modelVersionId: null,
     };
-    const plan = await planner.plan({ context: {}, decision: decision as never });
+    const plan = planner.plan(decision as never);
     const impact = planner.estimateImpact(plan, decision as never);
     expect(impact.liftPercent).toBe(13.5); // ۱۵ × (۰.۵ + ۰.۸/۲) از جدول پایه
     expect(impact.consistencyWarning).toBeTruthy();

@@ -62,7 +62,9 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     expect(ids).toContain(WORKER_JOB_IDS.policyEval);
     // PN-020/H2 — گارد فضای دیسک + هرس خودکار (هر ۱ ساعت)
     expect(ids).toContain(WORKER_JOB_IDS.diskGuard);
-    expect(ids.length).toBe(13);
+    // PN-020/فاز ۱۰ — چرخهٔ خودآگاهی (هر ۶ ساعت)
+    expect(ids).toContain(WORKER_JOB_IDS.diagnosisCycle);
+    expect(ids.length).toBe(14);
   });
 
   test("۴-۵ فاصله‌ها عین دیمن‌های قبلی (صفر قطع خدمت در رفتار زمانی)", () => {
@@ -105,7 +107,7 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
       // PN-018: drift-guard نیز کلید خاموشی خودش را دارد (MELK_DRIFT_GUARD)
       // PN-019: decision-shadow و policy-eval نیز کلید خاموشی خودشان را دارند
       // PN-020/H2: disk-guard نیز کلید خاموشی خودش را دارد (MELK_DISK_GUARD)
-      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diskGuard]);
+      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diagnosisCycle, WORKER_JOB_IDS.diskGuard]);
     } finally {
       for (const [k, v] of saved) {
         if (v === undefined) delete process.env[k];

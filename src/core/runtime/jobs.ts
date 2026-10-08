@@ -55,6 +55,7 @@ export const WORKER_JOB_IDS = {
   decisionShadow: "decision-shadow",
   policyEval: "policy-eval",
   diskGuard: "disk-guard",
+  diagnosisCycle: "diagnosis-cycle",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -332,6 +333,26 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
         const evaluations = await runPolicyEvaluation();
         const governance = await runGovernanceCheck("worker");
         return { policies: evaluations.length, verdicts: evaluations.map((e) => e.verdict), governanceFailed: governance.failed };
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Diagnosis Cycle → Worker (تازه — PN-020/فاز ۱۰: خودآگاهی ۲۵ بررسی) ──
+  // هر ۶ ساعت: چرخهٔ کامل تشخیص (۲۵ بررسی در ۵ دسته) + نمرهٔ سلامت ۰-۱۰۰
+  // + هشدارهای AuditLog + گزارش پایا در DiagnosticReport (DES10 §۵.۱).
+  if (process.env.MELK_DIAGNOSIS !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.diagnosisCycle,
+      title: "چرخهٔ خودآگاهی مغز (PN-020/فاز ۱۰)",
+      intervalMs: Number(process.env.MELK_DIAGNOSIS_INTERVAL_H ?? 6) * 60 * 60_000,
+      firstRunDelayMs: 4 * 60_000,
+      run: async () => {
+        const { runDiagnosisCycle } = await import("@/lib/services/self-diagnosis-service");
+        return runDiagnosisCycle("worker");
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

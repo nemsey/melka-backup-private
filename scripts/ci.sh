@@ -99,6 +99,11 @@ tail -1 /tmp/pn019-ci-audit14.log
 # PN-020/H2 — گارد فضای دیسک (راه‌حل ساختاری چهارمین ENOSPC — هرس واقعی + داوری):
 bash scripts/audit-disk-space.sh > /tmp/pn020-ci-audit15.log 2>&1 || { echo "✗ گام ۵-س: disk-space (فضای دیسک + هرس نسل‌ها)"; tail -8 /tmp/pn020-ci-audit15.log; exit 1; }
 tail -2 /tmp/pn020-ci-audit15.log
+# PN-020/فاز ۱۰+۱۱ — دو گارد شورا-ن۰۲۴ (خودآگاهی / دروازهٔ ترمیم):
+bash scripts/audit-self-diagnosis.sh > /tmp/pn020-ci-audit16.log 2>&1 || { echo "✗ گام ۵-ع: self-diagnosis (خودآگاهی ۲۵ بررسی)"; tail -8 /tmp/pn020-ci-audit16.log; exit 1; }
+tail -1 /tmp/pn020-ci-audit16.log
+bash scripts/audit-repair-gate.sh > /tmp/pn020-ci-audit17.log 2>&1 || { echo "✗ گام ۵-ف: repair-gate (دروازهٔ خودترمیمی)"; tail -8 /tmp/pn020-ci-audit17.log; exit 1; }
+tail -1 /tmp/pn020-ci-audit17.log
 
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"
