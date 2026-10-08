@@ -79,6 +79,9 @@ bash scripts/audit-permission-boundary.sh > /tmp/pn016-ci-audit6.log 2>&1 || { e
 tail -1 /tmp/pn016-ci-audit6.log
 bash scripts/audit-activity-log.sh > /tmp/pn016-ci-audit7.log 2>&1 || { echo "✗ گام ۵-ز: activity-log (سیاههٔ فعالیت)"; tail -8 /tmp/pn016-ci-audit7.log; exit 1; }
 tail -1 /tmp/pn016-ci-audit7.log
+# PN-018/T3b گارد تازه — سرریز Int32 در ستون‌های Int (ریشهٔ زندهٔ دو خطای گزارش‌شدهٔ مالک):
+bash scripts/audit-int-overflow.sh > /tmp/pn018-ci-audit8.log 2>&1 || { echo "✗ گام ۵-ح: int-overflow (سرریز Int32)"; tail -8 /tmp/pn018-ci-audit8.log; exit 1; }
+tail -1 /tmp/pn018-ci-audit8.log
 
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"

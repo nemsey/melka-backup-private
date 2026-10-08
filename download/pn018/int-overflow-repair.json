@@ -1,0 +1,31 @@
+{
+  "at": "2026-10-08T09:29:07.428757",
+  "repaired": 4,
+  "rows": [
+    {
+      "id": "6a0a2322896d35c242aa64c8",
+      "propertyCode": "53229",
+      "badFloor": 12345
+    },
+    {
+      "id": "691f3e86e1c37a1557f6d7a1",
+      "propertyCode": "48813",
+      "badFloor": 16500000000
+    },
+    {
+      "id": "68ebc0298e155b599f85e1f8",
+      "propertyCode": "47645",
+      "badFloor": 1234
+    },
+    {
+      "id": "674872d125ccd18f67fa42ff",
+      "propertyCode": "37560",
+      "badFloor": 2345
+    }
+  ],
+  "int32OverflowAfter": 0,
+  "illogicalAfter": 0,
+  "doctrine": "لایهٔ خام (detailsJson/rawArea/rawPrice) دست‌نخورده — فقط ستون تایپ‌دار نرمال‌شده تهی شد",
+  "rootCause": "خود سامانهٔ ARM در جزئیات این آگهی‌ها برچسب floor را با ارزش غیرطبقه‌ای (قیمت/کد) پر کرده بود (نمونه: آگهی ۴۸۸۱۳ طبقه=۱۶٬۵۰۰٬۰۰۰٬۰۰۰)؛ نرمال‌ساز بی‌دامنه آن را عیناً در ستون Int می‌ریخت",
+  "permanentFix": "دامنهٔ معتبر per-field در detailsToPropertyExtras (arm-catalog) + extractApuDetails (melk-public) + گارد audit-int-overflow.sh"
+}
