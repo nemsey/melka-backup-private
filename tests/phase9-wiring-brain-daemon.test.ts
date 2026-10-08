@@ -194,15 +194,25 @@ describe("PHASE 9 §۹ — دیمن v2", () => {
   // ایزوله‌سازی شاهدها: هر دو تست در دایرکتوری موقت — هرگز intelligence-data ریپو نوشته نمی‌شود
   let isoDir: string;
   let repoCwd: string;
+  let repoDirEnv: string | undefined;
 
   beforeAll(() => {
     repoCwd = process.cwd();
     isoDir = mkdtempSync(join(tmpdir(), "melk-brain-iso-"));
     process.chdir(isoDir);
+    // جداسازی کانال Worker: daemonHealth در تولید، وضعیت Worker زنده را از
+    // upload/.runtime/runtime-status.json می‌خواند (مسیر مطلق ریشهٔ رپو). بدون این
+    // انحراف، سرنوشت تست به «آیا Worker تولید تا این لحظه intelligence-cycle را
+    // اجرا کرده؟» گره می‌خورد — نوسان زندهٔ CI (شکست پیش از نخستین چرخهٔ Worker
+    // پس از ری‌استارت، پاس پس از آن). MELKA_REPO_DIR همان انکر رسمی خوددرمانی است.
+    repoDirEnv = process.env.MELKA_REPO_DIR;
+    process.env.MELKA_REPO_DIR = isoDir; // فایل وضعیت Worker در دایرکتوری ایزوله وجود ندارد → مسیر درون‌حافظه‌ای
   });
 
   afterAll(() => {
     process.chdir(repoCwd);
+    if (repoDirEnv === undefined) delete process.env.MELKA_REPO_DIR;
+    else process.env.MELKA_REPO_DIR = repoDirEnv;
     rmSync(isoDir, { recursive: true, force: true });
   });
 

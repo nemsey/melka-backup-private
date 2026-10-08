@@ -22,9 +22,12 @@ import {
   toSafeUser,
   validateUserInput,
   recordUserActivity,
+  visibilityAllowedForRole,
+  isUserVisibility,
   type PermissionInput,
   type SafeUser,
   type UserRole,
+  type UserVisibility,
   type LegacyRole,
 } from "@/lib/users/user-model";
 
@@ -36,6 +39,11 @@ export interface ListUsersOptions {
   search?: string;
   role?: string | null;
   includeInactive?: boolean;
+  /**
+   * PN-021 — "VISIBLE" (پیش‌فرض: فقط نمایان‌ها) | "HIDDEN" (فقط پنهان‌ها — تب مخصوص مالک)
+   * | "ALL" (همه — مالک)
+   */
+  visibility?: "VISIBLE" | "HIDDEN" | "ALL";
 }
 
 /** فهرست کاربران + شمار مجوزها (فیلتر/جستجو سطح DB) */
@@ -44,6 +52,8 @@ export async function listUsers(opts: ListUsersOptions = {}): Promise<SafeUser[]
   const where: Record<string, unknown> = {};
   if (opts.role && isUserRole(opts.role)) where.role = opts.role;
   if (!opts.includeInactive) where.isActive = true;
+  if (opts.visibility !== "ALL" && opts.visibility !== "HIDDEN") where.visibility = "VISIBLE";
+  else if (opts.visibility === "HIDDEN") where.visibility = "HIDDEN";
   if (search) {
     where.OR = [
       { fullName: { contains: search } },
@@ -122,6 +132,8 @@ export async function createUser(input: {
   role: UserRole;
   branchTitle?: string | null;
   roleTitleFa?: string | null;
+  /** PN-021 — VISIBLE (پیش‌فرض) | HIDDEN (کارشناس پنهان مالک) */
+  visibility?: UserVisibility;
   createdBy: string;
 }): Promise<SafeUser> {
   const err = validateUserInput(input);
@@ -132,6 +144,12 @@ export async function createUser(input: {
 
   // قانون هویت دوگانهٔ مالک — کد مالک همیشه OWNER ساخته می‌شود
   const role: UserRole = personnelCode && isOwnerPersonnelCode(personnelCode) ? "OWNER" : input.role;
+
+  // PN-021 — اعتبارسنجی پنهان‌سازی: مالک/مهمان پنهان نمی‌شوند
+  const visibility: UserVisibility = isUserVisibility(input.visibility) ? input.visibility : "VISIBLE";
+  if (visibility === "HIDDEN" && !visibilityAllowedForRole(role, "HIDDEN")) {
+    throw new MelkApiError("UNKNOWN", "این نقش قابل پنهان‌سازی نیست (مالک و مهمان همیشه نمایان‌اند).", 400, false);
+  }
 
   const dup = await db.user.findFirst({
     where: personnelCode ? { personnelCode } : mobile ? { mobile } : {},
@@ -148,13 +166,21 @@ export async function createUser(input: {
       branchTitle: input.branchTitle?.trim() || null,
       roleTitleFa: input.roleTitleFa?.trim() || null,
       isActive: true,
+      visibility,
       createdBy: input.createdBy,
-      metadata: JSON.stringify({ source: "manual", by: input.createdBy }),
+      metadata: JSON.stringify({ source: visibility === "HIDDEN" ? "stealth-expert" : "manual", by: input.createdBy }),
     },
   });
   await db.userPermission.createMany({
     data: defaultPermissionsForRole(role).map((p) => ({ userId: user.id, ...p })),
   });
+  if (visibility === "HIDDEN") {
+    await recordUserActivity({
+      userId: user.id,
+      action: "stealth-create",
+      details: JSON.stringify({ by: input.createdBy, visibility: "HIDDEN", role }),
+    });
+  }
   return toSafeUser(user);
 }
 
@@ -166,6 +192,8 @@ export async function updateUser(userId: string, input: {
   roleTitleFa?: string | null;
   isActive?: boolean;
   resetPermissions?: boolean;
+  /** PN-021 — تغییر دیده‌شدن: نمایان‌سازی یا پنهان‌سازی */
+  visibility?: UserVisibility;
 }, actor: string): Promise<SafeUser> {
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) throw new MelkApiError("UNKNOWN", "کاربر یافت نشد.", 404, false);
@@ -177,6 +205,20 @@ export async function updateUser(userId: string, input: {
   }
   if (isEnvOwner && input.isActive === false) {
     throw new MelkApiError("UNKNOWN", "کاربر مالک قابل غیرفعال‌سازی نیست.", 403, false);
+  }
+
+  // PN-021 — اعتبارسنجی تغییر دیده‌شدن
+  const nextRole: UserRole = (input.role !== undefined && isUserRole(input.role) && input.role !== user.role) ? input.role : (user.role as UserRole);
+  if (input.visibility !== undefined) {
+    if (!isUserVisibility(input.visibility)) {
+      throw new MelkApiError("UNKNOWN", "مقدار دیده‌شدن نامعتبر است (VISIBLE | HIDDEN).", 400, false);
+    }
+    if (isEnvOwner && input.visibility === "HIDDEN") {
+      throw new MelkApiError("UNKNOWN", "کاربر مالک قابل پنهان‌سازی نیست.", 403, false);
+    }
+    if (!visibilityAllowedForRole(nextRole, input.visibility)) {
+      throw new MelkApiError("UNKNOWN", "این نقش قابل پنهان‌سازی نیست (مالک و مهمان همیشه نمایان‌اند).", 400, false);
+    }
   }
 
   const data: Record<string, unknown> = {};
@@ -191,6 +233,7 @@ export async function updateUser(userId: string, input: {
   if (input.branchTitle !== undefined) data.branchTitle = input.branchTitle?.trim() || null;
   if (input.roleTitleFa !== undefined) data.roleTitleFa = input.roleTitleFa?.trim() || null;
   if (input.isActive !== undefined) data.isActive = Boolean(input.isActive);
+  if (input.visibility !== undefined) data.visibility = input.visibility;
 
   const updated = await db.user.update({
     where: { id: userId },
@@ -210,8 +253,10 @@ export async function updateUser(userId: string, input: {
 
   await recordUserActivity({
     userId,
-    action: input.role !== undefined && input.role !== user.role ? "role-change" : "edit",
-    details: JSON.stringify({ by: actor, changes: Object.keys(data), resetPermissions: Boolean(input.resetPermissions) }),
+    action: input.visibility !== undefined && input.visibility !== user.visibility
+      ? (input.visibility === "HIDDEN" ? "stealth-hide" : "stealth-reveal")
+      : input.role !== undefined && input.role !== user.role ? "role-change" : "edit",
+    details: JSON.stringify({ by: actor, changes: Object.keys(data), resetPermissions: Boolean(input.resetPermissions), visibility: input.visibility ?? undefined }),
   });
   return toSafeUser(updated);
 }
@@ -417,20 +462,22 @@ export async function unlockUser(userId: string, actor: string): Promise<void> {
   await recordUserActivity({ userId, action: "edit", details: JSON.stringify({ by: actor, unlocked: true }) });
 }
 
-/** شمار کلی برای داشبورد مدیریتی */
+/** شمار کلی برای داشبورد مدیریتی (PN-021: پنهان‌ها جدا شمرده می‌شوند — نمای عمومی تمیز می‌ماند) */
 export async function usersOverview(): Promise<{
-  total: number; active: number; byRole: Record<string, number>; guests: number; sessionsActive: number;
+  total: number; active: number; byRole: Record<string, number>; guests: number; sessionsActive: number; hidden: number;
 }> {
-  const [total, active, byRoleRows, guests, sessionsActive] = await Promise.all([
-    db.user.count(),
-    db.user.count({ where: { isActive: true } }),
-    db.user.groupBy({ by: ["role"], _count: { _all: true } }),
-    db.user.count({ where: { mobile: { not: null }, personnelCode: null } }),
+  const visibleWhere = { visibility: "VISIBLE" } as const;
+  const [total, active, byRoleRows, guests, sessionsActive, hidden] = await Promise.all([
+    db.user.count({ where: visibleWhere }),
+    db.user.count({ where: { ...visibleWhere, isActive: true } }),
+    db.user.groupBy({ by: ["role"], _count: { _all: true }, where: visibleWhere }),
+    db.user.count({ where: { ...visibleWhere, mobile: { not: null }, personnelCode: null } }),
     db.userSession.count({ where: { isActive: true, expiresAt: { gt: new Date() } } }),
+    db.user.count({ where: { visibility: "HIDDEN" } }),
   ]);
   const byRole: Record<string, number> = {};
   for (const r of byRoleRows) byRole[r.role] = r._count._all;
-  return { total, active, byRole, guests, sessionsActive };
+  return { total, active, byRole, guests, sessionsActive, hidden };
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -457,6 +504,8 @@ export interface MelkTabrizPersonnelRow {
   hasAccount: boolean;
   accountRole: string | null;
   accountActive: boolean | null;
+  /** PN-021 — حساب پنهان مالک (فقط در نمای مالک معنی دارد) */
+  accountHidden: boolean;
 }
 
 export interface MelkUsersDirectoryOptions {
@@ -488,9 +537,9 @@ export async function melkUsersDirectory(opts: MelkUsersDirectoryOptions = {}): 
     orderBy: { fullName: "asc" },
   });
 
-  // حساب‌های اپ موجود (برای پیوند)
+  // حساب‌های اپ موجود (برای پیوند) — PN-021: دیده‌شدن هم خوانده می‌شود
   const users = await db.user.findMany({
-    select: { personnelCode: true, role: true, isActive: true },
+    select: { personnelCode: true, role: true, isActive: true, visibility: true },
   });
   const byCode = new Map(users.filter((u) => u.personnelCode).map((u) => [u.personnelCode as string, u]));
 
@@ -512,6 +561,7 @@ export async function melkUsersDirectory(opts: MelkUsersDirectoryOptions = {}): 
       hasAccount: Boolean(acc),
       accountRole: acc?.role ?? null,
       accountActive: acc ? acc.isActive : null,
+      accountHidden: acc?.visibility === "HIDDEN",
     };
   });
 

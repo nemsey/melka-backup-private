@@ -252,8 +252,11 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
   // PN-020/گام اول-ج۲ — بارگذاری خودکار پس از پایان بروزرسانی پس‌زمینه:
   // سیگنال شمارنده‌ای از والد (صفحهٔ کاشی) — هر تغییر (۱→۲→…) فهرست را تازه می‌کند.
   // مقدار ۰ اولیه نادیده گرفته می‌شود (بار اول خود useTileData می‌کشد).
+  // (ترمیم لینت: به‌روزرسانی ref در رندر ممنوع — به اثرِ پس از رندر منتقل شد؛ رفتار یکسان)
   const reloadRef = useRef(reload);
-  reloadRef.current = reload;
+  useEffect(() => {
+    reloadRef.current = reload;
+  }, [reload]);
   useEffect(() => {
     if (syncDoneSignal && syncDoneSignal > 0) void reloadRef.current();
   }, [syncDoneSignal]);
