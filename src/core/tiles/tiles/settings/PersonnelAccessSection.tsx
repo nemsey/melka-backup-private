@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * بخش «مدیریت دسترسی کارشناسان» — PN-008 BLOCK 7 (بند ۷.۳)
+ * بخش «مدیریت دسترسی کارشناسان ملکا» — PN-008 BLOCK 7 (بند ۷.۳) · PN-017 جابه‌جایی عنوان
+ * (سازگاری: بخش شاهکار ساخت حساب/نقش/ماتریس را در «مدیریت کاربران ملک تبریز» انجام می‌دهد)
  * ------------------------------------------------------
  * در تنظیمات عمومی (فقط OWNER روت API را می‌بیند):
  *   · فرم ورودی کد پرسنلی
@@ -123,9 +124,9 @@ export function PersonnelAccessSection() {
     <Card id="settings-personnel-access">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <Users className="w-5 h-5 text-primary" aria-hidden /> مدیریت دسترسی کارشناسان
+          <Users className="w-5 h-5 text-primary" aria-hidden /> مدیریت دسترسی کارشناسان ملکا
         </CardTitle>
-        <CardDescription>میزان دسترسی هر کد پرسنلی به داشبورد مدیریتی ملک تبریز — سه حالت</CardDescription>
+        <CardDescription>سطح دسترسی هر کد پرسنلی به کاشی‌های اپلیکیشن ملکا — سه حالت (ساخت حساب و نقش‌ها در بخش «مدیریت کاربران ملک تبریز»)</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         {/* فرم ثبت/ویرایش */}
