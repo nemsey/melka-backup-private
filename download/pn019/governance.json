@@ -1,0 +1,123 @@
+{
+  "council": "ملکا-شورا-ن۰۲۳-۱۴۰۵",
+  "stage": "فاز ۹ — Governance ۱۵ قاعده",
+  "ranAt": "2026-10-08T11:56:50.327Z",
+  "checkId": "cmuzhe5na000pnkh0rpo7ju80",
+  "summary": {
+    "passed": 15,
+    "failed": 0,
+    "criticalViolations": [],
+    "enforcement": "strict"
+  },
+  "liveContext17Fields": {
+    "personalDataAccessWithoutAudit": 0,
+    "deletionsWithoutBackupWitness": 0,
+    "rawLayerMutations": 0,
+    "backupRestoresTotal": 0,
+    "backupRestoresLogged": 0,
+    "consultantScopeFailOpen": 0,
+    "modelChangesWithoutCouncil": 0,
+    "modelChangesWithoutRollback": 0,
+    "modelVersionsKept": 2,
+    "sessionsOlderThan30d": 0,
+    "loginsNotAudited": 0,
+    "ownerGateBypasses": 0,
+    "tokenSharingIncidents": 0,
+    "autoExecuteViolations": 0,
+    "decisionsKept90d": 16,
+    "decisionsTotal": 16,
+    "repairsWithoutCouncilApproval": 0
+  },
+  "results": [
+    {
+      "ruleId": "GOV-DATA-001",
+      "passed": true,
+      "severity": "critical",
+      "details": "همهٔ دسترسی‌ها با AuditLog"
+    },
+    {
+      "ruleId": "GOV-DATA-002",
+      "passed": true,
+      "severity": "critical",
+      "details": "حذفی فقط با شاهد بکاپ"
+    },
+    {
+      "ruleId": "GOV-DATA-003",
+      "passed": true,
+      "severity": "critical",
+      "details": "لایهٔ Raw دست‌نخورده"
+    },
+    {
+      "ruleId": "GOV-DATA-004",
+      "passed": true,
+      "severity": "high",
+      "details": "بازیابی‌ها ثبت‌شده"
+    },
+    {
+      "ruleId": "GOV-DATA-005",
+      "passed": true,
+      "severity": "critical",
+      "details": "محدودهٔ مشاور fail-closed"
+    },
+    {
+      "ruleId": "GOV-MODEL-001",
+      "passed": true,
+      "severity": "critical",
+      "details": "تغییر مدل فقط با شورا"
+    },
+    {
+      "ruleId": "GOV-MODEL-002",
+      "passed": true,
+      "severity": "high",
+      "details": "همهٔ تغییرها قابل بازگشت"
+    },
+    {
+      "ruleId": "GOV-MODEL-003",
+      "passed": true,
+      "severity": "medium",
+      "details": "2 نسخه محفوظ"
+    },
+    {
+      "ruleId": "GOV-ACCESS-001",
+      "passed": true,
+      "severity": "high",
+      "details": "نشست‌ها تازه"
+    },
+    {
+      "ruleId": "GOV-ACCESS-002",
+      "passed": true,
+      "severity": "high",
+      "details": "ورودها ثبت‌شده"
+    },
+    {
+      "ruleId": "GOV-ACCESS-003",
+      "passed": true,
+      "severity": "critical",
+      "details": "OWNER-gate دست‌نخورده"
+    },
+    {
+      "ruleId": "GOV-ACCESS-004",
+      "passed": true,
+      "severity": "critical",
+      "details": "توکن‌ها شخصی"
+    },
+    {
+      "ruleId": "GOV-DECISION-001",
+      "passed": true,
+      "severity": "critical",
+      "details": "صفر auto_execute"
+    },
+    {
+      "ruleId": "GOV-DECISION-002",
+      "passed": true,
+      "severity": "medium",
+      "details": "تصمیم‌ها ۹۰ روز محفوظ"
+    },
+    {
+      "ruleId": "GOV-REPAIR-001",
+      "passed": true,
+      "severity": "critical",
+      "details": "ترمیم فقط با شورا"
+    }
+  ]
+}

@@ -57,7 +57,10 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     expect(ids).toContain(WORKER_JOB_IDS.resetGuard);
     // PN-018 فاز ۷ — گارد رانش سه‌گانه (هر ۶ ساعت)
     expect(ids).toContain(WORKER_JOB_IDS.driftGuard);
-    expect(ids.length).toBe(10);
+    // PN-019 فاز ۸+۹ — تصمیم سایه (هر ۶ ساعت) + ارزیابی سیاست (هر ۹۰ روز)
+    expect(ids).toContain(WORKER_JOB_IDS.decisionShadow);
+    expect(ids).toContain(WORKER_JOB_IDS.policyEval);
+    expect(ids.length).toBe(12);
   });
 
   test("۴-۵ فاصله‌ها عین دیمن‌های قبلی (صفر قطع خدمت در رفتار زمانی)", () => {
@@ -98,7 +101,8 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
       expect(ids).not.toContain(WORKER_JOB_IDS.sizeGuard);
       // PN-015: دو گارد تازه از خاموشی این شش env پیروی نمی‌کنند (کلید خاموشی خودشان: MELK_PREVIEW_GUARD / MELK_RESET_GUARD)
       // PN-018: drift-guard نیز کلید خاموشی خودش را دارد (MELK_DRIFT_GUARD)
-      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard]);
+      // PN-019: decision-shadow و policy-eval نیز کلید خاموشی خودشان را دارند
+      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval]);
     } finally {
       for (const [k, v] of saved) {
         if (v === undefined) delete process.env[k];

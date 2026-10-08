@@ -89,6 +89,13 @@ bash scripts/audit-drift-detection.sh > /tmp/pn018-ci-audit10.log 2>&1 || { echo
 tail -1 /tmp/pn018-ci-audit10.log
 bash scripts/audit-learning-loop.sh > /tmp/pn018-ci-audit11.log 2>&1 || { echo "✗ گام ۵-ک: learning-loop (حلقهٔ کامل)"; tail -8 /tmp/pn018-ci-audit11.log; exit 1; }
 tail -1 /tmp/pn018-ci-audit11.log
+# PN-019 فاز ۸+۹ — سه گارد شورا-ن۰۲۳ (ایمنی تصمیم / حاکمیت / ارزیابی سیاست):
+bash scripts/audit-decision-safety.sh > /tmp/pn019-ci-audit12.log 2>&1 || { echo "✗ گام ۵-ل: decision-safety (ایمنی چرخهٔ تصمیم)"; tail -8 /tmp/pn019-ci-audit12.log; exit 1; }
+tail -1 /tmp/pn019-ci-audit12.log
+bash scripts/audit-governance.sh > /tmp/pn019-ci-audit13.log 2>&1 || { echo "✗ گام ۵-م: governance (حاکمیت ۱۵قاعده‌ای)"; tail -8 /tmp/pn019-ci-audit13.log; exit 1; }
+tail -1 /tmp/pn019-ci-audit13.log
+bash scripts/audit-policy-evaluation.sh > /tmp/pn019-ci-audit14.log 2>&1 || { echo "✗ گام ۵-ن: policy-evaluation (ارزیابی سیاست)"; tail -8 /tmp/pn019-ci-audit14.log; exit 1; }
+tail -1 /tmp/pn019-ci-audit14.log
 
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"

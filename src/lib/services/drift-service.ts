@@ -77,6 +77,81 @@ export function splitWindows(pairs: Pair[]): { baseline: Pair[]; recent: Pair[] 
   return { baseline: pairs.slice(0, cut), recent: pairs.slice(cut) };
 }
 
+/**
+ * PN-019 (مرحلهٔ ۱ — ترمیم G5): شکاف زمان‌محور پنجره‌ها.
+ * کشف ریشه‌ای: شکاف ترتیب فایل، مرز نوع پیامد را می‌بُرید (فایل پیامدها دولایه
+ * نوشته می‌شود) و رانش مفهوم کاذب می‌سازد. این تابع پنجره‌ها را با occurredAt
+ * واقعی می‌بُرد؛ اگر همهٔ پیامدها در یک روز (اسنپ‌شات پیوند تاریخی) بیایند،
+ * صادقانه به ترتیب فایل برمی‌گردد اما سازوکار را مهر می‌زند تا تحلیل بداند.
+ */
+export function splitWindowsByTime(
+  outcomes: Array<{ predictionId: string; occurredAt?: string; evidence?: { observed?: number } }>,
+  predictions: Array<{ predictionId: string; probability: number }>,
+  opts: { recentDays?: number } = {},
+): { baseline: Pair[]; recent: Pair[]; splitBy: "time" | "file-order"; rationale: string } {
+  const recentDays = opts.recentDays ?? 30;
+  const byPrediction = new Map(predictions.map((p) => [p.predictionId, p]));
+  const dates = outcomes.map((o) => (o.occurredAt ?? "").slice(0, 10)).filter(Boolean);
+  const distinctDays = new Set(dates).size;
+
+  if (distinctDays <= 1) {
+    // اسنپ‌شات یک‌روزه — برش زمانی ممکن نیست؛ عقب‌افت صادقانه با مهر سازوکار
+    const pairs: Pair[] = [];
+    for (const o of outcomes) {
+      const p = byPrediction.get(o.predictionId);
+      const obs = o.evidence?.observed;
+      if (!p || obs === undefined) continue;
+      pairs.push({ predictionId: o.predictionId, predictedValue: p.probability, observedValue: obs });
+    }
+    const legacy = splitWindows(pairs);
+    return {
+      ...legacy,
+      splitBy: "file-order",
+      rationale: `هر ${outcomes.length} پیامد در یک روز (${dates[0] ?? "?"}) ثبت شده‌اند — پیوند اسنپ‌شات تاریخی؛ برش زمانی ممکن نیست، ترتیب فایل با هشدار صریح (کشف PN-019 مرحلهٔ ۱).`,
+    };
+  }
+
+  // برش زمانی حقیقی: اخیر = occurredAt در N روز گذشته
+  const cutoff = Date.now() - recentDays * 86400000;
+  const baseline: Pair[] = [];
+  const recent: Pair[] = [];
+  for (const o of outcomes) {
+    const p = byPrediction.get(o.predictionId);
+    const obs = o.evidence?.observed;
+    if (!p || obs === undefined || !o.occurredAt) continue;
+    const pair: Pair = { predictionId: o.predictionId, predictedValue: p.probability, observedValue: obs };
+    (new Date(o.occurredAt).getTime() >= cutoff ? recent : baseline).push(pair);
+  }
+  // پنجرهٔ خالی → عقب‌افت به ترتیب فایل (نردبان تنزل صادقانه — آشکارسازها پنجرهٔ خالی نمی‌فهمند)
+  if (baseline.length === 0 || recent.length === 0) {
+    const pairs: Pair[] = [...baseline, ...recent];
+    const legacy = splitWindows(pairs);
+    return {
+      ...legacy,
+      splitBy: "file-order",
+      rationale: `برش زمانی همهٔ ${pairs.length} جفت را در یک پنجره انداخت (baseline=${baseline.length} · recent=${recent.length}) — عقب‌افت به ترتیب فایل ۷۰/۳۰ تا هر دو پنجره ساکن باشند (PN-019 مرحلهٔ ۱).`,
+    };
+  }
+  return {
+    baseline,
+    recent,
+    splitBy: "time",
+    rationale: `برش زمانی روی ${distinctDays} روز متمایز — اخیر = ${recentDays} روز گذشته (baseline=${baseline.length} · recent=${recent.length}).`,
+  };
+}
+
+/**
+ * PN-019 فاز ۹: شمارش رکوردهای رانش در پنجره (مصرف سرویس حاکمیت — مرز مخزن:
+ * همهٔ دسترسی‌های DriftCheck از همین سرویس می‌گذرند؛ گارد audit-drift نویسندهٔ واحد را وارسی می‌کند).
+ */
+export async function driftCountsInWindow(from: Date, to: Date): Promise<{ alerts: number; monitors: number }> {
+  const [alerts, monitors] = await Promise.all([
+    db.driftCheck.count({ where: { action: { in: ["alert", "retrain", "escalate"] }, checkedAt: { gte: from, lte: to } } }),
+    db.driftCheck.count({ where: { action: "monitor", checkedAt: { gte: from, lte: to } } }),
+  ]);
+  return { alerts, monitors };
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // اجرای سه آشکارساز + پایدارسازی
 // ─────────────────────────────────────────────────────────────────────────
@@ -95,8 +170,25 @@ export interface DriftRunResult {
 }
 
 export async function runDriftDetection(modelId: string, opts: { pairs?: Pair[] } = {}): Promise<DriftRunResult> {
-  const pairs = opts.pairs ?? (await loadRealPairs());
-  const { baseline, recent } = splitWindows(pairs);
+  // PN-019 مرحلهٔ ۱: شکاف زمان‌محور هرجا ممکن شود — با مهر سازوکار در شاهد.
+  // اگر جفت‌های آماده تزریق شده (تست)، همان شکاف کلاسیک (تست‌ها گارانتی می‌کنند).
+  let baseline: Pair[];
+  let recent: Pair[];
+  let splitBy: "time" | "file-order" = "file-order";
+  let splitRationale = "جفت‌های تزریقی تست — شکاف کلاسیک ۷۰/۳۰.";
+  if (opts.pairs) {
+    const s = splitWindows(opts.pairs);
+    baseline = s.baseline;
+    recent = s.recent;
+  } else {
+    const outcomes = await loadJsonl<RawOutcome & { occurredAt?: string }>("outcomes.jsonl");
+    const predictions = await loadJsonl<RawPrediction>("predictions.jsonl");
+    const timed = splitWindowsByTime(outcomes, predictions);
+    baseline = timed.baseline;
+    recent = timed.recent;
+    splitBy = timed.splitBy;
+    splitRationale = timed.rationale;
+  }
   const detector = new DriftDetector();
   const ranAt = new Date().toISOString();
   const reports: DriftRunResult["reports"] = [];
@@ -137,7 +229,7 @@ export async function runDriftDetection(modelId: string, opts: { pairs?: Pair[] 
       data: {
         modelId, driftType: r.driftType, magnitude: r.magnitude, action: r.action,
         rationale: r.rationale, pairsBaseline: baseline.length, pairsRecent: recent.length,
-        evidenceJson: JSON.stringify({ ranAt, thresholds: { alert: DRIFT_ALERT, retrain: DRIFT_RETRAIN, escalate: DRIFT_ESCALATE } }),
+        evidenceJson: JSON.stringify({ ranAt, splitBy, splitRationale, thresholds: { alert: DRIFT_ALERT, retrain: DRIFT_RETRAIN, escalate: DRIFT_ESCALATE } }),
       },
     });
     if (r.action !== "monitor") {

@@ -11,6 +11,7 @@ import {
   type DecisionAlternative,
   type DecisionRecord,
   type DecisionType,
+  type ExpectedImpact,
   type LearningTier,
   type SafetyCheckResult,
   type SafetyPolicy,
@@ -52,6 +53,36 @@ export function probabilityBand(p: number): { decisionType: DecisionType; label:
   return { decisionType: "priority_action", label: "اولویت بالا — اقدام فوری" };
 }
 
+/** جدول پایهٔ اثر کمی (§۸ DES8 — بازرسی‌پذیر؛ سقف lift = ۴۰) */
+export const EXPECTED_IMPACT_TABLE: Record<DecisionType, { liftPercent: number; reach: ExpectedImpact["reach"]; horizonDays: number }> = {
+  wait: { liftPercent: 0, reach: "listing", horizonDays: 30 },
+  investigate: { liftPercent: 5, reach: "listing", horizonDays: 21 },
+  contact_owner: { liftPercent: 15, reach: "listing", horizonDays: 14 },
+  assign_expert: { liftPercent: 18, reach: "listing", horizonDays: 30 },
+  adjust_price: { liftPercent: 25, reach: "listing", horizonDays: 45 },
+  schedule_visit: { liftPercent: 20, reach: "listing", horizonDays: 30 },
+  priority_action: { liftPercent: 15, reach: "listing", horizonDays: 7 },
+};
+
+export const MAX_LIFT_PERCENT = 40;
+
+/** PN-019 §۸ — اثر کمی سه‌مؤلفه‌ای هر تصمیم (کلمپ‌شده + مبنای اجباری) */
+export function expectedImpactFor(decisionType: DecisionType, confidence: number): ExpectedImpact {
+  const base = EXPECTED_IMPACT_TABLE[decisionType];
+  const lift = Math.min(MAX_LIFT_PERCENT, Math.max(0, Math.round(base.liftPercent * (0.5 + confidence / 2) * 10) / 10));
+  return {
+    liftPercent: lift,
+    reach: base.reach,
+    horizonDays: base.horizonDays,
+    basis: `جدول پایهٔ فاز ۸ §۸.۲ (${base.liftPercent}٪ پایه × ضریب اطمینان ${(Math.round((0.5 + confidence / 2) * 100) / 100).toFixed(2)}) — قاعدهٔ دامنهٔ فعال لحظهٔ تصمیم`,
+  };
+}
+
+/** PN-019 §۱۰ — انقضای فعال تصمیم (خالص؛ سرویس wrapper است) */
+export function isDecisionExpired(record: Pick<DecisionRecord, "expiresAt">, now: Date = new Date()): boolean {
+  return new Date(record.expiresAt).getTime() <= now.getTime();
+}
+
 export class DecisionEngineImpl {
   private readonly records: DecisionRecord[] = [];
 
@@ -74,15 +105,17 @@ export class DecisionEngineImpl {
       decisionType = "adjust_price";
     }
 
+    const expectedImpact = expectedImpactFor(decisionType, input.probability);
     const record: DecisionRecord = {
       id: `dec-${input.predictionId.slice(0, 8)}-${Date.now().toString(36)}`,
       predictionId: input.predictionId,
       decisionType,
       proposedAction: primary.action,
       confidence: Math.round(Math.max(input.probability, 0.3) * 1000) / 1000,
-      rationale: this.explain(input, decisionType, band.label, context),
+      rationale: this.explain(input, decisionType, band.label, context, expectedImpact),
       alternatives: alts.slice(1, 4),
       expectedOutcome: this.expectedOutcomeFor(decisionType),
+      expectedImpact,
       requiredResources: this.resourcesFor(decisionType, context),
       requiresApproval: true,
       autoExecute: false,
@@ -115,7 +148,8 @@ export class DecisionEngineImpl {
     return record;
   }
 
-  /** رتبه‌بندی گزینه‌ها با مقدار انتظاری — گزینهٔ رد‌شده دلیل رد دارد */
+  /** رتبه‌بندی گزینه‌ها با مقدار انتظاری — گزینهٔ رد‌شده دلیل رد دارد
+   *  PN-019 §۹: همیشه ≥۳ گزینه — اگر قواعد دامنه‌ای فعال نبودند، بدیل محافظه‌کارانهٔ سوم اضافه می‌شود */
   rankAlternatives(input: DecisionInput): Array<DecisionAction & { expectedValue: number }> {
     const { context } = input;
     const p = input.probability;
@@ -153,6 +187,14 @@ export class DecisionEngineImpl {
         expectedValue: ev(p * 90),
       });
     }
+    // PN-019 §۹ — تضمین حداقل سه گزینه: بدیل محافظه‌کارانهٔ «بازبینی در چرخهٔ بعد»
+    if (options.length < 3) {
+      options.push({
+        action: "ثبت در صف بازبینی چرخهٔ بعد و پایش خودکار ریسک‌ها",
+        whyRejected: "بدون کنش امروز — پایش مداوم جایگزین واکنش است",
+        expectedValue: ev(p * 30),
+      });
+    }
     options.sort((a, b) => b.expectedValue - a.expectedValue);
     return options;
   }
@@ -168,13 +210,16 @@ export class DecisionEngineImpl {
     return [...this.records];
   }
 
-  private explain(input: DecisionInput, decisionType: DecisionType, bandLabel: string, ctx: DecisionContext): string {
+  private explain(input: DecisionInput, decisionType: DecisionType, bandLabel: string, ctx: DecisionContext, expectedImpact?: ExpectedImpact): string {
     const parts: string[] = [`پیش‌بینی ${Math.round(input.probability * 100)}٪ — ${bandLabel}.`];
     if (ctx.price !== undefined && ctx.localAveragePrice !== undefined && ctx.price < ctx.localAveragePrice * 0.8) {
       parts.push(`قیمت ${Math.round((1 - ctx.price / ctx.localAveragePrice) * 100)}٪ زیر میانگین محلی است — قاعدهٔ دامنه: تعدیل قیمت.`);
     }
     if ((ctx.bestExpertSuccessRate ?? 0) >= 0.9) parts.push(`کارشناس ${ctx.bestExpertName ?? "برتر"} در این نوع ملک ${Math.round((ctx.bestExpertSuccessRate ?? 0) * 100)}٪ موفق بوده — قاعدهٔ دامنه: تخصیص کارشناس.`);
     if ((ctx.daysOnMarket ?? 0) > 90) parts.push(`${ctx.daysOnMarket} روز در بازار — قاعدهٔ دامنه: بازبینی قیمت حتی با احتمال کم.`);
+    if (expectedImpact) {
+      parts.push(`اثر موردانتظار: +${expectedImpact.liftPercent}٪ شانس موفقیت در افق ${expectedImpact.horizonDays} روز (${expectedImpact.reach}).`);
+    }
     parts.push(`نوع نهایی: ${decisionType}. اجرا فقط با تأیید انسان (requiresApproval=true، autoExecute=false).`);
     return parts.join(" ");
   }
@@ -221,6 +266,15 @@ export interface DecisionAction {
 /** پنج الگوی گام (§۳.۳.۲) */
 export type PlannerPattern = "direct_call" | "property_visit" | "price_adjust" | "expert_assign" | "smart_wait";
 
+/** PN-019 فاز ۸ §۱۱ — طرح بازگشت برای هر ۵ الگو (دیگر هیچ برنامه‌ای بی‌rollback نیست) */
+export const ROLLBACK_PLANS: Record<PlannerPattern, string> = {
+  direct_call: "نیازی به بازگردانی نیست — تماس ثبت‌پذیر است؛ در صورت خطای شماره، اصلاح دفترچهٔ تماس و ثبت دلیل در حسابرسی",
+  property_visit: "لغو هماهنگی بازدید و عذرخواهی از مالک — هیچ دادهٔ برون‌سیستمی تغییر نکرده است",
+  price_adjust: "بازگرداندن قیمت قبلی در سامانهٔ ARM و ثبت دلیل در حسابرسی",
+  expert_assign: "لغو تخصیص و بازگشت به صف بررسی — سوابق کارشناس دست‌نخورده می‌ماند",
+  smart_wait: "بازگشت به صف پایش هفتگی — بدون کنش و بدون اثر جانبی",
+};
+
 export function patternFor(decisionType: DecisionType): PlannerPattern {
   switch (decisionType) {
     case "contact_owner":
@@ -241,7 +295,8 @@ export function patternFor(decisionType: DecisionType): PlannerPattern {
 export class ActionPlannerEngineImpl {
   private readonly plans: ActionPlan[] = [];
 
-  /** §۳.۳.۲ — طرح گام‌به‌گام از تصمیم؛ قفل نوعی autoExecute: false */
+  /** §۳.۳.۲ — طرح گام‌به‌گام از تصمیم؛ قفل نوعی autoExecute: false
+   *  PN-019 §۱۱: rollbackPlan برای هر ۵ الگو از ROLLBACK_PLANS — همیشه غیر-null */
   plan(decision: DecisionRecord): ActionPlan {
     const pattern = patternFor(decision.decisionType);
     const steps: ActionStep[] = this.stepsFor(pattern, decision);
@@ -251,7 +306,7 @@ export class ActionPlannerEngineImpl {
       steps,
       estimatedDurationMinutes: steps.reduce((a, s) => a + s.estimatedMinutes, 0),
       riskLevel: decision.decisionType === "adjust_price" ? "medium" : decision.decisionType === "priority_action" ? "medium" : "low",
-      rollbackPlan: decision.decisionType === "adjust_price" ? "بازگرداندن قیمت قبلی در سامانهٔ ARM و ثبت دلیل در حسابرسی" : undefined,
+      rollbackPlan: ROLLBACK_PLANS[pattern],
       autoExecute: false,
     };
     this.plans.push(plan);
@@ -266,8 +321,9 @@ export class ActionPlannerEngineImpl {
     return { totalMinutes, criticalPath, bottlenecks };
   }
 
-  /** تخمین اثر طرح بر شانس موفقیت (بر مبنای اطمینان تصمیم) */
-  estimateImpact(plan: ActionPlan, decision: DecisionRecord): { liftPercent: number; rationale: string } {
+  /** تخمین اثر طرح بر شانس موفقیت (بر مبنای اطمینان تصمیم)
+   *  PN-019 §۱۲: cross-check با expectedImpact تصمیم — اختلاف >۵ واحد → هشدار سازگاری */
+  estimateImpact(plan: ActionPlan, decision: DecisionRecord): { liftPercent: number; rationale: string; consistencyWarning?: string } {
     const impactByPattern: Record<PlannerPattern, number> = {
       direct_call: 15,
       property_visit: 20,
@@ -276,10 +332,14 @@ export class ActionPlannerEngineImpl {
       smart_wait: 0,
     };
     const lift = impactByPattern[patternFor(decision.decisionType)];
-    return {
+    const result: { liftPercent: number; rationale: string; consistencyWarning?: string } = {
       liftPercent: lift,
       rationale: lift === 0 ? "انتظار هوشمند اثر فوری ندارد؛ بازبینی هفتگی لازم است." : `اجرای طرح ${plan.steps.length} گامی، برآورد ${lift}٪ افزایش شانس موفقیت (اطمینان فعلی ${Math.round(decision.confidence * 100)}٪).`,
     };
+    if (decision.expectedImpact && Math.abs(decision.expectedImpact.liftPercent - lift) > 5) {
+      result.consistencyWarning = `اختلاف اثر (${decision.expectedImpact.liftPercent}٪ تصمیم vs ${lift}٪ برنامه) — بازبینی جدول پایه توصیه می‌شود`;
+    }
+    return result;
   }
 
   all(): ActionPlan[] {

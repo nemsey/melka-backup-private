@@ -1,0 +1,24 @@
+{
+  "council": "ملکا-شورا-ن۰۲۳-۱۴۰۵",
+  "workOrder": "PN-019 — فاز ۸ (تعمیق Decision Engine + Action Planner + Safety) + فاز ۹ (حاکمیت ۱۵ قاعده + ارزیابی سیاست)",
+  "date": "1405/07/20",
+  "lockForm": {
+    "versions": {
+      "headAtStart": "7c476c8 (= dde54c8 + کامیت چک‌پوینت خودکار پلتفرم — راستی‌آزمایی: صفر تغییر فایل کد در dde54c8..7c476c8؛ فقط دادهٔ زندهٔ Worker/لاگ/db-test)",
+      "expectedHead": "dde54c8+ — برقرار",
+      "mirror": "dde54c8 (match با آخرین کامیت کد — کامیت چک‌پوینت فقط دادهٔ زمان‌اجراست)",
+      "survivalChainIndex": 19,
+      "buildIdAtStart": "dde54c8-20261008-1026 (= کد HEAD)",
+      "verdict": "4/4 — ورود مجاز با دلتای مستند"
+    },
+    "preconditions": {
+      "health": "200 (mode=real · ARM+PM متصل · masterLayersConsistent)",
+      "dbIntegrity": "quick_check ok",
+      "escrowThreePlace": "audit-boot-secrets PASS (۸۴ روت آینهٔ v1)",
+      "worker": "زنده · ۱۰ کار (عین انتظار: ۷ پایه + preview-guard + reset-guard + drift-guard)",
+      "chunkIntegrity": "PASS — ۱۲ ارجاع · ۰ مفقود · ۵۶ چانک · هویت match",
+      "preview": "دامنه dde54c8 را سرو می‌کند — برابر آخرین کامیت کد؛ کامیت چک‌پوینت (7c476c8) صفر دلتای کد دارد؛ یکدستی کامل در دروازهٔ پایانی با بازانتشار مهر تازه برقرار می‌شود (دکترین مستند PN-017)"
+    }
+  },
+  "note": "سند شورا در دو نقطه شمارهٔ pn020 برای مسیر شواهد آورده (خطای قلم‌اندازی دبیر — سند با عنوان PN-019 صادر شده و نقشهٔ بخش ششم PN-019=فاز۸+۹ را تأیید می‌کند)؛ مسیر صحیح شواهد: download/pn019/ — این انحراف مستند در گزارش نهایی آمده است."
+}

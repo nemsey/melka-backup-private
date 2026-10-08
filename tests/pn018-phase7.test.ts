@@ -401,10 +401,14 @@ describe("PN-018/فاز۷ · مرز API نسخه‌بندی و رانش", () => 
     }
   });
 
-  test("مانیفست api-versioning با ۸۴ مسیر هم‌خوان (۵ مسیر تازهٔ فاز ۷)", () => {
+  test("مانیفست api-versioning با ۹۲ مسیر هم‌خوان (۵ مسیر تازهٔ فاز ۷ + ۸ مسیر تازهٔ PN-019)", () => {
     const manifest = JSON.parse(readFileSync("download/pn012/api-versioning.json", "utf8"));
-    expect(manifest.totalRoutes).toBe(84);
+    expect(manifest.totalRoutes).toBe(92); // PN-019: ۸۴ + ۸ روت فاز ۸/۹
     for (const v1 of ["/api/v1/admin/model-versions", "/api/v1/admin/model-versions/[id]/promote", "/api/v1/admin/model-versions/[id]/reject", "/api/v1/admin/model-versions/[id]/rollback", "/api/v1/admin/drift-checks"]) {
+      expect(manifest.routes.some((r: { v1: string }) => r.v1 === v1)).toBe(true);
+    }
+    // PN-019 — هشت روت تازهٔ فاز ۸+۹
+    for (const v1 of ["/api/v1/admin/decisions", "/api/v1/admin/decisions/stats", "/api/v1/admin/decisions/expire", "/api/v1/admin/action-plans", "/api/v1/admin/governance", "/api/v1/admin/governance/run", "/api/v1/admin/policy-evaluations", "/api/v1/admin/policy-evaluations/run"]) {
       expect(manifest.routes.some((r: { v1: string }) => r.v1 === v1)).toBe(true);
     }
   });

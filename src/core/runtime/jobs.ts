@@ -52,6 +52,8 @@ export const WORKER_JOB_IDS = {
   previewGuard: "preview-guard",
   resetGuard: "reset-guard",
   driftGuard: "drift-guard",
+  decisionShadow: "decision-shadow",
+  policyEval: "policy-eval",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -287,6 +289,48 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       run: async () => {
         const { driftGuardTick } = await import("@/lib/services/learning-loop-service");
         return driftGuardTick();
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Decision Shadow → Worker (تازه — PN-019 فاز ۸: تصمیم سایه + انقضا) ──
+  // هر ۶ ساعت: از جفت‌های واقعی قهرمان تصمیم می‌سازد، ثبت می‌کند (صفر اجرا —
+  // executedSteps=0 لفظی) + جاروب تصمیم‌های سرسشده (بدون حذف — دکترین دادهٔ مقدس).
+  if (process.env.MELK_DECISION_SHADOW !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.decisionShadow,
+      title: "تصمیم سایه + انقضای تصمیم (PN-019 فاز ۸)",
+      intervalMs: Number(process.env.MELK_DECISION_SHADOW_INTERVAL_H ?? 6) * 60 * 60_000,
+      firstRunDelayMs: 3 * 60_000,
+      run: async () => {
+        const { shadowDecisionTick } = await import("@/lib/services/decision-service");
+        return shadowDecisionTick();
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Policy Evaluation → Worker (تازه — PN-019 فاز ۹: ارزیابی ۹۰روزهٔ سیاست‌ها) ──
+  // هر ۹۰ روز: پنج سیاست فعال با ۴ متریک ارزیابی و حکم keep/adjust/retire
+  // می‌گیرند + بررسی ۱۵قاعده‌ای حاکمیت؛ حکم فقط توصیه است — اعمال نیازمند شوراست.
+  if (process.env.MELK_POLICY_EVAL !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.policyEval,
+      title: "ارزیابی سیاست + حاکمیت (PN-019 فاز ۹)",
+      intervalMs: Number(process.env.MELK_POLICY_EVAL_INTERVAL_DAYS ?? 90) * 24 * 60 * 60_000,
+      firstRunDelayMs: 5 * 60_000,
+      run: async () => {
+        const { runPolicyEvaluation, runGovernanceCheck } = await import("@/lib/services/governance-service");
+        const evaluations = await runPolicyEvaluation();
+        const governance = await runGovernanceCheck("worker");
+        return { policies: evaluations.length, verdicts: evaluations.map((e) => e.verdict), governanceFailed: governance.failed };
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

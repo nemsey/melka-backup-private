@@ -1,0 +1,63 @@
+{
+  "council": "ملکا-شورا-ن۰۲۳-۱۴۰۵",
+  "stage": "فاز ۸ — Action Planner با تخمین اثر",
+  "ranAt": "2026-10-08T11:56:50.228Z",
+  "planCount": 16,
+  "realPlan": {
+    "id": "cmuzhe5lj0002nkh0s7ixnabi",
+    "decisionId": "cmuzhe5lg0001nkh0iudlm4ck",
+    "pattern": "direct_call",
+    "steps": [
+      {
+        "order": 1,
+        "action": "شناسایی ملک و مالک مرتبط با 74d5c4cc",
+        "owner": "system",
+        "estimatedMinutes": 2,
+        "dependencies": []
+      },
+      {
+        "order": 2,
+        "action": "تماس تلفنی با مالک",
+        "owner": "consultant",
+        "estimatedMinutes": 10,
+        "dependencies": [
+          1
+        ]
+      },
+      {
+        "order": 3,
+        "action": "ثبت نتیجهٔ تماس در سامانه",
+        "owner": "consultant",
+        "estimatedMinutes": 3,
+        "dependencies": [
+          2
+        ]
+      }
+    ],
+    "rollbackPlan": "نیازی به بازگردانی نیست — تماس ثبت‌پذیر است؛ در صورت خطای شماره، اصلاح دفترچهٔ تماس و ثبت دلیل در حسابرسی",
+    "simulation": {
+      "totalMinutes": 15,
+      "criticalPath": [
+        2,
+        3
+      ],
+      "bottlenecks": []
+    },
+    "impact": {
+      "liftPercent": 15,
+      "rationale": "اجرای طرح 3 گامی، برآورد 15٪ افزایش شانس موفقیت (اطمینان فعلی 40٪).",
+      "consistencyWarning": "اختلاف اثر (3.5٪ تصمیم vs 15٪ برنامه) — بازبینی جدول پایه توصیه می‌شود"
+    },
+    "estimatedDurationMinutes": 15,
+    "riskLevel": "low",
+    "autoExecute": false
+  },
+  "rollbackMatrixAllFivePatterns": {
+    "direct_call": "نیازی به بازگردانی نیست — تماس ثبت‌پذیر است؛ در صورت خطای شماره، اصلاح دفترچهٔ تماس و ثبت دلیل در حسابرسی",
+    "property_visit": "لغو هماهنگی بازدید و عذرخواهی از مالک — هیچ دادهٔ برون‌سیستمی تغییر نکرده است",
+    "price_adjust": "بازگرداندن قیمت قبلی در سامانهٔ ARM و ثبت دلیل در حسابرسی",
+    "expert_assign": "لغو تخصیص و بازگشت به صف بررسی — سوابق کارشناس دست‌نخورده می‌ماند",
+    "smart_wait": "بازگشت به صف پایش هفتگی — بدون کنش و بدون اثر جانبی"
+  },
+  "constraint": "autoExecute=false در همهٔ برنامه‌ها — اجرای گام وجود ندارد (قید سازنده)"
+}

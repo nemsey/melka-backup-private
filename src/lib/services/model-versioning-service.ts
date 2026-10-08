@@ -236,6 +236,9 @@ export async function promoteModelVersion(versionId: string, input: PromoteInput
       422, false,
     );
   }
+  // PN-019 فاز ۹ §۱۵.۱ — قلاب حاکمیت روی نوشتن حساس (نقض critical → ۵۰۳)
+  const { governanceGate } = await import("@/lib/services/governance-service");
+  await governanceGate("MODEL_PROMOTE");
   if (!input.approvalSource || input.approvalSource.trim().length < 4) {
     throw new MelkApiError("COUNCIL_APPROVAL_REQUIRED", "منبع تأیید شورا (approvalSource — شماره سند/جلسه) الزامی است.", 422, false);
   }
@@ -319,6 +322,9 @@ export async function rollbackChampion(modelId: string, input: RollbackInput): P
   if (!input.councilApproval || !input.approvalSource || input.approvalSource.trim().length < 4) {
     throw new MelkApiError("COUNCIL_APPROVAL_REQUIRED", "بازگشت مدل هم‌رتبهٔ ارتقاست — تأیید شورا و منبع آن الزامی است.", 422, false);
   }
+  // PN-019 فاز ۹ §۱۵.۱ — قلاب حاکمیت روی نوشتن حساس
+  const { governanceGate } = await import("@/lib/services/governance-service");
+  await governanceGate("MODEL_ROLLBACK");
   const target = await db.modelVersion.findUnique({ where: { id: input.targetId } });
   if (!target || target.modelId !== modelId || target.status !== "retired") {
     throw new MelkApiError("UNKNOWN", "نسخهٔ هدف بازگشت باید بازنشستهٔ همین مدل باشد.", 404, false);

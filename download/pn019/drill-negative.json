@@ -1,0 +1,33 @@
+{
+  "council": "ملکا-شورا-ن۰۲۳-۱۴۰۵",
+  "stage": "مرحلهٔ ۹ — دریل منفی سه گارد تازه",
+  "ranAt": "2026-10-08T12:21:52.039203Z",
+  "drills": [
+    {
+      "id": 1,
+      "violation": "DecisionRecord با autoExecute=1",
+      "expected": "گارد decision-safety قرمز",
+      "result": "قرمز ✓ سپس سبز پس از پاکسازی"
+    },
+    {
+      "id": 2,
+      "violation": "بررسی حاکمیت با ۱۴ نتیجه (نه ۱۵)",
+      "expected": "گارد governance قرمز",
+      "result": "قرمز ✓ سپس سبز"
+    },
+    {
+      "id": 3,
+      "violation": "ارزیابی با حکم نامعتبر + اثربخشی ۱٫۵",
+      "expected": "گارد policy-evaluation قرمز",
+      "result": "قرمز ✓ سپس سبز"
+    },
+    {
+      "id": 4,
+      "violation": "ShadowDecisionRun با executedSteps=3",
+      "expected": "گارد decision-safety قرمز (نقض مطلق صفر-اجرا)",
+      "result": "قرمز ✓ سپس سبز"
+    }
+  ],
+  "verdict": "PASS — هر چهار دریل موفق؛ گاردها نقض را می‌بینند و پس از پاکسازی سبز می‌شوند",
+  "logTail": "PASS: هر چهار دریل منفی موفق — گاردها نقض را می‌بینند و پس از پاکسازی سبز می‌شوند"
+}
