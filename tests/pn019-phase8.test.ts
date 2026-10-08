@@ -314,9 +314,9 @@ describe("PN-019/فاز۸ · Shadow Mode + Worker", () => {
     expect(src).toContain("MELK_DECISION_SHADOW_INTERVAL_H ?? 6");
   });
 
-  test("Worker پس از PN-019: ۱۲ کار", async () => {
+  test("Worker پس از PN-019/020: ۱۴ کار (۱۳ قبلی + diagnosis-cycle فاز ۱۰)", async () => {
     const { WORKER_JOB_IDS } = await import("@/core/runtime/jobs");
-    expect(Object.keys(WORKER_JOB_IDS)).toHaveLength(12);
+    expect(Object.keys(WORKER_JOB_IDS)).toHaveLength(14);
   });
 
   test("shadowDecisionTick روی دادهٔ fixture: اجرا + جاروب", async () => {

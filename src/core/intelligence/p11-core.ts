@@ -73,6 +73,16 @@ export class SelfRepairEngineImpl {
 
   /** §۶.۳.۱ — ارزیابی ریسک هر نوع کنش */
   assessRisk(actionType: RepairActionType): RiskAssessment {
+    return assessRiskTable(actionType);
+  }
+
+  /** PN-020 — طرح بازگشت عمومی (برای سرویس DB-محور) */
+  rollbackPlanFor(type: RepairActionType): string {
+    return rollbackPlanForType(type);
+  }
+
+  /** نگاشت داخلی — حفظ رفتار */
+  private _assessRiskOld(actionType: RepairActionType): RiskAssessment {
     const table: Record<RepairActionType, RiskAssessment> = {
       reindex: { level: "low", probability: 0.1, impact: 0.2, mitigation: "بازسازی ایندکس از دادهٔ موجود — بدون تغییر داده" },
       recalibrate: { level: "medium", probability: 0.2, impact: 0.4, mitigation: "اعمال تدریجی + مقایسهٔ Brier پیش/پس + بازگشت خودکار در افت" },
@@ -94,7 +104,8 @@ export class SelfRepairEngineImpl {
     return [...this.proposals];
   }
 
-  private rollbackPlanFor(type: RepairActionType): string {
+  /* rollbackPlanFor به عمومی منتقل شد */
+  private _unusedRollbackFor(type: RepairActionType): string {
     switch (type) {
       case "recalibrate":
       case "retrain":
@@ -268,5 +279,34 @@ export class RepairExecutorImpl {
 
   auditTrail(): RepairAuditLog[] {
     return [...this.events.logs];
+  }
+}
+
+/** جدول ریسک هفت‌کنشی — خالص و صادرشده (PN-020/فاز ۱۱ سرویس DB-محور) */
+export function assessRiskTable(actionType: RepairActionType): RiskAssessment {
+  const table: Record<RepairActionType, RiskAssessment> = {
+    reindex: { level: "low", probability: 0.1, impact: 0.2, mitigation: "بازسازی ایندکس از دادهٔ موجود — بدون تغییر داده" },
+    recalibrate: { level: "medium", probability: 0.2, impact: 0.4, mitigation: "اعمال تدریجی + مقایسهٔ Brier پیش/پس + بازگشت خودکار در افت" },
+    retrain: { level: "medium", probability: 0.3, impact: 0.5, mitigation: "نگهداری نسخهٔ قبل + ارزیابی سایه پیش از فعال‌سازی" },
+    prune_sessions: { level: "low", probability: 0.05, impact: 0.1, mitigation: "فقط نشست‌های منقضی ۳۰+ روزه؛ دادهٔ کاربر دست نمی‌خورد" },
+    restore_backup: { level: "high", probability: 0.3, impact: 0.9, mitigation: "بکاپ نقطه‌ای تازه پیش از بازیابی + تأیید md5 + حضور مالک" },
+    update_threshold: { level: "low", probability: 0.1, impact: 0.2, mitigation: "ثبت مقدار قبلی و بازگشت یک‌کلیکی" },
+    custom: { level: "medium", probability: 0.3, impact: 0.5, mitigation: "بازبینی دستی شورا پیش از اجرا" },
+  };
+  return table[actionType];
+}
+
+/** طرح بازگشت هر نوع کنش — خالص و صادرشده */
+export function rollbackPlanForType(type: RepairActionType): string {
+  switch (type) {
+    case "recalibrate":
+    case "retrain":
+      return "بازگرداندن وزن‌ها/کالیبراسیون نسخهٔ قبل از PolicyChangeLog و ثبت رویداد در حسابرسی ترمیم";
+    case "restore_backup":
+      return "بکاپ نقطه‌ای پیش از بازیابی به‌عنوان نقطهٔ بازگشت";
+    case "prune_sessions":
+      return "نشست‌های حذف‌شده از بکاپ قابل بازیابی‌اند";
+    default:
+      return "ثبت وضعیت قبلی و بازگشت دستی با تأیید شورا";
   }
 }

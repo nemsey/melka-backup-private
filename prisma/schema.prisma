@@ -1768,3 +1768,51 @@ model PolicyEvaluationRecord {
   @@index([policyId, evaluatedAt])
   @@index([evaluatedAt])
 }
+
+/// ═══ PN-020 · فاز ۱۰ — گزارش تشخیص خودآگاهی (۲۵ بررسی · نمرهٔ سلامت ۰-۱۰۰) ═══
+model DiagnosticReport {
+  id            String   @id @default(cuid())
+  /// نمرهٔ سلامت کلی ۰-۱۰۰ (میانگین موزون ۲۵ بررسی)
+  healthScore   Int
+  /// تعداد بررسی‌های پاس‌شده از ۲۵
+  passedCount   Int
+  /// هشدارهای فعال [{checkId, severity, message}]
+  alertsJson    String
+  /// آرایهٔ ۲۵تایی [{checkId, category, title, passed, weight, value, expected, message}]
+  checksJson    String
+  /// worker | manual
+  triggerSource String
+  /// مدت اجرای کل چرخه (ms)
+  durationMs    Int
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// ═══ PN-020 · فاز ۱۱ — پیشنهاد ترمیم خودکار (با دروازهٔ تأیید شورا) ═══
+model RepairProposalRecord {
+  id               String    @id @default(cuid())
+  /// شناسهٔ بررسیِ برمی‌گرداندندهٔ پیشنهاد از DiagnosticReport
+  checkId          String
+  /// یکی از هفت کنش: reindex | recalibrate | retrain | prune_sessions | restore_backup | update_threshold | custom
+  actionType       String
+  /// هدف ترمیم (نام مدل/جدول/تنظیم)
+  target           String
+  justification    String
+  expectedOutcome  String
+  /// طرح بازگشت اجباری (قید فاز ۱۱)
+  rollbackPlan     String
+  /// proposed | approved | rejected | executed | failed | rolled_back
+  status           String
+  /// شورا | مالک — منبع تأیید (صفر ترمیم بدون تأیید)
+  approvalSource   String?
+  approvedAt       DateTime?
+  executedAt       DateTime?
+  /// نتیجهٔ اجرا + شواهد
+  resultJson       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}

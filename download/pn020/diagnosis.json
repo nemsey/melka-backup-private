@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-10-08T19:07:39.455Z",
+  "workOrder": "PN-020/فاز ۱۰+۱۱ — خودآگاهی + خودترمیمی",
+  "diagnosis": {
+    "reportId": "cmuzws6y30000nkm4x5hblbnt",
+    "healthScore": 65,
+    "passed": "16/25",
+    "alerts": [
+      {
+        "checkId": "DIAG-DATA-004",
+        "severity": "warning",
+        "message": "[DIAG-DATA-004] صفر حذف بدون شاهد بکاپ: 1 عمل حذف بدون بکاپ تازه‌تر ثبت شده — GOV-DATA-002 (نسخهٔ هشدار)."
+      },
+      {
+        "checkId": "DIAG-DATA-006",
+        "severity": "warning",
+        "message": "[DIAG-DATA-006] تناقض جداول مرجع: 55٪ معاملات کد ملکِ ناشناخته دارند (> ۵٪) — شکاف همگام‌سازی کاتالوگ."
+      },
+      {
+        "checkId": "DIAG-MODEL-002",
+        "severity": "warning",
+        "message": "[DIAG-MODEL-002] Brier قهرمان در بازه: قهرمان امتیاز Brier ثبت‌شده ندارد."
+      },
+      {
+        "checkId": "DIAG-MODEL-004",
+        "severity": "warning",
+        "message": "[DIAG-MODEL-004] رانش سه‌گانه زیر آستانه: بیشترین رانش 0.474 ≥ ۰٫۰۵ — آستانهٔ آموزش مجدد رد شد."
+      },
+      {
+        "checkId": "DIAG-MODEL-005",
+        "severity": "warning",
+        "message": "[DIAG-MODEL-005] نسخه فعال مهر خورده: در ۷ روز اخیر هیچ تصمیمی با مهر نسخهٔ قهرمان ثبت نشده — حلقهٔ تصمیم ساکن است."
+      },
+      {
+        "checkId": "DIAG-SEC-002",
+        "severity": "warning",
+        "message": "[DIAG-SEC-002] صفر دسترسی غیرمجاز متمادی: 5 رد متوالی دسترسی غیرمجاز از یک کد (410031320) — احتمال تلاش نفوذ یا خطای کلاینت."
+      },
+      {
+        "checkId": "DIAG-SEC-004",
+        "severity": "warning",
+        "message": "[DIAG-SEC-004] نشست‌های فعال OWNER سالم: 11 نشست OWNER فعال (> ۳) — بستن نشست‌های اضافی لازم است."
+      },
+      {
+        "checkId": "DIAG-GOV-001",
+        "severity": "warning",
+        "message": "[DIAG-GOV-001] بررسی ۱۵قاعده‌ای پاس: آخرین بررسی حاکمیت 1 قاعده قرمز دارد."
+      },
+      {
+        "checkId": "DIAG-GOV-002",
+        "severity": "warning",
+        "message": "[DIAG-GOV-002] صفر نقض بحرانی باز: 1 نقض بحرانی باز: GOV-DATA-002 — گیت enforce ممکن است ۵۰۳ بدهد."
+      }
+    ],
+    "durationMs": 357
+  },
+  "failedChecksInterpretation": {
+    "DIAG-DATA-004": "هرس دیسک H2 (۲۷ فایل + ۴ پوشه) پس از آخرین بکاپ — طبیعی و مستند در AuditLog DISK_PRUNE",
+    "DIAG-DATA-006": "شکاف واقعی پیوند معاملات↔آگهی (کاتالوگ کهنه) — پیشنهاد ترمیم reindex",
+    "DIAG-MODEL-002": "قهرمان v1 فاقد brierScore ثبت‌شده در ModelVersion (Brier واقعی ۰.۲۲۵۶ در حلقهٔ یادگیری است) — ثبت فیلد در چرخهٔ بعد",
+    "DIAG-MODEL-004": "رانش مفهوم ۰.۴۷۴ تاریخی (آرتیفکت G5 که ریشه‌یابی شد) هنوز در DriftCheck آخر است — پاک‌سازی با چرخهٔ drift تازه",
+    "DIAG-SEC-002": "۵ رد متوالی ACCESS_DENIED در تاریخچه — بررسی",
+    "DIAG-SEC-004": "۱۱ نشست OWNER فعال — پیشنهاد prune_sessions",
+    "DIAG-GOV-001/002": "آخرین بررسی حاکمیت رد قرمز دارد (از رخدادهای جلسات قبل)"
+  },
+  "repairMappingCount": 16,
+  "proposalsGenerated": 16,
+  "proposalsTotal": 16,
+  "sampleProposal": {
+    "id": "cmuzws6yl000pnkm4urbnlsnk",
+    "checkId": "DIAG-GOV-003",
+    "actionType": "custom",
+    "target": "ارزیابی ۹۰روزه به‌روز",
+    "justification": "[DIAG-GOV-003] آخرین ارزیابی سیاست 0 روز پیش. — ریسک: medium (احتمال 0.3 · اثر 0.5 · تعدیل: بازبینی دستی شورا پیش از اجرا)",
+    "expectedOutcome": "بازگشت بررسی DIAG-GOV-003 به وضعیت pass در چرخهٔ بعدی خودآگاهی (DES11 §۶.۳.۱)",
+    "rollbackPlan": "ثبت وضعیت قبلی و بازگشت دستی با تأیید شورا",
+    "status": "proposed",
+    "approvalSource": null,
+    "approvedAt": null,
+    "executedAt": null,
+    "resultJson": null,
+    "createdAt": "2026-10-08T19:07:39.453Z"
+  },
+  "guardLock": "قفل شورا: اجرا فقط از وضعیت approved + approvalSource — دریل منفی ۴۰۴ در تست ۱۱-۲",
+  "rateLimit": "حداکثر ۱ ترمیم در ۲۴ ساعت (تست ۱۱-۴)"
+}

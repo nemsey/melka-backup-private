@@ -320,11 +320,12 @@ describe("PN-019/فاز۹ · Worker + API + گارد", () => {
     expect(pe).toContain("PASS");
   });
 
-  test("Worker پس از PN-019: ۱۲ کار (۱۰ قبلی + decision-shadow + policy-eval)", async () => {
+  test("Worker پس از PN-019/020: ۱۴ کار (۱۳ قبلی + diagnosis-cycle فاز ۱۰)", async () => {
     const { WORKER_JOB_IDS } = await import("@/core/runtime/jobs");
     const ids = Object.values(WORKER_JOB_IDS);
     expect(ids).toContain("decision-shadow");
     expect(ids).toContain("policy-eval");
-    expect(new Set(ids).size).toBe(12);
+    expect(ids).toContain("disk-guard"); // PN-020/H2
+    expect(new Set(ids).size).toBe(14);
   });
 });

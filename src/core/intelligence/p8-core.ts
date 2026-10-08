@@ -321,23 +321,29 @@ export class ActionPlannerEngineImpl {
     return { totalMinutes, criticalPath, bottlenecks };
   }
 
-  /** تخمین اثر طرح بر شانس موفقیت (بر مبنای اطمینان تصمیم)
-   *  PN-019 §۱۲: cross-check با expectedImpact تصمیم — اختلاف >۵ واحد → هشدار سازگاری */
+  /** تخمین اثر طرح بر شانس موفقیت
+   *  PN-019 §۱۲: cross-check با expectedImpact تصمیم — اختلاف >۵ واحد → هشدار سازگاری
+   *
+   *  PN-020/H3 — ریشه‌یابی و ترمیم اختلاف ۳.۵٪ vs ۱۵٪ (شاهد زندهٔ جلسهٔ ۰۲۳):
+   *  ریشهٔ دوتایی — (۱) جدول موازیِ ثابت در برنامه که اطمینان تصمیم را نادیده
+   *  می‌گرفت (direct_call=15٪ همیشگی) در برابر جدول تصمیمِ ضریب‌دار
+   *  (پایه × (۰.۵ + اطمینان/۲))؛ (۲) نگاشت یک‌به‌چند investigate→direct_call
+   *  با پایه‌های متفاوت (۵٪ در برابر ۱۵٪). ترمیم: منبع یگانهٔ حقیقت —
+   *  برآورد برنامه از همان expectedImpactFor(نوع تصمیم، اطمینان) می‌آید؛
+   *  cross-check برای رانش آینده زنده می‌ماند (اگر روزی اثر تصمیم از یادگیری
+   *  محیط محاسبه شود و از جدول پایه فاصله بگیرد، همین هشدار آن را می‌بیند). */
   estimateImpact(plan: ActionPlan, decision: DecisionRecord): { liftPercent: number; rationale: string; consistencyWarning?: string } {
-    const impactByPattern: Record<PlannerPattern, number> = {
-      direct_call: 15,
-      property_visit: 20,
-      price_adjust: 25,
-      expert_assign: 18,
-      smart_wait: 0,
-    };
-    const lift = impactByPattern[patternFor(decision.decisionType)];
+    const estimate = expectedImpactFor(decision.decisionType, decision.confidence);
+    const lift = estimate.liftPercent;
     const result: { liftPercent: number; rationale: string; consistencyWarning?: string } = {
       liftPercent: lift,
-      rationale: lift === 0 ? "انتظار هوشمند اثر فوری ندارد؛ بازبینی هفتگی لازم است." : `اجرای طرح ${plan.steps.length} گامی، برآورد ${lift}٪ افزایش شانس موفقیت (اطمینان فعلی ${Math.round(decision.confidence * 100)}٪).`,
+      rationale:
+        lift === 0
+          ? "انتظار هوشمند اثر فوری ندارد؛ بازبینی هفتگی لازم است."
+          : `اجرای طرح ${plan.steps.length} گامی (الگوی ${patternFor(decision.decisionType)})، برآورد ${lift}٪ افزایش شانس موفقیت — همان جدول پایهٔ فاز ۸ و ضریب اطمینان تصمیم (اطمینان ${Math.round(decision.confidence * 100)}٪).`,
     };
     if (decision.expectedImpact && Math.abs(decision.expectedImpact.liftPercent - lift) > 5) {
-      result.consistencyWarning = `اختلاف اثر (${decision.expectedImpact.liftPercent}٪ تصمیم vs ${lift}٪ برنامه) — بازبینی جدول پایه توصیه می‌شود`;
+      result.consistencyWarning = `اختلاف اثر (${decision.expectedImpact.liftPercent}٪ تصمیم vs ${lift}٪ برآورد برنامه) — اگر پایدار بود، اثرِ ثبت‌شدهٔ تصمیم از جدول پایهٔ فاز ۸ فاصله گرفته؛ بازبینی جدول با دادهٔ واقعی محیط توصیه می‌شود (PN-020/H3: ریشهٔ اختلاف تاریخی ۳.۵٪ vs ۱۵٪ رفع شد — برنامه اکنون همان ضریب اطمینان تصمیم را می‌گیرد)`;
     }
     return result;
   }

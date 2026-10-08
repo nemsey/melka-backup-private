@@ -27,7 +27,15 @@ import type { LearningTier, PolicyType } from "@/core/intelligence/contracts-p7-
 
 export const POLICY_EVAL_WINDOW_DAYS = Number(process.env.MELK_POLICY_EVAL_WINDOW_DAYS ?? 90);
 export const POLICY_EVAL_INTERVAL_DAYS = Number(process.env.MELK_POLICY_EVAL_INTERVAL_DAYS ?? 90);
-export const POLICY_MIN_EVENTS = Number(process.env.MELK_POLICY_MIN_EVENTS ?? 10);
+/**
+ * PN-020/H4 — آستانهٔ دادهٔ ناکافی ارزیابی سیاست: ۱۰ → ۵ رویداد.
+ * ریشه‌یابی جلسهٔ ۰۲۳: هر پنج سیاست insufficientData=true شدند چون کمتر از
+ * ۱۰ رویداد در پنجرهٔ ۹۰روزه داشتند (سیستم تازه بوت شده و تاریخچهٔ حاکمیت
+ * جوان است) — حکم‌ها زودتر معنادار می‌شوند و چرخهٔ ارزیابی زودتر فعال می‌شود.
+ * ۵ رویداد برای چهار متریک (اثربخشی/پایداری/پایبندی/هزینه) حداقل آماری
+ * معقولی است؛ پنجرهٔ ۹۰ روزه دست‌نخورده ماند.
+ */
+export const POLICY_MIN_EVENTS = Number(process.env.MELK_POLICY_MIN_EVENTS ?? 5);
 
 /** پنج سیاست فعال برای نخستین چرخه (DES9 §۱۱) */
 export const ACTIVE_POLICIES = [

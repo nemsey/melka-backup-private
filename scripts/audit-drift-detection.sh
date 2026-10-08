@@ -69,8 +69,8 @@ if ! grep -q 'MELK_DRIFT_ESCALATE ?? 0.10' src/lib/services/drift-service.ts; th
   echo "✗ آستانهٔ escalate پیش‌فرض تغییر یافته"; exit 1
 fi
 
-# ۵) مرز مخزن: drift-service تنها نویسندهٔ جدول
-WRITERS=$(grep -rl 'db.driftCheck' src/ --include='*.ts' | grep -v 'drift-service' || true)
+# ۵) مرز مخزن: drift-service تنها نویسندهٔ جدول (خواندن مجاز — PN-020/فاز ۱۰ تشخیص فقط می‌خواند)
+WRITERS=$(grep -rlE 'db\.driftCheck\.(create|update|upsert|delete)' src/ --include='*.ts' | grep -v 'drift-service' || true)
 if [ -n "$WRITERS" ]; then
   echo "✗ نویسندهٔ خارج از مرز: $WRITERS"; exit 1
 fi
