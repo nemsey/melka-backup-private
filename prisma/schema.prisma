@@ -1123,6 +1123,10 @@ model User {
   lockedUntil    DateTime?
   /// JSON آزاد (مثال: منبع ساخت: seed|pm-backfill|self-provision)
   metadata       String?
+  /// PN-021 (شورا-ن۰۲۵): VISIBLE (پیش‌فرض) | HIDDEN — کارشناس پنهانِ مالک:
+  /// در هیچ فهرست/آمار کاربریِ غیر از تب مخصوص مالک ظاهر نمی‌شود؛
+  /// ورود و مجوزها عادی کار می‌کنند (قابلیت مشابه «مدیر پنهان» تلگرام).
+  visibility     String    @default("VISIBLE")
 
   permissions UserPermission[]
   activityLog UserActivity[]

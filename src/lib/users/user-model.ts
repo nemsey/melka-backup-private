@@ -17,6 +17,29 @@ import { MANAGEABLE_TILES } from "@/lib/access/personnel-access";
 export const USER_ROLES = ["OWNER", "MANAGER", "EXPERT", "VIEWER", "GUEST"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
+// ─────────────────────────────────────────────────────────────────────────
+// PN-021 (شورا-ن۰۲۵) — دیده‌شدن کاربر: کارشناس پنهانِ مالک
+// ─────────────────────────────────────────────────────────────────────────
+
+/** مقادیر مجاز دیده‌شدن (تنها منبع مجاز تعریف) */
+export const USER_VISIBILITY = ["VISIBLE", "HIDDEN"] as const;
+export type UserVisibility = (typeof USER_VISIBILITY)[number];
+
+export function isUserVisibility(v: unknown): v is UserVisibility {
+  return typeof v === "string" && (USER_VISIBILITY as readonly string[]).includes(v);
+}
+
+/**
+ * قواعد پنهان‌سازی (بند راهنمای مالک):
+ *   · نقش OWNER هرگز پنهان نمی‌شود (مالک محیط — ردّ صریح)
+ *   · نقش GUEST پنهان نمی‌شود (مهمان فقط خانه است؛ معنایی ندارد)
+ *   · MANAGER | EXPERT | VIEWER قابل پنهان‌سازی‌اند (کاربرد اصلی: کارشناس فروش)
+ */
+export function visibilityAllowedForRole(role: UserRole, visibility: UserVisibility): boolean {
+  if (visibility === "VISIBLE") return true;
+  return role === "MANAGER" || role === "EXPERT" || role === "VIEWER";
+}
+
 export const ROLE_LABELS_FA: Record<UserRole, string> = {
   OWNER: "مالک — دسترسی کامل",
   MANAGER: "مدیر — تقریباً کامل (بدون تنظیمات حساس)",
@@ -119,6 +142,8 @@ export interface UserInput {
   branchTitle?: string | null;
   roleTitleFa?: string | null;
   isActive?: boolean;
+  /** PN-021 — پیش‌فرض VISIBLE؛ HIDDEN = کارشناس پنهان مالک */
+  visibility?: UserVisibility;
 }
 
 export function validateUserInput(u: UserInput): string | null {
@@ -150,6 +175,8 @@ export interface SafeUser {
   lastLoginIp: string | null;
   lockedUntil: string | null;
   permissionCount: number;
+  /** PN-021 — VISIBLE | HIDDEN */
+  visibility: UserVisibility;
 }
 
 type UserRow = {
@@ -165,6 +192,7 @@ type UserRow = {
   lastLoginAt: Date | null;
   lastLoginIp: string | null;
   lockedUntil: Date | null;
+  visibility?: string | null;
   _count?: { permissions: number };
 };
 
@@ -183,6 +211,7 @@ export function toSafeUser(u: UserRow): SafeUser {
     lastLoginIp: u.lastLoginIp,
     lockedUntil: u.lockedUntil ? u.lockedUntil.toISOString() : null,
     permissionCount: u._count?.permissions ?? 0,
+    visibility: (isUserVisibility(u.visibility) ? u.visibility : "VISIBLE") as UserVisibility,
   };
 }
 

@@ -105,6 +105,10 @@ tail -1 /tmp/pn020-ci-audit16.log
 bash scripts/audit-repair-gate.sh > /tmp/pn020-ci-audit17.log 2>&1 || { echo "✗ گام ۵-ف: repair-gate (دروازهٔ خودترمیمی)"; tail -8 /tmp/pn020-ci-audit17.log; exit 1; }
 tail -1 /tmp/pn020-ci-audit17.log
 
+# PN-021 (شورا-ن۰۲۵): گارد هجدهم — کارشناس فروش پنهان (دیده‌شدن کاربران)
+bash scripts/audit-stealth-users.sh > /tmp/pn021-ci-audit18.log 2>&1 || { echo "✗ گام ۵-ق: stealth-users (کارشناس فروش پنهان)"; tail -8 /tmp/pn021-ci-audit18.log; exit 1; }
+tail -1 /tmp/pn021-ci-audit18.log
+
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"
 # PN-012: ری‌استارت کنترل‌شدهٔ سرور تولید پیش از سنجهٔ RAM — الگوی مستند جلسهٔ ۰۰۶

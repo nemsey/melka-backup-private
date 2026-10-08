@@ -11,7 +11,7 @@ import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { audit } from "@/lib/auth/session";
 import { getUserWithPermissions, updateUser, deactivateUser } from "@/lib/services/users-service";
-import { isUserRole, type UserRole } from "@/lib/users/user-model";
+import { isUserRole, isUserVisibility, type UserRole, type UserVisibility } from "@/lib/users/user-model";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireRole(request, "OWNER", "GET /api/admin/users/[id]");
@@ -39,10 +39,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const body = (raw ?? {}) as {
     fullName?: string; role?: string; branchTitle?: string | null;
     roleTitleFa?: string | null; isActive?: boolean; resetPermissions?: boolean;
+    visibility?: string;
   };
 
   if (body.role !== undefined && !isUserRole(body.role)) {
     return errorResponse(new MelkApiError("UNKNOWN", "نقش نامعتبر است.", 400, false));
+  }
+  // PN-021 — تغییر دیده‌شدن (نمایان/پنهان) — اعتبارسنجی سطح روت + قواعد سرویس
+  if (body.visibility !== undefined && !isUserVisibility(body.visibility)) {
+    return errorResponse(new MelkApiError("UNKNOWN", "مقدار دیده‌شدن نامعتبر است (VISIBLE | HIDDEN).", 400, false));
   }
 
   try {
@@ -53,8 +58,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       roleTitleFa: body.roleTitleFa,
       isActive: body.isActive,
       resetPermissions: body.resetPermissions,
+      visibility: body.visibility as UserVisibility | undefined,
     }, guard.ctx.personnelCode);
-    await audit("USER_UPDATED", guard.ctx.personnelCode, `userId=${id}; role=${user.role}; active=${user.isActive}`);
+    await audit("USER_UPDATED", guard.ctx.personnelCode, `userId=${id}; role=${user.role}; active=${user.isActive}; visibility=${user.visibility}`);
     return Response.json({ ok: true, user });
   } catch (e) {
     if (e instanceof MelkApiError) return errorResponse(e);

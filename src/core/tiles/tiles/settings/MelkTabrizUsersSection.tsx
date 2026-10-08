@@ -15,6 +15,10 @@
  *     ۱۴۳ پرسنل · جستجو · فیلتر شعبه/سمت · «فقط بدون حساب» ·
  *     نشان پیوند حساب اپ · دکمهٔ «ساخت کاربر» (فرم پیش‌پرشده)
  *   تب ۳ «همگام‌سازی PM» — وضعیت اتصال + همگام‌سازی زندهٔ پرسنل از سامانهٔ ملک تبریز
+ *   تب ۴ «کارشناس فروش پنهان» — شاهکار PN-021 (دستور مالک ۱۴۰۵/۰۷/۲۶):
+ *     ساخت کارشناس فروش در سامانه‌های ملک تبریز (اپلیکیشن ملکا) که در هیچ
+ *     فهرست/آمار کاربری ظاهر نمی‌شود — فقط مالک در همین تب می‌بیند و مدیریت می‌کند.
+ *   تب ۵ «راهنما» — راهنمای کامل نحوهٔ ایجاد کاربر در سامانه‌های ملک تبریز.
  *
  * فقط OWNER (روت‌های API نیز OWNER-only هستند).
  */
@@ -32,7 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Save, UserPlus, Users, KeyRound, Activity, LogOut, Search, ShieldCheck, Ban,
-  Building2, RefreshCw, Link2, UserCheck, Crown, Database,
+  Building2, RefreshCw, Link2, UserCheck, Crown, Database, Ghost, Eye, EyeOff, BookOpen,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { useAppStore } from "@/lib/client/store";
@@ -45,12 +49,14 @@ interface SafeUser {
   role: string; branchTitle: string | null; roleTitleFa: string | null; isActive: boolean;
   createdAt: string; lastLoginAt: string | null; lastLoginIp: string | null; lockedUntil: string | null;
   permissionCount: number;
+  /** PN-021 — VISIBLE | HIDDEN */
+  visibility: string;
 }
 interface TilePerm { tileId: string; canRead: boolean; canWrite: boolean; canDelete: boolean; canExport: boolean; canSync: boolean }
 interface Registry { id: string; title: string }
 interface ListResponse {
   ok: boolean; rows: SafeUser[]; registry: Registry[]; roles: Array<{ id: string; label: string }>;
-  overview: { total: number; active: number; byRole: Record<string, number>; guests: number; sessionsActive: number };
+  overview: { total: number; active: number; byRole: Record<string, number>; guests: number; sessionsActive: number; hidden: number };
 }
 interface ActivityRow { id: string; action: string; tileId: string | null; details: string | null; ip: string | null; timestamp: string }
 interface SessionRow { id: string; ip: string | null; userAgent: string | null; createdAt: string; lastActivityAt: string; expiresAt: string }
@@ -62,6 +68,8 @@ interface PmPersonnelRow {
   hireDate: string | null; employmentType: number | null; voipExtension: string | null;
   active: boolean; saleCount: number; rentCount: number;
   hasAccount: boolean; accountRole: string | null; accountActive: boolean | null;
+  /** PN-021 — حساب پنهان مالک */
+  accountHidden: boolean;
 }
 interface DirectoryResponse {
   ok: boolean;
@@ -148,6 +156,16 @@ export function MelkTabrizUsersSection() {
   const [fBranch, setFBranch] = useState("");
   const [fTitle, setFTitle] = useState("");
 
+  // PN-021 — کارشناس فروش پنهان (تب ۴)
+  const [hiddenRows, setHiddenRows] = useState<SafeUser[]>([]);
+  const [hiddenLoading, setHiddenLoading] = useState(true);
+  const [stealthOpen, setStealthOpen] = useState(false);
+  const [sCode, setSCode] = useState("");
+  const [sMobile, setSMobile] = useState("");
+  const [sName, setSName] = useState("");
+  const [sBranch, setSBranch] = useState("");
+  const [sTitle, setSTitle] = useState("کارشناس فروش");
+
   // پنل جزئیات
   const [detail, setDetail] = useState<SafeUser | null>(null);
   const [perms, setPerms] = useState<TilePerm[]>([]);
@@ -197,10 +215,27 @@ export function MelkTabrizUsersSection() {
     }
   }, [pmSearch, pmBranch, pmRole, pmOnlyWithout]);
 
+  /* ── PN-021: بارگذاری کارشناسان پنهان (تب ۴) ── */
+  const loadHidden = useCallback(async () => {
+    try {
+      const q = new URLSearchParams();
+      q.set("visibility", "HIDDEN");
+      q.set("includeInactive", "1");
+      const res = await api<ListResponse>(`/api/admin/users?${q.toString()}`);
+      setHiddenRows(res.rows ?? []);
+      setOverview((prev) => (prev ? { ...prev, hidden: res.overview?.hidden ?? 0 } : res.overview ?? null));
+      setRegistry((prev) => (prev.length > 0 ? prev : res.registry ?? []));
+    } catch {
+      /* OWNER نیست یا خطا */
+    } finally {
+      setHiddenLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (userRole === "OWNER") { void load(); void loadDirectory(); }
-    else { setLoading(false); setPmLoading(false); }
-  }, [userRole, load, loadDirectory]);
+    if (userRole === "OWNER") { void load(); void loadDirectory(); void loadHidden(); }
+    else { setLoading(false); setPmLoading(false); setHiddenLoading(false); }
+  }, [userRole, load, loadDirectory, loadHidden]);
 
   if (userRole !== "OWNER") return null; // فقط مالک می‌بیند (روت هم OWNER-only)
 
@@ -360,6 +395,74 @@ export function MelkTabrizUsersSection() {
     }
   };
 
+  /* ═══ PN-021: کارشناس فروش پنهان (تب ۴ — شاهکار) ═══ */
+
+  const openStealthCreate = (fromPm?: PmPersonnelRow) => {
+    setSCode(fromPm?.personnelCode ?? "");
+    setSMobile(fromPm?.mobile ?? "");
+    setSName(fromPm?.fullName ?? "");
+    setSBranch(fromPm?.branchTitle ?? "");
+    setSTitle(fromPm?.roleTitle ?? "کارشناس فروش");
+    setStealthOpen(true);
+  };
+
+  const saveStealthForm = async () => {
+    setBusy(true);
+    try {
+      const u = await api<{ ok: boolean; user: SafeUser }>("/api/admin/users", {
+        method: "POST",
+        body: JSON.stringify({
+          personnelCode: sCode || null,
+          mobile: sMobile || null,
+          fullName: sName,
+          role: "EXPERT",
+          branchTitle: sBranch || null,
+          roleTitleFa: sTitle || "کارشناس فروش",
+          visibility: "HIDDEN",
+        }),
+      } as never);
+      toast({
+        title: "کارشناس فروش پنهان ساخته شد",
+        description: `${u.user.fullName} — در هیچ فهرست کاربری نمایان نیست؛ فقط مالک (شما) او را در همین تب می‌بیند`,
+      });
+      setStealthOpen(false);
+      await loadHidden();
+      await loadDirectory();
+    } catch (e) {
+      toast({ title: "ساخت کارشناس پنهان ناموفق", description: e instanceof ApiClientError ? e.message : "خطای نامشخص", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const revealUser = async (u: SafeUser) => {
+    setBusy(true);
+    try {
+      await api(`/api/admin/users/${u.id}`, { method: "PATCH", body: JSON.stringify({ visibility: "VISIBLE" }) } as never);
+      toast({ title: "کاربر نمایان شد", description: `${u.fullName} از این پس در فهرست کاربران سامانه دیده می‌شود` });
+      await loadHidden();
+      await load();
+    } catch (e) {
+      toast({ title: "نمایان‌سازی ناموفق", description: e instanceof ApiClientError ? e.message : "خطا", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const hideUser = async (u: SafeUser) => {
+    setBusy(true);
+    try {
+      await api(`/api/admin/users/${u.id}`, { method: "PATCH", body: JSON.stringify({ visibility: "HIDDEN" }) } as never);
+      toast({ title: "کاربر پنهان شد", description: `${u.fullName} از فهرست کاربران سامانه حذف شد — مدیریت در تب «کارشناس فروش پنهان»` });
+      await loadHidden();
+      await load();
+    } catch (e) {
+      toast({ title: "پنهان‌سازی ناموفق", description: e instanceof ApiClientError ? e.message : "خطا", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   /* ═══════════ رندر ═══════════ */
 
   return (
@@ -369,7 +472,7 @@ export function MelkTabrizUsersSection() {
           <Building2 className="w-5 h-5 text-primary" aria-hidden /> مدیریت کاربران ملک تبریز
         </CardTitle>
         <CardDescription>
-          شاهکار — مدیریت یکپارچهٔ کاربران دپارتمان ملک تبریز: کاربران اپلیکیشن، پرسنل سامانهٔ PM، مجوزهای دقیق هر کاشی، سیاههٔ فعالیت و نشست‌های فعال
+          شاهکار — مدیریت یکپارچهٔ کاربران دپارتمان ملک تبریز: کاربران اپلیکیشن، پرسنل سامانهٔ PM، مجوزهای دقیق هر کاشی، سیاههٔ فعالیت، نشست‌های فعال و کارشناس فروش پنهان
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -403,8 +506,15 @@ export function MelkTabrizUsersSection() {
               <Building2 className="w-3.5 h-3.5" aria-hidden /> پرسنل ملک تبریز (PM)
               {pmStats && <Badge variant="secondary" className="text-[9px] h-4 px-1">{faDigits(String(pmStats.pmTotal))}</Badge>}
             </TabsTrigger>
+            <TabsTrigger value="stealth" className="gap-1.5 text-xs">
+              <Ghost className="w-3.5 h-3.5" aria-hidden /> کارشناس فروش پنهان
+              {overview && overview.hidden > 0 && <Badge className="text-[9px] h-4 px-1 bg-amber-500 text-amber-950">{faDigits(String(overview.hidden))}</Badge>}
+            </TabsTrigger>
             <TabsTrigger value="sync" className="gap-1.5 text-xs">
               <Database className="w-3.5 h-3.5" aria-hidden /> همگام‌سازی PM
+            </TabsTrigger>
+            <TabsTrigger value="guide" className="gap-1.5 text-xs">
+              <BookOpen className="w-3.5 h-3.5" aria-hidden /> راهنما
             </TabsTrigger>
           </TabsList>
 
@@ -454,6 +564,11 @@ export function MelkTabrizUsersSection() {
                       )}
                     </button>
                     <div className="flex items-center gap-1">
+                      {u.role !== "OWNER" && u.role !== "GUEST" && (
+                        <Button size="sm" variant="ghost" className="h-7 text-[11px] gap-1" onClick={() => void hideUser(u)} disabled={busy} title="حذف از فهرست کاربران سامانه — مدیریت در تب کارشناس فروش پنهان">
+                          <EyeOff className="w-3 h-3" aria-hidden /> پنهان
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={() => void unlock(u)} disabled={busy || u.role === "OWNER"}>
                         <KeyRound className="w-3 h-3" aria-hidden /> بازنشانی قفل
                       </Button>
@@ -530,10 +645,17 @@ export function MelkTabrizUsersSection() {
                       {p.branchTitle && <Badge variant="outline" className="text-[10px]">{p.branchTitle}</Badge>}
                       {p.roleTitle && <span className="text-[10px] text-muted-foreground">{p.roleTitle}</span>}
                       {p.hasAccount ? (
-                        <Badge className={`text-[9px] ${ROLE_BADGE[p.accountRole ?? ""]?.cls ?? "bg-muted text-muted-foreground"}`} data-testid={`mtb-has-account-${p.personnelCode}`}>
-                          <Crown className="w-2.5 h-2.5 me-0.5" aria-hidden />
-                          {p.accountActive === false ? "حساب غیرفعال" : `حساب ${ROLE_BADGE[p.accountRole ?? ""]?.label ?? p.accountRole ?? ""}`}
-                        </Badge>
+                        p.accountHidden ? (
+                          <Badge className="text-[9px] bg-amber-500 text-amber-950" data-testid={`mtb-hidden-account-${p.personnelCode}`}>
+                            <Ghost className="w-2.5 h-2.5 me-0.5" aria-hidden />
+                            حساب پنهان
+                          </Badge>
+                        ) : (
+                          <Badge className={`text-[9px] ${ROLE_BADGE[p.accountRole ?? ""]?.cls ?? "bg-muted text-muted-foreground"}`} data-testid={`mtb-has-account-${p.personnelCode}`}>
+                            <Crown className="w-2.5 h-2.5 me-0.5" aria-hidden />
+                            {p.accountActive === false ? "حساب غیرفعال" : `حساب ${ROLE_BADGE[p.accountRole ?? ""]?.label ?? p.accountRole ?? ""}`}
+                          </Badge>
+                        )
                       ) : (
                         <Badge variant="secondary" className="text-[9px] text-muted-foreground">بدون حساب اپ</Badge>
                       )}
@@ -542,9 +664,14 @@ export function MelkTabrizUsersSection() {
                       )}
                     </div>
                     {!p.hasAccount && p.personnelCode && (
-                      <Button size="sm" className="h-7 text-[11px] gap-1" onClick={() => openFromPm(p)} disabled={busy} data-testid={`mtb-promote-${p.personnelCode}`}>
-                        <UserPlus className="w-3 h-3" aria-hidden /> ساخت کاربر
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" className="h-7 text-[11px] gap-1" onClick={() => openFromPm(p)} disabled={busy} data-testid={`mtb-promote-${p.personnelCode}`}>
+                          <UserPlus className="w-3 h-3" aria-hidden /> ساخت کاربر
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-[11px] gap-1" onClick={() => openStealthCreate(p)} disabled={busy} title="ساخت کارشناس فروش پنهان — بدون حضور در فهرست کاربران" data-testid={`mtb-stealth-promote-${p.personnelCode}`}>
+                          <Ghost className="w-3 h-3" aria-hidden /> پنهان
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -585,6 +712,136 @@ export function MelkTabrizUsersSection() {
                 ))}
               </div>
             )}
+          </TabsContent>
+          {/* ═══ تب ۴: کارشناس فروش پنهان — شاهکار PN-021 ═══ */}
+          <TabsContent value="stealth" className="space-y-4 pt-3">
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 space-y-2" data-testid="stealth-intro">
+              <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                <Ghost className="w-4 h-4 text-amber-600" aria-hidden /> کارشناس فروش پنهان — قابلیت ویژهٔ مالک
+              </h4>
+              <p className="text-xs text-muted-foreground leading-6">
+                کارشناس فروش پنهان، کاربری است که شما (مالک سامانه) می‌سازید و <strong>در هیچ فهرست، آمار یا گزارش کاربری ظاهر نمی‌شود</strong> —
+                نه در فهرست «کاربران سامانه»، نه در آمار نمای کلی، نه برای هیچ مدیر یا کارشناس دیگری. تنها نقطهٔ مدیریت او همین تب است که فقط خودتان می‌بینید.
+              </p>
+              <p className="text-xs text-muted-foreground leading-6">
+                کارشناس پنهان دقیقاً مانند هر کارشناس دیگری <strong>با کد پرسنلی و کد پیامکی وارد می‌شود</strong>، به کاشی‌های کارشناسان دسترسی دارد و عادی کار می‌کند؛
+                فقط «حضورش در فهرست‌ها» حذف شده است. هر زمان بخواهید می‌توانید او را «نمایان» کنید تا به فهرست عادی بازگردد.
+              </p>
+              <p className="text-[11px] text-muted-foreground border-s-2 border-amber-500/60 ps-2 leading-5">
+                نکتهٔ ورود: کد پرسنلی باید در سامانهٔ ARM ثبت شده باشد تا پیامک کد تأیید ارسال شود — راحت‌ترین راه، انتخاب پرسنل از تب «پرسنل ملک تبریز (PM)» با دکمهٔ «پنهان» است.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground" data-testid="stealth-caption">
+                {hiddenLoading
+                  ? "در حال بارگذاری…"
+                  : `${faDigits(String(hiddenRows.length))} کارشناس پنهان فعال در سامانه‌های ملک تبریز`}
+              </p>
+              <Button size="sm" onClick={() => openStealthCreate()} className="gap-1.5" data-testid="stealth-add">
+                <UserPlus className="w-3.5 h-3.5" aria-hidden /> ساخت کارشناس فروش پنهان
+              </Button>
+            </div>
+
+            {!hiddenLoading && hiddenRows.length === 0 ? (
+              <p className="text-xs text-muted-foreground rounded-md border border-dashed p-4 text-center">
+                هنوز کارشناس پنهانی ساخته نشده است — اولین را با دکمهٔ بالا بسازید.
+              </p>
+            ) : (
+              <div className="space-y-2" data-testid="stealth-list">
+                {hiddenRows.map((u) => (
+                  <div key={u.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2" data-testid={`stealth-row-${u.personnelCode ?? u.mobile}`}>
+                    <button type="button" onClick={() => void openDetail(u)} className="flex flex-wrap items-center gap-2 min-w-0 text-start">
+                      <Ghost className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />
+                      <span className="font-bold truncate max-w-[160px]">{u.fullName}</span>
+                      {u.personnelCode && <span className="font-mono text-xs tabular-nums text-muted-foreground" dir="ltr">{faDigits(u.personnelCode)}</span>}
+                      {u.mobile && <span className="font-mono text-xs text-muted-foreground" dir="ltr">{faDigits(u.mobile)}</span>}
+                      <Badge className={`text-[10px] ${ROLE_BADGE[u.role]?.cls ?? ""}`}>{ROLE_BADGE[u.role]?.label ?? u.role}</Badge>
+                      {u.roleTitleFa && <span className="text-[10px] text-muted-foreground">{u.roleTitleFa}</span>}
+                      {!u.isActive && <Badge variant="outline" className="text-[10px] text-destructive">غیرفعال</Badge>}
+                      {u.lastLoginAt && <span className="text-[10px] text-muted-foreground">آخرین ورود: {fmtDate(u.lastLoginAt)}</span>}
+                    </button>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={() => void revealUser(u)} disabled={busy} data-testid={`stealth-reveal-${u.personnelCode}`}>
+                        <Eye className="w-3 h-3" aria-hidden /> نمایان
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={() => void unlock(u)} disabled={busy}>
+                        <KeyRound className="w-3 h-3" aria-hidden /> بازنشانی قفل
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={() => void toggleActive(u)} disabled={busy}>
+                        {u.isActive ? <Ban className="w-3 h-3" aria-hidden /> : <ShieldCheck className="w-3 h-3" aria-hidden />}
+                        {u.isActive ? "غیرفعال" : "فعال"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ═══ تب ۵: راهنما — راهنمای نحوهٔ ایجاد کاربر در سامانه‌های ملک تبریز ═══ */}
+          <TabsContent value="guide" className="space-y-4 pt-3">
+            <div className="rounded-lg border p-4 space-y-4" data-testid="mtb-guide">
+              <div>
+                <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-primary" aria-hidden /> راهنمای ایجاد کاربر در سامانه‌های ملک تبریز
+                </h4>
+                <p className="text-xs text-muted-foreground pt-1 leading-6">
+                  این بخش تنها نقطهٔ مدیریت کاربران اپلیکیشن ملکا (سامانه‌های ملک تبریز) است و فقط مالک سامانه به آن دسترسی دارد.
+                  سه مسیر برای ایجاد کاربر وجود دارد؛ مسیر سوم — کارشناس فروش پنهان — قابلیت ویژهٔ مالک است.
+                </p>
+              </div>
+
+              <div className="rounded-md border p-3 space-y-1.5">
+                <h5 className="text-xs font-bold">مسیر ۱ — کاربر عادی (نمایان)</h5>
+                <ol className="text-xs text-muted-foreground leading-6 list-decimal ps-5 space-y-0.5">
+                  <li>در همین بخش، تب «کاربران سامانه» را باز کنید.</li>
+                  <li>دکمهٔ «افزودن کاربر» را بزنید.</li>
+                  <li>کد پرسنلی یا موبایل، نام کامل و نقش (کارشناس/مدیر/بازدید) را وارد کنید — شعبه و سمت اختیاری است.</li>
+                  <li>«ذخیره» را بزنید — مجوزهای پیش‌فرض نقش به‌صورت خودکار اعمال می‌شود و کاربر در فهرست نمایان است.</li>
+                </ol>
+              </div>
+
+              <div className="rounded-md border p-3 space-y-1.5">
+                <h5 className="text-xs font-bold">مسیر ۲ — از دفترچهٔ پرسنل ملک تبریز (PM)</h5>
+                <ol className="text-xs text-muted-foreground leading-6 list-decimal ps-5 space-y-0.5">
+                  <li>تب «پرسنل ملک تبریز (PM)» را باز کنید — دفترچهٔ ۱۴۳ نفرهٔ دپارتمان از سامانهٔ PM بارگذاری می‌شود.</li>
+                  <li>با فیلتر «فقط بدون حساب» پرسنلِ بدون حساب اپ را ببینید.</li>
+                  <li>روی ردیف پرسنل، دکمهٔ «ساخت کاربر» را بزنید — فرم با نام/کد/موبایل/شعبه/سمت او پیش‌پرشده است.</li>
+                  <li>«ذخیره» را بزنید — پیوند پرسنل PM با حساب اپ برقرار می‌شود.</li>
+                  <li>اگر پرسنل تازه‌ای در سامانهٔ PM ثبت شده باشد، ابتدا تب «همگام‌سازی PM» را اجرا کنید تا دفترچه به‌روز شود.</li>
+                </ol>
+              </div>
+
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 space-y-1.5">
+                <h5 className="text-xs font-bold flex items-center gap-1.5">
+                  <Ghost className="w-3.5 h-3.5 text-amber-600" aria-hidden /> مسیر ۳ — کارشناس فروش پنهان (قابلیت ویژهٔ مالک)
+                </h5>
+                <ol className="text-xs text-muted-foreground leading-6 list-decimal ps-5 space-y-0.5">
+                  <li>تب «کارشناس فروش پنهان» را باز کنید (همین صفحه).</li>
+                  <li>دکمهٔ «ساخت کارشناس فروش پنهان» را بزنید — یا از تب PM روی ردیف پرسنلِ بدون حساب، دکمهٔ «پنهان» را بزنید تا فرم پیش‌پرشده باز شود.</li>
+                  <li>کد پرسنلی (الزامی برای ورود پیامکی)، نام کامل، موبایل و شعبه را وارد کنید — سمت پیش‌فرض «کارشناس فروش» است.</li>
+                  <li>«ساخت» را بزنید — کاربر با نقش کارشناس ساخته می‌شود اما <strong>در هیچ فهرست کاربری ظاهر نمی‌شود</strong>؛ مدیریت او فقط در همین تب است.</li>
+                  <li>به کارشناس بگویید مانند همکارانش با همان کد پرسنلی و کد پیامکی وارد اپلیکیشن شود — تجربهٔ ورود و کار او کاملاً عادی است.</li>
+                  <li>هر زمان خواستید با دکمهٔ «نمایان» او را به فهرست عادی کاربران بازگردانید، یا با «غیرفعال» دسترسی‌اش را قطع کنید.</li>
+                </ol>
+                <p className="text-[11px] text-muted-foreground border-s-2 border-amber-500/60 ps-2 leading-5">
+                  صداقت فنی: کارشناس پنهان فقط در «نمایش» پنهان است — ورود، مجوزها و ثبت فعالیتش عادی کار می‌کند و سیاههٔ حسابرسی مالک رویداد ساخت/نمایان‌سازی را ثبت می‌کند.
+                  به سامانهٔ خارجی PM/ARM هیچ چیزی نوشته نمی‌شود (همگام‌سازی فقط خواندنی است).
+                </p>
+              </div>
+
+              <div className="rounded-md border p-3 space-y-1.5">
+                <h5 className="text-xs font-bold">نحوهٔ ورود کاربرها و رفع اشکال</h5>
+                <ul className="text-xs text-muted-foreground leading-6 list-disc ps-5 space-y-0.5">
+                  <li>ورود کارشناسان: صفحهٔ ورود ← «کد پرسنلی» ← دریافت کد پیامکی (از سامانهٔ ARM ارسال می‌شود) ← وارد شدن.</li>
+                  <li>اگر پیامک نرسید: کد پرسنلی باید در سامانهٔ ARM فعال باشد؛ «بازنشانی قفل» را امتحان کنید یا چند دقیقه بعد دوباره درخواست بدهید.</li>
+                  <li>مدیریت مجوزهای کاشی‌ها: روی نام کاربر بزنید ← ماتریس مجوز×کاشی ← ذخیره.</li>
+                  <li>قطع دسترسی فوری: دکمهٔ «غیرفعال» — همهٔ نشست‌های فعال کاربر همان لحظه بسته می‌شود.</li>
+                  <li>پسوردی وجود ندارد؛ احراز هویت همیشه با پیامک است و مهمان‌ها با موبایل وارد می‌شوند.</li>
+                </ul>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -757,6 +1014,55 @@ export function MelkTabrizUsersSection() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── PN-021: فرم ساخت کارشناس فروش پنهان ── */}
+      <Dialog open={stealthOpen} onOpenChange={setStealthOpen}>
+        <DialogContent dir="rtl" className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-1.5">
+              <Ghost className="w-4 h-4 text-amber-600" aria-hidden /> ساخت کارشناس فروش پنهان
+            </DialogTitle>
+            <DialogDescription>
+              کاربر با نقش «کارشناس» ساخته می‌شود ولی در هیچ فهرست/آمار کاربری ظاهر نمی‌شود — فقط مالک او را در تب «کارشناس فروش پنهان» می‌بیند.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="st-code">کد پرسنلی *</Label>
+                <Input id="st-code" value={sCode} onChange={(e) => setSCode(e.target.value)} placeholder="410xxxxxxx" dir="ltr" inputMode="numeric" data-testid="stealth-code" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="st-mobile">موبایل (اختیاری)</Label>
+                <Input id="st-mobile" value={sMobile} onChange={(e) => setSMobile(e.target.value)} placeholder="09xxxxxxxxx" dir="ltr" inputMode="numeric" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="st-name">نام کامل *</Label>
+              <Input id="st-name" value={sName} onChange={(e) => setSName(e.target.value)} placeholder="نام و نام خانوادگی کارشناس" data-testid="stealth-name" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="st-branch">شعبه</Label>
+                <Input id="st-branch" value={sBranch} onChange={(e) => setSBranch(e.target.value)} placeholder="مثلاً ملک تبریز" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="st-title">سمت</Label>
+                <Input id="st-title" value={sTitle} onChange={(e) => setSTitle(e.target.value)} placeholder="کارشناس فروش" />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground border-s-2 border-amber-500/60 ps-2 leading-5">
+              نکته: کد پرسنلی باید در سامانهٔ ARM ثبت شده باشد تا کارشناس بتواند با پیامک وارد شود — از تب PM با دکمهٔ «پنهان» این فرم را پیش‌پرشده باز کنید.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 justify-end">
+            <Button size="sm" variant="outline" onClick={() => setStealthOpen(false)}>انصراف</Button>
+            <Button size="sm" onClick={() => void saveStealthForm()} disabled={busy} className="gap-1.5" data-testid="stealth-save">
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Ghost className="w-3.5 h-3.5" aria-hidden />} ساخت پنهان
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </Card>
