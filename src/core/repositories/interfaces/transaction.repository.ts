@@ -78,6 +78,10 @@ export interface TransactionRepository {
       status: string | null;
       documentDate: Date | null;
       deliveryDate: Date | null;
+      /** PN-020/گام اول-ج۱ — پاسخ خام + مبالغ مالی برای شرایط مالی قرارداد */
+      rawInfoJson: string | null;
+      comisionOfContract: number | null;
+      taxOfContract: number | null;
     }>
   >;
   /** پاک‌سازی کامل (ریست کش CRM) */

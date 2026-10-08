@@ -828,8 +828,22 @@ export async function syncWithRefresh(
   return { sync, newArmToken };
 }
 
-/** در صورت خالی‌بودن کش، داده‌های واقعی را با توکن ARM بارگذاری می‌کند */
-export async function ensureSeeded(armToken?: string): Promise<{ transactions: number; experts: number; interactions: number; visits: number; supplyDemand: number; liveError?: string }> {
+/**
+ * در صورت خالی‌بودن کش، داده‌های واقعی را با توکن ARM بارگذاری می‌کند.
+ *
+ * PN-020/گام اول-ج۲ — ریشه‌یابی خطای ۵۰۴ بروزرسانی فهرست معاملات:
+ *   پیش از این، «خالی‌بودن کش + وجود توکن» یعنی اجرای زنجیرهٔ کامل
+ *   همگام‌سازی «درونِ همان درخواست فهرست» — زنجیرهٔ کامل (۱۳۰+ صفحهٔ ARM ×
+ *   ۴۰۰ms + غنی‌سازی) در شواهد زنده ۷۰.۸ ثانیه طول کشیده ← دروازهٔ proxy
+ *   پیش‌باز / مرورگر در ۶۰-۹۰ ثانیه می‌بُرد ← ۵۰۴ تکرارشونده تا پرشدن کش.
+ *   از این‌پس حالت «background» (که همهٔ روت‌های GET فهرست‌ها استفاده می‌کنند)
+ *   کار را در پس‌زمینه آغاز می‌کند (قفل HOTFIX-05 فراخوان‌های موازی را به همان
+ *   اجرا می‌پیوندد) و پاسخ فوری برمی‌گردد؛ روت صریحاً همگام (تست‌ها) دست‌نخورده است.
+ */
+export async function ensureSeeded(
+  armToken?: string,
+  opts: { background?: boolean } = {}
+): Promise<{ transactions: number; experts: number; interactions: number; visits: number; supplyDemand: number; liveError?: string; seedPending?: boolean }> {
   const [txCount, exCount, inCount, viCount, sdCount] = await Promise.all([
     db.transactionRecord.count(),
     db.expertRecord.count(),
@@ -839,6 +853,11 @@ export async function ensureSeeded(armToken?: string): Promise<{ transactions: n
   ]);
 
   if ((txCount === 0 || exCount === 0) && armToken) {
+    // PN-020/گام اول-ج۲ — مسیر غیرمسدود: شروع پس‌زمینه‌ای + پاسخ فوری
+    if (opts.background) {
+      void syncWithRefresh(armToken, "").catch(() => undefined);
+      return { transactions: txCount, experts: exCount, interactions: inCount, visits: viCount, supplyDemand: sdCount, seedPending: true };
+    }
     const { sync } = await syncWithRefresh(armToken, "");
     if (sync.ok) return { transactions: sync.transactions, experts: sync.experts, interactions: sync.interactions, visits: sync.visits, supplyDemand: sync.supplyDemand };
     return { transactions: txCount, experts: exCount, interactions: inCount, visits: viCount, supplyDemand: sdCount, liveError: sync.error };

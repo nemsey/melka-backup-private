@@ -71,7 +71,10 @@ export interface ContractLookup {
 
 /** P6.5-14 (BLOCK C — ملکا-شورا-۱۴۰۵-۰۱۷) — غنی‌سازی معامله‌محور:
  *  پاسخ نگاشت‌شدهٔ «trade-overviews/info/{txId}» عین منبع؛ بالاترین اولویت
- *  برای نوع/مبلغ/طرفین/حق‌السهم چون مستقیماً به خود معامله گره خورده است. */
+ *  برای نوع/مبلغ/طرفین/حق‌السهم چون مستقیماً به خود معامله گره خورده است.
+ *  PN-020/گام اول-ج۱ — rawInfoJson + مبالغ مالی برای «شرایط مالی قرارداد فی‌مابین»:
+ *  پاسخ خام ARM شامل جدول‌های پرداخت (نقد/چک طرفین)، جنبی/اداری/دنگ خدمات و
+ *  تاریخ سند است که از این‌پس در لایهٔ نمایش تجزیه می‌شوند (دادهٔ خام دست‌نخورده). */
 export interface TxInfoLookup {
   txId: string;
   contractType: string | null;
@@ -86,6 +89,10 @@ export interface TxInfoLookup {
   status: string | null;
   documentDate: Date | null;
   deliveryDate: Date | null;
+  /** PN-020/گام اول-ج۱ — پاسخ خام عین منبع (فقط سمت سرور؛ هرگز به کلاینت فرستاده نمی‌شود) */
+  rawInfoJson?: string | null;
+  comisionOfContract?: number | null;
+  taxOfContract?: number | null;
 }
 
 /** P6.5-12 — کارگزاری مرتبط با ملک معامله (special-properties سامانه ARM) */
@@ -146,7 +153,196 @@ export type EnrichedTxRow<R extends TxSourceRow = TxSourceRow> = R & {
   contractAmount: number | null;
   /** P6.5-12 — کارگزاری مرتبط با ملک (سند نمایندگی — منبع فایل قرارداد) */
   agency: AgencyLookup | null;
+  // ==========================================================================
+  // PN-020/گام اول-ج۱ — شاهکار: ستون‌های تازه از صورت‌وضعیت خام ARM (rawInfoJson)
+  // ==========================================================================
+  /** عنوان ملک معامله‌شده (property.title صورت‌وضعیت — پوشش ۱۰۰٪ دیتای زنده) */
+  propertyTitle: string | null;
+  /** آدرس ملک معامله‌شده (property.address) */
+  propertyAddress: string | null;
+  /** وضعیت معامله در سامانه مبدأ (finished / rescission / waitingFor… — برچسب فارسی در UI) */
+  txStatus: string | null;
+  /** تاریخ سند رسمی (contractSanadDate — پوشش ۱۰۰٪ دیتای زنده) */
+  sanadDate: string | null;
+  /** حق‌الزحمه (کمیسیون) کل قرارداد — تومان */
+  comisionOfContract: number | null;
+  /** مالیات قرارداد — تومان */
+  taxOfContract: number | null;
+  /** خلاصهٔ شرایط پرداخت برای ستون فهرست (نقد/چک طرفین) — null یعنی داده‌ای ثبت نشده */
+  paymentTerms: TxPaymentTermsSummary | null;
+  /** جدول کامل پرداخت‌ها + مبالغ جانبی برای سند قرارداد (دیالوگ) */
+  paymentSchedule: TxPaymentSchedule | null;
 };
+
+// ==========================================================================
+// PN-020/گام اول-ج۱ — تجزیهٔ «شرایط مالی قرارداد فی‌مابین طرفین» از rawInfoJson
+// ---------------------------------------------------------------------------
+// شاهکار دستور مالک: «یافتن متن قرارداد فی‌مابین خریدار و فروشنده (فروش،
+// رهن و اجاره، پیش فروش و …)». سامانه ARM متنِ واحدی برای قرارداد ندارد؛
+// اما «صورت‌وضعیت» هر معامله (trade-overviews/info — عین پاسخ خام در
+// rawInfoJson) همهٔ مؤلفه‌های مالیِ توافقِ طرفین را دارد:
+//   · buyerCashList / sellerCashList — پرداخت‌های نقدی با مبلغ + تاریخ + شماره پیگیری
+//   · buyerChequeList / sellerChequeList — چک‌های صادره (فهرست شناسه؛ تعدادش معتبر است)
+//   · janebiPrice (جنبی) · edariPrice (اداری) · serviceDong (دنگ خدمات)
+//   · comisionOfContract (حق‌الزحمه) · taxOfContract (مالیات)
+//   · contractSanadDate (تاریخ سند) · status (وضعیت: finished/rescission/…)
+// این لایه «تحلیل/نمایش» است — قانون دادهٔ مقدس: rawInfoJson هرگز تغییر نمی‌کند.
+// ==========================================================================
+
+/** یک فقره پرداخت نقدی طرف قرارداد (عین فیلدهای سامانه مبدأ) */
+export interface TxCashPayment {
+  amount: number;
+  date: string | null;
+  trackingNumber: string | null;
+}
+
+/** خلاصهٔ ستون «شرایط پرداخت» در فهرست */
+export interface TxPaymentTermsSummary {
+  buyerCashCount: number;
+  buyerCashTotal: number;
+  sellerCashCount: number;
+  sellerCashTotal: number;
+  buyerChequeCount: number;
+  sellerChequeCount: number;
+}
+
+/** جدول کامل پرداخت‌ها برای سند قرارداد (دیالوگ فایل قرارداد) */
+export interface TxPaymentSchedule {
+  buyerCash: TxCashPayment[];
+  sellerCash: TxCashPayment[];
+  buyerChequeCount: number;
+  sellerChequeCount: number;
+  janebiPrice: number | null;
+  edariPrice: number | null;
+  serviceDong: number | null;
+}
+
+/** خروجی کامل تجزیهٔ مالی — همهٔ فیلدهای تازهٔ PN-020 */
+export interface TxFinancialTerms {
+  sanadDate: string | null;
+  txStatus: string | null;
+  comisionOfContract: number | null;
+  taxOfContract: number | null;
+  paymentTerms: TxPaymentTermsSummary | null;
+  paymentSchedule: TxPaymentSchedule | null;
+}
+
+/** عدد امن از فیلد خام (در وجه تومان؛ مقادیر منفی/نامعتبر → null) */
+function toAmount(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v) && v >= 0) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v.replace(/[٬,،\s]/g, ""));
+    if (Number.isFinite(n) && n >= 0) return n;
+  }
+  return null;
+}
+
+/** فهرست نقدیِ یک طرف → آرایهٔ پرداخت‌ها (مرتب بر تاریخ صعودی — قدیمی‌ترین اول) */
+function parseCashList(list: unknown): TxCashPayment[] {
+  if (!Array.isArray(list)) return [];
+  const out: TxCashPayment[] = [];
+  for (const item of list) {
+    if (item === null || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
+    const amount = toAmount(r.amount);
+    if (amount === null || amount === 0) continue;
+    const dateRaw = typeof r.date === "string" ? r.date : null;
+    const d = dateRaw && !Number.isNaN(new Date(dateRaw).getTime()) ? dateRaw : null;
+    out.push({
+      amount,
+      date: d,
+      trackingNumber: typeof r.trackingNumber === "string" && r.trackingNumber.trim() ? r.trackingNumber.trim() : null,
+    });
+  }
+  out.sort((a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999"));
+  return out;
+}
+
+/** فهرست چک‌های یک طرف → فقط تعداد معتبر (آیتم‌ها شناسهٔ محض در مبدأند؛ جزئیات در سند نیست) */
+function parseChequeCount(list: unknown): number {
+  return Array.isArray(list) ? list.length : 0;
+}
+
+/**
+ * تجزیهٔ شرایط مالی قرارداد از پاسخ خام صورت‌وضعیت — خالص و قابل تست.
+ * خروجی همه-null فقط وقتی است که rawInfoJson تهی/نامعتبر باشد؛ اگر داده هست ولی
+ * هیچ پرداختی ثبت نشده، paymentTerms=null می‌ماند (صادقانه: «ثبت نشده»).
+ */
+export function parseTxFinancialTerms(rawInfoJson: string | null | undefined): TxFinancialTerms {
+  const empty: TxFinancialTerms = {
+    sanadDate: null,
+    txStatus: null,
+    comisionOfContract: null,
+    taxOfContract: null,
+    paymentTerms: null,
+    paymentSchedule: null,
+  };
+  if (!rawInfoJson) return empty;
+  let d: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(rawInfoJson) as unknown;
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return empty;
+    d = parsed as Record<string, unknown>;
+  } catch {
+    return empty;
+  }
+
+  const sanadRaw = typeof d.contractSanadDate === "string" ? d.contractSanadDate : null;
+  const buyerCash = parseCashList(d.buyerCashList);
+  const sellerCash = parseCashList(d.sellerCashList);
+  const buyerChequeCount = parseChequeCount(d.buyerChequeList);
+  const sellerChequeCount = parseChequeCount(d.sellerChequeList);
+  const janebiPrice = toAmount(d.janebiPrice);
+  const edariPrice = toAmount(d.edariPrice);
+  const serviceDong = toAmount(d.serviceDong);
+  const comision = toAmount(d.comisionOfContract);
+  const tax = toAmount(d.taxOfContract);
+
+  const hasSchedule =
+    buyerCash.length > 0 || sellerCash.length > 0 || buyerChequeCount > 0 || sellerChequeCount > 0 ||
+    janebiPrice !== null || edariPrice !== null || serviceDong !== null;
+
+  return {
+    sanadDate: sanadRaw && !Number.isNaN(new Date(sanadRaw).getTime()) ? sanadRaw : null,
+    txStatus: typeof d.status === "string" && d.status.trim() ? d.status.trim() : null,
+    comisionOfContract: comision,
+    taxOfContract: tax,
+    paymentTerms: hasSchedule
+      ? {
+          buyerCashCount: buyerCash.length,
+          buyerCashTotal: buyerCash.reduce((s, p) => s + p.amount, 0),
+          sellerCashCount: sellerCash.length,
+          sellerCashTotal: sellerCash.reduce((s, p) => s + p.amount, 0),
+          buyerChequeCount,
+          sellerChequeCount,
+        }
+      : null,
+    paymentSchedule: hasSchedule
+      ? { buyerCash, sellerCash, buyerChequeCount, sellerChequeCount, janebiPrice, edariPrice, serviceDong }
+      : null,
+  };
+}
+
+// ==========================================================================
+// PN-020/گام اول-ج۱ — برچسب فارسی وضعیت معامله (عین واژگان سامانه مبدأ)
+// ==========================================================================
+
+const TX_STATUS_LABELS: Readonly<Record<string, string>> = {
+  finished: "تکمیل شده",
+  rescission: "فسخ شده",
+  deletedByFinance: "حذف شده توسط مالی",
+  waitingForAddRealtors: "در انتظار افزودن مشاور",
+  waitingForRealtors: "در انتظار تایید مشاوران",
+  waitingForFinance: "در انتظار تایید مالی",
+  preDefined: "پیش‌نویس",
+  NOT_FOUND_AT_SOURCE: "در مبدأ یافت نشد",
+};
+
+/** برچسب فارسی وضعیت؛ مقدار ناشناخته عین متن خام برمی‌گردد (هیچ اختراعی نیست) */
+export function txStatusLabel(status: string | null | undefined): string | null {
+  if (!status) return null;
+  return TX_STATUS_LABELS[status] ?? status;
+}
 
 // ==========================================================================
 // تجمیع حق‌السهم مشاوران (بند پ-۵ — ستون «تجمیع حق السهم مشاوران»)
@@ -421,6 +617,13 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
     const contractAmount = info?.contractPrice ?? contract?.contractPrice ?? null;
     const shareSource = info?.realtorSharesJson ?? contract?.realtorListJson ?? null;
 
+    // PN-020/گام اول-ج۱ — شاهکار: تجزیهٔ شرایط مالی قرارداد از صورت‌وضعیت خام خود معامله.
+    // حق‌الزحمه/مالیات: ستون جدول غنی‌سازی معتبرتر است (نرمال‌شده هنگام نوشتن)؛
+    // rawInfoJson مکمل است (فقط وقتی ستون خالی است).
+    const financial = parseTxFinancialTerms(info?.rawInfoJson);
+    if (financial.comisionOfContract === null && info?.comisionOfContract != null) financial.comisionOfContract = info.comisionOfContract;
+    if (financial.taxOfContract === null && info?.taxOfContract != null) financial.taxOfContract = info.taxOfContract;
+
     // P6.5-14 — متن قرارداد: اولویت با داده‌های معامله‌محور (عین خود معامله)
     const contractLike: ContractLookup | null = info
       ? {
@@ -458,6 +661,11 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
       contractType,
       contractAmount,
       agency,
+      // PN-020/گام اول-ج۱ — ستون‌های تازه از صورت‌وضعیت خام (rawInfoJson فقط سمت سرور تجزیه می‌شود؛
+      // خودِ پاسخ خام هرگز در ردیف خروجی نمی‌نشیند — قانون دادهٔ مقدس + بار پاسخ سبک می‌ماند)
+      propertyTitle: info?.propertyTitle?.trim() || contract?.propertyTitle?.trim() || null,
+      propertyAddress: info?.propertyAddress?.trim() || contract?.propertyAddress?.trim() || null,
+      ...financial,
     };
   });
 }

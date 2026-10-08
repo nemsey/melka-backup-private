@@ -188,6 +188,10 @@ export class PrismaTransactionRepository implements ScopedTransactionRepository 
       status: string | null;
       documentDate: Date | null;
       deliveryDate: Date | null;
+      /** PN-020/گام اول-ج۱ — پاسخ خام + مبالغ مالی برای شرایط مالی قرارداد (تجزیه در لایهٔ نمایش) */
+      rawInfoJson: string | null;
+      comisionOfContract: number | null;
+      taxOfContract: number | null;
     }>
   > {
     if (txIds.length === 0) return [];
@@ -197,6 +201,8 @@ export class PrismaTransactionRepository implements ScopedTransactionRepository 
         txId: true, contractType: true, contractPrice: true, buyerName: true, buyerMobile: true,
         sellerName: true, sellerMobile: true, realtorSharesJson: true, propertyTitle: true,
         propertyAddress: true, status: true, documentDate: true, deliveryDate: true,
+        // PN-020/گام اول-ج۱ — شرایط مالی قرارداد فی‌مابین طرفین
+        rawInfoJson: true, comisionOfContract: true, taxOfContract: true,
       },
     });
   }

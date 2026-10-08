@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // تلاش برای استخراج زنده در صورت خالی‌بودن کش (فقط داده واقعی)
-    const seed = await ensureSeeded(guard.armTokens?.accessToken);
+    const seed = await ensureSeeded(guard.armTokens?.accessToken, { background: true });
     const syncState = await getSyncState();
     const sp = request.nextUrl.searchParams;
 

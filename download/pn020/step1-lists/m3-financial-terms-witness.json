@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-10-08T18:16:26.503Z",
+  "workOrder": "PN-020/گام اول-ج — شاهکار شرایط مالی قرارداد (rawInfoJson → ستون‌های تازهٔ M3)",
+  "sourceTable": "TransactionEnrichment.rawInfoJson (عین پاسخ خام ARM — قانون دادهٔ مقدس)",
+  "totalTransactions": 767,
+  "coverage": {
+    "sanadDate": {
+      "count": 765,
+      "pct": 99.7
+    },
+    "txStatus": {
+      "count": 766,
+      "pct": 99.9,
+      "distribution": {
+        "deletedByFinance": 3,
+        "finished": 708,
+        "rescission": 2,
+        "waitingForAddRealtors": 35,
+        "preDefined": 12,
+        "waitingForRealtors": 5,
+        "waitingForFinance": 1
+      }
+    },
+    "propertyTitle": {
+      "count": 766,
+      "pct": 99.9
+    },
+    "comisionOfContract": {
+      "count": 730,
+      "pct": 95.2
+    },
+    "taxOfContract": {
+      "count": 730,
+      "pct": 95.2
+    },
+    "paymentTerms": {
+      "count": 766,
+      "pct": 99.9
+    },
+    "buyerCashPayments": {
+      "count": 613,
+      "pct": 79.9
+    },
+    "sellerCashPayments": {
+      "count": 601,
+      "pct": 78.4
+    },
+    "cheques": {
+      "count": 174,
+      "pct": 22.7
+    },
+    "janebiPrice": {
+      "count": 5,
+      "pct": 0.7
+    },
+    "serviceDong": {
+      "count": 565,
+      "pct": 73.7
+    }
+  },
+  "sumAllRecordedCashPaymentsToman": 79837770250,
+  "sample": {
+    "txId": "683ad548085a0c3d78a9b37f",
+    "propertyTitle": "فروش ساختمان  تجاری-خدماتی 1373 متری",
+    "status": "حذف شده توسط مالی",
+    "sanadDate": "2025-05-31T10:06:29.181Z",
+    "comisionOfContract": 335311250,
+    "taxOfContract": 55372500,
+    "paymentTerms": {
+      "buyerCashCount": 0,
+      "buyerCashTotal": 0,
+      "sellerCashCount": 0,
+      "sellerCashTotal": 0,
+      "buyerChequeCount": 0,
+      "sellerChequeCount": 0
+    },
+    "paymentSchedule": {
+      "buyerCash": [],
+      "sellerCash": [],
+      "buyerChequeCount": 0,
+      "sellerChequeCount": 0,
+      "janebiPrice": 0,
+      "edariPrice": 0,
+      "serviceDong": 300000
+    }
+  }
+}
