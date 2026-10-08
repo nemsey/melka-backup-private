@@ -2741,3 +2741,26 @@ Stage Summary:
 - رکورد تست: ۲۱۰۲/۰ ×۲ (قبلی ۲۰۷۲ در میانهٔ جلسه — قبل از آن ۲۰۶۲) — +۴۰ تازهٔ PN-018
 - زنجیرهٔ بقا: chainIndex=19 · آینه = HEAD · preview = HEAD · Worker ۱۰ کار
 - انتظار مالک: (۱) دو خطا رفع شده — M1 و مغز را ببینید (۲) پانل نسخه‌ها: /api/admin/model-versions (۳) رانش مفهوم ۰٫۴۷۴ جدی — پایش ۶ساعته زنده (۴) PN-019/020 طبق نقشهٔ سه‌دستوری شورا
+---
+Task ID: PN-019
+Agent: main (Super Z / GLM)
+Task: ملکا-شورا-ن۰۲۳-۱۴۰۵ — PN-019: فاز ۸ (تعمیق Decision Engine + Action Planner + Safety) + فاز ۹ (حاکمیت ۱۵ قاعده + ارزیابی سیاست) + مرحلهٔ ۱ (تحلیل ریشه‌ای G5 رانش مفهوم)
+
+Work Log:
+- **قفل ورود:** ۴/۴ با دلتای مستند (HEAD=7c476c8 = dde54c8 + کامیت چک‌پوینت خودکار پلتفرم — راستی‌آمایی: صفر تغییر کد) + ۶/۶ پیش‌شرط → ورود مجاز (lock-form.json)
+- **مرحلهٔ ۱ (G5 — کشف ریشه‌ای):** سیگنال رانش مفهوم ۰٫۴۷۴ آرتیفکت ترتیب فایل بود — فایل پیامدها دولایه نوشته می‌شود (۳۴۷ معامله، ۱۹۳ منتشر، ۳۹ معامله، ۱۹۳ منتشر) و شکاف ۷۰/۳۰ مرز نوع پیامد را برید؛ ضمناً هر ۷۷۲ پیامد در یک روز (اسنپ‌شات) ثبت شده‌اند. تحلیل سه‌بازهٔ زمانی واقعی: نرخ معاملهٔ تعیین‌تکلیف‌ها ۱٫۵۰/۰٫۹۸/۱٫۳۹٪ (پایدار) · مکانیزم سن: آگهی جوان ۴۷٪ vs کهنه ۱۱٪ · افت واقعی کوهورتی ملایم ۷→۳٪ سالانه (هشدار برای بررسی میدانی مالک) · ترمیم: splitWindowsByTime با نردبان تنزل صادقانه + مهر سازوکار در evidenceJson
+- **فاز ۸ (DES8 ۵۲۵ خط):** DecisionRecord پندرگانه (۱۵ فیلد: +expectedImpact کمی سه‌مؤلفه‌ای lift/reach/horizon+basis · +modelVersionId مهر قهرمان) · بدیل ≥۳ با تضمین نوعی (گزینهٔ محافظه‌کارانه + ALTERNATIVES_MIN fail-loud) · انقضای فعال (TTL ۷روز + جاروب بدون حذف + ۴۰۹ DECISION_EXPIRED) · rollback هر ۵ الگو (ROLLBACK_PLANS) · simulate/estimateImpact ثبت‌شونده + cross-check · Shadow Mode صفر-اجرا (executedSteps=0 لفظی) · ۴ جدول تازه (DecisionRecord/ActionPlanRecord/SafetyCheckRecord/ShadowDecisionRun)
+- **فاز ۹ (DES9 ۵۱۸ خط):** زمینهٔ حاکمیت زندهٔ ۱۷فیلدی از DB واقعی (بسته شدن G-GOV-01 — صفرِ فرضی حذف شد) · بررسی ۱۵قاعده‌ای ثبت‌شونده (GovernanceCheckRecord + AuditLog) · گیت enforce روی نوشتن حساس (MODEL_PROMOTE/MODEL_ROLLBACK/DECISION_CREATE — نقض critical در strict → ۵۰۳) · ارزیابی ۵ سیاست × ۴ متریک × ۳ حکم (Worker ۹۰روزه کار دوازدهم) · حکم‌های زنده: champion-gate=keep · drift-alert=keep · decision-safety=adjust (پایبندی تاریخی ۰٫۳۳ — از تاریخچهٔ واقعی میانهٔ جلسه) · governance-strict=keep · session-30d=keep
+- **زیرساخت:** Worker ۱۰→۱۲ کار (decision-shadow هر ۶ساعت + policy-eval هر ۹۰روز) · ۸ روت OWNER-only + آینهٔ v1 با مولد رسمی (۸۴→۹۲ · توازن ۹۲=۹۲) · ۳ گارد تازه با ۴ دریل منفی (CI گام ۵-ل/م/ن — مجموع ۱۴ گارد) · ۶۶ تست تازه (۲ فایل)
+- **دو باگ زندهٔ ترمیم‌شده در میانهٔ جلسه:** ۱) جابه‌جایی مواضع Promise.all در زمینهٔ حاکمیت (placeholder جای sessionsOld نشست → repairsNoApproval عملاً decisionRecord.count() می‌خواند — گیت حاکمیت خودش آشکارش کرد: تصمیم اول پاس، دوم بلاک → ریشه‌یابی) — ترمیم با ترتیب برچسب‌دار + ۳ تست قناری ۲) مثبت کاذب GOV-DECISION-002 (سن ≠ حفظ — kept=total−حذف‌های مُهرشده) و GOV-MODEL-002 (ارتقای نخستین بدون پیشینیار = ثبت اولیه)
+- **تکرار چهارم درس نمایش دوزبانه:** «تایپوی odelId» در schema — od بایت خام: فایل سالم؛ فایل سالم ترمیم نشد
+- **ENOSPC چهارم:** هرس دو نسل بکاپ قدیمی + پارک استاندارد deliver-store (۲٫۹۸GB · لینک ۳۰/۳۰ پس از بازگشت)
+- **دروازهٔ پایانی:** CI ۸گامی PASS — تست **۲۱۶۸/۰ ×۲ یکسان (رکورد جدید · قبلی ۲۱۰۲ · +۶۶)** · ۱۴ گارد سبز · بیلد ۳۸٫۴s · chunk match · fingerprint 100% · بازانتشار با مهر چهارراهی 9b33194=HEAD=آینه=BUILD_ID=preview · بستهٔ بقا **chainIndex=20** (۴۳۹MB · ۳۹ فایل · لنگر VERIFIED ۲۰→۱۹→۱۸)
+- **تحویل v3:** ALL.zip + ۱۰ قطعه ≤48MB + SHA256SUMS + REJOIN + آزمون الحاق + **۲۸/۲۸ لینک ۲۰۰** (محلی + preview) + عهد عدم-شکست تاریقی سبز · کامیت کد 9b33194 + لایهٔ تحویل 286ba29 = آینه GitHub
+- **E2E زنده:** ورود مالک → decisions/stats (۱۶ تصمیم فعال) · governance (۱۵/۱۵) · policy-evaluations (۵ حکم) · ساخت تصمیم سایهٔ زنده (adjust_price با قاعدهٔ دامنه +21.5٪ · ۳ بدیل · autoExecute=false) · آینهٔ v1 · مرز ۴۰۱
+
+Stage Summary:
+- حکم گیت: G5_ROOT_CAUSED_AND_FIXED + PHASE_8_DECISION_DEEPENED (اثر کمی + بدیل + انقضا + سایه صفر-اجرا + پایاوری) + PHASE_9_GOVERNANCE_LIVE (زمینهٔ زنده + ۱۵ قاعده + گیت enforce + ارزیابی سیاست)
+- رکورد تست: ۲۱۶۸/۰ ×۲ (قبلی ۲۱۰۲)
+- زنجیرهٔ بقا: chainIndex=20 · آینه = کد HEAD · preview = HEAD · Worker ۱۲ کار · ۱۴ گارد · ۹۲ روت v1
+- انتظار مالک: (۱) بررسی میدانی افت کوهورتی ۷→۳٪ (G5 — کشف تحلیلی) (۲) پانل‌های تازه: /api/admin/decisions + /api/admin/governance (۳) تیکت D1 · Publish (۴) PN-020 = فاز ۱۰+۱۱ طبق نقشهٔ سه‌دستوری
