@@ -93,8 +93,8 @@ export function PersonnelAccessSection() {
     try {
       await api("/api/admin/personnel-access", {
         method: "POST",
-        body: JSON.stringify({ personnelCode, level, allowedTiles: tiles }),
-      } as never);
+        body: { personnelCode, level, allowedTiles: tiles },
+      });
       toast({ title: "دسترسی ذخیره شد", description: `کد پرسنلی ${faDigits(personnelCode)} — سطح: ${LEVEL_LABEL[level].split("—")[0].trim()}` });
       setCode("");
       setTiles([]);

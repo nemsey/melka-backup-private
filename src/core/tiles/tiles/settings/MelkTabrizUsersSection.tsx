@@ -268,14 +268,14 @@ export function MelkTabrizUsersSection() {
       if (editing) {
         await api(`/api/admin/users/${editing.id}`, {
           method: "PATCH",
-          body: JSON.stringify({ fullName: fName, role: fRole, branchTitle: fBranch || null, roleTitleFa: fTitle || null }),
-        } as never);
+          body: { fullName: fName, role: fRole, branchTitle: fBranch || null, roleTitleFa: fTitle || null },
+        });
         toast({ title: "کاربر به‌روزرسانی شد", description: `${fName} — ${ROLE_BADGE[fRole]?.label ?? fRole}` });
       } else {
         await api("/api/admin/users", {
           method: "POST",
-          body: JSON.stringify({ personnelCode: fCode || null, mobile: fMobile || null, fullName: fName, role: fRole, branchTitle: fBranch || null, roleTitleFa: fTitle || null }),
-        } as never);
+          body: { personnelCode: fCode || null, mobile: fMobile || null, fullName: fName, role: fRole, branchTitle: fBranch || null, roleTitleFa: fTitle || null },
+        });
         toast({ title: "کاربر ساخته شد", description: `${fName} — ${ROLE_BADGE[fRole]?.label ?? fRole} (مجوزهای پیش‌فرض نقش اعمال شد)` });
       }
       setFormOpen(false);
@@ -318,8 +318,8 @@ export function MelkTabrizUsersSection() {
     try {
       await api(`/api/admin/users/${detail.id}/permissions`, {
         method: "PUT",
-        body: JSON.stringify({ permissions: perms }),
-      } as never);
+        body: { permissions: perms },
+      });
       toast({ title: "مجوزها ذخیره شد", description: `${detail.fullName} — ${faDigits(perms.length)} کاشی` });
     } catch (e) {
       toast({ title: "ذخیرهٔ مجوزها ناموفق", description: e instanceof ApiClientError ? e.message : "خطا", variant: "destructive" });
@@ -335,7 +335,7 @@ export function MelkTabrizUsersSection() {
         await api(`/api/admin/users/${u.id}`, { method: "DELETE" });
         toast({ title: "کاربر غیرفعال شد", description: `${u.fullName} — همهٔ نشست‌هایش بسته شد` });
       } else {
-        await api(`/api/admin/users/${u.id}`, { method: "PATCH", body: JSON.stringify({ isActive: true }) } as never);
+        await api(`/api/admin/users/${u.id}`, { method: "PATCH", body: { isActive: true } });
         toast({ title: "کاربر فعال شد", description: u.fullName });
       }
       await load();
@@ -411,7 +411,7 @@ export function MelkTabrizUsersSection() {
     try {
       const u = await api<{ ok: boolean; user: SafeUser }>("/api/admin/users", {
         method: "POST",
-        body: JSON.stringify({
+        body: {
           personnelCode: sCode || null,
           mobile: sMobile || null,
           fullName: sName,
@@ -419,8 +419,8 @@ export function MelkTabrizUsersSection() {
           branchTitle: sBranch || null,
           roleTitleFa: sTitle || "کارشناس فروش",
           visibility: "HIDDEN",
-        }),
-      } as never);
+        },
+      });
       toast({
         title: "کارشناس فروش پنهان ساخته شد",
         description: `${u.user.fullName} — در هیچ فهرست کاربری نمایان نیست؛ فقط مالک (شما) او را در همین تب می‌بیند`,
@@ -438,7 +438,7 @@ export function MelkTabrizUsersSection() {
   const revealUser = async (u: SafeUser) => {
     setBusy(true);
     try {
-      await api(`/api/admin/users/${u.id}`, { method: "PATCH", body: JSON.stringify({ visibility: "VISIBLE" }) } as never);
+      await api(`/api/admin/users/${u.id}`, { method: "PATCH", body: { visibility: "VISIBLE" } });
       toast({ title: "کاربر نمایان شد", description: `${u.fullName} از این پس در فهرست کاربران سامانه دیده می‌شود` });
       await loadHidden();
       await load();
@@ -452,7 +452,7 @@ export function MelkTabrizUsersSection() {
   const hideUser = async (u: SafeUser) => {
     setBusy(true);
     try {
-      await api(`/api/admin/users/${u.id}`, { method: "PATCH", body: JSON.stringify({ visibility: "HIDDEN" }) } as never);
+      await api(`/api/admin/users/${u.id}`, { method: "PATCH", body: { visibility: "HIDDEN" } });
       toast({ title: "کاربر پنهان شد", description: `${u.fullName} از فهرست کاربران سامانه حذف شد — مدیریت در تب «کارشناس فروش پنهان»` });
       await loadHidden();
       await load();
