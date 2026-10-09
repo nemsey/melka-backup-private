@@ -1,0 +1,26 @@
+{
+  "workOrder": "PN-025/مرحلهٔ ۳ — اسکیمای حافظه (ستون ۱)",
+  "ranAt": "2026-10-09T20:31:12.776942+00:00",
+  "tables": [
+    "MemoryLifecycle",
+    "ConsolidationRun",
+    "RetentionPolicy"
+  ],
+  "additive": "قانون ۸ — صفر DROP · صفر DELETE · صفر تغییر ستون موجود",
+  "modelsBefore": 60,
+  "modelsAfter": 63,
+  "twinBalance": "63 = 63 (SQLite ↔ PostgreSQL)",
+  "uniqueKey": "MemoryLifecycle: @@unique([itemType, itemId]) — idempotency لمس",
+  "productionTables": [
+    "MemoryLifecycle",
+    "ConsolidationRun",
+    "RetentionPolicy"
+  ],
+  "policiesSeeded": {
+    "hot": 7,
+    "warm": 30,
+    "cold": 365
+  },
+  "dbPush": "هر دو DB (custom.db + test.db) — Done",
+  "verdict": "PASS"
+}

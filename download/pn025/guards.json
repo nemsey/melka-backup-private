@@ -1,0 +1,17 @@
+{
+  "workOrder": "PN-025/مرحلهٔ ۱۰ — سه گارد جدید (۲۸-۳۰) + جمع ۳۰/۳۰",
+  "ranAt": "2026-10-09T20:31:12.776298+00:00",
+  "newGuards": {
+    "memory-lifecycle": "PASS",
+    "unified-graph": "PASS",
+    "decision-lock": "PASS"
+  },
+  "negativeDrills": [
+    "حذف موقت سطح سیاست ⇒ قرمز ⇒ بازگردانی یکسان (memory)",
+    "یال چرخه‌ساز ⇒ isDag=false قرمز (vision)",
+    "spam ۱۱توصیه ⇒ rate-day قرمز + TTL منقضی ⇒ قرمز (lock)"
+  ],
+  "totalInCI": 30,
+  "ciRun": "PASS ۸گامی — ۲۵۱۰/۰ ×۲ · ۳۰/۳۰ · chunk ✓ · fingerprint ✓",
+  "verdict": "PASS 30/30"
+}

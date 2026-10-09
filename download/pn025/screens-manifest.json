@@ -1,0 +1,30 @@
+{
+  "shots": [
+    "screens/01-finder-light-advice.png",
+    "screens/02-m5-light-advice.png",
+    "screens/03-m7-light-advice.png",
+    "screens/04-finder-dark-advice.png",
+    "screens/05-m5-dark-advice.png",
+    "screens/06-m7-dark-advice.png",
+    "screens/07-finder-light-locked.png",
+    "screens/08-m5-light-locked.png",
+    "screens/09-m7-light-locked.png",
+    "screens/10-finder-dark-locked.png",
+    "screens/11-m5-dark-locked.png",
+    "screens/12-m7-dark-locked.png"
+  ],
+  "errors": [],
+  "login": "ok (fresh)",
+  "state-finder-light-1": "locked",
+  "state-m5-light-1": "absent",
+  "state-m7-light-1": "locked",
+  "state-finder-dark-1": "locked",
+  "state-m5-dark-1": "absent",
+  "state-m7-dark-1": "locked",
+  "state-finder-light-2": "locked",
+  "state-m5-light-2": "absent",
+  "state-m7-light-2": "locked",
+  "state-finder-dark-2": "locked",
+  "state-m5-dark-2": "absent",
+  "state-m7-dark-2": "locked"
+}
