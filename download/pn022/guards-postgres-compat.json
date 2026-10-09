@@ -1,6 +1,6 @@
 {
   "workOrder": "PN-022-A/مرحلهٔ۵ — گارد postgres-compat (گام ۵-ر)",
-  "ranAt": "2026-10-08T23:02:02.008521+00:00",
+  "ranAt": "2026-10-09T09:39:09.929259+00:00",
   "checks": [
     {
       "check": "وجود schema.postgres.prisma",
@@ -18,8 +18,8 @@
     },
     {
       "check": "توازن مدل‌ها",
-      "sqlite": 59,
-      "postgres": 59,
+      "sqlite": 60,
+      "postgres": 60,
       "ok": true
     },
     {
