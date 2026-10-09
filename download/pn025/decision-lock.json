@@ -1,0 +1,51 @@
+{
+  "workOrder": "PN-025/مرحلهٔ ۷ — ستون ۴: کمربند ایمنی",
+  "ranAt": "2026-10-09T18:41:32.307Z",
+  "constants": {
+    "ttlSeconds": 604800,
+    "cooldownHours": 48,
+    "ratePerDay": 10,
+    "ratePerCategory": 3
+  },
+  "literalTypeLock": {
+    "autoExecute": "false (literal)",
+    "requiresApproval": "true (literal)"
+  },
+  "drills": {
+    "cooldownActive": {
+      "locked": true,
+      "reason": "cooldown",
+      "message": "توصیهٔ مشابه برای این بستر ارائه شده — کمیته صبر می‌کند",
+      "remainingHours": 38
+    },
+    "rateDay": {
+      "locked": true,
+      "reason": "rate-day",
+      "message": "سقف توصیه‌های امروز پر شده — فردا صبح اولین توصیه همین‌جا است"
+    },
+    "rateCategory": {
+      "locked": true,
+      "reason": "rate-category",
+      "message": "سقف توصیه‌های این دسته برای امروز پر شده"
+    },
+    "evidenceChangedBypass": {
+      "locked": false
+    },
+    "ttlExpired": {
+      "expired": true,
+      "ageHours": 210.6923075
+    }
+  },
+  "sampleLock": {
+    "decisionId": "witness-1",
+    "category": "CALL",
+    "autoExecute": false,
+    "requiresApproval": true,
+    "ttl": 604800,
+    "cooldownHours": 48,
+    "rateLimit": {
+      "perDay": 10,
+      "perCategory": 3
+    }
+  }
+}

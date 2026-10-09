@@ -21,7 +21,7 @@ import { runIntelligenceCoreCycle } from "@/lib/intelligence/core-cycle";
 
 export const dynamic = "force-dynamic";
 
-/** ۱۵ موتور قراردادی — ۱۱ پایه (فاز ۴-۹) + ۴ فرا-ذهن (۱۳-الف/ب: توجه، علّیت، پادواقع، شبیه‌سازی) */
+/** ۱۶ موتور قراردادی — ۱۱ پایه (فاز ۴-۹) + ۴ فرا-ذهن (۱۳-الف/ب) + مشاور تصمیم (۱۳-ج: PN-025) */
 export const ENGINES = [
   { id: "context", title: "زمینه (Context)", bodyPhase: "PHASE 4" },
   { id: "memory", title: "حافظه (Memory)", bodyPhase: "PHASE 4" },
@@ -39,6 +39,8 @@ export const ENGINES = [
   { id: "causal", title: "علّیت (Causal)", bodyPhase: "PHASE 13A" },
   { id: "counterfactual", title: "پادواقع (Counterfactual)", bodyPhase: "PHASE 13B" },
   { id: "simulation", title: "شبیه‌سازی (Simulation)", bodyPhase: "PHASE 13B" },
+  // PN-025 (شورا-ن۰۳۲) — مغز کامل: موتور ۱۶ مشاور تصمیم (ستون ۳)
+  { id: "decision-advisor", title: "مشاور تصمیم (DecisionAdvisor)", bodyPhase: "PHASE 13C" },
 ] as const;
 
 export async function GET(request: NextRequest) {

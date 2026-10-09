@@ -1,0 +1,44 @@
+{
+  "workOrder": "PN-025/مرحلهٔ۱۰ — گارد decision-lock (گارد ۳۰)",
+  "ranAt": "2026-10-09T18:36:54.716230+00:00",
+  "checks": [
+    {
+      "check": "۱) قرارداد مشاور",
+      "ok": true
+    },
+    {
+      "check": "۲) سه قفل کمربند",
+      "ok": true
+    },
+    {
+      "check": "۳) قفل نوعی کامپایلری",
+      "ok": true
+    },
+    {
+      "check": "۴) صفر LLM در کل زنجیره",
+      "ok": true
+    },
+    {
+      "check": "۵) ۲۴ قالب فارسی",
+      "ok": true
+    },
+    {
+      "check": "۶) سرویس + AuditLog",
+      "ok": true
+    },
+    {
+      "check": "۷) روت‌ها + گاردها",
+      "ok": true
+    },
+    {
+      "check": "۸) AdviceCard سه کاشی",
+      "ok": true
+    },
+    {
+      "check": "۹) دریل منفی — spam ⇒ قرمز + TTL منقضی",
+      "ok": true
+    }
+  ],
+  "violations": [],
+  "verdict": "PASS"
+}

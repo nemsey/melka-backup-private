@@ -1849,3 +1849,45 @@ model CausalEdgeRecord {
   @@unique([fromFeature, toFeature, method])
   @@index([toFeature])
 }
+
+/// ═══ PN-025 (فاز ۱۳-ج / ستون ۱) — حافظهٔ بلندمدت: سه جدول تازه (دوقلوی PG) ═══
+/// افزودنی صرف (قانون ۸): صفر DROP · صفر DELETE · صفر تغییر ستون موجود.
+model MemoryLifecycle {
+  id              String   @id @default(cuid())
+  category        String
+  itemId          String
+  itemType        String
+  lastAccessedAt  DateTime @default(now())
+  accessCount     Int      @default(0)
+  importanceScore Float    @default(0)
+  consolidatedTo  String?
+  createdAt       DateTime @default(now())
+
+  @@unique([itemType, itemId])
+  @@index([category, lastAccessedAt])
+  @@index([importanceScore])
+}
+
+model ConsolidationRun {
+  id         String   @id @default(cuid())
+  ranAt      DateTime @default(now())
+  hotToWarm  Int      @default(0)
+  warmToCold Int      @default(0)
+  archived   Int      @default(0)
+  duration   Int      @default(0)
+  summary    Json?
+  evidence   Json?
+
+  @@index([ranAt])
+}
+
+model RetentionPolicy {
+  id            String    @id @default(cuid())
+  category      String
+  retentionDays Int
+  compression   String?
+  nextReviewAt  DateTime?
+  appliedBy     String?
+
+  @@unique([category])
+}

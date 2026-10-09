@@ -34,6 +34,8 @@ import { api, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/format";
 import { useAppStore } from "@/lib/client/store";
 import { AgentPanel } from "@/components/app/AgentPanel";
+// PN-025/مرحلهٔ ۸ — کارت مشورهٔ موتور ۱۶ روی کاشی حیاتی M5
+import { AdviceCard } from "@/components/app/shared/AdviceCard";
 import type { EnrichedCandidate, MatchSummary } from "@/core/matching/match-analysis";
 import { bucketOf, type MatchBucket } from "@/core/matching/match-analysis";
 import { MatchCard, matchPriceLabel } from "./MatchCard";
@@ -298,6 +300,12 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
 
       {result && summary ? (
         <>
+          {/* PN-025/مرحلهٔ ۸ — مشورهٔ مغز برای همین تطبیق (با کمربند: اگر قفل باشد پیام احترام) */}
+          <AdviceCard
+            endpoint={tab === "listing" ? `/api/smart-matching/advice?listingCode=${encodeURIComponent(result.sourceInfo?.code ?? "")}` : `/api/smart-matching/advice?requestId=${encodeURIComponent(result.sourceInfo?.code ?? "")}`}
+            title="توصیهٔ مغز برای این تطبیق"
+          />
+
           {/* شناسنامهٔ سطر ورودی */}
           {result.sourceInfo ? (
             <Card>

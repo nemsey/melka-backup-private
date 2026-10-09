@@ -1,0 +1,10 @@
+{
+  "stage": "۲ — Design Doc",
+  "file": "docs/PHASE13-C-MEMORY-VISION-ADVISOR-LOCK-DESIGN.md",
+  "lines": 751,
+  "chapters": 10,
+  "appendices": 5,
+  "templates": 24,
+  "testMatrix": 85,
+  "rule": "≥۷۰۰ خط — PASS (751 ≥ 700)"
+}

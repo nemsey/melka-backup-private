@@ -56,6 +56,7 @@ export const WORKER_JOB_IDS = {
   policyEval: "policy-eval",
   diskGuard: "disk-guard",
   diagnosisCycle: "diagnosis-cycle",
+  memoryConsolidation: "memory-consolidation",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -387,6 +388,27 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       run: async (database) => {
         const { runDiskGuard } = await import("@/core/runtime/guards");
         return runDiskGuard(database);
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Memory Consolidation → Worker (تازه — PN-025/ستون ۱: تثبیت شبانهٔ حافظه) ──
+  // هر شب: گذارهای hot→warm (عمر>۷روز و امتیاز≥۰٫۷) · warm→cold (عمر>۳۰روز و
+  // امتیاز<۰٫۳) · بیداری cold→warm (دسترسی تازه) — شاهد ConsolidationRun + AuditLog.
+  if (process.env.MELK_MEMORY_CONSOLIDATION !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.memoryConsolidation,
+      title: "تثبیت شبانهٔ حافظهٔ بلندمدت (PN-025)",
+      intervalMs: Number(process.env.MELK_MEMORY_CONSOLIDATION_INTERVAL_H ?? 24) * 60 * 60_000,
+      firstRunDelayMs: 5 * 60_000,
+      run: async (database) => {
+        const { runConsolidation } = await import("@/lib/services/memory-lifecycle-service");
+        void database;
+        return runConsolidation();
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

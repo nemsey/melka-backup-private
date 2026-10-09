@@ -1,0 +1,45 @@
+{
+  "workOrder": "PN-025/مرحلهٔ۱۰ — گارد memory-lifecycle (گارد ۲۸)",
+  "ranAt": "2026-10-09T18:37:02.915325+00:00",
+  "checks": [
+    {
+      "check": "۱) هستهٔ خالص — قرارداد کامل",
+      "ok": true
+    },
+    {
+      "check": "۲) آستانه‌های عین سفارش",
+      "ok": true
+    },
+    {
+      "check": "۳) خلوص هسته",
+      "ok": true
+    },
+    {
+      "check": "۴) سه جدول + کلید یکتا",
+      "ok": true
+    },
+    {
+      "check": "۵) سیاست سه‌گانه seed",
+      "ok": true
+    },
+    {
+      "check": "۶) تثبیت سالم",
+      "ok": true,
+      "lastRun": false
+    },
+    {
+      "check": "۷) کار Worker + کلید خاموشی",
+      "ok": true
+    },
+    {
+      "check": "۸) API stats مالک‌محور",
+      "ok": true
+    },
+    {
+      "check": "۹) دریل منفی — حذف سطح ⇒ قرمز ⇒ بازگردانی",
+      "ok": true
+    }
+  ],
+  "violations": [],
+  "verdict": "PASS"
+}

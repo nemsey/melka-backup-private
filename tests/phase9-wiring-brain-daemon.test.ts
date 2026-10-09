@@ -280,15 +280,17 @@ describe("PHASE 9 §۹ — دیمن v2", () => {
  * ========================================================================== */
 
 describe("PHASE 9 §۱۰ — شفافیت مغز هوشمند", () => {
-  test("۱۰-۱) فهرست موتورها endpoint — همه با بدنه و فاز درست (۱۱ پایه + ۴ فرا-ذهن PN-024)", async () => {
+  test("۱۰-۱) فهرست موتورها endpoint — همه با بدنه و فاز درست (۱۱ پایه + ۴ فرا-ذهن PN-024 + مشاور PN-025)", async () => {
     const { ENGINES } = await import("@/app/api/intelligence/status/route");
-    expect(ENGINES.length).toBe(15);
+    expect(ENGINES.length).toBe(16);
     expect(ENGINES.filter((e) => e.bodyPhase === "PHASE 7").map((e) => e.id).sort()).toEqual(["action-planner", "outcome", "safety"]);
     expect(ENGINES.filter((e) => e.bodyPhase === "PHASE 8").map((e) => e.id).sort()).toEqual(["decision", "evaluation", "learning"]);
-    expect(ENGINES.filter((e) => e.bodyPhase.startsWith("PHASE")).length).toBe(15);
+    expect(ENGINES.filter((e) => e.bodyPhase.startsWith("PHASE")).length).toBe(16);
     // PN-024 — چهار موتور فرا-ذهن (خواستهٔ ثانیاً مالک جلسهٔ ۰۳۱)
     expect(ENGINES.filter((e) => e.bodyPhase === "PHASE 13A").map((e) => e.id).sort()).toEqual(["attention", "causal"]);
     expect(ENGINES.filter((e) => e.bodyPhase === "PHASE 13B").map((e) => e.id).sort()).toEqual(["counterfactual", "simulation"]);
+    // PN-025 — موتور ۱۶ مشاور تصمیم (فاز ۱۳-ج)
+    expect(ENGINES.filter((e) => e.bodyPhase === "PHASE 13C").map((e) => e.id)).toEqual(["decision-advisor"]);
   });
 
   test("۱۰-۲) endpoint بدون نشست ⇒ ۴۰۱ (گارد استاندارد)", async () => {

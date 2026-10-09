@@ -1,0 +1,48 @@
+{
+  "order": "ملکا-شورا-ن۰۳۲-۱۴۰۵ — PN-025 شاهکار چهارستونه",
+  "stage": "۰ — قفل ورود",
+  "ranAt": "2026-10-09T18:04:30Z",
+  "identity": {
+    "headLocal": "2c08e90",
+    "headMirror": "2c08e90",
+    "chainIndex": 24,
+    "chainPackage": "deliver-store/pn024/PN-024-chainIndex24.tar.gz",
+    "buildIdLive": "7897e4b-20261009-1309",
+    "buildIdNote": "بیلد زندهٔ تحویل‌شدهٔ PN-024؛ دلتای کد = دو کامیت مستند (8d487b2 گواه گارد + 2c08e90 حذفیات/تغییرات UI جلسهٔ ۰۳۳ مالک) — بیلد و ری‌استارت تازه در دروازهٔ پایانی (قانون ۱۴)",
+    "identityMatch": "HEAD=آینه ✓ · chainIndex=24 ✓"
+  },
+  "preconditions": {
+    "health200": "PASS (0.0s)",
+    "dbIntegrity": "ok",
+    "escrowThreeMechanism": "PASS (audit-boot-secrets)",
+    "workerJobs": 14,
+    "workerPid": 24563,
+    "guards27": "PASS 27/27 (پس از همگام‌سازی آینه — دو کامیت جلسهٔ ۰۳۳ push شد)",
+    "diskFreePercent": 27,
+    "chunkIntegrity": "PASS (بیلد ۷۸۹۷e4b)",
+    "previewEqualsHead": "delta-documentada (بیلد PN-024 + دو کامیت تازه — ری‌استارت پایانی)",
+    "ciRunningFlag": "خالی ✓"
+  },
+  "dataLock": {
+    "backup": "backups/pre-pn025-2026-10-09T18-04-17Z.db",
+    "sizeMB": 293,
+    "md5": "99017992c6b629b3f0f0c04c3eb6f73e",
+    "counts": {
+      "listings": 27779,
+      "requests": 25529,
+      "transactions": 768,
+      "causalEdges": 16,
+      "memoryLifecycle": 0
+    },
+    "note": "شمارش سفارش (۲۷٬۷۰۱/۲۵٬۵۰۴/۷۶۵) قدیمی‌تر از جریان کاتالوگ بود — ارقام زندهٔ امروز قفل شد (دادهٔ مقدس — صفر تغییر)"
+  },
+  "riskPreAnalysis": [
+    { "risk": "ENOSPC ششم (دیسک ۲۷٪ آزاد — tracing حین بیلد)", "probability": "متوسط", "impact": "🟠", "mitigation": "پارک اتمی J1 + هرس درس ۹ + گارد دیسک ساعتی" },
+    { "risk": "اشباع L3 در سناریوهای تازهٔ مشاور", "probability": "متوسط", "impact": "🟡", "mitigation": "قرارداد z-score موتور ۱۴ + گارد audit-counterfactual-range (K1)" },
+    { "risk": "نامتوازنی حافظه (hot بی‌رحمانه می‌شود)", "probability": "متوسط", "impact": "🟠", "mitigation": "RetentionPolicy + تثبیت شبانه + گارد audit-memory-lifecycle" },
+    { "risk": "spam تصمیم موتور ۱۶", "probability": "بالا", "impact": "🟠", "mitigation": "کمربند سه‌سطحی TTL/Cooldown/RateLimit + گارد audit-decision-lock" },
+    { "risk": "چرخه در گراف یکپارچه", "probability": "کم", "impact": "🔴", "mitigation": "Kahn دو-گیت در unified-graph + گارد audit-unified-graph + دریل منفی" }
+  ],
+  "stopRule": "هر ناهم‌خوانی ⇒ توقف + reset-guard.sh recover + گزارش — صفر ادامه",
+  "verdict": "LOCKED-IN — ورود مجاز"
+}

@@ -283,9 +283,9 @@ describe("یکپارچگی — نظام Tier در همهٔ فازها", () => {
 
 /* ═══════════ دروازهٔ INTELLIGENCE-D (§۱۰.۲) ═══════════ */
 describe("یکپارچگی — دروازهٔ INTELLIGENCE-D", () => {
-  test("د-۱ ۱۵ موتور زنده در گزارش وضعیت موجود است (۱۱ پایه + ۴ فرا-ذهن PN-024)", async () => {
+  test("د-۱ ۱۶ موتور زنده در گزارش وضعیت موجود است (۱۱ پایه + ۴ فرا-ذهن PN-024 + مشاور PN-025)", async () => {
     const statusRoute = await import("../src/app/api/intelligence/status/route");
-    expect(statusRoute.ENGINES).toHaveLength(15);
+    expect(statusRoute.ENGINES).toHaveLength(16);
   });
   test("د-۲ چرخهٔ یادگیری واقعی کامل (شرط INTELLIGENCE-D)", async () => {
     const r = await runIntelligenceCoreCycle();
