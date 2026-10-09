@@ -6,8 +6,10 @@
  * هر اتصالِ تنظیم‌شده در تنظیمات عمومی، اینجا به‌صورت چراغ نشان داده می‌شود:
  * سبز = برقرار | قرمز = قطع — با تازه‌سازی خودکار هر ۶۰ ثانیه
  * ۱. حساب شخصی ARM  ۲. API ARM  ۳. حساب شخصی PM  ۴. API PM
- * ۵. سامانه عمومی ملک تبریز  ۶. حساب شخصی GAP  ۷. API GAP
- * ۸. API دیوار  ۹. حساب شخصی دیوار  ۱۰. حساب اینستاگرام
+ * ۵. سامانه عمومی ملک تبریز  ۶. API GAP
+ * ۷. API دیوار  ۸. حساب شخصی دیوار  ۹. حساب اینستاگرام
+ *
+ * جلسهٔ ۰۳۳ (دستور مالک): چراغ «حساب GAP» حذف شد (بخش اتصال GAP هم از تنظیمات حذف شد).
  *
  * P6546/گام صفر-۵: «ثابت ماندن بخش وضعیت اتصال» — همین مؤلفه در دو حالت رندر می‌شود:
  *   variant="full"  → بالای صفحه خانه (همان نوار کامل همیشگی)
@@ -37,7 +39,6 @@ const LABELS_FA: Record<string, string> = {
   pmAccount: "اتصال به حساب شخصی سامانه pm",
   pmApi: "اتصال به api سامانه pm",
   melkPublicApi: "اتصال به سامانه عمومی ملک تبریز",
-  gapAccount: "اتصال به حساب شخصی سامانه gap",
   gapApi: "اتصال به api سامانه gap",
   divarApi: "اتصال به api دیوار",
   divarAccount: "اتصال به حساب شخصی دیوار",
@@ -51,7 +52,6 @@ const LABELS_SHORT_FA: Record<string, string> = {
   pmAccount: "حساب PM",
   pmApi: "API PM",
   melkPublicApi: "سامانه عمومی ملک",
-  gapAccount: "حساب GAP",
   gapApi: "API GAP",
   divarApi: "API دیوار",
   divarAccount: "حساب دیوار",
@@ -59,7 +59,7 @@ const LABELS_SHORT_FA: Record<string, string> = {
 };
 
 /** ترتیب مالک: سامانه‌های ملک تبریز اول، سپس دیوار و اینستاگرام */
-const ORDER = ["armAccount", "armApi", "pmAccount", "pmApi", "melkPublicApi", "gapAccount", "gapApi", "divarApi", "divarAccount", "instagramAccount"];
+const ORDER = ["armAccount", "armApi", "pmAccount", "pmApi", "melkPublicApi", "gapApi", "divarApi", "divarAccount", "instagramAccount"];
 const TOTAL = ORDER.length;
 
 export function ConnectionIndicators({ variant = "full" }: { variant?: "full" | "compact" }) {

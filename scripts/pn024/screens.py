@@ -42,22 +42,29 @@ def open_tile(page, title, in_dashboard):
 
 with sync_playwright() as p:
     browser = p.chromium.launch()
-    ctx = browser.new_context(viewport={"width": 1440, "height": 900}, device_scale_factor=1.5, service_workers="block")
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900}, device_scale_factor=1.5, service_workers="block",
+                              storage_state="/tmp/pn024-session.json")
     page = ctx.new_page()
     console_errors = []
     page.on("console", lambda m: console_errors.append(m.text) if m.type == "error" else None)
 
-    # ── ورود ──
+    # ── ورود (نشست ذخیره‌شده از گواه M1-M5 — پرهیز از سقف نرخ لاگین ۵/۱۵د) ──
     page.goto(BASE, wait_until="load")
-    page.wait_for_selector("input", timeout=20000)
-    page.wait_for_timeout(1500)
-    try: page.click("text=ورود با کد مدیر", timeout=6000)
-    except Exception: pass
-    page.fill("#masterCode", code)
-    page.click("button[type=submit]", timeout=8000)
-    page.wait_for_selector("text=داشبورد مدیریتی", timeout=25000)
-    page.wait_for_timeout(2200)
-    out["login"] = "ok"
+    page.wait_for_timeout(2000)
+    try:
+        page.wait_for_selector("text=داشبورد مدیریتی", timeout=8000)
+        out["login"] = "ok (نشست ذخیره‌شده)"
+    except Exception:
+        # بازگشت: لاگین تازه (اگر نشست منقضی بود)
+        page.wait_for_selector("input", timeout=20000)
+        page.wait_for_timeout(1200)
+        try: page.click("text=ورود با کد مدیر", timeout=6000)
+        except Exception: pass
+        page.fill("#masterCode", code)
+        page.click("button[type=submit]", timeout=8000)
+        page.wait_for_selector("text=داشبورد مدیریتی", timeout=25000)
+        page.wait_for_timeout(2200)
+        out["login"] = "ok (لاگین تازه)"
 
     # ── تم روشن: ۱۱ اسکرین‌شات ──
     for title, name, in_dash in TILES:

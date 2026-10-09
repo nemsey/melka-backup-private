@@ -823,29 +823,29 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {/* جلسهٔ ۰۳۳ (دستور مالک — ثانیاً/ت): ترتیب ستون‌ها + حذف «آخرین فعالیت» */}
                     <TableHead className="w-10">ردیف</TableHead>
                     <TableHead className="min-w-20">کد آگهی</TableHead>
                     <TableHead className="min-w-28">کارشناس</TableHead>
                     <TableHead className="min-w-24">شعبه</TableHead>
+                    <TableHead className="min-w-24">نوع ملک</TableHead>
+                    <TableHead className="min-w-24">دسته‌بندی</TableHead>
                     <TableHead className="min-w-36">مالک</TableHead>
                     {/* P6546/گام پنجم-ت-۴ — ستون قیمت با نام «قیمت» و قالب ۹،۰۰۰،۰۰۰،۰۰۰ */}
                     <TableHead className="min-w-32">قیمت</TableHead>
                     <TableHead className="min-w-28">قیمت هر متر</TableHead>
+                    {/* PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM */}
+                    <TableHead className="min-w-20">رهن / اجاره</TableHead>
                     <TableHead className="min-w-44">آدرس ملک</TableHead>
-                    {/* P6546/گام یک — شش ستون غنی‌شده از ساختار ثبت آگهی ARM + سامانهٔ عمومی */}
-                    <TableHead className="min-w-24">نوع ملک</TableHead>
+                    {/* P6546/گام یک — ستون‌های غنی‌شده از ساختار ثبت آگهی ARM + سامانهٔ عمومی */}
                     <TableHead className="min-w-20">متراژ</TableHead>
                     <TableHead className="min-w-16">اتاق</TableHead>
                     <TableHead className="min-w-16">طبقه</TableHead>
                     <TableHead className="min-w-20">ساخت</TableHead>
-                    <TableHead className="min-w-24">دسته‌بندی</TableHead>
-                    <TableHead className="min-w-28">آخرین فعالیت</TableHead>
-                    {/* PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM */}
-                    <TableHead className="min-w-20">رهن / اجاره</TableHead>
                     <TableHead className="min-w-16">بازدید</TableHead>
-                    {/* PN-020/گام اول-الف — ستون‌های «تصاویر» و «انتشار» و «آخرین وضعیت» به دستور مالک حذف شدند */}
-                    <TableHead className="min-w-24">تاریخ وضعیت</TableHead>
                     <TableHead className="min-w-16">لینک</TableHead>
+                    {/* PN-020/گام اول-الف بند ۴ + جلسهٔ ۰۳۳ — تاریخ وضعیت، آخرین ستون فهرست */}
+                    <TableHead className="min-w-24">تاریخ وضعیت</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -881,7 +881,29 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[11px]">{BRANCH_UNSET}</span>
                           )}
                         </TableCell>
-                        {/* ۵ — مالک: نام + موبایل زیر نام (نکته ۱ + نکته بسیار مهم ۴ — عین الگوی فروشنده/خریدار M3) */}
+                        {/* ۵ — نوع ملک (P6546/گام یک — propertyTypeName از جزئیات + apu) */}
+                        {/* PN-011 ثانیاً — رنگ از رجیستری (قانون ۱۲): هر مقدار نوع ملک رنگ یکتای خود را دارد */}
+                        <TableCell className="whitespace-nowrap">
+                          {r.propertyTypeName ? (
+                            <Badge variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(r.propertyTypeName)}`}>
+                              <Building2 className="w-2.5 h-2.5" aria-hidden /> {r.propertyTypeName}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۶ — دسته‌بندی (نکته ۴) — PN-020/گام اول-الف: ستون «آخرین وضعیت» (status ده‌حالتهٔ ARM) به دستور مالک حذف شد؛
+                            بینش توزیع وضعیت + فیلتر وضعیت بالای فهرست باقی است و دادهٔ status در API/خروجی اکسل دست‌نخورده است */}
+                        <TableCell className="whitespace-nowrap">
+                          {r.tradeTypeName ? (
+                            <Badge variant="secondary" className={`gap-1 text-[11px] border-0 ${valueSoftClass(r.tradeTypeName)}`}>
+                              <Tag className="w-3 h-3" aria-hidden /> {r.tradeTypeName}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-[11px]">در نوبت تکمیل</span>
+                          )}
+                        </TableCell>
+                        {/* ۷ — مالک: نام + موبایل زیر نام (نکته ۱ + نکته بسیار مهم ۴ — عین الگوی فروشنده/خریدار M3) */}
                         <TableCell className="whitespace-normal">
                           {r.ownerName ? (
                             <div className="flex flex-col items-center gap-0.5">
@@ -907,7 +929,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             </span>
                           )}
                         </TableCell>
-                        {/* ۶ — قیمت (P6546/گام پنجم-ت-۴: نام «قیمت» + قالب ۹،۰۰۰،۰۰۰،۰۰۰ بدون واحد) */}
+                        {/* ۸ — قیمت (P6546/گام پنجم-ت-۴: نام «قیمت» + قالب ۹،۰۰۰،۰۰۰،۰۰۰ بدون واحد) */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.price === "number" && r.price > 0 ? (
                             <span className="inline-flex items-center gap-1 font-bold tabular-nums text-[11px]" title={`${faAmountFull(r.price)} — تومان`}>
@@ -918,7 +940,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">ثبت نشده</span>
                           )}
                         </TableCell>
-                        {/* ۶-ب — قیمت هر متر (P6546/گام یک — از فهرست سامانهٔ عمومی + جزئیات ARM) */}
+                        {/* ۸-ب — قیمت هر متر (P6546/گام یک — از فهرست سامانهٔ عمومی + جزئیات ARM) */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.pricePerMeter === "number" && r.pricePerMeter > 0 ? (
                             <span className="inline-flex items-center gap-1 font-medium tabular-nums text-[11px]" title={`${faAmountFull(r.pricePerMeter)} — تومان هر مترمربع`}>
@@ -929,7 +951,19 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۷ — آدرس ملک (منطقه، کوی، پلاک) */}
+                        {/* ۸-ب-002 گام ۱ — ستون‌های تازه */}
+                        {/* ۹ — رهن / اجاره (آگهی‌های رهن‌واجاره‌ای) */}
+                        <TableCell className="whitespace-nowrap">
+                          {typeof r.depositPrice === "number" && r.depositPrice > 0 ? (
+                            <span className="inline-flex flex-col items-center gap-0.5 tabular-nums text-[10px]" title={`رهن: ${faAmountFull(r.depositPrice)}${typeof r.rentPrice === "number" && r.rentPrice > 0 ? ` — اجاره: ${faAmountFull(r.rentPrice)}` : ""} — تومان`}>
+                              <span className="font-bold">{faAmountFull(r.depositPrice, "")}</span>
+                              {typeof r.rentPrice === "number" && r.rentPrice > 0 && <span className="text-muted-foreground">اجاره {faAmountFull(r.rentPrice, "")}</span>}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">{r.isRental ? "اجاره‌ای" : "—"}</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۰ — آدرس ملک (منطقه، کوی، پلاک) */}
                         <TableCell className="whitespace-normal">
                           <span className="inline-flex items-start gap-1 leading-relaxed">
                             <MapPin className="w-3 h-3 text-sec-m1-700 mt-0.5 shrink-0" aria-hidden />
@@ -941,18 +975,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             </span>
                           </span>
                         </TableCell>
-                        {/* ۷-ب — نوع ملک (P6546/گام یک — propertyTypeName از جزئیات + apu) */}
-                        {/* PN-011 ثانیاً — رنگ از رجیستری (قانون ۱۲): هر مقدار نوع ملک رنگ یکتای خود را دارد */}
-                        <TableCell className="whitespace-nowrap">
-                          {r.propertyTypeName ? (
-                            <Badge variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(r.propertyTypeName)}`}>
-                              <Building2 className="w-2.5 h-2.5" aria-hidden /> {r.propertyTypeName}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">—</span>
-                          )}
-                        </TableCell>
-                        {/* ۷-پ — متراژ */}
+                        {/* ۱۰-ب — متراژ */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.meterage === "number" && r.meterage > 0 ? (
                             <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium" title="مترمربع">
@@ -963,7 +986,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۷-ت — اتاق */}
+                        {/* ۱۰-پ — اتاق */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.rooms === "number" && r.rooms > 0 ? (
                             <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium">
@@ -974,7 +997,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۷-ث — طبقه */}
+                        {/* ۱۰-ت — طبقه */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.floor === "number" && r.floor > 0 ? (
                             <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium">
@@ -985,7 +1008,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۷-ج — سال ساخت (PN-020/گام اول-الف: بدون کاما — سال با جداکنندهٔ هزارگان «۱،۴۰۳» غلط است) */}
+                        {/* ۱۰-ث — سال ساخت (PN-020/گام اول-الف: بدون کاما — سال با جداکنندهٔ هزارگان «۱،۴۰۳» غلط است) */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.buildYear === "number" && r.buildYear > 0 ? (
                             <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium">
@@ -996,37 +1019,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۸ — دسته‌بندی (نکته ۴) — PN-020/گام اول-الف: ستون «آخرین وضعیت» (status ده‌حالتهٔ ARM) به دستور مالک حذف شد؛
-                            بینش توزیع وضعیت + فیلتر وضعیت بالای فهرست باقی است و دادهٔ status در API/خروجی اکسل دست‌نخورده است */}
-                        <TableCell className="whitespace-nowrap">
-                          {r.tradeTypeName ? (
-                            <Badge variant="secondary" className={`gap-1 text-[11px] border-0 ${valueSoftClass(r.tradeTypeName)}`}>
-                              <Tag className="w-3 h-3" aria-hidden /> {r.tradeTypeName}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-[11px]">در نوبت تکمیل</span>
-                          )}
-                        </TableCell>
-                        {/* ۱۰ — آخرین فعالیت */}
-                        <TableCell className="text-muted-foreground whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1.5">
-                            <History className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                            {r.createdAt ? faDateTime(r.createdAt) : "—"}
-                          </span>
-                        </TableCell>
-                        {/* PN-002 گام ۱ — ستون‌های تازه */}
-                        {/* ۱۱ — رهن / اجاره (آگهی‌های رهن‌واجاره‌ای) */}
-                        <TableCell className="whitespace-nowrap">
-                          {typeof r.depositPrice === "number" && r.depositPrice > 0 ? (
-                            <span className="inline-flex flex-col items-center gap-0.5 tabular-nums text-[10px]" title={`رهن: ${faAmountFull(r.depositPrice)}${typeof r.rentPrice === "number" && r.rentPrice > 0 ? ` — اجاره: ${faAmountFull(r.rentPrice)}` : ""} — تومان`}>
-                              <span className="font-bold">{faAmountFull(r.depositPrice, "")}</span>
-                              {typeof r.rentPrice === "number" && r.rentPrice > 0 && <span className="text-muted-foreground">اجاره {faAmountFull(r.rentPrice, "")}</span>}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">{r.isRental ? "اجاره‌ای" : "—"}</span>
-                          )}
-                        </TableCell>
-                        {/* ۱۳-ب — بازدید (PN-020/گام اول-الف: ستون‌های «تصاویر» و «انتشار» پس از این حذف شدند) */}
+                        {/* ۱۱ — بازدید (PN-020/گام اول-الف: ستون‌های «تصاویر» و «انتشار» پس از این حذف شدند) */}
                         <TableCell className="text-center">
                           {typeof r.viewCount === "number" ? (
                             <span className="inline-flex items-center gap-1 tabular-nums font-medium" title="تعداد بازدید آگهی در سامانه ARM">
@@ -1036,11 +1029,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۱۵ — تاریخ وضعیت */}
-                        <TableCell className="text-muted-foreground whitespace-nowrap text-[10px]">
-                          {r.statusDate ? faDateTime(r.statusDate) : "—"}
-                        </TableCell>
-                        {/* ۱۶ — لینک عمومی آگهی */}
+                        {/* ۱۲ — لینک عمومی آگهی */}
                         <TableCell className="text-center">
                           {r.publicUrl ? (
                             <a
@@ -1056,7 +1045,11 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                      </TableRow>
+                        {/* ۱۳ — تاریخ وضعیت (آخرین ستون — دستور جلسهٔ ۰۳۳) */}
+                        <TableCell className="text-muted-foreground whitespace-nowrap text-[10px]">
+                          {r.statusDate ? faDateTime(r.statusDate) : "—"}
+                        </TableCell>
+</TableRow>
                     );
                   }}
                 </TableBodyVirtual>

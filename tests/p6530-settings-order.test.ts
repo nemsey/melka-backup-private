@@ -47,16 +47,15 @@ describe("گام صفر P6546 — ترتیب هفت‌بخشی تنظیمات ع
     expect(melkIdx).toBeLessThan(divarIdx);
   });
 
-  test("۱-۳) پیکرهٔ یکپارچهٔ اتصال به ملک تبریز: مدیریت + ARM + PM + GAP + سامانه عمومی (الگوی دیوار)", async () => {
+  test("۱-۳) پیکرهٔ یکپارچهٔ اتصال به ملک تبریز: مدیریت + ARM + PM + سامانه عمومی (الگوی دیوار — جلسهٔ ۰۳۳: GAP حذف)", async () => {
     const s = readFileSync(`${TILES}/settings/MelkTabrizConnectionSection.tsx`, "utf8");
     expect(s).toContain('id="settings-connection-hub"');
     expect(s).toContain("اتصال به ملک تبریز");
-    // ترتیب توکار: مدیریت → ARM → PM → GAP → رابط سامانه عمومی
+    // ترتیب توکار: مدیریت → ARM → PM → رابط سامانه عمومی (GAP به دستور مالک جلسهٔ ۰۳۳ حذف شد)
     const order = [
       s.indexOf('id="settings-connection-hub"'),
       s.indexOf("<ArmConnectionSection embedded />"),
       s.indexOf("<PmConnectionSection embedded />"),
-      s.indexOf("<GapConnectionSection embedded />"),
       s.indexOf('aria-label="رابط سامانه عمومی ملک تبریز"'),
     ];
     for (const idx of order) expect(idx).toBeGreaterThan(-1);
@@ -74,14 +73,16 @@ describe("گام صفر P6546 — ترتیب هفت‌بخشی تنظیمات ع
     expect(s).toContain("خروج از حساب");
   });
 
-  test("۱-۵) بخش GAP همانند ARM/PM (روت + مؤلفه + گارد نرخ مستقل)", async () => {
+  test("۱-۵) جلسهٔ ۰۳۳ (دستور مالک): بخش GAP از تنظیمات حذف شده — روت API باقی و صفر ارجاع UI", async () => {
+    // مؤلفهٔ UI حذف شده و پیکرهٔ اتصال ارجاعی به آن ندارد
+    const melk = readFileSync(`${TILES}/settings/MelkTabrizConnectionSection.tsx`, "utf8");
+    expect(melk).not.toContain("GapConnectionSection");
+    expect(melk).not.toContain('aria-label="اتصال به سامانه GAP"');
+    // روت بک‌اند دست‌نخورده می‌ماند (سرویس gapApi و API v1 پابرجا — حذف فقط UI بود)
     const route = readFileSync(`${SRC}/app/api/gap/connection/route.ts`, "utf8");
     expect(route).toContain("start-otp");
     expect(route).toContain("REQUEST_OTP_GAP");
     expect(route).toContain('requireRole(request, "OWNER"');
-    const comp = readFileSync(`${TILES}/settings/GapConnectionSection.tsx`, "utf8");
-    expect(comp).toContain("اتصال به سامانه GAP");
-    expect(comp).toContain("/api/gap/connection");
   });
 
   test("۱-۶) رابط سامانهٔ عمومی (apu) در endpoints + کتابخانهٔ استخراج + روت", async () => {
@@ -96,10 +97,10 @@ describe("گام صفر P6546 — ترتیب هفت‌بخشی تنظیمات ع
     expect(route).toContain("syncMelkPublicCatalog");
   });
 
-  test("۱-۷) ده نشانگر اتصال شامل سامانه عمومی و GAP + نمایش پایدار در کاشی‌ها", async () => {
+  test("۱-۷) نُه نشانگر اتصال شامل سامانه عمومی و API GAP + نمایش پایدار در کاشی‌ها (جلسهٔ ۰۳۳: حساب GAP حذف)", async () => {
     const ind = readFileSync(`${SRC}/lib/indicators.ts`, "utf8");
     expect(ind).toContain('"melkPublicApi"');
-    expect(ind).toContain('"gapAccount"');
+    expect(ind).not.toContain('"gapAccount"');
     expect(ind).toContain('"gapApi"');
     const comp = readFileSync(`${SRC}/components/app/ConnectionIndicators.tsx`, "utf8");
     expect(comp).toContain('variant="compact"');

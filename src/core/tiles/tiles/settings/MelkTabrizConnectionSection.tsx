@@ -6,14 +6,15 @@
  * همانند «اتصال به دیوار» که پیکرهٔ واحدی دارد، تمام مدیریت اتصال‌ها و
  * اتصال به سامانه‌های ملک تبریز در «یک پیکرهٔ واحد» جمع شده است:
  *
- *   ۱. مدیریت اتصال‌ها — وضعیت زندهٔ پنج سرویس + تست + همگام‌سازی + ریست
+ *   ۱. مدیریت اتصال‌ها — وضعیت زندهٔ خدمات + تست + همگام‌سازی + ریست
  *   ۲. اتصال به سامانه ARM (آگهی و درخواست) — کد پرسنلی + پیامک
  *   ۳. اتصال به حساب شخصی سامانه PM — کد پرسنلی + پیامک
- *   ۴. اتصال به سامانه GAP (گفت‌وگوی آنلاین) — کد پرسنلی + پیامک
- *   ۵. رابط سامانهٔ عمومی ملک تبریز (melketabriz.com) — عمومی و بدون توکن
+ *   ۴. رابط سامانهٔ عمومی ملک تبریز (melketabriz.com) — عمومی و بدون توکن
+ *
+ * جلسهٔ ۰۳۳ (دستور مالک): بخش «اتصال به سامانه GAP» از تنظیمات حذف شد
+ * (به‌همراه نشانگر «حساب GAP» در وضعیت اتصال‌ها — سرویس gapApi پابرجاست).
  *
  * کشف P6546: رابط برنامه‌نویسی سامانهٔ عمومی = arus-api.melketabriz.ir/api/apu/
- * و رابط GAP = gap-api.melketabriz.ir/api/ (شاهد: download/p6546/systems-discovery-*.json)
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -37,7 +38,6 @@ import { api, ApiClientError } from "@/lib/client/api";
 import { faDateTime, faNumber } from "@/lib/format";
 import { ArmConnectionSection } from "./ArmConnectionSection";
 import { PmConnectionSection } from "./PmConnectionSection";
-import { GapConnectionSection } from "./GapConnectionSection";
 
 interface ServiceStatus {
   service: string;
@@ -178,7 +178,7 @@ export function MelkTabrizConnectionSection() {
           <Landmark className="w-5 h-5 text-sec-settings-700" aria-hidden /> اتصال به ملک تبریز
         </CardTitle>
         <CardDescription>
-          پیکرهٔ واحد مدیریت اتصال به همهٔ سامانه‌های ملک تبریز — ARM (آگهی و درخواست)، PM (پرسنلی)، GAP (گفت‌وگو) و سامانهٔ عمومی (melketabriz.com)
+          پیکرهٔ واحد مدیریت اتصال به سامانه‌های ملک تبریز — ARM (آگهی و درخواست)، PM (پرسنلی) و سامانهٔ عمومی (melketabriz.com)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -294,12 +294,6 @@ export function MelkTabrizConnectionSection() {
               </span>
             </p>
             <p>
-              رابط سامانه گفت‌وگو (گپ):{" "}
-              <span dir="ltr" className="font-mono">
-                {conn?.config.gapApiBase ?? "https://gap-api.melketabriz.ir/api/"}
-              </span>
-            </p>
-            <p>
               رابط سامانهٔ عمومی ملک تبریز:{" "}
               <span dir="ltr" className="font-mono">
                 {conn?.config.melkPublicApiBase ?? "https://arus-api.melketabriz.ir/api/apu/"}
@@ -348,10 +342,7 @@ export function MelkTabrizConnectionSection() {
         {/* ========== ۳) اتصال به حساب شخصی سامانه PM ========== */}
         <PmConnectionSection embedded />
 
-        {/* ========== ۴) اتصال به سامانه GAP (گام صفر-۲) ========== */}
-        <GapConnectionSection embedded />
-
-        {/* ========== ۵) رابط سامانهٔ عمومی ملک تبریز (گام صفر-۱) ========== */}
+        {/* ========== ۴) رابط سامانهٔ عمومی ملک تبریز (گام صفر-۱) ========== */}
         <section className="rounded-xl border p-4 space-y-3" aria-label="رابط سامانه عمومی ملک تبریز">
           <header className="space-y-0.5">
             <h4 className="text-sm font-bold flex items-center gap-2">

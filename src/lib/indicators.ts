@@ -24,7 +24,6 @@ export type IndicatorKey =
   | "pmAccount"
   | "pmApi"
   | "melkPublicApi"
-  | "gapAccount"
   | "gapApi"
   | "divarApi"
   | "divarAccount"
@@ -178,22 +177,6 @@ export async function computeIndicators(sessionHasArmToken: boolean, sessionArmU
     checkedAt: new Date(melkPublicProbe.at).toISOString(),
   };
 
-  // ۶. حساب شخصی سامانه GAP (P6546)
-  const gapConn = await db.gapConnection.findFirst().catch(() => null);
-  const gapAccount: IndicatorState = {
-    key: "gapAccount",
-    label: "حساب شخصی GAP",
-    connected: gapConn?.status === "connected" && Boolean(decryptSecret(gapConn.tokenEnc ?? null)),
-    detail:
-      gapConn?.status === "connected"
-        ? `حساب سامانه گفت‌وگو «${gapConn.displayName ?? gapConn.personnelCode ?? ""}» متصل است`
-        : gapConn?.status === "error"
-          ? `اتصال GAP خطا دارد: ${gapConn.lastError ?? "نامشخص"}`
-          : gapConn?.status === "pending"
-            ? "در انتظار تأیید کد پیامکی GAP"
-            : "اتصال سامانه گفت‌وگو (GAP) از تنظیمات عمومی برقرار نشده است",
-    checkedAt: gapConn?.lastCheckedAt?.toISOString() ?? now,
-  };
 
   // ۷. API سامانه GAP (P6546) — gap-api زنده است (پاسخ HTTP هر نوعی = در دسترس)
   const gapProbe = await probeGet(cfg.gapApiBase, "", Math.min(cfg.timeoutMs, 9000)).catch(() => ({
@@ -252,5 +235,5 @@ export async function computeIndicators(sessionHasArmToken: boolean, sessionArmU
     checkedAt: igConn?.lastCheckedAt?.toISOString() ?? now,
   };
 
-  return [armAccount, armApi, pmAccount, pmApi, melkPublicApi, gapAccount, gapApi, divarApi, divarAccount, instagramAccount];
+  return [armAccount, armApi, pmAccount, pmApi, melkPublicApi, gapApi, divarApi, divarAccount, instagramAccount];
 }
