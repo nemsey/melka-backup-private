@@ -211,12 +211,12 @@ describe("PN-022-A/مرحلهٔ۵ · سه گارد تازه", () => {
     expect(ci).toContain("گام ۵-ص: feature-factory");
   });
 
-  test("گ-۵) CI: مجموع گاردها در گام ۵ (۱۸ پایه + ۳ ن۲۲ + ۲ ن۲۳-الف)", () => {
+  test("گ-۵) CI: مجموع گاردها در گام ۵ (۱۸ پایه + ۳ ن۲۲ + ۲ ن۲۳-الف + ۴ ن۰۲۴)", () => {
     const ci = readFileSync("scripts/ci.sh", "utf8");
     // گام ۵ تا آغاز گام ۶ — گاردهای ساختاری (chunk-integrity در گام ۸ جدا است)
     const step5 = ci.slice(ci.indexOf("۵) Audit باغ"), ci.indexOf("── ۶) Perf Budget"));
     const count = (step5.match(/bash scripts\/audit-[a-z-]+\.sh/g) ?? []).length;
-    expect(count).toBe(23); // PN-023-A: ۲۱ + meta-mind + causal-validity
+    expect(count).toBe(27); // PN-024: ۲۳ + mirror-sync(J4) + pg-cluster(J5) + negin-consistency + counterfactual-purity
   });
 
   test("گ-۶) اسکریپت‌های گارد اجرایی هستند", () => {

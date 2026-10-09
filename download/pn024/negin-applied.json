@@ -1,0 +1,163 @@
+{
+  "workOrder": "PN-024/مرحلهٔ ۴ — اعمال نگین روی ۱۱ کاشی",
+  "generatedAt": "2026-10-09T11:36:05.714920+00:00",
+  "law7_minimalChange": "صفر تغییر منطق — هر صفحه فقط یک div میلهٔ نگین (negin-bar) + data-negin روی ریشه؛ TileCard فقط لایهٔ gem (bar + glow + data-negin)",
+  "count": "11/11",
+  "tiles": [
+    {
+      "tile": "FileFinderPage.tsx",
+      "gem": "yaghut-kamani",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "ListingsPage.tsx",
+      "gem": "kahroba-talaee",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "RequestsPage.tsx",
+      "gem": "aqiq-limoonee",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "ArmListingsPage.tsx",
+      "gem": "zomorrod-koohi",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "ArmRequestsPage.tsx",
+      "gem": "marjan-daryayi",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "TransactionsContractsPage.tsx",
+      "gem": "yaghut-banafsh",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "ExpertsPage.tsx",
+      "gem": "yaghut-kabud",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "SmartMatchingPage.tsx",
+      "gem": "kuartz-soorati",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "LearningTierPage.tsx",
+      "gem": "nili",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "MarketIndexPage.tsx",
+      "gem": "topaz-abee",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "DataCoveragePage.tsx",
+      "gem": "morvarid",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    }
+  ],
+  "gemDetails": [
+    {
+      "tile": "فایل یابی ملکا",
+      "gem": "yaghut-kamani",
+      "gemFa": "یاقوت کمانی",
+      "feeling": "غریزهٔ شکارچی",
+      "hex500": "#DC2626"
+    },
+    {
+      "tile": "آگهی ملکا",
+      "gem": "kahroba-talaee",
+      "gemFa": "کهربا طلایی",
+      "feeling": "گرمای فرصت",
+      "hex500": "#F59E0B"
+    },
+    {
+      "tile": "درخواست ملکا",
+      "gem": "aqiq-limoonee",
+      "gemFa": "عقیق لیمویی",
+      "feeling": "سبزدشت رشد",
+      "hex500": "#84CC16"
+    },
+    {
+      "tile": "M1 — آگهی‌ها",
+      "gem": "zomorrod-koohi",
+      "gemFa": "زمرد کوهی",
+      "feeling": "فرصت سرسبز",
+      "hex500": "#10B981"
+    },
+    {
+      "tile": "M2 — درخواست‌ها",
+      "gem": "marjan-daryayi",
+      "gemFa": "مرجان دریایی",
+      "feeling": "جریان زندهٔ آب",
+      "hex500": "#FB7185"
+    },
+    {
+      "tile": "M3 — معاملات",
+      "gem": "yaghut-banafsh",
+      "gemFa": "یاقوت بنفش",
+      "feeling": "شکوه توافق",
+      "hex500": "#8B5CF6"
+    },
+    {
+      "tile": "M4 — کارشناسان",
+      "gem": "yaghut-kabud",
+      "gemFa": "یاقوت کبود",
+      "feeling": "اعتماد آسمانی",
+      "hex500": "#3B82F6"
+    },
+    {
+      "tile": "M5 — تطبیق",
+      "gem": "kuartz-soorati",
+      "gemFa": "کوارتز صورتی",
+      "feeling": "هماهنگی دل‌نشین",
+      "hex500": "#F472B6"
+    },
+    {
+      "tile": "M6 — مغز ملکا",
+      "gem": "nili",
+      "gemFa": "نیلی",
+      "feeling": "ژرفای هوش",
+      "hex500": "#6366F1"
+    },
+    {
+      "tile": "M7 — شاخص بازار",
+      "gem": "topaz-abee",
+      "gemFa": "توپاز آبی",
+      "feeling": "شفافیت آب‌رس",
+      "hex500": "#06B6D4"
+    },
+    {
+      "tile": "M8 — پوشش داده",
+      "gem": "morvarid",
+      "gemFa": "مروارید",
+      "feeling": "سازوارهٔ آرام",
+      "hex500": "#E7E5E4"
+    }
+  ],
+  "screenshots": {
+    "plan": "۲۲ اسکرین‌شات (۱۱ کاشی × ۲ تم) — پس از ری‌استارت تولید با بیلد نگین‌دار در دروازهٔ پایانی (اسکرین‌شات‌های اولیه با بیلد کهنه گرفته شدند — صادقانه دور ریخته شدند و بازگرفته می‌شوند)",
+    "directory": "download/pn024/screens/",
+    "status": "در انتظار ری‌استارت (دروازهٔ پایانی)"
+  },
+  "validation": {
+    "p6530ColorSystem": "12/12 سبز — حفظ شد (قانون ۶)",
+    "tsc": "صفر خطا",
+    "negTests": "N1-N20 سبز در فایل تست مرحلهٔ ۱۰"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "workOrder": "PN-024/مرحلهٔ ۶ — J1: قفل rebuild پارک اتمی (درس دهم)",
+  "generatedAt": "2026-10-09T11:08:50Z",
+  "rootCause": "پارک ⇒ حذف standalone ⇒ نگهبان rebuild ⇒ tracing ۲٫۲GB ⇒ ENOSPC (پنجمین تکرار)",
+  "threeLayers": {
+    "layer1_rebuildLock": "prod-watchdog: گیت صبر ۳۰ دقیقه پیش از chunk-guard و هر spawn وقتی PARK_ACTIVE یا CI_RUNNING فعال است",
+    "layer2_atomicPark": "park-deliver: park = اول flag بعد انتقال · restore = اول بازگشت آخر حذف flag (fail-safe)",
+    "layer3_documented": "BUILD-DISCIPLINE درس دهم «پارک اتمی» ثبت شد"
+  },
+  "drills": {
+    "drill1_flagLocksRebuild": { "pass": true, "evidence": "flag فعال ⇒ گیت گزارش صbor کرد و rebuild نکرد" },
+    "drill2_negative_noFlag": { "pass": true, "evidence": "بدون flag ⇒ PASS-THROUGH (رفتار عادی)" },
+    "drill3_flagLifecycle": { "pass": true, "evidence": "flags: 0→1→0" },
+    "realParkRoundtrip": "موقول به دروازهٔ پایانی — نگهبان قدیمیِ در حال اجرا کد قدیمی دارد؛ پارک واقعی پیش از ری‌استارت = خودِ حلقهٔ مرگ. پس از ری‌استارت با کد جدید در بستهٔ گواه پایانی مستند می‌شود"
+  },
+  "staticEvidence": {
+    "gateInWatchdogLines": 3,
+    "gateInParkDeliverLines": 5,
+    "watchdogSyntaxCheck": "bash -n PASS",
+    "parkSyntaxCheck": "bash -n PASS",
+    "ciPrecondition8": "بررسی CI_RUNNING flag در بخش ۰٫۲ سفارش پوشش داده شد (lock-in)"
+  },
+  "safetyNote": "چرخهٔ واقعی park/restore بدون حذف standalone در گواه پایانی — صادقانه و مستند"
+}

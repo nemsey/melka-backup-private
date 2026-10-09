@@ -83,7 +83,9 @@ export function ListingsPage({ settings, onSettingsChange }: TilePageProps) {
   const stats = data?.stats;
 
   return (
-    <div className="space-y-6">
+    <div data-negin="kahroba-talaee" className="space-y-6">
+      {/* نگین (PN-024) — میلهٔ گوهر kahroba-talaee */}
+      <div className="negin-bar" aria-hidden />
       {/* سربرگ + KPI */}
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

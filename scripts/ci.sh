@@ -123,6 +123,16 @@ tail -1 /tmp/pn023a-ci-audit22.log
 bash scripts/audit-causal-validity.sh > /tmp/pn023a-ci-audit23.log 2>&1 || { echo "✗ گام ۵-ظ: causal-validity (DAG + کف اطمینان + دریل منفی)"; tail -8 /tmp/pn023a-ci-audit23.log; exit 1; }
 tail -1 /tmp/pn023a-ci-audit23.log
 
+# PN-024 (شورا-ن۰۳۱): چهار گارد تازه — J4 + J5 + نگین + پادواقع (مجموع ۲۷)
+bash scripts/audit-mirror-sync.sh > /tmp/pn024-ci-audit24.log 2>&1 || { echo "✗ گام ۵-غ: mirror-sync (J4 — همگامی آینهٔ GitHub)"; tail -8 /tmp/pn024-ci-audit24.log; exit 1; }
+tail -1 /tmp/pn024-ci-audit24.log
+bash scripts/audit-pg-cluster.sh > /tmp/pn024-ci-audit25.log 2>&1 || { echo "✗ گام ۵-خ: pg-cluster (J5 — پاک‌سازی PG تست > ۵۰۰MB)"; tail -8 /tmp/pn024-ci-audit25.log; exit 1; }
+tail -1 /tmp/pn024-ci-audit25.log
+bash scripts/audit-negin-consistency.sh > /tmp/pn024-ci-audit26.log 2>&1 || { echo "✗ گام ۵-ت: negin-consistency (۱۱ گوهر سازگار + قانون ۶)"; tail -8 /tmp/pn024-ci-audit26.log; exit 1; }
+tail -1 /tmp/pn024-ci-audit26.log
+bash scripts/audit-counterfactual-purity.sh > /tmp/pn024-ci-audit27.log 2>&1 || { echo "✗ گام ۵-ث: counterfactual-purity (خلوص L3 + قفل auto_execute + مرز لایه)"; tail -8 /tmp/pn024-ci-audit27.log; exit 1; }
+tail -1 /tmp/pn024-ci-audit27.log
+
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"
 # PN-012: ری‌استارت کنترل‌شدهٔ سرور تولید پیش از سنجهٔ RAM — الگوی مستند جلسهٔ ۰۰۶

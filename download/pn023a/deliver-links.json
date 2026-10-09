@@ -1,0 +1,24 @@
+{
+  "workOrder": "PN-023-A/مرحلهٔ۸ — تحویل v3 (قانون فایل v3 · لینک مستقیم ۲۰۰ · قانون ۱۴)",
+  "ranAt": "2026-10-09T09:45:57.793Z",
+  "links": 13,
+  "all200": true,
+  "files": {
+    "PN-023A-FINAL-REPORT.md": "http://localhost:3000/deliver/pn023a/PN-023A-FINAL-REPORT.md",
+    "lock-in.json": "http://localhost:3000/deliver/pn023a/lock-in.json",
+    "design-doc.json": "http://localhost:3000/deliver/pn023a/design-doc.json",
+    "attention-engine.json": "http://localhost:3000/deliver/pn023a/attention-engine.json",
+    "causal-engine.json": "http://localhost:3000/deliver/pn023a/causal-engine.json",
+    "graph-budget.json": "http://localhost:3000/deliver/pn023a/graph-budget.json",
+    "guard-witness.json": "http://localhost:3000/deliver/pn023a/guard-witness.json",
+    "guards-meta-mind.json": "http://localhost:3000/deliver/pn023a/guards-meta-mind.json",
+    "guards-causal-validity.json": "http://localhost:3000/deliver/pn023a/guards-causal-validity.json",
+    "tests-run1.log": "http://localhost:3000/deliver/pn023a/tests-run1.log",
+    "tests-run2.log": "http://localhost:3000/deliver/pn023a/tests-run2.log",
+    "SHA256SUMS.txt": "http://localhost:3000/deliver/pn023a/SHA256SUMS.txt",
+    "PN-023A-chainIndex23.tar.gz": "http://localhost:3000/deliver/pn023a/PN-023A-chainIndex23.tar.gz"
+  },
+  "survivalTar": "PN-023A-chainIndex23.tar.gz (212MB)",
+  "chainIndex": 23,
+  "commit": "b3b151855c6b1f9ef67332f18b8753c30a75c431"
+}

@@ -407,7 +407,7 @@ describe("P6.5-03-۳ — Idempotency مطلق (§۱.۶ + §۲.۴)", () => {
     } finally {
       await clearBulkTx();
     }
-  });
+  }, 30_000); // PN-024/J2+: کار سنگین واقعی DB (۲×۱۰۰۰ upsert + شمارش) زیر بار CI از سقف ۵s پیش‌فرض عبور می‌کند — عین درس J2
 
   test("تغییر یک فیلد در منبع → فقط همان رکورد update می‌شود (updated=1)", async () => {
     await clearBulkTx();

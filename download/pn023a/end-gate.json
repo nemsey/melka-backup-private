@@ -1,0 +1,45 @@
+{
+  "workOrder": "PN-023-A/مرحلهٔ۷ — دروازهٔ پایانی ۷گانه",
+  "ranAt": "2026-10-09T09:45:57.733Z",
+  "allStepsDone": true,
+  "tests": {
+    "run1": "2362pass 0fail",
+    "run2": "2362pass 0fail",
+    "identical": true,
+    "target": ">=2362 (2322+40)",
+    "law9": "✓"
+  },
+  "guards": {
+    "total": 23,
+    "new": [
+      "audit-meta-mind (۵-ض)",
+      "audit-causal-validity (۵-ظ)"
+    ],
+    "allPass": true
+  },
+  "gate": {
+    "1": "Fingerprint ✓ git=b3b1518",
+    "2": "tsc ×۲ ✓ صفر خطا",
+    "3": "lint ✓ (۲ هشدار موجود)",
+    "4": "تست ×۲ یکسان ✓ ۲۳۶۲/۰",
+    "5": "گارد ۲۳/۲۳ ✓",
+    "6": "Build 68s + chunk-integrity ✓ match",
+    "7": "BUILD_ID = HEAD ✓ b3b1518-20261009-0939 + ری‌استارت (قانون ۱۲) + M1-M5 (قانون ۱۱)"
+  },
+  "m1m5": {
+    "M1": 200,
+    "M2": 200,
+    "M3": 200,
+    "M4": 200,
+    "M5": 200,
+    "diagnosisScore": 96
+  },
+  "survival": {
+    "chainIndex": 23,
+    "package": "PN-023-20261009",
+    "anchorTo": "a390d28ee198c73473b1593ba685fe98 (بستهٔ ۲۲)",
+    "sizeMB": 462,
+    "dbMd5": "133b5adda2bc107236a3a9949ed88584\n"
+  },
+  "commit": "b3b151855c6b1f9ef67332f18b8753c30a75c431"
+}

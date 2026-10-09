@@ -10,6 +10,22 @@ const config: Config = {
   ],
   theme: {
         extend: {
+                /* PN-024 — هویت نگین: ۱۱ گوهر (لایهٔ رویی روی پالت فیروزه‌ای)
+                   توکن‌های عملیاتی در globals.css (@theme inline) تعریف‌اند؛
+                   این نگاشت برای سازگاری ابزارهای legacy (مثل پلاگین‌های v3) است. */
+                negin: {
+                        'yaghut-kamani': { 50: 'var(--negin-yaghut-kamani-50)', 200: 'var(--negin-yaghut-kamani-200)', 400: 'var(--negin-yaghut-kamani-400)', 500: 'var(--negin-yaghut-kamani-500)', 700: 'var(--negin-yaghut-kamani-700)' },
+                        'kahroba-talaee': { 50: 'var(--negin-kahroba-talaee-50)', 200: 'var(--negin-kahroba-talaee-200)', 400: 'var(--negin-kahroba-talaee-400)', 500: 'var(--negin-kahroba-talaee-500)', 700: 'var(--negin-kahroba-talaee-700)' },
+                        'aqiq-limoonee': { 50: 'var(--negin-aqiq-limoonee-50)', 200: 'var(--negin-aqiq-limoonee-200)', 400: 'var(--negin-aqiq-limoonee-400)', 500: 'var(--negin-aqiq-limoonee-500)', 700: 'var(--negin-aqiq-limoonee-700)' },
+                        'zomorrod-koohi': { 50: 'var(--negin-zomorrod-koohi-50)', 200: 'var(--negin-zomorrod-koohi-200)', 400: 'var(--negin-zomorrod-koohi-400)', 500: 'var(--negin-zomorrod-koohi-500)', 700: 'var(--negin-zomorrod-koohi-700)' },
+                        'marjan-daryayi': { 50: 'var(--negin-marjan-daryayi-50)', 200: 'var(--negin-marjan-daryayi-200)', 400: 'var(--negin-marjan-daryayi-400)', 500: 'var(--negin-marjan-daryayi-500)', 700: 'var(--negin-marjan-daryayi-700)' },
+                        'yaghut-banafsh': { 50: 'var(--negin-yaghut-banafsh-50)', 200: 'var(--negin-yaghut-banafsh-200)', 400: 'var(--negin-yaghut-banafsh-400)', 500: 'var(--negin-yaghut-banafsh-500)', 700: 'var(--negin-yaghut-banafsh-700)' },
+                        'yaghut-kabud': { 50: 'var(--negin-yaghut-kabud-50)', 200: 'var(--negin-yaghut-kabud-200)', 400: 'var(--negin-yaghut-kabud-400)', 500: 'var(--negin-yaghut-kabud-500)', 700: 'var(--negin-yaghut-kabud-700)' },
+                        'kuartz-soorati': { 50: 'var(--negin-kuartz-soorati-50)', 200: 'var(--negin-kuartz-soorati-200)', 400: 'var(--negin-kuartz-soorati-400)', 500: 'var(--negin-kuartz-soorati-500)', 700: 'var(--negin-kuartz-soorati-700)' },
+                        'nili': { 50: 'var(--negin-nili-50)', 200: 'var(--negin-nili-200)', 400: 'var(--negin-nili-400)', 500: 'var(--negin-nili-500)', 700: 'var(--negin-nili-700)' },
+                        'topaz-abee': { 50: 'var(--negin-topaz-abee-50)', 200: 'var(--negin-topaz-abee-200)', 400: 'var(--negin-topaz-abee-400)', 500: 'var(--negin-topaz-abee-500)', 700: 'var(--negin-topaz-abee-700)' },
+                        'morvarid': { 50: 'var(--negin-morvarid-50)', 200: 'var(--negin-morvarid-200)', 400: 'var(--negin-morvarid-400)', 500: 'var(--negin-morvarid-500)', 700: 'var(--negin-morvarid-700)' },
+                },
                 colors: {
                         background: 'hsl(var(--background))',
                         foreground: 'hsl(var(--foreground))',

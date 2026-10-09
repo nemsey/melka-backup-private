@@ -104,8 +104,11 @@ export function useAgentStats(tileId: string | null) {
  * از متغیرهای --sec-* در globals.css؛ دارک خودکار (قاعده ۴: ۵۰۰→۴۰۰ روشن‌تر).
  * مولد و شاهد: scripts/p6530/colors.json · کنتراست AA: download/p6530/color-contrast-report.md
  * نکته: رشته‌ها عمداً ایستا هستند تا اسکنر Tailwind همهٔ کلاس‌ها را تولید کند.
+ *
+ * PN-024 — هویت نگین: فیلد gem روی ۱۱ کاشی (لایهٔ گوهر روی فیروزه — قانون ۶:
+ * sec-* دست‌نخورده؛ gem فقط لایهٔ درخشان رویی می‌سازد). منبع: src/lib/negin-palette.ts
  */
-export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconText: string; ring: string; hairline: string; glow: string; freshness: string }> = {
+export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconText: string; ring: string; hairline: string; glow: string; freshness: string; gem?: string }> = {
   login: { // صفحهٔ ورود
     chip: "bg-sec-login-50 text-sec-login-700 border-sec-login-200",
     icon: "bg-gradient-to-br from-sec-login-700 via-sec-login-500 to-sec-login-500 shadow-lg shadow-sec-login-500/30",
@@ -132,6 +135,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-finder-700 via-sec-finder-500 to-sec-finder-500",
     glow: "bg-sec-finder-500/[0.05]",
     freshness: "text-sec-finder-700",
+    gem: "yaghut-kamani", // نگین: یاقوت کمانی (PN-024)
   },
   "melka-listing": { // آگهی ملکا
     chip: "bg-sec-melka-listing-50 text-sec-melka-listing-700 border-sec-melka-listing-200",
@@ -141,6 +145,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-melka-listing-700 via-sec-melka-listing-500 to-sec-melka-listing-500",
     glow: "bg-sec-melka-listing-500/[0.05]",
     freshness: "text-sec-melka-listing-700",
+    gem: "kahroba-talaee", // نگین: کهربا طلایی (PN-024)
   },
   "melka-request": { // درخواست ملکا
     chip: "bg-sec-melka-request-50 text-sec-melka-request-700 border-sec-melka-request-200",
@@ -150,6 +155,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-melka-request-700 via-sec-melka-request-500 to-sec-melka-request-500",
     glow: "bg-sec-melka-request-500/[0.05]",
     freshness: "text-sec-melka-request-700",
+    gem: "aqiq-limoonee", // نگین: عقیق لیمویی (PN-024)
   },
   settings: { // تنظیمات عمومی
     chip: "bg-sec-settings-50 text-sec-settings-700 border-sec-settings-200",
@@ -177,6 +183,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-m1-700 via-sec-m1-500 to-sec-m1-500",
     glow: "bg-sec-m1-500/[0.05]",
     freshness: "text-sec-m1-700",
+    gem: "zomorrod-koohi", // نگین: زمرد کوهی (PN-024)
   },
   m2: { // M2 درخواست ملک تبریز
     chip: "bg-sec-m2-50 text-sec-m2-700 border-sec-m2-200",
@@ -186,6 +193,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-m2-700 via-sec-m2-500 to-sec-m2-500",
     glow: "bg-sec-m2-500/[0.05]",
     freshness: "text-sec-m2-700",
+    gem: "marjan-daryayi", // نگین: مرجان دریایی (PN-024)
   },
   m3: { // M3 معاملات ملک تبریز
     chip: "bg-sec-m3-50 text-sec-m3-700 border-sec-m3-200",
@@ -195,6 +203,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-m3-700 via-sec-m3-500 to-sec-m3-500",
     glow: "bg-sec-m3-500/[0.05]",
     freshness: "text-sec-m3-700",
+    gem: "yaghut-banafsh", // نگین: یاقوت بنفش (PN-024)
   },
   m4: { // M4 کارشناسان ملک تبریز
     chip: "bg-sec-m4-50 text-sec-m4-700 border-sec-m4-200",
@@ -204,6 +213,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-m4-700 via-sec-m4-500 to-sec-m4-500",
     glow: "bg-sec-m4-500/[0.05]",
     freshness: "text-sec-m4-700",
+    gem: "yaghut-kabud", // نگین: یاقوت کبود (PN-024)
   },
   m5: { // M5 تطبیق هوشمند (P6545)
     chip: "bg-sec-m5-50 text-sec-m5-700 border-sec-m5-200",
@@ -213,6 +223,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-m5-700 via-sec-m5-500 to-sec-m5-500",
     glow: "bg-sec-m5-500/[0.05]",
     freshness: "text-sec-m5-700",
+    gem: "kuartz-soorati", // نگین: کوارتز صورتی (PN-024)
   },
   m6: { // M6 شاخص بازار (P6545)
     chip: "bg-sec-m6-50 text-sec-m6-700 border-sec-m6-200",
@@ -222,6 +233,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-m6-700 via-sec-m6-500 to-sec-m6-500",
     glow: "bg-sec-m6-500/[0.05]",
     freshness: "text-sec-m6-700",
+    gem: "topaz-abee", // نگین: توپاز آبی (PN-024 — کاشی M7 جدید‌نام)
   },
   m7: { // M7 پوشش داده (P6545)
     chip: "bg-sec-m7-50 text-sec-m7-700 border-sec-m7-200",
@@ -231,6 +243,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-m7-700 via-sec-m7-500 to-sec-m7-500",
     glow: "bg-sec-m7-500/[0.05]",
     freshness: "text-sec-m7-700",
+    gem: "morvarid", // نگین: مروارید (PN-024 — کاشی M8 جدیدنام)
   },
   m8: { // M8 یادگیری و Tier (P6545)
     chip: "bg-sec-m8-50 text-sec-m8-700 border-sec-m8-200",
@@ -240,6 +253,7 @@ export const SECTION_ACCENTS: Record<string, { chip: string; icon: string; iconT
     hairline: "bg-gradient-to-l from-sec-m8-700 via-sec-m8-500 to-sec-m8-500",
     glow: "bg-sec-m8-500/[0.05]",
     freshness: "text-sec-m8-700",
+    gem: "nili", // نگین: نیلی (PN-024 — کاشی M6 «مغز ملکا» جدیدنام)
   },
   consultant: { // صفحهٔ مشاور (ایجنت)
     chip: "bg-sec-consultant-50 text-sec-consultant-700 border-sec-consultant-200",
@@ -294,10 +308,14 @@ export function TileCard({
       aria-label={`باز کردن کاشی ${title}`}
     >
       <Card
+        data-negin={a.gem}
         className={`group relative h-full overflow-hidden border-border/60 sec-soft-shadow hover:sec-soft-shadow-lg sec-motion hover:-translate-y-1.5 ring-2 ring-transparent ${a.ring}`}
       >
         {/* خط گرادیانی برند بالای کارت — امضای بصری هر کاشی */}
         <div className={`absolute inset-x-0 top-0 h-1 ${a.hairline} opacity-80`} aria-hidden />
+
+        {/* نگین (PN-024) — میلهٔ گوهر زیر خط برند: هویت جدید روی لایهٔ فیروزه‌ای */}
+        {a.gem && <div className="negin-bar absolute inset-x-5 top-1" aria-hidden />}
 
         {/* هالهٔ بسیار ملایم رنگی در گوشهٔ پایین — عمق بدون شلوغی */}
         <div className={`pointer-events-none absolute -bottom-10 -start-10 w-40 h-40 rounded-full blur-3xl ${a.glow}`} aria-hidden />
@@ -318,7 +336,7 @@ export function TileCard({
 
           <div className="flex items-start justify-between">
             <div
-              className={`w-14 h-14 rounded-2xl ${a.icon} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}
+              className={`w-14 h-14 rounded-2xl ${a.icon} ${a.gem ? "negin-glow" : ""} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}
             >
               <Icon className={`w-7 h-7 ${a.iconText}`} aria-hidden />
             </div>

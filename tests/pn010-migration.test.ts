@@ -143,6 +143,12 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     const statusFile = `${RUNTIME_STATUS_DIR}/runtime-status.json`;
     const hadOriginal = existsSync(statusFile);
     const original = hadOriginal ? readFileSync(statusFile, "utf-8") : null;
+    // PN-024 (رفع نوسان دو-سبز): resolveStatusFile() از MELKA_REPO_DIR پیروی می‌کند؛
+    // تست فایل phase9 این env را در پنجرهٔ ایزوله‌سازی خود تغییر می‌دهد — اگر دو فایل
+    // هم‌پوشان شوند، نوشتنِ این تست به فایل واقعی ولی خواندن daemonHealth به مسیر
+    // ایزوله می‌رود (نوسان زندهٔ CI). قفل: env در طول همین تست به ریشهٔ واقعی سنجاق می‌شود.
+    const prevRepoEnv = process.env.MELKA_REPO_DIR;
+    process.env.MELKA_REPO_DIR = "/home/z/my-project";
     try {
       writeWorkerStatus({
         version: 1,
@@ -163,6 +169,8 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     } finally {
       if (original !== null) writeFileSync(statusFile, original, "utf-8");
       else if (existsSync(statusFile)) rmSync(statusFile);
+      if (prevRepoEnv === undefined) delete process.env.MELKA_REPO_DIR;
+      else process.env.MELKA_REPO_DIR = prevRepoEnv;
     }
   });
 

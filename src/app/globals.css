@@ -128,6 +128,18 @@
   --color-sec-m4-50: var(--sec-m4-50); --color-sec-m4-100: var(--sec-m4-100); --color-sec-m4-200: var(--sec-m4-200); --color-sec-m4-300: var(--sec-m4-300); --color-sec-m4-500: var(--sec-m4-500); --color-sec-m4-700: var(--sec-m4-700); --color-sec-m4-fg: var(--sec-m4-fg);
   --color-sec-consultant-50: var(--sec-consultant-50); --color-sec-consultant-100: var(--sec-consultant-100); --color-sec-consultant-200: var(--sec-consultant-200); --color-sec-consultant-300: var(--sec-consultant-300); --color-sec-consultant-500: var(--sec-consultant-500); --color-sec-consultant-700: var(--sec-consultant-700); --color-sec-consultant-fg: var(--sec-consultant-fg);
   --color-sec-ai-50: var(--sec-ai-50); --color-sec-ai-100: var(--sec-ai-100); --color-sec-ai-200: var(--sec-ai-200); --color-sec-ai-300: var(--sec-ai-300); --color-sec-ai-500: var(--sec-ai-500); --color-sec-ai-700: var(--sec-ai-700); --color-sec-ai-fg: var(--sec-ai-fg);
+  /* ═══ هویت نگین (PN-024) — توکن‌های Tailwind: bg/text/border-negin-{گوهر}-{سطح} ═══ */
+  --color-negin-yaghut-kamani-50: var(--negin-yaghut-kamani-50); --color-negin-yaghut-kamani-200: var(--negin-yaghut-kamani-200); --color-negin-yaghut-kamani-400: var(--negin-yaghut-kamani-400); --color-negin-yaghut-kamani-500: var(--negin-yaghut-kamani-500); --color-negin-yaghut-kamani-700: var(--negin-yaghut-kamani-700);
+  --color-negin-kahroba-talaee-50: var(--negin-kahroba-talaee-50); --color-negin-kahroba-talaee-200: var(--negin-kahroba-talaee-200); --color-negin-kahroba-talaee-400: var(--negin-kahroba-talaee-400); --color-negin-kahroba-talaee-500: var(--negin-kahroba-talaee-500); --color-negin-kahroba-talaee-700: var(--negin-kahroba-talaee-700);
+  --color-negin-aqiq-limoonee-50: var(--negin-aqiq-limoonee-50); --color-negin-aqiq-limoonee-200: var(--negin-aqiq-limoonee-200); --color-negin-aqiq-limoonee-400: var(--negin-aqiq-limoonee-400); --color-negin-aqiq-limoonee-500: var(--negin-aqiq-limoonee-500); --color-negin-aqiq-limoonee-700: var(--negin-aqiq-limoonee-700);
+  --color-negin-zomorrod-koohi-50: var(--negin-zomorrod-koohi-50); --color-negin-zomorrod-koohi-200: var(--negin-zomorrod-koohi-200); --color-negin-zomorrod-koohi-400: var(--negin-zomorrod-koohi-400); --color-negin-zomorrod-koohi-500: var(--negin-zomorrod-koohi-500); --color-negin-zomorrod-koohi-700: var(--negin-zomorrod-koohi-700);
+  --color-negin-marjan-daryayi-50: var(--negin-marjan-daryayi-50); --color-negin-marjan-daryayi-200: var(--negin-marjan-daryayi-200); --color-negin-marjan-daryayi-400: var(--negin-marjan-daryayi-400); --color-negin-marjan-daryayi-500: var(--negin-marjan-daryayi-500); --color-negin-marjan-daryayi-700: var(--negin-marjan-daryayi-700);
+  --color-negin-yaghut-banafsh-50: var(--negin-yaghut-banafsh-50); --color-negin-yaghut-banafsh-200: var(--negin-yaghut-banafsh-200); --color-negin-yaghut-banafsh-400: var(--negin-yaghut-banafsh-400); --color-negin-yaghut-banafsh-500: var(--negin-yaghut-banafsh-500); --color-negin-yaghut-banafsh-700: var(--negin-yaghut-banafsh-700);
+  --color-negin-yaghut-kabud-50: var(--negin-yaghut-kabud-50); --color-negin-yaghut-kabud-200: var(--negin-yaghut-kabud-200); --color-negin-yaghut-kabud-400: var(--negin-yaghut-kabud-400); --color-negin-yaghut-kabud-500: var(--negin-yaghut-kabud-500); --color-negin-yaghut-kabud-700: var(--negin-yaghut-kabud-700);
+  --color-negin-kuartz-soorati-50: var(--negin-kuartz-soorati-50); --color-negin-kuartz-soorati-200: var(--negin-kuartz-soorati-200); --color-negin-kuartz-soorati-400: var(--negin-kuartz-soorati-400); --color-negin-kuartz-soorati-500: var(--negin-kuartz-soorati-500); --color-negin-kuartz-soorati-700: var(--negin-kuartz-soorati-700);
+  --color-negin-nili-50: var(--negin-nili-50); --color-negin-nili-200: var(--negin-nili-200); --color-negin-nili-400: var(--negin-nili-400); --color-negin-nili-500: var(--negin-nili-500); --color-negin-nili-700: var(--negin-nili-700);
+  --color-negin-topaz-abee-50: var(--negin-topaz-abee-50); --color-negin-topaz-abee-200: var(--negin-topaz-abee-200); --color-negin-topaz-abee-400: var(--negin-topaz-abee-400); --color-negin-topaz-abee-500: var(--negin-topaz-abee-500); --color-negin-topaz-abee-700: var(--negin-topaz-abee-700);
+  --color-negin-morvarid-50: var(--negin-morvarid-50); --color-negin-morvarid-200: var(--negin-morvarid-200); --color-negin-morvarid-400: var(--negin-morvarid-400); --color-negin-morvarid-500: var(--negin-morvarid-500); --color-negin-morvarid-700: var(--negin-morvarid-700);
 }
 
 /* ================================================================
@@ -287,6 +299,20 @@
   --sec-m7-50: #eff6ff; --sec-m7-200: #bfdbfe; --sec-m7-500: #2563eb; --sec-m7-700: #1e40af; --sec-m7-fg: #ffffff;
   /* ۱۷. M8 یادگیری و Tier — فیروزه‌ای تیره #0D9488 (P6545) */
   --sec-m8-50: #f0fdfa; --sec-m8-200: #99f6e4; --sec-m8-500: #0d9488; --sec-m8-700: #134e4a; --sec-m8-fg: #0f172a;
+
+  /* ═════════ هویت «نگین» (PN-024 · جلسهٔ ۰۳۱) — لایهٔ گوهر روی نظام فیروزه‌ای ═════════
+     ۱۱ نگین · صفر تغییر در --sec-* (قانون ۶) · منبع یگانه: src/lib/negin-palette.ts */
+  --negin-yaghut-kamani-50: #FEF2F2; --negin-yaghut-kamani-200: #FECACA; --negin-yaghut-kamani-400: #F87171; --negin-yaghut-kamani-500: #DC2626; --negin-yaghut-kamani-700: #991B1B;
+  --negin-kahroba-talaee-50: #FFFBEB; --negin-kahroba-talaee-200: #FDE68A; --negin-kahroba-talaee-400: #FBBF24; --negin-kahroba-talaee-500: #F59E0B; --negin-kahroba-talaee-700: #B45309;
+  --negin-aqiq-limoonee-50: #F7FEE7; --negin-aqiq-limoonee-200: #D9F99D; --negin-aqiq-limoonee-400: #A3E635; --negin-aqiq-limoonee-500: #84CC16; --negin-aqiq-limoonee-700: #3F6212;
+  --negin-zomorrod-koohi-50: #ECFDF5; --negin-zomorrod-koohi-200: #A7F3D0; --negin-zomorrod-koohi-400: #34D399; --negin-zomorrod-koohi-500: #10B981; --negin-zomorrod-koohi-700: #047857;
+  --negin-marjan-daryayi-50: #FFF1F2; --negin-marjan-daryayi-200: #FECDD3; --negin-marjan-daryayi-400: #FDA4AF; --negin-marjan-daryayi-500: #FB7185; --negin-marjan-daryayi-700: #BE123C;
+  --negin-yaghut-banafsh-50: #F5F3FF; --negin-yaghut-banafsh-200: #DDD6FE; --negin-yaghut-banafsh-400: #A78BFA; --negin-yaghut-banafsh-500: #8B5CF6; --negin-yaghut-banafsh-700: #6D28D9;
+  --negin-yaghut-kabud-50: #EFF6FF; --negin-yaghut-kabud-200: #BFDBFE; --negin-yaghut-kabud-400: #60A5FA; --negin-yaghut-kabud-500: #3B82F6; --negin-yaghut-kabud-700: #1D4ED8;
+  --negin-kuartz-soorati-50: #FDF2F8; --negin-kuartz-soorati-200: #FBCFE8; --negin-kuartz-soorati-400: #F9A8D4; --negin-kuartz-soorati-500: #F472B6; --negin-kuartz-soorati-700: #BE185D;
+  --negin-nili-50: #EEF2FF; --negin-nili-200: #C7D2FE; --negin-nili-400: #818CF8; --negin-nili-500: #6366F1; --negin-nili-700: #4338CA;
+  --negin-topaz-abee-50: #ECFEFF; --negin-topaz-abee-200: #A5F3FC; --negin-topaz-abee-400: #22D3EE; --negin-topaz-abee-500: #06B6D4; --negin-topaz-abee-700: #0E7490;
+  --negin-morvarid-50: #FAFAF9; --negin-morvarid-200: #E7E5E4; --negin-morvarid-400: #A8A29E; --negin-morvarid-500: #E7E5E4; --negin-morvarid-700: #44403C;
 }
 
 /* قاعده ۴ — دارک مود: ۵۰۰→۴۰۰ روشن‌تر · متن معکوس · هویت رنگی حفظ */
@@ -308,6 +334,19 @@
   --sec-m6-50: #1d2a12; --sec-m6-200: #3c5220; --sec-m6-500: #84cc16; --sec-m6-700: #bef264; --sec-m6-fg: #0a0e1a;
   --sec-m7-50: #101f43; --sec-m7-200: #1c3a8a; --sec-m7-500: #3b82f6; --sec-m7-700: #7b9ff9; --sec-m7-fg: #ffffff;
   --sec-m8-50: #0f2e2b; --sec-m8-200: #14524c; --sec-m8-500: #2dd4bf; --sec-m8-700: #5eead4; --sec-m8-fg: #0f172a;
+
+  /* نگین — دارک (قاعدهٔ ۴: ۵۰۰→۴۰۰ روشن‌تر · متن معکوس) */
+  --negin-yaghut-kamani-50: #2A1215; --negin-yaghut-kamani-200: #7F1D1D; --negin-yaghut-kamani-400: #FCA5A5; --negin-yaghut-kamani-500: #F87171; --negin-yaghut-kamani-700: #FECACA;
+  --negin-kahroba-talaee-50: #2A2005; --negin-kahroba-talaee-200: #78350F; --negin-kahroba-talaee-400: #FCD34D; --negin-kahroba-talaee-500: #FBBF24; --negin-kahroba-talaee-700: #FDE68A;
+  --negin-aqiq-limoonee-50: #1C2606; --negin-aqiq-limoonee-200: #4D7C0F; --negin-aqiq-limoonee-400: #BEF264; --negin-aqiq-limoonee-500: #A3E635; --negin-aqiq-limoonee-700: #D9F99D;
+  --negin-zomorrod-koohi-50: #04211A; --negin-zomorrod-koohi-200: #065F46; --negin-zomorrod-koohi-400: #6EE7B7; --negin-zomorrod-koohi-500: #34D399; --negin-zomorrod-koohi-700: #A7F3D0;
+  --negin-marjan-daryayi-50: #2B0D16; --negin-marjan-daryayi-200: #9F1239; --negin-marjan-daryayi-400: #FDA4AF; --negin-marjan-daryayi-500: #FDA4AF; --negin-marjan-daryayi-700: #FECDD3;
+  --negin-yaghut-banafsh-50: #1E1636; --negin-yaghut-banafsh-200: #4C1D95; --negin-yaghut-banafsh-400: #C4B5FD; --negin-yaghut-banafsh-500: #A78BFA; --negin-yaghut-banafsh-700: #DDD6FE;
+  --negin-yaghut-kabud-50: #0D1B2E; --negin-yaghut-kabud-200: #1E40AF; --negin-yaghut-kabud-400: #93C5FD; --negin-yaghut-kabud-500: #60A5FA; --negin-yaghut-kabud-700: #BFDBFE;
+  --negin-kuartz-soorati-50: #2B0C21; --negin-kuartz-soorati-200: #9D174D; --negin-kuartz-soorati-400: #F9A8D4; --negin-kuartz-soorati-500: #F9A8D4; --negin-kuartz-soorati-700: #FBCFE8;
+  --negin-nili-50: #171A45; --negin-nili-200: #3730A3; --negin-nili-400: #A5B4FC; --negin-nili-500: #818CF8; --negin-nili-700: #C7D2FE;
+  --negin-topaz-abee-50: #0A222B; --negin-topaz-abee-200: #155E75; --negin-topaz-abee-400: #67E8F9; --negin-topaz-abee-500: #22D3EE; --negin-topaz-abee-700: #A5F3FC;
+  --negin-morvarid-50: #1C1917; --negin-morvarid-200: #57534E; --negin-morvarid-400: #D6D3D1; --negin-morvarid-500: #A8A29E; --negin-morvarid-700: #E7E5E4;
 }
 
 @layer base {
@@ -402,6 +441,90 @@ button, a, [role="button"] {
 @media (prefers-reduced-motion: reduce) {
   .tile-pop { animation: none; }
   html { scroll-behavior: auto; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   هویت «نگین» (PN-024 · جلسهٔ ۰۳۱ مالک) — لایهٔ گوهر روی فیروزه
+   ─────────────────────────────────────────────────────────────
+   کاربرد: عنصر با data-negin="{گوهر}" فعال می‌شود؛ سپس پنج افکت و
+   میلهٔ نگین در دسترس‌اند. ۱۱ گوهر · ۴ گرادیان · ۵ افکت فاخر.
+   قاعدهٔ ساختاری: صفر تغییر در --sec-* و value-colors (قانون ۶).
+   ═══════════════════════════════════════════════════════════════ */
+[data-negin="yaghut-kamani"]    { --negin-active-500: var(--negin-yaghut-kamani-500);    --negin-active-400: var(--negin-yaghut-kamani-400);    --negin-active-50: var(--negin-yaghut-kamani-50); }
+[data-negin="kahroba-talaee"]   { --negin-active-500: var(--negin-kahroba-talaee-500);   --negin-active-400: var(--negin-kahroba-talaee-400);   --negin-active-50: var(--negin-kahroba-talaee-50); }
+[data-negin="aqiq-limoonee"]    { --negin-active-500: var(--negin-aqiq-limoonee-500);    --negin-active-400: var(--negin-aqiq-limoonee-400);    --negin-active-50: var(--negin-aqiq-limoonee-50); }
+[data-negin="zomorrod-koohi"]   { --negin-active-500: var(--negin-zomorrod-koohi-500);   --negin-active-400: var(--negin-zomorrod-koohi-400);   --negin-active-50: var(--negin-zomorrod-koohi-50); }
+[data-negin="marjan-daryayi"]   { --negin-active-500: var(--negin-marjan-daryayi-500);   --negin-active-400: var(--negin-marjan-daryayi-400);   --negin-active-50: var(--negin-marjan-daryayi-50); }
+[data-negin="yaghut-banafsh"]   { --negin-active-500: var(--negin-yaghut-banafsh-500);   --negin-active-400: var(--negin-yaghut-banafsh-400);   --negin-active-50: var(--negin-yaghut-banafsh-50); }
+[data-negin="yaghut-kabud"]     { --negin-active-500: var(--negin-yaghut-kabud-500);     --negin-active-400: var(--negin-yaghut-kabud-400);     --negin-active-50: var(--negin-yaghut-kabud-50); }
+[data-negin="kuartz-soorati"]   { --negin-active-500: var(--negin-kuartz-soorati-500);   --negin-active-400: var(--negin-kuartz-soorati-400);   --negin-active-50: var(--negin-kuartz-soorati-50); }
+[data-negin="nili"]             { --negin-active-500: var(--negin-nili-500);             --negin-active-400: var(--negin-nili-400);             --negin-active-50: var(--negin-nili-50); }
+[data-negin="topaz-abee"]       { --negin-active-500: var(--negin-topaz-abee-500);       --negin-active-400: var(--negin-topaz-abee-400);       --negin-active-50: var(--negin-topaz-abee-50); }
+[data-negin="morvarid"]         { --negin-active-500: var(--negin-morvarid-500);         --negin-active-400: var(--negin-morvarid-400);         --negin-active-50: var(--negin-morvarid-50); }
+
+/* افکت ۱ — هالهٔ گوهر: حلقه + تاب ملایم رنگ گوهر */
+.negin-glow {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--negin-active-500) 35%, transparent),
+    0 2px 14px color-mix(in srgb, var(--negin-active-500) 26%, transparent);
+}
+
+/* افکت ۲ — درخشش متحرک: عبیر نور که گاهی از سطح گوهر می‌گذرد */
+.negin-shine { position: relative; overflow: hidden; }
+.negin-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--negin-active-400) 20%, transparent) 50%, transparent 60%);
+  transform: translateX(-130%);
+  animation: negin-shine-sweep 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes negin-shine-sweep {
+  0%, 58% { transform: translateX(-130%); }
+  86%, 100% { transform: translateX(130%); }
+}
+
+/* افکت ۳ — سوسوی نرم: تنفس نور گوهر */
+.negin-sparkle { animation: negin-sparkle 3.2s ease-in-out infinite; }
+@keyframes negin-sparkle {
+  0%, 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--negin-active-500) 22%, transparent), 0 2px 10px color-mix(in srgb, var(--negin-active-500) 18%, transparent); }
+  50%      { box-shadow: 0 0 0 1px color-mix(in srgb, var(--negin-active-500) 45%, transparent), 0 4px 22px color-mix(in srgb, var(--negin-active-500) 42%, transparent); }
+}
+
+/* افکت ۴ — عمق گوهر: سایهٔ لایه‌لایه */
+.negin-depth {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--negin-active-500) 12%, transparent),
+    0 8px 24px color-mix(in srgb, var(--negin-active-500) 16%, transparent);
+}
+
+/* افکت ۵ — شیشهٔ گوهرین: پس‌زمینهٔ مات مرزی رنگ گوهر */
+.negin-glass {
+  background: color-mix(in srgb, var(--negin-active-50) 62%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid color-mix(in srgb, var(--negin-active-500) 24%, transparent);
+}
+
+/* میلهٔ نگین — امضای گوهر در سربرگ هر کاشی */
+.negin-bar {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--negin-active-500), var(--negin-active-400), var(--negin-active-500), transparent);
+  opacity: 0.78;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--negin-active-500) 30%, transparent);
+}
+
+/* ۴ گرادیان درخشان نگین — «ترکیب‌های گوهر» */
+.negin-grad-shafaq { background-image: linear-gradient(90deg, #DC2626, #F59E0B); }
+.negin-grad-ocean  { background-image: linear-gradient(90deg, #06B6D4, #6366F1); }
+.negin-grad-jangal { background-image: linear-gradient(90deg, #10B981, #84CC16); }
+.negin-grad-shahaneh { background-image: linear-gradient(90deg, #8B5CF6, #3B82F6); }
+
+/* احترام به کاهش حرکت — نگین هم بی‌صدا می‌شود */
+@media (prefers-reduced-motion: reduce) {
+  .negin-shine::after { animation: none; opacity: 0; }
+  .negin-sparkle { animation: none; }
 }
 
 /* نمودارها: جهت چپ‌به‌راست برای محور زمان (استاندارد داشبوردهای فارسی) */

@@ -307,7 +307,9 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   const rows = useMemo(() => adsData?.rows ?? [], [adsData]);
 
   return (
-    <div className="space-y-6">
+    <div data-negin="yaghut-kamani" className="space-y-6">
+      {/* نگین (PN-024) — میلهٔ گوهر yaghut-kamani */}
+      <div className="negin-bar" aria-hidden />
       {/* نوار ابزار عملیاتی — هدر اصلی از TileShell می‌آید (بدون تکرار) */}
       <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex items-center gap-2">

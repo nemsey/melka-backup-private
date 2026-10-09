@@ -123,7 +123,9 @@ export function RequestsPage({ settings }: TilePageProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div data-negin="aqiq-limoonee" className="space-y-6">
+      {/* نگین (PN-024) — میلهٔ گوهر aqiq-limoonee */}
+      <div className="negin-bar" aria-hidden />
       {/* سربرگ + KPI */}
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

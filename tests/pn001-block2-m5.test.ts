@@ -238,5 +238,5 @@ describe("PN-001/B2.1 — گام پنجم: اطلاعات کامل گزینه‌
       if (res.candidates.length > 0) matched += 1;
     }
     expect(matched).toBeGreaterThanOrEqual(5);
-  });
+  }, 30_000); // PN-024/J2+: تطبیق واقعی روی دادهٔ زندهٔ custom.db (تا ۸۰ درخواست × موتور) زیر بار CI از ۵s پیش‌فرض عبور می‌کند — عین درس J2
 });

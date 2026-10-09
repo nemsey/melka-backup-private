@@ -366,7 +366,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
   const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void load());
 
   return (
-    <div className="space-y-6">
+    <div data-negin="zomorrod-koohi" className="space-y-6">
+      {/* نگین (PN-024) — میلهٔ گوهر zomorrod-koohi */}
+      <div className="negin-bar" aria-hidden />
       <PtrIndicator innerRef={ptrRef} spinning={ptrSpinning} />
       {/* ایجنت هوشمند یادگیرندهٔ مولتی‌بینش */}
       <AgentPanel tileId="arm-listings" />

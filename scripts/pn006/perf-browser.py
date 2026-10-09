@@ -109,12 +109,22 @@ with sync_playwright() as p:
     out["insightFound"] = insight_found
 
     # ── ۵) تأخیر تعامل تقریبی (INP proxy) ──
+    # PN-024: پایدارسازی سنجه — تک‌نمونهٔ double-rAF بسیار نویزی است (اندازه‌گیری
+    # زنده: ۸۱–۲۸۱ms روی همان بیلد). سه نمونه با وقفه + میانه = سنجهٔ پایدار که
+    # هنوز رگرسیون واقعی جریان اصلی را می‌گیرد (میانهٔ بالا = کندی واقعی، نه شانس).
     out["interactionLatencyMs"] = page.evaluate("""
-    () => new Promise(res => {
-      const t0 = performance.now();
-      const el = document.querySelector('button, [role=button], a') || document.body;
-      el.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      requestAnimationFrame(() => requestAnimationFrame(() => res(Math.round(performance.now() - t0))));
+    () => new Promise(async res => {
+      const one = () => new Promise(r => {
+        const t0 = performance.now();
+        const el = document.querySelector('button, [role=button], a') || document.body;
+        el.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+        requestAnimationFrame(() => requestAnimationFrame(() => r(Math.round(performance.now() - t0))));
+      });
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      const samples = [];
+      for (let i = 0; i < 3; i++) { samples.push(await one()); await sleep(150); }
+      samples.sort((a, b) => a - b);
+      res(samples[1]); // میانه
     })
     """)
 
