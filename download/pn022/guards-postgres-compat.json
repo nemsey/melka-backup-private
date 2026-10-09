@@ -1,6 +1,6 @@
 {
   "workOrder": "PN-022-A/مرحلهٔ۵ — گارد postgres-compat (گام ۵-ر)",
-  "ranAt": "2026-10-09T20:14:49.634647+00:00",
+  "ranAt": "2026-10-09T21:59:17.735012+00:00",
   "checks": [
     {
       "check": "وجود schema.postgres.prisma",

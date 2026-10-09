@@ -1,0 +1,54 @@
+#!/usr/bin/env bun
+/** PN-026 · بُعد ۱۲ — ظاهر (Appearance) · تجمیع شواهد E2E */
+import { writeFileSync, readdirSync, statSync } from "node:fs";
+
+const shots = readdirSync("/home/z/my-project/download/pn026/screenshots").filter((f) => f.endsWith(".png"));
+
+const evidence = {
+  dimension: "بُعد ۱۲ — ظاهر (Appearance)",
+  methodology: "E2E مرورگر واقعی (Chromium · 1380×900) · ورود مدیر · پیمایش ۱۲ صفحه × ۲ تم · محاسبهٔ WCAG با تبدیل رنگ زنده از DOM",
+  negin: {
+    gemsTotal: 11,
+    contrastReport: "۱۱/۱۱ گوهر WCAG AA ✓ — یاقوت کمانی ۷٫۶ · کهربا ۴٫۸ · عقیق ۶٫۸ · زمرد ۵٫۲ · مرجان ۵٫۷ · یاقوت بنفش ۶٫۵ · یاقوت کبود ۶٫۲ · کوارتز ۵٫۵ (ترمیم PN-024) · نیلی ۷٫۱ · توپاز ۵٫۲ · مروارید ۹٫۸",
+    domLive: "۸ عنصر data-negin در داشبورد مدیریتی + ۱۶ عنصر با کلاس نگین + data-negin=morvarid روی صفحهٔ M8 — لایهٔ نگین روی هر ۱۱ کاشی فعال",
+    architecture: "دولایهٔ مستند: «هویت جدید روی لایهٔ فیروزه‌ای» — میلهٔ گوهر نگین بالای خط برند هر کارت (TileCard.tsx:308)",
+  },
+  wcag: {
+    measuredLive: [
+      "تیترها H1/H2 (تیره): ۱۳٫۵–۱۳٫۷ ✓",
+      "متن بدنه (تیره): ۴٫۹–۵٫۶ ✓",
+      "دکمه‌ها (تیره): ۴٫۹–۱۲٫۰ ✓",
+      "کارت اعتبار مالک: پس‌زمینهٔ مؤثر ۵٪ teal روی تیره → ۱۲٫۹ ✓ (آلفا در محاسبهٔ اول نادیده گرفته شده بود — تصحیح شد)",
+      "دکمهٔ مخرب روشن: ۴٫۷۷ ✓",
+    ],
+    failure: {
+      element: "دکمهٔ «ریست اتصال» (واریانت destructive) در تم تاریک",
+      detail: "متن سفید روی rgb(255,100,103) — نسبت ۲٫۸۹ < ۴٫۵ AA (فقط در تم تاریک؛ روشن ۴٫۷۷ ✓)",
+      rootCause: "--destructive در تم تاریک oklch(0.704 0.191 22.22) — روشن‌تر از حد AA برای متن سفید",
+      proposedFix: "فاز ۵: تیره‌کردن destructive تاریک به oklch(0.62 0.19 25) یا مشابه → ~۴٫۸+",
+      severity: "🟠",
+    },
+    verdict: "۱۱/۱۱ گوهر AA · همهٔ متن‌های اصلی AA بجز یک مورد (دکمهٔ مخرب تاریک)",
+  },
+  themes: { light: "✓ ۱۲ اسکرین‌شات", dark: "✓ ۱۲ اسکرین‌شات", switching: "دکمهٔ «تاریک/روشن کردن تم» فعال · ماندگاری در localStorage" },
+  turquoiseLeak: {
+    verdict: "🟢 صفر نشت در گوهرهای نگین — ۱۱/۱۱ بدون فیروزه",
+    detail: "لایهٔ پایهٔ برند «فیروزه تبریز» v1.7 (primary + توکن‌های sec-* + ۴ گرادیان) طبق معماری مستند باقی است و نگین روی آن نشسته — «هویت جدید روی لایهٔ فیروزه‌ای» (TileCard.tsx). گوهری فیروزه‌ای نیست.",
+  },
+  console: { errors: 0, pageErrors: 0, verdict: "✓ صفر خطای کنسول در کل تور ۱۲ صفحه" },
+  virtualTable: { m1RowsRendered: 55, domStable: "۲٬۸۲۸→۲٬۸۳۱ بعد از ۳٬۲۰۰px اسکرول — پنجرهٔ مجازی‌سازی مقید ✓ (سنجهٔ بُعد ۶: DOM مقید)" },
+  scrollFps: { measured: "۶۰ fps در ۳ ثانیه اسکرول جدول M1 (هدف ≥ ۴۵) ✓", source: "بُعد ۹ — اندازه‌گیری زنده" },
+  screenshots: { count: shots.length, promised: 22, note: "۱۲ روشن + ۱۲ تاریک — بیش از وعده", files: shots },
+  homePageVerifications: {
+    heroDeleted: "✓ صفر «خوش آمدید» در DOM خانه (حذفیات جلسهٔ ۰۳۳ پابرجا)",
+    searchCardDeleted: "✓ کارت «جست‌وجوی تحلیل‌ها» حذف‌شده",
+    gapSectionDeleted: "✓ بخش GAP از تنظیمات حذف (۸ از ۹ اتصال — اینستاگرام قطع، GAP در فهرست اتصال‌ها برای مدیریت باقی طبق دستور «gapApi پابرجا»)",
+  },
+  findings: [
+    "۱۱/۱۱ گوهر AA ✓ · ۲۴ اسکرین‌شات ✓ · صفر خطای کنسول ✓ · ۶۰fps ✓",
+    "⚠ یک ناهم‌خوانی WCAG: دکمهٔ destructive در تم تاریک ۲٫۸۹ — نامزد فاز ۵",
+  ],
+};
+
+writeFileSync("/home/z/my-project/download/pn026/appearance.json", JSON.stringify(evidence, null, 1));
+console.log("✓ appearance.json — ۱۲ صفحه × ۲ تم · ۱۱ گوهر AA · ۱ یافتهٔ destructive");

@@ -1,0 +1,139 @@
+{
+ "phase": "فاز ۳ — لیست اضافات (فقط شناسایی · صفر حذف)",
+ "rule": "قاعدهٔ ۶ — تصمیم با مالک",
+ "scanned": {
+  "srcFiles": 602,
+  "testFiles": 116,
+  "scriptFiles": 563,
+  "apiRoutes": 200,
+  "tables": 63
+ },
+ "verified": {
+  "endpointsTrulyUnused": {
+   "count": 12,
+   "items": [
+    {
+     "route": "/crm/finance",
+     "review": "کاشی مالی ادغام‌شده در معاملات (P6.5-11) — داده ماندگار"
+    },
+    {
+     "route": "/crm/finance/commission",
+     "review": "کاشی مالی ادغام‌شده در معاملات (P6.5-11) — داده ماندگار"
+    },
+    {
+     "route": "/crm/customer-club",
+     "review": "کاشی حذف‌نما (P6.5-12) — داده ماندگار"
+    },
+    {
+     "route": "/crm/branches",
+     "review": "گزینه‌های شعبه از filterOptions پاسخ فهرست‌ها می‌آید — این روت احتمالاً زائد"
+    },
+    {
+     "route": "/gap/connection",
+     "review": "دستور جلسهٔ ۰۳۳ مالک: gapApi پابرجا ماند — تصمیم مالک"
+    },
+    {
+     "route": "/admin/drift-checks",
+     "review": "بازبینی پیش از هر تصمیم"
+    },
+    {
+     "route": "/admin/model-versions",
+     "review": "پنل قهرمان/چلنجر — نگه‌داری برای UI آینده یا حذف با تأیید"
+    },
+    {
+     "route": "/admin/model-versions/[id]/rollback",
+     "review": "پنل قهرمان/چلنجر — نگه‌داری برای UI آینده یا حذف با تأیید"
+    },
+    {
+     "route": "/admin/model-versions/[id]/reject",
+     "review": "پنل قهرمان/چلنجر — نگه‌داری برای UI آینده یا حذف با تأیید"
+    },
+    {
+     "route": "/admin/model-versions/[id]/promote",
+     "review": "پنل قهرمان/چلنجر — نگه‌داری برای UI آینده یا حذف با تأیید"
+    },
+    {
+     "route": "/runtime/metrics",
+     "review": "بازبینی پیش از هر تصمیم"
+    },
+    {
+     "route": "/melk-public/sync",
+     "review": "همگام‌سازی عمومی — بازبینی کاربرد خارجی"
+    }
+   ],
+   "note": "۳۲ روت غیر-ارجاع در src؛ ۲۰ تا از آن‌ها در Worker/اسکریپت‌ها زنده‌اند؛ ۱۰۰ آینهٔ v1 عمداً زنده‌اند (مانیفست v1 — نه کد مرده)"
+  },
+  "modulesUnused": {
+   "count": 4,
+   "items": [
+    "src/components/ui/toggle.tsx",
+    "src/components/ui/form.tsx",
+    "src/components/ui/scroll-area.tsx",
+    "src/components/ui/chart.tsx"
+   ],
+   "note": "پیش‌فرض‌های shadcn/ui — صفر import در کل مخزن؛ بقیهٔ «کاندیدهای» قبلی در تست‌ها/گاردها زنده‌اند (visits-agent · fa-sort · cross-tile · palette13 · smart-update) — رد شدند"
+  },
+  "tablesAbandoned": {
+   "count": 1,
+   "items": [
+    "SyncDeadLetter (صفر ردیف — صف نامه‌های مردهٔ sync؛ مدل زنده برای خطاهای آینده)"
+   ],
+   "note": "۱۳ جدول دیگر خالی اما ارجاع‌شده (InteractionRecord · CustomerRecord · PersonnelAccess · …) — آمادهٔ دادهٔ آینده — طبق قانون دادهٔ مقدس همه می‌مانند"
+  },
+  "depsUnused": {
+   "count": 26,
+   "items": [
+    "@dnd-kit/core",
+    "@dnd-kit/sortable",
+    "@dnd-kit/utilities",
+    "@hookform/resolvers",
+    "@mdxeditor/editor",
+    "@radix-ui/react-aspect-ratio",
+    "@radix-ui/react-context-menu",
+    "@radix-ui/react-hover-card",
+    "@radix-ui/react-menubar",
+    "@radix-ui/react-navigation-menu",
+    "@radix-ui/react-toggle-group",
+    "@reactuses/core",
+    "@tanstack/react-query",
+    "@tanstack/react-table",
+    "cmdk",
+    "date-fns",
+    "next-auth",
+    "next-intl",
+    "react-day-picker",
+    "react-markdown",
+    "react-resizable-panels",
+    "react-syntax-highlighter",
+    "sonner",
+    "uuid",
+    "vaul",
+    "zod"
+   ],
+   "note": "راستی‌آزمایی: صفر import در src+tests+scripts · prisma/sharp نگه"
+  },
+  "legacyDirs": {
+   "count": 3,
+   "items": [
+    "src/core/tiles/tiles/customer-club/ (حذف‌نما از bootstrap — پوشه مانده)",
+    "src/core/tiles/tiles/listing + request (کاشی‌های میراثی — در bootstrap زنده‌اند اما با arm-listing/arm-request هم‌پوشان)"
+   ],
+   "note": "ایجنت‌ها و دادهٔ این کاشی‌ها ماندگارند (قانون دادهٔ مقدس) — تصمیم حذف نمای UI با مالک"
+  },
+  "historicalScripts": {
+   "count": 404,
+   "note": "اسکریپت‌های تأیید/تحویل تاریخی (pn0*, p65*, verify-*) — اسناد زندهٔ ممیزی؛ حذف برخی ممکن با تأیید مالک"
+  },
+  "tmpBigLogsOldBackups": {
+   "tmp": 0,
+   "logsOver10MB": 0,
+   "backupsOver30d": 0,
+   "note": "چرخش لاگ و هرس نسل‌ها فعال و مؤثر"
+  }
+ },
+ "sizeEstimate": {
+  "depsMB": 0,
+  "note": "حدود ۲۶ dependency بی‌استفاده ≈ بخشی از node_modules (~۱۵-۴۰MB نصب) — اثر بر بیلد تولید تقریباً صفر (tree-shaking) — سود اصلی: سلامت manifest"
+ },
+ "decisionForm": "فرم درخواست مجوز فاز ۶ (حذف) — نیازمند تأیید صریح مالک برای هر قلم"
+}

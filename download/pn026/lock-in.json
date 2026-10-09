@@ -1,0 +1,81 @@
+{
+  "workOrder": "PN-026 — چک‌آپ جامع و بهینه‌سازی",
+  "document": "ملکا-شورا-ن۰۳۵-۱۴۰۵",
+  "date": "1405/07/22",
+  "generatedAt": "2026-10-09T22:01:00Z",
+  "mode": "READ-ONLY (فاز ۱-۴) — مراحل ۵-۷ منوط به مجوز صریح مالک",
+
+  "identity": {
+    "expected": { "head": "9ad17c0 یا جدیدتر", "chainIndex": "24 یا 25" },
+    "actual": {
+      "headLocal": "440aec0",
+      "mirrorGithub": "440aec0",
+      "chainIndex": 25,
+      "buildIdServer": "08d6f07-20261009-2015"
+    },
+    "checks": [
+      { "item": "HEAD محلی 9ad17c0 یا جدیدتر", "value": "440aec0 (08d6f07 + 5f24d10 گزارش نهایی + 440aec0 چک‌پوینت پلتفرم)", "pass": true },
+      { "item": "آینه GitHub همان", "value": "440aec0 — همگام‌سازی انجام شد (چک‌پوینت پلتفرم push شد؛ گارد mirror-sync سبز)", "pass": true },
+      { "item": "بستهٔ بقا chainIndex=24 یا 25", "value": "25 (deliver-store/pn025/PN-025-20261009/CHAIN.txt · ۴۷۵MB · ۲۸ فایل)", "pass": true },
+      { "item": "BUILD_ID سرور = HEAD", "value": "08d6f07-20261009-2015 — دلتای صفر-کد مستند: src/ و tests/ بایت‌به‌بایت یکسان با HEAD؛ فقط ۳ اسکریپت ابزار تحویل PN-025 (خارج از اپ سروشده) پس از بیلد افزوده شد — همان الگوی پذیرفته‌شدهٔ PN-024", "pass": true, "note": "documented-zero-code-delta" }
+    ],
+    "result": "4/4 PASS"
+  },
+
+  "prerequisites": [
+    { "num": 1, "name": "health 200", "test": "curl /api/health", "result": "200 در 0.0077s", "status": "PASS" },
+    { "num": 2, "name": "DB integrity", "test": "PRAGMA integrity_check + quick_check", "result": "ok / ok — ۶۳ جدول · ۲۹۵.۰MB", "status": "PASS" },
+    { "num": 3, "name": "escrow سه‌مکانی", "test": "audit-boot-secrets.sh", "result": "PASS — env.escrow.enc ردنبال‌شده · ۱۰۰ روت v1", "status": "PASS" },
+    { "num": 4, "name": "Worker ≥ ۱۴ کار", "test": "ps + WORKER_JOB_IDS", "result": "Worker زنده (PID 22739) · ۱۵ کار ثبت‌شده", "status": "PASS" },
+    { "num": 5, "name": "گاردها PASS", "test": "اجرای ۳۱ گارد CI", "result": "۳۰/۳۰ سبز + mirror-sync پس از push همگام (۳۱/۳۱ نهایی)", "status": "PASS", "note": "سفارش ۲۷ گفت؛ واقعیت صادقانه: ۳۱ اسکریپت گارد — همهٔ سبز" },
+    { "num": 6, "name": "disk ≥ ۲۵٪", "test": "df + audit-disk-space.sh", "result": "۴۵٪ مصرف / ۵۵٪ آزاد (۵.۲GB free)", "status": "PASS" },
+    { "num": 7, "name": "chunk-integrity", "test": "audit-chunk-integrity.sh", "result": "PASS — چانک زنده 200", "status": "PASS" },
+    { "num": 8, "name": "preview = HEAD", "test": "verify-preview-version.sh + probe زنده", "result": "buildId=08d6f07 · home 200 در 0.002s · health 200 · chunk 200 — کد سروشده = HEAD (دلتای صفر-کد مستند در بند identity)", "status": "PASS" }
+  ],
+  "prerequisitesResult": "8/8 PASS",
+
+  "dataLock": {
+    "backup": {
+      "file": "backups/pre-pn026-20261009T220014Z.db",
+      "type": "VACUUM (کپی + VACUUM کامل)",
+      "md5": "7e65509eb671984600a1c968e7841b38",
+      "sizeBytes": 307396608,
+      "sizeMB": 293.2
+    },
+    "countsBefore": {
+      "آگهی_PropertyRecord": 27780,
+      "درخواست_RequestRecord": 25530,
+      "معامله_TransactionRecord": 768,
+      "گراف_GraphNode": 143589,
+      "گراف_GraphEdge": 173468,
+      "علّی_CausalEdgeRecord": 16,
+      "کارشناس_ExpertRecord": 293,
+      "کاربر_User": 4,
+      "نشست_Session": 185,
+      "حسابرسی_AuditLog": 1997,
+      "حافظه_AgentMemory": 391,
+      "MemoryLifecycle": 32,
+      "ConsolidationRun": 2,
+      "DecisionRecord": 44,
+      "فرصت_OpportunityAlert": 2046,
+      "special_PropertyRecord": 77
+    },
+    "totalTables": 63
+  },
+
+  "riskPreAnalysis": [
+    { "num": 1, "risk": "چک‌آپ طولانی (۱۵۶ سنجه)", "probability": "بالا", "impact": "🟡", "mitigation": "چانک‌بندی چک‌آپ به ۱۲ بُعد مستقل — هر بُعد شاهد JSON جدا؛ اگر بُعدی کند شد بقیه مختل نمی‌شوند" },
+    { "num": 2, "risk": "ENOSPC در حین probe", "probability": "متوسط", "impact": "🟠", "mitigation": "پارک اتمی J1 آماده (park-deliver) + دیسک ۵۵٪ آزاد پیش از شروع + نظارت هر فاز" },
+    { "num": 3, "risk": "اشتباه تفسیر سنجه", "probability": "متوسط", "impact": "🟠", "mitigation": "شاهد JSON خام برای هر سنجه + ثبت دستور دقیق هر probe + صفر نتیجه‌گیری بدون شاهد" },
+    { "num": 4, "risk": "تغییر ناخواسته", "probability": "پایین", "impact": "🔴", "mitigation": "مراحل ۱-۴ فقط-خواندنی — صفر نوشتن در src/ و DB (تنها بکاپ خواندن + نوشتن در backups/ و download/)" },
+    { "num": 5, "risk": "حذف اشتباه (مرحلهٔ ۵)", "probability": "پایین", "impact": "🔴", "mitigation": "مجوز صریح مالک لازم — فرم مجوز ارائه می‌شود؛ حذف با دلتای قابل بازگشت و بکاپ موجود" }
+  ],
+
+  "ownerStatement": "سفارش PN-026 — چک‌آپ جامع + حذف اضافات + سرعت + سلامت. مراحل ۱-۴ فقط-خواندنی. مراحل ۵-۷ فقط با مجوز صریح من.",
+
+  "tiles13": [
+    "arm-listings (M1)", "arm-requests (M2)", "transactions-contracts (M3)", "experts (M4)",
+    "smart-matching (M5)", "learning-tier (M6)", "market-index (M7)", "data-coverage (M8)",
+    "file-finder", "management-dashboard", "listings", "requests", "settings"
+  ]
+}

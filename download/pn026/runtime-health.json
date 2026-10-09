@@ -1,0 +1,816 @@
+{
+ "dimension": "بُعد ۲ — Runtime سالم (Runtime Validity)",
+ "methodology": {
+  "session": "نشست واقعی مالک از master-login (الگوی دروازه‌های PN-020 تا PN-025) — یک ردیف Session",
+  "postRule": "قید «صفر POST/PUT/DELETE» روی داده حفظ شد: probe دستهٔ POST با (۱) بدون نشست → ۴۰۱ و (۲) نشست + payload نامعتبر → ۴۰۰ — مسیر و اعتبارسنجی ثابت، صفر رکورد نوشته شد",
+  "probeCount": {
+   "planned": 55,
+   "executed": 69,
+   "breakdown": "health 1 + version 1 + insight 13 + stats 13 + policy 13 + feedback-anon 13 + feedback-invalid 13 — جدول اقدام، ردیف feedback در دو لایهٔ بدون-نوشتار + منسوخ 2"
+  }
+ },
+ "summaryClasses": {
+  "ok200": 35,
+  "unauthorized401": 13,
+  "notFound404": 10,
+  "validation400": 11,
+  "serverError5xx": 0,
+  "fetchError": 0
+ },
+ "endpointSummary": {
+  "GET /api/health": {
+   "total": 1,
+   "c200": 1,
+   "c401": 0,
+   "c404": 0,
+   "c400": 0,
+   "c5xx": 0,
+   "avgMs": 3.7
+  },
+  "GET /api/version": {
+   "total": 1,
+   "c200": 1,
+   "c401": 0,
+   "c404": 0,
+   "c400": 0,
+   "c5xx": 0,
+   "avgMs": 2.5
+  },
+  "GET /api/agent/[tileId]/insight": {
+   "total": 13,
+   "c200": 11,
+   "c401": 0,
+   "c404": 2,
+   "c400": 0,
+   "c5xx": 0,
+   "avgMs": 76.3,
+   "tiles404": [
+    "management-dashboard",
+    "settings"
+   ]
+  },
+  "GET /api/agent/[tileId]/stats": {
+   "total": 13,
+   "c200": 11,
+   "c401": 0,
+   "c404": 2,
+   "c400": 0,
+   "c5xx": 0,
+   "avgMs": 8.4,
+   "tiles404": [
+    "management-dashboard",
+    "settings"
+   ]
+  },
+  "GET /api/agent/[tileId]/policy": {
+   "total": 13,
+   "c200": 11,
+   "c401": 0,
+   "c404": 2,
+   "c400": 0,
+   "c5xx": 0,
+   "avgMs": 8.1,
+   "tiles404": [
+    "management-dashboard",
+    "settings"
+   ]
+  },
+  "POST /api/agent/[tileId]/feedback (بدون نشست)": {
+   "total": 13,
+   "c200": 0,
+   "c401": 13,
+   "c404": 0,
+   "c400": 0,
+   "c5xx": 0,
+   "avgMs": 2.7
+  },
+  "POST /api/agent/[tileId]/feedback (نشست+نامعتبر)": {
+   "total": 13,
+   "c200": 0,
+   "c401": 0,
+   "c404": 2,
+   "c400": 11,
+   "c5xx": 0,
+   "avgMs": 5.6,
+   "tiles404": [
+    "management-dashboard",
+    "settings"
+   ]
+  },
+  "مسیر منسوخ /api/agent/feedback": {
+   "total": 2,
+   "c200": 0,
+   "c401": 0,
+   "c404": 2,
+   "c400": 0,
+   "c5xx": 0,
+   "avgMs": 5.7,
+   "tiles404": [
+    "/api/agent/feedback",
+    "/api/agent/feedback (POST)"
+   ]
+  }
+ },
+ "timing": {
+  "avgMs": 19.3,
+  "maxMs": 306.6,
+  "slowest": [
+   {
+    "name": "insight:requests",
+    "method": "GET",
+    "url": "/api/agent/requests/insight",
+    "status": 200,
+    "ms": 306.6,
+    "auth": "session"
+   },
+   {
+    "name": "insight:arm-requests",
+    "method": "GET",
+    "url": "/api/agent/arm-requests/insight",
+    "status": 200,
+    "ms": 247.5,
+    "auth": "session"
+   },
+   {
+    "name": "insight:transactions-contracts",
+    "method": "GET",
+    "url": "/api/agent/transactions-contracts/insight",
+    "status": 200,
+    "ms": 191.1,
+    "auth": "session"
+   },
+   {
+    "name": "insight:arm-listings",
+    "method": "GET",
+    "url": "/api/agent/arm-listings/insight",
+    "status": 200,
+    "ms": 134.6,
+    "auth": "session"
+   },
+   {
+    "name": "insight:experts",
+    "method": "GET",
+    "url": "/api/agent/experts/insight",
+    "status": 200,
+    "ms": 32.3,
+    "auth": "session"
+   }
+  ]
+ },
+ "probes": [
+  {
+   "name": "health",
+   "method": "GET",
+   "url": "/api/health",
+   "status": 200,
+   "ms": 3.7,
+   "auth": "anon"
+  },
+  {
+   "name": "version",
+   "method": "GET",
+   "url": "/api/version",
+   "status": 200,
+   "ms": 2.5,
+   "auth": "anon"
+  },
+  {
+   "name": "insight:arm-listings",
+   "method": "GET",
+   "url": "/api/agent/arm-listings/insight",
+   "status": 200,
+   "ms": 134.6,
+   "auth": "session"
+  },
+  {
+   "name": "stats:arm-listings",
+   "method": "GET",
+   "url": "/api/agent/arm-listings/stats",
+   "status": 200,
+   "ms": 30.2,
+   "auth": "session"
+  },
+  {
+   "name": "policy:arm-listings",
+   "method": "GET",
+   "url": "/api/agent/arm-listings/policy",
+   "status": 200,
+   "ms": 18.2,
+   "auth": "session"
+  },
+  {
+   "name": "insight:arm-requests",
+   "method": "GET",
+   "url": "/api/agent/arm-requests/insight",
+   "status": 200,
+   "ms": 247.5,
+   "auth": "session"
+  },
+  {
+   "name": "stats:arm-requests",
+   "method": "GET",
+   "url": "/api/agent/arm-requests/stats",
+   "status": 200,
+   "ms": 11.8,
+   "auth": "session"
+  },
+  {
+   "name": "policy:arm-requests",
+   "method": "GET",
+   "url": "/api/agent/arm-requests/policy",
+   "status": 200,
+   "ms": 11.6,
+   "auth": "session"
+  },
+  {
+   "name": "insight:transactions-contracts",
+   "method": "GET",
+   "url": "/api/agent/transactions-contracts/insight",
+   "status": 200,
+   "ms": 191.1,
+   "auth": "session"
+  },
+  {
+   "name": "stats:transactions-contracts",
+   "method": "GET",
+   "url": "/api/agent/transactions-contracts/stats",
+   "status": 200,
+   "ms": 5.9,
+   "auth": "session"
+  },
+  {
+   "name": "policy:transactions-contracts",
+   "method": "GET",
+   "url": "/api/agent/transactions-contracts/policy",
+   "status": 200,
+   "ms": 8.4,
+   "auth": "session"
+  },
+  {
+   "name": "insight:experts",
+   "method": "GET",
+   "url": "/api/agent/experts/insight",
+   "status": 200,
+   "ms": 32.3,
+   "auth": "session"
+  },
+  {
+   "name": "stats:experts",
+   "method": "GET",
+   "url": "/api/agent/experts/stats",
+   "status": 200,
+   "ms": 5.2,
+   "auth": "session"
+  },
+  {
+   "name": "policy:experts",
+   "method": "GET",
+   "url": "/api/agent/experts/policy",
+   "status": 200,
+   "ms": 4.2,
+   "auth": "session"
+  },
+  {
+   "name": "insight:smart-matching",
+   "method": "GET",
+   "url": "/api/agent/smart-matching/insight",
+   "status": 200,
+   "ms": 8.2,
+   "auth": "session"
+  },
+  {
+   "name": "stats:smart-matching",
+   "method": "GET",
+   "url": "/api/agent/smart-matching/stats",
+   "status": 200,
+   "ms": 8,
+   "auth": "session"
+  },
+  {
+   "name": "policy:smart-matching",
+   "method": "GET",
+   "url": "/api/agent/smart-matching/policy",
+   "status": 200,
+   "ms": 4.5,
+   "auth": "session"
+  },
+  {
+   "name": "insight:learning-tier",
+   "method": "GET",
+   "url": "/api/agent/learning-tier/insight",
+   "status": 200,
+   "ms": 10.8,
+   "auth": "session"
+  },
+  {
+   "name": "stats:learning-tier",
+   "method": "GET",
+   "url": "/api/agent/learning-tier/stats",
+   "status": 200,
+   "ms": 5,
+   "auth": "session"
+  },
+  {
+   "name": "policy:learning-tier",
+   "method": "GET",
+   "url": "/api/agent/learning-tier/policy",
+   "status": 200,
+   "ms": 6.5,
+   "auth": "session"
+  },
+  {
+   "name": "insight:market-index",
+   "method": "GET",
+   "url": "/api/agent/market-index/insight",
+   "status": 200,
+   "ms": 7.3,
+   "auth": "session"
+  },
+  {
+   "name": "stats:market-index",
+   "method": "GET",
+   "url": "/api/agent/market-index/stats",
+   "status": 200,
+   "ms": 5.6,
+   "auth": "session"
+  },
+  {
+   "name": "policy:market-index",
+   "method": "GET",
+   "url": "/api/agent/market-index/policy",
+   "status": 200,
+   "ms": 8,
+   "auth": "session"
+  },
+  {
+   "name": "insight:data-coverage",
+   "method": "GET",
+   "url": "/api/agent/data-coverage/insight",
+   "status": 200,
+   "ms": 8.1,
+   "auth": "session"
+  },
+  {
+   "name": "stats:data-coverage",
+   "method": "GET",
+   "url": "/api/agent/data-coverage/stats",
+   "status": 200,
+   "ms": 4.8,
+   "auth": "session"
+  },
+  {
+   "name": "policy:data-coverage",
+   "method": "GET",
+   "url": "/api/agent/data-coverage/policy",
+   "status": 200,
+   "ms": 11.7,
+   "auth": "session"
+  },
+  {
+   "name": "insight:file-finder",
+   "method": "GET",
+   "url": "/api/agent/file-finder/insight",
+   "status": 200,
+   "ms": 19,
+   "auth": "session"
+  },
+  {
+   "name": "stats:file-finder",
+   "method": "GET",
+   "url": "/api/agent/file-finder/stats",
+   "status": 200,
+   "ms": 4.6,
+   "auth": "session"
+  },
+  {
+   "name": "policy:file-finder",
+   "method": "GET",
+   "url": "/api/agent/file-finder/policy",
+   "status": 200,
+   "ms": 7.5,
+   "auth": "session"
+  },
+  {
+   "name": "insight:management-dashboard",
+   "method": "GET",
+   "url": "/api/agent/management-dashboard/insight",
+   "status": 404,
+   "ms": 3.6,
+   "auth": "session"
+  },
+  {
+   "name": "stats:management-dashboard",
+   "method": "GET",
+   "url": "/api/agent/management-dashboard/stats",
+   "status": 404,
+   "ms": 4.2,
+   "auth": "session"
+  },
+  {
+   "name": "policy:management-dashboard",
+   "method": "GET",
+   "url": "/api/agent/management-dashboard/policy",
+   "status": 404,
+   "ms": 3.8,
+   "auth": "session"
+  },
+  {
+   "name": "insight:listings",
+   "method": "GET",
+   "url": "/api/agent/listings/insight",
+   "status": 200,
+   "ms": 18.6,
+   "auth": "session"
+  },
+  {
+   "name": "stats:listings",
+   "method": "GET",
+   "url": "/api/agent/listings/stats",
+   "status": 200,
+   "ms": 5.6,
+   "auth": "session"
+  },
+  {
+   "name": "policy:listings",
+   "method": "GET",
+   "url": "/api/agent/listings/policy",
+   "status": 200,
+   "ms": 8.2,
+   "auth": "session"
+  },
+  {
+   "name": "insight:requests",
+   "method": "GET",
+   "url": "/api/agent/requests/insight",
+   "status": 200,
+   "ms": 306.6,
+   "auth": "session"
+  },
+  {
+   "name": "stats:requests",
+   "method": "GET",
+   "url": "/api/agent/requests/stats",
+   "status": 200,
+   "ms": 14.8,
+   "auth": "session"
+  },
+  {
+   "name": "policy:requests",
+   "method": "GET",
+   "url": "/api/agent/requests/policy",
+   "status": 200,
+   "ms": 9,
+   "auth": "session"
+  },
+  {
+   "name": "insight:settings",
+   "method": "GET",
+   "url": "/api/agent/settings/insight",
+   "status": 404,
+   "ms": 3.7,
+   "auth": "session"
+  },
+  {
+   "name": "stats:settings",
+   "method": "GET",
+   "url": "/api/agent/settings/stats",
+   "status": 404,
+   "ms": 3.5,
+   "auth": "session"
+  },
+  {
+   "name": "policy:settings",
+   "method": "GET",
+   "url": "/api/agent/settings/policy",
+   "status": 404,
+   "ms": 3.3,
+   "auth": "session"
+  },
+  {
+   "name": "feedback-anon:arm-listings",
+   "method": "POST",
+   "url": "/api/agent/arm-listings/feedback",
+   "status": 401,
+   "ms": 3.3,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:arm-listings",
+   "method": "POST",
+   "url": "/api/agent/arm-listings/feedback",
+   "status": 400,
+   "ms": 8.9,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:arm-requests",
+   "method": "POST",
+   "url": "/api/agent/arm-requests/feedback",
+   "status": 401,
+   "ms": 2.9,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:arm-requests",
+   "method": "POST",
+   "url": "/api/agent/arm-requests/feedback",
+   "status": 400,
+   "ms": 3.8,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:transactions-contracts",
+   "method": "POST",
+   "url": "/api/agent/transactions-contracts/feedback",
+   "status": 401,
+   "ms": 2.9,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:transactions-contracts",
+   "method": "POST",
+   "url": "/api/agent/transactions-contracts/feedback",
+   "status": 400,
+   "ms": 3.8,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:experts",
+   "method": "POST",
+   "url": "/api/agent/experts/feedback",
+   "status": 401,
+   "ms": 2.3,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:experts",
+   "method": "POST",
+   "url": "/api/agent/experts/feedback",
+   "status": 400,
+   "ms": 3.7,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:smart-matching",
+   "method": "POST",
+   "url": "/api/agent/smart-matching/feedback",
+   "status": 401,
+   "ms": 2.8,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:smart-matching",
+   "method": "POST",
+   "url": "/api/agent/smart-matching/feedback",
+   "status": 400,
+   "ms": 3.9,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:learning-tier",
+   "method": "POST",
+   "url": "/api/agent/learning-tier/feedback",
+   "status": 401,
+   "ms": 2.2,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:learning-tier",
+   "method": "POST",
+   "url": "/api/agent/learning-tier/feedback",
+   "status": 400,
+   "ms": 10.3,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:market-index",
+   "method": "POST",
+   "url": "/api/agent/market-index/feedback",
+   "status": 401,
+   "ms": 2.5,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:market-index",
+   "method": "POST",
+   "url": "/api/agent/market-index/feedback",
+   "status": 400,
+   "ms": 4.1,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:data-coverage",
+   "method": "POST",
+   "url": "/api/agent/data-coverage/feedback",
+   "status": 401,
+   "ms": 2.3,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:data-coverage",
+   "method": "POST",
+   "url": "/api/agent/data-coverage/feedback",
+   "status": 400,
+   "ms": 6.8,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:file-finder",
+   "method": "POST",
+   "url": "/api/agent/file-finder/feedback",
+   "status": 401,
+   "ms": 2.6,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:file-finder",
+   "method": "POST",
+   "url": "/api/agent/file-finder/feedback",
+   "status": 400,
+   "ms": 3.7,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:management-dashboard",
+   "method": "POST",
+   "url": "/api/agent/management-dashboard/feedback",
+   "status": 401,
+   "ms": 2.2,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:management-dashboard",
+   "method": "POST",
+   "url": "/api/agent/management-dashboard/feedback",
+   "status": 404,
+   "ms": 6.8,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:listings",
+   "method": "POST",
+   "url": "/api/agent/listings/feedback",
+   "status": 401,
+   "ms": 2.4,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:listings",
+   "method": "POST",
+   "url": "/api/agent/listings/feedback",
+   "status": 400,
+   "ms": 3.6,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:requests",
+   "method": "POST",
+   "url": "/api/agent/requests/feedback",
+   "status": 401,
+   "ms": 2.2,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:requests",
+   "method": "POST",
+   "url": "/api/agent/requests/feedback",
+   "status": 400,
+   "ms": 10,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "feedback-anon:settings",
+   "method": "POST",
+   "url": "/api/agent/settings/feedback",
+   "status": 401,
+   "ms": 4.5,
+   "auth": "anon"
+  },
+  {
+   "name": "feedback-invalid:settings",
+   "method": "POST",
+   "url": "/api/agent/settings/feedback",
+   "status": 404,
+   "ms": 3.5,
+   "auth": "session",
+   "note": "payload نامعتبر — اعتبارسنجی بدون نوشتار"
+  },
+  {
+   "name": "deprecated:/api/agent/feedback",
+   "method": "GET",
+   "url": "/api/agent/feedback",
+   "status": 404,
+   "ms": 8,
+   "auth": "anon"
+  },
+  {
+   "name": "deprecated:/api/agent/feedback (POST)",
+   "method": "POST",
+   "url": "/api/agent/feedback",
+   "status": 404,
+   "ms": 3.4,
+   "auth": "anon"
+  }
+ ],
+ "findings": [
+  "insight: 2 کاشی بدون ایجنت → 404 (فایل‌یابی/داشبورد مدیریتی/تنظیمات — بررسی بُعد ۵)",
+  "صفر خطای 5xx در تمام probeها ✓",
+  "صفر قطعی شبکه ✓",
+  "مسیر منسوخ /api/agent/feedback: GET→404 · POST→404 (۴۰۴ = حذف‌شده ✓ — نگرانی مالک پوشش داده شد)",
+  "کشف زندهٔ بُعد ۲: تعارض دو ناظر — ۱۱۹۹ تلاش EADDRINUSE از 20:24:58 — صفر تأثیر بر ترافیک (جزئیات: liveIncident)"
+ ],
+ "consoleErrorDiscovery": {
+  "dimension": "بُعد ۲ — کشف console.error (سمت سرور)",
+  "scope": {
+   "file": "server.log (بوت فعلی 2026-10-09T20:23Z)",
+   "sizeKB": 107,
+   "totalLines": 1439
+  },
+  "result": {
+   "errorLikeLines": 318,
+   "uniquePatterns": 179,
+   "patterns": [
+    "Error: Failed to start server. Is port 3000 in use?",
+    "{\"ts\":\"2026-10-09T21:57:38.280Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/health\",\"status\":\"start\",\"requestId\":\"238a980e-2deb",
+    "{\"ts\":\"2026-10-09T21:57:38.284Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/health\",\"status\":\"start\",\"requestId\":\"238a980e-2deb",
+    "{\"ts\":\"2026-10-09T21:57:38.285Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/health\",\"status\":\"ok\",\"requestId\":\"238a980e-2deb-45",
+    "{\"ts\":\"2026-10-09T21:57:38.294Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/version\",\"status\":\"start\",\"requestId\":\"94adaf66-8e7",
+    "{\"ts\":\"2026-10-09T21:59:38.228Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/version\",\"status\":\"start\",\"requestId\":\"14d94945-658",
+    "{\"ts\":\"2026-10-09T21:59:40.993Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/version\",\"status\":\"start\",\"requestId\":\"02457355-38a",
+    "{\"ts\":\"2026-10-09T21:59:41.171Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/health\",\"status\":\"start\",\"requestId\":\"93db6431-b620",
+    "{\"ts\":\"2026-10-09T21:59:41.174Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/health\",\"status\":\"start\",\"requestId\":\"93db6431-b620",
+    "{\"ts\":\"2026-10-09T21:59:41.175Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/health\",\"status\":\"ok\",\"requestId\":\"93db6431-b620-48",
+    "{\"ts\":\"2026-10-09T22:02:03.436Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/version\",\"status\":\"start\",\"requestId\":\"3857a414-e49",
+    "{\"ts\":\"2026-10-09T22:06:18.237Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"POST /api/auth/master-login\",\"status\":\"start\",\"requestId\":\"e",
+    "{\"ts\":\"2026-10-09T22:06:18.248Z\",\"level\":\"info\",\"category\":\"auth\",\"operation\":\"login\",\"status\":\"ok\",\"requestId\":\"6902db23-cdab-4c15-a3b2-281",
+    "{\"ts\":\"2026-10-09T22:06:18.252Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/health\",\"status\":\"start\",\"requestId\":\"2ff1f2e8-69f4",
+    "{\"ts\":\"2026-10-09T22:06:18.253Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/health\",\"status\":\"start\",\"requestId\":\"2ff1f2e8-69f4",
+    "{\"ts\":\"2026-10-09T22:06:18.254Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/health\",\"status\":\"ok\",\"requestId\":\"2ff1f2e8-69f4-49",
+    "{\"ts\":\"2026-10-09T22:06:18.256Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/version\",\"status\":\"start\",\"requestId\":\"51495119-111",
+    "{\"ts\":\"2026-10-09T22:06:18.259Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/agent/arm-listings/insight\",\"status\":\"start\",\"reque",
+    "{\"ts\":\"2026-10-09T22:06:18.269Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/agent/arm-listings/stats\",\"status\":\"start\",\"request",
+    "{\"ts\":\"2026-10-09T22:06:18.273Z\",\"level\":\"info\",\"category\":\"route\",\"operation\":\"GET /api/agent/arm-listings/policy\",\"status\":\"start\",\"reques"
+   ],
+   "verdict": "🟠 نیازمند تحلیل"
+  },
+  "note": "کشف console.error سمت مرورگر در بُعد ۱۲ (ظاهر — E2E با شمارش خطای کنسول) تکمیل می‌شود"
+ },
+ "dimension2Summary": {
+  "verdict": "سالم — صفر 5xx · صفر قطعی · گیت نشست ۱۰۰٪ · مسیر منسوخ حذف‌شده ✓",
+  "keyNumbers": {
+   "probesExecuted": 69,
+   "ok200": 35,
+   "unauthorized401": 13,
+   "notFound404": 10,
+   "validation400": 11,
+   "serverError5xx": 0,
+   "tilesWithAgents": 11,
+   "tilesWithoutAgents": "management-dashboard, settings",
+   "avgMs": 19.3,
+   "maxMs": 306.6
+  },
+  "ownerConcern2_feedback": "پوشش داده شد — مسیر منسوخ /api/agent/feedback: 404 (حذف‌شده) · مسیر صحیح /api/agent/[tileId]/feedback: فعال با گیت نشست 401 و اعتبارسنجی 400"
+ },
+ "liveIncident": {
+  "title": "تعارض دو ناظر سرور — حلقهٔ EADDRINUSE نگهبان",
+  "discoveredAt": "2026-10-09T22:10Z (کشف زندهٔ بُعد ۲)",
+  "timeline": [
+   "19:17 — prod-watchdog (PID 1426) زنده شد (بازیابی پس از بازنشانی پلتفرم PN-025) و سرور خودش را اسپاون کرد",
+   "20:23 — مراسم ری‌استارت قانون ۱۴ PN-025: سرور دستی با الگوی bash -c + tee (PID 23337→23339) بوت شد و پورت ۳۰۰۰ را گرفت",
+   "20:24:58 — فرزند نگهبان جان باخت (کد ۱) — نگهبان بازسازی را آغاز کرد",
+   "20:24:58 تا اکنون — هر ۵ ثانیه: اسپاون → EADDRINUSE (پورت در تصرف 23339) → کد ۱ — مجموع ۱۱۹۹ تلاش تا 22:10"
+  ],
+  "currentState": {
+   "servingServer": "PID 23339 (bun server.js · از 20:23 · CPU 5.3% · MEM 15.4%) — سالم، همهٔ probeها پاسخ",
+   "watchdog": "PID 1426 (از 19:17 · CPU 0.0% · خواب بین بازسازی‌ها) — حلقهٔ بازسازی بی‌اثر",
+   "impactOnTraffic": "صفر — تمام probeهای بُعد ۲ سالم پاسخ دادند (صفر 5xx · صفر قطعی)",
+   "impactResources": "اندک و محدود — هر تلاش < ۱ ثانیه CPU · آلودگی لاگ ~۱٫۴KB/min (چرخش خودکار ۱۰MB هر ۳۰ دقیقه فعال)",
+   "silver lining": "نگهبان عملاً به پشتیبان جانشین تبدیل شده — اگر 23339 بیفتد، ظرف ۵ ثانیه + گیت chunk جانشین می‌شود"
+  },
+  "rootCause": "دو الگوی راه‌اندازی هم‌زمان: ری‌استارت دستیِ مراسم دروازه (bash -c | tee) و نگهبان طراحی‌شده (اسپاون مستقیم) — تعارض معماری، نه خطای کد",
+  "proposedFix": {
+   "phase": "۵ (رفع باگ — نیازمند مجوز صریح مالک)",
+   "optionA": "خاتمهٔ سرور دستی 23337/23339 → نگهبان ظرف ۵ ثانیه سرور تازه اسپاون می‌کند (مسیر طراحی‌شده) — هزینه: < ۱۰ ثانیه وقفه",
+   "optionB": "خاتمهٔ نگهبان (فلگ .prod-stop) — مسیر دستی می‌ماند — هزینه: از دست رفتن خود-بازسازی",
+   "recommendation": "A"
+  },
+  "evidenceFiles": [
+   "server.log",
+   "server.log.20261009T205503Z.gz",
+   "server.log.20261009T212508Z.gz",
+   "server.log.20261009T215513Z.gz"
+  ]
+ }
+}

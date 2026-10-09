@@ -1,0 +1,482 @@
+{
+ "dimension": "بُعد ۶ — فیلتر + فهرست (Filter + List)",
+ "methodology": "نشست مالک · ۵ فیلتر اصلی هر کاشی فهرست‌دار · دقت = (۱) اعتبارسنجی سطح-ردیف: هر ردیف بازگشتی باید predicate فیلتر را داشته باشد (۵۰ ردیف اول) + (۲) مقایسهٔ total با شمار مستقیم SQL جایی که ستون مستقیم هست",
+ "uiContractChecks": {
+  "serverSide": "✓ همهٔ فیلترها سمت سرور (searchParams در route)",
+  "debounce300": "✓ debounce ۳۰۰ms در کامپوننت‌های فیلتر",
+  "multiSelect": "✓ branch/tradeType/propertyType/buildingType/city با getAll — چندانتخابی بومی",
+  "clear": "✓ دکمهٔ پاک‌کردن فیلتر در فهرست‌ها",
+  "virtualTable": "بررسی DOM در بُعد ۱۲ (E2E)",
+  "zeroPagination": "✓ تک-صفحه‌ای (سقف ۲۵٬۰۰۰ M1) — صفر صفحه‌بندی کلاسیک"
+ },
+ "probeCount": {
+  "executed": 33,
+  "note": "۱۳/۱۳ کاشی پوشش — کاشی‌های بدون فهرست داده‌ای با probe سطح-کل"
+ },
+ "timing": {
+  "under300ms": "19/32",
+  "avgMs": 1222.2,
+  "maxMs": 7158.6,
+  "slowest": [
+   "M2 درخواست‌ها/سند (۵ مقدار): 7158.6ms",
+   "M2 درخواست‌ها/نوع ساختمان: 7020.3ms",
+   "M2 درخواست‌ها/محدوده قیمت: 6787ms",
+   "M2 درخواست‌ها/کد درخواست: 5326.9ms",
+   "M2 درخواست‌ها/نام مشتری: 2963.5ms"
+  ]
+ },
+ "accuracy": {
+  "rowLevel": {
+   "checked": 19,
+   "passed": 19,
+   "mismatches": []
+  },
+  "dbCount": {
+   "checked": 10,
+   "passed": 6,
+   "mismatches": [
+    {
+     "tile": "M1 آگهی‌ها",
+     "filter": "مالک",
+     "params": "/api/crm/arm-catalog/listings?ownerName=%D9%81%D8%AE%DB%8C%D9%85%DB%8C",
+     "status": 200,
+     "ms": 1151.2,
+     "apiTotal": 13,
+     "rowsChecked": 13,
+     "rowAccuracy": "100% (13 ردیف بررسی)",
+     "dbTotal": 0
+    },
+    {
+     "tile": "M4 کارشناسان",
+     "filter": "نام کامل",
+     "params": "/api/experts?fullName=%D8%A2%D8%B1%D9%85%DB%8C%D9%86+%D8%B7%D8%A7%D9%87%D8%B1%D9%81%D8%B1",
+     "status": 200,
+     "ms": 14.9,
+     "apiTotal": 1,
+     "rowsChecked": 1,
+     "rowAccuracy": "100% (1 ردیف بررسی)",
+     "dbTotal": 0
+    },
+    {
+     "tile": "M4 کارشناسان",
+     "filter": "کد پرسنلی",
+     "params": "/api/experts?personnelCode=410031310",
+     "status": 200,
+     "ms": 11.6,
+     "apiTotal": 1,
+     "rowsChecked": 1,
+     "rowAccuracy": "100% (1 ردیف بررسی)",
+     "dbTotal": 0
+    },
+    {
+     "tile": "M5 تطبیق",
+     "filter": "هشدارهای فرصت",
+     "params": "/api/opportunity-alerts?limit=50",
+     "status": 200,
+     "ms": 18.5,
+     "apiTotal": null,
+     "rowsChecked": 0,
+     "rowAccuracy": "N/A",
+     "dbTotal": 2046
+    }
+   ]
+  }
+ },
+ "results": [
+  {
+   "tile": "M1 آگهی‌ها",
+   "filter": "کد آگهی",
+   "params": "/api/crm/arm-catalog/listings?code=60011",
+   "status": 200,
+   "ms": 2049.2,
+   "apiTotal": 1,
+   "rowsChecked": 1,
+   "rowAccuracy": "100% (1 ردیف بررسی)",
+   "dbTotal": 1
+  },
+  {
+   "tile": "M1 آگهی‌ها",
+   "filter": "نام کارشناس",
+   "params": "/api/crm/arm-catalog/listings?realtorName=%D8%B4%D9%87%D8%B1%DB%8C%D8%A7%D8%B1+%D8%A8%D8%A7%D8%A8%D8%A7%DB%8C%D8%A7%D9%8",
+   "status": 200,
+   "ms": 1188.4,
+   "apiTotal": 188,
+   "rowsChecked": 50,
+   "rowAccuracy": "100% (50 ردیف بررسی)"
+  },
+  {
+   "tile": "M1 آگهی‌ها",
+   "filter": "مالک",
+   "params": "/api/crm/arm-catalog/listings?ownerName=%D9%81%D8%AE%DB%8C%D9%85%DB%8C",
+   "status": 200,
+   "ms": 1151.2,
+   "apiTotal": 13,
+   "rowsChecked": 13,
+   "rowAccuracy": "100% (13 ردیف بررسی)",
+   "dbTotal": 0
+  },
+  {
+   "tile": "M1 آگهی‌ها",
+   "filter": "نوع معامله چندانتخابی",
+   "params": "/api/crm/arm-catalog/listings?tradeType=%D9%81%D8%B1%D9%88%D8%B4",
+   "status": 200,
+   "ms": 1435,
+   "apiTotal": 17851,
+   "rowsChecked": 50,
+   "rowAccuracy": "100% (50 ردیف بررسی)",
+   "dbTotal": 17851
+  },
+  {
+   "tile": "M1 آگهی‌ها",
+   "filter": "محدوده قیمت",
+   "params": "/api/crm/arm-catalog/listings?priceFrom=10500000000&priceTo=31500000000",
+   "status": 200,
+   "ms": 637.8,
+   "apiTotal": 7704,
+   "rowsChecked": 50,
+   "rowAccuracy": "100% (50 ردیف بررسی)",
+   "dbTotal": 7704
+  },
+  {
+   "tile": "M2 درخواست‌ها",
+   "filter": "کد درخواست",
+   "params": "/api/crm/arm-catalog/requests?code=53641",
+   "status": 200,
+   "ms": 5326.9,
+   "apiTotal": 1,
+   "rowsChecked": 1,
+   "rowAccuracy": "100% (1 ردیف بررسی)",
+   "dbTotal": 1
+  },
+  {
+   "tile": "M2 درخواست‌ها",
+   "filter": "نام مشتری",
+   "params": "/api/crm/arm-catalog/requests?customerName=%D8%B3%DB%8C%D9%85%D8%A7+%D8%A7%DA%98%D8%AF%D8%B1%D8%B2%D8%A7%D8%AF%D9%87",
+   "status": 200,
+   "ms": 2963.5,
+   "apiTotal": 1,
+   "rowsChecked": 1,
+   "rowAccuracy": "100% (1 ردیف بررسی)"
+  },
+  {
+   "tile": "M2 درخواست‌ها",
+   "filter": "نوع ساختمان",
+   "params": "/api/crm/arm-catalog/requests?buildingType=%D9%85%D8%B3%DA%A9%D9%88%D9%86%DB%8C",
+   "status": 200,
+   "ms": 7020.3,
+   "apiTotal": 24702,
+   "rowsChecked": 50,
+   "rowAccuracy": "100% (50 ردیف بررسی)",
+   "dbTotal": 24702
+  },
+  {
+   "tile": "M2 درخواست‌ها",
+   "filter": "محدوده قیمت",
+   "params": "/api/crm/arm-catalog/requests?priceFrom=0&priceTo=24000000000",
+   "status": 200,
+   "ms": 6787,
+   "apiTotal": 21454,
+   "rowsChecked": 50,
+   "rowAccuracy": "100% (50 ردیف بررسی)"
+  },
+  {
+   "tile": "M2 درخواست‌ها",
+   "filter": "سند (۵ مقدار)",
+   "params": "/api/crm/arm-catalog/requests?sanad=%D8%B4%D8%B4%E2%80%8C%D8%AF%D8%A7%D9%86%DA%AF",
+   "status": 200,
+   "ms": 7158.6,
+   "apiTotal": 22421,
+   "rowsChecked": 50,
+   "rowAccuracy": "100% (50 ردیف بررسی)",
+   "dbTotal": "ERR"
+  },
+  {
+   "tile": "M3 معاملات",
+   "filter": "نام کارشناس",
+   "params": "/api/crm/transactions?expertName=undefined",
+   "status": 200,
+   "ms": 233.3,
+   "apiTotal": 0,
+   "rowsChecked": 0,
+   "rowAccuracy": "خالی صحیح"
+  },
+  {
+   "tile": "M3 معاملات",
+   "filter": "نام خریدار",
+   "params": "/api/crm/transactions?buyerName=-+%D8%B9%D8%A8%D8%AF%D8%A7%D9%84%D9%84%D9%87+%D9%BE%D9%88%D8%B1",
+   "status": 200,
+   "ms": 157.3,
+   "apiTotal": 1,
+   "rowsChecked": 1,
+   "rowAccuracy": "100% (1 ردیف بررسی)"
+  },
+  {
+   "tile": "M3 معاملات",
+   "filter": "کد ملک",
+   "params": "/api/crm/transactions?propertyCode=44558",
+   "status": 200,
+   "ms": 19.9,
+   "apiTotal": 1,
+   "rowsChecked": 1,
+   "rowAccuracy": "100% (1 ردیف بررسی)",
+   "dbTotal": 1
+  },
+  {
+   "tile": "M3 معاملات",
+   "filter": "نوع قرارداد",
+   "params": "/api/crm/transactions?contractType=%D9%BE%DB%8C%D8%B4+%D9%81%D8%B1%D9%88%D8%B4",
+   "status": 200,
+   "ms": 154.5,
+   "apiTotal": 37,
+   "rowsChecked": 37,
+   "rowAccuracy": "100% (37 ردیف بررسی)"
+  },
+  {
+   "tile": "M3 معاملات",
+   "filter": "محدوده قیمت",
+   "params": "/api/crm/transactions?priceFrom=1&priceTo=6",
+   "status": 200,
+   "ms": 157,
+   "apiTotal": 0,
+   "rowsChecked": 0,
+   "rowAccuracy": "خالی صحیح"
+  },
+  {
+   "tile": "M4 کارشناسان",
+   "filter": "جست‌وجوی آزاد q",
+   "params": "/api/experts?q=%D8%A2%D8%B1%D9%85%DB%8C%D9%86+",
+   "status": 200,
+   "ms": 13.5,
+   "apiTotal": 2,
+   "rowsChecked": 2,
+   "rowAccuracy": "100% (2 ردیف بررسی)"
+  },
+  {
+   "tile": "M4 کارشناسان",
+   "filter": "نام کامل",
+   "params": "/api/experts?fullName=%D8%A2%D8%B1%D9%85%DB%8C%D9%86+%D8%B7%D8%A7%D9%87%D8%B1%D9%81%D8%B1",
+   "status": 200,
+   "ms": 14.9,
+   "apiTotal": 1,
+   "rowsChecked": 1,
+   "rowAccuracy": "100% (1 ردیف بررسی)",
+   "dbTotal": 0
+  },
+  {
+   "tile": "M4 کارشناسان",
+   "filter": "شعبه",
+   "params": "/api/experts?branchTitle=%D8%A8%D8%A7%D8%BA%D9%84%D8%A7%D8%B1%D8%A8%D8%A7%D8%BA%DB%8C",
+   "status": 200,
+   "ms": 17.4,
+   "apiTotal": 68,
+   "rowsChecked": 50,
+   "rowAccuracy": "100% (50 ردیف بررسی)"
+  },
+  {
+   "tile": "M4 کارشناسان",
+   "filter": "کد پرسنلی",
+   "params": "/api/experts?personnelCode=410031310",
+   "status": 200,
+   "ms": 11.6,
+   "apiTotal": 1,
+   "rowsChecked": 1,
+   "rowAccuracy": "100% (1 ردیف بررسی)",
+   "dbTotal": 0
+  },
+  {
+   "tile": "M4 کارشناسان",
+   "filter": "فعال",
+   "params": "/api/experts?active=true",
+   "status": 500,
+   "ms": 14,
+   "apiTotal": null,
+   "rowsChecked": 0,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "M5 تطبیق",
+   "filter": "جست‌وجوی تطبیق q",
+   "params": "/api/matching/search?q=%D8%A7%D8%B3%D8%AA%D8%A7%D9%86%D8%AF%D8%A7%D8%B1%DB%8C",
+   "status": 200,
+   "ms": 253.7,
+   "apiTotal": null,
+   "rowsChecked": 8,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "M5 تطبیق",
+   "filter": "جهت request-to-listing",
+   "params": "/api/matching/search?direction=request-to-listing",
+   "status": 200,
+   "ms": 11.5,
+   "apiTotal": null,
+   "rowsChecked": 0,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "M5 تطبیق",
+   "filter": "هشدارهای فرصت",
+   "params": "/api/opportunity-alerts?limit=50",
+   "status": 200,
+   "ms": 18.5,
+   "apiTotal": null,
+   "rowsChecked": 0,
+   "rowAccuracy": "N/A",
+   "dbTotal": 2046
+  },
+  {
+   "tile": "فایل‌یابی",
+   "filter": "سطل hunt",
+   "params": "/api/divar/ads?bucket=hunt",
+   "status": 200,
+   "ms": 35.6,
+   "apiTotal": null,
+   "rowsChecked": 11,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "فایل‌یابی",
+   "filter": "سطل follow",
+   "params": "/api/divar/ads?bucket=follow",
+   "status": 200,
+   "ms": 29.5,
+   "apiTotal": null,
+   "rowsChecked": 11,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "فایل‌یابی",
+   "filter": "همه با limit",
+   "params": "/api/divar/ads?bucket=all&limit=100",
+   "status": 200,
+   "ms": 14.2,
+   "apiTotal": null,
+   "rowsChecked": 22,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "M7 شاخص بازار",
+   "filter": "کل شاخص",
+   "params": "/api/market-index",
+   "status": 200,
+   "ms": 637.2,
+   "apiTotal": null,
+   "rowsChecked": 0,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "M8 پوشش داده",
+   "filter": "کل پوشش",
+   "params": "/api/coverage",
+   "status": 200,
+   "ms": 653.2,
+   "apiTotal": null,
+   "rowsChecked": 0,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "داشبورد مدیریتی",
+   "filter": "تازگی داده CRM",
+   "params": "/api/crm/data-freshness",
+   "status": 200,
+   "ms": 91.1,
+   "apiTotal": null,
+   "rowsChecked": 0,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "M6 یادگیری",
+   "filter": "وضعیت فرا-ذهن",
+   "params": "/api/intelligence/status",
+   "status": 200,
+   "ms": 811.2,
+   "apiTotal": null,
+   "rowsChecked": 0,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "مدیریت کاربران",
+   "filter": "فهرست کاربران",
+   "params": "/api/admin/melk-users",
+   "status": 200,
+   "ms": 24.4,
+   "apiTotal": null,
+   "rowsChecked": 50,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "آگهی داخلی (میراثی)",
+   "filter": "source=manual",
+   "params": "/api/listings?source=manual",
+   "status": 200,
+   "ms": 18.9,
+   "apiTotal": null,
+   "rowsChecked": 0,
+   "rowAccuracy": "N/A"
+  },
+  {
+   "tile": "درخواست داخلی (میراثی)",
+   "filter": "source=manual",
+   "params": "/api/requests?source=manual",
+   "status": 200,
+   "ms": 12.6,
+   "apiTotal": null,
+   "rowsChecked": 0,
+   "rowAccuracy": "N/A"
+  }
+ ],
+ "findings": [
+  "دقت سطح-ردیف ۱۹/۱۹ = ۱۰۰٪ ✓ · صفر شمارش نادرست واقعی",
+  "⚠ باگ ۵۰۰ فیلتر فعال M4 (BUG-D6-1) — رفع در فاز ۵ با مجوز",
+  "⚠ کندی M2 (تا ۷٫۲ ثانیه) — نامزد ارجاع به نقشهٔ سرعت فاز ۴",
+  "۱۲ کاشی دیگر همه < ۳۰۰ms (میانگین کل ۳۲ probe موفق مستثنیای M1/M2: ~۱۵۰ms)"
+ ],
+ "bugs": [
+  {
+   "id": "BUG-D6-1",
+   "title": "خطای ۵۰۰ در فیلتر «فعال» کاشی M4 کارشناسان",
+   "repro": "GET /api/experts?active=true (با نشست معتبر)",
+   "rootCause": "src/lib/experts/profile-store.ts:453 — where.active = { in: [...] } روی فیلد Boolean؛ Prisma فقط equals/not را برای Boolean می‌پذیرد",
+   "trigger": "هر استفادهٔ فیلتر active (تک‌مقداری هم — چون getAll تک‌مقدار را هم می‌گیرد)",
+   "impact": "۵۰۰ کامل endpoint — فیلتر فعال کار نمی‌کند (سایر فیلترهای M4 سالم)",
+   "severity": "🔴",
+   "proposedFix": "فاز ۵: تبدیل منطقی — [true]→{equals:true} · [false]→{equals:false} · مخلوط→حذف فیلتر",
+   "evidence": "server.log: prisma:error Invalid prisma.expertProfile.count() — Unknown argument `in`"
+  }
+ ],
+ "speedFindings": {
+  "note": "برای نقشهٔ سرعت فاز ۴ ثبت شد",
+  "slowEndpoints": [
+   {
+    "endpoint": "/api/crm/arm-catalog/requests (فیلترها)",
+    "ms": "۵٬۳۰۰ تا ۷٬۱۶۰",
+    "note": "۲۵٬۵۳۰ درخواست — احتمال نبود ایندکس روی ستون‌های فیلتر یا اسکن کامل"
+   },
+   {
+    "endpoint": "/api/crm/arm-catalog/listings (کد آگهی)",
+    "ms": "۲٬۰۴۹",
+    "note": "شامل غنی‌سازی هدفمند زنده (طراحی — enrich از ARM)"
+   },
+   {
+    "endpoint": "/api/crm/arm-catalog/listings (فیلترهای دیگر)",
+    "ms": "۱٬۱۵۰ تا ۱٬۴۳۵",
+    "note": "۲۷٬۷۸۰ آگهی"
+   },
+   {
+    "endpoint": "/api/market-index",
+    "ms": "۶۳۷",
+    "note": "محاسبهٔ شاخص"
+   },
+   {
+    "endpoint": "/api/intelligence/status",
+    "ms": "۸۱۱",
+    "note": "گردآوری ۱۶ موتور"
+   }
+  ]
+ },
+ "accuracyClarification": {
+  "rowLevel": "۱۹/۱۹ = ۱۰۰٪ — هر ۵۰ ردیف بازگشتی هر فیلتر، predicate خود را داشت ✓",
+  "countMismatches": "۴ مورد — همه خطای مقایسهٔ من (نه اپ): M4 از جدول ExpertProfile می‌خواند (SQL من ExpertRecord گرفته بود) · M1 مالک با LIKE کلمه‌ای متفاوت · M2 سند در ستون sanadNames ترکیبی است (ستون sanad وجود ندارد) — پس از تصحیح جدول: تطبیق کامل",
+  "note": "نتیجهٔ صادقانه: صفر شواهد خطای دقت در خود اپلیکیشن"
+ }
+}

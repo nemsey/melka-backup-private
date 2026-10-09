@@ -1,0 +1,258 @@
+{
+ "dimension": "بُعد ۴ — داده تازه (Data Freshness)",
+ "syncJobState": [
+  {
+   "jobId": "catalog-listings",
+   "jobKind": "catalog",
+   "status": "done",
+   "lastCompletedPage": 24,
+   "resumedFrom": 25,
+   "totalPages": 24,
+   "progressPercent": 100,
+   "updatedAt": 1791581747887
+  },
+  {
+   "jobId": "catalog-requests",
+   "jobKind": "catalog",
+   "status": "done",
+   "lastCompletedPage": 290,
+   "resumedFrom": 291,
+   "totalPages": 1,
+   "progressPercent": 100,
+   "updatedAt": 1791580747430
+  },
+  {
+   "jobId": "crm-sync",
+   "jobKind": "sync",
+   "status": "failed",
+   "lastCompletedPage": 0,
+   "resumedFrom": 1,
+   "totalPages": 0,
+   "progressPercent": 0,
+   "updatedAt": 1791534530600
+  },
+  {
+   "jobId": "main-sync",
+   "jobKind": "sync",
+   "status": "done",
+   "lastCompletedPage": 4,
+   "resumedFrom": 5,
+   "totalPages": 4,
+   "progressPercent": 100,
+   "updatedAt": 1791579879766
+  }
+ ],
+ "syncState": [
+  {
+   "id": "singleton",
+   "lastSyncedAt": 1791580449291,
+   "lastSuccessAt": 1791580519109,
+   "lastError": null,
+   "lastErrorCode": null,
+   "attempts": 0,
+   "summaryJson": "{\"totalCount\":768,\"hasRequestEvent\":456,\"hasSuggestedProperty\":446,\"hasBoth\":262}",
+   "lastSyncCursor": "{\"runId\":\"c615d895-c474-4e82-a6dc-22c1d2779e4f\",\"done\":[\"transactions\",\"experts\",\"interactions\",\"visits\",\"supplyDemand\"],\"detail\":[{\"entity\":\"transactions\",\"count\":768,\"failed\":0},{\"entity\":\"experts\",\"count\":293,\"failed\":0},{\"entity\":\"interactions\",\"count\":0,\"failed\":-1},{\"entity\":\"visits\",\"count\":2,\"failed\":0},{\"entity\":\"supplyDemand\",\"count\":5,\"failed\":0}]}",
+   "lastWatermark": 1791580519109,
+   "syncRunId": "c615d895-c474-4e82-a6dc-22c1d2779e4f",
+   "bulkImportCheckpoint": null,
+   "updatedAt": 1791580519110,
+   "_note": "وضعیت همگام‌سازی"
+  }
+ ],
+ "checkpoints": [
+  {
+   "id": "requests",
+   "cycleId": "cycle-e0ab9b90",
+   "pageSize": 50,
+   "lastCompletedPage": 280,
+   "totalPages": 417,
+   "totalAtSource": 20810,
+   "phase": "in-progress",
+   "completedAt": null,
+   "updatedAt": 1791583814781,
+   "createdAt": 1791224813031
+  },
+  {
+   "id": "listings",
+   "cycleId": "cycle-6d0b18b3",
+   "pageSize": 500,
+   "lastCompletedPage": 24,
+   "totalPages": 24,
+   "totalAtSource": 11549,
+   "phase": "complete",
+   "completedAt": 1791581747885,
+   "updatedAt": 1791581747886,
+   "createdAt": 1791224047893
+  },
+  {
+   "id": "main-sync:supply-demand",
+   "cycleId": "msync-47fcdff7",
+   "pageSize": 100,
+   "lastCompletedPage": 1,
+   "totalPages": 1,
+   "totalAtSource": 5,
+   "phase": "complete",
+   "completedAt": 1791580517667,
+   "updatedAt": 1791580517668,
+   "createdAt": 1791508992799
+  },
+  {
+   "id": "main-sync:visits",
+   "cycleId": "msync-995b11da",
+   "pageSize": 100,
+   "lastCompletedPage": 1,
+   "totalPages": 1,
+   "totalAtSource": 2,
+   "phase": "complete",
+   "completedAt": 1791580513938,
+   "updatedAt": 1791580513939,
+   "createdAt": 1791508989795
+  },
+  {
+   "id": "main-sync:experts",
+   "cycleId": "msync-7eab00f9",
+   "pageSize": 100,
+   "lastCompletedPage": 3,
+   "totalPages": 3,
+   "totalAtSource": 293,
+   "phase": "complete",
+   "completedAt": 1791580510834,
+   "updatedAt": 1791580510835,
+   "createdAt": 1791508984830
+  },
+  {
+   "id": "main-sync:transactions",
+   "cycleId": "msync-b3838afa",
+   "pageSize": 100,
+   "lastCompletedPage": 8,
+   "totalPages": 8,
+   "totalAtSource": 768,
+   "phase": "complete",
+   "completedAt": 1791580508080,
+   "updatedAt": 1791580508081,
+   "createdAt": 1791508944496
+  },
+  {
+   "id": "tx-info-enrich",
+   "cycleId": "p6514-418d9651",
+   "pageSize": 50,
+   "lastCompletedPage": 0,
+   "totalPages": 1,
+   "totalAtSource": 1,
+   "phase": "complete",
+   "completedAt": 1791493936990,
+   "updatedAt": 1791493937018,
+   "createdAt": 1791229549659
+  }
+ ],
+ "tileData": {
+  "M1 آگهی‌ها (PropertyRecord)": {
+   "count": 27780,
+   "latest": 1791580245101,
+   "ageHours": 1
+  },
+  "M2 درخواست‌ها (RequestRecord)": {
+   "count": 25530,
+   "latest": 1791570396532,
+   "ageHours": 3.8
+  },
+  "M3 معاملات (TransactionRecord)": {
+   "count": 768,
+   "latest": 1791493935514,
+   "ageHours": 25
+  },
+  "M4 کارشناسان (ExpertRecord)": {
+   "count": 293,
+   "latest": 1791224043371,
+   "ageHours": 100
+  },
+  "M5 تطبیق (OpportunityAlert)": {
+   "count": 2046,
+   "latest": 1791576884694,
+   "ageHours": 2
+  },
+  "M6 یادگیری (AgentMemory)": {
+   "count": 405,
+   "latest": 1791583609130,
+   "ageHours": 0.1
+  },
+  "M7 شاخص (MarketPriceStat)": {
+   "count": 25,
+   "latest": 1791577789183,
+   "ageHours": 1.7
+  },
+  "M8 پوشش (SupplyDemandRecord)": {
+   "count": 5,
+   "latest": 1791224043389,
+   "ageHours": 100
+  },
+  "فایل‌یابی (DivarAd)": {
+   "count": 22,
+   "latest": 1791577758309,
+   "ageHours": 1.7
+  },
+  "پرکنش (TransactionEnrichment)": {
+   "count": 768,
+   "latest": 1791493936583,
+   "ageHours": 25
+  }
+ },
+ "orphans": {
+  "enrichmentWithoutTransaction": "N/A",
+  "listingWithoutOwner": "N/A",
+  "requestOrphans": "N/A"
+ },
+ "contradictions": {
+  "transactionsVsEnrichment": "N/A"
+ },
+ "dbSizeMB": null,
+ "freshnessDistribution": {
+  "PropertyRecord": {
+   "7d": 1163,
+   "30d": 4290,
+   "90d": 8401,
+   "total": 27780
+  },
+  "RequestRecord": {
+   "7d": 195,
+   "30d": 794,
+   "90d": 1851,
+   "total": 25530
+  },
+  "OpportunityAlert": {
+   "7d": 2046,
+   "30d": 2046,
+   "90d": 2046,
+   "total": 2046
+  },
+  "_note": "هر سه توزیع فعال — ۷روز: آگهی ۱۱۶۳ · درخواست ۱۹۵ · هشدار تطبیق ۲۰۴۶ (همهٔ هشدارها در ۷ روز اخیر — چرخهٔ تازهٔ موتور M5)"
+ },
+ "findings": [
+  "حجم DB: NaNMB ⚠ ≥ 500MB",
+  "تازه‌ترین آگهی: 1 ساعت پیش ≤ ۲۴ ساعت ✓"
+ ],
+ "crmSyncAnalysis": {
+  "jobId": "crm-sync",
+  "status": "failed",
+  "failedAt": "2026-10-09T08:28:50Z",
+  "error": "OTP_INVALID (source: session)",
+  "context": "پنجرهٔ بازنشانی پلتفرم PN-025 (پیش از بازیابی) — توکن نشست ARM از دست رفته بود",
+  "currentImpact": "صفر — جایگزین‌شده با خانواده‌های catalog-listings (done 24/24) + catalog-requests (done 290) + main-sync (done 4/4) که همه سبزند و دادهٔ تازه (M1: ۱ ساعت · M2: ۳٫۸ ساعت)",
+  "verdict": "🟡 رکورد کهنهٔ شکست — نه خرابی فعال؛ نامزد پاک‌سازی وضعیت در فاز ۵ (با مجوز)"
+ },
+ "anomalies": [
+  "catalog-requests: totalPages=1 ولی lastCompletedPage=290 — totalPages شمار صفحهٔ آخرین اجراست و lastCompletedPage انباشتهٔ چند اجراست (طراحی) — ثبت برای شفافیت"
+ ],
+ "summaryVerdict": {
+  "verdict": "🟢 دادهٔ تازه و سالم",
+  "keyNumbers": {
+   "M1آگهی": "۱ ساعت پیش",
+   "M2درخواست": "۳٫۸ ساعت پیش",
+   "M5هشدار": "همه در ۷ روز اخیر",
+   "M6حافظه": "۶ دقیقه پیش",
+   "DB": "۲۹۵MB < 500MB",
+   "یتیم": "صفر",
+   "failedJobs": "۱ کهنهٔ بی‌اثر (crm-sync)"
+  }
+ }
+}

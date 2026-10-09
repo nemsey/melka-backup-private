@@ -1,0 +1,252 @@
+{
+ "dimension": "بُعد ۱۱ — مغز (Brain)",
+ "engines": {
+  "total": 16,
+  "allAlive": true,
+  "list": [
+   {
+    "n": 1,
+    "id": "context",
+    "title": "زمینه (Context)",
+    "body": true
+   },
+   {
+    "n": 2,
+    "id": "memory",
+    "title": "حافظه (Memory)",
+    "body": true
+   },
+   {
+    "n": 3,
+    "id": "retrieval",
+    "title": "بازیابی (Retrieval)",
+    "body": true
+   },
+   {
+    "n": 4,
+    "id": "feature",
+    "title": "ویژگی (Feature)",
+    "body": true
+   },
+   {
+    "n": 5,
+    "id": "prediction",
+    "title": "پیش‌بینی (Prediction)",
+    "body": true
+   },
+   {
+    "n": 6,
+    "id": "outcome",
+    "title": "پیامد (Outcome)",
+    "body": true
+   },
+   {
+    "n": 7,
+    "id": "action-planner",
+    "title": "برنامه‌ریز اقدام (ActionPlanner)",
+    "body": true
+   },
+   {
+    "n": 8,
+    "id": "safety",
+    "title": "ایمنی (Safety)",
+    "body": true
+   },
+   {
+    "n": 9,
+    "id": "evaluation",
+    "title": "ارزیابی (Evaluation)",
+    "body": true
+   },
+   {
+    "n": 10,
+    "id": "learning",
+    "title": "یادگیری (Learning)",
+    "body": true
+   },
+   {
+    "n": 11,
+    "id": "decision",
+    "title": "تصمیم (Decision)",
+    "body": true
+   },
+   {
+    "n": 12,
+    "id": "attention",
+    "title": "توجه (Attention)",
+    "body": true
+   },
+   {
+    "n": 13,
+    "id": "causal",
+    "title": "علّیت (Causal)",
+    "body": true
+   },
+   {
+    "n": 14,
+    "id": "counterfactual",
+    "title": "پادواقع (Counterfactual)",
+    "body": true
+   },
+   {
+    "n": 15,
+    "id": "simulation",
+    "title": "شبیه‌سازی (Simulation)",
+    "body": true
+   },
+   {
+    "n": 16,
+    "id": "decision-advisor",
+    "title": "مشاور تصمیم (DecisionAdvisor)",
+    "body": true
+   }
+  ],
+  "verdict": "16/۱۶ ✓ همهٔ موتورها با بدنهٔ زنده"
+ },
+ "engine12_attention": {
+  "alive": true,
+  "top10": [
+   {
+    "itemId": "2376",
+    "score": 0.68,
+    "reason": "مورد 2376: تازگی 0.00 · اثر 1.00 · تطابق 1.00 · هزینه 0.50 — امتیاز کل 0.67. — رتبهٔ 1 از "
+   },
+   {
+    "itemId": "4455",
+    "score": 0.57,
+    "reason": "مورد 4455: تازگی 0.99 · اثر 0.00 · تطابق 1.00 · هزینه 0.50 — امتیاز کل 0.57. — رتبهٔ 2 از "
+   },
+   {
+    "itemId": "5135",
+    "score": 0.57,
+    "reason": "مورد 5135: تازگی 0.99 · اثر 0.00 · تطابق 1.00 · هزینه 0.50 — امتیاز کل 0.57. — رتبهٔ 3 از "
+   },
+   {
+    "itemId": "1606",
+    "score": 0.51,
+    "reason": "مورد 1606: تازگی 0.99 · اثر 0.00 · تطابق 0.50 · هزینه 0.90 — امتیاز کل 0.51. — رتبهٔ 4 از "
+   },
+   {
+    "itemId": "1642",
+    "score": 0.51,
+    "reason": "مورد 1642: تازگی 0.99 · اثر 0.00 · تطابق 0.50 · هزینه 0.90 — امتیاز کل 0.51. — رتبهٔ 5 از "
+   },
+   {
+    "itemId": "1382",
+    "score": 0.51,
+    "reason": "مورد 1382: تازگی 0.99 · اثر 0.00 · تطابق 0.50 · هزینه 0.90 — امتیاز کل 0.51. — رتبهٔ 6 از "
+   },
+   {
+    "itemId": "1441",
+    "score": 0.48,
+    "reason": "مورد 1441: تازگی 0.99 · اثر 0.29 · تطابق 0.00 · هزینه 0.90 — امتیاز کل 0.48. — رتبهٔ 7 از "
+   },
+   {
+    "itemId": "4445",
+    "score": 0.45,
+    "reason": "مورد 4445: تازگی 0.00 · اثر 0.36 · تطابق 1.00 · هزینه 0.50 — امتیاز کل 0.45. — رتبهٔ 8 از "
+   },
+   {
+    "itemId": "1971",
+    "score": 0.43,
+    "reason": "مورد 1971: تازگی 0.02 · اثر 0.28 · تطابق 1.00 · هزینه 0.50 — امتیاز کل 0.43. — رتبهٔ 9 از "
+   },
+   {
+    "itemId": "4889",
+    "score": 0.42,
+    "reason": "مورد 4889: تازگی 0.00 · اثر 0.46 · تطابق 0.50 · هزینه 0.90 — امتیاز کل 0.42. — رتبهٔ 10 از"
+   }
+  ],
+  "best": "آگهی 2376 = 0.68 با دلیل شفاف",
+  "verdict": "✓ ۱۰ برتر با دلیل فارسی"
+ },
+ "engine13_causal": {
+  "alive": true,
+  "nodes": 7,
+  "edges": 16,
+  "dagVerified": true,
+  "doImage": {
+   "feature": "hasImage",
+   "delta": 1,
+   "target": "outcome",
+   "directEffect": 0.218,
+   "totalEffect": 0.218,
+   "paths": 1,
+   "method": "L2",
+   "evidence": "مداخلهٔ do(hasImage += 1): اثر کل +0.218 روی outcome از 1 مسیر (اثر مستقیم +0.218) — مدل خطی SCM، سطح L2 Pearl."
+  },
+  "note": "مداخلهٔ do(hasImage+=1) = +۰٫۲۱۸ — مقدار با تازگی داده به‌روز می‌شود (PN-023: +۰٫۲۹۳ · PN-024/۰۲۶: +۰٫۲۱۸ — هر دو روی گراف DAG زنده)",
+  "verdict": "✓ L2 Pearl زنده"
+ },
+ "engine14_counterfactual": {
+  "alive": true,
+  "scenario10pct": {
+   "scenario": "کاهش 10٪ قیمت (شاهد معیار)",
+   "baseline": 0.5,
+   "counterfactual": 0.5187860691295842,
+   "delta": 0.0188,
+   "confidence": 0.858,
+   "method": "Pearl-L3",
+   "reason": "سناریو «کاهش 10٪ قیمت (شاهد معیار)»: با نویز فردی 0.307، تغییر pricePerMeter از 0 به -0.12524046086389443 پیامد را از 0.500 به 0.519 جابه‌جا می‌کند (Δ=+0.019) با اطمینان 0.86 از 13 یال مؤثر — روش Pearl L3."
+  },
+  "verdict": "✓ قرارداد z-score: کاهش ۱۰٪ قیمت → Δ=+۰٫۰۱۸۸ = +۱٫۹pp (عین قرارداد PN-024)"
+ },
+ "engine15_simulation": {
+  "alive": true,
+  "autoExecuteFalse": true,
+  "verdict": "✓ صفر اجرا — موتور خالص پاسخ‌ده"
+ },
+ "engine16_advisor": {
+  "tiles": [
+   "M5 smart-matching",
+   "file-finder",
+   "M7 market-index"
+  ],
+  "liveToday": "هر سه روت advice زنده — قفل rate-day فعال (سقف روزانه)",
+  "decisionLockedAudit": 24,
+  "zeroLLM": "✓ صفر LLM — روایت از ۲۴ قالب فارسی با متغیرهای واقعی"
+ },
+ "decisionLock": {
+  "ttl": "۷ روز",
+  "cooldown": "۴۸ ساعت",
+  "rateLimit": "۱۰/روز + ۳/دسته",
+  "liveWitness": "قفل rate-day روی هر سه کاشی در همین چک‌آپ فعال بود — مدرک کارکرد در همان روز",
+  "auditRecords": "DECISION_LOCKED ×۲۴ · SHADOW_DECISION_CREATED ×۴۴ · GOVERNANCE_GATE_BLOCKED ×۱۷",
+  "autoExecuteFalseInCode": "src/core/intelligence/decision-advisor.ts:44+324 — قید لفظی TypeScript (قانون ۱۱ ابدی)",
+  "verdict": "✓ کمربند سه‌قفلی زنده"
+ },
+ "selfDiagnosis": {
+  "healthScore": 92,
+  "passed": "23/25",
+  "alerts": 2,
+  "durationMs": 268,
+  "alertDetails": [
+   "DIAG-ENGINE-003 (هشدار): crm-sync در وضعیت failed — رکورد کهنهٔ پنجرهٔ بازنشانی (تحلیل کامل در data-freshness.json) — نامزد پاک‌سازی فاز ۵",
+   "DIAG-SEC-004 (هشدار): ۱۶ نشست OWNER فعال > ۳ — شامل نشست‌های probe همین چک‌آپ — نامزد هرس فاز ۵"
+  ],
+  "verdict": "🟢 ۹۲/۱۰۰ — دو هشدار هر دو شناخته‌شده و قابل‌رفع در فاز ۵"
+ },
+ "coreCycle": {
+  "ranAt": "2026-10-09T22:28:05.725Z",
+  "tier": 3,
+  "brier": 0.2375,
+  "coverage": 100,
+  "lift": 5,
+  "verdict": "چرخهٔ زنده — Brier ۰٫۲۳۷۵ · پوشش ۱۰۰٪"
+ },
+ "evaluation": {
+  "sampleSize": 780,
+  "brier": 0.2382,
+  "verdict": "ABOVE_BASELINE"
+ },
+ "daemon": {
+  "alive": true,
+  "runs": 3,
+  "lastError": null
+ },
+ "findings": [
+  "۱۶/۱۶ موتور زنده با بدنه ✓ · توجه: ۱۰ برتر با دلیل ✓ · علّیت: DAG + do(hasImage)=+۰٫۲۱۸ ✓",
+  "پادواقع z-score: ۱۰٪→+۱٫۹pp ✓ · شبیه‌سازی: صفر اجرا ✓ · مشاور: ۳ کاشی + صفر LLM ✓",
+  "کمربند: قفل rate-day زنده ✓ · autoExecute=false در نوع ✓ · خودآگاهی ۹۲ (۲۳/۲۵)"
+ ]
+}

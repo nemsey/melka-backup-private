@@ -1,0 +1,181 @@
+{
+ "dimension": "بُعد ۵ — ایجنت‌ها (Agents)",
+ "registryTotal": 15,
+ "tilesWithAgents": 11,
+ "tilesWithoutAgents": [
+  "management-dashboard",
+  "settings"
+ ],
+ "legacyAgents": [
+  "customer-club",
+  "transactions",
+  "contracts",
+  "finance"
+ ],
+ "note": "۱۳ کاشی → ۱۱ ایجنت فعال (management-dashboard و settings کاشی مدیریتی/پیکربندی هستند و طبق طراحی ایجنت یادگیرنده ندارند — تأیید در report)",
+ "agentStats": [
+  {
+   "tile": "transactions-contracts",
+   "memory": 29,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791281779575
+   }
+  },
+  {
+   "tile": "experts",
+   "memory": 36,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791268319532
+   }
+  },
+  {
+   "tile": "file-finder",
+   "memory": 23,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791234362269
+   }
+  },
+  {
+   "tile": "listings",
+   "memory": 54,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791269228594
+   }
+  },
+  {
+   "tile": "requests",
+   "memory": 8,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791281530590
+   }
+  },
+  {
+   "tile": "arm-listings",
+   "memory": 154,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791224004805
+   }
+  },
+  {
+   "tile": "arm-requests",
+   "memory": 52,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791228112595
+   }
+  },
+  {
+   "tile": "smart-matching",
+   "memory": 43,
+   "feedback": {
+    "c": 6,
+    "latest": 1791489828611
+   },
+   "policyVersions": {
+    "c": 2,
+    "latest": 1791444305187
+   }
+  },
+  {
+   "tile": "market-index",
+   "memory": 2,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791583608700
+   }
+  },
+  {
+   "tile": "data-coverage",
+   "memory": 2,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791583608722
+   }
+  },
+  {
+   "tile": "learning-tier",
+   "memory": 2,
+   "feedback": {
+    "c": 0,
+    "latest": null
+   },
+   "policyVersions": {
+    "c": 1,
+    "latest": 1791583608674
+   }
+  }
+ ],
+ "memSample": [
+  {
+   "id": "cmuvkivnq000dqxsw88ocqj6w",
+   "tileId": "arm-listings",
+   "kind": "POLICY_CHANGE",
+   "payload": "{\"event\":\"policy-created\",\"version\":1,\"note\":\"سیاست اولیه ایجاد شد.\",\"at\":\"2026-10-05T18:13:24.806Z\"}",
+   "createdAt": 1791224004807
+  },
+  {
+   "id": "cmuvkivnw000eqxswq1qvyn2m",
+   "tileId": "arm-listings",
+   "kind": "INTERACTION",
+   "payload": "{\"event\":\"insight-render\",\"insightCount\":0,\"domains\":[],\"policyVersion\":1,\"at\":\"2026-10-05T18:13:24.811Z\"}",
+   "createdAt": 1791224004812
+  }
+ ],
+ "totalMemory": 405,
+ "totalFeedback": 405,
+ "feedbackTotal": 6,
+ "policyVersionsTotal": 12,
+ "findings": [
+  "AgentMemory: 405 ≥ ۱۰۰ ✓",
+  "بازخوردها: 6 · نسخه‌های سیاست: 12"
+ ],
+ "summaryVerdict": {
+  "verdict": "🟢 ایجنت‌ها سالم — ۱۱ کاشی ایجنت‌دار + ۲ کاشی مدیریتی/پیکربندی طبق طراحی بدون ایجنت",
+  "registry": "۱۵ ایجنت = ۱۱ کاشی زنده + ۴ میراثی (customer-club/transactions/contracts/finance) برای دسترسی حافظهٔ تاریخی (قانون دادهٔ مقدس)",
+  "agentMemory": "۴۰۵ رکورد ≥ ۱۰۰ ✓",
+  "feedback": "۶ بازخورد (تمامی smart-matching — منبع آزمون زندهٔ E2E قبلی)",
+  "policyVersions": "۱۲ نسخه در ۱۱ ایجنت"
+ }
+}
