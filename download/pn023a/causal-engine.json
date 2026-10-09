@@ -1,0 +1,197 @@
+{
+  "workOrder": "PN-023-A/مرحلهٔ۳ — موتور علّیت روی دادهٔ واقعی",
+  "ranAt": "2026-10-09T08:16:53.331Z",
+  "sourceData": {
+    "positive_traded": 212,
+    "negative_expired": 424,
+    "total": 636
+  },
+  "featureOrder": [
+    "pricePerMeter",
+    "meterage",
+    "rooms",
+    "buildYear",
+    "hasImage",
+    "viewCount",
+    "outcome"
+  ],
+  "gates": {
+    "dagCheck": "✓ صفر cycle (Kahn)",
+    "confidenceFloor": 0.6
+  },
+  "nodes": 7,
+  "nodeNames": [
+    "pricePerMeter",
+    "meterage",
+    "rooms",
+    "buildYear",
+    "hasImage",
+    "viewCount",
+    "outcome"
+  ],
+  "edges": 15,
+  "edgeList": [
+    {
+      "from": "pricePerMeter",
+      "to": "meterage",
+      "coefficient": 0.146,
+      "confidence": 0.71,
+      "method": "L1",
+      "evidence": "Pearson r=0.146 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی pricePerMeter→meterage)."
+    },
+    {
+      "from": "pricePerMeter",
+      "to": "rooms",
+      "coefficient": -0.296,
+      "confidence": 0.926,
+      "method": "L1",
+      "evidence": "Pearson r=-0.296 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی pricePerMeter→rooms)."
+    },
+    {
+      "from": "pricePerMeter",
+      "to": "buildYear",
+      "coefficient": -0.317,
+      "confidence": 0.939,
+      "method": "L1",
+      "evidence": "Pearson r=-0.317 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی pricePerMeter→buildYear)."
+    },
+    {
+      "from": "pricePerMeter",
+      "to": "hasImage",
+      "coefficient": -0.193,
+      "confidence": 0.808,
+      "method": "L1",
+      "evidence": "Pearson r=-0.193 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی pricePerMeter→hasImage)."
+    },
+    {
+      "from": "pricePerMeter",
+      "to": "viewCount",
+      "coefficient": 0.192,
+      "confidence": 0.806,
+      "method": "L1",
+      "evidence": "Pearson r=0.192 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی pricePerMeter→viewCount)."
+    },
+    {
+      "from": "pricePerMeter",
+      "to": "outcome",
+      "coefficient": -0.174,
+      "confidence": 0.774,
+      "method": "L1",
+      "evidence": "Pearson r=-0.174 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی pricePerMeter→outcome)."
+    },
+    {
+      "from": "meterage",
+      "to": "buildYear",
+      "coefficient": -0.315,
+      "confidence": 0.938,
+      "method": "L1",
+      "evidence": "Pearson r=-0.315 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی meterage→buildYear)."
+    },
+    {
+      "from": "meterage",
+      "to": "hasImage",
+      "coefficient": -0.242,
+      "confidence": 0.877,
+      "method": "L1",
+      "evidence": "Pearson r=-0.242 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی meterage→hasImage)."
+    },
+    {
+      "from": "meterage",
+      "to": "outcome",
+      "coefficient": -0.194,
+      "confidence": 0.81,
+      "method": "L1",
+      "evidence": "Pearson r=-0.194 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی meterage→outcome)."
+    },
+    {
+      "from": "rooms",
+      "to": "buildYear",
+      "coefficient": 0.382,
+      "confidence": 0.969,
+      "method": "L1",
+      "evidence": "Pearson r=0.382 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی rooms→buildYear)."
+    },
+    {
+      "from": "rooms",
+      "to": "hasImage",
+      "coefficient": 0.2,
+      "confidence": 0.82,
+      "method": "L1",
+      "evidence": "Pearson r=0.200 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی rooms→hasImage)."
+    },
+    {
+      "from": "buildYear",
+      "to": "hasImage",
+      "coefficient": 0.478,
+      "confidence": 0.99,
+      "method": "L1",
+      "evidence": "Pearson r=0.478 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی buildYear→hasImage)."
+    },
+    {
+      "from": "buildYear",
+      "to": "outcome",
+      "coefficient": 0.262,
+      "confidence": 0.897,
+      "method": "L1",
+      "evidence": "Pearson r=0.262 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی buildYear→outcome)."
+    },
+    {
+      "from": "hasImage",
+      "to": "viewCount",
+      "coefficient": 0.258,
+      "confidence": 0.893,
+      "method": "L1",
+      "evidence": "Pearson r=0.258 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی hasImage→viewCount)."
+    },
+    {
+      "from": "hasImage",
+      "to": "outcome",
+      "coefficient": 0.293,
+      "confidence": 0.924,
+      "method": "L1",
+      "evidence": "Pearson r=0.293 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی hasImage→outcome)."
+    }
+  ],
+  "sampleIntervention_L2": {
+    "feature": "hasImage",
+    "delta": 1,
+    "target": "outcome",
+    "directEffect": 0.293,
+    "totalEffect": 0.293,
+    "paths": 1,
+    "method": "L2",
+    "evidence": "مداخلهٔ do(hasImage += 1): اثر کل +0.293 روی outcome از 1 مسیر (اثر مستقیم +0.293) — مدل خطی SCM، سطح L2 Pearl."
+  },
+  "causesOfOutcomeRanked": [
+    {
+      "from": "hasImage",
+      "coefficient": 0.293,
+      "confidence": 0.924,
+      "evidence": "Pearson r=0.293 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی hasImage→outcome)."
+    },
+    {
+      "from": "buildYear",
+      "coefficient": 0.262,
+      "confidence": 0.897,
+      "evidence": "Pearson r=0.262 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی buildYear→outcome)."
+    },
+    {
+      "from": "meterage",
+      "coefficient": -0.194,
+      "confidence": 0.81,
+      "evidence": "Pearson r=-0.194 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی meterage→outcome)."
+    },
+    {
+      "from": "pricePerMeter",
+      "coefficient": -0.174,
+      "confidence": 0.774,
+      "evidence": "Pearson r=-0.174 روی n=636 جفت کامل — بررسی هم‌بستگی سطح L1 (ترتیب علّی پیشینی pricePerMeter→outcome)."
+    }
+  ],
+  "pearl": {
+    "L1": "همبستگی Pearson بر جفت‌های کامل",
+    "L2": "اثر مداخله — جمع مسیرهای DAG (مدل خطی SCM)",
+    "L3": "فاز ۱۳-ب (پادواقع) — خارج از این فاز"
+  },
+  "honesty": "پیامد=۱ از معاملات ثبت‌شده و پیامد=۰ از آگهی‌های منقضی — تقریب صادقانه با سوگیری انتخاب مستند (فصل ۶.۶ سند)"
+}

@@ -25,7 +25,7 @@ describe("PN-022-A/مرحلهٔ۳ · مهاجرت PostgreSQL (فقط تست)", (
     const models = (p: string) => [...readFileSync(p, "utf8").matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]);
     const sq = models("prisma/schema.prisma");
     const pg = models("prisma/schema.postgres.prisma");
-    expect(sq.length).toBe(59);
+    expect(sq.length).toBe(60); // PN-023-A: 59 + CausalEdgeRecord
     expect(new Set(pg)).toEqual(new Set(sq));
   });
 

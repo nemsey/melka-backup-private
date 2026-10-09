@@ -1,0 +1,62 @@
+{
+  "workOrder": "PN-023-A/مرحلهٔ۴ — گراف پایدار + بودجهٔ توجه (قانون ۸)",
+  "ranAt": "2026-10-09T08:16:53.331Z",
+  "additiveOnly": {
+    "newTable": "CausalEdgeRecord",
+    "modelCountBefore": 59,
+    "modelCountAfter": 60,
+    "droppedColumns": 0,
+    "changedColumns": 0,
+    "droppedTables": 0,
+    "twinSchema": "schema.postgres.prisma هم ۶۰ مدل — توازن گارد postgres-compat",
+    "dbPush": {
+      "test": "✓ موفق",
+      "production": "✓ موفق (additive only)"
+    }
+  },
+  "persistedGraph": {
+    "saved": 16,
+    "skippedBelowFloor": 0,
+    "stats": {
+      "edges": 16,
+      "nodes": 7,
+      "avgConfidence": 0.91,
+      "minConfidence": 0.806,
+      "lastSavedAt": "2026-10-09T08:16:53.576Z",
+      "belowFloor": 0
+    },
+    "reloadCheck": {
+      "edgesEqual": true,
+      "dagVerified": true
+    }
+  },
+  "attentionBudget": {
+    "levels": {
+      "CRITICAL": {
+        "maxItems": 5,
+        "refreshHours": 1,
+        "purpose": "تصمیم فوری — پنج موردِ همین ساعت"
+      },
+      "DAILY": {
+        "maxItems": 10,
+        "refreshHours": 24,
+        "purpose": "لیست صبح — ده موردِ روز"
+      },
+      "WEEKLY": {
+        "maxItems": 50,
+        "refreshHours": 168,
+        "purpose": "بررسی هفتگی — پنجاه مورد"
+      },
+      "MONTHLY": {
+        "maxItems": 500,
+        "refreshHours": 720,
+        "purpose": "تحلیل ماهانه — پانصد مورد"
+      }
+    },
+    "law": "بودجه سقف است نه هدف — صفر توجه به بقیه، بدون بودجه",
+    "exampleClamp": {
+      "requested37": 10,
+      "requested3": 3
+    }
+  }
+}

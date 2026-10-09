@@ -472,7 +472,7 @@ model CausalEdgeRecord {
 - twin schema (schema.postgres.prisma) همان model را می‌گیرد — گارد
   postgres-compat توازن ۶۰=۶۰ را enforcement می‌کند (وگرنه CI قرمز).
 
-### ۷.۲ — سرویس ماندگاری (causal-graph-store.ts)
+### ۷.۲ — سرویس ماندگاری (src/lib/services/causal-graph-store.ts — لایهٔ سرویس)
 
 ```typescript
 export async function saveGraph(graph: CausalGraph): Promise<{ saved: number }>;
