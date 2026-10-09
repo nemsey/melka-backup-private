@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-10-09T10:50:21.235Z",
+  "workOrder": "PN-024 — سه‌بخشی: هویت نگین + نقاط اصلاح J1-J5 + فاز ۱۳-ب (موتور ۱۴ پادواقع + موتور ۱۵ شبیه‌سازی) — ملکا-شورا-ن۰۳۱-۱۴۰۵",
+  "phase0_identity": {
+    "expectedHead": "90526e6 یا جدیدتر (طبق سفارش) — واقعیت: 9ad17c0 (کامیت ورک‌لاگ PN-023-A)",
+    "actualHead": "9ad17c0",
+    "mirrorEqualsHead": true,
+    "mirror": "9ad17c0a712c179a4979dcb311189410e7812a62",
+    "buildIdAtEntry": "b3b1518-20261009-0939",
+    "buildSrcDeltaToHead": "0 فایل src/ (بیلد b3b1518 = کد؛ HEAD 9ad17c0 فقط ورک‌لاگ/لاگ — الگوی مستند PN-017/019/021/023-A؛ دروازهٔ پایانی مهر تازه می‌خشد — قانون ۱۴)",
+    "chainIndexAtEntry": 23,
+    "chainNote": "سفارش انتظار chainIndex=23 داشت — درست: ۲۳ (بستهٔ بقا PN-023-A). هدف این جلسه: ۲۴",
+    "survivalManifestPeek": "{\"PropertyRecord\":27777,\"RequestRecord\":25526,\"TransactionRecord\":768,\"ExpertRecord\":293,\"ExpertProfile\":143,\"updatedAt\":\"2026-10-09T09:41:55Z\"}"
+  },
+  "phase0_preconditions": {
+    "health": "200 0.011665s ✓",
+    "dbQuickCheck": "ok",
+    "escrowThreePlace": "audit-boot-secrets: PASS ✓ (اجرا جداگانه — lock-raw)",
+    "worker": "PID 22476 زنده · 14 کار موروثی WORKER_JOB_IDS ✓ (تلاش خواندن SyncJobState در DB تولید: جدول مختص تست است — کارها از رجیستری کد می‌آیند)",
+    "chunkIntegrity": "✓ یکپارچگی chunk: 12 ارجاع بررسی شد · ۰ مفقود · 56 چانک روی دیسک · هویت: match",
+    "diskSpace": "2.1G free · 78% used — آستانهٔ سفارش ۲۵٪ ✓",
+    "previewEqualsHead": "پیش‌نمایش: b3b1518 سرو می‌کند · HEAD: 9ad17c0 — دلتای مستند (صفر تغییر src/) — ری‌استارت دروازهٔ پایانی مهر می‌خشد (قانون ۱۴)",
+    "ciRunningFlag": "flag فعال: 0\n0"
+  },
+  "phase0_dataLock": {
+    "backupFile": "backups/pre-pn024-20261009105018Z.db",
+    "backupMd5": "aa4c745cdd6563c8593bc0893a13d86b",
+    "backupSizeMB": 288.3,
+    "dbSizeBeforeMB": 296.1,
+    "recordCounts": {
+      "listings_PropertyRecord": 27778,
+      "requests_RequestRecord": 25526,
+      "transactions_TransactionRecord": 768,
+      "causalEdgeRecord": 16
+    }
+  },
+  "baselineReconciliation": {
+    "tests": "سفارش: ۲۳۶۲→≥۲۴۱۲ (۲۳۶۲+۵۰) — خط پایهٔ واقعی: ۲۳۶۲×۲ (PN-023-A) ✓ سازگار",
+    "guards": "سفارش: ۲۵/۲۵ — حساب واقعی: ۲۳ موجود + J4 + J5 + negin-consistency + counterfactual-purity = ۲۷ (سفارش خودش چهار گارد جدید الزام کرده ولی ۲۵ هدف گرفته — دلتای مثبت مستند؛ گزارش نهایی ۲۷/۲۷",
+    "chainIndex": "سفارش: ۲۴ — سازگار (۲۳ موجود → ۲۴ تازه)",
+    "engines": "مغز: ۱۳ موتور → ۱۵ (موتور ۱۴ پادواقع + موتور ۱۵ شبیه‌سازی)"
+  },
+  "ownerStatement": "سفارش PN-024 — سه بخش: (الف) هویت نگین، (ب) پنج نقطهٔ اصلاح، (ج) فاز ۱۳-ب — پادواقع + شبیه‌سازی.",
+  "entry": "مجاز — هویت (با دلتای مستند) + پیش‌شرط‌ها + قفل داده"
+}

@@ -231,7 +231,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void reload());
 
   return (
-    <div className="space-y-6">
+    <div data-negin="yaghut-kabud" className="space-y-6">
+      {/* نگین (PN-024) — میلهٔ گوهر yaghut-kabud */}
+      <div className="negin-bar" aria-hidden />
       <PtrIndicator innerRef={ptrRef} spinning={ptrSpinning} />
       {/* ایجنت هوشمند */}
       <AgentPanel tileId="experts" />

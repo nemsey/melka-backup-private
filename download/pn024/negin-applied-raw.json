@@ -1,0 +1,73 @@
+{
+  "ranAt": "2026-10-09T11:01:00.053Z",
+  "applied": 11,
+  "preApplied": 0,
+  "results": [
+    {
+      "tile": "FileFinderPage.tsx",
+      "gem": "yaghut-kamani",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "ListingsPage.tsx",
+      "gem": "kahroba-talaee",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "RequestsPage.tsx",
+      "gem": "aqiq-limoonee",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "ArmListingsPage.tsx",
+      "gem": "zomorrod-koohi",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "ArmRequestsPage.tsx",
+      "gem": "marjan-daryayi",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "TransactionsContractsPage.tsx",
+      "gem": "yaghut-banafsh",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "ExpertsPage.tsx",
+      "gem": "yaghut-kabud",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "SmartMatchingPage.tsx",
+      "gem": "kuartz-soorati",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "LearningTierPage.tsx",
+      "gem": "nili",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "MarketIndexPage.tsx",
+      "gem": "topaz-abee",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    },
+    {
+      "tile": "DataCoveragePage.tsx",
+      "gem": "morvarid",
+      "applied": true,
+      "note": "میلهٔ نگین + data-negin درج شد"
+    }
+  ]
+}

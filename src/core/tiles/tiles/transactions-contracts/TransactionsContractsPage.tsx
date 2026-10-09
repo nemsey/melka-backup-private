@@ -220,7 +220,9 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <div data-negin="yaghut-banafsh" className="space-y-6">
+      {/* نگین (PN-024) — میلهٔ گوهر yaghut-banafsh */}
+      <div className="negin-bar" aria-hidden />
       {/* ایجنت هوشمند مولتی‌بینش */}
       <AgentPanel tileId="transactions-contracts" />
 

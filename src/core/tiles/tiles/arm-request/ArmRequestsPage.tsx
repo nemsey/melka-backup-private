@@ -388,7 +388,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
   const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void load());
 
   return (
-    <div className="space-y-6">
+    <div data-negin="marjan-daryayi" className="space-y-6">
+      {/* نگین (PN-024) — میلهٔ گوهر marjan-daryayi */}
+      <div className="negin-bar" aria-hidden />
       <PtrIndicator innerRef={ptrRef} spinning={ptrSpinning} />
       {/* ایجنت هوشمند یادگیرندهٔ مولتی‌بینش */}
       <AgentPanel tileId="arm-requests" />

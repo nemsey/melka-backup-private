@@ -1,0 +1,29 @@
+{
+  "guard": "audit-counterfactual-purity",
+  "workOrder": "PN-024/مرحلهٔ ۱۱ — خلوص L3 + قفل auto_execute + مرز لایه + اتصال ثانیاً",
+  "generatedAt": "2026-10-09T11:30:24.594501+00:00",
+  "checks": [
+    {
+      "check": "۱ خلوص: موتورهای ۱۴/۱۵ صفر DB/fetch/env/فایل",
+      "ok": true
+    },
+    {
+      "check": "۲ قرارداد موتور ۱۴ (L3 سه‌گامی + ۵ گیت fail-loud)",
+      "ok": true
+    },
+    {
+      "check": "۳ قرارداد موتور ۱۵ + قفل ابدی autoExecute=false",
+      "ok": true
+    },
+    {
+      "check": "۴ مرز لایه: سرویس نازک = تنها نقطهٔ DB (الگوی self-diagnosis)",
+      "ok": true
+    },
+    {
+      "check": "۵ اتصال UI: روت ۱۵ موتور + تنظیمات (الف) + کاشی M6 (ب)",
+      "ok": true
+    }
+  ],
+  "violations": [],
+  "pass": true
+}

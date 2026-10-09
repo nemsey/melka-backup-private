@@ -1,0 +1,55 @@
+{
+  "guard": "audit-negin-consistency",
+  "workOrder": "PN-024/مرحلهٔ ۱۱ — ۱۱ نگین سازگار (پالت · CSS · رجیستری · اعمال · قانون ۶)",
+  "generatedAt": "2026-10-09T11:30:24.568214+00:00",
+  "checks": [
+    {
+      "check": "۱ رجیستری negin-palette.ts",
+      "ok": true
+    },
+    {
+      "check": "۲ یتایی ۱۱ گوهر (دریل منفی: تکرار رنگ = قرمز)",
+      "ok": true
+    },
+    {
+      "check": "۳ CSS: ۱۱×۵ متغیر ×۲ تم + توکن‌ها + ۵ افکت + ۴ گرادیان",
+      "ok": true
+    },
+    {
+      "check": "۴ قانون ۶: صفر تغییر رنگ CANONICAL (value-colors + colors.json)",
+      "ok": true
+    },
+    {
+      "check": "۵ اعمال: TileCard + ۱۱ صفحه با گوهر یکتا",
+      "ok": true
+    }
+  ],
+  "gems": [
+    "yaghut-kamani",
+    "kahroba-talaee",
+    "aqiq-limoonee",
+    "zomorrod-koohi",
+    "marjan-daryayi",
+    "yaghut-banafsh",
+    "yaghut-kabud",
+    "kuartz-soorati",
+    "nili",
+    "topaz-abee",
+    "morvarid"
+  ],
+  "appliedOnTiles": [
+    "yaghut-kamani",
+    "kahroba-talaee",
+    "aqiq-limoonee",
+    "zomorrod-koohi",
+    "marjan-daryayi",
+    "yaghut-banafsh",
+    "yaghut-kabud",
+    "kuartz-soorati",
+    "nili",
+    "topaz-abee",
+    "morvarid"
+  ],
+  "violations": [],
+  "pass": true
+}

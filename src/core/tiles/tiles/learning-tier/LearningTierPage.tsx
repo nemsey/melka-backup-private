@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, RefreshCw, ClipboardCheck, Clock, Layers } from "lucide-react";
+import { Brain, RefreshCw, ClipboardCheck, Clock, Layers, Gem, Radar, Workflow, GitCompareArrows, FlaskConical } from "lucide-react";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
 import { faDigits } from "@/lib/format";
@@ -38,22 +38,37 @@ interface BrainStatusCoreCycle {
 }
 interface BlackboardEntryView { namespace: string; engineId: string; at: string; hash: string; payload: unknown }
 
+/** PN-024 ثانیاً — فرا-ذهن (موتورهای ۱۲-۱۵) برای تب تازهٔ کاشی M6 */
+interface MetaMindView {
+  ranAt: string;
+  engines: {
+    attention: { alive: boolean; top: Array<{ itemId: string; total: number; reason: string }>; considered: number; budget: number; budgetLevel: string };
+    causal: { alive: boolean; nodes: number; edges: number; sampleSize: number; dagVerified: boolean; refIntervention: { feature: string; delta: number; totalEffect: number; paths: number } | null };
+    counterfactual: { alive: boolean; scenarios: Array<{ scenario: string; baseline: number; counterfactual: number; delta: number; confidence: number; reason: string }>; evidenceNote: string };
+    simulation: { alive: boolean; comparison: { results: Array<{ action: { label: string }; simulatedProbability: number; delta: number; confidence: number; risks: string[]; autoExecute: false; reason: string }>; best: { action: { label: string }; delta: number } | null; recommendation: string } | null };
+  };
+  marketPressure: number;
+  notes: string[];
+}
+
 const TIER_TARGETS = [30, 30, 25, 22, 20];
 const TIER_MIN_OUTCOMES = [0, 10, 20, 50, 70];
 
 export function LearningTierPage({ onBack }: TilePageProps) {
   const [cycle, setCycle] = useState<BrainStatusCoreCycle | null>(null);
   const [board, setBoard] = useState<BlackboardEntryView[]>([]);
+  const [metaMind, setMetaMind] = useState<MetaMindView | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
     try {
       const [status, blackboard] = await Promise.all([
-        api<{ ok: boolean; coreCycle: BrainStatusCoreCycle }>("/api/intelligence/status"),
+        api<{ ok: boolean; coreCycle: BrainStatusCoreCycle; metaMind?: MetaMindView }>("/api/intelligence/status"),
         api<{ ok: boolean; entries: BlackboardEntryView[] }>("/api/intelligence/blackboard?limit=30"),
       ]);
       setCycle(status.coreCycle);
+      setMetaMind(status.metaMind ?? null);
       setBoard(blackboard.entries ?? []);
     } finally {
       setLoading(false);
@@ -75,7 +90,9 @@ export function LearningTierPage({ onBack }: TilePageProps) {
   const fail = checks.filter((c) => c.status === "fail").length;
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div data-negin="nili" className="space-y-4 p-4 md:p-6">
+      {/* نگین (PN-024) — میلهٔ گوهر nili */}
+      <div className="negin-bar" aria-hidden />
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           {onBack ? <Button variant="outline" size="sm" onClick={onBack}>بازگشت</Button> : null}
@@ -135,10 +152,11 @@ export function LearningTierPage({ onBack }: TilePageProps) {
           ) : null}
 
           <Tabs defaultValue="checks">
-            <TabsList className="grid w-full max-w-xl grid-cols-3">
+            <TabsList className="grid w-full max-w-2xl grid-cols-4">
               <TabsTrigger value="checks" className="gap-1"><ClipboardCheck className="size-4" /> خودتشخیصی ({faDigits(checks.length)})</TabsTrigger>
               <TabsTrigger value="pending" className="gap-1"><Clock className="size-4" /> در انتظار شورا ({faDigits(cycle.p11.proposals.length)})</TabsTrigger>
               <TabsTrigger value="board" className="gap-1"><Layers className="size-4" /> تختهٔ سیاه</TabsTrigger>
+              <TabsTrigger value="metamind" className="gap-1 text-negin-nili-700 dark:text-negin-nili-300"><Gem className="size-4" /> فرا-ذهن (۴ موتور)</TabsTrigger>
             </TabsList>
 
             {/* ۵) ۲۵ بررسی */}
@@ -211,6 +229,131 @@ export function LearningTierPage({ onBack }: TilePageProps) {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* ═══ PN-024 ثانیاً — فرا-ذهن: موتورهای ۱۲ تا ۱۵ (خواستهٔ مالک جلسهٔ ۰۳۱) ═══ */}
+            <TabsContent value="metamind">
+              {metaMind ? (
+                <div className="space-y-3" data-negin="nili">
+                  {/* موتور ۱۲ — توجه */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><Radar className="size-4 text-negin-nili-500" /> موتور ۱۲ — توجه: {faDigits(metaMind.engines.attention.top.length)} برتر روز با دلیل</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        از {faDigits(metaMind.engines.attention.considered)} آگهی تازه · بودجهٔ {metaMind.engines.attention.budgetLevel === "DAILY" ? "روزانه" : metaMind.engines.attention.budgetLevel} ({faDigits(metaMind.engines.attention.budget)} مورد) — چهار عامل: تازگی + اثر + تطابق + هزینه
+                      </p>
+                      <div className="max-h-80 overflow-auto space-y-1">
+                        {metaMind.engines.attention.top.map((t, i) => (
+                          <div key={t.itemId} className="flex items-start gap-2 rounded border p-2 text-xs">
+                            <Badge variant="outline" className="shrink-0">{faDigits(i + 1)}</Badge>
+                            <div className="flex-1">
+                              <p><span className="font-bold" dir="ltr">{t.itemId}</span> — امتیاز <span className="font-bold text-negin-nili-700 dark:text-negin-nili-300">{faDigits(t.total)}</span></p>
+                              <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5">{t.reason}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* موتور ۱۳ — علّیت */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><Workflow className="size-4 text-negin-nili-500" /> موتور ۱۳ — علّیت: گراف DAG روی {faDigits(metaMind.engines.causal.sampleSize)} نمونهٔ واقعی</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      {metaMind.engines.causal.alive ? (
+                        <>
+                          <div className="grid gap-2 sm:grid-cols-4">
+                            <div className="rounded border p-2 text-center"><p className="text-muted-foreground">گره</p><p className="font-bold">{faDigits(metaMind.engines.causal.nodes)}</p></div>
+                            <div className="rounded border p-2 text-center"><p className="text-muted-foreground">یال علّی</p><p className="font-bold">{faDigits(metaMind.engines.causal.edges)}</p></div>
+                            <div className="rounded border p-2 text-center"><p className="text-muted-foreground">نمونهٔ واقعی</p><p className="font-bold">{faDigits(metaMind.engines.causal.sampleSize)}</p></div>
+                            <div className="rounded border p-2 text-center"><p className="text-muted-foreground">DAG</p><p className="font-bold">{metaMind.engines.causal.dagVerified ? "صفر چرخه ✓" : "—"}</p></div>
+                          </div>
+                          {metaMind.engines.causal.refIntervention && (
+                            <div className="negin-glow rounded-lg border p-3">
+                              <p className="font-bold">کشف کلیدی — «تصویر چند می‌ارزد؟»</p>
+                              <p className="mt-1">
+                                مداخلهٔ do({metaMind.engines.causal.refIntervention.feature} += ۱):
+                                <span className="font-bold text-emerald-600"> +{faDigits(Math.round(metaMind.engines.causal.refIntervention.totalEffect * 1000) / 10)}٪ احتمال معامله</span>
+                                <span className="text-muted-foreground"> — از {faDigits(metaMind.engines.causal.refIntervention.paths)} مسیر علّی در گراف (Pearl L2)</span>
+                              </p>
+                              <p className="text-[10px] text-muted-foreground mt-1">این پاسخ علمی است: قبلاً فقط همبستگی داشتیم؛ اکنون اثر مداخله را می‌دانیم.</p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-muted-foreground">گراف علّی هنوز ساخته نشده — پس از شاهد علّی نخست فعال می‌شود.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* موتور ۱۴ — پادواقع */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><GitCompareArrows className="size-4 text-negin-nili-500" /> موتور ۱۴ — پادواقع: «اگر … می‌شد چه؟» (Pearl L3)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      {metaMind.engines.counterfactual.scenarios.length > 0 ? (
+                        <>
+                          {metaMind.engines.counterfactual.scenarios.map((s) => (
+                            <div key={s.scenario} className="rounded border p-2.5">
+                              <p className="font-medium">{s.scenario}</p>
+                              <p className="mt-1">
+                                {faDigits(Math.round(s.baseline * 1000) / 10)}٪ → <span className="font-bold">{faDigits(Math.round(s.counterfactual * 1000) / 10)}٪</span>
+                                <span className={s.delta >= 0 ? "font-bold text-emerald-600" : "font-bold text-red-600"}> (Δ {s.delta >= 0 ? "+" : ""}{faDigits(Math.round(s.delta * 1000) / 10)}٪)</span>
+                                <span className="text-muted-foreground"> · اطمینان {faDigits(s.confidence)} · روش {s.reason.includes("L3") ? "Pearl L3" : "—"}</span>
+                              </p>
+                              <p className="text-[10px] text-muted-foreground leading-relaxed mt-1">{s.reason}</p>
+                            </div>
+                          ))}
+                          <p className="text-[10px] text-muted-foreground">شاهد: {metaMind.engines.counterfactual.evidenceNote} — نویز فردی بین دنیای واقعی و خیالی ثابت می‌ماند (تمایز L3 از L2)</p>
+                        </>
+                      ) : (
+                        <p className="text-muted-foreground">شاهد معیار کافی نیست — پس از غنی‌سازی معاملات فعال می‌شود.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* موتور ۱۵ — شبیه‌سازی */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><FlaskConical className="size-4 text-negin-nili-500" /> موتور ۱۵ — شبیه‌سازی: آزمون تصمیم پیش از اجرا</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      {metaMind.engines.simulation.comparison ? (
+                        <>
+                          <div className="space-y-1">
+                            {metaMind.engines.simulation.comparison!.results.map((r) => (
+                              <div key={r.action.label} className="rounded border p-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">{r.action.label}</span>
+                                  <span className={r.delta > 0 ? "font-bold text-emerald-600" : r.delta < 0 ? "font-bold text-red-600" : "text-muted-foreground"}>
+                                    Δ {r.delta >= 0 ? "+" : ""}{faDigits(Math.round(r.delta * 1000) / 10)}٪ → احتمال {faDigits(Math.round(r.simulatedProbability * 1000) / 10)}٪
+                                  </span>
+                                </div>
+                                {r.risks.length > 0 && (
+                                  <p className="text-[10px] text-muted-foreground mt-1">ریسک: {r.risks.join(" · ")}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <div className="rounded bg-muted/50 p-2.5">
+                            <p className="font-medium">{metaMind.engines.simulation.comparison!.recommendation}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">فشار بازار: {faDigits(metaMind.marketPressure)} (عرضه/تقاضا — تعدیل‌کنندهٔ Δ) · قفل ابدی: شبیه‌سازی فقط پیشنهاد، اجرا با تأیید مالک/شوراست (auto_execute=false)</p>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-muted-foreground">در انتظار گراف و شاهد معیار.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">فرا-ذهن در این نسخه در دسترس نیست.</CardContent></Card>
+              )}
             </TabsContent>
           </Tabs>
         </>

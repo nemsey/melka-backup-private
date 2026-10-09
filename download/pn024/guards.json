@@ -1,0 +1,190 @@
+{
+  "workOrder": "PN-024/مرحلهٔ ۱۱ — گاردها + دریل منفی",
+  "generatedAt": "2026-10-09T11:30:08.928032+00:00",
+  "guardCount": {
+    "total": 27,
+    "passed": 27,
+    "previous": 23,
+    "deltaNote": "سفارش ۲۵/۲۵ هدف گرفته بود؛ چهار گارد جدید الزامی‌شده توسط خود سفارش (J4+J5+نگین+پادواقع) ⇒ مجموع واقعی ۲۷ — دلتای مثبت مستند"
+  },
+  "guards": [
+    {
+      "guard": "repository-boundary",
+      "phase": "فاز ۳",
+      "pass": true,
+      "summary": "REPORT-ONLY: برای حاکمیت کامل از --strict استفاده کنید."
+    },
+    {
+      "guard": "intelligence-boundary",
+      "phase": "فاز ۳",
+      "pass": true,
+      "summary": "====================================================================="
+    },
+    {
+      "guard": "log-safety",
+      "phase": "فاز ۳",
+      "pass": true,
+      "summary": "PASS: امنیت لاگ رعایت شد."
+    },
+    {
+      "guard": "boot-secrets",
+      "phase": "PN-012",
+      "pass": true,
+      "summary": "PASS: سازوکار راز بوت سالم و کامل است."
+    },
+    {
+      "guard": "user-roles",
+      "phase": "PN-016",
+      "pass": true,
+      "summary": "کاربران: 4 | نقض: 0 | PASS"
+    },
+    {
+      "guard": "permission-boundary",
+      "phase": "PN-016",
+      "pass": true,
+      "summary": "کاربران: 4 | سطر مجوز: 18 | نقض: 0 | PASS"
+    },
+    {
+      "guard": "activity-log",
+      "phase": "PN-016",
+      "pass": true,
+      "summary": "نقض: 0 | PASS"
+    },
+    {
+      "guard": "int-overflow",
+      "phase": "PN-018",
+      "pass": true,
+      "summary": "PASS: گارد سرریز Int32 — سبز"
+    },
+    {
+      "guard": "champion-challenger",
+      "phase": "PN-018",
+      "pass": true,
+      "summary": "PASS: گارد Champion/Challenger — سبز"
+    },
+    {
+      "guard": "drift-detection",
+      "phase": "PN-018",
+      "pass": true,
+      "summary": "PASS: گارد Drift Detection — سبز"
+    },
+    {
+      "guard": "learning-loop",
+      "phase": "PN-018",
+      "pass": true,
+      "summary": "PASS: گارد Learning Loop — سبز"
+    },
+    {
+      "guard": "decision-safety",
+      "phase": "PN-019",
+      "pass": true,
+      "summary": "PASS: ایمنی چرخهٔ تصمیم برقرار — صفر autoExecute · صفر اجرای سایه · rollback کامل · ≥۳ بدیل"
+    },
+    {
+      "guard": "governance",
+      "phase": "PN-019",
+      "pass": true,
+      "summary": "PASS: حاکمیت ۱۵قاعده‌ای برقرار — زمینهٔ زنده · دروازهٔ شورا · قواعد دسترسی"
+    },
+    {
+      "guard": "policy-evaluation",
+      "phase": "PN-019",
+      "pass": true,
+      "summary": "PASS: ارزیابی سیاست برقرار — پنج سیاست × ۴ متریک · حکم معتبر · چرخهٔ ۹۰روزهٔ Worker"
+    },
+    {
+      "guard": "disk-space",
+      "phase": "PN-020",
+      "pass": true,
+      "summary": "DISK-SPACE: PASS (mode=prune)"
+    },
+    {
+      "guard": "self-diagnosis",
+      "phase": "PN-020",
+      "pass": true,
+      "summary": "SELF-DIAGNOSIS: PASS"
+    },
+    {
+      "guard": "repair-gate",
+      "phase": "PN-020",
+      "pass": true,
+      "summary": "REPAIR-GATE: PASS"
+    },
+    {
+      "guard": "stealth-users",
+      "phase": "PN-021",
+      "pass": true,
+      "summary": "کاربران: 4 | پنهان: 1 | نقض: 0 | PASS"
+    },
+    {
+      "guard": "postgres-compat",
+      "phase": "PN-022",
+      "pass": true,
+      "summary": "PASS — سازگاری PostgreSQL برقرار"
+    },
+    {
+      "guard": "tile-contract",
+      "phase": "PN-022",
+      "pass": true,
+      "summary": "PASS — قرارداد همهٔ کاشی‌ها سالم"
+    },
+    {
+      "guard": "feature-factory",
+      "phase": "PN-022",
+      "pass": true,
+      "summary": "PASS — کارخانهٔ کاشی سالم"
+    },
+    {
+      "guard": "meta-mind",
+      "phase": "PN-023-A",
+      "pass": true,
+      "summary": "PASS — فرا-ذهن کامل: دو موتور + دو ساختار + خلوص + جدول افزودنی + تست + CI"
+    },
+    {
+      "guard": "causal-validity",
+      "phase": "PN-023-A",
+      "pass": true,
+      "summary": "PASS — اعتبار علّی: DAG + کف اطمینان + دو دریل منفی"
+    },
+    {
+      "guard": "mirror-sync",
+      "phase": "PN-024/J4",
+      "pass": true,
+      "summary": "PASS: آینه همگاست — HEAD=9ad17c0"
+    },
+    {
+      "guard": "pg-cluster",
+      "phase": "PN-024/J5",
+      "pass": true,
+      "summary": "PASS: خوشه‌های PG تست در سقف —"
+    },
+    {
+      "guard": "negin-consistency",
+      "phase": "PN-024/مرحلهٔ ۱۱",
+      "pass": true,
+      "summary": "PASS: هویت نگین سازگار — ۱۱ گوهر · ۱۱ کاشی"
+    },
+    {
+      "guard": "counterfactual-purity",
+      "phase": "PN-024/مرحلهٔ ۱۱",
+      "pass": true,
+      "summary": "PASS: موتورهای ۱۴/۱۵ خالص + قفل ابدی + اتصال دو نقطهٔ UI"
+    }
+  ],
+  "newGuards": {
+    "audit-negin-consistency": "۱۱ گوهر: رجیستری + یتایی + CSS/توکن‌ها + قانون ۶ + اعمال ۱۱ کاشی",
+    "audit-counterfactual-purity": "خلوص موتورهای ۱۴/۱۵ (صفر DB/fetch/env/فایل) + قرارداد + قفل ابدی autoExecute + مرز لایه + اتصال ثانیاً"
+  },
+  "negativeDrills": [
+    {
+      "drill": "نقض نگین — تکرار رنگ ۵۰۰ (یاقوت→زمرد)",
+      "result": "قرمز فوری ✓ (قاعدهٔ ۱ مالک) · بازگشت سبز ✓"
+    },
+    {
+      "drill": "نقض L3 — import db در موتور پادواقع",
+      "result": "قرمز فوری ✓ (خلوص) · بازگشت سبز ✓"
+    }
+  ],
+  "ciIntegration": "گام‌های ۵-غ/خ/ت/ث به scripts/ci.sh اضافه شد — هر بیلد اجرا می‌شوند",
+  "pass": true
+}

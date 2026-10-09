@@ -1,0 +1,102 @@
+{
+  "workOrder": "PN-024/مرحلهٔ ۸ — موتور ۱۴ پادواقع روی گراف واقعی",
+  "ranAt": "2026-10-09T11:22:24.165Z",
+  "graph": {
+    "source": "CausalEdgeRecord (ذخیرهٔ ۱۳-الف)",
+    "nodes": 7,
+    "edges": 16,
+    "sampleSize": 0,
+    "dagVerified": true,
+    "featureOrder": [
+      "outcome",
+      "pricePerMeter",
+      "meterage",
+      "rooms",
+      "buildYear",
+      "hasImage",
+      "viewCount"
+    ]
+  },
+  "evidence": {
+    "type": "میانگین معامله‌های واقعی غنی‌شده — z-score پیوسته + باینری خام",
+    "n": 165,
+    "features": {
+      "pricePerMeter": 0,
+      "meterage": 0,
+      "rooms": 0,
+      "buildYear": 0,
+      "hasImage": 0.8848484848484849,
+      "viewCount": 0
+    },
+    "rawFeatures": {
+      "pricePerMeter": 44234219.24242424,
+      "meterage": 131.52733333333336,
+      "rooms": 2.2545454545454544,
+      "buildYear": 1350.5575757575757,
+      "hasImage": 0.8848484848484849,
+      "viewCount": 73.5939393939394
+    },
+    "sigma": {
+      "pricePerMeter": 35319431.86515096,
+      "meterage": 45.04842314900027,
+      "rooms": 0.6685855606313222,
+      "buildYear": 239.57269764625062,
+      "hasImage": 0.5,
+      "viewCount": 71.96644687102595
+    },
+    "priceZPerPercent": 0.012524046086389443
+  },
+  "threeStep": {
+    "abduction": "e = y_observed − Σβ·f (نویز فردی شاهد معیار)",
+    "action": "do(pricePerMeter: z(μ) → −5٪×μ/σ / −10٪×μ/σ)",
+    "prediction": "y′ = Σβ·f′ + e (همان نویز فردی)"
+  },
+  "scenarios": [
+    {
+      "scenario": "کاهش 10٪ قیمت‌متر (شاهد معیار معامله‌ها)",
+      "baseline": 0.5,
+      "counterfactual": 0.5187860691295842,
+      "delta": 0.0188,
+      "confidence": 0.858,
+      "method": "Pearl-L3",
+      "reason": "سناریو «کاهش 10٪ قیمت‌متر (شاهد معیار معامله‌ها)»: با نویز فردی 0.307، تغییر pricePerMeter از 0 به -0.12524046086389443 پیامد را از 0.500 به 0.519 جابه‌جا می‌کند (Δ=+0.019) با اطمینان 0.86 از 13 یال مؤثر — روش Pearl L3."
+    },
+    {
+      "scenario": "کاهش 5٪ قیمت‌متر (شاهد معیار معامله‌ها)",
+      "baseline": 0.5,
+      "counterfactual": 0.5093930345647921,
+      "delta": 0.0094,
+      "confidence": 0.858,
+      "method": "Pearl-L3",
+      "reason": "سناریو «کاهش 5٪ قیمت‌متر (شاهد معیار معامله‌ها)»: با نویز فردی 0.307، تغییر pricePerMeter از 0 به -0.06262023043194721 پیامد را از 0.500 به 0.509 جابه‌جا می‌کند (Δ=+0.009) با اطمینان 0.86 از 13 یال مؤثر — روش Pearl L3."
+    }
+  ],
+  "gates": [
+    {
+      "code": "CF_EMPTY_GRAPH",
+      "fa": "گراف خالی رد می‌شود",
+      "failLoud": true
+    },
+    {
+      "code": "CF_NOT_DAG",
+      "fa": "گراف بدون مهر DAG رد می‌شود",
+      "failLoud": true
+    },
+    {
+      "code": "CF_UNKNOWN_FEATURE",
+      "fa": "ویژگی ناشناخته رد می‌شود",
+      "failLoud": true
+    },
+    {
+      "code": "CF_EVIDENCE_MISMATCH",
+      "fa": "شاهد ناقص رد می‌شود",
+      "failLoud": true
+    },
+    {
+      "code": "CF_SAME_VALUE",
+      "fa": "سناریوی بی‌اثر رد می‌شود",
+      "failLoud": true
+    }
+  ],
+  "purity": "صفر وابستگی DB/fetch در موتور — فقط type-import از causal-engine"
+}

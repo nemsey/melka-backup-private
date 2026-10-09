@@ -1,0 +1,564 @@
+{
+  "workOrder": "PN-024/مراحل ۳+۴ — هویت نگین: پالت ۱۱ گوهر + اعمال روی ۱۱ کاشی",
+  "generatedAt": "2026-10-09T11:02:10.101Z",
+  "law6_additiveLayer": {
+    "valueColorsUntouched": true,
+    "secVarsUntouched": true,
+    "note": "نگین = لایهٔ درخشان رویی روی پالت ۲۴-خانه‌ای PN-011 — تست p6530 سبز می‌ماند"
+  },
+  "gems": [
+    {
+      "id": "yaghut-kamani",
+      "fa": "یاقوت کمانی",
+      "tile": "فایل یابی ملکا",
+      "feeling": "غریزهٔ شکارچی",
+      "hex500": "#DC2626",
+      "ramp": {
+        "50": "#FEF2F2",
+        "200": "#FECACA",
+        "400": "#F87171",
+        "500": "#DC2626",
+        "700": "#991B1B"
+      },
+      "dark": {
+        "50": "#2A1215",
+        "200": "#7F1D1D",
+        "400": "#FCA5A5",
+        "500": "#F87171",
+        "700": "#FECACA"
+      },
+      "fgOn500": "#FFFFFF"
+    },
+    {
+      "id": "kahroba-talaee",
+      "fa": "کهربا طلایی",
+      "tile": "آگهی ملکا",
+      "feeling": "گرمای فرصت",
+      "hex500": "#F59E0B",
+      "ramp": {
+        "50": "#FFFBEB",
+        "200": "#FDE68A",
+        "400": "#FBBF24",
+        "500": "#F59E0B",
+        "700": "#B45309"
+      },
+      "dark": {
+        "50": "#2A2005",
+        "200": "#78350F",
+        "400": "#FCD34D",
+        "500": "#FBBF24",
+        "700": "#FDE68A"
+      },
+      "fgOn500": "#1F2937"
+    },
+    {
+      "id": "aqiq-limoonee",
+      "fa": "عقیق لیمویی",
+      "tile": "درخواست ملکا",
+      "feeling": "سبزدشت رشد",
+      "hex500": "#84CC16",
+      "ramp": {
+        "50": "#F7FEE7",
+        "200": "#D9F99D",
+        "400": "#A3E635",
+        "500": "#84CC16",
+        "700": "#3F6212"
+      },
+      "dark": {
+        "50": "#1C2606",
+        "200": "#4D7C0F",
+        "400": "#BEF264",
+        "500": "#A3E635",
+        "700": "#D9F99D"
+      },
+      "fgOn500": "#1A2E05"
+    },
+    {
+      "id": "zomorrod-koohi",
+      "fa": "زمرد کوهی",
+      "tile": "M1 — آگهی‌ها",
+      "feeling": "فرصت سرسبز",
+      "hex500": "#10B981",
+      "ramp": {
+        "50": "#ECFDF5",
+        "200": "#A7F3D0",
+        "400": "#34D399",
+        "500": "#10B981",
+        "700": "#047857"
+      },
+      "dark": {
+        "50": "#04211A",
+        "200": "#065F46",
+        "400": "#6EE7B7",
+        "500": "#34D399",
+        "700": "#A7F3D0"
+      },
+      "fgOn500": "#022C22"
+    },
+    {
+      "id": "marjan-daryayi",
+      "fa": "مرجان دریایی",
+      "tile": "M2 — درخواست‌ها",
+      "feeling": "جریان زندهٔ آب",
+      "hex500": "#FB7185",
+      "ramp": {
+        "50": "#FFF1F2",
+        "200": "#FECDD3",
+        "400": "#FDA4AF",
+        "500": "#FB7185",
+        "700": "#BE123C"
+      },
+      "dark": {
+        "50": "#2B0D16",
+        "200": "#9F1239",
+        "400": "#FDA4AF",
+        "500": "#FDA4AF",
+        "700": "#FECDD3"
+      },
+      "fgOn500": "#4C0519"
+    },
+    {
+      "id": "yaghut-banafsh",
+      "fa": "یاقوت بنفش",
+      "tile": "M3 — معاملات",
+      "feeling": "شکوه توافق",
+      "hex500": "#8B5CF6",
+      "ramp": {
+        "50": "#F5F3FF",
+        "200": "#DDD6FE",
+        "400": "#A78BFA",
+        "500": "#8B5CF6",
+        "700": "#6D28D9"
+      },
+      "dark": {
+        "50": "#1E1636",
+        "200": "#4C1D95",
+        "400": "#C4B5FD",
+        "500": "#A78BFA",
+        "700": "#DDD6FE"
+      },
+      "fgOn500": "#FFFFFF"
+    },
+    {
+      "id": "yaghut-kabud",
+      "fa": "یاقوت کبود",
+      "tile": "M4 — کارشناسان",
+      "feeling": "اعتماد آسمانی",
+      "hex500": "#3B82F6",
+      "ramp": {
+        "50": "#EFF6FF",
+        "200": "#BFDBFE",
+        "400": "#60A5FA",
+        "500": "#3B82F6",
+        "700": "#1D4ED8"
+      },
+      "dark": {
+        "50": "#0D1B2E",
+        "200": "#1E40AF",
+        "400": "#93C5FD",
+        "500": "#60A5FA",
+        "700": "#BFDBFE"
+      },
+      "fgOn500": "#FFFFFF"
+    },
+    {
+      "id": "kuartz-soorati",
+      "fa": "کوارتز صورتی",
+      "tile": "M5 — تطبیق",
+      "feeling": "هماهنگی دل‌نشین",
+      "hex500": "#F472B6",
+      "ramp": {
+        "50": "#FDF2F8",
+        "200": "#FBCFE8",
+        "400": "#F9A8D4",
+        "500": "#F472B6",
+        "700": "#BE185D"
+      },
+      "dark": {
+        "50": "#2B0C21",
+        "200": "#9D174D",
+        "400": "#F9A8D4",
+        "500": "#F9A8D4",
+        "700": "#FBCFE8"
+      },
+      "fgOn500": "#500724"
+    },
+    {
+      "id": "nili",
+      "fa": "نیلی",
+      "tile": "M6 — مغز ملکا",
+      "feeling": "ژرفای هوش",
+      "hex500": "#6366F1",
+      "ramp": {
+        "50": "#EEF2FF",
+        "200": "#C7D2FE",
+        "400": "#818CF8",
+        "500": "#6366F1",
+        "700": "#4338CA"
+      },
+      "dark": {
+        "50": "#171A45",
+        "200": "#3730A3",
+        "400": "#A5B4FC",
+        "500": "#818CF8",
+        "700": "#C7D2FE"
+      },
+      "fgOn500": "#FFFFFF"
+    },
+    {
+      "id": "topaz-abee",
+      "fa": "توپاز آبی",
+      "tile": "M7 — شاخص بازار",
+      "feeling": "شفافیت آب‌رس",
+      "hex500": "#06B6D4",
+      "ramp": {
+        "50": "#ECFEFF",
+        "200": "#A5F3FC",
+        "400": "#22D3EE",
+        "500": "#06B6D4",
+        "700": "#0E7490"
+      },
+      "dark": {
+        "50": "#0A222B",
+        "200": "#155E75",
+        "400": "#67E8F9",
+        "500": "#22D3EE",
+        "700": "#A5F3FC"
+      },
+      "fgOn500": "#083344"
+    },
+    {
+      "id": "morvarid",
+      "fa": "مروارید",
+      "tile": "M8 — پوشش داده",
+      "feeling": "سازوارهٔ آرام",
+      "hex500": "#E7E5E4",
+      "ramp": {
+        "50": "#FAFAF9",
+        "200": "#E7E5E4",
+        "400": "#A8A29E",
+        "500": "#E7E5E4",
+        "700": "#44403C"
+      },
+      "dark": {
+        "50": "#1C1917",
+        "200": "#57534E",
+        "400": "#D6D3D1",
+        "500": "#A8A29E",
+        "700": "#E7E5E4"
+      },
+      "fgOn500": "#1C1917"
+    }
+  ],
+  "gradients": [
+    {
+      "id": "shafaq",
+      "fa": "شفق یاقوت",
+      "from": "#DC2626",
+      "to": "#F59E0B"
+    },
+    {
+      "id": "ocean",
+      "fa": "اقیانوس",
+      "from": "#06B6D4",
+      "to": "#6366F1"
+    },
+    {
+      "id": "jangal",
+      "fa": "جنگل زمرد",
+      "from": "#10B981",
+      "to": "#84CC16"
+    },
+    {
+      "id": "shahaneh",
+      "fa": "شاهانه",
+      "from": "#8B5CF6",
+      "to": "#3B82F6"
+    }
+  ],
+  "effects": [
+    "negin-glow",
+    "negin-shine",
+    "negin-sparkle",
+    "negin-depth",
+    "negin-glass"
+  ],
+  "wcag": {
+    "rule": "متن-۷۰۰ روی پس‌زمینه-۵۰ (جفت chip) ≥ ۴٫۵:۱ — AA",
+    "pairs": [
+      {
+        "id": "yaghut-kamani",
+        "fa": "یاقوت کمانی",
+        "ratio": 7.6,
+        "pass": true
+      },
+      {
+        "id": "kahroba-talaee",
+        "fa": "کهربا طلایی",
+        "ratio": 4.84,
+        "pass": true
+      },
+      {
+        "id": "aqiq-limoonee",
+        "fa": "عقیق لیمویی",
+        "ratio": 6.84,
+        "pass": true
+      },
+      {
+        "id": "zomorrod-koohi",
+        "fa": "زمرد کوهی",
+        "ratio": 5.21,
+        "pass": true
+      },
+      {
+        "id": "marjan-daryayi",
+        "fa": "مرجان دریایی",
+        "ratio": 5.72,
+        "pass": true
+      },
+      {
+        "id": "yaghut-banafsh",
+        "fa": "یاقوت بنفش",
+        "ratio": 6.48,
+        "pass": true
+      },
+      {
+        "id": "yaghut-kabud",
+        "fa": "یاقوت کبود",
+        "ratio": 6.16,
+        "pass": true
+      },
+      {
+        "id": "kuartz-soorati",
+        "fa": "کوارتز صورتی",
+        "ratio": 5.53,
+        "pass": true
+      },
+      {
+        "id": "nili",
+        "fa": "نیلی",
+        "ratio": 7.07,
+        "pass": true
+      },
+      {
+        "id": "topaz-abee",
+        "fa": "توپاز آبی",
+        "ratio": 5.15,
+        "pass": true
+      },
+      {
+        "id": "morvarid",
+        "fa": "مروارید",
+        "ratio": 9.84,
+        "pass": true
+      }
+    ],
+    "allPass": true
+  },
+  "uniqueness": {
+    "rule": "قاعدهٔ ۱ مالک — صفر تکرار گوهر",
+    "unique": true,
+    "values": [
+      "#DC2626",
+      "#F59E0B",
+      "#84CC16",
+      "#10B981",
+      "#FB7185",
+      "#8B5CF6",
+      "#3B82F6",
+      "#F472B6",
+      "#6366F1",
+      "#06B6D4",
+      "#E7E5E4"
+    ]
+  },
+  "tokenRegistration": {
+    "cssVarsLightDark": true,
+    "tailwindTokens": true,
+    "perGem": [
+      {
+        "id": "yaghut-kamani",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "kahroba-talaee",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "aqiq-limoonee",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "zomorrod-koohi",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "marjan-daryayi",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "yaghut-banafsh",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "yaghut-kabud",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "kuartz-soorati",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "nili",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "topaz-abee",
+        "lightTokens": true,
+        "darkTokens": true
+      },
+      {
+        "id": "morvarid",
+        "lightTokens": true,
+        "darkTokens": true
+      }
+    ]
+  },
+  "applied": {
+    "law7": "صفر تغییر منطق — فقط data-negin + یک div میلهٔ نگین + negin-glow آیکون",
+    "count": "11/11",
+    "tiles": [
+      {
+        "tile": "فایل یابی ملکا",
+        "gem": "yaghut-kamani",
+        "gemFa": "یاقوت کمانی",
+        "accentKey": "finder",
+        "feeling": "غریزهٔ شکارچی",
+        "pageHasDataNegin": true,
+        "pageFile": "file-finder/FileFinderPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "آگهی ملکا",
+        "gem": "kahroba-talaee",
+        "gemFa": "کهربا طلایی",
+        "accentKey": "melka-listing",
+        "feeling": "گرمای فرصت",
+        "pageHasDataNegin": true,
+        "pageFile": "listing/ListingsPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "درخواست ملکا",
+        "gem": "aqiq-limoonee",
+        "gemFa": "عقیق لیمویی",
+        "accentKey": "melka-request",
+        "feeling": "سبزدشت رشد",
+        "pageHasDataNegin": true,
+        "pageFile": "request/RequestsPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "M1 — آگهی‌ها",
+        "gem": "zomorrod-koohi",
+        "gemFa": "زمرد کوهی",
+        "accentKey": "m1",
+        "feeling": "فرصت سرسبز",
+        "pageHasDataNegin": true,
+        "pageFile": "arm-listing/ArmListingsPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "M2 — درخواست‌ها",
+        "gem": "marjan-daryayi",
+        "gemFa": "مرجان دریایی",
+        "accentKey": "m2",
+        "feeling": "جریان زندهٔ آب",
+        "pageHasDataNegin": true,
+        "pageFile": "arm-request/ArmRequestsPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "M3 — معاملات",
+        "gem": "yaghut-banafsh",
+        "gemFa": "یاقوت بنفش",
+        "accentKey": "m3",
+        "feeling": "شکوه توافق",
+        "pageHasDataNegin": true,
+        "pageFile": "transactions-contracts/TransactionsContractsPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "M4 — کارشناسان",
+        "gem": "yaghut-kabud",
+        "gemFa": "یاقوت کبود",
+        "accentKey": "m4",
+        "feeling": "اعتماد آسمانی",
+        "pageHasDataNegin": true,
+        "pageFile": "experts/ExpertsPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "M5 — تطبیق",
+        "gem": "kuartz-soorati",
+        "gemFa": "کوارتز صورتی",
+        "accentKey": "m5",
+        "feeling": "هماهنگی دل‌نشین",
+        "pageHasDataNegin": true,
+        "pageFile": "smart-matching/SmartMatchingPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "M6 — مغز ملکا",
+        "gem": "nili",
+        "gemFa": "نیلی",
+        "accentKey": "m8",
+        "feeling": "ژرفای هوش",
+        "pageHasDataNegin": true,
+        "pageFile": "learning-tier/LearningTierPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "M7 — شاخص بازار",
+        "gem": "topaz-abee",
+        "gemFa": "توپاز آبی",
+        "accentKey": "m6",
+        "feeling": "شفافیت آب‌رس",
+        "pageHasDataNegin": true,
+        "pageFile": "market-index/MarketIndexPage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      },
+      {
+        "tile": "M8 — پوشش داده",
+        "gem": "morvarid",
+        "gemFa": "مروارید",
+        "accentKey": "m7",
+        "feeling": "سازوارهٔ آرام",
+        "pageHasDataNegin": true,
+        "pageFile": "data-coverage/DataCoveragePage.tsx",
+        "accentHasGem": true,
+        "applied": true
+      }
+    ]
+  },
+  "tailwindConfig": "tailwind.config.ts — نگاشت legacy افزودنی (توکن عملیاتی در globals.css @theme inline)"
+}

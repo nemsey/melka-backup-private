@@ -1,0 +1,24 @@
+{
+  "workOrder": "PN-024/مرحلهٔ ۵ — تست سازگاری نگین + WCAG (بخشی از فایل مرحلهٔ ۱۰)",
+  "generatedAt": "2026-10-09T11:30:38.962111+00:00",
+  "file": "tests/pn024-negin-and-engines.test.ts",
+  "negTests": 20,
+  "wcag": {
+    "rule": "AA ≥ ۴٫۵:۱ متن-۷۰۰ روی پس‌زمینه-۵۰",
+    "pairs": 11,
+    "allPass": true,
+    "kuartzFix": "۷۰۰ از #DB2777 به #BE185D اصلاح شد (۴٫۲۱→۵٫۵۳)"
+  },
+  "pn011Compatibility": {
+    "p6530ColorSystem": "12/12 سبز (اجرا جداگانه)",
+    "valueColorsUntouched": true,
+    "colorsJsonUntouched": true
+  },
+  "applied": "11/11 کاشی",
+  "rawTail": [
+    "54 pass",
+    " 0 fail",
+    " 352 expect() calls",
+    "Ran 54 tests across 1 file. [1.62s]"
+  ]
+}

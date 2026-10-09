@@ -54,7 +54,9 @@ export function MarketIndexPage({ onBack }: TilePageProps) {
   useEffect(() => { load(); }, []);
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div data-negin="topaz-abee" className="space-y-4 p-4 md:p-6">
+      {/* نگین (PN-024) — میلهٔ گوهر topaz-abee */}
+      <div className="negin-bar" aria-hidden />
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           {onBack ? <Button variant="outline" size="sm" onClick={onBack}>بازگشت</Button> : null}

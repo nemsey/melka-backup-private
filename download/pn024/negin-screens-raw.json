@@ -1,0 +1,36 @@
+{
+  "shots": [
+    "screens/01-finder-light.png",
+    "screens/02-listing-light.png",
+    "screens/03-request-light.png",
+    "screens/04-m1-light.png",
+    "screens/05-m2-light.png",
+    "screens/06-m3-light.png",
+    "screens/07-m4-light.png",
+    "screens/08-m5-light.png",
+    "screens/09-m6-light.png",
+    "screens/10-m7-light.png",
+    "screens/11-m8-light.png",
+    "screens/01-finder-dark.png",
+    "screens/02-listing-dark.png",
+    "screens/03-request-dark.png",
+    "screens/04-m1-dark.png",
+    "screens/05-m2-dark.png",
+    "screens/06-m3-dark.png",
+    "screens/07-m4-dark.png",
+    "screens/08-m5-dark.png",
+    "screens/09-m6-dark.png",
+    "screens/10-m7-dark.png",
+    "screens/11-m8-dark.png"
+  ],
+  "errors": [],
+  "themes": {
+    "darkApplied": true
+  },
+  "login": "ok",
+  "consoleErrorCount": 0,
+  "consoleErrorSample": [],
+  "count": 22,
+  "expected": 22,
+  "allCaptured": true
+}

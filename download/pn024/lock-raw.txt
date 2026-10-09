@@ -1,0 +1,12 @@
+زمان: 2026-10-09T10:50:21.235Z
+HEAD: 9ad17c0
+mirror(auto-mirror/main): 9ad17c0a712c179a4979dcb311189410e7812a62
+BUILD_ID ورودی: b3b1518-20261009-0939
+src/ delta بیلد→HEAD: 0
+health: 200 0.011665s
+disk: 2.1G free · 78% used
+Worker: PID 22476 · 14 کار WORKER_JOB_IDS (intelligence-cycle · catalog-cycle · mirror-cycle · log-rotate · backup-rotation · privacy-guard · size-guard · preview-guard · reset-guard · drift-guard · decision-shadow · policy-eval · disk-guard · diagnosis-cycle)
+quick_check: ok
+بکاپ: /home/z/my-project/backups/pre-pn024-20261009105018Z.db (288.3MB) md5=aa4c745cdd6563c8593bc0893a13d86b
+رکوردها: آگهی 27778 · درخواست 25526 · معامله 768 · یال علّی 16
+chunk: ✓ یکپارچگی chunk: 12 ارجاع بررسی شد · ۰ مفقود · 56 چانک روی دیسک · هویت: match

@@ -21,7 +21,7 @@ import { runIntelligenceCoreCycle } from "@/lib/intelligence/core-cycle";
 
 export const dynamic = "force-dynamic";
 
-/** ۱۱ موتور قراردادی — همه با بدنهٔ واقعی از فاز ۹ (پیش از آن: ۵ بدنه تا فاز ۶) */
+/** ۱۵ موتور قراردادی — ۱۱ پایه (فاز ۴-۹) + ۴ فرا-ذهن (۱۳-الف/ب: توجه، علّیت، پادواقع، شبیه‌سازی) */
 export const ENGINES = [
   { id: "context", title: "زمینه (Context)", bodyPhase: "PHASE 4" },
   { id: "memory", title: "حافظه (Memory)", bodyPhase: "PHASE 4" },
@@ -34,6 +34,11 @@ export const ENGINES = [
   { id: "evaluation", title: "ارزیابی (Evaluation)", bodyPhase: "PHASE 8" },
   { id: "learning", title: "یادگیری (Learning)", bodyPhase: "PHASE 8" },
   { id: "decision", title: "تصمیم (Decision)", bodyPhase: "PHASE 8" },
+  // فرا-ذهن (PN-023-A + PN-024 — خواستهٔ ثانیاً مالک جلسهٔ ۰۳۱)
+  { id: "attention", title: "توجه (Attention)", bodyPhase: "PHASE 13A" },
+  { id: "causal", title: "علّیت (Causal)", bodyPhase: "PHASE 13A" },
+  { id: "counterfactual", title: "پادواقع (Counterfactual)", bodyPhase: "PHASE 13B" },
+  { id: "simulation", title: "شبیه‌سازی (Simulation)", bodyPhase: "PHASE 13B" },
 ] as const;
 
 export async function GET(request: NextRequest) {
@@ -50,6 +55,10 @@ export async function GET(request: NextRequest) {
     // سند ۰۲۷ — چرخهٔ بزرگ P7→P11 روی دادهٔ واقعی (صفر اجرای خودکار)
     // db در لایهٔ lib به‌صورت تنبل بارگذاری می‌شود (خلوص روت‌ها — گارد P2-03)
     const core = await runIntelligenceCoreCycle();
+
+    // PN-024 ثانیاً — فرا-ذهن: موتورهای ۱۲-۱۵ روی دادهٔ واقعی (تنظیمات + کاشی M6)
+    const { metaMindSnapshot } = await import("@/lib/services/meta-mind-service");
+    const metaMind = await metaMindSnapshot();
 
     return Response.json(
       {
@@ -119,6 +128,8 @@ export async function GET(request: NextRequest) {
         learning: policy
           ? { latestVersion: policy.latestVersion, active: policy.active, rationale: policy.rationale, createdAt: policy.createdAt }
           : null,
+        // PN-024 ثانیاً — فرا-ذهن (۱۲ توجه · ۱۳ علّیت · ۱۴ پادواقع · ۱۵ شبیه‌سازی)
+        metaMind,
         phases: { 7: "بازسازی سند ۰۲۷ — Outcome/Evaluation/Learning + Tier + Shadow + Drift", 8: "بازسازی سند ۰۲۷ — Decision/Planner/Safety (صفر auto_execute)", 9: "بازسازی سند ۰۲۷ — PolicyEval + Governance ۱۵ قاعده", 10: "خودتشخیصی ۲۵ بررسی — شناخت صادقانهٔ سیستم", 11: "خودترمیمی کنترل‌شده — پیشنهاد بدون اجرا (قفل شورا)" },
       },
       { headers: { "Cache-Control": "no-store, must-revalidate" } },

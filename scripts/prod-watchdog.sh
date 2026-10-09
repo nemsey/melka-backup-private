@@ -146,6 +146,18 @@ while true; do
     set +a
   fi
 
+  # ─── PN-024 · J1: قفل rebuild حین پارک اتمی (درس دهم — قانون ۹) ───
+  # اگر park-deliver فعال است (PARK_ACTIVE) یا CI در حال اجراست (CI_RUNNING)،
+  # هر rebuild/spawn صبر می‌کند: پارک ⇒ standalone حذف ⇒ این‌جا rebuild
+  # ⇒ tracing ۲٫۲GB ⇒ ENOSPC ⇒ حلقهٔ مرگ. قفل: ۳۰ دقیقه صبر + دور تازه.
+  if [ -f /home/z/my-project/upload/.runtime/PARK_ACTIVE ] || [ -f /home/z/my-project/upload/.runtime/CI_RUNNING ]; then
+    WHICH="PARK_ACTIVE"
+    [ -f /home/z/my-project/upload/.runtime/CI_RUNNING ] && WHICH="CI_RUNNING"
+    echo "[park-lock] $(date '+%F %T') $WHICH فعال — rebuild قفل است؛ ۳۰ دقیقه صبر (قانون ۹ پارک اتمی)" >> "$LOG"
+    sleep 1800
+    continue
+  fi
+
   # ─── PN-015/مرحلهٔ ۶: گارد یکپارچگی chunk پیش از هر اسپاون ───
   # درس شب chunk-404 (PN-014): سرور هرگز با بیلد ناقص بالا نمی‌آید.
   # اگر ارجاعی مفقود بود → بیلد مجدد (خروجی به لاگ — هرگز head-pipe نمی‌شود)

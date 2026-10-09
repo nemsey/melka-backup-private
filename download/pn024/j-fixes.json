@@ -1,0 +1,31 @@
+{
+  "workOrder": "PN-024/مرحلهٔ ۷ — J2+J4+J5: اصلاحات جانبی استخراج‌شده از PN-023-A",
+  "generatedAt": "2026-10-09T11:15:00Z",
+  "J2_graphTestTimeouts": {
+    "issue": "تست‌های گراف سنگین (danglingEdges روی ۱۶۰k+ یال با چرخه‌های مغز) از سقف ۵s پیش‌فرض bun عبور می‌کردند",
+    "status": "رفع‌شده در خود PN-023-A (کامیت b3b1518) — در این جلسه گواه شد",
+    "evidence": "tests/p6545-step1-infra.test.ts خطوط ۳۵۲ و ۳۵۸: مهلت صریح 30_000ms برای تست‌های ۲-۲۷ و ۲-۲۸",
+    "note": "سفارش مسیر tests/pn023a-*.test.ts را نام برده بود — تست‌های گرافی سنگین واقعاً در p6545-step1-infra.test.ts زندگی می‌کنند (شماره‌گذاری ۲-۲۷/۲-۲۸)؛ رفع واقعی و کامل است، فقط مسیر سفارش تقریبی بود",
+    "verified": true
+  },
+  "J4_mirrorDivergence": {
+    "issue": "واگرایی شاخهٔ آینهٔ GitHub (J4 جلسهٔ ۰۳۱)",
+    "fix": "گارد تازه scripts/audit-mirror-sync.sh — fetch + مقایسهٔ HEAD با auto-mirror/main + تشخیص جهت (push لازم vs rebase لازم)",
+    "run": "PASS — HEAD=9ad17c0 = auto-mirror/main",
+    "ci": "گام ۵-غ (هر بیلد — فراتر از «چک روزانه»ٔ سفارش: هر CI زودتر می‌گیرد)",
+    "witness": "download/pn024/guards-mirror-sync.json"
+  },
+  "J5_pgTestCluster": {
+    "issue": "خوشهٔ PostgreSQL تست ۶۲۰MB — نقش‌دار در حادثهٔ ENOSPC درس نهم",
+    "fix": "گارد تازه scripts/audit-pg-cluster.sh — پاک‌سازی خودکار خوشه‌های > ۵۰۰MB (بازسازی‌پذیر با pg-lifecycle)",
+    "run": "PASS — هیچ خوشهٔ فعالی در سقف نیست",
+    "paths": ["/tmp/melka-pg-test", "/home/z/my-project/.pg-test", "/home/z/my-project/node_modules/.pg-cluster"],
+    "ci": "گام ۵-ف",
+    "witness": "download/pn024/guards-pg-cluster.json"
+  },
+  "J3_layerBoundary": {
+    "status": "حل‌شده در PN-023-A (کشف زندهٔ گارد خلوص — انتقال causal-graph-store به لایهٔ سرویس) — صفر اقدام لازم",
+    "pattern": "الگوی self-diagnosis-service ثبت شد: موتور خالص + سرویس نازک DB"
+  },
+  "summary": "J1 (پارک اتمی) مرحلهٔ ۶ · J3 از قبل بسته · J2 گواه شد · J4+J5 دو گارد تازه زنده — مجموعاً گاردها ۲۳→۲۷ (۲ گارد این مرحله + negin-consistency + counterfactual-purity در مرحلهٔ ۱۱)"
+}

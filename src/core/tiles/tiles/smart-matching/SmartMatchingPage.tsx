@@ -218,7 +218,9 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
   const inputLabel = tab === "listing" ? "کد ملک یا عبارت جست‌وجو (مثلاً ولیعصر یا 59115)" : "کد درخواست یا عبارت جست‌وجو (مثلاً خرید آپارتمان)";
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div data-negin="kuartz-soorati" className="space-y-4 p-4 md:p-6">
+      {/* نگین (PN-024) — میلهٔ گوهر kuartz-soorati */}
+      <div className="negin-bar" aria-hidden />
       <div className="flex items-center gap-3">
         {onBack ? <Button variant="outline" size="sm" onClick={onBack}>بازگشت</Button> : null}
         <div>
