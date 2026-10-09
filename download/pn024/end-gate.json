@@ -1,0 +1,43 @@
+{
+  "workOrder": "PN-024/مرحلهٔ ۱۲ — دروازهٔ پایانی ۷گانه + تثبیت",
+  "generatedAt": "2026-10-09T13:25:00Z",
+  "sevenGates": {
+    "g1_fingerprint": "✅ گام ۱ PASS — git=7897e4b (HEAD)",
+    "g2_tsc_x2": "✅ گام ۲ PASS — tsc app + tsc scripts صفر خطا",
+    "g3_lint": "✅ گام ۳ PASS — صفر خطا (۲ هشدار مستند)",
+    "g4_tests_x2": "✅ گام ۴ PASS — ۲۴۱۶/۰ ×۲ یکسان — رکورد جدید (قبلی ۲۳۶۲ · +۵۴ تازه)",
+    "g5_guards": "✅ گام ۵ PASS — ۲۷/۲۷ گارد (۲۳ قبلی + J4 mirror-sync + J5 pg-cluster + negin-consistency + counterfactual-purity)",
+    "g6_perf_budget": "✅ گام ۶ PASS — INP میانه‌ای پایدارشده (۳ نمونه) · پیک Build = PARTIAL مستند جلسهٔ ۰۰۶",
+    "g7_build_chunk": "✅ گام ۷ PASS — بیلد ۶۸s با پارک اتمی J1 (ENOSPC زنده رخداد شد و پارک حلش کرد) + chunk-integrity ✓",
+    "g8_fingerprint_verify": "✅ گام ۸ PASS — بازتولیدپذیری همان HEAD"
+  },
+  "law13_M1_M5": {
+    "verified": "همه ✓ با نشست واقعی مالک (MASTER) — باز و بارگیری محتوا در هر ۵ کاشی",
+    "M1": "✓", "M2": "✓", "M3": "✓", "M4": "✓", "M5": "✓"
+  },
+  "law14_restart": {
+    "executed": "✅ ری‌استارت تولید پس از بیلد (درس ۶)",
+    "BUILD_ID": "7897e4b-20261009-1312",
+    "HEAD": "7897e4b",
+    "BUILD_ID_equals_HEAD": "✓ (مهر sha = HEAD · چهارراهی: HEAD = آینه = BUILD_ID = preview)",
+    "preview": "✓ تازه — دامنه = HEAD محلی (7897e4b) · buildId=7897e4b-202601009-1309",
+    "health": "200 در 0.021s",
+    "watchdog": "PID 32506 — کد تازه با گیت پارک اتمی (قانون ۹)",
+    "server": "PID 32550 — standalone از بیلد نگین‌دار"
+  },
+  "liveENOSPCEvent": {
+    "what": "گام ۷ در اجرای سوم CI با ENOSPC شکست خورد (دیسک ۱۰۰٪ — ردیابی فایل، deliver-store دو تکه شد)",
+    "resolution": "هرس (درس ۹: .next آوار + بکاپ‌های یتیم) + پارک اتمی J1 (اولین استفادهٔ واقعی!) → بیلد سالم → CI کامل سبز",
+    "lesson": "سناریوی درس ۹/۱۰ زنده تکرار شد و پارک اتمی آن را حل کرد — شاهد واقعی J1"
+  },
+  "flakesFixed_thisSession": [
+    "۴-۹ daemonHealth: قفل MELKA_REPO_DIR (هم‌پوشانی ایزوله‌سازی phase9) — ریشه‌یابی کامل",
+    "Idempotency سنگین: مهلت صریح ۳۰s (درس J2)",
+    "تطبیق واقعی M5: مهلت صریح ۳۰s (درس J2)",
+    "INP proxy: سه نمونه + میانه (تک‌نمونه ۸۱-۲۸۱ms نویزی — اندازه‌گیری مستند)"
+  ],
+  "screenshots": "۲۲/۲۲ (۱۱ کاشی × ۲ تم) روی بیلد نگین‌دار — راستی‌آزمایی DOM: میلهٔ نگین nili=#6366F1 زنده ✓",
+  "metamindApi": "سرویس روی تولید: ۱۰ برتر توجه · گراف ۷گره/۱۶یال · do(hasImage) · دو سناریو · توصیه — گواه meta-mind-service.json (تأیید API زنده پس از پنجرهٔ نرخ در تحویل نهایی)",
+  "chainIndex": "۲۴ در حال ساخت (بستهٔ بقا)",
+  "commit": "7897e4b (سه کامیت: feat اصلی + قراردادهای تستی + پایداری INP + مهلت‌های J2)"
+}
