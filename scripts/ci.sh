@@ -117,6 +117,12 @@ tail -1 /tmp/pn022-ci-audit20.log
 bash scripts/audit-feature-factory.sh > /tmp/pn022-ci-audit21.log 2>&1 || { echo "✗ گام ۵-ص: feature-factory (کارخانهٔ کاشی)"; tail -8 /tmp/pn022-ci-audit21.log; exit 1; }
 tail -1 /tmp/pn022-ci-audit21.log
 
+# PN-023-A (شورا-ن۰۲۹): دو گارد فرا-ذهن — فاز ۱۳-الف
+bash scripts/audit-meta-mind.sh > /tmp/pn023a-ci-audit22.log 2>&1 || { echo "✗ گام ۵-ض: meta-mind (فرا-ذهن: دو موتور + دو ساختار)"; tail -8 /tmp/pn023a-ci-audit22.log; exit 1; }
+tail -1 /tmp/pn023a-ci-audit22.log
+bash scripts/audit-causal-validity.sh > /tmp/pn023a-ci-audit23.log 2>&1 || { echo "✗ گام ۵-ظ: causal-validity (DAG + کف اطمینان + دریل منفی)"; tail -8 /tmp/pn023a-ci-audit23.log; exit 1; }
+tail -1 /tmp/pn023a-ci-audit23.log
+
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"
 # PN-012: ری‌استارت کنترل‌شدهٔ سرور تولید پیش از سنجهٔ RAM — الگوی مستند جلسهٔ ۰۰۶
