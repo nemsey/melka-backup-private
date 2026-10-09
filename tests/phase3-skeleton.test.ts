@@ -127,7 +127,7 @@ function walkImports(startFile: string): Set<string> {
 describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", () => {
   const intelFiles = collectTs(INTEL_DIR);
 
-  test("ناحیه هوشمندی وجود دارد — ترکیب مورد انتظار هر فاز (PHASE 3: ۱۵؛ PHASE 4: +۶؛ PHASE 5: +۷؛ PHASE 6: +۶؛ سند ۰۲۷: +۶)", () => {
+  test("ناحیه هوشمندی وجود دارد — ترکیب مورد انتظار هر فاز (PHASE 3: ۱۵؛ PHASE 4: +۶؛ PHASE 5: +۷؛ PHASE 6: +۶؛ سند ۰۲۷: +۶؛ ۱۳-الف: +۳؛ ۱۳-ب: +۲)", () => {
     // PHASE 3 (۱۵): ۱۱ قرارداد موتور + engines/index + ۴ اسکلت (base/engine-deps/index + قرارداد زمینه)
     // PHASE 4 (+۶): memory/{memory-store, vector-index, memory-engine, index} + context/{context-engine, index}
     // PHASE 5 (+۷): retrieval/{metadata, keyword-search, hybrid-retriever, reranker, citation-builder, retrieval-engine, index}
@@ -170,6 +170,9 @@ describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", (
       // ---- PN-023-A / فاز ۱۳-الف: فرا-ذهن — موتور ۱۲ (توجه) + موتور ۱۳ (علّیت) + بودجه (هر سه خالص) ----
       // ماندگاری گراف در lib/services/causal-graph-store.ts (لایهٔ سرویس — گارد خلوص)
       "attention-engine.ts", "causal-engine.ts", "attention-budget.ts",
+      // ---- PN-024 / فاز ۱۳-ب: موتور ۱۴ (پادواقع L3) + موتور ۱۵ (شبیه‌سازی) — هر دو خالص ----
+      // سرویس فرا-ذهن (تغذیهٔ تنظیمات + کاشی M6) در lib/services/meta-mind-service.ts (لایهٔ سرویس)
+      "counterfactual-engine.ts", "simulation-engine.ts",
     ]);
     const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
     expect([...actual].sort()).toEqual([...expected].sort());

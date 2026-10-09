@@ -1,17 +1,21 @@
 {
   "guard": "audit-mirror-sync",
   "workOrder": "PN-024/J4 — چک روزانهٔ همگامی آینه (در CI هر بیلد)",
-  "generatedAt": "2026-10-09T11:30:24.502122Z",
+  "generatedAt": "2026-10-09T11:39:27.710681Z",
   "checks": [
     {
       "check": "J4 همگامی آینه",
-      "ok": true,
-      "head": "9ad17c0",
+      "ok": false,
+      "head": "b0e2a8b",
       "mirror": "9ad17c0",
       "remote": "auto-mirror (GitHub — private backup)"
     }
   ],
-  "notes": [],
-  "violations": [],
-  "pass": true
+  "notes": [
+    "ahead=1 behind=0"
+  ],
+  "violations": [
+    "آینه واگراست: HEAD=b0e2a8b · mirror=9ad17c0 · جلوتر=1 · عقب‌تر=0 — push لازم (کامیت‌های محلی ارسال نشده)"
+  ],
+  "pass": false
 }
