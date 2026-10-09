@@ -61,13 +61,13 @@ describe("PN-020/فاز۱۰ — خودآگاهی: ۲۵ بررسی + نمره", (
     expect(d.recent.length).toBeLessThanOrEqual(7);
   });
 
-  test("۱۰-۵) کار Worker چهاردهم diagnosis-cycle با چرخهٔ ۶ ساعته", async () => {
+  test("۱۰-۵) کار Worker diagnosis-cycle با چرخهٔ ۶ ساعته (+PN-025: پانزدهمین کار حافظه)", async () => {
     const { buildWorkerJobs, WORKER_JOB_IDS } = await import("@/core/runtime/jobs");
     const jobs = buildWorkerJobs(db);
     const diag = jobs.find((j) => j.id === WORKER_JOB_IDS.diagnosisCycle);
     expect(diag).toBeDefined();
     expect(diag!.intervalMs).toBe(6 * 60 * 60_000);
-    expect(jobs.length).toBe(14); // ۱۳ کار قبلی + diagnosis-cycle
+    expect(jobs.length).toBe(15); // ۱۴ کار قبلی + memory-consolidation فاز ۱۳-ج
   });
 
   test("۱۰-۶) مرز روت تشخیص — بدون احراز ۴۰۱", async () => {
