@@ -324,8 +324,8 @@ describe("PN-023-A · گراف علّی پایدار — CausalEdgeRecord", () =
     }
   });
 
-  test("گ-۶) جدول افزودنی: قانون ۸ — ۶۰ جدول · CausalEdgeRecord حاضر", () => {
-    const { Database } = require("bun:sqlite");
+  test("گ-۶) جدول افزودنی: قانون ۸ — ۶۰ جدول · CausalEdgeRecord حاضر", async () => {
+    const { Database } = await import("bun:sqlite");
     const con = new Database("db/custom.db", { readonly: true });
     const t = con.query("SELECT name FROM sqlite_master WHERE type='table' AND name='CausalEdgeRecord'").get();
     expect(t).toBeDefined();
@@ -334,19 +334,20 @@ describe("PN-023-A · گراف علّی پایدار — CausalEdgeRecord", () =
     con.close();
   });
 
-  test("گ-۷) twin schema: توازن ۶۰=۶۰ (گارد postgres-compat)", () => {
-    const models = (p: string) => [...require("node:fs").readFileSync(p, "utf8").matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]);
+  test("گ-۷) twin schema: توازن ۶۰=۶۰ (گارد postgres-compat)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const models = (p: string) => [...readFileSync(p, "utf8").matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]);
     const sq = models("prisma/schema.prisma");
     const pg = models("prisma/schema.postgres.prisma");
     expect(sq.length).toBe(60);
     expect(new Set(pg)).toEqual(new Set(sq));
   });
 
-  test("گ-۸) schema additive: صفر تغییر در ۵۹ جدول موجود (diff برابری ستون‌ها)", () => {
-    // استخراج ستون‌های همهٔ مدل‌های موجود از دوتایی قدیمی و جدید — ستون CausalEdgeRecord تنها تفاوت است
-    const { Database } = require("bun:sqlite");
-    const con = new Database("db/custom.db", { readonly: true });
-    const cols = con.query("PRAGMA table_info(CausalEdgeRecord)").all().map((c) => c.name);
+  test("گ-۸) schema additive: صفر تغییر در ۵۹ جدول موجود (diff برابری ستون‌ها)", async () => {
+    // ستون‌های جدول تازه — تنها افزودنی (قانون ۸)
+    const { Database } = await import("bun:sqlite");
+    const con = new Database("db/custom.db", { readonly: true});
+    const cols = (con.query("PRAGMA table_info(CausalEdgeRecord)").all() as Array<{ name: string }>).map((c) => c.name);
     expect(cols).toEqual(["id", "fromFeature", "toFeature", "coefficient", "confidence", "method", "evidence", "createdAt"]);
     con.close();
   });
@@ -431,7 +432,7 @@ describe("PN-023-A · یکپارچگی فرا-ذهن", () => {
   });
 
   test("ی-۳) خلوص: موتورهای ۱۲/۱۳ صفر import از lib/db یا prisma (گارد فاز ۳)", async () => {
-    const fs = require("node:fs");
+    const fs = await import("node:fs");
     for (const f of ["attention-engine.ts", "causal-engine.ts", "attention-budget.ts"]) {
       const src = fs.readFileSync(`src/core/intelligence/${f}`, "utf8");
       expect(src.includes('from "@/lib/db"')).toBe(false);
@@ -444,7 +445,7 @@ describe("PN-023-A · یکپارچگی فرا-ذهن", () => {
 
   test("ی-۴) قانون ۶: موتورهای ۱-۱۱ دست‌نخورده — p7..p11 بدون تغییر این جلسه", async () => {
     // شمار کلاس‌های موتور موجود عین قبل — ۱۴ کلاس در p7..p11
-    const fs = require("node:fs");
+    const fs = await import("node:fs");
     const files = ["p7-core.ts", "p8-core.ts", "p9-core.ts", "p10-core.ts", "p11-core.ts"];
     let classes = 0;
     for (const f of files) {
