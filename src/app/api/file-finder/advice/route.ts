@@ -10,7 +10,7 @@
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
-import { advise } from "@/lib/services/decision-advisor-service";
+import { advise, areaDemandFor } from "@/lib/services/decision-advisor-service";
 
 export async function GET(request: NextRequest) {
   const guard = await requireSessionAsync(request);
@@ -23,17 +23,8 @@ export async function GET(request: NextRequest) {
     }
     const area = url.searchParams.get("area") ?? "";
 
-    // شمار متقاضیان هم‌منطقه — از درخواست‌های زنده (شاهد MATCH_INFORM واقعی)
-    let areaDemand: { area: string; requestCount: number } | null = null;
-    if (area.length >= 2) {
-      const { db } = await import("@/lib/db");
-      const rows = await db.requestRecord.findMany({
-        where: { areaNamesJson: { contains: `"${area}"` } },
-        select: { requestCode: true },
-        take: 50,
-      }).catch(() => [] as Array<{ requestCode: string }>);
-      areaDemand = { area, requestCount: rows.length };
-    }
+    // شمار متقاضیان هم‌منطقه — از سرویس (گارد P2-03: روت‌ها بدون import مستقیم DB)
+    const areaDemand = area.length >= 2 ? await areaDemandFor(area) : null;
 
     const result = await advise({
       kind: "property",

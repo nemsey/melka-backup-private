@@ -247,3 +247,15 @@ async function countCategoryToday(ctx: AdvisoryContext, todayStart: number): Pro
 
 /** ثابت‌های کمربند برای نمایش UI (تایمر باقی‌مانده) */
 export { DECISION_LOCK_CONSTANTS, expiryFromNow };
+
+/**
+ * تقاضای هم‌منطقه — شمار متقاضیان زندهٔ هم‌منطقهٔ یک فایل (کاشی فایل‌یابی).
+ * اینجا است تا روت‌ها import مستقیم DB نداشته باشند (گارد P2-03).
+ */
+export async function areaDemandFor(area: string): Promise<{ area: string; requestCount: number }> {
+  if (!area || area.length < 2) return { area, requestCount: 0 };
+  const rows = await db.requestRecord
+    .findMany({ where: { areaNamesJson: { contains: `"${area}"` } }, select: { requestCode: true }, take: 50 })
+    .catch(() => [] as Array<{ requestCode: string }>);
+  return { area, requestCount: rows.length };
+}
