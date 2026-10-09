@@ -62,7 +62,7 @@ async function main() {
 
   // ═══ ۳) موتور ۱۶ — ۱۰ تصمیم واقعی روی دادهٔ زنده ═══
   const { advise } = await import("../src/lib/services/decision-advisor-service");
-  const decisions = [];
+  const decisions: Array<Record<string, unknown>> = [];
   for (const p of topProps.slice(0, 8)) {
     if (!p.propertyCode) continue;
     const result = await advise({ kind: "property", id: p.propertyCode, label: `آگهی ${p.propertyCode}` });
