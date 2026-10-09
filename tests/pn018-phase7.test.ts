@@ -401,10 +401,14 @@ describe("PN-018/فاز۷ · مرز API نسخه‌بندی و رانش", () => 
     }
   });
 
-  test("مانیفست api-versioning با ۹۵ مسیر هم‌خوان (+۳ روت PN-020: تشخیص + ترمیم‌ها)", () => {
+  test("مانیفست api-versioning با ۱۰۰ مسیر هم‌خوان (+۵ روت PN-025: مشور)", () => {
     const manifest = JSON.parse(readFileSync("download/pn012/api-versioning.json", "utf8"));
-    expect(manifest.totalRoutes).toBe(95); // PN-020: ۹۲ + تشخیص + ترمیم‌ها + ترمیم[id]
+    expect(manifest.totalRoutes).toBe(100); // PN-025: ۹۵ + مشور مالک + stats حافظه + سه روت کاشی
     for (const v1 of ["/api/v1/admin/model-versions", "/api/v1/admin/model-versions/[id]/promote", "/api/v1/admin/model-versions/[id]/reject", "/api/v1/admin/model-versions/[id]/rollback", "/api/v1/admin/drift-checks"]) {
+      expect(manifest.routes.some((r: { v1: string }) => r.v1 === v1)).toBe(true);
+    }
+    // PN-025 — پنج روت مشور
+    for (const v1 of ["/api/v1/admin/decision-advisor", "/api/v1/admin/memory/stats", "/api/v1/smart-matching/advice", "/api/v1/file-finder/advice", "/api/v1/market-index/advice"]) {
       expect(manifest.routes.some((r: { v1: string }) => r.v1 === v1)).toBe(true);
     }
     // PN-019 — هشت روت تازهٔ فاز ۸+۹
