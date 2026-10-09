@@ -1,6 +1,6 @@
 {
   "workOrder": "PN-025/مرحلهٔ ۷ — ستون ۴: کمربند ایمنی",
-  "ranAt": "2026-10-09T18:41:32.307Z",
+  "ranAt": "2026-10-09T19:22:18.828Z",
   "constants": {
     "ttlSeconds": 604800,
     "cooldownHours": 48,
@@ -33,7 +33,7 @@
     },
     "ttlExpired": {
       "expired": true,
-      "ageHours": 210.6923075
+      "ageHours": 211.37189666666666
     }
   },
   "sampleLock": {
