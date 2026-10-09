@@ -1,7 +1,7 @@
 {
   "guard": "audit-pg-cluster",
   "workOrder": "PN-024/J5 — پاک‌سازی خودکار خوشهٔ PG تست > ۵۰۰MB (بازسازی‌پذیر)",
-  "generatedAt": "2026-10-09T11:30:24.539148Z",
+  "generatedAt": "2026-10-09T12:21:26.660002Z",
   "rationale": "خوشهٔ تست PG در حادثهٔ ENOSPC جلسهٔ قبل ۶۲۰MB اشغال می‌کرد — دادهٔ تست، بازسازی‌پذیر با pg-lifecycle است",
   "clusters": [
     {
