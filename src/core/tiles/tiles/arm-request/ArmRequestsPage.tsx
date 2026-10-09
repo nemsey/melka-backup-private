@@ -1039,10 +1039,16 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۱۵ — سند */}
-                        <TableCell className="whitespace-normal text-[10px] max-w-32">
+                        {/* ۱۵ — سند (جلسهٔ ۰۳۳ / ثانیاً-الف: رنگی — هر سند رنگ یکتای خود از رجیستری: شش‌دانگ/در دست اقدام/قراردادی/قولنامه) */}
+                        <TableCell className="whitespace-normal max-w-32">
                           {r.sanadNames ? (
-                            <span className="font-medium" title="نوع سند درخواستی — عین فرم ثبت ARM">{r.sanadNames}</span>
+                            <span className="inline-flex flex-wrap items-center justify-center gap-1 leading-relaxed">
+                              {parseNameList(r.sanadNames).map((name, idx) => (
+                                <Badge key={`${name}-${idx}`} variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(name)}`} title={`نوع سند درخواستی: ${name} — عین فرم ثبت ARM`}>
+                                  {name}
+                                </Badge>
+                              ))}
+                            </span>
                           ) : (
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}

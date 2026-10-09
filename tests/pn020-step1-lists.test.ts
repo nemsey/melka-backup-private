@@ -46,10 +46,24 @@ describe("PN-020 §الف — M1: حذف سه ستون + سال بدون کام�
     expect(M1_SRC).not.toContain("classifyListingStatus(r.status)");
   });
 
-  test("الف-۳) ستون‌های باقی‌ماندهٔ اصلی سر جایشان هستند (دسته‌بندی/آخرین فعالیت/تاریخ وضعیت/لینک)", () => {
-    for (const h of ["دسته‌بندی", "آخرین فعالیت", "تاریخ وضعیت", "لینک", "بازدید", "ساخت"]) {
+  test("الف-۳) ستون‌های باقی‌ماندهٔ اصلی سر جایشان هستند (دسته‌بندی/تاریخ وضعیت/لینک)", () => {
+    for (const h of ["دسته‌بندی", "تاریخ وضعیت", "لینک", "بازدید", "ساخت"]) {
       expect(M1_SRC).toContain(`>${h}</TableHead>`);
     }
+  });
+
+  test("الف-۳-ب) جلسهٔ ۰۳۳ (دستور مالک — ثانیاً/ب+ت): ستون «آخرین فعالیت» حذف + ترتیب ستون‌ها به‌ترتیب تازه", () => {
+    // حذف کامل ستون (سرستون + سلول)
+    expect(M1_SRC).not.toContain(">آخرین فعالیت</TableHead>");
+    // ترتیب الزامی مالک: ردیف · کد آگهی · کارشناس · شعبه · نوع ملک · دسته‌بندی · مالک · قیمت ·
+    // قیمت هر متر · رهن/اجاره · آدرس ملک · متراژ · اتاق · طبقه · ساخت · بازدید · لینک · تاریخ وضعیت
+    const headers = [...M1_SRC.matchAll(/<TableHead[^>]*>([^<]+)<\/TableHead>/g)].map((m) => m[1].trim());
+    expect(headers).toEqual([
+      "ردیف", "کد آگهی", "کارشناس", "شعبه", "نوع ملک", "دسته‌بندی", "مالک", "قیمت",
+      "قیمت هر متر", "رهن / اجاره", "آدرس ملک", "متراژ", "اتاق", "طبقه", "ساخت", "بازدید", "لینک", "تاریخ وضعیت",
+    ]);
+    // ترتیب بدنه هم منطبق است: لینک (۱۲) پیش از تاریخ وضعیت (۱۳ — آخرین ستون)
+    expect(M1_SRC).toMatch(/r\.publicUrl[\s\S]*?<\/TableCell>[\s\S]*?<TableCell className="text-muted-foreground whitespace-nowrap text-\[10px\]">\s*\{r\.statusDate/);
   });
 
   test("الف-۴) سال ساخت بدون کاما — faDigits (نه faNumber که جداکنندهٔ هزارگان می‌گذارد)", () => {
@@ -121,6 +135,19 @@ describe("PN-020 §ب — M2: رنگی سه ستون + سال بدون کاما 
     expect(valueSoftClass("فوری")).not.toBe(valueSoftClass("عادی"));
     const constructs = ["شخصی", "مجتمع", "برج"];
     expect(new Set(constructs.map((c) => valueSoftClass(c))).size).toBe(constructs.length);
+  });
+
+  test("ب-۸) جلسهٔ ۰۳۳ (ثانیاً/الف): ستون سند M2 رنگی — پنج مقدار واقعی DB از رجیستری + سلول Badge-دار", async () => {
+    const { valueSoftClass, hasDistinctColors } = await import("@/lib/value-colors");
+    // پنج مقدار واقعی DB (کشف زنده از ۳۵هزار ردیف)؛ golname = قولنامه با املاای مبدأ ⇒ هم‌رنگ معنایی
+    const sanads = ["شش‌دانگ", "در دست اقدام", "قراردادی", "قولنامه", "golname"];
+    for (const s of sanads) expect(valueSoftClass(s)).toMatch(/bg-\w+-\d+\/\d+ /);
+    // چهار سند معنایی متمایز — رنگ تکراری ممنوع (قانون مالک)
+    expect(hasDistinctColors(["شش‌دانگ", "در دست اقدام", "قراردادی", "قولنامه"])).toBe(true);
+    // golname هم‌رنگ قولنامه (هم‌معنا — الگوی «دفتر کار/دفترکار»)
+    expect(valueSoftClass("golname")).toBe(valueSoftClass("قولنامه"));
+    // سلول سند در M2 با Badge رنگی رندر می‌شود (نه متن ساده)
+    expect(M2_SRC).toMatch(/parseNameList\(r\.sanadNames\)[\s\S]{0,200}valueSoftClass\(name\)/);
   });
 });
 
