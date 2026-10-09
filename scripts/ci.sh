@@ -133,6 +133,14 @@ tail -1 /tmp/pn024-ci-audit26.log
 bash scripts/audit-counterfactual-purity.sh > /tmp/pn024-ci-audit27.log 2>&1 || { echo "✗ گام ۵-ث: counterfactual-purity (خلوص L3 + قفل auto_execute + مرز لایه)"; tail -8 /tmp/pn024-ci-audit27.log; exit 1; }
 tail -1 /tmp/pn024-ci-audit27.log
 
+# PN-025 (شورا-ن۰۳۲): سه گارد شاهکار چهارستونه (مجموع ۳۰)
+bash scripts/audit-memory-lifecycle.sh > /tmp/pn025-ci-audit28.log 2>&1 || { echo "✗ گام ۵-ح-۲: memory-lifecycle (ستون ۱ — سه سطح + سیاست + تثبیت + دریل)"; tail -8 /tmp/pn025-ci-audit28.log; exit 1; }
+tail -1 /tmp/pn025-ci-audit28.log
+bash scripts/audit-unified-graph.sh > /tmp/pn025-ci-audit29.log 2>&1 || { echo "✗ گام ۵-ط-۲: unified-graph (ستون ۲ — DAG + صفر چرخه + دریل)"; tail -8 /tmp/pn025-ci-audit29.log; exit 1; }
+tail -1 /tmp/pn025-ci-audit29.log
+bash scripts/audit-decision-lock.sh > /tmp/pn025-ci-audit30.log 2>&1 || { echo "✗ گام ۵-ی-۲: decision-lock (ستون ۳+۴ — قفل نوعی + سه قفل + صفر LLM + دریل)"; tail -8 /tmp/pn025-ci-audit30.log; exit 1; }
+tail -1 /tmp/pn025-ci-audit30.log
+
 # ── ۶) Perf Budget ──
 pass "Perf Budget (گارد بودجهٔ کارایی جلسهٔ ۰۰۶)"
 # PN-012: ری‌استارت کنترل‌شدهٔ سرور تولید پیش از سنجهٔ RAM — الگوی مستند جلسهٔ ۰۰۶

@@ -27,6 +27,8 @@ import {
   MapPin, ChevronDown, ChevronLeft, Search,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
+// PN-025/مرحلهٔ ۸ — کارت مشورهٔ موتور ۱۶ روی کاشی فایل‌یابی
+import { AdviceCard } from "@/components/app/shared/AdviceCard";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faNumber, faDateTime } from "@/lib/format";
@@ -747,6 +749,14 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* PN-025/مرحلهٔ ۸ — مشورهٔ مغز برای برترین فایل سطل جاری (تقاضای هم‌منطقه + شواهد علّی) */}
+      {adsData?.rows && adsData.rows.length > 0 ? (
+        <AdviceCard
+          endpoint={`/api/file-finder/advice?token=${encodeURIComponent(adsData.rows[0]!.token)}${adsData.rows[0]!.matchedAreaName ? `&area=${encodeURIComponent(adsData.rows[0]!.matchedAreaName)}` : ""}`}
+          title="توصیهٔ مغز برای برترین فایل"
+        />
+      ) : null}
 
       {/* پنجره‌های چهار کلید */}
       <AdDetailsDialog ad={detailsAd} open={Boolean(detailsAd)} onOpenChange={(v) => !v && setDetailsAd(null)} />

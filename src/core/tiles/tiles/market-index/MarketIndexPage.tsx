@@ -23,6 +23,8 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, 
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api } from "@/lib/client/api";
 import { faDigits } from "@/lib/format";
+// PN-025/مرحلهٔ ۸ — کارت مشورهٔ موتور ۱۶ روی کاشی حیاتی M7
+import { AdviceCard } from "@/components/app/shared/AdviceCard";
 
 interface MarketIndexData {
   dataSources: { transactions: number; transactionsWithPrice: number; listings: number; activeListings: number; requests: number };
@@ -69,6 +71,14 @@ export function MarketIndexPage({ onBack }: TilePageProps) {
         </div>
         <Button variant="outline" size="sm" onClick={load} className="gap-1"><RefreshCw className="size-4" /> بروزرسانی</Button>
       </div>
+
+      {/* PN-025/مرحلهٔ ۸ — هشدار تصمیم بازار برای منطقهٔ برتر (روند شاخص + فشار عرضه/تقاضا) */}
+      {data && data.byArea.length > 0 ? (
+        <AdviceCard
+          endpoint={`/api/market-index/advice?area=${encodeURIComponent(data.byArea[0]!.area)}`}
+          title="هشدار تصمیم بازار — منطقهٔ برتر"
+        />
+      ) : null}
 
       {loading && !data ? <Skeleton className="h-96 w-full" /> : null}
       {error ? <Card><CardContent className="p-4 text-sm text-red-600">{error}</CardContent></Card> : null}

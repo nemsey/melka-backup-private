@@ -1842,3 +1842,61 @@ model CausalEdgeRecord {
   @@unique([fromFeature, toFeature, method])
   @@index([toFeature])
 }
+
+/// ═══ PN-025 (فاز ۱۳-ج / ستون ۱) — حافظهٔ بلندمدت: سه جدول تازه ═══
+/// افزودنی صرف (قانون ۸): صفر DROP · صفر DELETE · صفر تغییر ستون موجود.
+/// سطح‌بندی عصب‌شناختی: داغ (هفته) · گرم (ماه) · سرد (آرشیو) + تثبیت شبانه (خواب).
+model MemoryLifecycle {
+  id              String   @id @default(cuid())
+  /// hot | warm | cold — سطح حافظه
+  category        String
+  /// شناسهٔ بستر — کد ملک / نرمال‌شدهٔ شخص / شناسهٔ توصیه …
+  itemId          String
+  /// property | person | request | transaction | advice | insight
+  itemType        String
+  lastAccessedAt  DateTime @default(now())
+  accessCount     Int      @default(0)
+  /// 0..1 — فرمول فصل ۳.۳ سند طراحی (تازگی ۰٫۴ + بسامد ۰٫۳۵ + پیوند نتیجه ۰٫۲۵)
+  importanceScore Float    @default(0)
+  /// زنجیرهٔ تبار برای audit پس از گذار سطح (رکورد حذف نمی‌شود — دادهٔ مقدس)
+  consolidatedTo  String?
+  createdAt       DateTime @default(now())
+
+  @@unique([itemType, itemId])
+  @@index([category, lastAccessedAt])
+  @@index([importanceScore])
+}
+
+/// هر اجرای تثبیت شبانه — شاهد کامل + بازتولیدپذیری (آستانه‌ها در evidence)
+model ConsolidationRun {
+  id         String   @id @default(cuid())
+  ranAt      DateTime @default(now())
+  /// شمار ارتقای hot→warm (عمر>۷روز و امتیاز≥۰٫۷)
+  hotToWarm  Int      @default(0)
+  /// شمار تنزل warm→cold (عمر>۳۰روز و امتیاز<۰٫۳)
+  warmToCold Int      @default(0)
+  /// شمار بیداری cold→warm (دسترسی تازه + جهش امتیاز) — آرشیو حذف نیست
+  archived   Int      @default(0)
+  /// مدت اجرا (ms)
+  duration   Int      @default(0)
+  /// { before:{hot,warm,cold}, after:{...}, topPromoted:[...] }
+  summary    Json?
+  /// { thresholds:{promote:0.7,demote:0.3,hotDays:7,warmDays:30}, sampled:[...] }
+  evidence   Json?
+
+  @@index([ranAt])
+}
+
+/// سیاست نگهداری هر سطح — قابل تنظیم بدون استقرار تازه (ستون compression برای فشرده‌سازی آینده)
+model RetentionPolicy {
+  id            String    @id @default(cuid())
+  /// hot | warm | cold
+  category      String
+  retentionDays Int
+  /// none | gzip-json (فعلاً none — مسیر رشد فصل ۱۰)
+  compression   String?
+  nextReviewAt  DateTime?
+  appliedBy     String?
+
+  @@unique([category])
+}

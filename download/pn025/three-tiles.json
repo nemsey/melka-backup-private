@@ -1,0 +1,31 @@
+{
+  "workOrder": "PN-025/مرحلهٔ ۸ — سه کاشی حیاتی: M5 + فایل‌یابی + M7",
+  "ranAt": "2026-10-09T18:41:32.307Z",
+  "tiles": {
+    "M5-تطبیق": {
+      "endpoint": "/api/smart-matching/advice",
+      "sample": {
+        "locked": true,
+        "reason": "ttl",
+        "message": "توصیهٔ قبلی هنوز معتبر است — تا انقضا تکرار نمی‌شود"
+      }
+    },
+    "فایل‌یابی": {
+      "endpoint": "/api/file-finder/advice",
+      "sample": {
+        "locked": true,
+        "reason": "rate-day",
+        "message": "سقف توصیه‌های امروز پر شده — فردا صبح اولین توصیه همین‌جا است"
+      }
+    },
+    "M7-شاخص": {
+      "endpoint": "/api/market-index/advice",
+      "sample": {
+        "locked": true,
+        "reason": "ttl",
+        "message": "توصیهٔ قبلی هنوز معتبر است — تا انقضا تکرار نمی‌شود"
+      }
+    }
+  },
+  "uiComponent": "src/components/app/shared/AdviceCard.tsx"
+}
