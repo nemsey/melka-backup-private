@@ -1,16 +1,16 @@
 {
-  "ranAt": "2026-10-09T11:35:57.887Z",
+  "ranAt": "2026-10-09T12:36:03.319Z",
   "tileId": "arm-listing",
-  "predictions": 726,
-  "positiveOutcomes": 363,
-  "negativeOutcomes": 363,
-  "linked": 726,
+  "predictions": 728,
+  "positiveOutcomes": 364,
+  "negativeOutcomes": 364,
+  "linked": 728,
   "evaluation": {
     "tileId": "arm-listing",
     "windowDays": 3650,
-    "sampleSize": 726,
+    "sampleSize": 728,
     "verdict": "ABOVE_BASELINE",
-    "computedAt": "2026-10-09T11:35:57.887Z",
+    "computedAt": "2026-10-09T12:36:03.319Z",
     "unresolvablePairs": 0,
     "target": "probability",
     "brierScore": 0.238,
@@ -23,12 +23,12 @@
       {
         "bucket": "0.2-0.4",
         "predicted": 0.395,
-        "observed": 0.326
+        "observed": 0.329
       },
       {
         "bucket": "0.4-0.6",
         "predicted": 0.488,
-        "observed": 0.731
+        "observed": 0.73
       },
       {
         "bucket": "0.6-0.8",
