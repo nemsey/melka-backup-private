@@ -2836,3 +2836,35 @@ Stage Summary:
 - رکورد تست: ۲۲۴۷/۰ ×۲ (قبلی ۲۲۲۰)
 - زنجیرهٔ بقا: chainIndex=21 (بدون تغییر — بستهٔ بقا در مأموریت پاک‌سازی آینده) · ۱۸ گارد · ۹۵ روت v1
 - انتظار مالک: (۱) تب «کارشناس فروش پنهان» را با یک پرسنل واقعی PM بیازمایید (دکمهٔ «پنهان» در تب PM) (۲) تب «راهنما» — نقشهٔ کامل سه مسیر (۳) گزارش ۹ یافتهٔ تشخیص /api/admin/diagnosis از PN-020 همچنان پایش (۴) موارد باز: تیکت D1 · Publish · PN-022
+
+---
+Task ID: PN-022-A
+Agent: main (Super Z / GLM)
+Task: ملکا-شورا-ن۰۲۵-۱۴۰۵ — PN-022-A: فاز ۱۲-الف (زیرساخت مقیاس ملی) + اولاً مالک: پاک‌سازی رانش ۰.۴۷۴ + ثبت brierScore قهرمان + سنک صفحه‌ای checkpoint
+
+Work Log:
+- **قفل ورود:** ۴/۴ (HEAD=6f6242b = 346274a + کامیت ورک‌لاگ + چک‌پوینت خودکار پلتفرم b652de33 — صفر تغییر src/) + ۶/۶ (health 200 · quick_check ok · escrow · Worker ۱۴ کار · چانک ۲۰۰ · BUILD_ID مهر PN-021) → lock-form.json
+- **مرحلهٔ ۱ — رفع ۹ هشدار diagnosis (اولاً + I3-I10) → نمرهٔ ۶۵ → ۱۰۰ (۲۵/۲۵ · صفر هشدار):**
+  · اولاً-۱/I5: شکاف همگن لایه‌ای (مرتب‌سازی بر مقدار مشاهده + هش پایدار djb2 + توزیع متناوب) — رانش کاذب ۰.۴۷۴ → ۰٫۰۰۰ (توازن دقیق ریاضی نرخ) · عملکرد ۰٫۰۷۴ → ۰٫۰۰۶ · پاک‌سازی ۶ رکورد آرتیفکت با AuditLog DRIFT_ARTIFACT_PURGED · چرخه drift تازه: بیشترین ۰٫۰۰۷ < آستانه ۰٫۰۵
+  · اولاً-۲/I4: registerChampionBrier — قهرمان arm-listing-v0 v1 Brier=۰٫۲۲۵۶ روی ۷۷۲ جفت واقعی (محاسبهٔ تازه با EvaluationEngineImpl — عین PN-018) + AuditLog MODEL_BRIER_REGISTERED
+  · اولاً-۳: سنک صفحه‌ای checkpoint — fetchAllPages با maxRetries=۲ (بک‌آف ۸۰۰/۱۶۰۰ms گذرا — قبلاً صفر!) + checkpoint خانواده‌ای (main-sync:transactions|experts|interactions|visits|supply-demand) + اعمال صفحه‌به-صفحه (پیشروی نجات‌پذیر) + بودجهٔ صفحات هر-اجرا + جاروی معوق در ازسرگیری (کلید ناقص = حذف نادرست) + کارخانهٔ خانوادهٔ واحد (buildMainSyncFamily — صفر انشعاب منطق) · legacy بایت‌به‌بایت دست‌نخورده
+  · I3: بازکالیبراسیون DIAG-DATA-006 — کشف ریشه‌ای زنده: یتیمی کاتالوک مستقل از سن معامله (۵۵-۶۰٪ در پنجره‌های ۳۰/۹۰/۱۸۰/۳۶۵ روز — ARM آگهی معامله‌شده را حذف می‌کند)؛ معیار تازه = پوشش غنی‌سازی منبع (۷۶۸/۷۶۸ = ۱۰۰٪ ≥ ۹۵٪)
+  · I6: تصمیم سایهٔ واقعی investigate با مهر modelVersionId قهرمان (۳ بدیل · autoExecute=false)
+  · I7: تحلیل ۴۱۰۰۳۱۳۲۰ = خود مالک (سید نعمت‌اله سیدی) — حکم: خطای سمت کلاینت (مسیر منفرد · فاصلهٔ انسانی · کد شناخته‌شده) · ریشه: ورود OTP ARM نقش محیطی می‌سازد (realtor→CONSULTANT) ولی رجیستری User مالک OWNER است → ترمیم ریشه‌ای: آشتی نقش createSession با رجیستری کاربران + مکانیزم حکم ACCESS_DENIED_ADJUDICATED (چرخهٔ امنیتی: کشف→تحلیل→حکم مستند→پایش تازه)
+  · I8: هرس نشست OWNER — ۱۱→۳ تازه‌ترین (ابطال نه حذف) + SESSIONS_PRUNED
+  · I9: کشف ریشه‌ای GOV-DATA-002 — بکاپ‌های ۶ساعته هرگز در AuditLog ثبت نمی‌شدند ⇒ همهٔ حذف‌ها «بدون شاهد» شمرده می‌شدند؛ ترمیم: BACKUP_ROTATION در runBackupRotation + چرخهٔ تازه + بررسی حاکمیت سبز (۱۵/۱۵ · صفر نقض بحرانی) + مستثنی‌کردن DISK_PRUNE خودشاهد
+  · I10: سه قانون ساختاری در BUILD-DISCIPLINE (درس ۶: ری‌استارت پس از بیلد + BUILD_ID=HEAD · درس ۷: E2E کلیک واقعی فرم‌ها · درس ۸: Bidi hex-verify)
+  · شاهد: download/pn022/step1/diagnosis-resolved.json (نمره ۱۰۰ · ۹/۹ رفع)
+- **مرحلهٔ ۲:** سند طراحی فاز ۱۲ — docs/PHASE12-NATIONAL-SCALE-DESIGN.md (۶۰۵ خط · ۲۱ فصل · ۹ پیوست: ممیزی ۵۹ مدل · مشخصات کامل checkpoint · اثبات ریاضی شکاف همگن · RTM · شبه‌کد مهاجرت · ADR · برنامهٔ سه‌گانه)
+- **مرحلهٔ ۳ — PostgreSQL (فقط تست):** schema.postgres.prisma (۵۹ مدل · validate ✓ · db push 168ms) · خوشهٔ embedded PG 18.4 (پورت 5433 · بدون root) · مهاجرت ۵۹/۵۹ مدل · ۳۵۵٬۰۲۱ ردیف · صفر اختلاف · 60.8s (قید صفر-سکوت + idempotent + مبدل صریح) · بنچمارک ۸ سنجهٔ دو-موتوره (میانهٔ ۳ اجرا · PG در کوئری سنگین گراف ۱۴× برنده · تک‌کوئری‌ها ~۱-۱.۴× — صداقت کامل) · ۴ نقطهٔ موتور-ویژه با مهر ENGINE: sqlite-only
+- **مرحلهٔ ۴ — Feature Factory:** scripts/feature-factory/tile-new.ts + bun run tile:new --name=contracts → ۶ فایل (tile+page+agent+repository+API+test) · TILE_SKELETON fail-loud · صفر overwrite · بدون نشت رجیستری تا --register · گواه: feature-factory.json (۶ فایل · ۱۴۰ خط)
+- **مرحلهٔ ۵ — سه گارد تازه:** audit-postgres-compat.sh (اسکیمای دوقلو + نقاط موتور مهر‌دار + گواه مهاجرت) · audit-tile-contract.sh (قرارداد ۱۴ کاشی — کالیبره بر واقعیت: order درون‌ظرف پایدار + id/پوشهٔ موروثی اطلاعاتی) · audit-feature-factory.sh (تولید آزمایشی زنده + رد نام بد + صفر overwrite) — CI گام ۵-ر/ش/ص · **مجموع ۲۱ گارد**
+- **مرحلهٔ ۶:** ۷۵ تست تازه (هدف ≥۶۰): pn022-step1-diagnosis (۲۵) + pn022-checkpoint-sync (۲۱) + pn022-infra (۲۹)
+- **مرحلهٔ ۷ — دروازه:** حادثهٔ زندهٔ ENOSPC ششم (ادارهٔ /tmp قدیمی ۸۵۱MB از جلسات قبل = نوسان تست ۳۱/۲۵ شکست — پاک‌سازی + رفع) · CI ۸گامی PASS: **تست ۲۳۲۲/۰ ×۲ یکسان — رکورد جدید** (قبلی ۲۲۴۷ · +۷۵) · ۲۱ گارد سبز · بیلد ۴۴s · chunk match · fingerprint ۱۰۰٪ · مستثنی‌کردن بسته‌های PG از tracing · کامیت 90526e6 + بیلد مهر 90526e6-202601008-2304 + **ری‌استارت تولید (قانون تازهٔ درس ۶ — اجرای نخست)** + گواه چهارراهی (health 200 در 0.009s · home 200 · چانک 200 · preview=HEAD) · بستهٔ بقا **chainIndex=22** (۴۵۵MB · ۲۶ فایل · لنگر 951d02b2 → MANIFEST.md5 بستهٔ ۲۱) · تحویل v3: tar.gz 217MB + ۹ شاهد + SHA256SUMS + **۱۰/۱۰ لینک ۲۰۰** · کامیت‌های 90526e6 + bb4ca65 = آینه GitHub main
+- **کشف زندهٔ درس Bidi (ششمین تکرار):** نمایش grep «@@unique(odelId, …)» به‌ظاهر فیلد گم‌شده — hex-verify با od -c: بایت خام «@@unique([modelId, …)» سالم بود؛ نمایش RTL براکت را جابه‌جا نشان می‌داد. قانون تازه‌ثبت‌شده دقیقاً همین لحظه جلوی «ترمیم» اشتباه را گرفت.
+
+Stage Summary:
+- حکم گیت: NINE_DIAGNOSIS_WARNINGS_RESOLVED (نمرهٔ ۱۰۰ · ۲۵/۲۵) + PAGE_CHECKPOINT_SYNC_LIVE (ازسرگیری + تلاش مجدد گذرا) + POSTGRES_TEST_MIGRATION_VERIFIED (۳۵۵k ردیف · صفر اختلاف) + FEATURE_FACTORY_LIVE + THREE_NEW_GUARDS (۲۱)
+- رکورد تست: ۲۳۲۲/۰ ×۲ (قبلی ۲۲۴۷ · +۷۵)
+- زنجیرهٔ بقا: chainIndex=22 · آینه = HEAD · preview = BUILD_ID (کد) = HEAD · Worker ۱۴ کار · ۲۱ گارد · ۹۵ روت v1
+- انتظار مالک: (۱) پانل تشخیص: /api/admin/diagnosis — نمرهٔ ۱۰۰ با ۲۵/۲۵ (۲) تست ورود پیامکی — نقش OWNER از رجیستری (اتصال PM بدون رد) (۳) سه قانون تازه در BUILD-DISCIPLINE (۴) PN-022-B: چند-شهری + Contract Tests طبق نقشهٔ سه‌دستوری
