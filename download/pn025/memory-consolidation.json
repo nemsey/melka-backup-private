@@ -1,23 +1,23 @@
 {
   "workOrder": "PN-025/مرحلهٔ ۴ — ستون ۱: حافظهٔ بلندمدت",
-  "ranAt": "2026-10-09T18:41:32.307Z",
+  "ranAt": "2026-10-09T19:22:18.828Z",
   "consolidation": {
     "hotToWarm": 0,
     "warmToCold": 0,
     "awakened": 0,
-    "durationMs": 6,
+    "durationMs": 7,
     "errors": []
   },
   "stats": {
     "levels": {
-      "hot": 20,
+      "hot": 10,
       "warm": 0,
       "cold": 0,
-      "total": 20
+      "total": 10
     },
     "importance": {
       "high": 0,
-      "low": 20
+      "low": 10
     },
     "policies": [
       {
@@ -25,20 +25,20 @@
         "retentionDays": 7
       },
       {
-        "category": "cold",
-        "retentionDays": 365
-      },
-      {
         "category": "warm",
         "retentionDays": 30
+      },
+      {
+        "category": "cold",
+        "retentionDays": 365
       }
     ],
     "lastConsolidation": {
-      "ranAt": "2026-10-09T18:41:32.380Z",
+      "ranAt": "2026-10-09T19:22:18.897Z",
       "hotToWarm": 0,
       "warmToCold": 0,
       "awakened": 0,
-      "durationMs": 6
+      "durationMs": 7
     }
   },
   "witness": "10 بستر واقعی لمس شد + نخستین تثبیت شبانه اجرا شد"

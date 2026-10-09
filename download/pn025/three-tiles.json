@@ -1,6 +1,6 @@
 {
   "workOrder": "PN-025/مرحلهٔ ۸ — سه کاشی حیاتی: M5 + فایل‌یابی + M7",
-  "ranAt": "2026-10-09T18:41:32.307Z",
+  "ranAt": "2026-10-09T19:22:18.828Z",
   "tiles": {
     "M5-تطبیق": {
       "endpoint": "/api/smart-matching/advice",
