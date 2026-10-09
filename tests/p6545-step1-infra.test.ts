@@ -349,13 +349,13 @@ describe("گام۱/B1.2 — سه گراف روی دادهٔ واقعی (custom.d
     expect(await realGraphs.danglingEdges("property")).toBe(0);
     expect(await realGraphs.danglingEdges("people")).toBe(0);
     expect(await realGraphs.danglingEdges("transaction")).toBe(0);
-  });
+  }, 30_000); // PN-023-A: مهلت صریح — گراف واقعی با چرخه‌های مغز رشد کرده (۱۶۰k+ یال) و پیمایش حافظه‌ای از ۵s پیش‌فرض عبور می‌کند
 
   test("۲-۲۸ سازندهٔ گراف ملک از PropertyRecord واقعی می‌سازد", async () => {
     const report = await buildPropertyGraph(real, realGraphs);
     expect(report.graph).toBe("property");
     expect(report.sources.properties).toBeGreaterThan(0);
-  });
+  }, 30_000); // PN-023-A: مهلت صریح — همین ریشهٔ رشد داده (سازندهٔ گراف روی ۲۷k+ آگهی واقعی)
 
   test("۲-۲۹ سازندهٔ گراف افراد منابع واقعی دارد", async () => {
     const report = await buildPeopleGraph(real, realGraphs);

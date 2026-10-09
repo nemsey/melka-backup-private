@@ -167,6 +167,9 @@ describe("P3-02 — خلوص لایه هوشمندی (اسکن مستقیم)", (
       "models/registry.ts", "models/index.ts",
       "agents/domain-agents.ts", "agents/index.ts",
       "cross-tile.ts",
+      // ---- PN-023-A / فاز ۱۳-الف: فرا-ذهن — موتور ۱۲ (توجه) + موتور ۱۳ (علّیت) + بودجه (هر سه خالص) ----
+      // ماندگاری گراف در lib/services/causal-graph-store.ts (لایهٔ سرویس — گارد خلوص)
+      "attention-engine.ts", "causal-engine.ts", "attention-budget.ts",
     ]);
     const actual = new Set(intelFiles.map((f) => f.slice(INTEL_DIR.length + 1)));
     expect([...actual].sort()).toEqual([...expected].sort());

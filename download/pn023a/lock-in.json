@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-10-09T08:08:30Z",
+  "workOrder": "PN-023-A (فاز ۱۳-الف — فرا-ذهن: موتور توجه + موتور علّیت) — ملکا-شورا-ن۰۲۹-۱۴۰۵",
+  "phase0_identity": {
+    "expectedHeadAtEntry": "346274a یا جدیدتر",
+    "actualHeadAtEntry": "754ac38",
+    "mirrorEqualsHeadCode": true,
+    "mirror": "a17b3fd (کامیت کد تحویل PN-022-A؛ HEAD = همان + ورک‌لاگ a17b3fd…خیر — زنجیرهٔ کامل: 90526e6→a17b3fd(ورک‌لاگ)→754ac38(چک‌پوینت خودکار پلتفرم f594e61e — صفر تغییر src/؛ راستی‌آمایی diff: ۸ فایل همه لاگ-روتیشن/هوش)",
+    "srcDeltaBuildToHead": "0 فایل (بیلد 90526e6 کد = HEAD)",
+    "chainIndex": 22,
+    "chainDeltaNote": "سفارش انتظار chainIndex=21 داشت (نگارش پیش از اجرای PN-022-A) — واقعیت جدیدتر: ۲۲ (PN-022-A بسته شد: ۲۳۲۲ تست · ۲۱ گارد · نمرهٔ تشخیص ۱۰۰). هدف این جلسه: chainIndex=23",
+    "buildId": "90526e6-20261008-2304 — پیش‌فرض دروازهٔ پایانی مهر تازه می‌خورد (قانون ۱۲)"
+  },
+  "phase0_preconditions": {
+    "health": "200 — 0.007s ✓",
+    "dbQuickCheck": "ok ✓",
+    "escrowThreePlace": "audit-boot-secrets: PASS ✓",
+    "workerAlive": "PID 21630 — ۱۴ کار ✓",
+    "chunkIntegrity": "۱۲ ارجاع · ۰ مفقود · ۵۶ چانک · match ✓",
+    "diskSpace": "۷۵٪ مصرف · ۲٫۴G آزاد (۲۵٪ ≥ آستانه ۲۰٪) ✓ — هرس ۷۸۸MB /tmp قدیمی پیش از قفل",
+    "previewEqualsHead": "دلتای مستند: preview=90526e6(کد) · HEAD=754ac38(چک‌پوینت لاگ-روتیشن · صفر کد) — عین الگوی PN-017/PN-019؛ دروازه پایانی با ری‌استارت و BUILD_ID=HEAD نهایی مهر می‌خورد (قانون ۱۲)"
+  },
+  "phase0_dataLock": {
+    "backupFile": "backups/pre-pn023a-20261009T080759Z.db",
+    "backupMd5": "9424afdbbbfe94bf103851587936d4d8",
+    "backupSizeMB": 285.0,
+    "dbSizeBeforeMB": 292.9,
+    "recordCounts": {
+      "listings_PropertyRecord": 27777,
+      "requests_RequestRecord": 25526,
+      "transactions_TransactionRecord": 768,
+      "enriched_TransactionEnrichment": 768
+    },
+    "orderExpectedCounts": "27,688 / 25,504 / 765 — سفارش بر اساس اسنپ‌شات قدیمی‌تر؛ سنک مداوم اعداد را جلو برده (دلتای طبیعی، بدون نقض)"
+  },
+  "ownerStatement": "من، سیدنعمت‌اله سیدی، سفارش PN-023-A را صادر می‌کنم: افزودن دو موتور پایه‌ای — توجه و علّیت — به مغز ملکا. صفر migration تهاجمی، صفر خطر داده (تنها جدول افزودنی CausalEdgeRecord طبق قانون ۸ و مرحلهٔ ۴ سفارش).",
+  "rawEvidence": "download/pn023a/lock-raw.txt",
+  "entry": "مجاز — ۴/۴ (با دلتای مستند) + ۷/۷ پیش‌شرط + قفل داده (بکاپ + md5)"
+}

@@ -1,0 +1,43 @@
+{
+  "workOrder": "PN-023-A/مرحلهٔ۶ — دو گارد + دریل منفی",
+  "ranAt": "2026-10-09T08:27:40.588Z",
+  "guards": {
+    "audit-meta-mind": {
+      "step": "گام ۵-ض CI",
+      "positiveRun": "PASS",
+      "checks": 8,
+      "negativeDrill": {
+        "test": "حذف موقت src/core/intelligence/attention-engine.ts → اجرای گارد → بازگشت آنی فایل",
+        "exitCode": 1,
+        "expectation": "exit ≠ ۰ (گارد باید بشکند)",
+        "result": "✗ شکست درست — FileNotFoundError صریح",
+        "fileRestoredIdentical": true,
+        "afterRestore": "PASS — فرا-ذهن کامل"
+      }
+    },
+    "audit-causal-validity": {
+      "step": "گام ۵-ظ CI",
+      "positiveRun": "PASS",
+      "checks": [
+        "کف اطمینان ۰٫۶ در DB",
+        "دامنهٔ ضریب + بدون خود-حلقه",
+        "روش L1/L2",
+        "DAG روی DB (Kahn مستقل)",
+        "دریل منفی — چرخه رد می‌شود",
+        "دریل منفی — یال زیر کف رد می‌شود"
+      ],
+      "negativeDrillsBuiltIn": {
+        "drill1_cycle": {
+          "test": "assertDag روی گراف چرخه‌ای a→b→a",
+          "result": true,
+          "witness": "DETECTED:گراف علّی cycle دارد (2 گره در حلقه: a،"
+        },
+        "drill2_floor": {
+          "test": "saveGraph با confidence=0.2 — رد مستند"
+        }
+      }
+    }
+  },
+  "totalGuardsNow": 23,
+  "law10": "هر دو گارد در گام ۵ CI (۵-ض + ۵-ظ) — قانون ۱۰"
+}

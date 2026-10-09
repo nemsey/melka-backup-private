@@ -1827,3 +1827,25 @@ model RepairProposalRecord {
   @@index([status])
   @@index([createdAt])
 }
+
+/// PN-023-A (فاز ۱۳-الف) — یال گراف علّی پایدار (موتور ۱۳).
+/// افزودنی صرف (قانون ۸): صفر DROP · صفر DELETE · صفر تغییر ستون موجود.
+/// گارانتی‌ها: کف اطمینان ۰٫۶ (گارد audit-causal-validity) · DAG پیش از ذخیره
+/// (assertDag در causal-graph-store) · upsert idempotent بر کلید یکتا.
+model CausalEdgeRecord {
+  id          String   @id @default(cuid())
+  fromFeature String
+  toFeature   String
+  /// −1..+1 — جهت و اندازهٔ اثر (مدل خطی SCM)
+  coefficient Float
+  /// 0..1 — کف پذیرش ۰٫۶
+  confidence  Float
+  /// L1 | L2 — سطح Pearl مولد یال
+  method      String
+  /// شاهد فارسی (n، r، نحوهٔ محاسبه)
+  evidence    String
+  createdAt   DateTime @default(now())
+
+  @@unique([fromFeature, toFeature, method])
+  @@index([toFeature])
+}

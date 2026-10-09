@@ -1,0 +1,39 @@
+{
+  "workOrder": "PN-023-A/مرحلهٔ۶ — گارد causal-validity (گام ۵-ظ)",
+  "ranAt": "2026-10-09T08:27:13.725902+00:00",
+  "checks": [
+    {
+      "check": "کف اطمینان ۰٫۶ در DB",
+      "edges": 16,
+      "below": 0,
+      "ok": true
+    },
+    {
+      "check": "دامنهٔ ضریب + بدون خود-حلقه",
+      "ok": true
+    },
+    {
+      "check": "روش L1/L2",
+      "ok": true
+    },
+    {
+      "check": "DAG روی DB (Kahn مستقل)",
+      "nodes": 7,
+      "edges": 16,
+      "cyclicNodes": 0,
+      "ok": true
+    },
+    {
+      "check": "دریل منفی — چرخه رد می‌شود",
+      "ok": true,
+      "witness": "DETECTED:گراف علّی cycle دارد (2 گره در حلقه: a،"
+    },
+    {
+      "check": "دریل منفی — یال زیر کف رد می‌شود",
+      "ok": true,
+      "witness": "SKIPPED=1 SAVED=0"
+    }
+  ],
+  "violations": [],
+  "verdict": "PASS"
+}

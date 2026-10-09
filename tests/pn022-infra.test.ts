@@ -25,7 +25,7 @@ describe("PN-022-A/مرحلهٔ۳ · مهاجرت PostgreSQL (فقط تست)", (
     const models = (p: string) => [...readFileSync(p, "utf8").matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]);
     const sq = models("prisma/schema.prisma");
     const pg = models("prisma/schema.postgres.prisma");
-    expect(sq.length).toBe(59);
+    expect(sq.length).toBe(60); // PN-023-A: 59 + CausalEdgeRecord
     expect(new Set(pg)).toEqual(new Set(sq));
   });
 
@@ -211,12 +211,12 @@ describe("PN-022-A/مرحلهٔ۵ · سه گارد تازه", () => {
     expect(ci).toContain("گام ۵-ص: feature-factory");
   });
 
-  test("گ-۵) CI: مجموع گاردها ۲۱ در گام ۵ (۱۸ + ۳ تازه)", () => {
+  test("گ-۵) CI: مجموع گاردها در گام ۵ (۱۸ پایه + ۳ ن۲۲ + ۲ ن۲۳-الف)", () => {
     const ci = readFileSync("scripts/ci.sh", "utf8");
     // گام ۵ تا آغاز گام ۶ — گاردهای ساختاری (chunk-integrity در گام ۸ جدا است)
     const step5 = ci.slice(ci.indexOf("۵) Audit باغ"), ci.indexOf("── ۶) Perf Budget"));
     const count = (step5.match(/bash scripts\/audit-[a-z-]+\.sh/g) ?? []).length;
-    expect(count).toBe(21);
+    expect(count).toBe(23); // PN-023-A: ۲۱ + meta-mind + causal-validity
   });
 
   test("گ-۶) اسکریپت‌های گارد اجرایی هستند", () => {
