@@ -166,25 +166,13 @@ describe("PN-013 مرحلهٔ ۶ — prediction.brier از موتور ارزیا
   });
 });
 
-describe("PN-013 مرحلهٔ ۶ — روت OWNER-only /api/(v1/)runtime/metrics", () => {
-  test("۱۵: بدون نشست → 401 (نه خطای 500)", async () => {
-    const { GET } = await import("@/app/api/runtime/metrics/route");
-    const res = await GET(new NextRequest("http://x/api/runtime/metrics"), undefined as unknown as never);
-    expect(res.status).toBe(401);
-  });
-
-  test("۱۶: آینهٔ v1 همان رفتار را دارد (401 بدون نشست)", async () => {
-    const { GET } = await import("@/app/api/v1/runtime/metrics/route");
-    const res = await GET(new NextRequest("http://x/api/v1/runtime/metrics"), undefined as unknown as never);
-    expect(res.status).toBe(401);
-  });
-
-  test("۱۷: پاسخ 401 نیز شناسهٔ همبستگی را برمی‌گرداند", async () => {
-    const { GET } = await import("@/app/api/runtime/metrics/route");
-    const res = await GET(new NextRequest("http://x/api/runtime/metrics", {
-      headers: { "x-request-id": "e2e-789" },
-    }), undefined as unknown as never);
-    expect(res.status).toBe(401);
-    expect(res.headers.get("x-request-id")).toBe("e2e-789");
+describe("PN-013 مرحلهٔ ۶ — روت /api/(v1/)runtime/metrics (حذف PN-027 · ۵-ب-۲)", () => {
+  test("PN-027: روت متریک ران-time حذف شد — صفر مصرف‌کنندهٔ زنده (جلسهٔ ۰۳۴)", async () => {
+    const { existsSync } = await import("node:fs");
+    expect(existsSync("src/app/api/runtime/metrics/route.ts")).toBe(false);
+    expect(existsSync("src/app/api/v1/runtime/metrics/route.ts")).toBe(false);
+    // کتابخانهٔ متریک observability زنده است و در بُعد ۹ چک‌آپ‌ها استفاده می‌شود
+    const lib = await import("@/lib/observability/metrics");
+    expect(typeof lib.metricsSnapshot).toBe("function");
   });
 });

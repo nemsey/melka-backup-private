@@ -323,102 +323,27 @@ describe("PN-018/فاز۷ · حلقهٔ کامل یادگیری", () => {
   });
 });
 
-/* ═══════ ۴) مرز API + آینه + روت لاغر ═══════ */
+/* ═══════ ۴) مرز API — حذف روت‌های قهرمان/چلنجر (PN-027 · ۵-ب-۲) ═══════ */
 describe("PN-018/فاز۷ · مرز API نسخه‌بندی و رانش", () => {
-  test("بدون توکن → 401 (روت‌های GET و POST)", async () => {
-    const mvRoute = await import("@/app/api/admin/model-versions/route");
-    const dcRoute = await import("@/app/api/admin/drift-checks/route");
-    const res1 = await mvRoute.GET(await NR("/api/admin/model-versions"));
-    expect(res1.status).toBe(401);
-    const res2 = await dcRoute.GET(await NR("/api/admin/drift-checks"));
-    expect(res2.status).toBe(401);
-    const res3 = await mvRoute.POST(await NR("/api/admin/model-versions", { method: "POST", body: "{}" }));
-    expect(res3.status).toBe(401);
-  });
-
-  test("CONSULTANT → 403", async () => {
-    const { token } = await makeSession("CONSULTANT");
-    const route = await import("@/app/api/admin/model-versions/route");
-    const res = await route.GET(await NR("/api/admin/model-versions", { headers: hdr(token) }));
-    expect(res.status).toBe(403);
-  });
-
-  test("OWNER → GET 200 با شکل کامل + POST ساخت چالشگر", async () => {
-    const { token } = await makeSession("OWNER");
-    const route = await import("@/app/api/admin/model-versions/route");
-    const res = await route.GET(await NR("/api/admin/model-versions", { headers: hdr(token) }));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.ok).toBe(true);
-    expect(Array.isArray(body.rows)).toBe(true);
-    // POST
-    const res2 = await route.POST(await NR("/api/admin/model-versions", {
-      method: "POST",
-      headers: { ...hdr(token), "content-type": "application/json" },
-      body: JSON.stringify({ modelId: "pn018-api-model" }),
-    }));
-    expect(res2.status).toBe(200);
-    const b2 = await res2.json();
-    expect(b2.version.modelId).toBe("pn018-api-model");
-  });
-
-  test("promote بدون شورا از API → 422 COUNCIL_APPROVAL_REQUIRED (چالشگر واقعی)", async () => {
-    const { token } = await makeSession("OWNER");
-    const { ensureChallenger } = await import("@/lib/services/model-versioning-service");
-    const v = await ensureChallenger({ modelId: "pn018-api-gate-model", actor: "api-test" });
-    const route = await import("@/app/api/admin/model-versions/[id]/promote/route");
-    const res = await route.POST(
-      await NR(`/api/admin/model-versions/${v.id}/promote`, {
-        method: "POST", headers: { ...hdr(token), "content-type": "application/json" },
-        body: JSON.stringify({ councilApproval: false }),
-      }),
-      { params: Promise.resolve({ id: v.id }) }
-    );
-    expect(res.status).toBe(422);
-    const body = await res.json();
-    expect(body.code).toBe("COUNCIL_APPROVAL_REQUIRED");
-  });
-
-  test("آینه‌های v1 همان ماژول‌اند (تک‌منبع حقیقت)", async () => {
-    const a1 = await import("@/app/api/admin/model-versions/route");
-    const v1a = await import("@/app/api/v1/admin/model-versions/route");
-    expect(v1a.GET).toBe(a1.GET);
-    const a2 = await import("@/app/api/admin/drift-checks/route");
-    const v1b = await import("@/app/api/v1/admin/drift-checks/route");
-    expect(v1b.GET).toBe(a2.GET);
-  });
-
-  test("روت‌ها لاغرند — صفر db.* (گارد مرز مخزن)", () => {
+  test("PN-027: روت‌های HTTP قهرمان/چلنجر و رانش حذف شدند — سرویس‌ها زنده‌اند", async () => {
+    // جلسهٔ ۰۳۴ (فرم ۵-ب): ۸ روت بدون‌استفاده حذف شد — از جمله:
+    //   /api/(v1/)admin/model-versions (+promote/reject/rollback) · /api/(v1/)admin/drift-checks
+    // سرویس‌های model-versioning-service و drift-detection در لایهٔ کتابخانه پابرجایند
+    // و در بلوک‌های دیگر همین فایل و در گارد audit-champion-challenger.sh گارد می‌شوند.
+    const { existsSync } = await import("node:fs");
     for (const f of [
       "src/app/api/admin/model-versions/route.ts",
-      "src/app/api/admin/model-versions/[id]/promote/route.ts",
-      "src/app/api/admin/model-versions/[id]/reject/route.ts",
-      "src/app/api/admin/model-versions/[id]/rollback/route.ts",
       "src/app/api/admin/drift-checks/route.ts",
+      "src/app/api/v1/admin/model-versions/route.ts",
     ]) {
-      const src = readFileSync(f, "utf8");
-      expect(src).not.toMatch(/\bdb\.[a-zA-Z]/);
+      expect(existsSync(f)).toBe(false);
     }
-  });
-
-  test("مانیفست api-versioning با ۱۰۰ مسیر هم‌خوان (+۵ روت PN-025: مشور)", () => {
-    const manifest = JSON.parse(readFileSync("download/pn012/api-versioning.json", "utf8"));
-    expect(manifest.totalRoutes).toBe(100); // PN-025: ۹۵ + مشور مالک + stats حافظه + سه روت کاشی
-    for (const v1 of ["/api/v1/admin/model-versions", "/api/v1/admin/model-versions/[id]/promote", "/api/v1/admin/model-versions/[id]/reject", "/api/v1/admin/model-versions/[id]/rollback", "/api/v1/admin/drift-checks"]) {
-      expect(manifest.routes.some((r: { v1: string }) => r.v1 === v1)).toBe(true);
-    }
-    // PN-025 — پنج روت مشور
-    for (const v1 of ["/api/v1/admin/decision-advisor", "/api/v1/admin/memory/stats", "/api/v1/smart-matching/advice", "/api/v1/file-finder/advice", "/api/v1/market-index/advice"]) {
-      expect(manifest.routes.some((r: { v1: string }) => r.v1 === v1)).toBe(true);
-    }
-    // PN-019 — هشت روت تازهٔ فاز ۸+۹
-    for (const v1 of ["/api/v1/admin/decisions", "/api/v1/admin/decisions/stats", "/api/v1/admin/decisions/expire", "/api/v1/admin/action-plans", "/api/v1/admin/governance", "/api/v1/admin/governance/run", "/api/v1/admin/policy-evaluations", "/api/v1/admin/policy-evaluations/run"]) {
-      expect(manifest.routes.some((r: { v1: string }) => r.v1 === v1)).toBe(true);
-    }
+    // سرویس زنده است
+    const svc = await import("@/lib/services/model-versioning-service");
+    expect(typeof svc.ensureChallenger).toBe("function");
   });
 });
 
-/* ═══════ ۵) کار Worker ═══════ */
 describe("PN-018/فاز۷ · کار Worker (drift-guard)", () => {
   test("WORKER_JOB_IDS شامل driftGuard و ثبت با فاصلهٔ ۶ ساعت", async () => {
     const { WORKER_JOB_IDS, buildWorkerJobs } = await import("@/core/runtime/jobs");

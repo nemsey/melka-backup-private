@@ -1,0 +1,59 @@
+{
+ "phase": "PN-027 · ۵-ب-۱ — حذف ۲۶ dependency زائد + ۴ کامپوننت shadcn",
+ "decision": "جلسهٔ ۰۳۴ فرم ۵-ب — تأیید کامل پس از بیلد سبز",
+ "verificationBefore": "راستی‌آزمایی مجدد رشته-ثابت (fixed-string) در src+tests: صفر import برای هر ۲۶ مورد — مثبت کاذب vaul (vault داخلی) رد شد",
+ "depsRemoved": [
+  "@dnd-kit/core",
+  "@dnd-kit/sortable",
+  "@dnd-kit/utilities",
+  "@hookform/resolvers",
+  "@mdxeditor/editor",
+  "@radix-ui/react-aspect-ratio",
+  "@radix-ui/react-context-menu",
+  "@radix-ui/react-hover-card",
+  "@radix-ui/react-menubar",
+  "@radix-ui/react-navigation-menu",
+  "@radix-ui/react-toggle-group",
+  "@reactuses/core",
+  "@tanstack/react-query",
+  "@tanstack/react-table",
+  "cmdk",
+  "date-fns",
+  "next-auth",
+  "next-intl",
+  "react-day-picker",
+  "react-markdown",
+  "react-resizable-panels",
+  "react-syntax-highlighter",
+  "sonner",
+  "uuid",
+  "vaul",
+  "zod"
+ ],
+ "componentsRemoved": [
+  "src/components/ui/toggle.tsx",
+  "src/components/ui/form.tsx",
+  "src/components/ui/scroll-area.tsx",
+  "src/components/ui/chart.tsx"
+ ],
+ "countDeps": 26,
+ "corePreserved": "next · react · react-dom · prisma · @prisma/client · recharts · zustand · next-themes · sharp — قید قرارداد ✓",
+ "newlyOrphaned": {
+  "note": "سه پکیج با حذف ۴ کامپوننت يتیم شدند (خارج از فهرست مصوب ۲۶تایی — پیشنهاد جلسهٔ بعد):",
+  "items": [
+   "react-hook-form (تنها مصرف‌کننده: form.tsx حذف‌شده)",
+   "@radix-ui/react-toggle (تنها مصرف‌کننده: toggle.tsx حذف‌شده)",
+   "@radix-ui/react-scroll-area (تنها مصرف‌کننده: scroll-area.tsx حذف‌شده)"
+  ]
+ },
+ "buildGreen": {
+  "buildId": "3599bdb-20261010-0441",
+  "compiled": "✓ Compiled successfully در ۳۵٫۷ ثانیه",
+  "ramCap": "NODE_OPTIONS=--max-old-space-size=3000 (آماده‌سازی ۵-پ-۸)",
+  "removedRoutesInManifest": 0
+ },
+ "testsAfterRemoval": "۲۴۹۶ pass / ۱ شکست یکتای پیش‌موجود (PN-014/D2 — پیش از آغاز PN-027)",
+ "packageJsonNow": {
+  "dependencies": 43
+ }
+}

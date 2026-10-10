@@ -1,0 +1,64 @@
+{
+ "phase": "PN-027 · ۵-ب-۲ — ۱۲ endpoint بدون‌استفاده: ۴ نگه‌داشت + ۸ حذف (بازبینی قلم‌به‌قلم)",
+ "kept": [
+  {
+   "route": "/crm/customer-club",
+   "reason": "قانون دادهٔ مقدس — کاشی داده (تصمیم جلسهٔ ۰۳۴)"
+  },
+  {
+   "route": "/crm/finance",
+   "reason": "دادهٔ ماندگار — تأیید نگه‌داشت شورا"
+  },
+  {
+   "route": "/crm/finance/commission",
+   "reason": "دادهٔ ماندگار — تأیید نگه‌داشت شورا"
+  },
+  {
+   "route": "/gap/connection",
+   "reason": "دستور جلسهٔ ۰۳۳ مالک: gapApi پابرجا"
+  }
+ ],
+ "removed": [
+  {
+   "pair": "/api/crm/branches + /api/v1/crm/branches",
+   "review": "گزینه‌های شعبه از filterOptions پاسخ فهرست‌ها ✓ · کتابخانهٔ branch-store در ۵ روت دیگر زنده (matching · export · arm-catalog×۲ · transactions) ✓ · صفر UI مصرف‌کننده · قابلیت ویرایش نقشهٔ شعبهٔ مالک (PUT/DELETE) با روت حذف می‌شود — مستند برای جلسهٔ آینده"
+  },
+  {
+   "pair": "/api/admin/drift-checks + v1",
+   "review": "صفر مصرف‌کنندهٔ src/scripts · سرویس drift-detection در کتابخانه زنده و توسط drift-guard کاری Worker گارد می‌شود · تست مرز HTTP در pn018 بازنویسی شد"
+  },
+  {
+   "pair": "/api/admin/model-versions + v1",
+   "review": "پنل قهرمان/چلنجر — صفر مصرف‌کننده · سرویس model-versioning-service زنده (ensureChallenger در تست مستند) · گارد audit-champion-challenger.sh کتابخانه‌سطح است ✓"
+  },
+  {
+   "pair": "/api/admin/model-versions/[id]/rollback + v1",
+   "review": "همان خانواده — حذف جفتی"
+  },
+  {
+   "pair": "/api/admin/model-versions/[id]/reject + v1",
+   "review": "همان خانواده — حذف جفتی"
+  },
+  {
+   "pair": "/api/admin/model-versions/[id]/promote + v1",
+   "review": "همان خانواده — حذف جفتی"
+  },
+  {
+   "pair": "/api/runtime/metrics + v1",
+   "review": "صفر مصرف‌کنندهٔ src · کتابخانهٔ metricsSnapshot در observability زنده · تست pn013 بازنویسی شد"
+  },
+  {
+   "pair": "/api/melk-public/sync + v1",
+   "review": "صفر مصرف‌کننده — syncMelkPublicCatalog مستقیماً توسط catalog-daemon (Worker) کاشته می‌شود ✓ · تست p6530 اصلاح شد"
+  }
+ ],
+ "filesDeleted": 16,
+ "guardV1Equality": "find: v0=92 = v1=92 — گارد audit-boot-secrets (تساوی شمار روت‌ها) سبز می‌ماند ✓",
+ "manifestUpdated": "download/pn012/api-versioning.json: ۱۰۰ → ۹۲ روت + سابقهٔ PN-027 درج شد",
+ "testsUpdated": [
+  "tests/pn016-crm-contracts.test.ts (فهرست قرارداد)",
+  "tests/pn018-phase7.test.ts (بلوک ۴ بازنویسی)",
+  "tests/pn013-observability.test.ts (بلوک مرحلهٔ ۶ بازنویسی)",
+  "tests/p6530-settings-order.test.ts (حذف خواندن فایل روت)"
+ ]
+}
