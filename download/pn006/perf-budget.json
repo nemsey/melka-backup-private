@@ -1,24 +1,24 @@
 {
   "case": "PN-006-BLOCK5-PERF-BUDGET",
-  "measuredAt": "2026-10-09T20:15:08.429254+00:00",
+  "measuredAt": "2026-10-09T22:21:51.185834+00:00",
   "budgets": [
     {
       "metric": "Initial JS (بار اول — سنجهٔ مرورگر)",
       "target": "< 300KB",
-      "value": "263KB",
+      "value": "281KB",
       "pass": true,
-      "note": "انتقال واقعی JS در بار اول صفحهٔ ورود (12 چانک — encodedBodySize)"
+      "note": "انتقال واقعی JS در بار اول صفحهٔ ورود (15 چانک — encodedBodySize)"
     },
     {
       "metric": "LCP (صفحهٔ ورود، موبایل شبیه‌سازی)",
       "target": "< 2500ms",
-      "value": "344ms",
+      "value": "572ms",
       "pass": true
     },
     {
       "metric": "INP proxy (تأخیر تعامل)",
       "target": "< 200ms",
-      "value": "85ms",
+      "value": "92ms",
       "pass": true,
       "note": "INP واقعی نیازمند تعامل کاربر واقعی است — این proxy کلیک→فریم بعدی است"
     },
@@ -31,25 +31,25 @@
     {
       "metric": "Login → Dashboard",
       "target": "< 2000ms",
-      "value": "262ms",
+      "value": "918ms",
       "pass": true
     },
     {
       "metric": "Dashboard → Tile (M1)",
       "target": "< 1000ms",
-      "value": "87ms",
+      "value": "115ms",
       "pass": true
     },
     {
       "metric": "Tile → First Insight",
       "target": "< 2000ms",
-      "value": "8ms",
+      "value": "9ms",
       "pass": true
     },
     {
       "metric": "API P95 /api/version",
       "target": "< 500ms",
-      "value": "5ms",
+      "value": "6ms",
       "pass": true
     },
     {
@@ -61,14 +61,14 @@
     {
       "metric": "API P95 / (خانه)",
       "target": "< 500ms",
-      "value": "3ms",
+      "value": "4ms",
       "pass": true
     },
     {
       "metric": "RAM production",
       "target": "< 500MB",
-      "value": "133MB",
-      "pass": true
+      "value": "578MB",
+      "pass": false
     },
     {
       "metric": "RAM Build پیک",
@@ -79,47 +79,48 @@
     }
   ],
   "browserJourney": {
-    "measuredAt": "2026-10-09T20:14:58Z",
+    "measuredAt": "2026-10-09T22:21:40Z",
     "base": "http://localhost:3000",
     "loginFirstPaint": {
-      "loadToInputMs": 360
+      "loadToInputMs": 588
     },
     "loginPage": {
-      "lcp": 344,
+      "lcp": 572,
       "cls": 0,
       "lcpUrl": ""
     },
     "initialJs": {
-      "count": 12,
-      "encodedKB": 263
-    },
-    "loginToDashboardMs": 262,
-    "dashboard": {
-      "lcp": 344,
-      "cls": 0,
-      "lcpUrl": ""
-    },
-    "dashboardToTileMs": 87,
-    "tilePage": {
-      "lcp": 344,
-      "cls": 0,
-      "lcpUrl": ""
-    },
-    "tileBodySample": "اکوسیستم هوشمند ملک ایران\nسی\nآگهی ملکا\n\nدفتر مرکزی فایل‌های آگهی: ثبت دستی و خودکار، انتقال گام‌به‌گام به CRM ملک تبریز و انتشار هوشمند در اینستاگرام\n\nوضعیت اتصال‌ها\n۰ از ۱۰\n…\n…\n…\n…\n…\n…\n…\n…\n…\n…\nدفتر فایل‌های آگهی\n\nثبت دستی (۵ گامی عین فرم آرم)، ثبت خودکار فایل‌های تأییدشده فایل‌یابی، انتقال گام‌به‌گ",
-    "tileToFirstInsightMs": 8,
-    "insightFound": true,
-    "interactionLatencyMs": 85,
-    "jsResources": {
       "count": 15,
-      "encodedBodyKB": 295
+      "encodedKB": 281
+    },
+    "loginToDashboardMs": 918,
+    "dashboard": {
+      "lcp": 572,
+      "cls": 0,
+      "lcpUrl": ""
+    },
+    "dashboardToTileMs": 115,
+    "tilePage": {
+      "lcp": 572,
+      "cls": 0,
+      "lcpUrl": ""
+    },
+    "tileBodySample": "اکوسیستم هوشمند ملک ایران\nسی\nآگهی ملکا\n\nدفتر مرکزی فایل‌های آگهی: ثبت دستی و خودکار، انتقال گام‌به‌گام به CRM ملک تبریز و انتشار هوشمند در اینستاگرام\n\nوضعیت اتصال‌ها\n۰ از ۹\n…\n…\n…\n…\n…\n…\n…\n…\n…\nدفتر فایل‌های آگهی\n\nثبت دستی (۵ گامی عین فرم آرم)، ثبت خودکار فایل‌های تأییدشده فایل‌یابی، انتقال گام‌به‌گام ",
+    "tileToFirstInsightMs": 9,
+    "insightFound": true,
+    "interactionLatencyMs": 92,
+    "jsResources": {
+      "count": 19,
+      "encodedBodyKB": 323
     }
   },
   "method": "playwright chromium (موبایل شبیه‌سازی‌شده 390×844) + curl P95 (۲۰ نمونه) + gzip چانک‌ها + ps RSS",
   "summary": {
     "total": 12,
-    "pass": 11,
-    "fail": 1,
+    "pass": 10,
+    "fail": 2,
     "failedMetrics": [
+      "RAM production",
       "RAM Build پیک"
     ]
   }

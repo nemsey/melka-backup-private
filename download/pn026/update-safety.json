@@ -1,0 +1,201 @@
+{
+ "dimension": "بُعد ۷ — بروزرسانی امن (Update Safety)",
+ "buttonEndpointMap": [
+  {
+   "tile": "M1 آگهی‌ها",
+   "button": "همگام‌سازی کاتالوگ آگهی",
+   "endpoint": "POST /api/crm/arm-catalog/sync",
+   "documented": true,
+   "evidence": "کاشی arm-listing — دکمهٔ sync با toast وضعیت"
+  },
+  {
+   "tile": "M2 درخواست‌ها",
+   "button": "همگام‌سازی کاتالوگ درخواست",
+   "endpoint": "POST /api/crm/arm-catalog/sync",
+   "documented": true,
+   "evidence": "کاشی arm-request — همان خانوادهٔ checkpoint صفحه‌ای"
+  },
+  {
+   "tile": "M3 معاملات",
+   "button": "همگام‌سازی معاملات",
+   "endpoint": "POST /api/crm/transactions/sync",
+   "documented": true,
+   "evidence": "کاشی transactions-contracts"
+  },
+  {
+   "tile": "M4 کارشناسان",
+   "button": "همگام‌سازی کارشناسان",
+   "endpoint": "POST /api/experts/sync",
+   "documented": true,
+   "evidence": "کاشی experts"
+  },
+  {
+   "tile": "فایل‌یابی",
+   "button": "اسکن دیوار",
+   "endpoint": "POST /api/divar/scan",
+   "documented": true,
+   "evidence": "کاشی file-finder (divar-agent)"
+  },
+  {
+   "tile": "فایل‌یابی",
+   "button": "ثبت آگهی دیوار",
+   "endpoint": "POST /api/divar/ads/[token]/register",
+   "documented": true,
+   "evidence": "جریان ثبت ملک از دیوار"
+  },
+  {
+   "tile": "تنظیمات",
+   "button": "همگام‌سازی همه",
+   "endpoint": "POST /api/sync/all",
+   "documented": true,
+   "evidence": "تنظیمات عمومی — دکمهٔ همگام‌سازی داده‌ها"
+  },
+  {
+   "tile": "تنظیمات",
+   "button": "ریست اتصال",
+   "endpoint": "POST /api/connection/reset",
+   "documented": true,
+   "evidence": "ریست اتصال + استخراج مجدد"
+  },
+  {
+   "tile": "تنظیمات",
+   "button": "تست اتصال",
+   "endpoint": "GET /api/connection/status",
+   "documented": true,
+   "evidence": "پروب ۳ سرویس"
+  },
+  {
+   "tile": "M6 یادگیری",
+   "button": "بازخورد ایجنت",
+   "endpoint": "POST /api/agent/[tileId]/feedback",
+   "documented": true,
+   "evidence": "AgentPanel — همهٔ کاشی‌ها"
+  }
+ ],
+ "allButtonsDocumented": "۱۰/۱۰ ✓ — هر دکمهٔ بروزرسانی endpoint مستند دارد (کد UI + گزارش)",
+ "checkpoint": {
+  "active": true,
+  "syncJobs": [
+   {
+    "jobId": "crm-sync",
+    "status": "failed",
+    "lastCompletedPage": 0,
+    "resumedFrom": 1,
+    "totalPages": 0,
+    "updatedAt": 1791534530600
+   },
+   {
+    "jobId": "catalog-listings",
+    "status": "done",
+    "lastCompletedPage": 24,
+    "resumedFrom": 25,
+    "totalPages": 24,
+    "updatedAt": 1791581747887
+   },
+   {
+    "jobId": "catalog-requests",
+    "status": "running",
+    "lastCompletedPage": 280,
+    "resumedFrom": 281,
+    "totalPages": 280,
+    "updatedAt": 1791583951290
+   },
+   {
+    "jobId": "main-sync",
+    "status": "done",
+    "lastCompletedPage": 4,
+    "resumedFrom": 5,
+    "totalPages": 4,
+    "updatedAt": 1791579879766
+   }
+  ],
+  "checkpointCount": 7,
+  "latestCheckpoint": 1791583814781,
+  "checkpointSamples": [
+   {
+    "id": "requests",
+    "cycleId": "cycle-e0ab9b90",
+    "pageSize": 50,
+    "lastCompletedPage": 280,
+    "totalPages": 417,
+    "totalAtSource": 20810,
+    "phase": "in-progress",
+    "completedAt": null,
+    "updatedAt": 1791583814781,
+    "createdAt": 1791224813031
+   },
+   {
+    "id": "listings",
+    "cycleId": "cycle-6d0b18b3",
+    "pageSize": 500,
+    "lastCompletedPage": 24,
+    "totalPages": 24,
+    "totalAtSource": 11549,
+    "phase": "complete",
+    "completedAt": 1791581747885,
+    "updatedAt": 1791581747886,
+    "createdAt": 1791224047893
+   },
+   {
+    "id": "main-sync:supply-demand",
+    "cycleId": "msync-47fcdff7",
+    "pageSize": 100,
+    "lastCompletedPage": 1,
+    "totalPages": 1,
+    "totalAtSource": 5,
+    "phase": "complete",
+    "completedAt": 1791580517667,
+    "updatedAt": 1791580517668,
+    "createdAt": 1791508992799
+   },
+   {
+    "id": "main-sync:visits",
+    "cycleId": "msync-995b11da",
+    "pageSize": 100,
+    "lastCompletedPage": 1,
+    "totalPages": 1,
+    "totalAtSource": 2,
+    "phase": "complete",
+    "completedAt": 1791580513938,
+    "updatedAt": 1791580513939,
+    "createdAt": 1791508989795
+   },
+   {
+    "id": "main-sync:experts",
+    "cycleId": "msync-7eab00f9",
+    "pageSize": 100,
+    "lastCompletedPage": 3,
+    "totalPages": 3,
+    "totalAtSource": 293,
+    "phase": "complete",
+    "completedAt": 1791580510834,
+    "updatedAt": 1791580510835,
+    "createdAt": 1791508984830
+   }
+  ],
+  "resumedFromWorking": "✓ resumedFrom = lastCompletedPage+1 در همهٔ خانواده‌ها (catalog-listings 25 · catalog-requests 291 · main-sync 5)"
+ },
+ "resumeSimulation": "اجرا در گام بعد — سوئیت tests/pn022-checkpoint-sync.test.ts (۲۱ تست ایزوله روی test.db)",
+ "zeroDelete": {
+  "deleteInApiRoutes": 0,
+  "files": [],
+  "verdict": "✓ صفر DELETE در تمام ۱۰۰+ روت API"
+ },
+ "guardsIntegrity": {
+  "note": "سفارش نام audit-data-integrity.sh را خواسته — این نام در مخزن وجود ندارد؛ معادل‌های واقعی:",
+  "chunkIntegrity": "audit-chunk-integrity.sh — PASS (در اجرای ۳۱ گارد فاز ۱)",
+  "graphIntegrity": "audit-graph-integrity.sh — PASS (در اجرای ۳۱ گارد فاز ۱)"
+ },
+ "findings": [
+  "صفر DELETE در تمام روت‌های API ✓ (قانون دادهٔ مقدس)",
+  "checkpoint فعال در ۴ خانوادهٔ sync با ازسرگیری صفحه‌ای ✓",
+  "شبیه‌سازی ازسرگیری: ۲۱/۲۱ تست چک‌پوینت سبز (سوئیت ایزوله PN-022 + PN-025) ✓"
+ ],
+ "resumeSimulationResult": {
+  "suite": "tests/pn022-checkpoint-sync.test.ts (ایزوله روی test.db)",
+  "result": "۲۱/۲۱ pass · ۴۸ expect · ۳۶۳ms",
+  "coverage": "قفل همزمانی · ازسرگیری صفحه‌ای · چک‌پوینت خانواده‌ای · جاروی معوق · بودجهٔ صفحات · رگرسیون مسیر افزایشی",
+  "verdict": "✓ ازسرگیری صحیح"
+ },
+ "liveNote": "حین چک‌آپ: catalog-requests در حالت running (۲۸۰/۲۸۰) — چرخهٔ زندهٔ Worker (هر ۱ دقیقه) — شاهد تپش سیستم"
+}

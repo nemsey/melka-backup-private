@@ -1,0 +1,250 @@
+{
+ "dimension": "بُعد ۱ — کد یکپارچه (Code Integrity)",
+ "scope": {
+  "patterns": 10,
+  "src": "src/ (599 فایل ts/tsx)",
+  "excluded": "docs/, download/, .next/"
+ },
+ "searches": [
+  {
+   "id": 1,
+   "query": "«80211186» در src/",
+   "goal": "کد مدیر hardcode",
+   "count": 0,
+   "samples": [],
+   "severity": "🟢",
+   "countSelfExcluded": 0
+  },
+  {
+   "id": 2,
+   "query": "«00000000» در src/",
+   "goal": "کد قدیمی",
+   "count": 0,
+   "samples": [],
+   "severity": "🟢",
+   "countSelfExcluded": 0
+  },
+  {
+   "id": 3,
+   "query": "«arm-tok-p6509» در همه",
+   "goal": "توکن قدیمی",
+   "count": 4,
+   "samples": [
+    {
+     "file": "tests/p6509-owner-unlimited.test.ts",
+     "line": 168,
+     "text": "{ accessToken: \"arm-tok-p6509\", refreshToken: \"arm-ref\", userType: \"realtor\" }"
+    }
+   ],
+   "severity": "🔴",
+   "countSelfExcluded": 1,
+   "note": "۳ مطابقت خود-ارجاعی اسکنر حذف شد — یافتهٔ واقعی: ۱ pin تست در tests/p6509-owner-unlimited.test.ts:168 (بُعد ۳)"
+  },
+  {
+   "id": 4,
+   "query": "«verify-p2-03» در همه",
+   "goal": "توکن تست قدیمی",
+   "count": 11,
+   "samples": [
+    {
+     "file": "tests/phase2-routes.test.ts",
+     "line": 6,
+     "text": "* scripts/verify-p2-03.ts — ۳۳ مقایسه قبل/بعد یکسان)."
+    },
+    {
+     "file": "scripts/verify-p2-03.ts",
+     "line": 10,
+     "text": "*   DATABASE_URL=file:/home/z/my-project/db/test-repository.db MELK_TOKEN_KEY=test bun scripts/verify-p2-03.ts"
+    },
+    {
+     "file": "scripts/verify-p2-03.ts",
+     "line": 49,
+     "text": "token: \"verify-p2-03-ad-1\", category: \"apartment-sell\", title: \"آپارتمان VERIFY-P2-03\","
+    },
+    {
+     "file": "scripts/verify-p2-03.ts",
+     "line": 61,
+     "text": "id: \"verify-p2-03-listing-1\", customerName: \"کاربر تست\", customerMobile: \"09140000000\","
+    },
+    {
+     "file": "scripts/verify-p2-03.ts",
+     "line": 70,
+     "text": "id: \"verify-p2-03-request-1\", source: \"manual\", customerName: \"درخواست‌دهنده تست\","
+    },
+    {
+     "file": "scripts/verify-p2-03.ts",
+     "line": 399,
+     "text": "await db.divarAd.deleteMany({ where: { token: \"verify-p2-03-ad-1\" } }).catch(() => undefined);"
+    },
+    {
+     "file": "scripts/verify-p2-03.ts",
+     "line": 400,
+     "text": "await db.listingRecord.deleteMany({ where: { id: \"verify-p2-03-listing-1\" } }).catch(() => undefined);"
+    },
+    {
+     "file": "scripts/verify-p2-03.ts",
+     "line": 401,
+     "text": "await db.requestRecord.deleteMany({ where: { id: \"verify-p2-03-request-1\" } }).catch(() => undefined);"
+    }
+   ],
+   "severity": "🔴",
+   "countSelfExcluded": 11,
+   "byLocation": {
+    "scripts/verify-p2-03.ts": 10,
+    "tests/phase2-routes.test.ts": 1
+   },
+   "note": "۱۱ = ۱۰ در اسکریپت تأیید تاریخی verify-p2-03.ts (خودِ نام‌گذاری) + ۱ ارجاع کامنتی در تست — صفر نشت در src/"
+  },
+  {
+   "id": 5,
+   "query": "«/home/z/my-project» در src/app",
+   "goal": "مسیر مطلق (مجاز: env)",
+   "count": 0,
+   "samples": [],
+   "severity": "🟡",
+   "all": 13,
+   "envSafe": 8,
+   "countSelfExcluded": 0,
+   "note": "۱۳ مسیر مطلق در src/ · ۸ با گیت env · ۵ fallback کاندید (boot-secrets/worker-status/deliver — همگی env-first با fallback صریح) · صفر در src/app"
+  },
+  {
+   "id": 6,
+   "query": "process.env.MELK_* فهرست کامل",
+   "goal": "متغیرهای env",
+   "count": 56,
+   "vars": [
+    "MELKA_GITHUB_REPO",
+    "MELKA_INTELLIGENCE_DATA_DIR",
+    "MELKA_PREVIEW_URL",
+    "MELKA_REPO_DIR",
+    "MELKA_SIZE_GUARD_DB_MB",
+    "MELKA_SIZE_GUARD_DISK_FREE_PERCENT",
+    "MELKA_SIZE_GUARD_SURVIVAL_MB",
+    "MELK_AUTO_RECOVERY",
+    "MELK_BACKGROUND_SYNC",
+    "MELK_BACKUP_KEEP",
+    "MELK_BACKUP_ROTATION",
+    "MELK_CATALOG_DAEMON",
+    "MELK_CATALOG_DAEMON_INTERVAL_MINUTES",
+    "MELK_CATALOG_RATE_MS",
+    "MELK_DECISION_SHADOW",
+    "MELK_DECISION_SHADOW_INTERVAL_H",
+    "MELK_DECISION_SHADOW_SAMPLE",
+    "MELK_DECISION_TTL_DAYS",
+    "MELK_DIAGNOSIS",
+    "MELK_DIAGNOSIS_INTERVAL_H",
+    "MELK_DISK_GUARD",
+    "MELK_DISK_GUARD_CRITICAL_PERCENT",
+    "MELK_DISK_GUARD_KEEP_DOWNLOAD_GENS",
+    "MELK_DISK_GUARD_KEEP_SURVIVAL_GENS",
+    "MELK_DISK_GUARD_WARN_PERCENT",
+    "MELK_DRIFT_ALERT",
+    "MELK_DRIFT_ESCALATE",
+    "MELK_DRIFT_GUARD",
+    "MELK_DRIFT_INTERVAL_H",
+    "MELK_DRIFT_RETRAIN",
+    "MELK_INTELLIGENCE_DAEMON",
+    "MELK_INTELLIGENCE_INTERVAL_MINUTES",
+    "MELK_LOG_LEVEL",
+    "MELK_MEMORY_CONSOLIDATION",
+    "MELK_MEMORY_CONSOLIDATION_INTERVAL_H",
+    "MELK_MIRROR_JOB",
+    "MELK_POLICY_EVAL",
+    "MELK_POLICY_EVAL_INTERVAL_DAYS",
+    "MELK_POLICY_EVAL_WINDOW_DAYS",
+    "MELK_POLICY_MIN_EVENTS",
+    "MELK_PREVIEW_GUARD",
+    "MELK_PRIVACY_GUARD",
+    "MELK_PUBLIC_ENRICH_MAX",
+    "MELK_PUBLIC_RATE_MS",
+    "MELK_RESET_GUARD",
+    "MELK_SHADOW_MIN_DELTA",
+    "MELK_SHADOW_MIN_SAMPLES",
+    "MELK_SHADOW_MIN_WINDOW_DAYS",
+    "MELK_SIZE_GUARD",
+    "MELK_SUPERVISOR_RESPAWN",
+    "MELK_SYNC_MODE",
+    "MELK_TOKEN_KEY",
+    "MELK_TOKEN_KEY_NEW",
+    "MELK_TOKEN_KEY_OLD",
+    "MELK_WORKER",
+    null
+   ],
+   "severity": "🟢"
+  },
+  {
+   "id": 7,
+   "query": "require(...) در .ts",
+   "goal": "CJS در ESM",
+   "count": 0,
+   "samples": [],
+   "severity": "🟡",
+   "countSelfExcluded": 0,
+   "note": "صفر — کلیدواژهٔ require در .ts تولیدی یافت نشد"
+  },
+  {
+   "id": 8,
+   "query": "console.log در src/",
+   "goal": "لاگ تولیدی",
+   "count": 0,
+   "samples": [],
+   "severity": "🟡",
+   "countSelfExcluded": 0
+  },
+  {
+   "id": 9,
+   "query": "TODO, FIXME, XXX",
+   "goal": "کد ناتمام",
+   "count": 0,
+   "samples": [],
+   "severity": "🟢",
+   "countSelfExcluded": 0,
+   "note": "صفر — پاک"
+  },
+  {
+   "id": 10,
+   "query": "@deprecated",
+   "goal": "مسیرهای منسوخ",
+   "count": 0,
+   "samples": [],
+   "severity": "🟠",
+   "countSelfExcluded": 0,
+   "note": "صفر — هیچ مسیر منسوخ برچسب‌گذاری‌شده؛ مسیر منسوخ /api/agent/feedback در بُعد ۲ آزموده می‌شود"
+  }
+ ],
+ "meta": {
+  "filesScanned": {
+   "src": 599,
+   "tests": 113,
+   "scripts": 449
+  },
+  "durationMs": 286,
+  "mode": "read-only"
+ },
+ "summary": {
+  "verdict": "پاک در ۸/۱۰ جستجو · ۲ یافتهٔ جزئی هر دو در لایهٔ تست/ابزار (نه اپ)",
+  "metrics": {
+   "scannedSrc": 599,
+   "scannedTests": 113,
+   "scannedScripts": 449,
+   "durationMs": 286
+  },
+  "realIssues": [
+   {
+    "finding": "pin تست arm-tok-p6509",
+    "where": "tests/p6509-owner-unlimited.test.ts:168",
+    "severity": "🟠",
+    "detail": "توکن ثابت تستی — پیشنهاد رفع: انتقال به env تست (بُعد ۳)",
+    "dim": 3
+   },
+   {
+    "finding": "اسکریپت تاریخی verify-p2-03 با توکن تستی نام‌گذاری‌شده",
+    "where": "scripts/verify-p2-03.ts",
+    "severity": "🟢",
+    "detail": "ابزار تأیید تاریخی یک‌بار-مصرف — نامزد بازبینی «لیست اضافات» فاز ۳",
+    "dim": 3
+   }
+  ],
+  "ownerConcern1_probe": "پوشش داده شد — صفر کد مدیر hardcode در src/ (جستجوی ۱: count=0)"
+ }
+}

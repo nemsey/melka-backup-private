@@ -1,0 +1,179 @@
+{
+ "dimension": "بُعد ۹ — کارایی (Performance)",
+ "perfBudget": {
+  "script": "scripts/perf-budget.sh — ۱۲ سنجه",
+  "result": "۱۰/۱۲ سبز",
+  "failed": [
+   {
+    "metric": "RAM production",
+    "value": "578MB",
+    "target": "<500MB",
+    "note": "سرور standalone + andami — نامزد نقشهٔ سرعت فاز ۴"
+   },
+   {
+    "metric": "RAM Build پیک",
+    "value": "2200MB",
+    "target": "<1500MB",
+    "note": "فقط هنگام بیلد — اثر عملیاتی صفر در حالت اجرا"
+   }
+  ],
+  "passed": [
+   {
+    "metric": "Initial JS",
+    "value": "281KB < 300KB ✓"
+   },
+   {
+    "metric": "LCP",
+    "value": "572ms < 2500ms ✓"
+   },
+   {
+    "metric": "INP proxy",
+    "value": "92ms < 200ms ✓"
+   },
+   {
+    "metric": "CLS",
+    "value": "0 < 0.1 ✓"
+   },
+   {
+    "metric": "Login→Dashboard",
+    "value": "918ms < 2000ms ✓"
+   },
+   {
+    "metric": "Dashboard→Tile M1",
+    "value": "115ms < 1000ms ✓"
+   },
+   {
+    "metric": "Tile→First Insight",
+    "value": "9ms < 2000ms ✓"
+   },
+   {
+    "metric": "API P95 version/health/home",
+    "value": "4-7ms < 500ms ✓"
+   }
+  ]
+ },
+ "apiLatency": [
+  {
+   "endpoint": "GET / (خانه)",
+   "p50": 2,
+   "p95": 7.5,
+   "p99": 7.5,
+   "min": 1.7,
+   "max": 7.5,
+   "runs": 10
+  },
+  {
+   "endpoint": "GET /api/health",
+   "p50": 3.7,
+   "p95": 9.1,
+   "p99": 9.1,
+   "min": 3.1,
+   "max": 9.1,
+   "runs": 10
+  },
+  {
+   "endpoint": "GET /api/crm/arm-catalog/listings (بدون فیلتر)",
+   "p50": 59.1,
+   "p95": 70.9,
+   "p99": 70.9,
+   "min": 56.8,
+   "max": 70.9,
+   "runs": 6
+  },
+  {
+   "endpoint": "GET /api/crm/arm-catalog/listings?realtorName (فیلتر)",
+   "p50": 1216,
+   "p95": 1252.9,
+   "p99": 1252.9,
+   "min": 1099.4,
+   "max": 1252.9,
+   "runs": 6
+  },
+  {
+   "endpoint": "GET /api/crm/arm-catalog/requests (بدون فیلتر)",
+   "p50": 143.8,
+   "p95": 160.8,
+   "p99": 160.8,
+   "min": 120.6,
+   "max": 160.8,
+   "runs": 6
+  },
+  {
+   "endpoint": "GET /api/crm/arm-catalog/requests?customerName (فیلتر)",
+   "p50": 2926.3,
+   "p95": 2955.2,
+   "p99": 2955.2,
+   "min": 2870.3,
+   "max": 2955.2,
+   "runs": 6
+  },
+  {
+   "endpoint": "GET /api/experts",
+   "p50": 12.3,
+   "p95": 24.1,
+   "p99": 24.1,
+   "min": 9,
+   "max": 24.1,
+   "runs": 10
+  },
+  {
+   "endpoint": "GET /api/crm/transactions",
+   "p50": 69.8,
+   "p95": 87.1,
+   "p99": 87.1,
+   "min": 61,
+   "max": 87.1,
+   "runs": 10
+  },
+  {
+   "endpoint": "GET /api/market-index",
+   "p50": 793.1,
+   "p95": 921.4,
+   "p99": 921.4,
+   "min": 674.5,
+   "max": 921.4,
+   "runs": 10
+  },
+  {
+   "endpoint": "GET /api/intelligence/status",
+   "p50": 163.5,
+   "p95": 182.1,
+   "p99": 182.1,
+   "min": 151.8,
+   "max": 182.1,
+   "runs": 10
+  },
+  {
+   "endpoint": "GET /api/matching/search",
+   "p50": 65,
+   "p95": 73.5,
+   "p99": 73.5,
+   "min": 62.8,
+   "max": 73.5,
+   "runs": 10
+  },
+  {
+   "endpoint": "GET /api/opportunity-alerts",
+   "p50": 7.8,
+   "p95": 12,
+   "p99": 12,
+   "min": 5.7,
+   "max": 12,
+   "runs": 10
+  }
+ ],
+ "browserMetrics": {
+  "note": "fps اسکرول ۱۰۰۰+ ردیف و بارگذاری اول در بُعد ۱۲ (E2E مرورگر) اندازه‌گیری می‌شود",
+  "initialLoadFromBudget": "Login→Dashboard 918ms · LCP 572ms"
+ },
+ "ram": {
+  "productionMB": 578,
+  "targetMB": 500,
+  "buildPeakMB": 2200,
+  "verdict": "⚠ تولید 78MB بالاتر از بودجه — ارجاع به نقشهٔ سرعت"
+ },
+ "findings": [
+  "perf-budget: ۱۰/۱۲ سبز (شکست: RAM تولید ۵۷۸MB · پیک بیلد ۲۲۰۰MB)",
+  "⚠ 3 endpoint با P95 > ۵۰۰ms: GET /api/crm/arm-catalog/listings?realtorName (فیلتر) · GET /api/crm/arm-catalog/requests?customerName (فیلتر) · GET /api/market-index — هستهٔ نقشهٔ سرعت فاز ۴"
+ ]
+}

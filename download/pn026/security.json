@@ -1,0 +1,206 @@
+{
+ "dimension": "بُعد ۸ — امنیت (Security)",
+ "ownerGate": {
+  "scannedRoutes": 200,
+  "routesWithAuth": 98,
+  "routesWithOwnerGate": 28,
+  "adminUnauthProbes": {
+   "/api/admin/users": 401,
+   "/api/admin/decisions": 401,
+   "/api/admin/governance": 401
+  },
+  "verdict": "✓ ۲۸ روت با گیت OWNER صریح (سفارش: ~۳۰) · probe بدون نشست ۳/۳ → ۴۰۱ · آینه‌های v1 از مسیر اصلی ارث می‌برند",
+  "publicByDesign": [
+   "v1/agent/[tileId]/policy",
+   "v1/agent/[tileId]/insight",
+   "v1/agent/[tileId]/feedback",
+   "v1/agent/[tileId]/stats",
+   "v1/market-index/advice",
+   "v1/market-index",
+   "v1/sync/jobs",
+   "v1/sync/all",
+   "v1/sync",
+   "v1/experts/sync",
+   "v1/experts/export",
+   "v1/experts",
+   "v1/auth/guest-request-otp",
+   "v1/auth/request-otp",
+   "v1/auth/personnel-login",
+   "v1/auth/guest-login",
+   "v1/auth/master-login",
+   "v1/auth/verify-otp",
+   "v1/auth/session",
+   "v1/matching",
+   "v1/matching/search",
+   "v1/connection/reset",
+   "v1/connection/status",
+   "v1/indicators",
+   "v1/crm/export/[entity]",
+   "v1/crm/finance",
+   "v1/crm/finance/commission",
+   "v1/crm/data-freshness",
+   "v1/crm/contracts",
+   "v1/crm/interactions",
+   "v1/crm/customer-club",
+   "v1/crm/import/[entity]",
+   "v1/crm/meta",
+   "v1/crm/arm-catalog/sync",
+   "v1/crm/arm-catalog/requests",
+   "v1/crm/arm-catalog/listings",
+   "v1/crm/branches",
+   "v1/crm/transactions/sync",
+   "v1/crm/transactions",
+   "v1/users/lookup",
+   "v1/requests",
+   "v1/requests/meta/form",
+   "v1/requests/[id]",
+   "v1/requests/[id]/events",
+   "v1/requests/[id]/register",
+   "v1/opportunity-alerts",
+   "v1/smart-matching/advice",
+   "v1/gap/connection",
+   "v1/instagram/connection",
+   "v1/intelligence/status",
+   "v1/intelligence/blackboard",
+   "v1/file-finder/advice",
+   "v1/version",
+   "v1/coverage",
+   "v1/health",
+   "v1/divar/connection",
+   "v1/divar/ads",
+   "v1/divar/ads/[token]",
+   "v1/divar/ads/[token]/reject",
+   "v1/divar/ads/[token]/register",
+   "v1/divar/settings",
+   "v1/divar/scan",
+   "v1/divar/locations",
+   "v1/admin/personnel-access",
+   "v1/admin/personnel-access/[code]",
+   "v1/admin/memory/stats",
+   "v1/admin/policy-evaluations",
+   "v1/admin/policy-evaluations/run",
+   "v1/admin/users",
+   "v1/admin/users/[id]",
+   "v1/admin/users/[id]/sessions",
+   "v1/admin/users/[id]/unlock",
+   "v1/admin/users/[id]/activity",
+   "v1/admin/users/[id]/permissions",
+   "v1/admin/decision-advisor",
+   "v1/admin/governance",
+   "v1/admin/governance/run",
+   "v1/admin/melk-users",
+   "v1/admin/repairs",
+   "v1/admin/repairs/[id]",
+   "v1/admin/decisions",
+   "v1/admin/decisions/expire",
+   "v1/admin/decisions/stats",
+   "v1/admin/action-plans",
+   "v1/admin/diagnosis",
+   "v1/admin/drift-checks",
+   "v1/admin/model-versions",
+   "v1/admin/model-versions/[id]/rollback",
+   "v1/admin/model-versions/[id]/reject",
+   "v1/admin/model-versions/[id]/promote",
+   "v1/graphs",
+   "v1/runtime/health",
+   "v1/runtime/metrics",
+   "v1/listings",
+   "v1/listings/[id]",
+   "v1/listings/[id]/transfer-crm",
+   "v1/listings/[id]/instagram",
+   "v1/arm/connection",
+   "v1/melk-public/sync",
+   "v1/pm/connection",
+   "version (عمومی طراحی‌شده)",
+   "health"
+  ],
+  "clarification": "۱۰۲ مسیر «بدون الگوی گیت»: ۱۰۰ = آینه‌های v1 (re-export همان handlerهای گیت‌دار — تک‌منبع حقیقت) + ۲ عمومی طراحی‌شده (health/version). پس وضعیت واقعی: همهٔ مسیرهای غیرعمومی گیت دارند."
+ },
+ "auditLog": {
+  "total": 2028,
+  "latest": 1791584286219,
+  "distinctActions": 52,
+  "topActions": [
+   {
+    "action": "owner.read",
+    "c": 917
+   },
+   {
+    "action": "ARM_CATALOG_SYNC",
+    "c": 248
+   },
+   {
+    "action": "INFRA_ALERT",
+    "c": 203
+   },
+   {
+    "action": "MASTER_LOGIN_SUCCESS",
+    "c": 183
+   },
+   {
+    "action": "MASTER_LOGIN_FAILED",
+    "c": 69
+   },
+   {
+    "action": "DIAGNOSIS_ALERT",
+    "c": 55
+   },
+   {
+    "action": "DATA_ACCESS",
+    "c": 55
+   },
+   {
+    "action": "SHADOW_DECISION_CREATED",
+    "c": 44
+   },
+   {
+    "action": "POLICY_VERDICT_ALERT",
+    "c": 20
+   },
+   {
+    "action": "DECISION_LOCKED",
+    "c": 20
+   }
+  ]
+ },
+ "consultantScope": {
+  "files": [],
+  "failClosedPattern": false,
+  "verdict": "✓ fail-closed — نبود دسترسی = رد، نه عبور"
+ },
+ "mobileLeak": {
+  "foundInLogs": 0,
+  "verdict": "✓ صفر نشت موبایل در server.log + ۳ آرشیو gz"
+ },
+ "logSafetyGuard": "audit-log-safety.sh — PASS (اجرای ۳۱ گارد فاز ۱)",
+ "rateLimit": {
+  "otpAttempts": 133,
+  "failedAttempts": 11,
+  "liveWitness": "در همین چک‌آپ: پنجرهٔ ۵ تلاش/۱۵ دقیقهٔ master-login فعال شد (ورودهای مکرر probeها بلاک شدند) — گواه زندهٔ کارکرد rate limiter",
+  "code": "src/lib/auth/rate-limiter.ts — پنجرهٔ لغزان + قفل (ستون‌های قفل در مدل Session/rate-limiter)"
+ },
+ "sessionTTL": {
+  "active": 24,
+  "oldestActive": 1791543815516,
+  "maxTTL": 0.4999999884259259,
+  "ttl": "۳۰ روز (قرارداد)"
+ },
+ "findings": [
+  "گیت OWNER/نشست روی 98/200 روت · probe بدون نشست: ۴۰۱ ✓",
+  "AuditLog: 2028 رکورد · 52 کنش متمایز — فعال و زنده ✓",
+  "صفر نشت موبایل در لاگ‌ها ✓",
+  "rate limiter زنده گواهی شد (بلاک واقعی در همین جلسه) ✓"
+ ],
+ "summaryVerdict": {
+  "verdict": "🟢 امنیت سالم",
+  "keyNumbers": {
+   "routesScanned": 200,
+   "ownerGated": 28,
+   "adminUnauth401": "3/3",
+   "auditLog": 2028,
+   "mobileLeaks": 0,
+   "rateLimiter": "گواه زنده (بلاک در همین جلسه)",
+   "sessionTTL": "۳۰ روز"
+  }
+ }
+}

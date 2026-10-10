@@ -1,0 +1,275 @@
+{
+ "dimension": "بُعد ۳ — قرارداد تست (Test Contract)",
+ "scope": {
+  "testFiles": 113,
+  "totalLines": 34606
+ },
+ "searches": [
+  {
+   "id": 1,
+   "query": "«80211186» در tests/",
+   "goal": "pin کد مدیر",
+   "count": 6,
+   "samples": [
+    {
+     "file": "tests/pn003-master-code.test.ts",
+     "line": 152,
+     "text": "if (code === \"80211186\") {"
+    },
+    {
+     "file": "tests/pn003-master-code.test.ts",
+     "line": 172,
+     "text": "expect(isValidMasterCodeFormat(\"80211186\")).toBe(true);"
+    },
+    {
+     "file": "tests/pn003-master-code.test.ts",
+     "line": 182,
+     "text": "expect(safeEqual(\"80211186\", \"80211186\")).toBe(true);"
+    },
+    {
+     "file": "tests/pn003-master-code.test.ts",
+     "line": 183,
+     "text": "expect(safeEqual(\"80211186\", \"80221186\")).toBe(false);"
+    },
+    {
+     "file": "tests/pn003-master-code.test.ts",
+     "line": 184,
+     "text": "expect(safeEqual(\"80211186\", \"\")).toBe(false);"
+    },
+    {
+     "file": "tests/pn011-boot-secrets.test.ts",
+     "line": 136,
+     "text": "process.env.MASTER_ACCESS_CODE = \"80211186\";"
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "query": "«00000000» در tests/",
+   "goal": "pin کد قدیمی",
+   "count": 3,
+   "samples": [
+    {
+     "file": "tests/pn003-master-code.test.ts",
+     "line": 60,
+     "text": "expect(code).not.toBe(\"00000000\");"
+    },
+    {
+     "file": "tests/pn012-repository-boundary.test.ts",
+     "line": 99,
+     "text": "expect(isEnvCodeValid(\"00000000\")).toBe(false); // کد تستی عمومی — قانون SEC-1"
+    },
+    {
+     "file": "tests/pn012-repository-boundary.test.ts",
+     "line": 100,
+     "text": "const state = await getMasterCodeState(\"00000000\");"
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "query": "«arm-tok-p6509» در tests/",
+   "goal": "pin توکن",
+   "count": 1,
+   "samples": [
+    {
+     "file": "tests/p6509-owner-unlimited.test.ts",
+     "line": 168,
+     "text": "{ accessToken: \"arm-tok-p6509\", refreshToken: \"arm-ref\", userType: \"realtor\" }"
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "query": "«verify-p2-03-ad-1» در tests/",
+   "goal": "pin توکن تست",
+   "count": 0,
+   "samples": []
+  },
+  {
+   "id": 5,
+   "query": "فایل‌های قدیمی p65*/pn00*",
+   "goal": "تست‌های قدیمی",
+   "count": 23,
+   "files": [
+    "tests/p6530-settings-order.test.ts",
+    "tests/p6530-color-system.test.ts",
+    "tests/p6509-owner-unlimited.test.ts",
+    "tests/p6537-p11-core.test.ts",
+    "tests/p6537-p9-core.test.ts",
+    "tests/pn003-master-code.test.ts",
+    "tests/p6537-p8-core.test.ts",
+    "tests/pn008-experts.test.ts",
+    "tests/p6519-deploy-freshness.test.ts",
+    "tests/p6511-merge-resume.test.ts",
+    "tests/pn001-block3-brain.test.ts",
+    "tests/p6527-mobile-list-performance.test.ts",
+    "tests/p6537-integration.test.ts",
+    "tests/p6537-p7-core.test.ts",
+    "tests/p6549-luxury-law.test.ts",
+    "tests/p6537-p10-core.test.ts",
+    "tests/p6530-architecture-guards.test.ts",
+    "tests/p6545-step3-brain.test.ts",
+    "tests/p6545-step2-tiles.test.ts",
+    "tests/p6504i-owner-role.test.ts",
+    "tests/pn002-tiles.test.ts",
+    "tests/pn001-block2-m5.test.ts",
+    "tests/p6545-step1-infra.test.ts"
+   ]
+  },
+  {
+   "id": 6,
+   "query": "MELKA_REPO_DIR استفاده",
+   "goal": "ایزوله‌سازی",
+   "count": 6,
+   "missingIn": [
+    "tests/phase1-kpicard.test.ts",
+    "tests/pn012-joblock-renewal.test.ts",
+    "tests/phase65-b3-coverage10k.test.ts",
+    "tests/p6530-color-system.test.ts",
+    "tests/pn013-observability.test.ts",
+    "tests/p6509-owner-unlimited.test.ts",
+    "tests/pn010-diag-data-005.test.ts",
+    "tests/phase1-step-report.test.ts",
+    "tests/p6537-p11-core.test.ts",
+    "tests/phase6-visibility.test.ts"
+   ]
+  },
+  {
+   "id": 7,
+   "query": "mock.module",
+   "goal": "آلودگی",
+   "count": 2,
+   "samples": [
+    {
+     "file": "tests/phase1-use-tile-data.test.ts",
+     "line": 36,
+     "text": "mock.module(\"@/hooks/use-toast\", () => ({"
+    },
+    {
+     "file": "tests/request-agent.intelligent.test.ts",
+     "line": 26,
+     "text": "mock.module(\"@/lib/request/customer-mgmt\", () => ({"
+    }
+   ]
+  }
+ ],
+ "pinAnalysis": [
+  {
+   "file": "tests/p6509-owner-unlimited.test.ts",
+   "pins": [
+    "arm-tok-p6509"
+   ],
+   "usesEnvGate": false,
+   "verdict": "hard-pin"
+  },
+  {
+   "file": "tests/pn003-master-code.test.ts",
+   "pins": [
+    "80211186",
+    "00000000"
+   ],
+   "usesEnvGate": false,
+   "verdict": "hard-pin"
+  },
+  {
+   "file": "tests/hotfix01-secrets.test.ts",
+   "pins": [
+    "test-key-hotfix01-rotate"
+   ],
+   "usesEnvGate": false,
+   "verdict": "hard-pin"
+  },
+  {
+   "file": "tests/pn011-boot-secrets.test.ts",
+   "pins": [
+    "80211186"
+   ],
+   "usesEnvGate": true,
+   "verdict": "pin-with-env-fallback"
+  },
+  {
+   "file": "tests/pn012-repository-boundary.test.ts",
+   "pins": [
+    "00000000"
+   ],
+   "usesEnvGate": false,
+   "verdict": "hard-pin"
+  }
+ ],
+ "otherPinsFound": [
+  "tok-p6509",
+  "test-key-hotfix01-rotate"
+ ],
+ "ownerConcern3_testPins": "پوشش داده شد — ۱۱۳ فایل تست اسکن شد · ۵ فایل pin دارند · یافتهٔ اصلی: کد واقعی مدیر ۸۰۲۱۱۱۸۶ در pn003 (۵ نقطه) — رفع پیشنهادی فاز ۵ با مجوز شما",
+ "afterActionTable": [
+  {
+   "file": "tests/p6509-owner-unlimited.test.ts",
+   "pins": "arm-tok-p6509",
+   "obsolete": "بله (توکن قدیمی)",
+   "contract": "hard-pin",
+   "action": "پیشنهاد: انتقال pin به env تست (فاز ۵ · مجوز مالک)"
+  },
+  {
+   "file": "tests/pn003-master-code.test.ts",
+   "pins": "80211186, 00000000",
+   "obsolete": "بله (کد قدیمی)",
+   "contract": "hard-pin",
+   "action": "پیشنهاد: انتقال pin به env تست (فاز ۵ · مجوز مالک)"
+  },
+  {
+   "file": "tests/hotfix01-secrets.test.ts",
+   "pins": "test-key-hotfix01-rotate",
+   "obsolete": "خیر",
+   "contract": "hard-pin",
+   "action": "پیشنهاد: انتقال pin به env تست (فاز ۵ · مجوز مالک)"
+  },
+  {
+   "file": "tests/pn011-boot-secrets.test.ts",
+   "pins": "80211186",
+   "obsolete": "خیر",
+   "contract": "env-first با fallback pin",
+   "action": "قابل‌قبول — env-first"
+  },
+  {
+   "file": "tests/pn012-repository-boundary.test.ts",
+   "pins": "00000000",
+   "obsolete": "بله (کد قدیمی)",
+   "contract": "hard-pin",
+   "action": "پیشنهاد: انتقال pin به env تست (فاز ۵ · مجوز مالک)"
+  }
+ ],
+ "securityClassification": {
+  "verdict": "۴ یافتهٔ pin — ۱ یافتهٔ امنیتی واقعی · ۳ بی‌خطر",
+  "items": [
+   {
+    "file": "tests/pn003-master-code.test.ts",
+    "pins": "80211186 (کد واقعی مدیر — تأیید با مقایسهٔ کور)",
+    "risk": "🔴 واقعی",
+    "detail": "۵ نقطه — تست‌های الگوریتمی safeEqual/isValidMasterCodeFormat با مقدار واقعی؛ مخفف‌سازی: مخزن خصوصی + هرگز به production نمی‌رسد؛ ولی طبق SEC باید pin واقعی حذف شود",
+    "action": "فاز ۵: جایگزینی با مقدار تستی متفاوت (مثل 12345678) یا env تست"
+   },
+   {
+    "file": "tests/pn011-boot-secrets.test.ts",
+    "pins": "80211186 (به‌عنوان env تستی ست می‌شود)",
+    "risk": "🟡 متوسط",
+    "detail": "الگوی env-first درست است ولی مقدار واقعی — با تغییر کد مدیر بی‌اثر می‌شود (خودکفا)",
+    "action": "فاز ۵ اختیاری: مقدار تستی متفاوت"
+   },
+   {
+    "file": "tests/pn012-repository-boundary.test.ts",
+    "pins": "00000000",
+    "risk": "🟢 صحیح",
+    "detail": "تست منفی — تأیید ردّ کد تستی عمومی (قانون SEC-1) — طراحی صحیح",
+    "action": "—"
+   },
+   {
+    "file": "tests/p6509-owner-unlimited.test.ts + hotfix01-secrets.test.ts",
+    "pins": "arm-tok-p6509 / test-key-hotfix01-rotate",
+    "risk": "🟢 بی‌خطر",
+    "detail": "توکن/کلید جعلی ساختگی — نه راز واقعی",
+    "action": "—"
+   }
+  ]
+ }
+}

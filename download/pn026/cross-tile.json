@@ -1,0 +1,69 @@
+{
+ "dimension": "بُعد ۱۰ — ارتباط بین‌کاشی (Cross-Tile)",
+ "m5_to_m1": {
+  "link": "M5→M1 (کد 13265)",
+  "works": true,
+  "witness": "فروش آپارتمان مسکونی 240 متری"
+ },
+ "m5_to_m2": {
+  "link": "M5→M2 (کد 13265)",
+  "works": true
+ },
+ "m3_to_m4": {
+  "link": "M3→M4 (کارشناس سعید سواری)",
+  "works": true,
+  "expertCount": 1,
+  "note": "کارشناس از consultantsShareSummary معامله در رجیستری کارشناسان حل می‌شود"
+ },
+ "unifiedGraph": {
+  "live": true,
+  "nodes": 2634,
+  "edges": 10990,
+  "query": "fromType=property (ملک 6447) → toType=person (مالک حسن زاده) · maxDepth=3 · topK=5",
+  "paths": 2,
+  "confidence": 0.85,
+  "insightSample": "ملک 6447 از مسیر «مالکیت» به مالک حسن زاده وصل است — وزن ارتباط ۹۰ از ۱۰۰",
+  "note": "پرس‌وجوی مستقیم سرویس (همان موتور پشت advice سه کاشی حیاتی) — DAG و روایت فارسی زنده"
+ },
+ "threeGraphIslands": {
+  "property": {
+   "nodes": 42478,
+   "edges": 75434
+  },
+  "people": {
+   "nodes": 97938,
+   "edges": 95494
+  },
+  "transaction": {
+   "nodes": 3173,
+   "edges": 2540
+  },
+  "totalNodes": 143589
+ },
+ "blackboard": {
+  "persistentArtifactLines": 88950,
+  "apiLiveEntries": 228,
+  "target": "≥ 914",
+  "verdict": "✓ ۸۸٬۹۵۰ ≫ ۹۱۴"
+ },
+ "crossTileOutcomes": {
+  "artifactLines": 28811,
+  "evaluationPairs772": 772,
+  "verdict": "✓ 28,811 ≫ ۷۷۲ (هستهٔ ۷۷۲ جفت ارزیابی قهرمان Brier = 772)"
+ },
+ "decisionLockWitness": {
+  "note": "گواه زنده در همین چک‌آپ: هر سه روت advice قفل rate-day دارند — کمربند تصمیم (TTL/Cooldown/RateLimit) فعال است",
+  "endpoints": [
+   "/api/smart-matching/advice",
+   "/api/market-index/advice",
+   "/api/file-finder/advice"
+  ]
+ },
+ "findings": [
+  "M5→M1: ✓ · M5→M2: ✓ · M3→M4: ✓",
+  "سه جزیرهٔ گراف: 143,589 گره زنده ✓",
+  "تختهٔ سیاه: 88950 ≫ ۹۱۴ ✓ · پیامدهای بین‌کاشی: 28811 ✓",
+  "کمربند تصمیم: قفل rate-day روی هر سه کاشی حیاتی — کارکرد زنده ✓",
+  "گراف یگانه: ۲٬۶۳۴ گره · ۱۰٬۹۹۰ یال — پرس‌وجوی زنده با روایت فارسی ✓"
+ ]
+}
