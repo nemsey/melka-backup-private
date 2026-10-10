@@ -23,7 +23,7 @@ PASS|audit-permission-boundary.sh
 PASS|audit-phase0-revision.sh
 PASS|audit-policy-evaluation.sh
 PASS|audit-repair-gate.sh
-FAIL|audit-reproducibility.sh
+PASS|audit-reproducibility.sh
 PASS|audit-roles.sh
 PASS|audit-self-diagnosis.sh
 PASS|audit-smart-update.sh
