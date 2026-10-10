@@ -21,6 +21,7 @@ import type {
   RequestWithEventsDTO,
 } from "../interfaces";
 import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
+import { requestNormColumns } from "@/lib/search-norm";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانهٔ نگاشت ارقام/حروف (رفع باگ ۴/۵)
 import { normalizeFilterInput } from "@/lib/normalize-input";
 
@@ -104,6 +105,8 @@ export function toArmRequestData(r: ArmRequestBulkRow): Record<string, unknown> 
     ...(r.cityName !== undefined && r.cityName !== null ? { cityName: r.cityName } : {}),
     ...(r.platform !== undefined && r.platform !== null ? { platform: r.platform } : {}),
     ...(r.customerDescription !== undefined && r.customerDescription !== null ? { customerDescription: r.customerDescription } : {}),
+    // PN-027 · ۵-پ-۱ — ستون‌های سایهٔ نرمال همیشه با هر نوشتن تازه می‌شوند
+    ...requestNormColumns(r),
   };
 }
 
@@ -248,7 +251,15 @@ export class PrismaRequestRepository implements RequestRepository {
     const sanadNorm = normalizeFilterInput(filter.sanad);
     const constructNorm = normalizeFilterInput(filter.constructType);
     const sideNorm = normalizeFilterInput(filter.side);
-    const needsJsFilter = codeNorm !== "" || realtorNorm !== "" || customerNorm !== "" || areaNorm !== "" || lineNorm !== "" || sanadNorm !== "" || constructNorm !== "" || sideNorm !== "";
+
+    // PN-027 · ۵-پ-۱ — فیلترهای متنی سنگین روی ستون‌های سایهٔ نرمال در سطح SQL
+    // (هم‌ارز عینی JS قدیم: نام+موبایل با ␟ ترکیب شده‌اند — تطبیق کاذب بین‌مرزی ناممکن)
+    if (customerNorm !== "") where.customerNameNorm = { contains: customerNorm };
+    if (sanadNorm !== "") where.sanadNamesNorm = { contains: sanadNorm };
+    if (realtorNorm !== "") where.actorNameNorm = { contains: realtorNorm };
+
+    // فیلترهای باقی‌مانده (JSON آرایه‌ای یا کد) همچنان در JS — فقط این‌ها اسکن کامل می‌خواهند
+    const needsJsFilter = codeNorm !== "" || areaNorm !== "" || lineNorm !== "" || constructNorm !== "" || sideNorm !== "";
     const fetchTake = needsJsFilter ? LIST_SCAN_CAP : limit;
 
     const records = await this.client.requestRecord.findMany({
@@ -306,15 +317,11 @@ export class PrismaRequestRepository implements RequestRepository {
 
     // P6525 — تطبیق نرمال‌شده: نتیجهٔ فارسی = لاتین = عربی (ارقام) و ي = ی، ك = ک (حروف)
     // P6530/گام ۲ — متقاضی: نام یا موبایل · مناطق: عضویت نام منطقه
+    // PN-027 · ۵-پ-۱ — نام مشتری/سند/کارشناس اکنون در SQL روی ستون‌های نرمال اعمال می‌شود؛
+    // اینجا فقط فیلترهای JS باقی‌مانده (کد · مناطق · خط · نوع ساخت · جهت)
     const matched = needsJsFilter
       ? records.filter((r) => {
           if (codeNorm !== "" && !normalizeFilterInput(r.requestCode).includes(codeNorm)) return false;
-          if (realtorNorm !== "" && !normalizeFilterInput(r.actorName).includes(realtorNorm)) return false;
-          if (customerNorm !== "") {
-            const name = normalizeFilterInput(r.customerName ?? r.rawCustomerName);
-            const mobile = normalizeFilterInput(r.customerMobile);
-            if (!name.includes(customerNorm) && !mobile.includes(customerNorm)) return false;
-          }
           if (areaNorm !== "") {
             const areas = parseAreaNamesJson(r.areaNamesJson).map((a) => normalizeFilterInput(a));
             if (!areas.some((a) => a.includes(areaNorm))) return false;
@@ -323,7 +330,6 @@ export class PrismaRequestRepository implements RequestRepository {
             const lines = parseAreaNamesJson(r.lineNamesJson).map((a) => normalizeFilterInput(a));
             if (!lines.some((a) => a.includes(lineNorm))) return false;
           }
-          if (sanadNorm !== "" && !normalizeFilterInput(r.sanadNames).includes(sanadNorm)) return false;
           if (constructNorm !== "" && !normalizeFilterInput(r.constructTypeNames).includes(constructNorm)) return false;
           if (sideNorm !== "" && !normalizeFilterInput(r.sideNames).includes(sideNorm)) return false;
           return true;

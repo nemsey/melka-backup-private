@@ -44,7 +44,8 @@
     "examples",
     "skills",
     "capacitor.config.ts",
-    "scripts"
+    "scripts",
+    "docs/archive"
   ]
 }
 

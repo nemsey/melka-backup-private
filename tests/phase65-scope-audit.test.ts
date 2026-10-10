@@ -467,7 +467,7 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
     }
   });
 
-  test("RequestRecordDTO — ۷۱ کلید (P6547 + PN-002/گام۲: +۲۱ ستون M2)؛ ستون‌های P6.5-02/03/04/10 + P6530/گام ۲ + خام‌های B.3 در دنباله", async () => {
+  test("RequestRecordDTO — ۷۴ کلید (P6547 + PN-002/گام۲: +۲۱ ستون M2 + PN-027 نرمال×۳)؛ ستون‌های P6.5-02/03/04/10 + P6530/گام ۲ + خام‌های B.3 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
@@ -476,17 +476,18 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
       // P6530/گام ۲ — دو ستون تازهٔ بازهٔ قیمت متقاضی (بعد از inputsJson)
       // P6547/گام دوم — سه ستون تازه: urgent/luxury/changeable (پس از جدیت مشتری)
       // PN-002/گام ۲ — ۲۱ ستون تازهٔ M2 در دنبالهٔ مدل (پس از normalizationVersion)
-      expect(keys.length).toBe(70); // events رابطه است — در findFirst نمی‌آید
+      expect(keys.length).toBe(73); // events رابطه است — در findFirst نمی‌آید · PN-027 · ۵-پ-۱: +۳ ستون نرمال
       // P6547 — سه ستون تازه بلافاصله پس از جدیت مشتری (userSeriousityName)
       const ui = keys.indexOf("urgent");
       expect(keys.slice(ui - 1, ui + 3)).toEqual(["userSeriousityName", "urgent", "luxury", "changeable"]);
       expect(keys.slice(18, 21)).toEqual(["inputsJson", "priceFrom", "priceTo"]);
-      // PN-002/گام ۲ — ۲۱ ستون M2 در انتهای مدل
-      expect(keys.slice(-21)).toEqual([
+      // PN-002/گام ۲ — ۲۱ ستون M2 در انتهای مدل · PN-027 · ۵-پ-۱ — +۳ ستون سایهٔ نرمال
+      expect(keys.slice(-24)).toEqual([
         "spaceFrom", "spaceTo", "roomsFrom", "roomsTo", "floorFrom", "floorTo",
         "buildYearFrom", "buildYearTo", "sanadNames", "constructTypeNames", "sideNames",
         "occasion", "deposit", "confirmSms", "notifyMe", "changeWithNames",
         "armBranchTitle", "countryName", "stateName", "cityName", "platform",
+        "customerNameNorm", "sanadNamesNorm", "actorNameNorm",
       ]);
       // P6.5-10 — ستون‌های افزودنی کاتالوگ ARM (نام کارشناس + عنوان درخواست)
       expect(keys).toContain("actorName");
@@ -509,7 +510,7 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
     }
   });
 
-  test("PropertyRecordDTO — ۵۴ کلید (PN-002/گام۱: +۱۴ ستون M1)؛ CustomerRecordDTO — ۱۳ کلید (مدل‌های جدید)", async () => {
+  test("PropertyRecordDTO — ۵۷ کلید (PN-002/گام۱: +۱۴ ستون M1 + PN-027 نرمال×۳)؛ CustomerRecordDTO — ۱۳ کلید (مدل‌های جدید)", async () => {
     const c = await getTestClient();
     await c.propertyRecord.deleteMany({ where: { id: "p6502-PR1" } });
     await c.customerRecord.deleteMany({ where: { mobile: "09140009999" } });
@@ -530,6 +531,8 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
         "isRental", "depositPrice", "rentPrice", "viewCount", "imageCount",
         "addedToDivar", "addedToInsta", "isReposted", "isTarget", "armBranchTitle",
         "stateName", "cityName", "publicUrl", "statusDate",
+        // PN-027 · ۵-پ-۲ — سه ستون سایهٔ نرمال
+        "realtorNameNorm", "ownerSearchNorm", "addressSearchNorm",
       ]);
       expect(p.tenantId).toBe("melk-tabriz"); // default
 

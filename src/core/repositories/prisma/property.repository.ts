@@ -16,6 +16,7 @@ import type {
   PropertyRecordRepository,
 } from "../interfaces";
 import { resolveClient, runBulkUpsert, type PrismaRepoDeps } from "./base";
+import { propertyNormColumns } from "@/lib/search-norm";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانهٔ نگاشت ارقام/حروف (رفع باگ ۴/۵)
 import { normalizeFilterInput } from "@/lib/normalize-input";
 
@@ -77,6 +78,8 @@ function toPropertyData(p: PropertyBulkInput): Record<string, unknown> {
     ...(p.cityName !== undefined && p.cityName !== null ? { cityName: p.cityName } : {}),
     ...(p.publicUrl !== undefined && p.publicUrl !== null ? { publicUrl: p.publicUrl } : {}),
     ...(p.statusDate !== undefined && p.statusDate !== null ? { statusDate: p.statusDate } : {}),
+    // PN-027 · ۵-پ-۲ — ستون‌های سایهٔ نرمال همیشه با هر نوشتن تازه می‌شوند
+    ...propertyNormColumns(p),
   };
 }
 
@@ -169,7 +172,15 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     const addrNorm = normalizeFilterInput(filter.address);
     const lineNorm = normalizeFilterInput(filter.lineName);
     const stateNorm = normalizeFilterInput(filter.stateName);
-    const needsJsFilter = codeNorm !== "" || realtorNorm !== "" || ownerNorm !== "" || addrNorm !== "" || lineNorm !== "" || stateNorm !== "";
+
+    // PN-027 · ۵-پ-۲ — فیلترهای متنی سنگین روی ستون‌های سایهٔ نرمال در سطح SQL
+    // (هم‌ارز عینی JS قدیم: مالک = rawOwnerName+موبایل · آدرس = آدرس+محله+خط با ␟)
+    if (realtorNorm !== "") where.realtorNameNorm = { contains: realtorNorm };
+    if (ownerNorm !== "") where.ownerSearchNorm = { contains: ownerNorm };
+    if (addrNorm !== "") where.addressSearchNorm = { contains: addrNorm };
+
+    // فیلترهای باقی‌مانده (کد · خط · استان) همچنان در JS — فقط این‌ها اسکن کامل می‌خواهند
+    const needsJsFilter = codeNorm !== "" || lineNorm !== "" || stateNorm !== "";
     // با فیلتر JS، کل کاتالوگ اسکن می‌شود (قانون فهرست: تمام ردیف‌ها؛ سقف = گارد ایمنی سرور)
     const fetchTake = needsJsFilter ? LIST_SCAN_CAP : limit;
 
@@ -219,21 +230,11 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
 
     // P6525 — تطبیق نرمال‌شده: نتیجهٔ فارسی = لاتین = عربی (ارقام) و ي = ی، ك = ک (حروف)
     // P6530/گام ۱ — مالک: نام یا موبایل · آدرس: متن کامل یا منطقه
+    // PN-027 · ۵-پ-۲ — کارشناس/مالک/آدرس اکنون در SQL روی ستون‌های نرمال اعمال می‌شود؛
+    // اینجا فقط فیلترهای JS باقی‌مانده (کد · خط · استان)
     const matched = needsJsFilter
       ? records.filter((r) => {
           if (codeNorm !== "" && !normalizeFilterInput(r.propertyCode).includes(codeNorm)) return false;
-          if (realtorNorm !== "" && !normalizeFilterInput(r.ownerName).includes(realtorNorm)) return false;
-          if (ownerNorm !== "") {
-            const name = normalizeFilterInput(r.rawOwnerName);
-            const mobile = normalizeFilterInput(r.ownerMobile);
-            if (!name.includes(ownerNorm) && !mobile.includes(ownerNorm)) return false;
-          }
-          if (addrNorm !== "") {
-            const addr = normalizeFilterInput(r.address);
-            const area = normalizeFilterInput(r.areaName);
-            const line = normalizeFilterInput(r.lineName);
-            if (!addr.includes(addrNorm) && !area.includes(addrNorm) && !line.includes(addrNorm)) return false;
-          }
           if (lineNorm !== "" && !normalizeFilterInput(r.lineName).includes(lineNorm)) return false;
           if (stateNorm !== "" && !normalizeFilterInput(r.stateName).includes(stateNorm)) return false;
           return true;
