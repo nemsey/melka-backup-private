@@ -40,8 +40,8 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
   });
 
   test("N3 سازگاری PN-011: colors.json موجود و بدون نگین (لایهٔ رویی، نه جایگزین)", () => {
-    const colorsJson = readFileSync(join(ROOT, "scripts/p6530/colors.json"), "utf-8");
-    expect(existsSync(join(ROOT, "scripts/p6530/colors.json"))).toBe(true);
+    const colorsJson = readFileSync(join(ROOT, "docs/archive/scripts/p6530/colors.json"), "utf-8");
+    expect(existsSync(join(ROOT, "docs/archive/scripts/p6530/colors.json"))).toBe(true);
     expect(colorsJson.includes("negin")).toBe(false);
   });
 

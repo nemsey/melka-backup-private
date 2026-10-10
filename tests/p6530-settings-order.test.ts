@@ -93,8 +93,8 @@ describe("گام صفر P6546 — ترتیب هفت‌بخشی تنظیمات ع
     const lib = readFileSync(`${SRC}/lib/melk-api/melk-public.ts`, "utf8");
     expect(lib).toContain("syncMelkPublicCatalog");
     expect(lib).toContain("merge-non-null");
-    const route = readFileSync(`${SRC}/app/api/melk-public/sync/route.ts`, "utf8");
-    expect(route).toContain("syncMelkPublicCatalog");
+    // PN-027 · ۵-ب-۲ — روت HTTP /api/melk-public/sync حذف شد (جلسهٔ ۰۳۴ · صفر مصرف‌کننده)؛
+    // کتابخانهٔ استخراج syncMelkPublicCatalog زنده است و Worker/کاتالوگ آن را می‌کارَد.
   });
 
   test("۱-۷) نُه نشانگر اتصال شامل سامانه عمومی و API GAP + نمایش پایدار در کاشی‌ها (جلسهٔ ۰۳۳: حساب GAP حذف)", async () => {

@@ -641,11 +641,23 @@ model PropertyRecord {
   publicUrl      String? // لینک عمومی آگهی (link)
   statusDate     DateTime? // تاریخ آخرین وضعیت (status[0].date)
 
+  // ---------- PN-027 · ۵-پ-۲ — ستون‌های سایهٔ نرمال برای فیلتر متنی سطح-SQL ----------
+  /// norm(ownerName) — فیلتر «کارشناس/مغایر» M1 (پیش‌تر JS روی ۲۷٫۸k ردیف)
+  realtorNameNorm  String?
+  /// norm(rawOwnerName) ␟ norm(ownerMobile) — فیلتر «مالک»: نام یا موبایل (هم‌ارز JS قدیم)
+  ownerSearchNorm  String?
+  /// norm(address) ␟ norm(areaName) ␟ norm(lineName) — فیلتر «آدرس/محله» (هم‌ارز JS قدیم)
+  addressSearchNorm String?
+
   @@index([cityId, areaId, propertyTypeId, tradeTypeId]) // ایندکس ۱ از §۴
   @@index([price, meterage]) // ایندکس ۲ از §۴
   @@index([createdAt]) // ایندکس ۴ از §۴
   @@index([ownerCode]) // پشتیبان ConsultantScope
   @@index([tenantId])
+  // PN-027 · ۵-پ-۲ — ایندکس ستون‌های نرمال (پیشوند/دقیق؛ contains روی سطح SQLite می‌ماند)
+  @@index([realtorNameNorm])
+  @@index([ownerSearchNorm])
+  @@index([addressSearchNorm])
 }
 
 /// P6.5-02 (§۲.۳ طراحی) — رجیستری مشتریان مشتق (خریدار/فروشنده/درخواست‌دهنده/مالک)؛ افزودنی.
@@ -1402,11 +1414,23 @@ model RequestRecord {
   cityName           String? // شهر (city.name)
   platform           String? // پلتفرم ثبت (platform)
 
+  // ---------- PN-027 · ۵-پ-۱ — ستون‌های سایهٔ نرمال برای فیلتر متنی سطح-SQL ----------
+  /// norm(customerName ?? rawCustomerName) ␟ norm(customerMobile) — فیلتر «نام مشتری»: نام یا موبایل (هم‌ارز JS قدیم)
+  customerNameNorm String?
+  /// norm(sanadNames) — فیلتر «سند» (پیش‌تر JS روی ۲۵٫۵k ردیف — کند‌ترین گلوگاه: P95 ۲۹۵۵ms)
+  sanadNamesNorm   String?
+  /// norm(actorName) — فیلتر «کارشناس/مغایر» M2
+  actorNameNorm    String?
+
   @@index([status])
   @@index([source])
   @@index([customerMobile])
   @@index([createdAt])
   @@index([armRegisteredAt])
+  // PN-027 · ۵-پ-۱ — ایندکس ستون‌های نرمال (پیشوند/دقیق؛ contains روی سطح SQLite می‌ماند)
+  @@index([customerNameNorm])
+  @@index([sanadNamesNorm])
+  @@index([actorNameNorm])
 }
 
 /// رویداد درخواست — «ثبت رویداد» عین خود سامانه (request-events/create):

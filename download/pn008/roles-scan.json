@@ -1,8 +1,193 @@
 {
  "task": "PN-008 BLOCK 4 — اسکن ایستای نقش‌ها",
- "at": "2026-10-06T13:46:57.958280",
- "totalRoutes": 64,
+ "at": "2026-10-10T05:42:42.576446",
+ "totalRoutes": 184,
  "routes": [
+  {
+   "route": "/admin/action-plans",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/decision-advisor",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/decisions/expire",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/decisions",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER|OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/decisions/stats",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/diagnosis",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER|OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/governance",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/governance/run",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/melk-users",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/memory/stats",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER|OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/personnel-access/[code]",
+   "methods": [
+    "DELETE"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/personnel-access",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER|OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/policy-evaluations",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/policy-evaluations/run",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/repairs/{id}",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/repairs",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER|OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/users/{id}/activity",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/users/{id}/permissions",
+   "methods": [
+    "PUT"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/users/{id}",
+   "methods": [
+    "GET",
+    "PATCH",
+    "DELETE"
+   ],
+   "guard": "requireRole:OWNER|OWNER|OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/users/{id}/sessions",
+   "methods": [
+    "GET",
+    "DELETE"
+   ],
+   "guard": "requireRole:OWNER|OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/users/{id}/unlock",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/users",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "guard": "requireRole:OWNER|OWNER",
+   "risk": null
+  },
   {
    "route": "/agent/[tileId]/feedback",
    "methods": [
@@ -46,12 +231,36 @@
    "risk": null
   },
   {
+   "route": "/auth/guest-login",
+   "methods": [
+    "POST"
+   ],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/auth/guest-request-otp",
+   "methods": [
+    "POST"
+   ],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
    "route": "/auth/master-login",
    "methods": [
     "POST"
    ],
    "guard": "requireSessionAsync (هر نقش واردشده)",
    "risk": null
+  },
+  {
+   "route": "/auth/personnel-login",
+   "methods": [
+    "POST"
+   ],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
   },
   {
    "route": "/auth/request-otp",
@@ -123,16 +332,6 @@
    "route": "/crm/arm-catalog/sync",
    "methods": [
     "POST"
-   ],
-   "guard": "requireSessionAsync (هر نقش واردشده)",
-   "risk": null
-  },
-  {
-   "route": "/crm/branches",
-   "methods": [
-    "GET",
-    "PUT",
-    "DELETE"
    ],
    "guard": "requireSessionAsync (هر نقش واردشده)",
    "risk": null
@@ -319,6 +518,14 @@
    "risk": null
   },
   {
+   "route": "/file-finder/advice",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
    "route": "/gap/connection",
    "methods": [
     "GET",
@@ -412,6 +619,14 @@
    "risk": null
   },
   {
+   "route": "/market-index/advice",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
    "route": "/market-index",
    "methods": [
     "GET"
@@ -428,12 +643,11 @@
    "risk": null
   },
   {
-   "route": "/melk-public/sync",
+   "route": "/matching/search",
    "methods": [
-    "GET",
-    "POST"
+    "GET"
    ],
-   "guard": "requireRole:OWNER",
+   "guard": "requireSessionAsync (هر نقش واردشده)",
    "risk": null
   },
   {
@@ -499,6 +713,22 @@
    "risk": null
   },
   {
+   "route": "/runtime/health",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/smart-matching/advice",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
    "route": "/sync/all",
    "methods": [
     "POST"
@@ -529,6 +759,558 @@
    ],
    "guard": "requireSessionAsync (هر نقش واردشده)",
    "risk": null
+  },
+  {
+   "route": "/v1/admin/action-plans",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/decision-advisor",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/decisions/expire",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/decisions",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/decisions/stats",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/diagnosis",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/governance",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/governance/run",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/melk-users",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/memory/stats",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/personnel-access/[code]",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/personnel-access",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/policy-evaluations",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/policy-evaluations/run",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/repairs/{id}",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/repairs",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/users/{id}/activity",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/users/{id}/permissions",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/users/{id}",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/users/{id}/sessions",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/users/{id}/unlock",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/users",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/agent/[tileId]/feedback",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/agent/[tileId]/insight",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/agent/[tileId]/policy",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/agent/[tileId]/stats",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/arm/connection",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/auth/guest-login",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/auth/guest-request-otp",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/auth/master-login",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/auth/personnel-login",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/auth/request-otp",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/auth/session",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/auth/verify-otp",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/connection/reset",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/connection/status",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/coverage",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/arm-catalog/listings",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/arm-catalog/requests",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/arm-catalog/sync",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/contracts",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/customer-club",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/data-freshness",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/export/[entity: listings|requests|transactions|experts]",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/finance/commission",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/finance",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/import/[entity: listings|requests|transactions|experts]",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/interactions",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/meta",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/transactions",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/crm/transactions/sync",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/divar/ads/[token]/register",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/divar/ads/[token]/reject",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/divar/ads/[token]",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/divar/ads",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/divar/connection",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/divar/locations",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/divar/scan",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/divar/settings",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/experts/export",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/experts",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/experts/sync",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/file-finder/advice",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/gap/connection",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/graphs",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/health",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/indicators",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/instagram/connection",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/intelligence/blackboard",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/intelligence/status",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/listings/{id}/instagram",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/listings/{id}",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/listings/{id}/transfer-crm",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/listings",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/market-index/advice",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/market-index",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/matching",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/matching/search",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/opportunity-alerts",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/pm/connection",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/requests/{id}/events",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/requests/{id}/register",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/requests/{id}",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/requests/meta/form",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/requests",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/runtime/health",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/smart-matching/advice",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/sync/all",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/sync/jobs",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/sync",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/users/lookup",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/version",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
   },
   {
    "route": "/version",

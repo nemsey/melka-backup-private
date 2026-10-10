@@ -1,0 +1,28 @@
+{
+ "phase": "PN-027 · ۵-ب-۳ — آرشیو اسکریپت‌های تاریخی (❌ رد حذف · ✅ آرشیو · صفر حذف فیزیکی)",
+ "decision": "جلسهٔ ۰۳۴ فرم ۵-ب — آرشیو به docs/archive/scripts/",
+ "counts": {
+  "pn026Report": 404,
+  "matchingToday": 424,
+  "archived": 373,
+  "keptLiveRefs": 14,
+  "keptCurrentOrderTooling": "scripts/pn026 (۱۳ فایل ابزار چک‌آپ اخیر) + scripts/pn027 (ابزار جاری)"
+ },
+ "method": "الگوی عین PN-026 فاز ۳ (verify-p\\d | p65\\d\\d | pn0\\d\\d | hotfix | dbg- | check- | analyze_) · جابه‌جایی با git mv (تاریخچهٔ کامل با git log --follow)",
+ "keptLiveRefs": [
+  "pn006/dev-entry.sh (package.json scripts.dev)",
+  "pn012/escrow-manager.ts",
+  "pn005c/recovery-guard.sh",
+  "verify-p2-03.ts",
+  "verify-p3-03.ts",
+  "pn006/perf-browser.py",
+  "pn001/db-counts.ts",
+  "pn006+pn007/baseline.ts",
+  "park-deliver ×۳",
+  "deliver.sh ×۴"
+ ],
+ "infraUntouched": "scripts/runtime (Worker زنده) · audit-*.sh (گاردها) · mirror/ · recovery/ · prod-watchdog.sh (در حال اجرا) · feature-factory/ · ci.sh · fingerprint.ts · log-rotate.sh",
+ "archiveLocation": "docs/archive/scripts/ (ساختار درخت حفظ شد + README مستقل)",
+ "scriptsDirBefore": 563,
+ "scriptsDirAfter": "۱۵۵ مدخل (همهٔ ابزار زنده)"
+}

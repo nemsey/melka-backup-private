@@ -249,4 +249,36 @@ export async function register(): Promise<void> {
   } else {
     // حالت پیش‌فرض پس از HOTFIX-02: خاموش — همگام‌سازی فقط دستی/درخواستی با توکن خود کاربر
   }
+
+  // ---------- ۵) PN-027 · ۵-پ-۵: پیش‌گرمایش مغز هوشمند (جلسهٔ ۰۳۴) ----------
+  // گلوگاه ۹ نقشهٔ سرعت: فراخوانی سرد /api/intelligence/status = ۸۱۱ms (گردآوری
+  // ۱۶ موتور + گراف) در برابر گرم = ۱۶۳ms. با یک بار گرم‌کردنِ معلق ۲۰ ثانیه‌ای
+  // پس از بوت، نخستین درخواستِ مالک از همان ابتدا پاسخ گرم می‌گیرد.
+  // صفر تغییر رفتار — فقط پیش‌محاسبه؛ خطا هرگز بوت را نمی‌شکند (بهترین-تلاش).
+  if (!(process.env.DATABASE_URL ?? "").includes("test")) {
+    const { logEvent: logPrewarm } = await import("@/lib/logger");
+    setTimeout(() => {
+      void (async () => {
+        const t0 = Date.now();
+        try {
+          const { ensureBrainStatus } = await import("@/lib/intelligence/daemon");
+          await ensureBrainStatus();
+          logPrewarm({
+            category: "system",
+            operation: "intelligence-prewarm",
+            status: "ok",
+            detail: { ms: Date.now() - t0, note: "موتورهای ۱-۱۶ گرم شد — نخستین درخواست سرد نیست (PN-027 · ۵-پ-۵)" },
+          });
+        } catch (e) {
+          logPrewarm({
+            level: "warn",
+            category: "system",
+            operation: "intelligence-prewarm",
+            status: "fail",
+            detail: { error: String(e), ms: Date.now() - t0 },
+          });
+        }
+      })();
+    }, 20_000);
+  }
 }

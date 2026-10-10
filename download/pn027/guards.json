@@ -1,0 +1,67 @@
+{
+ "phase": "PN-027 · دروازه ۳.۲ — گاردها",
+ "rule": "قاعدهٔ ۱۲ جلسهٔ ۰۳۴ — برای هر خطر جدید، یک گارد",
+ "suite": {
+  "total": 36,
+  "pass": 36,
+  "fail": 0,
+  "verdict": "✓ همهٔ سبز",
+  "list": [
+   "✓ audit-activity-log.sh",
+   "✓ audit-boot-secrets.sh",
+   "✓ audit-causal-validity.sh",
+   "✓ audit-champion-challenger.sh",
+   "✓ audit-chunk-integrity.sh",
+   "✓ audit-counterfactual-purity.sh",
+   "✓ audit-decision-lock.sh",
+   "✓ audit-decision-safety.sh",
+   "✓ audit-disk-space.sh",
+   "✓ audit-drift-detection.sh",
+   "✓ audit-feature-factory.sh",
+   "✓ audit-graph-integrity.sh",
+   "✓ audit-int-overflow.sh",
+   "✓ audit-job-state.sh",
+   "✓ audit-learning-loop.sh",
+   "✓ audit-log-safety.sh",
+   "✓ audit-memory-lifecycle.sh",
+   "✓ audit-meta-mind.sh",
+   "✓ audit-mirror-sync.sh",
+   "✓ audit-negin-consistency.sh",
+   "✓ audit-opportunity-alerts.sh",
+   "✓ audit-permission-boundary.sh",
+   "✓ audit-phase0-revision.sh",
+   "✓ audit-policy-evaluation.sh",
+   "✓ audit-repair-gate.sh",
+   "✓ audit-reproducibility.sh",
+   "✓ audit-roles.sh",
+   "✓ audit-self-diagnosis.sh",
+   "✓ audit-smart-update.sh",
+   "✓ audit-stealth-users.sh",
+   "✓ audit-tile-contract.sh",
+   "✓ audit-unified-graph.sh",
+   "✓ audit-user-roles.sh",
+   "✓ audit-repository-boundary.sh",
+   "✓ audit-intelligence-boundary.sh",
+   "✓ audit-feature-visibility.sh"
+  ]
+ },
+ "newGuard": {
+  "name": "audit-pin-check.sh",
+  "risk": "بازگشت pin کد واقعی مالک در تست‌ها/منبع (ریسک ۵ پیش‌تحلیل)",
+  "result": "PASS: صفر pin کد واقعی در کد زنده (تست‌ها و منبع).",
+  "checks": "۷ بررسی: کد واقعی + ارقام مجاور در src/tests · رگرسیون مثبت ۹۹۹۹۹۹۹۹ · الگوی env-first · آرشیو خارج از مسیر اجرا"
+ },
+ "notable": {
+  "audit-reproducibility": "سبز پس از بستهٔ بقا ۲۶ — ۶/۶ (در قفل ورود قرمزِ مستندِ دلتای صفر-کد بود — با بیلد+بستهٔ تازه حل شد)",
+  "audit-negin-consistency": "سبز پس از اصلاح مسیر colors.json آرشیوشده (پیامد مشروع ۵-ب-۳)",
+  "mirror-sync (J4)": "آینه GitHub = HEAD (همگام ✓)",
+  "audit-boot-secrets": "سبز — تساوی شمار روت‌های v1=v0=92 پس از حذف ۸ جفت"
+ },
+ "twoGreenTests": {
+  "run1": "2510 pass / 2 fail",
+  "run2": "2510 pass / 2 fail",
+  "identical": true,
+  "note": "۲ شکست = یک تست یکتای PN-014/D2 (پیش‌موجود از پیش از PN-027 — هرس deliver-store در فاز PN-025؛ خارج از دامنهٔ مصوب، مستند)"
+ },
+ "verifiedAt": "2026-10-10T05:43:04.131Z"
+}

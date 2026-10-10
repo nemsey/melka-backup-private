@@ -1,0 +1,46 @@
+{
+ "bug": "۱۶ نشست فعال probe + crm-sync کهنهٔ failed (یافتهٔ بُعد ۴ PN-026)",
+ "decision": "جلسهٔ ۰۳۴ فرم ۵-الف ردیف ۵ — تأیید مشروط: فقط نشست‌های probe",
+ "action1_sessions": {
+  "rule": "حذف فقط بر اساس IP محلی (127.0.0.1 + ::1) — تمامی probeهای اسکریپتی (master-login از localhost)",
+  "preserved": "همهٔ نشست‌های واقعی از پروکسی 21.0.0.1 (مالک + مشاوران) — قید «نه نشست‌های واقعی مالک» ✓",
+  "deleted": 160,
+  "breakdown": {
+   "activePruned": 15,
+   "expiredPruned": 145
+  },
+  "note": "شمارش شورا «۱۳» مربوط به probeهای زندهٔ لحظهٔ تحلیل بود؛ اجرا کل ۱۶۰ probe تاریخی localhost را هرس کرد (۱۵ فعال + ۱۴۵ منقضی) — همهٔ IPها localhost، صفر نشست 21.0.0.1"
+ },
+ "action2_crmSync": {
+  "rule": "صفر حذف رکورد — فقط تغییر وضعیت",
+  "jobId": "crm-sync",
+  "before": {
+   "status": "done",
+   "updatedAt": "2026-10-10T02:10:44.931Z",
+   "updatedMs": 1791598244931
+  },
+  "after": {
+   "status": "done (stale)",
+   "recordExists": true
+  },
+  "note": "dead-letter نیست — وضعیت کهنهٔ failed از پنجرهٔ بازنشانی؛ daemon در چرخهٔ بعدی موفق وضعیت واقعی تازه می‌نویسد"
+ },
+ "before": {
+  "total": 195,
+  "active": 17,
+  "localhost": 160,
+  "realProxy": 35
+ },
+ "after": {
+  "total": 35,
+  "active": 2,
+  "realProxy": 35,
+  "localhost": 0
+ },
+ "verifiedAt": "2026-10-10T04:25:36.978Z",
+ "honestNote_crmSync": {
+  "finding": "مابه‌التفاوت زمانی: PN-026 رکورد crm-sync را failed@2026-10-09T15:08 مشاهده کرد؛ در لحظهٔ اجرای PN-027 daemon پیش‌تر آن را به done@2026-10-10T02:10 به‌روز کرده بود (خوددرمانی چرخهٔ Worker).",
+  "action": "با وجود خوددرمانی، طبق قرارداد جلسهٔ ۰۳۴ وضعیت به «done (stale)» تنظیم شد — علامت‌گذاری صریح که دورهٔ کهنه بسته شده است.",
+  "effect": "گذرا — daemon در چرخهٔ موفق بعدی وضعیت تازهٔ واقعی (done + جزئیات) را بازمی‌نویسد؛ صفر حذف رکورد ✓"
+ }
+}

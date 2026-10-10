@@ -1,0 +1,47 @@
+{
+ "bug": "تعارض دو نگهبان (۱۱۹۹+ تلاش EADDRINUSE از 2026-10-09T20:24:58Z)",
+ "rootCause": "سرور دستی مراسم دروازهٔ PN-025 (PID 23337/23339 از 20:23:16) پورت ۳۰۰۰ را انحصاری گرفت؛ نگهبان رسمی prod-watchdog.sh (PID 1426 از 19:17:10) هر ۵ ثانیه بوت ناموفق می‌زد",
+ "action": {
+  "decision": "جلسهٔ ۰۳۴ فرم ۵-الف ردیف ۲ + گلوگاه ۸ نقشهٔ سرعت: خاتمهٔ سرور دستی → نگهبان جانشین",
+  "killed": [
+   {
+    "pid": 23339,
+    "desc": "bun .next/standalone/server.js (سرور دستی مراسم)",
+    "signal": "SIGTERM",
+    "at": "2026-10-10T04:12:50Z"
+   },
+   {
+    "pid": 23337,
+    "desc": "bash -c wrapper + tee (پدر سرور دستی — با مرگ فرزند خارج شد)",
+    "signal": "خودکار",
+    "at": "2026-10-10T04:12:50Z"
+   }
+  ],
+  "successor": {
+   "pid": 3919,
+   "parent": 1426,
+   "cmd": "bun /home/z/my-project/.next/standalone/server.js",
+   "upAt": "2026-10-10T04:12:51Z",
+   "latencySec": "~۱ ثانیه (انتظار ۵-۱۰ ✓)"
+  }
+ },
+ "beforeState": {
+  "eaddrinuseTotalInLog": 192,
+  "watchdogLines": 192,
+  "port3000Owner": "PID 23339 (سرور دستی)"
+ },
+ "afterState": {
+  "windowSec": 60,
+  "newEaddrinuse": 0,
+  "newWatchdogRestarts": 0,
+  "port3000Owner": "PID 3919 (فرزند نگهبان رسمی ۱۴۲۶)",
+  "healthAfter60s": {
+   "status": 200,
+   "ms": 17.8
+  },
+  "buildIdUnchanged": "08d6f07-20261009-2015 (همان بیلد موجود — صفر تغییر رفتار؛ بیلد تازه در دروازهٔ پایانی)"
+ },
+ "stabilityRule": "قاعدهٔ ۸ جلسهٔ ۰۳۴ — تأیید زمانی ۶۰ ثانیه: PASS",
+ "guardOngoing": "گارد mirror-sync زنده (J4) + نگهبان رسمی والد سرور از این پس",
+ "verifiedAt": "2026-10-10T04:14:00Z"
+}

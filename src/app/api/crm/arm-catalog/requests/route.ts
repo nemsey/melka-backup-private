@@ -42,6 +42,21 @@ import {
 import { resolveExpertBranch, TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
 import { readOwnerBranchMap, readPmBranchMap } from "@/lib/branch-store";
 
+// PN-027 · ۵-پ-۶ (جلسهٔ ۰۳۴) — کش تجمع‌های کمکی فهرست M2 (۶۰ ثانیه):
+// شمارش غنی‌سازی (۲× count روی ۲۵٫۵k) + توزیع وضعیت (groupBy) در هر درخواست
+// تکرار نمی‌شود؛ daemon کاتالوگ هر چرخه داده را تازه می‌کند — ۶۰ث << چرخهٔ daemon.
+// قید: صفر تغییر شکل پاسخ — فقط منبع محاسبهٔ همان فیلدها کش می‌شود.
+type M2Aggregates = { counts: { total: number; pending: number; complete: number }; breakdown: Array<{ status: string | null; count: number }> };
+let m2AggCache: { data: M2Aggregates; expiresAt: number } | null = null;
+const M2_AGG_TTL_MS = 60 * 1000;
+async function getM2Aggregates(repo: { countArmEnrichment(): Promise<M2Aggregates["counts"]>; statusBreakdownArm(): Promise<M2Aggregates["breakdown"]> }): Promise<M2Aggregates> {
+  if (m2AggCache && m2AggCache.expiresAt > Date.now()) return m2AggCache.data;
+  const [counts, breakdown] = await Promise.all([repo.countArmEnrichment(), repo.statusBreakdownArm()]);
+  const data: M2Aggregates = { counts, breakdown };
+  m2AggCache = { data, expiresAt: Date.now() + M2_AGG_TTL_MS };
+  return data;
+}
+
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
   const norm = normalizeFilterInput(v); // ارقام فارسی/عربی → لاتین
@@ -163,9 +178,9 @@ export async function GET(request: NextRequest) {
 
     await witnessScopedRead(guard, "arm-request", total, access.isOwnerRead, ownerLoginPath(guard));
 
-    const counts = await repo.countArmEnrichment();
+    // PN-027 · ۵-پ-۶ — تجمع‌های کمکی از کش ۶۰ثانه (زیر چرخهٔ daemon)؛ در سرد = همان دو کوئری
+    const { counts, breakdown } = await getM2Aggregates(repo);
     // P6530/گام ۲ (بند ۳) — بینش توزیع شش‌حالته از کل کاتالوگ
-    const breakdown = await repo.statusBreakdownArm();
     const statusCounts = rollupRequestStatusCounts(breakdown.map((b) => [b.status, b.count] as [string | null, number]));
 
     // ---- P6530/گام ۲ (نکتهٔ بسیار مهم ۳ + بند ۴.۲) — وضعیت بروزرسانی و پوشش منبع ----

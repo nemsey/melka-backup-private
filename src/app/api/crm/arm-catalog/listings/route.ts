@@ -39,6 +39,27 @@ import { compressedJson } from "@/lib/http/compressed-json";
 import { resolveExpertBranch, TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
 import { readOwnerBranchMap, readPmBranchMap } from "@/lib/branch-store";
 
+// PN-027 · ۵-پ-۴ — کش ۵ دقیقه‌ای غنی‌سازی هدفمند جست‌وجوی کد (جلسهٔ ۰۳۴)
+const ENRICH_CACHE_TTL_MS = 5 * 60 * 1000;
+const enrichDoneAt = new Map<string, number>();
+function enrichedRecently(code: string): boolean {
+  const at = enrichDoneAt.get(code);
+  if (at === undefined) return false;
+  if (Date.now() - at > ENRICH_CACHE_TTL_MS) {
+    enrichDoneAt.delete(code);
+    return false;
+  }
+  return true;
+}
+function markEnriched(code: string): void {
+  if (enrichDoneAt.size > 200) {
+    // هرس ساده: قدیمی‌ترین نیمی که منقضی شده‌اند حذف می‌شوند
+    const now = Date.now();
+    for (const [k, at] of enrichDoneAt) if (now - at > ENRICH_CACHE_TTL_MS) enrichDoneAt.delete(k);
+  }
+  enrichDoneAt.set(code, Date.now());
+}
+
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
   // ارقام فارسی/عربی → لاتین (قانون یکسان‌سازی ورودی قیمت)
@@ -97,13 +118,18 @@ export async function GET(request: NextRequest) {
     const repo = getPropertyRecordRepository();
 
     // ---- غنی‌سازی هدفمند ردیف‌های جست‌وجو‌شده با کد (زنده، سقف ۵) ----
-    if (code && guard.armTokens?.accessToken) {
+    // PN-027 · ۵-پ-۴ (جلسهٔ ۰۳۴): پیش‌فرض خاموش — فقط با enrich=1 صریح.
+    // کش ۵ دقیقه‌ای: همان کد در پنجرهٔ کش دوباره شبکه نمی‌زند (حذف enrichment اضافی).
+    // پس‌زمینه: daemon کاتالوگ هر چرخه غنی‌سازی می‌کند — تازگی داده بدون هزینهٔ جست‌وجو.
+    const enrichExplicit = sp.get("enrich") === "1";
+    if (enrichExplicit && code && guard.armTokens?.accessToken && !enrichedRecently(code)) {
       try {
         const targeted = await repo.listArmCatalog({ code }, 5);
         const incompleteIds = targeted.rows.filter((r) => !r.enrichedAt).slice(0, 5).map((r) => r.id);
         if (incompleteIds.length > 0) {
           await execWithArmToken(guard, (t) => enrichArmListings(t, { maxRows: incompleteIds.length, rowIds: incompleteIds }));
         }
+        markEnriched(code);
       } catch {
         /* غنی‌سازی هدفمند بهترین-تلاش است — فهرست بدون آن هم برگردانده می‌شود */
       }

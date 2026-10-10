@@ -64,7 +64,7 @@ describe("PN-016 · CRM Contract — احراز هویت", () => {
     "@/app/api/crm/contracts/route:/api/crm/contracts",
     "@/app/api/crm/interactions/route:/api/crm/interactions",
     "@/app/api/crm/meta/route:/api/crm/meta",
-    "@/app/api/crm/branches/route:/api/crm/branches",
+    // PN-027 · ۵-ب-۲ — /api/crm/branches حذف شد (جلسهٔ ۰۳۴ تأیید؛ گزینه‌های شعبه از filterOptions؛ کتابخانهٔ branch-store در ۵ روت دیگر زنده)
     "@/app/api/crm/data-freshness/route:/api/crm/data-freshness",
   ];
 

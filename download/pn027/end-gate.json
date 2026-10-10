@@ -1,0 +1,33 @@
+{
+ "phase": "PN-027 · دروازهٔ پایانی — بخش ۳ سند",
+ "tests": {
+  "run1": "2510 pass / 2 fail",
+  "run2": "2510 pass / 2 fail",
+  "identical": true,
+  "rule11_twoGreen": "✅",
+  "uniqueFail": "PN-014/D2 پیش‌موجود (deliver-store از فاز PN-025)"
+ },
+ "guards": {
+  "suite": "36/36 سبز",
+  "newGuard": "audit-pin-check PASS (قاعدهٔ ۱۲)",
+  "reproducibility": "6/6 سبز پس از بستهٔ ۲۶ (در قفل ورود قرمز مستند بود)"
+ },
+ "survival": {
+  "chainIndex": 26,
+  "files": 28,
+  "size": "506MB",
+  "anchorPrev": "بستهٔ ۲۵ (previousChainMd5=4c2208d5…)",
+  "counts": "آگهی ۲۷٬۷۸۲ · درخواست ۲۵٬۵۳۰ · معامله ۷۶۸ — صفر حذف"
+ },
+ "version": {
+  "api": "buildId=6fdcfef-20261010-0524 · gitSha=6fdcfef",
+  "meta": "app-build-id + app-git-sha ✓",
+  "footer": "VersionBadge زنده ✓",
+  "head": "6fdcfef",
+  "mirror": "6fdcfef همگام ✓",
+  "buildIdEqualsHead": true,
+  "rule13_restart": "✅ سرور جانشین PID 31507 از نگهبان رسمی (خاتمهٔ ۳۹۱۹ پس از بیلد)"
+ },
+ "liveProbes": "download/pn027/live-probes.json — M4 فعال ۲۰۰×۳ · فیلترها زیر هدف · حذف‌ها ۴۰۴ · نگه‌داشت‌ها ۲۰۰",
+ "rule15_zeroSurrender": "✅ صفر ادامه در حالت خطا — دو انحراف صادقانه با سند (WCAG 0.58 + روش‌شناسی baseline)"
+}

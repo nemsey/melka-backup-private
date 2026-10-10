@@ -1,0 +1,139 @@
+{
+ "phase": "PN-027 · تحویل v3 — بخش ۴ سند (۱۷ قلم · قانون ۱۴ لینک مستقیم)",
+ "items": [
+  {
+   "n": 1,
+   "file": "PN-027-FINAL-REPORT.md",
+   "url": "/deliver/pn027/PN-027-FINAL-REPORT.md"
+  },
+  {
+   "n": 2,
+   "file": "lock-in.json",
+   "url": "/deliver/pn027/lock-in.json"
+  },
+  {
+   "n": 3,
+   "file": "fix-supervisor.json",
+   "url": "/deliver/pn027/fix-supervisor.json"
+  },
+  {
+   "n": 4,
+   "file": "fix-pins.json",
+   "url": "/deliver/pn027/fix-pins.json"
+  },
+  {
+   "n": 5,
+   "file": "fix-wcag.json",
+   "url": "/deliver/pn027/fix-wcag.json"
+  },
+  {
+   "n": 6,
+   "file": "fix-sessions.json",
+   "url": "/deliver/pn027/fix-sessions.json"
+  },
+  {
+   "n": 7,
+   "file": "remove-deps.json",
+   "url": "/deliver/pn027/remove-deps.json"
+  },
+  {
+   "n": 8,
+   "file": "remove-endpoints.json",
+   "url": "/deliver/pn027/remove-endpoints.json"
+  },
+  {
+   "n": 9,
+   "file": "archive-scripts.json",
+   "url": "/deliver/pn027/archive-scripts.json"
+  },
+  {
+   "n": 10,
+   "file": "speed-m1.json",
+   "url": "/deliver/pn027/speed-m1.json"
+  },
+  {
+   "n": 11,
+   "file": "speed-m2.json",
+   "url": "/deliver/pn027/speed-m2.json"
+  },
+  {
+   "n": 12,
+   "file": "speed-misc.json",
+   "url": "/deliver/pn027/speed-misc.json"
+  },
+  {
+   "n": 13,
+   "file": "guards.json",
+   "url": "/deliver/pn027/guards.json"
+  },
+  {
+   "n": 14,
+   "file": "PN-027-ALL.zip",
+   "url": "/deliver/pn027/PN-027-ALL.zip"
+  },
+  {
+   "n": 15,
+   "file": "SHA256SUMS",
+   "url": "/deliver/pn027/SHA256SUMS"
+  }
+ ],
+ "survivalChunks": [
+  {
+   "n": 1,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.00"
+  },
+  {
+   "n": 2,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.01"
+  },
+  {
+   "n": 3,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.02"
+  },
+  {
+   "n": 4,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.03"
+  },
+  {
+   "n": 5,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.04"
+  },
+  {
+   "n": 6,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.05"
+  },
+  {
+   "n": 7,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.06"
+  },
+  {
+   "n": 8,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.07"
+  },
+  {
+   "n": 9,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.08"
+  },
+  {
+   "n": 10,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.09"
+  },
+  {
+   "n": 11,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.10"
+  },
+  {
+   "n": 12,
+   "url": "/deliver/pn027/PN-027-chainIndex26.part.11"
+  }
+ ],
+ "survivalTar": "/deliver/pn027/PN-027-chainIndex26.tar.gz",
+ "survivalSums": "/deliver/pn027/SHA256SUMS-survival.txt",
+ "witnessExtras": [
+  "live-probes.json",
+  "data-lock.json",
+  "speed-ab-bench.json",
+  "guards-raw.txt"
+ ],
+ "rule14": "همهٔ لینک‌ها از مسیر سرو /deliver/pn027 — پاسخ ۲۰۰ (روت زندهٔ PN-014/D2)"
+}

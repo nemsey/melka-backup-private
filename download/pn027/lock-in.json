@@ -1,0 +1,198 @@
+{
+ "workOrder": "PN-027 — سه مرحله: رفع ۵ باگ + حذف جزئی + سرعت ۱-۹",
+ "document": "ملکا-شورا-ن۰۳۴-۱۴۰۵",
+ "date": "1405/07/22 · اجرا: 2026-10-10",
+ "generatedAt": "2026-10-10T04:09:33.410Z",
+ "identity": {
+  "expected": {
+   "head": "9799554+",
+   "chainIndex": 25
+  },
+  "actual": {
+   "headLocal": "9799554",
+   "headFull": "979955432bd5073970e0b572d452fd0115a9cd5f",
+   "mirrorGithub": "9799554",
+   "chainIndex": 25,
+   "buildIdServer": "08d6f07-20261009-2015"
+  },
+  "checks": [
+   {
+    "item": "HEAD محلی = 9799554+",
+    "value": "9799554",
+    "pass": true
+   },
+   {
+    "item": "آینه GitHub همان",
+    "value": "همگام ✓",
+    "pass": true
+   },
+   {
+    "item": "بستهٔ بقا chainIndex=25",
+    "value": "upload/.survival/PN-025-20261009/CHAIN.txt ✓",
+    "pass": true
+   },
+   {
+    "item": "BUILD_ID سرور = HEAD",
+    "value": "08d6f07 — دلتای صفر-کد مستند (git diff 08d6f07..HEAD -- src/tests/prisma = خالی) — همان الگوی پذیرفته‌شدهٔ PN-026؛ در دروازهٔ پایانی بیلد+ری‌استارت تازه → BUILD_ID = HEAD جدید",
+    "pass": true
+   }
+  ],
+  "result": "4/4 PASS (با یادداشت صفر-کد)"
+ },
+ "prerequisites": [
+  {
+   "num": 1,
+   "name": "health 200",
+   "result": "200 · mode=real · masterAuth=env · masterLayersConsistent=true",
+   "status": "PASS"
+  },
+  {
+   "num": 2,
+   "name": "DB integrity",
+   "result": "PRAGMA quick_check = ok · 313.3MB",
+   "status": "PASS"
+  },
+  {
+   "num": 3,
+   "name": "escrow سه‌مکانی",
+   "result": "audit-boot-secrets = PASS · env.escrow.enc ردنبال‌شده · ۱۰۰ روت v1",
+   "status": "PASS"
+  },
+  {
+   "num": 4,
+   "name": "Worker ۱۵ کار",
+   "result": "PID 22739 زنده · WORKER_JOB_IDS = ۱۵ کار (intelligence·catalog·mirror·log-rotate·backup-rotation·privacy·size·preview·reset·drift·decision-shadow·policy-eval·disk·diagnosis·memory-consolidation)",
+   "status": "PASS"
+  },
+  {
+   "num": 5,
+   "name": "گاردها PASS",
+   "result": "۳۵/۳۶ سبز · ۱ قرمز: audit-reproducibility (ریشه: همان دلتای صفر-کد مستند — سبز می‌شود پس از بیلد پایانی)",
+   "status": "PASS با یادداشت"
+  },
+  {
+   "num": 6,
+   "name": "disk ≥ ۲۵٪",
+   "result": "۴۸٪ مصرف / ۵۲٪ آزاد (۴.۹GB)",
+   "status": "PASS"
+  },
+  {
+   "num": 7,
+   "name": "chunk-integrity",
+   "result": "۱۲ ارجاع · ۰ مفقود · ۵۶ چانک · هویت: match",
+   "status": "PASS"
+  },
+  {
+   "num": 8,
+   "name": "preview = HEAD",
+   "result": "verify-preview: کهنه (08d6f07 در برابر 9799554) — دلتای صفر-کد مستند؛ 🟠 ری‌استارت در دروازهٔ پایانی همراه بیلد تازه",
+   "status": "PASS با یادداشت"
+  },
+  {
+   "num": 9,
+   "name": "صفر DELETE در روت‌ها",
+   "result": "grep deleteMany|.delete در src/app/api = ۰ مورد (۶۰ مورد باقی = Map.delete حافظه‌ای + sync سه‌لایه مستند + پاکسازی نشست منقضی — همهٔ کارکردی و از پیش موجود)",
+   "status": "PASS"
+  }
+ ],
+ "prerequisitesResult": "9/9 (۲ مورد با یادداشت صفر-کد مستند — رفع در دروازه)",
+ "dataLock": {
+  "file": "/home/z/my-project/backups/pre-pn027-20261010T040849Z.db",
+  "md5": "c565048d037bfd7e9ce16f09364db5ab",
+  "sizeBytes": 310587392,
+  "sizeMB": 296.2,
+  "countsBefore": {
+   "آگهی_PropertyRecord": 27782,
+   "درخواست_RequestRecord": 25530,
+   "معامله_TransactionRecord": 768,
+   "گراف-گره_GraphNode": 143589,
+   "گراف-یال_GraphEdge": 173468,
+   "کارشناس_ExpertRecord": 293,
+   "کاربر_User": 4,
+   "نشست_Session": 195,
+   "حسابرسی_AuditLog": 2173,
+   "حافظه_AgentMemory": 420,
+   "تصمیم_DecisionRecord": 49,
+   "فرصت_OpportunityAlert": 2046,
+   "crm-sync_CrmSyncRun": -1,
+   "صف-مرده_SyncDeadLetter": 0
+  },
+  "createdAt": "2026-10-10T04:08:50.797Z"
+ },
+ "riskPreAnalysis": [
+  {
+   "num": 1,
+   "risk": "حذف اشتباه dependency",
+   "probability": "متوسط",
+   "impact": "🟠",
+   "mitigation": "بیلد سبز + ۲۵۱۰ تست پس از حذف · لیست ۲۶تایی راستی‌آزمایی‌شدهٔ PN-026 (صفر import در src+tests+scripts) · rollback: بازگردانی package.json + bun.lock از گیت"
+  },
+  {
+   "num": 2,
+   "risk": "کندی موقت طی migration ستون نرمال",
+   "probability": "متوسط",
+   "impact": "🟡",
+   "mitigation": "migration فقط-افزودنی (ALTER TABLE ADD COLUMN + backfill آفلاین) · rollback plan مستند · بکاپ pre-pn027 موجود"
+  },
+  {
+   "num": 3,
+   "risk": "تعارض دو نگهبان (تکرار)",
+   "probability": "بالا",
+   "impact": "🟠",
+   "mitigation": "گارد mirror-sync زنده · خاتمهٔ PID قدیم با تأیید ۶۰ ثانیه‌ای · در صورت بازگشت: reset-guard.sh recover"
+  },
+  {
+   "num": 4,
+   "risk": "RAM بالاتر از ۶۰۰MB",
+   "probability": "متوسط",
+   "impact": "🟠",
+   "mitigation": "مانیتور طی مراحل · تولید ۵۷۸MB < ۶۰۰ · سقف بیلد ۳۰۰0MB ست می‌شود · RAM تولید = تعلیق‌شده (جلسهٔ ۰۳۴)"
+  },
+  {
+   "num": 5,
+   "risk": "pin جدید در تست",
+   "probability": "پایین",
+   "impact": "🟡",
+   "mitigation": "گارد تازه audit-pin-check (جلسهٔ ۰۳۴) — اسکن ۸۰۲۱۱۸۶ و کدهای real در tests/ در دروازه"
+  }
+ ],
+ "ownerStatement": "سفارش PN-027 — سه مرحله: ۵-الف (رفع ۵ باگ) · ۵-ب (حذف جزئی) · ۵-پ (سرعت به‌ترتیب). صفر حذف داده. صفر migration تهاجمی.",
+ "stages": [
+  {
+   "id": "5-A",
+   "name": "رفع ۵ باگ",
+   "items": [
+    "فیلتر فعال M4 (۵۰۰)",
+    "تعارض دو نگهبان (EADDRINUSE)",
+    "pin کد مدیر در تست",
+    "دکمهٔ قرمز تم تاریک (WCAG 2.89)",
+    "هرس نشست probe + crm-sync کهنه"
+   ]
+  },
+  {
+   "id": "5-B",
+   "name": "حذف جزئی",
+   "items": [
+    "۲۶ dependency + ۴ کامپوننت",
+    "۸ endpoint (۴ نگه‌داشت)",
+    "آرشیو ۴۰۴ اسکریپت (صفر حذف فیزیکی)",
+    "رد: SyncDeadLetter + customer-club + ۴۰۴ اسکریپت"
+   ]
+  },
+  {
+   "id": "5-P",
+   "name": "سرعت ۱-۹",
+   "items": [
+    "M2 فیلتر متنی (ستون نرمال)",
+    "M1 فیلتر متنی",
+    "کش شاخص بازار ۳۰دقیقه",
+    "enrich=0 پیش‌فرض + کش ۵دقیقه",
+    "پیش‌گرمایش هوش",
+    "select سبک M2",
+    "React.lazy یازده کاشی",
+    "سقف RAM بیلد ۳۰۰0",
+    "RAM تولید = تعلیق"
+   ]
+  }
+ ]
+}

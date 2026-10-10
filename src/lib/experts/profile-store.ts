@@ -450,8 +450,14 @@ export async function listExpertProfiles(filter: ExpertProfileFilter): Promise<{
   else if (filter.headManager) where.headManager = { contains: filter.headManager };
   if (filter.cities && filter.cities.length > 0) where.city = { in: filter.cities };
   else if (filter.city) where.city = { contains: filter.city };
-  if (filter.actives && filter.actives.length > 0) where.active = { in: filter.actives };
-  else if (filter.active !== undefined) where.active = filter.active;
+  // PN-027 · ۵-الف-۱ — رفع باگ D6-1: Prisma برای Boolean فیلتر «in» ندارد (۵۰۰).
+  // چندانتخابی چیپی: تک‌مقدار → equals؛ هر دو مقدار = همه (بدون فیلتر).
+  if (filter.actives && filter.actives.length > 0) {
+    const hasTrue = filter.actives.includes(true);
+    const hasFalse = filter.actives.includes(false);
+    if (hasTrue && !hasFalse) where.active = { equals: true };
+    else if (hasFalse && !hasTrue) where.active = { equals: false };
+  } else if (filter.active !== undefined) where.active = filter.active;
   if (filter.address) where.address = { contains: filter.address };
   if (filter.telephone) where.telephone = { contains: filter.telephone };
   if (filter.postalCode) where.postalCode = { contains: filter.postalCode };

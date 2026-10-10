@@ -66,7 +66,10 @@ checks.append({"check": "۳ CSS: ۱۱×۵ متغیر ×۲ تم + توکن‌ها
 vc = open("src/lib/value-colors.ts", encoding="utf-8").read()
 if "negin" in vc:
     violations.append("قانون ۶ نقض: value-colors.ts آلوده به نگین شده")
-colors_json = open("scripts/p6530/colors.json", encoding="utf-8").read()
+# PN-027 · ۵-ب-۳ — colors.json به آرشیو منتقل شد (جلسهٔ ۰۳۴: آرشیو، صفر حذف)
+import os
+_colors_path = "scripts/p6530/colors.json" if os.path.exists("scripts/p6530/colors.json") else "docs/archive/scripts/p6530/colors.json"
+colors_json = open(_colors_path, encoding="utf-8").read()
 if "negin" in colors_json:
     violations.append("قانون ۶ نقض: colors.json (PN-011) آلوده شده")
 checks.append({"check": "۴ قانون ۶: صفر تغییر رنگ CANONICAL (value-colors + colors.json)", "ok": "negin" not in vc and "negin" not in colors_json})

@@ -11,6 +11,18 @@ import { dateToJalali, JALALI_MONTHS } from "@/lib/jalali";
 /** متر مربع — تبدیل ریال به میلیون تومان برای خوانایی */
 const rialToMilionToman = (rial: number) => Math.round((rial / 10 / 1_000_000) * 10) / 10;
 
+// PN-027 · ۵-پ-۳ (جلسهٔ ۰۳۴ فرم ۵-پ ردیف ۳) — کش TTL ۳۰ دقیقه:
+// محاسبهٔ شاخص روی ۲۷k آگهی + ۲۵k درخواست + ۷۶۸ معامله در هر فراخوانی تکرار نمی‌شود.
+// قید قرارداد: صفر تغییر دادهٔ پایه — فقط خواندن کش‌شده. generatedAt همان لحظهٔ محاسبه را
+// صادقانه نشان می‌دهد (شکل پاسخ عیناً حفظ شد).
+const MARKET_INDEX_TTL_MS = 30 * 60 * 1000;
+let marketIndexCache: { data: MarketIndexReport; expiresAt: number } | null = null;
+
+/** پاک‌سازی کش (برای تست‌ها و بازنشانی) */
+export function invalidateMarketIndexCache(): void {
+  marketIndexCache = null;
+}
+
 export interface MarketIndexReport {
   ok: boolean;
   generatedAt: string;
@@ -22,8 +34,19 @@ export interface MarketIndexReport {
   volume: Array<Record<string, unknown>>;
 }
 
-/** شاخص کامل بازار ملک تبریز (عین رفتار قبلی روت — صفر تغییر رفتار) */
+/** شاخص کامل بازار ملک تبریز (عین رفتار قبلی روت — صفر تغییر رفتار)
+ * PN-027 · ۵-پ-۳ — پوشش کش TTL ۳۰ دقیقه: پاسخ گرم < ۵۰ms (گلوگاه ۳ نقشهٔ سرعت: P50 ۷۹۳ms) */
 export async function getMarketIndex(): Promise<MarketIndexReport> {
+  if (marketIndexCache && marketIndexCache.expiresAt > Date.now()) {
+    return marketIndexCache.data; // گرم — شکل پاسخ عیناً همان (generatedAt = لحظهٔ محاسبه)
+  }
+  const report = await computeMarketIndex();
+  marketIndexCache = { data: report, expiresAt: Date.now() + MARKET_INDEX_TTL_MS };
+  return report;
+}
+
+/** محاسبهٔ کامل شاخص (محتوای قبلی getMarketIndex — عیناً دست‌نخورده) */
+async function computeMarketIndex(): Promise<MarketIndexReport> {
   /* ── ۱) روند قیمت ماهانهٔ معاملات (شمسی) ── */
   const txRows = await db.transactionRecord.findMany({
     select: { contractDate: true, id: true },
