@@ -133,7 +133,9 @@ describe("PN-011 boot-secrets — خوددرمانی رازهای بوت", () =>
     const root = makeRepo();
     try {
       const escrowPath = path.join(root, "upload", ".runtime", "boot-secrets.json");
-      process.env.MASTER_ACCESS_CODE = "80211186";
+      // PN-027 · ۵-الف-۳ — env-first: مقدار موجود env حفظ می‌شود؛ فقط در نبود، نمونهٔ آزمایشی.
+      // کد واقعی مالک هرگز در تست هاردکد نمی‌شود (جلسهٔ ۰۳۴ · فرم ۵-الف ردیف ۳).
+      process.env.MASTER_ACCESS_CODE = process.env.MASTER_ACCESS_CODE || "99999999";
 
       const report = await ensureBootSecrets({ repoRoot: root });
 

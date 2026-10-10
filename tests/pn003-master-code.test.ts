@@ -1,7 +1,7 @@
 /**
  * pn003-master-code.test.ts — گارد همیشگی ورود مالک (نکته ۲ — PN-003)
  * =============================================================================
- * علت ریشهٔ «مالک با کدمستر 80211186 نمی‌تواند وارد شود» (۱۴۰۵/۰۷/۱۴):
+ * علت ریشهٔ «مالک با کدمستر [نمونهٔ 99999999 — کد واقعی با PN-027 · ۵-الف-۳ از تست‌ها حذف شد] نمی‌تواند وارد شود» (۱۴۰۵/۰۷/۱۴):
  *   غلط تایپی ۸۰۲۲۱۱۸۶ (جابه‌جایی رقم ۲↔۱) که هم در .env.local و هم در هش
  *   AppMeta دیتابیس تزریق شده بود — هر دو لایه یک مقدار غلط داشتند و مالک
  *   با کد صحیح رد می‌شد.
@@ -110,7 +110,7 @@ describe("PN-003 §۳ — رگرسیون کلاس غلط تایپی کد مست�
   function neighborMutations(code: string): Set<string> {
     const out = new Set<string>();
     const arr = code.split("");
-    // جابه‌جایی هر جفت مجاور (عین حادثه: ۸۰۲۱۱۱۸۶ → ۸۰۲۲۱۱۸۶)
+    // جابه‌جایی هر جفت مجاور (عین حادثهٔ تاریخی PN-003: جابه‌جایی رقم ۲↔۱)
     for (let i = 0; i < arr.length - 1; i++) {
       const m = [...arr];
       [m[i], m[i + 1]] = [m[i + 1], m[i]];
@@ -146,10 +146,10 @@ describe("PN-003 §۳ — رگرسیون کلاس غلط تایپی کد مست�
     }
   });
 
-  test("۳-۲) کد غلط تایپی تاریخی 80221186 دقیقاً رد می‌شود (اگر کد صحیح 80211186 باشد)", async () => {
+  test("۳-۲) کد غلط تایپی تاریخی 80221186 دقیقاً رد می‌شود (اگر کد صحیح نمونهٔ 99999999 باشد)", async () => {
     const code = readMasterCodeFromEnvLocal()!;
-    // این تست فقط وقتی معنا دارد که کد صحیح همان کد حادثه باشد
-    if (code === "80211186") {
+    // این تست فقط وقتی معنا دارد که کد صحیح همان نمونهٔ آزمایشی باشد
+    if (code === "99999999") {
       const { PrismaClient } = await import("@prisma/client");
       const db = new PrismaClient({ datasources: { db: { url: DB_URL } } } as any);
       try {
@@ -169,19 +169,19 @@ describe("PN-003 §۳ — رگرسیون کلاس غلط تایپی کد مست�
 describe("PN-003 §۴ — زنجیرهٔ منطق master-login", () => {
   test("۴-۱) isValidMasterCodeFormat: ۸ رقم ✓ — ۷/۹ رقم، حروف، فارسی ✗", async () => {
     const { isValidMasterCodeFormat } = await import("@/lib/auth/crypto");
-    expect(isValidMasterCodeFormat("80211186")).toBe(true);
-    expect(isValidMasterCodeFormat("8021118")).toBe(false);
-    expect(isValidMasterCodeFormat("802111861")).toBe(false);
-    expect(isValidMasterCodeFormat("80211a86")).toBe(false);
-    expect(isValidMasterCodeFormat("۸۰۲۱۱۱۸۶")).toBe(false);
+    expect(isValidMasterCodeFormat("99999999")).toBe(true);
+    expect(isValidMasterCodeFormat("9999999")).toBe(false);
+    expect(isValidMasterCodeFormat("999999991")).toBe(false);
+    expect(isValidMasterCodeFormat("99999a99")).toBe(false);
+    expect(isValidMasterCodeFormat("۹۹۹۹۹۹۹۹")).toBe(false);
     expect(isValidMasterCodeFormat("")).toBe(false);
   });
 
   test("۴-۲) safeEqual رشته‌های متفاوت را رد می‌کند و برابرها را می‌پذیرد", async () => {
     const { safeEqual } = await import("@/lib/auth/crypto");
-    expect(safeEqual("80211186", "80211186")).toBe(true);
-    expect(safeEqual("80211186", "80221186")).toBe(false);
-    expect(safeEqual("80211186", "")).toBe(false);
+    expect(safeEqual("99999999", "99999999")).toBe(true);
+    expect(safeEqual("99999999", "80221186")).toBe(false);
+    expect(safeEqual("99999999", "")).toBe(false);
   });
 
   test("۴-۳) مسیر master-login کد تستی عمومی (۸ صفر) را در زنجیره env نمی‌پذیرد (SEC-1)", async () => {

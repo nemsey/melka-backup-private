@@ -1,0 +1,23 @@
+{
+ "file": "/home/z/my-project/backups/pre-pn027-20261010T040849Z.db",
+ "md5": "c565048d037bfd7e9ce16f09364db5ab",
+ "sizeBytes": 310587392,
+ "sizeMB": 296.2,
+ "countsBefore": {
+  "آگهی_PropertyRecord": 27782,
+  "درخواست_RequestRecord": 25530,
+  "معامله_TransactionRecord": 768,
+  "گراف-گره_GraphNode": 143589,
+  "گراف-یال_GraphEdge": 173468,
+  "کارشناس_ExpertRecord": 293,
+  "کاربر_User": 4,
+  "نشست_Session": 195,
+  "حسابرسی_AuditLog": 2173,
+  "حافظه_AgentMemory": 420,
+  "تصمیم_DecisionRecord": 49,
+  "فرصت_OpportunityAlert": 2046,
+  "crm-sync_CrmSyncRun": -1,
+  "صف-مرده_SyncDeadLetter": 0
+ },
+ "createdAt": "2026-10-10T04:08:50.797Z"
+}
