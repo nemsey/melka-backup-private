@@ -1,7 +1,7 @@
 {
  "task": "PN-008 BLOCK 4 — اسکن ایستای نقش‌ها",
- "at": "2026-10-10T04:08:08.321119",
- "totalRoutes": 200,
+ "at": "2026-10-10T05:42:42.576446",
+ "totalRoutes": 184,
  "routes": [
   {
    "route": "/admin/action-plans",
@@ -54,14 +54,6 @@
    "risk": null
   },
   {
-   "route": "/admin/drift-checks",
-   "methods": [
-    "GET"
-   ],
-   "guard": "requireRole:OWNER",
-   "risk": null
-  },
-  {
    "route": "/admin/governance",
    "methods": [
     "GET"
@@ -87,39 +79,6 @@
   },
   {
    "route": "/admin/memory/stats",
-   "methods": [
-    "GET",
-    "POST"
-   ],
-   "guard": "requireRole:OWNER|OWNER",
-   "risk": null
-  },
-  {
-   "route": "/admin/model-versions/{id}/promote",
-   "methods": [
-    "POST"
-   ],
-   "guard": "requireRole:OWNER",
-   "risk": null
-  },
-  {
-   "route": "/admin/model-versions/{id}/reject",
-   "methods": [
-    "POST"
-   ],
-   "guard": "requireRole:OWNER",
-   "risk": null
-  },
-  {
-   "route": "/admin/model-versions/{id}/rollback",
-   "methods": [
-    "POST"
-   ],
-   "guard": "requireRole:OWNER",
-   "risk": null
-  },
-  {
-   "route": "/admin/model-versions",
    "methods": [
     "GET",
     "POST"
@@ -373,16 +332,6 @@
    "route": "/crm/arm-catalog/sync",
    "methods": [
     "POST"
-   ],
-   "guard": "requireSessionAsync (هر نقش واردشده)",
-   "risk": null
-  },
-  {
-   "route": "/crm/branches",
-   "methods": [
-    "GET",
-    "PUT",
-    "DELETE"
    ],
    "guard": "requireSessionAsync (هر نقش واردشده)",
    "risk": null
@@ -702,15 +651,6 @@
    "risk": null
   },
   {
-   "route": "/melk-public/sync",
-   "methods": [
-    "GET",
-    "POST"
-   ],
-   "guard": "requireRole:OWNER",
-   "risk": null
-  },
-  {
    "route": "/opportunity-alerts",
    "methods": [
     "GET",
@@ -777,12 +717,6 @@
    "methods": [
     "GET"
    ],
-   "guard": "requireRole:OWNER",
-   "risk": null
-  },
-  {
-   "route": "/runtime/metrics",
-   "methods": [],
    "guard": "requireRole:OWNER",
    "risk": null
   },
@@ -863,12 +797,6 @@
    "risk": "بررسی دستی لازم"
   },
   {
-   "route": "/v1/admin/drift-checks",
-   "methods": [],
-   "guard": "عمومی (بدون گارد)",
-   "risk": "بررسی دستی لازم"
-  },
-  {
    "route": "/v1/admin/governance",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
@@ -888,30 +816,6 @@
   },
   {
    "route": "/v1/admin/memory/stats",
-   "methods": [],
-   "guard": "عمومی (بدون گارد)",
-   "risk": "بررسی دستی لازم"
-  },
-  {
-   "route": "/v1/admin/model-versions/{id}/promote",
-   "methods": [],
-   "guard": "عمومی (بدون گارد)",
-   "risk": "بررسی دستی لازم"
-  },
-  {
-   "route": "/v1/admin/model-versions/{id}/reject",
-   "methods": [],
-   "guard": "عمومی (بدون گارد)",
-   "risk": "بررسی دستی لازم"
-  },
-  {
-   "route": "/v1/admin/model-versions/{id}/rollback",
-   "methods": [],
-   "guard": "عمومی (بدون گارد)",
-   "risk": "بررسی دستی لازم"
-  },
-  {
-   "route": "/v1/admin/model-versions",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"
@@ -1092,12 +996,6 @@
   },
   {
    "route": "/v1/crm/arm-catalog/sync",
-   "methods": [],
-   "guard": "عمومی (بدون گارد)",
-   "risk": "بررسی دستی لازم"
-  },
-  {
-   "route": "/v1/crm/branches",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"
@@ -1331,12 +1229,6 @@
    "risk": "بررسی دستی لازم"
   },
   {
-   "route": "/v1/melk-public/sync",
-   "methods": [],
-   "guard": "عمومی (بدون گارد)",
-   "risk": "بررسی دستی لازم"
-  },
-  {
    "route": "/v1/opportunity-alerts",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
@@ -1380,12 +1272,6 @@
   },
   {
    "route": "/v1/runtime/health",
-   "methods": [],
-   "guard": "عمومی (بدون گارد)",
-   "risk": "بررسی دستی لازم"
-  },
-  {
-   "route": "/v1/runtime/metrics",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"
