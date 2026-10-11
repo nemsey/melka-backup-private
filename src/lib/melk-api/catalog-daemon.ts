@@ -36,8 +36,6 @@ import { syncMelkPublicCatalog } from "./melk-public";
 import { syncTypeRegistries } from "./type-registry";
 // PN-010 — کانال وضعیت مشترک Worker (فقط fs/path — بدون چرخهٔ وابستگی)
 import { readWorkerStatus } from "@/core/runtime/worker-status";
-// PN-029 — حالت آفلینی ملک تبریز (توقف تلاشهای خودکار)
-import { isArmOfflineMode } from "./offline-mode";
 
 /** فاصلهٔ پیش‌فرض تیک‌ها — دقیقه (PN-002 نکته ۵: لغو محدودیت — ۳→۱) */
 const DEFAULT_INTERVAL_MINUTES = 1;
@@ -168,16 +166,6 @@ async function getVaultArmTokens(db: PrismaClient): Promise<{ accessToken: strin
 
 /** تیک واحد دیمن — قابل فراخوانی مستقیم در تست */
 export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemonStatus> {
-  // PN-029 (مرحلهٔ ۲) — دفاع-در-عمق: در حالت آفلینی هیچ فراخوانی خارجی
-  // انجام نمی‌شود؛ تیک با نشانگر offlineSkip بی‌صدا خاتمه می‌یابد.
-  if (isArmOfflineMode()) {
-    const s = state();
-    s.status.lastTickAt = Date.now();
-    s.status.lastResult = { ...s.status.lastResult ?? { listingsPages: 0, requestsPages: 0, listingsEnriched: 0, requestsEnriched: 0 }, cooldownSkip: true } as NonNullable<CatalogDaemonStatus["lastResult"]>;
-    (s.status.lastResult as Record<string, unknown>).offlineSkip = true;
-    return s.status;
-  }
-
   const s = state();
   if (s.lock) {
     // تیک قبلی هنوز کار می‌کند — رد (هم‌پوشانی ممنوع)

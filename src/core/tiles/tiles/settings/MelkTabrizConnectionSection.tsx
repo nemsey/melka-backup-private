@@ -9,17 +9,12 @@
  *   ۱. مدیریت اتصال‌ها — وضعیت زندهٔ خدمات + تست + همگام‌سازی + ریست
  *   ۲. اتصال به سامانه ARM (آگهی و درخواست) — کد پرسنلی + پیامک
  *   ۳. اتصال به حساب شخصی سامانه PM — کد پرسنلی + پیامک
+ *   ۴. رابط سامانهٔ عمومی ملک تبریز (melketabriz.com) — عمومی و بدون توکن
  *
  * جلسهٔ ۰۳۳ (دستور مالک): بخش «اتصال به سامانه GAP» از تنظیمات حذف شد
  * (به‌همراه نشانگر «حساب GAP» در وضعیت اتصال‌ها — سرویس gapApi پابرجاست).
  *
- * PN-029 اولاً (دستور مالک — جلسهٔ فوق‌العاده ۰۳۳): بخش چهارم — رابطِ وب‌سایت
- * عمومی ملک تبریز — از تنظیمات عمومی حذف شد (سرویس استخراج apu پابرجاست —
- * کدهای ملکِ غایب همچنان از مسیر پایدارساز کاتالوگ افزوده می‌شوند).
- *
- * PN-030 مرحلهٔ ۶ (شورا-ن۰۳۵ · ۱۴۰۵/۰۷/۲۱): بخش «ورود مجدد به ملک تبریز» —
- * صفحهٔ سادهٔ OTP مالک (ارسال کد از API تک‌تلاش + تأیید + ذخیره در Vault) —
- * به‌عنوان بخش ۲ این پیکره (پس از مدیریت اتصال‌ها) افزوده شد.
+ * کشف P6546: رابط برنامه‌نویسی سامانهٔ عمومی = arus-api.melketabriz.ir/api/apu/
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -38,13 +33,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCcw, Wifi, WifiOff, Server, Landmark } from "lucide-react";
+import { Loader2, RefreshCcw, Wifi, WifiOff, Server, Globe, Landmark } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faDateTime, faNumber } from "@/lib/format";
 import { ArmConnectionSection } from "./ArmConnectionSection";
 import { PmConnectionSection } from "./PmConnectionSection";
-// PN-030 (شورا-ن۰۳۵ · مرحلهٔ ۶): صفحهٔ سادهٔ ورود با OTP برای مالک
-import { OtpReloginSection } from "./OtpReloginSection";
 
 interface ServiceStatus {
   service: string;
@@ -76,29 +69,11 @@ interface ConnectionInfo {
     armPublicApiBase: string;
     pmApiBase: string;
     gapApiBase?: string;
+    melkPublicApiBase?: string;
     timeoutMs: number;
     maxRetries: number;
     syncIntervalMinutes: number;
   };
-  /** PN-029 — لایهٔ احتیاط اتصال خارجی (شورا-ن۰۳۳) */
-  offlineMode?: boolean;
-  circuitBreakers?: Array<{
-    target: string;
-    consecutiveFailures: number;
-    lockUntil: string | null;
-    nextAttemptAt: string | null;
-    locked: boolean;
-    cooling: boolean;
-  }>;
-  containerIp?: {
-    currentIp: string | null;
-    source: string | null;
-    detectedAt: string | null;
-    changed: boolean;
-    historyCount: number;
-  };
-  /** PN-030 (شورا-ن۰۳۵) — وضعیت لایهٔ پروکسی عبوری ابری */
-  proxy?: { configured: boolean; host: string | null; secretConfigured: boolean };
 }
 
 function faDigitsLocal(n: string | number): string {
@@ -115,8 +90,7 @@ export function MelkTabrizConnectionSection() {
   const testConnection = useCallback(async () => {
     setTesting(true);
     try {
-      // PN-029 — live=1: پروب واقعی فقط از دکمهٔ مالک (اقدام آگاهانه)
-      const res = await api<ConnectionInfo>("/api/connection/status?live=1");
+      const res = await api<ConnectionInfo>("/api/connection/status");
       setConn(res);
       const armDbUp = res.status.services?.find((s) => s.service === "ARM_API")?.databaseUp;
       toast({
@@ -134,7 +108,6 @@ export function MelkTabrizConnectionSection() {
 
   useEffect(() => {
     // بارگذاری اولیهٔ بی‌صدای وضعیت (بدون توست)
-    // PN-029 — بارگذاری بی‌صدا: بدون live؛ در حالت آفلینی صفر پروب
     api<ConnectionInfo>("/api/connection/status")
       .then((res) => setConn(res))
       .catch(() => undefined);
@@ -195,8 +168,8 @@ export function MelkTabrizConnectionSection() {
     }
   };
 
+  const melkPublicDbUp = conn?.status.services?.find((s) => s.service === "MELK_PUBLIC_API")?.databaseUp;
   const gapDbUp = conn?.status.services?.find((s) => s.service === "GAP_API")?.databaseUp;
-  void gapDbUp; // سرویس gapApi پابرجاست؛ نشانگر اختصاصی از جلسهٔ ۰۳۳ حذف شده است
 
   return (
     <Card id="settings-melk-tabriz" className="border-sec-settings-200">
@@ -205,7 +178,7 @@ export function MelkTabrizConnectionSection() {
           <Landmark className="w-5 h-5 text-sec-settings-700" aria-hidden /> اتصال به ملک تبریز
         </CardTitle>
         <CardDescription>
-          پیکرهٔ واحد مدیریت اتصال به سامانه‌های ملک تبریز — ARM (آگهی و درخواست) و PM (پرسنلی)
+          پیکرهٔ واحد مدیریت اتصال به سامانه‌های ملک تبریز — ARM (آگهی و درخواست)، PM (پرسنلی) و سامانهٔ عمومی (melketabriz.com)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -222,46 +195,6 @@ export function MelkTabrizConnectionSection() {
 
           {conn && (
             <>
-              {/* PN-029 — بنر حالت آفلینی ملک تبریز (توقف تلاش‌های خودکار) */}
-              {conn.offlineMode && (
-                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1">
-                  <p className="text-sm font-bold text-amber-700 dark:text-amber-400">حالت آفلینی ملک تبریز فعال است (PN-029)</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    توقف عمدی همهٔ تلاش‌های خودکار به سامانه‌های ملک تبریز تا پایان تشخیص ریشه — دکترین شورا: «اول تشخیص، بعد اقدام». M1 تا M5 از دادهٔ محلی کار می‌کنند. دکمهٔ «تست اتصال» تنها پروب زندهٔ مجاز است.
-                  </p>
-                </div>
-              )}
-
-              {/* PN-029 — گارد IP کانتینر + فیوزهای قطع‌کننده */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-lg border bg-card p-3">
-                  <p className="text-xs text-muted-foreground">IP عمومی کانتینر (گارد ۶ساعته)</p>
-                  <p className="text-sm font-bold" dir="ltr">
-                    {conn.containerIp?.currentIp ?? "—"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {conn.containerIp?.detectedAt
-                      ? `آخرین ثبت: ${faDateTime(conn.containerIp.detectedAt)}${conn.containerIp.changed ? " — تغییر نسبت به قبل!" : ""}`
-                      : "هنوز ثبت نشده (کارِ Worker هر ۶ ساعت)"}
-                  </p>
-                </div>
-                <div className="rounded-lg border bg-card p-3">
-                  <p className="text-xs text-muted-foreground">فیوز قطع‌کنندهٔ اتصال (Retry هوشمند)</p>
-                  <p className="text-sm font-bold">
-                    {(conn.circuitBreakers ?? []).length === 0
-                      ? "همهٔ میزبانها عادی"
-                      : (conn.circuitBreakers ?? []).some((b) => b.locked)
-                        ? "قفل ۲۴ ساعته فعال"
-                        : (conn.circuitBreakers ?? []).some((b) => b.cooling)
-                          ? "خنک‌ساز فعال (تا ۶ ساعت)"
-                          : "همهٔ میزبانها عادی"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    قانون PN-029: یک تلاش در ۶ ساعت · سه شکست پیاپی = قفل ۲۴ ساعته
-                  </p>
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="rounded-lg border bg-card p-3 flex items-center gap-2">
                   {conn.status.services?.some((s) => s.databaseUp) ? (
@@ -282,9 +215,7 @@ export function MelkTabrizConnectionSection() {
                 </div>
                 <div className="rounded-lg border bg-card p-3">
                   <p className="text-xs text-muted-foreground">حالت اتصال</p>
-                  <p className="text-sm font-bold text-teal-700 dark:text-teal-400">
-                    {conn.offlineMode ? "آفلینی تشخیصی (PN-029)" : "اتصال واقعی"}
-                  </p>
+                  <p className="text-sm font-bold text-teal-700 dark:text-teal-400">اتصال واقعی</p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
                   <p className="text-xs text-muted-foreground">زمان پاسخ</p>
@@ -362,6 +293,12 @@ export function MelkTabrizConnectionSection() {
                 {conn?.config.pmApiBase ?? "https://pm-api.melketabriz.ir/api/"}
               </span>
             </p>
+            <p>
+              رابط سامانهٔ عمومی ملک تبریز:{" "}
+              <span dir="ltr" className="font-mono">
+                {conn?.config.melkPublicApiBase ?? "https://arus-api.melketabriz.ir/api/apu/"}
+              </span>
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -399,18 +336,42 @@ export function MelkTabrizConnectionSection() {
           </div>
         </section>
 
-        {/* ========== ۲) ورود مجدد به ملک تبریز (PN-030 · مرحلهٔ ۶ سند شورا-ن۰۳۵) ========== */}
-        <OtpReloginSection offlineMode={conn?.offlineMode} proxy={conn?.proxy} />
-
-        {/* ========== ۳) اتصال به سامانه ARM ========== */}
+        {/* ========== ۲) اتصال به سامانه ARM ========== */}
         <ArmConnectionSection embedded />
 
-        {/* ========== ۴) اتصال به حساب شخصی سامانه PM ========== */}
+        {/* ========== ۳) اتصال به حساب شخصی سامانه PM ========== */}
         <PmConnectionSection embedded />
 
-        {/* PN-029 اولاً (جلسهٔ فوق‌العاده ۰۳۳): بخش چهارم — رابط سامانهٔ وب‌سایت عمومی —
-            به دستور مالک از تنظیمات حذف شد (سرویس استخراج apu پابرجاست — از مسیر
-            پایدارساز کاتالوگ، بدون حضور در تنظیمات) */}
+        {/* ========== ۴) رابط سامانهٔ عمومی ملک تبریز (گام صفر-۱) ========== */}
+        <section className="rounded-xl border p-4 space-y-3" aria-label="رابط سامانه عمومی ملک تبریز">
+          <header className="space-y-0.5">
+            <h4 className="text-sm font-bold flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" aria-hidden /> رابط سامانهٔ عمومی ملک تبریز
+            </h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              سامانهٔ عمومی ملک تبریز (melketabriz.com) — رابط عمومی بدون توکن؛ از همین مسیر، کدهای ملکِ موجود در سامانهٔ عمومی که در فهرست آگهی موجود نیستند، یافت و به فهرست افزوده می‌شوند.
+            </p>
+          </header>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              {melkPublicDbUp ? (
+                <Badge className="gap-1 bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
+                  <Wifi className="w-3 h-3" aria-hidden /> متصل (عمومی — بدون توکن)
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="gap-1">
+                  <WifiOff className="w-3 h-3" aria-hidden /> در دسترس نیست
+                </Badge>
+              )}
+            </div>
+            <span dir="ltr" className="text-[10px] font-mono text-muted-foreground">
+              {conn?.config.melkPublicApiBase ?? "https://arus-api.melketabriz.ir/api/apu/"}
+            </span>
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-4">
+            مسیرهای عمومی کشف‌شده: properties/list (فهرست آگهی‌های منتشرشده) و properties/info/by-code/&#123;code&#125; (جزئیات کامل هر کدملک) — بدون نیاز به احراز هویت.
+          </p>
+        </section>
       </CardContent>
     </Card>
   );

@@ -105,8 +105,8 @@ pg_schema = open("prisma/schema.postgres.prisma", encoding="utf-8").read()
 if "model CausalEdgeRecord" not in pg_schema:
     violations.append("twin schema postgres هم CausalEdgeRecord را ندارد (توازن دوقلوها)")
 models = len(_re.findall(r"^model\s+\w+", schema, _re.M))
-if models != 67:
-    violations.append(f"شمار مدل‌ها {models} ≠ ۶۷ (۵۹ موجود + ۱ علّی PN-023-A + ۳ حافظه PN-025 + ۱ درس‌های رد PN-028 + ۳ لایهٔ احتیاط اتصال PN-029 — همه افزودنی)")
+if models != 63:
+    violations.append(f"شمار مدل‌ها {models} ≠ ۶۳ (۵۹ موجود + ۱ علّی PN-023-A + ۳ حافظه PN-025 — همه افزودنی)")
 try:
     con = sqlite3.connect("db/custom.db")
     t = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='CausalEdgeRecord'").fetchone()
@@ -115,7 +115,7 @@ try:
     con.close()
 except Exception as e:
     violations.append(f"بازکردن production DB: {e}")
-checks.append({"check": "جدول افزودنی (قانون ۸) — ۵۹→۶۷ (۱ علّی + ۳ حافظه + ۱ رد PN-028 + ۳ احتیاط اتصال PN-029)", "models": models, "ok": models == 67})
+checks.append({"check": "جدول افزودنی (قانون ۸) — ۵۹→۶۳ (۱ علّی + ۳ حافظه PN-025)", "models": models, "ok": models == 63})
 
 # ─── ۶) تست‌های فرا-ذهن ≥ ۴۰ در فایل واحد + اتصال CI ───
 tfile = "tests/pn023a-attention-causal.test.ts"
