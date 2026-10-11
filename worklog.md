@@ -3095,3 +3095,29 @@ Work Log:
 
 Stage Summary:
 - زنجیرهٔ نهایی: 1425ee0 → ef73007 (کد) → b352a8c (دروازه) · chainIndex=27 · سرور زنده روی آخرین HEAD
+
+---
+Task ID: PN-029 (کامل)
+Agent: main (Super Z / GLM)
+Task: اولاً حذف بخش «رابط سامانهٔ عمومی ملک تبریز» از تنظیمات عمومی + ثانیاً اجرای کامل سند شورای عالی ملکا (جلسهٔ فوق‌العاده ۰۳۳ — بازیابی اتصال به سامانه‌های ملک تبریز)
+
+Work Log:
+- تصریح شماره‌گذاری: سند سه شماره داشت (عنوان PN-029 / مسیرها pn026 / سطر پایانی pn028) — PN-028 قبلاً مهر شده بود ⇒ اجرا به‌عنوان PN-029 (ادامهٔ زنجیره) — Blocker→Decision→Continue
+- اولاً: بخش ۴ + نشانی API + اشارهٔ توضیحات «رابط سامانهٔ عمومی» از MelkTabrizConnectionSection حذف شد (الگوی GAP جلسهٔ ۰۳۳ — سرویس apu پابرجا)
+- مرحلهٔ ۲ (توقف): ماژول offline-mode.ts + پرچم MELK_ARM_OFFLINE=1 در env.platform.json + کشتن Worker قدیمی (1465) → Supervisor بازآورد (3371) → رجیستری بدون catalog-cycle + AuditLog ARM_OFFLINE_MODE + گاردهای دفاع-در-عمق در catalog-daemon/instrumentation/client/probeGet/indicators
+- مرحلهٔ ۳ (تشخیص شش‌گانه): diagnose-connection.sh + vault-status.ts — DNS×۶ سالم · TCP/TLS×۳ timeout · HTTP×۷ ملک تبریز code=000 · کنترل دیوار 403@0.9s ✓ · کنترل GitHub 403@0.1s ✓ · IP×۳ مقدار متفاوت · Vault ۴/۴ ناخوانا
+- مرحلهٔ ۴: ریشه=الف (بلاک IP/فایروال ملک تبریز) + ب هم‌زمان — پ رد (کنترل‌ها پاسخ دادند) — جدول تصمیم + استدلال در classification.json
+- مرحلهٔ ۵: action.json + owner-call-script.md (متن تماس مالک با ۳ IP + پیشنهاد whitelist رنج/proxy)
+- مرحلهٔ ۶: circuit-breaker.ts (۱بار/۶س · ۶/۱۲/۲۴س · ۳ شکست=قفل ۲۴س · fail-open · حالت تست خاموش) ادغام در armCall+probeGet + جدول CircuitBreakerState (هر دو اسکیما ۶۷=۶۷)
+- مرحلهٔ ۷: container-ip.ts + کار Worker ip-log (۶س، در حالت آفلینی هم فعال) + جدول ContainerIpLog + نمایش در تنظیمات + AuditLog CONTAINER_IP_LOG
+- مرحلهٔ ۸: otp-lock.ts (قفل ۶س دو-دامنه) + ادغام در request-otp + POST /api/admin/otp-burn (OWNER-only + confirm + bypassOffline تنها مسیر عبور آگاهانه) + آینهٔ v1 (۹۵ روت)
+- اصلاحات تست‌های زنجیره: pn010 (۱۶ کار + آرایهٔ خاموشی) · pn019×2 · pn020 · پاریتهٔ ۶۷ (pn022/pn023a) · p6530 (حذف عمومی) · hotfix04-B2 (سیاست تک‌وراث) · pn014-D2 (سیاست هرس) · platform-env (WATCHED_KEYS + MELK_ARM_OFFLINE) · preload-guard · MatchResult باز-صادر (خطای ازپیش‌موجود HEAD) · رفع باگ‌های شمارش guards (meta-mind ۶۷ + reproducibility BROKEN pipefail + خود-ارجاع MANIFEST)
+- خلوص روت‌ها (P2-03): connection-overview.ts + پوشش‌های بدون-db در otp-lock — سه روت از @/lib/db خالص شدند
+- تست‌ها: ۲۱ تست تازهٔ pn029 (تشخیص ۶ + CB ۵ + OTP ۳ + IP ۳ + نمایش ۴) — دو-سبز کامل ۲۵۶۴/۰ ×۲ (رکورد، قبلی ۲۵۴۳) · tsc صفر · lint صفر خطا (۲ هشدار ازپیش‌موجود در فایلهای دست‌نخورده)
+- تحویل: download/pn029 (۱۶ قلم + zip + SHA256SUMS) + deliver-store/pn029 — ۱۳/۱۳ لینک ۲۰۰
+- تثبیت: کامیت پله‌ای 13bee20 (کد) → ec353a4 (دروازه) · بیلد ۲ بار (BUILD_ID=HEAD در پایان) · ری‌استارت با health 200 · بستهٔ بقا chainIndex=28 (۵۲۸MB · لنگر هش به ۲۷) · آینه push ✓ · ۳۶ گارد PASS · REPRODUCIBLE ✓
+
+Stage Summary:
+- حکم: اولاً + سند کامل شورا-ن۰۳۳ اجرا شد؛ ریشهٔ قطعی اتصال = بلاک IP فایروال ملک تبریز (+ خزانهٔ ناخوانا) — مستند با کنترل‌های دیفرانسیل
+- انتظار مالک: (۱) تماس با ملک تبریز با متن آماده (۲) پس از رفع بلاک: برداشتن پرچم MELK_ARM_OFFLINE (۳) سوزاندن تک‌تلاش OTP از /api/admin/otp-burn (۴) publish مجدد دامنهٔ عمومی
+- زنجیره: HEAD=BUILD_ID=آینه=ec353a4 · دو-سبز ۲۵۶۴/۰ ×۲ · ۳ جدول افزودنی (۶۷=۶۷) · ۱ روت تازه + آینهٔ v1 (۹۵) · chainIndex=28
