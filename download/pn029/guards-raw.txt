@@ -15,7 +15,7 @@ PASS|audit-job-state.sh
 PASS|audit-learning-loop.sh
 PASS|audit-log-safety.sh
 PASS|audit-memory-lifecycle.sh
-FAIL|audit-meta-mind.sh
+PASS|audit-meta-mind.sh
 PASS|audit-mirror-sync.sh
 PASS|audit-negin-consistency.sh
 PASS|audit-opportunity-alerts.sh
@@ -23,7 +23,7 @@ PASS|audit-permission-boundary.sh
 PASS|audit-phase0-revision.sh
 PASS|audit-policy-evaluation.sh
 PASS|audit-repair-gate.sh
-FAIL|audit-reproducibility.sh
+PASS|audit-reproducibility.sh
 PASS|audit-roles.sh
 PASS|audit-self-diagnosis.sh
 PASS|audit-smart-update.sh

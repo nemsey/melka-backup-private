@@ -3095,3 +3095,59 @@ Work Log:
 
 Stage Summary:
 - زنجیرهٔ نهایی: 1425ee0 → ef73007 (کد) → b352a8c (دروازه) · chainIndex=27 · سرور زنده روی آخرین HEAD
+
+---
+Task ID: PN-029 (کامل)
+Agent: main (Super Z / GLM)
+Task: اولاً حذف بخش «رابط سامانهٔ عمومی ملک تبریز» از تنظیمات عمومی + ثانیاً اجرای کامل سند شورای عالی ملکا (جلسهٔ فوق‌العاده ۰۳۳ — بازیابی اتصال به سامانه‌های ملک تبریز)
+
+Work Log:
+- تصریح شماره‌گذاری: سند سه شماره داشت (عنوان PN-029 / مسیرها pn026 / سطر پایانی pn028) — PN-028 قبلاً مهر شده بود ⇒ اجرا به‌عنوان PN-029 (ادامهٔ زنجیره) — Blocker→Decision→Continue
+- اولاً: بخش ۴ + نشانی API + اشارهٔ توضیحات «رابط سامانهٔ عمومی» از MelkTabrizConnectionSection حذف شد (الگوی GAP جلسهٔ ۰۳۳ — سرویس apu پابرجا)
+- مرحلهٔ ۲ (توقف): ماژول offline-mode.ts + پرچم MELK_ARM_OFFLINE=1 در env.platform.json + کشتن Worker قدیمی (1465) → Supervisor بازآورد (3371) → رجیستری بدون catalog-cycle + AuditLog ARM_OFFLINE_MODE + گاردهای دفاع-در-عمق در catalog-daemon/instrumentation/client/probeGet/indicators
+- مرحلهٔ ۳ (تشخیص شش‌گانه): diagnose-connection.sh + vault-status.ts — DNS×۶ سالم · TCP/TLS×۳ timeout · HTTP×۷ ملک تبریز code=000 · کنترل دیوار 403@0.9s ✓ · کنترل GitHub 403@0.1s ✓ · IP×۳ مقدار متفاوت · Vault ۴/۴ ناخوانا
+- مرحلهٔ ۴: ریشه=الف (بلاک IP/فایروال ملک تبریز) + ب هم‌زمان — پ رد (کنترل‌ها پاسخ دادند) — جدول تصمیم + استدلال در classification.json
+- مرحلهٔ ۵: action.json + owner-call-script.md (متن تماس مالک با ۳ IP + پیشنهاد whitelist رنج/proxy)
+- مرحلهٔ ۶: circuit-breaker.ts (۱بار/۶س · ۶/۱۲/۲۴س · ۳ شکست=قفل ۲۴س · fail-open · حالت تست خاموش) ادغام در armCall+probeGet + جدول CircuitBreakerState (هر دو اسکیما ۶۷=۶۷)
+- مرحلهٔ ۷: container-ip.ts + کار Worker ip-log (۶س، در حالت آفلینی هم فعال) + جدول ContainerIpLog + نمایش در تنظیمات + AuditLog CONTAINER_IP_LOG
+- مرحلهٔ ۸: otp-lock.ts (قفل ۶س دو-دامنه) + ادغام در request-otp + POST /api/admin/otp-burn (OWNER-only + confirm + bypassOffline تنها مسیر عبور آگاهانه) + آینهٔ v1 (۹۵ روت)
+- اصلاحات تست‌های زنجیره: pn010 (۱۶ کار + آرایهٔ خاموشی) · pn019×2 · pn020 · پاریتهٔ ۶۷ (pn022/pn023a) · p6530 (حذف عمومی) · hotfix04-B2 (سیاست تک‌وراث) · pn014-D2 (سیاست هرس) · platform-env (WATCHED_KEYS + MELK_ARM_OFFLINE) · preload-guard · MatchResult باز-صادر (خطای ازپیش‌موجود HEAD) · رفع باگ‌های شمارش guards (meta-mind ۶۷ + reproducibility BROKEN pipefail + خود-ارجاع MANIFEST)
+- خلوص روت‌ها (P2-03): connection-overview.ts + پوشش‌های بدون-db در otp-lock — سه روت از @/lib/db خالص شدند
+- تست‌ها: ۲۱ تست تازهٔ pn029 (تشخیص ۶ + CB ۵ + OTP ۳ + IP ۳ + نمایش ۴) — دو-سبز کامل ۲۵۶۴/۰ ×۲ (رکورد، قبلی ۲۵۴۳) · tsc صفر · lint صفر خطا (۲ هشدار ازپیش‌موجود در فایلهای دست‌نخورده)
+- تحویل: download/pn029 (۱۶ قلم + zip + SHA256SUMS) + deliver-store/pn029 — ۱۳/۱۳ لینک ۲۰۰
+- تثبیت: کامیت پله‌ای 13bee20 (کد) → ec353a4 (دروازه) · بیلد ۲ بار (BUILD_ID=HEAD در پایان) · ری‌استارت با health 200 · بستهٔ بقا chainIndex=28 (۵۲۸MB · لنگر هش به ۲۷) · آینه push ✓ · ۳۶ گارد PASS · REPRODUCIBLE ✓
+
+Stage Summary:
+- حکم: اولاً + سند کامل شورا-ن۰۳۳ اجرا شد؛ ریشهٔ قطعی اتصال = بلاک IP فایروال ملک تبریز (+ خزانهٔ ناخوانا) — مستند با کنترل‌های دیفرانسیل
+- انتظار مالک: (۱) تماس با ملک تبریز با متن آماده (۲) پس از رفع بلاک: برداشتن پرچم MELK_ARM_OFFLINE (۳) سوزاندن تک‌تلاش OTP از /api/admin/otp-burn (۴) publish مجدد دامنهٔ عمومی
+- زنجیره: HEAD=BUILD_ID=آینه=ec353a4 · دو-سبز ۲۵۶۴/۰ ×۲ · ۳ جدول افزودنی (۶۷=۶۷) · ۱ روت تازه + آینهٔ v1 (۹۵) · chainIndex=28
+
+---
+Task ID: PN-030 (کامل)
+Agent: main (Super Z / GLM)
+Task: گام اول: راستی‌آزمایی نسخهٔ زندهٔ پس از PN-029 · گام دوم: ترتیب هشت کاشی داشبورد مدیریتی (آگهی، درخواست، معاملات، کارشناسان، تطبیق، شاخص ششم، پوشش هفتم، مغز ملکا) · گام سوم/چهارم: اجرای کامل سفارش PN-030 (شورای عالی ملکا جلسهٔ فوق‌العاده ۰۳۵ — ملکا-شورا-ن۰۳۵-۱۴۰۵ · تأیید صریح مالک + یادآوری قانون تثبیت و قانون بقا)
+
+Work Log:
+- گام اول: نسخهٔ زنده = buildId=gitSha=ec353a4 = مهر دروازهٔ PN-029 ✓ — تفکیک diff با HEAD فعلی (aed31e7): ۲۵ فایل همگی زمان‌اجرای پلتفرم، صفر تغییر کد — شاهد version-check.json (verdict=OK)
+- مرحلهٔ ۰ (قفل ورود): بکاپ VACUUM pre-pn030-20261011T131451Z.db (md5=d258012b… · integrity=ok) + health 200 + بیانیهٔ تأیید مالک + شش ریسک مهارشده — lock-in.json
+- گام دوم: market-index order 7→6 (شاخص ششم) + data-coverage 6→7 (پوشش هفتم) + به‌روزرسانی پنج فایل تست (management-dashboard · new-tiles-2 · p6530-architecture-guards · phase9-wiring) + تأیید مرورگر
+- مرحلهٔ ۱ (Worker): پروژهٔ کامل melka-proxy/ در مخزن (ماندگار در گیت/آینه/بقا) — HMAC-SHA256 زمان-ثابت + whitelist سه دامنه + پنجرهٔ ±۵د + صفر لاگ محتوا + redirect manual — ۶ تست B
+- مرحلهٔ ۲ (دیپلوی): bash melka-proxy/deploy.sh آماده — تنها گام باقی‌ماندهٔ مالک (۱۵ ثانیه OAuth)؛ اسکریپت راز را از env.platform نصب و MELK_ARM_PROXY_URL را خودکار ثبت می‌کند
+- مرحلهٔ ۳ (نقطهٔ یگانه): ماژول src/lib/melk-api/proxy.ts (۱۲۸خط) + هر دو نقطهٔ client.ts (armCall+probeGet) به proxyFetch تبدیل شدند — صفر fetch مستقیم باقی؛ MELK_ARM_PROXY_URL خالی = عین رفتار قبل (سازگاری کامل با ۲۵۶۴ تست قدیمی)
+- راز MELK_PROXY_SECRET (۶۴ هگز) تولید و در env.platform.json نصب شد (gitignored) — نسخهٔ example فقط کلید خالی
+- فیلد proxy {configured,host,secretConfigured} به connection-overview + /api/connection/status (بدون افشای راز)
+- مرحلهٔ ۴ (تست زنده بدون OTP): مستقیم هر سه میزبان 000 (بلاک پابرجا — سازگار با ریشهٔ الف) · کنترل github 200@0.28s · دیوار 403@0.73s · Worker آماده (راز ok64) — proxy-live-test.json
+- مرحلهٔ ۵ (پرچم آفلینی): تعیین تکلیف آگاهانه KEEP — قفل ترتیب سند؛ رویهٔ چهارگامهٔ برداشتن در online-mode.json (دیپلوی←تست←برداشتن←OTP)
+- مرحلهٔ ۶ (UI): OtpReloginSection.tsx (۲۷۹خط) — بخش ۲ پیکرهٔ «اتصال به ملک تبریز» — ارسال کد از otp-burn با دیالوگ تأیید صریح (قفل ۶س) + verify استاندارد ARM (توکن→نشست+Vault) + دو کارت وضعیت + بنر قفل ترتیب — فقط OWNER
+- گام چهارم-۲ (تنظیمات عمومی): بخش ورود مجدد افزوده شد؛ حذف رابط عمومی از PN-029 پابرجا؛ تعارض مستند: سند ۶رقمی، سامانه واقعی ۴رقمی — UI واقعیت سامانه را می‌پذیرد
+- مرورگر: ورود مدیر ✓ · ترتیب هشت کاشی ✓ · بخش ورود مجدد + کارتها ✓ · دیالوگ تأیید باز/لغو بدون سوزاندن ✓ · موبایل 390×844 ✓ · صفر خطا — ۳ اسکرین‌شات + browser-verify.json
+- رفع ۴ خطای ازپیش‌موجود lint در اسکریپت‌های آرشیوی pn026/pn027 (require/disable + optional-chain بدون !)
+- تست‌ها: ۲۹ تازهٔ pn030-proxy-connection (A ماژول ۹ + B Worker ۶ + C یکپارچگی ۳ + D UI ۵ + E env/ترتیب ۴ + F سازگاری ۲) + WATCHED_KEYS دو کلید تازه — دو-سبز ۲۵۹۳/۰ ×۲ (رکورد، قبلی ۲۵۶۴)
+- تحویل: download/pn030 (۱۶ قلم + ۳ اسکرین‌شات + zip + SHA256SUMS ۲۱خط) + deliver-store/pn030 — لینکهای ۲۰۰
+- تثبیت: کامیت پله‌ای 0a6e6fb (کد) → کامیت دروازه (گزارش/شواهد) · بیلد + ری‌استارت (health 200) · BUILD_ID=HEAD · آینه push ✓ · ۳۶/۳۶ گارد
+- بقا: بستهٔ chainIndex=29 (لنگر هش به ۲۸)
+
+Stage Summary:
+- حکم: هر چهار گام دستور مالک اجرا شد؛ PN-030 کامل اجرا شد تا مرزِ ۱۵ثانیهٔ اقدام مالک (OAuth کلودفلر) — بقیهٔ زنجیره (تست عبوری→برداشتن پرچم→e2e با OTP) رویهٔ مستند و آماده
+- انتظار مالک: (۱) bash melka-proxy/deploy.sh (۱۵ ثانیه) (۲) اطلاع به GLM برای تست مسیر و برداشتن پرچم (۳) سپس OTP از بخش «ورود مجدد به ملک تبریز» در تنظیمات عمومی (۳۰ ثانیه)
+- زنجیره: 0a6e6fb (کد) → دروازه · دو-سبز ۲۵۹۳/۰ ×۲ · tsc صفر · lint صفر خطا · ۳۶ گارد سبز · chainIndex=29

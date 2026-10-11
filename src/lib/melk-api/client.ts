@@ -16,6 +16,9 @@
 
 import { MelkApiError, type NestEnvelope } from "./types";
 import { isArmOfflineMode, offlineModeMessage, offlineBypassAllowed } from "./offline-mode";
+// PN-030 (شورا-ن۰۳۵): نقطهٔ یگانهٔ خروج — همهٔ فراخوانی‌های ملک تبریز از proxyFetch می‌گذرند.
+// بدون MELK_ARM_PROXY_URL رفتار عین fetch مستقیم است (سازگاری کامل با PN-029).
+import { proxyFetch } from "./proxy";
 import {
   breakerKeyFromBaseUrl,
   checkCircuit,
@@ -114,7 +117,8 @@ export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<Ar
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
     try {
-      const res = await fetch(url, {
+      // PN-030 — نقطهٔ یگانه: در صورت پیکربندی، عبور از پروکسی ابری (HMAC + whitelist)
+      const res = await proxyFetch(url, {
         method: opts.method ?? "GET",
         signal: controller.signal,
         headers: {
@@ -256,7 +260,8 @@ export async function probeGet(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, {
+    // PN-030 — نقطهٔ یگانه: پروب هم در صورت پیکربندی از پروکسی می‌گذرد
+    const res = await proxyFetch(url, {
       method: "GET",
       signal: controller.signal,
       headers: { Accept: "application/json" },

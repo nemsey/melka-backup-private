@@ -22,8 +22,8 @@ const CHILDREN_EXPECTED = [
   "transactions-contracts", // M3 معاملات ملک تبریز
   "experts",             // M4 کارشناسان ملک تبریز
   "smart-matching",      // M5 تطبیق هوشمند (P6545)
-  "data-coverage",       // M6 پوشش اطلاعات (PN-028/خامساً-ق — ترتیب الزامی مالک)
-  "market-index",        // M7 شاخص بازار
+  "market-index",        // M6 شاخص بازار (PN-030/گام دوم — شورا-ن۰۳۵: شاخص ششم)
+  "data-coverage",       // M7 پوشش اطلاعات (PN-030/گام دوم — شورا-ن۰۳۵: پوشش هفتم)
   "learning-tier",       // M8 مغز ملکا — یادگیری و Tier (PN-028/خامساً-ق)
 ];
 
@@ -41,7 +41,7 @@ describe("معماری داشبورد مدیریتی", () => {
     expect(rootConsultant).toEqual(ROOT_EXPECTED);
   });
 
-  test("P6545 — هشت کاشی مدیریتی M1 تا M8 داخل داشبورد مدیریتی — به همین ترتیب (جلسه ۰۳۳)", async () => {
+  test("P6545 — هشت کاشی مدیریتی M1 تا M8 داخل داشبورد مدیریتی — به همین ترتیب (شورا ۰۳۳ + گام دوم شورا-ن۰۳۵)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const children = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
     expect(children).toEqual(CHILDREN_EXPECTED);

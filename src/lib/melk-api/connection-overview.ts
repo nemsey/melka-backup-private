@@ -10,6 +10,7 @@ import { isArmOfflineMode } from "./offline-mode";
 import { breakerKeyFromBaseUrl, getBreakerSnapshot, type BreakerSnapshot } from "./circuit-breaker";
 import { getMelkApiConfig } from "./config";
 import { containerIpStatus } from "./container-ip";
+import { proxyStatus } from "./proxy";
 
 export interface CircuitBreakerView {
   target: string;
@@ -24,6 +25,8 @@ export interface ConnectionOverview {
   offlineMode: boolean;
   circuitBreakers: CircuitBreakerView[];
   containerIp: Awaited<ReturnType<typeof containerIpStatus>>;
+  /** PN-030 (شورا-ن۰۳۵) — وضعیت لایهٔ پروکسی عبوری ابری */
+  proxy: { configured: boolean; host: string | null; secretConfigured: boolean };
 }
 
 /** نمای کلّی برای روت وضعیت اتصال — دسترسی DB فقط همین‌جا (خلوص روت‌ها) */
@@ -58,5 +61,6 @@ export async function getConnectionOverview(): Promise<ConnectionOverview> {
     offlineMode: isArmOfflineMode(),
     circuitBreakers,
     containerIp,
+    proxy: proxyStatus(),
   };
 }

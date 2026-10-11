@@ -1,0 +1,11 @@
+=== PN-030 live-test 2026-10-11T13:32:19Z ===
+--- A) مستقیم: سه میزبان ملک تبریز ---
+DIRECT arus-api.melketabriz.ir -> 000 @ -1s
+DIRECT pm-api.melketabriz.ir -> 000 @ -1s
+DIRECT gap-api.melketabriz.ir -> 000 @ -1s
+--- B) کنترل‌های دیفرانسیل ---
+CONTROL github -> 200|0.279847
+CONTROL divar  -> 403|0.727484
+--- P) آمادگی Worker ---
+worker src=present toml=present deploy=present-executable secret=ok64 proxyUrl=''
+--- VERDICT: KEEP (پرچم آفلینی پابرجا — دیپلوی Worker در انتظار ۱۵ ثانیه تأیید OAuth مالک) ---

@@ -1,0 +1,30 @@
+{
+  "phase": "PN-030 · مرحلهٔ ۴ — تست زندهٔ بدون OTP (فهرست کارها #۵ سند شورا-ن۰۳۵)",
+  "testedAt": "2026-10-11T13:32:19Z",
+  "direct": {
+    "arus-api.melketabriz.ir": { "httpCode": "000", "seconds": "-1" },
+    "pm-api.melketabriz.ir": { "httpCode": "000", "seconds": "-1" },
+    "gap-api.melketabriz.ir": { "httpCode": "000", "seconds": "-1" }
+  },
+  "controls": {
+    "github.com": { "httpCode": "200", "seconds": "0.279847" },
+    "api.divar.ir": { "httpCode": "403", "seconds": "0.727484" }
+  },
+  "workerReadiness": {
+    "source": "present",
+    "wranglerToml": "present",
+    "deployScript": "present-executable",
+    "hmacSecretInEnvPlatform": "ok64",
+    "proxyUrlConfigured": false
+  },
+  "proxyTest": {
+    "status": "not-configured",
+    "code": "-",
+    "note": "تست عبوری فقط پس از دیپلوی Worker (۱۵ ثانیه OAuth مالک) و ثبت MELK_ARM_PROXY_URL انجام می‌شود"
+  },
+  "offlineFlagDecision": "KEEP (پرچم آفلینی پابرجا — دیپلوی Worker در انتظار ۱۵ ثانیه تأیید OAuth مالک)",
+  "interpretation": {
+    "directBlockedControlsAlive": "اگر مستقیمها 000/timeout و کنترلها پاسخگو باشند، ریشه=الف (بلاک ASN) همچنان پابرجاست — سازگار با تشخیص نهایی PN-029",
+    "expectation": "پس از دیپلوی: پاسخ ۲۰۰/۴۰۱/403/404 از ARM از طریق پروکسی = مسیر باز → برداشتن پرچم → تست e2e با OTP مالک"
+  }
+}
