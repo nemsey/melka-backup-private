@@ -34,6 +34,8 @@
 
 import { db } from "@/lib/db";
 import { probeGet } from "@/lib/melk-api/client";
+// PN-029 — حالت آفلینی ملک تبریز: صفر پروب خودکار (ریشهٔ ۵۰۲ نشانگرها)
+import { isArmOfflineMode } from "@/lib/melk-api/offline-mode";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { decryptSecret } from "@/lib/auth/crypto";
 
@@ -156,6 +158,23 @@ let inflightRefresh: Promise<unknown> | null = null;
 async function runExternalProbes(): Promise<ExternalProbes> {
   const cfg = getMelkApiConfig();
   const fallback = (detail: string): ProbeCache => ({ at: Date.now(), ok: false, detail });
+
+  // PN-029 (مرحلهٔ ۲ — سند شورا-ن۰۳۳): در حالت آفلینی، چهار نشانگرِ سامانه‌های
+  // ملک تبریز اصلاً پروب نمی‌شوند — آخرین کش (در صورت وجود) با برچسب آفلاین
+  // سرو می‌شود و صفر بستهٔ شبکه به arus-api/pm-api/gap-api ارسال می‌گردد.
+  // نشانگر دیوار بی‌ربط به این حالت است و مثل قبل سنجیده می‌شود.
+  if (isArmOfflineMode()) {
+    const offline = (key: string, label: string): ProbeCache =>
+      probeCache.get(key) ?? { at: Date.now(), ok: false, detail: `${label} — حالت آفلینی ملک تبریز (توقف تلاش خودکار · PN-029)` };
+    const divarApi = await probeDivar().catch(() => fallback("API دیوار در دسترس نیست"));
+    return {
+      armApi: offline("armApi", "API سامانه آرم"),
+      pmApi: offline("pmApi", "API سامانه پرسنلی"),
+      melkPublicApi: offline("melkPublicApi", "API عمومی سامانه ملک تبریز"),
+      gapApi: offline("gapApi", "سرور gap-api"),
+      divarApi,
+    };
+  }
   const [armApi, pmApi, melkPublicApi, gapApi, divarApi] = await Promise.all([
     cachedProbe("armApi", cfg.armPublicApiBase, "statics/enums-persian", "API سامانه آرم پاسخ می‌دهد", "API سامانه آرم در دسترس نیست")
       .catch(() => fallback("API سامانه آرم در دسترس نیست")),

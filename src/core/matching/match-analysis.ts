@@ -16,6 +16,9 @@
  */
 
 import type { MatchCandidate, MatchResult } from "./matching-engine";
+
+// باز-صادرکردن نوع برای مصرف‌کنندگان (تست PN-028 و کاشی تطبیق)
+export type { MatchResult };
 import { ALERT_SCORE_THRESHOLD } from "./matching-engine";
 
 /* ───────────────────────── ۰) نرمال‌سازی جست‌وجوی فارسی ───────────────────────── */

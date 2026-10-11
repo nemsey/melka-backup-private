@@ -15,6 +15,15 @@
  */
 
 import { MelkApiError, type NestEnvelope } from "./types";
+import { isArmOfflineMode, offlineModeMessage, offlineBypassAllowed } from "./offline-mode";
+import {
+  breakerKeyFromBaseUrl,
+  checkCircuit,
+  circuitLockedError,
+  isBreakerFailure,
+  recordBreakerFailure,
+  recordBreakerSuccess,
+} from "./circuit-breaker";
 
 export interface HttpRequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -26,6 +35,8 @@ export interface HttpRequestOptions {
   maxRetries: number;
   headers?: Record<string, string>;
   query?: Record<string, string | number | undefined | null>;
+  /** PN-029 — فقط برای فراخوانی صریح مالک (تک‌تلاش OTP)؛ هیچ مسیر خودکاری عبور نمی‌کند */
+  bypassOffline?: boolean;
 }
 
 /** پوشه درخواست/پاسخ استانداردشده */
@@ -84,6 +95,15 @@ function classifyServerFailure(status: number, bodyText: string): MelkApiError {
  * خطاهای ۴xx غیرقابل تلاش مجددند؛ ۵xx/شبکه با backoff تلاش می‌شوند.
  */
 export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<ArmCallResult<T>> {
+  // ---- گارد ۱: حالت آفلاین (صفر تلاش خودکار — PN-029 مرحلهٔ ۲) ----
+  if (isArmOfflineMode() && !offlineBypassAllowed(opts.bypassOffline)) {
+    throw new MelkApiError("ARM_OFFLINE", offlineModeMessage(), 503, false);
+  }
+  // ---- گارد ۲: فیوز قطع‌کننده (قانون Retry هوشمند — PN-029 مرحلهٔ ۶) ----
+  const target = breakerKeyFromBaseUrl(opts.baseUrl);
+  const gate = await checkCircuit(target);
+  if (!gate.allowed) throw circuitLockedError(gate);
+
   const base = opts.baseUrl.replace(/\/$/, "");
   const qs = buildQuery(opts.query);
   const url = `${base}/${opts.path.replace(/^\//, "")}${qs}`;
@@ -160,6 +180,8 @@ export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<Ar
           false
         );
       }
+      // PN-029 — موفقیت واقعی: بازنشانی فیوز میزبان (شمارش پیاپی صفر می‌شود)
+      await recordBreakerSuccess(target);
       return { data: (envelope?.data ?? (envelope as unknown as T)) as T, message: envelope?.message };
     } catch (err) {
       if (err instanceof MelkApiError) {
@@ -181,8 +203,10 @@ export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<Ar
   // اگر خطای ۵xx بود و متن Mongoose داشت، دقیق‌تر گزارش شود
   if (lastError?.code === "SERVER_ERROR" && lastBodyText) {
     const refined = classifyServerFailure(lastError.httpStatus, lastBodyText);
-    if (refined.code === "DB_DOWN") return Promise.reject(refined);
+    if (refined.code === "DB_DOWN") lastError = refined;
   }
+  // PN-029 — شکست سمت سرور/شبکه: ثبت در فیوز (backoff ۶/۱۲/۲۴س · ۳ پیاپی = قفل ۲۴س)
+  if (lastError && isBreakerFailure(lastError)) await recordBreakerFailure(target);
   throw lastError ?? new MelkApiError("UNKNOWN", "خطای نامشخص در ارتباط با سامانه ملک تبریز.", 500, false);
 }
 
@@ -193,7 +217,40 @@ export async function melkFetch<T>(opts: HttpRequestOptions): Promise<T> {
 }
 
 /** سنجش تک‌فراخوانی (GET) برای پایش زنده — بدون تلاش مجدد */
-export async function probeGet(baseUrl: string, path: string, timeoutMs = 8000): Promise<{ ok: boolean; httpStatus: number; latencyMs: number; bodyText: string }> {
+export interface ProbeResult {
+  ok: boolean;
+  httpStatus: number;
+  latencyMs: number;
+  bodyText: string;
+  /** PN-029 — پروب به‌خاطر حالت آفلاین انجام نشد */
+  offlineMode?: boolean;
+  /** PN-029 — پروب به‌خاطر فیوز بسته انجام نشد (پیام دقیق در circuitDetail) */
+  circuitLocked?: boolean;
+  circuitDetail?: string;
+}
+
+export async function probeGet(
+  baseUrl: string,
+  path: string,
+  timeoutMs = 8000,
+  opts?: { bypassOffline?: boolean }
+): Promise<ProbeResult> {
+  // گارد آفلاین — پروب همیشه «تلاش» است؛ فقط فراخوانی صریح live (دکمهٔ تست مالک) عبور می‌کند
+  if (isArmOfflineMode() && !opts?.bypassOffline) {
+    return { ok: false, httpStatus: 0, latencyMs: -1, bodyText: "", offlineMode: true };
+  }
+  const target = breakerKeyFromBaseUrl(baseUrl);
+  const gate = await checkCircuit(target);
+  if (!gate.allowed) {
+    return {
+      ok: false,
+      httpStatus: 0,
+      latencyMs: -1,
+      bodyText: "",
+      circuitLocked: true,
+      circuitDetail: circuitLockedError(gate).message,
+    };
+  }
   const url = `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
   const started = Date.now();
   const controller = new AbortController();
@@ -206,7 +263,14 @@ export async function probeGet(baseUrl: string, path: string, timeoutMs = 8000):
       cache: "no-store",
     });
     const bodyText = await res.text().catch(() => "");
+    // PN-029 — ۵xx = شکست فیوز (سرویس پشتیبان پایین است؛ کوبیدن درِ او فایده ندارد)
+    if (res.status >= 500) await recordBreakerFailure(target);
+    else await recordBreakerSuccess(target);
     return { ok: res.ok || res.status < 500 || bodyText.length > 0, httpStatus: res.status, latencyMs: Date.now() - started, bodyText };
+  } catch (err) {
+    // خطای شبکه/TLS — شکست فیوز ثبت و سپس خطا به صداکننده می‌رسد (قرارداد قبلی)
+    await recordBreakerFailure(target);
+    throw err;
   } finally {
     clearTimeout(timer);
   }

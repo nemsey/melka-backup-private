@@ -1,7 +1,7 @@
 {
   "guard": "audit-counterfactual-purity",
   "workOrder": "PN-024/مرحلهٔ ۱۱ — خلوص L3 + قفل auto_execute + مرز لایه + اتصال ثانیاً",
-  "generatedAt": "2026-10-10T05:42:12.396308+00:00",
+  "generatedAt": "2026-10-11T09:41:40.515052+00:00",
   "checks": [
     {
       "check": "۱ خلوص: موتورهای ۱۴/۱۵ صفر DB/fetch/env/فایل",

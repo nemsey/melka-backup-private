@@ -572,6 +572,9 @@ export type MelkErrorCode =
   | "DB_DOWN"
   | "NOT_FOUND"
   | "CONNECTION_RESET"
+  // PN-029 (شورا-ن۰۳۳) — گاردهای لایهٔ اتصال
+  | "ARM_OFFLINE" // حالت آفلینی ملک تبریز: توقف تلاش‌های خودکار تا پایان تشخیص
+  | "CIRCUIT_COOLDOWN" // فیوز قطع‌کننده: ۱ تلاش/۶ساعت · ۳ شکست = قفل ۲۴س
   // PN-018 فاز ۷ — دروازهٔ شورا و چرخهٔ عمر نسخهٔ مدل
   | "NOT_A_CHALLENGER"
   | "COUNCIL_APPROVAL_REQUIRED"
