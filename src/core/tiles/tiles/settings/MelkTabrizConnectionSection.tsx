@@ -16,6 +16,10 @@
  * PN-029 اولاً (دستور مالک — جلسهٔ فوق‌العاده ۰۳۳): بخش چهارم — رابطِ وب‌سایت
  * عمومی ملک تبریز — از تنظیمات عمومی حذف شد (سرویس استخراج apu پابرجاست —
  * کدهای ملکِ غایب همچنان از مسیر پایدارساز کاتالوگ افزوده می‌شوند).
+ *
+ * PN-030 مرحلهٔ ۶ (شورا-ن۰۳۵ · ۱۴۰۵/۰۷/۲۱): بخش «ورود مجدد به ملک تبریز» —
+ * صفحهٔ سادهٔ OTP مالک (ارسال کد از API تک‌تلاش + تأیید + ذخیره در Vault) —
+ * به‌عنوان بخش ۲ این پیکره (پس از مدیریت اتصال‌ها) افزوده شد.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -39,6 +43,8 @@ import { api, ApiClientError } from "@/lib/client/api";
 import { faDateTime, faNumber } from "@/lib/format";
 import { ArmConnectionSection } from "./ArmConnectionSection";
 import { PmConnectionSection } from "./PmConnectionSection";
+// PN-030 (شورا-ن۰۳۵ · مرحلهٔ ۶): صفحهٔ سادهٔ ورود با OTP برای مالک
+import { OtpReloginSection } from "./OtpReloginSection";
 
 interface ServiceStatus {
   service: string;
@@ -91,6 +97,8 @@ interface ConnectionInfo {
     changed: boolean;
     historyCount: number;
   };
+  /** PN-030 (شورا-ن۰۳۵) — وضعیت لایهٔ پروکسی عبوری ابری */
+  proxy?: { configured: boolean; host: string | null; secretConfigured: boolean };
 }
 
 function faDigitsLocal(n: string | number): string {
@@ -391,10 +399,13 @@ export function MelkTabrizConnectionSection() {
           </div>
         </section>
 
-        {/* ========== ۲) اتصال به سامانه ARM ========== */}
+        {/* ========== ۲) ورود مجدد به ملک تبریز (PN-030 · مرحلهٔ ۶ سند شورا-ن۰۳۵) ========== */}
+        <OtpReloginSection offlineMode={conn?.offlineMode} proxy={conn?.proxy} />
+
+        {/* ========== ۳) اتصال به سامانه ARM ========== */}
         <ArmConnectionSection embedded />
 
-        {/* ========== ۳) اتصال به حساب شخصی سامانه PM ========== */}
+        {/* ========== ۴) اتصال به حساب شخصی سامانه PM ========== */}
         <PmConnectionSection embedded />
 
         {/* PN-029 اولاً (جلسهٔ فوق‌العاده ۰۳۳): بخش چهارم — رابط سامانهٔ وب‌سایت عمومی —

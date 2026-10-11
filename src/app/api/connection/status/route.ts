@@ -54,6 +54,8 @@ export async function GET(request: NextRequest) {
       offlineMode: overview.offlineMode,
       circuitBreakers: overview.circuitBreakers,
       containerIp: overview.containerIp,
+      // PN-030 (شورا-ن۰۳۵) — وضعیت لایهٔ پروکسی عبوری ابری (بدون افشای راز)
+      proxy: overview.proxy,
     });
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);
