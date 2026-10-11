@@ -1,13 +1,13 @@
 {
   "guard": "audit-mirror-sync",
   "workOrder": "PN-024/J4 — چک روزانهٔ همگامی آینه (در CI هر بیلد)",
-  "generatedAt": "2026-10-11T09:41:44.508865Z",
+  "generatedAt": "2026-10-11T09:55:20.490056Z",
   "checks": [
     {
       "check": "J4 همگامی آینه",
       "ok": true,
-      "head": "ef799b7",
-      "mirror": "ef799b7",
+      "head": "ec353a4",
+      "mirror": "ec353a4",
       "remote": "auto-mirror (GitHub — private backup)"
     }
   ],
