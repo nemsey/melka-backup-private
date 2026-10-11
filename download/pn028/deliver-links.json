@@ -1,0 +1,50 @@
+{
+  "phase": "PN-028 · تحویل — جلسهٔ ۰۳۵ (۱۲ قلم · قانون ۱۴ لینک مستقیم)",
+  "items": [
+    {
+      "n": 1,
+      "file": "PN-028-FINAL-REPORT.md",
+      "url": "/deliver/pn028/PN-028-FINAL-REPORT.md"
+    },
+    {
+      "n": 2,
+      "file": "fix-indicators-502.json",
+      "url": "/deliver/pn028/fix-indicators-502.json"
+    },
+    {
+      "n": 3,
+      "file": "unlimited-analysis.json",
+      "url": "/deliver/pn028/unlimited-analysis.json"
+    },
+    {
+      "n": 4,
+      "file": "declined-hidden-user.json",
+      "url": "/deliver/pn028/declined-hidden-user.json"
+    },
+    {
+      "n": 5,
+      "file": "matching-upgrade.json",
+      "url": "/deliver/pn028/matching-upgrade.json"
+    },
+    {
+      "n": 6,
+      "file": "lists-freshness.json",
+      "url": "/deliver/pn028/lists-freshness.json"
+    },
+    {
+      "n": 7,
+      "file": "live-probe.json",
+      "url": "/deliver/pn028/live-probe.json"
+    },
+    {
+      "n": 8,
+      "file": "live-probe.txt",
+      "url": "/deliver/pn028/live-probe.txt"
+    },
+    {
+      "n": 9,
+      "file": "two-green.json",
+      "url": "/deliver/pn028/two-green.json"
+    }
+  ]
+}
