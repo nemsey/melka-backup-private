@@ -20,7 +20,7 @@ export const dataCoverageTile = defineTile({
   icon: Database,
   accent: "m7",
   component: lazyPage(() => import("./DataCoveragePage")),
-  order: 8,
+  order: 6, // PN-028/خامساً-ق — دستور مالک: پوشش ششم
   container: "management-dashboard",
   minRole: "OWNER",
   agent: {

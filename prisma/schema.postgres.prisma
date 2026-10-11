@@ -1891,3 +1891,30 @@ model RetentionPolicy {
 
   @@unique([category])
 }
+
+/// PN-028/رابعاً-ج — درس‌های رد تطبیق (دستور مالک: مغز ملکا از دلایل واقعی رد بیاموزد
+/// و در پیشنهادهای تطبیقِ آینده همان اشتباه را تکرار نکند).
+/// هر رد = یک جفت (آگهی × درخواست) + دلایل ساختاریافته + یادداشت آزاد.
+/// یادگیری سه‌لایه: (۱) همین جفت هرگز دوباره پیشنهاد نمی‌شود (۲) دلایل پرتکرار
+/// وزن عامل متناظر را در امتیازدهی تطبیق‌های آینده تقویت می‌کنند (۳) حلقهٔ
+/// بازخورد ایجنت (AgentFeedback) همان رد را برای وزن‌های آموخته ثبت می‌کند.
+model MatchRejectionRecord {
+  id          String   @id @default(cuid())
+  /// listing_to_request | request_to_listing
+  direction   String
+  /// کد آگهی سمت تطبیق
+  listingCode String?
+  /// کد درخواست سمت تطبیق
+  requestCode String?
+  /// کلیدهای دلایل رد — ["price","geo","meterage","type","rooms","floor","age","stale","dealt","customer","expert","other"]
+  reasonsJson String
+  /// دلیل آزاد کاربر (گزینهٔ «سایر» یا توضیح تکمیلی)
+  note        String?
+  /// امتیاز تطبیق در لحظهٔ رد (شاهد بازتولیدپذیری)
+  scoreAtReject Float?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([listingCode])
+  @@index([requestCode])
+}
