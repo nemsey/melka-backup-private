@@ -1,7 +1,7 @@
 {
  "task": "PN-008 BLOCK 4 — اسکن ایستای نقش‌ها",
- "at": "2026-10-10T05:42:42.576446",
- "totalRoutes": 184,
+ "at": "2026-10-11T09:42:18.411337",
+ "totalRoutes": 190,
  "routes": [
   {
    "route": "/admin/action-plans",
@@ -84,6 +84,14 @@
     "POST"
    ],
    "guard": "requireRole:OWNER|OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/otp-burn",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
    "risk": null
   },
   {
@@ -635,6 +643,23 @@
    "risk": null
   },
   {
+   "route": "/matching/feedback",
+   "methods": [
+    "POST",
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/matching/file",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
    "route": "/matching",
    "methods": [
     "GET"
@@ -816,6 +841,12 @@
   },
   {
    "route": "/v1/admin/memory/stats",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/otp-burn",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"
@@ -1212,6 +1243,18 @@
   },
   {
    "route": "/v1/market-index",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/matching/feedback",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/matching/file",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"

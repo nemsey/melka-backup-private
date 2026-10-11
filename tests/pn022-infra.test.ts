@@ -21,11 +21,11 @@ describe("PN-022-A/مرحلهٔ۳ · مهاجرت PostgreSQL (فقط تست)", (
     expect(src).not.toContain('env("DATABASE_URL")');
   });
 
-  test("پ-۲) توازن مدل‌ها: هر مدل در هر دو اسکیما (۶۴ — PN-025: +۳ حافظه · PN-028: +۱ درس‌های رد تطبیق)", () => {
+  test("پ-۲) توازن مدل‌ها: هر مدل در هر دو اسکیما (۶۷ — PN-025: +۳ · PN-028: +۱ · PN-029: +۳ لایهٔ احتیاط اتصال)", () => {
     const models = (p: string) => [...readFileSync(p, "utf8").matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]);
     const sq = models("prisma/schema.prisma");
     const pg = models("prisma/schema.postgres.prisma");
-    expect(sq.length).toBe(64); // 59 پایه + علّی PN-023-A + ۳ حافظه PN-025 + ۱ درس‌های رد PN-028
+    expect(sq.length).toBe(67); // 59 پایه + علّی PN-023-A + ۳ حافظه PN-025 + ۱ درس‌های رد PN-028
     expect(new Set(pg)).toEqual(new Set(sq));
   });
 
