@@ -3082,3 +3082,16 @@ Stage Summary:
 - تحویل: download/pn028/ (۱۲ قلم + zip + SHA256SUMS) + deliver-store/pn028 (۱۲/۱۲ لینک ۲۰۰) + بستهٔ بقا ۲۷
 - زنجیره: کامیت ef73007 = BUILD_ID = آینه · schema هر دو اسکیما +MatchRejectionRecord (۶۴=۶۴) · مانیفست v1: ۹۴ روت
 - انتظار مالک: (۱) مرور گزارش و probe های شخصی (۲) تصمیم دربارهٔ جایگزین نمایهٔ آزمایشی شفاف (۳) publish مجدد دامنهٔ عمومی از پنل (۴) پنج پیشنهاد جلسهٔ بعد در بخش ۸ گزارش
+
+---
+Task ID: PN-028 · دروازه نهایی (مهر چهارراهی)
+Agent: main (Super Z / GLM)
+Task: مهر پایانی — بیلد پس از کامیت دروازه = HEAD + ری‌استارت + راستی‌آزمایی عمومی
+
+Work Log:
+- کامیت دروازه b352a8c (گزارش/شواهد/بسته) → بیلد تازه BUILD_ID=b352a8c-20261011-0634 → نگهبان ری‌استارت (health 200 در ~۵ث)
+- مهر چهارراهی: BUILD_ID = HEAD (b352a8c) = آینهٔ GitHub = دامنهٔ preview (api/version راستی‌آزمایی شد: buildId=b352a8c-20261011-0634)
+- reproducibility: REPRODUCIBLE ✓ (۶/۶) · mirror-sync: PASS · ۶/۶ لینک تحویل روی دامنهٔ عمومی preview = ۲۰۰
+
+Stage Summary:
+- زنجیرهٔ نهایی: 1425ee0 → ef73007 (کد) → b352a8c (دروازه) · chainIndex=27 · سرور زنده روی آخرین HEAD
