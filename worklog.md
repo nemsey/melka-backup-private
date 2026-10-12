@@ -3272,3 +3272,27 @@ Work Log:
 Stage Summary:
 - هر سه قانون کامل: تثبیت (کامیت+آینه+گارد ۴۲/۴۲ پس از بیلد نهایی) · بقا (بستهٔ ۳۰ لنگرشده به ۲۹) · لینک (PASS)
 - درس ماندگار برای نوبت‌های بعد: (۱) پس از هر بازنشانی پلتفرم، BUILD_ID زنده با HEAD سنجیده شود (۲) کلید env تازه = ثبت در WATCHED_KEYS تست platform-env (۳) بکاپ db/ هرگز با git add -A کامیت نشود
+
+---
+Task ID: PN-031-HOTFIX (کامل)
+Agent: main (Super Z / GLM)
+Task: اجرای کامل دستور فوری جلسهٔ ۰۳۸ شورای عالی ملکا (ملکا-شورا-ن۰۳۸-۱۴۰۵ · ۱۴۰۵/۰۷/۲۲) — رفع باگ نشانی bootstrap داخلی (0.0.0.0:3000) در محیط عمومی + تولید مجدد QR/دستور + تست زنده + گزارش
+
+Work Log:
+- قفل ورود: HEAD=f0712ec · بکاپ گرم VACUUM (db/pre-pn031hotfix-20261012T094700Z.db · 312.6MB · md5 0d344f70 · integrity ok) · health 200
+- تشخیص: ریشه = request.nextUrl.origin در دو روت (enroll:30 → متن QR/دستور · bootstrap:28 → SERVER_URL درون اسکریپت) — پراکسی پلتفرم Host را به بایند داخلی بازنویسی می‌کند؛ شاهد diagnosis.json · کشف URL عمومی واقعی از runtime-status.json: https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai (تأیید health 200 از کانتینر در 0.10s)
+- اصلاح: ماژول تازهٔ src/lib/http/public-url.ts — getPublicBaseUrl با اولویت مصوب: (۱) MELK_PUBLIC_BASE_URL (۲) x-forwarded-host+proto (۳) host عمومی (۴) fail-closed با خطای صریح فارسی (503)
+- دو تصمیم ترتیبی: bootstrap نشانی را پیش از مصرف کد تعیین می‌کند (کد مالک در خطا سهم می‌ماند) · enroll پیش از ساخت دستگاه (بدون دستگاه یتیم)
+- بقا: MELK_PUBLIC_BASE_URL جزو BOOT_SECRET_KEYS (escrow سه‌لایه — زنده در بازنشانی محیط) + env.platform.json + example + WATCHED_KEYS تست platform-env + ENV_KEYS تست pn011
+- تست ۱۳گانهٔ تازه (pn031-hotfix-public-url.test.ts: اولویت‌ها · رگرسیون روت‌ها · ثبت env · سازگاری سازنده‌ها) + رفع تایپ پیشین TS2749 تست pn031 (drive-by)
+- گارد audit-mobile-relay بند ۹ تازه: «قانون URL عمومی جلسهٔ ۰۳۸» — نقطهٔ یگانه + صفر آدرس داخلی در دو روت + اولویت‌ها + fail-closed + بقا در escrow
+- تولید مجدد: ابطال رسمی کد کهنهٔ cff39acd… (منقضی طبیعی ۰۹:۲۸Z — هرگز مصرف نشد) + دو دستگاه یتیم · کد تازهٔ مالک poco-f3-1c663e از خودِ روت واقعی از URL عمومی + QR (PNG/SVG)
+- تست زندهٔ کامل مسیر مالک از اینترنت (live-test.sh): کد ساختگی 403 ✓ · ورود مدیر 200 ✓ · ثبت دستگاه از URL عمومی — دستور فقط URL عمومی، صفر 0.0.0.0/localhost ✓ · دانلود اسکریپت 200 با SERVER_URL عمومی + bash -n معتبر + wake-lock ✓ · تلاش دوم 403 (یک‌بارمصرف) ✓ · ابطال آزمایشی ✓ — شاهد live-test.json VERDICT: PASS
+- دروازه: tsc صفر · lint صفر خطا · دو-سبز ۲۶۳۰/۰ ×۲ (رکورد؛ قبلی ۲۶۱۷) · گارد ۴۲/۴۲ (۴۱ گارد + تکرارپذیری) · کامیت پله‌ای 7a3b414 (کد) → 273ef5a (دروازه) · بیلد ×۲ و ری‌استارت · BUILD_ID=HEAD=273ef5a-20261012-1015 · health 200 · env زنده: MELK_PUBLIC_BASE_URL اعمال‌شده ✓ · آینه push (f0712ec→7a3b414→273ef5a) · audit-reproducibility: REPRODUCIBLE ✓
+- تحویل: download/pn031-hotfix (diagnosis · live-test · regenerated · qr-install-command.png/svg · PN-031-HOTFIX-FINAL-REPORT.md) · اسکریپت‌های ماندگار scripts/pn031-hotfix/{live-test.sh,regenerate-owner.ts} · docs/LESSONS-LEARNED.md تازه (درس‌های ۳-۶)
+- قفل ترتیب پابرجا: MELK_ARM_OFFLINE=1 — برداشتن فقط پس از تست تونل زندهٔ گوشی مالک (رویهٔ چهارگامهٔ online-mode.json)
+
+Stage Summary:
+- باگ جلسهٔ ۰۳۸ کامل رفع شد: کل زنجیرهٔ مالک (ورود → ثبت دستگاه → QR/دستور → دانلود اسکریپت از اینترنت) با نشانی عمومی تست زندهٔ سبز — کد تازهٔ مالک صادر شد (اعتبار ۳۰دقیقه تا 10:38:53Z؛ دکمهٔ تنظیمات هم اکنون URL عمومی می‌سازد)
+- درس ماندگار: URL برای مصرف بیرونی فقط از getPublicBaseUrl — هرگز آدرس داخلی کانتینر؛ هر مقدار پیکربندی حیاتی غیرراز باید در escrow سه‌لایه هم بنشیند؛ تست زندهٔ خروجی بیرونی فقط از URL عمومی معنادار است
+- انتظار مالک: پیست دستور تازه در Termux ← پیام «رلهٔ ملکا فعال است» ← دکمهٔ «تست تونل» سبز ← اطلاع به GLM ← رویهٔ چهارگامه (برداشتن پرچم آفلینی ← ری‌استارت ← ورود کد پرسنلی + OTP)
