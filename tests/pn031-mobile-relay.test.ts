@@ -304,12 +304,11 @@ describe("PN-031 · C) یکپارچگی نقطهٔ یگانه و قفل ترتی
     setEnv("MELK_ARM_RELAY_MODE", "mobile");
     setEnv("MELK_ARM_OFFLINE", "1");
     const { armCall } = await import("@/lib/melk-api/client");
-    const { MelkApiError } = await import("@/lib/melk-api/types");
     let code = "";
     try {
       await armCall({ path: "x", baseUrl: "https://arus-api.melketabriz.ir/api/apm/", timeoutMs: 200, maxRetries: 0 });
     } catch (e) {
-      code = (e as MelkApiError).code;
+      code = (e as { code: string }).code;
     }
     expect(code).toBe("ARM_OFFLINE");
   });

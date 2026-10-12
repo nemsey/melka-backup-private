@@ -43,6 +43,10 @@ const WATCHED_KEYS = [
   // هم می‌نشاند؛ بدون backup/restore به تستهای بعدی در همان worker نشت می‌کند و
   // مسیر proxyFetch را به رله می‌برد (شاهد: شکست آبشاری A-6/A-8/A-9/B.1)
   "MELK_ARM_RELAY_MODE",
+  // PN-031-HOTFIX (شورا-ن۰۳۸): نشانی عمومی سرور برای مصرف بیرونی (گوشی/QR) —
+  // اعمال fallback فایل واقعی این کلید را می‌نشاند؛ باید بازگردانی شود تا
+  // تستهای getPublicBaseUrl در همان worker حالت «env غایب» را واقعی ببینند.
+  "MELK_PUBLIC_BASE_URL",
 ] as const;
 
 function setEnv(key: string, value: string | undefined) {

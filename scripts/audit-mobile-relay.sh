@@ -67,4 +67,19 @@ else
   ok "UI بدون راز (فقط QR/دستور نصب یک‌بارمصرف)"
 fi
 
+# ۹) قانون URL عمومی — جلسهٔ فوری ۰۳۸ (PN-031-HOTFIX):
+#    هر URL مصرف بیرونی (گوشی/QR) فقط از getPublicBaseUrl؛ هرگز آدرس داخلی کانتینر
+[ -f src/lib/http/public-url.ts ] && ok "ماژول نشانی عمومی (public-url.ts)" || fail "public-url.ts غایب"
+rg -q 'MELK_PUBLIC_BASE_URL' src/lib/http/public-url.ts && ok "اولویت ۱: MELK_PUBLIC_BASE_URL از env" || fail "اولویت env غایب"
+rg -q 'x-forwarded-host' src/lib/http/public-url.ts && ok "اولویت ۲: x-forwarded-host (استاندارد reverse-proxy)" || fail "اولویت forwarded غایب"
+rg -q 'PublicBaseUrlError' src/lib/http/public-url.ts && ok "fail-closed: خطای صریح، نه URL خراب" || fail "fail-closed غایب"
+for r in admin/relay/enroll mobile-relay/bootstrap; do
+  if rg -q 'getPublicBaseUrl\(' "src/app/api/${r}/route.ts" && ! rg -q 'nextUrl\.origin' "src/app/api/${r}/route.ts"; then
+    ok "قانون ۰۳۸ در api/${r} (نقطهٔ یگانه + بدون آدرس داخلی)"
+  else
+    fail "قانون ۰۳۸ در api/${r} شکسته"
+  fi
+done
+rg -q '"MELK_PUBLIC_BASE_URL"' src/lib/auth/boot-secrets.ts && ok "بقای نشانی عمومی در escrow سه‌لایه" || fail "کلید عمومی در escrow غایب"
+
 [ "$FAIL" = "0" ] && echo "گارد رلهٔ موبایل: سبز ✓" || { echo "گارد رلهٔ موبایل: قرمز ✗" >&2; exit 1; }

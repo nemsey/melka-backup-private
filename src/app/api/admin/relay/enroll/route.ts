@@ -13,6 +13,7 @@ import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { audit } from "@/lib/auth/session";
 import { createRelayDevice } from "@/lib/melk-api/relay";
 import { buildInstallCommand } from "@/lib/melk-api/relay-script";
+import { getPublicBaseUrl, PublicBaseUrlError } from "@/lib/http/public-url";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,8 +27,23 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => null)) as { label?: string } | null;
     const label = (body?.label ?? "Poco F3").trim().slice(0, 60) || "Poco F3";
 
+    // PN-031-HOTFIX (شورا-ن۰۳۸): نشانی عمومی — هرگز آدرسِ داخلیِ کانتینر (بایند 0.0.0.0)
+    // قانون تازه: URL برای مصرف بیرونی فقط از getPublicBaseUrl
+    // ترتیب: تعیین نشانی «پیش از» ساخت دستگاه — fail-closed نباید دستگاه یتیم بسازد
+    let serverUrl: string;
+    try {
+      serverUrl = getPublicBaseUrl({
+        headers: request.headers,
+        connectionProtocol: request.nextUrl.protocol,
+      });
+    } catch (e) {
+      if (e instanceof PublicBaseUrlError) {
+        return Response.json({ ok: false, error: e.message }, { status: 503 });
+      }
+      throw e;
+    }
+
     const dev = await createRelayDevice(label, ctx.personnelCode);
-    const serverUrl = request.nextUrl.origin;
 
     await audit("RELAY_ENROLL_OWNER", ctx.personnelCode, `ثبت دستگاه رلهٔ «${label}» (${dev.deviceId}) — کد راه‌اندازی یک‌بارمصرف صادر شد`);
 
