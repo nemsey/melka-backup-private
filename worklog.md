@@ -3170,3 +3170,20 @@ Stage Summary:
 - محیط بازیابی و آمادهٔ کامل: راز پروکسی از بستهٔ بقا نجات یافت (بازنشانی هفتم آن را از env زنده پاک کرده بود) · wrangler نصب · اسکریپت دیپلوی آماده و تست‌شده
 - دیپلوی متوقف بر پنجرهٔ زمانی توکن: مالک باید در داشبورد کلودفلیر (My Profile ← API Tokens ← ویرایش توکن) تاریخ شروع را به «الان» تغییر دهد — رشتهٔ توکن عیناً می‌ماند؛ پس از اطلاع مالک، دیپلوی در کمتر از یک دقیقه انجام می‌شود
 - پرچم MELK_ARM_OFFLINE پابرجا (قفل ترتیب سند) — برداشتن فقط پس از تست عبوری موفق طبق online-mode.json
+
+---
+Task ID: PN-030-deploy · تحلیل توکن دوم (cfk_)
+Agent: main (Super Z / GLM)
+Task: اعتبارسنجی توکن دوم مالک و تشخیص سبک احراز
+
+Work Log:
+- توکن دوم (cfk_…، ۵۲ کاراکتر، بدون کاراکتر پنهان — hexdump شاهد) در upload/.runtime/cloudflare-token.env جایگزین شد
+- رفتار متفاوت: /user/tokens/verify → کد ۱۰۰۰ Invalid API Token (توکن اول cfut_ کد ۱۰۰۰ نمی‌گرفت — آن توکن شناخته می‌شد) · Bearer روی /accounts → ۹۱۰۹ · X-Auth-Key بدون ایمیل → ۹۱۰۶ Missing X-Auth-Email
+- تحقیق مستنداتی (web-search + صفحهٔ رسمی developers.cloudflare.com/fundamentals/api/get-started/keys): پیشوندهای جدید کلودفلیر = cfut_ (توکن کاربر · Bearer) · cfk_ (کلید API سراسری — Global API Key با فرمت اسکن‌پذیر تازه) · cfat_ (توکن حساب) ⇒ توکن دوم مالک در واقع Global API Key است، نه API Token — احرازش X-Auth-Key + X-Auth-Email است (چیزی که خطای 9106 هم تأیید می‌کند)
+- وارسی wrangler 4.149.0: از CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL (X-Auth-Key) هنوز پشتیبانی می‌کند (شاهد grep باندل)
+- اسکریپت deploy-with-token.sh دوجزئی بازنویسی شد: حالت A (Bearer · verify + پنجرهٔ not_before) و حالت B (Global Key · /accounts با هدرهای قدیمی) — syntax-checked و گارد ایمیل خالی کار می‌کند
+- کلید cfk_ در upload/.runtime/cloudflare-token.env به‌صورت CLOUDFLARE_API_KEY ذخیره شد؛ CLOUDFLARE_EMAIL در انتظار مالک
+
+Stage Summary:
+- تنها قلم غایب برای دیپلوی: ایمیل حساب کلودفلیر مالک (Global API Key بدون ایمیل اصلاً قابل احراز نیست — مستند و شاهد‌دار)
+- نکتهٔ امنیتی ثبت شد: Global API Key دسترسی کامل حساب دارد؛ پس از پایان دیپلوی پیشنهاد roll به مالک داده می‌شود
