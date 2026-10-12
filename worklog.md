@@ -3151,3 +3151,78 @@ Stage Summary:
 - حکم: هر چهار گام دستور مالک اجرا شد؛ PN-030 کامل اجرا شد تا مرزِ ۱۵ثانیهٔ اقدام مالک (OAuth کلودفلر) — بقیهٔ زنجیره (تست عبوری→برداشتن پرچم→e2e با OTP) رویهٔ مستند و آماده
 - انتظار مالک: (۱) bash melka-proxy/deploy.sh (۱۵ ثانیه) (۲) اطلاع به GLM برای تست مسیر و برداشتن پرچم (۳) سپس OTP از بخش «ورود مجدد به ملک تبریز» در تنظیمات عمومی (۳۰ ثانیه)
 - زنجیره: 0a6e6fb (کد) → دروازه · دو-سبز ۲۵۹۳/۰ ×۲ · tsc صفر · lint صفر خطا · ۳۶ گارد سبز · chainIndex=29
+
+---
+Task ID: PN-030-deploy · گزارش وقفهٔ توکن
+Agent: main (Super Z / GLM)
+Task: اجرای دیپلوی Worker کلودفلر با توکن ارائه‌شدهٔ مالک (به‌جای OAuth مرورگر) — گام آخر PN-030
+
+Work Log:
+- تحقیق وضعیت: PN-030 کامل بود تا مرز «۱۵ ثانیهٔ اقدام مالک»؛ مالک توکن کلودفلر (cfut_…، ۵۳ کاراکتر) فرستاد و دستور دیپلوی داد
+- کشف بازنشانی پلتفرم هفتم (۱۴۰۵/۰۷/۲۰ ~19:52Z): env.platform.json توسط گارد خوددرمانی از boot-secrets بازسازی شد اما فاقد کلیدهای PN-030 بود — MELK_PROXY_SECRET + MELK_ARM_OFFLINE + دو کلید مستندسازی از بین رفته بودند (BOOT_SECRET_KEYS فقط ۳ کلید راز بوت را پوشش می‌دهد)
+- بازیابی معتبر: راز و پرچم از بستهٔ بقای chainIndex=29 (upload/.survival/PN-030-20261011/env.platform.json) بازگردانده شد — MELK_PROXY_SECRET=ok64hex ✓ · MELK_ARM_OFFLINE=1 (پابرجا طبق قفل ترتیب) · MELK_ARM_PROXY_URL=خالی (تا پس از دیپلوی) — بدون هیچ چاپ راز
+- زیرساخت: wrangler 4.149.0 در melka-proxy نصب · api.cloudflare.com در دسترس (پاسخ‌گو) · توکن در upload/.runtime/cloudflare-token.env ذخیره شد (پوشهٔ upload کاملاً gitignore ✓)
+- اسکریپت scripts/pn030/deploy-with-token.sh نوشته شد — معادل کامل deploy.sh مالک با توکن: اعتبارسنجی (verify + کشف پنجرهٔ not_before) → کشف حساب → دیپلوی → نصب راز (بدون چاپ) → استخراج workers.dev → ثبت MELK_ARM_PROXY_URL → تست عبوری · syntax-checked + dry-run موفق
+- **وقفهٔ ریشه‌ای (شاهد /user/tokens/verify):** توکن «active» اما `not_before=2026-11-11T20:30:00Z` و `expires_on=2026-11-12T20:29:59Z` — پنجرهٔ شروع دقیقاً یک ماه در آینده است (۲۰۲۶-۱۱-۱۲ ۰۰:۰۰ به وقت تهران)؛ API فعلاً 9109 Invalid access token برمی‌گرداند ⇒ دیپلوی ممکن نیست تا اصلاح پنجرهٔ زمانی توکن توسط مالک (تنها اقدام‌کنندهٔ ممکن)
+- شواهد: download/pn030/deploy-token.json پس از دیپلوی موفق تولید می‌شود
+
+Stage Summary:
+- محیط بازیابی و آمادهٔ کامل: راز پروکسی از بستهٔ بقا نجات یافت (بازنشانی هفتم آن را از env زنده پاک کرده بود) · wrangler نصب · اسکریپت دیپلوی آماده و تست‌شده
+- دیپلوی متوقف بر پنجرهٔ زمانی توکن: مالک باید در داشبورد کلودفلیر (My Profile ← API Tokens ← ویرایش توکن) تاریخ شروع را به «الان» تغییر دهد — رشتهٔ توکن عیناً می‌ماند؛ پس از اطلاع مالک، دیپلوی در کمتر از یک دقیقه انجام می‌شود
+- پرچم MELK_ARM_OFFLINE پابرجا (قفل ترتیب سند) — برداشتن فقط پس از تست عبوری موفق طبق online-mode.json
+
+---
+Task ID: PN-030-deploy · تحلیل توکن دوم (cfk_)
+Agent: main (Super Z / GLM)
+Task: اعتبارسنجی توکن دوم مالک و تشخیص سبک احراز
+
+Work Log:
+- توکن دوم (cfk_…، ۵۲ کاراکتر، بدون کاراکتر پنهان — hexdump شاهد) در upload/.runtime/cloudflare-token.env جایگزین شد
+- رفتار متفاوت: /user/tokens/verify → کد ۱۰۰۰ Invalid API Token (توکن اول cfut_ کد ۱۰۰۰ نمی‌گرفت — آن توکن شناخته می‌شد) · Bearer روی /accounts → ۹۱۰۹ · X-Auth-Key بدون ایمیل → ۹۱۰۶ Missing X-Auth-Email
+- تحقیق مستنداتی (web-search + صفحهٔ رسمی developers.cloudflare.com/fundamentals/api/get-started/keys): پیشوندهای جدید کلودفلیر = cfut_ (توکن کاربر · Bearer) · cfk_ (کلید API سراسری — Global API Key با فرمت اسکن‌پذیر تازه) · cfat_ (توکن حساب) ⇒ توکن دوم مالک در واقع Global API Key است، نه API Token — احرازش X-Auth-Key + X-Auth-Email است (چیزی که خطای 9106 هم تأیید می‌کند)
+- وارسی wrangler 4.149.0: از CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL (X-Auth-Key) هنوز پشتیبانی می‌کند (شاهد grep باندل)
+- اسکریپت deploy-with-token.sh دوجزئی بازنویسی شد: حالت A (Bearer · verify + پنجرهٔ not_before) و حالت B (Global Key · /accounts با هدرهای قدیمی) — syntax-checked و گارد ایمیل خالی کار می‌کند
+- کلید cfk_ در upload/.runtime/cloudflare-token.env به‌صورت CLOUDFLARE_API_KEY ذخیره شد؛ CLOUDFLARE_EMAIL در انتظار مالک
+
+Stage Summary:
+- تنها قلم غایب برای دیپلوی: ایمیل حساب کلودفلیر مالک (Global API Key بدون ایمیل اصلاً قابل احراز نیست — مستند و شاهد‌دار)
+- نکتهٔ امنیتی ثبت شد: Global API Key دسترسی کامل حساب دارد؛ پس از پایان دیپلوی پیشنهاد roll به مالک داده می‌شود
+
+---
+Task ID: PN-030-deploy · رد توکن سوم (cfut_JZS0…)
+Agent: main (Super Z / GLM)
+Task: اعتبارسنجی توکن سوم مالک (ارسال 2026-10-12) و بروزرسانی وضعیت اعتبارها
+
+Work Log:
+- توکن سوم در دو endpoint مستقل تست شد: /user/tokens/verify → کد 1000 «Invalid API Token» · /accounts → کد 9109 — کلودفلر این رشته را اصلاً نمی‌شناسد (برخلاف توکن اول که verify آن ok بود و فقط پنجرهٔ not_before آینده داشت؛ آن خطا 9109 در سطح ریسورس بود، این‌بار خود verify هم 1000 می‌دهد)
+- شاخص تشخیص: 1000 روی verify = رشتهٔ ناشناخته (کپی غلط / roll / حذف توکن) در برابر پاسخ ok + not_before آینده = توکن شناخته‌شدهٔ هنوز‌فعال‌نشده
+- تحلیل طول: توکن‌های قبلی هر دو ۴۸ کاراکتر پس از پیشوند بودند (cfut_ اول ۵۳ کل · cfk_ دوم ۵۲ کل)؛ توکن سوم ۵۴ کل (۴۹ پس از پیشوند) — یک کاراکتر مازاد/تبدیل‌شده در کپی محتمل است
+- توکن دوم (cfk_ = Global API Key طبق تحلیل جلسهٔ قبل) مجدداً به‌صورت Bearer تست شد → همان 1000/9109 (تأیید بیشتر: این کلید فقط با X-Auth-Key + X-Auth-Email احراز می‌شود)
+- فایل اعتبار بازسازی و مستند شد: CLOUDFLARE_API_TOKEN= (خالی) · CLOUDFLARE_API_KEY=cfk_… (حالت B در انتظار ایمیل) · CLOUDFLARE_EMAIL= (خالی) · مجوزها به 0600 برگردانده شد
+- توکن سومِ نامعتبر در فایل اعتبار ذخیره نشد (خطای 1000 قطعی است؛ ذخیرهٔ اعتبار مرده فقط منبع خطای بعدی می‌شود)
+- وارسی سلامت env.platform.json: MELK_PROXY_SECRET (۶۴-هگز، hidden) · MELK_ARM_OFFLINE='1' (قفل ترتیب پابرجا) · MELK_ARM_PROXY_URL='' (خالی تا پس از دیپلوی) — همه سالم
+
+Stage Summary:
+- دیپلوی همچنان مسدود بر اقدام مالک — دو مسیر: (A) ارسال مجدد رشتهٔ کامل توکن API از داشبورد (Roll + دکمهٔ Copy، بدون Start Date آینده) یا (B) ایمیل حساب کلودفلیر برای فعال‌سازی احراز Global Key (کلید cfk_ از قبل ذخیره است)
+- سایر اجزا آماده و دست‌نخورده: راز امضای HMAC در env · اسکریپت دوجزئی deploy-with-token.sh (تست‌شده) · wrangler 4.149.0 نصب · سرور ARM سالم
+# اصلاح ثبت: مجوز 0600 در این مسیر توسط فایل‌سیستم پذیرفته نمی‌شود (قفل 777 در سطح mount) — جبران: پوشهٔ upload کاملاً gitignore است و رازها هرگز در لاگ چاپ نمی‌شوند
+
+---
+Task ID: PN-030-deploy · دیپلوی موفق + کشف سد جغرافیایی مبدأ
+Agent: main (Super Z / GLM)
+Task: دیپلوی Worker کلودفلیر با توکن چهارم مالک + تست زندهٔ عبوری + تعیین تکلیف پرچم آفلاین
+
+Work Log:
+- توکن چهارم (cfut_kmUjj…، ۴۸ کاراکتر پس از پیشوند): verify → active بدون پنجرهٔ not_before ✓ · کشف حساب یگانه: 320a61ee9cd8fe0248877d4c768ce0fe (Nemsey.ns@gmail.com's Account) · ذخیره در upload/.runtime/cloudflare-token.env (حالت B کلید سراسری + ایمیل nemsey.ns@gmail.com به‌صورت کامنت احتیاطی)
+- اجرای کامل scripts/pn030/deploy-with-token.sh: دیپلوی melka-proxy نسخهٔ 433842dc-8398-4277-be94-5e8dd2105bfb → https://melka-proxy.nemsey-ns.workers.dev · نصب راز MELKA_PROXY_SECRET (ok64) · ثبت MELK_ARM_PROXY_URL در env.platform.json · پروب خام 403 (انتظار دقیق)
+- رفع باگ تست: scripts/pn030/proxy-live-test.sh متغیر target را در scope پایتون تعریف می‌کرد اما در bash استفاده می‌کرد (unbound variable) — اصلاح: TARGET_URL در bash + ارسال به پایتون به‌صورت آرگومان + استخراج path+query از خود URL
+- تست زندهٔ عبوری: درخواست امضادار → پاسخ دارای x-melka-proxy: pass (امضای HMAC کلاینت از احراز Worker گذشت — قرارداد سرتاسری تأیید) اما بالادستی HTTP 522 — تایم‌اوت اتصال TCP خروجی Cloudflare (HKG) به مبدأ
+- ریشه‌یابی توزیع‌شده با check-host.net: (۱) TCP از ۱۵ نود جهانی [requestId 507019f3kc75] → ۱۵/۱۵ تایم‌اوت · (۲) TCP از ۴ نود ایران [50703394k66f] → ۳/۴ موفق (تهران 14ms، شیراز 22ms، تهران 16ms؛ نود چهارم شیراز با ترانزیت خارجی تایم‌اوت) · (۳) HTTP از تهران [50703eaek168] → 404 کامل در 0.216s (طبیعی — ریشه هندلر ندارد)
+- DNS: هر شش دامنه (سه API + ir + com + www) → 46.100.93.175 یگانه (TCI)
+- حکم نهایی: سرور ARM سالم و برخط است اما فایروال ملک تبریز کل ترافیک خارج از ایران را drop می‌کند — تشخیص PN-029 (بلاک فایروال) درست اما دامنه وسیع‌تر از «ASN علی‌بابا» بود: بلاک جغرافیایی همهٔ IPهای خارجی؛ خروجی Cloudflare Workers هم قربانی همان سیاست است
+- تدارک: شاهد origin-geo-fence-diagnosis.json (شش شاهد + دو گزینهٔ اصلاح + وضعیت قفل ترتیب) + متن تماس به‌روزشدهٔ owner-call-script-v2.md (درخواست سفیدلیست ۱۴ رنج IPv4 رسمی Cloudflare از cloudflare.com/ips + بخش اطمینان‌بخش + گزینهٔ رلهٔ ایرانی)
+
+Stage Summary:
+- دیپلوی Worker کامل و موفق؛ قرارداد HMAC سرتاسری (کلاینت→Worker) عملاً تأیید شد — تنها حلقهٔ گسسته فایروال مبدأ است (خارج از کنترل ما)
+- پرچم MELK_ARM_OFFLINE=1 پابرجا (تست عبوری نگذشت — قفل ترتیب) · MELK_ARM_PROXY_URL ثبت‌شده اما تا برداشتن پرچم غیرفعال
+- اقدام بعدی مالک: تماس با ملک تبریز با متن v2 (سفیدلیست رنج‌های Cloudflare یا معرفی روش رسمی اتصال خارجی) → سپس رویهٔ چهارگامهٔ online-mode.json بدون هیچ تغییر کد

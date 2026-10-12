@@ -53,13 +53,15 @@ PROXY_CODE="-"
 if [ -n "$PROXY_URL" ]; then
   echo "--- T) عبوری از پروکسی: $PROXY_URL ---" | tee -a "$RAW"
   # امضای HMAC همان قرارداد client (بدون بدنه، GET به مسیر ریشه)
+  TARGET_URL="https://arus-api.melketabriz.ir/"
   SECRET=$(python3 -c 'import json; print((json.load(open("env.platform.json")).get("MELK_PROXY_SECRET") or "").strip())')
-  TSIG=$(python3 - "$SECRET" <<'PYEOF'
+  TSIG=$(python3 - "$SECRET" "$TARGET_URL" <<'PYEOF'
 import hashlib, hmac, sys, time
-secret, = sys.argv[1:]
+from urllib.parse import urlsplit
+secret, target = sys.argv[1], sys.argv[2]
 ts = str(int(time.time() * 1000))
-target = "https://arus-api.melketabriz.ir/"
-path = "/"
+u = urlsplit(target)
+path = (u.path or "/") + (u.query and "?" + u.query or "")
 body_digest = hashlib.sha256(b"").hexdigest()
 msg = f"GET\n{path}\n{body_digest}\n{ts}"
 print(ts + " " + hmac.new(secret.encode(), msg.encode(), hashlib.sha256).hexdigest())
@@ -67,7 +69,7 @@ PYEOF
 )
   T=$(echo "$TSIG" | cut -d' ' -f1); SIG=$(echo "$TSIG" | cut -d' ' -f2)
   r=$(curl -s -o /dev/null -w "%{http_code}|%{time_total}" --max-time 12 \
-    -H "X-Melka-Target: $target" -H "X-Melka-Timestamp: $T" -H "X-Melka-Signature: $SIG" \
+    -H "X-Melka-Target: $TARGET_URL" -H "X-Melka-Timestamp: $T" -H "X-Melka-Signature: $SIG" \
     "$PROXY_URL" 2>/dev/null || echo "000|-1")
   PROXY_CODE="${r%%|*}"
   PROXY_TEST="tested code=$PROXY_CODE ms=${r##*|}"
