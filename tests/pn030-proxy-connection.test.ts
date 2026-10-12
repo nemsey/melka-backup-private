@@ -23,7 +23,9 @@ const REPO = join(import.meta.dir, "..");
 describe("PN-030 · A) ماژول پروکسی (proxy.ts)", () => {
   const saved: Record<string, string | undefined> = {};
   beforeAll(() => {
-    for (const k of ["MELK_ARM_PROXY_URL", "MELK_PROXY_SECRET"]) {
+    // PN-031 (شورا-ن۰۳۷): MELK_ARM_RELAY_MODE هم ایزوله می‌شود — حالت رله
+    // پیش از تستهای این بلوک باید خاموش باشد تا مسیر Worker ارزیابی شود
+    for (const k of ["MELK_ARM_PROXY_URL", "MELK_PROXY_SECRET", "MELK_ARM_RELAY_MODE"]) {
       saved[k] = process.env[k];
       delete process.env[k];
     }
@@ -315,11 +317,17 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
     expect(env.MELK_PROXY_SECRET ?? "").toMatch(/^[0-9a-f]{64}$/);
   });
 
-  test("E-2) قفل ترتیب — MELK_ARM_PROXY_URL تا پس از دیپلوی/تست خالی است (فهرست کارها #۶)", () => {
+  test("E-2) قفل ترتیب — پویایی سه‌فازی: خالی ← دیپلوی‌شده (Worker) ← رلهٔ موبایل (PN-031)", () => {
     const env = JSON.parse(readFileSync(join(REPO, "env.platform.json"), "utf8")) as Record<string, string>;
-    expect(env.MELK_ARM_PROXY_URL ?? "").toBe("");
+    // فاز فعلی: Worker دیپلوی شده و URL ثبت است (۱۴۰۵/۰۷/۲۱ — deploy موفق)، اما
+    // مسیر عبوری نهایی حالا رلهٔ موبایل PN-031 است چون سد جغرافیایی کلودفلر را هم بلاک کرد.
+    // قفل ترتیب واقعی = MELK_ARM_OFFLINE=1 تا قبولی تست دروازهٔ زنده.
+    expect(env.MELK_ARM_PROXY_URL ?? "").toMatch(/^https:\/\/melka-proxy\.[a-z0-9-]+\.workers\.dev$/);
+    expect(env.MELK_ARM_RELAY_MODE ?? "").toBe("mobile"); // PN-031: رله مسیر فعال
+    expect(env.MELK_ARM_OFFLINE ?? "").toBe("1"); // قفل ترتیب پابرجا تا تست زنده
     // مستندسازی قفل در همان فایل
     expect(env._pn030 ?? "").toContain("MELK_ARM_PROXY_URL");
+    expect(env._pn031 ?? "").toContain("شورا-ن۰۳۷");
   });
 
   test("E-3) ترتیب هشت کاشی — آگهی، درخواست، معاملات، کارشناسان، تطبیق، شاخص، پوشش، مغز ملکا", async () => {

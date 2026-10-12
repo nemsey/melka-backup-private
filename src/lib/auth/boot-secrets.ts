@@ -37,11 +37,16 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync, chmodSy
 import path from "node:path";
 import { createHash, randomBytes, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
 
-/** کلیدهای مدیریت‌شده — نام‌ها عمداً صریح‌اند (مستند در KEYS.md بستهٔ بقا) */
+/** کلیدهای مدیریت‌شده — نام‌ها عمداً صریح‌اند (مستند در KEYS.md بستهٔ بقا)
+ *  PN-031-HOTFIX (شورا-ن۰۳۸): MELK_PUBLIC_BASE_URL راز نیست — نشانی عمومی
+ *  سرور برای URLهای مصرف بیرونی (گوشی/QR) است؛ اما همان نیاز بقای سه‌لایه را
+ *  دارد (بازنشانی محیط env.platform.json را می‌زداید)؛ بدون آن روت‌های رله
+ *  fail-closed می‌شوند. جزو fail-fast بوت «نیست» (تولید تصادفی هم ممنوع). */
 export const BOOT_SECRET_KEYS = [
   "MELK_TOKEN_KEY",
   "MASTER_ACCESS_CODE",
   "OWNER_PERSONNEL_CODES",
+  "MELK_PUBLIC_BASE_URL",
 ] as const;
 
 export type BootSecretKey = (typeof BOOT_SECRET_KEYS)[number];

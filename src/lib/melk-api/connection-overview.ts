@@ -11,6 +11,7 @@ import { breakerKeyFromBaseUrl, getBreakerSnapshot, type BreakerSnapshot } from 
 import { getMelkApiConfig } from "./config";
 import { containerIpStatus } from "./container-ip";
 import { proxyStatus } from "./proxy";
+import { relayConfigStatus } from "./relay";
 
 export interface CircuitBreakerView {
   target: string;
@@ -26,7 +27,9 @@ export interface ConnectionOverview {
   circuitBreakers: CircuitBreakerView[];
   containerIp: Awaited<ReturnType<typeof containerIpStatus>>;
   /** PN-030 (شورا-ن۰۳۵) — وضعیت لایهٔ پروکسی عبوری ابری */
-  proxy: { configured: boolean; host: string | null; secretConfigured: boolean };
+  proxy: { configured: boolean; host: string | null; secretConfigured: boolean; relayMode: string };
+  /** PN-031 (شورا-ن۰۳۷) — وضعیت رلهٔ موبایل ایرانی (فقط پیکربندی — بدون راز) */
+  relay: { mode: string; active: boolean };
 }
 
 /** نمای کلّی برای روت وضعیت اتصال — دسترسی DB فقط همین‌جا (خلوص روت‌ها) */
@@ -62,5 +65,6 @@ export async function getConnectionOverview(): Promise<ConnectionOverview> {
     circuitBreakers,
     containerIp,
     proxy: proxyStatus(),
+    relay: relayConfigStatus(),
   };
 }

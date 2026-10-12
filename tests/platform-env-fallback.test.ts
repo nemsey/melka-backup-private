@@ -39,6 +39,14 @@ const WATCHED_KEYS = [
   // PN-030 (شورا-ن۰۳۵): کلیدهای لایهٔ پروکسی عبوری — همین الگوی backup/restore
   "MELK_ARM_PROXY_URL",
   "MELK_PROXY_SECRET",
+  // PN-031 (شورا-ن۰۳۷): حالت رلهٔ موبایل — اعمال fallback فایل واقعی این پرچم را
+  // هم می‌نشاند؛ بدون backup/restore به تستهای بعدی در همان worker نشت می‌کند و
+  // مسیر proxyFetch را به رله می‌برد (شاهد: شکست آبشاری A-6/A-8/A-9/B.1)
+  "MELK_ARM_RELAY_MODE",
+  // PN-031-HOTFIX (شورا-ن۰۳۸): نشانی عمومی سرور برای مصرف بیرونی (گوشی/QR) —
+  // اعمال fallback فایل واقعی این کلید را می‌نشاند؛ باید بازگردانی شود تا
+  // تستهای getPublicBaseUrl در همان worker حالت «env غایب» را واقعی ببینند.
+  "MELK_PUBLIC_BASE_URL",
 ] as const;
 
 function setEnv(key: string, value: string | undefined) {

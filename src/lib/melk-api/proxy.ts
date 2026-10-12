@@ -1,5 +1,10 @@
 /**
  * پروکسی عبوری ملک تبریز — PN-030 (شورای عالی ملکا · جلسهٔ فوق‌العاده ۰۳۵ · لایهٔ ۱)
+ * PN-031 (شورای عالی ملکا · جلسهٔ فوق‌العاده ۰۳۷): حالت سوم — رلهٔ موبایل
+ * ایرانی (Pull-based). ترتیب تصمیم در proxyFetch:
+ *   ۱) MELK_ARM_RELAY_MODE=mobile + میزبان ملک تبریز → صف رله (relayFetch)
+ *   ۲) MELK_ARM_PROXY_URL + میزبان ملک تبریز → Worker کلودفلر (PN-030)
+ *   ۳) بقیه → fetch مستقیم (عین رفتار PN-029)
  * ---------------------------------------------------------------------------
  * ریشهٔ قطعی اتصال (تشخیص نهایی PN-029): فایروال ملک تبریز کل رنج ASN کانتینر
  * (Alibaba Cloud — AS45102) را drop می‌کند؛ مسیر خروج به ایران سالم است (کنترل
@@ -24,6 +29,8 @@
  *     را به «فقط API های ملک تبریز» محدود می‌کند.
  */
 
+import { relayModeActive, relayFetch } from "./relay";
+
 /** میزبانهای مجاز عبور — عین ALLOWED_HOSTS سمت Worker (دفاع دولایه) */
 export const MELK_PROXY_ALLOWED_HOSTS: readonly string[] = [
   "arus-api.melketabriz.ir", // ARM (آگهی/درخواست) + رابط عمومی (apu)
@@ -41,7 +48,7 @@ export function isMelkTabrizHost(url: string): boolean {
 }
 
 /** وضعیت پیکربندی پروکسی — برای نمایش در تنظیمات و شاهدها */
-export function proxyStatus(): { configured: boolean; host: string | null; secretConfigured: boolean } {
+export function proxyStatus(): { configured: boolean; host: string | null; secretConfigured: boolean; relayMode: string } {
   const url = process.env.MELK_ARM_PROXY_URL?.trim() ?? "";
   let host: string | null = null;
   try {
@@ -53,6 +60,7 @@ export function proxyStatus(): { configured: boolean; host: string | null; secre
     configured: Boolean(url) && host !== null,
     host,
     secretConfigured: Boolean(process.env.MELK_PROXY_SECRET?.trim()),
+    relayMode: (process.env.MELK_ARM_RELAY_MODE ?? "").trim() || "off",
   };
 }
 
@@ -100,9 +108,12 @@ export async function buildSignatureMessage(
  *   · در بقیهٔ حالات → عبور از Worker با هدرهای X-Melka-*
  */
 export async function proxyFetch(url: string, init: RequestInit): Promise<Response> {
+  if (!isMelkTabrizHost(url)) return fetch(url, init);
+  // PN-031 (شورا-ن۰۳۷): حالت رلهٔ موبایل — صف + گوشی ایرانی (اولویت بر Worker:
+  // پس از کشف سد جغرافیایی، Worker کلودفلر هم بلاک است و رله تنها مسیر باز)
+  if (relayModeActive()) return relayFetch(url, init);
   const proxyUrl = process.env.MELK_ARM_PROXY_URL?.trim();
   if (!proxyUrl) return fetch(url, init);
-  if (!isMelkTabrizHost(url)) return fetch(url, init);
   const secret = process.env.MELK_PROXY_SECRET?.trim();
   if (!secret) {
     // امضای خالی یعنی شکست حتمی احراز — مستقیم می‌رویم تا خطای شبکهٔ واقعی دیده شود
