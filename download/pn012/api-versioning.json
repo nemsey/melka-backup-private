@@ -2,7 +2,7 @@
   "schema": "melka-pn012-api-versioning",
   "generatedAt": "2026-10-11T09:17:08.819777Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 95,
+  "totalRoutes": 105,
   "created": 0,
   "routes": [
     {
@@ -384,6 +384,46 @@
     {
       "aliasOf": "/api/version",
       "v1": "/api/v1/version"
+    },
+    {
+      "v1": "/api/v1/mobile-relay/poll",
+      "original": "/api/mobile-relay/poll"
+    },
+    {
+      "v1": "/api/v1/mobile-relay/result",
+      "original": "/api/mobile-relay/result"
+    },
+    {
+      "v1": "/api/v1/mobile-relay/bootstrap",
+      "original": "/api/mobile-relay/bootstrap"
+    },
+    {
+      "v1": "/api/v1/admin/relay/enroll",
+      "original": "/api/admin/relay/enroll"
+    },
+    {
+      "v1": "/api/v1/admin/relay/status",
+      "original": "/api/admin/relay/status"
+    },
+    {
+      "v1": "/api/v1/admin/relay/test",
+      "original": "/api/admin/relay/test"
+    },
+    {
+      "v1": "/api/v1/admin/relay/revoke",
+      "original": "/api/admin/relay/revoke"
+    },
+    {
+      "v1": "/api/v1/admin/relay/qr",
+      "original": "/api/admin/relay/qr"
+    },
+    {
+      "v1": "/api/v1/admin/relay/browser-poll",
+      "original": "/api/admin/relay/browser-poll"
+    },
+    {
+      "v1": "/api/v1/admin/relay/browser-result",
+      "original": "/api/admin/relay/browser-result"
     }
   ],
   "history": [

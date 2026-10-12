@@ -1,0 +1,47 @@
+/**
+ * POST /api/admin/relay/enroll — PN-031 (شورا-ن۰۳۷)
+ * ---------------------------------------------------------------------------
+ * ثبت دستگاه رلهٔ تازه — فقط OWNER.
+ * خروجی: deviceId + راز (یک‌بار برای QR/دستور نصب) + کد یک‌بارمصرف bootstrap.
+ * راز در پاسخ فقط این یک بار برمی‌گردد (در گوشی می‌نشیند؛ سرور نسخهٔ خود را
+ * در RelayDevice دارد). شاهد کامل AuditLog با action=RELAY_ENROLL_OWNER.
+ */
+
+import { NextRequest } from "next/server";
+import { MelkApiError } from "@/lib/melk-api/types";
+import { errorResponse, requireRole } from "@/lib/auth/guard";
+import { audit } from "@/lib/auth/session";
+import { createRelayDevice } from "@/lib/melk-api/relay";
+import { buildInstallCommand } from "@/lib/melk-api/relay-script";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+export async function POST(request: NextRequest) {
+  const guard = await requireRole(request, "OWNER", "/api/admin/relay/enroll");
+  if (guard instanceof MelkApiError) return errorResponse(guard);
+  const ctx = guard.ctx;
+
+  try {
+    const body = (await request.json().catch(() => null)) as { label?: string } | null;
+    const label = (body?.label ?? "Poco F3").trim().slice(0, 60) || "Poco F3";
+
+    const dev = await createRelayDevice(label, ctx.personnelCode);
+    const serverUrl = request.nextUrl.origin;
+
+    await audit("RELAY_ENROLL_OWNER", ctx.personnelCode, `ثبت دستگاه رلهٔ «${label}» (${dev.deviceId}) — کد راه‌اندازی یک‌بارمصرف صادر شد`);
+
+    return Response.json({
+      ok: true,
+      deviceId: dev.deviceId,
+      label,
+      installCommand: buildInstallCommand(serverUrl, dev.enrollCode),
+      bootstrapUrl: `${serverUrl}/api/mobile-relay/bootstrap?code=${dev.enrollCode}`,
+      enrollExpires: dev.enrollExpires.toISOString(),
+      note: "راز دستگاه فقط در اسکریپتِ دانلودشده می‌نشیند — این پاسخ حاوی راز نیست.",
+    });
+  } catch (err) {
+    if (err instanceof MelkApiError) return errorResponse(err);
+    return errorResponse(new MelkApiError("UNKNOWN", "خطای غیرمنتظره در ثبت دستگاه رله.", 500, false));
+  }
+}

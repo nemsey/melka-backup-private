@@ -45,6 +45,8 @@ import { ArmConnectionSection } from "./ArmConnectionSection";
 import { PmConnectionSection } from "./PmConnectionSection";
 // PN-030 (شورا-ن۰۳۵ · مرحلهٔ ۶): صفحهٔ سادهٔ ورود با OTP برای مالک
 import { OtpReloginSection } from "./OtpReloginSection";
+// PN-031 (شورا-ن۰۳۷): راه‌اندازی رلهٔ موبایل ایرانی (Poco F3) — فقط مالک
+import { RelaySetupSection } from "./RelaySetupSection";
 
 interface ServiceStatus {
   service: string;
@@ -98,7 +100,9 @@ interface ConnectionInfo {
     historyCount: number;
   };
   /** PN-030 (شورا-ن۰۳۵) — وضعیت لایهٔ پروکسی عبوری ابری */
-  proxy?: { configured: boolean; host: string | null; secretConfigured: boolean };
+  proxy?: { configured: boolean; host: string | null; secretConfigured: boolean; relayMode?: string };
+  /** PN-031 (شورا-ن۰۳۷) — وضعیت رلهٔ موبایل ایرانی */
+  relay?: { mode: string; active: boolean };
 }
 
 function faDigitsLocal(n: string | number): string {
@@ -401,6 +405,9 @@ export function MelkTabrizConnectionSection() {
 
         {/* ========== ۲) ورود مجدد به ملک تبریز (PN-030 · مرحلهٔ ۶ سند شورا-ن۰۳۵) ========== */}
         <OtpReloginSection offlineMode={conn?.offlineMode} proxy={conn?.proxy} />
+
+        {/* ========== ۲-ب) رلهٔ موبایل ایرانی (PN-031 · سند شورا-ن۰۳۷) ========== */}
+        <RelaySetupSection relayMode={conn?.relay?.mode} />
 
         {/* ========== ۳) اتصال به سامانه ARM ========== */}
         <ArmConnectionSection embedded />
