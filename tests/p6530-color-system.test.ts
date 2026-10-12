@@ -42,7 +42,11 @@ function normalizeHex(c: string): string {
 // ---------- منبع حقیقت: سند colors.json (قاعده ۷ — شاهد) ----------
 
 const ROOT = join(import.meta.dir, "..");
-const colorsPath = join(ROOT, "scripts", "p6530", "colors.json");
+// PN-027/۵-ب-۳ — اسکریپت‌های تاریخی به docs/archive منتقل شدند؛ شاهد colors.json همان‌جاست.
+// جست‌وجوی هر دو مسیر (اصلی → آرشیو) — سازگاری دوطرفه.
+const colorsPath = existsSync(join(ROOT, "scripts", "p6530", "colors.json"))
+  ? join(ROOT, "scripts", "p6530", "colors.json")
+  : join(ROOT, "docs", "archive", "scripts", "p6530", "colors.json");
 const globalsPath = join(ROOT, "src", "app", "globals.css");
 const tailwindPath = join(ROOT, "tailwind.config.ts");
 

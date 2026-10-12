@@ -39,3 +39,10 @@ if (!process.env.MELK_TOKEN_KEY) {
 if (!process.env.MELK_API_TIMEOUT_MS) {
   process.env.MELK_API_TIMEOUT_MS = "300";
 }
+
+// PN-029 (شورا-ن۰۳۳): حالت آفلینی ملک تبریز هرگز نباید در جلسهٔ تست فعال باشد —
+// پرچم عملیاتیِ production است (env.platform.json). تستهای خودِ PN-029 آن را
+// موقتاً و کنترل‌شده روشن/خاموش می‌کنند.
+if (process.env.MELK_ARM_OFFLINE) {
+  delete process.env.MELK_ARM_OFFLINE;
+}

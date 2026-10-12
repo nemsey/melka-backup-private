@@ -32,6 +32,13 @@ const WATCHED_KEYS = [
   "DATABASE_URL",
   "OWNER_PERSONNEL_CODES",
   "MELK_SYNC_MODE",
+  // PN-029 (شورا-ن۰۳۳): اعمال fallback فایل واقعی، این پرچم عملیاتی را هم
+  // در فرایند تست می‌نشاند — باید در پایان جلسهٔ همین فایل بازگردانی شود
+  // تا رجیستری Worker و تستهای sync پس از آن، حالت واقعی (روشن) را نبینند.
+  "MELK_ARM_OFFLINE",
+  // PN-030 (شورا-ن۰۳۵): کلیدهای لایهٔ پروکسی عبوری — همین الگوی backup/restore
+  "MELK_ARM_PROXY_URL",
+  "MELK_PROXY_SECRET",
 ] as const;
 
 function setEnv(key: string, value: string | undefined) {

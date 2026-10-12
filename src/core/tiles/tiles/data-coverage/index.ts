@@ -1,5 +1,5 @@
 /**
- * ماژول کاشی M8 «پوشش اطلاعات ملک تبریز» — P6545/گام۲ BLOCK 2.3 (جلسه ۰۳۳)
+ * ماژول کاشی «پوشش اطلاعات ملک تبریز» — P6545/گام۲ BLOCK 2.3 (جلسه ۰۳۳)
  * جدول پوشش هر ستون M1-M4 · نمودار درصد · رکوردهای ناقص · مسیر پر شدن ·
  * نمایش Tier — OWNER-gate · رنگ آبی (sec-m7)
  */
@@ -20,7 +20,7 @@ export const dataCoverageTile = defineTile({
   icon: Database,
   accent: "m7",
   component: lazyPage(() => import("./DataCoveragePage")),
-  order: 8,
+  order: 7, // PN-030/گام دوم (شورا-ن۰۳۵ · ۱۴۰۵/۰۷/۲۱) — دستور مالک: پوشش هفتم
   container: "management-dashboard",
   minRole: "OWNER",
   agent: {

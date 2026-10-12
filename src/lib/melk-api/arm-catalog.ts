@@ -420,6 +420,9 @@ export interface ArmCatalogSyncResult {
   /** P6.5-11 (بند ب) — ازسرگیری: اطلاعات چرخه و نقطهٔ ادامه */
   resumedFromPage?: number;
   cycleId?: string;
+  /** PN-028/خامساً-الف — گذر سرِ تازه: شمار رکوردهای صفحهٔ ۱ (تازه‌ترین‌های منبع)
+ *  که پیش از ادامهٔ چرخهٔ ناتمام upsert شدند (صفر = چرخه از صفحهٔ ۱ شروع شد) */
+  freshHead?: number;
   checkpoint?: {
     lastCompletedPage: number;
     totalPages: number;
@@ -619,6 +622,37 @@ export async function syncArmListingsCatalog(
   let savedTotalAtSource = savedCp?.totalAtSource ?? 0;
   let reachedEndPage = 1;
 
+  // ═══ PN-028/خامساً-الف — گذر سرِ تازه (Fresh-Head pass) ═══
+  // شاهد داده: فهرست ARM «جدیدترین‌اول» است (صعود کدآگهی با extractedA در نخستین
+  // چرخه = ۰٫۰). رکوردهای امروز/ساعات اخیر همیشه در صفحهٔ ۱ اند؛ اما ازسرگیریِ
+  // checkpoint از میانهٔ فهرست ادامه می‌کرد ⇒ موارد تازه فقط پس از دور کامل به
+  // فهرست می‌رسید (تاخیر چندساعته/چندکلیکی). درمان: هر اجرا که از صفحهٔ >۱ ادامه
+  // می‌دهد، نخست یک صفحهٔ ۱ کامل می‌خواند و upsert می‌کند (بی‌اثر و idempotent)
+  // — پس با همان اولین کلیکِ «بروزرسانی»، موارد امروز در فهرست اند.
+  if (cycle.startPage > 1) {
+    try {
+      const head = await fetchListPage(token, MELK_ENDPOINTS.arm.propertiesList, 1, pageSize, savedTotalAtSource);
+      const headInputs = head.rows
+        .map((r) => mapArmPropertyListRow(r))
+        .filter((r): r is PropertyBulkInput => r !== null);
+      if (headInputs.length > 0) {
+        const headStats = await repo.upsertBulk(headInputs, { sourceRunId: runId });
+        out.fetched += headInputs.length;
+        out.created += headStats.created;
+        out.updated += headStats.updated;
+        out.duplicates += headStats.duplicates;
+        out.errors += headStats.errors;
+        out.freshHead = headInputs.length;
+      }
+      if (head.total > 0) {
+        out.totalAtSource = head.total;
+        savedTotalAtSource = savedTotalAtSource || head.total;
+      }
+    } catch {
+      // گذر سرِ تازه بهترین-تلاش است — شکستش هرگز چرخهٔ اصلی را متوقف نمی‌کند
+    }
+  }
+
   try {
     let page = cycle.startPage;
     let endPage = page;
@@ -697,6 +731,36 @@ export async function syncArmRequestsCatalog(
   let lastCompleted = cycle.lastCompletedPage;
   let savedTotalAtSource = savedCp?.totalAtSource ?? 0;
   let reachedEndPage = 1;
+
+  // ═══ PN-028/خامساً-الف — گذر سرِ تازه (Fresh-Head pass) — عین آگهی‌ها ═══
+  // فهرست درخواست‌های ARM نیز «جدیدترین‌اول» است؛ رکوردهای امروز در صفحهٔ ۱.
+  // هر ازسرگیریِ میانهٔ چرخه، نخست صفحهٔ ۱ را upsert می‌کند تا موارد تازه با
+  // همان اولین کلیکِ بروزرسانی در فهرست M2 ظاهر شوند (idempotent — بی‌اثر).
+  if (startPage > 1) {
+    try {
+      const { loadTypeMaps } = await import("./type-registry");
+      const headMaps = await loadTypeMaps().catch(() => undefined);
+      const head = await fetchListPage(token, MELK_ENDPOINTS.arm.requestsList, 1, pageSize, savedTotalAtSource);
+      const headInputs = head.rows
+        .map((r) => mapArmRequestListRow(r, headMaps))
+        .filter((r): r is ArmRequestBulkRow => r !== null);
+      if (headInputs.length > 0) {
+        const headStats = await repo.upsertArmBulk(headInputs, { sourceRunId: runId });
+        out.fetched += headInputs.length;
+        out.created += headStats.created;
+        out.updated += headStats.updated;
+        out.duplicates += headStats.duplicates;
+        out.errors += headStats.errors;
+        out.freshHead = headInputs.length;
+      }
+      if (head.total > 0) {
+        out.totalAtSource = head.total;
+        savedTotalAtSource = savedTotalAtSource || head.total;
+      }
+    } catch {
+      // گذر سرِ تازه بهترین-تلاش است — شکستش هرگز چرخهٔ اصلی را متوقف نمی‌کند
+    }
+  }
 
   try {
     let page = startPage;

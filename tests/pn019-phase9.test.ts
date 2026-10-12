@@ -327,6 +327,7 @@ describe("PN-019/فاز۹ · Worker + API + گارد", () => {
     expect(ids).toContain("policy-eval");
     expect(ids).toContain("disk-guard"); // PN-020/H2
     expect(ids).toContain("memory-consolidation"); // PN-025
-    expect(new Set(ids).size).toBe(15);
+    expect(ids).toContain("ip-log"); // PN-029 (شورا-ن۰۳۳) — گارد IP کانتینر
+    expect(new Set(ids).size).toBe(16);
   });
 });

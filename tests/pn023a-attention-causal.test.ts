@@ -334,12 +334,12 @@ describe("PN-023-A · گراف علّی پایدار — CausalEdgeRecord", () =
     con.close();
   });
 
-  test("گ-۷) twin schema: توازن ۶۳=۶۳ (گارد postgres-compat — PN-025: +۳ حافظه)", async () => {
+  test("گ-۷) twin schema: توازن ۶۷=۶۷ (گارد postgres-compat — PN-025: +۳ · PN-028: +۱ · PN-029: +۳ لایهٔ احتیاط اتصال)", async () => {
     const { readFileSync } = await import("node:fs");
     const models = (p: string) => [...readFileSync(p, "utf8").matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]);
     const sq = models("prisma/schema.prisma");
     const pg = models("prisma/schema.postgres.prisma");
-    expect(sq.length).toBe(63);
+    expect(sq.length).toBe(67);
     expect(new Set(pg)).toEqual(new Set(sq));
   });
 

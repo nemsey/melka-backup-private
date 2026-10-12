@@ -124,6 +124,8 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
     const route = await import("@/app/api/auth/request-otp/route");
     const code = TEST_PERSONNEL[0];
     await db.otpAttempt.deleteMany({ where: { personnelCode: code } });
+    // PN-029 — پاک‌سازی قفل تک‌وراث OTP از اجراهای پیشین تست (قفل ۶ ساعتهٔ مانا)
+    await db.otpRateLimit.deleteMany({ where: { scope: { in: [`code:${code}`, "ip:unknown"] } } });
 
     // شبیه‌سازی موفقیت ارسال پیامک (بدون شبکه واقعی)
     const provider = getMelkProvider();
@@ -144,14 +146,14 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
       provider.requestOtp = original;
     }
 
-    // پیکربندی: otpRequestMax=3 در پنجره ۱۰ دقیقه
-    expect(statuses.slice(0, 3)).toEqual([200, 200, 200]);
-    expect(statuses[3]).toBe(429);
-    expect(statuses[4]).toBe(429);
+    // پیکربندی PN-029 (شورا-ن۰۳۳ · مرحلهٔ ۸): مکانیزم OTP تک‌واره —
+    // تلاش نخست موفق، تلاش‌های بعدی تا ۶ ساعت با OTP_LOCKED (429) رد می‌شوند
+    expect(statuses[0]).toBe(200);
+    expect(statuses.slice(1, 5)).toEqual([429, 429, 429, 429]);
 
-    // هسته رفع باگ: تلاش‌های «ردشده توسط محدودساز» رکورد جدید نساخته‌اند
+    // هستهٔ رفع باگ پابرجاست: تلاش‌های «ردشده توسط قفل» رکورد شکست جدید نساخته‌اند
     const attempts = await db.otpAttempt.count({ where: { personnelCode: code, kind: "REQUEST_OTP" } });
-    expect(attempts).toBe(3); // قبل از رفع: 5 می‌شد (قفل خود-تمدیدشونده)
+    expect(attempts).toBe(1); // فقط تلاش نخست (OTP_LOCKED رکورد نمی‌سازد)
 
     // تلاش ششم و هفتم هم RATE_LIMITED (قفل جدیدی ایجاد نشد ولی قفل موجود پابرجاست)
     for (let i = 0; i < 2; i++) {
@@ -163,7 +165,7 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
       expect(res.status).toBe(429);
     }
     const attemptsAfter = await db.otpAttempt.count({ where: { personnelCode: code, kind: "REQUEST_OTP" } });
-    expect(attemptsAfter).toBe(3); // همچنان ۳ — پنجره لغزان ثابت مانده
+    expect(attemptsAfter).toBe(1); // همچنان ۱ — قفل ۶ساعتهٔ PN-029 پابرجا؛ پنجرهٔ لغزان محدودساز ثابت مانده
   });
 
   test("verify-otp: ۵ شکست متوالی → قفل؛ تلاش‌های بیشتر در حالت قفل رکورد نمی‌سازند", async () => {
