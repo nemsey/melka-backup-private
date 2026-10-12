@@ -97,6 +97,3 @@ download/*.tar.gz
 # عمداً خارج از public تا خط لولهٔ انتشار پلتفرم آن را داخل بستهٔ استقرار نکشد (P6528)
 /deliver-store/
 db/postgres-test/
-
-# PN-031 — بکاپهای پیش-اجرا در db/ (قانون: داده در upload/، نه در git)
-db/pre-*.db

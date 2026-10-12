@@ -1,5 +1,5 @@
 /**
- * ماژول کاشی «شاخص بازار ملک تبریز» — P6545/گام۲ BLOCK 2.2 (جلسه ۰۳۳)
+ * ماژول کاشی M7 «شاخص بازار ملک تبریز» — P6545/گام۲ BLOCK 2.2 (جلسه ۰۳۳)
  * روند قیمت ماهانه (شمسی) · ۱۰ منطقهٔ پرتقاضا · انواع ملک ·
  * معاملات در برابر آگهی‌های فعال · سری سه‌گانهٔ حجم — OWNER-gate · رنگ لیمویی (sec-m6)
  */
@@ -20,7 +20,7 @@ export const marketIndexTile = defineTile({
   icon: TrendingUp,
   accent: "m6",
   component: lazyPage(() => import("./MarketIndexPage")),
-  order: 6, // PN-030/گام دوم (شورا-ن۰۳۵ · ۱۴۰۵/۰۷/۲۱) — دستور مالک: شاخص ششم
+  order: 7,
   container: "management-dashboard",
   minRole: "OWNER",
   agent: {

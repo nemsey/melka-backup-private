@@ -77,7 +77,6 @@ const {
 } = await import("@/core/intelligence/decision-templates");
 
 const {
-  ANALYSIS_RATE_UNLIMITED,
   evaluateLock,
   evaluateTtl,
   expiryFromNow,
@@ -687,23 +686,16 @@ describe("PN-025 §کمربند — قفل سه‌سطحی (خالص)", () => {
     expect(v.locked).toBe(false); // داده عوض شده — توصیهٔ تازه ساخته می‌شود
   });
 
-  test("L-۷) RateLimit روزانه — PN-028/ثانیاً (فاز طرح): توصیهٔ ۱۱م هم عبور می‌کند (تحلیل نامحدود)", () => {
-    // دستور مالک (فاز طرح و توسعه): محدودیت تعداد تحلیل برای کاربران رفع شد —
-    // سقف روزانه ۱۰ دیگر قفل نمی‌کند؛ TTL/Cooldown ضد-تکرار همان‌ها برجا هستند
+  test("L-۷) RateLimit روزانه — توصیهٔ ۱۱م ⇒ رد rate-day", () => {
     const v = evaluateLock({ hoursSinceLastAdvice: 100, evidenceChangedSinceLast: false, advisorCountToday: 10, categoryCountToday: 0 });
-    expect(v.locked).toBe(false);
+    expect(v.locked).toBe(true);
+    expect(v.reason).toBe("rate-day");
   });
 
-  test("L-۸) RateLimit دسته‌ای — PN-028/ثانیاً (فاز طرح): توصیهٔ ۴م هم‌دسته هم عبور می‌کند", () => {
+  test("L-۸) RateLimit دسته‌ای — توصیهٔ ۴م هم‌دسته ⇒ رد rate-category", () => {
     const v = evaluateLock({ hoursSinceLastAdvice: 100, evidenceChangedSinceLast: false, advisorCountToday: 5, categoryCountToday: 3 });
-    expect(v.locked).toBe(false);
-  });
-
-  test("L-۸-ب) پرچم تحلیل نامحدود — پیش‌فرض فاز طرح روشن است (PN-028)", () => {
-    expect(ANALYSIS_RATE_UNLIMITED).toBe(true);
-    // شمارش‌های بزرگ هم هرگز قفل شمارشی نمی‌سازند — سقف واقعی وجود ندارد
-    const v = evaluateLock({ hoursSinceLastAdvice: 100, evidenceChangedSinceLast: false, advisorCountToday: 10_000, categoryCountToday: 10_000 });
-    expect(v.locked).toBe(false);
+    expect(v.locked).toBe(true);
+    expect(v.reason).toBe("rate-category");
   });
 
   test("L-۹) ترتیب ارزیابی — TTL منطقی (تکرار فوری) مقدم بر همه", () => {
@@ -711,10 +703,12 @@ describe("PN-025 §کمربند — قفل سه‌سطحی (خالص)", () => {
     expect(v.reason).toBe("ttl");
   });
 
-  test("L-۱۰) پیام فارسی هر رد — کاربر می‌فهمد چرا (PN-028: قفل شمارشی در فاز طرح خاموش — فقط TTL/Cooldown)", () => {
+  test("L-۱۰) پیام فارسی هر رد — کاربر می‌فهمد چرا", () => {
     const cases = [
       { hoursSinceLastAdvice: 0, changed: false, today: 0, cat: 0 },
       { hoursSinceLastAdvice: 10, changed: false, today: 0, cat: 0 },
+      { hoursSinceLastAdvice: 100, changed: false, today: 10, cat: 0 },
+      { hoursSinceLastAdvice: 100, changed: false, today: 0, cat: 3 },
     ];
     for (const c of cases) {
       const v = evaluateLock({ hoursSinceLastAdvice: c.hoursSinceLastAdvice, evidenceChangedSinceLast: c.changed, advisorCountToday: c.today, categoryCountToday: c.cat });

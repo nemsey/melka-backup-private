@@ -123,11 +123,11 @@ describe("گام۲/M5 — تطبیق هوشمند دوجهته", () => {
     expect(r.candidates.every((c) => c.hardPassed)).toBe(true);
   });
 
-  test("م-۵-۱۷ هر کاندیدا ۹ عامل امتیاز دارد (PN-028/رابعاً-د — فراکامل چندوجهی: +اتاق/طبقه/ساخت)", async () => {
+  test("م-۵-۱۷ هر کاندیدا ۶ عامل امتیاز دارد (۵ عامل جلسه ۰۳۳ + تطابق نوع)", async () => {
     const listing = await real.propertyRecord.findFirst({ where: { status: "منتشر شده" }, orderBy: { syncedAt: "desc" } });
     if (!listing) return;
     const r = await new MatchingEngine({ db: real, tier: 3 }).matchListingToRequests(listing.propertyCode);
-    for (const c of r.candidates) expect(c.reasons).toHaveLength(9);
+    for (const c of r.candidates) expect(c.reasons).toHaveLength(6);
   });
 
   test("م-۵-۱۸ عوامل با دلیل فارسی", async () => {

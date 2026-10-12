@@ -314,11 +314,10 @@ describe("PN-019/فاز۸ · Shadow Mode + Worker", () => {
     expect(src).toContain("MELK_DECISION_SHADOW_INTERVAL_H ?? 6");
   });
 
-  test("Worker پس از PN-029: ۱۶ کار (۱۵ قبلی + ip-log گارد IP کانتینر — شورا-ن۰۳۳)", async () => {
+  test("Worker پس از PN-025: ۱۵ کار (۱۴ قبلی + memory-consolidation فاز ۱۳-ج)", async () => {
     const { WORKER_JOB_IDS } = await import("@/core/runtime/jobs");
-    expect(Object.keys(WORKER_JOB_IDS)).toHaveLength(16);
+    expect(Object.keys(WORKER_JOB_IDS)).toHaveLength(15);
     expect(WORKER_JOB_IDS.memoryConsolidation).toBe("memory-consolidation");
-    expect(WORKER_JOB_IDS.ipLog).toBe("ip-log");
   });
 
   test("shadowDecisionTick روی دادهٔ fixture: اجرا + جاروب", async () => {
