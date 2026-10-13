@@ -20,7 +20,7 @@ export const learningTierTile = defineTile({
   icon: Brain,
   accent: "m8",
   component: lazyPage(() => import("./LearningTierPage")),
-  order: 6,
+  order: 8, // PN-028/خامساً-ق — دستور مالک: مغز ملکا هشتم
   container: "management-dashboard",
   minRole: "OWNER",
   agent: {

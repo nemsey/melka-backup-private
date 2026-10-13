@@ -1,0 +1,164 @@
+{
+  "phase": "PN-029 · مرحلهٔ ۳ — تشخیص شش‌گانه (فقط خواندن · صفر تغییر)",
+  "ranAt": "2026-10-11T08:56:25Z",
+  "test1_dns": {
+    "arus-api.melketabriz.ir": {
+      "ok": true,
+      "ip": "46.100.93.175"
+    },
+    "pm-api.melketabriz.ir": {
+      "ok": true,
+      "ip": "46.100.93.175"
+    },
+    "gap-api.melketabriz.ir": {
+      "ok": true,
+      "ip": "46.100.93.175"
+    }
+  },
+  "test2_tcp_443": {
+    "arus-api.melketabriz.ir": {
+      "ok": false,
+      "error": "FAIL TimeoutError: timed out",
+      "ms": ""
+    },
+    "pm-api.melketabriz.ir": {
+      "ok": false,
+      "error": "FAIL TimeoutError: timed out",
+      "ms": ""
+    },
+    "gap-api.melketabriz.ir": {
+      "ok": false,
+      "error": "FAIL TimeoutError: timed out",
+      "ms": ""
+    }
+  },
+  "test3_tls": {
+    "arus-api.melketabriz.ir": {
+      "ok": false,
+      "info": ""
+    },
+    "pm-api.melketabriz.ir": {
+      "ok": false,
+      "info": ""
+    },
+    "gap-api.melketabriz.ir": {
+      "ok": false,
+      "info": ""
+    }
+  },
+  "test4_http_public_readonly": {
+    "arm_apm_root": {
+      "httpStatus": 0,
+      "timeSec": 20.002724,
+      "bytes": 0,
+      "mongooseError": false,
+      "htmlBadGateway": false
+    },
+    "arm_public_enums": {
+      "httpStatus": 0,
+      "timeSec": 20.002351,
+      "bytes": 0,
+      "mongooseError": false,
+      "htmlBadGateway": false
+    },
+    "arm_otp_path_probe": {
+      "httpStatus": 0,
+      "timeSec": 20.002576,
+      "bytes": 0,
+      "mongooseError": false,
+      "htmlBadGateway": false
+    },
+    "pm_public_portal": {
+      "httpStatus": 0,
+      "timeSec": 20.002755,
+      "bytes": 0,
+      "mongooseError": false,
+      "htmlBadGateway": false
+    },
+    "gap_root": {
+      "httpStatus": 0,
+      "timeSec": 20.002414,
+      "bytes": 0,
+      "mongooseError": false,
+      "htmlBadGateway": false
+    },
+    "melk_public_apu_list": {
+      "httpStatus": 0,
+      "timeSec": 20.002334,
+      "bytes": 0,
+      "mongooseError": false,
+      "htmlBadGateway": false
+    },
+    "melketabriz_front": {
+      "httpStatus": 0,
+      "timeSec": 20.00234,
+      "bytes": 0,
+      "mongooseError": false,
+      "htmlBadGateway": false
+    },
+    "CONTROL_divar_iranian_third_party": {
+      "httpStatus": 403,
+      "timeSec": 0.925374,
+      "bytes": 19,
+      "mongooseError": false,
+      "htmlBadGateway": false
+    },
+    "CONTROL_github_foreign": {
+      "httpStatus": 403,
+      "timeSec": 0.111468,
+      "bytes": 279,
+      "mongooseError": false,
+      "htmlBadGateway": false
+    }
+  },
+  "test5_containerIp": {
+    "ifconfig_me": "47.57.242.119",
+    "api_ipify_org": "8.212.10.159",
+    "agree": false
+  },
+  "test6_vault": {
+    "ok": true,
+    "vaultRecords": 4,
+    "tokenDecryptable": 0,
+    "tokenUndecryptable": 4,
+    "note": "توکنهای موجود بررسی شدند — عمر بیش از ۴۸ ساعت یعنی قطعاً منقضی (قرارداد PN-008)",
+    "details": [
+      {
+        "ownerKey": "410031320",
+        "personnelCode": "410031320",
+        "tokenDecryptable": false,
+        "refreshDecryptable": false,
+        "status": "connected",
+        "lastRefreshedAt": "2026-10-05T19:31:08.460Z",
+        "ageHours": 133
+      },
+      {
+        "ownerKey": "master",
+        "personnelCode": "410031320",
+        "tokenDecryptable": false,
+        "refreshDecryptable": null,
+        "status": "disconnected",
+        "lastRefreshedAt": "2026-10-09T21:14:09.288Z",
+        "ageHours": 36
+      },
+      {
+        "ownerKey": "410031319",
+        "personnelCode": "410031319",
+        "tokenDecryptable": false,
+        "refreshDecryptable": false,
+        "status": "connected",
+        "lastRefreshedAt": "2026-10-06T10:00:55.617Z",
+        "ageHours": 119
+      },
+      {
+        "ownerKey": "410031338",
+        "personnelCode": "410031338",
+        "tokenDecryptable": false,
+        "refreshDecryptable": false,
+        "status": "connected",
+        "lastRefreshedAt": "2026-10-06T14:26:52.816Z",
+        "ageHours": 115
+      }
+    ]
+  }
+}

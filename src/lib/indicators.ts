@@ -7,14 +7,35 @@
  * ۴. API سامانه PM         — در دسترس بودن pm-api (کش ۶۰ ثانیه)
  * ۵. سامانه عمومی ملک تبریز — API عمومی apu (melketabriz.com) — P6546/گام صفر
  * ۶. حساب شخصی سامانه GAP  — اتصال ثبت‌شده سامانه گفت‌وگو — P6546/گام صفر
- * ۷. API سامانه GAP        — در دسترس بودن gap-api — P6546/گام صفر
+ * ۷. API سامانه GAP        — در دسترس بودن gap-api (کش ۶۰ ثانیه) — P6546/گام صفر
  * ۸. API دیوار             — کنار متصل یا API وب دیوار در دسترس
  * ۹. حساب شخصی دیوار       — اتصال پیامکی دیوار (توکن)
  * ۱۰. حساب اینستاگرام      — توکن Graph API معتبر
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ * PN-028 / اولاً — ریشه‌یابی دائمی «خطا در بررسی اتصال‌ها (502) پس از بالا آمدن»
+ * ══════════════════════════════════════════════════════════════════════════
+ * علت ریشه‌ای (شاهد زنده): تا پیش از این، هر فراخوانی /api/indicators پنج
+ * سنجش بیرونی را «پشت‌سرهم» اجرا می‌کرد (هرکدام تا ۹ ثانیه مهلت) ⇒ در ساعاتی
+ * که سامانه‌های ملک تبریز کند/قطع بودند، پاسخ این روت تا ۴۵+ ثانیه و با
+ * فشار بوت (پیش‌گرمایش ۱۶ موتور + همگام‌سازی پس‌زمینه) حتی بیشتر معلق می‌ماند؛
+ * دروازهٔ پلتفرم پس از مهلت خودش 502 برمی‌گرداند و UI دقیقاً پیام
+ * «سامانه ملک تبریز موقتاً پاسخ نمی‌دهد (خطای 502)» را نشان می‌داد.
+ *
+ * درمان ریشه‌ای (سه اصل — هر سه با هم، برای همیشه):
+ *   ۱) موازی‌سازی: همهٔ سنجش‌های بیرونی هم‌زمان اجرا می‌شوند — سقف کل = سقف
+ *      تک سنجش (۵ ثانیه)، نه مجموعشان.
+ *   ۲) مهلت کوتاه: هر سنجش بیرونی حداکثر ۵ ثانیه (پیش از این ۹).
+ *   ۳) الگوی stale-while-revalidate: پاسخ «همیشه فوری» از کشِ درون‌فرایندی؛
+ *      کشِ کهنه بلافاصله پاسخ داده می‌شود و تازه‌سازی در پس‌زمینه (بدون دوبله،
+ *      با قفل درون‌پروGRESS) انجام می‌شود. GAP هم از این پس کش‌شده است
+ *      (پیش از این تنها سنجشِ بدون کش بود).
  */
 
 import { db } from "@/lib/db";
 import { probeGet } from "@/lib/melk-api/client";
+// PN-029 — حالت آفلینی ملک تبریز: صفر پروب خودکار (ریشهٔ ۵۰۲ نشانگرها)
+import { isArmOfflineMode } from "@/lib/melk-api/offline-mode";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { decryptSecret } from "@/lib/auth/crypto";
 
@@ -48,11 +69,14 @@ interface ProbeCache {
 const probeCache = new Map<string, ProbeCache>();
 const PROBE_TTL_MS = 60_000;
 
+/** PN-028/اولاً — مهلت تک‌سنجش: ۵ ثانیه (پیش از این ۹) — پاسخ روت هرگز معلق نمی‌ماند */
+const PROBE_TIMEOUT_MS = 5_000;
+
 async function cachedProbe(key: string, baseUrl: string, path: string, okDetail: string, failDetail: string): Promise<ProbeCache> {
   const hit = probeCache.get(key);
   if (hit && Date.now() - hit.at < PROBE_TTL_MS) return hit;
   const cfg = getMelkApiConfig();
-  const probe = await probeGet(baseUrl, path, Math.min(cfg.timeoutMs, 9000));
+  const probe = await probeGet(baseUrl, path, Math.min(cfg.timeoutMs, PROBE_TIMEOUT_MS));
   const result: ProbeCache = {
     at: Date.now(),
     ok: probe.httpStatus > 0 && probe.httpStatus < 500 && !probe.bodyText.includes("MongooseError"),
@@ -62,16 +86,13 @@ async function cachedProbe(key: string, baseUrl: string, path: string, okDetail:
   return result;
 }
 
-// ===================== سنجش دیوار =====================
+// ═══════════════ PN-028/اولاً — سنجش دیوار (کش‌شده، همان مهلت ۵ ثانیه) ═══════════════
 
 async function probeDivar(): Promise<ProbeCache> {
   const hit = probeCache.get("divarApi");
   if (hit && Date.now() - hit.at < PROBE_TTL_MS) return hit;
-  const cfg = getMelkApiConfig();
-  void cfg;
-  // سنجش API جستجوی وب دیوار (مسیر داده‌ای فایل‌یابی)
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 9000);
+  const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   let ok = false;
   try {
     const res = await fetch("https://api.divar.ir/v8/postlist/w/search", {
@@ -88,7 +109,7 @@ async function probeDivar(): Promise<ProbeCache> {
     clearTimeout(timer);
   }
   // اگر کلید کنار متصل است، منبع رسمی هم در دسترس است
-  const kenar = await db.divarConnection.findUnique({ where: { method: "kenar" } });
+  const kenar = await db.divarConnection.findUnique({ where: { method: "kenar" } }).catch(() => null);
   const kenarConnected = kenar?.status === "connected";
   const result: ProbeCache = {
     at: Date.now(),
@@ -99,11 +120,143 @@ async function probeDivar(): Promise<ProbeCache> {
   return result;
 }
 
-// ===================== محاسبه هر ۷ نشانگر =====================
+// ═══════════════ PN-028/اولاً — سنجش GAP (از این پس کش‌شده، عین بقیه) ═══════════════
 
+async function probeGap(): Promise<ProbeCache> {
+  const hit = probeCache.get("gapApi");
+  if (hit && Date.now() - hit.at < PROBE_TTL_MS) return hit;
+  const cfg = getMelkApiConfig();
+  const probe = await probeGet(cfg.gapApiBase, "", Math.min(cfg.timeoutMs, PROBE_TIMEOUT_MS)).catch(() => ({
+    httpStatus: 0,
+    bodyText: "",
+    ok: false,
+    latencyMs: 0,
+  }));
+  const result: ProbeCache = {
+    at: Date.now(),
+    ok: probe.httpStatus > 0,
+    detail: probe.httpStatus > 0 ? `سرور gap-api پاسخ می‌دهد (HTTP ${probe.httpStatus})` : "سرور gap-api.melketabriz.ir در دسترس نیست",
+  };
+  probeCache.set("gapApi", result);
+  return result;
+}
+
+// ═════════ PN-028/اولاً — تازه‌سازی موازی همهٔ سنجش‌های بیرونی (با قفل دوبله‌شدن) ═════════
+
+/** نتیجهٔ یک دور کامل سنجش‌های بیرونی */
+interface ExternalProbes {
+  armApi: ProbeCache;
+  pmApi: ProbeCache;
+  melkPublicApi: ProbeCache;
+  gapApi: ProbeCache;
+  divarApi: ProbeCache;
+}
+
+let inflightRefresh: Promise<unknown> | null = null;
+
+/** یک دور سنجش بیرونی — همه هم‌زمان؛ سقف کل ≈ ۵ ثانیه (نه ۴۵) */
+async function runExternalProbes(): Promise<ExternalProbes> {
+  const cfg = getMelkApiConfig();
+  const fallback = (detail: string): ProbeCache => ({ at: Date.now(), ok: false, detail });
+
+  // PN-029 (مرحلهٔ ۲ — سند شورا-ن۰۳۳): در حالت آفلینی، چهار نشانگرِ سامانه‌های
+  // ملک تبریز اصلاً پروب نمی‌شوند — آخرین کش (در صورت وجود) با برچسب آفلاین
+  // سرو می‌شود و صفر بستهٔ شبکه به arus-api/pm-api/gap-api ارسال می‌گردد.
+  // نشانگر دیوار بی‌ربط به این حالت است و مثل قبل سنجیده می‌شود.
+  if (isArmOfflineMode()) {
+    const offline = (key: string, label: string): ProbeCache =>
+      probeCache.get(key) ?? { at: Date.now(), ok: false, detail: `${label} — حالت آفلینی ملک تبریز (توقف تلاش خودکار · PN-029)` };
+    const divarApi = await probeDivar().catch(() => fallback("API دیوار در دسترس نیست"));
+    return {
+      armApi: offline("armApi", "API سامانه آرم"),
+      pmApi: offline("pmApi", "API سامانه پرسنلی"),
+      melkPublicApi: offline("melkPublicApi", "API عمومی سامانه ملک تبریز"),
+      gapApi: offline("gapApi", "سرور gap-api"),
+      divarApi,
+    };
+  }
+  const [armApi, pmApi, melkPublicApi, gapApi, divarApi] = await Promise.all([
+    cachedProbe("armApi", cfg.armPublicApiBase, "statics/enums-persian", "API سامانه آرم پاسخ می‌دهد", "API سامانه آرم در دسترس نیست")
+      .catch(() => fallback("API سامانه آرم در دسترس نیست")),
+    cachedProbe("pmApi", cfg.pmApiBase, "public/portalInfo", "API سامانه پرسنلی پاسخ می‌دهد", "API سامانه پرسنلی در دسترس نیست")
+      .catch(() => fallback("API سامانه پرسنلی در دسترس نیست")),
+    cachedProbe(
+      "melkPublicApi",
+      cfg.melkPublicApiBase,
+      "properties/list?page=1&limit=1",
+      "API عمومی سامانه ملک تبریز (melketabriz.com) پاسخ می‌دهد",
+      "API عمومی سامانه ملک تبریز (melketabriz.com) در دسترس نیست"
+    ).catch(() => fallback("API عمومی سامانه ملک تبریز (melketabriz.com) در دسترس نیست")),
+    probeGap().catch(() => fallback("سرور gap-api.melketabriz.ir در دسترس نیست")),
+    probeDivar().catch(() => fallback("API دیوار در دسترس نیست")),
+  ]);
+  return { armApi, pmApi, melkPublicApi, gapApi, divarApi };
+}
+
+/** تازه‌سازی پس‌زمینه — بدون دوبله (inflight) و هرگز خطا به بالا نمی‌دهد */
+function refreshInBackground(): void {
+  if (inflightRefresh) return;
+  inflightRefresh = runExternalProbes()
+    .catch(() => null)
+    .finally(() => {
+      inflightRefresh = null;
+    });
+}
+
+/** سنجش‌های بیرونی «همیشه سریع»:
+ *  · کش تازه (< ۶۰ث) → همان
+ *  · کش کهنه → همان کش بلافاصله + تازه‌سازی پس‌زمینه (stale-while-revalidate)
+ *  · بدون کش (نخستین فراخوانی پس از بوت) → یک دور موازی تا ~۵ ثانیه —
+ *    سقف مطلق پاسخ این روت، حتی در بدترین حالت، از مرز مهلت دروازه دور است */
+function externalProbesFast(): Promise<ExternalProbes> {
+  const armApi = probeCache.get("armApi");
+  const fresh = armApi && Date.now() - armApi.at < PROBE_TTL_MS;
+  if (armApi && fresh) {
+    return Promise.resolve({
+      armApi: armApi,
+      pmApi: probeCache.get("pmApi") ?? { at: Date.now(), ok: false, detail: "API سامانه پرسنلی در دسترس نیست" },
+      melkPublicApi: probeCache.get("melkPublicApi") ?? { at: Date.now(), ok: false, detail: "API عمومی سامانه ملک تبریز (melketabriz.com) در دسترس نیست" },
+      gapApi: probeCache.get("gapApi") ?? { at: Date.now(), ok: false, detail: "سرور gap-api.melketabriz.ir در دسترس نیست" },
+      divarApi: probeCache.get("divarApi") ?? { at: Date.now(), ok: false, detail: "API دیوار در دسترس نیست" },
+    });
+  }
+  const anyCached = armApi ?? probeCache.get("pmApi") ?? probeCache.get("melkPublicApi") ?? probeCache.get("gapApi") ?? probeCache.get("divarApi");
+  if (anyCached && Date.now() - anyCached.at < PROBE_TTL_MS * 30) {
+    // کش کهنه — پاسخ فوری با همان + تازه‌سازی بی‌صدا در پس‌زمینه
+    refreshInBackground();
+    return Promise.resolve(externalFromCache());
+  }
+  // بدون کش — نخستین دور (موازی، حداکثر ~۵ ثانیه)
+  return runExternalProbes().catch(() => externalFromCache());
+}
+
+/** خواندن کش فعلی به شکل ExternalProbes (با مقادیر پیش‌فرض صادقانه) */
+function externalFromCache(): ExternalProbes {
+  const none = (d: string): ProbeCache => ({ at: Date.now(), ok: false, detail: d });
+  return {
+    armApi: probeCache.get("armApi") ?? none("API سامانه آرم در دسترس نیست"),
+    pmApi: probeCache.get("pmApi") ?? none("API سامانه پرسنلی در دسترس نیست"),
+    melkPublicApi: probeCache.get("melkPublicApi") ?? none("API عمومی سامانه ملک تبریز (melketabriz.com) در دسترس نیست"),
+    gapApi: probeCache.get("gapApi") ?? none("سرور gap-api.melketabriz.ir در دسترس نیست"),
+    divarApi: probeCache.get("divarApi") ?? none("API دیوار در دسترس نیست"),
+  };
+}
+
+// ===================== محاسبه هر ۹ نشانگر =====================
 export async function computeIndicators(sessionHasArmToken: boolean, sessionArmUserType?: string | null): Promise<IndicatorState[]> {
   const now = new Date().toISOString();
   const cfg = getMelkApiConfig();
+  void cfg;
+
+  // ── سنجش‌های بیرونی: همیشه سریع (کش/موازی — PN-028/اولاً) ──
+  const external = await externalProbesFast();
+
+  // ── وضعیت‌های محلی (DB — سریع، بدون شبکه) ──
+  const [pmConn, divarPhone, igConn] = await Promise.all([
+    db.pmConnection.findFirst().catch(() => null),
+    db.divarConnection.findUnique({ where: { method: "phone" } }).catch(() => null),
+    db.instagramConnection.findFirst().catch(() => null),
+  ]);
 
   // ۱. حساب شخصی ARM — توکن نشست
   const armAccount: IndicatorState = {
@@ -117,23 +270,15 @@ export async function computeIndicators(sessionHasArmToken: boolean, sessionArmU
   };
 
   // ۲. API سامانه ARM
-  const armProbe = await cachedProbe(
-    "armApi",
-    cfg.armPublicApiBase,
-    "statics/enums-persian",
-    "API سامانه آرم پاسخ می‌دهد",
-    "API سامانه آرم در دسترس نیست"
-  ).catch(() => ({ at: Date.now(), ok: false, detail: "API سامانه آرم در دسترس نیست" }) as ProbeCache);
   const armApi: IndicatorState = {
     key: "armApi",
     label: "API سامانه ARM",
-    connected: armProbe.ok,
-    detail: armProbe.detail,
-    checkedAt: new Date(armProbe.at).toISOString(),
+    connected: external.armApi.ok,
+    detail: external.armApi.detail,
+    checkedAt: new Date(external.armApi.at).toISOString(),
   };
 
   // ۳. حساب شخصی PM
-  const pmConn = await db.pmConnection.findFirst().catch(() => null);
   const pmAccount: IndicatorState = {
     key: "pmAccount",
     label: "حساب شخصی PM",
@@ -150,61 +295,43 @@ export async function computeIndicators(sessionHasArmToken: boolean, sessionArmU
   };
 
   // ۴. API سامانه PM
-  const pmProbe = await cachedProbe("pmApi", cfg.pmApiBase, "public/portalInfo", "API سامانه پرسنلی پاسخ می‌دهد", "API سامانه پرسنلی در دسترس نیست").catch(
-    () => ({ at: Date.now(), ok: false, detail: "API سامانه پرسنلی در دسترس نیست" }) as ProbeCache
-  );
   const pmApi: IndicatorState = {
     key: "pmApi",
     label: "API سامانه PM",
-    connected: pmProbe.ok,
-    detail: pmProbe.detail,
-    checkedAt: new Date(pmProbe.at).toISOString(),
+    connected: external.pmApi.ok,
+    detail: external.pmApi.detail,
+    checkedAt: new Date(external.pmApi.at).toISOString(),
   };
 
-  // ۵. سامانه عمومی ملک تبریز (P6546) — API عمومی apu که melketabriz.com از آن می‌خواند
-  const melkPublicProbe = await cachedProbe(
-    "melkPublicApi",
-    cfg.melkPublicApiBase,
-    "properties/list?page=1&limit=1",
-    "API عمومی سامانه ملک تبریز (melketabriz.com) پاسخ می‌دهد",
-    "API عمومی سامانه ملک تبریز (melketabriz.com) در دسترس نیست"
-  ).catch(() => ({ at: Date.now(), ok: false, detail: "API عمومی سامانه ملک تبریز (melketabriz.com) در دسترس نیست" }) as ProbeCache);
+  // ۵. سامانه عمومی ملک تبریز (P6546)
   const melkPublicApi: IndicatorState = {
     key: "melkPublicApi",
     label: "سامانه عمومی ملک تبریز",
-    connected: melkPublicProbe.ok,
-    detail: melkPublicProbe.detail,
-    checkedAt: new Date(melkPublicProbe.at).toISOString(),
+    connected: external.melkPublicApi.ok,
+    detail: external.melkPublicApi.detail,
+    checkedAt: new Date(external.melkPublicApi.at).toISOString(),
   };
 
-
-  // ۷. API سامانه GAP (P6546) — gap-api زنده است (پاسخ HTTP هر نوعی = در دسترس)
-  const gapProbe = await probeGet(cfg.gapApiBase, "", Math.min(cfg.timeoutMs, 9000)).catch(() => ({
-    httpStatus: 0,
-    bodyText: "",
-    ok: false,
-    latencyMs: 0,
-  }));
+  // ۷. API سامانه GAP (P6546) — از این پس کش‌شده (PN-028)
+  //    (چراغ «حساب GAP» به دستور مالک جلسهٔ ۰۳۳ حذف شده است — تنها API GAP مانده)
   const gapApi: IndicatorState = {
     key: "gapApi",
     label: "API سامانه GAP",
-    connected: gapProbe.httpStatus > 0,
-    detail: gapProbe.httpStatus > 0 ? `سرور gap-api پاسخ می‌دهد (HTTP ${gapProbe.httpStatus})` : "سرور gap-api.melketabriz.ir در دسترس نیست",
-    checkedAt: now,
+    connected: external.gapApi.ok,
+    detail: external.gapApi.detail,
+    checkedAt: new Date(external.gapApi.at).toISOString(),
   };
 
   // ۸. API دیوار
-  const divarProbe = await probeDivar().catch(() => ({ at: Date.now(), ok: false, detail: "API دیوار در دسترس نیست" }) as ProbeCache);
   const divarApi: IndicatorState = {
     key: "divarApi",
     label: "API دیوار",
-    connected: divarProbe.ok,
-    detail: divarProbe.detail,
-    checkedAt: new Date(divarProbe.at).toISOString(),
+    connected: external.divarApi.ok,
+    detail: external.divarApi.detail,
+    checkedAt: new Date(external.divarApi.at).toISOString(),
   };
 
   // ۹. حساب شخصی دیوار
-  const divarPhone = await db.divarConnection.findUnique({ where: { method: "phone" } }).catch(() => null);
   const divarAccount: IndicatorState = {
     key: "divarAccount",
     label: "حساب شخصی دیوار",
@@ -221,7 +348,6 @@ export async function computeIndicators(sessionHasArmToken: boolean, sessionArmU
   };
 
   // ۱۰. حساب اینستاگرام
-  const igConn = await db.instagramConnection.findFirst().catch(() => null);
   const instagramAccount: IndicatorState = {
     key: "instagramAccount",
     label: "حساب اینستاگرام",

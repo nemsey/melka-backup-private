@@ -56,8 +56,9 @@ describe("گام صفر P6546 — ترتیب هفت‌بخشی تنظیمات ع
       s.indexOf('id="settings-connection-hub"'),
       s.indexOf("<ArmConnectionSection embedded />"),
       s.indexOf("<PmConnectionSection embedded />"),
-      s.indexOf('aria-label="رابط سامانه عمومی ملک تبریز"'),
     ];
+    // PN-029 اولاً — بخش رابط سامانهٔ عمومی از تنظیمات حذف شده است
+    expect(s).not.toContain('aria-label="رابط سامانه عمومی ملک تبریز"');
     for (const idx of order) expect(idx).toBeGreaterThan(-1);
     for (let i = 1; i < order.length; i += 1) {
       expect(order[i]).toBeGreaterThan(order[i - 1]);
