@@ -2,9 +2,49 @@
   "schema": "melka-pn012-api-versioning",
   "generatedAt": "2026-10-11T09:17:08.819777Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 105,
+  "totalRoutes": 106,
   "created": 0,
   "routes": [
+    {
+      "v1": "/api/v1/mobile-relay/poll",
+      "original": "/api/mobile-relay/poll"
+    },
+    {
+      "v1": "/api/v1/mobile-relay/result",
+      "original": "/api/mobile-relay/result"
+    },
+    {
+      "v1": "/api/v1/mobile-relay/bootstrap",
+      "original": "/api/mobile-relay/bootstrap"
+    },
+    {
+      "v1": "/api/v1/admin/relay/enroll",
+      "original": "/api/admin/relay/enroll"
+    },
+    {
+      "v1": "/api/v1/admin/relay/status",
+      "original": "/api/admin/relay/status"
+    },
+    {
+      "v1": "/api/v1/admin/relay/test",
+      "original": "/api/admin/relay/test"
+    },
+    {
+      "v1": "/api/v1/admin/relay/revoke",
+      "original": "/api/admin/relay/revoke"
+    },
+    {
+      "v1": "/api/v1/admin/relay/qr",
+      "original": "/api/admin/relay/qr"
+    },
+    {
+      "v1": "/api/v1/admin/relay/browser-poll",
+      "original": "/api/admin/relay/browser-poll"
+    },
+    {
+      "v1": "/api/v1/admin/relay/browser-result",
+      "original": "/api/admin/relay/browser-result"
+    },
     {
       "aliasOf": "/api/admin/action-plans",
       "v1": "/api/v1/admin/action-plans"
@@ -14,12 +54,12 @@
       "v1": "/api/v1/admin/decision-advisor"
     },
     {
-      "aliasOf": "/api/admin/decisions/expire",
-      "v1": "/api/v1/admin/decisions/expire"
-    },
-    {
       "aliasOf": "/api/admin/decisions",
       "v1": "/api/v1/admin/decisions"
+    },
+    {
+      "aliasOf": "/api/admin/decisions/expire",
+      "v1": "/api/v1/admin/decisions/expire"
     },
     {
       "aliasOf": "/api/admin/decisions/stats",
@@ -50,12 +90,12 @@
       "v1": "/api/v1/admin/otp-burn"
     },
     {
-      "aliasOf": "/api/admin/personnel-access/[code]",
-      "v1": "/api/v1/admin/personnel-access/[code]"
-    },
-    {
       "aliasOf": "/api/admin/personnel-access",
       "v1": "/api/v1/admin/personnel-access"
+    },
+    {
+      "aliasOf": "/api/admin/personnel-access/[code]",
+      "v1": "/api/v1/admin/personnel-access/[code]"
     },
     {
       "aliasOf": "/api/admin/policy-evaluations",
@@ -66,12 +106,20 @@
       "v1": "/api/v1/admin/policy-evaluations/run"
     },
     {
+      "aliasOf": "/api/admin/repairs",
+      "v1": "/api/v1/admin/repairs"
+    },
+    {
       "aliasOf": "/api/admin/repairs/[id]",
       "v1": "/api/v1/admin/repairs/[id]"
     },
     {
-      "aliasOf": "/api/admin/repairs",
-      "v1": "/api/v1/admin/repairs"
+      "aliasOf": "/api/admin/users",
+      "v1": "/api/v1/admin/users"
+    },
+    {
+      "aliasOf": "/api/admin/users/[id]",
+      "v1": "/api/v1/admin/users/[id]"
     },
     {
       "aliasOf": "/api/admin/users/[id]/activity",
@@ -82,20 +130,12 @@
       "v1": "/api/v1/admin/users/[id]/permissions"
     },
     {
-      "aliasOf": "/api/admin/users/[id]",
-      "v1": "/api/v1/admin/users/[id]"
-    },
-    {
       "aliasOf": "/api/admin/users/[id]/sessions",
       "v1": "/api/v1/admin/users/[id]/sessions"
     },
     {
       "aliasOf": "/api/admin/users/[id]/unlock",
       "v1": "/api/v1/admin/users/[id]/unlock"
-    },
-    {
-      "aliasOf": "/api/admin/users",
-      "v1": "/api/v1/admin/users"
     },
     {
       "aliasOf": "/api/agent/[tileId]/feedback",
@@ -186,12 +226,12 @@
       "v1": "/api/v1/crm/export/[entity]"
     },
     {
-      "aliasOf": "/api/crm/finance/commission",
-      "v1": "/api/v1/crm/finance/commission"
-    },
-    {
       "aliasOf": "/api/crm/finance",
       "v1": "/api/v1/crm/finance"
+    },
+    {
+      "aliasOf": "/api/crm/finance/commission",
+      "v1": "/api/v1/crm/finance/commission"
     },
     {
       "aliasOf": "/api/crm/import/[entity]",
@@ -214,20 +254,20 @@
       "v1": "/api/v1/crm/transactions/sync"
     },
     {
-      "aliasOf": "/api/divar/ads/[token]/register",
-      "v1": "/api/v1/divar/ads/[token]/register"
-    },
-    {
-      "aliasOf": "/api/divar/ads/[token]/reject",
-      "v1": "/api/v1/divar/ads/[token]/reject"
+      "aliasOf": "/api/divar/ads",
+      "v1": "/api/v1/divar/ads"
     },
     {
       "aliasOf": "/api/divar/ads/[token]",
       "v1": "/api/v1/divar/ads/[token]"
     },
     {
-      "aliasOf": "/api/divar/ads",
-      "v1": "/api/v1/divar/ads"
+      "aliasOf": "/api/divar/ads/[token]/register",
+      "v1": "/api/v1/divar/ads/[token]/register"
+    },
+    {
+      "aliasOf": "/api/divar/ads/[token]/reject",
+      "v1": "/api/v1/divar/ads/[token]/reject"
     },
     {
       "aliasOf": "/api/divar/connection",
@@ -246,12 +286,12 @@
       "v1": "/api/v1/divar/settings"
     },
     {
-      "aliasOf": "/api/experts/export",
-      "v1": "/api/v1/experts/export"
-    },
-    {
       "aliasOf": "/api/experts",
       "v1": "/api/v1/experts"
+    },
+    {
+      "aliasOf": "/api/experts/export",
+      "v1": "/api/v1/experts/export"
     },
     {
       "aliasOf": "/api/experts/sync",
@@ -290,28 +330,32 @@
       "v1": "/api/v1/intelligence/status"
     },
     {
-      "aliasOf": "/api/listings/[id]/instagram",
-      "v1": "/api/v1/listings/[id]/instagram"
+      "aliasOf": "/api/listings",
+      "v1": "/api/v1/listings"
     },
     {
       "aliasOf": "/api/listings/[id]",
       "v1": "/api/v1/listings/[id]"
     },
     {
+      "aliasOf": "/api/listings/[id]/instagram",
+      "v1": "/api/v1/listings/[id]/instagram"
+    },
+    {
       "aliasOf": "/api/listings/[id]/transfer-crm",
       "v1": "/api/v1/listings/[id]/transfer-crm"
     },
     {
-      "aliasOf": "/api/listings",
-      "v1": "/api/v1/listings"
+      "aliasOf": "/api/market-index",
+      "v1": "/api/v1/market-index"
     },
     {
       "aliasOf": "/api/market-index/advice",
       "v1": "/api/v1/market-index/advice"
     },
     {
-      "aliasOf": "/api/market-index",
-      "v1": "/api/v1/market-index"
+      "aliasOf": "/api/matching",
+      "v1": "/api/v1/matching"
     },
     {
       "aliasOf": "/api/matching/feedback",
@@ -320,10 +364,6 @@
     {
       "aliasOf": "/api/matching/file",
       "v1": "/api/v1/matching/file"
-    },
-    {
-      "aliasOf": "/api/matching",
-      "v1": "/api/v1/matching"
     },
     {
       "aliasOf": "/api/matching/search",
@@ -338,6 +378,14 @@
       "v1": "/api/v1/pm/connection"
     },
     {
+      "aliasOf": "/api/requests",
+      "v1": "/api/v1/requests"
+    },
+    {
+      "aliasOf": "/api/requests/[id]",
+      "v1": "/api/v1/requests/[id]"
+    },
+    {
       "aliasOf": "/api/requests/[id]/events",
       "v1": "/api/v1/requests/[id]/events"
     },
@@ -346,16 +394,12 @@
       "v1": "/api/v1/requests/[id]/register"
     },
     {
-      "aliasOf": "/api/requests/[id]",
-      "v1": "/api/v1/requests/[id]"
-    },
-    {
       "aliasOf": "/api/requests/meta/form",
       "v1": "/api/v1/requests/meta/form"
     },
     {
-      "aliasOf": "/api/requests",
-      "v1": "/api/v1/requests"
+      "aliasOf": "/api/runtime/build-freshness",
+      "v1": "/api/v1/runtime/build-freshness"
     },
     {
       "aliasOf": "/api/runtime/health",
@@ -366,6 +410,10 @@
       "v1": "/api/v1/smart-matching/advice"
     },
     {
+      "aliasOf": "/api/sync",
+      "v1": "/api/v1/sync"
+    },
+    {
       "aliasOf": "/api/sync/all",
       "v1": "/api/v1/sync/all"
     },
@@ -374,56 +422,12 @@
       "v1": "/api/v1/sync/jobs"
     },
     {
-      "aliasOf": "/api/sync",
-      "v1": "/api/v1/sync"
-    },
-    {
       "aliasOf": "/api/users/lookup",
       "v1": "/api/v1/users/lookup"
     },
     {
       "aliasOf": "/api/version",
       "v1": "/api/v1/version"
-    },
-    {
-      "v1": "/api/v1/mobile-relay/poll",
-      "original": "/api/mobile-relay/poll"
-    },
-    {
-      "v1": "/api/v1/mobile-relay/result",
-      "original": "/api/mobile-relay/result"
-    },
-    {
-      "v1": "/api/v1/mobile-relay/bootstrap",
-      "original": "/api/mobile-relay/bootstrap"
-    },
-    {
-      "v1": "/api/v1/admin/relay/enroll",
-      "original": "/api/admin/relay/enroll"
-    },
-    {
-      "v1": "/api/v1/admin/relay/status",
-      "original": "/api/admin/relay/status"
-    },
-    {
-      "v1": "/api/v1/admin/relay/test",
-      "original": "/api/admin/relay/test"
-    },
-    {
-      "v1": "/api/v1/admin/relay/revoke",
-      "original": "/api/admin/relay/revoke"
-    },
-    {
-      "v1": "/api/v1/admin/relay/qr",
-      "original": "/api/admin/relay/qr"
-    },
-    {
-      "v1": "/api/v1/admin/relay/browser-poll",
-      "original": "/api/admin/relay/browser-poll"
-    },
-    {
-      "v1": "/api/v1/admin/relay/browser-result",
-      "original": "/api/admin/relay/browser-result"
     }
   ],
   "history": [

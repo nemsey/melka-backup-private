@@ -59,6 +59,7 @@ export const WORKER_JOB_IDS = {
   diagnosisCycle: "diagnosis-cycle",
   memoryConsolidation: "memory-consolidation",
   ipLog: "ip-log",
+  headGuard: "head-guard",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -460,6 +461,41 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       return {};
     },
   });
+
+  // ── Head Guard → Worker (تازه — PN-031-B/جلسهٔ ۰۳۹: جبران خودکار بازنشانی پلتفرم) ──
+  // درس بازنشانی‌های ۷-۸: درخت گیت سالم ماند اما بیلد زنده کهنه شد؛
+  // reset-guard درخت گیت را می‌سنجید (HEALTHY دروغین) و preview-guard فقط
+  // هشدار می‌داد. این گارد حلقهٔ بسته است: BUILD_ID زنده ≠ HEAD ⇒ بیلد +
+  // ری‌استارت + تأیید + شاهد AuditLog(action=HEAD_GUARD_AUTOBUILD).
+  // ⚠ نکتهٔ حیاتی: rebuild خودِ Worker را هم ری‌استارت می‌کند (بارگذاری
+  // رجیستری تازه) — مقدار بازگشتی این تابع پس از آن تضمینی نیست؛ شاهد
+  // نهایی از اسکریپت (witness + jsonl) و AuditLog می‌آید.
+  // صفر auto_execute کسب‌وکاری — فقط بیلد زیرساختی (بند ۲.۴ سند ۰۳۹).
+  if (process.env.MELK_HEAD_GUARD !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.headGuard,
+      title: "گارد تازگی بیلد زنده — head-guard (PN-031-B)",
+      intervalMs: envInt("MELK_HEAD_GUARD_INTERVAL_MINUTES", 10, 5) * 60_000,
+      firstRunDelayMs: 90_000,
+      run: async () => {
+        const check = await runShell(join(REPO_ROOT, "scripts/recovery/audit-head-guard.sh"), ["check"], 3 * 60_000);
+        if (check.code === 2) {
+          const rec = await runShell(join(REPO_ROOT, "scripts/recovery/audit-head-guard.sh"), ["rebuild"], 30 * 60_000);
+          return {
+            verdict: "STALE-REBUILT",
+            headAtCheck: "see-witness",
+            rebuildCode: rec.code,
+            rebuildStderr: rec.stderr.slice(0, 300),
+          };
+        }
+        return { verdict: check.code === 0 ? "OK" : "ERROR", checkCode: check.code, stderr: check.stderr.slice(0, 300) };
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
 
   return jobs;
 }
