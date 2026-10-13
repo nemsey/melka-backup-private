@@ -320,7 +320,7 @@ describe("PN-019/فاز۹ · Worker + API + گارد", () => {
     expect(pe).toContain("PASS");
   });
 
-  test("Worker پس از PN-025: ۱۵ کار (۱۴ قبلی + memory-consolidation فاز ۱۳-ج)", async () => {
+  test("Worker پس از PN-031-B: ۱۷ کار شناسهٔ یکتا (۱۶ قبلی + head-guard — شورا-ن۰۳۹)", async () => {
     const { WORKER_JOB_IDS } = await import("@/core/runtime/jobs");
     const ids = Object.values(WORKER_JOB_IDS);
     expect(ids).toContain("decision-shadow");
@@ -328,6 +328,7 @@ describe("PN-019/فاز۹ · Worker + API + گارد", () => {
     expect(ids).toContain("disk-guard"); // PN-020/H2
     expect(ids).toContain("memory-consolidation"); // PN-025
     expect(ids).toContain("ip-log"); // PN-029 (شورا-ن۰۳۳) — گارد IP کانتینر
-    expect(new Set(ids).size).toBe(16);
+    expect(ids).toContain("head-guard"); // PN-031-B (شورا-ن۰۳۹) — گارد تازگی بیلد زنده
+    expect(new Set(ids).size).toBe(17);
   });
 });

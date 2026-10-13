@@ -1,6 +1,6 @@
 {
   "workOrder": "PN-022-A/مرحلهٔ۵ — گارد postgres-compat (گام ۵-ر)",
-  "ranAt": "2026-10-12T10:18:19.493148+00:00",
+  "ranAt": "2026-10-13T04:30:13.462720+00:00",
   "checks": [
     {
       "check": "وجود schema.postgres.prisma",
@@ -37,13 +37,13 @@
   "engineSites": [
     {
       "file": "src/core/runtime/jobs.ts",
-      "line": 99,
+      "line": 100,
       "marked": true,
       "code": "await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, \"''\")}'`);"
     },
     {
       "file": "src/core/runtime/jobs.ts",
-      "line": 105,
+      "line": 106,
       "marked": true,
       "code": "const r = await probe.$queryRawUnsafe(\"PRAGMA integrity_check\") as { integrity_c"
     },
