@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     const dev = await createRelayDevice(label, ctx.personnelCode);
 
-    await audit("RELAY_ENROLL_OWNER", ctx.personnelCode, `ثبت دستگاه رلهٔ «${label}» (${dev.deviceId}) — کد راه‌اندازی یک‌بارمصرف صادر شد`);
+    await audit("RELAY_ENROLL_OWNER", ctx.personnelCode, `ثبت دستگاه رلهٔ «${label}» (${dev.deviceId}) — کد راه‌اندازی بخشندهٔ ۳تلاشی صادر شد`);
 
     return Response.json({
       ok: true,
@@ -54,7 +54,10 @@ export async function POST(request: NextRequest) {
       installCommand: buildInstallCommand(serverUrl, dev.enrollCode),
       bootstrapUrl: `${serverUrl}/api/mobile-relay/bootstrap?code=${dev.enrollCode}`,
       enrollExpires: dev.enrollExpires.toISOString(),
-      note: "راز دستگاه فقط در اسکریپتِ دانلودشده می‌نشیند — این پاسخ حاوی راز نیست.",
+      // PN-031-C (شورا-ن۰۴۰) — کد بخشنده: ۳ تلاش در پنجرهٔ ۳۰ دقیقه
+      maxAttempts: 3,
+      validityMinutes: 30,
+      note: "راز دستگاه فقط در اسکریپتِ دانلودشده می‌نشیند — این پاسخ حاوی راز نیست. کد تا ۳ بار قابل استفاده است؛ سوختن نهایی فقط پس از اتصال موفق گوشی (اولین Poll).",
     });
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);

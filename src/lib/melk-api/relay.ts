@@ -161,17 +161,126 @@ export async function createRelayDevice(label: string, enrolledBy: string): Prom
   return { deviceId: device?.deviceId ?? "", secret, enrollCode, enrollExpires };
 }
 
-/** مصرف کد یک‌بارمصرف راه‌اندازی — فقط روت bootstrap عمومی */
-export async function consumeEnrollCode(code: string, ip: string): Promise<{ ok: boolean; device?: { deviceId: string; secret: string; label: string } }> {
+// ───────────────────────── کد راه‌اندازی بخشنده (PN-031-C · شورا-ن۰۴۰) ─────────────────────────
+
+/**
+ * دلایل رد کد راه‌اندازی — هر دلیل پیام دقیق و متمایز دارد (کار ۵ سند ۰۴۰):
+ *   invalid — چنین کدی صادر نشده (غلط تایپی/کامل نبودن)
+ *   revoked — دستگاه صاحب کد باطل شده
+ *   used    — نصب کامل شده (اولین Poll آمده) → «کد سوخته» واقعی
+ *   limit   — ۳ تلاش دانلود مصرف شده (تلاش چهارم) → «کد سوخته»
+ *   expired — پنجرهٔ ۳۰ دقیقه گذشته → «کد منقضی»
+ */
+export type EnrollRejectReason = "invalid" | "revoked" | "used" | "limit" | "expired";
+
+export interface EnrollCodeView {
+  state: "waiting" | "installing" | "enrolled" | "burned-limit" | "burned-used" | "expired" | "revoked" | "absent";
+  attemptCount: number;
+  maxAttempts: number;
+  lastAttemptAt: string | null;
+  enrollExpires: string | null;
+  enrolledAt: string | null;
+}
+
+/** شمارش تلاش + وضعیت کد یک دستگاه (بدون راز) — برای code-status و UI */
+export function relayEnrollState(d: {
+  enrollCode: string | null;
+  enrollExpires: Date | null;
+  attemptCount: number;
+  maxAttempts: number;
+  lastAttemptAt: Date | null;
+  enrolledAt: Date | null;
+  revokedAt: Date | null;
+  lastSeenAt: Date | null;
+}): EnrollCodeView {
+  const base = {
+    attemptCount: d.attemptCount,
+    maxAttempts: d.maxAttempts,
+    lastAttemptAt: d.lastAttemptAt?.toISOString() ?? null,
+    enrollExpires: d.enrollExpires?.toISOString() ?? null,
+    enrolledAt: d.enrolledAt?.toISOString() ?? null,
+  };
+  if (d.revokedAt) return { ...base, state: "revoked" };
+  if (d.enrolledAt) return { ...base, state: "enrolled" };
+  if (!d.enrollCode) return { ...base, state: "absent" };
+  if (d.attemptCount >= d.maxAttempts) return { ...base, state: "burned-limit" };
+  if (!d.enrollExpires || d.enrollExpires.getTime() < Date.now()) return { ...base, state: "expired" };
+  // کد زنده: اگر تلاشی شده «در حال نصب» است، وگرنه منتظر نخستین تلاش
+  return { ...base, state: d.attemptCount > 0 || d.lastSeenAt ? "installing" : "waiting" };
+}
+
+/**
+ * مصرفِ بخشندهٔ کد راه‌اندازی — فقط روت bootstrap عمومی (PN-031-C).
+ *
+ * تفاوت با PN-031 (درس چرخهٔ خطای ۴۰۳ جلسهٔ ۰۴۰): کد در «تلاش ناموفق» نمی‌سوزد.
+ * هر دانلود موفق bootstrap فقط attemptCount را زیاد می‌کند (تا سقف maxAttempts=۳)
+ * و enrollCode را نگه می‌دارد؛ سوختن نهایی فقط با اولین Poll موفق گوشی است
+ * (markRelayEnrollCompleted) — یعنی مالک با همان کد تا ۳ بار می‌تواند اسکریپت
+ * را بگیرد و اگر وسط کار گوشی/شبکه خطا داد، همان کد دوباره کار می‌کند.
+ */
+export async function consumeEnrollCode(
+  code: string,
+  ip: string
+): Promise<{ ok: true; device: { deviceId: string; secret: string; label: string; attemptCount: number; maxAttempts: number } } | { ok: false; reason: EnrollRejectReason; retryAfterMinutes?: number }> {
   const device = await db.relayDevice.findFirst({ where: { enrollCode: code } });
-  if (!device) return { ok: false };
-  if (device.revokedAt) return { ok: false };
-  if (!device.enrollExpires || device.enrollExpires.getTime() < Date.now()) return { ok: false };
+  if (!device) return { ok: false, reason: "invalid" };
+  if (device.revokedAt) return { ok: false, reason: "revoked" };
+  if (device.enrolledAt) return { ok: false, reason: "used" };
+  if (!device.enrollExpires || device.enrollExpires.getTime() < Date.now()) {
+    return { ok: false, reason: "expired" };
+  }
+  if (device.attemptCount >= device.maxAttempts) return { ok: false, reason: "limit" };
+  // ثبت تلاش — کد هنوز زنده است؛ سوختن با اولین Poll موفق رخ می‌دهد
   await db.relayDevice.update({
     where: { id: device.id },
-    data: { enrollCode: null, enrollExpires: null, enrolledAt: new Date(), lastIp: ip },
+    data: { attemptCount: { increment: 1 }, lastAttemptAt: new Date(), lastIp: ip },
   });
-  return { ok: true, device: { deviceId: device.deviceId, secret: device.secret, label: device.label } };
+  return {
+    ok: true,
+    device: {
+      deviceId: device.deviceId,
+      secret: device.secret,
+      label: device.label,
+      attemptCount: device.attemptCount + 1,
+      maxAttempts: device.maxAttempts,
+    },
+  };
+}
+
+/**
+ * تکمیل نصب — اولین Poll موفق گوشی (کار ۳ سند ۰۴۰).
+ * اینجا کد واقعاً می‌سوزد: enrolledAt ثبت می‌شود (enrollCode حفظ می‌شود تا
+ * «سوختهٔ کامل» در برابر «نامعتبر» تشخیص داده شود — enrolledAt علامت سوختن است
+ * و روت bootstrap پیش از هر چیز آن را چک می‌کند). خروجی: تعداد رکوردهای تازه‌تکمیل (۰/۱).
+ */
+export async function markRelayEnrollCompleted(deviceId: string): Promise<number> {
+  const r = await db.relayDevice.updateMany({
+    where: { deviceId, enrolledAt: null, enrollCode: { not: null } },
+    data: { enrolledAt: new Date(), enrollExpires: null },
+  });
+  return r.count;
+}
+
+/**
+ * وضعیت کد راه‌اندازی برای مالک — کار ۴ سند ۰۴۰ (لایهٔ سرویس، روت سبک).
+ * بدون deviceId: تازه‌ترین دستگاهِ صاحب کد. خروجی بدون هیچ رازی.
+ */
+export async function getRelayCodeStatus(deviceId?: string): Promise<{
+  found: boolean;
+  deviceId?: string;
+  label?: string;
+  code?: EnrollCodeView;
+}> {
+  const device = deviceId
+    ? await db.relayDevice.findUnique({ where: { deviceId } })
+    : await db.relayDevice.findFirst({ where: { enrollCode: { not: null } }, orderBy: { id: "desc" } });
+  if (!device) return { found: false };
+  return {
+    found: true,
+    deviceId: device.deviceId,
+    label: device.label,
+    code: relayEnrollState(device),
+  };
 }
 
 /** ابطال دستگاه — فقط مالک */
@@ -422,6 +531,8 @@ export async function relayOverview(): Promise<{
     errorCount: number;
     lastRoundtripMs: number | null;
     revoked: boolean;
+    /** PN-031-C — وضعیت کد بخشنده برای نمایش در UI تنظیمات */
+    enroll: EnrollCodeView;
   }>;
   queue: { pending: number; dispatched: number; done24h: number; failed24h: number; expired24h: number };
 }> {
@@ -447,6 +558,7 @@ export async function relayOverview(): Promise<{
       errorCount: d.errorCount,
       lastRoundtripMs: d.lastRoundtripMs,
       revoked: !!d.revokedAt,
+      enroll: relayEnrollState(d),
     })),
     queue: { pending, dispatched, done24h, failed24h, expired24h },
   };

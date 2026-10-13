@@ -49,12 +49,12 @@ else
   fail "قفل ترتیب شکسته — گارد آفلینی پیش از شبکه نیست"
 fi
 
-# ۶) روت‌ها + آینه‌ها
-for r in mobile-relay/poll mobile-relay/result mobile-relay/bootstrap admin/relay/enroll admin/relay/status admin/relay/test admin/relay/revoke admin/relay/qr admin/relay/browser-poll admin/relay/browser-result; do
+# ۶) روت‌ها + آینه‌ها (PN-031-C: code-status افزوده شد — ۱۱ روت)
+for r in mobile-relay/poll mobile-relay/result mobile-relay/bootstrap admin/relay/enroll admin/relay/status admin/relay/test admin/relay/revoke admin/relay/qr admin/relay/browser-poll admin/relay/browser-result admin/relay/code-status; do
   [ -f "src/app/api/${r}/route.ts" ] || fail "روت api/${r} غایب"
   [ -f "src/app/api/v1/${r}/route.ts" ] || fail "آینهٔ v1/${r} غایب"
 done
-ok "۱۰ روت رله + ۱۰ آینهٔ v1"
+ok "۱۱ روت رله + ۱۱ آینهٔ v1"
 
 # ۷) اسکیما
 rg -q 'model RelayDevice' prisma/schema.prisma && ok "جدول RelayDevice در schema" || fail "RelayDevice غایب"
@@ -81,5 +81,18 @@ for r in admin/relay/enroll mobile-relay/bootstrap; do
   fi
 done
 rg -q '"MELK_PUBLIC_BASE_URL"' src/lib/auth/boot-secrets.ts && ok "بقای نشانی عمومی در escrow سه‌لایه" || fail "کلید عمومی در escrow غایب"
+
+# ۱۰) قانون کد بخشنده — PN-031-C (شورا-ن۰۴۰): پایان چرخهٔ خطای ۴۰۳
+#   · کد در تلاش ناموفق نمی‌سوزد: bootstrap فقط attemptCount را زیاد می‌کند
+#   · سوختن نهایی فقط با اولین Poll موفق (markRelayEnrollCompleted در روت poll)
+#   · سقف ۳ تلاش (maxAttempts) + پیام خطای متمایز used/limit/expired/invalid/revoked
+#   · اسکیمای بقای مهاجرت: فیلدهای attemptCount/maxAttempts/lastAttemptAt
+rg -q 'attemptCount: \{ increment: 1 \}' src/lib/melk-api/relay.ts && ok "کد بخشنده: تلاش ناموفق فقط شمارنده را زیاد می‌کند (نسوختن)" || fail "افزایش attemptCount غایب"
+rg -q 'markRelayEnrollCompleted' src/app/api/mobile-relay/poll/route.ts && ok "سوختن نهایی در اولین Poll موفق گوشی" || fail "نقطهٔ سوختن Poll غایب"
+rg -q 'maxAttempts *Int *@default\(3\)' prisma/schema.prisma && ok "اسکیما: سقف ۳ تلاش (maxAttempts)" || fail "فیلد maxAttempts غایب"
+rg -q 'attemptCount *Int *@default\(0\)' prisma/schema.prisma && ok "اسکیما: شمارش تلاش (attemptCount)" || fail "فیلد attemptCount غایب"
+rg -q 'lastAttemptAt *DateTime\?' prisma/schema.prisma && ok "اسکیما: زمان آخرین تلاش (lastAttemptAt)" || fail "فیلد lastAttemptAt غایب"
+rg -q 'reason: "used"' src/lib/melk-api/relay.ts && rg -q 'reason: "expired"' src/lib/melk-api/relay.ts && rg -q 'reason: "invalid"' src/lib/melk-api/relay.ts \
+  && ok "پیام خطای متمایز: سوخته/منقضی/نامعتبر" || fail "دلایل رد متمایز غایب"
 
 [ "$FAIL" = "0" ] && echo "گارد رلهٔ موبایل: سبز ✓" || { echo "گارد رلهٔ موبایل: قرمز ✗" >&2; exit 1; }

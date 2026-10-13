@@ -6,11 +6,14 @@
  *   · بدنه: {"wait": 20} — حداکثر ۲۵ ثانیه معلق می‌ماند
  *   · ۲۰۰ + آیتم صف (با امضای دوجهتهٔ sig) یا ۲۰۴ (خالی — ادامهٔ poll)
  *
+ * PN-031-C (شورا-ن۰۴۰): اولین Poll موفق = نقطهٔ سوختن کد راه‌اندازی بخشنده
+ * (پیش از این، کد در تلاش ناموفق می‌سوخت — ریشهٔ چرخهٔ خطای ۴۰۳ مالک).
+ *
  * قانون «صفر لاگ محتوا»: هیچ بدنه/هدری ثبت نمی‌شود — فقط شمارندهٔ lastSeen.
  */
 
 import { NextRequest } from "next/server";
-import { verifyRelayRequestAuth, claimNextRelayRequest } from "@/lib/melk-api/relay";
+import { verifyRelayRequestAuth, claimNextRelayRequest, markRelayEnrollCompleted } from "@/lib/melk-api/relay";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -23,6 +26,12 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) {
     return Response.json({ ok: false, error: auth.error }, { status: auth.status, headers: { "cache-control": "no-store" } });
   }
+
+  // PN-031-C (شورا-ن۰۴۰) — نقطهٔ سوختن کد راه‌اندازی: اولین Poll موفق گوشی
+  // یعنی اسکریپت واقعاً اجرا شده و راز را در گوشی نصب کرده؛ از این لحظه کد
+  // بخشنده به‌طور نهایی مصرف می‌شود (enrolledAt). تلاش‌های پیشین که به Poll
+  // نرسیدند، کد را نسوزانده بودند — پایان چرخهٔ خطای ۴۰۳.
+  await markRelayEnrollCompleted(auth.device!.deviceId);
 
   let waitSeconds = 20;
   try {
