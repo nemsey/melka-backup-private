@@ -30,7 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Smartphone, QrCode, ShieldCheck, Copy, Ban, Activity } from "lucide-react";
+import { Loader2, Smartphone, QrCode, ShieldCheck, Copy, Ban, Activity, Download } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faDateTime, faNumber } from "@/lib/format";
 import { useAppStore } from "@/lib/client/store";
@@ -93,6 +93,8 @@ export function RelaySetupSection({ relayMode }: { relayMode?: string }) {
   const [enroll, setEnroll] = useState<EnrollResult | null>(null);
   const [test, setTest] = useState<TestResult | null>(null);
   const [qrSvg, setQrSvg] = useState<string | null>(null);
+  // PN-031-D — QR دانلود APK (بعد از اولین کلیک مالک ساخته می‌شود)
+  const [apkQrSvg, setApkQrSvg] = useState<string | null>(null);
   // رلهٔ مرورگری (رویکرد B) — فقط وقتی همین صفحه باز است
   const [browserRelay, setBrowserRelay] = useState(false);
   const [browserRelayStats, setBrowserRelayStats] = useState({ served: 0, errors: 0, lastError: "" });
@@ -232,6 +234,18 @@ export function RelaySetupSection({ relayMode }: { relayMode?: string }) {
   const activeDevices = status?.devices.filter((d) => !d.revoked) ?? [];
   const onlineCount = activeDevices.filter((d) => d.online).length;
 
+  // PN-031-D — QR دانلود اپ اندروید (URL عمومی همان مرورگر مالک است)
+  const showApkQr = async () => {
+    if (apkQrSvg) return;
+    try {
+      const url = `${window.location.origin}/deliver/pn031d/melka-relay.apk`;
+      const res = await fetch(`/api/admin/relay/qr?text=${encodeURIComponent(url)}`);
+      setApkQrSvg(res.ok ? await res.text() : null);
+    } catch {
+      setApkQrSvg(null);
+    }
+  };
+
   return (
     <section className="rounded-xl border p-4 space-y-4" aria-label="رلهٔ موبایل ایرانی" id="settings-mobile-relay">
       <header className="space-y-0.5">
@@ -242,6 +256,37 @@ export function RelaySetupSection({ relayMode }: { relayMode?: string }) {
           عبور از سد جغرافیایی ملک تبریز با گوشی شما — گوشی در ایران است و فایروال ملک تبریز او را می‌پذیرد؛ سرور ملکا درخواست‌ها را از طریق همین گوشی به سامانه‌های ملک تبریز می‌رساند. راهکار صفر-هزینه، صفر-مکاتبه (PN-031 · جلسهٔ فوق‌العاده ۰۳۷).
         </p>
       </header>
+
+      {/* PN-031-D — اپ اندروید اختصاصی (روش پیشنهادی · افزودنی) */}
+      <div className="rounded-lg border border-teal-500/40 bg-teal-500/5 p-3 space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Smartphone className="w-4 h-4 text-teal-600 shrink-0" aria-hidden />
+          <p className="text-xs font-bold">اپ اندروید ملکا — ساده‌ترین راه (بدون Termux)</p>
+          <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">تازه · PN-031-D</Badge>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          اپ رسمی ملکا (حدود ۵ مگابایت · امضاشده) را یک‌بار نصب می‌کنید؛ خودش شروع خودکار پس از بوت، خودترمیمی، راهنمای MIUI و قفل بیداری دارد. بعد از نصب، در اپ دکمهٔ «اتصال با QR» را بزنید و QR راه‌اندازی همین بخش (پایین) را اسکن کنید.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" className="gap-2" onClick={() => window.open("/deliver/pn031d/melka-relay.apk", "_blank", "noopener")}>
+            <Download className="w-4 h-4" aria-hidden /> دانلود اپ (APK)
+          </Button>
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => void showApkQr()}>
+            <QrCode className="w-3.5 h-3.5" aria-hidden /> QR دانلود (برای گوشی)
+          </Button>
+        </div>
+        {apkQrSvg && (
+          <div className="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-3 items-start">
+            <div className="rounded-lg bg-white p-2 w-fit" dangerouslySetInnerHTML={{ __html: apkQrSvg }} aria-label="QR دانلود اپ اندروید ملکا" />
+            <ol className="text-xs leading-relaxed space-y-1 text-muted-foreground">
+              <li><b>۱.</b> در Poco F3 این QR را با دوربین اسکن کنید و APK را دانلود/نصب کنید (اجازهٔ «نصب از منابع ناشناس» لازم است).</li>
+              <li><b>۲.</b> اپ را باز کنید و دکمهٔ «اتصال با QR» را بزنید.</li>
+              <li><b>۳.</b> در همین صفحه پایین «راه‌اندازی رله» را بزنید و QR آن را با اپ اسکن کنید — تمام.</li>
+              <li><b>۴.</b> «تست تونل» سبز شود یعنی اتصال برای همیشه برقرار است.</li>
+            </ol>
+          </div>
+        )}
+      </div>
 
       {/* وضعیت */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

@@ -48,6 +48,9 @@ const REJECT_MESSAGES: Record<EnrollRejectReason, { message: string; hint: strin
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code")?.trim() ?? "";
   if (!code) return Response.json({ ok: false, error: "missing code", reason: "invalid" }, { status: 400 });
+  // PN-031-D (فاز ۲): شاخهٔ JSON برای اپ رسمی اندروید ملکا — همان کد بخشنده،
+  // همان شمارش تلاش و همان دلایل رد؛ فقط خروجی JSON به‌جای اسکریپت Termux.
+  const wantJson = request.nextUrl.searchParams.get("format")?.trim().toLowerCase() === "json";
 
   // نشانی سرور — PN-031-HOTFIX (شورا-ن۰۳۸): نشانی عمومی، نه بایند داخلی کانتینر.
   // کد بخشنده است؛ با این حال تعیین نشانی پیش از مصرف تلاش انجام می‌شود تا
@@ -71,6 +74,24 @@ export async function GET(request: NextRequest) {
     const { message, hint } = REJECT_MESSAGES[consumed.reason];
     await audit("RELAY_BOOTSTRAP_REJECT", "public", `کد راه‌اندازی رد شد: ${consumed.reason}`);
     return Response.json({ ok: false, reason: consumed.reason, error: message, hint }, { status: 403 });
+  }
+
+  // PN-031-D (فاز ۲): خروجی JSON برای اپ اندروید — راز دستگاه همان‌جا که در
+  // اسکریپت Termux بود؛ اپ آن را در Keystore/EncryptedSharedPreferences گوشی
+  // مالک نگه می‌دارد (سوختن نهایی کد همچنان فقط با اولین Poll موفق).
+  if (wantJson) {
+    return Response.json(
+      {
+        ok: true,
+        deviceId: consumed.device.deviceId,
+        deviceSecret: consumed.device.secret,
+        serverUrl,
+        label: consumed.device.label,
+        attempts: { used: consumed.device.attemptCount, max: consumed.device.maxAttempts },
+        note: "این پاسخ فقط برای اپ رسمی ملکا است — راز دستگاه را فقط در همین گوشی نگه دارید.",
+      },
+      { status: 200, headers: { "cache-control": "no-store" } }
+    );
   }
 
   const script = buildRelayScript({
