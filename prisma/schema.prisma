@@ -2022,6 +2022,14 @@ model RelayDevice {
   /// کد یک‌بارمصرف راه‌اندازی — پس از دانلود اسکریپت خالی می‌شود
   enrollCode    String?
   enrollExpires DateTime?
+  /// PN-031-C (شورا-ن۰۴۰) — کد بخشنده: شمارش تلاش‌های دانلود bootstrap.
+  /// سوختن نهایی (enrolledAt + خنثی‌سازی کد) فقط پس از اولین Poll موفق گوشی؛
+  /// تلاش ناموفق (شبکه/کانتینر/هر علت) کد را نمی‌سوزاند — تا ۳ تلاش در پنجرهٔ ۳۰دقیقه.
+  attemptCount  Int       @default(0)
+  /// سقف تلاش per device (پیش‌فرض ۳ — مصوب جلسهٔ ۰۴۰)
+  maxAttempts   Int       @default(3)
+  /// آخرین تلاش دانلود bootstrap (حالت «در حال نصب»)
+  lastAttemptAt DateTime?
   enrolledBy    String    @default("")
   enrolledAt    DateTime?
   lastSeenAt    DateTime?

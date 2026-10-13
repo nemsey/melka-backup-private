@@ -45,6 +45,15 @@ interface RelayDeviceView {
   errorCount: number;
   lastRoundtripMs: number | null;
   revoked: boolean;
+  /** PN-031-C — وضعیت کد بخشنده */
+  enroll?: {
+    state: "waiting" | "installing" | "enrolled" | "burned-limit" | "burned-used" | "expired" | "revoked" | "absent";
+    attemptCount: number;
+    maxAttempts: number;
+    lastAttemptAt: string | null;
+    enrollExpires: string | null;
+    enrolledAt: string | null;
+  };
 }
 
 interface RelayStatusView {
@@ -61,6 +70,9 @@ interface EnrollResult {
   installCommand: string;
   bootstrapUrl: string;
   enrollExpires: string;
+  /** PN-031-C — کد بخشنده (شورا-ن۰۴۰) */
+  maxAttempts?: number;
+  validityMinutes?: number;
 }
 
 interface TestResult {
@@ -261,16 +273,27 @@ export function RelaySetupSection({ relayMode }: { relayMode?: string }) {
         <div className="rounded-lg border divide-y">
           {activeDevices.map((d) => (
             <div key={d.deviceId} className="flex items-center justify-between gap-2 p-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate flex items-center gap-2">
-                  {d.label} <span className="font-mono text-[10px] text-muted-foreground" dir="ltr">({d.deviceId})</span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate flex items-center gap-2">
+                {d.label} <span className="font-mono text-[10px] text-muted-foreground" dir="ltr">({d.deviceId})</span>
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                آخرین اتصال: {d.lastSeenAt ? faDateTime(d.lastSeenAt) : "هنوز وصل نشده"}
+                {d.servedCount > 0 && ` · ${faNumber(d.servedCount)} درخواست موفق`}
+                {d.lastRoundtripMs != null && ` · رفت‌وبرگشت ${faNumber(d.lastRoundtripMs)}ms`}
+              </p>
+              {d.enroll && (
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {d.enroll.state === "enrolled" && "نصب کامل شده ✓"}
+                  {d.enroll.state === "installing" && `در حال نصب — تلاش ${faNumber(d.enroll.attemptCount)}/${faNumber(d.enroll.maxAttempts)} (همان کد دوباره کار می‌کند)`}
+                  {d.enroll.state === "waiting" && `کد صادر شده — تلاش ${faNumber(d.enroll.attemptCount)}/${faNumber(d.enroll.maxAttempts)}`}
+                  {d.enroll.state === "burned-limit" && "کد سوخته — سقف تلاش پر شد"}
+                  {d.enroll.state === "burned-used" && "کد سوخته — نصب قبلاً کامل شد"}
+                  {d.enroll.state === "expired" && "کد منقضی (۳۰ دقیقه گذشته)"}
+                  {d.enroll.state === "revoked" && "دستگاه ابطال شده"}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  آخرین اتصال: {d.lastSeenAt ? faDateTime(d.lastSeenAt) : "هنوز وصل نشده"}
-                  {d.servedCount > 0 && ` · ${faNumber(d.servedCount)} درخواست موفق`}
-                  {d.lastRoundtripMs != null && ` · رفت‌وبرگشت ${faNumber(d.lastRoundtripMs)}ms`}
-                </p>
-              </div>
+              )}
+            </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 {d.online ? (
                   <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 gap-1">
@@ -329,7 +352,8 @@ export function RelaySetupSection({ relayMode }: { relayMode?: string }) {
                 دستگاه ثبت شد: {enroll.label} <span className="font-mono text-[10px] text-muted-foreground" dir="ltr">({enroll.deviceId})</span>
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                کد راه‌اندازی تا <b>{faDateTime(enroll.enrollExpires)}</b> معتبر است — فقط یک بار قابل استفاده. اگر منقضی شد، دستگاه تازه ثبت کنید.
+                کد راه‌اندازی تا <b>{faDateTime(enroll.enrollExpires)}</b> معتبر است — تا <b>{faNumber(enroll.maxAttempts ?? 3)} بار قابل استفاده</b>.
+                اگر تلاش اول خطا داد، همان کد را دوباره پیست کنید؛ کد فقط وقتی می‌سوزاند که گوشی با موفقیت به سرور وصل شده باشد (PN-031-C · کد بخشنده).
               </p>
               <div className="rounded-md bg-card border p-2">
                 <p className="text-[10px] text-muted-foreground mb-1">دستور نصب — در Termux پیست کنید:</p>
