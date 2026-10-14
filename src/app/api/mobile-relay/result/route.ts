@@ -21,7 +21,11 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const auth = await verifyRelayRequestAuth("POST", "/api/mobile-relay/result", rawBody, request.headers);
   if (!auth.ok) {
-    return Response.json({ ok: false, error: auth.error }, { status: auth.status, headers: { "cache-control": "no-store" } });
+    // PN-031-E — serverTime در پاسخ رد (همان قرارداد poll)
+    return Response.json(
+      { ok: false, error: auth.error, serverTime: auth.serverTime ?? Date.now() },
+      { status: auth.status, headers: { "cache-control": "no-store" } }
+    );
   }
 
   let payload: { id?: string; httpStatus?: number; contentType?: string | null; bodyB64?: string | null; error?: string | null };

@@ -324,7 +324,8 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
     // قفل ترتیب واقعی = MELK_ARM_OFFLINE=1 تا قبولی تست دروازهٔ زنده.
     expect(env.MELK_ARM_PROXY_URL ?? "").toMatch(/^https:\/\/melka-proxy\.[a-z0-9-]+\.workers\.dev$/);
     expect(env.MELK_ARM_RELAY_MODE ?? "").toBe("mobile"); // PN-031: رله مسیر فعال
-    expect(env.MELK_ARM_OFFLINE ?? "").toBe("1"); // قفل ترتیب پابرجا تا تست زنده
+    // PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): قفل آفلاین به‌فرمان مالک برداشته شد — اپ در حالت اتصال واقعی
+    expect(env.MELK_ARM_OFFLINE ?? "").toBe("");
     // مستندسازی قفل در همان فایل
     expect(env._pn030 ?? "").toContain("MELK_ARM_PROXY_URL");
     expect(env._pn031 ?? "").toContain("شورا-ن۰۳۷");
