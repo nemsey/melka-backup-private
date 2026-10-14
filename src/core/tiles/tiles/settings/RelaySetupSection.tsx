@@ -95,6 +95,8 @@ export function RelaySetupSection({ relayMode }: { relayMode?: string }) {
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   // PN-031-D — QR دانلود APK (بعد از اولین کلیک مالک ساخته می‌شود)
   const [apkQrSvg, setApkQrSvg] = useState<string | null>(null);
+  // PN-031-E — اگر تولید سمت سرور در دسترس نبود، QR ایستا همیشه موجود است (عمومی · بدون احراز)
+  const [apkQrStatic, setApkQrStatic] = useState(false);
   // رلهٔ مرورگری (رویکرد B) — فقط وقتی همین صفحه باز است
   const [browserRelay, setBrowserRelay] = useState(false);
   const [browserRelayStats, setBrowserRelayStats] = useState({ served: 0, errors: 0, lastError: "" });
@@ -235,15 +237,21 @@ export function RelaySetupSection({ relayMode }: { relayMode?: string }) {
   const onlineCount = activeDevices.filter((d) => d.online).length;
 
   // PN-031-D — QR دانلود اپ اندروید (URL عمومی همان مرورگر مالک است)
+  // PN-031-E — مقاوم‌سازی: اگر QR سرور (نیازمند احراز) پاسخ نداد، QR ایستای عمومی
+  // از /deliver/pn031d/qr-apk.svg نمایش داده می‌شود — QR همیشه هست.
   const showApkQr = async () => {
-    if (apkQrSvg) return;
+    if (apkQrSvg || apkQrStatic) return;
     try {
       const url = `${window.location.origin}/deliver/pn031d/melka-relay.apk`;
       const res = await fetch(`/api/admin/relay/qr?text=${encodeURIComponent(url)}`);
-      setApkQrSvg(res.ok ? await res.text() : null);
+      if (res.ok) {
+        setApkQrSvg(await res.text());
+        return;
+      }
     } catch {
-      setApkQrSvg(null);
+      // سقوط به QR ایستا
     }
+    setApkQrStatic(true);
   };
 
   return (
@@ -275,9 +283,21 @@ export function RelaySetupSection({ relayMode }: { relayMode?: string }) {
             <QrCode className="w-3.5 h-3.5" aria-hidden /> QR دانلود (برای گوشی)
           </Button>
         </div>
-        {apkQrSvg && (
+        {(apkQrSvg || apkQrStatic) && (
           <div className="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-3 items-start">
-            <div className="rounded-lg bg-white p-2 w-fit" dangerouslySetInnerHTML={{ __html: apkQrSvg }} aria-label="QR دانلود اپ اندروید ملکا" />
+            {apkQrSvg ? (
+              <div className="rounded-lg bg-white p-2 w-fit" dangerouslySetInnerHTML={{ __html: apkQrSvg }} aria-label="QR دانلود اپ اندروید ملکا" />
+            ) : (
+              /* PN-031-E — QR ایستای عمومی: بدون احراز · بدون وابستگی به سرور — همیشه موجود */
+              <img
+                src="/deliver/pn031d/qr-apk.svg"
+                alt="QR دانلود اپ اندروید ملکا"
+                width={160}
+                height={160}
+                className="rounded-lg bg-white p-2 w-fit"
+                aria-label="QR دانلود اپ اندروید ملکا"
+              />
+            )}
             <ol className="text-xs leading-relaxed space-y-1 text-muted-foreground">
               <li><b>۱.</b> در Poco F3 این QR را با دوربین اسکن کنید و APK را دانلود/نصب کنید (اجازهٔ «نصب از منابع ناشناس» لازم است).</li>
               <li><b>۲.</b> اپ را باز کنید و دکمهٔ «اتصال با QR» را بزنید.</li>

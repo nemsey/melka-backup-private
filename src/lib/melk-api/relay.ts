@@ -32,6 +32,7 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
 import { isMelkTabrizHost } from "./proxy";
+import { audit } from "@/lib/auth/session";
 
 /** پنجرهٔ زمانی امضا (ضد replay) — عین TIMESTAMP_WINDOW_MS سمت Worker */
 export const RELAY_TIMESTAMP_WINDOW_MS = 5 * 60 * 1000;
@@ -93,7 +94,28 @@ export interface RelayAuthResult {
   ok: boolean;
   status: number;
   error?: string;
+  /** PN-031-E — زمان سرور در لحظهٔ رد (میلی‌ثانیه) — کلاینت با آن آفست ساعت خود را اصلاح می‌کند */
+  serverTime?: number;
   device?: { id: string; deviceId: string; secret: string };
+}
+
+/**
+ * PN-031-E — ردپای ردهای Poll/Result (ریشه‌یابی «Bootstrap موفق، Poll ناموفق»).
+ * پیش از این، هر رد احراز بدون هیچ ردی ناپدید می‌شد؛ مالک فقط «ناموفق» می‌دید.
+ * قانون صفر لاگ محتوا پابرجاست: دلیل رد + deviceId (بدون امضا/راز/بدنه) و
+ * حداکثر یک رکورد به‌ازای دستگاه/دلیل در ۵ دقیقه (ضد سیل لاگ).
+ */
+const relayRejectTrace = new Map<string, number>();
+function noteRelayReject(deviceId: string, reason: string): void {
+  const key = `${deviceId || "?"}|${reason}`;
+  const now = Date.now();
+  if (now - (relayRejectTrace.get(key) ?? 0) < 5 * 60_000) return;
+  relayRejectTrace.set(key, now);
+  if (relayRejectTrace.size > 200) {
+    // خانه‌تکانی — نگاشت دیرتر از ۱ ساعت حذف می‌شود
+    for (const [k, t] of relayRejectTrace) if (now - t > 3_600_000) relayRejectTrace.delete(k);
+  }
+  void audit("RELAY_POLL_REJECT", "public", `رد Poll/Result امضاشده: ${reason}${deviceId ? ` · دستگاه: ${deviceId}` : ""}`).catch(() => {});
 }
 
 /**
@@ -109,16 +131,30 @@ export async function verifyRelayRequestAuth(
   const deviceId = headers.get("X-Melka-Relay-Device")?.trim() ?? "";
   const ts = headers.get("X-Melka-Timestamp")?.trim() ?? "";
   const sig = headers.get("X-Melka-Signature")?.trim() ?? "";
-  if (!deviceId || !ts || !sig) return { ok: false, status: 403, error: "missing auth headers" };
+  if (!deviceId || !ts || !sig) {
+    noteRelayReject(deviceId, "missing auth headers");
+    return { ok: false, status: 403, error: "missing auth headers", serverTime: Date.now() };
+  }
   const tsNum = Number(ts);
   if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum) > RELAY_TIMESTAMP_WINDOW_MS) {
-    return { ok: false, status: 403, error: "stale request" };
+    // stale request — شایع‌ترین ریشهٔ خاموش: اختلاف ساعت گوشی (PN-031-E)
+    noteRelayReject(deviceId, "stale request");
+    return { ok: false, status: 403, error: "stale request", serverTime: Date.now() };
   }
   const device = await db.relayDevice.findUnique({ where: { deviceId } });
-  if (!device) return { ok: false, status: 403, error: "unknown device" };
-  if (device.revokedAt) return { ok: false, status: 403, error: "device revoked" };
+  if (!device) {
+    noteRelayReject(deviceId, "unknown device");
+    return { ok: false, status: 403, error: "unknown device", serverTime: Date.now() };
+  }
+  if (device.revokedAt) {
+    noteRelayReject(deviceId, "device revoked");
+    return { ok: false, status: 403, error: "device revoked", serverTime: Date.now() };
+  }
   const expected = relayHmacHex(device.secret, relayAuthMessage(method, path, rawBody, ts));
-  if (!relayTimingSafeEq(expected, sig.toLowerCase())) return { ok: false, status: 403, error: "forbidden" };
+  if (!relayTimingSafeEq(expected, sig.toLowerCase())) {
+    noteRelayReject(deviceId, "forbidden (signature mismatch)");
+    return { ok: false, status: 403, error: "forbidden", serverTime: Date.now() };
+  }
   return { ok: true, status: 200, device: { id: device.id, deviceId: device.deviceId, secret: device.secret } };
 }
 

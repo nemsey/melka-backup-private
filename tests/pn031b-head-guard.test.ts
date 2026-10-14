@@ -311,9 +311,9 @@ describe("PN-031-B/D — سازگاری و قراردادها", () => {
     }
   });
 
-  test("D-6: env.platform.json زنده — پرچم آفلینی + حالت رله + راز HMAC + نشانی Worker حاضرند", () => {
+  test("D-6: env.platform.json زنده — حالت رله + راز HMAC + نشانی Worker + بی‌پرچم آفلاینی (PN-031-E)", () => {
     const env = JSON.parse(readFileSync(join(import.meta.dir, "..", "env.platform.json"), "utf8")) as Record<string, string>;
-    expect(env.MELK_ARM_OFFLINE ?? "").toBe("1"); // قفل ترتیب — بازگردانی از بستهٔ بقای ۳۰
+    expect((env.MELK_ARM_OFFLINE ?? "")).toBe(""); // PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): پرچم آفلاین حذف شد
     expect(env.MELK_ARM_RELAY_MODE ?? "").toBe("mobile");
     expect(env.MELK_PROXY_SECRET ?? "").toMatch(/^[0-9a-f]{64}$/);
     expect(env.MELK_ARM_PROXY_URL ?? "").toMatch(/^https:\/\/melka-proxy\.[a-z0-9-]+\.workers\.dev$/);

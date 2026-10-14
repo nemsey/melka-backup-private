@@ -21,9 +21,8 @@ import { faDateTime } from "@/lib/format";
 import { InstallButton } from "@/components/app/InstallButton";
 // P6526/ث-۲ — باز کردن preview در صفحهٔ جدید (وقتی اپ داخل قاب گفت‌وگو است)
 import { OpenInNewTabButton } from "@/components/app/OpenInNewTabButton";
-// P6549/قانون ۰۳۵-B — نشان آفلاین (بخش ج/۵)
-import { OfflineBadge } from "@/components/app/OfflineBadge";
 // P6549/قانون ۰۳۵-B — انتقال نرم تم ۳۰۰ms (بخش ج-۲)
+// PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): نشان آفلاین (OfflineBadge) حذف شد — حالت آفلاین از اپ برداشته شد
 import { switchThemeSoft } from "@/lib/theme-transition";
 
 export function AppHeader() {
@@ -47,8 +46,7 @@ export function AppHeader() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* قانون ۰۳۵-B/ج-۵: نشان آفلاین */}
-          <OfflineBadge />
+          {/* PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): نشان آفلاین حذف شد — حالت آفلاین از اپلیکیشن برداشته شد */}
           {/* P6526/ث-۲ — داخل قاب چت: باز کردن همین صفحه در برگهٔ تازهٔ مرورگر */}
           <OpenInNewTabButton />
           {/* P6525 — نصب اپلیکیشن (PWA): کروم/اندروید/ادج → دیالوگ بومی؛ iOS → راهنما */}

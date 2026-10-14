@@ -24,7 +24,11 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const auth = await verifyRelayRequestAuth("POST", "/api/mobile-relay/poll", rawBody, request.headers);
   if (!auth.ok) {
-    return Response.json({ ok: false, error: auth.error }, { status: auth.status, headers: { "cache-control": "no-store" } });
+    // PN-031-E — serverTime در پاسخ رد: کلاینت (اسکریپت/اپ) آفست ساعت خود را اصلاح می‌کند
+    return Response.json(
+      { ok: false, error: auth.error, serverTime: auth.serverTime ?? Date.now() },
+      { status: auth.status, headers: { "cache-control": "no-store" } }
+    );
   }
 
   // PN-031-C (شورا-ن۰۴۰) — نقطهٔ سوختن کد راه‌اندازی: اولین Poll موفق گوشی
