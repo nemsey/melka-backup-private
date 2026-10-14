@@ -119,9 +119,9 @@ describe("PN-031-E · D) QR همیشه موجود (شکایت: «QR از تنظ�
   });
 
   test("D-2: sha256 عمومی APK با شاهد بیلد منطبق است", () => {
-    const witness = JSON.parse(readFileSync(join(REPO, "download/pn031d/apk-build.json"), "utf8")) as { sha256?: string };
+    const witness = JSON.parse(readFileSync(join(REPO, "download/pn031d/apk-build.json"), "utf8")) as { apk?: { sha256?: string } };
     const actual = createHash("sha256").update(readFileSync(APK_PUBLIC)).digest("hex");
-    expect(witness.sha256).toBe(actual);
+    expect(witness.apk?.sha256).toBe(actual);
   });
 
   test("D-3: UI به QR ایستا سقوط می‌کند اگر تولید سرور در دسترس نبود", () => {
@@ -180,9 +180,10 @@ describe("PN-031-E · E) پابرجایی قرارداد امنیتی (هیچ‌
     for (const line of assign) {
       expect(line).toMatch(/^(SERVER_URL|DEVICE_ID|DEVICE_SECRET)="[A-Za-z0-9:\/._-]*"$/);
     }
-    // تزریق فرمان ناممکن: نقل‌قول/دستور جانشین در مقادیر نیست
+    // تزریق فرمان ناممکن: نقل‌قول/دستور جانشین در مقادیر نیست — الگوی امن کافی است
     expect(assign.join("\n")).not.toContain("rm -rf");
     expect(assign.join("\n")).not.toContain("whoami");
-    expect(assign.join("\n")).not.toContain("id");
+    expect(assign.join("\n")).not.toContain(";");
+    expect(assign.join("\n")).not.toContain("`");
   });
 });

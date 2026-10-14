@@ -22,7 +22,7 @@ import { InstallButton } from "@/components/app/InstallButton";
 // P6526/ث-۲ — باز کردن preview در صفحهٔ جدید (وقتی اپ داخل قاب گفت‌وگو است)
 import { OpenInNewTabButton } from "@/components/app/OpenInNewTabButton";
 // P6549/قانون ۰۳۵-B — انتقال نرم تم ۳۰۰ms (بخش ج-۲)
-// PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): نشان آفلاین (OfflineBadge) حذف شد — حالت آفلاین از اپ برداشته شد
+// PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): نشان آفلاین از هدر حذف شد — حالت آفلاین از اپ برداشته شد
 import { switchThemeSoft } from "@/lib/theme-transition";
 
 export function AppHeader() {
