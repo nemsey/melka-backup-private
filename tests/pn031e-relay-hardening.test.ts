@@ -188,3 +188,32 @@ describe("PN-031-E · E) پابرجایی قرارداد امنیتی (هیچ‌
     expect(assign.join("\n")).not.toContain(" rm ");
   });
 });
+
+describe("PN-031-E · F) شکستن بن‌بست برخطی (کشف فاز C — lastSeen با صف خالی)", () => {
+  const relaySrc = readFileSync(RELAY_LIB, "utf8");
+  const pollSrc = readFileSync(POLL_ROUTE, "utf8");
+
+  test("F-1: noteRelayPollSeen در لایهٔ سرویس وجود دارد و lastSeenAt را به‌روز می‌کند", () => {
+    expect(relaySrc).toContain("export async function noteRelayPollSeen");
+    // updateMany با data: { lastSeenAt: new Date() } — نه فقط در claim
+    const fn = relaySrc.split("noteRelayPollSeen")[1] ?? "";
+    expect(fn.slice(0, 400)).toContain("lastSeenAt: new Date()");
+  });
+
+  test("F-2: روت poll پس از احراز موفق noteRelayPollSeen را صدا می‌زند", () => {
+    expect(pollSrc).toContain("noteRelayPollSeen(auth.device!.deviceId)");
+  });
+
+  test("F-3: بن‌بست مرغ و تخم‌مرغ مستند شده — anyRelayDeviceOnline به lastSeenAt نگاه می‌کند", () => {
+    // زنجیرهٔ بن‌بست (پیش از رفع): poll موفق + صف خالی → lastSeenAt دست‌نخورده →
+    // anyRelayDeviceOnline=false → relayFetch صف‌گذاری نمی‌کند → صف همیشه خالی.
+    // اکنون: هر poll موفق lastSeen را تازه می‌کند → پنجرهٔ ۹۰ ثانیه‌ای برخطی
+    expect(relaySrc).toContain("lastSeenAt: { gte: since }");
+    expect(pollSrc.indexOf("noteRelayPollSeen")).toBeGreaterThan(pollSrc.indexOf("markRelayEnrollCompleted"));
+  });
+
+  test("F-4: دستگاه ابطال‌شده با poll دیده نمی‌شود (revokedAt: null در شرط)", () => {
+    const fn = relaySrc.split("noteRelayPollSeen")[1] ?? "";
+    expect(fn.slice(0, 400)).toContain("revokedAt: null");
+  });
+});

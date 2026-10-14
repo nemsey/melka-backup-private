@@ -298,6 +298,22 @@ export async function markRelayEnrollCompleted(deviceId: string): Promise<number
 }
 
 /**
+ * PN-031-E (فاز C) — به‌روزرسانی lastSeen در هر Poll موفق، حتی با صف خالی.
+ * ریشهٔ بن‌بست ساختاری («مرغ و تخم‌مرغ»): پیش از این فقط claim آیتم صف
+ * lastSeenAt را به‌روز می‌کرد؛ اما anyRelayDeviceOnline (پیش‌شرط صف‌گذاری
+ * armCall) به همین lastSeenAt نگاه می‌کند. نتیجه: گوشی هر ۲۰ ثانیه Poll
+ * موفق می‌زد اما با صف خالی هرگز «برخط» نمی‌شد → armCall هرگز صف‌گذاری
+ * نمی‌کرد → صف همیشه خالی می‌ماند → رله هرگز هیچ درخواستی جابه‌جا نمی‌کرد.
+ * با این تابع هر Poll موفق = حضور زندهٔ دستگاه (پنجرهٔ ۹۰ ثانیه‌ای).
+ */
+export async function noteRelayPollSeen(deviceId: string): Promise<void> {
+  await db.relayDevice.updateMany({
+    where: { deviceId, revokedAt: null },
+    data: { lastSeenAt: new Date() },
+  });
+}
+
+/**
  * وضعیت کد راه‌اندازی برای مالک — کار ۴ سند ۰۴۰ (لایهٔ سرویس، روت سبک).
  * بدون deviceId: تازه‌ترین دستگاهِ صاحب کد. خروجی بدون هیچ رازی.
  */

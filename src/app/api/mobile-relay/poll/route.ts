@@ -13,7 +13,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { verifyRelayRequestAuth, claimNextRelayRequest, markRelayEnrollCompleted } from "@/lib/melk-api/relay";
+import { verifyRelayRequestAuth, claimNextRelayRequest, markRelayEnrollCompleted, noteRelayPollSeen } from "@/lib/melk-api/relay";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -36,6 +36,12 @@ export async function POST(request: NextRequest) {
   // بخشنده به‌طور نهایی مصرف می‌شود (enrolledAt). تلاش‌های پیشین که به Poll
   // نرسیدند، کد را نسوزانده بودند — پایان چرخهٔ خطای ۴۰۳.
   await markRelayEnrollCompleted(auth.device!.deviceId);
+
+  // PN-031-E (فاز C) — هر Poll موفق = حضور زندهٔ دستگاه، حتی با صف خالی.
+  // بدون این، بن‌بست «مرغ و تخم‌مرغ»: anyRelayDeviceOnline فقط به lastSeenAt
+  // نگاه می‌کند که فقط با claim آیتم به‌روز می‌شد → با صف خالی، گوشیِ در حالِ
+  // Poll هرگز «برخط» نمی‌شد → armCall صف‌گذاری نمی‌کرد → صف همیشه خالی می‌ماند.
+  await noteRelayPollSeen(auth.device!.deviceId);
 
   let waitSeconds = 20;
   try {
