@@ -180,10 +180,11 @@ describe("PN-031-E · E) پابرجایی قرارداد امنیتی (هیچ‌
     for (const line of assign) {
       expect(line).toMatch(/^(SERVER_URL|DEVICE_ID|DEVICE_SECRET)="[A-Za-z0-9:\/._-]*"$/);
     }
-    // تزریق فرمان ناممکن: نقل‌قول/دستور جانشین در مقادیر نیست — الگوی امن کافی است
-    expect(assign.join("\n")).not.toContain("rm -rf");
-    expect(assign.join("\n")).not.toContain("whoami");
+    // تزریق فرمان ناممکن: هیچ فرا-نویسهٔ پوسته‌ای (نقل‌قول/سمی‌کولن/بک‌تیک/جایگزینی) باقی نمی‌ماند
+    // (زیررشته‌های الفبایی مانند «whoami» پس از پاک‌سازی بی‌خطرند — قدرت فرا-نویسه‌هاست که حمله می‌سازد)
     expect(assign.join("\n")).not.toContain(";");
     expect(assign.join("\n")).not.toContain("`");
+    expect(assign.join("\n")).not.toContain("$(");
+    expect(assign.join("\n")).not.toContain(" rm ");
   });
 });
