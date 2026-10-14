@@ -94,6 +94,9 @@ export interface RelayAuthResult {
   ok: boolean;
   status: number;
   error?: string;
+  /** PN-031-G (شورا-ن۰۴۷) — نام هدرهای احرازی که در درخواست نایافته/خالی بودند.
+   * صرفاً نام هدر (دانش عمومی) — هیچ مقدار/امضا/رازی در آن نمی‌نشیند (قانون صفر لاگ محتوا). */
+  missing?: string[];
   /** PN-031-E — زمان سرور در لحظهٔ رد (میلی‌ثانیه) — کلاینت با آن آفست ساعت خود را اصلاح می‌کند */
   serverTime?: number;
   device?: { id: string; deviceId: string; secret: string };
@@ -132,8 +135,16 @@ export async function verifyRelayRequestAuth(
   const ts = headers.get("X-Melka-Timestamp")?.trim() ?? "";
   const sig = headers.get("X-Melka-Signature")?.trim() ?? "";
   if (!deviceId || !ts || !sig) {
-    noteRelayReject(deviceId, "missing auth headers");
-    return { ok: false, status: 403, error: "missing auth headers", serverTime: Date.now() };
+    // PN-031-G — نام هدرهای غایب در ردپا و پاسخ: ریشهٔ «missing auth headers»
+    // تکراری مالک (گوشی هدرِ خالی می‌فرستاد؛ curl هدر با مقدار خالی را بی‌صدا
+    // حذف می‌کند). از این پس یک نگاه به لاگ/پاسخ می‌گوید کدام هدر نرسیده است.
+    const missing = [
+      ...(deviceId ? [] : ["X-Melka-Relay-Device"]),
+      ...(ts ? [] : ["X-Melka-Timestamp"]),
+      ...(sig ? [] : ["X-Melka-Signature"]),
+    ];
+    noteRelayReject(deviceId, `missing auth headers (${missing.join(", ")})`);
+    return { ok: false, status: 403, error: "missing auth headers", missing, serverTime: Date.now() };
   }
   const tsNum = Number(ts);
   if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum) > RELAY_TIMESTAMP_WINDOW_MS) {

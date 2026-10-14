@@ -16,6 +16,15 @@
  *   · ضربان قلب هر ۱۰ چرخه — مالک می‌بیند رله زنده است
  *   · در رد stale از serverTime پاسخ سرور برای اصلاح فوری آفست استفاده می‌شود
  *
+ * سخت‌سازی PN-031-G (شورا-ن۰۴۷ · ریشهٔ «missing auth headers» تکرار مالک):
+ *   · پیش‌پرواز امضا — اگر ts/sig خالی ساخته شوند (openssl/date شکست بخورد)
+ *     ارسال انجام نمی‌شود؛ curl هدر با مقدار خالی را «بی‌صدا حذف» می‌کند و
+ *     سرور فقط «missing auth headers» می‌گوید (دقیقاً علامت مالک در جلسهٔ ۰۴۷).
+ *   · پیام موفقیت صادقانه — «رلهٔ ملکا فعال است» فقط پس از اولین پاسخ واقعی
+ *     سرور (204/200) چاپ می‌شود، نه پیش از اتصال.
+ *   · نام هدرهای احرازی غایب از پاسخ سرور (missing) در لاگ نمایش داده می‌شود —
+ *     تشخیص یک‌نگاهی روی خود گوشی.
+ *
  * نکتهٔ پیاده‌سازی: متن bash داخل template literal است؛ هر "\${" به‌صورت
  * "\\${" escape شده تا تعبیر جاوااسکریپت نشود.
  *
@@ -64,6 +73,13 @@ if ! need_cmd curl || ! need_cmd openssl || ! need_cmd jq; then
     log "این اسکریپت برای Termux ساخته شده (pkg یافت نشد)"
     exit 1
   fi
+fi
+
+# ── PN-031-G: وارسی پیکربندی — مقادیر احراز باید نان‌خالی باشند ──
+# curl هدر با مقدار خالی را بی‌صدا حذف می‌کند → «missing auth headers» بی‌ردپا.
+if [ -z "$SERVER_URL" ] || [ -z "$DEVICE_ID" ] || [ -z "$DEVICE_SECRET" ]; then
+  log "پیکربندی ناقص (شناسه/راز/نشانی خالی) — اسکریپت تازه را از «راه‌اندازی رله» در تنظیمات ملکا بگیرید"
+  exit 1
 fi
 
 # بقا در پس‌زمینه (MIUI) — بدون خطا اگر نبود
@@ -116,15 +132,24 @@ signed_curl() {
   ts=\$(( \$(date +%s%3N) + CLOCK_OFFSET ))
   digest=\$(printf '%s' "$body" | sha256hex)
   sig=\$(printf 'POST\\n%s\\n%s\\n%s' "$path" "$digest" "$ts" | hmac_hex)
+  # ── PN-031-G: پیش‌پرواز — هیچ هدری خاموش حذف نمی‌شود ──
+  # اگر date/openssl شکست بخورند، ts/sig خالی می‌شوند و curl آن هدرها را
+  # بی‌صدا حذف می‌کند → سرور «missing auth headers» می‌دهد (علامت جلسهٔ ۰۴۷).
+  # اینجا ارسال متوقف و خطای دقیق فارسی چاپ می‌شود.
+  if [ -z "$ts" ] || [ -z "$sig" ]; then
+    log "خطای داخلی: امضا/زمان خالی ساخته شد (date یا openssl کار نمی‌کند) — درخواست ارسال نشد"
+    return 9
+  fi
   curl -sS --max-time 35 "$SERVER_URL$path" "$@" \\
     -H "X-Melka-Relay-Device: $DEVICE_ID" \\
     -H "X-Melka-Timestamp: $ts" \\
     -H "X-Melka-Signature: $sig"
 }
 
-SERVED=0; ERRORS=0; LOOPS=0
-log "رلهٔ ملکا فعال است — دستگاه: $DEVICE_ID"
+SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0
+log "رلهٔ ملکا آغاز شد — دستگاه: $DEVICE_ID (در حال اتصال…)"
 log "سرور: $SERVER_URL"
+log "احراز: X-Melka-Relay-Device + X-Melka-Timestamp + X-Melka-Signature"
 sync_clock && log "ساعت با سرور همگام شد ✓" || log "همگام‌سازی ساعت سرور ممکن نشد — ادامه با ساعت محلی"
 
 while true; do
@@ -145,14 +170,28 @@ while true; do
   fi
 
   # خالی (204/شبکه) — ادامهٔ poll
-  [ -z "$RESP" ] && { sleep 1; continue; }
+  # PN-031-G: اولین پاسخ موفق = نشانهٔ صادقانهٔ «رله فعال است» (پیش از این،
+  # پیامِ فعال بودن پیش از اتصال چاپ می‌شد و مالک را گمراه می‌کرد)
+  if [ -z "$RESP" ]; then
+    if [ "$CONNECT_OK" -eq 0 ]; then
+      CONNECT_OK=1
+      log "✓ اتصال تأیید شد — رلهٔ ملکا فعال است"
+    fi
+    sleep 1; continue
+  fi
 
   OK=\$(printf '%s' "$RESP" | jq -r '.ok // empty' 2>/dev/null)
   if [ "$OK" != "true" ]; then
     # PN-031-E — دلیل دقیق رد سرور نمایش داده می‌شود (نه «غیرمنتظره»ی مبهم)
     ERRMSG=\$(printf '%s' "$RESP" | jq -r '.error // empty' 2>/dev/null)
+    # PN-031-G — نام هدرهای احرازی غایب (پاسخ ۴۰۳ «missing auth headers»)
+    MISSING=\$(printf '%s' "$RESP" | jq -r 'if (.missing // []) | length > 0 then (.missing | join("، ")) else empty end' 2>/dev/null)
     if [ -n "$ERRMSG" ]; then
-      log "خطای سرور: $ERRMSG — ۳۰ ثانیه صبر"
+      if [ -n "$MISSING" ]; then
+        log "خطای سرور: $ERRMSG — هدرهای نایافته: $MISSING — ۳۰ ثانیه صبر"
+      else
+        log "خطای سرور: $ERRMSG — ۳۰ ثانیه صبر"
+      fi
     else
       log "پاسخ غیرمنتظره: \$(printf '%s' "$RESP" | head -c 160) — ۳۰ ثانیه صبر"
     fi

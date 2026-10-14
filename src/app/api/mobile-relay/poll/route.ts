@@ -25,8 +25,9 @@ export async function POST(request: NextRequest) {
   const auth = await verifyRelayRequestAuth("POST", "/api/mobile-relay/poll", rawBody, request.headers);
   if (!auth.ok) {
     // PN-031-E — serverTime در پاسخ رد: کلاینت (اسکریپت/اپ) آفست ساعت خود را اصلاح می‌کند
+    // PN-031-G — missing: نام هدرهای احرازی نایافته (تشخیص یک‌نگاهی روی گوشی)
     return Response.json(
-      { ok: false, error: auth.error, serverTime: auth.serverTime ?? Date.now() },
+      { ok: false, error: auth.error, missing: auth.missing, serverTime: auth.serverTime ?? Date.now() },
       { status: auth.status, headers: { "cache-control": "no-store" } }
     );
   }
