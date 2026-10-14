@@ -1,0 +1,29 @@
+{
+ "phase": "PN-031-G · کار ۷ — کد تازهٔ مالک (سند ۰۴۷)",
+ "issuedAt": "2026-10-14T15:52:25.665Z",
+ "deviceId": "poco-f3-ea8e15",
+ "installCommand": "pkg install -y curl openssl jq && curl -fsSL \"https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=cee8658ed4fc85e3db8b3687b2ae8988bdb5\" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh",
+ "installCommandNote": "این دستور در Termux پیست شود — پس از Ctrl+C اسکریپت قبلی",
+ "bootstrapDownloads": {
+  "first": "skipped",
+  "second": "skipped",
+  "forgiving": "کد تا ۳ بار قابل دانلود است"
+ },
+ "hardenedScriptServed": true,
+ "codeStatus": {
+  "ok": true,
+  "found": true,
+  "deviceId": "poco-f3-ea8e15",
+  "label": "Poco F3",
+  "code": {
+   "attemptCount": 0,
+   "maxAttempts": 3,
+   "lastAttemptAt": null,
+   "enrollExpires": "2026-10-14T16:22:25.601Z",
+   "enrolledAt": null,
+   "state": "waiting"
+  },
+  "message": "کد صادر شده — منتظر نخستین تلاش نصب است."
+ },
+ "validity": "۳۰ دقیقه از صدور · سوختن نهایی فقط پس از اولین Poll موفق"
+}

@@ -1,0 +1,21 @@
+{
+ "phase": "PN-031-G · دروازهٔ نهایی (سند ۰۴۷)",
+ "at": "2026-10-14T16:04:10Z",
+ "doubleGreen": {
+  "run1": "2741/0",
+  "run2": "2741/0",
+  "note": "رکورد جدید · قبلی ۲۷۲۴ · +۱۷ تست PN-031-G"
+ },
+ "tsc": "صفر خطا",
+ "lint": "صفر خطا",
+ "guards42": {
+  "PASS": 40,
+  "FAIL": 2,
+  "expectedReds": [
+   "audit-mirror-sync.sh (آینه پس از push پایانی همگام می‌شود)",
+   "audit-reproducibility.sh (پس از بیلد نهایی BUILD_ID=HEAD)"
+  ]
+ },
+ "finalSequence": "پروتکل ۹۹۹f162: کامیت دروازه → بیلد نهایی → head-guard rebuild → دو گارد پایانی سبز → push آینه",
+ "liveGate": "PASS — download/pn031g/live-relay-test.json (۲۰۴ امضاشده · ۵+ چرخهٔ صفرخطا · صفر رد پس از G.5)"
+}

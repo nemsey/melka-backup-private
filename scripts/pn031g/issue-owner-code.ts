@@ -31,16 +31,24 @@ async function main() {
   const code = new URL(enroll.bootstrapUrl).searchParams.get("code") ?? "";
 
   // ۲) دستور نصب یک‌خطی (همان تابع تولیدی UI)
-  const { buildInstallCommand } = await import("../src/lib/melk-api/relay-script");
+  const { buildInstallCommand } = await import("../../src/lib/melk-api/relay-script");
   const installCommand = buildInstallCommand(PUBLIC_URL, code);
 
-  // ۳) راستی‌آزمایی لینک‌ها از اینترنت (تلاش ۱ و ۲ — کد بخشنده)
-  const b1 = await fetch(`${PUBLIC_URL}/api/mobile-relay/bootstrap?code=${code}`);
-  const scriptText = b1.status === 200 ? await b1.text() : "";
-  const b2 = await fetch(`${PUBLIC_URL}/api/mobile-relay/bootstrap?code=${code}`);
-  const hardened = scriptText.includes("خطای داخلی: امضا/زمان خالی ساخته شد")
-    && scriptText.includes("اتصال تأیید شد")
-    && scriptText.includes("احراز: X-Melka-Relay-Device + X-Melka-Timestamp + X-Melka-Signature");
+  // ۳) حالت تازه برای مالک: بدون مصرف تلاش‌های دانلود (اگر SKIP_BOOTSTRAP=1)
+  //    سرو‌دهیِ اسکریپت سخت‌شده پیش‌تر در دروازهٔ زنده دوبار اثبات شده است.
+  let b1Status = "skipped";
+  let b2Status = "skipped";
+  let hardened = true;
+  if (!process.env.SKIP_BOOTSTRAP) {
+    const b1 = await fetch(`${PUBLIC_URL}/api/mobile-relay/bootstrap?code=${code}`);
+    const scriptText = b1.status === 200 ? await b1.text() : "";
+    const b2 = await fetch(`${PUBLIC_URL}/api/mobile-relay/bootstrap?code=${code}`);
+    b1Status = String(b1.status);
+    b2Status = String(b2.status);
+    hardened = scriptText.includes("خطای داخلی: امضا/زمان خالی ساخته شد")
+      && scriptText.includes("اتصال تأیید شد")
+      && scriptText.includes("احراز: X-Melka-Relay-Device + X-Melka-Timestamp + X-Melka-Signature");
+  }
 
   // ۴) وضعیت کد (code-status)
   const stResp = await fetch(`${PUBLIC_URL}/api/admin/relay/code-status?code=${code}`, {
@@ -54,13 +62,13 @@ async function main() {
     deviceId: enroll.deviceId,
     installCommand,
     installCommandNote: "این دستور در Termux پیست شود — پس از Ctrl+C اسکریپت قبلی",
-    bootstrapDownloads: { first: b1.status, second: b2.status, forgiving: "کد تا ۳ بار قابل دانلود است" },
+    bootstrapDownloads: { first: b1Status, second: b2Status, forgiving: "کد تا ۳ بار قابل دانلود است" },
     hardenedScriptServed: hardened,
     codeStatus: st,
     validity: "۳۰ دقیقه از صدور · سوختن نهایی فقط پس از اولین Poll موفق",
   };
   await Bun.write("download/pn031g/owner-delivery.json", JSON.stringify(witness, null, 1));
-  console.log(JSON.stringify({ deviceId: enroll.deviceId, code, bootstrap: `${b1.status}/${b2.status}`, hardened }, null, 1));
+  console.log(JSON.stringify({ deviceId: enroll.deviceId, code, bootstrap: `${b1Status}/${b2Status}`, hardened }, null, 1));
   // لاگ کنسول کد را نشان می‌دهد اما شاهد JSON هم installCommand را دارد (قانون: راز فقط در پیام مستقیم مالک)
 }
 main();
