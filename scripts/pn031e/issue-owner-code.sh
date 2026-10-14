@@ -162,10 +162,12 @@ B=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$PUBLIC_URL/deliver/pn
 echo "  D.4) راهنمای مالک (زبان ساده) → ۲۰۰ ✓"
 
 # ─── شاهد ───
-python3 - "$DEV_ID" "$CODE" "$EXPIRES" "$CMD" "$LINKS_JSON" "$STATE" > "$OUTD/phase-d-witness.json" <<'PYEOF'
+# درس PN-031-C (درس ۴): داخل این بلوک فقط json.dump مستقیم به فایل — هیچ print‌ای
+# داخل ریدایرکت stdout نمی‌نشیند (print در آفست ۰ فایل را له می‌کند).
+python3 - "$DEV_ID" "$CODE" "$EXPIRES" "$CMD" "$LINKS_JSON" "$STATE" <<'PYEOF'
 import json, sys, datetime
 w = {
-  "phase": "PN-031-E · فاز D — کد تازهٔ مالک + QR",
+  "phase": "PN-031-F · فاز D — کد تازهٔ مالک + QR",
   "issuedAt": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
   "device": {"deviceId": sys.argv[1], "label": "Poco F3 مالک"},
   "enrollCode": sys.argv[2],
@@ -177,7 +179,6 @@ w = {
   "verdict": "PASS",
 }
 json.dump(w, open("download/pn031e/phase-d-witness.json", "w"), ensure_ascii=False, indent=1)
-print("VERDICT: PASS")
 PYEOF
 echo ""
 echo "═══ فاز D: PASS ═══ (کد مالک: $DEV_ID · تا $EXPIRES)"
