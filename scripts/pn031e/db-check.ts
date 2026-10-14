@@ -1,30 +1,46 @@
+/**
+ * db-check.ts — خواندن وضعیت رله از پایگاه تولید (فاز C · PN-031-E)
+ * فقط خواندن: RelayDevice + AuditLog(RELAY_POLL_REJECT) — صفر تغییر داده.
+ * اجرا: DATABASE_URL=file:/home/z/my-project/db/custom.db bun scripts/pn031e/db-check.ts <deviceId>
+ */
 import { PrismaClient } from "@prisma/client";
+
 const db = new PrismaClient();
+const deviceId = process.argv[2] ?? "";
+
 async function main() {
-  const devices = await db.relayDevice.findMany({ orderBy: { id: "desc" }, take: 10 });
-  console.log("=== RELAY DEVICES ===");
-  for (const d of devices) {
-    console.log(JSON.stringify({
-      deviceId: d.deviceId, label: d.label,
-      attemptCount: d.attemptCount, maxAttempts: d.maxAttempts,
-      enrolledAt: d.enrolledAt, lastSeenAt: d.lastSeenAt, lastAttemptAt: d.lastAttemptAt,
-      lastIp: d.lastIp, servedCount: d.servedCount, errorCount: d.errorCount,
-      revokedAt: d.revokedAt, enrollExpires: d.enrollExpires, createdAt: d.createdAt,
-      lastRoundtripMs: d.lastRoundtripMs,
-    }, null, 1));
-  }
-  const q = await db.relayQueue.findMany({ orderBy: { id: "desc" }, take: 15 });
-  console.log("=== RELAY QUEUE (last 15) ===");
-  for (const item of q) {
-    console.log(JSON.stringify({
-      id: item.id, status: item.status, method: item.method, url: item.url,
-      source: item.source, error: item.error, enqueuedAt: item.enqueuedAt,
-      completedAt: item.completedAt, responseStatus: item.responseStatus,
-      claimedBy: item.claimedBy,
-    }, null, 1));
-  }
-  const counts = await db.relayQueue.groupBy({ by: ["status"], _count: true });
-  console.log("=== QUEUE STATUS COUNTS ===", JSON.stringify(counts));
+  const device = deviceId
+    ? await db.relayDevice.findUnique({ where: { deviceId } })
+    : await db.relayDevice.findFirst({ orderBy: { id: "desc" } });
+  const since = new Date(Date.now() - 15 * 60 * 1000);
+  const rejects = await db.auditLog.findMany({
+    where: { action: "RELAY_POLL_REJECT", createdAt: { gte: since } },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+    select: { action: true, actor: true, detail: true, createdAt: true },
+  });
+  const out = {
+    device: device
+      ? {
+          deviceId: device.deviceId,
+          label: device.label,
+          enrolledAt: device.enrolledAt?.toISOString() ?? null,
+          lastSeenAt: device.lastSeenAt?.toISOString() ?? null,
+          attemptCount: device.attemptCount,
+          maxAttempts: device.maxAttempts,
+          servedCount: device.servedCount,
+          errorCount: device.errorCount,
+          revokedAt: device.revokedAt?.toISOString() ?? null,
+        }
+      : null,
+    relayPollRejects: rejects,
+    checkedAt: new Date().toISOString(),
+  };
+  console.log(JSON.stringify(out, null, 1));
   await db.$disconnect();
 }
-main().catch(e => { console.error(e); process.exit(1); });
+
+main().catch((e) => {
+  console.error("ERR:", e instanceof Error ? e.message : String(e));
+  process.exit(1);
+});

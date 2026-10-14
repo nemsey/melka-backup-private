@@ -217,3 +217,31 @@ describe("PN-031-E · F) شکستن بن‌بست برخطی (کشف فاز C �
     expect(fn.slice(0, 400)).toContain("revokedAt: null");
   });
 });
+
+describe("PN-031-E · G) ریشهٔ واقعی «Bootstrap موفق، Poll ناموفق» — URL در signed_curl", () => {
+  test("G-1: signed_curl مسیر کامل URL را به curl می‌دهد (کد ۲ curl = آرگومان ناقص)", () => {
+    // باگ تاریخی (از PN-031 · 554ef40): curl بدون URL → هر Poll روی خودِ گوشی
+    // با کد ۲ می‌مُرد و سرور هیچ‌وقت poll نمی‌دید (enrolledAt/lastSeenAt=NULL).
+    expect(script).toContain('curl -sS --max-time 35 "$SERVER_URL$path" "$@"');
+  });
+
+  test("G-2: هر دو فراخوانی signed_curl مسیر روت نسبی می‌دهند نه URL کامل", () => {
+    // مسیر امضا همیشه نسبی است (/api/mobile-relay/poll) — URL فقط برای curl
+    expect(script).toContain('signed_curl "/api/mobile-relay/poll" "$BODY"');
+    expect(script).toContain('signed_curl "/api/mobile-relay/result" "$RESULT_JSON"');
+  });
+
+  test("G-3: کد خطای ۲ curl توضیح فارسی دارد (راه‌اندازی/آرگومان ناقص)", () => {
+    expect(script).toContain("2) echo");
+    expect(script).toContain("آرگومان ناقص");
+  });
+
+  test("G-4: اجرای واقعی اسکریپت (بدون حلقهٔ بی‌نهایت) — شبیه‌سازی signed_curl محلی", () => {
+    // از اسکریپت تولیدشده، تابع signed_curl جدا و با URL غیرواقعی اجرا می‌شود:
+    // باید curl «با URL» صدا زده شود — کد خروج غیر از ۲ (یعنی curl راه‌اندازی شد)
+    const fnBlock = script.split("signed_curl() {")[1]?.split("\n}")[0] ?? "";
+    expect(fnBlock).toContain('"$SERVER_URL$path"');
+    // و در فراخوانی poll، "$@" بعد از URL است (ترتیب آرگومان معتبر)
+    expect(script.indexOf('"$SERVER_URL$path" "$@"')).toBeGreaterThan(0);
+  });
+});

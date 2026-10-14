@@ -95,6 +95,7 @@ sync_clock() {
 # توضیح فارسی کدهای خطای curl — دیگر هیچ شکستی خاموش نیست
 curl_err_desc() {
   case "$1" in
+    2) echo "راه‌اندازی curl ناموفق — آرگومان ناقص" ;;
     6) echo "نام سرور حل نشد (DNS)" ;;
     7) echo "سرور اتصال را نپذیرفت" ;;
     28) echo "تایم‌اوت — سرور در مهلت پاسخ نداد" ;;
@@ -105,6 +106,9 @@ curl_err_desc() {
 }
 
 # ── امضای درخواست گوشی → سرور (قرارداد PN-030/031 · ts با آفست سرور) ──
+# PN-031-E (فاز C · ریشهٔ واقعی «Bootstrap موفق، Poll ناموفق»): پیش از این
+# URL به curl پاس نمی‌شد → هر Poll با کد ۲ curl (آرگومان ناقص) روی خودِ گوشی
+# می‌مُرد و هیچ چیزی به سرور نمی‌رسید (enrolledAt/lastSeenAt=NULL در DB).
 signed_curl() {
   # $1 = مسیر روت · $2 = بدنهٔ خام · $3.. = آرگومانهای curl بعدی
   local path="$1" body="$2"; shift 2
@@ -112,7 +116,7 @@ signed_curl() {
   ts=\$(( \$(date +%s%3N) + CLOCK_OFFSET ))
   digest=\$(printf '%s' "$body" | sha256hex)
   sig=\$(printf 'POST\\n%s\\n%s\\n%s' "$path" "$digest" "$ts" | hmac_hex)
-  curl -sS --max-time 35 "$@" \\
+  curl -sS --max-time 35 "$SERVER_URL$path" "$@" \\
     -H "X-Melka-Relay-Device: $DEVICE_ID" \\
     -H "X-Melka-Timestamp: $ts" \\
     -H "X-Melka-Signature: $sig"
