@@ -1,6 +1,6 @@
-VERDICT: FAIL-C2-enrolled
-�از C — تست زندهٔ رله با اجرای اسکریپت واقعی (جلسهٔ ۰۴۴)",
- "testedAt": "2026-10-14T07:41:32Z",
+VERDICT: PASS
+N-031-E · فاز C — تست زندهٔ رله با اجرای اسکریپت واقعی (جلسهٔ ۰۴۴)",
+ "testedAt": "2026-10-14T07:48:20Z",
  "publicUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
  "method": "اسکریپت واقعی bash (همان bootstrap گوشی مالک) از اینترنت دانلود و اجرا شد — نه شبیه‌سازی",
  "C1_realScript": {
@@ -10,20 +10,28 @@ VERDICT: FAIL-C2-enrolled
   "forgivingSecondDownload": "200 (کد بخشنده)"
  },
  "C2_pollReachedServer": {
-  "lastSeenAt": null,
-  "enrolledAt": null,
+  "lastSeenAt": "2026-10-14T07:48:02.260Z",
+  "enrolledAt": "2026-10-14T07:46:57.858Z",
   "attemptCount": 2,
   "note": "lastSeenAt != null = Poll واقعی به سرور رسیده (بن‌بست برخطی شکسته شد)"
  },
  "C3_clockSync": {
   "scriptLogEvidence": "«ساعت با سرور همگام شد ✓»",
-  "heartbeats": 1
+  "heartbeats": 0
  },
  "C4_rejectVisibility": {
   "deliberateStaleStatus": "403",
   "deliberateStaleError": "stale request",
-  "serverTimeInReject": 1791963609831,
+  "serverTimeInReject": 1791964017605,
   "auditLogRejects": [
+   {
+    "detail": "رد Poll/Result امضاشده: stale request · دستگاه: pn031e-live-bf2c8d",
+    "at": "2026-10-14T07:46:57.606Z"
+   },
+   {
+    "detail": "رد Poll/Result امضاشده: stale request · دستگاه: pn031e-live-1f9a34",
+    "at": "2026-10-14T07:44:27.733Z"
+   },
    {
     "detail": "رد Poll/Result امضاشده: stale request · دستگاه: pn031e-live-db01a7",
     "at": "2026-10-14T07:40:09.832Z"
@@ -31,8 +39,8 @@ VERDICT: FAIL-C2-enrolled
   ]
  },
  "device": {
-  "deviceId": "pn031e-live-db01a7",
+  "deviceId": "pn031e-live-bf2c8d",
   "cleanup": "ابطال شد پس از آزمون"
  },
- "verdict": "FAIL-C2-enrolled"
+ "verdict": "PASS"
 }

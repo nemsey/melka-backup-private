@@ -29,19 +29,25 @@ jqget() { python3 -c "import json,sys;print(json.load(open('$1')).get('$2',''))"
 # ─── -۱) خودکفایی: سرور را در همین فراخوانی بالا بیاور (درس reaper) ───
 # پروسه‌های پس‌زمینه در پایان فراخوانی ابزار کشته می‌شوند؛ پس هر آزمون زنده
 # باید سرور را خودش در همان اجرا بالا بیاورد و در همان اجرا شواهد بگیرد.
+# درس «بیلد آمیخته»: سرورِ زندهٔ قبل از بیلد، روت‌های API را از حافظهٔ کهنه
+# سرو می‌کند → همیشه ری‌استارت اجباری با بیلدِ روی دیسک.
 SERVER_BOOTED=""
-if ! curl -s -o /dev/null -m 8 http://localhost:3000/api/health; then
-  rm -f /home/z/my-project/.prod-stop /home/z/my-project/upload/.runtime/CI_RUNNING /home/z/my-project/upload/.runtime/PARK_ACTIVE
-  bash /home/z/my-project/scripts/prod-watchdog.sh > /dev/null 2>&1 &
-  WATCHDOG_PID=$!
-  SERVER_BOOTED="watchdog($WATCHDOG_PID)"
-  for i in $(seq 1 30); do
-    curl -s -o /dev/null -m 8 http://localhost:3000/api/health && break
-    sleep 2
-  done
-  curl -s -o /dev/null -m 8 http://localhost:3000/api/health || { echo "✗ سرور بالا نیامد"; exit 1; }
-  echo "  -۱) سرور تولید در همین اجرا بالا آمد ($SERVER_BOOTED) — health 200 ✓"
-fi
+pkill -f "prod-watchdog.sh" 2>/dev/null || true
+pkill -f "standalone/server.js" 2>/dev/null || true
+sleep 2
+rm -f /home/z/my-project/.prod-stop /home/z/my-project/upload/.runtime/CI_RUNNING /home/z/my-project/upload/.runtime/PARK_ACTIVE
+bash /home/z/my-project/scripts/prod-watchdog.sh > /dev/null 2>&1 &
+WATCHDOG_PID=$!
+SERVER_BOOTED="watchdog($WATCHDOG_PID) · ری‌استارت اجباری با بیلد دیسک"
+for i in $(seq 1 30); do
+  curl -s -o /dev/null -m 8 http://localhost:3000/api/health && break
+  sleep 2
+done
+curl -s -o /dev/null -m 8 http://localhost:3000/api/health || { echo "✗ سرور بالا نیامد"; exit 1; }
+# راستی‌آزمایی BUILD_ID زنده = fingerprint دیسک (پایان الگوی «بیلد کهنه»)
+LIVE_FP=$(curl -s -m 10 http://localhost:3000/api/build-freshness 2>/dev/null | head -c 400 | rg -o "<!DOCTYPE html><!--[a-z0-9-]+_" | head -1 | sed 's/<!--//; s/_$//')
+DISK_FP=$(head -c 200 /home/z/my-project/.next/BUILD_ID)
+echo "  -۱) سرور بالا آمد ($SERVER_BOOTED) — health 200 ✓ · BUILD_ID زنده=$LIVE_FP (دیسک=$DISK_FP)"
 
 # ─── ۰) ورود مدیر (عین دکمهٔ مالک) ───
 MASTER_CODE=$(python3 -c "import json;print(json.load(open('env.platform.json'))['MASTER_ACCESS_CODE'])")
