@@ -105,7 +105,7 @@ describe("PN-031-B/A — audit-head-guard.sh (تشخیص)", () => {
   test("A-2: بیلد کهنه سرو می‌شود (عین بازنشانی هشتم) — STALE (خروج ۲)", async () => {
     const { repo, headFull } = fixture();
     CLEANUPS.push(() => rmSync(repo, { recursive: true, force: true }));
-    const staleSha = "1" + headFull.slice(1); // SHA متفاوت با همان طول
+    const staleSha = (headFull[0] === "1" ? "0" : "1") + headFull.slice(1); // SHA متفاوت تضمینی با همان طول (رفع flake: اگر HEAD با ۱ شروع می‌شد یکسان می‌شد)
     const srv = await startFakeServer(staleSha);
     CLEANUPS.push(srv.stop);
     const r = runGuard(repo, "check", srv.port);

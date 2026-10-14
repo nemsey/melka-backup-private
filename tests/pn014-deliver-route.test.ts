@@ -123,7 +123,9 @@ describe("PN-014/D2 — مسیر سرو تحویل (/deliver/[...path])", () => 
     if (!existsSync(store)) return; // محیط بدون مخزن — آزمون‌های موقت بالا کافی‌اند
     // سیاست هرس دیسک (PN-020/H2): تنها نسل‌های اخیر نگه داشته می‌شوند؛
     // آزمون «حداقل یک نسل کامل تحویل» را می‌سنجد (قانون فایل v3).
-    const gens = readdirSync(store).filter((d) => /^pn\d+$/.test(d)).sort();
+    // PN-031-F: الگوی نسل‌ها از pn014/pn025 به pn031c/pn031d/pn031e تکامل یافت —
+    // پسوند حرفی بخشی از نام‌گذاری رسمی نسل‌هاست (قصد آزمون تغییر نکرده).
+    const gens = readdirSync(store).filter((d) => /^pn\d+[a-z0-9]*$/.test(d)).sort();
     expect(gens.length).toBeGreaterThanOrEqual(1);
     const latest = gens[gens.length - 1];
     expect(existsSync(join(store, latest))).toBe(true);
