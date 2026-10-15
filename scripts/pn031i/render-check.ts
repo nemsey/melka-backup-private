@@ -19,7 +19,7 @@ await Bun.write("/tmp/pn031i-install-render.txt", install);
 
 // وارسی‌های محتوایی (بدون اجرا)
 const checks: Array<[string, boolean]> = [
-  ["http1.1 در signed_curl", script.includes('curl --http1.1 -A "$UA" -sS --max-time 35')],
+  ["http1.1 در signed_curl", script.includes('curl --http1.1 -A "$UA" -sS -v --max-time 35')],
   ["UA بروزری", script.includes("Chrome/128.0.6613.88 Mobile Safari/537.36")],
   ["نردبان retry", script.includes("RETRY_DELAYS=(30 60 120 300 300)")],
   ["سقف نرخ ۵/دقیقه", script.includes("-ge 5 ]") && script.includes("60 - (now - oldest) + 1")],

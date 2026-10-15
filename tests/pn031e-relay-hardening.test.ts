@@ -224,7 +224,7 @@ describe("PN-031-E · G) ریشهٔ واقعی «Bootstrap موفق، Poll نا�
     // باگ تاریخی (از PN-031 · 554ef40): curl بدون URL → هر Poll روی خودِ گوشی
     // با کد ۲ می‌مُرد و سرور هیچ‌وقت poll نمی‌دید (enrolledAt/lastSeenAt=NULL).
     // PN-031-I: URL از cur_url() می‌آید (primary/alt) + http1.1 + UA بروزری.
-    expect(script).toContain('curl --http1.1 -A "$UA" -sS --max-time 35 "$(cur_url)$path" "$@"');
+    expect(script).toContain('curl --http1.1 -A "$UA" -sS -v --max-time 35 "$(cur_url)$path" "$@"');
   });
 
   test("G-2: هر دو فراخوانی signed_curl مسیر روت نسبی می‌دهند نه URL کامل", () => {
