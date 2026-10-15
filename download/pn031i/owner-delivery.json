@@ -1,9 +1,9 @@
 {
   "phase": "PN-031-I · کار ۵.۳ — کد تازهٔ مالک (سند ۰۵۰)",
-  "at": "2026-10-15T22:36:23.251Z",
-  "device": "poco-f3-084b70",
-  "enrollCode": "9521a6be947cdf954898739b4124da995701",
-  "installCommand": "pkg install -y curl openssl jq && curl --http1.1 -A \"Mozilla/5.0 (Linux; Android 13; Poco F3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36\" -fsSL \"https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=9521a6be947cdf954898739b4124da995701\" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh",
+  "at": "2026-10-15T22:59:32.862Z",
+  "device": "poco-f3-eaff8d",
+  "enrollCode": "41c4e21b98f7ad49aef6331263fc358ee65b",
+  "installCommand": "pkg install -y curl openssl jq && curl --http1.1 -A \"Mozilla/5.0 (Linux; Android 13; Poco F3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36\" -fsSL \"https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=41c4e21b98f7ad49aef6331263fc358ee65b\" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh",
   "bootstrapDownloads": {
     "first": "skipped",
     "second": "skipped"
@@ -24,13 +24,13 @@
   "codeStatus": {
     "ok": true,
     "found": true,
-    "deviceId": "poco-f3-084b70",
+    "deviceId": "poco-f3-eaff8d",
     "label": "Poco F3",
     "code": {
       "attemptCount": 0,
       "maxAttempts": 3,
       "lastAttemptAt": null,
-      "enrollExpires": "2026-10-15T23:06:23.191Z",
+      "enrollExpires": "2026-10-15T23:29:32.758Z",
       "enrolledAt": null,
       "state": "waiting"
     },
