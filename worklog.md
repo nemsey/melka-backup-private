@@ -3416,3 +3416,29 @@ Stage Summary:
 - اثبات سه‌سويه: تست bash واقعی (17/17) + دروازهٔ زنده عمومی (PASS) + کد مالک صادرشده
 - انتظار مالک: در Termux ابتدا Ctrl+C (اسکریپت قبلی) → پیست دستور نصب تازه (owner-delivery.json) → پیام «✓ اتصال تأیید شد — رلهٔ ملکا فعال است» → اطلاع به GLM → رویهٔ چهارگامه (برداشتن MELK_ARM_OFFLINE ← ری‌استارت ← OTP)
 - درس‌های ماندگار: (۱) هر تحویل دستی اسکریپت به مالک باید از مولد رسمی (bootstrap) بیاید نه کد دست‌نویس (۲) curl هدر خالی را بی‌صدا حذف می‌کند — پیش‌پرواز اجباری (۳) نام هدرها را در پاسخ رد بگو تا تشخیص یک‌نگاهی شود (۴) درس heredoc/ریدایرکت برای بار سوم تکرار شد — اسکریپت‌های شاهد باید بازرسی دوره‌ای شوند
+
+---
+Task ID: PN-031-I (کامل)
+Agent: main (Super Z / GLM)
+Task: اجرای کامل سفارش PN-031-I (شورا-ن۰۵۰ · ملکا-شورا-ن۰۵۰-۱۴۰۵) — رفع curl 9 سه‌لایه + بازگشت دهم + مسیر جایگزین واکِر
+
+Work Log:
+- قفل ورود: HEAD=df3022a · health 200 · بیلد زنده=1425ee0-20261015-0722 (کامیت ۱۰ اکتبر!) — بازگشت دهم تأیید · شواهد recovery-log.jsonl: auto-recovery 07:24 ROLLBACK → reset-guard درخت را 07:29 بازیابی کرد اما build شکست (TypeError: generate is not a function) و detect بعدی «HEALTHY equal» دروغین گفت — سرور ۱۴ ساعت بیلد کهنه سرو کرد · head-guard: پنج rebuild ناموفق (03:01-05:02) → RATE-LIMIT 05:22 → Workerِ 07:23 از درخت بازگشته بوت شد و head-guard در رجیستری‌اش نبود (قربانی دوم)
+- بازیابی فوری: بیلد دستی سبز (خطای گذرا بود) → ری‌استارت → BUILD_ID=HEAD · Worker تازه با head-guard+ip-log
+- فاز ۱ (curl 9 — اسکریپت رله نسل I در relay-script.ts): --http1.1 + UA بروزری (Chrome/128 Poco F3) روی همهٔ تماسهای سرور + نردبان RETRY_DELAYS=(30 60 120 300 300) + سقف rate_gate ۵/۶۰ث + لاگ دیباگ ~/relay-debug.log با -v کامل و redact امضا و چرخش 512KB + نبض نسخه version_ping هر ۱۰دقیقه (هشدار «سرور روی نسخهٔ قدیمی» به مالک) + دستور نصب با همان حمل‌ونقل
+- فاز ۲ (تشخیص): ماتریس ۶تماسی از URL عمومی (فاز2-matrix.ts) — M1-M4 امضاشده همه ۲۰۴ · M5 بدون هدر: 403+missing · یافتهٔ کلیدی: دروازه فقط HTTP/1.1 ارائه می‌دهد (نسخ=1.1 حتی با --http2) → کد ۹ مال مسیر گوشی (WAF/bot/rate) — شاهد live-relay-test.json + raw-curl/ · (رفع باگ تست: digest با createHash نه createHmac)
+- فاز ۳ (بازگشت — reset-guard نسل I): داوری دُکلایه live_build_sha — «درخت سالم + بیلد کهنه» = BUILD-STALE (exit 2) در هر دو شاخه equal/ahead · recover: pkill worker هم پس از restart (رجیستری تازه) · شبیه‌سازی قطعی با stub-version-server.py: BUILD-STALE تشخیص داده شد (تست ۲-ب) · کلیدهای مستندسازی _pn030/_pn031 در بازسازی env.platform.json از صفر برمی‌گردند (درس از دست‌رفتگی در بازگشت)
+- کشف و ریشه‌یابی race بیلد×چرخش لاگ: بیلد 22:39 با ENOENT copyfile server.log.*.gz مرد (outputFileTracing نکست × هرس ۱۵دقیقه‌ای log-rotate) — ریشهٔ واقعی «بیلدهای گذرا» head-guard · رفع: پرچم BUILD_RUNNING در build + موکول‌سازی چرخش ۲۰دقیقه‌ای (log-rotate.sh)
+- فاز ۴ (مسیر جایگزین): melka-proxy واکِر شاخهٔ /relay/* (handleRelayRoute) — مبدأ ثابت MELKA_RELAY_ORIGIN فقط space-z.ai + پیشوندهای مجاز (mobile-relay/health/version) + هدرهای فقط احراز دستگاه + سقف ۳۰/IP/دقیقه · دیپلوی با توکن ذخیره (a97648da) · رفع دو باگ دیپلوی (نام متغیر MELK_RELAY→MELKA_RELAY · --var با URL دولبه → [vars] در toml) · تست زنده: health 200 · version 200 · مسیر غیرمجاز 403 · poll امضاشده ۵/۵=204 · گوشی: سوئیچ پس از ۳ خطا + بازگشت هر ۳۰ چرخه به اصلی
+- ثبت کلید MELK_RELAY_ALT_URL: env.platform.json + example + BOOT_SECRET_KEYS + WATCHED_KEYS (platform-env) + ENV_KEYS (pn011) + تزریق bootstrap به JSON اپ و اسکریپت Termux
+- فاز ۵: دو-سبز ۲۷۶۴/۰ ×۲ یکسان (رکورد · قبلی ۲۷۴۱) · tsc صفر · lint صفر (۵ هشدار مستند) · گارد ۴۴/۴۴ · کامیت پله‌ای: ea9db38 (سه‌لایه) → 66ae6c6 (پرچم -v) → b8de806 (پایان race) · BUILD_ID=HEAD=b8de806-20261015-2245 · health 200 · Worker تازه با head-guard · push آینه (df3022a→b8de806)
+- دروازهٔ زندهٔ اسکریپت واقعی (live-gate.sh ۷۵ث): «✓ اتصال تأیید شد — رلهٔ ملکا فعال است (مسیر اصلی)» · خطای شبکه ۰ · خطای سرور ۰ · نشت راز ۰ · لاگ دیباگ 11.7KB با ۴ خط امضای redact-شده · ALPN «curl offers http/1.1» — VERDICT: PASS ×۲
+- بقا: بستهٔ chainIndex=35 (PN-036-20261015 · ۵۰۰ قلم · ۵۳۵MB · VACUUM گرم integrity=ok · لنگر sha256 مانیفست ۳۴) + شامل melka-proxy-worker/ و hardened-relay/ و recovery-scripts نسل I
+- کد تازهٔ مالک (SKIP_BOOTSTRAP — ۳/۳ تلاش دست‌نخورده): poco-f3-eaff8d · راز فقط در owner-delivery.json + پیام مستقیم مالک
+- تحویل: download/pn031i/ (گزارش · live-relay-test · live-gate · raw-curl · owner-delivery · guards · SHA256SUMS) · اسکریپت‌های ماندگار scripts/pn031i/
+
+Stage Summary:
+- هر سه لایهٔ سند ۰۵۰ کامل: curl 9 (حمل‌ونقل سه‌وجهی) · بازگشت (داوری دُکلایه + تازه‌سازی Worker + پایان race بیلد) · مسیر جایگزین (واکِر /relay ۵/۵ سبز + سوئیچ خودکار)
+- سه ریشهٔ پنهان کشف و بسته شد: HEALTHY دروغین reset-guard · Workerِ قربانیِ بازگشت · race چرخش×بیلد (ریشهٔ «بیلدهای گذرا»)
+- درس‌های ماندگار: (۱) داوری تک‌لایه کور است — زنجیرهٔ درخت→بیلد→فرایند باید کامل دیده شود (۲) فرایندهای بلندمدت خودشان قربانی بازگشت می‌شوند — بازیابی باید تازه‌سازی کند (۳) «بیلد گذرا» وجود ندارد — raceها ریشه دارند (۴) حمل‌ونقل مقاوم = پروتکل+هویت+ریتم با هم (۵) مسیر جایگزین نباید راز تازه بخواهد — احراز در مبدأ
+- انتظار مالک: در Termux ابتدا Ctrl+C (اسکریپت قبلی) → پیست دستور نصب تازه (owner-delivery.json) → پیام «✓ اتصال تأیید شد — رلهٔ ملکا فعال است» → اطلاع به GLM → رویهٔ چهارگامه (برداشتن MELK_ARM_OFFLINE ← ری‌استارت ← OTP)
