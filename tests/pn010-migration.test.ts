@@ -66,7 +66,11 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     expect(ids).toContain(WORKER_JOB_IDS.diagnosisCycle);
     // PN-025 — تثبیت شبانهٔ حافظهٔ بلندمدت (فاز ۱۳-ج)
     expect(ids).toContain(WORKER_JOB_IDS.memoryConsolidation);
-    expect(ids.length).toBe(15);
+    // PN-029 مرحلهٔ ۷ (شورا-ن۰۳۳) — گارد IP کانتینر (هر ۶ ساعت؛ در حالت آفلینی هم فعال)
+    expect(ids).toContain(WORKER_JOB_IDS.ipLog);
+    // PN-031-B (شورا-ن۰۳۹) — گارد تازگی بیلد زنده (هر ۱۰ دقیقه؛ جبران خودکار بازنشانی)
+    expect(ids).toContain(WORKER_JOB_IDS.headGuard);
+    expect(ids.length).toBe(17);
   });
 
   test("۴-۵ فاصله‌ها عین دیمن‌های قبلی (صفر قطع خدمت در رفتار زمانی)", () => {
@@ -110,7 +114,9 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
       // PN-019: decision-shadow و policy-eval نیز کلید خاموشی خودشان را دارند
       // PN-020/H2: disk-guard نیز کلید خاموشی خودش را دارد (MELK_DISK_GUARD)
       // PN-025: تثبیت حافظه هم کلید خاموشی خودش را دارد (MELK_MEMORY_CONSOLIDATION)
-      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diagnosisCycle, WORKER_JOB_IDS.diskGuard, WORKER_JOB_IDS.memoryConsolidation]);
+      // PN-029: ip-log کلید خاموشی ندارد — گارد IP کانتینر همیشه فعال است (شورا-ن۰۳۳ مرحلهٔ ۷)
+      // PN-031-B: head-guard کلید خاموشی خودش را دارد (MELK_HEAD_GUARD — جلسهٔ ۰۳۹)
+      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diagnosisCycle, WORKER_JOB_IDS.diskGuard, WORKER_JOB_IDS.memoryConsolidation, WORKER_JOB_IDS.ipLog, WORKER_JOB_IDS.headGuard]);
     } finally {
       for (const [k, v] of saved) {
         if (v === undefined) delete process.env[k];

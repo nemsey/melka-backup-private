@@ -151,7 +151,7 @@ for d in $(ls -d upload/.survival/P*/ 2>/dev/null | sort -V); do
     else
       # فایل‌های اضافه‌شدهٔ پس از مهر (مثل screens تازه) خطا نمی‌شمارند؛
       # فقط فایل‌های REGISTERED که هش‌شان می‌شکند قرمز است:
-      BROKEN=$( cd "$pkg" && md5sum -c MANIFEST.md5 2>/dev/null | grep -c ": FAILED" || echo 0 )
+      BROKEN=$( cd "$pkg" && md5sum -c MANIFEST.md5 2>/dev/null | grep ": FAILED" | grep -vc "MANIFEST.md5" || true ); BROKEN=${BROKEN:-0}
       if [[ "${BROKEN:-0}" -gt 0 ]]; then
         bad "۶) $pkg — ${BROKEN} فایلِ مهرشده تغییر یافته (زنجیره شکسته!)"
         CHAIN_BROKEN=1

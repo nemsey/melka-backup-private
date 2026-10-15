@@ -1,0 +1,128 @@
+$ next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/ && cp env.platform.json .next/standalone/ && rm -rf .next/standalone/backups .next/standalone/db .next/standalone/prisma/db .next/standalone/download .next/standalone/skills .next/standalone/scripts .next/standalone/tool-results .next/standalone/docs .next/standalone/examples .next/standalone/tests .next/standalone/bun.lock .next/standalone/dev.log .next/standalone/server.log .next/standalone/worklog.md
+▲ Next.js 16.1.3 (Turbopack)
+- Environments: .env.local, .env
+
+  Creating an optimized production build ...
+Turbopack build encountered 2 warnings:
+./src/instrumentation.ts:131:29
+Ecmascript file had an error
+[0m [90m 129 |[39m     [36mconst[39m hookPath [33m=[39m [32m`${repoRoot}/scripts/recovery/auto-recovery.sh`[39m[33m;[39m
+ [90m 130 |[39m     [36mif[39m (existsSync(hookPath)) {
+[31m[1m>[22m[39m[90m 131 |[39m     [36mconst[39m { spawn } [33m=[39m [36mawait[39m [36mimport[39m([32m"node:child_process"[39m)[33m;[39m
+ [90m     |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 132 |[39m     [36mconst[39m { logEvent[33m:[39m logBootCheck } [33m=[39m [36mawait[39m [36mimport[39m([32m"@/lib/logger"[39m)[33m;[39m
+ [90m 133 |[39m     setTimeout(() [33m=>[39m {
+ [90m 134 |[39m       [36mtry[39m {[0m
+
+A Node.js module is loaded ('node:child_process' at line 131) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+Import trace:
+  App Route:
+    ./src/instrumentation.ts
+    ./src/lib/intelligence/daemon.ts
+    ./src/app/api/intelligence/status/route.ts
+
+
+./src/instrumentation.ts:20:32
+Ecmascript file had an error
+[0m [90m 18 |[39m
+ [90m 19 |[39m   [90m// فقط در رانتایم Node در دسترس است — تابع کمکی محلی[39m
+[31m[1m>[22m[39m[90m 20 |[39m   [36mconst[39m { existsSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"node:fs"[39m)[33m;[39m
+ [90m    |[39m                                [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 21 |[39m
+ [90m 22 |[39m   [90m// ---------- ۰) P6.5-08: env جایگزین پلتفرم ----------[39m
+ [90m 23 |[39m   [90m// فرایند دیپلوی پلتفرم .env/.env.local را می‌زداید و سرور standalone هم[39m[0m
+
+A Node.js module is loaded ('node:fs' at line 20) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+Import trace:
+  App Route:
+    ./src/instrumentation.ts
+    ./src/lib/intelligence/daemon.ts
+    ./src/app/api/intelligence/status/route.ts
+
+
+✓ Compiled successfully in 29.5s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/41) ...
+  Generating static pages using 1 worker (10/41) 
+  Generating static pages using 1 worker (20/41) 
+  Generating static pages using 1 worker (30/41) 
+✓ Generating static pages using 1 worker (41/41) in 126.1ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/agent/[tileId]/feedback
+├ ƒ /api/agent/[tileId]/insight
+├ ƒ /api/agent/[tileId]/policy
+├ ƒ /api/agent/[tileId]/stats
+├ ƒ /api/arm/connection
+├ ƒ /api/auth/master-login
+├ ƒ /api/auth/request-otp
+├ ƒ /api/auth/session
+├ ƒ /api/auth/verify-otp
+├ ƒ /api/connection/reset
+├ ƒ /api/connection/status
+├ ƒ /api/coverage
+├ ƒ /api/crm/arm-catalog/listings
+├ ƒ /api/crm/arm-catalog/requests
+├ ƒ /api/crm/arm-catalog/sync
+├ ƒ /api/crm/branches
+├ ƒ /api/crm/contracts
+├ ƒ /api/crm/customer-club
+├ ƒ /api/crm/data-freshness
+├ ƒ /api/crm/experts
+├ ƒ /api/crm/export/[entity]
+├ ƒ /api/crm/finance
+├ ƒ /api/crm/finance/commission
+├ ƒ /api/crm/import/[entity]
+├ ƒ /api/crm/interactions
+├ ƒ /api/crm/meta
+├ ƒ /api/crm/transactions
+├ ƒ /api/crm/transactions/sync
+├ ƒ /api/divar/ads
+├ ƒ /api/divar/ads/[token]
+├ ƒ /api/divar/ads/[token]/register
+├ ƒ /api/divar/ads/[token]/reject
+├ ƒ /api/divar/connection
+├ ƒ /api/divar/locations
+├ ƒ /api/divar/scan
+├ ƒ /api/divar/settings
+├ ƒ /api/gap/connection
+├ ƒ /api/graphs
+├ ƒ /api/health
+├ ƒ /api/indicators
+├ ƒ /api/instagram/connection
+├ ƒ /api/intelligence/blackboard
+├ ƒ /api/intelligence/status
+├ ƒ /api/listings
+├ ƒ /api/listings/[id]
+├ ƒ /api/listings/[id]/instagram
+├ ƒ /api/listings/[id]/transfer-crm
+├ ƒ /api/market-index
+├ ƒ /api/matching
+├ ƒ /api/melk-public/sync
+├ ƒ /api/opportunity-alerts
+├ ƒ /api/pm/connection
+├ ƒ /api/requests
+├ ƒ /api/requests/[id]
+├ ƒ /api/requests/[id]/events
+├ ƒ /api/requests/[id]/register
+├ ƒ /api/requests/meta/form
+├ ƒ /api/sync
+├ ƒ /api/sync/all
+├ ƒ /api/sync/jobs
+├ ƒ /api/users/lookup
+└ ƒ /api/version
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
