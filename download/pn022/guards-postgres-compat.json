@@ -1,6 +1,6 @@
 {
   "workOrder": "PN-022-A/مرحلهٔ۵ — گارد postgres-compat (گام ۵-ر)",
-  "ranAt": "2026-10-14T15:45:26.862017+00:00",
+  "ranAt": "2026-10-09T21:59:17.735012+00:00",
   "checks": [
     {
       "check": "وجود schema.postgres.prisma",
@@ -18,8 +18,8 @@
     },
     {
       "check": "توازن مدل‌ها",
-      "sqlite": 69,
-      "postgres": 69,
+      "sqlite": 63,
+      "postgres": 63,
       "ok": true
     },
     {
@@ -37,7 +37,7 @@
   "engineSites": [
     {
       "file": "src/lib/melk-api/sync.ts",
-      "line": 1145,
+      "line": 1108,
       "marked": true,
       "code": "await db.$executeRawUnsafe(`VACUUM INTO '${backupFile}'`);"
     },
@@ -49,13 +49,13 @@
     },
     {
       "file": "src/core/runtime/jobs.ts",
-      "line": 100,
+      "line": 97,
       "marked": true,
       "code": "await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, \"''\")}'`);"
     },
     {
       "file": "src/core/runtime/jobs.ts",
-      "line": 106,
+      "line": 103,
       "marked": true,
       "code": "const r = await probe.$queryRawUnsafe(\"PRAGMA integrity_check\") as { integrity_c"
     }
