@@ -162,7 +162,10 @@ describe("PN-031-HOTFIX · D) سازگاری دستور نصب و اسکریپت
     const cmd = buildInstallCommand(PUBLIC_URL, "a".repeat(36));
     expect(cmd).toContain(`${PUBLIC_URL}/api/mobile-relay/bootstrap?code=`);
     expect(cmd).not.toContain("0.0.0.0");
-    expect(cmd).toMatch(/^pkg install -y curl openssl jq && curl -fsSL "/);
+    // PN-031-I: همان حمل‌ونقل مقاوم — http1.1 + UA بروزری (همچنین curl -fsSL پابرجا)
+    expect(cmd).toContain("--http1.1");
+    expect(cmd).toContain('-A "Mozilla/5.0');
+    expect(cmd).toMatch(/^pkg install -y curl openssl jq && curl --http1\.1 -A "Mozilla\/\d\.\d .+" -fsSL "/);
   });
 
   test("D-2) اسکریپت رله SERVER_URL عمومی می‌گیرد و مسیر poll عمومی است", async () => {

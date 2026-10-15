@@ -47,6 +47,8 @@ const WATCHED_KEYS = [
   // اعمال fallback فایل واقعی این کلید را می‌نشاند؛ باید بازگردانی شود تا
   // تستهای getPublicBaseUrl در همان worker حالت «env غایب» را واقعی ببینند.
   "MELK_PUBLIC_BASE_URL",
+  // PN-031-I (جلسهٔ ۰۵۰): مسیر جایگزین رله — همان رژیم MELK_PUBLIC_BASE_URL
+  "MELK_RELAY_ALT_URL",
 ] as const;
 
 function setEnv(key: string, value: string | undefined) {

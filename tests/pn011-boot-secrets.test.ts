@@ -57,6 +57,8 @@ const ENV_KEYS = [
   "MASTER_ACCESS_CODE",
   "OWNER_PERSONNEL_CODES",
   "MELK_PUBLIC_BASE_URL",
+  // PN-031-I (جلسهٔ ۰۵۰): کلید escrow تازه — تازه/بازگردانی در هر تست
+  "MELK_RELAY_ALT_URL",
 ] as const;
 let saved: Record<string, string | undefined> = {};
 let savedRepoDir: string | undefined;

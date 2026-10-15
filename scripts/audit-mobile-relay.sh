@@ -95,4 +95,27 @@ rg -q 'lastAttemptAt *DateTime\?' prisma/schema.prisma && ok "اسکیما: زم
 rg -q 'reason: "used"' src/lib/melk-api/relay.ts && rg -q 'reason: "expired"' src/lib/melk-api/relay.ts && rg -q 'reason: "invalid"' src/lib/melk-api/relay.ts \
   && ok "پیام خطای متمایز: سوخته/منقضی/نامعتبر" || fail "دلایل رد متمایز غایب"
 
+# ۱۱) قانون حمل‌ونقل مقاوم + مسیر جایگزین — PN-031-I (شورا-ن۰۵۰ · ریشهٔ curl 9):
+#   · HTTP/1.1 اجباری روی تمام تماسهای سرور (پایان RST_STREAM/h2 framing)
+#   · User-Agent بروزری (WAF/bot-detection)
+#   · نردبان retry پله‌ای + سقف ۵/دقیقه (پایان چکش ۵ثانیه‌ای ۷۲۰ درخواست/ساعت)
+#   · لاگ دیباگ با redact امضا · نبض نسخه (کشف بازنشانی از گوشی)
+#   · مسیر جایگزین واکِر /relay/* با سوئیچ خودکار + ثبت کلید در escrow
+rg -q -- '--http1.1 -A "\$UA" -sS --max-time 35' src/lib/melk-api/relay-script.ts && ok "قانون I: http1.1 + UA روی poll/result" || fail "http1.1/UA در signed_curl غایب"
+rg -q 'RETRY_DELAYS=\(30 60 120 300 300\)' src/lib/melk-api/relay-script.ts && ok "قانون I: نردبان retry پله‌ای" || fail "نردبان retry غایب"
+rg -q '\-ge 5 \]' src/lib/melk-api/relay-script.ts && ok "قانون I: سقف نرخ ۵/دقیقه" || fail "سقف نرخ غایب"
+rg -q 'relay-debug\.log' src/lib/melk-api/relay-script.ts && rg -q 'redacted' src/lib/melk-api/relay-script.ts && ok "قانون I: لاگ دیباگ با redact امضا" || fail "لاگ دیباگ/redact غایب"
+rg -q 'version_ping' src/lib/melk-api/relay-script.ts && ok "قانون I: نبض نسخه (سلف-پینگ بیرونی)" || fail "نبض نسخه غایب"
+rg -q 'ALT_FAIL_THRESHOLD=3' src/lib/melk-api/relay-script.ts && ok "قانون I: سوئیچ مسیر جایگزین پس از ۳ خطا" || fail "آستانهٔ سوئیچ غایب"
+rg -q 'altServerUrl' src/app/api/mobile-relay/bootstrap/route.ts && ok "قانون I: bootstrap مسیر جایگزین را تزریق می‌کند" || fail "تزریق altServerUrl غایب"
+rg -q '"MELK_RELAY_ALT_URL"' src/lib/auth/boot-secrets.ts && ok "قانون I: بقای مسیر جایگزین در escrow" || fail "کلید مسیر جایگزین در escrow غایب"
+rg -q 'RELAY_ALLOWED_PREFIXES' melka-proxy/src/index.ts && ok "قانون I: واکِر /relay با پیشوندهای مجاز" || fail "whitelist مسیر واکِر غایب"
+rg -q 'RELAY_RATE_LIMIT' melka-proxy/src/index.ts && ok "قانون I: سقف نرخ هر IP در واکِر" || fail "سقف نرخ واکِر غایب"
+
+# ۱۲) قانون داوری بیلد زنده — PN-031-I (درس بازگشت دهم):
+#   · reset-guard: درخت سالم + بیلد کهنه = BUILD-STALE (پایان HEALTHY دروغین)
+#   · recover: Worker هم کشته/تازه می‌شود (رجیستری از درخت بازیابی‌شده)
+rg -q 'BUILD-STALE' scripts/recovery/reset-guard.sh && ok "قانون I: reset-guard بیلد زنده را داوری می‌کند (BUILD-STALE)" || fail "داوری BUILD-STALE غایب"
+rg -q 'pkill -f "scripts/runtime/worker.ts"' scripts/recovery/reset-guard.sh && ok "قانون I: recover کارگر تازه می‌سازد" || fail "تازه‌سازی Worker در recover غایب"
+
 [ "$FAIL" = "0" ] && echo "گارد رلهٔ موبایل: سبز ✓" || { echo "گارد رلهٔ موبایل: قرمز ✗" >&2; exit 1; }

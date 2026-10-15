@@ -12,3 +12,8 @@ compatibility_date = "2026-10-01"
 
 [observability]
 enabled = true
+
+# ── PN-031-I (لایهٔ ۳): مبدأ مسیر جایگزین رلهٔ گوشی — /relay/* ──
+# فقط https و فقط دامنهٔ space-z.ai (وارسی درون Worker) · بدون راز
+[vars]
+MELKA_RELAY_ORIGIN = "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai"
