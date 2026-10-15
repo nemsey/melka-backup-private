@@ -55,6 +55,10 @@ export const BOOT_SECRET_KEYS = [
   "MELK_ARM_PROXY_URL",
   "MELK_ARM_RELAY_MODE",
   "MELK_ARM_OFFLINE",
+  // PN-031-I (جلسهٔ ۰۵۰ · لایهٔ ۳): مسیر جایگزین رلهٔ گوشی (روت /relay واکِر) —
+  // پیکربندی حیاتیِ بقا (نه راز): بدون آن، پس از بازنشانی env پلتفرم اسکریپتِ
+  // تازهٔ گوشی فاقد مسیر جایگزین می‌شود.
+  "MELK_RELAY_ALT_URL",
 ] as const;
 
 export type BootSecretKey = (typeof BOOT_SECRET_KEYS)[number];
@@ -298,6 +302,14 @@ function regenerateEnvPlatform(repoRoot: string, secrets: EscrowData, databaseUr
     if (!hadFile) {
       existing._comment =
         "PN-011: بازسازی/همگام‌شده توسط گارد خوددرمانی راز (upload/.runtime/boot-secrets.json) — gitignored; مقادیر واقعی.";
+      // PN-031-I (جلسهٔ ۰۵۰ · درس بازگشت دهم): بازنشانی پلتفرم فایل را کلاً
+      // می‌زداید و کلیدهای مستندسازی «_» را می‌سوزاند — تستهای قفل ترتیب
+      // (pn030 E-2 / pn031 D-2) قرمز می‌شدند. کلیدهای مستندسازی (بدون راز)
+      // از اینجا همیشه بازمی‌گردند.
+      existing._pn030 =
+        "شورا-ن۰۳۵ · لایهٔ ۱: MELK_ARM_PROXY_URL = Worker کلادفلر عبوری — پس از کشف بلاک جغرافیاییِ خود کلودفلر، مسیر فعال رلهٔ موبایل (PN-031) شد؛ راز HMAC: MELK_PROXY_SECRET.";
+      existing._pn031 =
+        "شورا-ن۰۳۷ · رلهٔ موبایل ملکا: MELK_ARM_RELAY_MODE=mobile (گوشی مالک با IP ایرانی) — قفل ترتیب MELK_ARM_OFFLINE تا تست تونل زنده.";
     }
     const tmp = `${envPlatformPath}.tmp`;
     writeFileSync(tmp, JSON.stringify(existing, null, 2) + "\n", { encoding: "utf8", mode: 0o600 });

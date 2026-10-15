@@ -17,7 +17,7 @@
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { createHash, createHmac } from "node:crypto";
-import { readFileSync, writeFileSync, unlinkSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, unlinkSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { buildRelayScript } from "../src/lib/melk-api/relay-script";
 import { verifyRelayRequestAuth } from "../src/lib/melk-api/relay";
@@ -54,8 +54,10 @@ describe("PN-031-G · A) پیش‌پرواز امضا — پایان حذفِ خ
 
   test("A-3: پیام موفقیت صادقانه — «رله فعال» فقط پس از اولین پاسخ سرور", () => {
     // پیش از این، پیام فعال بودن پیش از هر اتصال چاپ می‌شد و مالک را گمراه می‌کرد
-    expect(script).toContain("رلهٔ ملکا آغاز شد — دستگاه: $DEVICE_ID (در حال اتصال…)");
-    expect(script).toContain('log "✓ اتصال تأیید شد — رلهٔ ملکا فعال است"');
+    expect(script).toContain("رلهٔ ملکا آغاز شد");
+    expect(script).toContain("(در حال اتصال…)");
+    // PN-031-I: پیام موفقیت نام مسیر فعال را هم می‌گوید (اصلی/جایگزین)
+    expect(script).toContain("✓ اتصال تأیید شد — رلهٔ ملکا فعال است");
     // و این پیام داخل حلقه است (پس از poll)، نه در آغاز اسکریپت
     const loopStart = script.indexOf("while true; do");
     const successMsg = script.indexOf("✓ اتصال تأیید شد");
@@ -73,7 +75,8 @@ describe("PN-031-G · A) پیش‌پرواز امضا — پایان حذفِ خ
   });
 
   test("A-6: دستور curl دست‌نخورده — URL و سه -H (رگرسیون G-1/E-2)", () => {
-    expect(script).toContain('curl -sS --max-time 35 "$SERVER_URL$path" "$@"');
+    // PN-031-I: http1.1 + UA بروزری + URL از cur_url() — سه هدر قراردادی پابرجا
+    expect(script).toContain('curl --http1.1 -A "$UA" -sS --max-time 35 "$(cur_url)$path" "$@"');
     expect(script).toContain("X-Melka-Relay-Device: $DEVICE_ID");
     expect(script).toContain("X-Melka-Timestamp: $ts");
     expect(script).toContain("X-Melka-Signature: $sig");
@@ -92,6 +95,7 @@ describe("PN-031-G · B) اجرای واقعی signed_curl در برابر سر�
   let records: { method: string; path: string; headers: Record<string, string>; body: string }[] = [];
 
   beforeAll(async () => {
+    mkdirSync(TMP, { recursive: true }); // درس PN-031-I: /tmp بین جلسات پاک می‌شود — ENOENT تکرار نشود
     writeFileSync(RECORDS, "");
     mockProc = Bun.spawn(["python3", MOCK, "0", RECORDS], { stdout: "pipe", stderr: "ignore" });
     // فقط خط اول (شمارهٔ پورت) خوانده می‌شود — استریم سرور زنده است و بسته نمی‌شود

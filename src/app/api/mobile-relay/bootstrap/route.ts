@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
         deviceId: consumed.device.deviceId,
         deviceSecret: consumed.device.secret,
         serverUrl,
+        altServerUrl: process.env.MELK_RELAY_ALT_URL ?? "",
         label: consumed.device.label,
         attempts: { used: consumed.device.attemptCount, max: consumed.device.maxAttempts },
         note: "این پاسخ فقط برای اپ رسمی ملکا است — راز دستگاه را فقط در همین گوشی نگه دارید.",
@@ -98,6 +99,8 @@ export async function GET(request: NextRequest) {
     serverUrl,
     deviceId: consumed.device.deviceId,
     deviceSecret: consumed.device.secret,
+    // PN-031-I (لایهٔ ۳): مسیر جایگزین واکِر — سوئیچ خودکار در گوشی پس از ۳ خطای پیاپی
+    altServerUrl: process.env.MELK_RELAY_ALT_URL ?? "",
   });
 
   // سرآیند اطلاع‌رسانی بخشندگی — مالک در Termux می‌بیند چند تلاش باقی است

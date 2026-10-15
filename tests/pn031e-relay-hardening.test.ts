@@ -33,7 +33,8 @@ const script = buildRelayScript({
 describe("PN-031-E · A) همگام‌سازی ساعت (ریشهٔ خاموش «stale request»)", () => {
   test("A-1: تابع sync_clock وجود دارد و Date سرور را می‌خواند", () => {
     expect(script).toContain("sync_clock()");
-    expect(script).toContain("curl -sSI --max-time 10");
+    // PN-031-I: sync_clock هم با http1.1 + UA بروزری (همان حمل‌ونقل poll)
+    expect(script).toContain('curl --http1.1 -A "$UA" -sSI --max-time 15');
     expect(script).toContain('tolower($1)=="date:"');
   });
 
@@ -222,7 +223,8 @@ describe("PN-031-E · G) ریشهٔ واقعی «Bootstrap موفق، Poll نا�
   test("G-1: signed_curl مسیر کامل URL را به curl می‌دهد (کد ۲ curl = آرگومان ناقص)", () => {
     // باگ تاریخی (از PN-031 · 554ef40): curl بدون URL → هر Poll روی خودِ گوشی
     // با کد ۲ می‌مُرد و سرور هیچ‌وقت poll نمی‌دید (enrolledAt/lastSeenAt=NULL).
-    expect(script).toContain('curl -sS --max-time 35 "$SERVER_URL$path" "$@"');
+    // PN-031-I: URL از cur_url() می‌آید (primary/alt) + http1.1 + UA بروزری.
+    expect(script).toContain('curl --http1.1 -A "$UA" -sS --max-time 35 "$(cur_url)$path" "$@"');
   });
 
   test("G-2: هر دو فراخوانی signed_curl مسیر روت نسبی می‌دهند نه URL کامل", () => {
@@ -240,8 +242,8 @@ describe("PN-031-E · G) ریشهٔ واقعی «Bootstrap موفق، Poll نا�
     // از اسکریپت تولیدشده، تابع signed_curl جدا و با URL غیرواقعی اجرا می‌شود:
     // باید curl «با URL» صدا زده شود — کد خروج غیر از ۲ (یعنی curl راه‌اندازی شد)
     const fnBlock = script.split("signed_curl() {")[1]?.split("\n}")[0] ?? "";
-    expect(fnBlock).toContain('"$SERVER_URL$path"');
+    expect(fnBlock).toContain('"$(cur_url)$path"');
     // و در فراخوانی poll، "$@" بعد از URL است (ترتیب آرگومان معتبر)
-    expect(script.indexOf('"$SERVER_URL$path" "$@"')).toBeGreaterThan(0);
+    expect(script.indexOf('"$(cur_url)$path" "$@"')).toBeGreaterThan(0);
   });
 });

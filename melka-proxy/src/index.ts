@@ -67,8 +67,115 @@ function deny(reason: string, status: number): Response {
   return new Response(reason, { status, headers: { "Cache-Control": "no-store" } });
 }
 
+// ═══════════ PN-031-I · لایهٔ ۳ — مسیر جایگزین رلهٔ گوشی (/relay/*) ═══════════
+// سند شورا-ن۰۵۰: اگر مسیر مستقیم گوشی→دروازهٔ space-z.ai قطع شد (curl 9 /
+// WAF / بلاک موقت)، اسکریپت رله پس از ۳ خطای پیاپی به همین مسیر سوئیچ می‌کند:
+//   POST /relay/api/mobile-relay/poll  →  MELKA_RELAY_ORIGIN/api/mobile-relay/poll
+// دفاع (بدون راز تازه روی گوشی — احراز همان HMAC دستگاه در مبدأ):
+//   · مبدأ ثابت (env MELK_RELAY_ORIGIN — فقط https · فقط دامنهٔ space-z.ai)
+//   · فقط پیشوندهای مجاز: /api/mobile-relay/* · /api/health · /api/version
+//   · سقف نرخ هر IP: ۳۰ درخواست در پنجرهٔ ۶۰ثانیه‌ای (درخواست بی‌احراز به مبدأ
+//     می‌رسد اما همان 401/403 مبدأ را می‌گیرد — احراز واقعی در مبدأ است)
+//   · هدرهای عبوری: فقط X-Melka-Relay-Device/Timestamp/Signature + Content-Type
+//   · صفر لاگ محتوا — همان قانون شورا (بخش ۳.۱)
+
+/** پیشوندهای مجاز روی مبدأ — فقط رله و سلامت/نسخه */
+const RELAY_ALLOWED_PREFIXES: readonly string[] = [
+  "/api/mobile-relay/", // poll · result · bootstrap
+  "/api/health",
+  "/api/version",
+];
+
+/** هدرهای عبوری رله — احراز دستگاه در مبدأ انجام می‌شود */
+const RELAY_FORWARD_HEADERS: readonly string[] = [
+  "x-melka-relay-device",
+  "x-melka-timestamp",
+  "x-melka-signature",
+  "content-type",
+];
+
+/** سقف نرخ هر IP — ۳۰ درخواست در ۶۰ ثانیه (شمارندهٔ درون‌حافظه، بهترین-تلاش) */
+const RELAY_RATE_LIMIT = 30;
+const relayRate = new Map<string, { windowStart: number; count: number }>();
+const relayStats = { total: 0, rejectedRate: 0, rejectedPath: 0, upstream: 0 };
+
+function relayRateAllow(ip: string): boolean {
+  const now = Date.now();
+  const entry = relayRate.get(ip);
+  if (!entry || now - entry.windowStart >= 60_000) {
+    relayRate.set(ip, { windowStart: now, count: 1 });
+    // پاکسازی گاه‌به‌گاه — ضد رشد بی‌کران حافظه
+    if (relayRate.size > 1000) {
+      for (const [k, v] of relayRate) if (now - v.windowStart >= 60_000) relayRate.delete(k);
+    }
+    return true;
+  }
+  entry.count += 1;
+  return entry.count <= RELAY_RATE_LIMIT;
+}
+
+async function handleRelayRoute(request: Request, env: { MELKA_RELAY_ORIGIN?: string }): Promise<Response> {
+  relayStats.total++;
+
+  // ۱) مبدأ — متغیر wrangler (بدون راز)؛ فقط https و فقط دامنهٔ space-z.ai
+  const origin = (env.MELKA_RELAY_ORIGIN ?? "").replace(/\/+$/, "");
+  if (!origin) return deny("relay origin not configured", 503);
+  let originUrl: URL;
+  try { originUrl = new URL(origin); } catch { return deny("relay origin invalid", 503); }
+  if (originUrl.protocol !== "https:" || !originUrl.hostname.endsWith(".space-z.ai")) {
+    return deny("relay origin not allowed", 503);
+  }
+
+  // ۲) مسیر — فقط پیشوندهای رله (پیشوند /relay حذف می‌شود)
+  const incoming = new URL(request.url);
+  const path = incoming.pathname.replace(/^\/relay/, "") || "/";
+  if (!RELAY_ALLOWED_PREFIXES.some((p) => path === p || path.startsWith(p))) {
+    relayStats.rejectedPath++;
+    return deny("path not allowed", 403);
+  }
+
+  // ۳) سقف نرخ هر IP
+  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+  if (!relayRateAllow(ip)) {
+    relayStats.rejectedRate++;
+    return deny("rate limited", 429);
+  }
+
+  // ۴) عبور — هدرهای احراز دستگاه + Content-Type (بدنهٔ خام دست‌نخورده)
+  const fwd = new Headers();
+  for (const h of RELAY_FORWARD_HEADERS) {
+    const v = request.headers.get(h);
+    if (v) fwd.set(h, v);
+  }
+  fwd.set("user-agent", request.headers.get("user-agent") ?? "melka-relay");
+  const hasBody = request.method !== "GET" && request.method !== "HEAD";
+  const body = hasBody ? await request.arrayBuffer() : undefined;
+
+  relayStats.upstream++;
+  const upstream = await fetch(`${origin}${path}${incoming.search}`, {
+    method: request.method,
+    headers: fwd,
+    body: body && body.byteLength > 0 ? body : undefined,
+    redirect: "manual",
+  });
+
+  // ۵) پاسخ — نوع محتوا + وضعیت؛ صفر کش؛ صفر لاگ محتوا
+  const respHeaders = new Headers();
+  const ct = upstream.headers.get("content-type");
+  if (ct) respHeaders.set("content-type", ct);
+  respHeaders.set("cache-control", "no-store");
+  respHeaders.set("x-melka-proxy", "relay");
+  return new Response(upstream.body, { status: upstream.status, headers: respHeaders});
+}
+
 export default {
-  async fetch(request: Request, env: { MELKA_PROXY_SECRET?: string }): Promise<Response> {
+  async fetch(request: Request, env: { MELKA_PROXY_SECRET?: string; MELKA_RELAY_ORIGIN?: string }): Promise<Response> {
+    // PN-031-I · لایهٔ ۳: شاخهٔ مسیر جایگزین رلهٔ گوشی — مستقل از احراز ARM
+    const pathname = new URL(request.url).pathname;
+    if (pathname === "/relay" || pathname.startsWith("/relay/")) {
+      return handleRelayRoute(request, env);
+    }
+
     stats.total++;
 
     // ۰) پیکربندی — راز نصب نشده؟ سرویس عمداً خاموش است
