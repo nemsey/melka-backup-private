@@ -210,7 +210,7 @@ signed_curl() {
   fi
   rate_gate
   # ── PN-031-I: http1.1 + UA بروزری + verbose به لاگ دیباگ (امضا redact) ──
-  curl --http1.1 -A "$UA" -sS --max-time 35 "\$(cur_url)$path" "$@" \\
+  curl --http1.1 -A "$UA" -sS -v --max-time 35 "\$(cur_url)$path" "$@" \\
     -H "X-Melka-Relay-Device: $DEVICE_ID" \\
     -H "X-Melka-Timestamp: $ts" \\
     -H "X-Melka-Signature: $sig" \\

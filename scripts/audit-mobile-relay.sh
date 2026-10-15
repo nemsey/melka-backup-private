@@ -101,7 +101,7 @@ rg -q 'reason: "used"' src/lib/melk-api/relay.ts && rg -q 'reason: "expired"' sr
 #   · نردبان retry پله‌ای + سقف ۵/دقیقه (پایان چکش ۵ثانیه‌ای ۷۲۰ درخواست/ساعت)
 #   · لاگ دیباگ با redact امضا · نبض نسخه (کشف بازنشانی از گوشی)
 #   · مسیر جایگزین واکِر /relay/* با سوئیچ خودکار + ثبت کلید در escrow
-rg -q -- '--http1.1 -A "\$UA" -sS --max-time 35' src/lib/melk-api/relay-script.ts && ok "قانون I: http1.1 + UA روی poll/result" || fail "http1.1/UA در signed_curl غایب"
+rg -q -- '--http1.1 -A "\$UA" -sS -v --max-time 35' src/lib/melk-api/relay-script.ts && ok "قانون I: http1.1 + UA روی poll/result" || fail "http1.1/UA در signed_curl غایب"
 rg -q 'RETRY_DELAYS=\(30 60 120 300 300\)' src/lib/melk-api/relay-script.ts && ok "قانون I: نردبان retry پله‌ای" || fail "نردبان retry غایب"
 rg -q '\-ge 5 \]' src/lib/melk-api/relay-script.ts && ok "قانون I: سقف نرخ ۵/دقیقه" || fail "سقف نرخ غایب"
 rg -q 'relay-debug\.log' src/lib/melk-api/relay-script.ts && rg -q 'redacted' src/lib/melk-api/relay-script.ts && ok "قانون I: لاگ دیباگ با redact امضا" || fail "لاگ دیباگ/redact غایب"

@@ -76,7 +76,7 @@ describe("PN-031-G · A) پیش‌پرواز امضا — پایان حذفِ خ
 
   test("A-6: دستور curl دست‌نخورده — URL و سه -H (رگرسیون G-1/E-2)", () => {
     // PN-031-I: http1.1 + UA بروزری + URL از cur_url() — سه هدر قراردادی پابرجا
-    expect(script).toContain('curl --http1.1 -A "$UA" -sS --max-time 35 "$(cur_url)$path" "$@"');
+    expect(script).toContain('curl --http1.1 -A "$UA" -sS -v --max-time 35 "$(cur_url)$path" "$@"');
     expect(script).toContain("X-Melka-Relay-Device: $DEVICE_ID");
     expect(script).toContain("X-Melka-Timestamp: $ts");
     expect(script).toContain("X-Melka-Signature: $sig");

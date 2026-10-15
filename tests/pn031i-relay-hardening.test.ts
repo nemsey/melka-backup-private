@@ -32,7 +32,7 @@ const resetGuardSrc = readFileSync(join(REPO, "scripts/recovery/reset-guard.sh")
 // ───────────────────── الف) لایهٔ ۱ — حمل‌ونقل ─────────────────────
 describe("PN-031-I · الف) لایهٔ ۱ — حمل‌ونقل مقاوم در برابر curl 9", () => {
   test("الف-۱: --http1.1 روی تمام تماسهای سرور (poll/result/health/version)", () => {
-    expect(script).toContain('curl --http1.1 -A "$UA" -sS --max-time 35 "$(cur_url)$path" "$@"');
+    expect(script).toContain('curl --http1.1 -A "$UA" -sS -v --max-time 35 "$(cur_url)$path" "$@"');
     expect(script).toContain('curl --http1.1 -A "$UA" -sSI --max-time 15');
     expect(script).toContain('curl --http1.1 -A "$UA" -sS --max-time 15 "$(cur_url)/api/version"');
   });
