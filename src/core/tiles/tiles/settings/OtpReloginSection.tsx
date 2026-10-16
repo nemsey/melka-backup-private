@@ -16,9 +16,10 @@
  *      توکن‌ها به نشست جاری مالک متصل و در صندوقچهٔ ماندگار (Vault) ذخیره می‌شوند.
  *
  * نمایش‌شرط: فقط نقش OWNER (API تک‌تلاش فقط مالک را می‌پذیرد — PN-029).
- * پاسخ به سوال مالک (بخش اول سند): «بله، پیامک ورود شما مستقیماً قابل
- * استفاده در اپلیکیشن ملکا است — چون OTP به کدپرسنلی گره خورده است، نه به
- * دستگاه. تنها پیش‌نیاز: مسیر شبکه‌ای (پروکسی) که همین بخش وضعیتش را نشان می‌دهد.»
+ *
+ * PN-033 (شورا-ن۰۵۴ · ساده‌سازی): کارت پروکسی ابری Worker + نشانگر/بنر حالت
+ * آفلینی PN-029 حذف شدند — دوران جنگ پایان یافت؛ مسیر یگانه رلهٔ Termux است
+ * و وضعیتش در بخش «رلهٔ Termux» دیده می‌شود. فقط: کدپرسنلی + دکمه + OTP.
  */
 
 import { useState } from "react";
@@ -40,13 +41,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAppStore } from "@/lib/client/store";
 import { api, ApiClientError } from "@/lib/client/api";
-import { Loader2, Smartphone, ShieldCheck, KeyRound, Cloud, CloudOff, Flame } from "lucide-react";
-
-interface OtpReloginSectionProps {
-  /** از وضعیت اتصال پیکرهٔ والد — بدون fetch تکراری */
-  offlineMode?: boolean;
-  proxy?: { configured: boolean; host: string | null; secretConfigured: boolean };
-}
+import { Loader2, Smartphone, ShieldCheck, KeyRound, Flame } from "lucide-react";
 
 /** نرمال‌سازی ارقام فارسی/عربی به لاتین + حذف غیررقم */
 function toLatinDigits(s: string): string {
@@ -56,7 +51,7 @@ function toLatinDigits(s: string): string {
     .replace(/\D/g, "");
 }
 
-export function OtpReloginSection({ offlineMode, proxy }: OtpReloginSectionProps) {
+export function OtpReloginSection() {
   const { toast } = useToast();
   const role = useAppStore((s) => s.user?.role);
   const [personnelCode, setPersonnelCode] = useState("");
@@ -68,8 +63,6 @@ export function OtpReloginSection({ offlineMode, proxy }: OtpReloginSectionProps
 
   // فقط مالک — API تک‌تلاش (otp-burn) نقشهای دیگر را رد می‌کند (PN-029)
   if (role !== "OWNER") return null;
-
-  const proxyReady = proxy?.configured === true;
 
   const burnOtp = async () => {
     const trimmed = personnelCode.trim();
@@ -145,60 +138,10 @@ export function OtpReloginSection({ offlineMode, proxy }: OtpReloginSectionProps
           </Badge>
         </h4>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          پاسخ شورا به سوال شما: بله، پیامک ورود شما در اپلیکیشن ملکا هم کار می‌کند — کد OTP به
-          کدپرسنلی شما گره خورده است، نه به دستگاه. با همین بخش، یک پیامک واقعی درخواست و تأیید
-          می‌شود و اتصال برای همیشه در صندوقچهٔ ماندگار ذخیره می‌گردد.
+          کد پرسنلی خود را وارد کنید؛ پیامک واقعی ملک تبریز درخواست و تأیید می‌شود و اتصال
+          برای همیشه در صندوقچهٔ ماندگار ذخیره می‌گردد. مسیر عبور: رلهٔ Termux (وضعیتش در بخش رله).
         </p>
       </header>
-
-      {/* وضعیت لایهٔ شبکه — همان سه لایهٔ سند شورا */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="rounded-lg border bg-card p-3 flex items-center gap-2">
-          {proxyReady ? (
-            <Cloud className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden />
-          ) : (
-            <CloudOff className="w-4 h-4 text-amber-600 shrink-0" aria-hidden />
-          )}
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">پروکسی ابری (لایهٔ ۱ شورا)</p>
-            <p className="text-sm font-bold truncate" dir="ltr">
-              {proxyReady ? (proxy?.host ?? "—") : "در انتظار دیپلوی Worker"}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {proxyReady
-                ? "مسیر عبوری از Cloudflare فعال است"
-                : "پس از ۱۵ ثانیه تأیید OAuth مالک در melka-proxy/deploy.sh فعال می‌شود"}
-            </p>
-          </div>
-        </div>
-        <div className="rounded-lg border bg-card p-3 flex items-center gap-2">
-          {offlineMode ? (
-            <CloudOff className="w-4 h-4 text-amber-600 shrink-0" aria-hidden />
-          ) : (
-            <Cloud className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden />
-          )}
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">حالت آفلینی تشخیصی (PN-029)</p>
-            <p className="text-sm font-bold">{offlineMode ? "فعال — صفر تلاش خودکار" : "برداشته شده — اتصال واقعی"}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {offlineMode
-                ? "پرچم پس از تست موفق پروکسی برداشته می‌شود (مرحلهٔ ۵ سند)"
-                : "همهٔ مسیرها از پروکسی عبور می‌کنند"}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {offlineMode && (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1">
-          <p className="text-xs font-bold text-amber-700 dark:text-amber-400">ترتیب صحیح گام‌ها (قفل ترتیب سند):</p>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            ۱) دیپلوی Worker (۱۵ ثانیه از شما) ← ۲) تست مسیر توسط GLM ← ۳) برداشتن پرچم آفلینی ← ۴) سپس
-            «ارسال کد» همین‌جا. ارسال کد پیش از باز شدن مسیر، تک‌تلاش را در بسته‌بودنِ راه می‌سوزاند
-            و قفل ۶ ساعته فعال می‌کند — همین‌طور دکمهٔ تأیید هم تا باز شدن مسیر پاسخ نمی‌گیرد.
-          </p>
-        </div>
-      )}
 
       {stage === "code" ? (
         <div className="space-y-1.5">
@@ -239,8 +182,7 @@ export function OtpReloginSection({ offlineMode, proxy }: OtpReloginSectionProps
             </AlertDialog>
           </div>
           <p className="text-[10px] text-muted-foreground leading-4">
-            دکمهٔ «ارسال کد» تنها مسیر مجاز در حالت آفلینی است (API مخصوص مالک — سوزاندن آگاهانهٔ
-            تک‌تلاش). پس از دریافت پیامک، کد ۴ رقمی را در همین بخش وارد کنید.
+            پس از دریافت پیامک، کد ۴ رقمی را در همین بخش وارد و تأیید کنید.
           </p>
         </div>
       ) : (

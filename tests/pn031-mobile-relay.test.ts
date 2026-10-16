@@ -317,20 +317,31 @@ describe("PN-031 · C) یکپارچگی نقطهٔ یگانه و قفل ترتی
 // ───────────────────── D) UI / env / اسکریپت (۵) ─────────────────────
 
 describe("PN-031 · D) UI، env و اسکریپت Termux", () => {
-  test("D-1) بخش تنظیمات «رلهٔ موبایل ایرانی» موجود و داخل پیکرهٔ اتصال ملک تبریز رندر می‌شود", () => {
+  test("D-1) بخش تنظیمات «رلهٔ Termux» (ساده‌شدهٔ ن۰۵۴) موجود و داخل پیکرهٔ اتصال ملک تبریز رندر می‌شود", () => {
     const section = readFileSync(join(REPO, "src/core/tiles/tiles/settings/RelaySetupSection.tsx"), "utf8");
-    expect(section).toContain("رلهٔ موبایل ایرانی");
+    expect(section).toContain("رلهٔ Termux");
     expect(section).toContain("تست تونل");
     expect(section).toContain('role !== "OWNER"');
     const body = readFileSync(join(REPO, "src/core/tiles/tiles/settings/MelkTabrizConnectionSection.tsx"), "utf8");
     expect(body).toContain("<RelaySetupSection");
+    // PN-033 (شورا-ن۰۵۴): پاکسازی — APK/QR/رلهٔ مرورگری/فهرست دستگاه‌ها/دکمهٔ ثبت حذف شدند
+    expect(section).not.toContain("melka-relay.apk");
+    expect(section).not.toContain("apkQr");
+    expect(section).not.toContain("browser-poll");
+    expect(section).not.toContain("(ثبت دستگاه + QR)"); // برچسب JSX دکمهٔ قدیمی ثبت
+    expect(section).not.toContain("activeDevices.map"); // فهرست دستگاه‌ها از UI رفت
+    expect(section).toContain("راهنمای ۳ خطی");
   });
 
-  test("D-2) env.platform.json — MELK_ARM_RELAY_MODE=mobile + کلید مستندسازی _pn031", async () => {
+  test("D-2) env.platform.json — MELK_ARM_RELAY_MODE=mobile + کلید مستندسازی _pn033 (پاکسازی ن۰۵۴)", async () => {
     const raw = JSON.parse(readFileSync(join(REPO, "env.platform.json"), "utf8")) as Record<string, unknown>;
     expect(raw.MELK_ARM_RELAY_MODE).toBe("mobile");
-    expect(typeof raw._pn031).toBe("string");
-    expect(String(raw._pn031)).toContain("شورا-ن۰۳۷");
+    expect(typeof raw._pn033).toBe("string");
+    expect(String(raw._pn033)).toContain("شورا-ن۰۵۴");
+    // PN-033 (شورا-ن۰۵۴): کلیدهای دوران Worker حذف + خاموشی فیوز
+    expect(raw).not.toHaveProperty("MELK_ARM_PROXY_URL");
+    expect(raw).not.toHaveProperty("MELK_RELAY_ALT_URL");
+    expect(raw.MELK_ARM_CIRCUIT_DISABLED).toBe("1");
   });
 
   test("D-3) اسکریپت bash معتبر — bash -n بدون خطا", async () => {

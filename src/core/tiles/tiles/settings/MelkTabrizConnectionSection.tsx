@@ -20,6 +20,13 @@
  * PN-030 مرحلهٔ ۶ (شورا-ن۰۳۵ · ۱۴۰۵/۰۷/۲۱): بخش «ورود مجدد به ملک تبریز» —
  * صفحهٔ سادهٔ OTP مالک (ارسال کد از API تک‌تلاش + تأیید + ذخیره در Vault) —
  * به‌عنوان بخش ۲ این پیکره (پس از مدیریت اتصال‌ها) افزوده شد.
+ *
+ * PN-033 (شورا-ن۰۵۴ · ۱۴۰۵/۰۷/۲۶ · پاکسازی نهایی): حذف‌ها — بنر/نشانگرهای حالت
+ * آفلینی PN-۰۲۹، کارت IP کانتینر، کارت فیوز قطع‌کننده (قفل جنگی برداشته شد)،
+ * بخش توکار «اتصال به سامانه ARM» (تکراریِ بخش ورود مجدد — همان روت
+ * /api/arm/connection را صدا می‌زند). فهرست سرویس‌ها به ARM/PM/APU ساده شد
+ * (GAP از نمایش حذف شد). باقی‌مانده: وضعیت ساده + ورود مجدد + رلهٔ Termux
+ * + اتصال PM (سامانهٔ مستقل، بدون جایگزین).
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -41,7 +48,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCcw, Wifi, WifiOff, Server, Landmark } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faDateTime, faNumber } from "@/lib/format";
-import { ArmConnectionSection } from "./ArmConnectionSection";
 import { PmConnectionSection } from "./PmConnectionSection";
 // PN-030 (شورا-ن۰۳۵ · مرحلهٔ ۶): صفحهٔ سادهٔ ورود با OTP برای مالک
 import { OtpReloginSection } from "./OtpReloginSection";
@@ -226,46 +232,7 @@ export function MelkTabrizConnectionSection() {
 
           {conn && (
             <>
-              {/* PN-029 — بنر حالت آفلینی ملک تبریز (توقف تلاش‌های خودکار) */}
-              {conn.offlineMode && (
-                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1">
-                  <p className="text-sm font-bold text-amber-700 dark:text-amber-400">حالت آفلینی ملک تبریز فعال است (PN-029)</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    توقف عمدی همهٔ تلاش‌های خودکار به سامانه‌های ملک تبریز تا پایان تشخیص ریشه — دکترین شورا: «اول تشخیص، بعد اقدام». M1 تا M5 از دادهٔ محلی کار می‌کنند. دکمهٔ «تست اتصال» تنها پروب زندهٔ مجاز است.
-                  </p>
-                </div>
-              )}
-
-              {/* PN-029 — گارد IP کانتینر + فیوزهای قطع‌کننده */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-lg border bg-card p-3">
-                  <p className="text-xs text-muted-foreground">IP عمومی کانتینر (گارد ۶ساعته)</p>
-                  <p className="text-sm font-bold" dir="ltr">
-                    {conn.containerIp?.currentIp ?? "—"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {conn.containerIp?.detectedAt
-                      ? `آخرین ثبت: ${faDateTime(conn.containerIp.detectedAt)}${conn.containerIp.changed ? " — تغییر نسبت به قبل!" : ""}`
-                      : "هنوز ثبت نشده (کارِ Worker هر ۶ ساعت)"}
-                  </p>
-                </div>
-                <div className="rounded-lg border bg-card p-3">
-                  <p className="text-xs text-muted-foreground">فیوز قطع‌کنندهٔ اتصال (Retry هوشمند)</p>
-                  <p className="text-sm font-bold">
-                    {(conn.circuitBreakers ?? []).length === 0
-                      ? "همهٔ میزبانها عادی"
-                      : (conn.circuitBreakers ?? []).some((b) => b.locked)
-                        ? "قفل ۲۴ ساعته فعال"
-                        : (conn.circuitBreakers ?? []).some((b) => b.cooling)
-                          ? "خنک‌ساز فعال (تا ۶ ساعت)"
-                          : "همهٔ میزبانها عادی"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    قانون PN-029: یک تلاش در ۶ ساعت · سه شکست پیاپی = قفل ۲۴ ساعته
-                  </p>
-                </div>
-              </div>
-
+              {/* وضعیت ساده — سه شاخص (سند ن۰۵۴: ARM/PM/APU · بدون بنر آفلینی/فیوز/IP) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="rounded-lg border bg-card p-3 flex items-center gap-2">
                   {conn.status.services?.some((s) => s.databaseUp) ? (
@@ -285,9 +252,9 @@ export function MelkTabrizConnectionSection() {
                   </div>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
-                  <p className="text-xs text-muted-foreground">حالت اتصال</p>
+                  <p className="text-xs text-muted-foreground">مسیر اتصال</p>
                   <p className="text-sm font-bold text-teal-700 dark:text-teal-400">
-                    {conn.offlineMode ? "آفلینی تشخیصی (PN-029)" : "اتصال واقعی"}
+                    {conn.relay?.active ? "رلهٔ Termux (گوشی مالک)" : "مستقیم"}
                   </p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
@@ -301,7 +268,9 @@ export function MelkTabrizConnectionSection() {
               {/* وضعیت تفصیلی هر سرویس (ARM ×۲ + PM + سامانه عمومی + GAP) */}
               {conn.status.services && (
                 <div className="rounded-lg border divide-y">
-                  {conn.status.services.map((s) => (
+                  {conn.status.services
+                    .filter((s) => s.service === "ARM_API" || s.service === "ARM_PUBLIC" || s.service === "PM_API" || s.service === "MELK_PUBLIC_API")
+                    .map((s) => (
                     <div key={s.service} className="flex items-center justify-between gap-2 p-3">
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{s.label}</p>
@@ -404,13 +373,14 @@ export function MelkTabrizConnectionSection() {
         </section>
 
         {/* ========== ۲) ورود مجدد به ملک تبریز (PN-030 · مرحلهٔ ۶ سند شورا-ن۰۳۵) ========== */}
-        <OtpReloginSection offlineMode={conn?.offlineMode} proxy={conn?.proxy} />
+        <OtpReloginSection />
 
         {/* ========== ۲-ب) رلهٔ موبایل ایرانی (PN-031 · سند شورا-ن۰۳۷) ========== */}
-        <RelaySetupSection relayMode={conn?.relay?.mode} />
+        <RelaySetupSection />
 
-        {/* ========== ۳) اتصال به سامانه ARM ========== */}
-        <ArmConnectionSection embedded />
+        {/* PN-033 (شورا-ن۰۵۴): بخش توکار «اتصال به سامانه ARM» حذف شد — تکراریِ
+            بخش «ورود مجدد» (هر دو همان روت /api/arm/connection را صدا می‌زنند)؛
+            فرم یگانهٔ ورود: OtpReloginSection بالا. */}
 
         {/* ========== ۴) اتصال به حساب شخصی سامانه PM ========== */}
         <PmConnectionSection embedded />

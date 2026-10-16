@@ -120,9 +120,20 @@ export function formatRemainingMs(ms: number): string {
  * واقعی را برای فایلهای بعدی قفل می‌کردند). روشن‌کردن صریح برای خودِ تستهای
  * فیوز: MELK_CIRCUIT_BREAKER=on (تست B-5 همین کار را می‌کند).
  * production/development همیشه فعال است.
+ *
+ * PN-033 (شورا-ن۰۵۴ · ۱۴۰۵/۰۷/۲۶): MELK_ARM_CIRCUIT_DISABLED=1 ⇒ خاموشی
+ * دائمی. فیوز از دوران «بدون راه» مانده بود — سه شکست پیاپیِ دوران تلاشهای
+ * مسدود، قفل ۲۴ ساعتهٔ سخت انداخته بود و مسیرِ زندهٔ Termux را می‌بست.
+ * قواعد backoff در کد پابرجاست؛ فقط با برداشتن این پرچم از env، فیوز
+ * «مهار» می‌شود نه «حذف» — یک‌لایه محافظت باقی می‌ماند برای آینده.
  */
 export function isCircuitBreakerEnabled(): boolean {
-  if (process.env.NODE_ENV === "test" && process.env.MELK_CIRCUIT_BREAKER !== "on") return false;
+  // روشن‌کردن صریحِ تست همیشه اولویت دارد (روت‌وبرگشت B-5) — حتی اگر خاموشی
+  // دائمی ن۰۵۴ از env.platform.json به محیط تست نشت کرده باشد
+  if (process.env.NODE_ENV === "test" && process.env.MELK_CIRCUIT_BREAKER === "on") return true;
+  // PN-033 (شورا-ن۰۵۴): خاموشی دائمی فیوز — قفلِ دوران جنگ دیگر مانعِ مسیرِ باز نیست
+  if (process.env.MELK_ARM_CIRCUIT_DISABLED === "1") return false;
+  if (process.env.NODE_ENV === "test") return false;
   return true;
 }
 

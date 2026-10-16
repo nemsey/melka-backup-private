@@ -101,23 +101,23 @@ describe("PN-031-D · B) عملکرد شاخهٔ JSON (test.db)", () => {
 });
 
 describe("PN-031-D · C) UI تنظیمات — کارت افزودنی اپ اندروید", () => {
-  test("C-1: کارت «اپ اندروید ملکا» با لینک APK عمومی در بخش رله است", () => {
+  test("C-1: (ن۰۵۴) کارت APK از UI حذف شد — Termux تنها راه (دستور مالک ۱۴۰۵/۰۷/۲۶)", () => {
     const src = readFileSync(RELAY_UI, "utf8");
-    expect(src).toContain("/deliver/pn031d/melka-relay.apk");
-    expect(src).toContain("دانلود اپ (APK)");
-    expect(src).toContain("QR دانلود (برای گوشی)");
+    expect(src).not.toContain("/deliver/pn031d/melka-relay.apk");
+    expect(src).not.toContain("دانلود اپ (APK)");
+    expect(src).not.toContain("QR دانلود");
   });
 
-  test("C-2: QR دانلود از همان روت OWNER می‌گیرد (نقطهٔ یگانه)", () => {
+  test("C-2: (ن۰۵۴) روت QR از UI حذف شد — صفر QR در تنظیمات", () => {
     const src = readFileSync(RELAY_UI, "utf8");
-    expect(src).toContain("/api/admin/relay/qr?text=");
+    expect(src).not.toContain("/api/admin/relay/qr?text=");
   });
 
-  test("C-3: افزودنی نه جایگزین — مسیر Termux و کد بخشنده پابرجاست", () => {
+  test("C-3: مسیر Termux پابرجاست — تست تونل + راهنمای ۳ خطی (ن۰۵۴)", () => {
     const src = readFileSync(RELAY_UI, "utf8");
-    expect(src).toContain("installCommand");
-    expect(src).toContain("startEnroll");
     expect(src).toContain("تست تونل");
+    expect(src).toContain("راهنمای ۳ خطی");
+    expect(src).toContain("Termux");
   });
 });
 
