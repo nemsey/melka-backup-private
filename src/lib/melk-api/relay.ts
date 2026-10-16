@@ -134,7 +134,7 @@ function noteRelayReject(deviceId: string, reason: string): void {
 /**
  * وارسی هدرهای احراز دستگاه روی یک درخواست poll/result.
  * فقط deviceId + HMAC معتبر + پنجرهٔ زمانی + عدم ابطال.
- * PN-035: rawBody می‌تواند بایت خام باشد (بدنهٔ gzip — امضا روی بایت‌های سیم).
+ * PN-035: بدنهٔ درخواست می‌تواند بایت خام باشد (gzip — امضا روی بایت‌های سیم).
  */
 export async function verifyRelayRequestAuth(
   method: string,

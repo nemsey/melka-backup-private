@@ -163,30 +163,36 @@ describe("PN-031 · B) چرخهٔ صف RelayQueue", () => {
   });
 
   test("B-3) claim اتمیک — یک آیتم فقط به یک دستگاه داده می‌شود", async () => {
-    const { enqueueRelayRequest, claimNextRelayRequest } = await import("@/lib/melk-api/relay");
+    const { enqueueRelayRequest, claimNextRelayRequest, createRelayDevice } = await import("@/lib/melk-api/relay");
     const { db } = await import("@/lib/db");
+    // PN-035 (شورا-ن۰۵۷): claimRelayBatch فقط برای دستگاهِ ثبت‌شده امضا می‌کند
+    // (راز دستگاه برای امضای دوجهتهٔ آیتم لازم است) — شناسهٔ واقعی دستگاه که
+    // createRelayDevice برمی‌گرداند (با پسوند تصادفی) باید استفاده شود.
+    const dev1 = await createRelayDevice("test-claim-1", "pn031-b3");
+    const dev2 = await createRelayDevice("test-claim-2", "pn031-b3");
     const { id } = await enqueueRelayRequest({ method: "GET", url: "https://pm-api.melketabriz.ir/api/y", source: "gate-test" });
-    const first = await claimNextRelayRequest("test-claim-1");
+    const first = await claimNextRelayRequest(dev1.deviceId);
     expect(first?.id).toBe(id);
     // آیتم دیگر pending نیست — دستگاه دوم چیزی نمی‌گیرد
-    const second = await claimNextRelayRequest("test-claim-2");
+    const second = await claimNextRelayRequest(dev2.deviceId);
     expect(second === null || second.id !== id).toBe(true);
     await db.relayQueue.deleteMany({ where: { id } });
   });
 
   test("B-4) نتیجه — مالکیت دستگاه اجباری؛ پاسخ کامل ذخیره می‌شود", async () => {
-    const { enqueueRelayRequest, claimNextRelayRequest, completeRelayRequest } = await import("@/lib/melk-api/relay");
+    const { enqueueRelayRequest, claimNextRelayRequest, completeRelayRequest, createRelayDevice } = await import("@/lib/melk-api/relay");
     const { db } = await import("@/lib/db");
+    const dev = await createRelayDevice("test-owner-1", "pn031-b4");
     const { id } = await enqueueRelayRequest({ method: "GET", url: "https://arus-api.melketabriz.ir/api/apu/z", source: "gate-test" });
-    await claimNextRelayRequest("test-owner-1");
+    await claimNextRelayRequest(dev.deviceId);
     // دستگاه دیگر نمی‌تواند نتیجه بدهد
-    const wrong = await completeRelayRequest({ id, deviceId: "test-owner-2", httpStatus: 200 });
+    const wrong = await completeRelayRequest({ id, deviceId: "test-owner-2-unknown", httpStatus: 200 });
     expect(wrong.ok).toBe(false);
     expect(wrong.status).toBe(403);
     // مالک واقعی
     const right = await completeRelayRequest({
       id,
-      deviceId: "test-owner-1",
+      deviceId: dev.deviceId,
       httpStatus: 404,
       contentType: "application/json",
       body: '{"statusCode":404}',

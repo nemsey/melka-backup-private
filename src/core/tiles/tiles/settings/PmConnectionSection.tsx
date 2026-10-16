@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Smartphone, RotateCcw, ShieldCheck, XCircle, Server } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
+import { pollRelayJob } from "@/lib/client/relay-job";
 import { faDateTime } from "@/lib/format";
 
 interface PmConnectionResponse {
@@ -71,13 +72,33 @@ export function PmConnectionSection({ embedded = false }: { embedded?: boolean }
     }
     setBusy(true);
     try {
-      const res = await api<{ ok: boolean; message: string; alreadySent?: boolean }>("/api/pm/connection", {
+      // PN-035 (شورا-ن۰۵۷ · فاز ۳+۴ · Eager UI): پاسخ فوری {jobId}؛ فیلد کد
+      // تأیید همان لحظه نمایش داده می‌شود؛ نتیجه در پس‌زمینه poll می‌شود.
+      const res = await api<{ ok: boolean; jobId?: string; message?: string; alreadySent?: boolean }>("/api/pm/connection", {
         method: "POST",
         body: { action: "start-otp", personnelCode: trimmed },
+        timeoutMs: 10_000,
       });
-      if (res.ok) {
+      if (res.jobId) {
         setStage("otp");
-        setAlreadySentHint(res.alreadySent ? res.message : "");
+        setAlreadySentHint("");
+        toast({
+          title: "در حال ارسال پیامک…",
+          description: "فیلد کد تأیید آماده است — پیامک از مسیر رلهٔ موبایل در راه است.",
+        });
+        const out = await pollRelayJob<{ message?: string; alreadySent?: boolean }>(res.jobId, { attempts: 60 });
+        if (out.ok && out.result) {
+          setAlreadySentHint(out.result.alreadySent ? out.result.message ?? "" : "");
+          toast({
+            title: out.result.alreadySent ? "پیامک قبلاً ارسال شده" : "کد پیامکی PM ارسال شد",
+            description: out.result.message,
+          });
+        } else if (out.kind === "failed") {
+          toast({ title: "ارسال کد ناموفق", description: out.error?.message ?? "خطای ارسال پیامک.", variant: "destructive" });
+        }
+      } else if (res.ok) {
+        setStage("otp");
+        setAlreadySentHint(res.alreadySent ? res.message ?? "" : "");
         toast({
           title: res.alreadySent ? "پیامک قبلاً ارسال شده" : "کد پیامکی PM ارسال شد",
           description: res.message,
@@ -102,16 +123,30 @@ export function PmConnectionSection({ embedded = false }: { embedded?: boolean }
     }
     setBusy(true);
     try {
-      const res = await api<{ ok: boolean; message: string }>("/api/pm/connection", {
+      // PN-035 (فاز ۳): verify async — تأیید در پس‌زمینه از مسیر رله.
+      const res = await api<{ ok: boolean; jobId?: string; message?: string }>("/api/pm/connection", {
         method: "POST",
         body: { action: "verify", personnelCode: personnelCode.trim(), code: digits },
+        timeoutMs: 10_000,
       });
+      let ok = res.ok;
+      let message = res.message;
+      if (res.jobId) {
+        const out = await pollRelayJob<{ message?: string }>(res.jobId, { attempts: 60 });
+        if (out.ok && out.result) {
+          ok = true;
+          message = out.result.message;
+        } else {
+          ok = false;
+          message = out.error?.message ?? "تأیید ناموفق بود.";
+        }
+      }
       toast({
-        title: res.ok ? "اتصال حساب شخصی PM برقرار شد" : "تأیید ناموفق",
-        description: res.message,
-        variant: res.ok ? "default" : "destructive",
+        title: ok ? "اتصال حساب شخصی PM برقرار شد" : "تأیید ناموفق",
+        description: message,
+        variant: ok ? "default" : "destructive",
       });
-      if (res.ok) {
+      if (ok) {
         setCode("");
         setStage("code");
       }

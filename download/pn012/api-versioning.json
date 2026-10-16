@@ -2,7 +2,7 @@
   "schema": "melka-pn012-api-versioning",
   "generatedAt": "2026-10-13T06:03:51Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 106,
+  "totalRoutes": 107,
   "created": 0,
   "routes": [
     {
@@ -428,6 +428,10 @@
     {
       "v1": "/api/v1/version",
       "original": "/api/version"
+    },
+    {
+      "v1": "/api/v1/relay/job/[id]",
+      "original": "/api/relay/job/[id]"
     }
   ],
   "history": [
@@ -456,6 +460,11 @@
     {
       "at": "2026-10-13T06:03:51Z",
       "change": "PN-031-C (شورا-ن۰۴۰): روت code-status (وضعیت کد راه‌اندازی بخشنده) + آینهٔ v1 — ۱۰۶ → ۱۰۷ روت"
+    },
+    {
+      "at": "2026-10-16T17:20:00Z",
+      "change": "PN-035 (شورا-ن۰۵۷): روت relay/job/[id] (polling کار async) + آینهٔ v1 — ۱۰۶ → ۱۰۷ روت",
+      "totalRoutes": 107
     }
   ],
   "note": "PN-029: +otp-burn (تک‌تلاش OTP مالک — شورا-ن۰۳۳)"

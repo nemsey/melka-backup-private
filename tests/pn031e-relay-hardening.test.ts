@@ -232,7 +232,10 @@ describe("PN-031-E · G) ریشهٔ واقعی «Bootstrap موفق، Poll نا�
   test("G-2: هر دو فراخوانی signed_curl مسیر روت نسبی می‌دهند نه URL کامل", () => {
     // مسیر امضا همیشه نسبی است (/api/mobile-relay/poll) — URL فقط برای curl
     expect(script).toContain('signed_curl "/api/mobile-relay/poll" "$BODY"');
-    expect(script).toContain('signed_curl "/api/mobile-relay/result" "$RESULT_JSON"');
+    // PN-035 (نسل J): نتیجه از درون submit_batch_raw با پارامتر payload؛
+    // مسیر همچنان نسبی + تابع فایل (gzip) نیز مسیر نسبی می‌دهد
+    expect(script).toContain('signed_curl "/api/mobile-relay/result" "$payload"');
+    expect(script).toContain('signed_curl_file "/api/mobile-relay/result" "$gz" "gzip"');
   });
 
   test("G-3: کد خطای ۲ curl توضیح فارسی دارد (راه‌اندازی/آرگومان ناقص)", () => {

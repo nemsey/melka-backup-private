@@ -334,12 +334,12 @@ describe("PN-023-A · گراف علّی پایدار — CausalEdgeRecord", () =
     con.close();
   });
 
-  test("گ-۷) twin schema: توازن ۶۸=۶۸ (گارد postgres-compat — ن۰۵۵: −۱ OtpRateLimit حذف کامل · PN-025: +۳ · PN-031: +۲ رلهٔ موبایل)", async () => {
+  test("گ-۷) twin schema: توازن ۶۹=۶۹ (گارد postgres-compat — ن۰۵۵: −۱ OtpRateLimit حذف کامل · PN-025: +۳ · PN-031: +۲ رلهٔ موبایل · ن۰۵۷: +۱ RelayJob)", async () => {
     const { readFileSync } = await import("node:fs");
     const models = (p: string) => [...readFileSync(p, "utf8").matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]);
     const sq = models("prisma/schema.prisma");
     const pg = models("prisma/schema.postgres.prisma");
-    expect(sq.length).toBe(68); // ۶۹ − ۱ OtpRateLimit (ن۰۵۵ · قانون مالک: صفر محدودیت اتصال)
+    expect(sq.length).toBe(69); // ۷۰ − ۱ OtpRateLimit (ن۰۵۵) + ۱ RelayJob (ن۰۵۷ · کار async رله)
     expect(new Set(pg)).toEqual(new Set(sq));
   });
 
