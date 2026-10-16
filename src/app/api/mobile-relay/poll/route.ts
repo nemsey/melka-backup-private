@@ -3,17 +3,23 @@
  * ---------------------------------------------------------------------------
  * ایستگاه long-poll گوشی مالک (Poco F3 · Termux · IP ایرانی):
  *   · احراز HMAC سه‌هدری (X-Melka-Relay-Device · Timestamp · Signature)
- *   · بدنه: {"wait": 20} — حداکثر ۲۵ ثانیه معلق می‌ماند
- *   · ۲۰۰ + آیتم صف (با امضای دوجهتهٔ sig) یا ۲۰۴ (خالی — ادامهٔ poll)
+ *   · بدنه: {"wait": 20, "batch": 100} — حداکثر ۲۵ ثانیه معلق می‌ماند
+ *   · ۲۰۰ + دستهٔ آیتم‌های صف (با امضای دوجهتهٔ sig) یا ۲۰۴ (خالی — ادامهٔ poll)
  *
- * PN-031-C (شورا-ن۰۴۰): اولین Poll موفق = نقطهٔ سوختن کد راه‌اندازی بخشنده
+ * PN-031-C (شورای-ن۰۴۰): اولین Poll موفق = نقطهٔ سوختن کد راه‌اندازی بخشنده
  * (پیش از این، کد در تلاش ناموفق می‌سوخت — ریشهٔ چرخهٔ خطای ۴۰۳ مالک).
+ *
+ * PN-035 (شورا-ن۰۵۷ · فاز ۴+۵):
+ *   · batch — تا ۱۰۰ آیتم در هر poll (کارگرهای موازی گوشی)؛ پاسخ «items» آرایه است.
+ *   · سازگاری عقبه: فیلد «request» = نخستین آیتم دسته — اسکریپت‌های نسل
+ *     PN-031-I (تک‌آیتمی) بدون تغییر به کار خود ادامه می‌دهند.
+ *   · اولویت: آیتم‌های تعاملی (OTP=۵) مقدم بر سینک حجیم جلا می‌شوند.
  *
  * قانون «صفر لاگ محتوا»: هیچ بدنه/هدری ثبت نمی‌شود — فقط شمارندهٔ lastSeen.
  */
 
 import { NextRequest } from "next/server";
-import { verifyRelayRequestAuth, claimNextRelayRequest, markRelayEnrollCompleted, noteRelayPollSeen } from "@/lib/melk-api/relay";
+import { verifyRelayRequestAuth, claimRelayBatch, markRelayEnrollCompleted, noteRelayPollSeen, RELAY_MAX_BATCH } from "@/lib/melk-api/relay";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,7 +38,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // PN-031-C (شورا-ن۰۴۰) — نقطهٔ سوختن کد راه‌اندازی: اولین Poll موفق گوشی
+  // PN-031-C (شورای-ن۰۴۰) — نقطهٔ سوختن کد راه‌اندازی: اولین Poll موفق گوشی
   // یعنی اسکریپت واقعاً اجرا شده و راز را در گوشی نصب کرده؛ از این لحظه کد
   // بخشنده به‌طور نهایی مصرف می‌شود (enrolledAt). تلاش‌های پیشین که به Poll
   // نرسیدند، کد را نسوزانده بودند — پایان چرخهٔ خطای ۴۰۳.
@@ -45,30 +51,46 @@ export async function POST(request: NextRequest) {
   await noteRelayPollSeen(auth.device!.deviceId);
 
   let waitSeconds = 20;
+  let batch = 1;
   try {
-    const parsed = rawBody ? (JSON.parse(rawBody) as { wait?: number }) : {};
+    const parsed = rawBody ? (JSON.parse(rawBody) as { wait?: number; batch?: number }) : {};
     if (typeof parsed.wait === "number" && Number.isFinite(parsed.wait)) {
       waitSeconds = Math.min(Math.max(parsed.wait, 0), 25);
     }
+    // PN-035 (فاز ۵): اندازهٔ دسته — ۱ (نسل قدیمی) تا RELAY_MAX_BATCH (۱۰۰)
+    if (typeof parsed.batch === "number" && Number.isFinite(parsed.batch)) {
+      batch = Math.min(Math.max(Math.floor(parsed.batch), 1), RELAY_MAX_BATCH);
+    }
   } catch {
-    // بدنهٔ خام یا خالی — wait پیش‌فرض
+    // بدنهٔ خام یا خالی — wait/batch پیش‌فرض
   }
   const deadline = Date.now() + waitSeconds * 1000;
 
   while (true) {
-    const item = await claimNextRelayRequest(auth.device!.deviceId);
-    if (item) {
+    const items = await claimRelayBatch(auth.device!.deviceId, batch);
+    if (items.length > 0) {
       return Response.json(
         {
           ok: true,
+          // PN-035 — دستهٔ کامل برای اسکریپت نسل J+؛
+          // «request» = نخستین آیتم (سازگاری عقبه با اسکریپت‌های تک‌آیتمی)
+          items: items.map((it) => ({
+            id: it.id,
+            method: it.method,
+            url: it.url,
+            headers: it.headers,
+            body: it.body ?? "",
+            sig: it.sig,
+            ts: it.ts,
+          })),
           request: {
-            id: item.id,
-            method: item.method,
-            url: item.url,
-            headers: item.headers,
-            body: item.body ?? "",
-            sig: item.sig,
-            ts: item.ts,
+            id: items[0].id,
+            method: items[0].method,
+            url: items[0].url,
+            headers: items[0].headers,
+            body: items[0].body ?? "",
+            sig: items[0].sig,
+            ts: items[0].ts,
           },
         },
         { status: 200, headers: { "cache-control": "no-store" } }

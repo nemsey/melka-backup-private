@@ -36,14 +36,21 @@ import { audit } from "@/lib/auth/session";
 
 /** پنجرهٔ زمانی امضا (ضد replay) — عین TIMESTAMP_WINDOW_MS سمت Worker */
 export const RELAY_TIMESTAMP_WINDOW_MS = 5 * 60 * 1000;
-/** مهلت اجرای یک درخواست روی گوشی قبل از انقضا (ثانیه) */
-export const RELAY_ITEM_TTL_S = 45;
+/** مهلت اجرای یک درخواست روی گوشی قبل از انقضا (ثانیه)
+ *  PN-035 (شورا-ن۰۵۷ · مشکل ۲): ۴۵ ← ۱۲۰ — نتیجهٔ دیرهنگام (گوشی در نردبان
+ *  retry یا اجرای کند مقصد) دیگر با انقضای صف کشته نمی‌شود؛ مسیر برگشت
+ *  /result تا ۱۲۰ ثانیه بعد از صف‌گذاری پذیرفته می‌شود. */
+export const RELAY_ITEM_TTL_S = 120;
 /** مهلت پیش‌فرض انتظار caller برای نتیجهٔ رله (میلی‌ثانیه) */
 export const RELAY_WAIT_DEFAULT_MS = 30_000;
 /** آستانهٔ «دستگاه برخط» — آخرین poll تا این عدد ثانیه پیش (میلی‌ثانیه) */
 export const RELAY_ONLINE_WINDOW_MS = 90_000;
 /** سقف اندازهٔ بدنهٔ پاسخ گوشی (بایت — پایه) */
 export const RELAY_MAX_RESULT_BYTES = 5 * 1024 * 1024;
+/** PN-035 (فاز ۵) — سقف اندازهٔ دستهٔ هر poll (پاسخ ۴× سرور؛ کارگر موازی گوشی) */
+export const RELAY_MAX_BATCH = 100;
+/** PN-035 (فاز ۵) — اولویت درخواست‌های تعاملی (OTP/ورود) — مقدم بر سینک حجیم */
+export const RELAY_PRIORITY_INTERACTIVE = 5;
 /** هدرهای عبوری مجاز — عین FORWARD_REQUEST_HEADERS سمت Worker */
 export const RELAY_FORWARD_HEADERS: readonly string[] = ["authorization", "content-type", "accept"];
 
@@ -62,8 +69,9 @@ export function relayConfigStatus(): { mode: string; active: boolean } {
 
 // ───────────────────────── ابزار رمزنگاری (Node crypto — sync و ساده) ─────────────────────────
 
-function sha256(text: string): string {
-  return createHash("sha256").update(text, "utf8").digest("hex");
+/** sha256 — PN-035: ورودی می‌تواند متن (utf8) یا بایت خام باشد (بدنهٔ gzip) */
+function sha256(data: string | Buffer): string {
+  return createHash("sha256").update(data).digest("hex");
 }
 
 /** HMAC-SHA256(secret, message) → هگز — سازگار با قرارداد PN-030 */
@@ -78,8 +86,10 @@ export function relayTimingSafeEq(a: string, b: string): boolean {
   return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
-/** پیام امضای درخواست گوشی → سرور — عین قرارداد PN-030 */
-export function relayAuthMessage(method: string, path: string, bodyText: string, ts: string): string {
+/** پیام امضای درخواست گوشی → سرور — عین قرارداد PN-030
+ *  PN-035 (فاز ۶): بدنهٔ فشرده (gzip) به‌صورت بایت خام امضا می‌شود —
+ *  sha256 روی همان بایت‌های سیم؛ دو سو همیشه یک دیجست می‌سازند. */
+export function relayAuthMessage(method: string, path: string, bodyText: string | Buffer, ts: string): string {
   return `${method}\n${path}\n${sha256(bodyText)}\n${ts}`;
 }
 
@@ -124,11 +134,12 @@ function noteRelayReject(deviceId: string, reason: string): void {
 /**
  * وارسی هدرهای احراز دستگاه روی یک درخواست poll/result.
  * فقط deviceId + HMAC معتبر + پنجرهٔ زمانی + عدم ابطال.
+ * PN-035: rawBody می‌تواند بایت خام باشد (بدنهٔ gzip — امضا روی بایت‌های سیم).
  */
 export async function verifyRelayRequestAuth(
   method: string,
   path: string,
-  rawBody: string,
+  rawBody: string | Buffer,
   headers: Headers
 ): Promise<RelayAuthResult> {
   const deviceId = headers.get("X-Melka-Relay-Device")?.trim() ?? "";
@@ -387,13 +398,16 @@ function requestFingerprint(method: string, url: string, headersJson: string | n
   return sha256(`${method}\n${url}\n${headersJson ?? ""}\n${body ?? ""}`);
 }
 
-/** صف‌گذاری یک درخواست عبوری — نقطهٔ ورود armCall (تولید واقعی) و تست دروازه */
+/** صف‌گذاری یک درخواست عبوری — نقطهٔ ورود armCall (تولید واقعی) و تست دروازه
+ *  PN-035 (فاز ۵): پارامتر priority — درخواست‌های تعاملی (OTP/ورود) با اولویت ۵
+ *  پیش از سینک حجیم صف می‌شوند؛ claim دسته‌ای با ترتیب priority DESC جلا می‌دهد. */
 export async function enqueueRelayRequest(params: {
   method: string;
   url: string;
   headers?: Record<string, string>;
   body?: string | null;
   source?: string;
+  priority?: number;
 }): Promise<{ id: string; fingerprint: string; attached: boolean }> {
   // دفاع در عمق — این تابع فقط میزبان whitelist شده را قبول می‌کند
   if (!isMelkTabrizHost(params.url)) throw new Error("relay: host not allowed");
@@ -425,13 +439,25 @@ export async function enqueueRelayRequest(params: {
       body: params.body ?? null,
       fingerprint,
       source: params.source ?? "armCall",
+      priority: Math.max(0, Math.min(params.priority ?? 0, 10)),
     },
   });
   return { id: item.id, fingerprint, attached: false };
 }
 
-/** برداشتن اتمیک قدیمی‌ترین درخواست pending — با به‌روزرسانی مقید به وضعیت */
-export async function claimNextRelayRequest(deviceId: string): Promise<{
+/** PN-035 (فاز ۵) — آشکارساز اولویت: مسیرهای OTP/ورود (تعاملی) از هر سه سامانه */
+export function relayPriorityForUrl(url: string): number {
+  try {
+    const p = new URL(url).pathname;
+    if (/\/authentication\/otp(\/|$)/i.test(p)) return RELAY_PRIORITY_INTERACTIVE;
+  } catch {
+    /* نشانی نامعتبر — اولویت پیش‌فرض */
+  }
+  return 0;
+}
+
+/** شکل آیتمِ تحویل‌شده به گوشی (امضاشده برای احراز دوجهته) */
+export interface RelayDispatchedItem {
   id: string;
   method: string;
   url: string;
@@ -439,42 +465,69 @@ export async function claimNextRelayRequest(deviceId: string): Promise<{
   body: string | null;
   sig: string;
   ts: number;
-} | null> {
-  await expireStaleRelayItems();
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const next = await db.relayQueue.findFirst({
-      where: { status: "pending" },
-      orderBy: { enqueuedAt: "asc" },
-    });
-    if (!next) return null;
-    const claimed = await db.relayQueue.updateMany({
-      where: { id: next.id, status: "pending" },
-      data: { status: "dispatched", dispatchedAt: new Date(), claimedBy: deviceId },
-    });
-    if (claimed.count === 1) {
-      const device = await db.relayDevice.findUnique({ where: { deviceId } });
-      if (device) {
-        await db.relayDevice.update({
-          where: { id: device.id },
-          data: { lastSeenAt: new Date() },
-        });
-      }
-      return {
-        id: next.id,
-        method: next.method,
-        url: next.url,
-        headers: next.headersJson ? (JSON.parse(next.headersJson) as Record<string, string>) : {},
-        body: next.body,
-        sig: relayItemSignature({ id: next.id, method: next.method, url: next.url, body: next.body }, next.enqueuedAt.getTime(), device?.secret ?? ""),
-        ts: next.enqueuedAt.getTime(),
-      };
-    }
-    // رقابت با دستگاه دیگر — یک بار دیگر
-  }
-  return null;
 }
 
-/** ثبت نتیجهٔ اجرا از سمت گوشی — روت result */
+/** برداشتن اتمیک قدیمی‌ترین درخواست pending — با به‌روزرسانی مقید به وضعیت */
+export async function claimNextRelayRequest(deviceId: string): Promise<RelayDispatchedItem | null> {
+  const batch = await claimRelayBatch(deviceId, 1);
+  return batch.length ? batch[0] : null;
+}
+
+/**
+ * PN-035 (فاز ۵ · شورا-ن۰۵۷) — برداشتن اتمیک دسته‌ای تا سقف limit.
+ * ترتیب: اولویت DESC (OTP/تعاملی مقدم) سپس enqueuedAt ASC (FIFO).
+ * هر آیتم با updateMany مقید به status=pending برداشته می‌شود (بدون رقابت).
+ */
+export async function claimRelayBatch(deviceId: string, limit: number): Promise<RelayDispatchedItem[]> {
+  const want = Math.max(1, Math.min(limit, RELAY_MAX_BATCH));
+  await expireStaleRelayItems();
+  const claimed: RelayDispatchedItem[] = [];
+  const device = await db.relayDevice.findUnique({ where: { deviceId } });
+  if (!device) return claimed;
+  let scanAttempts = 0;
+  while (claimed.length < want && scanAttempts < 3) {
+    scanAttempts += 1;
+    const nextItems = await db.relayQueue.findMany({
+      where: { status: "pending" },
+      orderBy: [{ priority: "desc" }, { enqueuedAt: "asc" }],
+      take: want,
+    });
+    if (nextItems.length === 0) break;
+    let progressed = false;
+    for (const next of nextItems) {
+      if (claimed.length >= want) break;
+      const claimedOne = await db.relayQueue.updateMany({
+        where: { id: next.id, status: "pending" },
+        data: { status: "dispatched", dispatchedAt: new Date(), claimedBy: deviceId },
+      });
+      if (claimedOne.count === 1) {
+        progressed = true;
+        claimed.push({
+          id: next.id,
+          method: next.method,
+          url: next.url,
+          headers: next.headersJson ? (JSON.parse(next.headersJson) as Record<string, string>) : {},
+          body: next.body,
+          sig: relayItemSignature({ id: next.id, method: next.method, url: next.url, body: next.body }, next.enqueuedAt.getTime(), device.secret),
+          ts: next.enqueuedAt.getTime(),
+        });
+      }
+    }
+    if (!progressed) break; // رقابت با دستگاه دیگر — یک بار دیگر (سقف ۳)
+  }
+  if (claimed.length > 0) {
+    await db.relayDevice.update({
+      where: { id: device.id },
+      data: { lastSeenAt: new Date() },
+    });
+  }
+  return claimed;
+}
+
+/** ثبت نتیجهٔ اجرا از سمت گوشی — روت result (تک‌آیتم) یا حلقهٔ دسته‌ای
+ *  PN-035 (فاز ۲ · مشکل ۲): بخش‌بندی نتی‌جات — آیتمِ تازه‌منقضی‌شده (expired
+ *  کمتر از ۶۰ ثانیه پس از TTL) که نتیجه‌اش رسیده «احیا» می‌شود (done/failed):
+ *  مسیر برگشت دیگر با انقضای لحظه‌ای صف نمی‌شکند؛ پاسخِ حاضر = پاسخِ پذیرفته. */
 export async function completeRelayRequest(params: {
   id: string;
   deviceId: string;
@@ -485,7 +538,12 @@ export async function completeRelayRequest(params: {
 }): Promise<{ ok: boolean; status: number; error?: string }> {
   const item = await db.relayQueue.findUnique({ where: { id: params.id } });
   if (!item) return { ok: false, status: 404, error: "no such request" };
-  if (item.status !== "dispatched") return { ok: false, status: 409, error: `state=${item.status}` };
+  // بخش‌بندی: آیتم expired تازه (کمتر از ۶۰ث بعد از TTL) با نتیجهٔ رسیده احیا می‌شود
+  const expiredRecently =
+    item.status === "expired" && item.enqueuedAt.getTime() > Date.now() - (RELAY_ITEM_TTL_S + 60) * 1000;
+  if (item.status !== "dispatched" && !expiredRecently) {
+    return { ok: false, status: 409, error: `state=${item.status}` };
+  }
   if (item.claimedBy !== params.deviceId) return { ok: false, status: 403, error: "claimed by another device" };
   const done = params.error
     ? { status: "failed", error: params.error.slice(0, 300) }
@@ -536,7 +594,9 @@ export async function anyRelayDeviceOnline(): Promise<boolean> {
  * خروجی: Response کامل (proxyFetch سازگار) یا پرتاب خطا.
  */
 export async function waitRelayResponse(itemId: string, timeoutMs: number, signal?: AbortSignal): Promise<Response> {
-  const deadline = Date.now() + Math.min(Math.max(timeoutMs, 1_000), 60_000);
+  // PN-035 (فاز ۳): سقف ۶۰ ← ۱۲۰ ثانیه — کار async در پس‌زمینهٔ سرور منتظر
+  // می‌ماند (بدون گره HTTP باز)؛ هم‌تراز TTL صف؛ گره HTTP اپ همیشه < ۱ ثانیه است.
+  const deadline = Date.now() + Math.min(Math.max(timeoutMs, 1_000), 120_000);
   while (true) {
     const item = await db.relayQueue.findUnique({ where: { id: itemId } });
     if (!item) throw new RelayOfflineError("رله: درخواست ناپدید شد.");
@@ -575,7 +635,14 @@ export async function relayFetch(url: string, init: RequestInit, timeoutMs = REL
   const headers: Record<string, string> = {};
   const h = init.headers instanceof Headers ? init.headers : new Headers(init.headers);
   for (const [k, v] of h.entries()) headers[k.toLowerCase()] = v;
-  const { id } = await enqueueRelayRequest({ method, url, headers, body: bodyText || null });
+  // PN-035 (فاز ۵): اولویت تعاملی — OTP/ورود مقدم بر سینک حجیم جلا می‌شود
+  const { id } = await enqueueRelayRequest({
+    method,
+    url,
+    headers,
+    body: bodyText || null,
+    priority: relayPriorityForUrl(url),
+  });
   return waitRelayResponse(id, timeoutMs, init.signal ?? undefined);
 }
 
@@ -641,6 +708,7 @@ export async function runRelayGateTest(timeoutMs = 40_000): Promise<{
     method: "GET",
     url: "https://arus-api.melketabriz.ir/",
     source: "gate-test",
+    priority: RELAY_PRIORITY_INTERACTIVE,
   });
   try {
     const res = await waitRelayResponse(id, timeoutMs);
