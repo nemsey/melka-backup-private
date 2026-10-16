@@ -93,10 +93,10 @@ else
   fail "ترتیب ردّ/JSON در bootstrap نادرست"
 fi
 
-# ۷) UI افزودنی
+# ۷) UI — PN-033 (شورا-ن۰۵۴ · ۱۴۰۵/۰۷/۲۶): کارت APK به فرمان مالک از تنظیمات حذف شد (Termux تنها راه)
 UI="src/core/tiles/tiles/settings/RelaySetupSection.tsx"
-rg -q '/deliver/pn031d/melka-relay\.apk' "$UI" && ok "کارت دانلود APK در تنظیمات" || fail "کارت APK غایب"
-rg -q 'installCommand' "$UI" && rg -q 'تست تونل' "$UI" && ok "مسیر Termux و تست تونل پابرجا (افزودنی)" || fail "مسیر قبلی حذف شده — خلاف قانون افزودنی"
+rg -q '/deliver/pn031d/melka-relay\.apk' "$UI" && fail "کارت APK هنوز در UI است — خلاف سند ن۰۵۴" || ok "کارت APK از UI حذف شد (ن۰۵۴)"
+rg -q 'تست تونل' "$UI" && rg -q 'راهنمای ۳ خطی' "$UI" && ok "مسیر Termux + تست تونل + راهنمای ۳ خطی پابرجا (ن۰۵۴)" || fail "مسیر Termux حذف شده — خلاف سند ن۰۵۴"
 
 # ۸) بقای تحویل
 rg -q 'standalone/public/deliver' package.json && fail "build همچنان public/deliver را حذف می‌کند" || ok "بیلد APK را حذف نمی‌کند (لینک می‌ماند)"
