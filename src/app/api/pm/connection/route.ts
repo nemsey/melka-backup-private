@@ -28,6 +28,7 @@ import { armCall } from "@/lib/melk-api/client";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { MELK_ENDPOINTS } from "@/lib/melk-api/endpoints";
 import { clientIp } from "@/lib/auth/client-ip";
+import { startRelayJob } from "@/lib/melk-api/relay-jobs";
 
 /** وضعیت اتصال PM */
 async function getStatus() {
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
 
   switch (body.action) {
     // ---------- شروع: ارسال پیامک PM ----------
+    // PN-035 (شورا-ن۰۵۷ · فاز ۳): async — پاسخ فوری jobId؛ کارِ رله پس‌زمینه.
     case "start-otp": {
       const code = String(body.personnelCode ?? "").trim();
       if (!code || code.length < 3) {
@@ -73,51 +75,60 @@ export async function POST(request: NextRequest) {
       }
       // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال) — گارد نرخ محلی
       // جریان PM برافتاد؛ recordAttempt تنها رد حسابرسی می‌ماند.
-      try {
-        await armCall<unknown>({
-          method: "GET",
-          path: MELK_ENDPOINTS.pm.requestOtp(code),
-          baseUrl: cfg.pmApiBase,
-          timeoutMs: Math.min(cfg.timeoutMs, 20000),
-          maxRetries: 1,
-        });
-        await recordAttempt(code, "REQUEST_OTP_PM", true, ip);
-        await getIntegrationRepository().upsertPmConnection({
-          status: "pending",
-          personnelCode: code,
-          lastError: null,
-        });
-        await audit("PM_OTP_REQUEST", guard.personnelCode, `code=${code}`);
-        return Response.json({ ok: true, message: "کد پیامکی سامانه پرسنلی (PM) ارسال شد — گام تأیید کد را انجام دهید." });
-      } catch (err) {
-        const e = err as MelkApiError;
-
-        // P6.5-09 — «پیامک قبلاً ارسال شده» (مثلاً اتصال ARM همین حالا) ⇒ نرم‌موفق
-        const sms = classifySmsSendFailure(e.message);
-        if (sms.kind === "ALREADY_SENT") {
-          await getIntegrationRepository()
-            .upsertPmConnection({ status: "pending", personnelCode: code, lastError: null })
-            .catch(() => undefined);
-          await audit("PM_OTP_ALREADY_SENT", guard.personnelCode, `code=${code}`);
-          return Response.json({ ok: true, alreadySent: true, message: sms.userMessage });
-        }
-        // «سقف پیامک سمت ملک تبریز» ⇒ پیام شفاف؛ ثبت تلاش نمی‌کنیم (قفل خود-تمدیدشونده نمی‌سازیم)
-        if (sms.kind === "LIMIT_REACHED") {
-          return errorResponse(new MelkApiError("SMS_LIMIT_REMOTE", sms.userMessage, 429, false));
-        }
-
-        await getIntegrationRepository()
-          .upsertPmConnection({
-            status: "error",
-            personnelCode: code,
-            lastError: e.message,
-          })
-          .catch(() => undefined);
-        return errorResponse(new MelkApiError("UNKNOWN", `ارسال پیامک PM ناموفق بود: ${e.message}`, 502, false));
-      }
+      const auditActor = guard.personnelCode;
+      const job = await startRelayJob({
+        type: "pm-start-otp",
+        sessionId: guard.sessionId,
+        personnelCode: code,
+        payload: { flow: "pm-start-otp" },
+        run: async () => {
+          try {
+            await armCall<unknown>({
+              method: "GET",
+              path: MELK_ENDPOINTS.pm.requestOtp(code),
+              baseUrl: cfg.pmApiBase,
+              timeoutMs: Math.min(cfg.timeoutMs, 20000),
+              maxRetries: 1,
+            });
+            await recordAttempt(code, "REQUEST_OTP_PM", true, ip);
+            await getIntegrationRepository().upsertPmConnection({
+              status: "pending",
+              personnelCode: code,
+              lastError: null,
+            });
+            await audit("PM_OTP_REQUEST", auditActor, `code=${code}`);
+            return { result: { message: "کد پیامکی سامانه پرسنلی (PM) ارسال شد — گام تأیید کد را انجام دهید." } };
+          } catch (err) {
+            const e = err as MelkApiError;
+            // P6.5-09 — «پیامک قبلاً ارسال شده» (مثلاً اتصال ARM همین حالا) ⇒ نرم‌موفق
+            const sms = classifySmsSendFailure(e.message);
+            if (sms.kind === "ALREADY_SENT") {
+              await getIntegrationRepository()
+                .upsertPmConnection({ status: "pending", personnelCode: code, lastError: null })
+                .catch(() => undefined);
+              await audit("PM_OTP_ALREADY_SENT", auditActor, `code=${code}`);
+              return { result: { alreadySent: true, message: sms.userMessage } };
+            }
+            // «سقف پیامک سمت ملک تبریز» ⇒ خطای شفاف
+            if (sms.kind === "LIMIT_REACHED") {
+              throw new MelkApiError("SMS_LIMIT_REMOTE", sms.userMessage, 429, false);
+            }
+            await getIntegrationRepository()
+              .upsertPmConnection({
+                status: "error",
+                personnelCode: code,
+                lastError: e.message,
+              })
+              .catch(() => undefined);
+            throw new MelkApiError("UNKNOWN", `ارسال پیامک PM ناموفق بود: ${e.message}`, 502, false);
+          }
+        },
+      });
+      return Response.json({ ok: true, jobId: job.id, status: "queued", pollMs: 1000 });
     }
 
     // ---------- تأیید کد ----------
+    // PN-035 (شورا-ن۰۵۷ · فاز ۳): async — تأییدِ رله پس‌زمینه؛ اپ jobId را poll می‌کند.
     case "verify": {
       const code = String(body.personnelCode ?? "").trim();
       const otp = String(body.code ?? "").replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/\D/g, "");
@@ -127,50 +138,60 @@ export async function POST(request: NextRequest) {
       }
       // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال) — گارد نرخ تأیید
       // جریان PM برافتاد؛ recordAttempt تنها رد حسابرسی می‌ماند.
-      try {
-        const res = await armCall<{
-          token?: string;
-          refreshToken?: string;
-          user?: { fullName?: string; name?: string; firstName?: string; lastName?: string; username?: string; type?: string };
-        }>({
-          method: "POST",
-          path: MELK_ENDPOINTS.pm.verifyOtp,
-          baseUrl: cfg.pmApiBase,
-          body: { code, otpCode: otp },
-          timeoutMs: Math.min(cfg.timeoutMs, 20000),
-          maxRetries: 1,
-        });
-        const data = res.data;
-        if (!data?.token) {
-          throw new MelkApiError("OTP_INVALID", "پاسخ ورود PM فاقد توکن است.", 401, false);
-        }
-        const displayName =
-          data.user?.fullName ?? data.user?.name ?? [data.user?.firstName, data.user?.lastName].filter(Boolean).join(" ") ?? data.user?.username ?? code;
-        await recordAttempt(code, "VERIFY_OTP_PM", true, ip);
-        await getIntegrationRepository().upsertPmConnection({
-          status: "connected",
-          personnelCode: code,
-          displayName: displayName || code,
-          tokenEnc: encryptSecret(data.token),
-          refreshTokenEnc: data.refreshToken ? encryptSecret(data.refreshToken) : null,
-          lastCheckedAt: new Date(),
-          lastError: null,
-        });
-        await audit("PM_CONNECT", guard.personnelCode, `code=${code}`);
-        return Response.json({ ok: true, message: `اتصال حساب شخصی PM برقرار شد${displayName ? ` — «${displayName}»` : ""}.` });
-      } catch (err) {
-        const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error).message, 502, false);
-        // P6.5-09 — تأیید ناموفق در سبد مستقل PM ثبت می‌شود (قفل ۱۵ دقیقه‌ای پس از ۵ شکست)
-        await recordAttempt(code, "VERIFY_OTP_PM", false, ip).catch(() => undefined);
-        await getIntegrationRepository()
-          .upsertPmConnection({
-            status: "error",
-            personnelCode: code,
-            lastError: e.message,
-          })
-          .catch(() => undefined);
-        return errorResponse(e);
-      }
+      const auditActor = guard.personnelCode;
+      const job = await startRelayJob({
+        type: "pm-verify",
+        sessionId: guard.sessionId,
+        personnelCode: code,
+        payload: { flow: "pm-verify" },
+        run: async () => {
+          try {
+            const res = await armCall<{
+              token?: string;
+              refreshToken?: string;
+              user?: { fullName?: string; name?: string; firstName?: string; lastName?: string; username?: string; type?: string };
+            }>({
+              method: "POST",
+              path: MELK_ENDPOINTS.pm.verifyOtp,
+              baseUrl: cfg.pmApiBase,
+              body: { code, otpCode: otp },
+              timeoutMs: Math.min(cfg.timeoutMs, 20000),
+              maxRetries: 1,
+            });
+            const data = res.data;
+            if (!data?.token) {
+              throw new MelkApiError("OTP_INVALID", "پاسخ ورود PM فاقد توکن است.", 401, false);
+            }
+            const displayName =
+              data.user?.fullName ?? data.user?.name ?? [data.user?.firstName, data.user?.lastName].filter(Boolean).join(" ") ?? data.user?.username ?? code;
+            await recordAttempt(code, "VERIFY_OTP_PM", true, ip);
+            await getIntegrationRepository().upsertPmConnection({
+              status: "connected",
+              personnelCode: code,
+              displayName: displayName || code,
+              tokenEnc: encryptSecret(data.token),
+              refreshTokenEnc: data.refreshToken ? encryptSecret(data.refreshToken) : null,
+              lastCheckedAt: new Date(),
+              lastError: null,
+            });
+            await audit("PM_CONNECT", auditActor, `code=${code}`);
+            return { result: { message: `اتصال حساب شخصی PM برقرار شد${displayName ? ` — «${displayName}»` : ""}.` } };
+          } catch (err) {
+            const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error).message, 502, false);
+            // P6.5-09 — تأیید ناموفق در سبد مستقل PM ثبت می‌شود
+            await recordAttempt(code, "VERIFY_OTP_PM", false, ip).catch(() => undefined);
+            await getIntegrationRepository()
+              .upsertPmConnection({
+                status: "error",
+                personnelCode: code,
+                lastError: e.message,
+              })
+              .catch(() => undefined);
+            throw e;
+          }
+        },
+      });
+      return Response.json({ ok: true, jobId: job.id, status: "queued", pollMs: 1000 });
     }
 
     // ---------- ریست ----------

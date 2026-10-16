@@ -242,7 +242,15 @@ describe("PN-031-G · D) قرارداد هدرها — سه نامِ قرارد�
     expect(script).not.toContain("X-Melka-Target");
     expect(script).not.toContain("X-Melka-Sig:");
     const headerLines = script.split("\n").filter((l) => l.trim().startsWith("-H \"X-Melka-"));
-    expect(headerLines.length).toBe(3);
+    // PN-035 (نسل J): دو تابع حمل‌ونقل (signed_curl + signed_curl_file) هر یک
+    // همان سه هدر قراردادی را می‌فرستند — مجموعهٔ متمایز خطوط دقیقاً ۳ است
+    // و هر خط یکی از همان سه نام است (هیچ نام چهارمی پیدانشده).
+    expect(headerLines.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(headerLines).size).toBe(3);
+    for (const l of headerLines) {
+      const name = l.match(/-H "(X-Melka-[A-Za-z-]+)/)?.[1] ?? "";
+      expect(["X-Melka-Relay-Device", "X-Melka-Timestamp", "X-Melka-Signature"]).toContain(name);
+    }
   });
 
   test("D-2: پیام امضا همان قرارداد PN-030/031 — POST\\npath\\nsha256(body)\\nts", () => {

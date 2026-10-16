@@ -117,8 +117,21 @@ describe("HOTFIX-04/B1 — try/catch روت‌ها با پاکت فارسی", ()
 // B2 — قفل خود-تمدیدشونده RATE_LIMITED
 // ==========================================================================
 
-describe("HOTFIX-04/B2 — (ن۰۵۵) قانون مالک: صفر محدودیت اتصال — مسیرهای ورود بدون قفل", () => {
-  test("request-otp: (ن۰۵۵) ۵ تلاش سریع → همهٔ ۵ به سامانه واقعی می‌رسند (صفر 429 محلی · PN-034)", async () => {
+describe("HOTFIX-04/B2 — (ن۰۵۵/ن۰۵۷) قانون مالک: صفر محدودیت — مسیرهای ورود بدون قفل · الگوی Async", () => {
+  /** PN-035 (شورا-ن۰۵۷): روت‌های ورود async شدند — پاسخ فوری {jobId}؛ کارِ رله
+   *  در پس‌زمینه. این تست‌ها با provider شبیه‌سازی‌شده کارها را تا پایان
+   *  دنب می‌کنند (درین قبل از بازگردانی provider — تماس واقعی ممنوع). */
+  const drainJob = async (jobId: string): Promise<void> => {
+    const { getRelayJobForClient } = await import("@/lib/melk-api/relay-jobs");
+    for (let t = 0; t < 60; t++) {
+      const v = await getRelayJobForClient(jobId, null);
+      if (v.ok && (v.job?.status === "done" || v.job?.status === "consumed" || v.job?.status === "failed")) return;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error("job did not settle in 6s");
+  };
+
+  test("request-otp: (ن۰۵۷) الگوی Async — ۵ تلاش سریع → ۵ پاسخ فوری ۲۰۰+jobId (<۱ث) · کارها در پس‌زمینه به provider شبیه‌سازی‌شده می‌رسند (صفر 429 محلی)", async () => {
     const { NextRequest } = await import("next/server");
     const { getMelkProvider } = await import("@/lib/melk-api/provider");
     const route = await import("@/app/api/auth/request-otp/route");
@@ -131,6 +144,7 @@ describe("HOTFIX-04/B2 — (ن۰۵۵) قانون مالک: صفر محدودیت
     provider.requestOtp = async () => ({ ok: true, expiresInSeconds: 120, message: "شبیه‌سازی تست" });
 
     const statuses: number[] = [];
+    const jobIds: string[] = [];
     try {
       for (let i = 0; i < 5; i++) {
         const req = new NextRequest("http://localhost/api/auth/request-otp", {
@@ -139,22 +153,24 @@ describe("HOTFIX-04/B2 — (ن۰۵۵) قانون مالک: صفر محدودیت
         });
         const res = await route.POST(req);
         statuses.push(res.status);
+        const body = (await res.json()) as { ok: boolean; jobId?: string };
+        jobIds.push(body.jobId ?? "");
       }
+      // PN-035 (شورا-ن۰۵۷ · فاز ۳): پاسخ فوری — سنجهٔ ۶: < ۱ ثانیه · پایان 502 دروازه
+      expect(statuses).toEqual([200, 200, 200, 200, 200]);
+      expect(jobIds.every((j) => j.length >= 8)).toBe(true);
+      // کارهای پس‌زمینه با provider شبیه‌سازی‌شده تمام می‌شوند (درین قبل از بازگردانی)
+      for (const j of jobIds) await drainJob(j);
     } finally {
       provider.requestOtp = original;
     }
 
-    // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال): قفل تک‌بارة PN-029
-    // و سقف نرخ محلی (۳/۱۰ دقیقه) هر دو برافتادند — هر ۵ تلاش به سامانه
-    // واقعی رسیدند (۲۰۰). تنها سقف باقی‌مانده سهمیهٔ سمت ملک تبریز است.
-    expect(statuses).toEqual([200, 200, 200, 200, 200]);
-
-    // رد حسابرسی هر ۵ تلاش ثبت شده (recordAttempt دیگر مسدودکننده نیست — فقط شاهد)
+    // رد حسابرسی هر ۵ تلاش پس از اتمام کارها ثبت شده (شاهد — نه سپر)
     const attempts = await db.otpAttempt.count({ where: { personnelCode: code, kind: "REQUEST_OTP" } });
     expect(attempts).toBe(5);
   });
 
-  test("verify-otp: (ن۰۵۵) ۷ شکست متوالی → همه به سامانه واقعی می‌رسند (۴۰۱) — صفر 429 محلی", async () => {
+  test("verify-otp: (ن۰۵۷) الگوی Async — ۷ شکست متوالی → ۷ پاسخ فوری ۲۰۰+jobId · کارها در پس‌زمینه با خطای ۴۰۱ provider می‌رسند (صفر 429 محلی)", async () => {
     const { NextRequest } = await import("next/server");
     const { getMelkProvider } = await import("@/lib/melk-api/provider");
     const { MelkApiError } = await import("@/lib/melk-api/types");
@@ -170,6 +186,7 @@ describe("HOTFIX-04/B2 — (ن۰۵۵) قانون مالک: صفر محدودیت
     };
 
     const statuses: number[] = [];
+    const jobIds: string[] = [];
     try {
       for (let i = 0; i < 7; i++) {
         const req = new NextRequest("http://localhost/api/auth/verify-otp", {
@@ -178,16 +195,20 @@ describe("HOTFIX-04/B2 — (ن۰۵۵) قانون مالک: صفر محدودیت
         });
         const res = await route.POST(req);
         statuses.push(res.status);
+        const body = (await res.json()) as { ok: boolean; jobId?: string };
+        jobIds.push(body.jobId ?? "");
       }
+      // PN-035 (فاز ۳): پاسخ فوری ۲۰۰+jobId — «کد اشتباه» دیگر گرهٔ HTTP را ۴۰۱ نمی‌کند؛
+      // خطا در کار ثبت می‌شود و اپ آن را با polling می‌خواند (پایان 502 دروازه)
+      expect(statuses).toEqual([200, 200, 200, 200, 200, 200, 200]);
+      expect(jobIds.every((j) => j.length >= 8)).toBe(true);
+      // کارها با provider شبیه‌سازی‌شده (پرتاب ۴۰۱) تمام می‌شوند — هر ۷ شکسته
+      for (const j of jobIds) await drainJob(j);
     } finally {
       provider.verifyOtp = original;
     }
 
-    // (ن۰۵۵ · قانون صفر-محدودیت): هر ۷ شکست به سامانه واقعی رسیدند (۴۰۱) —
-    // سقف نرخ محلی VERIFY_OTP برافتاد؛ قفل خود-تمدیدشونده دیگر اصلاً وجود ندارد
-    expect(statuses).toEqual([401, 401, 401, 401, 401, 401, 401]);
-
-    // رد حسابرسی هر ۷ شکست ثبت شده (شاهد — نه سپر)
+    // رد حسابرسی هر ۷ شکست پس از اتمام کارها ثبت شده (شاهد — نه سپر)
     const fails = await db.otpAttempt.count({ where: { personnelCode: code, kind: "VERIFY_OTP", success: false } });
     expect(fails).toBe(7);
   });

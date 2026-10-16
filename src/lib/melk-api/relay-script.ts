@@ -1,52 +1,39 @@
 /**
- * مولد اسکریپت رلهٔ Termux — PN-031 (شورای ن۰۳۷) · سخت‌سازی PN-031-E · PN-031-G · PN-031-I (شورا-ن۰۵۰)
+ * مولد اسکریپت رلهٔ Termux — PN-031 (شورای ن۰۳۷) · PN-031-E/G/I · نسل J = PN-035 (شورا-ن۰۵۷)
  * ---------------------------------------------------------------------------
  * روت bootstrap این قالب را با پیکربندی دستگاه (SERVER_URL · DEVICE_ID ·
  * DEVICE_SECRET · ALT_SERVER_URL) پر می‌کند و به‌صورت text/x-shellscript تحویل می‌دهد.
  * مالک فقط یک بار آن را در Termux اجرا می‌کند — از آن پس حلقهٔ رله:
  *
- *   poll (امضاشده) → وارسی امضای سرور → whitelist میزبان → اجرای curl →
- *   result (امضاشده، body پایه۶۴) → تکرار
+ *   poll (امضاشده · دسته‌ای) → وارسی امضای سرور → پالایش روش + whitelist میزبان →
+ *   اجرای موازی curl (موج‌های ۸تایی) → result (امضاشده · دسته‌ای · gzip) → تکرار
  *
- * سخت‌سازی PN-031-E (ریشه‌یابی «Bootstrap موفق، Poll ناموفق»):
- *   · همگام‌سازی ساعت با سرور (Date header) + اصلاح خودکار ts امضا
- *   · خطای دقیق سرور نمایش داده می‌شود (error از JSON پاسخ)
- *   · خطای شبکه با کد curl و توضیح فارسی
- *   · ضربان قلب هر ۱۰ چرخه
+ * نسل J — PN-035 (شورا-ن۰۵۷ · فاز ۱+۲+۵+۶ کلاینت):
+ *   · پالایش روش — فقط GET/POST/PUT/DELETE/PATCH اجرا می‌شود؛ هر روش دیگر
+ *     بدون اجرا رد و به سرور «method not allowed» گزارش می‌شود (سنجهٔ ۱).
+ *   · دسته‌ای — poll با batch=100؛ پاسخ items[] آرایه است؛ سازگاری عقبه:
+ *     نبودِ items = تک‌آیتم request (نسل‌های قدیمی سرور).
+ *   · موج‌های موازی — حداکثر ۸ کارگر همزمان (موج بعدی پس از اتمام موج)؛
+ *     آیتم‌های تعاملی (OTP) به‌واسطهٔ اولویت سرور مقدم‌اند → تأخیر OTP حداقلی.
+ *   · نتیجهٔ دسته‌ای — همهٔ نتیجه‌های موج در «یک» POST /result (سربار دروازه ÷N).
+ *   · پایداری نتیجه — ۳ تلاش با backoff (۲/۶/۱۸ث)؛ رد قطعی سرور بدون تلاش مجدد؛
+ *     شکست نهایی → ذخیرهٔ محلی ~/failed-results.jsonl (TTL ۱۰ دقیقه) و
+ *     بازپخش خودکار در چرخه‌های بعد (پایان «پیامک آمد اما پاسخ برنگشت»).
+ *   · gzip — بدنهٔ نتیجه > ۱KB فشرده و با Content-Encoding: gzip ارسال می‌شود؛
+ *     امضا روی «همان بایت‌های فشردهٔ سیم» (قرارداد فاز ۶ سرور).
  *
- * سخت‌سازی PN-031-G (شورا-ن۰۴۷ · ریشهٔ «missing auth headers»):
- *   · پیش‌پرواز امضا — ts/sig خالی هرگز ارسال نمی‌شود (curl هدر خالی را بی‌صدا حذف می‌کند)
- *   · پیام موفقیت صادقانه — «رلهٔ ملکا فعال است» فقط پس از اولین پاسخ واقعی سرور
- *   · نام هدرهای احرازی غایب (missing) از پاسخ ۴۰۳ در لاگ نمایش داده می‌شود
- *
- * سخت‌سازی PN-031-I (شورا-ن۰۵۰ · ریشهٔ «curl error 9» + تحمل مسیر):
- *   · اجبار HTTP/1.1 روی تمام تماسهای سرور — دروازهٔ space-z.ai با برخی
- *     جریانهای HTTP/2 از گوشی (RST_STREAM) ناسازگار است؛ HTTP/1.1 خاموش‌کنندهٔ
- *     کل طبقهٔ خطاهای کد ۹/۱۶ است.
- *   · User-Agent بروزری (Chrome روی اندروید) — دروازه/WAF درخواستهای
- *     curl/8.x را ممکن است bot تشخیص دهد و تماس را قطع کند (کد ۹).
- *   · نردبان retry پله‌ای ۳۰/۶۰/۱۲۰/۳۰۰/۳۰۰ ثانیه — جایگزینِ «۵ ثانیه»ی
- *     قدیمی که ۱۲ درخواست/دقیقه = ۷۲۰ در ساعت می‌ساخت و خودش را به‌عنوان
- *     حمله به دروازه معرفی می‌کرد و قفل rate-limit/بلاک موقت IP را فعال می‌کرد.
- *   · سقف نرخ: حداکثر ۵ تماس سرور در هر پنجرهٔ ۶۰ثانیه‌ای — حتی اگر حلقه
- *     خطا بخورد (لایهٔ دفاعی مستقل از نردبان).
- *   · لاگ verbose به ~/relay-debug.log — خروجی -v فقط هدرها و اتصال؛ مقدار
- *     امضا پیش از نوشتن redact می‌شود؛ چرخش خودکار در ۵۱۲KB (آخرین ۳۲KB می‌ماند).
- *   · مسیر جایگزین (لایهٔ ۳ سند): ALT_SERVER_URL (روت /relay واکِر کلادفلیر) —
- *     پس از ۳ خطای شبکهٔ پیاپی روی مسیر اصلی، سوئیچ خودکار؛ هر ۳۰ چرخه بازگشت
- *     به آزمایش مسیر اصلی (primary مقدم است).
- *   · نبض نسخه (سلف-پینگ بیرونی): هر ۱۰ دقیقه /api/version خوانده می‌شود؛ اگر
- *     سرور روی بیلد قدیمی باشد مالک فوراً هشدار می‌بیند (کشف بازنشانی پلتفرم
- *     از بیرون — درس بازگشت دهم: گاردهای درونی خودشان قربانی می‌شوند).
- *
- * نکتهٔ پیاده‌سازی: متن bash داخل template literal است؛ هر "\${" به‌صورت
- * "\${" escape شده تا تعبیر جاوااسکریپت نشود.
+ * سخت‌سازی میراثی (نسبت به نسل‌های قبلی — همه پابرجا):
+ *   · PN-031-E: همگام‌سازی ساعت با سرور + خطای دقیق سرور + ضربان قلب
+ *   · PN-031-G: پیش‌پرواز امضا (ts/sig خالی هرگز ارسال نمی‌شود) + missing
+ *   · PN-031-I: HTTP/1.1 + UA بروزری + نردمان retry ۳۰/۶۰/۱۲۰/۳۰۰/۳۰۰ + سقف
+ *     نرخ ۵/۶۰ث + لاگ دیباگ redact-شده + نبض نسخه + مسیر جایگزین
  *
  * ویژگی‌های امنیتی داخلی اسکریپت (دفاع در عمق — عین سرور):
- *   · فقط https و فقط *.melketabriz.ir برای اجرای درخواست صف — هیچ مقصد دیگری اجرا نمی‌شود
+ *   · فقط https و فقط *.melketabriz.ir برای اجرای درخواست صف
+ *   · پالایش روش (GET/POST/PUT/DELETE/PATCH) پیش از اجرا
  *   · امضای هر آیتم صف پیش از اجرا وارسی می‌شود (RELAY\nid\nmethod\nurl\nsha256(body)\nts)
- *   · صفر لاگ محتوا — فقط شمارنده و کد وضعیت (لاگ debug هدرها است، نه بدنه)
- *   · wake-lock Termux (بقا در پس‌زمینه) + امتناع از اجرا در محیط غیر Termux
+ *   · صفر لاگ محتوا — فقط شمارنده و کد وضعیت
+ *   · wake-lock Termux + امتناع از اجرا در محیط غیر Termux
  */
 
 export interface RelayScriptConfig {
@@ -71,11 +58,12 @@ export function buildRelayScript(cfg: RelayScriptConfig): string {
 
   return `#!/usr/bin/env bash
 # ============================================================
-# melka-relay — رلهٔ موبایل ملکا (PN-031-I · شورای عالی ملکا ۰۵۰)
+# melka-relay — رلهٔ موبایل ملکا (نسل J · PN-035 · شورای عالی ملکا ۰۵۷)
 # روی گوشی مالک (Poco F3 · Termux · IP ایرانی) اجرا می‌شود.
 # این فایل را اجرا نکنید مگر اینکه از طریق «راه‌اندازی رله» در
 # تنظیمات ملکا ساخته شده باشد — راز دستگاه داخلش است.
-# نسل: PN-031-I (http1.1 + UA بروزری + retry پله‌ای + مسیر جایگزین)
+# نسل J: دسته‌ای batch=۱۰۰ · موج‌های موازی ۸تایی · نتیجهٔ دسته‌ای ·
+#         retry×۳ + ذخیرهٔ محلی + gzip>۱KB · پالایش روش
 # ============================================================
 set -u
 
@@ -84,15 +72,25 @@ DEVICE_ID="${deviceId}"
 DEVICE_SECRET="${deviceSecret}"
 ALT_SERVER_URL="${altServerUrl}"
 
-# ── PN-031-I: ثابت‌های حمل‌ونقل ──
+# ── ثابت‌های حمل‌ونقل (PN-031-I) ──
 UA="${BROWSER_UA}"
 RELAY_DEBUG="\$HOME/relay-debug.log"
 DEBUG_MAX=524288   # 512KB — چرخش لاگ دیباگ
-RETRY_DELAYS=(30 60 120 300 300)   # نردبان: ۳۰ث · ۱د · ۲د · ۵د · ۵د
+RETRY_DELAYS=(30 60 120 300 300)   # نردمان شبکه: ۳۰ث · ۱د · ۲د · ۵د · ۵د
 ALT_FAIL_THRESHOLD=3               # سوئیچ به مسیر جایگزین پس از ۳ خطای پیاپی
 PRIMARY_RECHECK_LOOPS=30           # هر ۳۰ چرخه، مسیر اصلی دوباره آزموده می‌شود
 
-log() { echo "[$(date '+%H:%M:%S')] $*"; }
+# ── ثابت‌های نسل J (PN-035) ──
+BATCH=100                           # فاز ۵ — حداکثر آیتم هر poll
+MAX_WORKERS=8                       # فاز ۵ — موج‌های کارگر موازی
+RESULT_ATTEMPTS=3                   # فاز ۲ — تلاش‌های ارسال نتیجه
+RESULT_BACKOFF=(2 6)                # فاز ۲ — مکث بین تلاش‌ها (۳تایی: ۲ و ۶)
+GZIP_THRESHOLD=1024                 # فاز ۶ — فشرده‌سازی بدنه‌های بزرگ‌تر از ۱KB
+FAILED_RESULTS="\$HOME/failed-results.jsonl"
+FAILED_TTL_S=600                    # عمر ردیف نتیجهٔ ذخیره‌شده (۱۰ دقیقه)
+FAILED_MAX_LINES=200                # سقف فایل نتیجه‌های ذخیره‌شده
+
+log() { echo "[$(date '+%H:%M:%S')] \$*"; }
 
 debug_rotate() {
   [ -f "$RELAY_DEBUG" ] || return 0
@@ -115,7 +113,6 @@ if ! need_cmd curl || ! need_cmd openssl || ! need_cmd jq; then
 fi
 
 # ── PN-031-G: وارسی پیکربندی — مقادیر احراز باید نان‌خالی باشند ──
-# curl هدر با مقدار خالی را بی‌صدا حذف می‌کند → «missing auth headers» بی‌ردپا.
 if [ -z "$SERVER_URL" ] || [ -z "$DEVICE_ID" ] || [ -z "$DEVICE_SECRET" ]; then
   log "پیکربندی ناقص (شناسه/راز/نشانی خالی) — اسکریپت تازه را از «راه‌اندازی رله» در تنظیمات ملکا بگیرید"
   exit 1
@@ -130,7 +127,6 @@ NET_FAILS=0
 cur_url() { printf '%s' "\${URLS[$URL_IDX]}"; }
 
 # ── PN-031-I: سقف نرخ — حداکثر ۵ تماس سرور در ۶۰ ثانیه ──
-# مستقل از نردبان retry؛ حتی در بدترین سناریوی خطا، دروازه الگوی حمله نمی‌بیند.
 REQ_TIMES=()
 rate_gate() {
   local now t keep i oldest wait_s
@@ -198,7 +194,7 @@ curl_err_desc() {
 
 # ── امضای درخواست گوشی → سرور (قرارداد PN-030/031 · ts با آفست سرور) ──
 signed_curl() {
-  # $1 = مسیر روت · $2 = بدنهٔ خام · $3.. = آرگومانهای curl بعدی
+  # $1 = مسیر روت · $2 = بدنهٔ خام (رشته) · $3.. = آرگومانهای curl بعدی
   local path="$1" body="$2"; shift 2
   local ts digest sig
   ts=\$(( \$(date +%s%3N) + CLOCK_OFFSET ))
@@ -210,7 +206,6 @@ signed_curl() {
     return 9
   fi
   rate_gate
-  # ── PN-031-I: http1.1 + UA بروزری + verbose به لاگ دیباگ (امضا redact) ──
   curl --http1.1 -A "$UA" -sS -v --max-time 35 "\$(cur_url)$path" "$@" \\
     -H "X-Melka-Relay-Device: $DEVICE_ID" \\
     -H "X-Melka-Timestamp: $ts" \\
@@ -221,8 +216,125 @@ signed_curl() {
   return $rc
 }
 
+# ── PN-035 (فاز ۶): امضای بدنهٔ فایلی (gzip) — امضا روی بایت‌های فشردهٔ سیم ──
+signed_curl_file() {
+  # $1 = مسیر روت · $2 = فایل بدنه (بایت خام) · $3 = Content-Encoding (مثلاً gzip)
+  local path="$1" file="$2" enc="$3"
+  local ts digest sig
+  ts=\$(( \$(date +%s%3N) + CLOCK_OFFSET ))
+  digest=\$(sha256hex < "$file")
+  sig=\$(printf 'POST\\n%s\\n%s\\n%s' "$path" "$digest" "$ts" | hmac_hex)
+  if [ -z "$ts" ] || [ -z "$sig" ]; then
+    log "خطای داخلی: امضا/زمان خالی ساخته شد — درخواست ارسال نشد"
+    return 9
+  fi
+  rate_gate
+  local enc_args=()
+  [ -n "$enc" ] && enc_args=(-H "Content-Encoding: $enc")
+  curl --http1.1 -A "$UA" -sS -v --max-time 60 "\$(cur_url)$path" \\
+    -X POST -H "Content-Type: application/json" "\${enc_args[@]+"\${enc_args[@]}"}" --data-binary @"$file" \\
+    -H "X-Melka-Relay-Device: $DEVICE_ID" \\
+    -H "X-Melka-Timestamp: $ts" \\
+    -H "X-Melka-Signature: $sig" \\
+    2> >(sed -u 's/^\\(> *X-Melka-Signature: \\).*/\\1<redacted>/; s/^\\(< *X-Melka-Signature: \\).*/\\1<redacted>/' >> "$RELAY_DEBUG" 2>/dev/null)
+  local rc=$?
+  debug_rotate
+  return $rc
+}
+
+# ── PN-035 (فاز ۶): ارسال یک بدنهٔ نتیجه — gzip اگر > آستانه ──
+submit_batch_raw() {
+  # $1 = رشتهٔ JSON آرایهٔ نتیجه‌ها → خروجی: پاسخ سرور روی stdout
+  local payload="$1"
+  if [ "\${#payload}" -gt "$GZIP_THRESHOLD" ] && need_cmd gzip; then
+    local gz; gz=\$(mktemp)
+    if printf '%s' "$payload" | gzip -c > "$gz" 2>/dev/null; then
+      signed_curl_file "/api/mobile-relay/result" "$gz" "gzip"
+      local rc=$?
+      rm -f "$gz"
+      return $rc
+    fi
+    rm -f "$gz"
+    log "gzip ناموفق — ارسال فشرده نشده"
+  fi
+  signed_curl "/api/mobile-relay/result" "$payload" \\
+    -X POST -H "Content-Type: application/json" --data-binary "$payload"
+}
+
+# ── PN-035 (فاز ۲): ارسال نتیجه با پایداری — ۳ تلاش + backoff + ذخیرهٔ محلی ──
+post_results() {
+  # $1 = رشتهٔ JSON آرایهٔ نتیجه‌ها
+  # خروجی: 0 = پذیرش سرور · 1 = شکست (ذخیره‌شده محلی)
+  local payload="$1" attempt=0 delay out rc
+  while [ $attempt -lt $RESULT_ATTEMPTS ]; do
+    attempt=\$((attempt+1))
+    out=""; rc=0
+    out=\$(submit_batch_raw "$payload") || rc=$?
+    # ۱) پذیرش — سرور ok گفت
+    if [ $rc -eq 0 ] && printf '%s' "$out" | jq -e '.ok == true' >/dev/null 2>&1; then
+      return 0
+    fi
+    # ۲) رد قطعی سرور (پاسخ JSON با فیلد ok) — تلاش مجدد بی‌فایده است
+    if [ $rc -eq 0 ] && printf '%s' "$out" | jq -e 'has("ok")' >/dev/null 2>&1; then
+      log "سرور نتیجه را نپذیرفت: \$(printf '%s' "$out" | head -c 120)"
+      return 1
+    fi
+    # ۳) خطای گذرا (شبکه/دروازه/پاسخ غیرJSON) — تلاش مجدد با backoff
+    if [ $attempt -lt $RESULT_ATTEMPTS ]; then
+      delay="\${RESULT_BACKOFF[\$((attempt-1))]:-6}"
+      log "ارسال نتیجه ناموفق (تلاش \$attempt/\$RESULT_ATTEMPTS · \$(curl_err_desc \$rc)) — \$delay ثانیه دیگر"
+      sleep "$delay"
+    fi
+  done
+  # شکست نهایی — ذخیرهٔ محلی + بازپخش در چرخه‌های بعد
+  store_failed "$payload"
+  return 1
+}
+
+# ── PN-035 (فاز ۲): ذخیرهٔ محلی نتیجه‌های ارسال‌نشده ──
+store_failed() {
+  # $1 = رشتهٔ JSON آرایهٔ نتیجه‌ها
+  local rec
+  rec=\$(jq -nc --argjson ts "\$(date +%s)" --argjson p "\$1" '{_ts:\$ts,payload:\$p}' 2>/dev/null) || rec=""
+  if [ -z "$rec" ]; then
+    # JSON نامعتبر (نباید رخ دهد) — خام ذخیره می‌شود تا ناشناخته نماند
+    printf '%s\\n' "{\\"_ts\\":\$(date +%s),\\"payload_raw\\":true}" >> "$FAILED_RESULTS"
+  else
+    printf '%s\\n' "$rec" >> "$FAILED_RESULTS"
+  fi
+  # سقف فایل — فقط ۲۰۰ ردیف آخر می‌ماند
+  [ -f "$FAILED_RESULTS" ] && tail -n "$FAILED_MAX_LINES" "$FAILED_RESULTS" > "\${FAILED_RESULTS}.tmp" 2>/dev/null && mv -f "\${FAILED_RESULTS}.tmp" "$FAILED_RESULTS" 2>/dev/null
+  log "نتیجه‌ها در ~/failed-results.jsonl ذخیره شدند (بازپخش خودکار تا ۱۰ دقیقه)"
+}
+
+# ── PN-035 (فاز ۲): بازپخش نتیجه‌های ذخیره‌شدهٔ تازه ──
+replay_failed_results() {
+  [ -s "$FAILED_RESULTS" ] || return 0
+  local now line lts payload kept=0 replayed=0
+  now=\$(date +%s)
+  local tmp; tmp=\$(mktemp)
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    lts=\$(printf '%s' "$line" | jq -r '._ts // 0' 2>/dev/null)
+    # ردیف منقضی (TTL) یا خراب — حذف بی‌صدا
+    if [ -z "$lts" ] || [ "\$(( now - lts ))" -gt "$FAILED_TTL_S" ]; then
+      continue
+    fi
+    payload=\$(printf '%s' "$line" | jq -c '.payload // empty' 2>/dev/null)
+    [ -z "$payload" ] && continue
+    if post_results "$payload"; then
+      replayed=\$((replayed+1))
+    else
+      printf '%s\\n' "$line" >> "$tmp"
+      kept=\$((kept+1))
+    fi
+  done < "$FAILED_RESULTS"
+  mv -f "$tmp" "$FAILED_RESULTS" 2>/dev/null || true
+  [ $replayed -gt 0 ] && log "بازیابی \$replayed دستهٔ نتیجهٔ ذخیره‌شده ✓"
+  return 0
+}
+
 # ── PN-031-I: نبض نسخه (سلف-پینگ بیرونی — کشف بازنشانی پلتفرم از گوشی) ──
-# هر ۱۰ دقیقه: اگر بیلد زنده سرور با HEAD آن یکی نبود، مالک همان لحظه می‌بیند.
 VERSION_CHECK_AT=0
 version_ping() {
   local now v bid sha
@@ -236,16 +348,94 @@ version_ping() {
   if [ -n "$bid" ] && [ -n "$sha" ]; then
     case "$bid" in
       "$sha"*) ;;
-      *) log "⚠️ سرور ملکا روی نسخهٔ قدیمی است ($bid ≠ $sha) — لطفاً GLM را با یک پیام کوتاه آگاه کنید" ;;
+      *) log "⚠️ سرور ملکا روی نسخهٔ قدیمی است (\$bid ≠ \$sha) — لطفاً GLM را با یک پیام کوتاه آگاه کنید" ;;
     esac
   fi
 }
 
-SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0
-log "رلهٔ ملکا آغاز شد (نسل PN-031-I) — دستگاه: $DEVICE_ID (در حال اتصال…)"
+# ── PN-035 (فاز ۱+۵): اجرای «یک» آیتم صف — کارگرِ موج ──
+# ورودی: $1 = آبجکت JSON آیتم · $2 = فایل خروجی نتیجه (JSON)
+# امنیت: پالایش روش + whitelist میزبان + وارسی امضای سرور — همه پیش از اجرا
+process_item() {
+  local item="$1" outf="$2"
+  local RID RURL RMETHOD RBODY RSIG RTS BDIG EXPECT AUTH CT ACC
+  RID=\$(printf '%s' "$item" | jq -r '.id // empty')
+  RURL=\$(printf '%s' "$item" | jq -r '.url // empty')
+  RMETHOD=\$(printf '%s' "$item" | jq -r '.method // "GET"')
+  RBODY=\$(printf '%s' "$item" | jq -r '.body // ""')
+  RSIG=\$(printf '%s' "$item" | jq -r '.sig // empty')
+  RTS=\$(printf '%s' "$item" | jq -r '.ts // empty')
+
+  # آیتم بی‌شناسه — نادیده (نتیجه‌ای هم گزارش نمی‌شود؛ سرور خودش TTL را می‌بَرد)
+  if [ -z "$RID" ]; then
+    log "آیتم بی‌شناسه — نادیده گرفته شد"
+    return 0
+  fi
+
+  # ── فاز ۱: پالایش روش — فقط پنج روش مجاز اجرا می‌شوند ──
+  case "$RMETHOD" in
+    GET|POST|PUT|DELETE|PATCH) ;;
+    *)
+      log "رد آیتم: روش \$RMETHOD مجاز نیست"
+      jq -nc --arg id "$RID" --arg err "method \$RMETHOD not allowed" '{id:\$id,error:\$err}' > "$outf"
+      return 0
+      ;;
+  esac
+
+  # ── دفاع دولایه ۱: whitelist میزبان (فقط https و فقط *.melketabriz.ir) ──
+  case "$RURL" in
+    https://*.melketabriz.ir/*) ;;
+    *)
+      log "رد درخواست غیرمجاز (مقصد خارج از ملک تبریز)"
+      jq -nc --arg id "$RID" --arg err "host not allowed" '{id:\$id,error:\$err}' > "$outf"
+      return 0
+      ;;
+  esac
+
+  # ── دفاع دولایه ۲: وارسی امضای سرور پیش از اجرا ──
+  BDIG=\$(printf '%s' "$RBODY" | sha256hex)
+  EXPECT=\$(printf 'RELAY\\n%s\\n%s\\n%s\\n%s\\n%s' "$RID" "$RMETHOD" "$RURL" "$BDIG" "$RTS" | hmac_hex)
+  if [ -z "$RSIG" ] || [ "$RSIG" != "$EXPECT" ]; then
+    log "امضای سرور نامعتبر — درخواست نادیده گرفته شد"
+    jq -nc --arg id "$RID" --arg err "bad signature" '{id:\$id,error:\$err}' > "$outf"
+    return 0
+  fi
+
+  # ── اجرای درخواست به مقصد (IP ایرانی گوشی · PN-035: پشتیبانی کامل POST) ──
+  local TMP HDR CODE CTYPE B64 CURL_EXIT
+  TMP=\$(mktemp); HDR=\$(mktemp)
+  AUTH=\$(printf '%s' "$item" | jq -r '.headers.authorization // empty')
+  CT=\$(printf '%s' "$item" | jq -r '.headers["content-type"] // empty')
+  ACC=\$(printf '%s' "$item" | jq -r '.headers["accept"] // empty')
+
+  local ARGS=(-sS --max-time 25 -D "$HDR" -o "$TMP" -w '%{http_code}' -X "$RMETHOD")
+  [ -n "$AUTH" ] && ARGS+=(-H "Authorization: $AUTH")
+  [ -n "$CT" ] && ARGS+=(-H "Content-Type: $CT")
+  [ -n "$ACC" ] && ARGS+=(-H "Accept: $ACC")
+  if [ -n "$RBODY" ] && [ "$RMETHOD" != "GET" ] && [ "$RMETHOD" != "HEAD" ]; then
+    ARGS+=(--data-binary "$RBODY")
+  fi
+
+  CODE=\$(curl "\${ARGS[@]}" "$RURL" 2>/dev/null)
+  CURL_EXIT=$?
+
+  if [ $CURL_EXIT -ne 0 ]; then
+    jq -nc --arg id "$RID" --arg err "curl exit \$CURL_EXIT" '{id:\$id,error:\$err}' > "$outf"
+  else
+    CTYPE=\$(awk 'tolower($1)=="content-type:"{sub(/\\r$/,"");print $2;exit}' "$HDR")
+    [ -z "$CTYPE" ] && CTYPE=\$(awk 'tolower($1)=="content-type:"{sub(/\\r$/,"");\$1="";sub(/^ /,"");print;exit}' "$HDR")
+    B64=\$(base64 -w0 "$TMP" 2>/dev/null || base64 "$TMP" | tr -d '\\n')
+    jq -nc --arg id "$RID" --argjson code "\${CODE:-0}" --arg ct "$CTYPE" --arg b64 "$B64" '{id:\$id,httpStatus:\$code,contentType:\$ct,bodyB64:\$b64}' > "$outf"
+  fi
+  rm -f "$TMP" "$HDR"
+}
+
+SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0; BATCHES=0
+log "رلهٔ ملکا آغاز شد (نسل J · PN-035) — دستگاه: $DEVICE_ID (در حال اتصال…)"
 log "مسیر اصلی: $SERVER_URL"
 [ "$URL_COUNT" -gt 1 ] && log "مسیر جایگزین: $ALT_SERVER_URL (سوئیچ خودکار پس از $ALT_FAIL_THRESHOLD خطای پیاپی)"
-log "حمل‌ونقل: HTTP/1.1 · UA بروزری · retry پله‌ای ۳۰/۶۰/۱۲۰/۳۰۰/۳۰۰ · سقف ۵ در دقیقه"
+log "حمل‌ونقل: HTTP/1.1 · UA بروزری · نردبان ۳۰/۶۰/۱۲۰/۳۰۰/۳۰۰ · سقف ۵ در دقیقه"
+log "نسل J: دسته batch=$BATCH · موج‌های $MAX_WORKERS کارگر · نتیجه retry×$RESULT_ATTEMPTS + ذخیرهٔ محلی · gzip>$GZIP_THRESHOLD بایت"
 log "لاگ دیباگ: ~/relay-debug.log (هدرها؛ مقدار امضا حذف می‌شود)"
 log "احراز: X-Melka-Relay-Device + X-Melka-Timestamp + X-Melka-Signature"
 sync_clock && log "ساعت با سرور همگام شد ✓" || log "همگام‌سازی ساعت سرور ممکن نشد — ادامه با ساعت محلی"
@@ -262,12 +452,16 @@ while true; do
   # نبض نسخه — کشف بازنشانی پلتفرم از بیرون
   version_ping
 
-  # ضربان قلب — هر ۱۰ چرخه (~۳٫۵ دقیقه) مالک می‌بیند رله زنده است
+  # ── فاز ۲: بازپخش نتیجه‌های ارسال‌نشدهٔ تازه (اگر هست) ──
+  replay_failed_results
+
+  # ضربان قلب — هر ۱۰ چرخه مالک می‌بیند رله زنده است
   if [ \$((LOOPS % 10)) -eq 0 ]; then
-    log "زنده — چرخهٔ $LOOPS · مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) · $SERVED موفق / $ERRORS خطا"
+    log "زنده — چرخهٔ \$LOOPS · مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) · \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته"
   fi
 
-  BODY='{"wait":20}'
+  # ── فاز ۵: poll دسته‌ای — تا ۱۰۰ آیتم در هر تماس ──
+  BODY="{\\"wait\\":20,\\"batch\\":$BATCH}"
   RESP=""; CURL_EXIT=0
   RESP=\$(signed_curl "/api/mobile-relay/poll" "$BODY" \\
     -X POST -H "Content-Type: application/json" --data-binary "$BODY") || CURL_EXIT=$?
@@ -276,17 +470,16 @@ while true; do
     NET_FAILS=\$((NET_FAILS+1))
     local_idx=\$(( NET_FAILS < 4 ? NET_FAILS - 1 : 4 ))
     delay="\${RETRY_DELAYS[\$local_idx]:-300}"
-    log "شبکه: curl خطای $CURL_EXIT (\$(curl_err_desc $CURL_EXIT)) — $delay ثانیه دیگر تلاش می‌کنم (خطای پیاپی: $NET_FAILS)"
+    log "شبکه: curl خطای $CURL_EXIT (\$(curl_err_desc $CURL_EXIT)) — \$delay ثانیه دیگر تلاش می‌کنم (خطای پیاپی: \$NET_FAILS)"
     # سوئیچ مسیر جایگزین پس از ۳ خطای پیاپی (اگر موجود است)
     if [ "$URL_COUNT" -gt 1 ] && [ "$NET_FAILS" -ge "$ALT_FAIL_THRESHOLD" ] && [ "\$(( NET_FAILS % ALT_FAIL_THRESHOLD ))" -eq 0 ]; then
       URL_IDX=\$(( (URL_IDX + 1) % URL_COUNT ))
       log "سوئیچ به مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) — تلاش بعدی از آنجا"
     fi
-    sleep "$delay"; continue
+    sleep "\$delay"; continue
   fi
 
-  # خالی (204/شبکه) — ادامهٔ poll
-  # PN-031-G: اولین پاسخ موفق = نشانهٔ صادقانهٔ «رله فعال است»
+  # خالی (204/شبکه) — ادامهٔ poll (سرور تا ۲۵ث معلق نگه داشت — «۱ ثانیه» فاصلهٔ تنفس)
   if [ -z "$RESP" ]; then
     NET_FAILS=0
     if [ "$CONNECT_OK" -eq 0 ]; then
@@ -299,20 +492,17 @@ while true; do
   OK=\$(printf '%s' "$RESP" | jq -r '.ok // empty' 2>/dev/null)
   if [ "$OK" != "true" ]; then
     NET_FAILS=0
-    # PN-031-E — دلیل دقیق رد سرور نمایش داده می‌شود (نه «غیرمنتظره»ی مبهم)
     ERRMSG=\$(printf '%s' "$RESP" | jq -r '.error // empty' 2>/dev/null)
-    # PN-031-G — نام هدرهای احرازی غایب (پاسخ ۴۰۳ «missing auth headers»)
     MISSING=\$(printf '%s' "$RESP" | jq -r 'if (.missing // []) | length > 0 then (.missing | join("، ")) else empty end' 2>/dev/null)
     if [ -n "$ERRMSG" ]; then
       if [ -n "$MISSING" ]; then
-        log "خطای سرور: $ERRMSG — هدرهای نایافته: $MISSING — ۳۰ ثانیه صبر"
+        log "خطای سرور: \$ERRMSG — هدرهای نایافته: \$MISSING — ۳۰ ثانیه صبر"
       else
-        log "خطای سرور: $ERRMSG — ۳۰ ثانیه صبر"
+        log "خطای سرور: \$ERRMSG — ۳۰ ثانیه صبر"
       fi
     else
       log "پاسخ غیرمنتظره: \$(printf '%s' "$RESP" | head -c 160) — ۳۰ ثانیه صبر"
     fi
-    # ردِ «stale» = اختلاف ساعت — اصلاح فوری از serverTime خود پاسخ
     ST=\$(printf '%s' "$RESP" | jq -r '.serverTime // empty' 2>/dev/null)
     if [ -n "$ST" ] && [ "$ERRMSG" = "stale request" ]; then
       CLOCK_OFFSET=\$(( ST - \$(date +%s%3N) ))
@@ -321,69 +511,52 @@ while true; do
     sleep 30; continue
   fi
 
-  # پاسخ موفق (آیتم صف) — اجرای درخواست
+  # ── پاسخ موفق — استخراج دسته (items[]) با سازگاری عقبه (request تک‌آیتمی) ──
   NET_FAILS=0
-  RID=\$(printf '%s' "$RESP" | jq -r '.request.id // empty')
-  RURL=\$(printf '%s' "$RESP" | jq -r '.request.url // empty')
-  RMETHOD=\$(printf '%s' "$RESP" | jq -r '.request.method // "GET"')
-  RBODY=\$(printf '%s' "$RESP" | jq -r '.request.body // ""')
-  RSIG=\$(printf '%s' "$RESP" | jq -r '.request.sig // empty')
-  RTS=\$(printf '%s' "$RESP" | jq -r '.request.ts // empty')
-
-  # ── دفاع دولایه ۱: whitelist میزبان (فقط https و فقط *.melketabriz.ir) ──
-  case "$RURL" in
-    https://*.melketabriz.ir/*) ;;
-    *) log "رد درخواست غیرمجاز (مقصد خارج از ملک تبریز)"; continue ;;
-  esac
-
-  # ── دفاع دولایه ۲: وارسی امضای سرور پیش از اجرا ──
-  BDIG=\$(printf '%s' "$RBODY" | sha256hex)
-  EXPECT=\$(printf 'RELAY\\n%s\\n%s\\n%s\\n%s\\n%s' "$RID" "$RMETHOD" "$RURL" "$BDIG" "$RTS" | hmac_hex)
-  if [ -z "$RSIG" ] || [ "$RSIG" != "$EXPECT" ]; then
-    log "امضای سرور نامعتبر — درخواست نادیده گرفته شد"
-    continue
-  fi
-
-  # ── اجرای درخواست به مقصد (IP ایرانی گوشی) ──
-  TMP=\$(mktemp); HDR=\$(mktemp)
-  AUTH=\$(printf '%s' "$RESP" | jq -r '.request.headers.authorization // empty')
-  CT=\$(printf '%s' "$RESP" | jq -r '.request.headers["content-type"] // empty')
-  ACC=\$(printf '%s' "$RESP" | jq -r '.request.headers["accept"] // empty')
-
-  ARGS=(-sS --max-time 25 -D "$HDR" -o "$TMP" -w '%{http_code}' -X "$RMETHOD")
-  [ -n "$AUTH" ] && ARGS+=(-H "Authorization: $AUTH")
-  [ -n "$CT" ] && ARGS+=(-H "Content-Type: $CT")
-  [ -n "$ACC" ] && ARGS+=(-H "Accept: $ACC")
-  if [ -n "$RBODY" ] && [ "$RMETHOD" != "GET" ] && [ "$RMETHOD" != "HEAD" ]; then
-    ARGS+=(--data-binary "$RBODY")
-  fi
-
-  CODE=\$(curl "\${ARGS[@]}" "$RURL" 2>/dev/null)
-  CURL_EXIT=$?
-
-  RESULT_JSON=""
-  if [ $CURL_EXIT -ne 0 ]; then
-    ERRORS=\$((ERRORS+1))
-    RESULT_JSON=\$(jq -n --arg id "$RID" --arg err "curl exit $CURL_EXIT" '{id:$id,error:$err}')
+  N_ITEMS=\$(printf '%s' "$RESP" | jq '.items | length' 2>/dev/null)
+  if [ -z "$N_ITEMS" ] || [ "\$N_ITEMS" = "0" ] || [ "\$N_ITEMS" = "null" ]; then
+    ITEMS_JSON=\$(printf '%s' "$RESP" | jq -c '[.request] // []' 2>/dev/null)
   else
-    SERVED=\$((SERVED+1))
-    CTYPE=\$(awk 'tolower($1)=="content-type:"{sub(/\\r$/,"");print $2;exit}' "$HDR")
-    [ -z "$CTYPE" ] && CTYPE=\$(awk 'tolower($1)=="content-type:"{sub(/\\r$/,"");$1="";sub(/^ /,"");print;exit}' "$HDR")
-    B64=\$(base64 -w0 "$TMP" 2>/dev/null || base64 "$TMP" | tr -d '\\n')
-    RESULT_JSON=\$(jq -n --arg id "$RID" --argjson code "\${CODE:-0}" --arg ct "$CTYPE" --arg b64 "$B64" '{id:$id,httpStatus:$code,contentType:$ct,bodyB64:$b64}')
+    ITEMS_JSON=\$(printf '%s' "$RESP" | jq -c '[.items[]]' 2>/dev/null)
   fi
-  rm -f "$TMP" "$HDR"
 
-  # ── ارسال نتیجه (امضاشده) ──
-  RRESULT=\$(signed_curl "/api/mobile-relay/result" "$RESULT_JSON" \\
-    -X POST -H "Content-Type: application/json" --data-binary "$RESULT_JSON") || {
-    log "ارسال نتیجه ناموفق (\$(curl_err_desc $?)) — درخواست در سرور منقضی می‌شود"
-  }
-  ROK=""
-  [ -n "$RRESULT" ] && ROK=\$(printf '%s' "$RRESULT" | jq -r '.ok // empty' 2>/dev/null)
-  [ "$ROK" = "true" ] || log "توجه: سرور نتیجه را نپذیرفت: \$(printf '%s' "$RRESULT" | head -c 120)"
+  # ── فاز ۵: اجرای موجی — هر موج حداکثر $MAX_WORKERS کارگر موازی ──
+  RESULTS_DIR=\$(mktemp -d)
+  IDX=0; WAVE=0
+  while IFS= read -r ITEM; do
+    [ -z "$ITEM" ] && continue
+    IDX=\$((IDX+1))
+    # نام صفرپرشده — ترتیب glob با ترتیب عددی یکی می‌شود (دستهٔ نتیجه قطعی)
+    process_item "$ITEM" "\$RESULTS_DIR/\$(printf '%04d' "\$IDX").json" &
+    if [ \$(( IDX % MAX_WORKERS )) -eq 0 ]; then
+      WAVE=\$((WAVE+1))
+      wait
+    fi
+  done < <(printf '%s' "$ITEMS_JSON" | jq -c '.[]' 2>/dev/null)
+  wait
 
-  log "اجراشده: $RMETHOD $RURL → $CODE (مجموع: $SERVED موفق / $ERRORS خطا)"
+  # ── جمع‌آوری نتیجه‌های موج — یک POST برای همه ──
+  RESULT_JSON=""
+  if compgen -G "\$RESULTS_DIR/*.json" >/dev/null 2>&1; then
+    RESULT_JSON=\$(jq -sc '.' "\$RESULTS_DIR"/*.json 2>/dev/null || echo "")
+  fi
+  rm -rf "\$RESULTS_DIR"
+
+  if [ -n "\$RESULT_JSON" ] && [ "\$RESULT_JSON" != "[]" ] && [ "\$RESULT_JSON" != "null" ]; then
+    BATCHES=\$((BATCHES+1))
+    # شمارش موفق/خطا از خودِ نتیجه‌ها (کارگرها فرزندند و شمارندهٔ پدر را نمی‌بینند)
+    TOTALN=\$(printf '%s' "\$RESULT_JSON" | jq 'length')
+    ERRN=\$(printf '%s' "\$RESULT_JSON" | jq '[.[] | select(.error != null and .error != "")] | length')
+    SERVED=\$(( SERVED + TOTALN - ERRN ))
+    ERRORS=\$(( ERRORS + ERRN ))
+    post_results "\$RESULT_JSON"
+    log "دسته اجراشده: \$TOTALN نتیجه در \$(( WAVE + 1 )) موج → \$ERRN خطا (مجموع: \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته)"
+    # تنفس — حتی پس از رد قطعی، حلقه هرگز بدون مکث نمی‌چرخد (پنجهٔ محترمانه به دروازه)
+    sleep 1
+  else
+    # هیچ نتیجه‌ای تولید نشد (آیتم‌های بی‌شناسه) — poll بعدی
+    sleep 1
+  fi
 done
 `;
 }
