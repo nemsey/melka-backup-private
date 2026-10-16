@@ -1,7 +1,7 @@
 {
  "task": "PN-008 BLOCK 4 — اسکن ایستای نقش‌ها",
- "at": "2026-10-16T13:02:54.127389",
- "totalRoutes": 212,
+ "at": "2026-10-16T17:41:46.251888",
+ "totalRoutes": 214,
  "routes": [
   {
    "route": "/admin/action-plans",
@@ -774,6 +774,14 @@
    "risk": null
   },
   {
+   "route": "/relay/job/{id}",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
    "route": "/requests/{id}/events",
    "methods": [
     "GET",
@@ -1427,6 +1435,12 @@
   },
   {
    "route": "/v1/pm/connection",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/relay/job/{id}",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"
