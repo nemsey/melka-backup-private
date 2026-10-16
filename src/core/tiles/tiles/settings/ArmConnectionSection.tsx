@@ -112,7 +112,7 @@ export function ArmConnectionSection({ embedded = false }: { embedded?: boolean 
           title: "در حال ارسال پیامک…",
           description: "فیلد کد تأیید آماده است — پیامک از مسیر رلهٔ موبایل در راه است.",
         });
-        const out = await pollRelayJob<{ message?: string; alreadySent?: boolean }>(res.jobId, { attempts: 60 });
+        const out = await pollRelayJob<{ message?: string; alreadySent?: boolean }>(res.jobId, { attempts: 120 });
         if (out.ok && out.result) {
           setAlreadySentHint(out.result.alreadySent ? out.result.message ?? "" : "");
           toast({
@@ -159,7 +159,7 @@ export function ArmConnectionSection({ embedded = false }: { embedded?: boolean 
       let ok = res.ok;
       let message = res.message;
       if (res.jobId) {
-        const out = await pollRelayJob<{ message?: string; user?: { displayName?: string } }>(res.jobId, { attempts: 60 });
+        const out = await pollRelayJob<{ message?: string; user?: { displayName?: string } }>(res.jobId, { attempts: 120 });
         if (out.ok && out.result) {
           ok = true;
           message = out.result.message;

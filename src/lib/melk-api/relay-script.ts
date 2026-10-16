@@ -1,5 +1,5 @@
 /**
- * مولد اسکریپت رلهٔ Termux — PN-031 (شورای ن۰۳۷) · PN-031-E/G/I · نسل J = PN-035 (شورا-ن۰۵۷)
+ * مولد اسکریپت رلهٔ Termux — PN-031 (شورای ن۰۳۷) · PN-031-E/G/I · نسل J = PN-035 (شورا-ن۰۵۷) · نسل K = PN-036 (شورا-ن۰۵۸)
  * ---------------------------------------------------------------------------
  * روت bootstrap این قالب را با پیکربندی دستگاه (SERVER_URL · DEVICE_ID ·
  * DEVICE_SECRET · ALT_SERVER_URL) پر می‌کند و به‌صورت text/x-shellscript تحویل می‌دهد.
@@ -8,15 +8,32 @@
  *   poll (امضاشده · دسته‌ای) → وارسی امضای سرور → پالایش روش + whitelist میزبان →
  *   اجرای موازی curl (موج‌های ۸تایی) → result (امضاشده · دسته‌ای · gzip) → تکرار
  *
- * نسل J — PN-035 (شورا-ن۰۵۷ · فاز ۱+۲+۵+۶ کلاینت):
+ * نسل K — PN-036 (شورا-ن۰۵۸ · فاز ۱+۲ + فاز ۵ اصلاحی):
+ *   · رفع jq ARG_MAX — «Argument list too long» Termux (سقف ~۱۲۸KB آرگومان):
+ *     بدنهٔ base64 دیگر هرگز به‌عنوان آرگومان خط فرمان به jq نمی‌رود؛ در فایل
+ *     موقت نوشته و با --rawfile خوانده می‌شود (صفر سقف). ادغام نتیجه‌های موج
+ *     نیز از stdin می‌گذرد (cat … | jq -sc '.') — مسیر فایل‌ها هم از خط فرمان
+ *     jq حذف شد (فاز ۱ · جلسهٔ ۰۵۸ · خط ۳۷۱ لاگ مالک).
+ *   · batch سبک — ۱۰۰ → ۲۰: چرخهٔ هر poll کوتاه؛ پیامک/OTP در صف رله هرگز
+ *     پشت ده‌ها فهرست سنگین گیر نمی‌کند (گرسنگی موج‌ها → پایان انقضای TTL).
+ *   · مهلت تطبیقی هر آیتم — مسیرهای تعاملی (authentication/otp) ۱۵ ثانیه؛
+ *     بقیه (فهرست‌های سنگین) ۶۰ ثانیه (curl 28 → صفر؛ فاز ۲ جلسهٔ ۰۵۸).
+ *   · تلاش دوم برای تایم‌اوت — خطای ۲۸ یک بار با ۵ ثانیه فاصله دوباره
+ *     می‌شود؛ فقط همان آیتم، بدون بازپخش کل دسته (فاز ۲.۳).
+ *   · Express lane — آیتم‌های تعاملی (OTP) پیش از فهرست‌های سنگین اجرا و
+ *     نتیجه‌شان «بی‌درنگ» و جداگانه POST می‌شود؛ وقتی موبایل مشغول موجِ
+ *     سنگین است، پاسخ OTP منتظر اتمام موج نمی‌ماند.
+ *   · لاگ زمان هر آیتم — روش + میزبان/مسیر (بدون کوئری) + کد وضعیت + مدت؛
+ *     «کدام endpoint timeout شد» دیگر حدس نیست (فاز ۲.۴ و ۴.۱).
+ *
+ * نسل J — PN-035 (شورا-ن۰۵۷ · فاز ۱+۲+۵+۶ کلاینت) — همه پابرجا:
  *   · پالایش روش — فقط GET/POST/PUT/DELETE/PATCH اجرا می‌شود؛ هر روش دیگر
  *     بدون اجرا رد و به سرور «method not allowed» گزارش می‌شود (سنجهٔ ۱).
- *   · دسته‌ای — poll با batch=100؛ پاسخ items[] آرایه است؛ سازگاری عقبه:
+ *   · دسته‌ای — poll با batch؛ پاسخ items[] آرایه است؛ سازگاری عقبه:
  *     نبودِ items = تک‌آیتم request (نسل‌های قدیمی سرور).
- *   · موج‌های موازی — حداکثر ۸ کارگر همزمان (موج بعدی پس از اتمام موج)؛
- *     آیتم‌های تعاملی (OTP) به‌واسطهٔ اولویت سرور مقدم‌اند → تأخیر OTP حداقلی.
- *   · نتیجهٔ دسته‌ای — همهٔ نتیجه‌های موج در «یک» POST /result (سربار دروازه ÷N).
- *   · پایداری نتیجه — ۳ تلاش با backoff (۲/۶/۱۸ث)؛ رد قطعی سرور بدون تلاش مجدد؛
+ *   · موج‌های موازی — حداکثر ۸ کارگر همزمان (موج بعدی پس از اتمام موج).
+ *   · نتیجهٔ دسته‌ای — نتیجه‌های هر مجموعه در «یک» POST /result (سربار دروازه ÷N).
+ *   · پایداری نتیجه — ۳ تلاش با backoff (۲/۶ث)؛ رد قطعی سرور بدون تلاش مجدد؛
  *     شکست نهایی → ذخیرهٔ محلی ~/failed-results.jsonl (TTL ۱۰ دقیقه) و
  *     بازپخش خودکار در چرخه‌های بعد (پایان «پیامک آمد اما پاسخ برنگشت»).
  *   · gzip — بدنهٔ نتیجه > ۱KB فشرده و با Content-Encoding: gzip ارسال می‌شود؛
@@ -32,7 +49,7 @@
  *   · فقط https و فقط *.melketabriz.ir برای اجرای درخواست صف
  *   · پالایش روش (GET/POST/PUT/DELETE/PATCH) پیش از اجرا
  *   · امضای هر آیتم صف پیش از اجرا وارسی می‌شود (RELAY\nid\nmethod\nurl\nsha256(body)\nts)
- *   · صفر لاگ محتوا — فقط شمارنده و کد وضعیت
+ *   · صفر لاگ محتوا — فقط شمارنده و کد وضعیت (مسیر بدون کوئری؛ هیچ توکنی در URL نیست)
  *   · wake-lock Termux + امتناع از اجرا در محیط غیر Termux
  */
 
@@ -58,11 +75,12 @@ export function buildRelayScript(cfg: RelayScriptConfig): string {
 
   return `#!/usr/bin/env bash
 # ============================================================
-# melka-relay — رلهٔ موبایل ملکا (نسل J · PN-035 · شورای عالی ملکا ۰۵۷)
+# melka-relay — رلهٔ موبایل ملکا (نسل K · PN-036 · شورای عالی ملکا ۰۵۸)
 # روی گوشی مالک (Poco F3 · Termux · IP ایرانی) اجرا می‌شود.
 # این فایل را اجرا نکنید مگر اینکه از طریق «راه‌اندازی رله» در
 # تنظیمات ملکا ساخته شده باشد — راز دستگاه داخلش است.
-# نسل J: دسته‌ای batch=۱۰۰ · موج‌های موازی ۸تایی · نتیجهٔ دسته‌ای ·
+# نسل K: رفع jq ARG_MAX (--rawfile + stdin) · batch=۲۰ · مهلت تطبیقی
+#         (OTP ۱۵ث / سنگین ۶۰ث) · تلاش دوم تایم‌اوت · Express lane OTP ·
 #         retry×۳ + ذخیرهٔ محلی + gzip>۱KB · پالایش روش
 # ============================================================
 set -u
@@ -81,7 +99,7 @@ ALT_FAIL_THRESHOLD=3               # سوئیچ به مسیر جایگزین پ�
 PRIMARY_RECHECK_LOOPS=30           # هر ۳۰ چرخه، مسیر اصلی دوباره آزموده می‌شود
 
 # ── ثابت‌های نسل J (PN-035) ──
-BATCH=100                           # فاز ۵ — حداکثر آیتم هر poll
+BATCH=20                            # PN-036 فاز ۲ — دستهٔ سبک (قبلاً ۱۰۰: چرخهٔ چنددقیقه‌ای، گرسنگی TTL)
 MAX_WORKERS=8                       # فاز ۵ — موج‌های کارگر موازی
 RESULT_ATTEMPTS=3                   # فاز ۲ — تلاش‌های ارسال نتیجه
 RESULT_BACKOFF=(2 6)                # فاز ۲ — مکث بین تلاش‌ها (۳تایی: ۲ و ۶)
@@ -89,6 +107,20 @@ GZIP_THRESHOLD=1024                 # فاز ۶ — فشرده‌سازی بدن
 FAILED_RESULTS="\$HOME/failed-results.jsonl"
 FAILED_TTL_S=600                    # عمر ردیف نتیجهٔ ذخیره‌شده (۱۰ دقیقه)
 FAILED_MAX_LINES=200                # سقف فایل نتیجه‌های ذخیره‌شده
+
+# ── ثابت‌های نسل K (PN-036 · جلسهٔ ۰۵۸) ──
+LIGHT_TIMEOUT=15                    # مسیر تعاملی (OTP) — پاسخ چندثانیه‌ای
+HEAVY_TIMEOUT=60                    # فهرست‌های سنگین — قبلاً ۲۵ث (curl 28 مکرر)
+TIMEOUT_RETRY_DELAY=5               # فاصلهٔ تلاش دوم برای خطای ۲۸ (تایم‌اوت)
+
+# آیا آیتم تعاملی است؟ (OTP/ورود — Express lane + مهلت کوتاه)
+# الگو عین relayPriorityForUrl سرور: /authentication/otp در مسیر URL
+is_interactive() {
+  case "$1" in
+    *"/authentication/otp"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 log() { echo "[$(date '+%H:%M:%S')] \$*"; }
 
@@ -263,9 +295,12 @@ submit_batch_raw() {
 
 # ── PN-035 (فاز ۲): ارسال نتیجه با پایداری — ۳ تلاش + backoff + ذخیرهٔ محلی ──
 post_results() {
-  # $1 = رشتهٔ JSON آرایهٔ نتیجه‌ها
-  # خروجی: 0 = پذیرش سرور · 1 = شکست (ذخیره‌شده محلی)
-  local payload="$1" attempt=0 delay out rc
+  # $1 = رشتهٔ JSON آرایهٔ نتیجه‌ها · $2 = "nostore" اختیاری (فراخوانی از replay —
+  #   ردیف اصلی در فایل هست؛ ذخیرهٔ دوباره = تکرار ردیف = رشد فایل)
+  # خروجی (PN-036 جلسهٔ ۰۵۸ — ریشهٔ شکایت ۴ مالک: بازپخش بی‌پایان):
+  #   0 = پذیرش سرور · 1 = شکست گذرا (ذخیره‌شده محلی) · 2 = رد قطعی سرور
+  #   (نه retry و نه ذخیره — بازپخش در چرخه‌های بعد هم رخ نمی‌دهد)
+  local payload="$1" nostore="\${2:-}" attempt=0 delay out rc
   while [ $attempt -lt $RESULT_ATTEMPTS ]; do
     attempt=\$((attempt+1))
     out=""; rc=0
@@ -277,7 +312,7 @@ post_results() {
     # ۲) رد قطعی سرور (پاسخ JSON با فیلد ok) — تلاش مجدد بی‌فایده است
     if [ $rc -eq 0 ] && printf '%s' "$out" | jq -e 'has("ok")' >/dev/null 2>&1; then
       log "سرور نتیجه را نپذیرفت: \$(printf '%s' "$out" | head -c 120)"
-      return 1
+      return 2
     fi
     # ۳) خطای گذرا (شبکه/دروازه/پاسخ غیرJSON) — تلاش مجدد با backoff
     if [ $attempt -lt $RESULT_ATTEMPTS ]; then
@@ -286,8 +321,11 @@ post_results() {
       sleep "$delay"
     fi
   done
-  # شکست نهایی — ذخیرهٔ محلی + بازپخش در چرخه‌های بعد
-  store_failed "$payload"
+  # شکست نهایی — ذخیرهٔ محلی + بازپخش در چرخه‌های بعد (مگر در حالت replay —
+  # ردیف اصلی در فایل هست؛ ذخیرهٔ دوباره = دوبرابر شدن ردیف در هر بازپخش)
+  if [ "$nostore" != "nostore" ]; then
+    store_failed "$payload"
+  fi
   return 1
 }
 
@@ -310,7 +348,7 @@ store_failed() {
 # ── PN-035 (فاز ۲): بازپخش نتیجه‌های ذخیره‌شدهٔ تازه ──
 replay_failed_results() {
   [ -s "$FAILED_RESULTS" ] || return 0
-  local now line lts payload kept=0 replayed=0
+  local now line lts payload kept=0 replayed=0 dropped=0 rc
   now=\$(date +%s)
   local tmp; tmp=\$(mktemp)
   while IFS= read -r line; do
@@ -322,15 +360,22 @@ replay_failed_results() {
     fi
     payload=\$(printf '%s' "$line" | jq -c '.payload // empty' 2>/dev/null)
     [ -z "$payload" ] && continue
-    if post_results "$payload"; then
+    # PN-036 (جلسهٔ ۰۵۸ · ریشهٔ شکایت ۴): رد قطعی = حذف ردیف — بازپخشِ
+    # «هر چرخه دوباره POST» برای رد قطعی ممنوع؛ فقط شکست گذرا نگه داشته می‌شود.
+    post_results "$payload" "nostore"
+    rc=$?
+    if [ $rc -eq 0 ]; then
       replayed=\$((replayed+1))
+    elif [ $rc -eq 2 ]; then
+      dropped=\$((dropped+1))
     else
-      printf '%s\\n' "$line" >> "$tmp"
+      printf '%s\n' "$line" >> "$tmp"
       kept=\$((kept+1))
     fi
   done < "$FAILED_RESULTS"
   mv -f "$tmp" "$FAILED_RESULTS" 2>/dev/null || true
   [ $replayed -gt 0 ] && log "بازیابی \$replayed دستهٔ نتیجهٔ ذخیره‌شده ✓"
+  [ $dropped -gt 0 ] && log "رد قطعی در بازپخش: \$dropped ردیف حذف شد (دیگر بازپخش نمی‌شود)"
   return 0
 }
 
@@ -402,13 +447,22 @@ process_item() {
   fi
 
   # ── اجرای درخواست به مقصد (IP ایرانی گوشی · PN-035: پشتیبانی کامل POST) ──
-  local TMP HDR CODE CTYPE B64 CURL_EXIT
-  TMP=\$(mktemp); HDR=\$(mktemp)
+  # PN-036 فاز ۲: مهلت تطبیقی — تعاملی (OTP) سبک و فوری؛ فهرست‌های سنگین ۶۰ث
+  local TMP HDR CODE CTYPE B64F CURL_EXIT T0 DUR RPATH
+  TMP=\$(mktemp); HDR=\$(mktemp); B64F=\$(mktemp)
   AUTH=\$(printf '%s' "$item" | jq -r '.headers.authorization // empty')
   CT=\$(printf '%s' "$item" | jq -r '.headers["content-type"] // empty')
   ACC=\$(printf '%s' "$item" | jq -r '.headers["accept"] // empty')
 
-  local ARGS=(-sS --max-time 25 -D "$HDR" -o "$TMP" -w '%{http_code}' -X "$RMETHOD")
+  if is_interactive "$RURL"; then
+    local MAX_TIME="$LIGHT_TIMEOUT"
+  else
+    local MAX_TIME="$HEAVY_TIMEOUT"
+  fi
+  # مسیر برای لاگ زمان (بدون کوئری — صفر لاگ محتوا؛ هیچ توکنی در URL نیست)
+  RPATH=\${RURL%%\\?*}
+
+  local ARGS=(-sS --max-time "$MAX_TIME" -D "$HDR" -o "$TMP" -w '%{http_code}' -X "$RMETHOD")
   [ -n "$AUTH" ] && ARGS+=(-H "Authorization: $AUTH")
   [ -n "$CT" ] && ARGS+=(-H "Content-Type: $CT")
   [ -n "$ACC" ] && ARGS+=(-H "Accept: $ACC")
@@ -416,26 +470,86 @@ process_item() {
     ARGS+=(--data-binary "$RBODY")
   fi
 
+  T0=\$(date +%s)
   CODE=\$(curl "\${ARGS[@]}" "$RURL" 2>/dev/null)
   CURL_EXIT=$?
+  DUR=\$(( \$(date +%s) - T0 ))
 
+  # PN-036 فاز ۲.۳: خطای ۲۸ (تایم‌اوت) یک بار با ۵ث فاصله دوباره می‌شود
+  if [ $CURL_EXIT -eq 28 ]; then
+    log "تایم‌اوت \$RMETHOD \${RPATH#https://} — \$DURث (تلاش ۱/۲) — \$TIMEOUT_RETRY_DELAY ثانیه دیگر"
+    sleep "$TIMEOUT_RETRY_DELAY"
+    T0=\$(date +%s)
+    CODE=\$(curl "\${ARGS[@]}" "$RURL" 2>/dev/null)
+    CURL_EXIT=$?
+    DUR=\$(( \$(date +%s) - T0 ))
+  fi
+
+  # PN-036 فاز ۲.۴ + ۴.۱: لاگ زمان هر آیتم — روش + میزبان/مسیر + نتیجه + مدت
   if [ $CURL_EXIT -ne 0 ]; then
+    log "⚔ \$RMETHOD \${RPATH#https://} → خطای curl \$CURL_EXIT پس از \${DUR}ث"
     jq -nc --arg id "$RID" --arg err "curl exit \$CURL_EXIT" '{id:\$id,error:\$err}' > "$outf"
   else
+    log "✓ \$RMETHOD \${RPATH#https://} → HTTP \$CODE در \${DUR}ث"
     CTYPE=\$(awk 'tolower($1)=="content-type:"{sub(/\\r$/,"");print $2;exit}' "$HDR")
     [ -z "$CTYPE" ] && CTYPE=\$(awk 'tolower($1)=="content-type:"{sub(/\\r$/,"");\$1="";sub(/^ /,"");print;exit}' "$HDR")
-    B64=\$(base64 -w0 "$TMP" 2>/dev/null || base64 "$TMP" | tr -d '\\n')
-    jq -nc --arg id "$RID" --argjson code "\${CODE:-0}" --arg ct "$CTYPE" --arg b64 "$B64" '{id:\$id,httpStatus:\$code,contentType:\$ct,bodyB64:\$b64}' > "$outf"
+    # PN-036 فاز ۱ — رفع ARG_MAX: بدنهٔ base64 در فایل می‌نشیند و jq آن را
+    # با --rawfile می‌خواند؛ دیگر هیچ آرگومان خط‌فرمانی از سقف ~۱۲۸KB عبور نمی‌کند
+    # (لاگ مالک: «line 371: jq: Argument list too long» — برای پاسخ‌های فهرست بزرگ)
+    base64 -w0 "$TMP" 2>/dev/null > "$B64F" || base64 "$TMP" 2>/dev/null | tr -d '\\n' > "$B64F"
+    jq -nc --arg id "$RID" --argjson code "\${CODE:-0}" --arg ct "$CTYPE" --rawfile b64 "$B64F" '{id:\$id,httpStatus:\$code,contentType:\$ct,bodyB64:\$b64}' > "$outf"
   fi
-  rm -f "$TMP" "$HDR"
+  rm -f "$TMP" "$HDR" "$B64F"
+}
+
+# ── PN-036: اجرای «یک مجموعه» آیتم (موج‌های $MAX_WORKERS تایی) + ارسال نتیجه ──
+# ورودی: $1 = آرایهٔ JSON آیتم‌ها · $2 = برچسب مجموعه (express | normal)
+# فرزندان شمارندهٔ پدر را نمی‌بینند — شمارش از خودِ نتیجه‌ها انجام می‌شود.
+run_batch_set() {
+  local items_json="$1" label="$2"
+  local RESULTS_DIR IDX WAVE RESULT_JSON TOTALN ERRN
+  RESULTS_DIR=\$(mktemp -d)
+  IDX=0; WAVE=0
+  while IFS= read -r ITEM; do
+    [ -z "$ITEM" ] && continue
+    IDX=\$((IDX+1))
+    # نام صفرپرشده — ترتیب glob با ترتیب عددی یکی می‌شود (دستهٔ نتیجه قطعی)
+    process_item "$ITEM" "\$RESULTS_DIR/\$(printf '%04d' "\$IDX").json" &
+    if [ \$(( IDX % MAX_WORKERS )) -eq 0 ]; then
+      WAVE=\$((WAVE+1))
+      wait
+    fi
+  done < <(printf '%s' "$items_json" | jq -c '.[]' 2>/dev/null)
+  wait
+
+  # ── جمع‌آوری نتیجه‌های مجموعه — PN-036 فاز ۱: ادغام از stdin ──
+  # cat فایل‌ها را می‌خواند و jq از stdin می‌خواند: نه فایل‌ها و نه بدنهٔ بزرگ
+  # هرگز به خط فرمان jq نمی‌رسند (رفع «Argument list too long» — سقف ~۱۲۸KB)
+  RESULT_JSON=""
+  if compgen -G "\$RESULTS_DIR/*.json" >/dev/null 2>&1; then
+    RESULT_JSON=\$(cat "\$RESULTS_DIR"/*.json 2>/dev/null | jq -sc '.' 2>/dev/null || echo "")
+  fi
+  rm -rf "\$RESULTS_DIR"
+
+  if [ -n "\$RESULT_JSON" ] && [ "\$RESULT_JSON" != "[]" ] && [ "\$RESULT_JSON" != "null" ]; then
+    BATCHES=\$((BATCHES+1))
+    TOTALN=\$(printf '%s' "\$RESULT_JSON" | jq 'length' 2>/dev/null)
+    ERRN=\$(printf '%s' "\$RESULT_JSON" | jq '[.[] | select(.error != null and .error != "")] | length' 2>/dev/null)
+    SERVED=\$(( SERVED + TOTALN - ERRN ))
+    ERRORS=\$(( ERRORS + ERRN ))
+    post_results "\$RESULT_JSON"
+    log "دسته \$label: \$TOTALN نتیجه در \$(( WAVE + 1 )) موج → \$ERRN خطا (مجموع: \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته)"
+  fi
+  # تنفس — حتی پس از رد قطعی، حلقه هرگز بدون مکث نمی‌چرخد (پنجهٔ محترمانه به دروازه)
+  sleep 1
 }
 
 SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0; BATCHES=0
-log "رلهٔ ملکا آغاز شد (نسل J · PN-035) — دستگاه: $DEVICE_ID (در حال اتصال…)"
+log "رلهٔ ملکا آغاز شد (نسل K · PN-036) — دستگاه: $DEVICE_ID (در حال اتصال…)"
 log "مسیر اصلی: $SERVER_URL"
 [ "$URL_COUNT" -gt 1 ] && log "مسیر جایگزین: $ALT_SERVER_URL (سوئیچ خودکار پس از $ALT_FAIL_THRESHOLD خطای پیاپی)"
 log "حمل‌ونقل: HTTP/1.1 · UA بروزری · نردبان ۳۰/۶۰/۱۲۰/۳۰۰/۳۰۰ · سقف ۵ در دقیقه"
-log "نسل J: دسته batch=$BATCH · موج‌های $MAX_WORKERS کارگر · نتیجه retry×$RESULT_ATTEMPTS + ذخیرهٔ محلی · gzip>$GZIP_THRESHOLD بایت"
+log "نسل K: دسته batch=$BATCH · موج‌های $MAX_WORKERS کارگر · Express lane (OTP مقدم) · مهلت OTP=$LIGHT_TIMEOUTث / سنگین=$HEAVY_TIMEOUTث · تلاش دوم تایم‌اوت · رفع jq ARG_MAX (--rawfile + stdin)"
 log "لاگ دیباگ: ~/relay-debug.log (هدرها؛ مقدار امضا حذف می‌شود)"
 log "احراز: X-Melka-Relay-Device + X-Melka-Timestamp + X-Melka-Signature"
 sync_clock && log "ساعت با سرور همگام شد ✓" || log "همگام‌سازی ساعت سرور ممکن نشد — ادامه با ساعت محلی"
@@ -520,40 +634,23 @@ while true; do
     ITEMS_JSON=\$(printf '%s' "$RESP" | jq -c '[.items[]]' 2>/dev/null)
   fi
 
-  # ── فاز ۵: اجرای موجی — هر موج حداکثر $MAX_WORKERS کارگر موازی ──
-  RESULTS_DIR=\$(mktemp -d)
-  IDX=0; WAVE=0
-  while IFS= read -r ITEM; do
-    [ -z "$ITEM" ] && continue
-    IDX=\$((IDX+1))
-    # نام صفرپرشده — ترتیب glob با ترتیب عددی یکی می‌شود (دستهٔ نتیجه قطعی)
-    process_item "$ITEM" "\$RESULTS_DIR/\$(printf '%04d' "\$IDX").json" &
-    if [ \$(( IDX % MAX_WORKERS )) -eq 0 ]; then
-      WAVE=\$((WAVE+1))
-      wait
-    fi
-  done < <(printf '%s' "$ITEMS_JSON" | jq -c '.[]' 2>/dev/null)
-  wait
-
-  # ── جمع‌آوری نتیجه‌های موج — یک POST برای همه ──
-  RESULT_JSON=""
-  if compgen -G "\$RESULTS_DIR/*.json" >/dev/null 2>&1; then
-    RESULT_JSON=\$(jq -sc '.' "\$RESULTS_DIR"/*.json 2>/dev/null || echo "")
+  # ── PN-036 فاز ۵ (اصلاحی): Express lane — جداسازی تعاملی (OTP) از سنگین ──
+  # پیامک/ورود هرگز پشت موجِ فهرست‌های سنگین گیر نمی‌کند: تعاملی‌ها مقدم اجرا
+  # و نتیجه‌شان «بی‌درنگ» جداگانه POST می‌شود؛ سپس بقیه در موج‌های عادی.
+  EXPRESS_JSON=\$(printf '%s' "\$ITEMS_JSON" | jq -c '[.[] | select((.url // "") | contains("/authentication/otp"))]' 2>/dev/null || echo "[]")
+  NORMAL_JSON=\$(printf '%s' "\$ITEMS_JSON" | jq -c '[.[] | select(((.url // "") | contains("/authentication/otp")) | not)]' 2>/dev/null || echo "[]")
+  EXPRESS_N=\$(printf '%s' "\$EXPRESS_JSON" | jq 'length' 2>/dev/null)
+  [ -z "\$EXPRESS_N" ] && EXPRESS_N=0
+  if [ "\$EXPRESS_N" -gt 0 ]; then
+    log "Express lane: \$EXPRESS_N آیتم تعاملی (OTP) — پیش از فهرست‌ها اجرا می‌شود"
+    run_batch_set "\$EXPRESS_JSON" "express"
   fi
-  rm -rf "\$RESULTS_DIR"
-
-  if [ -n "\$RESULT_JSON" ] && [ "\$RESULT_JSON" != "[]" ] && [ "\$RESULT_JSON" != "null" ]; then
-    BATCHES=\$((BATCHES+1))
-    # شمارش موفق/خطا از خودِ نتیجه‌ها (کارگرها فرزندند و شمارندهٔ پدر را نمی‌بینند)
-    TOTALN=\$(printf '%s' "\$RESULT_JSON" | jq 'length')
-    ERRN=\$(printf '%s' "\$RESULT_JSON" | jq '[.[] | select(.error != null and .error != "")] | length')
-    SERVED=\$(( SERVED + TOTALN - ERRN ))
-    ERRORS=\$(( ERRORS + ERRN ))
-    post_results "\$RESULT_JSON"
-    log "دسته اجراشده: \$TOTALN نتیجه در \$(( WAVE + 1 )) موج → \$ERRN خطا (مجموع: \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته)"
-    # تنفس — حتی پس از رد قطعی، حلقه هرگز بدون مکث نمی‌چرخد (پنجهٔ محترمانه به دروازه)
-    sleep 1
-  else
+  NORMAL_N=\$(printf '%s' "\$NORMAL_JSON" | jq 'length' 2>/dev/null)
+  [ -z "\$NORMAL_N" ] && NORMAL_N=0
+  if [ "\$NORMAL_N" -gt 0 ]; then
+    run_batch_set "\$NORMAL_JSON" "normal"
+  fi
+  if [ "\$EXPRESS_N" -eq 0 ] && [ "\$NORMAL_N" -eq 0 ]; then
     # هیچ نتیجه‌ای تولید نشد (آیتم‌های بی‌شناسه) — poll بعدی
     sleep 1
   fi

@@ -150,8 +150,18 @@ class RealProvider implements MelkProvider {
     this.config = config;
   }
 
+  /**
+   * PN-036 (شورا-ن۰۵۸ · فاز ۳) — بودجهٔ رله برای جریان‌های تعاملی (OTP).
+   * رفت‌وبرگشت رله در شلوغی صف بیش از مهلت پیش‌فرض (۲۵ث) می‌شد؛ جریان‌های
+   * async (ورود/اتصال ARM) اکنون ۹۰ ثانیه صبر می‌کنند — زیر TTL صف (۱۲۰ث).
+   * از config (env MELK_INTERACTIVE_TIMEOUT_MS) — محیط تست ۳۰۰ms شکست‌سریع (PN-013/D5).
+   */
+  private get interactiveBudgetMs(): number {
+    return this.config.interactiveTimeoutMs;
+  }
+
   /** فراخوانی API اصلی ARM */
-  private arm<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; token?: string; query?: Record<string, string | number | undefined | null>; bypassOffline?: boolean } = {}) {
+  private arm<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; token?: string; query?: Record<string, string | number | undefined | null>; bypassOffline?: boolean; timeoutMs?: number } = {}) {
     return armCall<T>({
       path,
       baseUrl: this.config.armApiBase,
@@ -159,7 +169,7 @@ class RealProvider implements MelkProvider {
       body: init.body,
       token: init.token,
       query: init.query,
-      timeoutMs: this.config.timeoutMs,
+      timeoutMs: init.timeoutMs ?? this.config.timeoutMs,
       maxRetries: this.config.maxRetries,
       bypassOffline: init.bypassOffline,
     });
@@ -167,7 +177,11 @@ class RealProvider implements MelkProvider {
 
   async requestOtp(personnelCode: string, _ip?: string, opts?: { bypassOffline?: boolean }): Promise<OtpIssueResult> {
     // قرارداد واقعی: GET authentication/otp/{code} — پیامک از سمت سامانه ARM ارسال می‌شود
-    const res = await this.arm<unknown>(MELK_ENDPOINTS.arm.requestOtp(personnelCode), { bypassOffline: opts?.bypassOffline });
+    // PN-036: بودجهٔ رله ۹۰ث — جریان async (درخواست پیامک ورود/اتصال) گره HTTP باز نمی‌گذارد
+    const res = await this.arm<unknown>(MELK_ENDPOINTS.arm.requestOtp(personnelCode), {
+      bypassOffline: opts?.bypassOffline,
+      timeoutMs: this.interactiveBudgetMs,
+    });
     const env = res.data as (NestEnvelope & { verificationMinutesLimit?: number }) | null;
     // سامانه ARM عمر کد را با verificationMinutesLimit (دقیقه) یا پیش‌فرض ۱۸۰ ثانیه اعلام می‌کند
     let expiresInSeconds = 180;
@@ -178,9 +192,11 @@ class RealProvider implements MelkProvider {
 
   async verifyOtp(personnelCode: string, otp: string): Promise<OtpVerifyResult> {
     // قرارداد واقعی: POST authentication/otp/login با {code, otpCode}
+    // PN-036: بودجهٔ رله ۹۰ث — تأیید نیز async است (auth verify-otp کار پس‌زمینه)
     const res = await this.arm<ArmLoginData | NestEnvelope<ArmLoginData>>(MELK_ENDPOINTS.arm.verifyOtp, {
       method: "POST",
       body: { code: personnelCode, otpCode: otp },
+      timeoutMs: this.interactiveBudgetMs,
     });
 
     const loginData = (res.data ?? (res.data as unknown)) as ArmLoginData;

@@ -1,5 +1,6 @@
 /**
  * تست‌های PN-035 (شورا-ن۰۵۷) — تکمیل ماتریس رله + الگوی Async + نسل J
+ * + PN-036 (شورا-ن۰۵۸) — نسل K: رفع jq ARG_MAX + batch ۲۰ + مهلت تطبیقی + Express lane
  * ---------------------------------------------------------------------------
  * زمینه: سه ریشهٔ روی‌هم‌افتاده (پشتیبانی POST رله، مسیر نتیجه، سقف دروازه)
  * در هفت فاز حل شد. فازهای سروری کامیت شده‌اند؛ این تست‌ها «کلاینت» را
@@ -48,9 +49,9 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("method $RMETHOD not allowed");
   });
 
-  test("A-2) poll دسته‌ای — wait=20 · batch=100 (فاز ۵)", () => {
+  test("A-2) poll دسته‌ای — wait=20 · batch=20 (فاز ۵ + PN-036 فاز ۲: دستهٔ سبک)", () => {
     expect(script).toContain('BODY="{\\"wait\\":20,\\"batch\\":$BATCH}"');
-    expect(script).toContain("BATCH=100");
+    expect(script).toContain("BATCH=20");
   });
 
   test("A-3) خواندن items[] + سازگاری عقبه (request تک‌آیتمی نسل‌های قدیم)", () => {
@@ -59,10 +60,11 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("[.request]");
   });
 
-  test("A-4) نتیجهٔ دسته‌ای — ادغام jq -sc و «یک» POST برای کل موج", () => {
+  test("A-4) نتیجهٔ دسته‌ای — ادغام jq از stdin (PN-036: رفع ARG_MAX) و «یک» POST برای کل دسته", () => {
     expect(script).toContain("jq -sc '.'");
     expect(script).toContain('post_results "$RESULT_JSON"');
-    expect(script).toContain("RESULT_JSON=\$(jq -sc '.'");
+    // نسل K: cat فایل‌ها → jq از stdin — نه مسیرهای فایل در خط فرمان (سقف ~128KB Termux)
+    expect(script).toContain('RESULT_JSON=$(cat "$RESULTS_DIR"/*.json 2>/dev/null | jq -sc');
   });
 
   test("A-5) پایداری نتیجه — retry×۳ + backoff + ذخیرهٔ محلی + TTL + بازپخش (فاز ۲)", () => {
@@ -102,9 +104,9 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("امضای سرور نامعتبر");
   });
 
-  test("A-10) نشانگر نسل J و ثابت‌های اعلامی در لاگ آغاز", () => {
-    expect(script).toContain("نسل J · PN-035");
-    expect(script).toContain("نسل J: دسته batch=$BATCH · موج‌های $MAX_WORKERS کارگر · نتیجه retry×$RESULT_ATTEMPTS + ذخیرهٔ محلی · gzip>$GZIP_THRESHOLD بایت");
+  test("A-10) نشانگر نسل K (PN-036) و ثابت‌های اعلامی در لاگ آغاز", () => {
+    expect(script).toContain("نسل K · PN-036");
+    expect(script).toContain("نسل K: دسته batch=$BATCH · موج‌های $MAX_WORKERS کارگر · Express lane (OTP مقدم) · مهلت OTP=$LIGHT_TIMEOUTث / سنگین=$HEAVY_TIMEOUTث · تلاش دوم تایم‌اوت · رفع jq ARG_MAX (--rawfile + stdin)");
   });
 
   test("A-11) دستور نصب — حمل‌ونقل بقا پابرجا (openssl-tool · http1.1 · bootstrap)", () => {
@@ -112,6 +114,54 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(cmd).toContain("pkg install -y curl openssl-tool jq");
     expect(cmd).toContain("--http1.1");
     expect(cmd).toContain("/api/mobile-relay/bootstrap?code=CODE123");
+  });
+});
+
+// ───────────────────── K) ساختار نسل K (PN-036 · جلسهٔ ۰۵۸) ─────────────────────
+
+describe("PN-036 · K) اسکریپت نسل K — رفع jq ARG_MAX + batch سبک + مهلت تطبیقی + Express lane", () => {
+  test("K-1) رفع ARG_MAX — بدنهٔ base64 با --rawfile از فایل (نه آرگومان خط فرمان)", () => {
+    // خط ۳۷۱ لاگ مالک: «jq: Argument list to long» برای پاسخ فهرست بزرگ
+    expect(script).toContain("--rawfile b64 \"$B64F\"");
+    expect(script).not.toContain("--arg b64 \"$B64\"");
+    expect(script).toContain('base64 -w0 "$TMP" 2>/dev/null > "$B64F"');
+  });
+
+  test("K-2) مهلت تطبیقی — تعاملی ۱۵ث / سنگین ۶۰ث (curl 28 → صفر)", () => {
+    expect(script).toContain("LIGHT_TIMEOUT=15");
+    expect(script).toContain("HEAVY_TIMEOUT=60");
+    expect(script).toContain("is_interactive");
+    expect(script).toContain('local MAX_TIME="$LIGHT_TIMEOUT"');
+    expect(script).toContain('local MAX_TIME="$HEAVY_TIMEOUT"');
+  });
+
+  test("K-3) تلاش دوم تایم‌اوت — خطای ۲۸ یک بار با ۵ث فاصله (فقط همان آیتم)", () => {
+    expect(script).toContain("TIMEOUT_RETRY_DELAY=5");
+    expect(script).toContain("if [ $CURL_EXIT -eq 28 ]; then");
+  });
+
+  test("K-4) Express lane — آیتم‌های OTP جدا از فهرست‌های سنگین و مقدم", () => {
+    expect(script).toContain('contains("/authentication/otp")');
+    expect(script).toContain('run_batch_set "$EXPRESS_JSON" "express"');
+    expect(script).toContain('run_batch_set "$NORMAL_JSON" "normal"');
+  });
+
+  test("K-5) لاگ زمان هر آیتم — روش + مسیر بدون کوئری + کد + مدت (فاز ۴.۱)", () => {
+    expect(script).toContain("RPATH=${RURL%%\\?*}");
+    expect(script).toContain("→ HTTP $CODE در ${DUR}ث");
+  });
+
+  test("K-7) قرارداد سه‌حالتهٔ post_results — بازپخش بی‌پایان ممنوع (شکایت ۴ مالک)", () => {
+    expect(script).toContain('nostore="\${2:-}"');
+    expect(script).toContain("return 2");
+    expect(script).toContain("رد قطعی در بازپخش");
+    expect(script).toContain('post_results "$payload" "nostore"');
+  });
+
+  test("K-6) run_batch_set — هر مجموعه موج‌های ۸تایی + جمع‌آوری stdin + POST جدا", () => {
+    expect(script).toContain("run_batch_set()");
+    expect(script).toContain('process_item "$ITEM"');
+    expect(script).toContain('دسته $label: $TOTALN نتیجه');
   });
 });
 
@@ -190,6 +240,11 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
       if (pred()) return;
       await new Promise((r) => setTimeout(r, stepMs));
     }
+    // تشخیص flake: هنگام تایم‌اوت، دُم لاگ اسکریپت چاپ می‌شود (PN-036)
+    try {
+      const tail = readFileSync(LOG, "utf8").trim().split("\n").slice(-12).join("\n");
+      console.error(`[waitFor timeout after ${timeoutMs}ms] — script.log tail:\n${tail}`);
+    } catch { /* لاگ نیست */ }
   };
 
   beforeAll(() => {
@@ -224,7 +279,7 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
     runScript();
 
     // منتظر POST نتیجه (اجرا + DNS-fail سریع آیتم‌ها)
-    await waitFor(() => readRecords().some((r) => r.kind === "result"), 30_000);
+    await waitFor(() => readRecords().some((r) => r.kind === "result"), 75_000);
     stopAll();
 
     const recs = readRecords();
@@ -233,7 +288,7 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
 
     // poll دسته‌ای با بدنهٔ قراردادی
     expect(polls.length).toBeGreaterThanOrEqual(1);
-    expect(Buffer.from(polls[0].body_b64, "base64").toString("utf8")).toBe('{"wait":20,"batch":100}');
+    expect(Buffer.from(polls[0].body_b64, "base64").toString("utf8")).toBe('{"wait":20,"batch":20}');
 
     // کل دسته در یک POST واحد
     expect(results.length).toBe(1);
@@ -260,7 +315,7 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
     expect(arr[29].id).toBe("jobitem-030");
     // آیتم‌ها DNS-NXDOMAIN دارند → خطای curl ۶ (whitelist عبور کرد، تماس واقعی نه)
     expect(arr.every((r) => typeof r.error === "string" && r.error.includes("curl exit"))).toBe(true);
-  }, 60_000);
+  }, 120_000);
 
   test("B-2) خطای گذرا (پاسخ غیرJSON دروازه) → retry×۳ → ذخیرهٔ محلی failed-results.jsonl", async () => {
     port = await startStub();
@@ -274,7 +329,9 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
 
     // سه تلاش (۲ث + ۶ث backoff) و سپس ذخیرهٔ محلی
     const failedFile = `${HOME_DIR}/failed-results.jsonl`;
-    await waitFor(() => existsSync(failedFile) && readFileSync(failedFile, "utf8").trim().length > 0, 40_000);
+    // PN-036: مهلت ارتقا یافت (۴۰→۷۰ث) — زیر بار کامل مجموعهٔ ۱۲۷-فایلی،
+    // زنجیرهٔ فرایندهای زنده (bash + curl + jq) تا ~۳۰ث اضافه می‌گیرد؛ flake دوسبزشکن.
+    await waitFor(() => existsSync(failedFile) && readFileSync(failedFile, "utf8").trim().length > 0, 70_000);
     stopAll();
 
     const recs = readRecords();
@@ -288,7 +345,7 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
     };
     expect(typeof line._ts).toBe("number");
     expect(line.payload[0].id).toBe("jobitem-001");
-  }, 60_000);
+  }, 120_000);
 
   test("B-3) بازپخش خودکار — چرخهٔ بعد نتیجهٔ ذخیره‌شده را می‌فرستد و فایل را پاک می‌کند", async () => {
     port = await startStub();
@@ -303,7 +360,7 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
     expect(existsSync(failedFile)).toBe(true); // میراث B-2
 
     runScript();
-    await waitFor(() => readRecords().some((r) => r.kind === "result"), 30_000);
+    await waitFor(() => readRecords().some((r) => r.kind === "result"), 75_000);
     stopAll();
 
     // بازپخش: همان شناسهٔ ذخیره‌شده در یک POST پذیرفته‌شده
@@ -314,7 +371,7 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
     // فایل پاک شد (بازپخش موفق)
     const rest = existsSync(failedFile) ? readFileSync(failedFile, "utf8").trim() : "";
     expect(rest).toBe("");
-  }, 60_000);
+  }, 120_000);
 
   test("B-4) رد قطعی سرور (پاسخ JSON ok:false) → بدون retry و بدون ذخیرهٔ محلی", async () => {
     port = await startStub();
@@ -327,7 +384,7 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
     runScript();
 
     // یک POST نتیجه؛ سپس اگر retry وجود داشت در ۲/۶ ثانیهٔ بعد می‌آمد
-    await waitFor(() => readRecords().some((r) => r.kind === "result"), 30_000);
+    await waitFor(() => readRecords().some((r) => r.kind === "result"), 75_000);
     await new Promise((r) => setTimeout(r, 9_000)); // پنجرهٔ backoff سپری شود
     stopAll();
 
@@ -339,7 +396,39 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
     const failedFile = `${HOME_DIR}/failed-results.jsonl`;
     const rest = existsSync(failedFile) ? readFileSync(failedFile, "utf8").trim() : "";
     expect(rest).toBe("");
-  }, 60_000);
+  }, 120_000);
+
+  test("B-5) PN-036 — رد قطعی در بازپخش: ردیف حذف می‌شود، بازپخش بی‌پایان ممنوع", async () => {
+    // ریشهٔ شکایت ۴ مالک (جلسهٔ ۰۵۸): نسل J رد قطعی را مثل شکست گذرا نگه
+    // می‌داشت → هر چرخه دوباره POST → چکشِ بی‌پایان تا TTL. قرارداد تازه:
+    // rc=2 → ردیف حذف (log «رد قطعی در بازپخش») — یک POST، نه صدها.
+    port = await startStub();
+    writeFileSync(
+      SCRIPT_PATH,
+      buildRelayScript({ serverUrl: `http://127.0.0.1:${port}`, deviceId: DEVICE_ID, deviceSecret: DEVICE_SECRET })
+    );
+    // فایل بازپخش: یک ردیف تازه با payload معتبر
+    const failedFile = `${HOME_DIR}/failed-results.jsonl`;
+    const payload = JSON.stringify([{ id: "jobitem-001", httpStatus: 200, contentType: "application/json", bodyB64: "e30=" }]);
+    writeFileSync(failedFile, JSON.stringify({ _ts: Math.floor(Date.now() / 1000), payload: JSON.parse(payload) }) + "\n");
+    writeFileSync(STATE, JSON.stringify({ poll_items: 0, result_mode: "reject" }));
+    writeFileSync(RECORDS, "");
+    runScript();
+
+    // یک POST بازپخش رخ می‌دهد و رد قطعی می‌گیرد
+    await waitFor(() => readRecords().filter((r) => r.kind === "result").length >= 1, 75_000);
+    await new Promise((r) => setTimeout(r, 4_000)); // دو چرخهٔ دیگر — اگر باگ باشد دوباره POST می‌شود
+    stopAll();
+
+    const results = readRecords().filter((r) => r.kind === "result");
+    // دقیقاً یک POST در پنجرهٔ بازپخش — نه چکشِ هر-چرخه
+    expect(results.length).toBe(1);
+    const log = existsSync(LOG) ? readFileSync(LOG, "utf8") : "";
+    expect(log).toContain("رد قطعی در بازپخش: 1 ردیف حذف شد");
+    // ردیف از فایل حذف شد — فایل خالی
+    const rest = existsSync(failedFile) ? readFileSync(failedFile, "utf8").trim() : "";
+    expect(rest).toBe("");
+  }, 120_000);
 });
 
 // ───────────────────── C) pollRelayJob — قرارداد polling از سمت اپ ─────────────────────

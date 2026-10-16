@@ -66,8 +66,11 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const MAX_PAGES = 500;
 
 /** مهلت فهرست — سرور ARM برای فهرست درخواست‌ها هزینهٔ ثابت ~۵ثانیه‌ای دارد
- * (پروب: limit=50 در ۵٫۱ثانیه؛ limit=500 تا ۶۰ثانیه و بیش از مهلت) */
-const LIST_TIMEOUT_MS = 45_000;
+ * (پروب: limit=50 در ۵٫۱ثانیه؛ limit=500 تا ۶۰ثانیه و بیش از مهلت)
+ * PN-036 (شورا-ن۰۵۸ · فاز ۴): ۴۵ ← ۷۵ ثانیه — مسیر رله: curl ۶۰ث گوشی +
+ * صف‌گذاری + ارسال نتیجه؛ مهلت سرور باید از مهلت گوشی بلندتر باشد (در
+ * نسل J گوشی در ۲۵ث می‌شکست و سرور هنوز ۲۰ ثانیه دیگر منتظر می‌ماند). */
+const LIST_TIMEOUT_MS = 75_000;
 
 type RawRow = Record<string, unknown>;
 
@@ -603,7 +606,10 @@ export async function syncArmListingsCatalog(
 ): Promise<ArmCatalogSyncResult> {
   const started = Date.now();
   const repo = opts.repos?.property ?? getPropertyRecordRepository();
-  const pageSize = Math.min(Math.max(opts.pageSize ?? 500, 1), 500);
+  const pageSize = Math.min(Math.max(opts.pageSize ?? 50, 1), 100);
+  // PN-036 (شورا-ن۰۵۸ · فاز ۴): pageSize پیش‌فرض ۵۰۰ ← ۵۰ — پاسخ ۵۰۰رکوردی
+  // (تا ۵+ مگابایت) هم curl ۲۵ثانیه‌ای گوشی را می‌شکست (خطای ۲۸ مکرر مالک)،
+  // هم ARG_MAX jq؛ سقف clamp هم ۵۰۰ ← ۱۰۰ کاهش یافت (۵۰ عین رفتار خود سامانه پایدار است)
   const maxPages = Math.min(opts.maxPages ?? MAX_PAGES, MAX_PAGES);
   const runId = `p6510-listings-${randomUUID().slice(0, 8)}`;
   const out: ArmCatalogSyncResult = {
