@@ -157,15 +157,16 @@ describe("PN-031-HOTFIX · C) ثبت env و بقای سه‌لایه", () => {
 // ───────────────────── D) سازگاری سازنده‌ها (۲) ─────────────────────
 
 describe("PN-031-HOTFIX · D) سازگاری دستور نصب و اسکریپت رله", () => {
-  test("D-1) دستور نصب یک‌خطی از URL عمومی درست ساخته می‌شود", async () => {
+  test("D-1) (ن۰۵۵) دستور نصب یک‌خطی از URL عمومی درست ساخته می‌شود — openssl-tool", async () => {
     const { buildInstallCommand } = await import("@/lib/melk-api/relay-script");
     const cmd = buildInstallCommand(PUBLIC_URL, "a".repeat(36));
     expect(cmd).toContain(`${PUBLIC_URL}/api/mobile-relay/bootstrap?code=`);
     expect(cmd).not.toContain("0.0.0.0");
     // PN-031-I: همان حمل‌ونقل مقاوم — http1.1 + UA بروزری (همچنین curl -fsSL پابرجا)
+    // PN-034 (ن۰۵۵): openssl-tool — مسیر اثبات‌شدهٔ مالک (PN-031-I/J)
     expect(cmd).toContain("--http1.1");
     expect(cmd).toContain('-A "Mozilla/5.0');
-    expect(cmd).toMatch(/^pkg install -y curl openssl jq && curl --http1\.1 -A "Mozilla\/\d\.\d .+" -fsSL "/);
+    expect(cmd).toMatch(/^pkg install -y curl openssl-tool jq && curl --http1\.1 -A "Mozilla\/\d\.\d .+" -fsSL "/);
   });
 
   test("D-2) اسکریپت رله SERVER_URL عمومی می‌گیرد و مسیر poll عمومی است", async () => {

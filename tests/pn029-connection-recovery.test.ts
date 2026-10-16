@@ -4,13 +4,13 @@
  * پوشش تستی مصوب مرحلهٔ ۹:
  *   A) تشخیص/حالت آفلینی (۶) — گاردهای client/probeGet + پرچم MELK_ARM_OFFLINE
  *   B) فیوز قطع‌کننده (۵) — backoff ۶/۱۲/۲۴س · قفل ۲۴س پس از ۳ شکست · درگاه
- *   C) OTP تک‌واره (۳) — قفل ۶ ساعته + سوزاندن تلاش
+ *   C) (ن۰۵۵) صفر محدودیت — مکانیزم تک‌بارة PN-029 حذف کامل (PN-034)
  *   D) گارد IP کانتینر (۳) — تشخیص/ثبت + رجیستری Worker در حالت آفلینی
  *   E) دسته‌بندی/نمایش (۴) — وضعیت آفلاین provider + حذف بخش عمومی از تنظیمات + پیامهای دقیق
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 // ───────────────────── A) تشخیص — حالت آفلینی (۶) ─────────────────────
 
@@ -178,43 +178,33 @@ describe("PN-029 · B) فیوز قطع‌کنندهٔ Retry هوشمند (مرح
   });
 });
 
-// ───────────────────── C) OTP تک‌واره (۳) ─────────────────────
+// ───────────────────── C) (ن۰۵۵) مکانیزم OTP تک‌بارة PN-029 — حذف کامل ─────────────────────
 
-describe("PN-029 · C) مکانیزم OTP تک‌واره (مرحلهٔ ۸)", () => {
-  test("C-1) داوری قفل — بدون رکورد/مهلت گذشته = مجاز", async () => {
-    const { judgeOtpLock } = await import("@/lib/auth/otp-lock");
-    const now = new Date("2026-10-11T08:00:00Z");
-    expect(judgeOtpLock("code:1", null, now).allowed).toBe(true);
-    expect(judgeOtpLock("code:1", { attempts: 2, lockedUntil: new Date(now.getTime() - 1000) }, now).allowed).toBe(true);
-    expect(judgeOtpLock("code:1", { attempts: 2, lockedUntil: new Date(now.getTime() - 1000) }, now).attempts).toBe(2);
+describe("PN-029 · C) (ن۰۵۵) قانون مالک: صفر محدودیت اتصال — مکانیزم تک‌بارة مرده", () => {
+  test("C-1) (ن۰۵۵) ماژول قفل + جدول DB — هر دو حذف کامل شدند (PN-034)", () => {
+    // سند ن۰۵۵: «هیچ محدودیتی برای اتصال به سامانه‌ها باقی نماند» —
+    // ماژول otp-lock.ts، روت otp-burn و مدل OtpRateLimit همگی برافتادند
+    expect(existsSync("src/lib/auth/otp-lock.ts")).toBe(false);
+    expect(existsSync("src/app/api/admin/otp-burn/route.ts")).toBe(false);
+    const schema = readFileSync("prisma/schema.prisma", "utf8");
+    expect(schema).not.toContain("model OtpRateLimit");
   });
 
-  test("C-2) داوری قفل — درون پنجرهٔ ۶ ساعته = رد با زمان باقی‌ماندهٔ دقیق", async () => {
-    const { judgeOtpLock, OTP_LOCK_HOURS } = await import("@/lib/auth/otp-lock");
-    expect(OTP_LOCK_HOURS).toBe(6);
-    const now = new Date("2026-10-11T08:00:00Z");
-    const st = judgeOtpLock("ip:1.2.3.4", { attempts: 1, lockedUntil: new Date(now.getTime() + 5.5 * 3600_000) }, now);
-    expect(st.allowed).toBe(false);
-    expect(st.retryInMs).toBeGreaterThan(5 * 3600_000);
-    expect(st.retryInMs).toBeLessThanOrEqual(6 * 3600_000);
+  test("C-2) (ن۰۵۵) مسیر ورود مستقیم — صفر قفل: request-otp بدون checkRate/otp-lock", () => {
+    const route = readFileSync("src/app/api/auth/request-otp/route.ts", "utf-8");
+    expect(route).not.toContain("checkRate");
+    expect(route).not.toContain("otp-lock");
+    expect(route).not.toContain("OTP_LOCKED");
+    // فراخوانی واقعی سامانه پابرجاست
+    expect(route).toContain("provider.requestOtp");
   });
 
-  test("C-3) رفت‌وبرگشت DB — سوزاندن تلاش، دو دامنه را ۶ ساعت قفل می‌کند", async () => {
+  test("C-3) (ن۰۵۵) ناوردای جدول — OtpRateLimit در DB زنده وجود ندارد", async () => {
     const { db } = await import("@/lib/db");
-    const { burnOtpAttempt, checkOtpLock } = await import("@/lib/auth/otp-lock");
-    const code = `45003199${Date.now() % 1000}`;
-    const ip = `10.99.${Date.now() % 250}.${(Date.now() / 7) % 250 | 0}`;
-    const before = await checkOtpLock(db, code, ip);
-    expect(before.allowed).toBe(true);
-    await burnOtpAttempt(db, code, ip);
-    const after = await checkOtpLock(db, code, ip);
-    expect(after.allowed).toBe(false);
-    if (!after.allowed) {
-      expect(after.blocked.retryInMs).toBeGreaterThan(5.9 * 3600_000);
-      expect(after.blocked.retryInMs).toBeLessThanOrEqual(6 * 3600_000);
-    }
-    // پاکسازی تست
-    await db.otpRateLimit.deleteMany({ where: { scope: { in: [`code:${code}`, `ip:${ip}`] } } });
+    const tables = await db.$queryRawUnsafe<{ name: string }[]>(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='OtpRateLimit'"
+    );
+    expect(tables.length).toBe(0);
   });
 });
 
@@ -348,9 +338,8 @@ describe("PN-029 · E) وضعیت آفلاین و نمایش (دسته‌بند�
     expect(indicators).toContain("melkPublicApi");
   });
 
-  test("E-4) پیامهای خطای دقیق برای مالک (L6) — فیوز و OTP با زمان باقی‌ماندهٔ فارسی", async () => {
+  test("E-4) (ن۰۵۵) پیامهای خطای دقیق برای مالک (L6) — فیوز پابرجا · قفل OTP مرده", async () => {
     const { circuitLockedError, formatRemainingMs } = await import("@/lib/melk-api/circuit-breaker");
-    const { otpLockedError, otpScopeForCode, otpScopeForIp } = await import("@/lib/auth/otp-lock");
     // قالب‌بندی فارسی
     expect(formatRemainingMs(5 * 3600_000 + 23 * 60_000)).toBe("۵ ساعت و ۲۳ دقیقه");
     expect(formatRemainingMs(2 * 60_000)).toBe("۲ دقیقه");
@@ -360,12 +349,7 @@ describe("PN-029 · E) وضعیت آفلاین و نمایش (دسته‌بند�
     expect(err.code).toBe("CIRCUIT_COOLDOWN");
     expect(err.message).toContain("قفل سخت ۲۴ ساعته");
     expect(err.message).toContain("۲۴ ساعت");
-    // خطای OTP — با دامنه و زمان
-    const otpErr = otpLockedError({ scope: "code:450031320", allowed: false, retryInMs: 5.5 * 3600_000, attempts: 1 });
-    expect(otpErr.code).toBe("OTP_LOCKED");
-    expect(otpErr.message).toContain("این کد پرسنلی");
-    // دامنه‌های قفل
-    expect(otpScopeForCode("450031320")).toBe("code:450031320");
-    expect(otpScopeForIp("1.2.3.4")).toBe("ip:1.2.3.4");
+    // (ن۰۵۵) قفل OTP تک‌بارة PN-029 دیگر وجود ندارد — قانون مالک: صفر محدودیت
+    expect(existsSync("src/lib/auth/otp-lock.ts")).toBe(false);
   });
 });

@@ -1,17 +1,18 @@
 /**
  * PN-033 — گارد تمیزکاری نهایی (شورای عالی ملکا · جلسهٔ فوق‌العاده ۰۵۴ · ۱۴۰۵/۰۷/۲۶)
- * ---------------------------------------------------------------------------
  * «قفل از دوران جنگ مانده. الآن که تونل زنده است، این قفل باید برود.»
+ * PN-034 (شورا-ن۰۵۵): بخش C به واقعیت تازه به‌روزرسانی شد — قانون مالک:
+ * «صفر محدودیت اتصال» + درس ۰۵۴: «پاکسازی بیش از حد، به اندازهٔ ناکافی بد است»
  *
  * A) فیوز — خاموشی دائمی: MELK_ARM_CIRCUIT_DISABLED=1 + اولویت تست صریح + DB خالی از قفل
  * B) env — دوران Worker پایان یافت: صفر MELK_ARM_PROXY_URL / MELK_RELAY_ALT_URL + فیوز خاموش
- * C) UI — معماری هدف ن۰۵۴: فقط رلهٔ Termux + کدپرسنلی + OTP (بدون APK/QR/Worker/آفلینی/فهرست دستگاه‌ها)
+ * C) UI — (ن۰۵۵) تولید کد نصب احیا · ورود مجدد حذف کامل · ARM مستقیم احیا
  * D) escrow — همگام‌سازی سه‌لایه: کلید تازه جای کلیدهای کهنه
  *
  * اجرا: bun test tests/pn033-cleanup.test.ts
  */
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const REPO = join(import.meta.dir, "..");
@@ -126,40 +127,42 @@ describe("PN-033 · B) env — پاکسازی کلیدهای دوران Worker",
   });
 });
 
-// ───────────────────── C) UI — معماری هدف ن۰۵۴ ─────────────────────
+// ───────────────────── C) UI — (ن۰۵۵) سه بازگردانی + یک حذف ─────────────────────
 
-describe("PN-033 · C) UI — فقط Termux + کدپرسنلی + OTP", () => {
+describe("PN-033 · C) UI — قانون مالک: صفر محدودیت (به‌روزرسانی PN-034 · ن۰۵۵)", () => {
   const relay = read("src/core/tiles/tiles/settings/RelaySetupSection.tsx");
-  const otp = read("src/core/tiles/tiles/settings/OtpReloginSection.tsx");
   const melk = read("src/core/tiles/tiles/settings/MelkTabrizConnectionSection.tsx");
 
-  test("C-1) بخش رله — وضعیت زنده/آفلاین + تست تونل + راهنمای ۳ خطی؛ صفر APK/QR/مرورگری/ثبت", () => {
+  test("C-1) (ن۰۵۵) رلهٔ Termux — «تولید کد نصب» احیا شد (مسیر اثبات‌شدهٔ PN-031-I)؛ صفر APK/QR/مرورگری/فهرست دستگاه", () => {
     expect(relay).toContain("رلهٔ Termux");
+    expect(relay).toContain("تولید کد نصب");
+    expect(relay).toContain('"/api/admin/relay/enroll"');
+    expect(relay).toContain("pkg install -y openssl-tool");
     expect(relay).toContain("تست تونل");
-    expect(relay).toContain("راهنمای ۳ خطی");
     expect(relay).not.toContain("melka-relay.apk");
     expect(relay).not.toContain("apkQr");
     expect(relay).not.toContain("browser-poll");
-    expect(relay).not.toContain("(ثبت دستگاه + QR)");
     expect(relay).not.toContain("activeDevices.map");
   });
 
-  test("C-2) بخش ورود مجدد — کدپرسنلی + دکمه + OTP؛ صفر کارت Worker/بنر آفلینی", () => {
-    expect(otp).toContain("کد پرسنلی");
-    expect(otp).toContain("ارسال کد");
-    expect(otp).toContain("کد پیامکی");
-    expect(otp).not.toContain("پروکسی ابری (لایهٔ ۱ شورا)");
-    expect(otp).not.toContain("حالت آفلینی تشخیصی (PN-029)");
-    expect(otp).not.toContain("CloudOff");
+  test("C-2) (ن۰۵۵) «ورود مجدد به ملک تبریز» + مکانیزم OTP تک‌بارة PN-029 — حذف کامل سه‌لایه", () => {
+    // بخش UI + روت سوزاندن + ماژول قفل — هر سه مرده‌اند (قانون صفر-محدودیت)
+    expect(existsSync(join(REPO, "src/core/tiles/tiles/settings/OtpReloginSection.tsx"))).toBe(false);
+    expect(existsSync(join(REPO, "src/app/api/admin/otp-burn/route.ts"))).toBe(false);
+    expect(existsSync(join(REPO, "src/app/api/v1/admin/otp-burn/route.ts"))).toBe(false);
+    expect(existsSync(join(REPO, "src/lib/auth/otp-lock.ts"))).toBe(false);
+    // جدول OtpRateLimit هم از اسکیمای زنده حذف شد
+    const schema = read("prisma/schema.prisma");
+    expect(schema).not.toContain("model OtpRateLimit");
   });
 
-  test("C-3) پیکرهٔ اتصال — بدون بنر آفلینی/کارت فیوز/کارت IP/بخش ARM تکراری؛ سرویس‌ها ARM/PM/APU", () => {
+  test("C-3) (ن۰۵۵) پیکرهٔ اتصال — «اتصال به حساب شخصی ARM» احیا (embedded · فرم مستقیم بدون قفل) + رله + PM", () => {
     expect(melk).not.toContain("حالت آفلینی ملک تبریز فعال است");
     expect(melk).not.toContain("فیوز قطع‌کنندهٔ اتصال");
     expect(melk).not.toContain("IP عمومی کانتینر");
-    expect(melk).not.toContain("<ArmConnectionSection embedded />");
+    expect(melk).not.toContain("OtpReloginSection");
+    expect(melk).toContain("<ArmConnectionSection embedded />");
     expect(melk).toContain('s.service === "ARM_API" || s.service === "ARM_PUBLIC" || s.service === "PM_API" || s.service === "MELK_PUBLIC_API"');
-    expect(melk).toContain("<OtpReloginSection />");
     expect(melk).toContain("<RelaySetupSection />");
   });
 
@@ -179,7 +182,8 @@ describe("PN-033 · D) منطق فیوز دست‌نخورده (فقط مهار 
     const now = new Date("2026-10-16T10:00:00Z");
     const s1 = breakerAfterFailure(null, now);
     expect(s1.consecutiveFailures).toBe(1);
-    const s3 = { ...s1, consecutiveFailures: 3 };
+    // (ن۰۵۵) اصلاح تایپ نهفته: BreakerSnapshot کامل ساخته می‌شود (خطای TS2345 پنهان از دوران ۰۵۴)
+    const s3 = { target: "x", lastFailureAt: now, lastSuccessAt: null, ...s1, consecutiveFailures: 3 };
     const s = breakerAfterFailure(s3, now);
     expect(s.lockUntil?.getTime()).toBe(now.getTime() + 24 * 3600 * 1000);
     expect(breakerGate({ target: "x", ...s, lastFailureAt: now, lastSuccessAt: null } as never, now).reason).toBe("locked");

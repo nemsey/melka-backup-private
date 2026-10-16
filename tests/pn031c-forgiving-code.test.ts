@@ -307,10 +307,12 @@ describe("PN-031-C · F) سازگاری ساختاری — روت تازه، ر�
     expect(schema).toContain("PN-031-C (شورا-ن۰۴۰) — کد بخشنده");
   });
 
-  test("F-6) مانیفست api-versioning — ۱۰۷ روت با code-status", () => {
+  test("F-6) (ن۰۵۵) مانیفست api-versioning — ۱۰۶ روت با code-status (otp-burn حذف کامل · PN-034)", () => {
     const manifest = JSON.parse(readFileSync(join(REPO, "download/pn012/api-versioning.json"), "utf8"));
-    expect(manifest.totalRoutes).toBe(107);
+    // 107 − 1: /api/v1/admin/otp-burn برافتاد (قانون مالک: صفر محدودیت اتصال · ن۰۵۵)
+    expect(manifest.totalRoutes).toBe(106);
     expect(manifest.routes.some((r: { original: string }) => r.original === "/api/admin/relay/code-status")).toBe(true);
+    expect(manifest.routes.some((r: { v1: string }) => r.v1 === "/api/v1/admin/otp-burn")).toBe(false);
   });
 
   test("F-7) relayOverview — فیلد enroll برای UI بدون راز", async () => {

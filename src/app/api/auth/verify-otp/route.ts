@@ -9,7 +9,7 @@
 import { NextRequest } from "next/server";
 import { getMelkProvider } from "@/lib/melk-api/provider";
 import { isValidOtpFormat, isValidPersonnelCodeFormat } from "@/lib/auth/crypto";
-import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
+import { recordAttempt } from "@/lib/auth/rate-limiter";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse } from "@/lib/auth/guard";
 import { createSession, audit } from "@/lib/auth/session";
@@ -31,10 +31,8 @@ export async function POST(request: NextRequest) {
     }
 
     const ip = clientIp(request); // PN-008 BLOCK 3 — Trusted Proxy (تک‌نقطه تصمیم)
-    const rate = await checkRate(personnelCode, "VERIFY_OTP", ip);
-    if (!rate.allowed) {
-      throw new MelkApiError("RATE_LIMITED", rate.reason ?? "تلاش بیش از حد مجاز.", 429, false);
-    }
+    // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال) — سقف نرخ محلی برافتاد؛
+    // recordAttempt تنها رد حسابرسی می‌ماند (هرگز مسدود نمی‌کند).
 
     // ✅ تأیید در سامانه واقعی ARM
     const provider = getMelkProvider();

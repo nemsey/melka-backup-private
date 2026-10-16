@@ -34,7 +34,7 @@
 import { NextRequest } from "next/server";
 import { getMelkProvider } from "@/lib/melk-api/provider";
 import { isValidOtpFormat, isValidPersonnelCodeFormat } from "@/lib/auth/crypto";
-import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
+import { recordAttempt } from "@/lib/auth/rate-limiter";
 import { classifySmsSendFailure } from "@/lib/melk-api/sms";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
@@ -107,11 +107,8 @@ export async function POST(request: NextRequest) {
           new MelkApiError("INVALID_PERSONNEL_CODE", "قالب کد پرسنلی نامعتبر است (۶ تا ۱۲ رقم).", 400, false)
         );
       }
-      // P6.5-09 — سهمیهٔ «مستقل» جریان اتصال ARM (بدون اشتراک با ورود/PM)
-      const rate = await checkRate(code, "REQUEST_OTP_ARM", ip);
-      if (!rate.allowed) {
-        return errorResponse(new MelkApiError("RATE_LIMITED", rate.reason ?? "درخواست بیش از حد مجاز.", 429, false));
-      }
+      // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال) — سقف نرخ محلی
+      // جریان اتصال ARM برافتاد؛ recordAttempt تنها رد حسابرسی می‌ماند.
       try {
         const provider = getMelkProvider();
         const result = await provider.requestOtp(code, ip);
@@ -168,11 +165,8 @@ export async function POST(request: NextRequest) {
           new MelkApiError("OTP_INVALID", "کد پیامکی باید ۴ رقم باشد (مطابق سامانه ملک تبریز).", 400, false)
         );
       }
-      // P6.5-09 — سهمیهٔ تأیید «مستقل» جریان اتصال ARM
-      const rate = await checkRate(code, "VERIFY_OTP_ARM", ip);
-      if (!rate.allowed) {
-        return errorResponse(new MelkApiError("RATE_LIMITED", rate.reason ?? "تلاش بیش از حد مجاز.", 429, false));
-      }
+      // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال) — سقف نرخ تأیید
+      // اتصال ARM برافتاد؛ recordAttempt تنها رد حسابرسی می‌ماند.
       try {
         // ✅ تأیید در سامانه واقعی ARM — کد پیامکی واقعی سنجیده می‌شود
         const provider = getMelkProvider();

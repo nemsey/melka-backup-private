@@ -106,7 +106,8 @@ need_cmd() { command -v "$1" >/dev/null 2>&1; }
 if ! need_cmd curl || ! need_cmd openssl || ! need_cmd jq; then
   if need_cmd pkg; then
     log "نصب وابستگی‌ها (بار اول — چند دقیقه صبر کنید)…"
-    pkg install -y curl openssl jq || { log "نصب ناموفق — Termux را ببندید و دوباره باز کنید"; exit 1; }
+    # PN-034 (شورا-ن۰۵۵): openssl-tool — بستهٔ CLI واقعی Termux (مسیر اثبات‌شدهٔ مالک در PN-031-I/J)
+    pkg install -y curl openssl-tool jq || { log "نصب ناموفق — Termux را ببندید و دوباره باز کنید"; exit 1; }
   else
     log "این اسکریپت برای Termux ساخته شده (pkg یافت نشد)"
     exit 1
@@ -393,5 +394,7 @@ export function buildInstallCommand(serverUrl: string, enrollCode: string): stri
   const url = safe(serverUrl).replace(/\/+$/, "");
   const code = safe(enrollCode);
   // PN-031-I: همان حمل‌ونقل بقا — http1.1 + UA بروزری برای دانلود bootstrap
-  return `pkg install -y curl openssl jq && curl --http1.1 -A "${BROWSER_UA}" -fsSL "${url}/api/mobile-relay/bootstrap?code=${code}" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh`;
+  // PN-034 (شورا-ن۰۵۵): openssl-tool — بستهٔ CLI واقعی Termux؛ مسیر اثبات‌شدهٔ مالک
+  // (PN-031-I/J: pkg install -y openssl-tool → پیست همین دستور → Enter → اتصال ✓)
+  return `pkg install -y curl openssl-tool jq && curl --http1.1 -A "${BROWSER_UA}" -fsSL "${url}/api/mobile-relay/bootstrap?code=${code}" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh`;
 }

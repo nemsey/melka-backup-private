@@ -47,21 +47,21 @@ describe("گام صفر P6546 — ترتیب هفت‌بخشی تنظیمات ع
     expect(melkIdx).toBeLessThan(divarIdx);
   });
 
-  test("۱-۳) پیکرهٔ یکپارچهٔ اتصال به ملک تبریز: مدیریت + ورود مجدد + رله + PM (ن۰۵۴: ARM تکراری حذف · GAP حذف جلسهٔ ۰۳۳)", async () => {
+  test("۱-۳) پیکرهٔ یکپارچهٔ اتصال به ملک تبریز: مدیریت + اتصال ARM مستقیم + رله + PM (ن۰۵۵: احیای ARM · حذف ورود مجدد)", async () => {
     const s = readFileSync(`${TILES}/settings/MelkTabrizConnectionSection.tsx`, "utf8");
     expect(s).toContain('id="settings-connection-hub"');
     expect(s).toContain("اتصال به ملک تبریز");
-    // ترتیب توکار (پس از پاکسازی ن۰۵۴): مدیریت → ورود مجدد → رلهٔ Termux → PM
+    // ترتیب توکار (پس از احیای ن۰۵۵): مدیریت → اتصال ARM (فرم مستقیم) → رلهٔ Termux → PM
     const order = [
       s.indexOf('id="settings-connection-hub"'),
-      s.indexOf("<OtpReloginSection />"),
+      s.indexOf("<ArmConnectionSection embedded />"),
       s.indexOf("<RelaySetupSection />"),
       s.indexOf("<PmConnectionSection embedded />"),
     ];
     // PN-029 اولاً — بخش رابط سامانهٔ عمومی از تنظیمات حذف شده است
     expect(s).not.toContain('aria-label="رابط سامانه عمومی ملک تبریز"');
-    // PN-033 (شورا-ن۰۵۴): بخش ARM توکار حذف شد — تکراریِ «ورود مجدد» (فرم یگانهٔ OTP)
-    expect(s).not.toContain("<ArmConnectionSection embedded />");
+    // PN-034 (شورا-ن۰۵۵): «ورود مجدد» حذف کامل — فرم مستقیم ARM بدون قفل احیا شد
+    expect(s).not.toContain("OtpReloginSection");
     for (const idx of order) expect(idx).toBeGreaterThan(-1);
     for (let i = 1; i < order.length; i += 1) {
       expect(order[i]).toBeGreaterThan(order[i - 1]);
