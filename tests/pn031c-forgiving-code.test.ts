@@ -288,13 +288,14 @@ describe("PN-031-C · F) سازگاری ساختاری — روت تازه، ر�
     expect(src).toContain("کد تا ۳ بار قابل استفاده است");
   });
 
-  test("F-4) UI تنظیمات — نمایش تلاش‌ها + متن کد بخشنده", () => {
+  test("F-4) UI تنظیمات — ساده‌شدهٔ ن۰۵۴: فهرست دستگاه/کد بخشنده حذف؛ صفر راز", () => {
     const ui = readFileSync(join(REPO, "src/core/tiles/tiles/settings/RelaySetupSection.tsx"), "utf8");
-    expect(ui).toContain("بار قابل استفاده");
-    expect(ui).toContain("در حال نصب — تلاش");
-    expect(ui).toContain("نصب کامل شده ✓");
-    expect(ui).toContain("کد سوخته — سقف تلاش پر شد");
-    // صفر راز (بند ۸ گارد رله)
+    // PN-033 (شورا-ن۰۵۴): فهرست دستگاه‌ها و وضعیت کد از UI حذف شد — ثبت کد فقط توسط GLM
+    expect(ui).not.toContain("بار قابل استفاده");
+    expect(ui).not.toContain("در حال نصب — تلاش");
+    expect(ui).not.toContain("کد سوخته");
+    expect(ui).toContain("رلهٔ Termux");
+    // صفر راز (بند ۸ گارد رله) — پابرجا
     expect(ui).not.toContain("deviceSecret");
   });
 

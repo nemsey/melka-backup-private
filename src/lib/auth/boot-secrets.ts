@@ -52,13 +52,14 @@ export const BOOT_SECRET_KEYS = [
   "OWNER_PERSONNEL_CODES",
   "MELK_PUBLIC_BASE_URL",
   "MELK_PROXY_SECRET",
-  "MELK_ARM_PROXY_URL",
   "MELK_ARM_RELAY_MODE",
   "MELK_ARM_OFFLINE",
-  // PN-031-I (جلسهٔ ۰۵۰ · لایهٔ ۳): مسیر جایگزین رلهٔ گوشی (روت /relay واکِر) —
-  // پیکربندی حیاتیِ بقا (نه راز): بدون آن، پس از بازنشانی env پلتفرم اسکریپتِ
-  // تازهٔ گوشی فاقد مسیر جایگزین می‌شود.
-  "MELK_RELAY_ALT_URL",
+  // PN-033 (جلسهٔ ۰۵۴ · پاکسازی نهایی): خاموشی دائمی فیوز PN-029 —
+  // پیکربندی حیاتیِ بقا (نه راز): بدون آن، پس از بازنشانی env پلتفرم
+  // فیوز دوباره مسلح می‌شود و سه شکست پیاپی، قفل ۲۴ ساعتهٔ مالک را
+  // برمی‌گرداند. MELK_ARM_PROXY_URL و MELK_RELAY_ALT_URL (دوران Worker)
+  // حذف شدند — مسیر یگانه: رلهٔ Termux.
+  "MELK_ARM_CIRCUIT_DISABLED",
 ] as const;
 
 export type BootSecretKey = (typeof BOOT_SECRET_KEYS)[number];

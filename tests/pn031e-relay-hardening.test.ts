@@ -125,10 +125,10 @@ describe("PN-031-E · D) QR همیشه موجود (شکایت: «QR از تنظ�
     expect(witness.apk?.sha256).toBe(actual);
   });
 
-  test("D-3: UI به QR ایستا سقوط می‌کند اگر تولید سرور در دسترس نبود", () => {
+  test("D-3: (ن۰۵۴) QR ایستا از UI حذف شد — صفر QR در تنظیمات (Termux تنها راه)", () => {
     const ui = readFileSync(RELAY_UI, "utf8");
-    expect(ui).toContain('src="/deliver/pn031d/qr-apk.svg"');
-    expect(ui).toContain("apkQrStatic");
+    expect(ui).not.toContain('src="/deliver/pn031d/qr-apk.svg"');
+    expect(ui).not.toContain("apkQrStatic");
   });
 
   test("D-4: QR ایستا SVG معتبر با محتوای واقعی QR است", () => {

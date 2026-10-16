@@ -292,11 +292,14 @@ describe("PN-030 · D) بخش «ورود مجدد به ملک تبریز» (مر
     expect(SEC).toContain('action: "verify"');
   });
 
-  test("D-4) داخل پیکرهٔ «اتصال به ملک تبریز» رندر می‌شود و وضعیت پروکسی/آفلینی را می‌گیرد", () => {
+  test("D-4) داخل پیکرهٔ «اتصال به ملک تبریز» رندر می‌شود — ساده‌شده (ن۰۵۴: بدون کارت Worker/آفلینی)", () => {
     expect(MELK_SECTION).toContain('import { OtpReloginSection } from "./OtpReloginSection"');
-    expect(MELK_SECTION).toContain("<OtpReloginSection");
-    expect(MELK_SECTION).toContain("proxy={conn?.proxy}");
-    expect(MELK_SECTION).toContain("offlineMode={conn?.offlineMode}");
+    expect(MELK_SECTION).toContain("<OtpReloginSection />");
+    // PN-033 (شورا-ن۰۵۴): کارت پروکسی ابری Worker + نشانگر حالت آفلینی از UI حذف شد
+    const sec = readFileSync(join(REPO, "src/core/tiles/tiles/settings/OtpReloginSection.tsx"), "utf8");
+    expect(sec).not.toContain("پروکسی ابری (لایهٔ ۱ شورا)"); // عنوان JSX کارت Worker حذف شد
+    expect(sec).not.toContain("حالت آفلینی تشخیصی");
+    expect(sec).toContain("کد پرسنلی");
   });
 
   test("D-5) فقط نقش OWNER — مکانیزم تک‌تلاش برای مشاوران رندر نمی‌شود", () => {
@@ -317,18 +320,17 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
     expect(env.MELK_PROXY_SECRET ?? "").toMatch(/^[0-9a-f]{64}$/);
   });
 
-  test("E-2) قفل ترتیب — پویایی سه‌فازی: خالی ← دیپلوی‌شده (Worker) ← رلهٔ موبایل (PN-031)", () => {
+  test("E-2) قفل ترتیب — فاز نهایی (ن۰۵۴): تنها مسیر رلهٔ Termux · Worker حذف · فیوز خاموش", () => {
     const env = JSON.parse(readFileSync(join(REPO, "env.platform.json"), "utf8")) as Record<string, string>;
-    // فاز فعلی: Worker دیپلوی شده و URL ثبت است (۱۴۰۵/۰۷/۲۱ — deploy موفق)، اما
-    // مسیر عبوری نهایی حالا رلهٔ موبایل PN-031 است چون سد جغرافیایی کلودفلر را هم بلاک کرد.
-    // قفل ترتیب واقعی = MELK_ARM_OFFLINE=1 تا قبولی تست دروازهٔ زنده.
-    expect(env.MELK_ARM_PROXY_URL ?? "").toMatch(/^https:\/\/melka-proxy\.[a-z0-9-]+\.workers\.dev$/);
-    expect(env.MELK_ARM_RELAY_MODE ?? "").toBe("mobile"); // PN-031: رله مسیر فعال
-    // PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): قفل آفلاین به‌فرمان مالک برداشته شد — اپ در حالت اتصال واقعی
+    // PN-033 (شورا-ن۰۵۴ · پاکسازی نهایی): دوران سه‌فازی (خالی ← Worker ← رله) پایان یافت.
+    // مسیر یگانه: رلهٔ موبایل Termux؛ کلیدهای Worker از env حذف شدند و فیوز PN-029 خاموش است.
+    expect(env.MELK_ARM_RELAY_MODE ?? "").toBe("mobile");
+    expect(env).not.toHaveProperty("MELK_ARM_PROXY_URL");
+    expect(env).not.toHaveProperty("MELK_RELAY_ALT_URL");
     expect(env.MELK_ARM_OFFLINE ?? "").toBe("");
-    // مستندسازی قفل در همان فایل
-    expect(env._pn030 ?? "").toContain("MELK_ARM_PROXY_URL");
-    expect(env._pn031 ?? "").toContain("شورا-ن۰۳۷");
+    expect(env.MELK_ARM_CIRCUIT_DISABLED ?? "").toBe("1");
+    // مستندسازی پاکسازی در همان فایل
+    expect(env._pn033 ?? "").toContain("شورا-ن۰۵۴");
   });
 
   test("E-3) ترتیب هشت کاشی — آگهی، درخواست، معاملات، کارشناسان، تطبیق، شاخص، پوشش، مغز ملکا", async () => {

@@ -304,19 +304,25 @@ describe("PN-031-B/D — سازگاری و قراردادها", () => {
     expect(r.verdict).not.toBe("FRESH");
   });
 
-  test("D-5: بقا در برابر بازنشانی env — چهار کلید عملیاتی جزو BOOT_SECRET_KEYS (درس هشتم)", async () => {
+  test("D-5: بقا در برابر بازنشانی env — کلیدهای عملیاتی جزو BOOT_SECRET_KEYS (درس هشتم · به‌روزشدهٔ ن۰۵۴)", async () => {
     const { BOOT_SECRET_KEYS } = await import("@/lib/auth/boot-secrets");
-    for (const k of ["MELK_PROXY_SECRET", "MELK_ARM_PROXY_URL", "MELK_ARM_RELAY_MODE", "MELK_ARM_OFFLINE"]) {
+    for (const k of ["MELK_PROXY_SECRET", "MELK_ARM_RELAY_MODE", "MELK_ARM_OFFLINE", "MELK_ARM_CIRCUIT_DISABLED"]) {
       expect(BOOT_SECRET_KEYS as readonly string[]).toContain(k);
     }
+    // PN-033 (شورا-ن۰۵۴): کلیدهای دوران Worker از escrow حذف شدند
+    expect(BOOT_SECRET_KEYS as readonly string[]).not.toContain("MELK_ARM_PROXY_URL");
+    expect(BOOT_SECRET_KEYS as readonly string[]).not.toContain("MELK_RELAY_ALT_URL");
   });
 
-  test("D-6: env.platform.json زنده — حالت رله + راز HMAC + نشانی Worker + بی‌پرچم آفلاینی (PN-031-E)", () => {
+  test("D-6: env.platform.json زنده — حالت رله + راز HMAC + بی‌Worker + بی‌پرچم آفلاینی + فیوز خاموش (ن۰۵۴)", () => {
     const env = JSON.parse(readFileSync(join(import.meta.dir, "..", "env.platform.json"), "utf8")) as Record<string, string>;
     expect((env.MELK_ARM_OFFLINE ?? "")).toBe(""); // PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): پرچم آفلاین حذف شد
     expect(env.MELK_ARM_RELAY_MODE ?? "").toBe("mobile");
     expect(env.MELK_PROXY_SECRET ?? "").toMatch(/^[0-9a-f]{64}$/);
-    expect(env.MELK_ARM_PROXY_URL ?? "").toMatch(/^https:\/\/melka-proxy\.[a-z0-9-]+\.workers\.dev$/);
+    // PN-033 (شورا-ن۰۵۴): کلیدهای Worker حذف شدند — مسیر یگانه رلهٔ Termux
+    expect(env).not.toHaveProperty("MELK_ARM_PROXY_URL");
+    expect(env).not.toHaveProperty("MELK_RELAY_ALT_URL");
+    expect(env.MELK_ARM_CIRCUIT_DISABLED ?? "").toBe("1");
     expect(env.MELK_PUBLIC_BASE_URL ?? "").toMatch(/^https:\/\/preview-/);
   });
 });

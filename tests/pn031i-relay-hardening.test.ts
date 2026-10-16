@@ -123,11 +123,14 @@ describe("PN-031-I · ب) لایهٔ ۳ — مسیر جایگزین واکِر /
     expect(workerSrc).toContain('"path not allowed", 403');
   });
 
-  test("ب-۷: ثبت کلید MELK_RELAY_ALT_URL در escrow بوت (بقا در بازنشانی env)", () => {
+  test("ب-۷: (ن۰۵۴) MELK_RELAY_ALT_URL از escrow و env حذف شد — دوران Worker پایان یافت", () => {
     const bootSecrets = readFileSync(join(REPO, "src/lib/auth/boot-secrets.ts"), "utf8");
-    expect(bootSecrets).toContain('"MELK_RELAY_ALT_URL"');
+    expect(bootSecrets).not.toContain('"MELK_RELAY_ALT_URL"');
     const envPlatform = readFileSync(join(REPO, "env.platform.json"), "utf8");
-    expect(envPlatform).toContain('"MELK_RELAY_ALT_URL"');
+    expect(envPlatform).not.toContain('"MELK_RELAY_ALT_URL"');
+    // جایگزین بقای همان مسیر: خاموشی دائمی فیوز (کلید حیاتی تازه)
+    expect(bootSecrets).toContain('"MELK_ARM_CIRCUIT_DISABLED"');
+    expect(envPlatform).toContain('"MELK_ARM_CIRCUIT_DISABLED"');
   });
 
   test("ب-۸: bootstrap روت — altServerUrl هم به JSON اپ اندروید هم اسکریپت Termux", () => {
