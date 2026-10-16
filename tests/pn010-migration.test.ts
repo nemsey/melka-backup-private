@@ -7,10 +7,12 @@
  */
 
 import { describe, expect, test, beforeEach } from "bun:test";
-import { existsSync, statSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, statSync, readFileSync, rmSync, mkdirSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const { buildWorkerJobs, WORKER_JOB_IDS, REPO_ROOT } = await import("@/core/runtime/jobs");
-const { readWorkerStatus, writeWorkerStatus, RUNTIME_STATUS_DIR } = await import("@/core/runtime/worker-status");
+const { readWorkerStatus, writeWorkerStatus } = await import("@/core/runtime/worker-status");
 const { daemonHealth } = await import("@/lib/intelligence/daemon");
 const { catalogDaemonStatus } = await import("@/lib/melk-api/catalog-daemon");
 
@@ -149,15 +151,16 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
   });
 
   test("۴-۹ daemonHealth از کانال Worker می‌خواند (منبع حقیقت جابجا شده)", () => {
-    const statusFile = `${RUNTIME_STATUS_DIR}/runtime-status.json`;
-    const hadOriginal = existsSync(statusFile);
-    const original = hadOriginal ? readFileSync(statusFile, "utf-8") : null;
+    // PN-032 (قطعی‌سازی flake): دایرکتوری موقت — فایل وضعیت واقعی دیگر لمس نمی‌شود
+    // (Worker زنده هر ~۳۰ث ضربان می‌نویسد و با پنجرهٔ تست مسابقه می‌داد).
+    const tmpRepo = mkdtempSync(join(tmpdir(), "pn010-status-"));
+    mkdirSync(join(tmpRepo, "upload", ".runtime"), { recursive: true });
     // PN-024 (رفع نوسان دو-سبز): resolveStatusFile() از MELKA_REPO_DIR پیروی می‌کند؛
     // تست فایل phase9 این env را در پنجرهٔ ایزوله‌سازی خود تغییر می‌دهد — اگر دو فایل
     // هم‌پوشان شوند، نوشتنِ این تست به فایل واقعی ولی خواندن daemonHealth به مسیر
-    // ایزوله می‌رود (نوسان زندهٔ CI). قفل: env در طول همین تست به ریشهٔ واقعی سنجاق می‌شود.
+    // قفل PN-032: env در طول همین تست به دایرکتوری موقت سنجاق می‌شود (فایل واقعی دست‌نخورده).
     const prevRepoEnv = process.env.MELKA_REPO_DIR;
-    process.env.MELKA_REPO_DIR = "/home/z/my-project";
+    process.env.MELKA_REPO_DIR = tmpRepo;
     try {
       writeWorkerStatus({
         version: 1,
@@ -176,10 +179,9 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
       expect(cs.ticks).toBe(77);
       expect(cs.lastResult?.typeRegistriesSynced).toBe(2);
     } finally {
-      if (original !== null) writeFileSync(statusFile, original, "utf-8");
-      else if (existsSync(statusFile)) rmSync(statusFile);
       if (prevRepoEnv === undefined) delete process.env.MELKA_REPO_DIR;
       else process.env.MELKA_REPO_DIR = prevRepoEnv;
+      rmSync(tmpRepo, { recursive: true, force: true });
     }
   });
 
