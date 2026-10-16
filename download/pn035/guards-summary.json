@@ -1,8 +1,8 @@
 {
   "guardsPass": 42,
-  "guardsFail": 3,
-  "guardsTimeout": 0,
+  "guardsFail": 2,
+  "guardsTimeout": 1,
   "guardsTotal": 45,
-  "at": "2026-10-16T17:42:57Z",
+  "at": "2026-10-16T17:58:09Z",
   "phase": "PN-035 (شورا-ن۰۵۷)"
 }
