@@ -10,6 +10,12 @@
  *     امنیتی قبلی است؛ «فرم ورود مستقیم (بدون قفل)».
  * تنها سقف باقی‌مانده سهمیهٔ سمت خود ملک تبریز است (بیرون از حاکمیت ما).
  * recordAttempt تنها برای رد حسابرسی (AuditLog/OtpAttempt) می‌ماند — هرگز مسدود نمی‌کند.
+ *
+ * PN-035 (شورا-ن۰۵۷ · فاز ۳ · الگوی Async):
+ * این روت فوری {jobId} برمی‌گرداند (< ۱ ثانیه)؛ کارِ رله (ارسال پیامک از
+ * مسیر گوشی مالک) در پس‌زمینهٔ سرور انجام می‌شود و صفحهٔ OTP همان لحظه
+ * (eager) نمایش داده می‌شود و با /api/relay/job/{id} نتیجه را می‌خواند —
+ * پایان 502های دروازهٔ Z.ai روی جریان ورود (مشکل ۳ جلسهٔ ۰۵۷).
  */
 
 import { NextRequest } from "next/server";
@@ -20,6 +26,7 @@ import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse } from "@/lib/auth/guard";
 import { audit } from "@/lib/auth/session";
 import { clientIp } from "@/lib/auth/client-ip";
+import { startRelayJob } from "@/lib/melk-api/relay-jobs";
 
 export async function POST(request: NextRequest) {
   let personnelCode = "";
@@ -33,29 +40,39 @@ export async function POST(request: NextRequest) {
 
     const ip = clientIp(request) ?? "unknown"; // PN-008 BLOCK 3 — Trusted Proxy (تک‌نقطه تصمیم)
 
-    // ✅ فراخوانی واقعی سامانه ARM — پیامک از سمت ملک تبریز ارسال می‌شود
-    // (PN-034: بدون قفل تک‌باره، بدون سقف نرخ محلی — قانون صفر-محدودیت)
-    const provider = getMelkProvider();
-    const result = await provider.requestOtp(personnelCode, ip);
-
-    await recordAttempt(personnelCode, "REQUEST_OTP", true, ip);
-    await audit("OTP_REQUESTED", personnelCode, "arm.melketabriz.ir SMS dispatched");
-
-    return Response.json({
-      ok: true,
-      expiresInSeconds: result.expiresInSeconds,
-      source: "arm.melketabriz.ir",
+    // PN-035 (فاز ۳): پاسخ فوری — کار ارسال پیامک در پس‌زمینه؛
+    // اپ فیلد OTP را فوراً نشان می‌دهد (eager UI) و شغل را poll می‌کند.
+    const job = await startRelayJob({
+      type: "auth-start-otp",
+      personnelCode,
+      payload: { flow: "auth-request-otp" },
+      run: async () => {
+        // ✅ فراخوانی واقعی سامانه ARM — پیامک از سمت ملک تبریز ارسال می‌شود
+        // (PN-034: بدون قفل تک‌باره، بدون سقف نرخ محلی — قانون صفر-محدودیت)
+        try {
+          const provider = getMelkProvider();
+          const result = await provider.requestOtp(personnelCode, ip);
+          await recordAttempt(personnelCode, "REQUEST_OTP", true, ip);
+          await audit("OTP_REQUESTED", personnelCode, "arm.melketabriz.ir SMS dispatched");
+          return { result: { expiresInSeconds: result.expiresInSeconds, source: "arm.melketabriz.ir" } };
+        } catch (err) {
+          // رد حسابرسی شکست (سپرِ مسدودساز دیگر وجود ندارد — قانون صفر-محدودیت)
+          if (personnelCode) {
+            await recordAttempt(personnelCode, "REQUEST_OTP", false).catch(() => {});
+          }
+          if (err instanceof MelkApiError) throw err;
+          // خطای خام fetch به سامانه واقعی — پیام شفاف برای کاربر
+          const msg = (err as Error)?.message?.includes("fetch")
+            ? "ارتباط با سامانه ملک تبریز برقرار نشد. لطفاً اتصال شبکه و وضعیت سرورهای ملک تبریز را بررسی کنید."
+            : "خطای غیرمنتظره در صدور کد پیامکی.";
+          throw new MelkApiError("UNKNOWN", msg, 500, false);
+        }
+      },
     });
+
+    return Response.json({ ok: true, jobId: job.id, status: "queued", pollMs: 1000 });
   } catch (err) {
-    // رد حسابرسی شکست (سپرِ مسدودساز دیگر وجود ندارد — قانون صفر-محدودیت)
-    if (personnelCode) {
-      await recordAttempt(personnelCode, "REQUEST_OTP", false).catch(() => {});
-    }
     if (err instanceof MelkApiError) return errorResponse(err);
-    // خطای خام fetch به سامانه واقعی — پیام شفاف برای کاربر
-    const msg = (err as Error)?.message?.includes("fetch")
-      ? "ارتباط با سامانه ملک تبریز برقرار نشد. لطفاً اتصال شبکه و وضعیت سرورهای ملک تبریز را بررسی کنید."
-      : "خطای غیرمنتظره در صدور کد پیامکی.";
-    return errorResponse(new MelkApiError("UNKNOWN", msg, 500, false));
+    return errorResponse(new MelkApiError("UNKNOWN", "خطای غیرمنتظره در صدور کد پیامکی.", 500, false));
   }
 }
