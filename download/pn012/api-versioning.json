@@ -2,7 +2,7 @@
   "schema": "melka-pn012-api-versioning",
   "generatedAt": "2026-10-13T06:03:51Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 107,
+  "totalRoutes": 106,
   "created": 0,
   "routes": [
     {
@@ -44,10 +44,6 @@
     {
       "v1": "/api/v1/admin/memory/stats",
       "original": "/api/admin/memory/stats"
-    },
-    {
-      "v1": "/api/v1/admin/otp-burn",
-      "original": "/api/admin/otp-burn"
     },
     {
       "v1": "/api/v1/admin/personnel-access",

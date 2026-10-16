@@ -267,44 +267,43 @@ describe("PN-030 · C) نقطهٔ یگانهٔ خروج (client.ts)", () => {
   });
 });
 
-// ───────────────────── D) UI — تنظیمات عمومی (۵) ─────────────────────
+// ───────────────────── D) UI — (ن۰۵۵) حذف کامل «ورود مجدد» + احیای ARM مستقیم ─────────────────────
 
-describe("PN-030 · D) بخش «ورود مجدد به ملک تبریز» (مرحلهٔ ۶ سند)", () => {
-  const SEC = readFileSync(join(REPO, "src/core/tiles/tiles/settings/OtpReloginSection.tsx"), "utf8");
+describe("PN-030 · D) (ن۰۵۵) بخش «ورود مجدد» حذف کامل — جایگزین: اتصال مستقیم ARM (PN-034)", () => {
   const MELK_SECTION = readFileSync(join(REPO, "src/core/tiles/tiles/settings/MelkTabrizConnectionSection.tsx"), "utf8");
+  const ARM_SECTION = readFileSync(join(REPO, "src/core/tiles/tiles/settings/ArmConnectionSection.tsx"), "utf8");
 
-  test("D-1) بخش با عنوان سند موجود است", () => {
-    expect(existsSync(join(REPO, "src/core/tiles/tiles/settings/OtpReloginSection.tsx"))).toBe(true);
-    expect(SEC).toContain("ورود مجدد به ملک تبریز");
-    expect(SEC).toContain("PN-030");
+  test("D-1) (ن۰۵۵) بخش و روت تک‌تلاش — حذف کامل (قانون مالک: صفر محدودیت)", () => {
+    // سند ن۰۵۵: «بخش ورود مجدد به ملک تبریز کامل حذف شود زیرا خطای قفل میدهد»
+    expect(existsSync(join(REPO, "src/core/tiles/tiles/settings/OtpReloginSection.tsx"))).toBe(false);
+    expect(existsSync(join(REPO, "src/app/api/admin/otp-burn/route.ts"))).toBe(false);
   });
 
-  test("D-2) دکمهٔ «ارسال کد» → POST /api/admin/otp-burn با تأیید صریح (confirm: true)", () => {
-    expect(SEC).toContain('"/api/admin/otp-burn"');
-    expect(SEC).toContain("confirm: true");
-    // تأیید آگاهانه پیش از سوزاندن — AlertDialog (متن قفل ۶ ساعته)
-    expect(SEC).toContain("سوزاندن تک‌تلاش OTP؟");
-    expect(SEC).toContain("۶ ساعت");
+  test("D-2) (ن۰۵۵) فرم مستقیم احیا — ArmConnectionSection بدون هیچ قفلی (بدون otp-burn/confirm)", () => {
+    expect(ARM_SECTION).toContain('"/api/arm/connection"');
+    expect(ARM_SECTION).toContain('action: "start-otp"');
+    expect(ARM_SECTION).toContain('action: "verify"');
+    expect(ARM_SECTION).not.toContain("otp-burn");
+    expect(ARM_SECTION).not.toContain("confirm: true");
   });
 
-  test("D-3) فیلد کد → تأیید از مسیر استاندارد اتصال ARM (توکن ← نشست + Vault)", () => {
-    expect(SEC).toContain('"/api/arm/connection"');
-    expect(SEC).toContain('action: "verify"');
+  test("D-3) فرم مستقیم — روت استاندارد اتصال ARM (توکن ← نشست + Vault)", () => {
+    expect(ARM_SECTION).toContain('action: "verify"');
+    // Vault ماندگار + ریست (P6.5-09) پابرجا
+    expect(ARM_SECTION).toContain("durable");
+    expect(ARM_SECTION).toContain('action: "reset"');
   });
 
-  test("D-4) داخل پیکرهٔ «اتصال به ملک تبریز» رندر می‌شود — ساده‌شده (ن۰۵۴: بدون کارت Worker/آفلینی)", () => {
-    expect(MELK_SECTION).toContain('import { OtpReloginSection } from "./OtpReloginSection"');
-    expect(MELK_SECTION).toContain("<OtpReloginSection />");
-    // PN-033 (شورا-ن۰۵۴): کارت پروکسی ابری Worker + نشانگر حالت آفلینی از UI حذف شد
-    const sec = readFileSync(join(REPO, "src/core/tiles/tiles/settings/OtpReloginSection.tsx"), "utf8");
-    expect(sec).not.toContain("پروکسی ابری (لایهٔ ۱ شورا)"); // عنوان JSX کارت Worker حذف شد
-    expect(sec).not.toContain("حالت آفلینی تشخیصی");
-    expect(sec).toContain("کد پرسنلی");
+  test("D-4) (ن۰۵۵) داخل پیکرهٔ «اتصال به ملک تبریز» رندر می‌شود — توکار (embedded)", () => {
+    expect(MELK_SECTION).toContain('import { ArmConnectionSection } from "./ArmConnectionSection"');
+    expect(MELK_SECTION).toContain("<ArmConnectionSection embedded />");
+    expect(MELK_SECTION).not.toContain("OtpReloginSection");
   });
 
-  test("D-5) فقط نقش OWNER — مکانیزم تک‌تلاش برای مشاوران رندر نمی‌شود", () => {
-    expect(SEC).toContain('role !== "OWNER"');
-    expect(SEC).toContain('return null');
+  test("D-5) (ن۰۵۵) صفر محدودیت روی مسیر — سقف نرخ start-otp/verify از روت اتصال ARM برافتاد", () => {
+    const ROUTE = readFileSync(join(REPO, "src/app/api/arm/connection/route.ts"), "utf8");
+    expect(ROUTE).not.toContain("checkRate");
+    expect(ROUTE).toContain("صفر محدودیت اتصال");
   });
 });
 

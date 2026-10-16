@@ -117,15 +117,13 @@ describe("HOTFIX-04/B1 — try/catch روت‌ها با پاکت فارسی", ()
 // B2 — قفل خود-تمدیدشونده RATE_LIMITED
 // ==========================================================================
 
-describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی‌کند", () => {
-  test("request-otp: ۵ تلاش سریع → ۳ اول موفق، ۴ و ۵ RATE_LIMITED و رکورد شکست جدید ساخته نمی‌شود", async () => {
+describe("HOTFIX-04/B2 — (ن۰۵۵) قانون مالک: صفر محدودیت اتصال — مسیرهای ورود بدون قفل", () => {
+  test("request-otp: (ن۰۵۵) ۵ تلاش سریع → همهٔ ۵ به سامانه واقعی می‌رسند (صفر 429 محلی · PN-034)", async () => {
     const { NextRequest } = await import("next/server");
     const { getMelkProvider } = await import("@/lib/melk-api/provider");
     const route = await import("@/app/api/auth/request-otp/route");
     const code = TEST_PERSONNEL[0];
     await db.otpAttempt.deleteMany({ where: { personnelCode: code } });
-    // PN-029 — پاک‌سازی قفل تک‌وراث OTP از اجراهای پیشین تست (قفل ۶ ساعتهٔ مانا)
-    await db.otpRateLimit.deleteMany({ where: { scope: { in: [`code:${code}`, "ip:unknown"] } } });
 
     // شبیه‌سازی موفقیت ارسال پیامک (بدون شبکه واقعی)
     const provider = getMelkProvider();
@@ -146,29 +144,17 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
       provider.requestOtp = original;
     }
 
-    // پیکربندی PN-029 (شورا-ن۰۳۳ · مرحلهٔ ۸): مکانیزم OTP تک‌واره —
-    // تلاش نخست موفق، تلاش‌های بعدی تا ۶ ساعت با OTP_LOCKED (429) رد می‌شوند
-    expect(statuses[0]).toBe(200);
-    expect(statuses.slice(1, 5)).toEqual([429, 429, 429, 429]);
+    // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال): قفل تک‌بارة PN-029
+    // و سقف نرخ محلی (۳/۱۰ دقیقه) هر دو برافتادند — هر ۵ تلاش به سامانه
+    // واقعی رسیدند (۲۰۰). تنها سقف باقی‌مانده سهمیهٔ سمت ملک تبریز است.
+    expect(statuses).toEqual([200, 200, 200, 200, 200]);
 
-    // هستهٔ رفع باگ پابرجاست: تلاش‌های «ردشده توسط قفل» رکورد شکست جدید نساخته‌اند
+    // رد حسابرسی هر ۵ تلاش ثبت شده (recordAttempt دیگر مسدودکننده نیست — فقط شاهد)
     const attempts = await db.otpAttempt.count({ where: { personnelCode: code, kind: "REQUEST_OTP" } });
-    expect(attempts).toBe(1); // فقط تلاش نخست (OTP_LOCKED رکورد نمی‌سازد)
-
-    // تلاش ششم و هفتم هم RATE_LIMITED (قفل جدیدی ایجاد نشد ولی قفل موجود پابرجاست)
-    for (let i = 0; i < 2; i++) {
-      const req = new NextRequest("http://localhost/api/auth/request-otp", {
-        method: "POST",
-        body: JSON.stringify({ personnelCode: code }),
-      });
-      const res = await route.POST(req);
-      expect(res.status).toBe(429);
-    }
-    const attemptsAfter = await db.otpAttempt.count({ where: { personnelCode: code, kind: "REQUEST_OTP" } });
-    expect(attemptsAfter).toBe(1); // همچنان ۱ — قفل ۶ساعتهٔ PN-029 پابرجا؛ پنجرهٔ لغزان محدودساز ثابت مانده
+    expect(attempts).toBe(5);
   });
 
-  test("verify-otp: ۵ شکست متوالی → قفل؛ تلاش‌های بیشتر در حالت قفل رکورد نمی‌سازند", async () => {
+  test("verify-otp: (ن۰۵۵) ۷ شکست متوالی → همه به سامانه واقعی می‌رسند (۴۰۱) — صفر 429 محلی", async () => {
     const { NextRequest } = await import("next/server");
     const { getMelkProvider } = await import("@/lib/melk-api/provider");
     const { MelkApiError } = await import("@/lib/melk-api/types");
@@ -197,14 +183,13 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
       provider.verifyOtp = original;
     }
 
-    // ۵ شکست واقعی (401) سپس قفل (429)
-    expect(statuses.slice(0, 5)).toEqual([401, 401, 401, 401, 401]);
-    expect(statuses[5]).toBe(429);
-    expect(statuses[6]).toBe(429);
+    // (ن۰۵۵ · قانون صفر-محدودیت): هر ۷ شکست به سامانه واقعی رسیدند (۴۰۱) —
+    // سقف نرخ محلی VERIFY_OTP برافتاد؛ قفل خود-تمدیدشونده دیگر اصلاً وجود ندارد
+    expect(statuses).toEqual([401, 401, 401, 401, 401, 401, 401]);
 
-    // هسته رفع باگ: فقط ۵ رکورد شکست وجود دارد — تلاش ۶ و ۷ (RATE_LIMITED) رکورد نساخته‌اند
+    // رد حسابرسی هر ۷ شکست ثبت شده (شاهد — نه سپر)
     const fails = await db.otpAttempt.count({ where: { personnelCode: code, kind: "VERIFY_OTP", success: false } });
-    expect(fails).toBe(5); // قبل از رفع: 7 می‌شد
+    expect(fails).toBe(7);
   });
 });
 

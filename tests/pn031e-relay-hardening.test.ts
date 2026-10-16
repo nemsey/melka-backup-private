@@ -161,10 +161,12 @@ describe("PN-031-E · E) پابرجایی قرارداد امنیتی (هیچ‌
     expect(script).toContain("امضای سرور نامعتبر");
   });
 
-  test("E-5: دستور نصب یک‌خطی همان قرارداد بوت‌استرپ است", () => {
+  test("E-5: (ن۰۵۵) دستور نصب یک‌خطی همان قرارداد بوت‌استرپ است — openssl-tool (مسیر اثبات‌شدهٔ مالک)", () => {
     const cmd = buildInstallCommand("https://x.example/", "abc123");
     expect(cmd).toContain("/api/mobile-relay/bootstrap?code=abc123");
-    expect(cmd).toContain("pkg install -y curl openssl jq");
+    // PN-034 (شورا-ن۰۵۵): openssl-tool — بستهٔ CLI واقعی Termux؛ مسیر اثبات‌شدهٔ
+    // مالک در PN-031-I/J (pkg install -y openssl-tool → پیست → Enter → اتصال ✓)
+    expect(cmd).toContain("pkg install -y curl openssl-tool jq");
   });
 
   test("E-6: مقدارهای تزریقی پاک‌سازی می‌شوند — خطوط انتساب فقط نویسهٔ امن دارند", () => {
