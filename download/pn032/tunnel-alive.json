@@ -1,14 +1,28 @@
 {
   "phase": "PN-032 گام ۳.۳ — تأیید تونل زنده پس از ری‌استارت (اجرای واقعی اسکریپت نسل I از URL عمومی)",
-  "at": "2026-10-16T09:12:07Z",
-  "durationSec": 75,
-  "liveBuildId": "18ee781-20261016-0907",
-  "device": "pn-032-tunnel-gate-e79f4a",
-  "connectConfirmed": 1,
-  "networkErrors": 0,
-  "serverErrors": 0,
-  "debugLogBytes": 11710,
-  "secretLeaks": 0,
+  "runs": [
+    {
+      "at": "2026-10-16T09:13:30Z",
+      "durationSec": 75,
+      "liveBuildId": "18ee781-20261016-0907",
+      "context": "پس از ری‌استارت گام ۳ (سرور 09:08 · Worker 09:11)",
+      "connectConfirmed": 1,
+      "networkErrors": 0,
+      "serverErrors": 0,
+      "secretLeaks": 0,
+      "debugLogBytes": 11733
+    },
+    {
+      "at": "2026-10-16T09:34:00Z",
+      "durationSec": 35,
+      "liveBuildId": "9259a0c-20261016-0928",
+      "context": "پس از بیلد نهایی از HEAD قطعی + ری‌استارت نهایی (سرور 09:33 · پس از واقعهٔ بازگشت یازدهم و بازیابی)",
+      "connectConfirmed": 1,
+      "networkErrors": 0,
+      "serverErrors": 0,
+      "secretLeaks": 0
+    }
+  ],
   "ownerWitness": "جلسهٔ ۰۵۲: اپ ملکا «تونل زنده است» · HTTP 404 در ۴۰۲۱ms · دستگاه poco-f3-42f475 (IP ایرانی)",
   "testDeviceRevoked": true,
   "verdict": "PASS"
