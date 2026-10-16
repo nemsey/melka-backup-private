@@ -2021,7 +2021,43 @@ model RelayQueue {
   /// منبع ثبت: armCall (تولید واقعی) | gate-test (تست دروازهٔ مالک)
   source      String    @default("armCall")
 
-  @@index([status, enqueuedAt])
+  /// PN-035 (شورا-ن۰۵۷) — اولویت صف: OTP=۵ (تعاملی) · ۰=پیش‌فرض (سینک/سایر).
+  /// کارگر گوشی در هر poll دستهٔ batch را با ترتیب priority DESC می‌گیرد.
+  priority    Int       @default(0)
+
+  @@index([status, priority, enqueuedAt])
   @@index([fingerprint, enqueuedAt])
   @@index([claimedBy, dispatchedAt])
+}
+
+/// PN-035 (شورا-ن۰۵۷ · سنتز پنج تحلیل) — کار async رله:
+/// درخواست‌های app→server (start-otp/verify و…) «فوری» jobId می‌گیرند (< ۱ ثانیه)
+/// و کارِ طولانیِ رله در پس‌زمینهٔ سرور انجام می‌شود؛ اپ با polling وضعیت را
+/// می‌خواند. این الگو هر گره HTTP را از دروازهٔ Z.ai (< ۳۰-۶۰ث) کوتاه نگه می‌دارد.
+model RelayJob {
+  id          String    @id @default(cuid())
+  /// نوع کار: auth-start-otp | auth-verify-otp | arm-start-otp | arm-verify | pm-start-otp | pm-verify
+  type        String
+  /// queued | running | done | failed | consumed
+  status      String    @default("queued")
+  /// نشستِ صاحب کار (برای مسیرهای نشست‌دار — تأیید هویت هنگام polling)
+  sessionId   String?
+  personnelCode String?
+  /// ورودی کار (JSON — بدون راز)
+  payloadJson String?
+  /// نتیجهٔ غیرحساس کار (JSON — پیام/نمایش)
+  resultJson  String?
+  /// نتیجهٔ حساس (AES-256-GCM با MELK_TOKEN_KEY — فقط یک‌بار در polling باز می‌شود)
+  resultEnc   String?
+  error       String?
+  errorCode   String?
+  httpStatus  Int?
+  /// یک‌بارمصرف‌بودن نتیجهٔ حساس (پس از نخستین خواندن موفق)
+  consumedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([expiresAt])
 }
