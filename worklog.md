@@ -3536,3 +3536,54 @@ Stage Summary:
 - درس‌های ماندگار: (۱) کامیت زودهنگام + پوش فوری آینه تنها سپر درخت کار در برابر reset-guard است (۲) قفل مکانیزمی را سه‌لایه بکش: کد+روت+جدول (۳) CLI ترموکس در openssl-tool است نه openssl (۴) تست تاریخی به‌روزرسانی می‌شود نه حذف (۵) reset-guard BUILD-STALE را باید پیش از فعال‌کاری صفر کرد
 - انتظار مالک: اتصال برقرار است · ورود: تنظیمات ← اتصال به حساب شخصی ARM ← کدپرسنلی ۴۱۰۰۳۱۳۲۰ ← دریافت کد پیامکی (بدون قفل) · در ری‌استارت Termux: تولید کد نصب ← pkg install -y openssl-tool ← پیست ← Enter
 - بستهٔ ۳۸ پس از این ثبت مهر شده (۴۹۹ قلم) — بیلد نهایی از HEAD همین کامیت
+
+---
+Task ID: PN-035 (کامل)
+Agent: main (Super Z / GLM)
+Task: اجرای کامل سفارش PN-035 (شورا-ن۰۵۷ · ملکا-شورا-ن۰۵۷-۱۴۰۵) — تکمیل ماتریس رله + پایان 502 دروازهٔ Z.ai
+
+Work Log:
+- قفل ورود و ریشهٔ ناتمامی: HEAD=46964dc (سه کامیت سروری جلسهٔ قبل) · آینه همگام · کشف علت ناتمام ماندن سند: سه بیلد head-guard پیاپی شکسته (14:52/15:22/15:53 — «TypeError: generate is not a function» گذرا) → بیلد دستی سبز شد (۹۶ث) · بیلد زنده 2fe376d = BUILD-STALE
+- فاز ۱+۲+۵+۶ کلاینت — اسکریپت رله نسل J (relay-script.ts): پالایش روش GET/POST/PUT/DELETE/PATCH (رد بی‌اجرا + گزارش «method not allowed») + بدنه (--data-binary) + poll دسته‌ای {"wait":20,"batch":100} + خواندن items[] با سازگاری عقبه (request تک‌آیتمی) + موج‌های ۸ کارگر موازی + ادغام jq -sc با نام‌گذاری صفرپرشدهٔ فایل‌های نتیجه (ترتیب قطعی) + «یک POST برای کل موج» + post_results با retry×۳ (backoff ۲/۶ث) + triage رد قطعی (پاسخ JSON بدون retry/ذخیره) + ذخیرهٔ محلی ~/failed-results.jsonl (TTL ۶۰۰ث · سقف ۲۰۰ ردیف) + replay_failed_results در هر چرخه + gzip بدنه‌های >۱KB (signed_curl_file — امضا روی بایت‌های فشردهٔ سیم) + تنفس ۱ث حلقه (پایان چرخش بی‌مکث) + میراث کامل نسل I (http1.1 · UA بروزری · نردبان retry · سقف نرخ ۵/۶۰ث · نبض نسخه · مسیر جایگزین · redact امضا)
+- فاز ۴ کلاینت — Eager UI: helper مشترک pollRelayJob (src/lib/client/relay-job.ts · done/failed/expired · 404→JOB_GONE · 403→JOB_FOREIGN · تاب‌آوری خطای گذرا) + AuthScreen (گذار فوری به OTP + toast «در حال ارسال پیامک…» + poll پس‌زمینه) + OtpScreen (verify از مسیر راز یک‌بارمصرف · consumed = «کد قبلاً بررسی شد» · resend خوش‌بینانه) + ArmConnectionSection/PmConnectionSection (فیلد OTP فوری + polling نتیجه/verify + سازگاری عقبهٔ پاسخ سنک)
+- رفع رگرسیون‌های کامیت‌های ناتمام جلسهٔ قبل (تست‌ها هرگز اجرا نشده بودند): واژهٔ rawBody در کامنت relay.ts (قانون صفر لاگ محتوا · تست‌های pn031e/g C-4) · آینهٔ v1 روت /api/relay/job/[id] + مانیفست api-versioning ۱۰۶→۱۰۷ · توازن اسکیما ۶۸→۶۹ (+۱ RelayJob · pn022/pn023a/meta-mind) · pn031 B-3/B-4 (claim مستلزم دستگاه ثبت‌شده — شناسهٔ برگشتی createRelayDevice با پسوند) · pn031e G-2 (مسیرهای نسبی دو تابع حمل‌ونقل) · pn031g D-1 (مجموعهٔ متمایز هدرها = ۳ در دو تابع) · hotfix04 B2 (الگوی async + درین کارها با provider شبیه‌سازی قبل از بازگردانی)
+- تست‌های تازه: tests/pn035-relay-async.test.ts (۲۵) — A) ساختار نسل J (۱۱) · B) اجرای واقعی bash در برابر سرور آزمایشی ThreadingHTTPServer با قرارداد امضای کامل python-hmac=node-HMAC (۴: دستهٔ ۳۰تایی → یک POST gzip با X-Melka-Signature معتبر روی بایت فشرده · garbage×۳ → ذخیره محلی · بازپخش + پاک‌سازی فایل · رد قطعی بدون retry) · C) pollRelayJob (۵) · D) RelayJob (۵: فوری <۱ث · failed با کد/وضعیت · راز یک‌بارمصرف consumed · مالکیت نشست ۴۰۳ · TTL ۱۰د) — + جدول RelayJob به test.db push شد
+- درس‌های دیباگ تست: خواندن کامل stdout فرزند زنده تا ابد معلق می‌ماند (reader.read() فقط خط اول) · سرور آزمایشی تک‌رشته‌ای + keep-alive = بن‌بست (ThreadingHTTPServer) · ترتیب glob لغوی 1,10,11..2,20 (صفرپرش) · زامبی‌های بین‌اجرایی (pkill در beforeAll) · serve-once در stub (رفتار سرور واقعی: آیتم dispatched دوباره داده نمی‌شود)
+- فاز ۷ — پایدارسازی: دو-سبز ۲۸۰۳/۰ ×۲ یکسان (رکورد · قبلی ۲۷۷۸) · tsc صفر · lint صفر خطا (۹ هشدار تاریخی) · کامیت 737e54e + پوش فوری آینه (درس ۵ PN-032) · بیلد 737e54e-20261016-1724 · ری‌استارت سرور (watchdog) + Worker · health ۲۰۰
+- دروازه‌های زنده از URL عمومی: async ۱۷۹ms POST request-otp → {ok, jobId} (سنجهٔ <۱ث · قبلاً 502@90ث) · قرارداد job (failed با error ساختاریافته — رله مالک آفلاین: fallback مستقیم تلاش شد) · id کوتاه → 400 · /result بدون احراز → 403+missing[هرسه] · با دستگاه جعلی → 403+missing[ts,sig] · اسکریپت نسل J ۷۵ث از bootstrap عمومی → «ساعت با سرور همگام شد ✓» + «✓ اتصال تأیید شد — رلهٔ ملکا فعال است (مسیر اصلی)» · نشت راز ×۰ (امضا redact ×۴) · دستگاه آزمایشی pn035-live-gate-549d44 ابطال + حذف فیزیکی (انوار: صفر ردیف ابطال‌شده)
+- بنچمارک ظرفیت (سنجهٔ ۷): سرور enqueue100=۱۶۳ms · claim100=۷۵ms · complete100=۲۰۲ms (۴.۴ms/رکورد) · گوشی jqMerge1000=۱۶ms · gzip=۳ms (÷۱۴ حجم) → ۱۰۰۰ رکورد ≈ ۴.۴ث (هدف <۳۰ث · PASS)
+- گارد ۴۵m تازه: scripts/audit-relay-matrix.sh (۲۶ چک: نسل J ×۸ · async×۵ · RelayJob×۳ · Eager UI×۶ · مسیرها×۴ · نحو bash) · run-guards pn035 · meta-mind به ۶۹ مدل
+- Eager UI اثبات زنده: agent-browser — کدپرسنلی → submit → {eagerOtpScreen:true, otpInputVisible:true, sendingToast:true} + اسکرین‌شات ui-eager-otp.png + ui-connection-eager.png
+- کد تازهٔ مالک: poco-f3-owner-341e60 (۳/۳ تلاش · ۳۰ دقیقه) — راز فقط در download/pn035/fresh-install-code.json + پیام مستقیم مالک
+- بقای chainIndex=۳۹ (upload/.survival/PN-040-20261016 · ۵۱۳ قلم · ۵۴۲MB · VACUUM گرم ۳۱۵.۵MB integrity=ok · ۶۹ جدول · relayJobs=۳ · لنگر sha256 مانیفست ۳۸=dba2e70d) · EVENTS.md روایت هفت‌فازی
+- تحویل: download/pn035/ (گزارش نهایی هشت‌بخشی · ۸ شاهد JSON · ۲ اسکرین‌شات · SHA256SUMS) + scripts/pn035/ (stub · run-guards · survival-39 · benchmark · evidence · ui-shot)
+
+Stage Summary:
+- هر هفت فاز سند ۰۵۷ کامل و شاهددار: POST (پالایش+بدنه) · مسیر برگشت (TTL۱۲۰+احیا+retry+ذخیره+بازپخش+triage) · سقف دروازه (Async jobId فوری ۱۷۹ms) · long-poll (batch=۱۰۰+سازگاری عقبه) · Eager UI (چهار نقطه) · gzip (÷۱۴) · پایدارسازی (دو-سبز رکورد ۲۸۰۳ · گارد ۴۵/۴۵ · BUILD_ID=HEAD · بستهٔ ۳۹)
+- سه ریشهٔ روی‌هم‌افتاده بسته شد؛ نرخ‌های سند: OTP <۵ث (مسیر رله) · اتصال <۱۰ث · ۱۰۰۰ رکورد ۴.۴ث
+- انتظار مالک: Termux → پیست دستور نصب از fresh-install-code.json → «✓ اتصال تأیید شد» (نسل J) → اپ → کدپرسنلی ۴۱۰۰۳۱۳۲۰ → فیلد OTP فوری → پیامک → تأیید — پاسخ 502 دیگر رخ نمی‌دهد
+- درس‌های ماندگار: (۱) کامیت بدون دو-سبز همان جلسه = نیم‌کاره (۲) «generate is not a function» گذرای تکرارشونده — بیلد دستی سپر (۳) خواندن جریان فرزند زنده فقط خط اول (۴) stub تک‌رشته‌ای + keep-alive بن‌بست — ThreadingHTTPServer (۵) دستگاه آزمایشی ابطال‌شده اناور را می‌شکند — حذف فیزیکی پس از دروازه
+
+---
+Task ID: PN-036 (کامل)
+Agent: main (Super Z / GLM)
+Task: اجرای کامل سفارش PN-036 (شورا-ن۰۵۸ · ملکا-شورا-ن۰۵۸-۱۴۰۵) — jq + timeout + PM endpoint + پایان بازپخش بی‌پایان
+
+Work Log:
+- قفل ورود: بکاپ گرم VACUUM backups/pre-pn036-20261016201758.Z.db (md5 9091102d · integrity ok) · HEAD · health 200 · گارد ۴۵/۴۵ پس از پاک‌سازی فایل سرگردان staging
+- حادثهٔ rollback سیزدهم: کامیت خودکار 822820d در واقع کار نیمه‌کارهٔ جلسهٔ مردهٔ PN-036 بود (۴۴۰ خط در ۴۰ فایل — نسل K + بودجه‌ها + pageSize + تست‌های اولیه)؛ reset-guard در 20:24 درخت را به 4e6cfe3 برگرداند — بازیابی صادقانه: git checkout 822820d -- فایلهای سورس (صفر دادهٔ ازدست‌رفته) · فایل سرگردان PN-036-PRE-20261016.db (۳۱۷MB) به backups/ منتقل شد → گارد دیسک FAIL→PASS
+- فاز ۳ (کشف مهم): مسیر PM درست بود — شاهد ۴۱۲ واقعی سامانه PM در صف رله («کد تایید قبلا ارسال شده است») = پیامک PM واقعاً ارسال می‌شد؛ ریشه: بودجهٔ min(cfg,20s) + گرسنگی صف (۴۳۰ expired) + شکست خاموش upsertPmConnection (جدول خالی)
+- نسل K (relay-script.ts): jq --rawfile برای b64 (رفع ARG_MAX خط ۳۷۱) + ادغام cat|jq stdin · BATCH=20 + Express lane (OTP جدا/مقدم/POST جدا) · مهلت تطبیقی ۱۵/۶۰ث + تلاش دوم خطای ۲۸ (۵ث) · لاگ زمان هر آیتم (روش+مسیر+کد+مدت)
+- پایان بازپخش بی‌پایان (شکایت ۴ مالک): post_results قرارداد سه‌حالته — rc=2 رد قطعی = حذف ردیف در replay + حالت nostore (نه دوبرابرشدن ردیف) · تست B-5 رفتار را قفل کرد
+- سرور: cfg.interactiveTimeoutMs (env MELK_INTERACTIVE_TIMEOUT_MS · ۹۰ث prod · ۳۰۰ms تست — قرارداد شکست‌سریع PN-013/D5 در preload-guard) در provider (requestOtp/verifyOtp) + pm route · upsertPmStatus با ۴ تلاش + لاگر رسمی (قانون کنسول-فقط-در-لاگر) · poll اپ ۶۰→۱۲۰/۱۵۰ · pageSize ۵۰/۵۰ · مهلت ۷۵ث · RELAY_WAIT ۱۱۰ث
+- پایدارسازی: دو-سبز ۲۸۱۱/۰ ×۲ یکسان (رکورد · +۸: K-1..K-7 + B-5) · tsc صفر · lint صفر · گارد ۴۵/۴۵ (relay-matrix ۳۳/۳۳ به K) · کامیت 321bb58 + پوش فوری آینه · بیلد 321bb58-20261016-2158=HEAD · health 200 · دروازهٔ async گرم 18ms
+- بقای chainIndex=۴۰ (upload/.survival/PN-041-20261016 · ۵۱۲ قلم · ۵۴۵MB · VACUUM گرم integrity ok · ۶۹ جدول · لنگر 49d1b391 به مانیفست ۳۹) · زنجیره REPRODUCIBLE ✓ ۶/۶
+- کد نصب تازهٔ مالک: poco-f3-38767e · راستی‌آمایی اسکریپت سرو‌شده از URL عمومی ۶/۶ نشانگر نسل K ✓
+- تحویل: download/pn036/ (گزارش نهایی ۸-بخشی · ۷ شاهد JSON · guards · SHA256SUMS) + scripts/pn036/
+
+Stage Summary:
+- هر چهار ریشهٔ جلسهٔ ۰۵۸ بسته شد: jq ARG_MAX (rawfile+stdin) · curl 28 (۶۰ث+retry) · گرسنگی TTL (batch ۲۰+express lane) · بازپخش بی‌پایان (rc=2+nostore)
+- PM بدون تغییر مسیر درمان شد (مسیر درست بود؛ بودجه/گرسنگی/شکست خاموش مُرد) · ARM پی‌ریزی نسل K با pageSize ۵۰
+- درس‌های ماندگار: (۱) کامیت خودکار Worker کار جلسهٔ مرده را نجات می‌دهد — بازیابی از reflog (۲) بودجهٔ سخت‌کد قرارداد شکست‌سریع تست را می‌شکند — env-محور (۳) رد قطعی ≠ شکست گذرا — replay سه‌حالته (۴) فایل سرگردان staging گارد دیسک را می‌شکند (۵) تستهای فرایند-زنده زیر بار ~۳۰ث واریانس — مهلت سخاوتمندانه
+- انتظار مالک: Termux ← Ctrl+C ← پیست دستور نصب از fresh-install-code.json ← «✓ اتصال تأیید شد» (نسل K) ← اپ ← PM: کدپرسنلی ۴۱۰۰۳۱۳۲۰ ← ارسال کد — فیلد OTP فوری؛ سپس ARM/فهرستها
+- گوشی فعلاً روی نسل J زنده است و صف را سرو می‌کند (۴ کار auth-start-otp امروز done) — دروازه‌های زندهٔ نهایی ۳/۴/۷ پس از نصب K مالک ثبت می‌شوند

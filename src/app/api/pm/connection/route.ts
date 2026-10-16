@@ -29,6 +29,49 @@ import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { MELK_ENDPOINTS } from "@/lib/melk-api/endpoints";
 import { clientIp } from "@/lib/auth/client-ip";
 import { startRelayJob } from "@/lib/melk-api/relay-jobs";
+import type { PmConnectionUpsertInput } from "@/core/repositories";
+
+/**
+ * PN-036 (شورا-ن۰۵۸ · فاز ۳) — بودجهٔ رله برای جریان PM.
+ * قبلاً min(cfg,۲۰ث) بود: رفت‌وبرگشت رله (صف + poll گوشی + curl + ارسال نتیجه)
+ * در شلوغی صف بیش از ۲۰ث می‌شد و کارِ پیامک PM با «ارتباط برقرار نشد» می‌مُرد
+ * (شاهد زنده: کار pm-start-otp ساعت ۱۸:۵۵ سرور رد شد در حالی که پیامک PM
+ * واقعاً ارسال شده بود — پاسخ ۴۱۲ سامانه PM: «کد تایید قبلا ارسال شده است»).
+ * اکنون cfg.interactiveTimeoutMs (۹۰ث پیش‌فرض · env MELK_INTERACTIVE_TIMEOUT_MS —
+ * محیط تست ۳۰۰ms شکست‌سریع PN-013/D5) — زیر TTL صف (۱۲۰ث)؛ جریان async است.
+ */
+
+/**
+ * PN-036 (شورا-ن۰۵۸ · فاز ۳) — نوشتن وضعیت PM با تاب‌آوری.
+ * ریشهٔ باگ: upsert تک‌تلاشی زیر بار نوشتنِ همزمان صف رله با SQLITE_BUSY/P2024
+ * شکست می‌خورد و «بی‌صدا» (.catch(() => undefined)) می‌رفت — جدول PmConnection
+ * پس از یک جلسهٔ کامل مالک خالی ماند (شاهد زندهٔ ۱۴۰۵/۰۷/۲۶). سه تلاش با
+ * فاصلهٔ صعودی + هشدار لاگ در شکست نهایی — دیگر هیچ شکستی خاموش نیست.
+ */
+async function upsertPmStatus(input: PmConnectionUpsertInput): Promise<void> {
+  const repo = getIntegrationRepository();
+  const delays = [250, 750, 2000];
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      await repo.upsertPmConnection(input);
+      return;
+    } catch (err) {
+      if (attempt === delays.length) {
+        const { logEvent } = await import("@/lib/logger");
+        logEvent({
+          level: "error",
+          category: "sync",
+          operation: "pm-connection-upsert",
+          status: "fail",
+          errorCode: "PM_STATUS_WRITE_FAILED",
+          detail: { error: err instanceof Error ? err.message : String(err), attempts: delays.length + 1 },
+        });
+        return;
+      }
+      await new Promise((r) => setTimeout(r, delays[attempt]));
+    }
+  }
+}
 
 /** وضعیت اتصال PM */
 async function getStatus() {
@@ -87,11 +130,11 @@ export async function POST(request: NextRequest) {
               method: "GET",
               path: MELK_ENDPOINTS.pm.requestOtp(code),
               baseUrl: cfg.pmApiBase,
-              timeoutMs: Math.min(cfg.timeoutMs, 20000),
+              timeoutMs: cfg.interactiveTimeoutMs,
               maxRetries: 1,
             });
             await recordAttempt(code, "REQUEST_OTP_PM", true, ip);
-            await getIntegrationRepository().upsertPmConnection({
+            await upsertPmStatus({
               status: "pending",
               personnelCode: code,
               lastError: null,
@@ -103,9 +146,7 @@ export async function POST(request: NextRequest) {
             // P6.5-09 — «پیامک قبلاً ارسال شده» (مثلاً اتصال ARM همین حالا) ⇒ نرم‌موفق
             const sms = classifySmsSendFailure(e.message);
             if (sms.kind === "ALREADY_SENT") {
-              await getIntegrationRepository()
-                .upsertPmConnection({ status: "pending", personnelCode: code, lastError: null })
-                .catch(() => undefined);
+              await upsertPmStatus({ status: "pending", personnelCode: code, lastError: null });
               await audit("PM_OTP_ALREADY_SENT", auditActor, `code=${code}`);
               return { result: { alreadySent: true, message: sms.userMessage } };
             }
@@ -113,13 +154,11 @@ export async function POST(request: NextRequest) {
             if (sms.kind === "LIMIT_REACHED") {
               throw new MelkApiError("SMS_LIMIT_REMOTE", sms.userMessage, 429, false);
             }
-            await getIntegrationRepository()
-              .upsertPmConnection({
-                status: "error",
-                personnelCode: code,
-                lastError: e.message,
-              })
-              .catch(() => undefined);
+            await upsertPmStatus({
+              status: "error",
+              personnelCode: code,
+              lastError: e.message,
+            });
             throw new MelkApiError("UNKNOWN", `ارسال پیامک PM ناموفق بود: ${e.message}`, 502, false);
           }
         },
@@ -155,7 +194,7 @@ export async function POST(request: NextRequest) {
               path: MELK_ENDPOINTS.pm.verifyOtp,
               baseUrl: cfg.pmApiBase,
               body: { code, otpCode: otp },
-              timeoutMs: Math.min(cfg.timeoutMs, 20000),
+              timeoutMs: cfg.interactiveTimeoutMs,
               maxRetries: 1,
             });
             const data = res.data;
@@ -165,7 +204,7 @@ export async function POST(request: NextRequest) {
             const displayName =
               data.user?.fullName ?? data.user?.name ?? [data.user?.firstName, data.user?.lastName].filter(Boolean).join(" ") ?? data.user?.username ?? code;
             await recordAttempt(code, "VERIFY_OTP_PM", true, ip);
-            await getIntegrationRepository().upsertPmConnection({
+            await upsertPmStatus({
               status: "connected",
               personnelCode: code,
               displayName: displayName || code,
@@ -180,13 +219,11 @@ export async function POST(request: NextRequest) {
             const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error).message, 502, false);
             // P6.5-09 — تأیید ناموفق در سبد مستقل PM ثبت می‌شود
             await recordAttempt(code, "VERIFY_OTP_PM", false, ip).catch(() => undefined);
-            await getIntegrationRepository()
-              .upsertPmConnection({
-                status: "error",
-                personnelCode: code,
-                lastError: e.message,
-              })
-              .catch(() => undefined);
+            await upsertPmStatus({
+              status: "error",
+              personnelCode: code,
+              lastError: e.message,
+            });
             throw e;
           }
         },
