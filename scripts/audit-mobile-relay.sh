@@ -108,7 +108,9 @@ rg -q 'relay-debug\.log' src/lib/melk-api/relay-script.ts && rg -q 'redacted' sr
 rg -q 'version_ping' src/lib/melk-api/relay-script.ts && ok "قانون I: نبض نسخه (سلف-پینگ بیرونی)" || fail "نبض نسخه غایب"
 rg -q 'ALT_FAIL_THRESHOLD=3' src/lib/melk-api/relay-script.ts && ok "قانون I: سوئیچ مسیر جایگزین پس از ۳ خطا" || fail "آستانهٔ سوئیچ غایب"
 rg -q 'altServerUrl' src/app/api/mobile-relay/bootstrap/route.ts && ok "قانون I: bootstrap مسیر جایگزین را تزریق می‌کند" || fail "تزریق altServerUrl غایب"
-rg -q '"MELK_RELAY_ALT_URL"' src/lib/auth/boot-secrets.ts && ok "قانون I: بقای مسیر جایگزین در escrow" || fail "کلید مسیر جایگزین در escrow غایب"
+# PN-033 (شورا-ن۰۵۴): کلید مسیر جایگزین Worker از escrow حذف شد — دوران Worker پایان یافت؛
+# جانشین بقای همان جلسه: خاموشی دائمی فیوز PN-029 (MELK_ARM_CIRCUIT_DISABLED)
+rg -q '"MELK_ARM_CIRCUIT_DISABLED"' src/lib/auth/boot-secrets.ts && ok "قانون ن۰۵۴: خاموشی دائمی فیوز در escrow" || fail "کلید خاموشی فیوز در escrow غایب"
 rg -q 'RELAY_ALLOWED_PREFIXES' melka-proxy/src/index.ts && ok "قانون I: واکِر /relay با پیشوندهای مجاز" || fail "whitelist مسیر واکِر غایب"
 rg -q 'RELAY_RATE_LIMIT' melka-proxy/src/index.ts && ok "قانون I: سقف نرخ هر IP در واکِر" || fail "سقف نرخ واکِر غایب"
 

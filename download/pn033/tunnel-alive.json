@@ -1,0 +1,16 @@
+{
+  "phase": "PN-033 — دروازهٔ تونل روی بیلد پاکسازی‌شده (شورا-ن۰۵۴): فیوز خاموش + DB تک‌دستگاه",
+  "at": "2026-10-16T10:42:40Z",
+  "durationSec": 45,
+  "liveBuildId": "9f3e707-20261016-1036",
+  "device": "pn-033-tunnel-gate-a0fd99",
+  "connectConfirmed": 1,
+  "networkErrors": 0,
+  "serverErrors": 0,
+  "debugLogBytes": 8633,
+  "secretLeaks": 0,
+  "circuitBreakerRows": 0,
+  "testDeviceDeleted": true,
+  "ownerWitness": "جلسهٔ ۰۵۲: تونل زنده · ن۰۵۴: قفل فیوز رفع شد و ۵۰ دستگاه مرده پاک شد",
+  "verdict": "PASS"
+}
