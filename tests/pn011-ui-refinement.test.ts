@@ -98,10 +98,12 @@ describe("PN-011 ثانیاً — صفحات فهرست از رجیستری رن
     expect(page).not.toContain("bg-sec-m1-50 text-sec-m1-700\">\n                              <Building2");
   });
 
-  test("۱۲) M2 ستون نوع ملک و نوع ساختمان از valueSoftClass", () => {
+  test("۱۲) M2 ستون نوع ملک از valueSoftClass + نوع ساختمان حذف ستونی (PN-039/گام ۷ — داده در API دست‌نخورده)", () => {
     const page = readFileSync(path.join(ROOT, TILES, "arm-request/ArmRequestsPage.tsx"), "utf8");
     expect(page).toContain("valueSoftClass(r.propertyTypeName)");
-    expect(page).toContain("valueSoftClass(r.buildingTypeName)");
+    // PN-039 (گام ۷) — ستون نوع ساختمان حذف شد: نه سرستون نه سلول رندر
+    expect(page).not.toContain(">نوع ساختمان</TableHead>");
+    expect(page).not.toContain("valueSoftClass(r.buildingTypeName)");
   });
 
   test("۱۳) M4 ستون سمت پرسنلی از valueSoftClass", () => {

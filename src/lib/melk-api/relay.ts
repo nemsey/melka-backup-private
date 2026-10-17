@@ -57,6 +57,11 @@ export const RELAY_MAX_RESULT_BYTES = 5 * 1024 * 1024;
 export const RELAY_MAX_BATCH = 100;
 /** PN-035 (فاز ۵) — اولویت درخواست‌های تعاملی (OTP/ورود) — مقدم بر سینک حجیم */
 export const RELAY_PRIORITY_INTERACTIVE = 5;
+/** PN-039 (گام ۲) — اولویت صفحات کاتالوگ «درخواست‌ها» — پایان قحطی هفت‌روزه:
+ *  هر صفحهٔ requests/list ~۵ثانیه هزینهٔ مبدأ دارد؛ پشت موج آگهی‌ها/غنی‌سازی‌ها
+ *  (اولویت ۰) در TTL ۱۲۰ث انقضا می‌خورد (۴۷۲ expired شاهد). اولویت ۱ = گوشی در
+ *  هر poll اول اینها را برمی‌دارد (ترتیب priority DESC) و مقدم بر OTP (۵) نیست. */
+export const RELAY_PRIORITY_CATALOG_REQUESTS = 1;
 /** هدرهای عبوری مجاز — عین FORWARD_REQUEST_HEADERS سمت Worker */
 export const RELAY_FORWARD_HEADERS: readonly string[] = ["authorization", "content-type", "accept"];
 
@@ -451,11 +456,14 @@ export async function enqueueRelayRequest(params: {
   return { id: item.id, fingerprint, attached: false };
 }
 
-/** PN-035 (فاز ۵) — آشکارساز اولویت: مسیرهای OTP/ورود (تعاملی) از هر سه سامانه */
+/** PN-035 (فاز ۵) — آشکارساز اولویت: مسیرهای OTP/ورود (تعاملی) از هر سه سامانه
+ *  PN-039 (گام ۲) — صفحات کاتالوگ درخواست‌ها (requests/list) با اولویت ۱:
+ *  پایان قحطی صف — شاهد: ایستگاه requests از ۱۰ اکتبر راکد + ۴۷۲ expired. */
 export function relayPriorityForUrl(url: string): number {
   try {
     const p = new URL(url).pathname;
     if (/\/authentication\/otp(\/|$)/i.test(p)) return RELAY_PRIORITY_INTERACTIVE;
+    if (/\/requests\/list(\/|$)/i.test(p)) return RELAY_PRIORITY_CATALOG_REQUESTS;
   } catch {
     /* نشانی نامعتبر — اولویت پیش‌فرض */
   }

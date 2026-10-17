@@ -640,6 +640,9 @@ model PropertyRecord {
   cityName       String? // شهر (city.name)
   publicUrl      String? // لینک عمومی آگهی (link)
   statusDate     DateTime? // تاریخ آخرین وضعیت (status[0].date)
+  /// PN-039 (گام ۴) — یادداشت مالک روی آگهی؛ فقط از مسیر PATCH مالک نوشته می‌شود
+  /// (سینک ARM هرگز این ستون را نمی‌نویسد — قانون دادهٔ مقدس)
+  ownerNote      String?
 
   // ---------- PN-027 · ۵-پ-۲ — ستون‌های سایهٔ نرمال برای فیلتر متنی سطح-SQL ----------
   /// norm(ownerName) — فیلتر «کارشناس/مغایر» M1 (پیش‌تر JS روی ۲۷٫۸k ردیف)
@@ -1369,8 +1372,9 @@ model RequestRecord {
   title     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  /// رویدادهای درخواست (ثبت رویداد — عین request-events سامانه)
+  /// PN-039 (گام ۴) — یادداشت مالک روی درخواست؛ فقط از مسیر PATCH مالک نوشته می‌شود
+  /// (سینک ARM هرگز این ستون را نمی‌نویسد — قانون دادهٔ مقدس)
+  ownerNote String?
   events RequestEventRecord[]
 
   /// P6.5-02 (§۵.۳) — شعبه انتساب Scope

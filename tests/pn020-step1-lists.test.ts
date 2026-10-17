@@ -43,7 +43,10 @@ describe("PN-020 §الف — M1: حذف سه ستون + سال بدون کام�
     expect(M1_SRC).not.toContain("r.imageCount");
     expect(M1_SRC).not.toContain("r.addedToDivar");
     expect(M1_SRC).not.toContain("r.addedToInsta");
-    expect(M1_SRC).not.toContain("classifyListingStatus(r.status)");
+    // PN-039 (ن۰۶۴/گام ۵): ستون تازهٔ «وضعیت آگهی» classifyListingStatus را زنده کرد —
+    // ستون قدیمی «آخرین وضعیت» همچنان حذف است (الف-۱)؛ این گارد اکنون رندر تازه را قفل می‌کند
+    expect(M1_SRC).toContain("classifyListingStatus(r.status)");
+    expect(M1_SRC).toContain("listingStatusLabel(r.status)");
   });
 
   test("الف-۳) ستون‌های باقی‌ماندهٔ اصلی سر جایشان هستند (دسته‌بندی/تاریخ وضعیت/لینک)", () => {
@@ -55,15 +58,30 @@ describe("PN-020 §الف — M1: حذف سه ستون + سال بدون کام�
   test("الف-۳-ب) جلسهٔ ۰۳۳ (دستور مالک — ثانیاً/ب+ت): ستون «آخرین فعالیت» حذف + ترتیب ستون‌ها به‌ترتیب تازه", () => {
     // حذف کامل ستون (سرستون + سلول)
     expect(M1_SRC).not.toContain(">آخرین فعالیت</TableHead>");
-    // ترتیب الزامی مالک: ردیف · کد آگهی · کارشناس · شعبه · نوع ملک · دسته‌بندی · مالک · قیمت ·
-    // قیمت هر متر · رهن/اجاره · آدرس ملک · متراژ · اتاق · طبقه · ساخت · بازدید · لینک · تاریخ وضعیت
+    // ترتیب الزامی مالک (ن۰۶۴): ردیف · کد آگهی · کارشناس · شعبه · نوع ملک · دسته‌بندی · وضعیت آگهی · مالک · قیمت ·
+    // قیمت هر متر · رهن/اجاره · آدرس ملک · متراژ · اتاق · طبقه · ساخت · بازدید · لینک · تاریخ وضعیت · تاریخ ثبت · یادداشت
     const headers = [...M1_SRC.matchAll(/<TableHead[^>]*>([^<]+)<\/TableHead>/g)].map((m) => m[1].trim());
     expect(headers).toEqual([
-      "ردیف", "کد آگهی", "کارشناس", "شعبه", "نوع ملک", "دسته‌بندی", "مالک", "قیمت",
-      "قیمت هر متر", "رهن / اجاره", "آدرس ملک", "متراژ", "اتاق", "طبقه", "ساخت", "بازدید", "لینک", "تاریخ وضعیت",
+      "ردیف", "کد آگهی", "کارشناس", "شعبه", "نوع ملک", "دسته‌بندی", "وضعیت آگهی", "مالک", "قیمت",
+      "قیمت هر متر", "رهن / اجاره", "آدرس ملک", "متراژ", "اتاق", "طبقه", "ساخت", "بازدید", "لینک", "تاریخ وضعیت", "تاریخ ثبت", "یادداشت",
     ]);
-    // ترتیب بدنه هم منطبق است: لینک (۱۲) پیش از تاریخ وضعیت (۱۳ — آخرین ستون)
+    // ترتیب بدنه هم منطبق است: لینک (۱۲) → تاریخ وضعیت (۱۳) → تاریخ ثبت (۱۴) → یادداشت (۱۵ — آخرین ستون)
     expect(M1_SRC).toMatch(/r\.publicUrl[\s\S]*?<\/TableCell>[\s\S]*?<TableCell className="text-muted-foreground whitespace-nowrap text-\[10px\]">\s*\{r\.statusDate/);
+    expect(M1_SRC).toMatch(/\{r\.statusDate \? faDateTime\(r\.statusDate\) : "—"\}[\s\S]*?\{r\.createdAt \? faDateTime\(r\.createdAt\) : "—"\}[\s\S]*?<OwnerNoteCell/);
+  });
+
+  test("الف-۳-پ) (ن۰۶۴/گام ۵) ستون «وضعیت آگهی» بلافاصله بعد از دسته‌بندی است", () => {
+    const headers = [...M1_SRC.matchAll(/<TableHead[^>]*>([^<]+)<\/TableHead>/g)].map((m) => m[1].trim());
+    const i = headers.indexOf("دسته‌بندی");
+    expect(i).toBeGreaterThan(-1);
+    expect(headers[i + 1]).toBe("وضعیت آگهی");
+  });
+
+  test("الف-۳-ت) (ن۰۶۴/گام ۳) ستون «تاریخ ثبت» بلافاصله بعد از تاریخ وضعیت است", () => {
+    const headers = [...M1_SRC.matchAll(/<TableHead[^>]*>([^<]+)<\/TableHead>/g)].map((m) => m[1].trim());
+    const i = headers.indexOf("تاریخ وضعیت");
+    expect(i).toBeGreaterThan(-1);
+    expect(headers[i + 1]).toBe("تاریخ ثبت");
   });
 
   test("الف-۴) سال ساخت بدون کاما — faDigits (نه faNumber که جداکنندهٔ هزارگان می‌گذارد)", () => {
@@ -119,11 +137,25 @@ describe("PN-020 §ب — M2: رنگی سه ستون + سال بدون کاما 
     expect(M2_SRC).not.toMatch(/faNumber\(r\.buildYear(From|To)\)/);
   });
 
-  test("ب-۶) تاریخ ثبت آخرین ستون فهرست است (بند ۴ دستور)", () => {
-    // سرستون‌ها: آخرین <TableHead> قبل از بستن TableRow باید «تاریخ ثبت» باشد
+  test("ب-۶) تاریخ ثبت پیش از یادداشت + یادداشت آخرین ستون فهرست است (بند ۴ دستور + PN-039/گام ۴)", () => {
+    // سرستون‌ها: آخرین <TableHead> باید «یادداشت» و پیش از آن «تاریخ ثبت» باشد (ن۰۶۴)
     const headers = [...M2_SRC.matchAll(/<TableHead[^>]*>([^<]+)<\/TableHead>/g)].map((m) => m[1].trim());
     expect(headers.length).toBeGreaterThan(10);
-    expect(headers[headers.length - 1]).toBe("تاریخ ثبت");
+    expect(headers[headers.length - 1]).toBe("یادداشت");
+    expect(headers[headers.length - 2]).toBe("تاریخ ثبت");
+  });
+
+  test("ب-۶-ب) (ن۰۶۴/گام ۷) ستون «نوع ساختمان» از فهرست درخواست حذف شده است", () => {
+    // نه سرستون نه سلول رندر — دادهٔ buildingTypeName در API/اکسل دست‌نخورده می‌ماند
+    expect(M2_SRC).not.toContain(">نوع ساختمان</TableHead>");
+    expect(M2_SRC).not.toContain("valueSoftClass(r.buildingTypeName)");
+  });
+
+  test("ب-۶-پ) (ن۰۶۴/گام ۶) فیلتر «نوع ملک» چیپی در هر دو فهرست است", () => {
+    expect(M1_SRC).toContain('id="arm-listing-property-types-filter"');
+    expect(M1_SRC).toContain('params.append("propertyType", t)');
+    expect(M2_SRC).toContain('id="arm-request-property-types-filter"');
+    expect(M2_SRC).toContain('params.append("propertyType", t)');
   });
 
   test("ب-۷) رجیستری رنگ: هر ۱۱ جهت رنگ یکتا دارند (قانون عدم تکرار تک‌رنگ در ستون)", async () => {

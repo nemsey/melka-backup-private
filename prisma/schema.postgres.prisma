@@ -647,6 +647,9 @@ model PropertyRecord {
   cityName       String? // شهر (city.name)
   publicUrl      String? // لینک عمومی آگهی (link)
   statusDate     DateTime? // تاریخ آخرین وضعیت (status[0].date)
+  /// PN-039 (گام ۴) — یادداشت مالک روی آگهی؛ فقط از مسیر PATCH مالک نوشته می‌شود
+  /// (سینک ARM هرگز این ستون را نمی‌نویسد — قانون دادهٔ مقدس)
+  ownerNote      String?
 
   @@index([cityId, areaId, propertyTypeId, tradeTypeId]) // ایندکس ۱ از §۴
   @@index([price, meterage]) // ایندکس ۲ از §۴
@@ -1364,6 +1367,9 @@ model RequestRecord {
   title     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  /// PN-039 (گام ۴) — یادداشت مالک روی درخواست؛ فقط از مسیر PATCH مالک نوشته می‌شود
+  /// (سینک ARM هرگز این ستون را نمی‌نویسد — قانون دادهٔ مقدس)
+  ownerNote String?
 
   /// رویدادهای درخواست (ثبت رویداد — عین request-events سامانه)
   events RequestEventRecord[]
