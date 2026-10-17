@@ -8,7 +8,7 @@
 #      از proxyFetch می‌گذرند (صفر fetch مستقیم ملک تبریز)
 #   ۳) whitelist دفاع دولایه: سرور (enqueue) و اسکریپت (case pattern)
 #   ۴) راز دستگاه هرگز به UI/کلاینت نشت نمی‌کند (فقط در bootstrap تزریقی)
-#   ۵) قفل ترتیب: رله گارد آفلینی را دور نمی‌زند — armCall اول offline را چک می‌کند
+#   ۵) قفل ترتیب (ن۰۶۳): relayFetch پیش‌شرط دستگاه برخط — ARM_OFFLINE حذف کامل (کد مرده)
 #   ۶) روت‌های رله + آینه‌های v1 موجودند
 #   ۷) جدولهای RelayDevice/RelayQueue در schema موجودند (بقای مهاجرت)
 # خروجی: exit 1 اگر هر بند شکست بخورد.
@@ -40,13 +40,12 @@ rg -q 'proxyFetch' src/lib/melk-api/client.ts && ok "armCall/probeGet از proxy
 rg -q 'isMelkTabrizHost\(params\.url\)' src/lib/melk-api/relay.ts && ok "whitelist سمت سرور (enqueue)" || fail "whitelist سرور غایب"
 rg -q 'https://\*.melketabriz\.ir/\*' src/lib/melk-api/relay-script.ts && ok "whitelist سمت گوشی (case pattern)" || fail "whitelist گوشی غایب"
 
-# ۵) قفل ترتیب — گارد آفلینی پیش از هر شبکه در armCall
-LINE_OFFLINE=$(rg -n 'isArmOfflineMode\(\)' src/lib/melk-api/client.ts | head -1 | cut -d: -f1)
-LINE_FETCH=$(rg -n 'proxyFetch\(' src/lib/melk-api/client.ts | head -1 | cut -d: -f1)
-if [ -n "$LINE_OFFLINE" ] && [ -n "$LINE_FETCH" ] && [ "$LINE_OFFLINE" -lt "$LINE_FETCH" ]; then
-  ok "قفل ترتیب: گارد آفلینی پیش از proxyFetch در armCall"
+# ۵) قفل ترتیب (ن۰۶۳ — بازنویسی): گارد آفلینی مرده (حذف کد مرده · PN-038/فاز ۶)؛
+#     قرارداد تازه: relayFetch پیش‌شرط دستگاه برخط دارد — صف رله همیشه پیش از شبکه
+if rg -q 'anyRelayDeviceOnline' src/lib/melk-api/relay.ts && ! rg -q 'isArmOfflineMode' src/lib/melk-api/client.ts; then
+  ok "قفل ترتیب ن۰۶۳: relayFetch پیش‌شرط برخط + ARM_OFFLINE مرده (حذف کامل)"
 else
-  fail "قفل ترتیب شکسته — گارد آفلینی پیش از شبکه نیست"
+  fail "قفل ترتیب ن۰۶۳ شکسته — پیش‌شرط صف یا بازگشت کد مرده"
 fi
 
 # ۶) روت‌ها + آینه‌ها (PN-031-C: code-status افزوده شد — ۱۱ روت)

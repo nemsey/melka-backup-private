@@ -83,7 +83,7 @@ grep -q "export \* from" "$V1_MIRROR"; check "route: آینهٔ v1 سبک (re-ex
 python3 -c "
 import json
 m = json.load(open('download/pn012/api-versioning.json'))
-assert any(r['original'] == '/api/relay/job/[id]' for r in m['routes'])
+assert any((r.get('aliasOf') or r.get('original')) == '/api/relay/job/[id]' for r in m['routes'])  # ن۰۶۳: مولد رسمی aliasOf می‌نویسد
 print('ok')
 " >/dev/null 2>&1; check "manifest: api-versioning روت job را می‌شناسد" $?
 
