@@ -1,0 +1,72 @@
+{
+  "at": "2026-10-17T13:16:20.704Z",
+  "cli": "melka-debug probe",
+  "label": "pn038-session2-live-134",
+  "results": [
+    {
+      "target": "health",
+      "probeId": "cmvcf72i40000nh2nujtxw25k",
+      "status": "done",
+      "ok": true,
+      "httpStatus": 200,
+      "durationMs": 1,
+      "count": 1,
+      "via": "local-health"
+    },
+    {
+      "target": "melk-public",
+      "probeId": "cmvcf72ib0002nh2njg1f61ng",
+      "status": "failed",
+      "ok": false,
+      "httpStatus": 504,
+      "durationMs": 12008,
+      "count": null,
+      "via": "melk-public",
+      "error": "کاتالوگ عمومی پاسخ نداد"
+    },
+    {
+      "target": "enums-persian",
+      "probeId": "cmvcf7brz0005nh2nbjxiqwy5",
+      "status": "failed",
+      "ok": false,
+      "httpStatus": 503,
+      "durationMs": 3,
+      "count": null,
+      "via": "relay-cache",
+      "error": "خنک‌ساز تلاش مجدد فعال است: تلاش بعدی تا ۶ ساعت دیگر مجاز است (قانون Retry هوشمند PN-029 — یک تلاش در ۶ ساعت).",
+      "relayCache": {
+        "keys": [
+          {
+            "key": "commission-config",
+            "ageHours": 175.7
+          },
+          {
+            "key": "user-seriousness",
+            "ageHours": 175.8
+          },
+          {
+            "key": "user-jobs",
+            "ageHours": 175.8
+          },
+          {
+            "key": "user-roles",
+            "ageHours": 175.8
+          },
+          {
+            "key": "user-characters",
+            "ageHours": 175.8
+          },
+          {
+            "key": "arm-type-registries",
+            "ageHours": 178.7
+          },
+          {
+            "key": "acc-best-realtor",
+            "ageHours": 264.6
+          }
+        ],
+        "freshestHours": 175.7
+      }
+    }
+  ]
+}

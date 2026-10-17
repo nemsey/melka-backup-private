@@ -1,6 +1,6 @@
 {
   "workOrder": "PN-022-A/مرحلهٔ۵ — گارد postgres-compat (گام ۵-ر)",
-  "ranAt": "2026-10-16T18:05:12.985864+00:00",
+  "ranAt": "2026-10-17T13:33:02.085297+00:00",
   "checks": [
     {
       "check": "وجود schema.postgres.prisma",
@@ -18,13 +18,13 @@
     },
     {
       "check": "توازن مدل‌ها",
-      "sqlite": 69,
-      "postgres": 69,
+      "sqlite": 70,
+      "postgres": 70,
       "ok": true
     },
     {
       "check": "نقاط موتور-ویژه مهر خورده",
-      "sites": 4,
+      "sites": 6,
       "unmarked": 0
     },
     {
@@ -36,8 +36,32 @@
   ],
   "engineSites": [
     {
+      "file": "src/core/runtime/jobs.ts",
+      "line": 101,
+      "marked": true,
+      "code": "await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, \"''\")}'`);"
+    },
+    {
+      "file": "src/core/runtime/jobs.ts",
+      "line": 107,
+      "marked": true,
+      "code": "const r = await probe.$queryRawUnsafe(\"PRAGMA integrity_check\") as { integrity_c"
+    },
+    {
+      "file": "src/core/runtime/jobs.ts",
+      "line": 153,
+      "marked": true,
+      "code": "await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, \"''\")}'`);"
+    },
+    {
+      "file": "src/core/runtime/jobs.ts",
+      "line": 160,
+      "marked": true,
+      "code": "const r = await probe.$queryRawUnsafe(\"PRAGMA integrity_check\") as { integrity_c"
+    },
+    {
       "file": "src/lib/melk-api/sync.ts",
-      "line": 1145,
+      "line": 1158,
       "marked": true,
       "code": "await db.$executeRawUnsafe(`VACUUM INTO '${backupFile}'`);"
     },
@@ -46,18 +70,6 @@
       "line": 104,
       "marked": true,
       "code": "const r = (await db.$queryRawUnsafe(\"PRAGMA quick_check\")) as { quick_check: str"
-    },
-    {
-      "file": "src/core/runtime/jobs.ts",
-      "line": 100,
-      "marked": true,
-      "code": "await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, \"''\")}'`);"
-    },
-    {
-      "file": "src/core/runtime/jobs.ts",
-      "line": 106,
-      "marked": true,
-      "code": "const r = await probe.$queryRawUnsafe(\"PRAGMA integrity_check\") as { integrity_c"
     }
   ],
   "violations": [],

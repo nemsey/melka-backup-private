@@ -108,7 +108,8 @@ if 'requireRole(request, "OWNER"' not in owner_route:
 checks.append({"check": "۷) روت‌ها + گاردها", "ok": True})
 
 # ─── ۸) UI سه کاشی — AdviceCard ───
-for f in ["src/core/tiles/tiles/smart-matching/SmartMatchingPage.tsx", "src/core/tiles/tiles/file-finder/FileFinderPage.tsx", "src/core/tiles/tiles/market-index/MarketIndexPage.tsx"]:
+# ن۰۶۳ (PN-038/فاز ۲): MarketIndexPage حذف شد (کاشی M6 از هوم رفت؛ دادهٔ DB و روت API ماند — قانون دادهٔ مقدس)
+for f in ["src/core/tiles/tiles/smart-matching/SmartMatchingPage.tsx", "src/core/tiles/tiles/file-finder/FileFinderPage.tsx"]:
     src = open(f, encoding="utf-8").read()
     if "AdviceCard" not in src:
         violations.append(f"کاشی حیاتی AdviceCard ندارد: {f}")
