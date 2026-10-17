@@ -36,7 +36,6 @@ import { syncMelkPublicCatalog } from "./melk-public";
 import { syncTypeRegistries } from "./type-registry";
 // PN-010 — کانال وضعیت مشترک Worker (فقط fs/path — بدون چرخهٔ وابستگی)
 import { readWorkerStatus } from "@/core/runtime/worker-status";
-// PN-029 — حالت آفلینی ملک تبریز (توقف تلاشهای خودکار)
 
 /** فاصلهٔ پیش‌فرض تیک‌ها — دقیقه (PN-002 نکته ۵: لغو محدودیت — ۳→۱) */
 const DEFAULT_INTERVAL_MINUTES = 1;

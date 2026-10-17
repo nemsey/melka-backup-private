@@ -324,18 +324,20 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     expect(tileRegistry.has("contracts")).toBe(false);
     expect(tileRegistry.has("finance-commission")).toBe(false);
 
-    // PN-038/فاز ۲ (شورا-ن۰۶۳): ترتیب جدید هوم — فایل یابی ← آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← مغز ← تنظیمات
-    const ids = tileRegistry.listRoot("OWNER").map((t) => t.id);
-    expect(ids).toEqual([
-      "file-finder", "arm-listings", "arm-requests", "transactions-contracts",
-      "experts", "smart-matching", "learning-tier", "settings",
-    ]);
-    // M6/M7 و ظرف و کاشی‌های قدیمی ملکا حذف شدند (PN-038/۲.۱-۲.۳)
-    expect(tileRegistry.has("market-index")).toBe(false);
-    expect(tileRegistry.has("data-coverage")).toBe(false);
-    expect(tileRegistry.has("management-dashboard")).toBe(false);
-    expect(tileRegistry.has("listings")).toBe(false);
-    expect(tileRegistry.has("requests")).toBe(false);
+    // بازسازی فازهای ۷-۸-۹ — ترتیب الزامی M1 تا M4
+    const ids = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
+    expect(ids.indexOf("arm-listings")).toBe(0); // M1
+    expect(ids.indexOf("arm-requests")).toBe(1); // M2
+    expect(ids.indexOf("transactions-contracts")).toBe(2); // M3
+    expect(ids.indexOf("experts")).toBe(3); // M4
+    expect(ids.length).toBe(8); // هشت کاشی — M1-M4 + چهار کاشی تازه (PN-003: m5 تطبیق + m6 یادگیری)
+    expect(ids.indexOf("smart-matching")).toBe(4); // M5 تطبیق
+    expect(ids.indexOf("learning-tier")).toBe(5); // M6 یادگیری و Tier
+    expect(ids.indexOf("market-index")).toBe(6); // M7 شاخص بازار
+    expect(ids.indexOf("data-coverage")).toBe(7); // M8 پوشش اطلاعات
+    // تنظیمات عمومی ریشه است (چهارم) — نه داخل داشبورد مدیریتی؛ داشبورد مدیریتی آخرین کاشی ریشه
+    expect(ids).not.toContain("settings");
+    expect(tileRegistry.listRoot("OWNER").at(-1)?.id).toBe("management-dashboard");
   });
 
   test("بازسازی فازهای ۷-۸-۹ — کاشی‌های ماندگار M1 تا M4 ایجنت اختصاصی متصل به شناسه خود دارند", async () => {

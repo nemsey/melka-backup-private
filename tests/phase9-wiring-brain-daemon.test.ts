@@ -325,28 +325,44 @@ describe("PHASE 9 §۱۰ — شفافیت مغز هوشمند", () => {
  * §۱۱ — داشبورد M1-M4 (گارد جهانی بازسازی)
  * ========================================================================== */
 
-describe("PHASE 9 §۱۱ → PN-038 — هوم یک‌پارچه (گارد جهانی بازطراحی)", () => {
+describe("PHASE 9 §۱۱ — داشبورد مدیریتی = دقیقاً M1 تا M4", () => {
   beforeAll(async () => {
     await import("@/core/tiles/bootstrap");
   });
 
-  test("۱۱-۱ → PN-03۸/۲.۵: هوم = هشت کاشی با نام‌های کوتاه به ترتیب الزامی مالک", async () => {
+  test("۱۱-۱) هوم = ۵ کاشی ملکا به ترتیب الزامی (دست‌نخورده در بازسازی)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     expect(tileRegistry.listRoot("OWNER").map((t) => t.title)).toEqual([
-      "فایل یابی", "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "مغز", "تنظیمات",
+      "فایل یابی ملکا",
+      "آگهی ملکا",
+      "درخواست ملکا",
+      "تنظیمات عمومی",
+      "داشبورد مدیریتی ملک تبریز",
     ]);
   });
 
-  test("۱۱-۲ → PN-03۸: ظرف داشبورد مدیریتی حذف شد — هشت کاشی همه در ریشهٔ هوم‌اند", async () => {
+  test("۱۱-۲) داشبورد مدیریتی = هشت کاشی M1-M8 (PN-003: m5 تطبیق + m6 یادگیری — نام‌گذاری مالک)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    expect(tileRegistry.listChildren("management-dashboard", "OWNER")).toEqual([]);
-    expect(tileRegistry.get("management-dashboard")).toBeUndefined();
-    const roots = tileRegistry.listRoot("OWNER");
-    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    const children = tileRegistry.listChildren("management-dashboard", "OWNER");
+    expect(children.map((t) => t.title)).toEqual([
+      "آگهی ملک تبریز",
+      "درخواست ملک تبریز",
+      "معاملات ملک تبریز",
+      "کارشناسان ملک تبریز",
+      "تطبیق هوشمند ملک تبریز",
+      "مغز ملکا — یادگیری و Tier",
+      "شاخص بازار ملک تبریز",
+      "پوشش اطلاعات ملک تبریز",
+    ]);
   });
 
-  test("۱۱-۳ → PN-03۸/۲.۲: ماژول صفحهٔ داشبورد مدیریتی فیزیکی حذف شد (داده DB مقدس)", () => {
-    expect(existsSync("src/core/tiles/tiles/management-dashboard/ManagementDashboardPage.tsx")).toBe(false);
-    expect(existsSync("src/core/tiles/tiles/management-dashboard/index.ts")).toBe(false);
+  test("۱۱-۳) متن‌های UI کهنه (M1 تا M7 / هفت کاشی) پاک‌سازی شده‌اند", () => {
+    const home = readFileSync("src/components/app/DashboardHome.tsx", "utf8");
+    const dash = readFileSync("src/core/tiles/tiles/management-dashboard/ManagementDashboardPage.tsx", "utf8");
+    const def = readFileSync("src/core/tiles/tiles/management-dashboard/index.ts", "utf8");
+    for (const src of [home, dash, def]) {
+      expect(src).not.toContain("M1 تا M7");
+      expect(src).not.toContain("هفت کاشی");
+    }
   });
 });

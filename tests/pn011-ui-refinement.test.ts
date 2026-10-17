@@ -220,7 +220,7 @@ describe("PN-011 خامسا — کاشی تطبیق: توضیحات توسعه�
     expect(tileWhole).toContain("info?.expertName");
     expect(tileWhole).toContain("info.expertBranch");
     expect(tileWhole).toContain("مشاهده در کاشی");
-    expect(page).toContain('openTile(tileId, null, { code })'); // PN-038/فاز ۲: ظرف حذف شد — بازگشت به هوم
+    expect(page).toContain('openTile(tileId, "management-dashboard", { code })');
   });
 
   test("۲۹) صفحهٔ M5: تنظیم showReasons فعال شد (تنظیم مرده زنده شد)", () => {

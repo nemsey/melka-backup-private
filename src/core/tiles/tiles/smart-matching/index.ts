@@ -14,14 +14,15 @@ import { Sparkles } from "lucide-react";
 export const smartMatchingTile = defineTile({
   id: "smart-matching",
   version: "1.0.0",
-  title: "تطبیق", // PN-038/۲.۴ — نام کوتاه
+  title: "تطبیق هوشمند ملک تبریز",
   tagline: "M5 — تطبیق دوجهتهٔ آگهی ↔ درخواست: ۵ گزینهٔ برتر با امتیاز و دلیل شفاف",
   description:
     "تطبیق هوشمند دو جهت: با ورود کد ملک، ۵ درخواست فعال برتر و با ورود درخواست، ۵ آگهی منتشرشدهٔ برتر پیشنهاد می‌شود. فیلتر سخت (معکوس نوع معامله، تلاقی قیمت و منطقه، نوع ملک) + امتیاز نرم پنج‌عامله (فاصله قیمت، نزدیکی جغرافیایی، تناسب متراژ، تازگی، سابقه کارشناس) با پوشش سیگنال شفاف. هر پذیرش/رد در حلقهٔ یادگیری ثبت و وزن‌ها تدریجاً شخصی می‌شوند. Tier-aware. صفر اجرای خودکار — پیشنهاد فقط.",
   icon: Sparkles,
   accent: "m5",
   component: lazyPage(() => import("./SmartMatchingPage")),
-  order: 6, // PN-038/۲.۵ — ترتیب جدید هوم: تطبیق ششم
+  order: 5,
+  container: "management-dashboard",
   minRole: "OWNER",
   agent: {
     tileId: "smart-matching",

@@ -57,10 +57,6 @@ export const WORKER_JOB_IDS = {
   diskGuard: "disk-guard",
   diagnosisCycle: "diagnosis-cycle",
   memoryConsolidation: "memory-consolidation",
-  ipLog: "ip-log",
-  headGuard: "head-guard",
-  sacredBackup: "sacred-backup",
-  relayHealthCheck: "relay-health-check",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -136,64 +132,6 @@ export async function runBackupRotation(db: PrismaClient, options?: { keep?: num
 }
 
 /**
- * بکاپ مقدس ۱۵دقیقه‌ای (PN-038 · فاز ۱ · بند ۱.۳ — شورا-ن۰۶۳):
- * چرخهٔ بکاپ اتمی (VACUUM INTO — بدون توقف سرویس) هر ۱۵ دقیقه + مانیفست
- * mtime/شمارش در upload/.runtime/sacred-backups.json (خوراک گارد مقدس).
- * نگهداری: پیش‌فرض ۴ نسل (یک ساعت تاریخ) — env MELK_SACRED_BACKUP_KEEP.
- */
-export async function runSacredBackup(db: PrismaClient, options?: { keep?: number; backupsDir?: string }): Promise<{ created: string; kept: string[]; pruned: string[]; integrity: string; mtimeIso: string; counts: Record<string, number> }> {
-  const envKeep = Number.parseInt(process.env.MELK_SACRED_BACKUP_KEEP ?? "4", 10);
-  const keep = Math.max(1, options?.keep ?? (Number.isFinite(envKeep) ? envKeep : 4));
-  const dir = options?.backupsDir ?? join(REPO_ROOT, "backups");
-  mkdirSync(dir, { recursive: true });
-  const tsBase = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 23);
-  let target = join(dir, `sacred-${tsBase}.db`);
-  for (let i = 1; existsSync(target); i++) target = join(dir, `sacred-${tsBase}-${i}.db`);
-  // ENGINE: sqlite-only (VACUUM INTO اتمی — خواننده‌ها هرگز حالت نصفه نمی‌بینند)
-  await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, "''")}'`);
-  // مانیفست مقدس: mtime + شمارش ردیف‌های شاهد — خوراک sacred-data-guard
-  const manifest = { created: target.split("/").pop()!, mtimeIso: new Date().toISOString(), counts: {} as Record<string, number> };
-  try {
-    const probe = new (await import("@prisma/client")).PrismaClient({ datasources: { db: { url: `file:${target}` } } });
-    try {
-      // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
-      const r = await probe.$queryRawUnsafe("PRAGMA integrity_check") as { integrity_check: string }[];
-      manifest.counts["__integrity"] = r[0]?.integrity_check === "ok" ? 1 : 0;
-      for (const t of ["PropertyRecord", "RequestRecord", "TransactionRecord", "ExpertRecord", "GraphNode"]) {
-        try {
-          const c = await probe.$queryRawUnsafe(`SELECT COUNT(*) as c FROM ${t}`) as { c: number | bigint }[];
-          manifest.counts[t] = Number(c[0]?.c ?? 0);
-        } catch { manifest.counts[t] = -1; }
-      }
-    } finally { await probe.$disconnect(); }
-  } catch { /* مانیفست بهترین-تلاش */ }
-  // هرس: فقط فایل‌های sacred-*.db (بکاپ‌های چرخشی دیگری را لمس نمی‌کند)
-  const createdName = target.split("/").pop()!;
-  const files = existsSync(dir)
-    ? readdirSync(dir).filter((f) => f.startsWith("sacred-") && f.endsWith(".db")).map((f) => ({ f, m: statSync(join(dir, f)).mtimeMs })).sort((a, b) => b.m - a.m)
-    : [];
-  const kept: string[] = [];
-  const pruned: string[] = [];
-  for (let i = 0; i < files.length; i++) {
-    if (i < keep || files[i].f === createdName) kept.push(files[i].f);
-    else { unlinkSync(join(dir, files[i].f)); pruned.push(files[i].f); }
-  }
-  // شاهد پایدار برای گارد/آپ‌تایم — بهترین-تلاش
-  try {
-    const { writeFileSync } = await import("node:fs");
-    writeFileSync(join(REPO_ROOT, "upload/.runtime/sacred-backups.json"), JSON.stringify({ ...manifest, kept, pruned: pruned.length, at: manifest.mtimeIso }, null, 2));
-  } catch { /* شاهد بهترین-تلاش */ }
-  await db.auditLog.create({
-    data: {
-      action: "SACRED_BACKUP",
-      actor: "worker:sacred-backup",
-      detail: JSON.stringify({ created: createdName, kept: kept.length, pruned: pruned.length, counts: manifest.counts }),
-    },
-  }).catch(() => undefined);
-  return { created: target, kept, pruned, integrity: String(manifest.counts["__integrity"] ?? "unknown"), mtimeIso: manifest.mtimeIso, counts: manifest.counts };
-}
-
-/**
  * تعریف کارهای Worker — با همان زمان‌بندی و رفتار دیمن‌های قبلی
  * (صفر قطع خدمت: اولین اجراها دقیقاً مثل قبل ۴۵s/۶۰s بعد از بوت).
  */
@@ -215,7 +153,7 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
     });
   }
 
-  // ── Catalog → Worker — PN-029 → PN-038/۶.۱: گارد آفلینی حذف شد ──
+  // ── Catalog → Worker (فاصله و کلید خاموشی عین قبل) ──
   if (process.env.MELK_CATALOG_DAEMON !== "disabled") {
     const intervalMinutes = envInt("MELK_CATALOG_DAEMON_INTERVAL_MINUTES", 1, 1);
     jobs.push({
@@ -262,23 +200,6 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       intervalMs: 6 * 60 * 60_000,
       firstRunDelayMs: 90_000, // نخستین بکاپِ چرخشی زودهنگام
       run: async (database) => runBackupRotation(database),
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── Sacred Backup → Worker (تازه — PN-038/۱.۳: بکاپ ۱۵دقیقه‌ای دادهٔ مقدس) ──
-  // شورا-ن۰۶۳: «بکاپ پیوسته — هر ۱۵ دقیقه دیتابیس زنده را اتمی بکاپ بگیر».
-  // اتمی (VACUUM INTO بدون توقف) + مانیفست شمارش + هرس ۴ نسلی.
-  if (process.env.MELK_SACRED_BACKUP !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.sacredBackup,
-      title: "بکاپ مقدس ۱۵دقیقه‌ای (PN-038/۱.۳)",
-      intervalMs: envInt("MELK_SACRED_BACKUP_INTERVAL_MINUTES", 15, 5) * 60_000,
-      firstRunDelayMs: 30_000, // نخستین بکاپ مقدس نیم دقیقه پس از بوت
-      run: async (database) => runSacredBackup(database),
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
         return {};
@@ -488,81 +409,6 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
         const { runConsolidation } = await import("@/lib/services/memory-lifecycle-service");
         void database;
         return runConsolidation();
-      },
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── IP-Log → Worker (تازه — PN-029 مرحلهٔ ۷: گارد IP کانتینر) ──
-  // هر ۶ ساعت: تشخیص IP عمومی کانتینر (ifconfig.me → api.ipify.org) + ثبت در
-  // ContainerIpLog و AuditLog؛ تغییر IP پس از ریست پلتفرم = سرنخ ریشهٔ «الف».
-  // ⚠ این کار در حالت آفلینی نیز فعال می‌ماند — میزبانهای سنجش IP، سامانه‌های
-  // ملک تبریز نیستند و خود سند شورا آزمون ۵ را خواسته است.
-  jobs.push({
-    id: WORKER_JOB_IDS.ipLog,
-    title: "گارد IP کانتینر (PN-029 مرحلهٔ ۷)",
-    intervalMs: 6 * 60 * 60_000,
-    firstRunDelayMs: 45_000, // نخستین ثبت، کمتر از یک دقیقه پس از بوت
-    run: async (database) => {
-      const { recordContainerIp } = await import("@/lib/melk-api/container-ip");
-      return recordContainerIp(database);
-    },
-    toDomain: (r) => {
-      if (r && typeof r === "object") return r as Record<string, unknown>;
-      return {};
-    },
-  });
-
-  // ── Head Guard → Worker (تازه — PN-031-B/جلسهٔ ۰۳۹: جبران خودکار بازنشانی پلتفرم) ──
-  // درس بازنشانی‌های ۷-۸: درخت گیت سالم ماند اما بیلد زنده کهنه شد؛
-  // reset-guard درخت گیت را می‌سنجید (HEALTHY دروغین) و preview-guard فقط
-  // هشدار می‌داد. این گارد حلقهٔ بسته است: BUILD_ID زنده ≠ HEAD ⇒ بیلد +
-  // ری‌استارت + تأیید + شاهد AuditLog(action=HEAD_GUARD_AUTOBUILD).
-  // ⚠ نکتهٔ حیاتی: rebuild خودِ Worker را هم ری‌استارت می‌کند (بارگذاری
-  // رجیستری تازه) — مقدار بازگشتی این تابع پس از آن تضمینی نیست؛ شاهد
-  // نهایی از اسکریپت (witness + jsonl) و AuditLog می‌آید.
-  // صفر auto_execute کسب‌وکاری — فقط بیلد زیرساختی (بند ۲.۴ سند ۰۳۹).
-  if (process.env.MELK_HEAD_GUARD !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.headGuard,
-      title: "گارد تازگی بیلد زنده — head-guard (PN-031-B)",
-      intervalMs: envInt("MELK_HEAD_GUARD_INTERVAL_MINUTES", 10, 5) * 60_000,
-      firstRunDelayMs: 90_000,
-      run: async () => {
-        const check = await runShell(join(REPO_ROOT, "scripts/recovery/audit-head-guard.sh"), ["check"], 3 * 60_000);
-        if (check.code === 2) {
-          const rec = await runShell(join(REPO_ROOT, "scripts/recovery/audit-head-guard.sh"), ["rebuild"], 30 * 60_000);
-          return {
-            verdict: "STALE-REBUILT",
-            headAtCheck: "see-witness",
-            rebuildCode: rec.code,
-            rebuildStderr: rec.stderr.slice(0, 300),
-          };
-        }
-        return { verdict: check.code === 0 ? "OK" : "ERROR", checkCode: check.code, stderr: check.stderr.slice(0, 300) };
-      },
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── Relay Health Check → Worker (تازه — PN-038/۴.۱: پایش ۲۴ ساعتهٔ رله سه‌لایه) ──
-  // شورا-ن۰۶۳: «Job relay-health-check (۳ لایه: Heartbeat، API Probe، Full Sync)»
-  // هر ۵ دقیقه: محاسبهٔ سه لایه + حکم 🟢/🟡/🔴 + شاهد AuditLog + فایل شاهد.
-  if (process.env.MELK_RELAY_HEALTH !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.relayHealthCheck,
-      title: "پایش ۲۴ ساعتهٔ رله — سه لایه (PN-038/۴.۱)",
-      intervalMs: envInt("MELK_RELAY_HEALTH_INTERVAL_MINUTES", 5, 2) * 60_000,
-      firstRunDelayMs: 45_000, // نخستین سنجش زیر یک دقیقه پس از بوت
-      run: async (_database) => {
-        const { runRelayHealthCheckJob } = await import("@/lib/relay/health");
-        return runRelayHealthCheckJob();
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
