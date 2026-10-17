@@ -123,7 +123,6 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
       "file-finder/FileFinderPage.tsx",
       "arm-listing/ArmListingsPage.tsx", "arm-request/ArmRequestsPage.tsx", "transactions-contracts/TransactionsContractsPage.tsx",
       "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx", "learning-tier/LearningTierPage.tsx",
-      "settings/SettingsPage.tsx",
     ];
     for (const p of pages) {
       const src = readFileSync(join(ROOT, "src/core/tiles/tiles", p), "utf-8");
@@ -138,7 +137,6 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
       "file-finder/FileFinderPage.tsx",
       "arm-listing/ArmListingsPage.tsx", "arm-request/ArmRequestsPage.tsx", "transactions-contracts/TransactionsContractsPage.tsx",
       "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx", "learning-tier/LearningTierPage.tsx",
-      "settings/SettingsPage.tsx",
     ];
     const seen = new Set<string>();
     for (const p of pages) {
@@ -148,7 +146,7 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
       expect(validGems.has(m![1]!)).toBe(true);
       seen.add(m![1]!);
     }
-    expect(seen.size).toBe(11); // یکتا: هر کاشی گوهر مخصوص خودش
+    expect(seen.size).toBe(7); // PN-038: هفت گوهر یکتا (M6/M7 حذف؛ تنظیمات data-negin ندارد)
   });
 
   test("N16 قاعدهٔ مروارید: متن ۷۰۰ تیره است (رنگ روشن ⇒ متن تیره اجباری)", () => {
