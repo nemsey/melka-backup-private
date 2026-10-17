@@ -332,23 +332,27 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
     expect(env._pn033 ?? "").toContain("شورا-ن۰۵۴");
   });
 
-  test("E-3) ترتیب هشت کاشی — آگهی، درخواست، معاملات، کارشناسان، تطبیق، شاخص، پوشش، مغز ملکا", async () => {
+  test("E-3 → PN-038/۲.۵: ترتیب هشت کاشی هوم — فایل یابی، آگهی، درخواست، معاملات، کارشناسان، تطبیق، مغز، تنظیمات", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    const ids = tileRegistry.listChildren("management-dashboard", "OWNER").map((t) => t.id);
+    // M6/M7 حذف شدند؛ ظرف حذف شد — هشت کاشی همه در ریشهٔ هوم‌اند
+    expect(tileRegistry.get("market-index")).toBeUndefined();
+    expect(tileRegistry.get("data-coverage")).toBeUndefined();
+    expect(tileRegistry.listChildren("management-dashboard", "OWNER")).toEqual([]);
+    const ids = tileRegistry.listRoot("OWNER").map((t) => t.id);
     expect(ids).toEqual([
-      "arm-listings", // ۱ آگهی
-      "arm-requests", // ۲ درخواست
-      "transactions-contracts", // ۳ معاملات
-      "experts", // ۴ کارشناسان
-      "smart-matching", // ۵ تطبیق
-      "market-index", // ۶ شاخص (گام دوم — شاخص ششم)
-      "data-coverage", // ۷ پوشش (گام دوم — پوشش هفتم)
-      "learning-tier", // ۸ مغز ملکا
+      "file-finder",           // ۱ فایل یابی
+      "arm-listings",          // ۲ آگهی
+      "arm-requests",          // ۳ درخواست
+      "transactions-contracts", // ۴ معاملات
+      "experts",               // ۵ کارشناسان
+      "smart-matching",        // ۶ تطبیق
+      "learning-tier",         // ۷ مغز
+      "settings",              // ۸ تنظیمات
     ]);
     // ترتیب عددی هم عین فهرست مالک است
-    expect(tileRegistry.get("market-index")!.order).toBe(6);
-    expect(tileRegistry.get("data-coverage")!.order).toBe(7);
-    expect(tileRegistry.get("learning-tier")!.order).toBe(8);
+    expect(tileRegistry.get("smart-matching")!.order).toBe(6);
+    expect(tileRegistry.get("learning-tier")!.order).toBe(7);
+    expect(tileRegistry.get("settings")!.order).toBe(8);
   });
 
   test("E-4) پروژهٔ Worker آمادهٔ دیپلوی است (wrangler.toml + deploy.sh + README)", () => {

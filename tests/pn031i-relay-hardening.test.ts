@@ -177,6 +177,9 @@ describe("PN-031-I · د) اجرای واقعی bash — منطق سوئیچ و 
   test("د-۱..د-۳: هارنس ماندگار — rate_gate/سوئیچ مسیر/نردبان retry/کد۹", () => {
     // درس جلسهٔ ۰۴۷: شبیه‌سازی ≠ اجرای واقعی — هارنس bash ماندگار
     // scripts/pn031i/bash-smoke.sh توابع را از اسکریپتِ رندرشده استخراج و اجرا می‌کند
+    // PN-038 (درس ریست ۰۷:۲۳): /tmp با ریست کانتینر پاک می‌شود — رندر را همین‌جا تازه کن
+    const render = Bun.spawnSync(["bun", join(REPO, "scripts/pn031i/render-check.ts")]);
+    expect(render.exitCode).toBe(0);
     const r = Bun.spawnSync(["bash", join(REPO, "scripts/pn031i/bash-smoke.sh")]);
     const out = new TextDecoder().decode(r.stdout);
     expect(r.exitCode).toBe(0);
