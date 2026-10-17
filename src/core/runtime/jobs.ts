@@ -61,6 +61,7 @@ export const WORKER_JOB_IDS = {
   ipLog: "ip-log",
   headGuard: "head-guard",
   sacredBackup: "sacred-backup",
+  relayHealthCheck: "relay-health-check",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -565,6 +566,26 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
           };
         }
         return { verdict: check.code === 0 ? "OK" : "ERROR", checkCode: check.code, stderr: check.stderr.slice(0, 300) };
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Relay Health Check → Worker (تازه — PN-038/۴.۱: پایش ۲۴ ساعتهٔ رله سه‌لایه) ──
+  // شورا-ن۰۶۳: «Job relay-health-check (۳ لایه: Heartbeat، API Probe، Full Sync)»
+  // هر ۵ دقیقه: محاسبهٔ سه لایه + حکم 🟢/🟡/🔴 + شاهد AuditLog + فایل شاهد.
+  if (process.env.MELK_RELAY_HEALTH !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.relayHealthCheck,
+      title: "پایش ۲۴ ساعتهٔ رله — سه لایه (PN-038/۴.۱)",
+      intervalMs: envInt("MELK_RELAY_HEALTH_INTERVAL_MINUTES", 5, 2) * 60_000,
+      firstRunDelayMs: 45_000, // نخستین سنجش زیر یک دقیقه پس از بوت
+      run: async (_database) => {
+        const { runRelayHealthCheckJob } = await import("@/lib/relay/health");
+        return runRelayHealthCheckJob();
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
