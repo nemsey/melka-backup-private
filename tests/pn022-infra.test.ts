@@ -196,7 +196,7 @@ describe("PN-022-A/مرحلهٔ۵ · سه گارد تازه", () => {
   test("گ-۲) گارد tile-contract: همهٔ کاشی‌های موجود با قرارداد سالم", () => {
     const r = JSON.parse(readFileSync("download/pn022/guards-tile-contract.json", "utf8"));
     expect(r.verdict).toBe("PASS");
-    expect(r.tiles.length).toBeGreaterThanOrEqual(14);
+    expect(r.tiles.length).toBeGreaterThanOrEqual(11); // ن۰۶۳ (PN-038/فاز ۲): هوم یک‌پارچه — M6/M7/ظرف/دو کاشی کهنه حذف → ۱۱
   });
 
   test("گ-۳) گارد feature-factory: مولد سالم (تولید آزمایشی + صفر overwrite + رد نام بد)", () => {
