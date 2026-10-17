@@ -64,7 +64,13 @@ git commit -q -m "chore(P6549): بهداشت git — حذف DB از ایندکس
 git status --short | head -8
 
 step "5) جایگزینی DB با تازه‌ترین نسخهٔ بسته (۰۴:۴۶Z)"
-cp "$PKG/custom.db" db/custom.db && echo "OK: DB جایگزین شد ($(stat -c%s db/custom.db) بایت)"
+# PN-038/۱.۲ — گارد دادهٔ مقدس (شورا-ن۰۶۳): دیتابیس زندهٔ پرتر/جدیدتر هرگز
+# با بستهٔ کهنه جایگزین نمی‌شود — BLOCK = زنده می‌ماند.
+if bun scripts/recovery/sacred-data-guard.ts "$PKG/custom.db" --live db/custom.db; then
+  cp "$PKG/custom.db" db/custom.db && echo "OK: DB جایگزین شد ($(stat -c%s db/custom.db) بایت)"
+else
+  echo "گارد مقدس: زنده حفظ شد (exit $?) — جایگزینی رد شد (PN-038/۱.۲)"
+fi
 
 step "6) worklog — تازه‌ترین نسخه"
 LSZ=$(stat -c%s worklog.md 2>/dev/null || echo 0); PSZ=$(stat -c%s "$PKG/worklog.md")

@@ -168,7 +168,7 @@ export function resolveMainSyncStart(
 // قفل همزمانی sync — HOTFIX-05 (B6)
 // ==========================================================================
 // الگوی __divarScanRunning (lib/divar/scan.ts) به لایه sync منتقل شد:
-// همگام‌سازی deleteMany+createMany هرگز نباید موازی اجرا شود. فراخوان‌های
+// همگام‌سازی (PN-038: upsert افزودنی) هرگز نباید موازی اجرا شود. فراخوان‌های
 // موازی به همان اجرای در-جریان «می‌پیوندند» (نتیجه مشترک، بدون شروع مجدد).
 
 let __armSyncInFlight: Promise<SyncResult> | null = null;
@@ -541,10 +541,13 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
     }
 
     // ---------------- ذخیره در پایگاه محلی ----------------
-    if (incremental) {
+    // PN-038/۱.۴ (شورا-ن۰۶۳ · قانون دادهٔ مقدس): مسیر legacy (پاک‌سازی کامل
+    // deleteMany + createMany) برای همیشه حذف شد. همیشه مسیر افزایشی
+    // (upsert افزودنی) اجرا می‌شود — «هیچ دادهٔ قبلی حذف نمی‌شود».
+    {
       // P2-04 — مسیر افزایشی: upsert بر کلید طبیعی + نامه مرده
       // PN-022-A/مرحلهٔ۱ — ردیف‌های خانواده‌های صفحه‌ای هم‌اکنون اعمال شده‌اند؛
-      // اینجا: قراردادها + جاروی سنگ‌قبرهای چرخه‌های کامل تازه
+      // اینجا: قراردادها + گزارش ردیف‌های محوشده (بدون حذف — قانون مقدس)
       const ctFamily = buildMainSyncFamily("contracts", contracts as never[], runId, { fetched: contractsFetched });
       await applyMainSyncFamily(runId, ctFamily);
       const done: Array<{ entity: string; count: number; failed: number }> = [
@@ -554,7 +557,7 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
         { entity: "visits", count: visits.length, failed: familyCycle.visits?.fetched ? 0 : -1 },
         { entity: "supplyDemand", count: supplyDemand.length, failed: familyCycle.supplyDemand?.fetched ? 0 : -1 },
       ];
-      // جارو — تنها چرخهٔ کاملِ تازه (نه ازسرگیری‌شده): کلیدهای این اجرا کامل‌اند
+      // گزارش ردیف‌های محوشده (sweep فقط می‌شمارد — هرگز حذف نمی‌کند؛ PN-038/۱.۴)
       const sweepable: Array<[MainSyncFamilyEntity, unknown[]]> = [
         ["transactions", transactions], ["experts", experts], ["interactions", interactions],
         ["visits", visits], ["supplyDemand", supplyDemand], ["contracts", contracts],
@@ -568,22 +571,6 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
       await writeSyncState({
         lastSyncCursor: JSON.stringify({ runId, done: done.map((d) => d.entity), detail: done }),
       });
-    } else {
-      // مسیر legacy — عین کد قبلی: پاک‌سازی کامل + درج اتمیک
-      await db.$transaction([
-        db.transactionRecord.deleteMany({}),
-        db.expertRecord.deleteMany({}),
-        db.interactionRecord.deleteMany({}),
-        db.visitRecord.deleteMany({}),
-        db.supplyDemandRecord.deleteMany({}),
-        db.contractRecord.deleteMany({}),
-        ...toTxCreates(transactions),
-        ...toExCreates(experts),
-        ...toInCreates(interactions),
-        ...toViCreates(visits),
-        ...toSdCreates(supplyDemand, runId),
-        ...toContractCreates(contracts),
-      ]);
     }
 
     const successAt = new Date();
@@ -840,10 +827,16 @@ interface IncrementalFamily<T> {
   fetched: boolean;
   keyOf: (row: T) => string;
   upsert: (rows: T[]) => Promise<unknown>;
-  /** کلیدهای موجود در پایگاه (برای جاروی سنگ‌قبرها) */
+  /** کلیدهای موجود در پایگاه (برای گزارش ردیف‌های محوشده) */
   listExistingKeys: () => Promise<string[]>;
+  /** PN-038/۱.۴ — قانون دادهٔ مقدس: حذف ممنوع. deleteByKeys همیشه بی‌اثر است.
+   *  امضا حفظ شد (سازگاری تست‌ها) اما هرگز چیزی حذف نمی‌کند. */
   deleteByKeys: (keys: string[]) => Promise<unknown>;
 }
+
+/** no-op مقدسی — هرگز چیزی حذف نمی‌کند (قانون دادهٔ مقدس PN-038/۱.۴) */
+const sacredNoDelete = async (_keys: string[]): Promise<{ sacredKeep: true; wouldDelete: number }> =>
+  ({ sacredKeep: true, wouldDelete: _keys.length });
 
 /** موجودیت‌های خانوادهٔ سنک اصلی (کلید نقطهٔ ازسرگیری داده) */
 type MainSyncFamilyEntity = "transactions" | "experts" | "interactions" | "visits" | "supplyDemand" | "contracts";
@@ -874,7 +867,7 @@ export function buildMainSyncFamily(
         keyOf: (t) => (t as unknown as TransactionUpsertInput).id,
         upsert: (rows) => txRepo.upsertBatch(rows as unknown as TransactionUpsertInput[]),
         listExistingKeys: async () => (await db.transactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
-        deleteByKeys: (keys) => db.transactionRecord.deleteMany({ where: { id: { in: keys } } }),
+        deleteByKeys: sacredNoDelete,
       };
     case "experts":
       return {
@@ -884,7 +877,7 @@ export function buildMainSyncFamily(
         keyOf: (e) => (e as unknown as ExpertUpsertInput).personnelCode,
         upsert: (rows) => exRepo.upsertBatch(rows as unknown as ExpertUpsertInput[]),
         listExistingKeys: async () => (await db.expertRecord.findMany({ where: { sourceRunId: null }, select: { personnelCode: true } })).map((r) => r.personnelCode),
-        deleteByKeys: (keys) => db.expertRecord.deleteMany({ where: { personnelCode: { in: keys } } }),
+        deleteByKeys: sacredNoDelete,
       };
     case "interactions":
       return {
@@ -894,7 +887,7 @@ export function buildMainSyncFamily(
         keyOf: (i) => (i as unknown as InteractionUpsertInput).id,
         upsert: (rows) => exRepo.upsertInteractionsBatch(rows as unknown as InteractionUpsertInput[]),
         listExistingKeys: async () => (await db.interactionRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
-        deleteByKeys: (keys) => db.interactionRecord.deleteMany({ where: { id: { in: keys } } }),
+        deleteByKeys: sacredNoDelete,
       };
     case "visits":
       return {
@@ -904,7 +897,7 @@ export function buildMainSyncFamily(
         keyOf: (v) => (v as unknown as VisitUpsertInput).id,
         upsert: (rows) => viRepo.upsertBatch(rows as unknown as VisitUpsertInput[]),
         listExistingKeys: async () => (await db.visitRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
-        deleteByKeys: (keys) => db.visitRecord.deleteMany({ where: { id: { in: keys } } }),
+        deleteByKeys: sacredNoDelete,
       };
     case "supplyDemand":
       return {
@@ -914,7 +907,7 @@ export function buildMainSyncFamily(
         keyOf: (s) => (s as unknown as SupplyDemandUpsertInput).id,
         upsert: (rows) => mkRepo.upsertSupplyDemandBatch(rows as unknown as SupplyDemandUpsertInput[]),
         listExistingKeys: async () => (await db.supplyDemandRecord.findMany({ select: { id: true } })).map((r) => r.id),
-        deleteByKeys: (keys) => db.supplyDemandRecord.deleteMany({ where: { id: { in: keys } } }),
+        deleteByKeys: sacredNoDelete,
       };
     case "contracts":
     default:
@@ -925,7 +918,7 @@ export function buildMainSyncFamily(
         keyOf: (c) => (c as unknown as ContractUpsertInput).id,
         upsert: (rows) => ctRepo.upsertBatch(rows as unknown as ContractUpsertInput[]),
         listExistingKeys: async () => (await db.contractRecord.findMany({ where: { sourceRunId: null }, select: { id: true } })).map((r) => r.id),
-        deleteByKeys: (keys) => db.contractRecord.deleteMany({ where: { id: { in: keys } } }),
+        deleteByKeys: sacredNoDelete,
       };
   }
 }
@@ -958,13 +951,12 @@ export async function applyMainSyncFamily(runId: string, family: IncrementalFami
 }
 
 /**
- * جاروی سنگ‌قبرها: ردیف‌هایی که دیگر در سامانه نیستند (به‌جز نامه‌های مرده باز).
- * P6.5-03 — رکوردهای Bulk (sourceRunId غیرتهی) از جارو محافظت می‌شوند:
- * داده تاریخیِ خارج از پوشش واکشی sync است؛ حذفش = حفره داده غیرقابل ترمیم (کشف §۱.۹).
+ * گزارش ردیف‌های محوشده: ردیف‌هایی که دیگر در سامانه نیستند (به‌جز نامه‌های
+ * مرده باز). P6.5-03 — رکوردهای Bulk (sourceRunId غیرتهی) محافظت می‌شوند.
  *
- * PN-022-A/مرحلهٔ۱ — قید صحت: تنها با «کلیدهای کامل یک چرخهٔ کاملِ تازه» صدا
- * زده می‌شود؛ چرخهٔ ازسرگیری‌شده کلیدهای ناقص دارد و جارو تا چرخهٔ کامل بعد تعویق
- * می‌خورد (حذف نادرست = حفرهٔ داده).
+ * PN-038/۱.۴ (شورا-ن۰۶۳ · قانون دادهٔ مقدس): این تابع دیگر هیچ ردیفی حذف
+ * نمی‌کند — فقط می‌شمارد و در SyncState گزارش می‌کند («نامهٔ محوشدگی»).
+ * حذف داده در مسیر سینک مطلقاً ممنوع است (گارد audit-data-sacred.sh).
  */
 export async function sweepFamilyStale(family: IncrementalFamily<never>): Promise<number> {
   try {
@@ -973,10 +965,21 @@ export async function sweepFamilyStale(family: IncrementalFamily<never>): Promis
     const fetchedSet = new Set(keys);
     const openDead = await openDeadLetterKeys(family.entity);
     const stale = existing.filter((k) => !fetchedSet.has(k) && !openDead.has(k));
-    if (stale.length > 0) await family.deleteByKeys(stale);
+    if (stale.length > 0) {
+      // قانون مقدس: حذف ممنوع — فقط گزارش (زنده می‌مانند تا سامانه دوباره بفرستد)
+      await logSync("sacred-stale-report", {
+        status: "ok",
+        detail: {
+          entity: family.entity,
+          staleCount: stale.length,
+          action: "keep",
+          note: "ردیف‌های ناموجود در سامانه مبدأ حفظ شدند (قانون دادهٔ مقدس PN-038)",
+        },
+      });
+    }
     return stale.length;
   } catch {
-    // جارو شکست خورد ⇒ اجرا همچنان موفق است؛ دفع بعد تمیز می‌کند
+    // گزارش شکست خورد ⇒ اجرا همچنان موفق است
     return 0;
   }
 }
@@ -1111,7 +1114,11 @@ export async function ensureSeeded(
  */
 export interface ClearCrmResult {
   cleared: boolean;
-  /** فایل بکاپ خودکار (اگر داده‌ای برای بکاپ بود و ساخت موفق بود) */
+  /** PN-038/۱.۴ — حالت مقدس: داده حذف نمی‌شود (sacred-keep) */
+  mode?: "sacred-keep";
+  /** ردیف‌هایی که حفظ شدند (قانون دادهٔ مقدس) */
+  rowsKept?: number;
+  /** فایل بکاپ شاهد (اگر داده‌ای برای بکاپ بود و ساخت موفق بود) */
   backupFile?: string;
 }
 
@@ -1123,6 +1130,10 @@ function resolveBackupsDir(): string {
 }
 
 export async function clearCrmCacheTables(): Promise<ClearCrmResult> {
+  // PN-038/۱.۴ (شورا-ن۰۶۳ · قانون دادهٔ مقدس): «ریست» دیگر حذف نیست.
+  // پیش‌تر این تابع شش جدول را deleteMany می‌کرد (حادثهٔ P6527: ۷۳۹ معامله
+  // + ۲۹۱ کارشناس در «ریست اتصال» گم شد). از این پس ریست = بازسازی روی
+  // داده (sync مجدد با upsert) — دادهٔ موجود هرگز حذف نمی‌شود.
   const [txCount, exCount, inCount, viCount, sdCount, ctCount] = await Promise.all([
     db.transactionRecord.count(),
     db.expertRecord.count(),
@@ -1133,144 +1144,32 @@ export async function clearCrmCacheTables(): Promise<ClearCrmResult> {
   ]);
   const hasData = txCount + exCount + inCount + viCount + sdCount + ctCount > 0;
 
+  if (!hasData) return { cleared: true, mode: "sacred-keep", rowsKept: 0 };
+
+  // بکاپ شاهد (VACUUM INTO اتمی) — سپس داده سر جای خود می‌ماند
   let backupFile: string | undefined;
-  if (hasData) {
-    try {
-      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const suffix = Math.random().toString(36).slice(2, 8);
-      const dir = resolveBackupsDir();
-      mkdirSync(dir, { recursive: true });
-      backupFile = `${dir}/pre-reset-${stamp}-${suffix}.db`;
-      // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
-      await db.$executeRawUnsafe(`VACUUM INTO '${backupFile}'`);
-    } catch {
-      // بکاپ بهترین-تلاش است — پاک‌سازی درخواست‌شده همچنان اجرا می‌شود
-      backupFile = undefined;
-    }
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const suffix = Math.random().toString(36).slice(2, 8);
+    const dir = resolveBackupsDir();
+    mkdirSync(dir, { recursive: true });
+    backupFile = `${dir}/pre-reset-${stamp}-${suffix}.db`;
+    // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
+    await db.$executeRawUnsafe(`VACUUM INTO '${backupFile}'`);
+  } catch {
+    backupFile = undefined;
   }
-
-  await db.transactionRecord.deleteMany({});
-  await db.expertRecord.deleteMany({});
-  await db.interactionRecord.deleteMany({});
-  await db.visitRecord.deleteMany({});
-  await db.supplyDemandRecord.deleteMany({});
-  await db.contractRecord.deleteMany({});
-  return { cleared: true, backupFile };
+  await logSync("sacred-reset-keep", {
+    status: "ok",
+    detail: {
+      note: "ریست اتصال بدون حذف (قانون دادهٔ مقدس PN-038/۱.۴)",
+      rowsKept: { transactions: txCount, experts: exCount, interactions: inCount, visits: viCount, supplyDemand: sdCount, contracts: ctCount },
+      backupFile,
+    },
+  });
+  return { cleared: true, mode: "sacred-keep", rowsKept: txCount + exCount + inCount + viCount + sdCount + ctCount, backupFile };
 }
 
-/** پاک‌سازی کامل کش و استخراج مجدد از سامانه واقعی (دکمه ریست اتصال) */
-export async function resetCrmCache(armToken: string): Promise<SyncResult> {
-  await clearCrmCacheTables();
-  return syncFromArm(armToken);
-}
-
-function toTxCreates(rows: CrmTransaction[]) {
-  return rows.map((t) =>
-    db.transactionRecord.create({
-      data: {
-        id: t.id,
-        contractDate: new Date(t.contractDate),
-        propertyCode: t.propertyCode,
-        propertyCustomer: t.propertyCustomer === null ? null : normName(t.rawPropertyCustomer ?? t.propertyCustomer),
-        requestCode: t.requestCode,
-        requestCustomer: t.requestCustomer === null ? null : normName(t.rawRequestCustomer ?? t.requestCustomer),
-        contractHolo: t.contractHolo,
-        suggestedPropertyCount: t.suggestedPropertyCount,
-        eventsCount: t.eventsCount,
-        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: خام‌ها عین منبع
-        ...(t.rawDate !== undefined ? { rawDate: t.rawDate } : {}),
-        ...(t.rawPropertyCustomer !== undefined ? { rawPropertyCustomer: t.rawPropertyCustomer ?? t.propertyCustomer } : {}),
-        ...(t.rawRequestCustomer !== undefined ? { rawRequestCustomer: t.rawRequestCustomer ?? t.requestCustomer } : {}),
-      },
-    })
-  );
-}
-
-function toExCreates(rows: CrmExpert[]) {
-  return rows.map((e) =>
-    db.expertRecord.create({
-      data: {
-        id: e.id,
-        personnelCode: e.personnelCode,
-        fullName: normName(e.rawFullName ?? e.fullName),
-        mobile: normMobile(e.rawMobile ?? e.mobile),
-        role: e.role,
-        businessTitle: normName(e.rawBusinessTitle ?? e.businessTitle),
-        creator: e.creator === null ? null : normName(e.rawCreator ?? e.creator),
-        active: e.active,
-        createdAt: new Date(e.createdAt),
-        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: خام‌ها عین منبع
-        ...(e.rawFullName !== undefined ? { rawFullName: e.rawFullName ?? e.fullName } : {}),
-        ...(e.rawMobile !== undefined ? { rawMobile: e.rawMobile ?? e.mobile } : {}),
-        ...(e.rawBusinessTitle !== undefined ? { rawBusinessTitle: e.rawBusinessTitle ?? e.businessTitle } : {}),
-        ...(e.rawCreator !== undefined ? { rawCreator: e.rawCreator ?? e.creator } : {}),
-      },
-    })
-  );
-}
-
-function toInCreates(rows: CrmInteraction[]) {
-  return rows.map((i) =>
-    db.interactionRecord.create({
-      data: {
-        id: i.id,
-        requestRealtorName: normName(i.rawRequestRealtorName ?? i.requestRealtorName),
-        propertyRealtorName: normName(i.rawPropertyRealtorName ?? i.propertyRealtorName),
-        count: i.count,
-        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام (کلید طبیعی)
-        ...(i.rawRequestRealtorName !== undefined ? { rawRequestRealtorName: i.rawRequestRealtorName ?? i.requestRealtorName } : {}),
-        ...(i.rawPropertyRealtorName !== undefined ? { rawPropertyRealtorName: i.rawPropertyRealtorName ?? i.propertyRealtorName } : {}),
-      },
-    })
-  );
-}
-
-function toViCreates(rows: CrmVisit[]) {
-  return rows.map((v) =>
-    db.visitRecord.create({
-      data: {
-        id: v.id,
-        propertyCode: v.propertyCode,
-        requesterName: normName(v.rawRequesterName ?? v.requesterName),
-        checkerName: normName(v.rawCheckerName ?? v.checkerName),
-        propertyRealtorName: normName(v.rawPropertyRealtorName ?? v.propertyRealtorName),
-        checkTime: v.checkTime ? new Date(v.checkTime) : null,
-        createdAt: new Date(v.createdAt),
-        status: v.status,
-        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: نام‌های خام
-        ...(v.rawRequesterName !== undefined ? { rawRequesterName: v.rawRequesterName ?? v.requesterName } : {}),
-        ...(v.rawCheckerName !== undefined ? { rawCheckerName: v.rawCheckerName ?? v.checkerName } : {}),
-        ...(v.rawPropertyRealtorName !== undefined ? { rawPropertyRealtorName: v.rawPropertyRealtorName ?? v.propertyRealtorName } : {}),
-      },
-    })
-  );
-}
-
-/** B.3 (P6.5-04-v2) — عرضه/تقاضا با مهر provenance (عین toSdUpsert — مسیر legacy) */
-function toSdCreates(rows: CrmSupplyDemand[], runId?: string) {
-  return rows.map((s) =>
-    db.supplyDemandRecord.create({
-      data: {
-        id: s.id,
-        rangeTitle: s.rangeTitle,
-        propertyCount: s.propertyCount,
-        requestPercent: s.requestPercent,
-        status: s.status,
-        ...(runId ? { rawSourceVersion: null, extractedAt: new Date(), extractionBatchId: runId } : {}),
-      },
-    })
-  );
-}
-
-// ==========================================================================
-// قراردادها و اسناد — استخراج لیست + جزئیات
-// ==========================================================================
-
-/**
- * استخراج قراردادها (صورت وضعیت‌ها): ابتدا لیست صفحه‌بندی‌شده، سپس
- * جزئیات کامل هر قرارداد (خریداران/فروشندگان/حق‌السهم مشاوران).
- * جزئیات فقط برای ۴۰۰ قرارداد نخست گرفته می‌شود (حفاظت از بار سامانه).
- */
 export async function fetchContracts(armToken: string): Promise<CrmContract[]> {
   const cfg = getMelkApiConfig();
   const { rows } = await fetchAllPages(MELK_ENDPOINTS.arm.tradeOverviewsList, armToken, 30, 100, mapArmContractRow);
@@ -1293,40 +1192,14 @@ export async function fetchContracts(armToken: string): Promise<CrmContract[]> {
   return detailed;
 }
 
-function toContractCreates(rows: CrmContract[]) {
-  return rows.map((c) =>
-    db.contractRecord.create({
-      data: {
-        id: c.id,
-        status: c.status,
-        contractHolo: c.contractHolo,
-        propertyCode: c.propertyCode,
-        requestCode: c.requestCode,
-        contractType: c.contractType,
-        creatorName: c.creatorName === null ? null : normName(c.rawCreatorName ?? c.creatorName),
-        createdAt: c.createdAt ? new Date(c.createdAt) : null,
-        contractDate: c.contractDate ? new Date(c.contractDate) : null,
-        documentDate: c.documentDate ? new Date(c.documentDate) : null,
-        deliveryDate: c.deliveryDate ? new Date(c.deliveryDate) : null,
-        propertyTitle: c.propertyTitle === null ? null : normName(c.rawPropertyTitle ?? c.propertyTitle),
-        propertyAddress: c.propertyAddress,
-        buyerListJson: c.buyers.length > 0 ? JSON.stringify(c.buyers) : null,
-        sellerListJson: c.sellers.length > 0 ? JSON.stringify(c.sellers) : null,
-        realtorListJson: c.realtorShares.length > 0 ? JSON.stringify(c.realtorShares) : null,
-        canAddRealtor: c.canAddRealtor,
-        // P6.5-12 — مبالغ مالی قرارداد
-        ...(c.contractPrice !== undefined && c.contractPrice !== null ? { contractPrice: c.contractPrice } : {}),
-        ...(c.rawContractPrice ? { rawContractPrice: c.rawContractPrice } : {}),
-        ...(c.comisionOfContract !== undefined && c.comisionOfContract !== null ? { comisionOfContract: c.comisionOfContract } : {}),
-        ...(c.taxOfContract !== undefined && c.taxOfContract !== null ? { taxOfContract: c.taxOfContract } : {}),
-        ...(c.businessId ? { businessId: c.businessId } : {}),
-        // B.3 (P6.5-04-v2) — لایه ۱ حقیقت: خام‌ها عین منبع
-        ...(c.rawDate !== undefined ? { rawDate: c.rawDate } : {}),
-        ...(c.rawCreatorName !== undefined ? { rawCreatorName: c.rawCreatorName ?? c.creatorName } : {}),
-        ...(c.rawPropertyTitle !== undefined ? { rawPropertyTitle: c.rawPropertyTitle ?? c.propertyTitle } : {}),
-      },
-    })
-  );
+// PN-038/۱.۴ — توابع to*Creates مسیر legacy (deleteMany + createMany)
+// کنار گذاشته شدند؛ داده از این پس فقط از مسیر upsert افزون‌ی می‌شود.
+// (تابع‌های نگاشت to*Upsert همان خانواده همچنان در مسیر افزایشی فعال‌اند.)
+
+/** پاک‌سازی کامل کش و استخراج مجدد از سامانه واقعی (دکمه ریست اتصال) — PN-038: بدون حذف */
+export async function resetCrmCache(armToken: string): Promise<SyncResult> {
+  await clearCrmCacheTables();
+  return syncFromArm(armToken);
 }
 
 // ==========================================================================

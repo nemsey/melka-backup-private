@@ -134,24 +134,24 @@ afterAll(async () => {
 // ۱) پرچم حالت
 // ==========================================================================
 
-describe("P2-04 — پرچم MELK_SYNC_MODE", () => {
-  test("بدون مقدار → legacy (پیش‌فرض تا PHASE 4)", async () => {
+describe("P2-04 → PN-038 — پرچم MELK_SYNC_MODE (قانون دادهٔ مقدس)", () => {
+  test("PN-038/۱.۴: همیشه incremental — legacy برای همیشه بازنشسته شد", async () => {
     const { syncMode } = await import("@/lib/melk-api/sync-mode");
     const saved = process.env.MELK_SYNC_MODE;
     delete process.env.MELK_SYNC_MODE;
-    expect(syncMode()).toBe("legacy");
+    expect(syncMode()).toBe("incremental");
     process.env.MELK_SYNC_MODE = saved;
   });
 
-  test("فقط رشته دقیق incremental حالت افزایشی است — هر چیز دیگر legacy", async () => {
+  test("PN-038: مقدار legacy دیگر بی‌اثر است — هر مقداری ⇒ incremental", async () => {
     const { syncMode } = await import("@/lib/melk-api/sync-mode");
     const saved = process.env.MELK_SYNC_MODE;
+    process.env.MELK_SYNC_MODE = "legacy";
+    expect(syncMode()).toBe("incremental"); // قانون دادهٔ مقدس: حذف ممنوع
     process.env.MELK_SYNC_MODE = "incremental";
     expect(syncMode()).toBe("incremental");
-    process.env.MELK_SYNC_MODE = "INCREMENTAL";
-    expect(syncMode()).toBe("legacy"); // حساس به بزرگی/کوچکی — عمداً محافظه‌کار
     process.env.MELK_SYNC_MODE = "garbage";
-    expect(syncMode()).toBe("legacy");
+    expect(syncMode()).toBe("incremental");
     process.env.MELK_SYNC_MODE = saved;
   });
 });
@@ -200,21 +200,21 @@ describe("P2-04 — مسیر افزایشی", () => {
     expect(vi?.id).toBe(before?.id); // دست‌نخورده (بین دو اجرا همان ردیف)
   });
 
-  test("جاروی سنگ‌قبرها — ردیف حذف‌شده از سامانه پاک می‌شود؛ نامه مرده باز محافظت می‌شود", async () => {
+  test("PN-038/۱.۴ — قانون مقدس: ردیف حذف‌شده از سامانه مبدأ در پایگاه می‌ماند (گزارش بدون حذف)", async () => {
     const { applyIncrementalSync } = await import("@/lib/melk-api/sync");
-    // tx-b از فهرست حذف می‌شود؛ tx-bad نامه مرده باز است (در تست بعد ساخته می‌شود — اینجا اول می‌سازیم)
+    // tx-b از فهرست حذف می‌شود؛ tx-bad نامه مرده باز است
     await db.syncDeadLetter.create({
       data: { runId: "run-p204-x", entity: "transactions", naturalKey: "p204-tx-bad", attempts: 3, lastError: "خراب" },
     });
-    await db.transactionRecord.create({
-      data: txRow("p204-tx-bad") as never,
-    });
+    if (!(await db.transactionRecord.findUnique({ where: { id: "p204-tx-bad" } }))) {
+      await db.transactionRecord.create({ data: txRow("p204-tx-bad") as never });
+    }
 
     await applyIncrementalSync("run-p204-4", fullData({ transactions: [txRow("p204-tx-a")] }));
 
-    // tx-b جارو شد (دیگر در سامانه نیست)
-    expect(await db.transactionRecord.count({ where: { id: "p204-tx-b" } })).toBe(0);
-    // tx-bad به‌خاطر نامه مرده باز جارو نشد
+    // PN-038: قانون دادهٔ مقدس — tx-b دیگر در سامانه نیست اما پایگاه نگهش می‌دارد
+    expect(await db.transactionRecord.count({ where: { id: "p204-tx-b" } })).toBe(1);
+    // tx-bad هم (عین بقیهٔ داده) محفوظ است
     expect(await db.transactionRecord.count({ where: { id: "p204-tx-bad" } })).toBe(1);
   });
 });
@@ -276,17 +276,25 @@ describe("P2-04 — خانواده با واکشی ناموفق دست‌نخو�
 });
 
 // ==========================================================================
-// ۹) مسیر legacy دست‌نخورده
+// ۹) قانون دادهٔ مقدس — مسیر legacy برای همیشه حذف شد (PN-038/۱.۴)
 // ==========================================================================
 
-describe("P2-04 — مسیر legacy", () => {
-  test("doSyncFromArm در حالت legacy از deleteMany+createMany استفاده می‌کند (سطح سورس، بدون HTTP)", async () => {
+describe("P2-04 → PN-038 — میراث legacy حذف شد", () => {
+  test("سورس sync.ts دیگر هیچ deleteMany کدی ندارد — فقط upsert افزودنی (قانون مقدس)", async () => {
     const source = await Bun.file(`${import.meta.dir}/../src/lib/melk-api/sync.ts`).text();
-    // شاخه legacy عین الگوی قبلی را دارد
-    expect(source).toContain("db.transactionRecord.deleteMany({})");
-    expect(source).toContain("...toTxCreates(transactions)");
-    // شاخه افزایشی جدید نیز موجود است
+    // هیچ فراخوانی کدی deleteMany باقی نماند (کامنت‌ها مستثنا هستند)
+    const codeLines = source.split("\n").filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"));
+    const offenders = codeLines.filter((l) => l.includes("deleteMany("));
+    expect(offenders).toEqual([]);
+    // شاخه افزایشی موجود است
     expect(source).toContain("applyIncrementalSync");
-    expect(source).toContain("MELK_SYNC_MODE");
+    expect(source).toContain("sacredNoDelete");
+  });
+
+  test("sacredNoDelete — deleteByKeys همیشه بی‌اثر است (حذف ممنوع)", async () => {
+    const { buildMainSyncFamily } = await import("@/lib/melk-api/sync");
+    const family = buildMainSyncFamily("transactions", [], "run-sacred-1", { fetched: true });
+    const r = await family.deleteByKeys(["a", "b", "c"]);
+    expect(r).toEqual({ sacredKeep: true, wouldDelete: 3 }); // شمارش بدون حذف
   });
 });

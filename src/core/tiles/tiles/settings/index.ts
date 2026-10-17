@@ -13,14 +13,14 @@ import { Settings } from "lucide-react";
 export const settingsTile = defineTile({
   id: "settings",
   version: "1.0.0",
-  title: "تنظیمات عمومی",
+  title: "تنظیمات", // PN-038/۲.۴ — نام کوتاه
   tagline: "زبان، تم، حساب کاربری، مدیریت اتصال و راهنمای اپلیکیشن",
   description:
     "تمام تنظیمات سراسری اپلیکیشن: حالت نمایش، حساب کاربری، مدیریت اتصال به سامانه ملک تبریز (تست و ریست)، و راهنمای کامل استفاده.",
   icon: Settings,
   accent: "settings",
   component: lazyPage(() => import("./SettingsPage")),
-  order: 4,
+  order: 8, // PN-038/۲.۵ — ترتیب جدید هوم: تنظیمات هشتم (آخر)
   agent: null,
   settings: [],
 });
