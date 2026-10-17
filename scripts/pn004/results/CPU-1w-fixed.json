@@ -1,0 +1,166 @@
+{
+ "scenario": "cpu_load_1w",
+ "kind": "cputest",
+ "ts": "2026-10-05T19:12:28+0000",
+ "workers": 1,
+ "duration_s": 30,
+ "loadavg_before": "0.18 0.38 0.31 1/217 3714",
+ "cpu_total_pct_samples": [
+  {
+   "total_pct": 50.5,
+   "workers_pct": 49.5,
+   "other_pct": 1.0
+  },
+  {
+   "total_pct": 51.5,
+   "workers_pct": 50.0,
+   "other_pct": 1.5
+  },
+  {
+   "total_pct": 51.5,
+   "workers_pct": 50.0,
+   "other_pct": 1.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 51.0,
+   "workers_pct": 50.0,
+   "other_pct": 1.0
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.0,
+   "workers_pct": 50.0,
+   "other_pct": 0.0
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 77.0,
+   "workers_pct": 43.0,
+   "other_pct": 34.0
+  },
+  {
+   "total_pct": 98.5,
+   "workers_pct": 33.5,
+   "other_pct": 65.0
+  },
+  {
+   "total_pct": 58.5,
+   "workers_pct": 48.5,
+   "other_pct": 10.0
+  },
+  {
+   "total_pct": 52.5,
+   "workers_pct": 50.0,
+   "other_pct": 2.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 51.0,
+   "workers_pct": 50.0,
+   "other_pct": 1.0
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 51.0,
+   "workers_pct": 50.0,
+   "other_pct": 1.0
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.5,
+   "workers_pct": 50.0,
+   "other_pct": 0.5
+  },
+  {
+   "total_pct": 50.0,
+   "workers_pct": 50.0,
+   "other_pct": 0.0
+  },
+  {
+   "total_pct": 51.0,
+   "workers_pct": 50.0,
+   "other_pct": 1.0
+  }
+ ],
+ "cpu_total_pct_avg": 53.4,
+ "cpu_workers_pct_avg": 49.1,
+ "cpu_other_pct_avg": 4.3,
+ "cpu_total_pct_max": 98.5,
+ "ncores": 2,
+ "loadavg_after": "0.51 0.44 0.33 1/216 3717"
+}

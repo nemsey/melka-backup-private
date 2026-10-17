@@ -1,0 +1,81 @@
+{
+  "phase": "PN-032 (شورا-ن۰۵۲) — قانون لینک",
+  "at": "2026-10-16T09:28:31Z",
+  "server": {
+    "previewBase": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+    "previewHealth": "200",
+    "previewBuildId": "9e8c522-20261016-0918",
+    "publishBase": "https://c1vdh8442240-d.space-z.ai",
+    "publishHealth": "500",
+    "publishNote": "دامنهٔ publish طبق مستند P6521/P6526 «Recycled» — تازه‌سازی فقط از مودال UI مالک (زیرساخت پلتفرم، خارج از ریپو). لینک تحویلِ کارِ مالک مطابق معماری، دامنهٔ preview است."
+  },
+  "linksOk": 16,
+  "linksBad": 0,
+  "linksChecked": [
+    {
+      "name": "PN-032-FINAL-REPORT.md",
+      "status": 200
+    },
+    {
+      "name": "build-freshness.json",
+      "status": 200
+    },
+    {
+      "name": "offline-flag-removed.json",
+      "status": 200
+    },
+    {
+      "name": "restart-proof.json",
+      "status": 200
+    },
+    {
+      "name": "tunnel-alive.json",
+      "status": 200
+    },
+    {
+      "name": "entry-lock.json",
+      "status": 200
+    },
+    {
+      "name": "guards-summary.json",
+      "status": 200
+    },
+    {
+      "name": "guards-raw.txt",
+      "status": 200
+    },
+    {
+      "name": "tests-run1.log",
+      "status": 200
+    },
+    {
+      "name": "tests-run2.log",
+      "status": 200
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "status": 200
+    },
+    {
+      "name": "melka-relay.apk",
+      "status": 200
+    },
+    {
+      "name": "qr-install.png",
+      "status": 200
+    },
+    {
+      "name": "OWNER-GUIDE.html",
+      "status": 200
+    },
+    {
+      "name": "CHAIN.json",
+      "status": 200
+    },
+    {
+      "name": "EVENTS.md",
+      "status": 200
+    }
+  ],
+  "verdict": "PASS"
+}
