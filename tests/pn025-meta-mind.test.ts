@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, test, beforeAll, afterAll } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 
 process.env.OWNER_PERSONNEL_CODES = "410099950";
 const { db } = await import("@/lib/db");
@@ -843,7 +843,6 @@ describe("PN-025 §ادغام UI — سه کاشی حیاتی", () => {
     expect(m5).toMatch(/<AdviceCard/);
     expect(ff).toMatch(/<AdviceCard/);
     // M6 (market-index) با کاشی حذف شد — ماژول فیزیکی هم نیست (قانون دادهٔ مقدس: داده DB ماند)
-    const { existsSync } = require("node:fs") as typeof import("node:fs");
     expect(existsSync(`${TILES}/market-index/MarketIndexPage.tsx`)).toBe(false);
   });
 
