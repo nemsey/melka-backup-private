@@ -167,6 +167,19 @@ case "$MODE" in
       exit 5
     fi
     echo "[reset-guard] درخت بازگشت → $REMOTE_SHA"
+    # PN-038/۱.۲ — گارد دادهٔ مقدس (شورا-ن۰۶۳): شاهد زندهٔ وضعیت DB پس از
+    # بازنشانی درخت. reset-guard خودش DB را جایگزین نمی‌کند؛ این شاهد proves
+    # دادهٔ زنده از بازنشانی جان سالم به در برده (یا گودیدن آن را ثبت می‌کند).
+    if [[ -f "$REPO/db/custom.db" ]] && command -v bun >/dev/null 2>&1; then
+      local _pkg_db=""
+      for _d in $(ls -d "$REPO"/upload/.survival/P*/ 2>/dev/null | sort -V | tail -3); do
+        if [[ -f "${_d%/}/db/custom.db" ]]; then _pkg_db="${_d%/}/db/custom.db"; elif [[ -f "${_d%/}/custom.db" ]]; then _pkg_db="${_d%/}/custom.db"; fi
+      done
+      if [[ -n "$_pkg_db" ]]; then
+        bun "$REPO/scripts/recovery/sacred-data-guard.ts" "$_pkg_db" --live "$REPO/db/custom.db" >/dev/null 2>&1 || true
+        echo "[reset-guard] شاهد گارد مقدس ثبت شد ($_pkg_db)"
+      fi
+    fi
     if [ "${DRILL:-0}" = "1" ]; then
       echo "[reset-guard] DRILL: بازیابی گیت کامل شد؛ build/restart صرفاً طرح (در تولید انجام می‌شود)"
       write_state recover "$VERDICT_LINE" "$HEAD_SHA" "$REMOTE_SHA" "drill-git-recovered" "دریل: بازیابی کامل گیت بدون build"
