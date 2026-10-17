@@ -49,17 +49,7 @@ function makeStandaloneLikeDir(): string {
   return root;
 }
 
-// PN-031-HOTFIX (شورا-ن۰۳۸): MELK_PUBLIC_BASE_URL هم اکنون کلید مدیریت‌شدهٔ
-// escrow است — در جلسهٔ این فایل باید تازه/بازگردانی شود تا رفتار per-key
-// فایل‌های بعدی در همان worker واقعی بماند.
-const ENV_KEYS = [
-  "MELK_TOKEN_KEY",
-  "MASTER_ACCESS_CODE",
-  "OWNER_PERSONNEL_CODES",
-  "MELK_PUBLIC_BASE_URL",
-  // PN-031-I (جلسهٔ ۰۵۰): کلید escrow تازه — تازه/بازگردانی در هر تست
-  "MELK_RELAY_ALT_URL",
-] as const;
+const ENV_KEYS = ["MELK_TOKEN_KEY", "MASTER_ACCESS_CODE", "OWNER_PERSONNEL_CODES"] as const;
 let saved: Record<string, string | undefined> = {};
 let savedRepoDir: string | undefined;
 

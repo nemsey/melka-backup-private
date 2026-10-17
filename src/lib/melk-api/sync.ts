@@ -315,13 +315,6 @@ async function fetchTradedSummary(
   }
 }
 
-/** PN-028/خامساً-ث — بازهٔ گزارشِ پنجرهٔ اخیر: «همین چند روز گذشته تا الان»
- *  (عین قالب ISO خود سامانه — سازگار با buildReportDateRange) */
-export function buildRecentReportDateRange(days: number, now: Date = new Date()): { startDate: string; endDate: string } {
-  const from = new Date(now.getTime() - Math.max(1, days) * 24 * 3600 * 1000);
-  return { startDate: from.toISOString(), endDate: buildReportDateRange(now).endDate };
-}
-
 /**
  * خواندن یک گزارش صفحه‌بندی‌شده تا انتها (با سقف ایمن صفحات).
  * baseQuery = پارامترهای الزامی گزارش (مثل بازهٔ تاریخی) که در همهٔ صفحات تکرار می‌شوند.
@@ -426,36 +419,6 @@ async function doSyncFromArm(armToken: string): Promise<SyncResult> {
   };
 
   try {
-    // ═══ PN-028/خامساً-ث — پنجرهٔ اخیر (Recent-Window pass) ═══
-    // شاهد داده: گزارش traded-count صعودیِ تاریخ قرارداد است (قدیمی‌ترین‌اول) و
-    // ادامهٔ checkpoint از میانهٔ تاریخچه می‌رفت ⇒ معاملاتِ امروز/ساعات اخیر (انتهای
-    // فهرست) فقط پس از دور کامل می‌رسیدند. درمان: پیش از چرخهٔ تاریخی، یک پنجرهٔ
-    // ۲۱روزهٔ اخیر (چند صفحه — سبک و بدون checkpoint) خوانده و بلافاصله اعمال
-    // می‌شود؛ upsert بر کلید طبیعی idempotent است. شکستش هرگز چرخهٔ اصلی را
-    // نمی‌شکند (بهترین-تلاش). فقط در مسیر افزایشی (حالت تولید).
-    if (incremental) {
-      try {
-        const recentRange = buildRecentReportDateRange(21);
-        const recentFetch = await fetchAllPages(
-          MELK_ENDPOINTS.arm.tradedCount,
-          armToken,
-          10,
-          100,
-          mapArmTradedRow,
-          recentRange,
-          { onPage: pageApplier<CrmTransaction>("transactions") }
-        );
-        logSync("sync-run", {
-          status: "ok",
-          mode: "incremental",
-          userId: "recent-window",
-          detail: { recentTransactions: recentFetch.rows.length, range: recentRange, note: "PN-028/خامساً-ث — پنجرهٔ ۲۱روزهٔ اخیر، پیش از چرخهٔ تاریخی" },
-        });
-      } catch {
-        // پنجرهٔ اخیر بهترین-تلاش است — چرخهٔ اصلی ادامه می‌یابد
-      }
-    }
-
     // ---------------- ۱) گزارش تطابق معاملات + خلاصه ----------------
     // رفع B.1: بازهٔ الزامی ارسال می‌شود و «لیست» از traded-count می‌آید
     // (traded-count-total فقط خلاصهٔ چهارگانه است — کشف شب ۱).

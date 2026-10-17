@@ -34,7 +34,7 @@
 import { NextRequest } from "next/server";
 import { getMelkProvider } from "@/lib/melk-api/provider";
 import { isValidOtpFormat, isValidPersonnelCodeFormat } from "@/lib/auth/crypto";
-import { recordAttempt } from "@/lib/auth/rate-limiter";
+import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
 import { classifySmsSendFailure } from "@/lib/melk-api/sms";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
@@ -42,7 +42,6 @@ import { audit, clearSessionArmTokens, updateSessionArmTokens } from "@/lib/auth
 import { getArmVaultStatus, vaultKeyForSession } from "@/lib/auth/arm-vault";
 import { getSyncState } from "@/lib/melk-api/sync";
 import { clientIp } from "@/lib/auth/client-ip";
-import { startRelayJob } from "@/lib/melk-api/relay-jobs";
 
 /** نرمال‌سازی ارقام فارسی/عربی به لاتین */
 function toLatinDigits(s: string): string {
@@ -101,8 +100,6 @@ export async function POST(request: NextRequest) {
 
   switch (body.action) {
     // ---------- ۱) ارسال پیامک ARM (عین GET authentication/otp/{code}) ----------
-    // PN-035 (شورا-ن۰۵۷ · فاز ۳): الگوی async — پاسخ فوری jobId؛ کارِ رله در
-    // پس‌زمینه؛ اپ /api/relay/job/{id} را poll می‌کند (هر گره HTTP < ۱ ثانیه).
     case "start-otp": {
       const code = String(body.personnelCode ?? "").trim();
       if (!isValidPersonnelCodeFormat(code)) {
@@ -110,58 +107,56 @@ export async function POST(request: NextRequest) {
           new MelkApiError("INVALID_PERSONNEL_CODE", "قالب کد پرسنلی نامعتبر است (۶ تا ۱۲ رقم).", 400, false)
         );
       }
-      // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال) — سقف نرخ محلی
-      // جریان اتصال ARM برافتاد؛ recordAttempt تنها رد حسابرسی می‌ماند.
-      const ip = clientIp(request);
-      const job = await startRelayJob({
-        type: "arm-start-otp",
-        sessionId: guard.sessionId,
-        personnelCode: code,
-        payload: { flow: "arm-start-otp" },
-        run: async () => {
-          try {
-            const provider = getMelkProvider();
-            const result = await provider.requestOtp(code, ip);
-            await recordAttempt(code, "REQUEST_OTP_ARM", true, ip);
-            await audit("ARM_OTP_REQUEST", guard.personnelCode, `armCode=${code}`);
-            return {
-              result: {
-                message: `کد پیامکی سامانه ARM به موبایل کد پرسنلی ${code} ارسال شد.`,
-                expiresInSeconds: result.expiresInSeconds,
-              },
-            };
-          } catch (err) {
-            const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error).message, 502, false);
-            // P6.5-09 — «پیامک قبلاً ارسال شده» ⇒ نرم‌موفق: کدِ فعلی هنوز معتبر است
-            const sms = classifySmsSendFailure(e.message);
-            if (sms.kind === "ALREADY_SENT") {
-              await audit("ARM_OTP_ALREADY_SENT", guard.personnelCode, `armCode=${code}`);
-              return { result: { alreadySent: true, message: sms.userMessage, expiresInSeconds: 180 } };
-            }
-            // «سقف پیامک سمت ملک تبریز» ⇒ خطای شفاف با کد متمایز
-            if (sms.kind === "LIMIT_REACHED") {
-              throw new MelkApiError("SMS_LIMIT_REMOTE", sms.userMessage, 429, false);
-            }
-            // سایر خطاها — عین رفتار قبلی (HOTFIX-04: خطای RATE_LIMITED خودش تلاشِ ردشده ثبت نمی‌کند)
-            if (e.code !== "RATE_LIMITED") {
-              await recordAttempt(code, "REQUEST_OTP_ARM", false, ip).catch(() => undefined);
-            }
-            throw new MelkApiError(
-              e.code,
-              `ارسال پیامک ARM ناموفق بود: ${e.message}`,
-              e.httpStatus >= 400 && e.httpStatus < 600 ? e.httpStatus : 502,
-              false
-            );
-          }
-        },
-      });
-      // پاسخ فوری — «شمارهٔ پیگیری» (الگوی Async · سنجهٔ ۶: < ۱ ثانیه)
-      return Response.json({ ok: true, jobId: job.id, status: "queued", pollMs: 1000 });
+      // P6.5-09 — سهمیهٔ «مستقل» جریان اتصال ARM (بدون اشتراک با ورود/PM)
+      const rate = await checkRate(code, "REQUEST_OTP_ARM", ip);
+      if (!rate.allowed) {
+        return errorResponse(new MelkApiError("RATE_LIMITED", rate.reason ?? "درخواست بیش از حد مجاز.", 429, false));
+      }
+      try {
+        const provider = getMelkProvider();
+        const result = await provider.requestOtp(code, ip);
+        await recordAttempt(code, "REQUEST_OTP_ARM", true, ip);
+        await audit("ARM_OTP_REQUEST", guard.personnelCode, `armCode=${code}`);
+        return Response.json({
+          ok: true,
+          message: `کد پیامکی سامانه ARM به موبایل کد پرسنلی ${code} ارسال شد.`,
+          expiresInSeconds: result.expiresInSeconds,
+        });
+      } catch (err) {
+        const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error).message, 502, false);
+
+        // P6.5-09 — «پیامک قبلاً ارسال شده» ⇒ نرم‌موفق: کدِ فعلی هنوز معتبر است
+        const sms = classifySmsSendFailure(e.message);
+        if (sms.kind === "ALREADY_SENT") {
+          await audit("ARM_OTP_ALREADY_SENT", guard.personnelCode, `armCode=${code}`);
+          return Response.json({
+            ok: true,
+            alreadySent: true,
+            message: sms.userMessage,
+            expiresInSeconds: 180,
+          });
+        }
+        // «سقف پیامک سمت ملک تبریز» ⇒ پیام شفاف؛ ثبت تلاش نمی‌کنیم (قفل خود-تمدیدشونده نمی‌سازیم)
+        if (sms.kind === "LIMIT_REACHED") {
+          return errorResponse(new MelkApiError("SMS_LIMIT_REMOTE", sms.userMessage, 429, false));
+        }
+
+        // سایر خطاها — عین رفتار قبلی (HOTFIX-04: خطای RATE_LIMITED خودش تلاشِ ردشده ثبت نمی‌کند)
+        if (e.code !== "RATE_LIMITED") {
+          await recordAttempt(code, "REQUEST_OTP_ARM", false, ip).catch(() => undefined);
+        }
+        return errorResponse(
+          new MelkApiError(
+            e.code,
+            `ارسال پیامک ARM ناموفق بود: ${e.message}`,
+            e.httpStatus >= 400 && e.httpStatus < 600 ? e.httpStatus : 502,
+            false
+          )
+        );
+      }
     }
 
     // ---------- ۲) تأیید کد + اتصال توکن ARM به نشست جاری ----------
-    // PN-035 (شورا-ن۰۵۷ · فاز ۳): async — تأییدِ رله در پس‌زمینه؛ اتصال توکن
-    // به نشست در همان کار انجام می‌شود؛ اپ jobId را poll می‌کند.
     case "verify": {
       const code = String(body.personnelCode ?? "").trim();
       const otp = toLatinDigits(String(body.otp ?? "")).replace(/\D/g, "");
@@ -173,86 +168,73 @@ export async function POST(request: NextRequest) {
           new MelkApiError("OTP_INVALID", "کد پیامکی باید ۴ رقم باشد (مطابق سامانه ملک تبریز).", 400, false)
         );
       }
-      // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال) — سقف نرخ تأیید
-      // اتصال ARM برافتاد؛ recordAttempt تنها رد حسابرسی می‌ماند.
-      const ip = clientIp(request);
-      // مقادیر فرارِ نشست — در زمان ایجاد کار قفل می‌شوند
-      const sessionId = guard.sessionId;
-      const ownerKey = vaultKeyForSession(guard.personnelCode, guard.role);
-      const auditActor = guard.personnelCode;
-      const job = await startRelayJob({
-        type: "arm-verify",
-        sessionId,
-        personnelCode: code,
-        payload: { flow: "arm-verify" },
-        run: async () => {
+      // P6.5-09 — سهمیهٔ تأیید «مستقل» جریان اتصال ARM
+      const rate = await checkRate(code, "VERIFY_OTP_ARM", ip);
+      if (!rate.allowed) {
+        return errorResponse(new MelkApiError("RATE_LIMITED", rate.reason ?? "تلاش بیش از حد مجاز.", 429, false));
+      }
+      try {
+        // ✅ تأیید در سامانه واقعی ARM — کد پیامکی واقعی سنجیده می‌شود
+        const provider = getMelkProvider();
+        const result = await provider.verifyOtp(code, otp);
+        await recordAttempt(code, "VERIFY_OTP_ARM", true, ip);
+
+        // توکن‌ها فقط به «نشست خودِ درخواست‌کننده» (SEC-3) + صندوقچهٔ ماندگار (بند ث P6.5-11):
+        // اتصال مالک از این پس در ورودهای بعدی خودکار بازیابی می‌شود — بدون پیامک مجدد
+        await updateSessionArmTokens(guard.sessionId, result.armTokens, {
+          ownerKey: vaultKeyForSession(guard.personnelCode, guard.role),
+          personnelCode: code,
+          displayName: result.user.displayName,
+        });
+        await audit(
+          "ARM_CONNECT",
+          guard.personnelCode,
+          `armCode=${code}; userType=${result.armTokens.userType ?? "-"}; role=${guard.role}; vault=${vaultKeyForSession(guard.personnelCode, guard.role)}`
+        );
+
+        // استخراج داده واقعی در پس‌زمینه — مسدودکننده پاسخ نیست؛ خطایش فقط لاگ می‌شود
+        void (async () => {
           try {
-            // ✅ تأیید در سامانه واقعی ARM — کد پیامکی واقعی سنجیده می‌شود
-            const provider = getMelkProvider();
-            const result = await provider.verifyOtp(code, otp);
-            await recordAttempt(code, "VERIFY_OTP_ARM", true, ip);
-
-            // توکن‌ها فقط به «نشست خودِ درخواست‌کننده» (SEC-3) + صندوقچهٔ ماندگار (بند ث P6.5-11):
-            // اتصال مالک از این پس در ورودهای بعدی خودکار بازیابی می‌شود — بدون پیامک مجدد
-            await updateSessionArmTokens(sessionId, result.armTokens, {
-              ownerKey,
-              personnelCode: code,
-              displayName: result.user.displayName,
-            });
+            const { syncFromArm } = await import("@/lib/melk-api/sync");
+            const sync = await syncFromArm(result.armTokens.accessToken);
             await audit(
-              "ARM_CONNECT",
-              auditActor,
-              `armCode=${code}; userType=${result.armTokens.userType ?? "-"}; vault=${ownerKey}`
+              "ARM_CONNECT_SYNC",
+              guard.personnelCode,
+              `ok=${sync.ok}; tx=${sync.transactions}; ex=${sync.experts}${sync.errorCode ? `; err=${sync.errorCode}` : ""}`
             );
-
-            // استخراج داده واقعی در پس‌زمینه — مسدودکننده پاسخ نیست؛ خطایش فقط لاگ می‌شود
-            void (async () => {
-              try {
-                const { syncFromArm } = await import("@/lib/melk-api/sync");
-                const sync = await syncFromArm(result.armTokens.accessToken);
-                await audit(
-                  "ARM_CONNECT_SYNC",
-                  auditActor,
-                  `ok=${sync.ok}; tx=${sync.transactions}; ex=${sync.experts}${sync.errorCode ? `; err=${sync.errorCode}` : ""}`
-                );
-              } catch (e) {
-                const { logEvent } = await import("@/lib/logger");
-                logEvent({
-                  level: "error",
-                  category: "sync",
-                  operation: "arm-connect-auto-sync",
-                  status: "fail",
-                  errorCode: "AUTO_SYNC_ERROR",
-                  detail: { error: e instanceof Error ? e.message : String(e) },
-                });
-              }
-            })();
-
-            return {
-              result: {
-                message: `اتصال سامانه ARM برقرار شد${result.user.displayName ? ` — «${result.user.displayName}»` : ""}. استخراج داده واقعی در پس‌زمینه آغاز شد.`,
-                user: { displayName: result.user.displayName, userType: result.armTokens.userType ?? null },
-              },
-            };
-          } catch (err) {
-            await recordAttempt(code, "VERIFY_OTP_ARM", false, ip).catch(() => undefined);
-            const { logAuth } = await import("@/lib/logger");
-            logAuth("otp-failed", {
-              userId: auditActor,
+          } catch (e) {
+            const { logEvent } = await import("@/lib/logger");
+            logEvent({
+              level: "error",
+              category: "sync",
+              operation: "arm-connect-auto-sync",
               status: "fail",
-              errorCode: err instanceof MelkApiError ? err.code : "UNKNOWN",
-              detail: { flow: "arm-connection" },
+              errorCode: "AUTO_SYNC_ERROR",
+              detail: { error: e instanceof Error ? e.message : String(e) },
             });
-            const e =
-              err instanceof MelkApiError
-                ? err
-                : new MelkApiError("UNKNOWN", "خطای غیرمنتظره در تأیید کد پیامکی.", 502, false);
-            throw e;
           }
-        },
-      });
-      // پاسخ فوری — «شمارهٔ پیگیری» (الگوی Async · سنجهٔ ۶: < ۱ ثانیه)
-      return Response.json({ ok: true, jobId: job.id, status: "queued", pollMs: 1000 });
+        })();
+
+        return Response.json({
+          ok: true,
+          message: `اتصال سامانه ARM برقرار شد${result.user.displayName ? ` — «${result.user.displayName}»` : ""}. استخراج داده واقعی در پس‌زمینه آغاز شد.`,
+          user: { displayName: result.user.displayName, userType: result.armTokens.userType ?? null },
+        });
+      } catch (err) {
+        await recordAttempt(code, "VERIFY_OTP_ARM", false, ip).catch(() => undefined);
+        const { logAuth } = await import("@/lib/logger");
+        logAuth("otp-failed", {
+          userId: guard.personnelCode,
+          status: "fail",
+          errorCode: err instanceof MelkApiError ? err.code : "UNKNOWN",
+          detail: { flow: "arm-connection" },
+        });
+        const e =
+          err instanceof MelkApiError
+            ? err
+            : new MelkApiError("UNKNOWN", "خطای غیرمنتظره در تأیید کد پیامکی.", 502, false);
+        return errorResponse(e);
+      }
     }
 
     // ---------- ۳) قطع اتصال ARM از نشست جاری (نشست زنده می‌ماند) ----------

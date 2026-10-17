@@ -13,7 +13,6 @@
 import { getMelkApiConfig, type MelkApiConfig } from "./config";
 import { MELK_ENDPOINTS } from "./endpoints";
 import { armCall, probeGet } from "./client";
-import { isArmOfflineMode, offlineModeMessage } from "./offline-mode";
 import {
   extractAddress,
   extractDetailItems,
@@ -52,9 +51,8 @@ export interface MelkProvider {
   mode: "real";
   config: MelkApiConfig;
 
-  /** مرحله ۱: درخواست ارسال کد پیامکی از سامانه واقعی ARM.
-   *   PN-029 مرحلهٔ ۸: bypassOffline=true فقط از API تک‌تلاش مالک — سوزاندن آگاهانه. */
-  requestOtp(personnelCode: string, ip?: string, opts?: { bypassOffline?: boolean }): Promise<OtpIssueResult>;
+  /** مرحله ۱: درخواست ارسال کد پیامکی از سامانه واقعی ARM */
+  requestOtp(personnelCode: string, ip?: string): Promise<OtpIssueResult>;
   /** مرحله ۲: تأیید کد پیامکی در سامانه واقعی ARM */
   verifyOtp(personnelCode: string, otp: string): Promise<OtpVerifyResult>;
   /** تمدید توکن ARM با refreshToken */
@@ -71,9 +69,8 @@ export interface MelkProvider {
   listVisits(token: string, page: number, limit: number): Promise<Paged<CrmVisit>>;
   /** گزارش عرضه و تقاضا (realtor-reports/supply-demand سامانه ARM) */
   listSupplyDemand(token: string, page: number, limit: number): Promise<Paged<CrmSupplyDemand>>;
-  /** تست زنده اتصال سرویس‌ها — PN-029: live=true یعنی پروب واقعی (دکمهٔ تست مالک)؛
-   * در حالت آفلینی، بدون live هیچ پروبی زده نمی‌شود (صفر تلاش خودکار). */
-  testConnection(opts?: { live?: boolean }): Promise<ConnectionStatus>;
+  /** تست زنده اتصال هر سه سرویس */
+  testConnection(): Promise<ConnectionStatus>;
   /** وضعیت زنده پورتال PM */
   pmPortalInfo(): Promise<{ ok: boolean; detail: string }>;
 }
@@ -150,18 +147,8 @@ class RealProvider implements MelkProvider {
     this.config = config;
   }
 
-  /**
-   * PN-036 (شورا-ن۰۵۸ · فاز ۳) — بودجهٔ رله برای جریان‌های تعاملی (OTP).
-   * رفت‌وبرگشت رله در شلوغی صف بیش از مهلت پیش‌فرض (۲۵ث) می‌شد؛ جریان‌های
-   * async (ورود/اتصال ARM) اکنون ۹۰ ثانیه صبر می‌کنند — زیر TTL صف (۱۲۰ث).
-   * از config (env MELK_INTERACTIVE_TIMEOUT_MS) — محیط تست ۳۰۰ms شکست‌سریع (PN-013/D5).
-   */
-  private get interactiveBudgetMs(): number {
-    return this.config.interactiveTimeoutMs;
-  }
-
   /** فراخوانی API اصلی ARM */
-  private arm<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; token?: string; query?: Record<string, string | number | undefined | null>; bypassOffline?: boolean; timeoutMs?: number } = {}) {
+  private arm<T>(path: string, init: { method?: "GET" | "POST"; body?: unknown; token?: string; query?: Record<string, string | number | undefined | null> } = {}) {
     return armCall<T>({
       path,
       baseUrl: this.config.armApiBase,
@@ -169,19 +156,14 @@ class RealProvider implements MelkProvider {
       body: init.body,
       token: init.token,
       query: init.query,
-      timeoutMs: init.timeoutMs ?? this.config.timeoutMs,
+      timeoutMs: this.config.timeoutMs,
       maxRetries: this.config.maxRetries,
-      bypassOffline: init.bypassOffline,
     });
   }
 
-  async requestOtp(personnelCode: string, _ip?: string, opts?: { bypassOffline?: boolean }): Promise<OtpIssueResult> {
+  async requestOtp(personnelCode: string, _ip?: string): Promise<OtpIssueResult> {
     // قرارداد واقعی: GET authentication/otp/{code} — پیامک از سمت سامانه ARM ارسال می‌شود
-    // PN-036: بودجهٔ رله ۹۰ث — جریان async (درخواست پیامک ورود/اتصال) گره HTTP باز نمی‌گذارد
-    const res = await this.arm<unknown>(MELK_ENDPOINTS.arm.requestOtp(personnelCode), {
-      bypassOffline: opts?.bypassOffline,
-      timeoutMs: this.interactiveBudgetMs,
-    });
+    const res = await this.arm<unknown>(MELK_ENDPOINTS.arm.requestOtp(personnelCode));
     const env = res.data as (NestEnvelope & { verificationMinutesLimit?: number }) | null;
     // سامانه ARM عمر کد را با verificationMinutesLimit (دقیقه) یا پیش‌فرض ۱۸۰ ثانیه اعلام می‌کند
     let expiresInSeconds = 180;
@@ -192,11 +174,9 @@ class RealProvider implements MelkProvider {
 
   async verifyOtp(personnelCode: string, otp: string): Promise<OtpVerifyResult> {
     // قرارداد واقعی: POST authentication/otp/login با {code, otpCode}
-    // PN-036: بودجهٔ رله ۹۰ث — تأیید نیز async است (auth verify-otp کار پس‌زمینه)
     const res = await this.arm<ArmLoginData | NestEnvelope<ArmLoginData>>(MELK_ENDPOINTS.arm.verifyOtp, {
       method: "POST",
       body: { code: personnelCode, otpCode: otp },
-      timeoutMs: this.interactiveBudgetMs,
     });
 
     const loginData = (res.data ?? (res.data as unknown)) as ArmLoginData;
@@ -469,49 +449,22 @@ class RealProvider implements MelkProvider {
     }
   }
 
-  async testConnection(opts?: { live?: boolean }): Promise<ConnectionStatus> {
+  async testConnection(): Promise<ConnectionStatus> {
     const checkedAt = new Date().toISOString();
     const services: ArmServiceStatus[] = [];
 
-    // PN-029 (مرحلهٔ ۲) — حالت آفلینی: بدون live (بارگذاری صفحه) صفر پروب؛
-    // خروجی صادقانه «حالت آفلین» است نه «قطع». live=true فقط از دکمهٔ تست
-    // مالک می‌آید (اقدام آگاهانهٔ دستی — مجاز به عبور از گارد).
-    if (isArmOfflineMode() && !opts?.live) {
-      const offlineDetail = "حالت آفلینی ملک تبریز — پروب متوقف (PN-029: توقف تلاش‌های خودکار تا پایان تشخیص)";
-      const names: Array<[ArmServiceStatus["service"], string]> = [
-        ["ARM_PUBLIC", "سامانه مدیریت آگهی و درخواست — بخش عمومی"],
-        ["ARM_API", "سامانه مدیریت آگهی و درخواست — احراز هویت"],
-        ["PM_API", "سامانه مدیریت پرسنلی"],
-        ["MELK_PUBLIC_API", "سامانه عمومی ملک تبریز (melketabriz.com)"],
-        ["GAP_API", "سامانه گفت‌وگوی آنلاین (gap.melketabriz.ir)"],
-      ];
-      for (const [service, label] of names) {
-        services.push({ service, label, reachable: false, databaseUp: false, latencyMs: -1, detail: offlineDetail });
-      }
-      return {
-        ok: false,
-        mode: this.mode,
-        latencyMs: -1,
-        checkedAt,
-        services,
-        detail: offlineModeMessage(),
-      };
-    }
-    // در حالت آفلینی با live=true، پروب‌ها با bypassOffline زده می‌شوند
-    const probeOpts = opts?.live ? { bypassOffline: true } : undefined;
-
     // ۱) API اصلی ARM — سنجش با نقطه عمومی enums (بدون توکن، همان زنجیره nginx)
     try {
-      const probe = await probeGet(this.config.armPublicApiBase, MELK_ENDPOINTS.armPublic.enums, 12000, probeOpts);
+      const probe = await probeGet(this.config.armPublicApiBase, MELK_ENDPOINTS.armPublic.enums, 12000);
       const dbUp = probe.httpStatus < 500 && !probe.bodyText.includes("MongooseError");
       services.push({
         service: "ARM_PUBLIC",
         label: "سامانه مدیریت آگهی و درخواست — بخش عمومی",
-        reachable: !probe.circuitLocked && !probe.offlineMode,
+        reachable: true,
         databaseUp: dbUp,
         httpStatus: probe.httpStatus,
         latencyMs: probe.latencyMs,
-        detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "پاسخ موفق" : "پایگاه داده سامانه آگهی و درخواست در دسترس نیست (خطای پایگاه داده/پنج‌صد و دو)",
+        detail: dbUp ? "پاسخ موفق" : "پایگاه داده سامانه آگهی و درخواست در دسترس نیست (خطای پایگاه داده/پنج‌صد و دو)",
       });
     } catch {
       services.push({
@@ -526,16 +479,16 @@ class RealProvider implements MelkProvider {
 
     // ۲) API احراز هویت ARM — سنجش نقطه OTP (بدون توکن؛ کد تستی صرفاً برای بررسی سلامت مسیر)
     try {
-      const probe = await probeGet(this.config.armApiBase, `authentication/otp/0`, 12000, probeOpts);
+      const probe = await probeGet(this.config.armApiBase, `authentication/otp/0`, 12000);
       const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
       services.push({
         service: "ARM_API",
         label: "سامانه مدیریت آگهی و درخواست — احراز هویت",
-        reachable: !probe.circuitLocked && !probe.offlineMode,
+        reachable: true,
         databaseUp: dbUp,
         httpStatus: probe.httpStatus,
         latencyMs: probe.latencyMs,
-        detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "مسیر احراز هویت فعال است" : "پایگاه داده سامانه آگهی و درخواست قطع است — ارسال پیامک ممکن نیست",
+        detail: dbUp ? "مسیر احراز هویت فعال است" : "پایگاه داده سامانه آگهی و درخواست قطع است — ارسال پیامک ممکن نیست",
       });
     } catch {
       services.push({
@@ -550,16 +503,16 @@ class RealProvider implements MelkProvider {
 
     // ۳) API سامانه پرسنلی PM
     try {
-      const probe = await probeGet(this.config.pmApiBase, MELK_ENDPOINTS.pm.portalInfo, 12000, probeOpts);
+      const probe = await probeGet(this.config.pmApiBase, MELK_ENDPOINTS.pm.portalInfo, 12000);
       const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
       services.push({
         service: "PM_API",
         label: "سامانه مدیریت پرسنلی",
-        reachable: !probe.circuitLocked && !probe.offlineMode,
+        reachable: true,
         databaseUp: dbUp,
         httpStatus: probe.httpStatus,
         latencyMs: probe.latencyMs,
-        detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "پاسخ موفق" : "پایگاه داده سامانه پرسنلی در دسترس نیست",
+        detail: dbUp ? "پاسخ موفق" : "پایگاه داده سامانه پرسنلی در دسترس نیست",
       });
     } catch {
       services.push({
@@ -574,16 +527,16 @@ class RealProvider implements MelkProvider {
 
     // ۴) API سامانه عمومی ملک تبریز (P6546/گام صفر) — بخش عمومی apu (بدون توکن)
     try {
-      const probe = await probeGet(this.config.melkPublicApiBase, `${MELK_ENDPOINTS.melkPublic.propertiesList}?page=1&limit=1`, 12000, probeOpts);
+      const probe = await probeGet(this.config.melkPublicApiBase, `${MELK_ENDPOINTS.melkPublic.propertiesList}?page=1&limit=1`, 12000);
       const dbUp = probe.httpStatus === 200 && !probe.bodyText.includes("MongooseError");
       services.push({
         service: "MELK_PUBLIC_API",
         label: "سامانه عمومی ملک تبریز (melketabriz.com)",
-        reachable: !probe.circuitLocked && !probe.offlineMode,
+        reachable: true,
         databaseUp: dbUp,
         httpStatus: probe.httpStatus,
         latencyMs: probe.latencyMs,
-        detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "فهرست عمومی آگهی‌ها پاسخ می‌دهد" : "بخش عمومی سامانه ملک تبریز در دسترس نیست",
+        detail: dbUp ? "فهرست عمومی آگهی‌ها پاسخ می‌دهد" : "بخش عمومی سامانه ملک تبریز در دسترس نیست",
       });
     } catch {
       services.push({
@@ -598,7 +551,7 @@ class RealProvider implements MelkProvider {
 
     // ۵) API سامانه گفت‌وگو GAP (P6546/گام صفر) — سرور Express؛ هر پاسخ HTTP = در دسترس
     try {
-      const probe = await probeGet(this.config.gapApiBase, "", 12000, probeOpts);
+      const probe = await probeGet(this.config.gapApiBase, "", 12000);
       services.push({
         service: "GAP_API",
         label: "سامانه گفت‌وگوی آنلاین (gap.melketabriz.ir)",

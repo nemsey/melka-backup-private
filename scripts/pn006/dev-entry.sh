@@ -45,14 +45,6 @@ else
     bun scripts/pn012/escrow-manager.ts restore 2>&1 | tee -a dev-recovery.log || true
   fi
 
-  # ۱-ب) PN-031-E — بازیابی مسیر سرو تحویل‌ها (public/deliver) اگر بازنشانی پلتفرم آن را زد
-  #      منبع حقیقت: download/ + upload/.survival (طبق .gitignore بند ۹۵)؛ اینجا فقط کپی سرو.
-  if [[ ! -f public/deliver/pn031d/melka-relay.apk && -f download/pn031d/melka-relay.apk ]]; then
-    mkdir -p public/deliver/pn031d
-    cp -f download/pn031d/melka-relay.apk download/pn031d/qr-apk.png download/pn031d/qr-apk.svg download/pn031d/OWNER-GUIDE.html public/deliver/pn031d/ 2>/dev/null || true
-    echo "[dev-entry] public/deliver/pn031d از منبع حقیقت download/pn031d بازگردانده شد (APK + QR)"
-  fi
-
   # ۲) بیلد در صورت نبود
   if [[ ! -f .next/standalone/server.js ]]; then
     echo "[dev-entry] بیلد production…"

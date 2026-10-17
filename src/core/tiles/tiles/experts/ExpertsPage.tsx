@@ -305,8 +305,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
           </FilterGroup>
           {/* هویت پرسنلی */}
           <FilterGroup label="هویت پرسنلی">
-            {/* PN-028/خامساً-ف (دستور مالک) — فیلدهای متنی دوتایی: هر ردیف دو فیلد روبروهم */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="exf-name">کارشناس (نام)</Label>
                 <Input id="exf-name" value={filters.fullName} onChange={(e) => setF("fullName", e.target.value)} placeholder="نام کارشناس" />
@@ -418,8 +417,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
           </FilterGroup>
           {/* تماس و نشانی */}
           <FilterGroup label="تماس و نشانی">
-            {/* PN-028/خامساً-ف — دوتایی */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="exf-address">آدرس</Label>
                 <Input id="exf-address" value={filters.address} onChange={(e) => setF("address", e.target.value)} placeholder="بخشی از آدرس" />
@@ -436,8 +434,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
           </FilterGroup>
           {/* بازهٔ استخدام + شمارش قرارداد */}
           <FilterGroup label="بازهٔ استخدام و شمارش قرارداد">
-            {/* PN-028/خامساً-ف — دوتایی */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label>استخدام</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -474,11 +471,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
 
       {/* ─── فهرست کارشناسان ─── */}
       <Card>
-        {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
-            ردیف ۱: عنوان وسط‌چین · ردیف ۲: اکسل کل فهرست */}
-        <CardHeader className="py-4 flex flex-col items-center gap-2">
-          <CardTitle className="text-base text-center">فهرست کارشناسان و کارکنان</CardTitle>
-          <div className="w-full flex items-center justify-between gap-3 flex-wrap">
+        <CardHeader className="py-4 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <CardTitle className="text-base text-center">فهرست کارشناسان و کارکنان</CardTitle>
             <Button
               variant="outline"
               size="sm"

@@ -630,8 +630,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                 }}
               >
               <FilterGroup label="شناسه و اشخاص">
-                {/* PN-028/خامساً-ف (دستور مالک) — فیلدهای متنی دوتایی: هر ردیف دو فیلد روبروهم */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
                 <div className="space-y-1.5">
                   <Label htmlFor="arm-listing-code">کد آگهی</Label>
                   <Input
@@ -788,12 +787,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
       ) : (
         <Card>
           {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین (الگوی فهرست معاملات) */}
-          {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
-              ردیف ۱: عنوان «فهرست آگهی» وسط‌چین
-              ردیف ۲: «اکسل کل فهرست» (راست) + «بارگذاری اکسل» (چپ) */}
-          <CardHeader className="py-4 flex flex-col items-center gap-2">
-            <CardTitle className="text-base text-center">فهرست آگهی</CardTitle>
-            <div className="w-full flex items-center justify-between gap-3 flex-wrap">
+          <CardHeader className="py-4 flex flex-col items-center gap-1">
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              <CardTitle className="text-base text-center">فهرست آگهی‌ها</CardTitle>
               {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
               <Button
                 variant="outline"
