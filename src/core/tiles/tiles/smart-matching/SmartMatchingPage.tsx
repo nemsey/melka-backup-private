@@ -204,7 +204,7 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
   const openInTile = useCallback(
     (code: string) => {
       const tileId = tab === "listing" ? "arm-requests" : "arm-listings";
-      openTile(tileId, "management-dashboard", { code });
+      openTile(tileId, null, { code }); // PN-038/فاز ۲: ظرف حذف شد — بازگشت به هوم
     },
     [tab, openTile],
   );
@@ -217,7 +217,7 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
   const openSourceInTile = useCallback(() => {
     if (!result?.sourceInfo) return;
     const tileId = result.direction === "listing_to_request" ? "arm-listings" : "arm-requests";
-    openTile(tileId, "management-dashboard", { code: result.sourceInfo.code });
+    openTile(tileId, null, { code: result.sourceInfo.code }); // PN-038/فاز ۲
   }, [result, openTile]);
 
   const candidatesInBucket = useMemo(
