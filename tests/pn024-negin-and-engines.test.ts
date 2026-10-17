@@ -117,12 +117,13 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
     }
   });
 
-  test("N14 اعمال: هر ۱۱ صفحهٔ کاشی data-negin دارد", () => {
+  test("N14 اعمال: هر ۷ صفحهٔ کاشی data-negin دارد (PN-038 — تنظیمات data-negin ندارد)", () => {
     const pages = [
-      "file-finder/FileFinderPage.tsx", "listing/ListingsPage.tsx", "request/RequestsPage.tsx",
+      // PN-038/فاز ۲: M6/M7 حذف شدند؛ کاشی‌های ریشهٔ فعال (فایل یابی…تنظیمات)
+      "file-finder/FileFinderPage.tsx",
       "arm-listing/ArmListingsPage.tsx", "arm-request/ArmRequestsPage.tsx", "transactions-contracts/TransactionsContractsPage.tsx",
       "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx", "learning-tier/LearningTierPage.tsx",
-      "market-index/MarketIndexPage.tsx", "data-coverage/DataCoveragePage.tsx",
+      "settings/SettingsPage.tsx",
     ];
     for (const p of pages) {
       const src = readFileSync(join(ROOT, "src/core/tiles/tiles", p), "utf-8");
@@ -130,13 +131,14 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
     }
   });
 
-  test("N15 اعمال: مقدار data-negin هر صفحه در فهرست ۱۱ گوهر معتبر است", () => {
+  test("N15 اعمال: مقدار data-negin هر صفحه در فهرست گوهرها معتبر است (PN-038: ۷ صفحه)", () => {
     const validGems = new Set(NEGIN_GEMS.map((g) => g.id));
     const pages = [
-      "file-finder/FileFinderPage.tsx", "listing/ListingsPage.tsx", "request/RequestsPage.tsx",
+      // PN-038/فاز ۲: M6/M7 حذف شدند؛ کاشی‌های ریشهٔ فعال (فایل یابی…تنظیمات)
+      "file-finder/FileFinderPage.tsx",
       "arm-listing/ArmListingsPage.tsx", "arm-request/ArmRequestsPage.tsx", "transactions-contracts/TransactionsContractsPage.tsx",
       "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx", "learning-tier/LearningTierPage.tsx",
-      "market-index/MarketIndexPage.tsx", "data-coverage/DataCoveragePage.tsx",
+      "settings/SettingsPage.tsx",
     ];
     const seen = new Set<string>();
     for (const p of pages) {

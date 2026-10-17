@@ -156,6 +156,7 @@ export async function runSacredBackup(db: PrismaClient, options?: { keep?: numbe
   try {
     const probe = new (await import("@prisma/client")).PrismaClient({ datasources: { db: { url: `file:${target}` } } });
     try {
+      // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
       const r = await probe.$queryRawUnsafe("PRAGMA integrity_check") as { integrity_check: string }[];
       manifest.counts["__integrity"] = r[0]?.integrity_check === "ok" ? 1 : 0;
       for (const t of ["PropertyRecord", "RequestRecord", "TransactionRecord", "ExpertRecord", "GraphNode"]) {

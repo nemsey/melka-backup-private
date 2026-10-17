@@ -835,16 +835,16 @@ describe("PN-025 §کمربند — سرویس و API", () => {
  * ════════════════════════════════════════════════════════════════════ */
 
 describe("PN-025 §ادغام UI — سه کاشی حیاتی", () => {
-  test("U-۱) AdviceCard در هر سه کاشی حیاتی import شده", () => {
+  test("U-۱ → PN-03۸/۲.۱: AdviceCard در کاشی‌های حیاتی مانده (M6 حذف شد — کاشی‌های ریشه)", () => {
     const m5 = readFileSync(`${TILES}/smart-matching/SmartMatchingPage.tsx`, "utf8");
     const ff = readFileSync(`${TILES}/file-finder/FileFinderPage.tsx`, "utf8");
-    const m7 = readFileSync(`${TILES}/market-index/MarketIndexPage.tsx`, "utf8");
     expect(m5).toContain('from "@/components/app/shared/AdviceCard"');
     expect(ff).toContain('from "@/components/app/shared/AdviceCard"');
-    expect(m7).toContain('from "@/components/app/shared/AdviceCard"');
     expect(m5).toMatch(/<AdviceCard/);
     expect(ff).toMatch(/<AdviceCard/);
-    expect(m7).toMatch(/<AdviceCard/);
+    // M6 (market-index) با کاشی حذف شد — ماژول فیزیکی هم نیست (قانون دادهٔ مقدس: داده DB ماند)
+    const { existsSync } = require("node:fs") as typeof import("node:fs");
+    expect(existsSync(`${TILES}/market-index/MarketIndexPage.tsx`)).toBe(false);
   });
 
   test("U-۲) حالت قفل — پیام کمربند رندر می‌شود (data-testid)", () => {
