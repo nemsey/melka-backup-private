@@ -2,7 +2,7 @@ PASS|scripts/audit-activity-log.sh|
 PASS|scripts/audit-boot-secrets.sh|
 PASS|scripts/audit-causal-validity.sh|
 PASS|scripts/audit-champion-challenger.sh|
-FAIL|scripts/audit-chunk-integrity.sh|
+PASS|scripts/audit-chunk-integrity.sh|
 PASS|scripts/audit-counterfactual-purity.sh|
 PASS|scripts/audit-data-sacred.sh|
 PASS|scripts/audit-decision-lock.sh|
@@ -34,7 +34,7 @@ PASS|scripts/audit-postgres-compat.sh|
 PASS|scripts/audit-relay-matrix.sh|
 PASS|scripts/audit-repair-gate.sh|
 PASS|scripts/audit-repository-boundary.sh|--strict
-TIMEOUT|scripts/audit-reproducibility.sh|
+PASS|scripts/audit-reproducibility.sh|
 PASS|scripts/audit-roles.sh|
 PASS|scripts/audit-self-diagnosis.sh|
 PASS|scripts/audit-smart-update.sh|
