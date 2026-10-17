@@ -1,0 +1,23 @@
+{
+ "phase": "PN-031-C · تحویل مالک — کد تازهٔ بخشنده (جلسهٔ فوق‌العاده ۰۴۰)",
+ "generatedAt": "2026-10-13T06:32:00Z",
+ "publicUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+ "invalidatedStale": [],
+ "newEnrollment": {
+  "deviceId": "poco-f3-141ecc",
+  "label": "Poco F3",
+  "installCommand": "pkg install -y curl openssl jq && curl -fsSL \"https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=a46e409e75f1dc8ddee25f02ad9217c2a851\" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh",
+  "bootstrapUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=a46e409e75f1dc8ddee25f02ad9217c2a851",
+  "enrollExpires": "2026-10-13T07:02:20.113Z",
+  "validityMinutes": 30,
+  "maxAttempts": 3,
+  "note": "کد بخشندهٔ ۳تلاشی — اگر تلاش اول خطا داد، همان کد را دوباره پیست کنید؛ کد فقط پس از اتصال موفق گوشی می‌سوزد (PN-031-C)."
+ },
+ "files": [
+  "qr-install-command.png",
+  "qr-install-command.svg",
+  "regenerated-owner.json",
+  "OWNER-GUIDE.md"
+ ],
+ "verdict": "PASS — کد تازهٔ بخشنده از روت واقعی و از URL عمومی صادر شد"
+}

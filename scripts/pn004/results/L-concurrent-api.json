@@ -1,0 +1,42 @@
+{
+ "scenario": "L-concurrent-api",
+ "kind": "parallel",
+ "ts": "2026-10-05T18:54:07+0000",
+ "mem_available_before_mb": 514.3,
+ "next_server_rss_before_mb": 2922.8,
+ "url": "http://localhost:3000/api/listings",
+ "concurrency": 5,
+ "requests": [
+  {
+   "code": 401,
+   "ms": 73,
+   "err": null
+  },
+  {
+   "code": 401,
+   "ms": 25,
+   "err": null
+  },
+  {
+   "code": 401,
+   "ms": 59,
+   "err": null
+  },
+  {
+   "code": 401,
+   "ms": 65,
+   "err": null
+  },
+  {
+   "code": 401,
+   "ms": 30,
+   "err": null
+  }
+ ],
+ "wall_ms": 74,
+ "srv_rss_peak_mb": 2922.8,
+ "free_min_mb": 514.1,
+ "mem_available_after_mb": 511.5,
+ "next_server_rss_after_mb": 2924.4,
+ "db_openers_after": 3
+}

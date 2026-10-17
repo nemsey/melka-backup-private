@@ -1,0 +1,9 @@
+{
+  "phase": "PN-030 · دیپلوی Worker",
+  "deployedAt": "2026-10-12T06:14:24Z",
+  "authMode": "bearer",
+  "workerUrl": "https://melka-proxy.nemsey-ns.workers.dev",
+  "accountId": "320a61ee9cd8fe0248877d4c768ce0fe",
+  "secretInstalled": "MELKA_PROXY_SECRET",
+  "workerRawProbe": "403"
+}
