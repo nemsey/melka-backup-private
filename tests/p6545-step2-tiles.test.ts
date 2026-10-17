@@ -9,7 +9,7 @@
 
 import { describe, expect, test, beforeAll, afterAll } from "bun:test";
 import { PrismaClient } from "@prisma/client";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 
 const db = new PrismaClient({ datasources: { db: { url: "file:/home/z/my-project/db/test.db" } } });
 const real = new PrismaClient({ datasources: { db: { url: "file:/home/z/my-project/db/custom.db" } } });
@@ -309,20 +309,12 @@ describe("گام۲/M6 — شاخص بازار ملک تبریز", () => {
     expect(listingPrice).toBeGreaterThan(0);
   });
 
-  test("م-۶-۱۴ فایل کاشی M6 ثبت شده (اسکن منبع)", () => {
-    const idx = readFileSync(`${TILES_DIR}/market-index/index.ts`, "utf8");
-    expect(idx).toContain('id: "market-index"');
-    expect(idx).toContain('accent: "m6"');
-    expect(idx).toContain('minRole: "OWNER"');
+  test("م-۶-۱۴ → PN-038/۲.۱: فایل کاشی M6 فیزیکی حذف شد (رجیستری + ماژول؛ داده DB مقدس)", () => {
+    expect(existsSync(`${TILES_DIR}/market-index/index.ts`)).toBe(false);
   });
 
-  test("م-۶-۱۵ صفحهٔ M6 هر پنج قابلیت را دارد (اسکن منبع)", () => {
-    const page = readFileSync(`${TILES_DIR}/market-index/MarketIndexPage.tsx`, "utf8");
-    expect(page).toContain("روند قیمت ماهانه");
-    expect(page).toContain("۱۰ منطقهٔ پرتقاضا");
-    expect(page).toContain("نوع ملک");
-    expect(page).toContain("معاملات واقعی در برابر آگهی‌های فعال");
-    expect(page).toContain("حجم ماهانه");
+  test("م-۶-۱۵ → PN-038: صفحهٔ M6 فیزیکی حذف شد", () => {
+    expect(existsSync(`${TILES_DIR}/market-index/MarketIndexPage.tsx`)).toBe(false);
   });
 
   test("م-۶-۱۶ مسیر API شاخص موجود است", () => {
@@ -334,11 +326,8 @@ describe("گام۲/M6 — شاخص بازار ملک تبریز", () => {
     expect(route).toContain("volume");
   });
 
-  test("م-۶-۱۷ نمودار سه‌سری در صفحه هست (اسکن منبع)", () => {
-    const page = readFileSync(`${TILES_DIR}/market-index/MarketIndexPage.tsx`, "utf8");
-    expect(page).toContain('dataKey="transactions"');
-    expect(page).toContain('dataKey="listings"');
-    expect(page).toContain('dataKey="requests"');
+  test("م-۶-۱۷ → PN-038: نمودار سه‌سری M6 با ماژول حذف شد (دادهٔ معاملات در DB ماندگار)", () => {
+    expect(existsSync(`${TILES_DIR}/market-index/`)).toBe(false);
   });
 
   test("م-۶-۱۸ دادهٔ منطقه‌ای در DB بالای ۱۰ منطقه است", async () => {
@@ -368,9 +357,9 @@ describe("گام۲/M6 — شاخص بازار ملک تبریز", () => {
     expect(route).toContain("price: { not: null }");
   });
 
-  test("م-۶-۲۳ دادهٔ شاخص از ۷۵۷ معاملهٔ واقعی سخن می‌گوید (اسکن سند)", () => {
-    const idx = readFileSync(`${TILES_DIR}/market-index/index.ts`, "utf8");
-    expect(idx).toContain("معاملات");
+  test("م-۶-۲۳ → PN-038: دادهٔ شاخص (۷۵۷ معامله) در DB مقدس ماند — کاشی حذف، داده ماندگار", async () => {
+    const count = await real.transactionRecord.count();
+    expect(count).toBeGreaterThan(700); // داده در پایگاه ماندگار است (قانون دادهٔ مقدس)
   });
 
   test("م-۶-۲۴ رنگ اختصاصی M6 در نظام رنگ (اسکن منبع)", () => {
@@ -444,19 +433,12 @@ describe("گام۲/M7 — پوشش اطلاعات", () => {
     expect(percent(10, 0)).toBe(0);
   });
 
-  test("م-۷-۱۱ فایل کاشی M7 ثبت شده (اسکن منبع)", () => {
-    const idx = readFileSync(`${TILES_DIR}/data-coverage/index.ts`, "utf8");
-    expect(idx).toContain('id: "data-coverage"');
-    expect(idx).toContain('accent: "m7"');
-    expect(idx).toContain('minRole: "OWNER"');
+  test("م-۷-۱۱ → PN-038/۲.۱: فایل کاشی M7 فیزیکی حذف شد (رجیستری + ماژول؛ داده DB مقدس)", () => {
+    expect(existsSync(`${TILES_DIR}/data-coverage/index.ts`)).toBe(false);
   });
 
-  test("م-۷-۱۲ صفحهٔ M7 جدول پوشش + نمودار + رکوردهای ناقص دارد", () => {
-    const page = readFileSync(`${TILES_DIR}/data-coverage/DataCoveragePage.tsx`, "utf8");
-    expect(page).toContain("درصد پوشش");
-    expect(page).toContain("مسیر پر شدن");
-    expect(page).toContain("رکوردهای ناقص");
-    expect(page).toContain("BarChart");
+  test("م-۷-۱۲ → PN-038: صفحهٔ M7 فیزیکی حذف شد (پوشش داده در DB محاسبه‌پذیر ماند)", () => {
+    expect(existsSync(`${TILES_DIR}/data-coverage/DataCoveragePage.tsx`)).toBe(false);
   });
 
   test("م-۷-۱۳ مسیر API پوشش موجود است", () => {
@@ -465,9 +447,8 @@ describe("گام۲/M7 — پوشش اطلاعات", () => {
     expect(route).toContain("incompleteRecords");
   });
 
-  test("م-۷-۱۴ نمایش Tier در صفحهٔ M7 (بینش Tier-aware)", () => {
-    const page = readFileSync(`${TILES_DIR}/data-coverage/DataCoveragePage.tsx`, "utf8");
-    expect(page).toContain("Tier");
+  test("م-۷-۱۴ → PN-038: نمایش Tier در صفحهٔ M7 با حذف صفحه منتفی (Tier در مغز M8)", () => {
+    expect(existsSync(`${TILES_DIR}/data-coverage/`)).toBe(false);
   });
 
   test("م-۷-۱۵ رنگ اختصاصی M7 در نظام رنگ", () => {
@@ -632,12 +613,13 @@ describe("گام۲/M8 — یادگیری و Tier", () => {
     expect(globals).toContain("--sec-m8-500: #0d9488");
   });
 
-  test("م-۸-۲۴ رجیستری کاشی‌ها شامل چهار کاشی تازه است", async () => {
+  test("م-۸-۲۴ → PN-038: رجیستری bootstrap — هشت کاشی هوم (M6/M7/ظرف حذف)", async () => {
     const bootstrap = readFileSync("src/core/tiles/bootstrap.ts", "utf8");
     expect(bootstrap).toContain("smart-matching");
-    expect(bootstrap).toContain("market-index");
-    expect(bootstrap).toContain("data-coverage");
     expect(bootstrap).toContain("learning-tier");
+    expect(bootstrap).not.toContain("market-index");
+    expect(bootstrap).not.toContain("data-coverage");
+    expect(bootstrap).not.toContain("management-dashboard");
   });
 
   test("م-۸-۲۵ هشدار فرصت در تنظیمات عمومی نمایش داده می‌شود (BLOCK 1.4)", () => {

@@ -18,7 +18,6 @@ import { mkdirSync, existsSync, readdirSync, statSync, unlinkSync } from "node:f
 import { join } from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import type { WorkerJobDef } from "./job-queue";
-import { isArmOfflineMode } from "@/lib/melk-api/offline-mode";
 
 /** ریشهٔ مخزن — همان لنگر رسمی (instrumentation / auto-recovery) */
 export const REPO_ROOT = process.env.MELKA_REPO_DIR ?? "/home/z/my-project";
@@ -61,6 +60,7 @@ export const WORKER_JOB_IDS = {
   ipLog: "ip-log",
   headGuard: "head-guard",
   sacredBackup: "sacred-backup",
+  relayHealthCheck: "relay-health-check",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -156,6 +156,7 @@ export async function runSacredBackup(db: PrismaClient, options?: { keep?: numbe
   try {
     const probe = new (await import("@prisma/client")).PrismaClient({ datasources: { db: { url: `file:${target}` } } });
     try {
+      // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
       const r = await probe.$queryRawUnsafe("PRAGMA integrity_check") as { integrity_check: string }[];
       manifest.counts["__integrity"] = r[0]?.integrity_check === "ok" ? 1 : 0;
       for (const t of ["PropertyRecord", "RequestRecord", "TransactionRecord", "ExpertRecord", "GraphNode"]) {
@@ -214,30 +215,8 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
     });
   }
 
-  // ── Catalog → Worker — PN-029 (مرحلهٔ ۲ سند شورا-ن۰۳۳) ──
-  // حالت آفلینی ملک تبریز: صفر کار خارجی برای Worker. catalog-cycle ثبت
-  // نمی‌شود (هیچ فراخوانی ARM/PM/عمومی انجام نمی‌گیرد) و توقف در AuditLog
-  // با action=ARM_OFFLINE_MODE شاهدسازی می‌شود. M1-M5 از DB محلی کار می‌کنند.
-  if (isArmOfflineMode()) {
-    // شاهد توقف در AuditLog — بهترین-تلاش (رجیستری خالص با db=null هم نباید بشکند)
-    try {
-      void db.auditLog.create({
-        data: {
-          action: "ARM_OFFLINE_MODE",
-          actor: "worker:boot",
-          detail: JSON.stringify({
-            note: "توقف فوری همهٔ تلاش‌های خودکار به سامانه‌های ملک تبریز (PN-029 مرحلهٔ ۲)",
-            flag: "MELK_ARM_OFFLINE=1",
-            stopped: ["catalog-cycle"],
-            kept: ["intelligence-cycle", "mirror-cycle", "log-rotate", "backup-rotation", "guards"],
-            reason: "اول تشخیص، بعد اقدام — دکترین شورای عالی ملکا (جلسهٔ فوق‌العاده ۰۳۳)",
-          }),
-        },
-      }).catch(() => undefined);
-    } catch {
-      // db تزریقی نیست (رجیستری خالص در تست‌ها) — ثبت شاهد در فرایند واقعی Worker انجام می‌شود
-    }
-  } else if (process.env.MELK_CATALOG_DAEMON !== "disabled") {
+  // ── Catalog → Worker — PN-029 → PN-038/۶.۱: گارد آفلینی حذف شد ──
+  if (process.env.MELK_CATALOG_DAEMON !== "disabled") {
     const intervalMinutes = envInt("MELK_CATALOG_DAEMON_INTERVAL_MINUTES", 1, 1);
     jobs.push({
       id: WORKER_JOB_IDS.catalogCycle,
@@ -564,6 +543,26 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
           };
         }
         return { verdict: check.code === 0 ? "OK" : "ERROR", checkCode: check.code, stderr: check.stderr.slice(0, 300) };
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Relay Health Check → Worker (تازه — PN-038/۴.۱: پایش ۲۴ ساعتهٔ رله سه‌لایه) ──
+  // شورا-ن۰۶۳: «Job relay-health-check (۳ لایه: Heartbeat، API Probe، Full Sync)»
+  // هر ۵ دقیقه: محاسبهٔ سه لایه + حکم 🟢/🟡/🔴 + شاهد AuditLog + فایل شاهد.
+  if (process.env.MELK_RELAY_HEALTH !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.relayHealthCheck,
+      title: "پایش ۲۴ ساعتهٔ رله — سه لایه (PN-038/۴.۱)",
+      intervalMs: envInt("MELK_RELAY_HEALTH_INTERVAL_MINUTES", 5, 2) * 60_000,
+      firstRunDelayMs: 45_000, // نخستین سنجش زیر یک دقیقه پس از بوت
+      run: async (_database) => {
+        const { runRelayHealthCheckJob } = await import("@/lib/relay/health");
+        return runRelayHealthCheckJob();
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

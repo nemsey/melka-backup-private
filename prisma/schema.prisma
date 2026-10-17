@@ -2102,3 +2102,27 @@ model RelayJob {
   @@index([status, createdAt])
   @@index([expiresAt])
 }
+
+/// PN-038/فاز ۳ (شورا-ن۰۶۳ · بند ۳.۱) — حالت پروب GLM برای تست زنده
+/// هر پروب: هدف + وضعیت + نتیجهٔ خلاصه (بدون راز) + مدت — شاهد زندهٔ توانمندی
+/// تست GLM روی مسیرهای واقعی (enums-persian و…) خارج از تست‌های ایستا.
+model GlmProbe {
+  id          String   @id @default(cuid())
+  /// برچسب آزمون (مثلاً enums-persian-live)
+  label       String
+  /// هدف: enums-persian | melk-public | health | custom:<path>
+  target      String
+  /// queued | running | done | failed
+  status      String   @default("queued")
+  /// ورودی آزمون (JSON — بدون راز)
+  requestJson String?
+  /// نتیجهٔ خلاصه (JSON — وضعیت HTTP/شمارش/مسیر)
+  resultJson  String?
+  error       String?
+  durationMs  Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([label, createdAt])
+}

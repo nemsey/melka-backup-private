@@ -15,7 +15,6 @@
  */
 
 import { MelkApiError, type NestEnvelope } from "./types";
-import { isArmOfflineMode, offlineModeMessage, offlineBypassAllowed } from "./offline-mode";
 // PN-030 (شورا-ن۰۳۵): نقطهٔ یگانهٔ خروج — همهٔ فراخوانی‌های ملک تبریز از proxyFetch می‌گذرند.
 // بدون MELK_ARM_PROXY_URL رفتار عین fetch مستقیم است (سازگاری کامل با PN-029).
 import { proxyFetch } from "./proxy";
@@ -98,10 +97,6 @@ function classifyServerFailure(status: number, bodyText: string): MelkApiError {
  * خطاهای ۴xx غیرقابل تلاش مجددند؛ ۵xx/شبکه با backoff تلاش می‌شوند.
  */
 export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<ArmCallResult<T>> {
-  // ---- گارد ۱: حالت آفلاین (صفر تلاش خودکار — PN-029 مرحلهٔ ۲) ----
-  if (isArmOfflineMode() && !offlineBypassAllowed(opts.bypassOffline)) {
-    throw new MelkApiError("ARM_OFFLINE", offlineModeMessage(), 503, false);
-  }
   // ---- گارد ۲: فیوز قطع‌کننده (قانون Retry هوشمند — PN-029 مرحلهٔ ۶) ----
   const target = breakerKeyFromBaseUrl(opts.baseUrl);
   const gate = await checkCircuit(target);
@@ -237,12 +232,8 @@ export async function probeGet(
   baseUrl: string,
   path: string,
   timeoutMs = 8000,
-  opts?: { bypassOffline?: boolean }
+  _opts?: { bypassOffline?: boolean } // PN-038/۶.۱: پارامتر حفظ شد (سازگاری فراخوان‌ها) — گارد حذف شد
 ): Promise<ProbeResult> {
-  // گارد آفلاین — پروب همیشه «تلاش» است؛ فقط فراخوانی صریح live (دکمهٔ تست مالک) عبور می‌کند
-  if (isArmOfflineMode() && !opts?.bypassOffline) {
-    return { ok: false, httpStatus: 0, latencyMs: -1, bodyText: "", offlineMode: true };
-  }
   const target = breakerKeyFromBaseUrl(baseUrl);
   const gate = await checkCircuit(target);
   if (!gate.allowed) {

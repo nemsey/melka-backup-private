@@ -310,7 +310,7 @@ describe("PN-031-C · F) سازگاری ساختاری — روت تازه، ر�
   test("F-6) (ن۰۵۷) مانیفست api-versioning — ۱۰۷ روت با code-status و relay/job/[id] (otp-burn حذف کامل · PN-034)", () => {
     const manifest = JSON.parse(readFileSync(join(REPO, "download/pn012/api-versioning.json"), "utf8"));
     // PN-035 (شورا-ن۰۵۷): +۱ روت relay/job/[id] (polling کار async) — ۱۰۶ → ۱۰۷
-    expect(manifest.totalRoutes).toBe(107);
+    expect(manifest.totalRoutes).toBe(108); // PN-038/فاز ۳: +۱ glm/probe
     expect(manifest.routes.some((r: { original: string }) => r.original === "/api/admin/relay/code-status")).toBe(true);
     expect(manifest.routes.some((r: { original: string }) => r.original === "/api/relay/job/[id]")).toBe(true);
     expect(manifest.routes.some((r: { v1: string }) => r.v1 === "/api/v1/admin/otp-burn")).toBe(false);

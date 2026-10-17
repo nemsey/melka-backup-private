@@ -14,93 +14,53 @@ import { existsSync, readFileSync } from "node:fs";
 
 // ───────────────────── A) تشخیص — حالت آفلینی (۶) ─────────────────────
 
-describe("PN-029 · A) حالت آفلینی ملک تبریز (مرحلهٔ ۲)", () => {
+describe("PN-029 · A) → PN-038/۶.۱: حالت آفلینی حذف شد (کد مرده — دوران رله)", () => {
   const saved = process.env.MELK_ARM_OFFLINE;
   afterAll(() => {
     if (saved === undefined) delete process.env.MELK_ARM_OFFLINE;
     else process.env.MELK_ARM_OFFLINE = saved;
   });
 
-  test("A-1) پرچم MELK_ARM_OFFLINE — مقادیر پذیرفته و پیش‌فرض خاموش", async () => {
-    const { isArmOfflineMode } = await import("@/lib/melk-api/offline-mode");
-    delete process.env.MELK_ARM_OFFLINE;
-    expect(isArmOfflineMode()).toBe(false);
+  test("A-0 → PN-038: ماژول offline-mode فیزیکی حذف شده است", () => {
+    expect(existsSync("src/lib/melk-api/offline-mode.ts")).toBe(false);
+  });
+
+  test("A-1 → PN-038: پرچم MELK_ARM_OFFLINE دیگر هیچ اثری ندارد (دوران رله — ن۰۵۴ خاموش)", async () => {
     process.env.MELK_ARM_OFFLINE = "1";
-    expect(isArmOfflineMode()).toBe(true);
-    process.env.MELK_ARM_OFFLINE = "true";
-    expect(isArmOfflineMode()).toBe(true);
-    process.env.MELK_ARM_OFFLINE = "0";
-    expect(isArmOfflineMode()).toBe(false);
-    process.env.MELK_ARM_OFFLINE = "";
-    expect(isArmOfflineMode()).toBe(false);
-  });
-
-  test("A-2) عبور از گارد فقط با صراحت (bypass) — هیچ مسیر خودکاری عبور نمی‌کند", async () => {
-    const { offlineBypassAllowed } = await import("@/lib/melk-api/offline-mode");
-    expect(offlineBypassAllowed(undefined)).toBe(false);
-    expect(offlineBypassAllowed(false)).toBe(false);
-    expect(offlineBypassAllowed(true)).toBe(true);
-  });
-
-  test("A-3) پیام حالت آفلینی — فارسی، دقیق، با شناسهٔ پرونده", async () => {
-    const { offlineModeMessage } = await import("@/lib/melk-api/offline-mode");
-    const msg = offlineModeMessage();
-    expect(msg).toContain("PN-029");
-    expect(msg).toContain("آفلینی");
-    expect(msg.length).toBeGreaterThan(50);
-  });
-
-  test("A-4) armCall در حالت آفلینی — پیش از هر شبکه، خطای ARM_OFFLINE (صفر تلاش خودکار)", async () => {
+    // armCall بدون گارد آفلاین — مستقیم به شبکه/فیوز می‌رود (در تست: شکست شبکه صادقانه)
     const { armCall } = await import("@/lib/melk-api/client");
-    process.env.MELK_ARM_OFFLINE = "1";
     const originalFetch = globalThis.fetch;
-    let networkCalled = false;
-    globalThis.fetch = (() => { networkCalled = true; return Promise.reject(new Error("نباید شبکه صدا زده شود")); }) as unknown as unknown as typeof fetch;
+    globalThis.fetch = (async () => new Response(JSON.stringify({ data: { ok: 1 }, message: "ok" }), { status: 200 })) as unknown as typeof fetch;
     try {
-      await armCall({ path: "x", baseUrl: "https://arus-api.melketabriz.ir/api/apm/", timeoutMs: 100, maxRetries: 0 });
-      throw new Error("باید خطا می‌داد");
-    } catch (e) {
-      const err = e as { code?: string };
-      expect(err.code).toBe("ARM_OFFLINE");
-      expect(networkCalled).toBe(false); // گارد پیش از fetch
+      const r = await armCall({ path: "x", baseUrl: "https://pn038-offline-test.example/api/", timeoutMs: 500, maxRetries: 0 });
+      expect(r.data).toBeDefined(); // گارد حذف شد — پاسخ دریافت شد
     } finally {
       globalThis.fetch = originalFetch;
       delete process.env.MELK_ARM_OFFLINE;
     }
   });
 
-  test("A-5) probeGet در حالت آفلینی — نشانگر offlineMode بدون هیچ شبکه‌ای", async () => {
-    const { probeGet } = await import("@/lib/melk-api/client");
+  test("A-2 → PN-038: probeGet بدون گارد آفلانی — نشانگر offlineMode دیگر تولید نمی‌شود", async () => {
     process.env.MELK_ARM_OFFLINE = "1";
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = (() => Promise.reject(new Error("نباید شبکه صدا زده شود"))) as unknown as typeof fetch;
-    try {
-      const r = await probeGet("https://pm-api.melketabriz.ir/api/", "public/portalInfo", 1000);
-      expect(r.offlineMode).toBe(true);
-      expect(r.httpStatus).toBe(0);
-    } finally {
-      globalThis.fetch = originalFetch;
-      delete process.env.MELK_ARM_OFFLINE;
-    }
-  });
-
-  test("A-6) probeGet با bypass (دکمهٔ تست مالک) — از گارد آفلاین عبور می‌کند و پاسخ می‌گیرد", async () => {
     const { probeGet } = await import("@/lib/melk-api/client");
-    process.env.MELK_ARM_OFFLINE = "1";
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async () => new Response("{}", { status: 200 })) as unknown as typeof fetch;
     try {
-      const r = await probeGet("https://pn029-bypass-test.example/api/", "x", 1000, { bypassOffline: true });
-      expect(r.offlineMode).toBeUndefined();
+      const r = await probeGet("https://pn038-probe-test.example/api/", "x", 1000);
       expect(r.httpStatus).toBe(200);
+      expect(r.offlineMode).toBeUndefined();
     } finally {
       globalThis.fetch = originalFetch;
       delete process.env.MELK_ARM_OFFLINE;
     }
   });
-});
 
-// ───────────────────── B) فیوز قطع‌کننده (۵) ─────────────────────
+  test("A-3 → PN-038: سورس client.ts دیگر ارجاعی به offline-mode ندارد", () => {
+    const src = readFileSync("src/lib/melk-api/client.ts", "utf8");
+    expect(src).not.toContain("isArmOfflineMode");
+    expect(src).not.toContain("offlineModeMessage");
+  });
+});
 
 describe("PN-029 · B) فیوز قطع‌کنندهٔ Retry هوشمند (مرحلهٔ ۶)", () => {
   test("B-1) کلید فیوز از baseUrl — فقط میزبان استخراج می‌شود", async () => {
@@ -266,13 +226,13 @@ describe("PN-029 · D) گارد IP کانتینر (مرحلهٔ ۷)", () => {
       expect(normal).toContain(WORKER_JOB_IDS.catalogCycle);
       expect(normal).toContain(WORKER_JOB_IDS.ipLog);
       expect(normal).toContain(WORKER_JOB_IDS.backupRotation);
-      // حالت آفلینی: صفر کار خارجی به ملک تبریز — اما گارد IP و کارهای محلی پابرجا
+      // PN-038/۶.۱: حالت آفلینی حذف شد — پرچم دیگر بی‌اثر است (catalog همیشه ثبت می‌شود)
       process.env.MELK_ARM_OFFLINE = "1";
       const offline = buildWorkerJobs(null as never).map((j) => j.id);
-      expect(offline).not.toContain(WORKER_JOB_IDS.catalogCycle); // توقف کامل
-      expect(offline).toContain(WORKER_JOB_IDS.ipLog); // گارد IP می‌ماند (میزبان غیرملک‌تبریزی)
-      expect(offline).toContain(WORKER_JOB_IDS.intelligenceCycle); // مغز — محلی
-      expect(offline).toContain(WORKER_JOB_IDS.mirrorCycle); // آینهٔ GitHub — قانون تثبیت ۰۳۱
+      expect(offline).toContain(WORKER_JOB_IDS.catalogCycle); // PN-038: گارد حذف شد
+      expect(offline).toContain(WORKER_JOB_IDS.ipLog);
+      expect(offline).toContain(WORKER_JOB_IDS.intelligenceCycle);
+      expect(offline).toContain(WORKER_JOB_IDS.mirrorCycle);
       expect(offline).toContain(WORKER_JOB_IDS.logRotate);
     } finally {
       if (saved === undefined) delete process.env.MELK_ARM_OFFLINE;
@@ -287,18 +247,24 @@ describe("PN-029 · E) وضعیت آفلاین و نمایش (دسته‌بند�
   beforeAll(() => { process.env.MELK_ARM_OFFLINE = "1"; });
   afterAll(() => { delete process.env.MELK_ARM_OFFLINE; });
 
-  test("E-1) provider.testConnection بدون live — هر پنج سرویس با برچسب آفلاین، صفر شبکه", async () => {
+  test("E-1 → PN-038/۶.۱: testConnection بدون live — پروب واقعی، بدون برچسب آفلاین (گارد حذف شد)", async () => {
+    const { db } = await import("@/lib/db");
+    await db.circuitBreakerState.deleteMany({
+      where: { target: { in: ["arus-api.melketabriz.ir", "pm-api.melketabriz.ir", "gap-api.melketabriz.ir"] } },
+    }).catch(() => undefined);
     const { getMelkProvider } = await import("@/lib/melk-api/provider");
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = (() => Promise.reject(new Error("نباید شبکه صدا زده شود"))) as unknown as typeof fetch;
+    globalThis.fetch = (async () => { throw new Error("network unreachable"); }) as unknown as typeof fetch;
     try {
       const st = await getMelkProvider().testConnection();
       expect(st.ok).toBe(false);
       expect(st.services?.length).toBe(5);
-      for (const s of st.services ?? []) expect(s.detail).toContain("آفلینی");
-      expect(st.detail).toContain("PN-029");
+      for (const s of st.services ?? []) expect(s.detail).not.toContain("آفلینی"); // برچسب مرده حذف شد
     } finally {
       globalThis.fetch = originalFetch;
+      await db.circuitBreakerState.deleteMany({
+        where: { target: { in: ["arus-api.melketabriz.ir", "pm-api.melketabriz.ir", "gap-api.melketabriz.ir"] } },
+      }).catch(() => undefined);
     }
   });
 

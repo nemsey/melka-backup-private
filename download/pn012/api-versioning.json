@@ -1,471 +1,445 @@
 {
   "schema": "melka-pn012-api-versioning",
-  "generatedAt": "2026-10-13T06:03:51Z",
+  "generatedAt": "2026-10-17T11:37:36.807Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 107,
-  "created": 0,
+  "totalRoutes": 109,
+  "created": 1,
   "routes": [
     {
-      "v1": "/api/v1/admin/action-plans",
-      "original": "/api/admin/action-plans"
+      "aliasOf": "/api/runtime/build-freshness",
+      "v1": "/api/v1/runtime/build-freshness"
     },
     {
-      "v1": "/api/v1/admin/decision-advisor",
-      "original": "/api/admin/decision-advisor"
+      "aliasOf": "/api/runtime/health",
+      "v1": "/api/v1/runtime/health"
     },
     {
-      "v1": "/api/v1/admin/decisions",
-      "original": "/api/admin/decisions"
+      "aliasOf": "/api/divar/scan",
+      "v1": "/api/v1/divar/scan"
     },
     {
-      "v1": "/api/v1/admin/decisions/expire",
-      "original": "/api/admin/decisions/expire"
+      "aliasOf": "/api/divar/locations",
+      "v1": "/api/v1/divar/locations"
     },
     {
-      "v1": "/api/v1/admin/decisions/stats",
-      "original": "/api/admin/decisions/stats"
+      "aliasOf": "/api/divar/settings",
+      "v1": "/api/v1/divar/settings"
     },
     {
-      "v1": "/api/v1/admin/diagnosis",
-      "original": "/api/admin/diagnosis"
+      "aliasOf": "/api/divar/connection",
+      "v1": "/api/v1/divar/connection"
     },
     {
-      "v1": "/api/v1/admin/governance",
-      "original": "/api/admin/governance"
+      "aliasOf": "/api/divar/ads/[token]/reject",
+      "v1": "/api/v1/divar/ads/[token]/reject"
     },
     {
-      "v1": "/api/v1/admin/governance/run",
-      "original": "/api/admin/governance/run"
+      "aliasOf": "/api/divar/ads/[token]/register",
+      "v1": "/api/v1/divar/ads/[token]/register"
     },
     {
-      "v1": "/api/v1/admin/melk-users",
-      "original": "/api/admin/melk-users"
+      "aliasOf": "/api/divar/ads/[token]",
+      "v1": "/api/v1/divar/ads/[token]"
     },
     {
-      "v1": "/api/v1/admin/memory/stats",
-      "original": "/api/admin/memory/stats"
+      "aliasOf": "/api/divar/ads",
+      "v1": "/api/v1/divar/ads"
     },
     {
-      "v1": "/api/v1/admin/personnel-access",
-      "original": "/api/admin/personnel-access"
+      "aliasOf": "/api/coverage",
+      "v1": "/api/v1/coverage"
     },
     {
-      "v1": "/api/v1/admin/personnel-access/[code]",
-      "original": "/api/admin/personnel-access/[code]"
+      "aliasOf": "/api/listings",
+      "v1": "/api/v1/listings"
     },
     {
-      "v1": "/api/v1/admin/policy-evaluations",
-      "original": "/api/admin/policy-evaluations"
+      "aliasOf": "/api/listings/[id]/transfer-crm",
+      "v1": "/api/v1/listings/[id]/transfer-crm"
     },
     {
-      "v1": "/api/v1/admin/policy-evaluations/run",
-      "original": "/api/admin/policy-evaluations/run"
+      "aliasOf": "/api/listings/[id]",
+      "v1": "/api/v1/listings/[id]"
     },
     {
-      "v1": "/api/v1/admin/relay/browser-poll",
-      "original": "/api/admin/relay/browser-poll"
+      "aliasOf": "/api/listings/[id]/instagram",
+      "v1": "/api/v1/listings/[id]/instagram"
     },
     {
-      "v1": "/api/v1/admin/relay/browser-result",
-      "original": "/api/admin/relay/browser-result"
+      "aliasOf": "/api/graphs",
+      "v1": "/api/v1/graphs"
     },
     {
-      "v1": "/api/v1/admin/relay/code-status",
-      "original": "/api/admin/relay/code-status"
+      "aliasOf": "/api/requests",
+      "v1": "/api/v1/requests"
     },
     {
-      "v1": "/api/v1/admin/relay/enroll",
-      "original": "/api/admin/relay/enroll"
+      "aliasOf": "/api/requests/meta/form",
+      "v1": "/api/v1/requests/meta/form"
     },
     {
-      "v1": "/api/v1/admin/relay/qr",
-      "original": "/api/admin/relay/qr"
+      "aliasOf": "/api/requests/[id]/register",
+      "v1": "/api/v1/requests/[id]/register"
     },
     {
-      "v1": "/api/v1/admin/relay/revoke",
-      "original": "/api/admin/relay/revoke"
+      "aliasOf": "/api/requests/[id]",
+      "v1": "/api/v1/requests/[id]"
     },
     {
-      "v1": "/api/v1/admin/relay/status",
-      "original": "/api/admin/relay/status"
+      "aliasOf": "/api/requests/[id]/events",
+      "v1": "/api/v1/requests/[id]/events"
     },
     {
-      "v1": "/api/v1/admin/relay/test",
-      "original": "/api/admin/relay/test"
+      "aliasOf": "/api/indicators",
+      "v1": "/api/v1/indicators"
     },
     {
-      "v1": "/api/v1/admin/repairs",
-      "original": "/api/admin/repairs"
+      "aliasOf": "/api/intelligence/blackboard",
+      "v1": "/api/v1/intelligence/blackboard"
     },
     {
-      "v1": "/api/v1/admin/repairs/[id]",
-      "original": "/api/admin/repairs/[id]"
+      "aliasOf": "/api/intelligence/status",
+      "v1": "/api/v1/intelligence/status"
     },
     {
-      "v1": "/api/v1/admin/users",
-      "original": "/api/admin/users"
+      "aliasOf": "/api/glm/probe",
+      "v1": "/api/v1/glm/probe"
     },
     {
-      "v1": "/api/v1/admin/users/[id]",
-      "original": "/api/admin/users/[id]"
+      "aliasOf": "/api/matching/feedback",
+      "v1": "/api/v1/matching/feedback"
     },
     {
-      "v1": "/api/v1/admin/users/[id]/activity",
-      "original": "/api/admin/users/[id]/activity"
+      "aliasOf": "/api/matching",
+      "v1": "/api/v1/matching"
     },
     {
-      "v1": "/api/v1/admin/users/[id]/permissions",
-      "original": "/api/admin/users/[id]/permissions"
+      "aliasOf": "/api/matching/file",
+      "v1": "/api/v1/matching/file"
     },
     {
-      "v1": "/api/v1/admin/users/[id]/sessions",
-      "original": "/api/admin/users/[id]/sessions"
+      "aliasOf": "/api/matching/search",
+      "v1": "/api/v1/matching/search"
     },
     {
-      "v1": "/api/v1/admin/users/[id]/unlock",
-      "original": "/api/admin/users/[id]/unlock"
+      "aliasOf": "/api/market-index/advice",
+      "v1": "/api/v1/market-index/advice"
     },
     {
-      "v1": "/api/v1/agent/[tileId]/feedback",
-      "original": "/api/agent/[tileId]/feedback"
+      "aliasOf": "/api/market-index",
+      "v1": "/api/v1/market-index"
     },
     {
-      "v1": "/api/v1/agent/[tileId]/insight",
-      "original": "/api/agent/[tileId]/insight"
+      "aliasOf": "/api/agent/[tileId]/feedback",
+      "v1": "/api/v1/agent/[tileId]/feedback"
     },
     {
-      "v1": "/api/v1/agent/[tileId]/policy",
-      "original": "/api/agent/[tileId]/policy"
+      "aliasOf": "/api/agent/[tileId]/stats",
+      "v1": "/api/v1/agent/[tileId]/stats"
     },
     {
-      "v1": "/api/v1/agent/[tileId]/stats",
-      "original": "/api/agent/[tileId]/stats"
+      "aliasOf": "/api/agent/[tileId]/policy",
+      "v1": "/api/v1/agent/[tileId]/policy"
     },
     {
-      "v1": "/api/v1/arm/connection",
-      "original": "/api/arm/connection"
+      "aliasOf": "/api/agent/[tileId]/insight",
+      "v1": "/api/v1/agent/[tileId]/insight"
     },
     {
-      "v1": "/api/v1/auth/guest-login",
-      "original": "/api/auth/guest-login"
+      "aliasOf": "/api/opportunity-alerts",
+      "v1": "/api/v1/opportunity-alerts"
     },
     {
-      "v1": "/api/v1/auth/guest-request-otp",
-      "original": "/api/auth/guest-request-otp"
+      "aliasOf": "/api/admin/diagnosis",
+      "v1": "/api/v1/admin/diagnosis"
     },
     {
-      "v1": "/api/v1/auth/master-login",
-      "original": "/api/auth/master-login"
+      "aliasOf": "/api/admin/decisions/expire",
+      "v1": "/api/v1/admin/decisions/expire"
     },
     {
-      "v1": "/api/v1/auth/personnel-login",
-      "original": "/api/auth/personnel-login"
+      "aliasOf": "/api/admin/decisions/stats",
+      "v1": "/api/v1/admin/decisions/stats"
     },
     {
-      "v1": "/api/v1/auth/request-otp",
-      "original": "/api/auth/request-otp"
+      "aliasOf": "/api/admin/decisions",
+      "v1": "/api/v1/admin/decisions"
     },
     {
-      "v1": "/api/v1/auth/session",
-      "original": "/api/auth/session"
+      "aliasOf": "/api/admin/policy-evaluations/run",
+      "v1": "/api/v1/admin/policy-evaluations/run"
     },
     {
-      "v1": "/api/v1/auth/verify-otp",
-      "original": "/api/auth/verify-otp"
+      "aliasOf": "/api/admin/policy-evaluations",
+      "v1": "/api/v1/admin/policy-evaluations"
     },
     {
-      "v1": "/api/v1/connection/reset",
-      "original": "/api/connection/reset"
+      "aliasOf": "/api/admin/relay/test",
+      "v1": "/api/v1/admin/relay/test"
     },
     {
-      "v1": "/api/v1/connection/status",
-      "original": "/api/connection/status"
+      "aliasOf": "/api/admin/relay/browser-result",
+      "v1": "/api/v1/admin/relay/browser-result"
     },
     {
-      "v1": "/api/v1/coverage",
-      "original": "/api/coverage"
+      "aliasOf": "/api/admin/relay/revoke",
+      "v1": "/api/v1/admin/relay/revoke"
     },
     {
-      "v1": "/api/v1/crm/arm-catalog/listings",
-      "original": "/api/crm/arm-catalog/listings"
+      "aliasOf": "/api/admin/relay/enroll",
+      "v1": "/api/v1/admin/relay/enroll"
     },
     {
-      "v1": "/api/v1/crm/arm-catalog/requests",
-      "original": "/api/crm/arm-catalog/requests"
+      "aliasOf": "/api/admin/relay/code-status",
+      "v1": "/api/v1/admin/relay/code-status"
     },
     {
-      "v1": "/api/v1/crm/arm-catalog/sync",
-      "original": "/api/crm/arm-catalog/sync"
+      "aliasOf": "/api/admin/relay/status",
+      "v1": "/api/v1/admin/relay/status"
     },
     {
-      "v1": "/api/v1/crm/contracts",
-      "original": "/api/crm/contracts"
+      "aliasOf": "/api/admin/relay/qr",
+      "v1": "/api/v1/admin/relay/qr"
     },
     {
-      "v1": "/api/v1/crm/customer-club",
-      "original": "/api/crm/customer-club"
+      "aliasOf": "/api/admin/relay/browser-poll",
+      "v1": "/api/v1/admin/relay/browser-poll"
     },
     {
-      "v1": "/api/v1/crm/data-freshness",
-      "original": "/api/crm/data-freshness"
+      "aliasOf": "/api/admin/governance/run",
+      "v1": "/api/v1/admin/governance/run"
     },
     {
-      "v1": "/api/v1/crm/export/[entity]",
-      "original": "/api/crm/export/[entity]"
+      "aliasOf": "/api/admin/governance",
+      "v1": "/api/v1/admin/governance"
     },
     {
-      "v1": "/api/v1/crm/finance",
-      "original": "/api/crm/finance"
+      "aliasOf": "/api/admin/action-plans",
+      "v1": "/api/v1/admin/action-plans"
     },
     {
-      "v1": "/api/v1/crm/finance/commission",
-      "original": "/api/crm/finance/commission"
+      "aliasOf": "/api/admin/repairs",
+      "v1": "/api/v1/admin/repairs"
     },
     {
-      "v1": "/api/v1/crm/import/[entity]",
-      "original": "/api/crm/import/[entity]"
+      "aliasOf": "/api/admin/repairs/[id]",
+      "v1": "/api/v1/admin/repairs/[id]"
     },
     {
-      "v1": "/api/v1/crm/interactions",
-      "original": "/api/crm/interactions"
+      "aliasOf": "/api/admin/users",
+      "v1": "/api/v1/admin/users"
     },
     {
-      "v1": "/api/v1/crm/meta",
-      "original": "/api/crm/meta"
+      "aliasOf": "/api/admin/users/[id]/activity",
+      "v1": "/api/v1/admin/users/[id]/activity"
     },
     {
-      "v1": "/api/v1/crm/transactions",
-      "original": "/api/crm/transactions"
+      "aliasOf": "/api/admin/users/[id]/unlock",
+      "v1": "/api/v1/admin/users/[id]/unlock"
     },
     {
-      "v1": "/api/v1/crm/transactions/sync",
-      "original": "/api/crm/transactions/sync"
+      "aliasOf": "/api/admin/users/[id]/permissions",
+      "v1": "/api/v1/admin/users/[id]/permissions"
     },
     {
-      "v1": "/api/v1/divar/ads",
-      "original": "/api/divar/ads"
+      "aliasOf": "/api/admin/users/[id]",
+      "v1": "/api/v1/admin/users/[id]"
     },
     {
-      "v1": "/api/v1/divar/ads/[token]",
-      "original": "/api/divar/ads/[token]"
+      "aliasOf": "/api/admin/users/[id]/sessions",
+      "v1": "/api/v1/admin/users/[id]/sessions"
     },
     {
-      "v1": "/api/v1/divar/ads/[token]/register",
-      "original": "/api/divar/ads/[token]/register"
+      "aliasOf": "/api/admin/melk-users",
+      "v1": "/api/v1/admin/melk-users"
     },
     {
-      "v1": "/api/v1/divar/ads/[token]/reject",
-      "original": "/api/divar/ads/[token]/reject"
+      "aliasOf": "/api/admin/decision-advisor",
+      "v1": "/api/v1/admin/decision-advisor"
     },
     {
-      "v1": "/api/v1/divar/connection",
-      "original": "/api/divar/connection"
+      "aliasOf": "/api/admin/personnel-access/[code]",
+      "v1": "/api/v1/admin/personnel-access/[code]"
     },
     {
-      "v1": "/api/v1/divar/locations",
-      "original": "/api/divar/locations"
+      "aliasOf": "/api/admin/personnel-access",
+      "v1": "/api/v1/admin/personnel-access"
     },
     {
-      "v1": "/api/v1/divar/scan",
-      "original": "/api/divar/scan"
+      "aliasOf": "/api/admin/memory/stats",
+      "v1": "/api/v1/admin/memory/stats"
     },
     {
-      "v1": "/api/v1/divar/settings",
-      "original": "/api/divar/settings"
+      "aliasOf": "/api/arm/connection",
+      "v1": "/api/v1/arm/connection"
     },
     {
-      "v1": "/api/v1/experts",
-      "original": "/api/experts"
+      "aliasOf": "/api/relay/job/[id]",
+      "v1": "/api/v1/relay/job/[id]"
     },
     {
-      "v1": "/api/v1/experts/export",
-      "original": "/api/experts/export"
+      "aliasOf": "/api/relay/health",
+      "v1": "/api/v1/relay/health"
     },
     {
-      "v1": "/api/v1/experts/sync",
-      "original": "/api/experts/sync"
+      "aliasOf": "/api/file-finder/advice",
+      "v1": "/api/v1/file-finder/advice"
     },
     {
-      "v1": "/api/v1/file-finder/advice",
-      "original": "/api/file-finder/advice"
+      "aliasOf": "/api/crm/import/[entity]",
+      "v1": "/api/v1/crm/import/[entity]"
     },
     {
-      "v1": "/api/v1/gap/connection",
-      "original": "/api/gap/connection"
+      "aliasOf": "/api/crm/interactions",
+      "v1": "/api/v1/crm/interactions"
     },
     {
-      "v1": "/api/v1/graphs",
-      "original": "/api/graphs"
+      "aliasOf": "/api/crm/data-freshness",
+      "v1": "/api/v1/crm/data-freshness"
     },
     {
-      "v1": "/api/v1/health",
-      "original": "/api/health"
+      "aliasOf": "/api/crm/customer-club",
+      "v1": "/api/v1/crm/customer-club"
     },
     {
-      "v1": "/api/v1/indicators",
-      "original": "/api/indicators"
+      "aliasOf": "/api/crm/finance",
+      "v1": "/api/v1/crm/finance"
     },
     {
-      "v1": "/api/v1/instagram/connection",
-      "original": "/api/instagram/connection"
+      "aliasOf": "/api/crm/finance/commission",
+      "v1": "/api/v1/crm/finance/commission"
     },
     {
-      "v1": "/api/v1/intelligence/blackboard",
-      "original": "/api/intelligence/blackboard"
+      "aliasOf": "/api/crm/arm-catalog/listings",
+      "v1": "/api/v1/crm/arm-catalog/listings"
     },
     {
-      "v1": "/api/v1/intelligence/status",
-      "original": "/api/intelligence/status"
+      "aliasOf": "/api/crm/arm-catalog/requests",
+      "v1": "/api/v1/crm/arm-catalog/requests"
     },
     {
-      "v1": "/api/v1/listings",
-      "original": "/api/listings"
+      "aliasOf": "/api/crm/arm-catalog/sync",
+      "v1": "/api/v1/crm/arm-catalog/sync"
     },
     {
-      "v1": "/api/v1/listings/[id]",
-      "original": "/api/listings/[id]"
+      "aliasOf": "/api/crm/contracts",
+      "v1": "/api/v1/crm/contracts"
     },
     {
-      "v1": "/api/v1/listings/[id]/instagram",
-      "original": "/api/listings/[id]/instagram"
+      "aliasOf": "/api/crm/meta",
+      "v1": "/api/v1/crm/meta"
     },
     {
-      "v1": "/api/v1/listings/[id]/transfer-crm",
-      "original": "/api/listings/[id]/transfer-crm"
+      "aliasOf": "/api/crm/transactions",
+      "v1": "/api/v1/crm/transactions"
     },
     {
-      "v1": "/api/v1/market-index",
-      "original": "/api/market-index"
+      "aliasOf": "/api/crm/transactions/sync",
+      "v1": "/api/v1/crm/transactions/sync"
     },
     {
-      "v1": "/api/v1/market-index/advice",
-      "original": "/api/market-index/advice"
+      "aliasOf": "/api/crm/export/[entity]",
+      "v1": "/api/v1/crm/export/[entity]"
     },
     {
-      "v1": "/api/v1/matching",
-      "original": "/api/matching"
+      "aliasOf": "/api/pm/connection",
+      "v1": "/api/v1/pm/connection"
     },
     {
-      "v1": "/api/v1/matching/feedback",
-      "original": "/api/matching/feedback"
+      "aliasOf": "/api/mobile-relay/result",
+      "v1": "/api/v1/mobile-relay/result"
     },
     {
-      "v1": "/api/v1/matching/file",
-      "original": "/api/matching/file"
+      "aliasOf": "/api/mobile-relay/poll",
+      "v1": "/api/v1/mobile-relay/poll"
     },
     {
-      "v1": "/api/v1/matching/search",
-      "original": "/api/matching/search"
+      "aliasOf": "/api/mobile-relay/bootstrap",
+      "v1": "/api/v1/mobile-relay/bootstrap"
     },
     {
-      "v1": "/api/v1/mobile-relay/bootstrap",
-      "original": "/api/mobile-relay/bootstrap"
+      "aliasOf": "/api/auth/verify-otp",
+      "v1": "/api/v1/auth/verify-otp"
     },
     {
-      "v1": "/api/v1/mobile-relay/poll",
-      "original": "/api/mobile-relay/poll"
+      "aliasOf": "/api/auth/guest-login",
+      "v1": "/api/v1/auth/guest-login"
     },
     {
-      "v1": "/api/v1/mobile-relay/result",
-      "original": "/api/mobile-relay/result"
+      "aliasOf": "/api/auth/session",
+      "v1": "/api/v1/auth/session"
     },
     {
-      "v1": "/api/v1/opportunity-alerts",
-      "original": "/api/opportunity-alerts"
+      "aliasOf": "/api/auth/master-login",
+      "v1": "/api/v1/auth/master-login"
     },
     {
-      "v1": "/api/v1/pm/connection",
-      "original": "/api/pm/connection"
+      "aliasOf": "/api/auth/personnel-login",
+      "v1": "/api/v1/auth/personnel-login"
     },
     {
-      "v1": "/api/v1/requests",
-      "original": "/api/requests"
+      "aliasOf": "/api/auth/guest-request-otp",
+      "v1": "/api/v1/auth/guest-request-otp"
     },
     {
-      "v1": "/api/v1/requests/[id]",
-      "original": "/api/requests/[id]"
+      "aliasOf": "/api/auth/request-otp",
+      "v1": "/api/v1/auth/request-otp"
     },
     {
-      "v1": "/api/v1/requests/[id]/events",
-      "original": "/api/requests/[id]/events"
+      "aliasOf": "/api/gap/connection",
+      "v1": "/api/v1/gap/connection"
     },
     {
-      "v1": "/api/v1/requests/[id]/register",
-      "original": "/api/requests/[id]/register"
+      "aliasOf": "/api/health",
+      "v1": "/api/v1/health"
     },
     {
-      "v1": "/api/v1/requests/meta/form",
-      "original": "/api/requests/meta/form"
+      "aliasOf": "/api/users/lookup",
+      "v1": "/api/v1/users/lookup"
     },
     {
-      "v1": "/api/v1/runtime/build-freshness",
-      "original": "/api/runtime/build-freshness"
+      "aliasOf": "/api/smart-matching/advice",
+      "v1": "/api/v1/smart-matching/advice"
     },
     {
-      "v1": "/api/v1/runtime/health",
-      "original": "/api/runtime/health"
+      "aliasOf": "/api/version",
+      "v1": "/api/v1/version"
     },
     {
-      "v1": "/api/v1/smart-matching/advice",
-      "original": "/api/smart-matching/advice"
+      "aliasOf": "/api/connection/reset",
+      "v1": "/api/v1/connection/reset"
     },
     {
-      "v1": "/api/v1/sync",
-      "original": "/api/sync"
+      "aliasOf": "/api/connection/status",
+      "v1": "/api/v1/connection/status"
     },
     {
-      "v1": "/api/v1/sync/all",
-      "original": "/api/sync/all"
+      "aliasOf": "/api/instagram/connection",
+      "v1": "/api/v1/instagram/connection"
     },
     {
-      "v1": "/api/v1/sync/jobs",
-      "original": "/api/sync/jobs"
+      "aliasOf": "/api/sync",
+      "v1": "/api/v1/sync"
     },
     {
-      "v1": "/api/v1/users/lookup",
-      "original": "/api/users/lookup"
+      "aliasOf": "/api/sync/all",
+      "v1": "/api/v1/sync/all"
     },
     {
-      "v1": "/api/v1/version",
-      "original": "/api/version"
+      "aliasOf": "/api/sync/jobs",
+      "v1": "/api/v1/sync/jobs"
     },
     {
-      "v1": "/api/v1/relay/job/[id]",
-      "original": "/api/relay/job/[id]"
+      "aliasOf": "/api/experts",
+      "v1": "/api/v1/experts"
+    },
+    {
+      "aliasOf": "/api/experts/sync",
+      "v1": "/api/v1/experts/sync"
+    },
+    {
+      "aliasOf": "/api/experts/export",
+      "v1": "/api/v1/experts/export"
     }
-  ],
-  "history": [
-    {
-      "order": "PN-027 · ۵-ب-۲",
-      "date": "1405/07/22",
-      "action": "جلسهٔ ۰۳۴ مالک: حذف ۸ جفت روت بدون‌استفاده (v0+v1) — نگه‌داشت /crm/customer-club · /crm/finance · /crm/finance/commission · /gap/connection",
-      "totalRoutes": 92,
-      "removed": [
-        "/api/admin/drift-checks",
-        "/api/admin/model-versions",
-        "/api/admin/model-versions/[id]/promote",
-        "/api/admin/model-versions/[id]/reject",
-        "/api/admin/model-versions/[id]/rollback",
-        "/api/crm/branches",
-        "/api/melk-public/sync",
-        "/api/runtime/metrics"
-      ],
-      "removedCount": 8
-    },
-    {
-      "at": "2026-10-11T05:53:28.000Z",
-      "change": "PN-028: +۲ روت تطبیق (matching/feedback + matching/file) — ۹۲ → ۹۴",
-      "totalRoutes": 94
-    },
-    {
-      "at": "2026-10-13T06:03:51Z",
-      "change": "PN-031-C (شورا-ن۰۴۰): روت code-status (وضعیت کد راه‌اندازی بخشنده) + آینهٔ v1 — ۱۰۶ → ۱۰۷ روت"
-    },
-    {
-      "at": "2026-10-16T17:20:00Z",
-      "change": "PN-035 (شورا-ن۰۵۷): روت relay/job/[id] (polling کار async) + آینهٔ v1 — ۱۰۶ → ۱۰۷ روت",
-      "totalRoutes": 107
-    }
-  ],
-  "note": "PN-029: +otp-burn (تک‌تلاش OTP مالک — شورا-ن۰۳۳)"
+  ]
 }

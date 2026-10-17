@@ -329,6 +329,8 @@ describe("PN-019/فاز۹ · Worker + API + گارد", () => {
     expect(ids).toContain("memory-consolidation"); // PN-025
     expect(ids).toContain("ip-log"); // PN-029 (شورا-ن۰۳۳) — گارد IP کانتینر
     expect(ids).toContain("head-guard"); // PN-031-B (شورا-ن۰۳۹) — گارد تازگی بیلد زنده
-    expect(new Set(ids).size).toBe(17);
+    expect(ids).toContain("sacred-backup"); // PN-038/۱.۳ — بکاپ مقدس ۱۵دقیقه‌ای
+    expect(ids).toContain("relay-health-check"); // PN-038/۴.۱ — پایش ۲۴ ساعتهٔ رله
+    expect(new Set(ids).size).toBe(19);
   });
 });
