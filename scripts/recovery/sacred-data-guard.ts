@@ -30,7 +30,7 @@
  * شاهد: upload/.runtime/sacred-data-guard.json + لاگ recovery-log.jsonl
  */
 
-import { statSync, existsSync, mkdirSync, appendFileSync } from "node:fs";
+import { statSync, existsSync, mkdirSync, appendFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { Database } from "bun:sqlite";
 
@@ -100,7 +100,6 @@ function logr(kind: string, detail: Record<string, unknown>): void {
 function writeWitness(w: Record<string, unknown>): void {
   try {
     mkdirSync(dirname(WITNESS), { recursive: true });
-    const { writeFileSync } = require("node:fs") as typeof import("node:fs");
     writeFileSync(WITNESS, JSON.stringify(w, null, 2));
   } catch {
     /* شاهد بهترین-تلاش */

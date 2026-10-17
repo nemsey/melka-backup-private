@@ -306,17 +306,26 @@ describe("PN-031 · C) یکپارچگی نقطهٔ یگانه و قفل ترتی
     }
   });
 
-  test("C-4) قفل ترتیب — پرچم MELK_ARM_OFFLINE در حالت رله هم armCall را متوقف می‌کند", async () => {
+  test("C-4) قفل ترتیب (بازنویسی ن۰۶۳) — پرچم MELK_ARM_OFFLINE مرده (حذف کد مرده · PN-038/فاز ۶)؛ در حالت رله armCall هرگز مستقیم به ملک تبریز نمی‌رود (صف رله تصمیم می‌گیرد)", async () => {
     setEnv("MELK_ARM_RELAY_MODE", "mobile");
-    setEnv("MELK_ARM_OFFLINE", "1");
+    setEnv("MELK_ARM_OFFLINE", "1"); // پرچم کهنه — دیگر gate نیست؛ ماژول offline-mode حذف کامل شد
     const { armCall } = await import("@/lib/melk-api/client");
+    const originalFetch = globalThis.fetch;
+    let directCalled = false;
     let code = "";
+    globalThis.fetch = (async () => {
+      directCalled = true;
+      return new Response("{}", { status: 200 });
+    }) as unknown as typeof fetch;
     try {
       await armCall({ path: "x", baseUrl: "https://arus-api.melketabriz.ir/api/apm/", timeoutMs: 200, maxRetries: 0 });
     } catch (e) {
-      code = (e as { code: string }).code;
+      code = (e as { code: string }).code ?? "";
+    } finally {
+      globalThis.fetch = originalFetch;
     }
-    expect(code).toBe("ARM_OFFLINE");
+    expect(code).not.toBe("ARM_OFFLINE"); // کد مرده هرگز برنمی‌گردد
+    expect(directCalled).toBe(false); // صفر fetch مستقیم — مسیر رله (صف + گوشی)
   });
 });
 

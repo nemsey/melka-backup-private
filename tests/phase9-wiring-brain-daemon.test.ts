@@ -346,7 +346,6 @@ describe("PHASE 9 §۱۱ → PN-038 — هوم یک‌پارچه (گارد جه�
   });
 
   test("۱۱-۳ → PN-03۸/۲.۲: ماژول صفحهٔ داشبورد مدیریتی فیزیکی حذف شد (داده DB مقدس)", () => {
-    const { existsSync } = require("node:fs") as typeof import("node:fs");
     expect(existsSync("src/core/tiles/tiles/management-dashboard/ManagementDashboardPage.tsx")).toBe(false);
     expect(existsSync("src/core/tiles/tiles/management-dashboard/index.ts")).toBe(false);
   });

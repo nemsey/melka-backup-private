@@ -10,7 +10,7 @@
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, existsSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
 
@@ -25,7 +25,6 @@ function makeDb(file: string, props: number, mtime?: Date): void {
   db.close();
   if (mtime) {
     // mtime پس از بسته‌شدن — history دست‌نخورده (ایزوله از ساخت)
-    const { utimesSync } = require("node:fs") as typeof import("node:fs");
     utimesSync(file, mtime, mtime);
   }
 }
