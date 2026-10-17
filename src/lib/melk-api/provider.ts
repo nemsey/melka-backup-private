@@ -13,7 +13,6 @@
 import { getMelkApiConfig, type MelkApiConfig } from "./config";
 import { MELK_ENDPOINTS } from "./endpoints";
 import { armCall, probeGet } from "./client";
-import { isArmOfflineMode, offlineModeMessage } from "./offline-mode";
 import {
   extractAddress,
   extractDetailItems,
@@ -475,28 +474,6 @@ class RealProvider implements MelkProvider {
 
     // PN-029 (مرحلهٔ ۲) — حالت آفلینی: بدون live (بارگذاری صفحه) صفر پروب؛
     // خروجی صادقانه «حالت آفلین» است نه «قطع». live=true فقط از دکمهٔ تست
-    // مالک می‌آید (اقدام آگاهانهٔ دستی — مجاز به عبور از گارد).
-    if (isArmOfflineMode() && !opts?.live) {
-      const offlineDetail = "حالت آفلینی ملک تبریز — پروب متوقف (PN-029: توقف تلاش‌های خودکار تا پایان تشخیص)";
-      const names: Array<[ArmServiceStatus["service"], string]> = [
-        ["ARM_PUBLIC", "سامانه مدیریت آگهی و درخواست — بخش عمومی"],
-        ["ARM_API", "سامانه مدیریت آگهی و درخواست — احراز هویت"],
-        ["PM_API", "سامانه مدیریت پرسنلی"],
-        ["MELK_PUBLIC_API", "سامانه عمومی ملک تبریز (melketabriz.com)"],
-        ["GAP_API", "سامانه گفت‌وگوی آنلاین (gap.melketabriz.ir)"],
-      ];
-      for (const [service, label] of names) {
-        services.push({ service, label, reachable: false, databaseUp: false, latencyMs: -1, detail: offlineDetail });
-      }
-      return {
-        ok: false,
-        mode: this.mode,
-        latencyMs: -1,
-        checkedAt,
-        services,
-        detail: offlineModeMessage(),
-      };
-    }
     // در حالت آفلینی با live=true، پروب‌ها با bypassOffline زده می‌شوند
     const probeOpts = opts?.live ? { bypassOffline: true } : undefined;
 

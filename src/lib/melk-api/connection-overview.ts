@@ -6,7 +6,6 @@
  * خلوص import روت‌ها) و هر دسترسی DB در لایهٔ کتابخانه متمرکز شود.
  */
 
-import { isArmOfflineMode } from "./offline-mode";
 import { breakerKeyFromBaseUrl, getBreakerSnapshot, type BreakerSnapshot } from "./circuit-breaker";
 import { getMelkApiConfig } from "./config";
 import { containerIpStatus } from "./container-ip";
@@ -61,7 +60,7 @@ export async function getConnectionOverview(): Promise<ConnectionOverview> {
   const containerIp = await containerIpStatus(db);
 
   return {
-    offlineMode: isArmOfflineMode(),
+    offlineMode: false, // PN-038/۶.۱: حالت آفلینی حذف شد (دوران رله — ن۰۵۴)
     circuitBreakers,
     containerIp,
     proxy: proxyStatus(),

@@ -202,9 +202,8 @@ export async function register(): Promise<void> {
   // PN-029 (مرحلهٔ ۲) — L7: صفر تلاش خودکار در تولید بدون توکن سالم؛
   // در حالت آفلینی ملک تبریز حلقهٔ پس‌زمینه حتی با MELK_BACKGROUND_SYNC=enabled
   // نیز روشن نمی‌شود (قانون احتیاط اتصال خارجی — سند شورا-ن۰۳۳).
-  if (process.env.MELK_BACKGROUND_SYNC === "enabled" && !(
-    (await import("@/lib/melk-api/offline-mode")).isArmOfflineMode()
-  )) {
+  // PN-038/۶.۱: گارد حالت آفلینی حذف شد (پرچم از ن۰۵۴ خاموش است — کد مرده)
+  if (process.env.MELK_BACKGROUND_SYNC === "enabled") {
     const { getMelkApiConfig } = await import("@/lib/melk-api/config");
     const cfg = getMelkApiConfig();
     const intervalMs = Math.max(cfg.syncIntervalMinutes, 2) * 60 * 1000;

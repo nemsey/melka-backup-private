@@ -18,7 +18,6 @@ import { mkdirSync, existsSync, readdirSync, statSync, unlinkSync } from "node:f
 import { join } from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import type { WorkerJobDef } from "./job-queue";
-import { isArmOfflineMode } from "@/lib/melk-api/offline-mode";
 
 /** ریشهٔ مخزن — همان لنگر رسمی (instrumentation / auto-recovery) */
 export const REPO_ROOT = process.env.MELKA_REPO_DIR ?? "/home/z/my-project";
@@ -216,30 +215,8 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
     });
   }
 
-  // ── Catalog → Worker — PN-029 (مرحلهٔ ۲ سند شورا-ن۰۳۳) ──
-  // حالت آفلینی ملک تبریز: صفر کار خارجی برای Worker. catalog-cycle ثبت
-  // نمی‌شود (هیچ فراخوانی ARM/PM/عمومی انجام نمی‌گیرد) و توقف در AuditLog
-  // با action=ARM_OFFLINE_MODE شاهدسازی می‌شود. M1-M5 از DB محلی کار می‌کنند.
-  if (isArmOfflineMode()) {
-    // شاهد توقف در AuditLog — بهترین-تلاش (رجیستری خالص با db=null هم نباید بشکند)
-    try {
-      void db.auditLog.create({
-        data: {
-          action: "ARM_OFFLINE_MODE",
-          actor: "worker:boot",
-          detail: JSON.stringify({
-            note: "توقف فوری همهٔ تلاش‌های خودکار به سامانه‌های ملک تبریز (PN-029 مرحلهٔ ۲)",
-            flag: "MELK_ARM_OFFLINE=1",
-            stopped: ["catalog-cycle"],
-            kept: ["intelligence-cycle", "mirror-cycle", "log-rotate", "backup-rotation", "guards"],
-            reason: "اول تشخیص، بعد اقدام — دکترین شورای عالی ملکا (جلسهٔ فوق‌العاده ۰۳۳)",
-          }),
-        },
-      }).catch(() => undefined);
-    } catch {
-      // db تزریقی نیست (رجیستری خالص در تست‌ها) — ثبت شاهد در فرایند واقعی Worker انجام می‌شود
-    }
-  } else if (process.env.MELK_CATALOG_DAEMON !== "disabled") {
+  // ── Catalog → Worker — PN-029 → PN-038/۶.۱: گارد آفلینی حذف شد ──
+  if (process.env.MELK_CATALOG_DAEMON !== "disabled") {
     const intervalMinutes = envInt("MELK_CATALOG_DAEMON_INTERVAL_MINUTES", 1, 1);
     jobs.push({
       id: WORKER_JOB_IDS.catalogCycle,

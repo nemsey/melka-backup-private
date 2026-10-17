@@ -368,25 +368,25 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
 // ───────────────────── F) سازگاری PN-029 (۲) ─────────────────────
 
 describe("PN-030 · F) سازگاری — قوانین PN-029 پابرجا می‌مانند", () => {
-  test("F-1) پروکسی گارد آفلینی را دور نمی‌زند — armCall در حالت آفلینی صفر شبکه", async () => {
+  test("F-1 → PN-038/۶.۱: گارد آفلینی حذف شد — پروکسی مستقیم فراخوانی می‌شود (پرچم مرده)", async () => {
     const { armCall } = await import("@/lib/melk-api/client");
     const savedFlag = process.env.MELK_ARM_OFFLINE;
     const savedUrl = process.env.MELK_ARM_PROXY_URL;
     const savedSecret = process.env.MELK_PROXY_SECRET;
-    process.env.MELK_ARM_OFFLINE = "1";
+    process.env.MELK_ARM_OFFLINE = "1"; // PN-038: دیگر بی‌اثر
     process.env.MELK_ARM_PROXY_URL = "https://melka-proxy.example.workers.dev";
     process.env.MELK_PROXY_SECRET = "d".repeat(64);
     let networkCalled = false;
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (() => {
       networkCalled = true;
-      return Promise.reject(new Error("نباید شبکه صدا زده شود — نه مستقیم نه پروکسی"));
+      return Promise.reject(new Error("شبکه صدا زده شد — گارد حذف شده است (PN-038/۶.۱)"));
     }) as unknown as typeof fetch;
     try {
       await expect(
         armCall({ path: "x", baseUrl: "https://arus-api.melketabriz.ir/api/apm/", timeoutMs: 100, maxRetries: 0 })
       ).rejects.toThrow();
-      expect(networkCalled).toBe(false); // گارد پیش از هر شبکه (مستقیم یا پروکسی) می‌ایستد
+      expect(networkCalled).toBe(true); // PN-038: گارد مرده حذف شد — فراخوانی واقعی انجام می‌شود
     } finally {
       globalThis.fetch = originalFetch;
       if (savedFlag === undefined) delete process.env.MELK_ARM_OFFLINE;
