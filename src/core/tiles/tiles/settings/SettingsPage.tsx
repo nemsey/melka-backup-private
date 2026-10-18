@@ -31,8 +31,6 @@ import { AccountGeneralSection } from "./AccountGeneralSection";
 import { MelkTabrizUsersSection } from "./MelkTabrizUsersSection";
 // PN-017 (شورا-ن۰۲۱ ب): «مدیریت دسترسی کارشناسان ملکا» — جایگاه ۹ (لایهٔ قدیمی PN-008 BLOCK 7)
 import { PersonnelAccessSection } from "./PersonnelAccessSection";
-// PN-031-B (شورا-ن۰۳۹): بنر تازگی سرور — «سرور روی HEAD است» / هشدار جبران خودکار
-import { BuildFreshnessBanner } from "./BuildFreshnessBanner";
 
 export function SettingsPage({ onBack }: TilePageProps) {
   void onBack; // بازگشت از پوستهٔ کاشی مدیریت می‌شود
@@ -47,9 +45,6 @@ export function SettingsPage({ onBack }: TilePageProps) {
           </p>
         </CardContent>
       </Card>
-
-      {/* PN-031-B (شورا-ن۰۳۹): بنر تازگی سرور — بالای همهٔ بخش‌ها (فقط مالک) */}
-      <BuildFreshnessBanner />
 
       {/* ۱ — اتصال به ملک تبریز (پیکرهٔ یکپارچه — گام صفر-۳) */}
       <MelkTabrizConnectionSection />

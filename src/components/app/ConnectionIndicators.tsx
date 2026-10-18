@@ -16,7 +16,7 @@
  *   variant="compact" → درون TileShell بالای همهٔ کاشی‌ها (نوار فشردهٔ چرخان)
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
@@ -68,23 +68,16 @@ export function ConnectionIndicators({ variant = "full" }: { variant?: "full" | 
   const [indicators, setIndicators] = useState<IndicatorState[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
-  /** PN-028 — آیا دست‌کم یک بار دادهٔ نشانگرها دریافت شد (برای تلاش دوم بی‌صدا) */
-  const gotDataRef = useRef(false);
 
   const load = useCallback(
     async (silent = true) => {
       if (!silent) setLoading(true);
       try {
-        // PN-028/اولاً — مهلت کوتاه ۱۵ ثانیه (پیش از این ۹۰): نشانگرها هرگز نباید
-        // مرورگر را معلق کنند؛ سرور از این پس موازی/کش‌شده پاسخ فوری می‌دهد
-        const res = await api<{ ok: boolean; indicators: IndicatorState[] }>("/api/indicators", { timeoutMs: 15_000 });
+        const res = await api<{ ok: boolean; indicators: IndicatorState[] }>("/api/indicators");
         const sorted = [...res.indicators].sort((a, b) => ORDER.indexOf(a.key) - ORDER.indexOf(b.key));
         setIndicators(sorted);
-        gotDataRef.current = true;
         setLastRefresh(new Date().toISOString());
       } catch (err) {
-        // PN-028/اولاً — بارگذاری خودکار (بوت/تایمر ۶۰ث) هرگز toast خطا نمی‌دهد؛
-        // فقط کلیک صریح «بررسی» توسط کاربر، خطا را گزارش می‌کند
         if (!silent) {
           const e = err as ApiClientError;
           toast({ title: "خطا در بررسی اتصال‌ها", description: e.message, variant: "destructive" });
@@ -97,16 +90,9 @@ export function ConnectionIndicators({ variant = "full" }: { variant?: "full" | 
   );
 
   useEffect(() => {
-    // PN-028/اولاً — نخستین بار بی‌صدا؛ در شکست گذرا، یک تلاش دوم بعد از ۵ ثانیه
-    void load(true);
-    const retryTimer = setTimeout(() => {
-      if (!gotDataRef.current) void load(true);
-    }, 5_000);
+    void load(false);
     const timer = setInterval(() => void load(true), 60_000);
-    return () => {
-      clearTimeout(retryTimer);
-      clearInterval(timer);
-    };
+    return () => clearInterval(timer);
   }, [load]);
 
   const connectedCount = indicators?.filter((i) => i.connected).length ?? 0;

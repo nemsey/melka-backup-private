@@ -1,64 +1,60 @@
 /**
- * PN-016 → PN-031-E — تست «حذف حالت آفلاین» (دستور مالک ۱۴۰۵/۰۷/۲۳ · «حالت آفلینی را در اپلیکیشن حذف کن»)
+ * PN-016 — تست Offline Mode واقعی (پوستهٔ آفلاین + قانون کش)
  * ---------------------------------------------------------------------------
- * قرارداد تازه (جایگزین قرارداد آفلاین PN-016):
- *   ۱) پوستهٔ آفلاین استاتیک حذف شده — offline.html دیگر وجود ندارد
- *   ۲) سرویس‌ورکر: هیچ جانشین آفلاین برای ناوبری و هیچ پاسخ ساختگی OFFLINE برای API
- *      ندارد — خطای واقعی شبکه دیده می‌شود، نه پوشش «آفلاین»
- *   ۳) قانون P6519 دست‌نخورده: HTML اپ هرگز کش نمی‌شود؛ داده حساس هرگز کش نمی‌شود
- *   ۴) نشان آفلاین مرورگر (OfflineBadge) از هدر حذف شده
- *   ۵) پاک‌سازی میراث: activate سوئیچ تازه، کش‌های قدیمی (شامل offline.html
- *      کش‌شدهٔ بیلدهای قبل) را حذف می‌کند
+ * ۱) پوستهٔ آفلاین استاتیک است — بدون چانک Next، بدون داده حساس (قانون P6519 برقرار)
+ * ۲) اسکریپت سرویس‌ورکر: /offline.html در فهرست تغییرناپذیران + جانشین ناوبری آفلاین
+ * ۳) پاسخ 503 ساختگی API آفلاین (کد OFFLINE) — قرارداد JSON
  */
 
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 
 const SW = readFileSync("public/sw.js", "utf8");
-const HEADER = readFileSync("src/components/app/AppHeader.tsx", "utf8");
+const SHELL = readFileSync("public/offline.html", "utf8");
 
-describe("PN-031-E · حذف حالت آفلاین از اپلیکیشن", () => {
-  test("پوستهٔ آفلاین حذف شده — offline.html دیگر وجود ندارد", () => {
-    expect(existsSync("public/offline.html")).toBe(false);
+describe("PN-016 · Offline Mode واقعی", () => {
+  test("پوستهٔ آفلاین: سند فارسی RTL با برند ملکا و دکمهٔ تلاش دوباره", () => {
+    expect(SHELL).toContain('lang="fa"');
+    expect(SHELL).toContain('dir="rtl"');
+    expect(SHELL).toContain("تلاش دوباره");
+    expect(SHELL).toContain("ملکا");
   });
 
-  test("سرویس‌ورکر: offline.html در فهرست تغییرناپذیران نیست", () => {
-    expect(SW).not.toContain('"/offline.html"');
+  test("پوستهٔ آفلاین: استایل درون‌خطی — بدون وابستگی به چانک/فایل بیرونی (زیر شبکهٔ قطع بار می‌شود)", () => {
+    expect(SHELL).toContain("<style>");
+    expect(SHELL).not.toMatch(/<link[^>]+stylesheet/);
+    expect(SHELL).not.toMatch(/src="\/_next\//);
+  });
+
+  test("پوستهٔ آفلاین: بازگشت خودکار هنگام آنلاین شدن + پرس‌وجوی دوره‌ای سلامت", () => {
+    expect(SHELL).toContain('"online"');
+    expect(SHELL).toContain("/api/health");
+  });
+
+  test("قانون P6519 برقرار: HTML اپ هرگز کش نمی‌شود — پوستهٔ آفلاین تنها HTML کش‌شونده است", () => {
+    expect(SW).toContain("HTML هرگز کش نمی‌شود");
+    // فقط offline.html به‌عنوان HTML در فهرست تغییرناپذیران است
     const immutable = SW.split("IMMUTABLE_ASSETS = [")[1].split("];")[0];
     const htmls = immutable.match(/"[^"]*\.html"/g) ?? [];
-    expect(htmls).toEqual([]);
+    expect(htmls).toEqual(['"/offline.html"']);
   });
 
-  test("سرویس‌ورکر: جانشین ناوبری آفلاین حذف شده", () => {
-    expect(SW).not.toContain('request.mode === "navigate"');
-    expect(SW).not.toContain('caches.match("/offline.html")');
+  test("سرویس‌ورکر: /offline.html در فهرست پیش‌کش است", () => {
+    expect(SW).toContain('"/offline.html"');
   });
 
-  test("سرویس‌ورکر: پاسخ ساختگی OFFLINE برای API حذف شده", () => {
-    expect(SW).not.toContain('"OFFLINE"');
-    // 503 ساختگی — اسکریپت نباید Response آفلاین بسازد
-    expect(SW).not.toContain("آفلاین هستید");
+  test("سرویس‌ورکر: جانشین ناوبری آفلاین → پوستهٔ آفلاین (نه 503 خالی)", () => {
+    expect(SW).toContain('request.mode === "navigate"');
+    expect(SW).toContain('caches.match("/offline.html")');
   });
 
-  test("نشان آفلاین مرورگر از هدر حذف شده (OfflineBadge)", () => {
-    expect(existsSync("src/components/app/OfflineBadge.tsx")).toBe(false);
-    expect(HEADER).not.toContain("OfflineBadge");
+  test("قرارداد API آفلاین: پاسخ 503 با کد OFFLINE (سرویس‌ورکر JSON برمی‌گرداند)", () => {
+    expect(SW).toContain('"OFFLINE"');
+    expect(SW).toContain("503");
   });
 
-  test("قانون P6519 دست‌نخورده: HTML اپ هرگز کش نمی‌شود (شبکه-only)", () => {
-    expect(SW).toContain("HTML هرگز کش نمی‌شود");
-    expect(SW).toContain('url.pathname.startsWith("/api/")');
+  test("دادهٔ حساس هرگز کش نمی‌شود — API همیشه شبکه (قانون امنیتی P6519 دست‌نخورده)", () => {
+    expect(SW).toContain("رابط‌های برنامه‌نویسی: همیشه شبکه");
     expect(SW).toContain("داده حساس هرگز کش نمی‌شود");
-  });
-
-  test("پاک‌سازی میراث: activate کش‌های غیرجاری (شامل کش آفلاین قدیمی) را حذف می‌کند", () => {
-    expect(SW).toContain("caches.delete(k)");
-    expect(SW).toContain("self.skipWaiting()");
-    expect(SW).toContain("self.clients.claim()");
-  });
-
-  test("سینتکس sw.js معتبر است (node --check)", () => {
-    const proc = Bun.spawnSync(["node", "--check", "public/sw.js"]);
-    expect(proc.exitCode).toBe(0);
   });
 });

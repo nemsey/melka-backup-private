@@ -523,10 +523,9 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
         </CardHeader>
         {(!isMobile || filtersOpen) && (
         <CardContent>
-          {/* PN-028/خامساً-ف (دستور مالک) — فیلدهای متنی دوتایی: هر ردیف دو فیلد روبروهم */}
           <form
             id="m3-filters-form"
-            className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
             onSubmit={(e) => {
               e.preventDefault();
               setApplied({ ...filters });
@@ -643,11 +642,9 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
           کد ملک/کد درخواست فقط کد (دستور ۱ و ۲ مالک)؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
       <Card>
         {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین */}
-        {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
-            ردیف ۱: عنوان «فهرست معاملات» وسط‌چین · ردیف ۲: اکسل کل فهرست + بارگذاری اکسل */}
-        <CardHeader className="py-4 flex flex-col items-center gap-2">
-          <CardTitle className="text-base text-center">فهرست معاملات</CardTitle>
-          <div className="w-full flex items-center justify-between gap-3 flex-wrap">
+        <CardHeader className="py-4 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <CardTitle className="text-base text-center">فهرست معاملات</CardTitle>
             {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
             <Button
               variant="outline"

@@ -46,17 +46,6 @@ beforeAll(async () => {
   await db.user.deleteMany({ where: { personnelCode: { startsWith: "9600" } } });
   await db.userActivity.deleteMany({});
   await db.userSession.deleteMany({});
-  // PN-031: کاربر نمایان آزمایشی — نمای کلی (overview.total) به آن وابسته است؛
-  // پس از بازسازی test.db با db:push دیگر کاربران مانده از دورهای قبلی وجود ندارند
-  await db.user.deleteMany({ where: { personnelCode: "970017" } });
-  await db.user.create({
-    data: {
-      personnelCode: "970017",
-      fullName: "کاربر نمایان آزمون ن۰۱۷",
-      role: "EXPERT",
-      isActive: true,
-    },
-  });
   // ردیف PM آزمایشی (شعبه/سمت غیرواقعی اما معتبر — پس از تست حذف کامل می‌شود)
   await db.expertProfile.deleteMany({ where: { personnelCode: TEST_PM_CODE } });
   await db.expertProfile.create({
@@ -78,7 +67,6 @@ afterAll(async () => {
     await db.session.deleteMany({ where: { tokenHash: sha(t) } }).catch(() => undefined);
   }
   await db.user.deleteMany({ where: { personnelCode: { startsWith: "9600" } } });
-  await db.user.deleteMany({ where: { personnelCode: "970017" } });
   await db.expertProfile.deleteMany({ where: { personnelCode: TEST_PM_CODE } });
   await db.userActivity.deleteMany({});
   await db.userSession.deleteMany({});
