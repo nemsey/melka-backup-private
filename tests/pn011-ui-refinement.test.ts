@@ -98,12 +98,10 @@ describe("PN-011 ثانیاً — صفحات فهرست از رجیستری رن
     expect(page).not.toContain("bg-sec-m1-50 text-sec-m1-700\">\n                              <Building2");
   });
 
-  test("۱۲) M2 ستون نوع ملک از valueSoftClass + نوع ساختمان حذف ستونی (PN-039/گام ۷ — داده در API دست‌نخورده)", () => {
+  test("۱۲) M2 ستون نوع ملک و نوع ساختمان از valueSoftClass", () => {
     const page = readFileSync(path.join(ROOT, TILES, "arm-request/ArmRequestsPage.tsx"), "utf8");
     expect(page).toContain("valueSoftClass(r.propertyTypeName)");
-    // PN-039 (گام ۷) — ستون نوع ساختمان حذف شد: نه سرستون نه سلول رندر
-    expect(page).not.toContain(">نوع ساختمان</TableHead>");
-    expect(page).not.toContain("valueSoftClass(r.buildingTypeName)");
+    expect(page).toContain("valueSoftClass(r.buildingTypeName)");
   });
 
   test("۱۳) M4 ستون سمت پرسنلی از valueSoftClass", () => {
@@ -222,7 +220,7 @@ describe("PN-011 خامسا — کاشی تطبیق: توضیحات توسعه�
     expect(tileWhole).toContain("info?.expertName");
     expect(tileWhole).toContain("info.expertBranch");
     expect(tileWhole).toContain("مشاهده در کاشی");
-    expect(page).toContain('openTile(tileId, null, { code })'); // PN-038/فاز ۲: ظرف حذف شد — بازگشت به هوم
+    expect(page).toContain('openTile(tileId, "management-dashboard", { code })');
   });
 
   test("۲۹) صفحهٔ M5: تنظیم showReasons فعال شد (تنظیم مرده زنده شد)", () => {

@@ -1,6 +1,6 @@
 {
   "workOrder": "PN-022-A/مرحلهٔ۵ — گارد postgres-compat (گام ۵-ر)",
-  "ranAt": "2026-10-17T21:31:34.726738+00:00",
+  "ranAt": "2026-10-09T21:59:17.735012+00:00",
   "checks": [
     {
       "check": "وجود schema.postgres.prisma",
@@ -18,13 +18,13 @@
     },
     {
       "check": "توازن مدل‌ها",
-      "sqlite": 70,
-      "postgres": 70,
+      "sqlite": 63,
+      "postgres": 63,
       "ok": true
     },
     {
       "check": "نقاط موتور-ویژه مهر خورده",
-      "sites": 6,
+      "sites": 4,
       "unmarked": 0
     },
     {
@@ -36,38 +36,26 @@
   ],
   "engineSites": [
     {
+      "file": "src/lib/melk-api/sync.ts",
+      "line": 1108,
+      "marked": true,
+      "code": "await db.$executeRawUnsafe(`VACUUM INTO '${backupFile}'`);"
+    },
+    {
       "file": "src/lib/services/self-diagnosis-service.ts",
       "line": 104,
       "marked": true,
       "code": "const r = (await db.$queryRawUnsafe(\"PRAGMA quick_check\")) as { quick_check: str"
     },
     {
-      "file": "src/lib/melk-api/sync.ts",
-      "line": 1158,
-      "marked": true,
-      "code": "await db.$executeRawUnsafe(`VACUUM INTO '${backupFile}'`);"
-    },
-    {
       "file": "src/core/runtime/jobs.ts",
-      "line": 101,
+      "line": 97,
       "marked": true,
       "code": "await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, \"''\")}'`);"
     },
     {
       "file": "src/core/runtime/jobs.ts",
-      "line": 107,
-      "marked": true,
-      "code": "const r = await probe.$queryRawUnsafe(\"PRAGMA integrity_check\") as { integrity_c"
-    },
-    {
-      "file": "src/core/runtime/jobs.ts",
-      "line": 153,
-      "marked": true,
-      "code": "await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, \"''\")}'`);"
-    },
-    {
-      "file": "src/core/runtime/jobs.ts",
-      "line": 160,
+      "line": 103,
       "marked": true,
       "code": "const r = await probe.$queryRawUnsafe(\"PRAGMA integrity_check\") as { integrity_c"
     }

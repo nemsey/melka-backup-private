@@ -21,14 +21,15 @@ import { FileCheck2 } from "lucide-react";
 export const transactionsContractsTile = defineTile({
   id: "transactions-contracts",
   version: "1.1.0",
-  title: "معاملات", // PN-038/۲.۴ — نام کوتاه
+  title: "معاملات ملک تبریز",
   tagline: "M3 — فهرست معاملات تمامی کارشناسان ملک تبریز با فایل قرارداد، مبلغ و حق‌السهم مشاوران",
   description:
     "فهرست تک‌صفحه‌ای معاملات با ستون‌های کامل: کد ملک با نام و موبایل مالک، درخواست با نام و موبایل درخواست‌دهنده، نوع قرارداد، شماره هولوگرام، مبلغ قرارداد با جداکنندهٔ «،»، فایل قرارداد (سند PDF تولیدی از داده‌های واقعی سامانه‌های ملک تبریز) و تجمیع حق‌السهم مشاوران با درصد هر مشاور — شامل اطلاعات تمامی کارشناسان ملک تبریز با ایجنت هوشمند مولتی‌بینش.",
   icon: FileCheck2,
   accent: "m3",
   component: lazyPage(() => import("./TransactionsContractsPage")),
-  order: 4, // PN-038/۲.۵ — ترتیب جدید هوم: معاملات چهارم
+  order: 3,
+  container: "management-dashboard",
   agent: {
     tileId: "transactions-contracts",
     // P6526/پ — عین ایجنت واقعی (P6.5-14: INFO_COVERAGE جای CONTACT_COVERAGE نشست؛
