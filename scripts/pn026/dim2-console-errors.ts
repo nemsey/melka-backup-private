@@ -41,6 +41,7 @@ rh.dimension2Summary = {
   },
   ownerConcern2_feedback: "پوشش داده شد — مسیر منسوخ /api/agent/feedback: 404 (حذف‌شده) · مسیر صحیح /api/agent/[tileId]/feedback: فعال با گیت نشست 401 و اعتبارسنجی 400",
 };
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 require("node:fs").writeFileSync("/home/z/my-project/download/pn026/runtime-health.json", JSON.stringify(rh, null, 1));
 console.log(JSON.stringify({ errorLikeLines: evidence.result.errorLikeLines, uniquePatterns: evidence.result.uniquePatterns, verdict: evidence.result.verdict.verdict ?? evidence.result.verdict }, null, 1));
 console.log("✓ runtime-health.json تکمیل شد");

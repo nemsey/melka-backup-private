@@ -188,6 +188,20 @@ PYW
 # ───────────────────────── بازیابی ─────────────────────────
 do_recover() {
   local pkg target snap_for_head mirror_head pfile
+  # PN-038/۱.۲ — گارد دادهٔ مقدس (شورا-ن۰۶۳): پیش از هر بازیابی، داوری DB.
+  # BLOCK یعنی دیتابیس زنده مقدس است — بازیابی کد ادامه می‌یابد اما جایگزینی DB
+  # توسط گارد درونی restore.sh / recovery-guard.sh متوقف می‌شود.
+  local sacred_pkg_db
+  sacred_pkg_db=$(newest_pkg 2>/dev/null)
+  if [[ -n "$sacred_pkg_db" ]]; then
+    [[ -f "$sacred_pkg_db/db/custom.db" ]] && sacred_pkg_db="$sacred_pkg_db/db/custom.db" || sacred_pkg_db="$sacred_pkg_db/custom.db"
+    if [[ -n "$sacred_pkg_db" && -f "$sacred_pkg_db" && -f "$REPO/db/custom.db" ]] && command -v bun >/dev/null 2>&1; then
+      if ! bun "$REPO/scripts/recovery/sacred-data-guard.ts" "$sacred_pkg_db" --live "$REPO/db/custom.db" >/dev/null 2>&1; then
+        logr sacred-data-guard-block '"where":"auto-recovery.do_recover","pkg":"'"$sacred_pkg_db"'"'
+        echo "[recover] گارد مقدس: دیتابیس زنده مقدس است — بازیابی کاد بدون جایگزینی DB ادامه می‌یابد (PN-038/۱.۲)"
+      fi
+    fi
+  fi
   if [[ "$REPO" == "/home/z/my-project" ]]; then
     echo "[recover] اجرای restore.sh روی مخزن زنده…"
     if bash "$REPO/scripts/recovery-034/restore.sh"; then

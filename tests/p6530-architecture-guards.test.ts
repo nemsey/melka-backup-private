@@ -54,36 +54,27 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const roots = tileRegistry.listRoot("OWNER");
     expect(roots.map((t) => t.title)).toEqual([
-      "فایل یابی ملکا",
-      "آگهی ملکا",
-      "درخواست ملکا",
-      "تنظیمات عمومی",
-      "داشبورد مدیریتی ملک تبریز",
-    ]);
+      "فایل یابی", "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "مغز", "تنظیمات",
+    ]); // PN-038/فاز ۲: هشت کاشی ریشه با نام‌های کوتاه
   });
 
   test("۰-۲) نمای مشاور همان ترتیب هوم را دارد (تنظیمات/داشبورد عمومی‌اند)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const ownerRoots = tileRegistry.listRoot("OWNER").map((t) => t.title);
     const consultantRoots = tileRegistry.listRoot("CONSULTANT").map((t) => t.title);
-    expect(consultantRoots).toEqual(ownerRoots);
+    // PN-038: کاشی‌های فقط-مالک (تطبیق/مغز) برای مشاور حذف می‌شوند
+    expect(consultantRoots).toEqual(ownerRoots.filter((t) => t !== "تطبیق" && t !== "مغز"));
   });
 
   // P6545/گام۲ (جلسه ۰۳۳): چهار کاشی تازهٔ M5-M8 به داشبورد مدیریتی افزوده شدند
   test("۰-۳) داشبورد مدیریتی — هشت کاشی M1 تا M8 با نام‌ها و ترتیب (PN-003: m5 تطبیق + m6 یادگیری)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
+    // PN-038/۲.۲: ظرف حذف شد — فرزندی وجود ندارد؛ هشت کاشی در ریشهٔ هوم‌اند
     const children = tileRegistry.listChildren("management-dashboard", "OWNER");
-    expect(children.map((t) => t.title)).toEqual([
-      "آگهی ملک تبریز",
-      "درخواست ملک تبریز",
-      "معاملات ملک تبریز",
-      "کارشناسان ملک تبریز",
-      "تطبیق هوشمند ملک تبریز",
-      "مغز ملکا — یادگیری و Tier",
-      "شاخص بازار ملک تبریز",
-      "پوشش اطلاعات ملک تبریز",
-    ]);
-    expect(children.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(children).toEqual([]);
+    const roots = tileRegistry.listRoot("OWNER");
+    expect(roots.map((t) => t.title)).toEqual(["فایل یابی", "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "مغز", "تنظیمات"]);
+    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
   test("۰-۴) کاشی‌های M5/M6/M7 در رجیستری فعال ثبت نشده‌اند (حذف نما — فاز ۷/۸/۹)", async () => {

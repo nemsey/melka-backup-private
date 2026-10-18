@@ -93,11 +93,28 @@ for _f in "" "-wal" "-shm"; do
 done
 
 # ── گام ۵: بازگرداندن DB + env ──
-# PN-008: پیش از جایگزینی، WAL/SHM کهنهٔ DB قبلی حذف شود (خطر آلودگی/خرابی)
-rm -f db/custom.db-wal db/custom.db-shm
-if ! cp "$PKG_DB" db/custom.db; then
-  logr guard-recovery-fail '"cause":"db-copy-failed"'
-  exit 1
+# PN-038/۱.۲ — گارد دادهٔ مقدس (شورا-ن۰۶۳): پیش از هر جایگزینی DB، داوری
+# سه‌لایه (mtime + شمارش ردیف + سلامت). دیتابیس زندهٔ پرتر/جدیدتر = مقدس؛
+# جایگزینی با بستهٔ کهنه‌تر BLOCK می‌شود (ریشهٔ گم‌شدن داده در ریست‌ها).
+SACRED_VERDICT="allow"
+if [[ -x "$PWD/scripts/recovery/sacred-data-guard.ts" || -f "$PWD/scripts/recovery/sacred-data-guard.ts" ]] && command -v bun >/dev/null 2>&1; then
+  if ! bun scripts/recovery/sacred-data-guard.ts "$PKG_DB" --live db/custom.db 2>&1 | tee /tmp/pn038-sacred-guard.out; then
+    if [[ "${PIPESTATUS[0]}" -eq 2 ]]; then
+      SACRED_VERDICT="block"
+      logr sacred-data-guard-block '"where":"recovery-guard.sh","pkg":"'"$PKG_DB"'"'
+    fi
+  fi
+fi
+if [[ "$SACRED_VERDICT" == "block" ]]; then
+  echo "[recovery-guard] گارد مقدس: BLOCK — دیتابیس زنده حفظ شد (PN-038/۱.۲)؛ فقط کد/env بازیابی می‌شود"
+  # DB زنده ماند — WAL/SHM هم دست نمی‌خورند؛ expected-counts تازه از زنده
+else
+  # PN-008: پیش از جایگزینی، WAL/SHM کهنهٔ DB قبلی حذف شود (خطر آلودگی/خرابی)
+  rm -f db/custom.db-wal db/custom.db-shm
+  if ! cp "$PKG_DB" db/custom.db; then
+    logr guard-recovery-fail '"cause":"db-copy-failed"'
+    exit 1
+  fi
 fi
 if [[ ! -f .env.local && -f upload/.survival/env.local.template ]]; then
   cp upload/.survival/env.local.template .env.local

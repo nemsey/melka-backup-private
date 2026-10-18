@@ -312,6 +312,8 @@ export class PrismaRequestRepository implements RequestRepository {
         cityName: true,
         platform: true,
         customerDescription: true,
+        // PN-039 (گام ۴) — یادداشت مالک (فقط از مسیر PATCH مالک نوشته می‌شود)
+        ownerNote: true,
       },
     });
 
@@ -385,6 +387,7 @@ export class PrismaRequestRepository implements RequestRepository {
       cityName: r.cityName,
       platform: r.platform,
       customerDescription: r.customerDescription,
+      ownerNote: r.ownerNote ?? null,
     }));
     return { rows, total: matched.length };
   }
@@ -444,5 +447,15 @@ export class PrismaRequestRepository implements RequestRepository {
     return records
       .filter((r): r is { requestCode: string; customerName: string | null; customerMobile: string | null } => r.requestCode !== null)
       .map((r) => ({ requestCode: r.requestCode as string, customerName: r.customerName, customerMobile: r.customerMobile }));
+  }
+
+  /** PN-039 (گام ۴) — یادداشت مالک: تنها مسیر نوشتن این ستون — سینک ARM هرگز نمی‌نویسد */
+  async updateOwnerNote(id: string, note: string | null): Promise<{ id: string; ownerNote: string | null }> {
+    const row = await this.client.requestRecord.update({
+      where: { id },
+      data: { ownerNote: note },
+      select: { id: true, ownerNote: true },
+    });
+    return { id: row.id, ownerNote: row.ownerNote ?? null };
   }
 }

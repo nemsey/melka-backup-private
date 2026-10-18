@@ -1,7 +1,7 @@
 {
  "task": "PN-008 BLOCK 4 — اسکن ایستای نقش‌ها",
- "at": "2026-10-10T05:42:42.576446",
- "totalRoutes": 184,
+ "at": "2026-10-17T21:32:44.285494",
+ "totalRoutes": 220,
  "routes": [
   {
    "route": "/admin/action-plans",
@@ -113,6 +113,70 @@
   },
   {
    "route": "/admin/policy-evaluations/run",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/relay/browser-poll",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/relay/browser-result",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/relay/code-status",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/relay/enroll",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/relay/qr",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/relay/revoke",
+   "methods": [
+    "POST"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/relay/status",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/admin/relay/test",
    "methods": [
     "POST"
    ],
@@ -535,6 +599,15 @@
    "risk": null
   },
   {
+   "route": "/glm/probe",
+   "methods": [
+    "POST",
+    "GET"
+   ],
+   "guard": "requireRole:OWNER|OWNER",
+   "risk": null
+  },
+  {
    "route": "/graphs",
    "methods": [
     "GET",
@@ -635,6 +708,23 @@
    "risk": null
   },
   {
+   "route": "/matching/feedback",
+   "methods": [
+    "POST",
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/matching/file",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
    "route": "/matching",
    "methods": [
     "GET"
@@ -651,9 +741,41 @@
    "risk": null
   },
   {
+   "route": "/mobile-relay/bootstrap",
+   "methods": [
+    "GET"
+   ],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/mobile-relay/poll",
+   "methods": [
+    "POST"
+   ],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/mobile-relay/result",
+   "methods": [
+    "POST"
+   ],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
    "route": "/opportunity-alerts",
    "methods": [
     "GET",
+    "PATCH"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/owner-notes/[entity]/{id}",
+   "methods": [
     "PATCH"
    ],
    "guard": "requireSessionAsync (هر نقش واردشده)",
@@ -666,6 +788,22 @@
     "POST"
    ],
    "guard": "requireRole:OWNER",
+   "risk": null
+  },
+  {
+   "route": "/relay/health",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/relay/job/{id}",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireSessionAsync (هر نقش واردشده)",
    "risk": null
   },
   {
@@ -710,6 +848,14 @@
     "POST"
    ],
    "guard": "requireSessionAsync (هر نقش واردشده)",
+   "risk": null
+  },
+  {
+   "route": "/runtime/build-freshness",
+   "methods": [
+    "GET"
+   ],
+   "guard": "requireRole:OWNER",
    "risk": null
   },
   {
@@ -840,6 +986,54 @@
   },
   {
    "route": "/v1/admin/policy-evaluations/run",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/relay/browser-poll",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/relay/browser-result",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/relay/code-status",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/relay/enroll",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/relay/qr",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/relay/revoke",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/relay/status",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/admin/relay/test",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"
@@ -1145,6 +1339,12 @@
    "risk": "بررسی دستی لازم"
   },
   {
+   "route": "/v1/glm/probe",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
    "route": "/v1/graphs",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
@@ -1217,6 +1417,18 @@
    "risk": "بررسی دستی لازم"
   },
   {
+   "route": "/v1/matching/feedback",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/matching/file",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
    "route": "/v1/matching",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
@@ -1229,13 +1441,49 @@
    "risk": "بررسی دستی لازم"
   },
   {
+   "route": "/v1/mobile-relay/bootstrap",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/mobile-relay/poll",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/mobile-relay/result",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
    "route": "/v1/opportunity-alerts",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"
   },
   {
+   "route": "/v1/owner-notes/[entity]/{id}",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
    "route": "/v1/pm/connection",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/relay/health",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/relay/job/{id}",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"
@@ -1266,6 +1514,12 @@
   },
   {
    "route": "/v1/requests",
+   "methods": [],
+   "guard": "عمومی (بدون گارد)",
+   "risk": "بررسی دستی لازم"
+  },
+  {
+   "route": "/v1/runtime/build-freshness",
    "methods": [],
    "guard": "عمومی (بدون گارد)",
    "risk": "بررسی دستی لازم"

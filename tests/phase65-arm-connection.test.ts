@@ -291,14 +291,20 @@ describe("P6.5-07 — چرخه اتصال نشست (بدون تماس شبکه �
 });
 
 describe("P6.5-07 — رجیستری UI", () => {
-  test("K) ArmConnectionSection در صفحه تنظیمات mount شده و مسیر API موجود است (P6546: توکار در پیکرهٔ اتصال به ملک تبریز)", async () => {
+  test("K) (ن۰۵۵) ArmConnectionSection احیا شد — فرم مستقیم اتصال ARM بدون قفل (PN-034) · OtpReloginSection مرده", async () => {
     const fs = await import("fs");
-    // P6546/گام صفر — بخش ARM اکنون توکار (embedded) درون پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز» رندر می‌شود
+    // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت): بخش «ورود مجدد» حذف کامل؛
+    // فرم مستقیم «اتصال به حساب شخصی ARM» (همان روت /api/arm/connection) احیا شد
     const unifiedSrc = fs.readFileSync("src/core/tiles/tiles/settings/MelkTabrizConnectionSection.tsx", "utf8");
     expect(unifiedSrc.includes("ArmConnectionSection")).toBe(true);
+    expect(unifiedSrc.includes("OtpReloginSection")).toBe(false);
+    expect(fs.existsSync("src/core/tiles/tiles/settings/OtpReloginSection.tsx")).toBe(false);
     const settingsSrc = fs.readFileSync("src/core/tiles/tiles/settings/SettingsPage.tsx", "utf8");
     expect(settingsSrc.includes("MelkTabrizConnectionSection")).toBe(true);
+    // کامپوننت و روت پابرجا هستند — بدون هیچ سقف نرخ محلی
     expect(fs.existsSync("src/app/api/arm/connection/route.ts")).toBe(true);
     expect(fs.existsSync("src/core/tiles/tiles/settings/ArmConnectionSection.tsx")).toBe(true);
+    const routeSrc = fs.readFileSync("src/app/api/arm/connection/route.ts", "utf8");
+    expect(routeSrc.includes("checkRate")).toBe(false);
   });
 });

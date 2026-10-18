@@ -640,6 +640,9 @@ model PropertyRecord {
   cityName       String? // شهر (city.name)
   publicUrl      String? // لینک عمومی آگهی (link)
   statusDate     DateTime? // تاریخ آخرین وضعیت (status[0].date)
+  /// PN-039 (گام ۴) — یادداشت مالک روی آگهی؛ فقط از مسیر PATCH مالک نوشته می‌شود
+  /// (سینک ARM هرگز این ستون را نمی‌نویسد — قانون دادهٔ مقدس)
+  ownerNote      String?
 
   // ---------- PN-027 · ۵-پ-۲ — ستون‌های سایهٔ نرمال برای فیلتر متنی سطح-SQL ----------
   /// norm(ownerName) — فیلتر «کارشناس/مغایر» M1 (پیش‌تر JS روی ۲۷٫۸k ردیف)
@@ -1369,8 +1372,9 @@ model RequestRecord {
   title     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  /// رویدادهای درخواست (ثبت رویداد — عین request-events سامانه)
+  /// PN-039 (گام ۴) — یادداشت مالک روی درخواست؛ فقط از مسیر PATCH مالک نوشته می‌شود
+  /// (سینک ARM هرگز این ستون را نمی‌نویسد — قانون دادهٔ مقدس)
+  ownerNote String?
   events RequestEventRecord[]
 
   /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
@@ -1923,4 +1927,206 @@ model RetentionPolicy {
   appliedBy     String?
 
   @@unique([category])
+}
+
+/// PN-028/رابعاً-ج — درس‌های رد تطبیق (دستور مالک: مغز ملکا از دلایل واقعی رد بیاموزد
+/// و در پیشنهادهای تطبیقِ آینده همان اشتباه را تکرار نکند).
+/// هر رد = یک جفت (آگهی × درخواست) + دلایل ساختاریافته + یادداشت آزاد.
+/// یادگیری سه‌لایه: (۱) همین جفت هرگز دوباره پیشنهاد نمی‌شود (۲) دلایل پرتکرار
+/// وزن عامل متناظر را در امتیازدهی تطبیق‌های آینده تقویت می‌کنند (۳) حلقهٔ
+/// بازخورد ایجنت (AgentFeedback) همان رد را برای وزن‌های آموخته ثبت می‌کند.
+model MatchRejectionRecord {
+  id          String   @id @default(cuid())
+  /// listing_to_request | request_to_listing
+  direction   String
+  /// کد آگهی سمت تطبیق
+  listingCode String?
+  /// کد درخواست سمت تطبیق
+  requestCode String?
+  /// کلیدهای دلایل رد — ["price","geo","meterage","type","rooms","floor","age","stale","dealt","customer","other"]
+  reasonsJson String
+  /// دلیل آزاد کاربر (گزینهٔ «سایر» یا توضیح تکمیلی)
+  note        String?
+  /// امتیاز تطبیق در لحظهٔ رد (شاهد بازتولیدپذیری)
+  scoreAtReject Float?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([listingCode])
+  @@index([requestCode])
+}
+
+/// PN-029/مرحلهٔ ۶ (شورا-ن۰۳۳) — وضعیت فیوز قطع‌کنندهٔ هر میزبان خارجی.
+/// قانون Retry هوشمند: ۱ تلاش در ۶ ساعت · backoff پله‌ای ۶/۱۲/۲۴ ساعت ·
+/// ۳ شکست پیاپی = قفل سخت ۲۴ ساعته. شکست = فقط خطاهای سمت سرور/شبکه/نرخ.
+model CircuitBreakerState {
+  id                  String    @id @default(cuid())
+  /// میزبان هدف (مثلاً arus-api.melketabriz.ir)
+  target              String    @unique
+  /// شمار شکستهای پیاپی از آخرین موفقیت
+  consecutiveFailures Int       @default(0)
+  /// آمار تجمعی (شکست)
+  totalFailures       Int       @default(0)
+  /// آمار تجمعی (موفقیت)
+  totalSuccesses      Int       @default(0)
+  lastFailureAt       DateTime?
+  lastSuccessAt       DateTime?
+  /// تا این زمان تلاش بعدی مجاز نیست (backoff)
+  nextAttemptAt       DateTime?
+  /// قفل سخت پس از ۳ شکست پیاپی — ۲۴ ساعت
+  lockUntil           DateTime?
+  updatedAt           DateTime  @updatedAt
+
+  @@index([nextAttemptAt])
+  @@index([lockUntil])
+}
+
+/// PN-029/مرحلهٔ ۷ (شورا-ن۰۳۳) — تاریخچهٔ IP عمومی کانتینر.
+/// هر ۶ ساعت (کار Worker) و در هر بوت ثبت می‌شود؛ تغییر IP پس از ریست
+/// پلتفرم = سرنخ ریشهٔ «الف» (بلاک‌لیست IP در ملک تبریز).
+model ContainerIpLog {
+  id         String   @id @default(cuid())
+  ip         String
+  /// منبع تشخیص (ifconfig.me / api.ipify.org)
+  source     String   @default("ifconfig.me")
+  /// آیا نسبت به نمونهٔ قبلی تغییر کرده بود؟
+  changed    Boolean  @default(false)
+  detectedAt DateTime @default(now())
+
+  @@index([detectedAt])
+  @@index([ip])
+}
+
+/// PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال · ۱۴۰۵/۰۷/۲۶):
+/// مدل OtpRateLimit (مکانیزم OTP تک‌بارة PN-029 — قفل ۶ ساعته) برای همیشه
+/// حذف شد. درس ۰۵۵: «پاکسازی بیش از حد، به اندازهٔ ناکافی بد است» — اما
+/// قفلِ ماندرده روی مسیر مالک بدتر است. هیچ محدودیت اتصالی بازنمی‌گردد.
+
+/// PN-031 (شورا-ن۰۳۷ · ۱۴۰۵/۰۷/۲۲) — دستگاه‌های رلهٔ موبایل ایرانی.
+/// هر دستگاه (Termux روی گوشی مالک) با deviceId + secret اختصاصی که فقط
+/// مالک می‌تواند از تنظیمات (OWNER) ثبتش کند؛ قابل ابطال در هر لحظه.
+model RelayDevice {
+  id            String    @id @default(cuid())
+  /// شناسهٔ عمومی دستگاه (مثلاً poco-f3-7f3a) — در هر درخواست poll/result
+  deviceId      String    @unique
+  /// راز HMAC دستگاه (۶۴ هگز) — همان قرارداد امضای PN-030
+  secret        String
+  /// برچسب انسانی (مثلاً «Poco F3 سیدی»)
+  label         String    @default("")
+  /// کد یک‌بارمصرف راه‌اندازی — پس از دانلود اسکریپت خالی می‌شود
+  enrollCode    String?
+  enrollExpires DateTime?
+  /// PN-031-C (شورا-ن۰۴۰) — کد بخشنده: شمارش تلاش‌های دانلود bootstrap.
+  /// سوختن نهایی (enrolledAt + خنثی‌سازی کد) فقط پس از اولین Poll موفق گوشی؛
+  /// تلاش ناموفق (شبکه/کانتینر/هر علت) کد را نمی‌سوزاند — تا ۳ تلاش در پنجرهٔ ۳۰دقیقه.
+  attemptCount  Int       @default(0)
+  /// سقف تلاش per device (پیش‌فرض ۳ — مصوب جلسهٔ ۰۴۰)
+  maxAttempts   Int       @default(3)
+  /// آخرین تلاش دانلود bootstrap (حالت «در حال نصب»)
+  lastAttemptAt DateTime?
+  enrolledBy    String    @default("")
+  enrolledAt    DateTime?
+  lastSeenAt    DateTime?
+  lastIp        String?
+  revokedAt     DateTime?
+  /// شمارنده‌های بدون محتوا (قانون «صفر لاگ محتوا» شورا)
+  servedCount   Int       @default(0)
+  errorCount    Int       @default(0)
+  lastRoundtripMs Int?
+
+  @@index([deviceId, lastSeenAt])
+}
+
+/// PN-031 (شورا-ن۰۳۷ · ۱۴۰۵/۰۷/۲۲) — صف درخواست‌های عبوری از رلهٔ موبایل.
+/// armCall → enqueue (pending) → گوشی poll می‌گیرد (dispatched) → نتیجه
+/// برمی‌گردد (done/failed) یا منقضی می‌شود (expired — TTL ۴۵ ثانیه).
+model RelayQueue {
+  id          String    @id @default(cuid())
+  /// روش HTTP مقصد (GET/POST/…)
+  method      String
+  /// نشانی کامل مقصد — فقط میزبانهای whitelist ملک تبریز (عین proxy.ts)
+  url         String
+  /// هدرهای عبوری مجاز (authorization/content-type/accept) — JSON
+  headersJson String?
+  /// بدنهٔ درخواست (متنی — همان قرارداد proxyFetch)
+  body        String?
+  /// pending | dispatched | done | failed | expired
+  status      String    @default("pending")
+  fingerprint String
+  enqueuedAt  DateTime  @default(now())
+  dispatchedAt DateTime?
+  completedAt DateTime?
+  /// deviceId دستگاهی که این درخواست را برداشته/اجرا کرده
+  claimedBy   String?
+  /// ── نتیجه (فقط پس از done/failed) ──
+  responseStatus   Int?
+  responseContentType String?
+  responseBody      String?
+  /// خطای شبکه/اجرا سمت گوشی (بدون محتوا — فقط پیام خطا)
+  error       String?
+  /// منبع ثبت: armCall (تولید واقعی) | gate-test (تست دروازهٔ مالک)
+  source      String    @default("armCall")
+  /// PN-035 (شورا-ن۰۵۷) — اولویت صف: OTP=۵ (تعاملی) · ۰=پیش‌فرض (سینک/سایر).
+  /// کارگر گوشی در هر poll دستهٔ batch را با ترتیب priority DESC می‌گیرد.
+  priority    Int       @default(0)
+
+  @@index([status, priority, enqueuedAt])
+  @@index([fingerprint, enqueuedAt])
+  @@index([claimedBy, dispatchedAt])
+}
+
+/// PN-035 (شورا-ن۰۵۷ · سنتز پنج تحلیل) — کار async رله:
+/// درخواست‌های app→server (start-otp/verify و…) «فوری» jobId می‌گیرند (< ۱ ثانیه)
+/// و کارِ طولانیِ رله در پس‌زمینهٔ سرور انجام می‌شود؛ اپ با polling وضعیت را
+/// می‌خواند. این الگو هر گره HTTP را از دروازهٔ Z.ai (< ۳۰-۶۰ث) کوتاه نگه می‌دارد.
+model RelayJob {
+  id          String    @id @default(cuid())
+  /// نوع کار: auth-start-otp | auth-verify-otp | arm-start-otp | arm-verify | pm-start-otp | pm-verify
+  type        String
+  /// queued | running | done | failed | consumed
+  status      String    @default("queued")
+  /// نشستِ صاحب کار (برای مسیرهای نشست‌دار — تأیید هویت هنگام polling)
+  sessionId   String?
+  personnelCode String?
+  /// ورودی کار (JSON — بدون راز)
+  payloadJson String?
+  /// نتیجهٔ غیرحساس کار (JSON — پیام/نمایش)
+  resultJson  String?
+  /// نتیجهٔ حساس (AES-256-GCM با MELK_TOKEN_KEY — فقط یک‌بار در polling باز می‌شود)
+  resultEnc   String?
+  error       String?
+  errorCode   String?
+  httpStatus  Int?
+  /// یک‌بارمصرف‌بودن نتیجهٔ حساس (پس از نخستین خواندن موفق)
+  consumedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([expiresAt])
+}
+
+/// PN-038/فاز ۳ (شورا-ن۰۶۳ · بند ۳.۱) — حالت پروب GLM برای تست زنده
+/// هر پروب: هدف + وضعیت + نتیجهٔ خلاصه (بدون راز) + مدت — شاهد زندهٔ توانمندی
+/// تست GLM روی مسیرهای واقعی (enums-persian و…) خارج از تست‌های ایستا.
+model GlmProbe {
+  id          String   @id @default(cuid())
+  /// برچسب آزمون (مثلاً enums-persian-live)
+  label       String
+  /// هدف: enums-persian | melk-public | health | custom:<path>
+  target      String
+  /// queued | running | done | failed
+  status      String   @default("queued")
+  /// ورودی آزمون (JSON — بدون راز)
+  requestJson String?
+  /// نتیجهٔ خلاصه (JSON — وضعیت HTTP/شمارش/مسیر)
+  resultJson  String?
+  error       String?
+  durationMs  Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([label, createdAt])
 }

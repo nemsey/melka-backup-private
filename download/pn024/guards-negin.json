@@ -1,7 +1,7 @@
 {
   "guard": "audit-negin-consistency",
   "workOrder": "PN-024/مرحلهٔ ۱۱ — ۱۱ نگین سازگار (پالت · CSS · رجیستری · اعمال · قانون ۶)",
-  "generatedAt": "2026-10-10T05:42:16.804519+00:00",
+  "generatedAt": "2026-10-17T21:31:15.394654+00:00",
   "checks": [
     {
       "check": "۱ رجیستری negin-palette.ts",
@@ -21,7 +21,7 @@
     },
     {
       "check": "۵ اعمال: TileCard + ۱۱ صفحه با گوهر یکتا",
-      "ok": true
+      "ok": false
     }
   ],
   "gems": [
@@ -46,9 +46,7 @@
     "yaghut-banafsh",
     "yaghut-kabud",
     "kuartz-soorati",
-    "nili",
-    "topaz-abee",
-    "morvarid"
+    "nili"
   ],
   "violations": [],
   "pass": true
