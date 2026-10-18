@@ -225,8 +225,6 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
         cityName: true,
         publicUrl: true,
         statusDate: true,
-        // PN-039 (گام ۴) — یادداشت مالک (فقط از مسیر PATCH مالک نوشته می‌شود)
-        ownerNote: true,
       },
     });
 
@@ -280,7 +278,6 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
       cityName: r.cityName,
       publicUrl: r.publicUrl,
       statusDate: r.statusDate,
-      ownerNote: r.ownerNote ?? null,
     }));
     return { rows, total: matched.length };
   }
@@ -349,15 +346,5 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
       where: { propertyCode },
       data: patch as Prisma.PropertyRecordUpdateInput,
     });
-  }
-
-  /** PN-039 (گام ۴) — یادداشت مالک: تنها مسیر نوشتن این ستون — سینک ARM هرگز نمی‌نویسد */
-  async updateOwnerNote(id: string, note: string | null): Promise<{ id: string; ownerNote: string | null }> {
-    const row = await this.client.propertyRecord.update({
-      where: { id },
-      data: { ownerNote: note },
-      select: { id: true, ownerNote: true },
-    });
-    return { id: row.id, ownerNote: row.ownerNote ?? null };
   }
 }

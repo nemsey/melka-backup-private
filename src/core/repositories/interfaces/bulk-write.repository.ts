@@ -425,6 +425,4 @@ export interface PropertyRecordRepository {
   findExistingCodes(codes: string[]): Promise<string[]>;
   /** P6546/گام پنجم — به‌روزرسانی هدفمند ردیف‌ها (فقط فیلدهای داده‌شده؛ برای غنی‌سازی چند-منبعی) */
   updateCatalogFields(propertyCode: string, patch: Record<string, string | number | null>): Promise<void>;
-  /** PN-039 (گام ۴) — ثبت/پاک‌سازی یادداشت مالک — تنها مسیر نوشتن این ستون (قانون دادهٔ مقدس) */
-  updateOwnerNote(id: string, note: string | null): Promise<{ id: string; ownerNote: string | null }>;
 }

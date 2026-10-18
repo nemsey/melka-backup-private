@@ -10,11 +10,6 @@
 # راه‌حل: داوری با «شاخهٔ main آینه» — تبارِ مرجع کد که هرگز عقب
 # نمی‌رود. اگر HEAD محلی جدِّ اکیدِ main آینه باشد یعنی درخت برگشته.
 #
-# PN-040 (گام ۴ · بند ۴.۳ — جلسهٔ ۰۶۶): مرجع داوری از «آینهٔ محلی» به
-# GitHub (remote origin) تغییر کرد و بازیابیِ سنگین به سپر عالی سپرده شد
-# (scripts/recovery/github-supreme-guard.sh) — این گارد نقش تشخیص‌گرِ
-# قرارداد PN-015 را نگه می‌دارد؛ نبود سپر → مسیر داخلی پیشین.
-#
 # دستورها:
 #   check   — فقط تشخیص: ۰=HEALTHY · ۲=RESET-DETECTED · ۳=DIVERGED · ۱=خطا
 #   recover — تشخیص + بازیابی نرخ‌محدود (fetch → reset --hard → install →
@@ -43,61 +38,29 @@ mkdir -p "$SURV" 2>/dev/null || true
 logr() { printf '{"at":"%s","kind":"%s",%s}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" >> "$LOGR" 2>/dev/null || true; }
 
 remote_url() {
-  # PN-040 (گام ۴ · بند ۴.۳): مرجع رسمی = GitHub (remote origin) — نه آینهٔ محلی
-  local _origin
-  _origin=$(git -C "$REPO" remote get-url origin 2>/dev/null || true)
-  [ -n "$_origin" ] && { echo "$_origin"; return; }
   if [ -n "${MIRROR_REMOTE_URL:-}" ]; then echo "$MIRROR_REMOTE_URL"; return; fi
   [ -f "$CRED" ] && { set -a; . "$CRED"; set +a; echo "${MIRROR_URL_AUTHED:-}"; }
 }
 
 # ── تشخیص ──
-# PN-031-I (جلسهٔ ۰۵۰ · درس بازگشت دهم): داوری دُکلایه —
-#   ۱) درخت گیت در برابر آینه (قبلی)
-#   ۲) بیلدِ زنده در برابر HEAD (تازه) — درختِ سالم + بیلدِ کهنه = همان
-#      حالتی که ساعت ۰۷:۲۹ بازگشت دهم باقی گذاشت: درخت بازیابی شد اما
-#      بیلد شکست خورد و detect بعدی «HEALTHY equal» گفت و بازیابی هرگز
-#      ادامه نیافت — سرور ۱۴ ساعت نسخهٔ کهنه سرو کرد. از این پس
-#      «درخت سالم + بیلد کهنه» = BUILD-STALE = همان مسیر recover.
-live_build_sha() { # خروجی: gitSha کامل بیلد زنده — خالی یعنی سرور در دسترس نیست
-  curl -s -m 8 "http://127.0.0.1:${MELK_HEAD_GUARD_PORT:-3000}/api/version" 2>/dev/null \
-    | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('fingerprint',{}).get('gitSha') or d.get('gitSha') or '')" 2>/dev/null || echo ""
-}
-
 detect() {
-  local head remote_main live
+  local head remote_main
   head=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo "")
   if [ -z "$head" ]; then echo "ERROR no-HEAD"; return 1; fi
   local url; url=$(remote_url)
   if [ -z "$url" ]; then echo "ERROR no-remote"; return 1; fi
   remote_main=$(timeout 60 git ls-remote "$url" refs/heads/main 2>/dev/null | awk '{print $1}')
   if [ -z "$remote_main" ]; then echo "ERROR ls-remote"; return 1; fi
-  if [ "$remote_main" = "$head" ]; then
-    # درخت سالم است — اما بیلد زنده؟ (حفرهٔ بازگشت دهم)
-    live=$(live_build_sha)
-    if [ -n "$live" ]; then
-      if [ "$live" = "$head" ]; then echo "HEALTHY equal"; return 0; fi
-      echo "BUILD-STALE live=$live head=$head"; return 2
-    fi
-    # سرور در دسترس نیست — عهدهٔ watchdog است، نه این گارد
-    echo "HEALTHY equal (server-unreachable)"; return 0
-  fi
+  if [ "$remote_main" = "$head" ]; then echo "HEALTHY equal"; return 0; fi
   # آیا main آینه به‌طور محلی موجود است؟ (اگر نه، بگیر)
   if ! git -C "$REPO" cat-file -e "$remote_main^{commit}" 2>/dev/null; then
     timeout 120 git -C "$REPO" fetch "$url" refs/heads/main:refs/heads/reset-guard-mirror-main >/dev/null 2>&1 || true
   fi
   if git -C "$REPO" cat-file -e "$remote_main^{commit}" 2>/dev/null; then
     if git -C "$REPO" merge-base --is-ancestor "$head" "$remote_main" 2>/dev/null; then
-      # درخت عقب است — و بیلد زنده هم قطعاً عقب/کهنه است (reset کامل لازم)
       echo "RESET-DETECTED behind"; return 2
     fi
     if git -C "$REPO" merge-base --is-ancestor "$remote_main" "$head" 2>/dev/null; then
-      # درخت جلو است (کار تازه کامیت‌نشده روی آینه) — اما اگر بیلد زنده هم عقب
-      # باشد باز هم BUILD-STALE است (بیلد باید به HEAD برسد)
-      live=$(live_build_sha)
-      if [ -n "$live" ] && [ "$live" != "$head" ]; then
-        echo "BUILD-STALE live=$live head=$head (ahead-of-mirror)"; return 2
-      fi
       echo "HEALTHY ahead"; return 0
     fi
     echo "DIVERGED"; return 3
@@ -167,17 +130,6 @@ case "$MODE" in
     fi
     date -u +%Y-%m-%dT%H:%M:%SZ > /dev/null
     python3 -c "import json,datetime; json.dump({'at': datetime.datetime.utcnow().isoformat()+'Z'}, open('$RATE_FILE','w'))" 2>/dev/null || true
-    # ═══ PN-040 (گام ۴ · بند ۴.۳): واگذاری بازیابی سنگین به سپر عالی گیت‌هاب ═══
-    # سپر: fetch origin main → checkout -B main → install → build → restart → مهر.
-    # نبود سپر (مخازن ساختگی تست PN-015) → مسیر داخلی پیشین بدون تغییر.
-    if [ -f "$REPO/scripts/recovery/github-supreme-guard.sh" ]; then
-      echo "[reset-guard] واگذاری بازیابی به سپر عالی گیت‌هاب (PN-040/گام-۴)"
-      if bash "$REPO/scripts/recovery/github-supreme-guard.sh" recover; then
-        write_state recover "$VERDICT_LINE" "$HEAD_SHA" "$REMOTE_SHA" "delegated-supreme-guard" "بازیابی کامل توسط سپر عالی گیت‌هاب"
-        exit 0
-      fi
-      echo "[reset-guard] سپر عالی ناکام ماند — ادامه با مسیر داخلی (قانون ۱۱)"
-    fi
     # ۱) بازگرداندن درخت از آینه — دکترین: کد کامیت‌نشده = کد گم‌شده (آینه هر ۵ دقیقه پوش می‌کند)
     (cd "$REPO" && timeout 180 git fetch "$(remote_url)" refs/heads/main:refs/heads/reset-guard-mirror-main >/dev/null 2>&1 \
       && git reset --hard "$REMOTE_SHA") >> /tmp/pn015-reset-guard-recover.log 2>&1
@@ -187,21 +139,6 @@ case "$MODE" in
       exit 5
     fi
     echo "[reset-guard] درخت بازگشت → $REMOTE_SHA"
-    # PN-038/۱.۲ — گارد دادهٔ مقدس (شورا-ن۰۶۳): شاهد زندهٔ وضعیت DB پس از
-    # بازنشانی درخت. reset-guard خودش DB را جایگزین نمی‌کند؛ این شاهد proves
-    # دادهٔ زنده از بازنشانی جان سالم به در برده (یا گودیدن آن را ثبت می‌کند).
-    # PN-041 (شورا-ن۰۶۷): مسیر زندهٔ رسمی از حل‌کنندهٔ واحد (قلعه اول، قدیم fallback)
-    _LIVE_DB="$(bash "$REPO/scripts/recovery/live-db-path.sh" 2>/dev/null || echo "$REPO/db/custom.db")"
-    if [[ -f "$_LIVE_DB" ]] && command -v bun >/dev/null 2>&1; then
-      local _pkg_db=""
-      for _d in $(ls -d "$REPO"/upload/.survival/P*/ 2>/dev/null | sort -V | tail -3); do
-        if [[ -f "${_d%/}/db/custom.db" ]]; then _pkg_db="${_d%/}/db/custom.db"; elif [[ -f "${_d%/}/custom.db" ]]; then _pkg_db="${_d%/}/custom.db"; fi
-      done
-      if [[ -n "$_pkg_db" ]]; then
-        bun "$REPO/scripts/recovery/sacred-data-guard.ts" "$_pkg_db" --live "$_LIVE_DB" >/dev/null 2>&1 || true
-        echo "[reset-guard] شاهد گارد مقدس ثبت شد ($_pkg_db)"
-      fi
-    fi
     if [ "${DRILL:-0}" = "1" ]; then
       echo "[reset-guard] DRILL: بازیابی گیت کامل شد؛ build/restart صرفاً طرح (در تولید انجام می‌شود)"
       write_state recover "$VERDICT_LINE" "$HEAD_SHA" "$REMOTE_SHA" "drill-git-recovered" "دریل: بازیابی کامل گیت بدون build"
@@ -226,12 +163,6 @@ case "$MODE" in
     fi
     # ۴) ری‌استارت تمیز سرور: کشتن سرور → نگهبان با بیلد تازه بالا می‌آورد
     pkill -f "standalone/server.js" 2>/dev/null || true
-    # PN-031-I (جلسهٔ ۰۵۰ · درس بازگشت دهم): Worker قدیمی هم تازه می‌شود —
-    # Workerِ بوت‌شده از درختِ بازگشته، رجیستری کارهای قدیمی (بدون head-guard)
-    # در حافظه داشت و تا ری‌بوت بعدی تازه نمی‌شد. سرور تازه Worker تازه spawn
-    # می‌کند (supervisor) → رجیستری از درختِ بازیابی‌شده بارگذاری می‌شود.
-    sleep 2
-    pkill -f "scripts/runtime/worker.ts" 2>/dev/null || true
     # ۵) وارسی مهر تازه (تا ۹۰ ثانیه)
     for _ in $(seq 1 45); do
       V=$(curl -s --max-time 3 http://localhost:3000/api/version 2>/dev/null | sed -n 's/.*"gitSha":"\([^"]*\)".*/\1/p')

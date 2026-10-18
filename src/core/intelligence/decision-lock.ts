@@ -4,13 +4,6 @@
  * سه قفل (عین سفارش): TTL ۷ روز · Cooldown ۴۸ ساعت · RateLimit ۱۰/روز + ۳/دسته
  * ترتیب ارزیابی: TTL → Cooldown → RateLimit (ارزان‌ترین و قطعی‌ترین اول).
  *
- * ═══ PN-028 / ثانیاً (دستور مالک — فاز طرح و توسعه) ═══
- * قفل‌های شمارشی (سقف روزانه ۱۰ و سقف دسته‌ای ۳) به‌طور پیش‌فرض غیرفعال‌اند:
- * اپلیکیشن در مرحلهٔ طرح و توسعه است ⇒ محدودیتی در تعداد تحلیل/توصیهٔ مغز ملکا
- * برای کاربران برقرار نیست (تعداد تحلیل نامحدود). قفل‌های TTL و Cooldown — که
- * «تکرار توصیهٔ یکسان» را مهار می‌کنند نه شمار را — سر جای خود مانده‌اند.
- * بازگشت به حالت سقف‌دار: MELKA_ANALYSIS_UNLIMITED=disabled
- *
  * قید مطلق (قانون ۱۱ ابدی): autoExecute: false در سطح نوع TypeScript —
  * صفر اجرای واقعی؛ این ماژول فقط «می‌گوید» و «صبر می‌کند».
  *
@@ -20,10 +13,6 @@
 /** قفل نوعی صفر-اجرا — تنها مقادیر مجاز این نوع، همین دو لفظ است */
 export type NeverExecute = { autoExecute: false; requiresApproval: true };
 
-/** PN-028/ثانیاً — فاز طرح و توسعه: تحلیل مغز نامحدود (پیش‌فرض روشن).
- *  با MELKA_ANALYSIS_UNLIMITED=disabled قفل‌های شمارشی به حالت سقف‌دار برمی‌گردند. */
-export const ANALYSIS_RATE_UNLIMITED: boolean = process.env.MELKA_ANALYSIS_UNLIMITED !== "disabled";
-
 // ═══════════════ ثابت‌های لفظی کمربند (عین سفارش — قفل نوع) ═══════════════
 
 export const DECISION_LOCK_CONSTANTS = {
@@ -31,9 +20,9 @@ export const DECISION_LOCK_CONSTANTS = {
   ttlSeconds: (7 * 24 * 3600) as 604800,
   /** ۴۸ ساعت */
   cooldownHours: 48 as 48,
-  /** سقف روزانه به ازای هر کارشناس — فقط در حالت سقف‌دار (PN-028) */
+  /** سقف روزانه به ازای هر کارشناس */
   ratePerDay: 10 as 10,
-  /** سقف روزانه به ازای هر بستر+دسته — فقط در حالت سقف‌دار (PN-028) */
+  /** سقف روزانه به ازای هر بستر+دسته */
   ratePerCategory: 3 as 3,
 } as const;
 
@@ -101,14 +90,12 @@ export function evaluateLock(input: LockEvaluationInput): LockVerdict {
   }
 
   // ── قفل ۳a: سقف روزانهٔ کارشناس ──
-  // PN-028/ثانیاً — در فاز طرح و توسعه غیرفعال: تحلیل مغز نامحدود است
-  if (!ANALYSIS_RATE_UNLIMITED && input.advisorCountToday >= c.ratePerDay) {
+  if (input.advisorCountToday >= c.ratePerDay) {
     return { locked: true, reason: "rate-day", message: "سقف توصیه‌های امروز پر شده — فردا صبح اولین توصیه همین‌جا است" };
   }
 
   // ── قفل ۳b: سقف روزانهٔ بستر+دسته ──
-  // PN-028/ثانیاً — در فاز طرح و توسعه غیرفعال: تحلیل مغز نامحدود است
-  if (!ANALYSIS_RATE_UNLIMITED && input.categoryCountToday >= c.ratePerCategory) {
+  if (input.categoryCountToday >= c.ratePerCategory) {
     return { locked: true, reason: "rate-category", message: "سقف توصیه‌های این دسته برای امروز پر شده" };
   }
 

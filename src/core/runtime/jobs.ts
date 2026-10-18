@@ -14,7 +14,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { mkdirSync, existsSync, readdirSync, statSync, statfsSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import type { WorkerJobDef } from "./job-queue";
@@ -57,11 +57,6 @@ export const WORKER_JOB_IDS = {
   diskGuard: "disk-guard",
   diagnosisCycle: "diagnosis-cycle",
   memoryConsolidation: "memory-consolidation",
-  ipLog: "ip-log",
-  headGuard: "head-guard",
-  sacredBackup: "sacred-backup",
-  rollingBackup: "rolling-backup", // PN-041 · شورا-ن۰۶۷ — لایهٔ ۲ قلعهٔ داده
-  relayHealthCheck: "relay-health-check",
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -137,169 +132,6 @@ export async function runBackupRotation(db: PrismaClient, options?: { keep?: num
 }
 
 /**
- * بکاپ مقدس ۱۵دقیقه‌ای (PN-038 · فاز ۱ · بند ۱.۳ — شورا-ن۰۶۳):
- * چرخهٔ بکاپ اتمی (VACUUM INTO — بدون توقف سرویس) هر ۱۵ دقیقه + مانیفست
- * mtime/شمارش در upload/.runtime/sacred-backups.json (خوراک گارد مقدس).
- * نگهداری: پیش‌فرض ۵ نسل (PN-041/فاز ۳ · شورا-ن۰۶۷ — از ۴ به ۵) — env MELK_SACRED_BACKUP_KEEP.
- * محل (PN-041/فاز ۳): منطقهٔ پایدار upload/.data/sacred/ (قبلاً backups/ در منطقهٔ ریست).
- */
-export async function runSacredBackup(db: PrismaClient, options?: { keep?: number; backupsDir?: string }): Promise<{ created: string; kept: string[]; pruned: string[]; integrity: string; mtimeIso: string; counts: Record<string, number> }> {
-  const envKeep = Number.parseInt(process.env.MELK_SACRED_BACKUP_KEEP ?? "5", 10);
-  const keep = Math.max(1, options?.keep ?? (Number.isFinite(envKeep) ? envKeep : 5));
-  const dir = options?.backupsDir ?? join(REPO_ROOT, "upload/.data/sacred");
-  mkdirSync(dir, { recursive: true });
-  // PN-041 (درس دیسک): شیر دیسکِ همان چرخشی — بحرانی → پرش با شاهد (زنده هرگز در خطر نیست)
-  const free0 = freeDiskBytes(dir);
-  if (free0 < 1_000_000_000) {
-    const detail = { skipped: "disk-low", freeBytes: free0, at: new Date().toISOString() };
-    await db.auditLog.create({
-      data: { action: "SACRED_BACKUP", actor: "worker:sacred-backup", detail: JSON.stringify(detail) },
-    }).catch(() => undefined);
-    return { created: "", kept: [], pruned: [], integrity: "skipped", mtimeIso: new Date().toISOString(), counts: {} };
-  }
-  const tsBase = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 23);
-  let target = join(dir, `sacred-${tsBase}.db`);
-  for (let i = 1; existsSync(target); i++) target = join(dir, `sacred-${tsBase}-${i}.db`);
-  // ENGINE: sqlite-only (VACUUM INTO اتمی — خواننده‌ها هرگز حالت نصفه نمی‌بینند)
-  await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, "''")}'`);
-  // مانیفست مقدس: mtime + شمارش ردیف‌های شاهد — خوراک sacred-data-guard
-  const manifest = { created: target.split("/").pop()!, mtimeIso: new Date().toISOString(), counts: {} as Record<string, number> };
-  try {
-    const probe = new (await import("@prisma/client")).PrismaClient({ datasources: { db: { url: `file:${target}` } } });
-    try {
-      // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
-      const r = await probe.$queryRawUnsafe("PRAGMA integrity_check") as { integrity_check: string }[];
-      manifest.counts["__integrity"] = r[0]?.integrity_check === "ok" ? 1 : 0;
-      for (const t of ["PropertyRecord", "RequestRecord", "TransactionRecord", "ExpertRecord", "GraphNode"]) {
-        try {
-          const c = await probe.$queryRawUnsafe(`SELECT COUNT(*) as c FROM ${t}`) as { c: number | bigint }[];
-          manifest.counts[t] = Number(c[0]?.c ?? 0);
-        } catch { manifest.counts[t] = -1; }
-      }
-    } finally { await probe.$disconnect(); }
-  } catch { /* مانیفست بهترین-تلاش */ }
-  // هرس: فقط فایل‌های sacred-*.db (بکاپ‌های چرخشی دیگری را لمس نمی‌کند)
-  const createdName = target.split("/").pop()!;
-  const files = existsSync(dir)
-    ? readdirSync(dir).filter((f) => f.startsWith("sacred-") && f.endsWith(".db")).map((f) => ({ f, m: statSync(join(dir, f)).mtimeMs })).sort((a, b) => b.m - a.m)
-    : [];
-  const kept: string[] = [];
-  const pruned: string[] = [];
-  for (let i = 0; i < files.length; i++) {
-    if (i < keep || files[i].f === createdName) kept.push(files[i].f);
-    else { unlinkSync(join(dir, files[i].f)); pruned.push(files[i].f); }
-  }
-  // شاهد پایدار برای گارد/آپ‌تایم — بهترین-تلاش
-  try {
-    const { writeFileSync } = await import("node:fs");
-    writeFileSync(join(REPO_ROOT, "upload/.runtime/sacred-backups.json"), JSON.stringify({ ...manifest, kept, pruned: pruned.length, at: manifest.mtimeIso }, null, 2));
-  } catch { /* شاهد بهترین-تلاش */ }
-  await db.auditLog.create({
-    data: {
-      action: "SACRED_BACKUP",
-      actor: "worker:sacred-backup",
-      detail: JSON.stringify({ created: createdName, kept: kept.length, pruned: pruned.length, counts: manifest.counts }),
-    },
-  }).catch(() => undefined);
-  return { created: target, kept, pruned, integrity: String(manifest.counts["__integrity"] ?? "unknown"), mtimeIso: manifest.mtimeIso, counts: manifest.counts };
-}
-
-/**
- * بکاپ چرخشی ۵دقیقه‌ای (PN-041 · فاز ۲ · شورا-ن۰۶۷):
- * لایهٔ ۲ قلعهٔ داده — VACUUM INTO اتمی هر ۵ دقیقه در «منطقهٔ پایدار»
- * upload/.data/rolling/ (باقی‌مانده از ریست). هرس خودکار ۵ نسخه +
- * شیر دیسک (فضای آزاد < آستانه → هرس تهاجمی‌تر؛ بحرانی → پرش با شاهد).
- * مانیفست mtime/شمارش در upload/.runtime/rolling-backups.json (خوراک گارد قلعه).
- */
-export async function runRollingBackup(db: PrismaClient, options?: { keep?: number; rollingDir?: string }): Promise<{ created: string; kept: string[]; pruned: string[]; integrity: string; skipped?: string; freeBytes?: number; counts: Record<string, number> }> {
-  const envKeep = Number.parseInt(process.env.MELK_ROLLING_BACKUP_KEEP ?? "5", 10);
-  const keep = Math.max(2, options?.keep ?? (Number.isFinite(envKeep) ? envKeep : 5));
-  const dir = options?.rollingDir ?? join(REPO_ROOT, "upload/.data/rolling");
-  mkdirSync(dir, { recursive: true });
-
-  // ── شیر دیسک: پیش از نوشتنِ ~۴۰۰MB فضای آزاد را ببین ──
-  // بحرانی (< ۱GB) → پرش با شاهد (بکاپ بعدی در چرخهٔ بعد؛ دادهٔ زنده هرگز در خطر نیست)
-  // فشرده (< ۱.۶GB) → هرس تهاجمی به ۲ نسل پیش از ساختن
-  const free0 = freeDiskBytes(dir);
-  if (free0 < 1_000_000_000) {
-    const detail = { skipped: "disk-low", freeBytes: free0, at: new Date().toISOString() };
-    try {
-      writeFileSync(join(REPO_ROOT, "upload/.runtime/rolling-backups.json"), JSON.stringify(detail, null, 2));
-    } catch { /* بهترین-تلاش */ }
-    await db.auditLog.create({
-      data: { action: "ROLLING_BACKUP", actor: "worker:rolling-backup", detail: JSON.stringify(detail) },
-    }).catch(() => undefined);
-    return { created: "", kept: [], pruned: [], integrity: "skipped", counts: {}, skipped: "disk-low", freeBytes: free0 };
-  }
-
-  // نام یکتا (VACUUM INTO روی فایل موجود خطا می‌دهد)
-  const tsBase = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 23);
-  let target = join(dir, `live-${tsBase}.db`);
-  for (let i = 1; existsSync(target); i++) target = join(dir, `live-${tsBase}-${i}.db`);
-  // ENGINE: sqlite-only (VACUUM INTO اتمی — خواننده‌ها حالت نصفه نمی‌بینند)
-  await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, "''")}'`);
-
-  // مانیفست چرخشی: mtime + شمارش ردیف‌های شاهد — خوراک db-fortress-guard
-  const manifest = { created: target.split("/").pop()!, mtimeIso: new Date().toISOString(), counts: {} as Record<string, number> };
-  try {
-    const probe = new (await import("@prisma/client")).PrismaClient({ datasources: { db: { url: `file:${target}` } } });
-    try {
-      // ENGINE: sqlite-only (dbHealth شاخهٔ موتور — سوییچ PN-022-C)
-      const r = await probe.$queryRawUnsafe("PRAGMA integrity_check") as { integrity_check: string }[];
-      manifest.counts["__integrity"] = r[0]?.integrity_check === "ok" ? 1 : 0;
-      for (const t of ["PropertyRecord", "RequestRecord", "TransactionRecord", "ExpertRecord", "GraphNode"]) {
-        try {
-          const c = await probe.$queryRawUnsafe(`SELECT COUNT(*) as c FROM ${t}`) as { c: number | bigint }[];
-          manifest.counts[t] = Number(c[0]?.c ?? 0);
-        } catch { manifest.counts[t] = -1; }
-      }
-    } finally { await probe.$disconnect(); }
-  } catch { /* مانیفست بهترین-تلاش */ }
-
-  // هرس: فقط فایل‌های live-*.db (بکاپ‌های sacred را لمس نمی‌کند)
-  // حالت فشردهٔ دیسک → نگه‌داری ۲ نسل (به‌جای ۵) — شیر دیسک
-  const effectiveKeep = freeDiskBytes(dir) < 1_600_000_000 ? Math.min(keep, 2) : keep;
-  const createdName = target.split("/").pop()!;
-  const files = existsSync(dir)
-    ? readdirSync(dir).filter((f) => f.startsWith("live-") && f.endsWith(".db")).map((f) => ({ f, m: statSync(join(dir, f)).mtimeMs })).sort((a, b) => b.m - a.m)
-    : [];
-  const kept: string[] = [];
-  const pruned: string[] = [];
-  for (let i = 0; i < files.length; i++) {
-    if (i < effectiveKeep || files[i].f === createdName) kept.push(files[i].f);
-    else { unlinkSync(join(dir, files[i].f)); pruned.push(files[i].f); }
-  }
-
-  // شاهد پایدار برای گارد قلعه — بهترین-تلاش
-  try {
-    const { writeFileSync } = await import("node:fs");
-    writeFileSync(join(REPO_ROOT, "upload/.runtime/rolling-backups.json"), JSON.stringify({ ...manifest, kept, pruned: pruned.length, freeBytes: freeDiskBytes(dir), at: manifest.mtimeIso }, null, 2));
-  } catch { /* شاهد بهترین-تلاش */ }
-  await db.auditLog.create({
-    data: {
-      action: "ROLLING_BACKUP",
-      actor: "worker:rolling-backup",
-      detail: JSON.stringify({ created: createdName, kept: kept.length, pruned: pruned.length, counts: manifest.counts, freeBytes: freeDiskBytes(dir) }),
-    },
-  }).catch(() => undefined);
-  return { created: target, kept, pruned, integrity: String(manifest.counts["__integrity"] ?? "unknown"), freeBytes: freeDiskBytes(dir), counts: manifest.counts };
-}
-
-/** فضای آزاد دیسکِ مسیر (بایت) — نامعلوم = بی‌نهایت (سد نکن)
- *  نکتهٔ PN-041: fuse/ossfs سهمیه گزارش نمی‌دهد (bavail=۰/منفی) →
- *  داوری از ریشهٔ کانتینر (overlayfs — همان دیسکی که پرمی‌شود). */
-function freeDiskBytes(dir: string): number {
-  try {
-    const st = statfsSync(dir);
-    const free = Number(st.bavail) * Number(st.bsize);
-    if (free > 0) return free;
-    const root = statfsSync(REPO_ROOT);
-    const rootFree = Number(root.bavail) * Number(root.bsize);
-    return rootFree > 0 ? rootFree : Number.MAX_SAFE_INTEGER;
-  } catch { return Number.MAX_SAFE_INTEGER; }
-}
-
-/**
  * تعریف کارهای Worker — با همان زمان‌بندی و رفتار دیمن‌های قبلی
  * (صفر قطع خدمت: اولین اجراها دقیقاً مثل قبل ۴۵s/۶۰s بعد از بوت).
  */
@@ -321,7 +153,7 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
     });
   }
 
-  // ── Catalog → Worker — PN-029 → PN-038/۶.۱: گارد آفلینی حذف شد ──
+  // ── Catalog → Worker (فاصله و کلید خاموشی عین قبل) ──
   if (process.env.MELK_CATALOG_DAEMON !== "disabled") {
     const intervalMinutes = envInt("MELK_CATALOG_DAEMON_INTERVAL_MINUTES", 1, 1);
     jobs.push({
@@ -368,40 +200,6 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       intervalMs: 6 * 60 * 60_000,
       firstRunDelayMs: 90_000, // نخستین بکاپِ چرخشی زودهنگام
       run: async (database) => runBackupRotation(database),
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── Sacred Backup → Worker (PN-038/۱.۳ + PN-041/فاز ۳: بکاپ ۱۵دقیقه‌ای در منطقهٔ پایدار) ──
-  // شورا-ن۰۶۳: «بکاپ پیوسته — هر ۱۵ دقیقه دیتابیس زنده را اتمی بکاپ بگیر».
-  // شورا-ن۰۶۷ (PN-041): محل بکاپ → upload/.data/sacred/ (پایدار) · نگه‌داری ۵ نسل.
-  if (process.env.MELK_SACRED_BACKUP !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.sacredBackup,
-      title: "بکاپ مقدس ۱۵دقیقه‌ای (PN-038/۱.۳ + PN-041/۳)",
-      intervalMs: envInt("MELK_SACRED_BACKUP_INTERVAL_MINUTES", 15, 5) * 60_000,
-      firstRunDelayMs: 30_000, // نخستین بکاپ مقدس نیم دقیقه پس از بوت
-      run: async (database) => runSacredBackup(database),
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── Rolling Backup → Worker (تازه — PN-041/فاز ۲: بکاپ چرخشی ۵دقیقه‌ای قلعه) ──
-  // شورا-ن۰۶۷: «هیچ ریستی نمی‌تواند بیش از ۵ دقیقه دیتا را عقب ببرد».
-  // VACUUM INTO اتمی در upload/.data/rolling/ (پایدار) · هرس ۵ نسل · شیر دیسک.
-  if (process.env.MELK_ROLLING_BACKUP !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.rollingBackup,
-      title: "بکاپ چرخشی ۵دقیقه‌ای قلعهٔ داده (PN-041/۲)",
-      intervalMs: envInt("MELK_ROLLING_BACKUP_INTERVAL_MINUTES", 5, 5) * 60_000,
-      firstRunDelayMs: 15_000, // نخستین بکاپ چرخشی ۱۵ ثانیه پس از بوت
-      run: async (database) => runRollingBackup(database),
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
         return {};
@@ -611,81 +409,6 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
         const { runConsolidation } = await import("@/lib/services/memory-lifecycle-service");
         void database;
         return runConsolidation();
-      },
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── IP-Log → Worker (تازه — PN-029 مرحلهٔ ۷: گارد IP کانتینر) ──
-  // هر ۶ ساعت: تشخیص IP عمومی کانتینر (ifconfig.me → api.ipify.org) + ثبت در
-  // ContainerIpLog و AuditLog؛ تغییر IP پس از ریست پلتفرم = سرنخ ریشهٔ «الف».
-  // ⚠ این کار در حالت آفلینی نیز فعال می‌ماند — میزبانهای سنجش IP، سامانه‌های
-  // ملک تبریز نیستند و خود سند شورا آزمون ۵ را خواسته است.
-  jobs.push({
-    id: WORKER_JOB_IDS.ipLog,
-    title: "گارد IP کانتینر (PN-029 مرحلهٔ ۷)",
-    intervalMs: 6 * 60 * 60_000,
-    firstRunDelayMs: 45_000, // نخستین ثبت، کمتر از یک دقیقه پس از بوت
-    run: async (database) => {
-      const { recordContainerIp } = await import("@/lib/melk-api/container-ip");
-      return recordContainerIp(database);
-    },
-    toDomain: (r) => {
-      if (r && typeof r === "object") return r as Record<string, unknown>;
-      return {};
-    },
-  });
-
-  // ── Head Guard → Worker (تازه — PN-031-B/جلسهٔ ۰۳۹: جبران خودکار بازنشانی پلتفرم) ──
-  // درس بازنشانی‌های ۷-۸: درخت گیت سالم ماند اما بیلد زنده کهنه شد؛
-  // reset-guard درخت گیت را می‌سنجید (HEALTHY دروغین) و preview-guard فقط
-  // هشدار می‌داد. این گارد حلقهٔ بسته است: BUILD_ID زنده ≠ HEAD ⇒ بیلد +
-  // ری‌استارت + تأیید + شاهد AuditLog(action=HEAD_GUARD_AUTOBUILD).
-  // ⚠ نکتهٔ حیاتی: rebuild خودِ Worker را هم ری‌استارت می‌کند (بارگذاری
-  // رجیستری تازه) — مقدار بازگشتی این تابع پس از آن تضمینی نیست؛ شاهد
-  // نهایی از اسکریپت (witness + jsonl) و AuditLog می‌آید.
-  // صفر auto_execute کسب‌وکاری — فقط بیلد زیرساختی (بند ۲.۴ سند ۰۳۹).
-  if (process.env.MELK_HEAD_GUARD !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.headGuard,
-      title: "گارد تازگی بیلد زنده — head-guard (PN-031-B)",
-      intervalMs: envInt("MELK_HEAD_GUARD_INTERVAL_MINUTES", 10, 5) * 60_000,
-      firstRunDelayMs: 90_000,
-      run: async () => {
-        const check = await runShell(join(REPO_ROOT, "scripts/recovery/audit-head-guard.sh"), ["check"], 3 * 60_000);
-        if (check.code === 2) {
-          const rec = await runShell(join(REPO_ROOT, "scripts/recovery/audit-head-guard.sh"), ["rebuild"], 30 * 60_000);
-          return {
-            verdict: "STALE-REBUILT",
-            headAtCheck: "see-witness",
-            rebuildCode: rec.code,
-            rebuildStderr: rec.stderr.slice(0, 300),
-          };
-        }
-        return { verdict: check.code === 0 ? "OK" : "ERROR", checkCode: check.code, stderr: check.stderr.slice(0, 300) };
-      },
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── Relay Health Check → Worker (تازه — PN-038/۴.۱: پایش ۲۴ ساعتهٔ رله سه‌لایه) ──
-  // شورا-ن۰۶۳: «Job relay-health-check (۳ لایه: Heartbeat، API Probe، Full Sync)»
-  // هر ۵ دقیقه: محاسبهٔ سه لایه + حکم 🟢/🟡/🔴 + شاهد AuditLog + فایل شاهد.
-  if (process.env.MELK_RELAY_HEALTH !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.relayHealthCheck,
-      title: "پایش ۲۴ ساعتهٔ رله — سه لایه (PN-038/۴.۱)",
-      intervalMs: envInt("MELK_RELAY_HEALTH_INTERVAL_MINUTES", 5, 2) * 60_000,
-      firstRunDelayMs: 45_000, // نخستین سنجش زیر یک دقیقه پس از بوت
-      run: async (_database) => {
-        const { runRelayHealthCheckJob } = await import("@/lib/relay/health");
-        return runRelayHealthCheckJob();
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

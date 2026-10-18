@@ -178,22 +178,8 @@ while true; do
     fi
   fi
 
-  # ═══ PN-041 (شورا-ن۰۶۷): دیتابیس در منطقهٔ پایدار upload/.data ═══
-  # لایهٔ ۱ قلعهٔ داده — اولویت قلعه (باقی‌مانده از ریست)؛ fallback منطقهٔ ریست.
-  # سلامت کامل در db-fortress-guard (بوت) داوری می‌شود؛ اینجا فقط پروبِ ارزانِ
-  # سرآیند (۱۰۰ بایت — صفر هزینه) تا حلقهٔ نگهبان هرگز روی فایل خراب loop نکند.
-  FORTRESS_DB="/home/z/my-project/upload/.data/custom.db"
-  LEGACY_DB="/home/z/my-project/db/custom.db"
-  LIVE_DB_URL="file:$FORTRESS_DB"
-  if [ ! -s "$FORTRESS_DB" ] || [ "$(head -c 15 "$FORTRESS_DB" 2>/dev/null)" != "SQLite format 3" ]; then
-    LIVE_DB_URL="file:$LEGACY_DB"
-    echo "[watchdog] $(date '+%F %T') قلعه غایب/نامعتبر — سرو از مسیر قدیمی db/custom.db" >> "$LOG"
-  fi
-  # PN-008/PN-041: حالت ژورنال مناسبِ مسیر پیش از اسپاون — ایدمپوتنت
-  # (قلعه روی fuse/ossfs → DELETE · دیسک محلی → WAL — درس شکست WAL روی FUSE ۰۹:۰۱)
-  DATABASE_URL="$LIVE_DB_URL" bun /home/z/my-project/scripts/pn008/ensure-wal.ts >/dev/null 2>&1 || true
   PORT=3000 HOSTNAME=0.0.0.0 NODE_ENV=production \
-    DATABASE_URL="$LIVE_DB_URL" \
+    DATABASE_URL="file:/home/z/my-project/db/custom.db" \
     MELKA_REPO_DIR="/home/z/my-project" \
     bun /home/z/my-project/.next/standalone/server.js >> "$LOG" 2>&1
   CODE=$?
