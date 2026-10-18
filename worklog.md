@@ -3710,3 +3710,19 @@ Work Log:
 Stage Summary:
 - هر ۴ بند گام ۲ با شاهد زنده سبز · شاهد کامل: download/pn040/pn038-recovery.json
 - گام بعد: گام ۳ — وارسی PN-039 (ستون‌ها + چیپ + اولویت requests)
+
+---
+Task ID: PN-040 · گام ۳
+Agent: main (Super Z / GLM)
+Task: وارسی PN-039 — اولویت صف requests + ستون‌های M1/M2 + یادداشت قابل ویرایش + چیپ‌ها (سند شورا-ن۰۶۶ · PN-040)
+
+Work Log:
+- **3.1 اولویت requests:** relay.ts — priority=1 برای requests/list (priority DESC) · رلهٔ زنده مالک: سبز سه‌لایه · ۱۲۵ کار موفق ۳۰ دقیقه · ۱۰۰٪
+- **3.2 M1 زنده:** DOM مرورگر — وضعیت آگهی بعد از دسته‌بندی ✓ · تاریخ ثبت بعد از تاریخ وضعیت ✓ (۳۶ سرستون) · اسکرین‌شات ui-m1-listings-columns.png
+- **3.3 یادداشت:** آخرین ستون هر دو فهرست ✓ · گردش API واقعی: ورود مدیر → PATCH نوشتن (ok + تأیید SQLite) → PATCH پاک‌سازی (None · صفر بقایا) · OwnerNoteCell درون‌سلولی
+- **3.4 M2:** ستون نوع ساختمان = صفر رخداد در DOM زنده (۴ رخداد کد = ۲ کامنت مستند + ۲ نشانگر حذف) · چیپ‌های نوع ملک چندانتخابی در هر دو فهرست زنده · اسکرین‌شات ui-m2-requests-columns.png
+- **رله:** گوشی مالک متصل و فعال — عبور ۲۴س=۱۳۷ و در حال رشد
+
+Stage Summary:
+- هر ۴ بند گام ۳ با شاهد زنده (کد + DOM + API) سبز · شاهد: download/pn040/pn039-recovery.json
+- گام بعد: گام ۴ — سپر گیت‌هاب (github-supreme-guard + reset-guard به GitHub + روت version + Boot Guard)
