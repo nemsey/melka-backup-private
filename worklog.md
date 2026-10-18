@@ -3726,3 +3726,26 @@ Work Log:
 Stage Summary:
 - هر ۴ بند گام ۳ با شاهد زنده (کد + DOM + API) سبز · شاهد: download/pn040/pn039-recovery.json
 - گام بعد: گام ۴ — سپر گیت‌هاب (github-supreme-guard + reset-guard به GitHub + روت version + Boot Guard)
+
+---
+Task ID: PN-040 · گام ۴
+Agent: main (Super Z / GLM)
+Task: ساخت سپر دفاعی گیت‌هاب — supreme-guard + reset-guard→GitHub + روت version + Boot Guard + Action (سند شورا-ن۰۶۶ · PN-040)
+
+Work Log:
+- **۴.۱ سپر عالی:** scripts/recovery/github-supreme-guard.sh (check/recover · نرخ‌حد ۳۰د · DRILL) + remote origin → GitHub
+- **۴.۲ منطق:** ls-remote origin main → checkout -B main → install → build → restart → مهر · سه لایهٔ تشخیص (MIRROR-ROLLBACK با داور مستقل اسنپ‌شات‌های بقا — بستن کامل K3 با پیمایش ۸ اسنپ‌شات · DRIFT · BUILD-STALE)
+- **اولین بازیابی واقعی زنده:** BUILD-STALE (d823557→5a9b3e0) → توقف تمیز نگهبان (درس OOM: سرور ۱.۲GB رم + بیلد ۳GB = OOM-137؛ فلگ .prod-stop پیش از بیلد) → بیلد سبز → دیمن‌سازی → مهر زنده=هدف ✓
+- **دو باگ واقعی کشف و رفع:** (۱) متغیر ORIGIN_MAIN_SHA بدون $ (مثبت کاذب rollback) (۲) نرمال‌سازی sha کوتاه/کامل در drift (match همیشه false) — پس از رفع: check روی مخزن واقعی = HEALTHY صفر کاذب
+- **۴.۳ reset-guard:** remote_url → اولویت origin (GitHub) · recover → واگذاری به سپر (fallback داخلی برای فیکسچرها) · قرارداد PN-015 حفظ (۶/۶ تست سبز)
+- **۴.۴ روت version:** کلید drift {available, headSha, buildSha, match} — افزودنی · import دینامیک node:fs (درس P6549) · MELKA_REPO_DIR (قرارداد P6548)
+- **Boot Guard:** dev-entry بند ۱-ج — هر بوت کانتینر سپر را recover می‌خواند (بدون دخالت انسانی)
+- **GitHub Action:** github-shield-alert.yml — هر ۳۰د داوری HEAD↔/api/version → Issue فوری با دستور بازیابی یک‌خطی
+- **تست تازه:** pn040-github-shield.test.ts — ۱۴ تست (فیکسچر گیت واقعی + سناریوی K3 + رفتار drift سه‌حالته)
+- **گارد تازه:** audit-github-shield.sh ۲۰/۲۰ · سوئیت گاردها ۴۷/۴۷
+- **دو-سبز (قانون ۹):** ۲۸۸۲/۰ ×۲ پیاپی (۸۹.۴ث · ۸۳.۴ث) — تلاش نخست ۵ شکست نژ Prisma (گرمای بار) با لاگ صادقانه مستند (tests-run-attempt0-flaky.log)
+
+Stage Summary:
+- هر ۴ بند گام ۴ + Boot Guard + Action با شاهد زنده/تست سبز · شاهد: download/pn040/github-shield.json
+- بازیابی یک‌دستوری مالک: bash scripts/recovery/github-supreme-guard.sh recover (~۲ دقیقه) — یا ری‌استارت کانتینر
+- گام بعد: بازگشت رم-های زنده (ری‌بیلد نهایی پس از کامیت) + کد نصب تازه + گزارش نهایی + SHA256SUMS

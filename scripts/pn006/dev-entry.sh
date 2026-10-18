@@ -53,6 +53,17 @@ else
     echo "[dev-entry] public/deliver/pn031d از منبع حقیقت download/pn031d بازگردانده شد (APK + QR)"
   fi
 
+  # ۱-ج) ═══ PN-040 (گام ۴): سپر عالی گیت‌هاب — قلاب بوت کانتینر ═══
+  #      هر بوتِ کانتینر = داوری درخت در برابر GitHub (origin/main — همیشه
+  #      آخرین نسخهٔ سالم طبق قانون ۰۳۱ پوش-فوری). اگر بازنشانیِ پلتفرم
+  #      درخت را عقب برده باشد، سپر بازیابی + بیلد می‌کند و همین بوت با
+  #      کد سالم ادامه می‌یابد. نرخ‌حد ۳۰ دقیقه در خود سپر. عدم دسترسی
+  #      به GitHub (قانون ۱۱) → سرو از نسخهٔ محلی — بوت هرگز نمی‌ایستد.
+  if [[ -f scripts/recovery/github-supreme-guard.sh ]]; then
+    echo "[dev-entry] سپر عالی گیت‌هاب — داوری درخت در برابر origin/main…"
+    bash scripts/recovery/github-supreme-guard.sh recover || true
+  fi
+
   # ۲) بیلد در صورت نبود
   if [[ ! -f .next/standalone/server.js ]]; then
     echo "[dev-entry] بیلد production…"

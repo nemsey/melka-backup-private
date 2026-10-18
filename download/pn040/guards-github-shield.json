@@ -1,0 +1,109 @@
+{
+  "guard": "audit-github-shield.sh (PN-040/گام-۴)",
+  "ok": true,
+  "checksTotal": 20,
+  "checksPass": 20,
+  "violations": [],
+  "checks": [
+    {
+      "check": "۴.۱-سپر-عالی-موجود",
+      "ok": true,
+      "detail": "scripts/recovery/github-supreme-guard.sh"
+    },
+    {
+      "check": "۴.۱-remote-origin-گیت‌هاب",
+      "ok": true,
+      "detail": "https://nemysey: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@git"
+    },
+    {
+      "check": "۴.۲-ls-remote (داوری origin/main)",
+      "ok": true,
+      "detail": "marker: 'git ls-remote' یافت نشد"
+    },
+    {
+      "check": "۴.۲-checkout -B main",
+      "ok": true,
+      "detail": "marker: 'git checkout -q -B main' یافت نشد"
+    },
+    {
+      "check": "۴.۲-نصب وابستگی‌ها",
+      "ok": true,
+      "detail": "marker: 'bun install' یافت نشد"
+    },
+    {
+      "check": "۴.۲-بیلد production",
+      "ok": true,
+      "detail": "marker: 'bun run build' یافت نشد"
+    },
+    {
+      "check": "۴.۲-خاتمه سرور برای ری‌استارت نگهبان",
+      "ok": true,
+      "detail": "marker: 'pkill -f \"standalone/server.js\"' یافت نشد"
+    },
+    {
+      "check": "۴.۲-دیمن‌سازی نگهبان (درس مرز reap)",
+      "ok": true,
+      "detail": "marker: 'daemonize-watchdog.py' یافت نشد"
+    },
+    {
+      "check": "۴.۲-وارسی مهر زنده",
+      "ok": true,
+      "detail": "marker: '/api/version' یافت نشد"
+    },
+    {
+      "check": "۴.۲-شاهد گارد مقدس پس از بازیابی",
+      "ok": true,
+      "detail": "marker: 'sacred-data-guard.ts' یافت نشد"
+    },
+    {
+      "check": "۴.۲-نرخ‌حد ۳۰ دقیقه",
+      "ok": true,
+      "detail": "marker: 'rate_limited' یافت نشد"
+    },
+    {
+      "check": "۴.۳-مرجع-origin-در-reset-guard",
+      "ok": true,
+      "detail": "remote_url() به origin ارجاع ندارد"
+    },
+    {
+      "check": "۴.۳-واگذاری-به-سپر",
+      "ok": true,
+      "detail": "recover به سپر عالی واگذار نشده"
+    },
+    {
+      "check": "۴.۴-کلید-drift-در-روت",
+      "ok": true,
+      "detail": "کلید drift در پاسخ نیست"
+    },
+    {
+      "check": "۴.۴-مغایرت-head-build",
+      "ok": true,
+      "detail": "قرارداد match/buildSha غایب"
+    },
+    {
+      "check": "۴.۴-قرارداد-پایدار",
+      "ok": true,
+      "detail": "کلیدهای قبلی تغییر کرده‌اند!"
+    },
+    {
+      "check": "بوت-قلاب-سپر-در-dev-entry",
+      "ok": true,
+      "detail": "قلاب سپر در بوت نیست"
+    },
+    {
+      "check": "اکشن-اطلاع‌رسانی-موجود",
+      "ok": true,
+      "detail": ".github/workflows/github-shield-alert.yml"
+    },
+    {
+      "check": "اکشن-داوری-drift",
+      "ok": true,
+      "detail": "اکشن کلید drift را داور نمی‌کند"
+    },
+    {
+      "check": "اکشن-issue-فوری",
+      "ok": true,
+      "detail": "ایجاد Issue در مغایرت نیست"
+    }
+  ]
+}
