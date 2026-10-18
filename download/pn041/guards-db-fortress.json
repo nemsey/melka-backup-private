@@ -1,0 +1,104 @@
+{
+  "guard": "audit-db-fortress (PN-041 · شورا-ن۰۶۷)",
+  "checks": [
+    {
+      "check": "۱-زندهٔ-محلی-موجود",
+      "ok": true,
+      "detail": "db/custom.db (401403904 bytes)"
+    },
+    {
+      "check": "۱-زندهٔ-محلی-سرآیند-sqlite",
+      "ok": true,
+      "detail": "پروب ارزان سرآیند"
+    },
+    {
+      "check": "۱-کپی-پایدار-قلعه-موجود",
+      "ok": true,
+      "detail": "upload/.data/custom.db کپی هم‌روز پایدار"
+    },
+    {
+      "check": "۲-چرخشی-حداقل-یک-نسخه",
+      "ok": true,
+      "detail": "rolling: 5 فایل live-*"
+    },
+    {
+      "check": "۳-env-مسیر-زندهٔ-محلی",
+      "ok": true,
+      "detail": "env.platform.json → DATABASE_URL"
+    },
+    {
+      "check": "۳-env-dot-زندهٔ-محلی",
+      "ok": true,
+      "detail": ".env (هدف Prisma CLI)"
+    },
+    {
+      "check": "۴-کار-rolling-backup",
+      "ok": true,
+      "detail": "WORKER_JOB_IDS.rollingBackup + runRollingBackup"
+    },
+    {
+      "check": "۵-کار-sacred-backup-پایدار",
+      "ok": true,
+      "detail": "WORKER_JOB_IDS.sacredBackup + مقصد upload/.data/sacred"
+    },
+    {
+      "check": "۵-شیر-دیسک-چرخشی",
+      "ok": true,
+      "detail": "شیر دیسک (پرش با شاهد)"
+    },
+    {
+      "check": "۶-recover-all-موجود-اجرا",
+      "ok": true,
+      "detail": "scripts/recovery/recover-all.sh"
+    },
+    {
+      "check": "۷-db-fortress-guard-موجود-اجرا",
+      "ok": true,
+      "detail": "scripts/recovery/db-fortress-guard.sh"
+    },
+    {
+      "check": "۷-زنجیره-پنج-لایه",
+      "ok": true,
+      "detail": "rolling→sacred→pre-stop→survival→cloud + گارد مقدس"
+    },
+    {
+      "check": "۸-workflow-ابری",
+      "ok": true,
+      "detail": ".github/workflows/db-backup.yml"
+    },
+    {
+      "check": "۹-boot-guard-متصل",
+      "ok": true,
+      "detail": "dev-entry بند ۱-د"
+    },
+    {
+      "check": "۹-watchdog-اولویت-محلی",
+      "ok": true,
+      "detail": "prod-watchdog اولویت دیسک محلی (شورا-ن۰۶۸)"
+    },
+    {
+      "check": "۱۰-زندهٔ-محلی-wal",
+      "ok": true,
+      "detail": "journal_mode={\"journal_mode\":\"wal\"}"
+    },
+    {
+      "check": "ت-۱-قلعه-سلامت-کامل",
+      "ok": true,
+      "detail": "{\"file\":\"/home/z/my-project/upload/.data/custom.db\",\"exists\":true,\"bytes\":399298560,\"header\":\"ok\",\"integrity\":\"ok\",\"coun"
+    },
+    {
+      "check": "ت-۲-مانیفست-چرخشی",
+      "ok": true,
+      "detail": "upload/.runtime/rolling-backups.json"
+    },
+    {
+      "check": "ت-۳-روت-برون‌بری",
+      "ok": true,
+      "detail": "/api/admin/db-export + احراز Bearer"
+    }
+  ],
+  "violations": [],
+  "pass": 19,
+  "fail": 0,
+  "total": 19
+}

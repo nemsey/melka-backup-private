@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { tileRegistry } from "@/core/tiles/tile-registry";
 import { useAppStore } from "@/lib/client/store";
 import { ConnectionIndicators } from "./ConnectionIndicators";
+import { RelayStatusCard } from "./RelayStatusCard";
 import { TileCard } from "./TileCard";
 import { VersionBadge } from "./VersionBadge";
 
@@ -30,6 +31,9 @@ export function DashboardHome() {
     <main className="flex-1 mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 flex flex-col">
       {/* نشانگرهای اتصال — هفت چراغ سبز/قرمز (الزام مالک) */}
       <ConnectionIndicators />
+
+      {/* PN-038/۴.۲ — پایش ۲۴ ساعتهٔ رله: 🟢/🟡/🔴 سه‌لایه */}
+      <RelayStatusCard />
 
       {/* شبکه کاشی‌های صفحه هوم — ریسپانسیو: ۱ ستون موبایل / ۲ تبلت / ۳ دسکتاپ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

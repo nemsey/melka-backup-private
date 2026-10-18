@@ -1,0 +1,99 @@
+{
+  "guard": "audit-auth-resilience (PN-041-R · شورا-ن۰۶۸)",
+  "checks": [
+    {
+      "check": "ف-۱-ورود-مستر-زنده",
+      "ok": true,
+      "detail": "HTTP 200 · 20ms (پیش از رفع: UNKNOWN/۵۰۰۰ms)"
+    },
+    {
+      "check": "ف-۲-ورود-مستر-سریع",
+      "ok": true,
+      "detail": "20ms < ۳۰۰۰ms (شورا: <۳۰ث · واقعی: sub-second)"
+    },
+    {
+      "check": "ف-۳-پراگماهای-بوت",
+      "ok": true,
+      "detail": "پنج پراگمای مصوب شورا-ن۰۶۸ (بند ۴.۱-۴.۳)"
+    },
+    {
+      "check": "ف-۴-پراگما-در-بوت",
+      "ok": true,
+      "detail": "instrumentation.register → sqlite-optimize-boot"
+    },
+    {
+      "check": "ف-۵-env-اتصال",
+      "ok": true,
+      "detail": "DATABASE_URL زندهٔ محلی + پارامترهای اتصال"
+    },
+    {
+      "check": "ب-۱-مهلت-سبک-۲۰ث",
+      "ok": true,
+      "detail": "سبک (ورود) ۲۰ث"
+    },
+    {
+      "check": "ب-۲-مهلت-سنگین-۱۵۰ث",
+      "ok": true,
+      "detail": "سنگین (فهرست‌ها) ۱۵۰ث"
+    },
+    {
+      "check": "ب-۳-پیام-صادقانه",
+      "ok": true,
+      "detail": "شکست سریع با راهنمای رله (نه ۹۰ث سکوت)"
+    },
+    {
+      "check": "ج-۱-کد-نصب-زنده",
+      "ok": true,
+      "detail": "HTTP 200 (پیش از رفع: خطای خاموش)"
+    },
+    {
+      "check": "ج-۲-خطای-شفاف-DB",
+      "ok": true,
+      "detail": "خطای قفل DB → 503 DB_BUSY با پیام روشن (نه UNKNOWN)"
+    },
+    {
+      "check": "د-۱-MIUI-wakelock-راهنما",
+      "ok": true,
+      "detail": "WakeLock اسکریپت + راهنمای تصویری UI"
+    },
+    {
+      "check": "د-۲-Long-Polling-۱۰۰ث",
+      "ok": true,
+      "detail": "سرور ۱۰۰ث + اسکریپت wait:100 (~۸۶۰ درخواست/روز · قبلاً ۳۴۵۶)"
+    },
+    {
+      "check": "د-۳-فیوز-مستثنی-رله",
+      "ok": true,
+      "detail": "روت‌های رله مستثنی + نثبت شکست عصرِ قطع + auto-reset رلهٔ وصل"
+    },
+    {
+      "check": "د-۴-مهلت-curl-پارامتری",
+      "ok": true,
+      "detail": "poll=۱۱۰ · سایر=۳۵"
+    },
+    {
+      "check": "د-۵-ALT-URL-پایدار",
+      "ok": true,
+      "detail": "URL publish پایدار + سوئیچ خودکار + Boot Guard"
+    },
+    {
+      "check": "د-۶-خوددرمانی-DB",
+      "ok": true,
+      "detail": "۳ شکست پیاپی = ری‌استارت نگهبان (۵ث) — کار Worker ۲۱"
+    },
+    {
+      "check": "ه-۱-WAL-محلی",
+      "ok": true,
+      "detail": "journal_mode={\"journal_mode\":\"wal\"}"
+    },
+    {
+      "check": "ه-۲-بکاپ-زیرپروسه",
+      "ok": true,
+      "detail": "اتصال یگانه هرگز بلاک نمی‌شود (فاز ۴)"
+    }
+  ],
+  "violations": [],
+  "pass": 18,
+  "fail": 0,
+  "total": 18
+}

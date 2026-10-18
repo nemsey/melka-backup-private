@@ -102,6 +102,23 @@ export async function register(): Promise<void> {
     });
   }
 
+  // ---------- ۱-پ) PN-041-R (شورا-ن۰۶۸ · فاز ۴): بهینه‌سازی SQLite در بوت ----------
+  // چهار پراگمای مصوب (busy_timeout=10000 · cache_size=-20000 · mmap_size=256MB
+  // · synchronous=NORMAL) + wal_autocheckpoint — روی اتصال یگانه در هر بوت.
+  // شکست هرگز بوت را نمی‌شکند (بهترین-تلاش + شاهد لاگ).
+  {
+    const { optimizeSqliteOnBoot } = await import("@/lib/db-optimize");
+    const { logEvent: logDb } = await import("@/lib/logger");
+    const r = await optimizeSqliteOnBoot();
+    logDb({
+      level: r.failed.length > 0 ? "warn" : "info",
+      category: "system",
+      operation: "sqlite-optimize-boot",
+      status: r.ok ? "ok" : "fail",
+      detail: { applied: r.applied, failed: r.failed, journalMode: r.journalMode },
+    });
+  }
+
   // ---------- ۲) چرخش کلید در صورت درخواست صریح (ROTATION_PENDING=true) ----------
   if (process.env.ROTATION_PENDING === "true") {
     const { rotateFromEnv } = await import("@/lib/auth/key-rotation");
@@ -199,6 +216,10 @@ export async function register(): Promise<void> {
   // توکن ARM مشترک (SyncState.armTokenEnc) حذف شد؛ تا معرفی «حساب سرویس»
   // مجزا در PHASE 2، تایمر پس‌زمینه فقط با فعال‌سازی صریح (MELK_BACKGROUND_SYNC=enabled)
   // کار می‌کند و در آن حالت نیز با آخرین نشستِ «زنده و دارای توکن» و ثبت AuditLog.
+  // PN-029 (مرحلهٔ ۲) — L7: صفر تلاش خودکار در تولید بدون توکن سالم؛
+  // در حالت آفلینی ملک تبریز حلقهٔ پس‌زمینه حتی با MELK_BACKGROUND_SYNC=enabled
+  // نیز روشن نمی‌شود (قانون احتیاط اتصال خارجی — سند شورا-ن۰۳۳).
+  // PN-038/۶.۱: گارد حالت آفلینی حذف شد (پرچم از ن۰۵۴ خاموش است — کد مرده)
   if (process.env.MELK_BACKGROUND_SYNC === "enabled") {
     const { getMelkApiConfig } = await import("@/lib/melk-api/config");
     const cfg = getMelkApiConfig();
