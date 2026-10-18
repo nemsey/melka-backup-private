@@ -1,0 +1,55 @@
+{
+  "at": "2026-10-18T07:55:02.045Z",
+  "tool": "vacuum-copy (PN-041)",
+  "source": "/home/z/my-project/db/custom.db",
+  "target": "/home/z/my-project/upload/.data/custom.db",
+  "bytes": 398700544,
+  "md5": "57833a750ebf95879ea72a7c612c01da",
+  "integrity": "ok",
+  "counts": {
+    "PropertyRecord": 27864,
+    "RequestRecord": 25580,
+    "TransactionRecord": 792,
+    "ExpertRecord": 293,
+    "GraphNode": 149359
+  },
+  "durationMs": 10524,
+  "phase": "PN-041 فاز ۱ (شورا-ن۰۶۷) — انتقال دیتابیس به منطقهٔ پایدار",
+  "migration": {
+    "from": "db/custom.db (منطقهٔ ریست — با ریست سرور پاک می‌شود)",
+    "to": "upload/.data/custom.db (منطقهٔ پایدار ossfs — از ریست جان سالم به در می‌برد)",
+    "method": "VACUUM INTO اتمی (بدون توقف سرویس· تصویر سازگار)",
+    "schema": "prisma/schema.prisma از env(DATABASE_URL) می‌خواند — صفر تغییر لازم (path-agnostic)",
+    "envChanges": [
+      "env.platform.json",
+      ".env (هدف Prisma CLI)",
+      "prod-watchdog.sh (اولویت قلعه + پروب سرآیند + ensure-WAL پیش از اسپاون)"
+    ],
+    "guardsUpdated": [
+      "sacred-data-guard.ts (مسیر زندهٔ پویا)",
+      "live-db-path.sh (حل‌کنندهٔ واحد تازه)",
+      "github-supreme-guard.sh",
+      "reset-guard.sh",
+      "recovery-guard.sh",
+      "auto-recovery.sh",
+      "ensure-wal.ts"
+    ]
+  },
+  "liveVerification": {
+    "serverPid": 21589,
+    "openFileExclusive": "/home/z/my-project/upload/.data/custom.db (تنها custom.db باز)",
+    "journalMode": "wal",
+    "oldDbFrozenAt": "2026-10-18T07:50:24Z (صفر نوشتن پس از مهاجرت)",
+    "walFile": "upload/.data/custom.db-wal (نوشتن زندهٔ رله)",
+    "relayPollsAfter": "۷ poll در ۴۵ ثانیهٔ نخست (Poco F3 بدون وقفه وصل ماند)",
+    "health": "200 ok · relay/health 401 (زنده+گارد)",
+    "countsPreserved": {
+      "PropertyRecord": 27864,
+      "RequestRecord": 25580,
+      "TransactionRecord": 792,
+      "ExpertRecord": 293,
+      "GraphNode": 149359
+    }
+  },
+  "fsEvidence": "upload/ = fuse.ossfs (ذخیرهٔ ابری) — دلیل بقای بسته‌های ۴۲/۴۳ از ریست‌های قبلی"
+}

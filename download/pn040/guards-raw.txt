@@ -35,7 +35,7 @@ PASS|scripts/audit-postgres-compat.sh|
 PASS|scripts/audit-relay-matrix.sh|
 PASS|scripts/audit-repair-gate.sh|
 PASS|scripts/audit-repository-boundary.sh|--strict
-PASS|scripts/audit-reproducibility.sh|
+TIMEOUT|scripts/audit-reproducibility.sh|
 PASS|scripts/audit-roles.sh|
 PASS|scripts/audit-self-diagnosis.sh|
 PASS|scripts/audit-smart-update.sh|
@@ -43,5 +43,5 @@ PASS|scripts/audit-stealth-users.sh|
 PASS|scripts/audit-tile-contract.sh|
 PASS|scripts/audit-unified-graph.sh|
 PASS|scripts/audit-user-roles.sh|
-PASS|scripts/recovery/audit-head-guard.sh|check
-PASS|scripts/recovery/github-supreme-guard.sh|check
+FAIL|scripts/recovery/audit-head-guard.sh|check
+FAIL|scripts/recovery/github-supreme-guard.sh|check

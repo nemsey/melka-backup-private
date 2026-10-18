@@ -184,13 +184,16 @@ recover_to() { # $1=target_sha $2=reason
   fi
   echo "[supreme-guard] درخت → $(git -C "$REPO" rev-parse --short HEAD)"
   # ۲) گارد مقدس — شاهد وضعیت DB پس از بازیابی کد (DB هرگز جایگزین نمی‌شود؛ gitignored)
-  if [[ -f "$REPO/db/custom.db" ]] && command -v bun >/dev/null 2>&1; then
+  #    PN-041: مسیر زندهٔ رسمی از حل‌کنندهٔ واحد (قلعه اول، قدیم fallback)
+  local _live_db _pkg_db
+  _live_db="$(bash "$REPO/scripts/recovery/live-db-path.sh" 2>/dev/null || echo "$REPO/db/custom.db")"
+  if [[ -f "$_live_db" ]] && command -v bun >/dev/null 2>&1; then
     local _pkg_db=""
     for _d in $(ls -d "$REPO"/upload/.survival/P*/ 2>/dev/null | sort -V | tail -1); do
       [[ -f "${_d%/}/db/custom.db" ]] && _pkg_db="${_d%/}/db/custom.db"
     done
     if [[ -n "$_pkg_db" ]]; then
-      bun "$REPO/scripts/recovery/sacred-data-guard.ts" "$_pkg_db" --live "$REPO/db/custom.db" >/dev/null 2>&1 || true
+      bun "$REPO/scripts/recovery/sacred-data-guard.ts" "$_pkg_db" --live "$_live_db" >/dev/null 2>&1 || true
     fi
   fi
   # ۳-الف) توقف تمیز پیش از بیلد — درس OOM جلسهٔ ۰۶۶ (۱۴۰۵/۰۷/۲۸):
