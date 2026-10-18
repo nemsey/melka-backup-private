@@ -1,0 +1,80 @@
+# ============================================================
+# github-shield-alert.yml — اطلاع‌رسانی فوری مغایرت نسخه (PN-040 · گام ۴)
+# ------------------------------------------------------------
+# شورای عالی ملکا (جلسهٔ ۰۶۶ · بند ۲.۲): «GitHub Action برای اطلاع‌رسانی فوری».
+#
+# داوری: HEAD این مخزن (که طبق قانون ۰۳۱ همیشه آخرین نسخهٔ سالم است) در
+# برابر شاهد زندهٔ سرور (GET /api/version → drift) — اگر سرور روی کدی
+# جز HEAD سرو کند (بازنشانی بدون بازیابی) یا مهر drift.match=false دهد،
+# فوراً Issue باز می‌شود تا مالک/GLM با یک دستور بازیابی کنند.
+#
+# محدودیت صادقانه: این Action در گیت‌هابِ مخزن خصوصی اجرا می‌شود؛ فعال
+# بودن Actions باید در تنظیمات مخزن روشن باشد. سرور بی‌دسترسی → skip
+# بدون خطا (قانون ۱۱: سرو ادامه دارد — Issue فقط اطلاع‌رسانی است).
+# ============================================================
+name: github-shield-version-drift
+on:
+  schedule:
+    - cron: "*/30 * * * *" # هر ۳۰ دقیقه
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+  contents: read
+
+env:
+  PREVIEW_URL: https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: داوری HEAD مخزن در برابر بیلد زندهٔ سرور
+        id: verdict
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          HEAD_SHA="$(git rev-parse HEAD)"
+          LIVE="$(curl -fsS -m 20 "$PREVIEW_URL/api/version" 2>/dev/null || true)"
+          if [ -z "$LIVE" ]; then
+            echo "verdict=server-unreachable" >> "$GITHUB_OUTPUT"
+            echo "live=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LIVE_SHA="$(printf '%s' "$LIVE" | jq -r '.gitSha // empty')"
+          DRIFT_MATCH="$(printf '%s' "$LIVE" | jq -r '.drift.match // "null"')"
+          BUILD_ID="$(printf '%s' "$LIVE" | jq -r '.buildId // empty')"
+          echo "live=$LIVE_SHA" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          echo "match=$DRIFT_MATCH" >> "$GITHUB_OUTPUT"
+          if [ "$LIVE_SHA" != "$HEAD_SHA" ] || [ "$DRIFT_MATCH" = "false" ]; then
+            echo "verdict=DRIFT" >> "$GITHUB_OUTPUT"
+          else
+            echo "verdict=HEALTHY" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: اطلاع‌رسانی فوری — Issue
+        if: steps.verdict.outputs.verdict == 'DRIFT'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="🛡️ سپر گیت‌هاب: مغایرت نسخهٔ سرور (PN-040)"
+          BODY="سرور روی کدی جز HEAD مخزن سرو می‌کند.
+
+          - HEAD مخزن (گیت‌هاب): \`${{ github.sha }}\`
+          - بیلد زندهٔ سرور: \`${{ steps.verdict.outputs.live }}\` (buildId: \`${{ steps.verdict.outputs.build }}\`)
+          - drift.match: \`${{ steps.verdict.outputs.match }}\`
+
+          بازیابی (یک دستور — ~۲ دقیقه):
+          \`\`\`bash
+          bash scripts/recovery/github-supreme-guard.sh recover
+          \`\`\`
+          یا صرفاً ری‌استارت کانتینر — قلاب بوت dev-entry خودش سپر را اجرا می‌کند.
+
+          — خودکار توسط github-shield (PN-040 · جلسهٔ ۰۶۶)"
+          gh issue create --title "$TITLE" --body "$BODY" --label "recovery,automated" 2>/dev/null || \
+          gh issue create --title "$TITLE" --body "$BODY"

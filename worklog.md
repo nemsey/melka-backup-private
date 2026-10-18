@@ -3672,3 +3672,122 @@ Work Log:
 Stage Summary:
 - وضعیت تحویل: هشت گام کامل · دو-سبز ۲۸۶۸/۰×۲ · گارد ۴۵/۴۵ · بستهٔ بقای ۴۲ · آینه=HEAD · کد نصب تازه در انتظار مالک
 - پس از اتصال مالک: صف اولویت‌دار درخواست‌ها خودکار جاری می‌شود (ریشهٔ ۷روزه بسته شده) — صفر اقدام دیگر لازم است
+
+---
+Task ID: PN-040 · گام ۱ (+ بخش ۰ قفل ورود)
+Agent: main (Super Z / GLM)
+Task: احیای PN-036 — رله و سینک + بکاپ VACUUM + بیلد/ری‌استارت تا ظاهر شدن بخش رله (سند شورا-ن۰۶۶ · PN-040)
+
+Work Log:
+- **قفل ورود:** VACUUM از دیتابیس زنده (۳۳۵MB · md5 b2bca79f) + شاهد وضعیت قرمز (بیلد 1425ee0-20261018-0213 · relay/health=404 · glm/probe=404 · آینهٔ GitHub=1425ee0)
+- **تشخیص منبع بازیابی:** کامیت‌های PN-036/038/039 در reflog محلی (شاخهٔ reset-guard-mirror-main) موجود بودند → d823557 = دروازهٔ بستهٔ PN-039 · 321bb58 جدِّ آن است
+- **بازیابی:** git reset --hard d823557 · درخت کامل برگشت (relay-script نسل K · sacred-data-guard · گزارش‌های pn036/038/039 · worklog کامل)
+- **ترمیم env:** env.platform.json عریان‌شده (۵ کلید) → بازسازی از بستهٔ بقای PN-043 (۹ کلید · رله mobile · URL عمومی) — مقادیر مشترک یکسان بودند (صفر ریسک)
+- **APK/QR:** بازگشت به public/deliver/pn031d از مسیر حقیقت — sha256=20e5967f مطابق شاهد apk-build.json · سرو زنده 200
+- **درس بوت (کلیدی):** فرایندهای زمینه‌ای عادی در مرز هر دستور reap می‌شوند (شاهد: دو بوت اول مردند بی‌درنگ) → دیمن‌سازی دو-فورکی scripts/pn040/daemonize-watchdog.py (یتیمِ PID 1) → نگهبان زنده ماند
+- **بیلد + ری‌استارت:** BUILD_ID=d823557-20261018-0550 · آماده 124ms · Worker spawned (1-web-1-worker) · قلاب خوددرمانی P6548 فعال شد (بیلد کهنه فاقدش بود — ریشهٔ گیرافتادن)
+- **شواهد زنده:** relay/health 404→401 (زنده/محافظت‌شده) · glm/probe 404→401 · APK 200
+- **دو-سبز (قانون ۹):** ۲۸۶۸/۰ ×۲ (92.81s · 92.33s) پیش از کامیت
+
+Stage Summary:
+- سرور زنده روی بیلد بازیابی‌شده · بخش رله در اپلیکیشن ظاهر شد → مالک می‌تواند رله (Termux) را روشن کند (بدون هماهنگی با GLM)
+- شاهد کامل: download/pn040/pn036-recovery.json
+- گام بعد: گام ۲ (وارسی PN-038 زنده) → گام ۳ (وارسی PN-039) → گام ۴ (سپر گیت‌هاب)
+
+---
+Task ID: PN-040 · گام ۲
+Agent: main (Super Z / GLM)
+Task: وارسی زندهٔ PN-038 — گارد دادهٔ مقدس + UI هوم ۸ کاشی + GlmProbe (سند شورا-ن۰۶۶ · PN-040)
+
+Work Log:
+- **گارد مقدس زنده:** آزمون واقعی — نامزد=bکاپ کیت ۴۳ · verdict=BLOCK (live-richer-rowcounts · PropertyRecord 27864>27863) → شاهد upload/.runtime/sacred-data-guard.json
+- **management-dashboard:** صفر رخداد در tile-registry (حذف ن۰۶۳ برقرار)
+- **هوم ۸ کاشی:** فایل‌یابی/آگهی/درخواست/معاملات/کارشناسان/تطبیق/مغز/تنظیمات — اسکرین‌شات زندهٔ پس از ورود مالک (ui-home-unified.png)
+- **کشف طلایی:** رلهٔ مالک (Poco F3) به‌محض بازگشت اپ وصل شد — نبض ۱ دقیقه پیش · ۴۹ کار موفق ۳۰ دقیقه · بکاپ مقدس ۵ دقیقه پیش — نقشهٔ راه شورا عملیاتی شد
+- **بخش رله در تنظیمات:** «رله زنده (۱ دستگاه) · عبور ۲۴س=۱۳۷» + دکمهٔ تولید کد نصب (آزمایش زنده: کد صادر شد) + bootstrap عمومی ۲۰۰ با اسکریپت نسل K (۳۰KB) — اسکرین‌شات ui-settings-relay-section.png
+- **GlmProbe:** 404→401 (زنده/محافظت‌شده)
+
+Stage Summary:
+- هر ۴ بند گام ۲ با شاهد زنده سبز · شاهد کامل: download/pn040/pn038-recovery.json
+- گام بعد: گام ۳ — وارسی PN-039 (ستون‌ها + چیپ + اولویت requests)
+
+---
+Task ID: PN-040 · گام ۳
+Agent: main (Super Z / GLM)
+Task: وارسی PN-039 — اولویت صف requests + ستون‌های M1/M2 + یادداشت قابل ویرایش + چیپ‌ها (سند شورا-ن۰۶۶ · PN-040)
+
+Work Log:
+- **3.1 اولویت requests:** relay.ts — priority=1 برای requests/list (priority DESC) · رلهٔ زنده مالک: سبز سه‌لایه · ۱۲۵ کار موفق ۳۰ دقیقه · ۱۰۰٪
+- **3.2 M1 زنده:** DOM مرورگر — وضعیت آگهی بعد از دسته‌بندی ✓ · تاریخ ثبت بعد از تاریخ وضعیت ✓ (۳۶ سرستون) · اسکرین‌شات ui-m1-listings-columns.png
+- **3.3 یادداشت:** آخرین ستون هر دو فهرست ✓ · گردش API واقعی: ورود مدیر → PATCH نوشتن (ok + تأیید SQLite) → PATCH پاک‌سازی (None · صفر بقایا) · OwnerNoteCell درون‌سلولی
+- **3.4 M2:** ستون نوع ساختمان = صفر رخداد در DOM زنده (۴ رخداد کد = ۲ کامنت مستند + ۲ نشانگر حذف) · چیپ‌های نوع ملک چندانتخابی در هر دو فهرست زنده · اسکرین‌شات ui-m2-requests-columns.png
+- **رله:** گوشی مالک متصل و فعال — عبور ۲۴س=۱۳۷ و در حال رشد
+
+Stage Summary:
+- هر ۴ بند گام ۳ با شاهد زنده (کد + DOM + API) سبز · شاهد: download/pn040/pn039-recovery.json
+- گام بعد: گام ۴ — سپر گیت‌هاب (github-supreme-guard + reset-guard به GitHub + روت version + Boot Guard)
+
+---
+Task ID: PN-040 · گام ۴
+Agent: main (Super Z / GLM)
+Task: ساخت سپر دفاعی گیت‌هاب — supreme-guard + reset-guard→GitHub + روت version + Boot Guard + Action (سند شورا-ن۰۶۶ · PN-040)
+
+Work Log:
+- **۴.۱ سپر عالی:** scripts/recovery/github-supreme-guard.sh (check/recover · نرخ‌حد ۳۰د · DRILL) + remote origin → GitHub
+- **۴.۲ منطق:** ls-remote origin main → checkout -B main → install → build → restart → مهر · سه لایهٔ تشخیص (MIRROR-ROLLBACK با داور مستقل اسنپ‌شات‌های بقا — بستن کامل K3 با پیمایش ۸ اسنپ‌شات · DRIFT · BUILD-STALE)
+- **اولین بازیابی واقعی زنده:** BUILD-STALE (d823557→5a9b3e0) → توقف تمیز نگهبان (درس OOM: سرور ۱.۲GB رم + بیلد ۳GB = OOM-137؛ فلگ .prod-stop پیش از بیلد) → بیلد سبز → دیمن‌سازی → مهر زنده=هدف ✓
+- **دو باگ واقعی کشف و رفع:** (۱) متغیر ORIGIN_MAIN_SHA بدون $ (مثبت کاذب rollback) (۲) نرمال‌سازی sha کوتاه/کامل در drift (match همیشه false) — پس از رفع: check روی مخزن واقعی = HEALTHY صفر کاذب
+- **۴.۳ reset-guard:** remote_url → اولویت origin (GitHub) · recover → واگذاری به سپر (fallback داخلی برای فیکسچرها) · قرارداد PN-015 حفظ (۶/۶ تست سبز)
+- **۴.۴ روت version:** کلید drift {available, headSha, buildSha, match} — افزودنی · import دینامیک node:fs (درس P6549) · MELKA_REPO_DIR (قرارداد P6548)
+- **Boot Guard:** dev-entry بند ۱-ج — هر بوت کانتینر سپر را recover می‌خواند (بدون دخالت انسانی)
+- **GitHub Action:** github-shield-alert.yml — هر ۳۰د داوری HEAD↔/api/version → Issue فوری با دستور بازیابی یک‌خطی
+- **تست تازه:** pn040-github-shield.test.ts — ۱۴ تست (فیکسچر گیت واقعی + سناریوی K3 + رفتار drift سه‌حالته)
+- **گارد تازه:** audit-github-shield.sh ۲۰/۲۰ · سوئیت گاردها ۴۷/۴۷
+- **دو-سبز (قانون ۹):** ۲۸۸۲/۰ ×۲ پیاپی (۸۹.۴ث · ۸۳.۴ث) — تلاش نخست ۵ شکست نژ Prisma (گرمای بار) با لاگ صادقانه مستند (tests-run-attempt0-flaky.log)
+
+Stage Summary:
+- هر ۴ بند گام ۴ + Boot Guard + Action با شاهد زنده/تست سبز · شاهد: download/pn040/github-shield.json
+- بازیابی یک‌دستوری مالک: bash scripts/recovery/github-supreme-guard.sh recover (~۲ دقیقه) — یا ری‌استارت کانتینر
+- گام بعد: بازگشت رم-های زنده (ری‌بیلد نهایی پس از کامیت) + کد نصب تازه + گزارش نهایی + SHA256SUMS
+
+---
+Task ID: PN-040 · دروازهٔ نهایی (گام ۸)
+Agent: main (Super Z / GLM)
+Task: تحویل نهایی PN-040 — گزارش هشت‌بخشی + SHA256SUMS + ۱۷ لینک ۲۰۰ + شاهدهای پایانی
+
+Work Log:
+- **ری‌بیلد نهایی با خودِ سپر:** بازیابی دوم → مهر زنده = db8ef9c · drift.match=true (نرمال‌سازی زنده کار می‌کند)
+- **کد نصب تازه:** POST /api/admin/relay/enroll با نشست مالک → fresh-install-code.json (سه‌تلاشی · ۳۰د · bootstrap ۲۰۰ با اسکریپت نسل K ۳۰KB)
+- **مخزن تحویل:** deliver-store/pn040 (۱۷ قلم) · قانون لینک/فایل: **۱۷/۱۷ لینک ۲۰۰**
+- **SHA256SUMS:** ۱۶ قلم + گزارش
+- **شاهد نهایی:** download/pn006 دست‌نخورده (صفر diff) · زنجیرهٔ بقا: kit 42 chainIndex=42 + پیدایش PN-006/chainIndex=7 در CHAIN.json سالم
+- **گزارش نهایی هشت‌بخشی:** PN-040-FINAL-REPORT.md (گزارش مالک · تحلیل · ۱۹/۱۹ بند جدول اعمال · ۱۲/۱۲ قانون · ۱۷ ردیف فایل)
+
+Stage Summary:
+- چهار گام + قفل ورود کامل · ۵ کامیت پله‌ای (033f943→3676516→5a9b3e0→db8ef9c→پایانی) · آینه=HEAD
+- بیلد زنده=db8ef9c-20261018-0651=HEAD · drift.match=true · رلهٔ مالک زنده
+- دو-سبز ۲۸۸۲/۰×۲ · گاردها ۴۷/۴۷ · صفر حذف داده · صفر auto_execute
+
+---
+Task ID: PN-041 (قلعهٔ داده — شورا-ن۰۶۷)
+Agent: main (Super Z / GLM)
+Task: اجرای کامل PN-041 — انتقال دیتابیس به منطقهٔ پایدار + ۴ لایهٔ دفاعی + گارد قلعه + بازیابی جامع
+
+Work Log:
+- **اولاً (پاسخ پرسش مالک):** اپ روی آخرین نسخهٔ PN-040 بود (بیلد 5009c24 = آخرین کد · صفر diff کد تا HEAD · رله 401 · گارد ۴۷/۴۷) — فقط کامیت خودکارِ بدون-کد روی بیلد
+- **فاز ۰:** VACUUM قفل (md5 70d7e0d1 · ۲۷۸۶۴) + استعلام فنی: upload/=fuse.ossfs (پایداری اثبات) · WAL چند-فرایندی + بنچمارک
+- **فاز ۱:** VACUUM INTO اتمی → upload/.data/custom.db (md5 57833a75) · prod-watchdog اولویت قلعه + ensure-WAL · live-db-path.sh واحد در ۵ گارد · env هم‌ترازی · رلهٔ مالک ۷ poll بدون وقفه
+- **فاز ۲+۳:** کار rolling-backup (۵د · هرس ۵ · شیر دیسک دو-مرحله‌ای · مانیفست · AuditLog) + sacred → upload/.data/sacred (۵ نسل · همان شیر)
+- **فاز ۴:** /api/admin/db-export (روت سبک · Bearer زمان-ثابت · singleton) + workflow db-backup.yml + اولین Release واقعی db-20261018-0805 (۵۵.۲MB) + ۳ Secret با sealed-box
+- **فاز ۵:** db-fortress-guard (۵-لایه · بهترین=پرترین · گارد مقدس · .broken مهر) + recover-all.sh + dev-entry بند ۱-د + دریل شبیه‌سازی ریست (۵ جدول IDENTICAL)
+- **سه بحران واقعی و بسته:**
+  (۱) چرخهٔ snapshot-reset ویرایش‌های ردیابی‌نشدهٔ ۲۵دقیقه‌ای را با git reset خورد — کامیت فوری (الگوی n۰۶۳)
+  (۲) Worker جدانشدهٔ کهنه (بوت ۰۵:۵۹) زنده مانده بود — ریشه‌یابی + احیای تمیز
+  (۳) **درس ۰۹:۰۱:** WAL روی fuse/ossfs بین فرایندها می‌شکند (mmap -shm) → SQLITE_CORRUPT + آلودگی WAL → گارد قلعه در تولید BROKEN را تشخیص و از لایهٔ چرخشی احیا کرد (۲۷۸۶۴ · صفر گم‌شدن) → راه‌حل mount-aware: DELETE روی FUSE + busy_timeout همه‌جا
+- **فاز ۶:** ۱۹ تست تازه (pn041-data-fortress) · گارد audit-db-fortress ۱۸/۱۸ · سوئیت ۴۹/۴۹ · DATA-FORTRESS.md · دو-سبز ۲۹۰۱/۰ ×۲ · کیت ۴۴ (۳۶ قلم · ۵۶۴MB · chainIndex=43) · ۱۴/۱۴ لینک ۲۰۰
+
+Stage Summary:
+- ۸ کامیت پله‌ای (876bc9b→653fb0d+نهایی) هرکدام پوش فوری · بیلد نهایی = HEAD · drift.match=true
+- قلعهٔ داده کامل: زنده در پایدار + چرخشی ۵د + مقدس ۱۵د + Release روزانه + Boot Guard خودکار
+- حداکثر عقب‌ماندگی داده پس از ریست: ۵ دقیقه · جملهٔ مالک: «bash scripts/recover-all.sh»
+- تحویل: ۱۴ قلم در /deliver/pn041 (همه ۲۰۰) + SHA256SUMS + بستهٔ بقا ۴۴

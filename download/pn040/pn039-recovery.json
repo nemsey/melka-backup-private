@@ -1,0 +1,94 @@
+{
+  "pn": "PN-040 · گام ۳ — اعمال/وارسی PN-039 (اصلاح فهرست‌ها)",
+  "at": "2026-10-18T06:16:00Z",
+  "context": "کد بازیابی‌شده d823557 حاوی هر هشت گام PN-039 است؛ این شاهد وارسی کد + DOM زندهٔ مرورگر + گردش API واقعی است.",
+  "step_3_1_requests_queue_priority": {
+    "code": "src/lib/melk-api/relay.ts — «PN-039 (گام ۲) — اولویت صفحات کاتالوگ درخواست‌ها — پایان قحطی هفت‌روزه» · priority=1 برای requests/list · claim دسته‌ای با ترتیب priority DESC",
+    "liveRelayHealth": {
+      "verdict": "green · «رله سالم — همهٔ لایه‌ها سبز»",
+      "heartbeat": "آخرین نبض همین حالا (2026-10-18T06:14:06Z)",
+      "apiProbe": "۱۲۵ کار موفق در ۳۰ دقیقه · موفقیت ۱۰۰٪ — صف درحال سرو شدن توسط گوشی مالک",
+      "auth": "GET /api/relay/health با Bearer مالک"
+    },
+    "meaning": "فهرست درخواست‌ها دیگر پشت موج آگهی‌ها گرسنه نمی‌ماند — قحطی سینک درخواست‌ها (گزارش مالک در PN-039) پایان یافت"
+  },
+  "step_3_2_m1_new_columns": {
+    "liveDomOrder": [
+      "ردیف",
+      "کد آگهی",
+      "کارشناس",
+      "شعبه",
+      "نوع ملک",
+      "دسته‌بندی",
+      "وضعیت آگهی",
+      "مالک",
+      "قیمت",
+      "قیمت هر متر",
+      "رهن/اجاره",
+      "آدرس ملک",
+      "متراژ",
+      "اتاق",
+      "طبقه",
+      "ساخت",
+      "بازدید",
+      "لینک",
+      "تاریخ وضعیت",
+      "تاریخ ثبت",
+      "یادداشت"
+    ],
+    "screenshot": "download/pn040/ui-m1-listings-columns.png (DOM زنده با ۳۶ سرستون)",
+    "witness": "agent-browser snapshot — columnheader ها از جدول واقعی رندرشده",
+    "status_ads_position": "بلافاصله پس از دسته‌بندی (دستور مالک · نظام ده‌حالته P6530) ✓",
+    "register_date_position": "بلافاصله پس از تاریخ وضعیت — دقیق‌ترین لحظهٔ ایجاد آگهی (createdAt) ✓"
+  },
+  "step_3_3_owner_note_column": {
+    "m1LastColumn": "یادداشت ✓ (پس از تاریخ ثبت)",
+    "m2LastColumn": "یادداشت ✓ (پس از تاریخ ثبت)",
+    "component": "src/components/app/shared/OwnerNoteCell.tsx (textarea درون‌سلولی · PATCH /api/owner-notes/[entity]/[id])",
+    "apiRoundTripLive": {
+      "login": "POST /api/auth/master-login → token (۶۴ کاراکتر)",
+      "write": "PATCH /api/owner-notes/request/6ac931dce417a2d0eebb0d54 {note:'تست گردش PN-040'} → ok:true",
+      "dbVerify": "SQLite مستقیم: ownerNote='تست گردش PN-040' ✓",
+      "clear": "PATCH {note:''} → ok:true · ownerNote=None (صفر بقایای تست — دادهٔ مالک پاک ماند)",
+      "audit": "OWNER_NOTE_UPDATE در لاگ ممیزی ثبت می‌شود"
+    },
+    "editability": "قابل ویرایش توسط مالک — دکمهٔ «ثبت یادداشت» در هر ردیف هر دو فهرست (DOM زنده)"
+  },
+  "step_3_4_m2_building_type_removed_and_chips": {
+    "removedColumn": "columnheader «نوع ساختمان» در DOM زندهٔ M2 = صفر رخداد ✓ (داده در API/اکسل دست‌نخورده — فقط ستون حذف)",
+    "removalMarkers": "کامنت‌های رسمی گام ۷ در خطوط ۸۹۷/۱۰۰۵ ArmRequestsPage.tsx",
+    "m2LiveDomOrder": [
+      "ردیف",
+      "کد درخواست",
+      "کارشناس",
+      "شعبه",
+      "متقاضی",
+      "قیمت",
+      "مناطق",
+      "نوع ملک",
+      "دسته‌بندی",
+      "وضعیت",
+      "سند",
+      "نوع ساخت",
+      "جهت",
+      "فوریت",
+      "متراژ",
+      "اتاق",
+      "طبقه",
+      "ساخت",
+      "معاوضه",
+      "تاریخ ثبت",
+      "یادداشت"
+    ],
+    "propertyTypeChips": {
+      "m1": "region «نوع ملک (چندانتخابی)» — دکمه‌های چیپ: آپارتمان · انباری · باغ · پاساژ · پرورش ماهی · جایگاه سوخت · خانه،حیاط · دفترکار · زمین …",
+      "m2": "region «نوع ملک (چندانتخابی)» — دکمه‌های چیپ: آپارتمان · انباری · پاساژ · خانه،حیاط · خانه،حیاط،ویلایی …",
+      "law": "FilterChip/FilterGroup مشترک (PN-011 ثالثاً) — چندانتخابی با اعمال خودکار"
+    },
+    "screenshot": "download/pn040/ui-m2-requests-columns.png"
+  },
+  "relayLiveBonus": {
+    "note": "رلهٔ مالک (Poco F3 · Termux) به‌محض بازگشت اپ متصل شد و فعالانه صف را سرو می‌کند — عبور موفق ۲۴س: ۱۳۷ و در حال رشد",
+    "sacredData": "پیش/پس از گردش تست: شمارش رکوردها تغییر نکرد (فقط ownerNote همان یک رکورد — و پس از پاک‌سازی حتی آن هم None) — قانون دادهٔ مقدس ✓"
+  }
+}

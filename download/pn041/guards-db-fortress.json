@@ -1,0 +1,99 @@
+{
+  "guard": "audit-db-fortress (PN-041 · شورا-ن۰۶۷)",
+  "checks": [
+    {
+      "check": "۱-قلعه-موجود",
+      "ok": true,
+      "detail": "upload/.data/custom.db (398868480 bytes)"
+    },
+    {
+      "check": "۱-قلعه-سرآیند-sqlite",
+      "ok": true,
+      "detail": "پروب ارزان سرآیند"
+    },
+    {
+      "check": "۲-چرخشی-حداقل-یک-نسخه",
+      "ok": true,
+      "detail": "rolling: 4 فایل live-*"
+    },
+    {
+      "check": "۳-env-مسیر-قلعه",
+      "ok": true,
+      "detail": "env.platform.json → DATABASE_URL"
+    },
+    {
+      "check": "۳-env-dot-قلعه",
+      "ok": true,
+      "detail": ".env (هدف Prisma CLI)"
+    },
+    {
+      "check": "۴-کار-rolling-backup",
+      "ok": true,
+      "detail": "WORKER_JOB_IDS.rollingBackup + runRollingBackup"
+    },
+    {
+      "check": "۵-کار-sacred-backup-پایدار",
+      "ok": true,
+      "detail": "WORKER_JOB_IDS.sacredBackup + مقصد upload/.data/sacred"
+    },
+    {
+      "check": "۵-شیر-دیسک-چرخشی",
+      "ok": true,
+      "detail": "شیر دیسک (پرش با شاهد)"
+    },
+    {
+      "check": "۶-recover-all-موجود-اجرا",
+      "ok": true,
+      "detail": "scripts/recovery/recover-all.sh"
+    },
+    {
+      "check": "۷-db-fortress-guard-موجود-اجرا",
+      "ok": true,
+      "detail": "scripts/recovery/db-fortress-guard.sh"
+    },
+    {
+      "check": "۷-زنجیره-پنج-لایه",
+      "ok": true,
+      "detail": "rolling→sacred→pre-stop→survival→cloud + گارد مقدس"
+    },
+    {
+      "check": "۸-workflow-ابری",
+      "ok": true,
+      "detail": ".github/workflows/db-backup.yml"
+    },
+    {
+      "check": "۹-boot-guard-متصل",
+      "ok": true,
+      "detail": "dev-entry بند ۱-د"
+    },
+    {
+      "check": "۹-watchdog-اولویت-قلعه",
+      "ok": true,
+      "detail": "prod-watchdog اولویت قلعه"
+    },
+    {
+      "check": "۱۰-قلعه-جدیدتر-از-قدیمی",
+      "ok": true,
+      "detail": "fortress mtime 1792315742 ≥ legacy 1792315548"
+    },
+    {
+      "check": "ت-۱-قلعه-سلامت-کامل",
+      "ok": true,
+      "detail": "{\"file\":\"/home/z/my-project/upload/.data/custom.db\",\"exists\":true,\"bytes\":398868480,\"header\":\"ok\",\"integrity\":\"ok\",\"coun"
+    },
+    {
+      "check": "ت-۲-مانیفست-چرخشی",
+      "ok": true,
+      "detail": "upload/.runtime/rolling-backups.json"
+    },
+    {
+      "check": "ت-۳-روت-برون‌بری",
+      "ok": true,
+      "detail": "/api/admin/db-export + احراز Bearer"
+    }
+  ],
+  "violations": [],
+  "pass": 18,
+  "fail": 0,
+  "total": 18
+}

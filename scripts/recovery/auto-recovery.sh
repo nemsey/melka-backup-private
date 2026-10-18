@@ -56,8 +56,9 @@ tree_minus_oversized() {
 
 refresh_expected_counts() {
   [[ "$REPO" == "/home/z/my-project" && -f "$REPO/scripts/recovery-034/db-counts.ts" ]] || return 0
-  local out ads req tx ex pm
-  out=$(bun "$REPO/scripts/recovery-034/db-counts.ts" "$REPO/db/custom.db" 2>/dev/null) || return 0
+  local out ads req tx ex pm live_db
+  live_db="$(bash "$REPO/scripts/recovery/live-db-path.sh" 2>/dev/null || echo "$REPO/db/custom.db")"
+  out=$(bun "$REPO/scripts/recovery-034/db-counts.ts" "$live_db" 2>/dev/null) || return 0
   ads=$(echo "$out" | sed -n 's/^PropertyRecord: \([0-9]*\)/\1/p')
   req=$(echo "$out" | sed -n 's/^RequestRecord: \([0-9]*\)/\1/p')
   tx=$(echo "$out"  | sed -n 's/^TransactionRecord: \([0-9]*\)/\1/p')
@@ -129,11 +130,13 @@ do_check() {
   # ── ۳-ب) جلسهٔ ۰۰۵: تشخیص تخریب ساختاری DB (هش کدمستر/گراف) ──
   # دیمن‌ها آگهی/درخواست ARM را برمی‌گردانند و وارسی شمارش را می‌گذرانند؛
   # ولی گراف صفر/هش NULL فقط پس از تخریب محیط رخ می‌دهد — این وارسی کور نیست.
-  if [[ -f "$REPO/db/custom.db" ]]; then
-    wipe=$(REPO="$REPO" python3 - <<'PYW'
+  # PN-041 (شورا-ن۰۶۷): مسیر زندهٔ رسمی از حل‌کنندهٔ واحد (قلعه اول، قدیم fallback)
+  _LIVE_DB="$(bash "$REPO/scripts/recovery/live-db-path.sh" 2>/dev/null || echo "$REPO/db/custom.db")"
+  if [[ -f "$_LIVE_DB" ]]; then
+    wipe=$(LIVE_DB="$_LIVE_DB" python3 - <<'PYW'
 import os, sqlite3
 try:
-    con = sqlite3.connect(os.path.join(os.environ.get('REPO','.'), 'db', 'custom.db'))
+    con = sqlite3.connect(os.environ.get('LIVE_DB', 'db/custom.db'))
     h = con.execute('SELECT masterCodeHash FROM AppMeta').fetchone()
     g = con.execute('SELECT COUNT(*) FROM GraphNode').fetchone()[0]
     con.close()
@@ -152,10 +155,10 @@ PYW
   fi
 
   # ۳) شمارش DB در برابر آخرین وضعیت معتبر پایدار
-  if [[ -f "$EXPECTED" && -f "$REPO/db/custom.db" && -f "$REPO/scripts/recovery-034/db-counts.ts" ]]; then
+  if [[ -f "$EXPECTED" && -f "$_LIVE_DB" && -f "$REPO/scripts/recovery-034/db-counts.ts" ]]; then
     local exp_ads cur cur_ads
     exp_ads=$(sed -n 's/.*"PropertyRecord":\([0-9]*\).*/\1/p' "$EXPECTED")
-    cur=$(bun "$REPO/scripts/recovery-034/db-counts.ts" "$REPO/db/custom.db" 2>/dev/null | sed -n 's/^PropertyRecord: \([0-9]*\)/\1/p')
+    cur=$(bun "$REPO/scripts/recovery-034/db-counts.ts" "$_LIVE_DB" 2>/dev/null | sed -n 's/^PropertyRecord: \([0-9]*\)/\1/p')
     if [[ -n "$exp_ads" && -n "$cur" && "$cur" -lt $((exp_ads * 80 / 100)) ]]; then
       echo "[check] ROLLBACK-DB-DETECTED: آگهی‌ها $cur < ۸۰٪ انتظار $exp_ads"
       verdict="ROLLBACK-DB"

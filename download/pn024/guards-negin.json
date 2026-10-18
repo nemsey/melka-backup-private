@@ -1,7 +1,7 @@
 {
   "guard": "audit-negin-consistency",
   "workOrder": "PN-024/مرحلهٔ ۱۱ — ۱۱ نگین سازگار (پالت · CSS · رجیستری · اعمال · قانون ۶)",
-  "generatedAt": "2026-10-17T21:31:15.394654+00:00",
+  "generatedAt": "2026-10-18T09:30:33.650848+00:00",
   "checks": [
     {
       "check": "۱ رجیستری negin-palette.ts",

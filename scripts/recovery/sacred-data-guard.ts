@@ -70,6 +70,8 @@ function probeDb(file: string): DbFacts {
   try {
     const db = new Database(file, { readonly: true });
     try {
+      // PN-041/درس ۰۹:۰۱: مهلت قفل — خواندن هم‌زمان با نویسنده (حالت DELETE روی fuse)
+      db.run("PRAGMA busy_timeout=8000");
       const ic = db.query("PRAGMA integrity_check").get() as { integrity_check: string } | null;
       facts.integrity = ic?.integrity_check ?? "unknown";
       for (const t of COUNT_TABLES) {
@@ -110,7 +112,28 @@ function writeWitness(w: Record<string, unknown>): void {
 const args = process.argv.slice(2);
 const candidateArg = args[0];
 const liveIdx = args.indexOf("--live");
-const liveArg = liveIdx >= 0 ? args[liveIdx + 1] : resolve(REPO_ROOT, "db/custom.db");
+
+/**
+ * PN-041 (شورا-ن۰۶۷): مسیر دیتابیس زنده پویا شد — نه هاردکد.
+ * اولویت: آرگومان --live → env DATABASE_URL → قلعهٔ داده (upload/.data) →
+ * مسیر قدیمی db/custom.db (fallback). گاردهای بازیابی همه از همین حل‌کننده
+ * استفاده می‌کنند تا «زنده» همیشه همان فایلی باشد که سرور واقعاً سرو می‌کند.
+ */
+function resolveLiveDb(): string {
+  const fortress = resolve(REPO_ROOT, "upload/.data/custom.db");
+  const legacy = resolve(REPO_ROOT, "db/custom.db");
+  const envUrl = process.env.DATABASE_URL ?? "";
+  if (envUrl.startsWith("file:") && !envUrl.includes("test")) {
+    const p = resolve(envUrl.slice(5));
+    if (p !== fortress && p !== legacy) return p; // مسیر صریح env (نه پیش‌فرض‌ها)
+  }
+  // قلعه اگر موجود است همان زندهٔ رسمی است (سپر قلعه آن را تضمین می‌کند)
+  if (existsSync(fortress)) return fortress;
+  if (existsSync(legacy)) return legacy;
+  return fortress; // هیچ نیست — قلعه مقصدِ بازیابی است
+}
+
+const liveArg = liveIdx >= 0 ? args[liveIdx + 1] : resolveLiveDb();
 
 if (!candidateArg) {
   console.error("کاربرد: sacred-data-guard.ts <candidate-db> [--live <live-db>]");
