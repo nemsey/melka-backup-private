@@ -240,14 +240,14 @@ describe("PN-040 · گام ۴ — رفتار drift در GET /api/version (شبی
       process.env.NEXT_PUBLIC_GIT_SHA = head.slice(0, 7);
       __resetBuildWitnessCacheForTests();
       ({ GET } = await import("@/app/api/version/route"));
-      drift = ((await (await GET()).json()) as { drift: { match: boolean | null } }).drift;
+      drift = ((await (await GET()).json()) as { drift: { match: boolean | null; headSha: string | null } }).drift;
       expect(drift.match).toBe(true);
 
       // حالت ۳: sha متفاوت → عدم تطبیق
       process.env.NEXT_PUBLIC_GIT_SHA = "ffffffffffffffffffffffffffffffffffffffff";
       __resetBuildWitnessCacheForTests();
       ({ GET } = await import("@/app/api/version/route"));
-      drift = ((await (await GET()).json()) as { drift: { match: boolean | null } }).drift;
+      drift = ((await (await GET()).json()) as { drift: { match: boolean | null; headSha: string | null } }).drift;
       expect(drift.match).toBe(false);
     } finally {
       if (prevRepoDir === undefined) delete process.env.MELKA_REPO_DIR;

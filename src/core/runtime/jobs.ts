@@ -14,7 +14,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { mkdirSync, existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
+import { mkdirSync, existsSync, readdirSync, statSync, statfsSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import type { WorkerJobDef } from "./job-queue";
@@ -60,6 +60,7 @@ export const WORKER_JOB_IDS = {
   ipLog: "ip-log",
   headGuard: "head-guard",
   sacredBackup: "sacred-backup",
+  rollingBackup: "rolling-backup", // PN-041 · شورا-ن۰۶۷ — لایهٔ ۲ قلعهٔ داده
   relayHealthCheck: "relay-health-check",
 } as const;
 
@@ -139,12 +140,13 @@ export async function runBackupRotation(db: PrismaClient, options?: { keep?: num
  * بکاپ مقدس ۱۵دقیقه‌ای (PN-038 · فاز ۱ · بند ۱.۳ — شورا-ن۰۶۳):
  * چرخهٔ بکاپ اتمی (VACUUM INTO — بدون توقف سرویس) هر ۱۵ دقیقه + مانیفست
  * mtime/شمارش در upload/.runtime/sacred-backups.json (خوراک گارد مقدس).
- * نگهداری: پیش‌فرض ۴ نسل (یک ساعت تاریخ) — env MELK_SACRED_BACKUP_KEEP.
+ * نگهداری: پیش‌فرض ۵ نسل (PN-041/فاز ۳ · شورا-ن۰۶۷ — از ۴ به ۵) — env MELK_SACRED_BACKUP_KEEP.
+ * محل (PN-041/فاز ۳): منطقهٔ پایدار upload/.data/sacred/ (قبلاً backups/ در منطقهٔ ریست).
  */
 export async function runSacredBackup(db: PrismaClient, options?: { keep?: number; backupsDir?: string }): Promise<{ created: string; kept: string[]; pruned: string[]; integrity: string; mtimeIso: string; counts: Record<string, number> }> {
-  const envKeep = Number.parseInt(process.env.MELK_SACRED_BACKUP_KEEP ?? "4", 10);
-  const keep = Math.max(1, options?.keep ?? (Number.isFinite(envKeep) ? envKeep : 4));
-  const dir = options?.backupsDir ?? join(REPO_ROOT, "backups");
+  const envKeep = Number.parseInt(process.env.MELK_SACRED_BACKUP_KEEP ?? "5", 10);
+  const keep = Math.max(1, options?.keep ?? (Number.isFinite(envKeep) ? envKeep : 5));
+  const dir = options?.backupsDir ?? join(REPO_ROOT, "upload/.data/sacred");
   mkdirSync(dir, { recursive: true });
   const tsBase = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 23);
   let target = join(dir, `sacred-${tsBase}.db`);
@@ -191,6 +193,94 @@ export async function runSacredBackup(db: PrismaClient, options?: { keep?: numbe
     },
   }).catch(() => undefined);
   return { created: target, kept, pruned, integrity: String(manifest.counts["__integrity"] ?? "unknown"), mtimeIso: manifest.mtimeIso, counts: manifest.counts };
+}
+
+/**
+ * بکاپ چرخشی ۵دقیقه‌ای (PN-041 · فاز ۲ · شورا-ن۰۶۷):
+ * لایهٔ ۲ قلعهٔ داده — VACUUM INTO اتمی هر ۵ دقیقه در «منطقهٔ پایدار»
+ * upload/.data/rolling/ (باقی‌مانده از ریست). هرس خودکار ۵ نسخه +
+ * شیر دیسک (فضای آزاد < آستانه → هرس تهاجمی‌تر؛ بحرانی → پرش با شاهد).
+ * مانیفست mtime/شمارش در upload/.runtime/rolling-backups.json (خوراک گارد قلعه).
+ */
+export async function runRollingBackup(db: PrismaClient, options?: { keep?: number; rollingDir?: string }): Promise<{ created: string; kept: string[]; pruned: string[]; integrity: string; skipped?: string; freeBytes?: number; counts: Record<string, number> }> {
+  const envKeep = Number.parseInt(process.env.MELK_ROLLING_BACKUP_KEEP ?? "5", 10);
+  const keep = Math.max(2, options?.keep ?? (Number.isFinite(envKeep) ? envKeep : 5));
+  const dir = options?.rollingDir ?? join(REPO_ROOT, "upload/.data/rolling");
+  mkdirSync(dir, { recursive: true });
+
+  // ── شیر دیسک: پیش از نوشتنِ ~۴۰۰MB فضای آزاد را ببین ──
+  // بحرانی (< ۱GB) → پرش با شاهد (بکاپ بعدی در چرخهٔ بعد؛ دادهٔ زنده هرگز در خطر نیست)
+  // فشرده (< ۱.۶GB) → هرس تهاجمی به ۲ نسل پیش از ساختن
+  const free0 = freeDiskBytes(dir);
+  if (free0 < 1_000_000_000) {
+    const detail = { skipped: "disk-low", freeBytes: free0, at: new Date().toISOString() };
+    try {
+      writeFileSync(join(REPO_ROOT, "upload/.runtime/rolling-backups.json"), JSON.stringify(detail, null, 2));
+    } catch { /* بهترین-تلاش */ }
+    await db.auditLog.create({
+      data: { action: "ROLLING_BACKUP", actor: "worker:rolling-backup", detail: JSON.stringify(detail) },
+    }).catch(() => undefined);
+    return { created: "", kept: [], pruned: [], integrity: "skipped", counts: {}, skipped: "disk-low", freeBytes: free0 };
+  }
+
+  // نام یکتا (VACUUM INTO روی فایل موجود خطا می‌دهد)
+  const tsBase = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 23);
+  let target = join(dir, `live-${tsBase}.db`);
+  for (let i = 1; existsSync(target); i++) target = join(dir, `live-${tsBase}-${i}.db`);
+  // ENGINE: sqlite-only (VACUUM INTO اتمی — خواننده‌ها حالت نصفه نمی‌بینند)
+  await db.$queryRawUnsafe(`VACUUM INTO '${target.replace(/'/g, "''")}'`);
+
+  // مانیفست چرخشی: mtime + شمارش ردیف‌های شاهد — خوراک db-fortress-guard
+  const manifest = { created: target.split("/").pop()!, mtimeIso: new Date().toISOString(), counts: {} as Record<string, number> };
+  try {
+    const probe = new (await import("@prisma/client")).PrismaClient({ datasources: { db: { url: `file:${target}` } } });
+    try {
+      const r = await probe.$queryRawUnsafe("PRAGMA integrity_check") as { integrity_check: string }[];
+      manifest.counts["__integrity"] = r[0]?.integrity_check === "ok" ? 1 : 0;
+      for (const t of ["PropertyRecord", "RequestRecord", "TransactionRecord", "ExpertRecord", "GraphNode"]) {
+        try {
+          const c = await probe.$queryRawUnsafe(`SELECT COUNT(*) as c FROM ${t}`) as { c: number | bigint }[];
+          manifest.counts[t] = Number(c[0]?.c ?? 0);
+        } catch { manifest.counts[t] = -1; }
+      }
+    } finally { await probe.$disconnect(); }
+  } catch { /* مانیفست بهترین-تلاش */ }
+
+  // هرس: فقط فایل‌های live-*.db (بکاپ‌های sacred را لمس نمی‌کند)
+  // حالت فشردهٔ دیسک → نگه‌داری ۲ نسل (به‌جای ۵) — شیر دیسک
+  const effectiveKeep = freeDiskBytes(dir) < 1_600_000_000 ? Math.min(keep, 2) : keep;
+  const createdName = target.split("/").pop()!;
+  const files = existsSync(dir)
+    ? readdirSync(dir).filter((f) => f.startsWith("live-") && f.endsWith(".db")).map((f) => ({ f, m: statSync(join(dir, f)).mtimeMs })).sort((a, b) => b.m - a.m)
+    : [];
+  const kept: string[] = [];
+  const pruned: string[] = [];
+  for (let i = 0; i < files.length; i++) {
+    if (i < effectiveKeep || files[i].f === createdName) kept.push(files[i].f);
+    else { unlinkSync(join(dir, files[i].f)); pruned.push(files[i].f); }
+  }
+
+  // شاهد پایدار برای گارد قلعه — بهترین-تلاش
+  try {
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(join(REPO_ROOT, "upload/.runtime/rolling-backups.json"), JSON.stringify({ ...manifest, kept, pruned: pruned.length, freeBytes: freeDiskBytes(dir), at: manifest.mtimeIso }, null, 2));
+  } catch { /* شاهد بهترین-تلاش */ }
+  await db.auditLog.create({
+    data: {
+      action: "ROLLING_BACKUP",
+      actor: "worker:rolling-backup",
+      detail: JSON.stringify({ created: createdName, kept: kept.length, pruned: pruned.length, counts: manifest.counts, freeBytes: freeDiskBytes(dir) }),
+    },
+  }).catch(() => undefined);
+  return { created: target, kept, pruned, integrity: String(manifest.counts["__integrity"] ?? "unknown"), freeBytes: freeDiskBytes(dir), counts: manifest.counts };
+}
+
+/** فضای آزاد دیسکِ مسیر (بایت) — نامعلوم = بی‌نهایت (سد نکن) */
+function freeDiskBytes(dir: string): number {
+  try {
+    const st = statfsSync(dir);
+    return Number(st.bavail) * Number(st.bsize);
+  } catch { return Number.MAX_SAFE_INTEGER; }
 }
 
 /**
@@ -269,16 +359,33 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
     });
   }
 
-  // ── Sacred Backup → Worker (تازه — PN-038/۱.۳: بکاپ ۱۵دقیقه‌ای دادهٔ مقدس) ──
+  // ── Sacred Backup → Worker (PN-038/۱.۳ + PN-041/فاز ۳: بکاپ ۱۵دقیقه‌ای در منطقهٔ پایدار) ──
   // شورا-ن۰۶۳: «بکاپ پیوسته — هر ۱۵ دقیقه دیتابیس زنده را اتمی بکاپ بگیر».
-  // اتمی (VACUUM INTO بدون توقف) + مانیفست شمارش + هرس ۴ نسلی.
+  // شورا-ن۰۶۷ (PN-041): محل بکاپ → upload/.data/sacred/ (پایدار) · نگه‌داری ۵ نسل.
   if (process.env.MELK_SACRED_BACKUP !== "disabled") {
     jobs.push({
       id: WORKER_JOB_IDS.sacredBackup,
-      title: "بکاپ مقدس ۱۵دقیقه‌ای (PN-038/۱.۳)",
+      title: "بکاپ مقدس ۱۵دقیقه‌ای (PN-038/۱.۳ + PN-041/۳)",
       intervalMs: envInt("MELK_SACRED_BACKUP_INTERVAL_MINUTES", 15, 5) * 60_000,
       firstRunDelayMs: 30_000, // نخستین بکاپ مقدس نیم دقیقه پس از بوت
       run: async (database) => runSacredBackup(database),
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Rolling Backup → Worker (تازه — PN-041/فاز ۲: بکاپ چرخشی ۵دقیقه‌ای قلعه) ──
+  // شورا-ن۰۶۷: «هیچ ریستی نمی‌تواند بیش از ۵ دقیقه دیتا را عقب ببرد».
+  // VACUUM INTO اتمی در upload/.data/rolling/ (پایدار) · هرس ۵ نسل · شیر دیسک.
+  if (process.env.MELK_ROLLING_BACKUP !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.rollingBackup,
+      title: "بکاپ چرخشی ۵دقیقه‌ای قلعهٔ داده (PN-041/۲)",
+      intervalMs: envInt("MELK_ROLLING_BACKUP_INTERVAL_MINUTES", 5, 5) * 60_000,
+      firstRunDelayMs: 15_000, // نخستین بکاپ چرخشی ۱۵ ثانیه پس از بوت
+      run: async (database) => runRollingBackup(database),
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
         return {};

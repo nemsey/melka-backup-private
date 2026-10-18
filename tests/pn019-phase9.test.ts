@@ -331,6 +331,7 @@ describe("PN-019/فاز۹ · Worker + API + گارد", () => {
     expect(ids).toContain("head-guard"); // PN-031-B (شورا-ن۰۳۹) — گارد تازگی بیلد زنده
     expect(ids).toContain("sacred-backup"); // PN-038/۱.۳ — بکاپ مقدس ۱۵دقیقه‌ای
     expect(ids).toContain("relay-health-check"); // PN-038/۴.۱ — پایش ۲۴ ساعتهٔ رله
-    expect(new Set(ids).size).toBe(19);
+    expect(ids).toContain("rolling-backup"); // PN-041/۲ — بکاپ چرخشی ۵دقیقه‌ای قلعه (شورا-ن۰۶۷)
+    expect(new Set(ids).size).toBe(20);
   });
 });

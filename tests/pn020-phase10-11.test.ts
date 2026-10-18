@@ -67,7 +67,7 @@ describe("PN-020/فاز۱۰ — خودآگاهی: ۲۵ بررسی + نمره", (
     const diag = jobs.find((j) => j.id === WORKER_JOB_IDS.diagnosisCycle);
     expect(diag).toBeDefined();
     expect(diag!.intervalMs).toBe(6 * 60 * 60_000);
-    expect(jobs.length).toBe(19); // PN-038: ۱۷ کار قبلی + sacred-backup + relay-health-check
+    expect(jobs.length).toBe(20); // PN-041: ۱۹ کار قبلی + rolling-backup (شورا-ن۰۶۷)
   });
 
   test("۱۰-۶) مرز روت تشخیص — بدون احراز ۴۰۱", async () => {
