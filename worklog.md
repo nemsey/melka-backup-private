@@ -3749,3 +3749,21 @@ Stage Summary:
 - هر ۴ بند گام ۴ + Boot Guard + Action با شاهد زنده/تست سبز · شاهد: download/pn040/github-shield.json
 - بازیابی یک‌دستوری مالک: bash scripts/recovery/github-supreme-guard.sh recover (~۲ دقیقه) — یا ری‌استارت کانتینر
 - گام بعد: بازگشت رم-های زنده (ری‌بیلد نهایی پس از کامیت) + کد نصب تازه + گزارش نهایی + SHA256SUMS
+
+---
+Task ID: PN-040 · دروازهٔ نهایی (گام ۸)
+Agent: main (Super Z / GLM)
+Task: تحویل نهایی PN-040 — گزارش هشت‌بخشی + SHA256SUMS + ۱۷ لینک ۲۰۰ + شاهدهای پایانی
+
+Work Log:
+- **ری‌بیلد نهایی با خودِ سپر:** بازیابی دوم → مهر زنده = db8ef9c · drift.match=true (نرمال‌سازی زنده کار می‌کند)
+- **کد نصب تازه:** POST /api/admin/relay/enroll با نشست مالک → fresh-install-code.json (سه‌تلاشی · ۳۰د · bootstrap ۲۰۰ با اسکریپت نسل K ۳۰KB)
+- **مخزن تحویل:** deliver-store/pn040 (۱۷ قلم) · قانون لینک/فایل: **۱۷/۱۷ لینک ۲۰۰**
+- **SHA256SUMS:** ۱۶ قلم + گزارش
+- **شاهد نهایی:** download/pn006 دست‌نخورده (صفر diff) · زنجیرهٔ بقا: kit 42 chainIndex=42 + پیدایش PN-006/chainIndex=7 در CHAIN.json سالم
+- **گزارش نهایی هشت‌بخشی:** PN-040-FINAL-REPORT.md (گزارش مالک · تحلیل · ۱۹/۱۹ بند جدول اعمال · ۱۲/۱۲ قانون · ۱۷ ردیف فایل)
+
+Stage Summary:
+- چهار گام + قفل ورود کامل · ۵ کامیت پله‌ای (033f943→3676516→5a9b3e0→db8ef9c→پایانی) · آینه=HEAD
+- بیلد زنده=db8ef9c-20261018-0651=HEAD · drift.match=true · رلهٔ مالک زنده
+- دو-سبز ۲۸۸۲/۰×۲ · گاردها ۴۷/۴۷ · صفر حذف داده · صفر auto_execute
