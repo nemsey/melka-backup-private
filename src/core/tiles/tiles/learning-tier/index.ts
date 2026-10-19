@@ -20,7 +20,7 @@ export const learningTierTile = defineTile({
   icon: Brain,
   accent: "m8",
   component: lazyPage(() => import("./LearningTierPage")),
-  order: 7, // PN-038/۲.۵ — ترتیب جدید هوم: مغز هفتم
+  order: 3, // PN-043/فاز ۲ (شورا-ن۰۸۷) — ترتیب جدید هوم: مغز سوم
   minRole: "OWNER",
   agent: {
     tileId: "learning-tier",

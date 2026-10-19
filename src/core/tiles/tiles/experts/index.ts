@@ -19,7 +19,8 @@ export const expertsTile = defineTile({
   icon: Users,
   accent: "m4",
   component: lazyPage(() => import("./ExpertsPage")),
-  order: 5, // PN-038/۲.۵ — ترتیب جدید هوم: کارشناسان پنجم
+  order: 5, // M4 — ترتیب درون ظرف tenant-dashboards: کارشناسان چهارمِ داشبورد (PN-043/فاز ۲)
+  container: "tenant-dashboards", // PN-043/فاز ۲ (شورا-ن۰۸۷): از هوم ریشه به داشبوردهای tenant — wrapper، نه تکرار
   agent: {
     tileId: "experts",
     insightDomains: ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK"],
