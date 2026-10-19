@@ -151,6 +151,13 @@ bun run build
 echo "— راه‌اندازی سرور…"
 bash scripts/start-prod.sh
 
+# PN-042-D: Worker restart (پس از رستاخیز)
+pkill -f "scripts/runtime/worker" 2>/dev/null || true
+sleep 1
+nohup bun scripts/runtime/worker.ts > /tmp/worker-restart.log 2>&1 &
+sleep 2
+echo "✅ Worker restarted"
+
 # ─── ۷) تأیید — پیام موفقیت فقط با شاهد زنده ───
 EXPECT=$(git rev-parse --short HEAD)
 VERSION=""
@@ -171,5 +178,11 @@ if [ "${VERSION:0:${#EXPECT}}" != "$EXPECT" ]; then
 fi
 trap - EXIT
 T1=$(date +%s)
+ROWCOUNT_FINAL=$(python3 -c "import sqlite3; print(sqlite3.connect('db/custom.db').execute('SELECT COUNT(*) FROM PropertyRecord').fetchone()[0])" 2>/dev/null || echo 0)
+if [ "$ROWCOUNT_FINAL" -lt 1000 ]; then
+  echo "❌ FATAL: PropertyRecord=$ROWCOUNT_FINAL < 1000 — data restoration failed"
+  exit 1
+fi
+echo "✅ Data verified: $ROWCOUNT_FINAL PropertyRecord"
 echo "✅ RESURRECTION COMPLETE — Version: ${VERSION} — مدت: $((T1-T0)) ثانیه"
 echo "✅ رستاخیز کامل شد. منبع حقیقت: $RAW_URL"
