@@ -8,6 +8,8 @@
  *   · نام‌ها کوتاه شدند (حذف پسوند «ملکا» و «ملک تبریز»)
  *   · ترتیب جدید هوم: فایل یابی ← آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← مغز ← تنظیمات
  * دادهٔ همهٔ کاشی‌های حذف‌شده در DB ماندگار است (قانون دادهٔ مقدس PN-038).
+ * PN-043/فاز ۲ (شورا-ن۰۸۷): داشبوردهای tenant — M1-M4 به ظرف tenant-dashboards رفتند؛
+ * ترتیب جدید هوم: فایل یابی ← تطبیق ← مغز ← تنظیمات ← داشبورد ملک تبریز ← داشبورد ملکتون.
  * اجرا: bun test tests/management-dashboard.test.ts
  */
 
@@ -16,19 +18,25 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Home as DummyIcon } from "lucide-react";
 
-/** PN-038/۲.۵ — ترتیب الزامی هوم: هشت کاشی ریشه */
+/** PN-043/فاز ۲ (شورا-ن۰۸۷) — ترتیب الزامی هوم: شش کاشی ریشه */
 const ROOT_EXPECTED = [
-  "file-finder",             // فایل یابی
+  "file-finder",                 // فایل یابی
+  "smart-matching",              // تطبیق
+  "learning-tier",               // مغز
+  "settings",                    // تنظیمات
+  "tenant-dashboard-tabriz",     // داشبورد ملک تبریز (ظرف wrapper)
+  "tenant-dashboard-melketun",   // داشبورد ملکتون (ظرف wrapper)
+];
+
+/** PN-043 — کاشی‌های M1-M4 درون ظرف tenant-dashboards (داشبوردهای tenant) */
+const TENANT_CHILDREN_EXPECTED = [
   "arm-listings",            // آگهی
   "arm-requests",            // درخواست
   "transactions-contracts",  // معاملات
   "experts",                 // کارشناسان
-  "smart-matching",          // تطبیق
-  "learning-tier",           // مغز
-  "settings",                // تنظیمات
 ];
 
-/** PN-038/۲.۴ — نام‌های کوتاه هشت کاشی */
+/** PN-038/۲.۴ + PN-043 — نام‌های کاشی‌ها */
 const TITLES_EXPECTED: Record<string, string> = {
   "file-finder": "فایل یابی",
   "arm-listings": "آگهی",
@@ -38,6 +46,8 @@ const TITLES_EXPECTED: Record<string, string> = {
   "smart-matching": "تطبیق",
   "learning-tier": "مغز",
   "settings": "تنظیمات",
+  "tenant-dashboard-tabriz": "داشبورد ملک تبریز",
+  "tenant-dashboard-melketun": "داشبورد ملکتون",
 };
 
 describe("معماری هوم یک‌پارچه (PN-038/فاز ۲)", () => {
@@ -45,7 +55,7 @@ describe("معماری هوم یک‌پارچه (PN-038/فاز ۲)", () => {
     await import("@/core/tiles/bootstrap");
   });
 
-  test("PN-038/۲.۵ — هوم: هشت کاشی ریشه به ترتیب الزامی مالک (فایل یابی ← … ← تنظیمات)", async () => {
+  test("PN-043/۲.۵ — هوم: شش کاشی ریشه به ترتیب الزامی مالک (فایل یابی ← تطبیق ← مغز ← تنظیمات ← داشبوردها)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const root = tileRegistry.listRoot("OWNER").map((t) => t.id);
     expect(root).toEqual(ROOT_EXPECTED);
@@ -62,7 +72,9 @@ describe("معماری هوم یک‌پارچه (PN-038/فاز ۲)", () => {
     // هیچ کاشی ثبت‌شده‌ای پسوند قدیمی ندارد
     for (const t of tileRegistry.listAll("OWNER")) {
       expect(t.title).not.toContain("ملکا");
-      expect(t.title).not.toContain("ملک تبریز");
+      if (t.id !== "tenant-dashboard-tabriz" && t.id !== "tenant-dashboard-melketun") {
+        expect(t.title).not.toContain("ملک تبریز"); // PN-043: نام کامل داشبوردهای tenant به دستور مالک است
+      }
     }
   });
 
@@ -73,11 +85,14 @@ describe("معماری هوم یک‌پارچه (PN-038/فاز ۲)", () => {
     }
   });
 
-  test("PN-038/۲.۲ — کانتینر management-dashboard حذف شد؛ هیچ کاشی فرزند ظرف ندارد", async () => {
+  test("PN-043/۲.۲ — کانتینر قدیمی حذف؛ فرزندانِ ظرف فقط M1-M4 در tenant-dashboards", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     expect(tileRegistry.get("management-dashboard")).toBeUndefined();
+    const children = tileRegistry.listChildren("tenant-dashboards", "OWNER").map((t) => t.id);
+    expect(children).toEqual(TENANT_CHILDREN_EXPECTED); // PN-043: تنها ظرف زنده = داشبوردهای tenant
+    // همهٔ فرزندانِ ظرف در ریشه نیستند (wrapper — نه تکرار)
     for (const t of tileRegistry.listAll("OWNER")) {
-      expect(t.container).toBeUndefined();
+      if (t.container) expect(t.container).toBe("tenant-dashboards");
     }
   });
 
@@ -103,10 +118,10 @@ describe("معماری هوم یک‌پارچه (PN-038/فاز ۲)", () => {
     expect(tile.agent!.insightDomains).toContain("VISIT_STATUS");
   });
 
-  test("PN-038 — هیچ کاشی گم نشده: هشت ریشه = کل رجیستری", async () => {
+  test("PN-043 — هیچ کاشی گم نشده: ۶ ریشه + ۴ فرزند tenant = کل رجیستری (۱۳)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const all = tileRegistry.listAll("OWNER").map((t) => t.id);
-    expect(all.sort()).toEqual([...ROOT_EXPECTED].sort());
+    expect(all.sort()).toEqual([...ROOT_EXPECTED, ...TENANT_CHILDREN_EXPECTED].sort()); // PN-043: wrapper — همهٔ کاشی‌ها سرِجایشان
   });
 
   test("PN-038 — کاشی‌های منتقل‌شده ایجنت‌های خود را حفظ کرده‌اند", async () => {

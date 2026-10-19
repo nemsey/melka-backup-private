@@ -89,12 +89,13 @@ afterAll(async () => {
 describe("PN-017 · جابه‌جایی دو بخش تنظیمات (دستور مالک)", () => {
   const settings = readFileSync("src/core/tiles/tiles/settings/SettingsPage.tsx", "utf8");
 
-  test("جایگاه ۸ = شاهکار «مدیریت کاربران ملک تبریز» و جایگاه ۹ = «مدیریت دسترسی کارشناسان ملکا»", () => {
-    const posMelk = settings.indexOf("<MelkTabrizUsersSection />");
-    const posPa = settings.indexOf("<PersonnelAccessSection />");
-    expect(posMelk).toBeGreaterThan(0);
-    expect(posPa).toBeGreaterThan(0);
-    expect(posMelk).toBeLessThan(posPa); // شاهکار پیش از دسترسی کارشناسان
+  test("PN-043-F1 — UI «مدیریت کاربران ملک تبریز» از تنظیمات حذف شد؛ جایگاه ۹ محفوظ (دادهٔ مقدس)", () => {
+    // PN-043/فاز ۱ (شورا-ن۰۸۷): حذف نما نه حذف داده — رندر از SettingsPage برداشته شد
+    expect(settings).not.toContain("<MelkTabrizUsersSection />");
+    expect(settings).toContain("PN-043-F1"); // شاهد حذفِ مستند در سورس
+    expect(settings).toContain("<PersonnelAccessSection />"); // جایگاه ۹ (دسترسی کارشناسان) محفوظ
+    // کامپوننت نگه‌داری شده — گارد audit-stealth-users فایل را می‌خواند؛ داده در DB محفوظ (قانون ۶)
+    expect(existsSync("src/core/tiles/tiles/settings/MelkTabrizUsersSection.tsx")).toBe(true);
   });
 
   test("عنوان بخش شاهکار: «مدیریت کاربران ملک تبریز» + توضیح دپارتمان", () => {
