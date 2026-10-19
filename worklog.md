@@ -3853,3 +3853,26 @@ Stage Summary:
 - پاسخ چهارگانه: (۱) بیلد=✅ سبز (9e8d67a-20261019-2054) (۲) اپ=✅ سالم — ok=true · PropertyRecord=27,868 روی بیلد 9e8d67a (۳) v2 روی GitHub=✅ YES (کامیت 5a8feac · هر دو مارکر · SHA یکسان) (۴) BP=✅ فعال (false/true)
 - انحراف کوچک آشکار: درخت روی 9e8d67a بود نه e8d19627 (کامیت مستندات C — صفر تغییر کد)؛ health-gate با قرارداد واقعی ok=true ارزیابی شد چون فیلد status در endpoint نیست (دستور .status می‌نوشت که null می‌داد و rollback کاذب می‌کرد)
 - شواهد: download/pn042d/ (vacuum.log · head-before-build.log · build.log · verify-1.log · commit.log · push.log · bp-final.log · resurrect-from-github-v2.sh · final-report.log · SHA256SUMS.txt)
+
+---
+Task ID: PN-043
+Agent: main (GLM-5.3)
+Task: اجرای دستور یکپارچه PN-043 (شورا-ن۰۸۷) — ۵ فاز: کشف ملکتون + حذف UI مدیریت کاربران + داشبوردهای tenant + اتصال ملکتون + تثبیت
+
+Work Log:
+- فاز ۰: قفل نسخه (HEAD=آینه=7f21b90 · BP false/true · PropertyRecord=27,868) + بکاپ VACUUM اتمیک (md5 17e2a759…؛ ۴۰۲MB) + کشف ملکتون: اتصال مستقیم (melketun.com=200 · melketun.app=302→/login=200 · بدون فایروال) ⇒ طبق قانون ۱، فاز ۴ skip
+- فاز ۱: حذف رندر MelkTabrizUsersSection از SettingsPage جایگاه ۸ (def1c86) — کامپوننت برای گارد audit-stealth-users نگه‌داری شد (خط ۸۰ گارد فایل را می‌خواند) · دادهٔ مقدس صفر تغییر · گارد stealth-users سبز ماند
+- فاز ۲: TenantDashboard.tsx (wrapper مشترک، یک کد دو کاربرد) + ۲ کاشی tenant-dashboard-tabriz/melketun + M1-M4 با container="tenant-dashboards" (از ریشهٔ هوم به ظرف) + ترتیب تازهٔ هوم ۶تایی: فایل‌یابی←تطبیق←مغز←تنظیمات←داشبورد ملک تبریز←داشبورد ملکتون (b5749a6 · tsc صفر خطا)
+- فاز ۳: راز در Persistent Zone (upload/.runtime/melketun-secrets.json · md5 4eda326a · gitignored ✓ · رمز صفر در گیت) + گارد تازهٔ audit-melketun-secrets (دو اصلاح ثبت‌شده: chmod محیطی ۷۷۷ یکنواخت ماونت + خواندن رمز از فایل راز به‌جای متنی‌کردن رمز در گارد) + صفحهٔ /settings/melketun (۴ تب) + API /api/integrations/melketun (OWNER-only + آینهٔ v1) + Adapter reachability-only (endpoint دقیق login کشف نشد — پیام صادقانه «در انتظار کشف API») (22f6200)
+- فاز ۵: boot-secrets قرمز ⇒ آینهٔ v1 برای روت تازه (۱۱۲/۱۱۲ سبز، 46e1494) · ۶ فایل تست قدیمی به واقعیت PN-043 به‌روز (p6530 · management-dashboard · new-tiles-2 · phase9 §۱۱ · pn017 · pn030 + F-6 مانیفست ۱۱۲) · ترمیم محیطی: APK/QR عمومی از بستهٔ بقای PN-042 با sha256 منطبق شاهد بازیابی شد (20e5967f/70239a15) + env.platform.json ریشه از یگانه منبع upload/.runtime همگام شد (ALT_URL+_pn033) · reset-guard (BUILD-STALE) سه بار تغییرات کامیت‌نشده را بازگرداند — درمان: بازسازی فوری + کامیت فوری (قانون ۸) + بیلد تازه
+- بیلد: 6766a6d-20261019-2253 = HEAD (BUILD-STALE پایان یافت؛ reset-guard آرام شد) · ری‌استارت production + watchdog + Worker
+- دو-سبز: اجرای ۱: ۲۹۱۴/۱ (ریشهٔ fail: ۵ تصمیم منقضی — Worker سایه از ۱۹:۵۲ کاشته بود؛ expireSweep خود سیستم اجرا شد، صفر حذف) ⇒ اجرای ۲ و ۳: ۲۹۱۵/۰ ×۲ (پایدار) — نوسان probe با GLM_PROBE_TIMEOUT_MS=4000 مدیریت شد (شکست صادقانه هم شاهد است)
+- گاردها: ۱۲/۱۲ سبز (۹ دستور + stealth-users + tile-contract + data-sacred)
+- تأیید نهایی: dashboard/tabriz=200 · dashboard/melketun=200 · settings/melketun=200 · Health=true · Version=6766a6d · PropertyRecord=27,868 ⇒ «PN-043 ALL PHASES COMPLETE»
+- تحویل: FINAL-REPORT.md (۹ بخش) + شواهد در download/pn043/ (+final/SHA256SUMS.txt) (5f4f59b)
+
+Stage Summary:
+- نتیجه: PN-043 کامل — دو کسب‌وکار در یک سیستم‌عامل (wrapper، نه تکرار) · اتصال مستقیم ملکتون بدون رله · UI مدیریت کاربران حذف شد (داده مقدس محفوظ) · ترتیب هوم طبق دستور مالک
+- کامیت‌ها (پوش خطی موفق): def1c86 → b5749a6 → 22f6200 → 46e1494 → 55754ab → 6766a6d → 5f4f59b
+- رخداد ویژه: commit آلودهٔ ۸۳۲MB (.next.backup) پیش از پوش بازنشانی و تمیز شد (f6cab76 هرگز پوش نشد) — .gitignore: .next.backup-*/
+- ریسک‌های باقی (گزارش به مالک): endpoint دقیق login ملکتون کشف نشده (فعلاً reachability) · ارجاع متنی قدیمی به «مدیریت کاربران» در DashboardHome/PersonnelAccessSection خارج از محدودهٔ دستور ماند · اگر فایروال ملکتون روزی ببندد: گوشی دوم Termux (relay.sh + MELKETUN_URL)
