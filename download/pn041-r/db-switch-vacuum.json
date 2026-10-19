@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-18T12:00:18.518Z",
+  "tool": "vacuum-copy (PN-041)",
+  "source": "/home/z/my-project/upload/.data/custom.db",
+  "target": "/home/z/my-project/db/custom.db",
+  "bytes": 399208448,
+  "md5": "7e53f4421af31a6fbe086a09d2e807d7",
+  "integrity": "ok",
+  "counts": {
+    "PropertyRecord": 27868,
+    "RequestRecord": 25580,
+    "TransactionRecord": 792,
+    "ExpertRecord": 293,
+    "GraphNode": 149359
+  },
+  "durationMs": 3988
+}

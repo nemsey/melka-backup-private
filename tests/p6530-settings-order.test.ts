@@ -47,17 +47,21 @@ describe("گام صفر P6546 — ترتیب هفت‌بخشی تنظیمات ع
     expect(melkIdx).toBeLessThan(divarIdx);
   });
 
-  test("۱-۳) پیکرهٔ یکپارچهٔ اتصال به ملک تبریز: مدیریت + ARM + PM + سامانه عمومی (الگوی دیوار — جلسهٔ ۰۳۳: GAP حذف)", async () => {
+  test("۱-۳) پیکرهٔ یکپارچهٔ اتصال به ملک تبریز: مدیریت + اتصال ARM مستقیم + رله + PM (ن۰۵۵: احیای ARM · حذف ورود مجدد)", async () => {
     const s = readFileSync(`${TILES}/settings/MelkTabrizConnectionSection.tsx`, "utf8");
     expect(s).toContain('id="settings-connection-hub"');
     expect(s).toContain("اتصال به ملک تبریز");
-    // ترتیب توکار: مدیریت → ARM → PM → رابط سامانه عمومی (GAP به دستور مالک جلسهٔ ۰۳۳ حذف شد)
+    // ترتیب توکار (پس از احیای ن۰۵۵): مدیریت → اتصال ARM (فرم مستقیم) → رلهٔ Termux → PM
     const order = [
       s.indexOf('id="settings-connection-hub"'),
       s.indexOf("<ArmConnectionSection embedded />"),
+      s.indexOf("<RelaySetupSection />"),
       s.indexOf("<PmConnectionSection embedded />"),
-      s.indexOf('aria-label="رابط سامانه عمومی ملک تبریز"'),
     ];
+    // PN-029 اولاً — بخش رابط سامانهٔ عمومی از تنظیمات حذف شده است
+    expect(s).not.toContain('aria-label="رابط سامانه عمومی ملک تبریز"');
+    // PN-034 (شورا-ن۰۵۵): «ورود مجدد» حذف کامل — فرم مستقیم ARM بدون قفل احیا شد
+    expect(s).not.toContain("OtpReloginSection");
     for (const idx of order) expect(idx).toBeGreaterThan(-1);
     for (let i = 1; i < order.length; i += 1) {
       expect(order[i]).toBeGreaterThan(order[i - 1]);
@@ -273,10 +277,12 @@ describe("گام ۶ §۴ — رفع خطای 502/504 در بروزرسانی ف�
     expect(s).toMatch(/از همان نقطهٔ قطع‌شده ادامه می‌یابد/);
   });
 
-  test("۴-۳) خطای TIMEOUT کلاینت: کد TIMEOUT + وضعیت 504 + پیام فارسی", async () => {
+  test("۴-۳) خطای TIMEOUT کلاینت: کد TIMEOUT + وضعیت 504 + پیام فارسی (تطبیقی ۲۰/۱۵۰ · ن۰۶۸)", async () => {
+    // PN-041-R (شورا-ن۰۶۸ · بند ۲.۴): پیام سبک ۲۰ث + سنگین ۱۵۰ث — به‌جای ۹۰ث یکسان
     const s = readFileSync(`${SRC}/lib/client/api.ts`, "utf8");
     expect(s).toMatch(/"TIMEOUT"/);
-    expect(s).toMatch(/مهلت ۹۰ ثانیه/);
+    expect(s).toMatch(/مهلت ۲۰ ثانیه/);
+    expect(s).toMatch(/مهلت ۱۵۰ ثانیه/);
   });
 
   test("۴-۴) سمت سرور: گارد صفحهٔ معیوب ARM (پاسخ 504گونه) → تلاش مجدد، نه بسته‌شدن چرخه", async () => {

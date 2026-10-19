@@ -47,7 +47,7 @@ import {
   CalendarDays, TrendingUp, Award, MapPinned, Globe, FileSpreadsheet, Eye, ExternalLink,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup } from "@/components/app/shared";
+import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup, OwnerNoteCell } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
@@ -60,6 +60,8 @@ import { normalizeFilterInput } from "@/lib/normalize-input";
 import {
   LISTING_STATES,
   LISTING_STATE_BY_KEY,
+  classifyListingStatus,
+  listingStatusLabel,
   type ListingStateKey,
 } from "@/lib/listing-status";
 import { TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
@@ -103,6 +105,8 @@ interface ListingRow {
   cityName: string | null;
   publicUrl: string | null;
   statusDate: string | null;
+  /** PN-039 (گام ۴) — یادداشت مالک (آخرین ستون فهرست) */
+  ownerNote: string | null;
 }
 
 interface Enrichment {
@@ -183,6 +187,8 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   /** شعبه‌های انتخاب‌شدهٔ فیلتر چندانتخابی (PN-011 ثالثاً — چیپ همانند دسته‌بندی) */
   const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
+  /** PN-039 (گام ۶) — نوع‌های ملک انتخاب‌شدهٔ فیلتر چندانتخابی (چیپ) */
+  const [selectedPropertyTypes, setSelectedPropertyTypes] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(
     // قانون ۰۳۵-B/ت-۵: آکاردئون در موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
@@ -213,6 +219,8 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
     for (const t of selectedTrades) params.append("tradeType", t);
     // PN-011 ثالثاً — شعبه چندانتخابی (چیپ): چند مقدار هم‌زمان
     for (const b of selectedBranches) params.append("branch", b);
+    // PN-039 (گام ۶) — نوع ملک چندانتخابی (چیپ)
+    for (const t of selectedPropertyTypes) params.append("propertyType", t);
     try {
       const res = await api<ListingsResponse>(`/api/crm/arm-catalog/listings?${params.toString()}`);
       setData(res);
@@ -223,7 +231,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
     } finally {
       setLoading(false);
     }
-  }, [applied, selectedStates, selectedTrades, selectedBranches]);
+  }, [applied, selectedStates, selectedTrades, selectedBranches, selectedPropertyTypes]);
 
   useEffect(() => {
     setLoading(true);
@@ -290,6 +298,24 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
   const toggleBranch = useCallback((b: string) => {
     setSelectedBranches((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
   }, []);
+
+  /** PN-039 (گام ۶) — تاگل یک نوع ملک در فیلتر چندانتخابی (اعمال خودکار) */
+  const togglePropertyType = useCallback((t: string) => {
+    setSelectedPropertyTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }, []);
+
+  /** PN-039 (گام ۴) — به‌روزرسانی یادداشت ردیف در state پس از ذخیرهٔ موفق */
+  const updateRowNote = useCallback((id: string, note: string | null) => {
+    setData((prev) => (prev ? { ...prev, rows: prev.rows.map((r) => (r.id === id ? { ...r, ownerNote: note } : r)) } : prev));
+    toast({ title: "یادداشت ذخیره شد", description: "یادداشت مالک روی آگهی ثبت شد." });
+  }, [toast]);
+
+  /** PN-039 (گام ۶) — وجه نوع ملک برای چیپ‌ها: مقادیر یکتای کاتالوگ بارخورده + انتخاب‌های جاری */
+  const propertyTypeFacet = useMemo(() => {
+    const set = new Set<string>(selectedPropertyTypes);
+    for (const r of data?.rows ?? []) if (r.propertyTypeName) set.add(r.propertyTypeName);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "fa"));
+  }, [data, selectedPropertyTypes]);
 
   const doSync = useCallback(async () => {
     setSyncing(true);
@@ -579,6 +605,25 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                 </div>
               </FilterGroup>
 
+              {/* PN-039 (گام ۶) — نوع ملک — چندانتخابی چیپی (مقادیر از کاتالوگ زنده) */}
+              <FilterGroup
+                label="نوع ملک (چندانتخابی)"
+                hint={selectedPropertyTypes.length > 0 ? `${faNumber(selectedPropertyTypes.length)} نوع انتخاب شده` : undefined}
+              >
+                <div className="flex flex-wrap gap-1.5" id="arm-listing-property-types-filter">
+                  {propertyTypeFacet.map((t) => (
+                    <FilterChip
+                      key={t}
+                      label={t}
+                      active={selectedPropertyTypes.includes(t)}
+                      onToggle={() => togglePropertyType(t)}
+                      softClass={valueSoftClass(t)}
+                      solidClass={valueSolidClass(t)}
+                    />
+                  ))}
+                </div>
+              </FilterGroup>
+
               {/* شعبه — PN-011 ثالثاً: فیلتر چندانتخابی چیپی (همانند دسته‌بندی — دستور مالک) */}
               <FilterGroup
                 label="شعبهٔ کارشناس (چندانتخابی)"
@@ -630,7 +675,8 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                 }}
               >
               <FilterGroup label="شناسه و اشخاص">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
+                {/* PN-028/خامساً-ف (دستور مالک) — فیلدهای متنی دوتایی: هر ردیف دو فیلد روبروهم */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                 <div className="space-y-1.5">
                   <Label htmlFor="arm-listing-code">کد آگهی</Label>
                   <Input
@@ -787,9 +833,12 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
       ) : (
         <Card>
           {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین (الگوی فهرست معاملات) */}
-          <CardHeader className="py-4 flex flex-col items-center gap-1">
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-              <CardTitle className="text-base text-center">فهرست آگهی‌ها</CardTitle>
+          {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
+              ردیف ۱: عنوان «فهرست آگهی» وسط‌چین
+              ردیف ۲: «اکسل کل فهرست» (راست) + «بارگذاری اکسل» (چپ) */}
+          <CardHeader className="py-4 flex flex-col items-center gap-2">
+            <CardTitle className="text-base text-center">فهرست آگهی</CardTitle>
+            <div className="w-full flex items-center justify-between gap-3 flex-wrap">
               {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
               <Button
                 variant="outline"
@@ -830,6 +879,8 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-24">شعبه</TableHead>
                     <TableHead className="min-w-24">نوع ملک</TableHead>
                     <TableHead className="min-w-24">دسته‌بندی</TableHead>
+                    {/* PN-039 (گام ۵) — ستون «وضعیت آگهی» بعد از دسته‌بندی (دستور مالک) */}
+                    <TableHead className="min-w-28">وضعیت آگهی</TableHead>
                     <TableHead className="min-w-36">مالک</TableHead>
                     {/* P6546/گام پنجم-ت-۴ — ستون قیمت با نام «قیمت» و قالب ۹،۰۰۰،۰۰۰،۰۰۰ */}
                     <TableHead className="min-w-32">قیمت</TableHead>
@@ -846,6 +897,10 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-16">لینک</TableHead>
                     {/* PN-020/گام اول-الف بند ۴ + جلسهٔ ۰۳۳ — تاریخ وضعیت، آخرین ستون فهرست */}
                     <TableHead className="min-w-24">تاریخ وضعیت</TableHead>
+                    {/* PN-039 (گام ۳) — تاریخ دقیق ایجاد آگهی در سامانه (createdAt) — بلافاصله پس از تاریخ وضعیت */}
+                    <TableHead className="min-w-36">تاریخ ثبت</TableHead>
+                    {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک) */}
+                    <TableHead className="min-w-32">یادداشت</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -901,6 +956,23 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                             </Badge>
                           ) : (
                             <span className="text-muted-foreground text-[11px]">در نوبت تکمیل</span>
+                          )}
+                        </TableCell>
+                        {/* ۶-ب — PN-039 (گام ۵) — وضعیت آگهی: بعد از دسته‌بندی (دستور مالک) —
+                            نگاشت قانون ده‌حالتهٔ P6530؛ خارج از ده‌گانه = متن خام با Badge خنثی */}
+                        <TableCell className="whitespace-nowrap" data-listing-status-cell={r.id}>
+                          {r.status ? (
+                            <Badge
+                              variant="secondary"
+                              className={`gap-1 text-[10px] border-0 ${(() => {
+                                const k = classifyListingStatus(r.status);
+                                return k ? listingStateBadgeClass(k) : "";
+                              })()}`}
+                            >
+                              <History className="w-2.5 h-2.5" aria-hidden /> {listingStatusLabel(r.status)}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
                         {/* ۷ — مالک: نام + موبایل زیر نام (نکته ۱ + نکته بسیار مهم ۴ — عین الگوی فروشنده/خریدار M3) */}
@@ -1048,6 +1120,20 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                         {/* ۱۳ — تاریخ وضعیت (آخرین ستون — دستور جلسهٔ ۰۳۳) */}
                         <TableCell className="text-muted-foreground whitespace-nowrap text-[10px]">
                           {r.statusDate ? faDateTime(r.statusDate) : "—"}
+                        </TableCell>
+                        {/* ۱۴ — PN-039 (گام ۳) — تاریخ ثبت: دقیق‌ترین لحظهٔ ایجاد آگهی در سامانهٔ ملکا (createdAt) */}
+                        <TableCell className="text-muted-foreground whitespace-nowrap text-[10px]" data-registered-at-cell={r.id}>
+                          {r.createdAt ? faDateTime(r.createdAt) : "—"}
+                        </TableCell>
+                        {/* ۱۵ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline */}
+                        <TableCell className="whitespace-normal" data-owner-note-column-cell={r.id}>
+                          <OwnerNoteCell
+                            id={r.id}
+                            entity="property"
+                            value={r.ownerNote}
+                            onSaved={(note) => updateRowNote(r.id, note)}
+                            onError={(msg) => toast({ title: "خطا در ذخیرهٔ یادداشت", description: msg, variant: "destructive" })}
+                          />
                         </TableCell>
 </TableRow>
                     );

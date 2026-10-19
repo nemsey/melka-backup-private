@@ -1,0 +1,176 @@
+{
+  "guard": "audit-resurrect-ultimate (PN-042 · جلسهٔ ۰۷۰ · بند ۳.۳)",
+  "checks": [
+    {
+      "check": "۱-فایل-در-ریشه-موجود-اجرا",
+      "ok": true,
+      "detail": "resurrect-ultimate.sh"
+    },
+    {
+      "check": "۲-fetch از گیت‌هاب",
+      "ok": true,
+      "detail": "marker: 'git fetch' یافت نشد"
+    },
+    {
+      "check": "۲-reset سخت به main",
+      "ok": true,
+      "detail": "marker: 'git reset --hard' یافت نشد"
+    },
+    {
+      "check": "۲-لایهٔ قلعهٔ داده",
+      "ok": true,
+      "detail": "marker: 'upload/.data/custom.db' یافت نشد"
+    },
+    {
+      "check": "۲-لایهٔ بستهٔ بقا",
+      "ok": true,
+      "detail": "marker: 'upload/.survival' یافت نشد"
+    },
+    {
+      "check": "۲-نصب وابستگی‌ها",
+      "ok": true,
+      "detail": "marker: 'bun install' یافت نشد"
+    },
+    {
+      "check": "۲-بیلد production",
+      "ok": true,
+      "detail": "marker: 'bun run build' یافت نشد"
+    },
+    {
+      "check": "۲-راه‌اندازی دیمن",
+      "ok": true,
+      "detail": "marker: 'scripts/start-prod.sh' یافت نشد"
+    },
+    {
+      "check": "۲-پیام موفقیت نهایی",
+      "ok": true,
+      "detail": "marker: 'RESURRECTION COMPLETE' یافت نشد"
+    },
+    {
+      "check": "۲-سروِ نجات‌بخش در شکست",
+      "ok": true,
+      "detail": "marker: 'قانون ۱۱' یافت نشد"
+    },
+    {
+      "check": "۳-اولویت زندهٔ محلی",
+      "ok": true,
+      "detail": "marker: 'db/custom.db' یافت نشد"
+    },
+    {
+      "check": "۳-لایهٔ چرخشی",
+      "ok": true,
+      "detail": "marker: 'upload/.data/rolling' یافت نشد"
+    },
+    {
+      "check": "۳-پروب سرآیند sqlite",
+      "ok": true,
+      "detail": "marker: 'SQLite format 3' یافت نشد"
+    },
+    {
+      "check": "۳-مهر نسخهٔ معیوب (حذف نمی‌شود)",
+      "ok": true,
+      "detail": "marker: '.broken-' یافت نشد"
+    },
+    {
+      "check": "۳-مهر نسخهٔ عقب‌مانده",
+      "ok": true,
+      "detail": "marker: '.stale-' یافت نشد"
+    },
+    {
+      "check": "۳-دادهٔ مقدس لمس نمی‌شود",
+      "ok": true,
+      "detail": "marker: 'صفر مداخله' یافت نشد"
+    },
+    {
+      "check": "۴-remote-origin-گیت‌هاب",
+      "ok": true,
+      "detail": "https://nemysey:ghp_ypH8YVgTMtct8g5282EFsUhIz8i7HS"
+    },
+    {
+      "check": "۵-حضور-در-گیت‌هاب",
+      "ok": false,
+      "detail": "HTTP/raw پاسخ نداد (0 بایت)"
+    },
+    {
+      "check": "۶-صفر-ارجاع-فعال-منسوخ",
+      "ok": true,
+      "detail": "بقایای فعال: "
+    },
+    {
+      "check": "۷-reset-guard-بدون-واگذاری-منسوخ",
+      "ok": true,
+      "detail": "ارجاع به سپر منسوخ در reset-guard باقی است"
+    },
+    {
+      "check": "۸-dev-entry-راهنمای-رستاخیز",
+      "ok": true,
+      "detail": "راهنمای curl رستاخیز در بوت چاپ نمی‌شود"
+    },
+    {
+      "check": "۸-dev-entry-بدون-قلاب-منسوخ",
+      "ok": true,
+      "detail": "قلاب بازیابی خودکار منسوخ در dev-entry باقی است"
+    },
+    {
+      "check": "۹-داوری اجداد (جهت push)",
+      "ok": true,
+      "detail": "marker: 'merge-base --is-ancestor' یافت نشد"
+    },
+    {
+      "check": "۹-ترمیم خودکار بازگشت",
+      "ok": true,
+      "detail": "marker: 'git push --force' یافت نشد"
+    },
+    {
+      "check": "۹-مجوز نوشتن",
+      "ok": true,
+      "detail": "marker: 'contents: write' یافت نشد"
+    },
+    {
+      "check": "۹-قلاب روی push به main",
+      "ok": true,
+      "detail": "marker: 'push:' یافت نشد"
+    },
+    {
+      "check": "۱۰-اکشن-نام-پایدار",
+      "ok": true,
+      "detail": "نام اکشن تغییر کرده است"
+    },
+    {
+      "check": "۱۰-اکشن-داوری-drift",
+      "ok": true,
+      "detail": "اکشن کلید drift را داور نمی‌کند"
+    },
+    {
+      "check": "۱۰-اکشن-issue-فوری",
+      "ok": true,
+      "detail": "ایجاد Issue در مغایرت نیست"
+    },
+    {
+      "check": "۱۰-اکشن-دستور-رستاخیز",
+      "ok": true,
+      "detail": "دستور بازیابی اکشن باید curl رستاخیز باشد"
+    },
+    {
+      "check": "۱۱-کلید-drift-در-روت",
+      "ok": true,
+      "detail": "کلید drift در پاسخ نیست"
+    },
+    {
+      "check": "۱۱-مغایرت-head-build",
+      "ok": true,
+      "detail": "قرارداد match/buildSha غایب"
+    },
+    {
+      "check": "۱۱-قرارداد-پایدار",
+      "ok": true,
+      "detail": "کلیدهای قبلی تغییر کرده‌اند!"
+    }
+  ],
+  "violations": [
+    "۵-حضور-در-گیت‌هاب: HTTP/raw پاسخ نداد (0 بایت)"
+  ],
+  "pass": 32,
+  "fail": 1,
+  "total": 33
+}

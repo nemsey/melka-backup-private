@@ -41,4 +41,6 @@ export interface RequestRepository {
   listPendingArmEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]>;
   /** P6.5-11 (بند پ-۵) — تماس درخواست‌دهنده بر اساس کددرخواست‌ها (دسته‌ای؛ source='arm') */
   findArmRequesterContactsByCodes(requestCodes: string[]): Promise<Array<{ requestCode: string; customerName: string | null; customerMobile: string | null }>>;
+  /** PN-039 (گام ۴) — ثبت/پاک‌سازی یادداشت مالک — تنها مسیر نوشتن این ستون (قانون دادهٔ مقدس) */
+  updateOwnerNote(id: string, note: string | null): Promise<{ id: string; ownerNote: string | null }>;
 }
