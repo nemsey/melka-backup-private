@@ -3814,3 +3814,24 @@ Stage Summary:
 - هر سه باگ ورود + ۵ دلیل رله + قلعهٔ داده WAL: کد و گاردهای مربوطه همه حاضر و سبز
 - دیوار دفاعی برای ریست بعدی کامل: recover-all.sh سالم (main سالم) · escrow ALT_URL · APK عمومی · ۴۷ گارد سبز
 - انتظار مالک: (۱) تست ورود با کد مستر (۲) اگر گوشی رله خاموش است: Termux یا APK (لینک /deliver/pn031d) (۳) کد نصب نسل L از تنظیمات برای Long-Polling ۱۰۰ث
+
+---
+Task ID: PN-042-C
+Agent: main (Super Z / GLM)
+Task: ملکا — دستور PN-042-C (شورا/مالک): توکن جدید در remote + پوش کامیت‌ها + راستی‌آزمایی v2 روی GitHub + فعال‌سازی Branch Protection + تست فورس‌پوش + تأیید نهایی — قید طلایی: فقط ۶ گام، صفر تغییر کد
+
+Work Log:
+- **کشف وضعیت سندباکس (پیش‌گام):** بازنشانی پلتفرم → درخت از چک‌پوینت 6bb3c8e (خط A · بستهٔ بقا chainIndex=26) بازسازی شده؛ ریموت origin اصلاً وجود نداشت (auto-mirror/melka-backup/mirror با توکن مرده)؛ فایل resurrect-ultimate.sh و REJOIN.txt محلی غایب؛ GitHub main = e8d19627 (اسنپ‌شات بقای 2026-10-19T08:56Z · درخت 6743ab9a · ریشهٔ بی‌تبار) · protected=false · اپ زنده و سالم (ok=true · buildId=6bb3c8e-20261019-1951 · دیتابیس 27,868 ردیف)
+- **گام ۱ — توکن:** چون origin نبود، ساخته شد + توکن تازه در هر ۴ ریموت نوشته شد → راستی‌آزمایی API: visibility=public ✓ · permissions.admin=true ✓
+- **گام ۲ — پوش:** fetch با توکن جدید موفق → push رد شد (! [rejected] non-fast-forward) · LOCAL=6bb3c8e ≠ REMOTE=e8d19627 · merge-base هیچ (دو خط واگرا) → «❌ PUSH FAILED» طبق گیتِ خود دستور · wip-safety محلی نبود → شاخهٔ آرشیوی wip-safety در 6bb3c8e ساخته و پوش شد (۱۵۵ کامیت خط قدیم روی GitHub — صفر-اتلاف)
+- **گام ۳ — راستی‌آزمایی v2:** raw با کش‌شکن → مارکرها: RESURRECTION v2=❌ · PropertyRecord=✅ · python3=✅ · symlink=❌ → روی آینه v1 است (سرآمد: «مخزن خصوصی» = عصر PN-042-A) · فایل محلی MISSING · اثبات تازگی: SHA فایل raw == SHA بلاب origin/main (ca644b5a…) — حقیقت آینه است نه کش کهنه
+- **گام ۴ — Branch Protection:** PUT موفق → verify دقیقاً true/false/false + linear_history=true → فعال ✓ (bp-put.json + bp-after.json)
+- **گام ۵ — تست فورس‌پوش:** A (HEAD:main) → رد GH006 «Cannot force-push» ✓ · هم‌ترازی درخت: reset --hard origin/main → HEAD=e8d19627 (db/custom.db محلی 402MB/27,868 untracked — دست‌نخورده · اسرار در آینه صفر · ۱۱ حذف diff همگی جزئی) · B (HEAD~5:main) → رد GH013 «Repository rule violations — Cannot force-push» ✓ (grep دستور GH006/protected را نمی‌گرفت — رد شدن از لاگ اثبات شد)
+- **گام ۶ — تأیید نهایی:** health ok=true ✓ · version gitSha=6bb3c8e (بیلدِ پیش از هم‌ترازی — اپ هنوز روی بیلد خط A می‌زند) · PropertyRecord=27,868 ✓ · GitHub نهایی: main.sha=e8d19627 · protected=true ✓
+- **تحویل:** ۱۰ شاهد در download/pn042c/ (bp-put · bp-after · force-test-a/b · push-rejected · repo-info · branch-main-before-bp · resurrect-from-github · PN-042C-EVIDENCE · SHA256SUMS)
+- **الگوی n۰۶۳:** کامیت فوریِ همین ورک‌لاگ + پوش fast-forward (BP اجازه می‌دهد) — پیش از چرخهٔ snapshot-reset بعدی
+
+Stage Summary:
+- پاسخ چهارگانه: (۱) پوش=❌ رد non-fast-forward — آینه جلوتر است؛ ۶ کامیت PN-042-B به‌صورت آبجکت با بازنشانی گم شدند اما کل محتوایشان در اسنپ‌شات e8d19627 حاضر است (۲) v2 روی GitHub=❌ فقط v1 (۲/۴ مارکر) (۳) Branch Protection=✅ true/false/false (۴) فورس‌پوش=✅ در هر دو تست رد (GH006/GH013)
+- کشف‌ها: توکن جدید فاقد اسکوپ workflow (پوش‌های لمس‌کنندهٔ workflows رد می‌شوند) · BP چرخهٔ اسنپ‌شات force-push به main را می‌بندد (سازوکار باید fast-forward یا به survival/code برود) · بیلد زنده خط A فاقد ۵۹۴ فایل PN-041-R → بیلد+ری‌استارت لازم · بسته‌های بقا PN-045 (repo.bundle تاریخ کامل) و PN-046 روی دیسک در upload/.survival — منبع بازیابی تبار واقعی و v2
+- انتظار شورا: PN-042-D — (۱) بازیابی تبار واقعی از repo.bundle کیت PN-045/046 + بازسازی v2 با ۴ اصلاح (۲) بیلد+ری‌استارت اپ از درخت e8d19627 (۳) تصمیم اسنپ‌شات×BP (۴) توکن با اسکوپ workflow
