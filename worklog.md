@@ -3835,3 +3835,21 @@ Stage Summary:
 - پاسخ چهارگانه: (۱) پوش=❌ رد non-fast-forward — آینه جلوتر است؛ ۶ کامیت PN-042-B به‌صورت آبجکت با بازنشانی گم شدند اما کل محتوایشان در اسنپ‌شات e8d19627 حاضر است (۲) v2 روی GitHub=❌ فقط v1 (۲/۴ مارکر) (۳) Branch Protection=✅ true/false/false (۴) فورس‌پوش=✅ در هر دو تست رد (GH006/GH013)
 - کشف‌ها: توکن جدید فاقد اسکوپ workflow (پوش‌های لمس‌کنندهٔ workflows رد می‌شوند) · BP چرخهٔ اسنپ‌شات force-push به main را می‌بندد (سازوکار باید fast-forward یا به survival/code برود) · بیلد زنده خط A فاقد ۵۹۴ فایل PN-041-R → بیلد+ری‌استارت لازم · بسته‌های بقا PN-045 (repo.bundle تاریخ کامل) و PN-046 روی دیسک در upload/.survival — منبع بازیابی تبار واقعی و v2
 - انتظار شورا: PN-042-D — (۱) بازیابی تبار واقعی از repo.bundle کیت PN-045/046 + بازسازی v2 با ۴ اصلاح (۲) بیلد+ری‌استارت اپ از درخت e8d19627 (۳) تصمیم اسنپ‌شات×BP (۴) توکن با اسکوپ workflow
+
+---
+Task ID: PN-042-D
+Agent: main (Super Z / GLM)
+Task: ملکا — دستور PN-042-D (شورا/مالک): بکاپ امنیتی + بیلد از درخت + ری‌استارت + پوش v2 (Worker restart + FATAL rowcount) + تأیید GitHub/BP — قید طلایی: فقط ۶ گام، صفر تحلیل اضافی، صفر تغییر کد (خارج پچ مشخص گام ۴)
+
+Work Log:
+- گام ۱ — بکاپ: .next → .next.backup-1792443260 · بکاپ اتمیک DB (vacuum-copy PN-041): 402,550,784 بایت · md5=95066f74… · integrity=ok · شمارش‌ها: PropertyRecord=27,868 · RequestRecord=25,580 · TransactionRecord=798 · ExpertRecord=296 · GraphNode=149,696
+- گام ۲ — بیلد: HEAD=9e8d67a (یک کامیت مستنداتی C بالاتر از e8d19627 مورد انتظار — diff صفر کد، فقط worklog+شواهد pn042c) · bun install + prisma generate + build سبز · BUILD_ID=9e8d67a-20261019-2054 · postbuild/fingerprint چیده شد
+- گام ۳ — ری‌استارت: pkill سرور+نگهبان → start-prod (دیمن نو 5445 + سرور نو 5487) → Health(ok)=true · Version=9e8d67a · PropertyRecord=27,868 → PASS · نکتهٔ شفاف: فیلد status در /api/health وجود ندارد (قرارداد واقعی endpoint: ok) — گیت سلامت با ok=true انجام شد، هر دو مقدار در verify-1.log ثبت است · Worker تک‌نمونی ماند (count=1 — سرور جدید Worker موجود را به خدمت گرفت، بدون Worker دوگانه)
+- گام ۴ — پچ v2: هر دو لنگر دقیق پیدا و اعمال شد (bash scripts/start-prod.sh سطر ۱۵۲ · echo "✅ RESURRECTION COMPLETE سطر ۱۷۴) · bash -n OK · مارکرهای محلی Worker restarted=1 · FATAL: PropertyRecord=1 · کامیت 5a8feac (۱ فایل، +۱۳ خط) · پوش خطی موفق 9e8d67a..5a8feac (BP اجازه داد — فایل workflow لمس نشد) · LOCAL==REMOTE==5a8feac
+- گام ۵ — تأیید GitHub: مارکر Worker restart ✓ · مارکر Rowcount FATAL ✓ · SHA256 ریموت == محلی = 13d0a242… (تازگی، نه کش) · BP: allow_force_pushes=false · enforce_admins=true → همچنان فعال
+- گام ۶ — بلوک گزارش نهایی دستور مو‌به‌مو اجرا شد (final-report.log)
+
+Stage Summary:
+- پاسخ چهارگانه: (۱) بیلد=✅ سبز (9e8d67a-20261019-2054) (۲) اپ=✅ سالم — ok=true · PropertyRecord=27,868 روی بیلد 9e8d67a (۳) v2 روی GitHub=✅ YES (کامیت 5a8feac · هر دو مارکر · SHA یکسان) (۴) BP=✅ فعال (false/true)
+- انحراف کوچک آشکار: درخت روی 9e8d67a بود نه e8d19627 (کامیت مستندات C — صفر تغییر کد)؛ health-gate با قرارداد واقعی ok=true ارزیابی شد چون فیلد status در endpoint نیست (دستور .status می‌نوشت که null می‌داد و rollback کاذب می‌کرد)
+- شواهد: download/pn042d/ (vacuum.log · head-before-build.log · build.log · verify-1.log · commit.log · push.log · bp-final.log · resurrect-from-github-v2.sh · final-report.log · SHA256SUMS.txt)
