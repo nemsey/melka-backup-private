@@ -1,6 +1,6 @@
 {
   "workOrder": "PN-022-A/مرحلهٔ۵ — گارد tile-contract (گام ۵-ش)",
-  "ranAt": "2026-10-19T05:48:35.252115+00:00",
+  "ranAt": "2026-10-19T22:29:27.064205+00:00",
   "checks": [
     {
       "check": "قرارداد TileDefinition در سورس",
@@ -8,9 +8,9 @@
     },
     {
       "check": "کاشی‌های موجود",
-      "tiles": 11,
-      "ids": 11,
-      "uniqueIds": 11,
+      "tiles": 13,
+      "ids": 13,
+      "uniqueIds": 13,
       "idFolderMismatches": [
         {
           "folder": "arm-listing",
@@ -33,7 +33,7 @@
     },
     {
       "check": "ثبت رجیستری",
-      "registered": 11,
+      "registered": 13,
       "skeletons": 0
     }
   ],
@@ -48,6 +48,8 @@
     "request",
     "settings",
     "smart-matching",
+    "tenant-dashboard-melketun",
+    "tenant-dashboard-tabriz",
     "transactions-contracts"
   ],
   "violations": [],
