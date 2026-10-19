@@ -16,7 +16,8 @@
  */
 
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, PenLine } from "lucide-react";
+import { BookOpen, Landmark, PenLine } from "lucide-react";
+import Link from "next/link";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 // P6546/گام صفر — پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز»
 import { MelkTabrizConnectionSection } from "./MelkTabrizConnectionSection";
@@ -73,6 +74,23 @@ export function SettingsPage({ onBack }: TilePageProps) {
 
       {/* ۹ — PN-017 (دستور مالک ۱۴۰۵/۰۷/۱۹): «مدیریت دسترسی کارشناسان ملکا» (جایگاه پیشین مدیریت کاربران — جابه‌جایی کامل) */}
       <PersonnelAccessSection />
+
+      {/* ۱۰ — PN-043/فاز ۳ (شورا-ن۰۸۷): تنظیمات یکپارچهٔ ملکتون — اتصال به CRM + عمومی + رله */}
+      <Card className="border-indigo-200 bg-indigo-50/50">
+        <CardContent className="p-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Landmark className="w-5 h-5 text-indigo-700 shrink-0" aria-hidden />
+            <span className="text-sm font-bold">تنظیمات ملکتون (اتصال CRM + سایت عمومی + رله Termux)</span>
+          </div>
+          <Link
+            href="/settings/melketun"
+            className="text-xs font-bold text-indigo-700 underline underline-offset-4"
+            data-testid="melketun-settings-link"
+          >
+            باز کردن ←
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* اعتبار */}
       <Card>
