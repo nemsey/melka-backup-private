@@ -47,6 +47,8 @@ import {
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup, OwnerNoteCell } from "@/components/app/shared";
+// PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: پنجره‌ای به دادهٔ خام (modal + فایل کامل هر کد)
+import { InfoButton } from "@/components/info/InfoButton";
 // PN-011 ثالثاً — شعبه چندانتخابی چیپی؛ Select تک‌انتخابی حذف شد
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
@@ -916,6 +918,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-24">معاوضه</TableHead>
                     {/* PN-020/گام اول-ب (بند ۴) — تاریخ ثبت، آخرین ستون فهرست است */}
                     <TableHead className="min-w-28">تاریخ ثبت</TableHead>
+                    {/* PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: نمایش فایل کامل دادهٔ هر کد
+                        (فیلدهای استاندارد + دادهٔ خام + متادیتا) — ماقبل آخر، چسبنده (RTL) */}
+                    <TableHead className="w-24 pn045-sticky-info">اطلاعات</TableHead>
                     {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک)
                         PN-045/فاز ۲ — ستون چسبندهٔ چپ (RTL: آخرین ستون = چپ‌ترین) */}
                     <TableHead className="min-w-32 w-44 pn045-sticky-note">یادداشت</TableHead>
@@ -1133,7 +1138,12 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             {r.createdAt ? faDateTime(r.createdAt) : "—"}
                           </span>
                         </TableCell>
-                        {/* ۲۰ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline
+                        {/* ۲۰ — PN-045/فاز ۳ — ستون «اطلاعات»: دکمهٔ 📋 نمایش → فایل کامل در modal
+                            چسبندهٔ ماقبل آخر (RTL: بلافاصله راستِ یادداشت) · lazy fetch — فقط هنگام کلیک */}
+                        <TableCell className="pn045-sticky-info">
+                          <InfoButton tenant={tenantId ?? "tabriz"} type="request" code={r.requestCode} />
+                        </TableCell>
+                        {/* ۲۱ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline
                             PN-045/فاز ۲ — سلول چسبندهٔ چپ (عرض ثابت w-44 = 176px — قانون ۱۱) */}
                         <TableCell className="whitespace-normal pn045-sticky-note" data-owner-note-column-cell={r.id}>
                           <OwnerNoteCell
