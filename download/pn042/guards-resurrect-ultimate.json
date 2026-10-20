@@ -84,17 +84,12 @@
     {
       "check": "۴-remote-origin-گیت‌هاب",
       "ok": true,
-      "detail": "https://nemsey:ghp_r3clDaUGI1gfHf6dAmkGwL9ny2NijG2"
+      "detail": "https://github.com/nemsey/melka-backup-private.git"
     },
     {
       "check": "۵-حضور-در-گیت‌هاب-احرازشده",
-      "ok": true,
-      "detail": "raw با توکن پاسخ نداد (token-len=40 · body=9769 بایت)"
-    },
-    {
-      "check": "۵-هم‌شانی-sha256-محلی-گیت",
-      "ok": true,
-      "detail": "local=13d0a242b462a9af… remote=13d0a242b462a9af…"
+      "ok": false,
+      "detail": "raw با توکن پاسخ نداد (token-len=0 · body=0 بایت)"
     },
     {
       "check": "۶-صفر-ارجاع-فعال-منسوخ",
@@ -172,8 +167,10 @@
       "detail": "کلیدهای قبلی تغییر کرده‌اند!"
     }
   ],
-  "violations": [],
-  "pass": 34,
-  "fail": 0,
-  "total": 34
+  "violations": [
+    "۵-حضور-در-گیت‌هاب-احرازشده: raw با توکن پاسخ نداد (token-len=0 · body=0 بایت)"
+  ],
+  "pass": 32,
+  "fail": 1,
+  "total": 33
 }

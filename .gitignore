@@ -112,3 +112,5 @@ download/pn043/*.db
 server.log.*.gz
 .next.backup-*/
 download/pn044/*.db
+/download/*/pre-*.db
+/download/*/*.db
