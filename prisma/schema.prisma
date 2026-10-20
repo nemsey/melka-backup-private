@@ -1037,6 +1037,8 @@ model TransactionEnrichment {
 ///   عمق contactInfo: contactInfo.address + telephoneNumber + postalCode + voip + city/state — نمونهٔ ۱۲/۱۲ پر
 /// ستون‌های الزامی مالک + ستون‌های کشف‌شده، همگی در این یک مدل.
 model ExpertProfile {
+  /// PN-044 multi-tenant — آماده‌سازی چند-مستأجری (الگوی P6.5-02 §۱۴: nullable + default، بدون منطق فعال)
+  tenantId String? @default("melk-tabriz")
   /// شناسهٔ مشترک با ExpertRecord.id و سامانه PM/ARM (_id)
   id               String   @id
   /// کدپرسنلی (مثال: 410031320) — عین فیلد code رجیستری PM
@@ -1092,6 +1094,7 @@ model ExpertProfile {
   @@index([personnelCode])
   @@index([branchTitle])
   @@index([fullName])
+  @@index([tenantId])
 }
 
 /// PN-008 BLOCK 7 — مدیریت دسترسی کدپرسنلی‌ها به داشبورد (تنظیمات عمومی مالک)

@@ -76,7 +76,7 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     expect(ids).toContain(WORKER_JOB_IDS.sacredBackup);
     // PN-041/۲ (شورا-ن۰۶۷) — بکاپ چرخشی ۵دقیقه‌ای قلعهٔ داده
     expect(ids).toContain(WORKER_JOB_IDS.rollingBackup);
-    expect(ids.length).toBe(21); // PN-041-R: ۲۰ کار قبلی + db-health-probe (شورا-ن۰۶۸)
+    expect(ids.length).toBe(22); // PN-041-R: ۲۰ کار قبلی + db-health-probe (شورا-ن۰۶۸) + melketun-sync (شورا-ن۰۸۸/PN-044)
   });
 
   test("۴-۵ فاصله‌ها عین دیمن‌های قبلی (صفر قطع خدمت در رفتار زمانی)", () => {
@@ -123,7 +123,7 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
       // PN-029: ip-log کلید خاموشی ندارد — گارد IP کانتینر همیشه فعال است (شورا-ن۰۳۳ مرحلهٔ ۷)
       // PN-031-B: head-guard کلید خاموشی خودش را دارد (MELK_HEAD_GUARD — جلسهٔ ۰۳۹)
       // PN-041-R: db-health-probe کلید خاموشی خودش را دارد (MELK_DB_PROBE — شورا-ن۰۶۸)
-      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.sacredBackup, WORKER_JOB_IDS.rollingBackup, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diagnosisCycle, WORKER_JOB_IDS.diskGuard, WORKER_JOB_IDS.memoryConsolidation, WORKER_JOB_IDS.ipLog, WORKER_JOB_IDS.headGuard, WORKER_JOB_IDS.relayHealthCheck, WORKER_JOB_IDS.dbHealthProbe]);
+      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.sacredBackup, WORKER_JOB_IDS.rollingBackup, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diagnosisCycle, WORKER_JOB_IDS.diskGuard, WORKER_JOB_IDS.memoryConsolidation, WORKER_JOB_IDS.ipLog, WORKER_JOB_IDS.headGuard, WORKER_JOB_IDS.relayHealthCheck, WORKER_JOB_IDS.melketunSync, WORKER_JOB_IDS.dbHealthProbe]);
     } finally {
       for (const [k, v] of saved) {
         if (v === undefined) delete process.env[k];

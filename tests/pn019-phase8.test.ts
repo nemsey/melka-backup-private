@@ -316,7 +316,7 @@ describe("PN-019/فاز۸ · Shadow Mode + Worker", () => {
 
   test("Worker پس از PN-031-B: ۲۰ کار (۱۶ قبلی + head-guard + sacred/relay + rolling PN-041)", async () => {
     const { WORKER_JOB_IDS } = await import("@/core/runtime/jobs");
-    expect(Object.keys(WORKER_JOB_IDS)).toHaveLength(21); // PN-041-R: +db-health-probe (شورا-ن۰۶۸)
+    expect(Object.keys(WORKER_JOB_IDS)).toHaveLength(22); // PN-041-R: +db-health-probe (شورا-ن۰۶۸) + melketun-sync (PN-044/شورا-ن۰۸۸)
     expect(WORKER_JOB_IDS.memoryConsolidation).toBe("memory-consolidation");
     expect(WORKER_JOB_IDS.ipLog).toBe("ip-log");
     expect(WORKER_JOB_IDS.headGuard).toBe("head-guard");
