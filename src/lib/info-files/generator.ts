@@ -1,9 +1,14 @@
 /**
- * Info File Generator — PN-045 · فاز ۳ (شورا-ن۰۸۹)
+ * Info File Generator — PN-045 · فاز ۳ (شورا-ن۰۸۹) + PN-047/گام دوم-۱ (زیباسازی)
  * ---------------------------------------------------------------------------
  * «ستون اطلاعات = پنجره‌ای به دادهٔ خام» (بخش ۱ گزارش شورا):
  * هر کد (آگهی/درخواست/معامله/کارشناس) یک فایل متنی کامل دارد که هر سه لایه را
  * نشان می‌دهد: (۱) فیلدهای نرمال‌شده (۲) دادهٔ خام منبع (۳) متادیتای استخراج.
+ *
+ * PN-047/گام دوم-۱ (دستور مالک: «فایل ایجاد شده زیباسازی شود همانند فایل قرارداد»):
+ *   · generateInfoFile — فایل متنی شاهد روی دیسک (عین PN-045 — بدون تغییر)
+ *   · generateInfoDoc — سند ساختاری برای UI زیبا: سربرگ هویت (M7/M1 …)،
+ *     بخش‌های فیلد/خام/متادیتا — همان سه لایه، قالب سند رسمی.
  *
  * تولید: lazy روی هر GET (خواندن یک رکورد + نوشتن فایل متنی) — بدون LLM،
  * بدون هزینه، بدون auto_execute. فایل هر بار تازه regenerate می‌شود تا
@@ -20,7 +25,7 @@
 import fs from "fs";
 import path from "path";
 import { db } from "@/lib/db";
-import { TENANT_DB_VALUES, type TenantKey } from "@/lib/tenants";
+import { TENANT_DB_VALUES, tileIdentityLabel, tileIdentityCode, type TenantKey, type TenantTileKind } from "@/lib/tenants";
 
 export type InfoType = "listing" | "request" | "transaction" | "expert";
 export type InfoTenant = TenantKey; // 'tabriz' | 'melketun'
@@ -288,4 +293,108 @@ export function isInfoType(v: string): v is InfoType {
 
 export function isInfoTenant(v: string): v is InfoTenant {
   return v === "tabriz" || v === "melketun";
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * PN-047/گام دوم-۱ — سند ساختاری برای UI زیبا (همانند فایل قرارداد M3)
+ * ---------------------------------------------------------------------------
+ * هر سه لایهٔ فایل متنی، این‌بار در قالب JSON ساختاری: سربرگ هویت (شمارهٔ
+ * کاشی از TENANT_TILE_IDENTITY — منبع یگانه) + فیلدها + خام + متادیتا +
+ * متن کامل فایل (برای نمایش «فایل متنی» و دانلود).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+export interface InfoDocField {
+  label: string;
+  value: string;
+}
+
+export interface InfoDoc {
+  ok: true;
+  found: boolean;
+  tenant: InfoTenant;
+  type: InfoType;
+  code: string;
+  /** هویت کاشی — «M7 · آگهی ملکتون» / «M1 · آگهی ملک تبریز» (منبع یگانه: tenants.ts) */
+  tileIdentity: string;
+  tileCode: string;
+  tenantLabel: string;
+  generatedAt: string;
+  standard: InfoDocField[];
+  raw: string | null;
+  rawTruncated: boolean;
+  meta: InfoDocField[];
+  notFoundNote: string | null;
+  /** متن کامل فایل متنی شاهد (همان فایل روی دیسک) */
+  content: string;
+}
+
+/** type → کلید کاشی برای هویت (TENANT_TILE_IDENTITY) */
+const TYPE_TILE_KIND: Record<InfoType, TenantTileKind> = {
+  listing: "listings",
+  request: "requests",
+  transaction: "transactions",
+  expert: "experts",
+};
+
+/**
+ * تولید سند ساختاری — همان generateInfoFile + doc (بدون نوشتن مجدد فایل؛
+ * فایل متنی همیشه regenerate می‌شود — شاهد دیسک بدون تغییر PN-045).
+ */
+export async function generateInfoDoc(tenant: InfoTenant, type: InfoType, code: string): Promise<InfoDoc> {
+  // فایل متنی (شاهد دیسک + متن خام) — هر دو از یک منبع تولید می‌شوند
+  const file = await generateInfoFile(tenant, type, code);
+  const record = await findRecord(tenant, type, code);
+
+  const standard: InfoDocField[] = record
+    ? standardFields(type, record as Record<string, unknown>).map(([label, v]) => ({ label, value: val(v) }))
+    : [];
+  const rawOf0 = record ? rawOf(type, record as Record<string, unknown>) : null;
+  let rawPretty: string | null = null;
+  let rawTruncated = false;
+  if (rawOf0 !== null && rawOf0 !== undefined && rawOf0 !== "") {
+    try {
+      rawPretty =
+        typeof rawOf0 === "string"
+          ? prettyJson(rawOf0)
+          : JSON.stringify(rawOf0, null, 2);
+    } catch {
+      rawPretty = String(rawOf0);
+    }
+    if (rawPretty && rawPretty.length > RAW_SECTION_MAX) {
+      rawPretty = rawPretty.slice(0, RAW_SECTION_MAX);
+      rawTruncated = true;
+    }
+  }
+  const meta: InfoDocField[] = record
+    ? [
+        { label: "tenant", value: `${tenant} (DB: ${TENANT_DB_VALUES[tenant]})` },
+        { label: "type", value: type },
+        { label: "شناسهٔ رکورد", value: val((record as Record<string, unknown>).id) },
+        { label: "نسخهٔ منبع خام", value: val((record as Record<string, unknown>).rawSourceVersion) },
+        { label: "زمان استخراج", value: dateVal((record as Record<string, unknown>).extractedAt as string | Date | null) },
+        { label: "شناسهٔ دستهٔ استخراج", value: val((record as Record<string, unknown>).extractionBatchId) },
+        { label: "نسخهٔ نرمال‌سازی", value: val((record as Record<string, unknown>).normalizationVersion) },
+        { label: "آخرین sync-run", value: val((record as Record<string, unknown>).sourceRunId) },
+      ]
+    : [];
+
+  return {
+    ok: true,
+    found: Boolean(record),
+    tenant,
+    type,
+    code,
+    tileIdentity: tileIdentityLabel(tenant, TYPE_TILE_KIND[type]),
+    tileCode: tileIdentityCode(tenant, TYPE_TILE_KIND[type]),
+    tenantLabel: TENANT_LABELS[tenant],
+    generatedAt: new Date().toISOString(),
+    standard,
+    raw: rawPretty,
+    rawTruncated,
+    meta,
+    notFoundNote: record
+      ? null
+      : "رکوردی با این کد در این tenant پیدا نشد — ممکن است پس از آخرین sync حذف/تغییر کد شده باشد.",
+    content: file.content,
+  };
 }

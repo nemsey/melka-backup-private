@@ -747,7 +747,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                     {/* ۱۲ — اطلاعات (PN-046/گام اول-۲: ستون اطلاعات در تمامی فهرست‌ها — فایل متنی کامل هر کد)
                         ⚠ قانون ساختاری (دستور مالک/گام اول-۳): ستون «اطلاعات» همیشه آخرین ستون این فهرست است —
                         هر ستون جدیدی در آینده باید «قبل از» همین ستون افزوده شود. سنجاق چپ (RTL) — همیشه قابل‌رویت. */}
-                    <TableHead className="w-24 pn045-sticky-info-solo">اطلاعات</TableHead>
+                    <TableHead className="w-24">اطلاعات</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -957,7 +957,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                         </Button>
                       </TableCell>
                       {/* ۱۲ — اطلاعات: همیشه آخرین سلول (قانون ساختاری گام اول-۳) — فایل متنی کامل */}
-                      <TableCell className="pn045-sticky-info-solo">
+                      <TableCell>
                         <InfoButton tenant={tenantId ?? "tabriz"} type="transaction" code={t.propertyCode} />
                       </TableCell>
                     </TableRow>

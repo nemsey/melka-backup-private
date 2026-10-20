@@ -1000,10 +1000,10 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     {/* PN-020/گام اول-ب (بند ۴) — تاریخ ثبت، آخرین ستون فهرست است */}
                     <TableHead className="min-w-28">تاریخ ثبت</TableHead>
                     {/* PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: نمایش فایل کامل دادهٔ هر کد
-                        (فیلدهای استاندارد + دادهٔ خام + متادیتا) — ماقبل آخر، چسبنده (RTL)
+                        (سند رسمی + دادهٔ خام + متادیتا) — ماقبل آخر (غیرچسبنده — PN-047)
                         ⚠ قانون ساختاری (دستور مالک/گام اول-۳): «اطلاعات» و «یادداشت» همیشه دو ستون آخر می‌مانند —
                         هر ستون جدید در آینده باید «قبل از» ستون اطلاعات افزوده شود. */}
-                    <TableHead className="w-24 pn045-sticky-info">اطلاعات</TableHead>
+                    <TableHead className="w-24">اطلاعات</TableHead>
                     {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک)
                         PN-045/فاز ۲ — ستون چسبندهٔ چپ (RTL: آخرین ستون = چپ‌ترین) */}
                     <TableHead className="min-w-32 w-44 pn045-sticky-note">یادداشت</TableHead>
@@ -1274,7 +1274,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                         </TableCell>
                         {/* ۲۰ — PN-045/فاز ۳ — ستون «اطلاعات»: دکمهٔ 📋 نمایش → فایل کامل در modal
                             چسبندهٔ ماقبل آخر (RTL: بلافاصله راستِ یادداشت) · lazy fetch — فقط هنگام کلیک */}
-                        <TableCell className="pn045-sticky-info">
+                        <TableCell>
                           <InfoButton tenant={tenantId ?? "tabriz"} type="request" code={r.requestCode} />
                         </TableCell>
                         {/* ۲۱ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline

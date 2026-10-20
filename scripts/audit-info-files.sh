@@ -87,26 +87,32 @@ else
   fail=1
 fi
 
-# ── ۷. سیم‌کشی ستون در فهرست‌ها ─────────────────────────────────────────────
+# ── ۷. سیم‌کشی ستون در فهرست‌ها (PN-047: ستون اطلاعات غیرچسبنده — فقط یادداشت ثابت) ──
 for f in "$LISTING" "$REQUEST"; do
   if ! grep -q "InfoButton" "$f"; then
     echo "❌ FAIL: InfoButton not wired in $f"
     fail=1
   fi
-  if ! grep -q "pn045-sticky-info" "$f"; then
-    echo "❌ FAIL: sticky-info class missing in $f"
+  # دستور مالک PN-047/گام دوم-۱: ستون اطلاعات از حالت ثابت خارج شود
+  if grep -q "pn045-sticky-info" "$f"; then
+    echo "❌ FAIL: info column still sticky in $f (PN-047 forbids sticky info)"
     fail=1
   fi
 done
 if [ $fail -eq 0 ]; then
-  echo "✅ wiring: InfoButton + sticky-info in both lists (all 4 tenant×type)"
+  echo "✅ wiring: InfoButton in all lists · info column non-sticky (owner order PN-047)"
 fi
 
-# ── ۸. CSS ستون چسبنده (عرض ثابت — قانون ۱۱) ────────────────────────────────
-if grep -q "pn045-sticky-info" src/app/globals.css && grep -q "left: 176px" src/app/globals.css; then
-  echo "✅ css: sticky classes with fixed px offset in globals.css"
+# ── ۸. CSS: فقط یادداشت چسبنده (دستور مالک PN-047: «فقط ستون یادداشت ثابت بماند و لاغیر») ──
+if grep -q "pn045-sticky-note" src/app/globals.css; then
+  if grep -q "pn045-sticky-info" src/app/globals.css; then
+    echo "❌ FAIL: sticky-info CSS still present in globals.css (PN-047 forbids)"
+    fail=1
+  else
+    echo "✅ css: only sticky-note remains in globals.css (owner order PN-047)"
+  fi
 else
-  echo "❌ FAIL: sticky CSS with fixed px offset missing in globals.css"
+  echo "❌ FAIL: sticky-note CSS missing in globals.css"
   fail=1
 fi
 

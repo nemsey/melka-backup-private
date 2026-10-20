@@ -11,7 +11,10 @@
  *
  * تولید: lazy — هر GET فایل را از رکورد تازه regenerate می‌کند (بدون LLM،
  * بدون هزینه). کد ضد پیمایش مسیر: فقط [A-Za-z0-9_-] (سقف ۶۴).
- * پاسخ: text/plain; charset=utf-8 — فایل متنی خوانا برای مالک.
+ * پاسخ (پیش‌فرض): text/plain; charset=utf-8 — فایل متنی خوانا برای مالک.
+ * PN-047/گام دوم-۱: ?format=json → سند ساختاری InfoDoc برای UI زیبای
+ * فایل اطلاعات (همانند فایل قرارداد) — فایل متنی همچنان روی دیسک regenerate
+ * می‌شود (شاهد PN-045 دست‌نخورده).
  */
 
 import { NextRequest } from "next/server";
@@ -19,6 +22,7 @@ import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { MelkApiError } from "@/lib/melk-api/types";
 import {
+  generateInfoDoc,
   generateInfoFile,
   isInfoTenant,
   isInfoType,
@@ -58,6 +62,17 @@ export async function GET(
   if (tileAccess instanceof MelkApiError) return errorResponse(tileAccess);
 
   try {
+    // PN-047/گام دوم-۱ — حالت سند ساختاری برای UI زیبا (فایل قرارداد-گونه)
+    if (_request.nextUrl.searchParams.get("format") === "json") {
+      const doc = await generateInfoDoc(tenant, type, code);
+      return Response.json(doc, {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store",
+          "X-Info-Found": doc.found ? "1" : "0",
+        },
+      });
+    }
     const result = await generateInfoFile(tenant, type, code);
     return new Response(result.content, {
       status: 200,

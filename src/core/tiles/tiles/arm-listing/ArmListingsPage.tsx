@@ -986,10 +986,10 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     {/* PN-039 (گام ۳) — تاریخ دقیق ایجاد آگهی (createdAt) — برای ملکتون = تاریخ ثبت واقعی CRM (شمسی پارس‌شده) */}
                     <TableHead className="min-w-36">تاریخ ثبت</TableHead>
                     {/* PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: نمایش فایل کامل دادهٔ هر کد
-                        (فیلدهای استاندارد + دادهٔ خام + متادیتا) — ماقبل آخر، چسبنده (RTL)
+                        (سند رسمی + دادهٔ خام + متادیتا) — ماقبل آخر (غیرچسبنده — PN-047)
                         ⚠ قانون ساختاری (دستور مالک/گام اول-۳): «اطلاعات» و «یادداشت» همیشه دو ستون آخر می‌مانند —
                         هر ستون جدید در آینده باید «قبل از» ستون اطلاعات افزوده شود. */}
-                    <TableHead className="w-24 pn045-sticky-info">اطلاعات</TableHead>
+                    <TableHead className="w-24">اطلاعات</TableHead>
                     {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک)
                         PN-045/فاز ۲ — ستون چسبندهٔ چپ (RTL: آخرین ستون = چپ‌ترین) */}
                     <TableHead className="min-w-32 w-44 pn045-sticky-note">یادداشت</TableHead>
@@ -1273,7 +1273,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                         </TableCell>
                         {/* ۱۵ — PN-045/فاز ۳ — ستون «اطلاعات»: دکمهٔ 📋 نمایش → فایل کامل در modal
                             چسبندهٔ ماقبل آخر (RTL: بلافاصله راستِ یادداشت) · lazy fetch — فقط هنگام کلیک */}
-                        <TableCell className="pn045-sticky-info">
+                        <TableCell>
                           <InfoButton tenant={tenantId ?? "tabriz"} type="listing" code={r.propertyCode} />
                         </TableCell>
                         {/* ۱۶ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline

@@ -15,7 +15,7 @@ export const tenantDashboardTabrizTile = defineTile({
   id: "tenant-dashboard-tabriz",
   version: "1.0.0",
   title: "داشبورد ملک تبریز",
-  tagline: "M1-M4 در یک داشبورد: آگهی · درخواست · معاملات · کارشناسان (wrapper مشترک tenant — PN-043)",
+  tagline: "M1 آگهی · M2 درخواست · M3 معاملات · M4 کارشناسان — هویت کاشی‌های ملک تبریز (PN-047)",
   description:
     "داشبورد یکپارچهٔ ملک تبریز: چهار کاشی (آگهی، درخواست، معاملات، کارشناسان) درون یک ظرف مشترک چند-مستأجری — بدون تکرار کد (PN-043/فاز ۲ — شورا-ن۰۸۷).",
   icon: LayoutDashboard,
