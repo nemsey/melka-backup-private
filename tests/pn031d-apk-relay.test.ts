@@ -108,12 +108,13 @@ describe("PN-031-D · C) UI تنظیمات — کارت افزودنی اپ ان
     expect(src).not.toContain("QR دانلود");
   });
 
-  test("C-2: (ن۰۵۴→ن۰۶۸) QR بازگشت — سنجهٔ ۲ سند ۰۶۸: دکمهٔ تولید کد نصب با QR + دستور", () => {
-    // بازنگری: شورا-ن۰۶۸ (PN-041-R · فاز ۳ · بند ۳.۲) QR را همراه دستور نصب برگرداند
+  test("C-2: (ن۰۶۸→PN-047) دستور نصب پابرجا — QR به دستور مالک حذف شد (گام دوم-۲ · ۱۴۰۵/۰۷/۲۹)", () => {
+    // بازنگری: PN-047/گام دوم-۲ — بخش QR کد نصب از تنظیمات رله Termux حذف شد؛
+    // دکمهٔ تولید کد نصب + دستور + کپی باقی است (درس ۰۵۴: دکمه حذف نشود)
     const src = readFileSync(RELAY_UI, "utf8");
-    expect(src).toContain("/api/admin/relay/qr?text=");
-    expect(src).toContain("اسکن با دوربین گوشی");
     expect(src).toContain("کپی دستور نصب");
+    expect(src).not.toContain("/api/admin/relay/qr?text=");
+    expect(src).not.toContain("اسکن با دوربین گوشی");
   });
 
   test("C-3: مسیر Termux پابرجاست — تست تونل + راهنمای ۳ خطی (ن۰۵۴)", () => {

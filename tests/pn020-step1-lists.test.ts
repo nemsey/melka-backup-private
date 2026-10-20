@@ -57,24 +57,27 @@ afterAll(async () => {
  * ========================================================================== */
 
 describe("PN-020 §الف — M1: حذف سه ستون + سال بدون کاما", () => {
-  test("الف-۱) سه ستون حذف‌شده در سرستون‌های تبریز نیستند: آخرین وضعیت (وضعیت) · تصاویر · انتشار (PN-046: ملکتون طبق دستور تازه ستون «تصاویر» دارد)", () => {
+  test("الف-۱) سه ستون حذف‌شده در سرستون‌های تبریز نیستند: آخرین وضعیت (وضعیت) · تصاویر · انتشار (PN-047: ملکتون به‌جای تصاویر، متراژِ CRM دارد)", () => {
     // قانون ن۰۶۴ برای شاخهٔ تبریز پابرجاست
     expect(heads(M1_SRC, "tabriz")).not.toContain("وضعیت");
     expect(heads(M1_SRC, "tabriz")).not.toContain("تصاویر");
     expect(heads(M1_SRC, "tabriz")).not.toContain("انتشار");
     expect(heads(M1_SRC, "tabriz")).not.toContain("آخرین فعالیت");
-    // PN-046/گام اول-۱ — فهرست ملکتون مختص دادهٔ CRM: ستون «تصاویر» از دادهٔ واقعی CRM
-    expect(heads(M1_SRC, "melketun")).toContain("تصاویر");
+    // PN-047/گام اول-۲ (دستور مالک ۱۴۰۵/۰۷/۲۹): ملکتون متراژ (size نمای عمومی — پوشش ۹۹٪)
+    // دارد و «تصاویر» حذف شد — نمای عمومی CRM ملکتون تصویر ندارد (صادقانه)
+    expect(heads(M1_SRC, "melketun")).not.toContain("تصاویر");
+    expect(heads(M1_SRC, "melketun")).toContain("متراژ");
   });
 
-  test("الف-۲) سلول‌های ستون‌های حذف‌شدهٔ تبریز پاک مانده‌اند (addedToDivar/addedToInsta حذف · r.imageCount فقط شاخهٔ ملکتون — PN-046)", () => {
+  test("الف-۲) سلول‌های ستون‌های حذف‌شدهٔ تبریز پاک مانده‌اند (addedToDivar/addedToInsta حذف · r.meterage ملکتون — PN-047)", () => {
     expect(M1_SRC).not.toContain("r.addedToDivar");
     expect(M1_SRC).not.toContain("r.addedToInsta");
-    // تصاویر ملکتون: r.imageCount فقط درون سلول شاخهٔ ملکتون (بلوک isMelketun درون ردیف) است
-    const iMark = M1_SRC.indexOf("ملکتون: تصاویر");
+    // PN-047: متراژ ملکتون درون سلول شاخهٔ ملکتون است — تصاویرِ ردیفِ ملکتون حذف شد
+    const iMark = M1_SRC.indexOf("ملکتون M7: متراژ");
     expect(iMark).toBeGreaterThan(-1);
     const branch = M1_SRC.slice(iMark, M1_SRC.indexOf(")}", iMark));
-    expect(branch).toContain("r.imageCount");
+    expect(branch).toContain("r.meterage");
+    expect(M1_SRC).not.toContain("r.imageCount ?? 0");
     // و پیش از آن نشانهٔ شاخه‌بندی isMelketun در سلول‌ها حاضر است
     expect(M1_SRC).toContain("{isMelketun ? (");
     // شاخهٔ تبریز (سمت دوم بلوک دوطرفه) رندر تصاویر ندارد

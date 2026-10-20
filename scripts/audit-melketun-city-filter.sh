@@ -40,7 +40,10 @@ strict = sys.argv[1] if len(sys.argv) > 1 else ""
 c = sqlite3.connect("db/custom.db")
 
 # واژه‌های تبریز (عین sync.ts)
-AGENCY_KW = ["تبریز", "tabriz", "Tabriz", "TABRIZ"]
+# PN-047/گام اول-۴ (دستور مالک ۱۴۰۵/۰۷/۲۹): شعب ملکتون در سطح شهر تبریز —
+#   کشف از نمای عمومی CRM: رضانژاد تبریز · آسمان تبریز · 17 شهریور (میدان هفده‌شهریور تبریز).
+#   عین TABRIZ_AGENCY_KEYWORDS در sync.ts (منبع یگانه).
+AGENCY_KW = ["تبریز", "tabriz", "Tabriz", "TABRIZ", "17 شهریور", "۱۷ شهریور", "هفده شهریور"]
 
 total = c.execute("SELECT COUNT(*) FROM PropertyRecord WHERE tenantId='melketun'").fetchone()[0]
 req_total = c.execute("SELECT COUNT(*) FROM RequestRecord WHERE tenantId='melketun'").fetchone()[0]
