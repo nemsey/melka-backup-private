@@ -8,6 +8,14 @@
  *   · داده: صفحات احراز‌شده → JSON تمیز درون <div id="app" data-page="…"> (بدون DOM scraping)
  *   · Pagینیش: /Melketunfilingplus/{n} · /Potentials/{n} — هر صفحه ۱۰ رکورد، پایان = صفحهٔ خالی
  *
+ * PN-045/فاز ۱ (شورا-ن۰۸۹) — فیلتر شهر تبریز در مبدأ:
+ *   · کشف ۱.۱: فیلد city/branch_id در Filings/Potentials وجود ندارد (گزارش صادقانه،
+ *     قانون ۱۷ دستور → fallback چندلایه)
+ *   · معیار ۱ (اصلی): agency شامل واژهٔ تبریز (کشف ۱.۳: ۱۰۰٪ دادهٔ فعلی)
+ *   · معیار ۲ (منطقه): area/areas شامل محله‌های شناخته‌شدهٔ تبریز
+ *   · معیار ۳ (fallback): اگر هیچ‌کدام نبود → skip صادقانه + گزارش دلیل
+ *   · dry-run ۱.۳: filings=49/49 تبریز · potentials=19/19 تبریز · صفر skip انتظار
+ *
  * نگاشت (M1-M4):
  *   · filings (آگهی‌ها)    → PropertyRecord  · tenantId='melketun'
  *   · potentials (درخواست) → RequestRecord   · tenantId='melketun'
@@ -30,6 +38,46 @@ const MAX_PAGES = 100; // سقف ایمن (فاز ۰: کل داده < ۴۹۰ ص�
 
 /** کلید tenant ملکتون در جداول مشترک. تبریز = 'melk-tabriz' (P6.5-02 §۱۴ — دست‌نخورده). */
 export const MELKETUN_TENANT_ID = "melketun" as const;
+
+// ── PN-045/فاز ۱ — فیلتر شهر تبریز (در مبدأ، نه UI — اصل ۵ بخش ۲) ──────────
+/** واژه‌های دالّ بر تبریز در نام آژانس/شعبه (کشف فاز ۱.۳: رضانژاد تبریز + آسمان تبریز) */
+const TABRIZ_AGENCY_KEYWORDS = ["تبریز", "tabriz", "Tabriz", "TABRIZ"];
+/** محله‌های شناخته‌شدهٔ تبریز (از توزیع واقعی فاز ۱.۳ + محله‌های اصلی شهر) */
+const TABRIZ_NEIGHBORHOOD_KEYWORDS = [
+  "مرزداران", "ولیعصر", "نصر", "شهرک باغمیشه", "باغمیشه", "الهیه", "رشدیه",
+  "فرشته جنوبی", "فرشته شمالی", "ولی امر", "ائل‌گلی", "ائل گلی", "ایل گلی",
+  "استانداری", "زعفرانیه", "میرداماد", "شهید رجایی", "گلشهر", "یاغچیان",
+  "چایکنار", "خاوران", "زیتون", "قره‌آغاج", "قره آغاج",
+  "باسمنج", "خسروشاه", "کوی سیلاب", "سیلاب", "طرنج", "بهشتی",
+  "سیه‌رون", "سیهرون", "آبرسان", "مرجان", "نماز",
+  "امیرخیز", "مهرگان",
+];
+
+/** آیا نام آژانس دالّ بر تبریز است؟ (معیار اصلی — ۱۰۰٪ دادهٔ فعلی) */
+function isTabrizAgency(agency: unknown): boolean {
+  const s = String(agency ?? "");
+  return TABRIZ_AGENCY_KEYWORDS.some((k) => s.includes(k));
+}
+
+/** آیا متن منطقه/محله دالّ بر تبریز است؟ (معیار دوم — چندمحله‌ای با کاما) */
+function isTabrizArea(area: unknown): boolean {
+  const s = String(area ?? "");
+  if (!s.trim()) return false;
+  return TABRIZ_NEIGHBORHOOD_KEYWORDS.some((k) => s.includes(k));
+}
+
+/**
+ * حکم تبریز بودن یک رکورد ملکتون — زنجیرهٔ fallback (قانون ۱۷ دستور):
+ *   ۱. agency تبریز → TABRIZ
+ *   ۲. area/areas تبریز → TABRIZ
+ *   ۳. هر دو خالی/نامشخص → UNKNOWN (skip صادقانه + گزارش، نه حذف)
+ * دادهٔ مقدس: رکورد skip‌شده هرگز حذف نمی‌شود — فقط وارد DB نمی‌شود.
+ */
+function tabrizVerdict(row: { agency?: unknown; area?: unknown }): "TABRIZ" | "UNKNOWN" {
+  if (isTabrizAgency(row.agency)) return "TABRIZ";
+  if (isTabrizArea(row.area)) return "TABRIZ";
+  return "UNKNOWN";
+}
 
 interface MelketunSecrets {
   crm: { base_url: string; username: string; password: string };
@@ -308,6 +356,9 @@ export interface SyncResult {
   tenantId: typeof MELKETUN_TENANT_ID;
   fetched: { listings: number; requests: number; transactions: number; experts: number };
   upserted: { listings: number; requests: number; transactions: number; experts: number };
+  /** PN-045/فاز ۱ — رکوردهای skip‌شده به دلیل فیلتر تبریز (گزارش صادقانه، قانون ۱۴) */
+  skippedByCityFilter: { listings: number; requests: number };
+  skippedSamples: { code: string; agency: string; area: string }[];
   errors: string[];
   durationMs: number;
 }
@@ -332,6 +383,8 @@ export async function syncMelketun(): Promise<SyncResult> {
     tenantId: MELKETUN_TENANT_ID,
     fetched: { listings: 0, requests: 0, transactions: 0, experts: 0 },
     upserted: { listings: 0, requests: 0, transactions: 0, experts: 0 },
+    skippedByCityFilter: { listings: 0, requests: 0 },
+    skippedSamples: [],
     errors: [],
     durationMs: 0,
   };
@@ -356,9 +409,17 @@ export async function syncMelketun(): Promise<SyncResult> {
     result.fetched.listings = filings.length;
     result.fetched.requests = potentials.length;
 
-    // upsert آگهی‌ها (PropertyRecord)
+    // upsert آگهی‌ها (PropertyRecord) — PN-045/فاز ۱: فقط تبریز در مبدأ
     for (const f of filings as unknown as FilingRow[]) {
       try {
+        // فیلتر شهر (در مبدأ — نه UI): رکورد غیرتبریز وارد DB نمی‌شود (حذفی صورت نمی‌گیرد)
+        if (tabrizVerdict({ agency: f.agency, area: f.area }) !== "TABRIZ") {
+          result.skippedByCityFilter.listings++;
+          if (result.skippedSamples.length < 10) {
+            result.skippedSamples.push({ code: f.code ?? f.id, agency: String(f.agency ?? ""), area: String(f.area ?? "") });
+          }
+          continue;
+        }
         const data = filingToProperty(f, runId);
         await db.propertyRecord.upsert({ where: { id: data.id }, create: data, update: data });
         result.upserted.listings++;
@@ -367,9 +428,17 @@ export async function syncMelketun(): Promise<SyncResult> {
       }
     }
 
-    // upsert درخواست‌ها (RequestRecord)
+    // upsert درخواست‌ها (RequestRecord) — PN-045/فاز ۱: فقط تبریز در مبدأ
     for (const p of potentials as unknown as PotentialRow[]) {
       try {
+        // فیلتر شهر (در مبدأ): area پتانسیل = areas چندمحله‌ای
+        if (tabrizVerdict({ agency: p.agency, area: p.areas }) !== "TABRIZ") {
+          result.skippedByCityFilter.requests++;
+          if (result.skippedSamples.length < 10) {
+            result.skippedSamples.push({ code: p.code ?? p.id, agency: String(p.agency ?? ""), area: String(p.areas ?? "") });
+          }
+          continue;
+        }
         const data = potentialToRequest(p, runId);
         await db.requestRecord.upsert({ where: { id: data.id }, create: data, update: data });
         result.upserted.requests++;
