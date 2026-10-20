@@ -1,12 +1,12 @@
 // Adapter: Melketun integration (CRM + Public)
 // ---------------------------------------------------------------------------
 // PN-043/فاز ۳ (شورا-ن۰۸۷) — اتصال یکپارچهٔ ملکتون.
+// PN-044/فاز ۲-۳ (شورا-ن۰۸۸) — لاگین واقعی کشف و پیاده شد:
+//   CRM = Laravel + Inertia · POST /login-store (فیلدهای دقیق Username/Password)
+//   + هدر X-XSRF-TOKEN · راستی‌آزمایی: GET /dashboard → 200 (لاگ: pn044/recon.log)
 // Doctrine: no LLM, no cost, no auto_execute.
 // Secrets live in the Persistent Zone file upload/.runtime/melketun-secrets.json
 // (chmod 600 — never in code, never in git, never printed to logs).
-// Recon (PN-043/فاز ۰): melketun.com → HTTP 200 · melketun.app → 302 → /login (200)
-// · real login API endpoint NOT discovered (/api/auth/login → 404) → CRM check is
-// reachability-only until a future recon discovers the exact endpoint.
 
 import fs from 'fs'
 import path from 'path'
@@ -58,17 +58,64 @@ export const melketun = {
 
   async testCrmLogin(): Promise<{ ok: boolean; status: number; note: string }> {
     const s = loadSecrets()
-    // [GLM/فاز ۰ recon]: endpoint دقیق login API کشف نشد (صفحهٔ /login → 200 ولی
-    // /api/auth/login → 404). در نبود کشف: فقط reachability چک می‌شود (نه login واقعی).
+    // PN-044/فاز ۰ کشف: POST /login-store (فیلدهای Username/Password + X-XSRF-TOKEN).
+    // لاگین واقعی + راستی‌آزمایی GET /dashboard → 200 (نه صرفاً reachability).
+    // رمز هرگز در پاسخ/لاگ برنمی‌گردد (قانون ۱۲/۱۸).
     try {
-      const res = await fetch(`${s.crm.base_url}/`, { method: 'HEAD' })
+      const base = s.crm.base_url.replace(/\/$/, '')
+      const cookies = new Map<string, string>()
+      const absorb = (res: Response) => {
+        const list: string[] =
+          typeof res.headers.getSetCookie === 'function'
+            ? res.headers.getSetCookie()
+            : (res.headers.get('set-cookie') ?? '').split(/,(?=[^;]+=)/).filter(Boolean)
+        for (const line of list) {
+          const [pair] = line.split(';')
+          const eq = pair.indexOf('=')
+          if (eq > 0) cookies.set(pair.slice(0, eq).trim(), pair.slice(eq + 1).trim())
+        }
+      }
+      const cookieHeader = () => [...cookies.entries()].map(([k, v]) => `${k}=${v}`).join('; ')
+      const decodedXsrf = () => {
+        const v = cookies.get('XSRF-TOKEN') ?? ''
+        try { return decodeURIComponent(v) } catch { return v }
+      }
+
+      const loginPage = await fetch(`${base}/login`, { signal: AbortSignal.timeout(20_000) })
+      absorb(loginPage)
+      if (!loginPage.ok) return { ok: false, status: loginPage.status, note: `GET /login → ${loginPage.status}` }
+
+      const loginRes = await fetch(`${base}/login-store`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Cookie: cookieHeader(),
+          'X-XSRF-TOKEN': decodedXsrf(),
+        },
+        body: new URLSearchParams({ Username: s.crm.username, Password: s.crm.password }),
+        redirect: 'manual',
+        signal: AbortSignal.timeout(20_000),
+      })
+      absorb(loginRes)
+      if (loginRes.status !== 302 && loginRes.status !== 303) {
+        return { ok: false, status: loginRes.status, note: `login-store → ${loginRes.status} (bad credentials or CSRF)` }
+      }
+
+      const verify = await fetch(`${base}/dashboard`, {
+        headers: { Cookie: cookieHeader() },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(20_000),
+      })
+      const ok = verify.status === 200
       return {
-        ok: res.ok,
-        status: res.status,
-        note: 'reachability only (login endpoint pending recon)'
+        ok,
+        status: verify.status,
+        note: ok
+          ? 'real login OK (POST /login-store · dashboard 200) — session-based'
+          : `login verify failed (dashboard → ${verify.status})`,
       }
     } catch (e) {
-      return { ok: false, status: 0, note: 'unreachable' }
+      return { ok: false, status: 0, note: e instanceof Error ? e.message : 'unreachable' }
     }
   },
 }

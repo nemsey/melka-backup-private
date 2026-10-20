@@ -117,6 +117,7 @@ export const WORKER_JOB_IDS = {
   rollingBackup: "rolling-backup", // PN-041 · شورا-ن۰۶۷ — لایهٔ ۲ قلعهٔ داده
   relayHealthCheck: "relay-health-check",
   dbHealthProbe: "db-health-probe", // PN-041-R · شورا-ن۰۶۸ — خوددرمانی DB قفل‌شده
+  melketunSync: "melketun-sync", // PN-044 · شورا-ن۰۸۸ — هماهنگ‌سازی CRM ملکتون (۶ ساعت)
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -753,6 +754,28 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       run: async (_database) => {
         const { runRelayHealthCheckJob } = await import("@/lib/relay/health");
         return runRelayHealthCheckJob();
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Melketun Sync → Worker (تازه — PN-044/شورا-ن۰۸۸ · فاز ۳) ──
+  // کش دادهٔ ملکتون از CRM (Laravel Inertia · نشست‌محور) → جداول مشترک با
+  // tenantId='melketun'. الگوی ARM: چرخهٔ ۶ ساعت · فقط upsert (صفر حذف — قانون ۶).
+  // استراتژی SESSION_HTML_ADAPTER — کشف فاز ۰: login-store + JSON اینرسیا.
+  // خاموشی: MELK_MELKETUN_SYNC=disabled
+  if (process.env.MELK_MELKETUN_SYNC !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.melketunSync,
+      title: "هماهنگ‌سازی ملکتون (CRM → tenantId='melketun') — PN-044/۳",
+      intervalMs: 6 * 60 * 60_000, // همان ARM/Mirror — ۶ ساعت (ریسک #۴: rate limit)
+      firstRunDelayMs: 10 * 60_000, // نخستین sync ۱۰ دقیقه پس از بوت
+      run: async (_database) => {
+        const { syncMelketun } = await import("@/lib/integrations/melketun/sync");
+        return syncMelketun();
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
