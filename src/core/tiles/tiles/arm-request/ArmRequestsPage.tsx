@@ -395,6 +395,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
   const coveragePct = enrichment.total > 0 ? Math.round((enrichment.complete / enrichment.total) * 100) : 0;
   const todayCount = rows.filter((r) => r.createdAt && Date.now() - new Date(r.createdAt).getTime() < 86400_000).length;
   const activeRealtors = new Set(rows.map((r) => r.actorName).filter(Boolean)).size;
+  // PN-047/گام اول-۴ — شعب ثبت‌کنندهٔ ملکتون (سه شعبهٔ سطح تبریز) از دادهٔ واقعی درخواست‌ها
+  const melketunBranchCount = useMemo(() => new Set(rows.map((r) => r.armBranchTitle).filter(Boolean)).size, [rows]);
   const stateFilterActive = selectedStates.length > 0;
   const anyFilterActive =
     stateFilterActive ||
@@ -459,10 +461,10 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
 
       {/* شاخص‌ها — رنگ بخش M2 (کهربایی روشن) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <KpiCard label={isMelketun ? "کل درخواست‌های ملکتون (فقط تبریز)" : "کل درخواست‌های ملک تبریز"} value={loading ? undefined : faNumber(data?.total ?? 0)} icon={ClipboardList} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
+        <KpiCard label={isMelketun ? "کل درخواست‌های ملکتون (همهٔ شعب تبریز)" : "کل درخواست‌های ملک تبریز"} value={loading ? undefined : faNumber(data?.total ?? 0)} icon={ClipboardList} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
         <KpiCard label={isMelketun ? "استخراج کامل از CRM ملکتون" : "اطلاعات متقاضی و مناطق تکمیل‌شده"} value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
         <KpiCard label="درخواست امروز" value={loading ? undefined : faNumber(todayCount)} icon={CalendarDays} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
-        <KpiCard label={isMelketun ? "آژانس‌های ثبت‌کننده" : "کارشناسان ثبت‌کننده"} value={loading ? undefined : faNumber(activeRealtors)} icon={Users} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
+        <KpiCard label={isMelketun ? "شعب ثبت‌کنندهٔ ملکتون" : "کارشناسان ثبت‌کننده"} value={loading ? undefined : faNumber(melketunBranchCount || activeRealtors)} icon={Network} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
       </div>
 
       {/* بینش توزیع وضعیت شش‌حالته (گام ۲ بند ۳) */}
@@ -525,7 +527,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
         {/* P6546/گام دوم-۲ — جدول ۱۰ کارشناسان پردرخواست */}
         <TopRankingTable
           id="m2-top-realtors"
-          title={isMelketun ? "جدول آژانس‌های پردرخواست ملکتون" : "جدول ۱۰ کارشناسان پردرخواست ملک تبریز"}
+          title={isMelketun ? "جدول کارشناسان پردرخواست ملکتون" : "جدول ۱۰ کارشناسان پردرخواست ملک تبریز"}
           rows={topRealtors}
           countLabel="کارشناس"
           icon={Award}
@@ -960,10 +962,14 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                   <TableRow>
                     <TableHead className="w-10">ردیف</TableHead>
                     <TableHead className="min-w-20">کد درخواست</TableHead>
-                    {/* PN-046/گام اول-۱ — ملکتون: عنوان درخواست + آژانس بجای کارشناس/شعبه */}
+                    {/* PN-046/گام اول-۱ + PN-047/گام اول-۲ — ملکتون: عنوان درخواست + کارشناس مسئول حل‌شده + شعبهٔ ملکتون */}
                     {isMelketun && <TableHead className="min-w-36">عنوان درخواست</TableHead>}
-                    <TableHead className="min-w-28">{isMelketun ? "آژانس" : "کارشناس"}</TableHead>
-                    {!isMelketun && <TableHead className="min-w-24">شعبه</TableHead>}
+                    <TableHead className="min-w-28">{isMelketun ? "کارشناس مسئول" : "کارشناس"}</TableHead>
+                    {isMelketun ? (
+                      <TableHead className="min-w-24">شعبه ملکتون</TableHead>
+                    ) : (
+                      <TableHead className="min-w-24">شعبه</TableHead>
+                    )}
                     <TableHead className="min-w-36">متقاضی</TableHead>
                     {/* P6546/گام پنجم-ت-۴ — ستون قیمت و قالب از/تا · ملکتون: بودجه خرید */}
                     <TableHead className="min-w-40">{isMelketun ? "بودجه خرید" : "قیمت"}</TableHead>
@@ -1039,8 +1045,18 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             {r.actorName ?? "ثبت نشده در سامانه"}
                           </span>
                         </TableCell>
-                        {/* ۴ — شعبه (فقط تبریز — PN-046: ملکتون شعبهٔ چهارگانه ندارد) */}
-                        {!isMelketun && (
+                        {/* ۴ — تبریز: شعبهٔ کارشناس (PM) · ملکتون M8: شعبهٔ ملکتون (سه شعبهٔ سطح تبریز — PN-047) */}
+                        {isMelketun ? (
+                          <TableCell className="whitespace-nowrap">
+                            {r.armBranchTitle ? (
+                              <Badge variant="outline" className="gap-1 text-[11px] border-0" title="شعبهٔ ملکتون — همگی در سطح شهر تبریز (دستور مالک PN-047)">
+                                <Network className="w-3 h-3" aria-hidden /> {r.armBranchTitle}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-[11px]">—</span>
+                            )}
+                          </TableCell>
+                        ) : (
                         <TableCell>
                           {r.branch && r.branch !== BRANCH_UNSET ? (
                             <Badge variant="outline" className={`gap-1 text-[11px] border-0 ${branchBadgeClass(r.branch)}`} title="شعبهٔ کارشناس — از سامانهٔ PM">

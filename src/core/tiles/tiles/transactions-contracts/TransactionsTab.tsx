@@ -63,6 +63,7 @@ import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { ContractFileDialog, type ContractDocData } from "./ContractFileDialog";
+import { MelketunPipelineSection } from "./MelketunPipelineSection";
 // PN-020/گام اول-ج۱ — برچسب فارسی وضعیت معامله از لایهٔ غنی‌سازی
 import { txStatusLabel } from "@/lib/melk-api/tx-enrichment";
 // P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
@@ -376,6 +377,28 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
 
   // قانون ۰۳۵-B/ج-۸ — کشیدن برای تازه‌سازی
   const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void fetchTransactions());
+
+  // PN-047/گام اول-۲ — ملکتون: نمای مختص کسب‌وکار (خط لولهٔ فروش CRM) جایگزین
+  // بخش‌های تبریز-محور می‌شود؛ فهرست زیر آن صادقانه خالی است (صفر معامله در CRM).
+  if (tenantId === "melketun") {
+    return (
+      <div className="space-y-6">
+        <PtrIndicator innerRef={ptrRef} spinning={ptrSpinning} />
+        <MelketunPipelineSection />
+        {/* حالت خالی فهرست — صادقانه (۰ معامله در CRM ملکتون) */}
+        <Card>
+          <CardContent className="p-6 text-center space-y-2" id="m9-melketun-empty">
+            <p className="text-sm font-bold">فهرست معاملات ملکتون: صفر رکورد (عین CRM)</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              هیچ پرونده‌ای در CRM ملکتون به مرحلهٔ «قرارداد» یا «معاملهٔ موفق» قیف فروش نرسیده است — به محض
+              ثبت نخستین معامله در CRM و اجرای همگام‌سازی بعدی، رکوردها این‌جا ظاهر می‌شوند.
+              داده‌های ملک تبریز کاملاً دست‌نخورده‌اند (جداسازی tenant — PN-044).
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -697,13 +720,9 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                   setApplied(EMPTY_FILTERS);
                 }}
               />
-              {/* PN-046/گام اول-۱ — صداقت ملکتون: ماژول معاملات در CRM برای این حساب در دسترس نیست */}
-              {tenantId === "melketun" && (
-                <p className="text-[11px] text-muted-foreground leading-relaxed text-center px-4 pb-3">
-                  فهرست معاملات ملکتون: ماژول معاملات در CRM ملکتون برای حساب جاری در دسترس نیست (کشف PN-044) —
-                  در انتظار تصمیم مالک برای دسترسی admin در CRM. داده‌های ملک تبریز دست‌نخورده‌اند.
-                </p>
-              )}
+              {/* PN-047 — پیام قدیمی ملکتون حذف شد: نمای M9 ملکتون در بالای همین
+                  کامپوننت early-return می‌شود (MelketunPipelineSection) و هرگز
+                  به این بخش تبریز-محور نمی‌رسد. */}
             </div>
           ) : (
             <Table>
