@@ -3876,3 +3876,24 @@ Stage Summary:
 - کامیت‌ها (پوش خطی موفق): def1c86 → b5749a6 → 22f6200 → 46e1494 → 55754ab → 6766a6d → 5f4f59b
 - رخداد ویژه: commit آلودهٔ ۸۳۲MB (.next.backup) پیش از پوش بازنشانی و تمیز شد (f6cab76 هرگز پوش نشد) — .gitignore: .next.backup-*/
 - ریسک‌های باقی (گزارش به مالک): endpoint دقیق login ملکتون کشف نشده (فعلاً reachability) · ارجاع متنی قدیمی به «مدیریت کاربران» در DashboardHome/PersonnelAccessSection خارج از محدودهٔ دستور ماند · اگر فایروال ملکتون روزی ببندد: گوشی دوم Termux (relay.sh + MELKETUN_URL)
+
+---
+Task ID: PN-044
+Agent: main (GLM-5.3)
+Task: اجرای دستور PN-044 (شورا-ن۰۸۸ · ملکا-شورا-ن۰۸۸-۱۴۰۵): تکمیل کسب‌وکار ملکتون — کشف API + Multi-tenant + Login واقعی + Sync Worker + Adapt کاشی‌های M1-M4 + تثبیت — ۶ فاز به ترتیب، صفر تغییر بیرون از محدوده
+
+Work Log:
+- فاز ۰ (کشف): قفل نسخه ۵/۵ (HEAD=آینه=2ad26a7 · BUILD docs-only عقب · 27,868 · BP false/true) + بکاپ VACUUM اتمیک (md5 26c79989… · ۴۰۲MB) + کشف عمیق ۶-تستی: فریم‌ورک = Laravel + Inertia (MELKETUN_CRM · ۱۶۰ مسیر از Ziggy) · REST عمومی هیچ (همه /api/* → 404) · login واقعی = POST /login-store (فیلدهای دقیق Username/Password از خطای 422 — سه تلاش) → GET /dashboard = 200 AUTHENTICATED · داده = JSON اینرسیا در data-page (بدون cheerio) · ماژول‌ها: filings(10/pg) potentials(10/pg) specialists خالی · مجوز Sarmasti غیر-admin (admin/* → 403) → VERDICT: SESSION_HTML_ADAPTER · PROCEED
+- فاز ۱ (Migration): کشف مهم — ستون tenantId از قبل بود (P6.5-02 §۱۴ · default 'melk-tabriz' · همهٔ ۵۴,۵۴۲ رکورد) → rename ممنوز (قانون ۱۱) · کلید UI 'tabriz' → نگاشت در src/lib/tenants.ts · افزودنی‌ها: ایندکس tenantId به ۳ جدول فاقد آن (db push 85ms — صفر داده) + ستون tenantId به ExpertProfile (کشف: M4 از این جدول می‌خواند نه ExpertRecord — الگوی §۱۴) · verify: 27868/25580/798/296 عیناً برابر ✓ (کامیت 612430a)
+- فاز ۲ (Login): login-test.log SUCCESS (login-store · session-based) · session در Persistent Zone (gitignored ✓ · md5 dcab4be7) · گارد تازهٔ audit-melketun-session.sh سبز · آداپتر PN-043 از reachability به login واقعی ارتقا یافت (کامیت 66904f7)
+- فاز ۳ (Sync Worker): src/lib/integrations/melketun/sync.ts — استراتژی SESSION_HTML_ADAPTER (CookieJar سبک · login-store + X-XSRF-TOKEN · استخراج JSON اینرسیا · pagینیش تا صفحهٔ خالی · ادب 300ms) · نگاشت: filings→PropertyRecord · potentials→RequestRecord (id های vtiger — صفر تصادم) · transactions/experts = stub صادقانه (ماژول در دسترس نیست) · تست واقعی: ۴۹ آگهی + ۱۹ درخواست upsert · ۱۰.۷ث · تبریز دست‌نخورده 27868/25580 ✓ · Worker melketun-sync (۶س · MELK_MELKETUN_SYNC) در رجیستری + API دستی OWNER + آینهٔ v1 (کامیت 46ea911)
+- فاز ۴ (کاشی‌ها): TilePageProps.tenantId (اختیاری — صفر شکستن) · TenantDashboard تزریق · ۴ صفحهٔ کاشی پارامتر tenantId به API · ۴ روت اصلی + ۲ روت export + ۵ where در repo/ذخیره‌گاه (پیش‌فرض 'melk-tabriz' = صفر نشت) · repo-level isolation: 27868/49 · 25580/19 · 798/0 · 296/0 ✓ (کامیت a368cff)
+- فاز ۵ (تثبیت): گارد audit-tenant-isolation.sh (advisory طبق دستور) · ۱۲/۱۲ گارد سبز · دو-سبز: اجرای اول ۳۰ شکست → ریشه‌ها: test fixtures و شمارش Worker و مانیفست + reset-guard یک‌بار تغییرات کامیت‌نشده را خورد (درس PN-043: کامیت فوری قبل از تست!) + P2022 (test.db بی‌ستون) + ۱۰ تصمیم منقضی (expireSweep قانونی — صفر حذف) → نتیجه نهایی: **۲۹۱۵/۰ × ۲ اجرای متوالی پایدار** (flake یک‌بارهٔ relay در انزوا ۳۳/۰ سبز) · مانیفست api-versioning 112→113 · بیلد 5ed9ccb-20261020-0500 = HEAD · ری‌استارت production + نگهبان + Worker · Health=True · Version=5ed9ccb ✓ (کامیت 5ed9ccb + گزارش)
+- تأیید نهایی: dashboard/tabriz=200 · dashboard/melketun=200 · settings/melketun=200 · sync API 401-مرزبندی سالم · شمارش دو-tenant عین طبق انتظار · «PN-044 ALL PHASES COMPLETE»
+
+Stage Summary:
+- نتیجه: داشبورد ملکتون از «پوستهٔ خالی» به «دادهٔ واقعی» رسید — ۴۹ آگهی + ۱۹ درخواست ملکتون، tenantId='melketun'، جداسازی کامل و متقابل با تبریز (۲۷,۸۶۸+۲۵,۵۸۰+۷۹۸+۲۹۶ دست‌نخورده)
+- پاسخ پنج‌گانهٔ مالک: (۱) API ملکتون = session-based Laravel Inertia — نه REST نه HTML scraping (JSON اینرسیا) (۲) tenantId از قبل بود (P6.5-02) — ایندکس‌ها + ExpertProfile افزوده شد (۳) Login = موفق (login-store · Username/Password) (۴) Sync = ۶۸ رکورد (۴۹+۱۹) · معاملات/کارشناسان = stub صادقانه — ماژول در CRM قابل‌دسترس نیست (۵) هر دو داشبورد ۲۰۰ با دادهٔ کاملاً جدا
+- تصمیم‌های شفاف: مقدار DB 'melk-tabriz' حفظ شد (قانون ۱۱) · ستون ExpertProfile افزودنی (بیرون از ۴ مدل — منبع واقعی M4) · غنی‌سازی ARM فقط برای tenant تبریز
+- کامیت‌ها: 612430a → 66904f7 → 46ea911 → a368cff → 5ed9ccb (+گزارش) — پوش خطی موفق، BP فعال
+- ریسک باقی‌مانده برای شورا: ماژول معاملات/کارشناسان ملکتون در دسترس نیست (نیاز به تصمیم مالک: دسترسی admin در CRM ملکتون یا تعریف ماژول) · سقف sync = ۱۰۰۰ رکورد (رفع آسان در آینده)

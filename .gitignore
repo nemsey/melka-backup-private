@@ -111,3 +111,4 @@ db/custom.db.broken-*
 download/pn043/*.db
 server.log.*.gz
 .next.backup-*/
+download/pn044/*.db
