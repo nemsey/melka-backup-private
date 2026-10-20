@@ -697,6 +697,13 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                   setApplied(EMPTY_FILTERS);
                 }}
               />
+              {/* PN-046/گام اول-۱ — صداقت ملکتون: ماژول معاملات در CRM برای این حساب در دسترس نیست */}
+              {tenantId === "melketun" && (
+                <p className="text-[11px] text-muted-foreground leading-relaxed text-center px-4 pb-3">
+                  فهرست معاملات ملکتون: ماژول معاملات در CRM ملکتون برای حساب جاری در دسترس نیست (کشف PN-044) —
+                  در انتظار تصمیم مالک برای دسترسی admin در CRM. داده‌های ملک تبریز دست‌نخورده‌اند.
+                </p>
+              )}
             </div>
           ) : (
             <Table>

@@ -645,6 +645,13 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
             <div className="p-4 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           )}
           {!loading && rows.length === 0 && <EmptyState hasFilters={anyFilterActive} onClearFilters={clearFilters} />}
+          {/* PN-046/گام اول-۱ — صداقت ملکتون: ماژول کارشناسان در CRM برای این حساب در دسترس نیست */}
+          {!loading && rows.length === 0 && tenantId === "melketun" && (
+            <p className="text-[11px] text-muted-foreground leading-relaxed text-center px-4 pb-3">
+              فهرست کارشناسان ملکتون: ماژول کارشناسان (specialists/valuations) در CRM ملکتون برای حساب جاری در دسترس نیست (کشف PN-044) —
+              در انتظار تصمیم مالک برای دسترسی admin در CRM. کارشناسان ملک تبریز دست‌نخورده‌اند.
+            </p>
+          )}
           {viewMode === "cards" && rows.length > 0 && (
             <p className="text-[10px] text-muted-foreground text-center pt-2">{faNumber(rows.length)} ردیف — نمایش جدولی</p>
           )}
