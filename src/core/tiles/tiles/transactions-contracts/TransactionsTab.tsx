@@ -68,6 +68,8 @@ import { txStatusLabel } from "@/lib/melk-api/tx-enrichment";
 // P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
 import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
 import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
+// PN-046/گام اول-۲ (دستور مالک: ستون اطلاعات در «تمامی» فهرست‌ها) — فهرست معاملات (M3)
+import { InfoButton } from "@/components/info/InfoButton";
 
 
 /** برچسب فارسی سری‌های نمودار روند (B.۱ — ملکا-شورا-۱۴۰۵-۰۱۸) */
@@ -735,6 +737,10 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                     <TableHead>شماره هولوگرام</TableHead>
                     {/* ۱۱ — فایل قرارداد */}
                     <TableHead className="min-w-32">فایل قرارداد</TableHead>
+                    {/* ۱۲ — اطلاعات (PN-046/گام اول-۲: ستون اطلاعات در تمامی فهرست‌ها — فایل متنی کامل هر کد)
+                        ⚠ قانون ساختاری (دستور مالک/گام اول-۳): ستون «اطلاعات» همیشه آخرین ستون این فهرست است —
+                        هر ستون جدیدی در آینده باید «قبل از» همین ستون افزوده شود. سنجاق چپ (RTL) — همیشه قابل‌رویت. */}
+                    <TableHead className="w-24 pn045-sticky-info-solo">اطلاعات</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -942,6 +948,10 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                           <FileText className="w-3.5 h-3.5 text-primary" aria-hidden />
                           {t.contractType || t.agency ? "مشاهده و دانلود" : "مشاهده سند"}
                         </Button>
+                      </TableCell>
+                      {/* ۱۲ — اطلاعات: همیشه آخرین سلول (قانون ساختاری گام اول-۳) — فایل متنی کامل */}
+                      <TableCell className="pn045-sticky-info-solo">
+                        <InfoButton tenant={tenantId ?? "tabriz"} type="transaction" code={t.propertyCode} />
                       </TableCell>
                     </TableRow>
                     );

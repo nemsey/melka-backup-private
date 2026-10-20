@@ -706,3 +706,23 @@ tr:hover .pn045-sticky-info {
 .pn045-sticky-info {
   box-shadow: -4px 0 8px -6px rgb(0 0 0 / 0.25);
 }
+
+/* ═══════════════ PN-046/گام اول-۲و۳ — ستون اطلاعات در فهرست‌های بدون ستون یادداشت ═══════════════ */
+/* فهرست معاملات (M3) و کارشناسان (M4) ستون یادداشت ندارند (یادداشت مالک مختص
+   آگهی/درخواست است) → ستون «اطلاعات» تنها و «همیشه آخرین» ستون این فهرست‌هاست
+   و در لبهٔ چپ (RTL) سنجاق می‌شود — همیشه قابل‌رویت در اسکرول افقی. */
+.pn045-sticky-info-solo {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--card);
+}
+thead .pn045-sticky-info-solo {
+  z-index: 20;
+}
+tr:hover .pn045-sticky-info-solo {
+  background: var(--muted);
+}
+.pn045-sticky-info-solo {
+  box-shadow: -4px 0 8px -6px rgb(0 0 0 / 0.25);
+}

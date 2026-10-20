@@ -43,6 +43,8 @@ import { faNumber, faJalaliShort } from "@/lib/format";
 import { branchBadgeClass, valueSoftClass, valueSolidClass } from "@/lib/value-colors";
 import { faDigits } from "@/lib/jalali";
 import { expertFamilyStats, expertWithBranchCount } from "@/core/agent/analyzers";
+// PN-046/گام اول-۲ (دستور مالک: ستون اطلاعات در «تمامی» فهرست‌ها) — فهرست کارشناسان (M4)
+import { InfoButton } from "@/components/info/InfoButton";
 
 /** ردیف فهرست تازه — عین ExpertProfileRow سرور */
 interface ExRow {
@@ -533,6 +535,10 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   <TableHead className="min-w-20">کد پستی</TableHead>
                   <TableHead className="min-w-16">داخلی</TableHead>
                   <TableHead className="min-w-20">وضعیت</TableHead>
+                  {/* اطلاعات (PN-046/گام اول-۲: ستون اطلاعات در تمامی فهرست‌ها — فایل متنی کامل هر کد پرسنلی)
+                      ⚠ قانون ساختاری (دستور مالک/گام اول-۳): ستون «اطلاعات» همیشه آخرین ستون این فهرست است —
+                      هر ستون جدیدی در آینده باید «قبل از» همین ستون افزوده شود. سنجاق چپ (RTL) — همیشه قابل‌رویت. */}
+                  <TableHead className="w-24 pn045-sticky-info-solo">اطلاعات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
@@ -625,6 +631,10 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                     {/* وضعیت */}
                     <TableCell>
                       <Badge variant={r.active ? "default" : "secondary"} className="text-[10px]">{r.active ? "فعال" : "غیرفعال"}</Badge>
+                    </TableCell>
+                    {/* اطلاعات: همیشه آخرین سلول (قانون ساختاری گام اول-۳) — فایل متنی کامل */}
+                    <TableCell className="pn045-sticky-info-solo">
+                      <InfoButton tenant={tenantId ?? "tabriz"} type="expert" code={r.personnelCode ?? ""} />
                     </TableCell>
                   </TableRow>
                 )}
