@@ -79,7 +79,10 @@ export async function GET(request: NextRequest) {
       offset: num(sp.get("offset")) ?? 0,
     };
 
-    const [{ rows, total }, options] = await Promise.all([listExpertProfiles(filter), expertFilterOptions()]);
+    const [{ rows, total }, options] = await Promise.all([
+      listExpertProfiles(filter),
+      expertFilterOptions(filter.tenantId ?? "melk-tabriz"), // PN-047 — گزینه‌های فیلتر tenant-scoped (رفع نشت تبریز→ملکتون)
+    ]);
 
     // شفافیت منبع داده
     const lastSyncedAt = rows.length > 0 ? rows.reduce<string | null>((acc, r) => (acc === null || r.syncedAt < acc ? r.syncedAt : acc), null) : null;

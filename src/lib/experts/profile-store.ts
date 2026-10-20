@@ -517,19 +517,21 @@ export async function listExpertProfiles(filter: ExpertProfileFilter): Promise<{
 }
 
 /** گزینه‌های فیلتر از دادهٔ زندهٔ ستون‌ها (بروزرسانی فیلتر بر اساس تمام ستون‌ها) */
-export async function expertFilterOptions(): Promise<{
+export async function expertFilterOptions(tenantId: string = "melk-tabriz"): Promise<{
   branches: string[];
   employmentTypes: Array<{ value: number; label: string }>;
   managers: string[];
   roles: string[];
   cities: string[];
 }> {
+  // PN-047/گام اول-۲ — tenant-scoped: گزینه‌های فیلتر M10 ملکتون نباید هیچ داده‌ای از
+  // تبریز نشان دهد (نشت قبلی: شعب/سمت‌های تبریز در چیپ‌های فیلتر ملکتون).
   const [branches, managers, roles, cities, empTypes] = await Promise.all([
-    db.expertProfile.findMany({ where: { branchTitle: { not: null } }, select: { branchTitle: true }, distinct: ["branchTitle"] }),
-    db.expertProfile.findMany({ where: { headManager: { not: null } }, select: { headManager: true }, distinct: ["headManager"] }),
-    db.expertProfile.findMany({ where: { roleTitle: { not: null } }, select: { roleTitle: true }, distinct: ["roleTitle"] }),
-    db.expertProfile.findMany({ where: { city: { not: null } }, select: { city: true }, distinct: ["city"] }),
-    db.expertProfile.findMany({ where: { employmentType: { not: null } }, select: { employmentType: true }, distinct: ["employmentType"] }),
+    db.expertProfile.findMany({ where: { tenantId, branchTitle: { not: null } }, select: { branchTitle: true }, distinct: ["branchTitle"] }),
+    db.expertProfile.findMany({ where: { tenantId, headManager: { not: null } }, select: { headManager: true }, distinct: ["headManager"] }),
+    db.expertProfile.findMany({ where: { tenantId, roleTitle: { not: null } }, select: { roleTitle: true }, distinct: ["roleTitle"] }),
+    db.expertProfile.findMany({ where: { tenantId, city: { not: null } }, select: { city: true }, distinct: ["city"] }),
+    db.expertProfile.findMany({ where: { tenantId, employmentType: { not: null } }, select: { employmentType: true }, distinct: ["employmentType"] }),
   ]);
   return {
     branches: branches.map((b) => b.branchTitle as string).sort((a, b) => a.localeCompare(b, "fa")),
