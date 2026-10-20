@@ -251,6 +251,10 @@ export interface ArmRequestCatalogRow {
   /** P6530/گام ۲ — بازهٔ قیمت متقاضی (تومان): از / تا (از جزئیات ARM — inputsJson قیمت کل) */
   priceFrom: number | null;
   priceTo: number | null;
+  /** PN-046/گام اول-۱ — بودجهٔ رهن/پیش‌پرداخت درخواست ملکتون (CRM prepayment) */
+  depositBudget: number | null;
+  /** PN-046/گام اول-۱ — بودجهٔ اجارهٔ درخواست ملکتون (CRM rent) */
+  rentBudget: number | null;
   /** P6547/گام دوم — روش پرداخت متقاضی (userPaymentMethod.name خود ردیف فهرست) */
   paymentMethodName: string | null;
   /** P6547/گام دوم — جدیت متقاضی (userSeriousity.name خود ردیف فهرست) */
@@ -417,10 +421,12 @@ export interface PropertyRecordRepository {
   upsertBulk(rows: PropertyBulkInput[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
   /** P6.5-10 — کاتالوگ تک‌صفحه‌ای با فیلتر کدآگهی/نام کارشناس (جدیدترین اول) */
   listArmCatalog(filter: ArmListingCatalogFilter, limit: number): Promise<{ rows: ArmListingCatalogRow[]; total: number }>;
-  /** P6521/M1 — توزیع وضعیت‌های خام (status × count) برای بینش شش‌حالته */
-  statusBreakdown(): Promise<Array<{ status: string | null; count: number }>>;
-  /** P6.5-10 — شمارش غنی‌سازی: total / pending / complete */
-  countEnrichment(): Promise<EnrichmentCounts>;
+  /** P6521/M1 — توزیع وضعیت‌های خام (status × count) برای بینش شش‌حالته
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz' (سازگار عقبه) */
+  statusBreakdown(tenantId?: string): Promise<Array<{ status: string | null; count: number }>>;
+  /** P6.5-10 — شمارش غنی‌سازی: total / pending / complete
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz' (سازگار عقبه) */
+  countEnrichment(tenantId?: string): Promise<EnrichmentCounts>;
   /** P6.5-10 — برش ردیف‌های در انتظار غنی‌سازی (جدیدترین اول؛ rowIds = هدفگذاری دقیق) */
   listPendingEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]>;
   /** P6.5-11 (بند پ-۵) — تماس مالک ملک بر اساس کدآگهی‌ها (دسته‌ای؛ برای ستون‌های فهرست معاملات) */

@@ -288,20 +288,24 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     return { rows, total: matched.length };
   }
 
-  /** P6521/M1 — توزیع وضعیت‌های خام برای بینش شش‌حالته (groupBy status) */
-  async statusBreakdown(): Promise<Array<{ status: string | null; count: number }>> {
+  /** P6521/M1 — توزیع وضعیت‌های خام برای بینش شش‌حالته (groupBy status)
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz'؛ پیش از این بدون فیلتر
+   *  بود و بینش وضعیت داشبورد ملکتون اعداد تبریز را نشان می‌داد (نشت بین-tenant). */
+  async statusBreakdown(tenantId: string = "melk-tabriz"): Promise<Array<{ status: string | null; count: number }>> {
     const grouped = await this.client.propertyRecord.groupBy({
       by: ["status"],
+      where: { tenantId },
       _count: { _all: true },
     });
     return grouped.map((g) => ({ status: g.status, count: g._count._all }));
   }
 
-  /** شمارش غنی‌سازی — extractionBatchId تهی = در انتظار لایه ۲ */
-  async countEnrichment(): Promise<EnrichmentCounts> {
+  /** شمارش غنی‌سازی — extractionBatchId تهی = در انتظار لایه ۲
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz' (سازگار عقبه) */
+  async countEnrichment(tenantId: string = "melk-tabriz"): Promise<EnrichmentCounts> {
     const [total, pending] = await Promise.all([
-      this.client.propertyRecord.count(),
-      this.client.propertyRecord.count({ where: { extractionBatchId: null } }),
+      this.client.propertyRecord.count({ where: { tenantId } }),
+      this.client.propertyRecord.count({ where: { tenantId, extractionBatchId: null } }),
     ]);
     return { total, pending, complete: total - pending };
   }

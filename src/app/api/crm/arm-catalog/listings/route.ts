@@ -188,9 +188,10 @@ export async function GET(request: NextRequest) {
 
     await witnessScopedRead(guard, "property", total, access.isOwnerRead, ownerLoginPath(guard));
 
-    const counts = await repo.countEnrichment();
+    // PN-046/گام اول-۱ — تجمع‌ها tenant-scoped: بینش وضعیت/غنی‌سازی هر داشبورد از دادهٔ خودش
+    const counts = await repo.countEnrichment(tenantId);
     // P6530/گام ۱ — بینش توزیع ده‌حالته (بند ۳ — همیشه از کل کاتالوگ، مستقل از فیلتر فعال)
-    const breakdown = await repo.statusBreakdown();
+    const breakdown = await repo.statusBreakdown(tenantId);
     const statusCounts = rollupStatusCounts(breakdown.map((b) => [b.status, b.count] as [string | null, number]));
 
     // ---- P6530/گام ۱ — وضعیت بروزرسانی (بند ۴.۲: تاریخ/ساعت دقیق آخرین بروزرسانی + نقطهٔ ادامه) ----

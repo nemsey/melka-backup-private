@@ -48,13 +48,18 @@ import { readOwnerBranchMap, readPmBranchMap } from "@/lib/branch-store";
 // تکرار نمی‌شود؛ daemon کاتالوگ هر چرخه داده را تازه می‌کند — ۶۰ث << چرخهٔ daemon.
 // قید: صفر تغییر شکل پاسخ — فقط منبع محاسبهٔ همان فیلدها کش می‌شود.
 type M2Aggregates = { counts: { total: number; pending: number; complete: number }; breakdown: Array<{ status: string | null; count: number }> };
-let m2AggCache: { data: M2Aggregates; expiresAt: number } | null = null;
+// PN-046/گام اول-۱ — کش per-tenant (پیش از این کش سراسری بود و عدد تبریز به ملکتون نشت می‌کرد)
+let m2AggCache: Map<string, { data: M2Aggregates; expiresAt: number }> = new Map();
 const M2_AGG_TTL_MS = 60 * 1000;
-async function getM2Aggregates(repo: { countArmEnrichment(): Promise<M2Aggregates["counts"]>; statusBreakdownArm(): Promise<M2Aggregates["breakdown"]> }): Promise<M2Aggregates> {
-  if (m2AggCache && m2AggCache.expiresAt > Date.now()) return m2AggCache.data;
-  const [counts, breakdown] = await Promise.all([repo.countArmEnrichment(), repo.statusBreakdownArm()]);
+async function getM2Aggregates(
+  repo: { countArmEnrichment(tenantId?: string): Promise<M2Aggregates["counts"]>; statusBreakdownArm(tenantId?: string): Promise<M2Aggregates["breakdown"]> },
+  tenantId: string,
+): Promise<M2Aggregates> {
+  const hit = m2AggCache.get(tenantId);
+  if (hit && hit.expiresAt > Date.now()) return hit.data;
+  const [counts, breakdown] = await Promise.all([repo.countArmEnrichment(tenantId), repo.statusBreakdownArm(tenantId)]);
   const data: M2Aggregates = { counts, breakdown };
-  m2AggCache = { data, expiresAt: Date.now() + M2_AGG_TTL_MS };
+  m2AggCache.set(tenantId, { data, expiresAt: Date.now() + M2_AGG_TTL_MS });
   return data;
 }
 
@@ -184,7 +189,7 @@ export async function GET(request: NextRequest) {
     await witnessScopedRead(guard, "arm-request", total, access.isOwnerRead, ownerLoginPath(guard));
 
     // PN-027 · ۵-پ-۶ — تجمع‌های کمکی از کش ۶۰ثانه (زیر چرخهٔ daemon)؛ در سرد = همان دو کوئری
-    const { counts, breakdown } = await getM2Aggregates(repo);
+    const { counts, breakdown } = await getM2Aggregates(repo, tenantId);
     // P6530/گام ۲ (بند ۳) — بینش توزیع شش‌حالته از کل کاتالوگ
     const statusCounts = rollupRequestStatusCounts(breakdown.map((b) => [b.status, b.count] as [string | null, number]));
 

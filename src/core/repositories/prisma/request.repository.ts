@@ -293,6 +293,9 @@ export class PrismaRequestRepository implements RequestRepository {
         buildingTypeName: true,
         priceFrom: true,
         priceTo: true,
+        // PN-046/گام اول-۱ — بودجهٔ رهن/اجارهٔ ملکتون (افزودنی §۱۴)
+        depositBudget: true,
+        rentBudget: true,
         extractedAt: true,
         createdAt: true,
         updatedAt: true,
@@ -363,6 +366,9 @@ export class PrismaRequestRepository implements RequestRepository {
       buildingTypeName: r.buildingTypeName,
       priceFrom: r.priceFrom,
       priceTo: r.priceTo,
+      // PN-046/گام اول-۱ — بودجهٔ رهن/اجارهٔ ملکتون
+      depositBudget: r.depositBudget,
+      rentBudget: r.rentBudget,
       paymentMethodName: r.userPaymentMethodName,
       seriousnessName: r.userSeriousityName,
       urgent: r.urgent,
@@ -398,12 +404,14 @@ export class PrismaRequestRepository implements RequestRepository {
     return { rows, total: matched.length };
   }
 
-  /** شمارش غنی‌سازی درخواست‌های ARM — extractionBatchId تهی = در انتظار لایه ۲ */
-  async countArmEnrichment(): Promise<EnrichmentCounts> {
-    const whereArm: Prisma.RequestRecordWhereInput = { source: "arm" };
+  /** شمارش غنی‌سازی درخواست‌های ARM — extractionBatchId تهی = در انتظار لایه ۲
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz'؛ برای ملکتون شمارش روی
+   *  tenantId (source='melketun-crm') — پیش از این عدد تبریز به ملکتون نشت می‌کرد. */
+  async countArmEnrichment(tenantId: string = "melk-tabriz"): Promise<EnrichmentCounts> {
+    const whereArm: Prisma.RequestRecordWhereInput = tenantId === "melk-tabriz" ? { source: "arm" } : { tenantId };
     const [total, pending] = await Promise.all([
       this.client.requestRecord.count({ where: whereArm }),
-      this.client.requestRecord.count({ where: { source: "arm", extractionBatchId: null } }),
+      this.client.requestRecord.count({ where: { ...whereArm, extractionBatchId: null } }),
     ]);
     return { total, pending, complete: total - pending };
   }
@@ -413,11 +421,12 @@ export class PrismaRequestRepository implements RequestRepository {
     return this.client.requestRecord.count({ where: { source: "arm" } });
   }
 
-  /** P6530/گام ۲ (بند ۳) — توزیع وضعیت‌های خام درخواست‌های ARM (status × count) برای بینش شش‌حالته */
-  async statusBreakdownArm(): Promise<Array<{ status: string | null; count: number }>> {
+  /** P6530/گام ۲ (بند ۳) — توزیع وضعیت‌های خام درخواست‌های ARM (status × count) برای بینش شش‌حالته
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz'؛ برای ملکتون روی tenantId */
+  async statusBreakdownArm(tenantId: string = "melk-tabriz"): Promise<Array<{ status: string | null; count: number }>> {
     const grouped = await this.client.requestRecord.groupBy({
       by: ["status"],
-      where: { source: "arm" },
+      where: tenantId === "melk-tabriz" ? { source: "arm" } : { tenantId },
       _count: { _all: true },
     });
     return grouped.map((g) => ({ status: g.status, count: g._count._all }));

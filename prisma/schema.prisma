@@ -1340,6 +1340,12 @@ model RequestRecord {
   priceFrom           Float?
   /// P6530/گام ۲ — سقف قیمت متقاضی (تومان) از جزئیات ARM (ستون فهرست M2)
   priceTo             Float?
+  /// PN-046/گام اول-۱ (§۱۴ افزودنی) — بودجهٔ رهن/پیش‌پرداخت درخواست ملکتون
+  /// (prepayment خود CRM — ستون فهرست M2 ملکتون؛ برای ARM تهی می‌ماند)
+  depositBudget       Float?
+  /// PN-046/گام اول-۱ (§۱۴ افزودنی) — بودجهٔ اجارهٔ درخواست ملکتون
+  /// (rent خود CRM — ستون فهرست M2 ملکتون؛ برای ARM تهی می‌ماند)
+  rentBudget          Float?
   /// توضیحات مشتری (عین خود سامانه)
   customerDescription String?
 

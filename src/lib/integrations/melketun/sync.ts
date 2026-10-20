@@ -162,6 +162,48 @@ function toFloat(raw: unknown): number | null {
   return n > 0 ? n : null;
 }
 
+/**
+ * PN-046/گام اول-۱ — پارس «مقدار قابل صفر بودن»: ۰ دادهٔ واقعی است
+ * (فروش = بدون رهن/اجاره؛ صفر ≠ تهی — «تمام ستون‌ها دارای داده» دستور مالک).
+ */
+function toFloatOrZero(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === "") return null;
+  if (typeof raw === "number") return Number.isFinite(raw) && raw >= 0 ? raw : null;
+  if (typeof raw !== "string") return null;
+  const normalized = raw
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[,،]/g, "")
+    .trim();
+  if (!normalized || !/^\d+(\.\d+)?$/.test(normalized)) return null;
+  const n = Number(normalized);
+  return n >= 0 ? n : null;
+}
+
+/**
+ * PN-046/گام اول-۱ — پارس تاریخ شمسی CRM ملکتون → Date
+ * نمونه‌ها: «27 مهر 1405، ساعت 19:32» · «23 مهر 1405 01:13» · «15 مهر 1405»
+ * (jalaliToGregorian از کتابخانهٔ یگانهٔ src/lib/jalali.ts — بدون وابستگی بیرونی).
+ */
+import { jalaliToGregorian as melJalaliToGregorian } from "@/lib/jalali";
+const MELKETUN_MONTHS: Record<string, number> = {
+  "فروردین": 1, "اردیبهشت": 2, "خرداد": 3, "تیر": 4, "مرداد": 5, "شهریور": 6,
+  "مهر": 7, "آبان": 8, "آذر": 9, "دی": 10, "بهمن": 11, "اسفند": 12,
+};
+function parseMelketunJalali(raw: unknown): Date | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const m = raw.match(/(\d{1,2})\s+([\u0600-\u06FF]+)\s+(\d{4})/);
+  if (!m) return null;
+  const day = Number(m[1]);
+  const month = MELKETUN_MONTHS[m[2]];
+  const year = Number(m[3]);
+  if (!month || !day || !year) return null;
+  const tm = raw.match(/(\d{1,2}):(\d{2})/);
+  const [gYear, gMonth, gDay] = melJalaliToGregorian(year, month, day);
+  const d = new Date(Date.UTC(gYear, gMonth - 1, gDay, tm ? Number(tm[1]) : 0, tm ? Number(tm[2]) : 0));
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
 // ── لاگین نشست (فاز ۰ تأیید: POST /login-store) ────────────────────────────
 async function crmLogin(baseUrl: string, username: string, password: string, errors: string[]): Promise<CookieJar> {
   const jar = new CookieJar();
@@ -275,31 +317,51 @@ function filingToProperty(f: FilingRow, runId: string) {
   const saleType = f.saleType?.trim() || null;
   const fileType = f.fileType?.trim() || null;
   const area = f.area?.trim() || null;
+  const agency = f.agency?.trim() || null;
   const details: { label: string; value: string }[] = [
     { label: "نوع ملک", value: fileType ?? "" },
     { label: "نوع معامله", value: saleType ?? "" },
     { label: "منطقه", value: area ?? "" },
     { label: "پیش‌پرداخت", value: String(f.prepayment ?? "") },
     { label: "اجاره", value: String(f.rent ?? "") },
-    { label: "آژانس", value: f.agency ?? "" },
+    { label: "آژانس", value: agency ?? "" },
     { label: "منبع", value: f.source ?? "" },
     { label: "تلفن", value: f.phone ?? "" },
+    { label: "کاربر مسئول", value: f.assignedUser ?? "" },
     { label: "زمان ثبت (ملکتون)", value: f.createdTime ?? "" },
     { label: "شناسهٔ کامل", value: f.full_id ?? f.id },
     { label: "تصاویر", value: `${(f.images ?? []).length} تصویر` },
   ].filter((d) => d.value !== "");
+
+  // PN-046/گام اول-۱ — استخراج فراجامع به ستون‌های ساختاری (تمام ستون‌های فهرست مختص ملکتون پُر):
+  //   realtorName (کارشناس/آژانس) = ownerName سامانهٔ ما ← آژانس CRM؛
+  //   rawOwnerName = مالک واقعی (ownerName CRM) → ستون «مالک» + ownerMobile = تلفن.
+  const deposit = toFloatOrZero(f.prepayment);
+  const rent = toFloatOrZero(f.rent);
+  const isRental = saleType?.includes("اجاره") === true || (rent ?? 0) > 0 || saleType?.includes("رهن") === true;
 
   return {
     id: f.id, // شناسهٔ vtiger ('71x…') — بدون تصادم با objectId های ARM
     propertyCode: f.code?.trim() || f.id, // 'ME8418' — بدون تصادم با کدهای عددی ARM
     title: [saleType, fileType, area && `در ${area}`].filter(Boolean).join(" ") || null,
     status: f.status?.trim() || null,
-    ownerName: f.ownerName?.trim() || null,
+    ownerName: agency, // کارشناس/آژانسِ مسئول فایل (الگوی کاتالوگ M1)
+    rawOwnerName: f.ownerName?.trim() || null, // مالک واقعی ملک (ستون «مالک»)
     ownerMobile: f.phone?.replace(/\D/g, "") || null,
     areaName: area,
     propertyTypeName: fileType,
     tradeTypeName: saleType,
     price: toFloat(f.price),
+    // بودجهٔ اجاره‌ای — ۰ هم دادهٔ واقعی است (فروش = بدون رهن/اجاره)
+    depositPrice: deposit,
+    rentPrice: rent,
+    isRental,
+    imageCount: (f.images ?? []).length,
+    // شهر/استان — استنتاج صادقانه از فیلتر «فقط تبریز» (دستور مالک گام اول-۳)
+    cityName: "تبریز",
+    stateName: "آذربایجان شرقی",
+    armBranchTitle: agency, // ستون شعبه/آژانس (زنجیرهٔ شعبه تبریز برای ملکتون کاربرد ندارد)
+    createdAt: parseMelketunJalali(f.createdTime), // تاریخ ثبت واقعی CRM (شمسی → میلادی)
     detailsJson: JSON.stringify(details),
     tenantId: MELKETUN_TENANT_ID,
     sourceRunId: runId,
@@ -307,7 +369,7 @@ function filingToProperty(f: FilingRow, runId: string) {
     rawSourceVersion: "melketun-crm",
     extractedAt: new Date(),
     extractionBatchId: runId,
-    normalizationVersion: "pn044-v1",
+    normalizationVersion: "pn046-v2",
   };
 }
 
@@ -336,6 +398,10 @@ function potentialToRequest(p: PotentialRow, runId: string) {
     tradeTypeName: p.customerType?.includes("اجاره") ? "رهن و اجاره" : p.customerType?.includes("خرید") ? "فروش" : null,
     priceFrom: priceVal,
     priceTo: priceVal,
+    // PN-046/گام اول-۱ — بودجهٔ رهن/اجاره (ستون‌های فهرست M2 ملکتون — §۱۴ افزودنی)
+    depositBudget: toFloatOrZero(p.prepayment),
+    rentBudget: toFloatOrZero(p.rent),
+    urgent: null, // فیلد معادل در CRM ملکتون وجود ندارد (صادقانه — قانون ۱۴)
     inputsJson: JSON.stringify(inputs),
     status: p.status?.trim() || "فعال",
     actorCode: "melketun-sync",
@@ -346,7 +412,8 @@ function potentialToRequest(p: PotentialRow, runId: string) {
     rawSourceVersion: "melketun-crm",
     extractedAt: new Date(),
     extractionBatchId: runId,
-    normalizationVersion: "pn044-v1",
+    normalizationVersion: "pn046-v2",
+    createdAt: parseMelketunJalali(p.createdTime) ?? undefined, // تاریخ ثبت واقعی CRM
     // spaceFrom/roomsFrom و… در دادهٔ ملکتون موجود نیست — null می‌مانند (صادقانه)
   };
 }
