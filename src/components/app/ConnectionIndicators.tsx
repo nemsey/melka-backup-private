@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * نوار نشانگرهای اتصال — ده چراغ سبز/قرمز (P6546/گام صفر)
+ * نوار نشانگرهای اتصال — یازده چراغ سبز/قرمز (P6546/گام صفر + PN-046/گام صفر)
  * ------------------------------------------------------
  * هر اتصالِ تنظیم‌شده در تنظیمات عمومی، اینجا به‌صورت چراغ نشان داده می‌شود:
  * سبز = برقرار | قرمز = قطع — با تازه‌سازی خودکار هر ۶۰ ثانیه
  * ۱. حساب شخصی ARM  ۲. API ARM  ۳. حساب شخصی PM  ۴. API PM
  * ۵. سامانه عمومی ملک تبریز  ۶. API GAP
- * ۷. API دیوار  ۸. حساب شخصی دیوار  ۹. حساب اینستاگرام
+ * ۷. CRM ملکتون (ورود واقعی یوزر/پسورد — PN-046)  ۸. سایت عمومی ملکتون (PN-046)
+ * ۹. API دیوار  ۱۰. حساب شخصی دیوار  ۱۱. حساب اینستاگرام
  *
  * جلسهٔ ۰۳۳ (دستور مالک): چراغ «حساب GAP» حذف شد (بخش اتصال GAP هم از تنظیمات حذف شد).
  *
@@ -40,6 +41,8 @@ const LABELS_FA: Record<string, string> = {
   pmApi: "اتصال به api سامانه pm",
   melkPublicApi: "اتصال به سامانه عمومی ملک تبریز",
   gapApi: "اتصال به api سامانه gap",
+  melketunCrm: "اتصال به CRM ملکتون (حساب شخصی یوزر/پسورد)",
+  melketunPublic: "اتصال به سایت عمومی ملکتون",
   divarApi: "اتصال به api دیوار",
   divarAccount: "اتصال به حساب شخصی دیوار",
   instagramAccount: "اتصال به حساب اینستاگرام",
@@ -53,13 +56,15 @@ const LABELS_SHORT_FA: Record<string, string> = {
   pmApi: "API PM",
   melkPublicApi: "سامانه عمومی ملک",
   gapApi: "API GAP",
+  melketunCrm: "CRM ملکتون",
+  melketunPublic: "سایت عمومی ملکتون",
   divarApi: "API دیوار",
   divarAccount: "حساب دیوار",
   instagramAccount: "اینستاگرام",
 };
 
-/** ترتیب مالک: سامانه‌های ملک تبریز اول، سپس دیوار و اینستاگرام */
-const ORDER = ["armAccount", "armApi", "pmAccount", "pmApi", "melkPublicApi", "gapApi", "divarApi", "divarAccount", "instagramAccount"];
+/** ترتیب مالک: سامانه‌های ملک تبریز اول، سپس ملکتون (PN-046)، سپس دیوار و اینستاگرام */
+const ORDER = ["armAccount", "armApi", "pmAccount", "pmApi", "melkPublicApi", "gapApi", "melketunCrm", "melketunPublic", "divarApi", "divarAccount", "instagramAccount"];
 const TOTAL = ORDER.length;
 
 export function ConnectionIndicators({ variant = "full" }: { variant?: "full" | "compact" }) {

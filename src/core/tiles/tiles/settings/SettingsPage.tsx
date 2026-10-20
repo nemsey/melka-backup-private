@@ -7,6 +7,7 @@
  *
  * ترتیب الزامی بخش‌ها (دستور مالک — گام صفر-۷):
  *   ۱. اتصال به ملک تبریز (پیکرهٔ یکپارچهٔ همهٔ سامانه‌های ملک تبریز: مدیریت + ARM + PM + GAP + سامانه عمومی)
+ *   ۱-ب. اتصال به ملکتون (PN-046/گام صفر — پیکرهٔ یکپارچهٔ همانند تبریز، جایگاه: درست زیر تبریز؛ حساب شخصی = یوزر + پسورد)
  *   ۲. اتصال به دیوار
  *   ۳. اتصال به اینستاگرام
  *   ۴. مغز هوشمند و یادگیر ملکا
@@ -16,11 +17,13 @@
  */
 
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Landmark, PenLine } from "lucide-react";
-import Link from "next/link";
+import { BookOpen, PenLine } from "lucide-react";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 // P6546/گام صفر — پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز»
 import { MelkTabrizConnectionSection } from "./MelkTabrizConnectionSection";
+// PN-046/گام صفر (دستور مالک ۱۴۰۵/۰۷/۲۸) — پیکرهٔ یکپارچهٔ «اتصال به ملکتون»:
+// همانند الگوی تبریز ولی با حساب شخصی یوزر/پسورد — جایگاه: درست زیر پیکرهٔ تبریز
+import { MelketunConnectionSection } from "./MelketunConnectionSection";
 import { DivarConnectionSection } from "./DivarConnectionSection";
 import { InstagramConnectionSection } from "./InstagramConnectionSection";
 import { BrainStatusSection } from "./BrainStatusSection";
@@ -55,6 +58,10 @@ export function SettingsPage({ onBack }: TilePageProps) {
       {/* ۱ — اتصال به ملک تبریز (پیکرهٔ یکپارچه — گام صفر-۳) */}
       <MelkTabrizConnectionSection />
 
+      {/* ۱-ب — PN-046/گام صفر (دستور مالک): اتصال به ملکتون — پیکرهٔ یکپارچه،
+          درست «زیر» پیکرهٔ یکپارچهٔ اتصال سامانه‌های ملک تبریز (نکتهٔ دستور) */}
+      <MelketunConnectionSection />
+
       {/* ۲ — اتصال به دیوار */}
       <DivarConnectionSection />
 
@@ -74,23 +81,6 @@ export function SettingsPage({ onBack }: TilePageProps) {
 
       {/* ۹ — PN-017 (دستور مالک ۱۴۰۵/۰۷/۱۹): «مدیریت دسترسی کارشناسان ملکا» (جایگاه پیشین مدیریت کاربران — جابه‌جایی کامل) */}
       <PersonnelAccessSection />
-
-      {/* ۱۰ — PN-043/فاز ۳ (شورا-ن۰۸۷): تنظیمات یکپارچهٔ ملکتون — اتصال به CRM + عمومی + رله */}
-      <Card className="border-indigo-200 bg-indigo-50/50">
-        <CardContent className="p-4 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Landmark className="w-5 h-5 text-indigo-700 shrink-0" aria-hidden />
-            <span className="text-sm font-bold">تنظیمات ملکتون (اتصال CRM + سایت عمومی + رله Termux)</span>
-          </div>
-          <Link
-            href="/settings/melketun"
-            className="text-xs font-bold text-indigo-700 underline underline-offset-4"
-            data-testid="melketun-settings-link"
-          >
-            باز کردن ←
-          </Link>
-        </CardContent>
-      </Card>
 
       {/* اعتبار */}
       <Card>

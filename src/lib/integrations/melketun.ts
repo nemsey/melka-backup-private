@@ -4,18 +4,32 @@
 // PN-044/فاز ۲-۳ (شورا-ن۰۸۸) — لاگین واقعی کشف و پیاده شد:
 //   CRM = Laravel + Inertia · POST /login-store (فیلدهای دقیق Username/Password)
 //   + هدر X-XSRF-TOKEN · راستی‌آزمایی: GET /dashboard → 200 (لاگ: pn044/recon.log)
+// PN-046/گام صفر (دستور مالک ۱۴۰۵/۰۷/۲۸) — بازنویسی تنظیمات اتصال ملکتون
+//   دقیقاً همانند الگوی «اتصال به ملک تبریز»:
+//   · saveCredentials — فرم یوزر/پسورد مالک (بجای کدپرسنلی + پیامک تبریز)
+//   · وضعیت اتصال پایدار (state file) — سوخت نشانگر نوار وضعیت + تنظیمات
 // Doctrine: no LLM, no cost, no auto_execute.
 // Secrets live in the Persistent Zone file upload/.runtime/melketun-secrets.json
-// (chmod 600 — never in code, never in git, never printed to logs).
+// (chmod 600 — never in code, never in git, never printed to logs — قانون ۱۲/۱۸).
 
 import fs from 'fs'
 import path from 'path'
 
-const SECRET_FILE = path.join(process.cwd(), 'upload/.runtime/melketun-secrets.json')
+const RUNTIME_DIR = path.join(process.cwd(), 'upload/.runtime')
+const SECRET_FILE = path.join(RUNTIME_DIR, 'melketun-secrets.json')
+/** PN-046/گام صفر — وضعیت آخرین ورود واقعی (سوخت نوار وضعیت + بخش تنظیمات) */
+const STATE_FILE = path.join(RUNTIME_DIR, 'melketun-connection-state.json')
 
 interface MelketunSecrets {
   crm: { base_url: string; username: string; password: string }
   public: { base_url: string }
+}
+
+export interface MelketunConnectionState {
+  ok: boolean
+  at: string
+  note: string
+  username: string
 }
 
 let _cached: MelketunSecrets | null = null
@@ -26,6 +40,62 @@ function loadSecrets(): MelketunSecrets {
   return _cached
 }
 
+/** رازها بعد از تغییر اعتبارنامه از نو خوانده می‌شوند (هر دو مصرف‌کننده هم‌راستا) */
+export function invalidateMelketunSecretsCache(): void {
+  _cached = null
+}
+
+/**
+ * PN-046/گام صفر — ذخیرهٔ اعتبارنامهٔ حساب شخصی CRM ملکتون (یوزر + پسورد).
+ * نوشتن اتمیک + chmod 600 — فقط در Persistent Zone (هرگز در کد/گیت/لاگ).
+ */
+export function saveMelketunCredentials(username: string, password: string): void {
+  const trimmedUser = username.trim()
+  if (!trimmedUser || !password.trim()) {
+    throw new Error('نام کاربری و رمز عبور هر دو لازم است (قانون ۱۲ — خالی ممنوع).')
+  }
+  const current = loadSecrets()
+  const next: MelketunSecrets = {
+    crm: { ...current.crm, username: trimmedUser, password: password.trim() },
+    public: { ...current.public },
+  }
+  fs.mkdirSync(RUNTIME_DIR, { recursive: true })
+  const tmp = `${SECRET_FILE}.tmp`
+  fs.writeFileSync(tmp, JSON.stringify(next, null, 2), { mode: 0o600 })
+  fs.renameSync(tmp, SECRET_FILE)
+  fs.chmodSync(SECRET_FILE, 0o600)
+  _cached = null // کش باطل — خواندن بعدی از فایل تازه
+}
+
+/** PN-046/گام صفر — ثبت وضعیت آخرین ورود واقعی (پایدار در برابر ری‌استارت) */
+export function recordMelketunConnection(ok: boolean, note: string): void {
+  try {
+    fs.mkdirSync(RUNTIME_DIR, { recursive: true })
+    const state: MelketunConnectionState = {
+      ok,
+      at: new Date().toISOString(),
+      note,
+      username: (() => { try { return loadSecrets().crm.username } catch { return '' } })(),
+    }
+    const tmp = `${STATE_FILE}.tmp`
+    fs.writeFileSync(tmp, JSON.stringify(state, null, 2), { mode: 0o600 })
+    fs.renameSync(tmp, STATE_FILE)
+    fs.chmodSync(STATE_FILE, 0o600)
+  } catch {
+    // ثبت وضعیت نباید جریان اصلی را بشکند — نشانگر «آزمایش‌نشده» صادقانه می‌ماند
+  }
+}
+
+/** PN-046/گام صفر — خواندن وضعیت اتصال (null = هنوز هیچ ورودی آزمایش نشده) */
+export function getMelketunConnection(): MelketunConnectionState | null {
+  try {
+    const raw = fs.readFileSync(STATE_FILE, 'utf8')
+    return JSON.parse(raw) as MelketunConnectionState
+  } catch {
+    return null
+  }
+}
+
 /**
  * Metadata for the settings UI — NEVER includes the password itself.
  * (رمز هرگز برنمی‌گردد — فقط نمایش ماسک‌شده)
@@ -34,6 +104,8 @@ export function melketunMeta(): {
   crm: { base_url: string; username: string; passwordMasked: string }
   public: { base_url: string }
   connectionMode: 'direct' | 'relay' | 'blocked'
+  /** PN-046/گام صفر — وضعیت آخرین ورود واقعی CRM (سوخت نشانگر) */
+  connection: MelketunConnectionState | null
 } {
   const s = loadSecrets()
   // Verdict فاز ۰: اتصال مستقیم برقرار است (رله لازم نیست)
@@ -41,6 +113,7 @@ export function melketunMeta(): {
     crm: { base_url: s.crm.base_url, username: s.crm.username, passwordMasked: '••••••••' },
     public: { base_url: s.public.base_url },
     connectionMode: 'direct',
+    connection: getMelketunConnection(),
   }
 }
 
@@ -49,9 +122,9 @@ export const melketun = {
     const s = loadSecrets()
     const t0 = Date.now()
     try {
-      const res = await fetch(s.public.base_url, { method: 'HEAD' })
+      const res = await fetch(s.public.base_url, { method: 'HEAD', signal: AbortSignal.timeout(10_000) })
       return { ok: res.ok, status: res.status, latencyMs: Date.now() - t0 }
-    } catch (e) {
+    } catch {
       return { ok: false, status: 0, latencyMs: Date.now() - t0 }
     }
   },
@@ -61,6 +134,8 @@ export const melketun = {
     // PN-044/فاز ۰ کشف: POST /login-store (فیلدهای Username/Password + X-XSRF-TOKEN).
     // لاگین واقعی + راستی‌آزمایی GET /dashboard → 200 (نه صرفاً reachability).
     // رمز هرگز در پاسخ/لاگ برنمی‌گردد (قانون ۱۲/۱۸).
+    // PN-046/گام صفر: نتیجه در state file ثبت می‌شود (نوار وضعیت + تنظیمات).
+    let result: { ok: boolean; status: number; note: string }
     try {
       const base = s.crm.base_url.replace(/\/$/, '')
       const cookies = new Map<string, string>()
@@ -83,7 +158,11 @@ export const melketun = {
 
       const loginPage = await fetch(`${base}/login`, { signal: AbortSignal.timeout(20_000) })
       absorb(loginPage)
-      if (!loginPage.ok) return { ok: false, status: loginPage.status, note: `GET /login → ${loginPage.status}` }
+      if (!loginPage.ok) {
+        result = { ok: false, status: loginPage.status, note: `GET /login → ${loginPage.status}` }
+        recordMelketunConnection(false, result.note)
+        return result
+      }
 
       const loginRes = await fetch(`${base}/login-store`, {
         method: 'POST',
@@ -98,7 +177,9 @@ export const melketun = {
       })
       absorb(loginRes)
       if (loginRes.status !== 302 && loginRes.status !== 303) {
-        return { ok: false, status: loginRes.status, note: `login-store → ${loginRes.status} (bad credentials or CSRF)` }
+        result = { ok: false, status: loginRes.status, note: `login-store → ${loginRes.status} (bad credentials or CSRF)` }
+        recordMelketunConnection(false, result.note)
+        return result
       }
 
       const verify = await fetch(`${base}/dashboard`, {
@@ -107,15 +188,17 @@ export const melketun = {
         signal: AbortSignal.timeout(20_000),
       })
       const ok = verify.status === 200
-      return {
+      result = {
         ok,
         status: verify.status,
         note: ok
-          ? 'real login OK (POST /login-store · dashboard 200) — session-based'
+          ? 'ورود واقعی موفق (POST /login-store · dashboard 200) — session-based'
           : `login verify failed (dashboard → ${verify.status})`,
       }
     } catch (e) {
-      return { ok: false, status: 0, note: e instanceof Error ? e.message : 'unreachable' }
+      result = { ok: false, status: 0, note: e instanceof Error ? e.message : 'unreachable' }
     }
+    recordMelketunConnection(result.ok, result.note)
+    return result
   },
 }

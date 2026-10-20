@@ -30,6 +30,7 @@
 import fs from "fs";
 import path from "path";
 import { db } from "@/lib/db";
+import { recordMelketunConnection } from "@/lib/integrations/melketun";
 
 const SECRET_FILE = path.join(process.cwd(), "upload/.runtime/melketun-secrets.json");
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -396,7 +397,10 @@ export async function syncMelketun(): Promise<SyncResult> {
     const { username, password } = secrets.crm;
 
     const jar = await crmLogin(base, username, password, result.errors);
-    if (result.errors.some((e) => e.startsWith("POST /login-store") || e.startsWith("login verify"))) {
+    const loginFailed = result.errors.some((e) => e.startsWith("POST /login-store") || e.startsWith("login verify"));
+    // PN-046/گام صفر — وضعیت اتصال پایدار (سوخت نوار وضعیت + تنظیمات) از هر sync واقعی
+    recordMelketunConnection(!loginFailed, loginFailed ? result.errors.join(" · ") : `sync login OK (${username})`);
+    if (loginFailed) {
       result.durationMs = Date.now() - t0;
       return result; // لاگین ناموفق — صفر sync (گزارش صادقانه، قانون ۱۴)
     }
