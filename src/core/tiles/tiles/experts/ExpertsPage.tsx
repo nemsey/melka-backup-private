@@ -555,17 +555,27 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   <TableHead className="w-10">ردیف</TableHead>
                   <TableHead className="min-w-40">کارشناس</TableHead>
                   <TableHead className="min-w-24">کد پرسنلی</TableHead>
-                  <TableHead className="min-w-24">شعبه</TableHead>
-                  <TableHead className="min-w-24">مبایعه نامه</TableHead>
-                  <TableHead className="min-w-24">اجاره نامه</TableHead>
-                  <TableHead className="min-w-24">تاریخ استخدام</TableHead>
-                  <TableHead className="min-w-36">آدرس کارشناس</TableHead>
-                  <TableHead className="min-w-24">سمت پرسنلی</TableHead>
-                  <TableHead className="min-w-24">نوع همکاری</TableHead>
-                  <TableHead className="min-w-24">مدیر</TableHead>
-                  <TableHead className="min-w-24">تلفن ثابت</TableHead>
-                  <TableHead className="min-w-20">کد پستی</TableHead>
-                  <TableHead className="min-w-16">داخلی</TableHead>
+                  <TableHead className="min-w-24">{isMelketun ? "شعبه ملکتون" : "شعبه"}</TableHead>
+                  {isMelketun ? (
+                    <>
+                      {/* ستون‌های مخصوص M10 ملکتون — از دادهٔ واقعی CRM specialists (PN-047) */}
+                      <TableHead className="min-w-28">سمت در CRM</TableHead>
+                      <TableHead className="min-w-20">شهر</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead className="min-w-24">مبایعه نامه</TableHead>
+                      <TableHead className="min-w-24">اجاره نامه</TableHead>
+                      <TableHead className="min-w-24">تاریخ استخدام</TableHead>
+                      <TableHead className="min-w-36">آدرس کارشناس</TableHead>
+                      <TableHead className="min-w-24">سمت پرسنلی</TableHead>
+                      <TableHead className="min-w-24">نوع همکاری</TableHead>
+                      <TableHead className="min-w-24">مدیر</TableHead>
+                      <TableHead className="min-w-24">تلفن ثابت</TableHead>
+                      <TableHead className="min-w-20">کد پستی</TableHead>
+                      <TableHead className="min-w-16">داخلی</TableHead>
+                    </>
+                  )}
                   <TableHead className="min-w-20">وضعیت</TableHead>
                   {/* اطلاعات (PN-046/گام اول-۲: ستون اطلاعات در تمامی فهرست‌ها — فایل متنی کامل هر کد پرسنلی)
                       ⚠ قانون ساختاری (دستور مالک/گام اول-۳): ستون «اطلاعات» همیشه آخرین ستون این فهرست است —
