@@ -16,6 +16,9 @@
 
 import { useState } from "react";
 import { ClipboardList, Loader2, X, RefreshCw } from "lucide-react";
+// PN-046/گام اول-۲ — کلاینت واحد API (تزریق خودکار Bearer توکن نشست):
+// پیش از این fetch خام بود و در نشست واردشده 401 می‌داد (باگ جلسهٔ قبل).
+import { apiBlob } from "@/lib/client/api";
 
 export interface InfoButtonProps {
   /** 'tabriz' | 'melketun' — tenant همین رندر (پیش‌فرض tabriz — صفر نشت) */
@@ -37,12 +40,8 @@ export function InfoButton({ tenant, type, code }: InfoButtonProps) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/info/${tenant}/${type}/${encodeURIComponent(code)}`);
-      if (res.ok) {
-        setContent(await res.text());
-      } else {
-        setError(`دریافت اطلاعات ناموفق بود (HTTP ${res.status}).`);
-      }
+      const blob = await apiBlob(`/api/info/${tenant}/${type}/${encodeURIComponent(code)}`, 30_000);
+      setContent(await blob.text());
     } catch {
       setError("خطا در دریافت اطلاعات — ارتباط با سرور برقرار نشد.");
     }
