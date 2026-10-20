@@ -3954,3 +3954,23 @@ Stage Summary:
 - هر سه گام دستور مالک پیاده، اجرا و با مرورگر راستی‌آزمایی شد؛ داده مقدس تبریز در تمام طول کار دست‌نخورده (۲۷,۸۶۸ آگهی · ۲۵,۶۳۰+ درخواست · ۱۴۳ کارشناس)
 - خروجی گام دوم (PN-045-A) در ادامهٔ همین ورک‌لاگ: توکن تازه + پوش origin/main = درمان دائمی reset-guard
 - کامیت‌ها: babd2fc → f1c011d (RTL) → 692cde8 (گام صفر) → 8288448 (اطلاعات M3/M4) → c40df06 (استخراج فراجامع + tenant-scoped) → 85c5d4d (فهرست‌های ملکتون) → da7549f (وضعیت خام CRM) → 0f8094e (فیکس 401) → e0d1158 (generator فراجامع)
+
+---
+Task ID: PN-046 (نهایی)
+Agent: main (GLM-5.3)
+Task: گام دوم دستور مالک — اجرای مو به مو PN-045-A (شورا) + تثبیت نهایی
+
+Work Log:
+- گام ۱ PN-045-A: توکن تازه در هر ۴ remote (origin/mirror/melka-backup/auto-mirror) — راستی‌آزمایی API گیت‌هاب: visibility=public ✓ · permissions.admin=true ✓
+- گام ۲: ۱۶ کامیت جلوی origin/main (زنجیرهٔ PN-045 جلسهٔ قبل ۶ کامیت + بازیابی babd2fc + زنجیرهٔ PN-04۶ ۹ کامیت)
+- گام ۳: پوش سبز بدون force: **411108e..e55bbf0 main → main** · LOCAL==REMOTE==e55bbf0 ✓ · wip-safety وجود ندارد (|| true طبق دستور)
+- گام ۴: بیلد ناهماهنگ بود → بازسازی کامل (سرور خاموش) → ری‌استارت → Live=e55bbf0 == HEAD (drift match)
+- گام ۵: گارد resurrect-ultimate **34/34 PASS** (جلسهٔ قبل 32/33 به‌خاطر توکن منقضی) · داده: PropertyRecord تبریز=27,868 · ملکتون=49 · RequestRecord تبریز=25,630 · ملکتون=19 · Health=true
+- درمان دائمی reset-guard اعمال شد: از لحظهٔ پوش، reset به remote = عملیات بی‌اثر — چرخهٔ مخرب «۵ بازنشانی شاخه» برای همیشه بسته شد
+- تثبیت تست: schema دیتابیس‌های تست (test.db + test-repository.db) با ستون‌های §۱۴ همگام شد (۹ شکست جلسهٔ قبل رفع) · تست‌های ساختاری PN-020/PN-002/DTO/مانیفست به واقعیت tenant-branched به‌روز شدند (helper تفیصل tenant در pn020) · دو اجرای متوالی: ۲۸۹۹/۱۶ و ۲۹۰۱/۱۴ — صفر شکست از PN-04۶؛ ۱۳ شکست نامدار عین fails-set جلسهٔ قبل (محیطی) + ۱ PN-014 (deliver-store هرس‌شده)
+- گاردها: ۱۲/۱۲ سبز (repository/intelligence/log/boot-secrets/melketun-secrets/melketun-session/stealth-users/tile-contract/data-sacred/tenant-isolation/melketun-city-filter/info-files)
+- شاهدها: download/pn046/ (fails-set · test-run-final · push-pn045a · resurrect-guard · TEST-VERDICT) + اسکرین‌شات‌های وارسی مرورگری در download/pn045/
+
+Stage Summary:
+- پاسخ چهارگانهٔ PN-045-A به مالک: (۱) پوش موفق؟ بله — 411108e..e55bbf0 · (۲) بیلد=HEAD؟ بله — e55bbf0 (۳) گارد resurrect 34/34؟ بله (۴) داده‌ها: تبریز 27,868 آگهی + 25,630 درخواست + 143 کارشناس سالم · ملکتون 49+19 (فقط تبریز)
+- هر سه گام دستور مالک ۱۴۰۵/۰۷/۲۸ کامل: گام صفر (تنظیمات ملکتون همانند تبریز با یوزر/پسورد + جایگاه زیر تبریز + نوار وضعیت ۱۱ نشانگره) · گام اول (راست‌چین واقعی جداول/نمودارها/بینش‌ها + فهرست‌های ملکتون مختص داده CRM با تمام ستون‌های پُر + ستون اطلاعات متنی در ۴ فهرست + اطلاعات/یادداشت همیشه آخر و سنجاق + فقط تبریز) · گام دوم (PN-045-A کامل)

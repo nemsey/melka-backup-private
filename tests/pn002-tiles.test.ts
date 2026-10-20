@@ -334,15 +334,26 @@ describe("PN-002 §۳ — فیلترهای تازهٔ M1/M2 (روت زنده ر�
  * ========================================================================== */
 
 describe("PN-002 §۴ — گام ۶ (حذف توضیحات + ستون‌ها + اکسل)", () => {
-  test("۴-۱) M1: سرستون‌های تازه (رهن/اجاره، بازدید، تاریخ وضعیت، لینک — PN-020/گام اول-الف: تصاویر/انتشار/آخرین وضعیت به دستور مالک حذف شدند)", () => {
-    for (const h of ["رهن / اجاره", "بازدید", "تاریخ وضعیت", "لینک"]) {
-      expect(M1_SRC).toContain(`>${h}</TableHead>`);
+  test("۴-۱) M1: سرستون‌های تازهٔ تبریز (رهن/اجاره، بازدید، تاریخ وضعیت، لینک — تصاویر/انتشار/آخرین وضعیت حذف؛ PN-046: ملکتون تصاویرِ CRM دارد)", () => {
+    // شاخهٔ تبریز (بلوک !isMelketun) سرستون‌های تازه را دارد — تفیصل tenant (PN-046 helper)
+    const tabHeads = [...M1_SRC.matchAll(/\{isMelketun \? \(\s*<>[\s\S]*?<\/>\s*\) : \(\s*<>([\s\S]*?)<\/>\s*\)\}/g)].flatMap((m) =>
+      [...m[1].matchAll(/<TableHead[^>]*>([^<]+)<\/TableHead>/g)].map((h) => h[1].trim()),
+    );
+    for (const h of ["قیمت هر متر", "رهن / اجاره", "بازدید", "تاریخ وضعیت", "لینک"]) {
+      expect(tabHeads).toContain(h);
     }
-    // PN-020/گام اول-الف — حذف سه ستون به دستور مالک (برگزیدهٔ ۱۴۰۵/۰۷/۲۱):
+    // PN-020/گام اول-الف — حذف سه ستون «تبریز» به دستور مالک (برگزیدهٔ ۱۴۰۵/۰۷/۲۱):
     // «ستون آخرین وضعیت و ستون تصاویر و ستون انتشار حذف شود»
-    expect(M1_SRC).not.toContain(">تصاویر</TableHead>");
-    expect(M1_SRC).not.toContain(">انتشار</TableHead>");
-    expect(M1_SRC).not.toContain(">وضعیت</TableHead>");
+    expect(tabHeads).not.toContain("تصاویر");
+    expect(tabHeads).not.toContain("انتشار");
+    expect(tabHeads).not.toContain("وضعیت");
+    // PN-046/گام اول-۱ (دستور مالک ۱۴۰۵/۰۷/۲۸): شاخهٔ ملکتون ستون «تصاویر» از دادهٔ واقعی CRM دارد
+    const melHeads = [...M1_SRC.matchAll(/\{isMelketun \? \(\s*<>([\s\S]*?)<\/>\s*\) : \(\s*<>[\s\S]*?<\/>\s*\)\}/g)].flatMap((m) =>
+      [...m[1].matchAll(/<TableHead[^>]*>([^<]+)<\/TableHead>/g)].map((h) => h[1].trim()),
+    );
+    expect(melHeads).toContain("تصاویر");
+    expect(melHeads).toContain("پیش‌پرداخت");
+    expect(melHeads).toContain("اجاره");
   });
 
   test("۴-۲) M2: سرستون‌های تازه (متراژ، اتاق، طبقه، ساخت، سند، نوع ساخت، جهت، معاوضه)", () => {

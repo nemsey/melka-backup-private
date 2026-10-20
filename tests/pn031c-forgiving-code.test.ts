@@ -307,11 +307,11 @@ describe("PN-031-C · F) سازگاری ساختاری — روت تازه، ر�
     expect(schema).toContain("PN-031-C (شورا-ن۰۴۰) — کد بخشنده");
   });
 
-  test("F-6) (ن۰۶۷) مانیفست api-versioning — ۱۱۳ روت (+db-export) (+glm/probe +relay/health +owner-notes +integrations/melketun/sync) با code-status و relay/job/[id] (otp-burn حذف کامل · PN-034)", () => {
+  test("F-6) (ن۰۶۷) مانیفست api-versioning — ۱۱۴ روت (+db-export) (+glm/probe +relay/health +owner-notes +integrations/melketun/sync +info text-file) با code-status و relay/job/[id] (otp-burn حذف کامل · PN-034)", () => {
     const manifest = JSON.parse(readFileSync(join(REPO, "download/pn012/api-versioning.json"), "utf8"));
     // PN-035 (ن۰۵۷): +۱ روت relay/job/[id] · PN-038 (ن۰۶۳): +۱ glm/probe +۱ relay/health
     // PN-039 (ن۰۶۴/گام ۴): +۱ owner-notes/[entity]/[id] — یادداشت مالک M1/M2
-    expect(manifest.totalRoutes).toBe(113); // PN-043: +1 integrations/melketun · PN-044: +1 integrations/melketun/sync
+    expect(manifest.totalRoutes).toBe(114); // PN-043: +integrations/melketun · PN-044: +integrations/melketun/sync · PN-045/فاز ۳: +api/v1/info (114)
     // ن۰۶۳: بازتولید مانیفست با مولد رسمی (generate-v1-aliases) — نام فیلد: aliasOf
     const key = (r: { aliasOf?: string; original?: string }) => r.aliasOf ?? r.original ?? "";
     expect(manifest.routes.some((r: { aliasOf?: string; original?: string }) => key(r) === "/api/admin/relay/code-status")).toBe(true);
