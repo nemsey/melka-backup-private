@@ -903,8 +903,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-24">تاریخ وضعیت</TableHead>
                     {/* PN-039 (گام ۳) — تاریخ دقیق ایجاد آگهی در سامانه (createdAt) — بلافاصله پس از تاریخ وضعیت */}
                     <TableHead className="min-w-36">تاریخ ثبت</TableHead>
-                    {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک) */}
-                    <TableHead className="min-w-32">یادداشت</TableHead>
+                    {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک)
+                        PN-045/فاز ۲ — ستون چسبندهٔ چپ (RTL: آخرین ستون = چپ‌ترین) */}
+                    <TableHead className="min-w-32 w-44 pn045-sticky-note">یادداشت</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -1129,8 +1130,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _r
                         <TableCell className="text-muted-foreground whitespace-nowrap text-[10px]" data-registered-at-cell={r.id}>
                           {r.createdAt ? faDateTime(r.createdAt) : "—"}
                         </TableCell>
-                        {/* ۱۵ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline */}
-                        <TableCell className="whitespace-normal" data-owner-note-column-cell={r.id}>
+                        {/* ۱۵ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline
+                            PN-045/فاز ۲ — سلول چسبندهٔ چپ (عرض ثابت w-44 = 176px — قانون ۱۱) */}
+                        <TableCell className="whitespace-normal pn045-sticky-note" data-owner-note-column-cell={r.id}>
                           <OwnerNoteCell
                             id={r.id}
                             entity="property"

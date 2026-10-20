@@ -916,8 +916,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-24">معاوضه</TableHead>
                     {/* PN-020/گام اول-ب (بند ۴) — تاریخ ثبت، آخرین ستون فهرست است */}
                     <TableHead className="min-w-28">تاریخ ثبت</TableHead>
-                    {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک) */}
-                    <TableHead className="min-w-32">یادداشت</TableHead>
+                    {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک)
+                        PN-045/فاز ۲ — ستون چسبندهٔ چپ (RTL: آخرین ستون = چپ‌ترین) */}
+                    <TableHead className="min-w-32 w-44 pn045-sticky-note">یادداشت</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
@@ -1132,8 +1133,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             {r.createdAt ? faDateTime(r.createdAt) : "—"}
                           </span>
                         </TableCell>
-                        {/* ۲۰ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline */}
-                        <TableCell className="whitespace-normal" data-owner-note-column-cell={r.id}>
+                        {/* ۲۰ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline
+                            PN-045/فاز ۲ — سلول چسبندهٔ چپ (عرض ثابت w-44 = 176px — قانون ۱۱) */}
+                        <TableCell className="whitespace-normal pn045-sticky-note" data-owner-note-column-cell={r.id}>
                           <OwnerNoteCell
                             id={r.id}
                             entity="request"
