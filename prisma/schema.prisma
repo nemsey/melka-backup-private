@@ -175,6 +175,7 @@ model TransactionRecord {
   @@index([contractDate])
   @@index([propertyCode])
   @@index([requestCode])
+  @@index([tenantId])
 }
 
 /// کارشناسان (realtors/list) — عین ساختار users-list خود سامانه ARM
@@ -214,6 +215,7 @@ model ExpertRecord {
   @@index([fullName])
   @@index([role])
   @@index([businessTitle])
+  @@index([tenantId])
 }
 
 /// تعاملات مشاوران با یکدیگر — عین ساختار realtor-interactions سامانه ARM:
@@ -1435,6 +1437,7 @@ model RequestRecord {
   @@index([customerNameNorm])
   @@index([sanadNamesNorm])
   @@index([actorNameNorm])
+  @@index([tenantId])
 }
 
 /// رویداد درخواست — «ثبت رویداد» عین خود سامانه (request-events/create):
