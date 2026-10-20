@@ -1141,7 +1141,18 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[11px]">در نوبت تکمیل</span>
                           )}
                         </TableCell>
-                        {/* ۹ — وضعیت (شش‌حالته) */}
+                        {/* ۹ — وضعیت (شش‌حالته) · ملکتون: وضعیت خام CRM خودش (PN-046/گام اول-۱) */}
+                        {isMelketun ? (
+                          <TableCell>
+                            {r.status ? (
+                              <Badge variant="secondary" className="text-[11px] border" title={`وضعیت خام CRM ملکتون: ${r.status}`}>
+                                {r.status}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        ) : (
                         <TableCell>
                           {r.status ? (
                             <Badge variant="secondary" className={`text-[11px] border ${requestStateBadgeClass(stateKey)}`} title={REQUEST_STATE_BY_KEY.get(stateKey)?.hint}>
@@ -1151,6 +1162,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
+                        )}
                         {/* ۱۰ تا معاوضه — ستون‌های تبریز (PN-046: ملکتون معادل CRM ندارد) */}
                         {!isMelketun && (
                           <>{/* ۱۰ — سند (جلسهٔ ۰۳۳ / ثانیاً-الف: رنگی — هر سند رنگ یکتای خود از رجیستری: شش‌دانگ/در دست اقدام/قراردادی/قولنامه) */}
