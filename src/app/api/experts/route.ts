@@ -12,6 +12,7 @@
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { tenantDbValue } from "@/lib/tenants";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { normalizeFilterInput } from "@/lib/normalize-input";
 import { listExpertProfiles, expertFilterOptions, type ExpertProfileFilter } from "@/lib/experts/profile-store";
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
     const cities = (sp.getAll("city") || []).map((v) => normalizeFilterInput(v)).filter(Boolean);
     const actives = (sp.getAll("active") || []).filter((v) => v === "true" || v === "false").map((v) => v === "true");
     const filter: ExpertProfileFilter = {
+      tenantId: tenantDbValue(sp.get("tenantId")), // PN-044/فاز ۴ — چند-مستأجری
       q: str(sp.get("q")),
       fullName: str(sp.get("fullName")),
       mobile: str(sp.get("mobile")),

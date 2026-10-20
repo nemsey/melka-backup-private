@@ -13,6 +13,7 @@
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { tenantDbValue } from "@/lib/tenants";
 import { normalizeFilterInput } from "@/lib/normalize-input";
 import {
   getPropertyRecordRepository,
@@ -75,6 +76,11 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
 
   const { entity } = await ctx.params;
   const sp = request.nextUrl.searchParams;
+  // PN-044/فاز ۴ (شورا-ن۰۸۸) — tenant همین خروجی: 'melketun' → دادهٔ ملکتون؛
+  // پیش‌فرض/هر چیز دیگر → 'melk-tabriz' (رفتار فعلی — صفر شکستن).
+  const tenantKey = sp.get("tenantId");
+  const tenantId = tenantDbValue(tenantKey);
+  const tenantLabel = tenantKey === "melketun" ? "ملکتون" : "ملک تبریز";
 
   try {
     let buffer: Buffer;
@@ -88,6 +94,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       const address = normalizeFilterInput(sp.get("address")) || undefined;
       const { rows } = await repo.listArmCatalog(
         {
+          tenantId,
           code, realtorName, ownerName, address,
           priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")),
           rentalType: sp.get("rentalType") === "rental" ? "rental" : sp.get("rentalType") === "sale" ? "sale" : undefined,
@@ -97,7 +104,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       const branchOf = await branchResolver();
 
       buffer = await buildXlsx(
-        "آگهی‌های ملک تبریز",
+        `آگهی‌های ${tenantLabel}`,
         [
           { header: "ردیف", width: 8 }, { header: "کد آگهی", width: 12 }, { header: "عنوان", width: 30 },
           { header: "کارشناس", width: 20 }, { header: "شعبه", width: 16 }, { header: "مالک", width: 20 },
@@ -130,13 +137,13 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       const customerName = normalizeFilterInput(sp.get("customerName")) || undefined;
       const areaName = normalizeFilterInput(sp.get("areaName")) || undefined;
       const { rows } = await repo.listArmCatalog(
-        { code, realtorName, customerName, areaName, priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")) },
+        { tenantId, code, realtorName, customerName, areaName, priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")) },
         25000
       );
       const branchOf = await branchResolver();
 
       buffer = await buildXlsx(
-        "درخواست‌های ملک تبریز",
+        `درخواست‌های ${tenantLabel}`,
         [
           { header: "ردیف", width: 8 }, { header: "کد درخواست", width: 12 }, { header: "عنوان", width: 30 },
           { header: "کارشناس", width: 20 }, { header: "شعبه", width: 16 }, { header: "متقاضی", width: 20 },
@@ -164,12 +171,12 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       filename = `melka-requests-${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else if (entity === "transactions") {
       const repo = getTransactionRepository();
-      const rows = (await repo.listWithSummary({ limit: 25000 })) as unknown as {
+      const rows = (await repo.listWithSummary({ filter: { tenantId }, limit: 25000 })) as unknown as {
         rows: Array<Record<string, unknown>>;
       };
       const txRows = (rows?.rows ?? []) as Array<Record<string, unknown>>;
       buffer = await buildXlsx(
-        "معاملات ملک تبریز",
+        `معاملات ${tenantLabel}`,
         [
           { header: "ردیف", width: 8 }, { header: "کد ملک", width: 12 }, { header: "مالک/فروشنده", width: 20 },
           { header: "کد درخواست", width: 12 }, { header: "درخواست‌دهنده/خریدار", width: 20 },
@@ -186,12 +193,13 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       filename = `melka-transactions-${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else if (entity === "experts") {
       const repo = getExpertRepository();
-      const rows = await repo.findAll();
+      // PN-044/فاز ۴ — findAll بدون فیلتر tenant می‌بود؛ اکنون tenant همین خروجی
+      const { rows } = await repo.listWithInteractions({ filter: { tenantId }, limit: 5000 });
       // شمارش متقاطع آگهی (شاهکار M4) — PN-012 BLOCK 1: از سرویس
       const listingCount = await expertListingCounts();
 
       buffer = await buildXlsx(
-        "کارشناسان ملک تبریز",
+        `کارشناسان ${tenantLabel}`,
         [
           { header: "ردیف", width: 8 }, { header: "کد پرسنلی", width: 14 }, { header: "نام و نام خانوادگی", width: 24 },
           { header: "موبایل", width: 16 }, { header: "نقش", width: 20 }, { header: "کسب‌وکار/شعبه", width: 18 },

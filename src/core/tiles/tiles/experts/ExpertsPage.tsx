@@ -128,7 +128,7 @@ const EMPTY_CHIPS: ChipFilters = {
   city: [],
 };
 
-export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
+export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back, tenantId }: TilePageProps) {
   const { toast } = useToast();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
@@ -147,6 +147,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
 
   const fetchExperts = useCallback(async (): Promise<ExResponse> => {
     const params = new URLSearchParams();
+    // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
+    params.set("tenantId", tenantId ?? "tabriz");
     const set = (k: keyof Filters, v: string) => { if (v) params.set(k, v); };
     set("q", applied.q);
     set("fullName", applied.fullName);
@@ -171,7 +173,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
     for (const c of chips.city) params.append("city", c);
     params.set("limit", "5000");
     return api<ExResponse>(`/api/experts?${params.toString()}`);
-  }, [applied, chips]);
+  }, [applied, chips, tenantId]);
 
   const { data, loading, reload } = useTileData(fetchExperts, {
     errorTitle: "خطا در دریافت فهرست کارشناسان",
@@ -485,6 +487,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               className="gap-1.5 h-7 text-[11px]"
               onClick={() => {
                 const params = new URLSearchParams();
+                // PN-044/فاز ۴ — خروجی اکسل هم tenant همین رندر را می‌گیرد
+                params.set("tenantId", tenantId ?? "tabriz");
                 const set = (k: string, v: string) => { if (v && v !== "all") params.set(k, v); };
                 set("q", applied.q); set("fullName", applied.fullName); set("mobile", applied.mobile);
                 set("personnelCode", applied.personnelCode);

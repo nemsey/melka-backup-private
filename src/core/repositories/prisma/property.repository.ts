@@ -123,6 +123,9 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     limit: number
   ): Promise<{ rows: ArmListingCatalogRow[]; total: number }> {
     const where: Prisma.PropertyRecordWhereInput = {};
+    // PN-044/فاز ۴ (شورا-ن۰۸۸) — جداسازی tenant: پیش‌فرض 'melk-tabriz' (تمام دادهٔ
+    // فعلی همین است — صفر شکستن) ⇒ دادهٔ ملکتون هرگز به کاشی‌های تبریز نشت نمی‌کند.
+    where.tenantId = filter.tenantId ?? "melk-tabriz";
     // P6521/M1 + P6530 — فیلتر وضعیت: مقادیر خام قانون‌مند (listingStateRawValues) — دقیق، بدون تخمین
     if (filter.statuses && filter.statuses.length > 0) where.status = { in: filter.statuses };
     // P6530/گام ۱ — دسته‌بندی (دقیق — مقادیر خام سامانه)

@@ -170,7 +170,13 @@ export class PrismaRequestRepository implements RequestRepository {
     filter: ArmRequestCatalogFilter,
     limit: number
   ): Promise<{ rows: ArmRequestCatalogRow[]; total: number }> {
-    const where: Prisma.RequestRecordWhereInput = { source: "arm" };
+    // PN-044/فاز ۴ (شورا-ن۰۸۸) — جداسازی tenant: ملکتون (source='melketun-crm')
+    // بدون فیلتر source؛ تبریز همان رفتار قبلی (source='arm') + tenant.
+    // پیش‌فرض 'melk-tabriz' — تمام دادهٔ فعلی همین است ⇒ صفر شکستن، صفر نشت.
+    const where: Prisma.RequestRecordWhereInput =
+      filter.tenantId === "melketun"
+        ? { tenantId: "melketun" }
+        : { tenantId: filter.tenantId ?? "melk-tabriz", source: "arm" };
 
     // P6530/گام ۲ — فیلترهای SQL: وضعیت (IN یا NOT IN برای «سایر») · دسته‌بندی · تاریخ · قیمت
     const statuses = filter.statuses ?? [];

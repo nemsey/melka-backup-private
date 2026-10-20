@@ -55,6 +55,8 @@ export interface ExpertProfileRow {
 
 /** فیلتر تمام ستون‌ها — هر ستون فهرست، فیلدر مستقل دارد */
 export interface ExpertProfileFilter {
+  /** PN-044/فاز ۴ — مقدار ستون tenantId در DB ('melk-tabriz' | 'melketun'). undefined → تبریز */
+  tenantId?: string;
   q?: string;
   fullName?: string;
   mobile?: string;
@@ -436,6 +438,9 @@ function toRow(p: {
 /** لیست با فیلتر تمام ستون‌ها + مرتب‌سازی — خروجی ردیف‌های UI-ready */
 export async function listExpertProfiles(filter: ExpertProfileFilter): Promise<{ rows: ExpertProfileRow[]; total: number }> {
   const where: Record<string, unknown> = {};
+  // PN-044/فاز ۴ (شورا-ن۰۸۸) — جداسازی tenant: پیش‌فرض 'melk-tabriz' (تمام دادهٔ
+  // فعلی همین است — صفر شکستن) ⇒ دادهٔ ملکتون هرگز به کاشی‌های تبریز نشت نمی‌کند.
+  where.tenantId = filter.tenantId ?? "melk-tabriz";
   if (filter.fullName) where.fullName = { contains: filter.fullName };
   if (filter.mobile) where.mobile = { contains: filter.mobile };
   if (filter.personnelCode) where.personnelCode = { contains: filter.personnelCode };

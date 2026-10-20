@@ -177,7 +177,7 @@ const TRADE_CATEGORIES: readonly string[] = ["خرید", "پیش خرید", "ر�
 const MAX_AUTO_SLICES = 10;
 const AUTO_SLICE_ROWS = 25;
 
-export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
+export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back, tenantId }: TilePageProps) {
   const { toast } = useToast();
   // PN-011 خامسا-۲ — بار کاشی از M5 (کد درخواست) یک‌بار در ساخت مقصد مصرف می‌شود؛
   // فیلتر و اعمال هر دو از همان ابتدا پر می‌شوند ⇒ اولین واکشی خودش جست‌وجو است.
@@ -211,6 +211,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
+    // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
+    params.set("tenantId", tenantId ?? "tabriz");
     // P6525 — نرمال‌سازی مرکزی
     if (applied.code) params.set("code", normalizeFilterInput(applied.code));
     if (applied.realtorName) params.set("realtorName", normalizeFilterInput(applied.realtorName));
@@ -238,7 +240,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     } finally {
       setLoading(false);
     }
-  }, [applied, selectedStates, selectedTrades, selectedBranches, selectedPropertyTypes]);
+  }, [applied, selectedStates, selectedTrades, selectedBranches, selectedPropertyTypes, tenantId]);
 
   useEffect(() => {
     setLoading(true);
@@ -858,6 +860,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                 className="gap-1.5 h-7 text-[11px]"
                 onClick={() => {
                   const p = new URLSearchParams();
+                  // PN-044/فاز ۴ — خروجی اکسل هم tenant همین رندر را می‌گیرد
+                  p.set("tenantId", tenantId ?? "tabriz");
                   if (applied.code) p.set("code", applied.code);
                   if (applied.realtorName) p.set("realtorName", applied.realtorName);
                   if (applied.customerName) p.set("customerName", applied.customerName);

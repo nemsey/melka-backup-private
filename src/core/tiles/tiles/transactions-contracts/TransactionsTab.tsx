@@ -198,7 +198,7 @@ interface TxResponse {
 
 const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
 
-export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSignal }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode; syncDoneSignal?: number }) {
+export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSignal, tenantId }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode; syncDoneSignal?: number; tenantId?: "tabriz" | "melketun" }) {
   // PN-009 مرحله E — لحن‌های معنایی از رجیستری: مبایعه‌نامه=سبز، اجاره=بنفش (هم‌خانوادهٔ چیپ/ستون)
   const saleTone = valueIconPair("مبایعه‌نامه");
   const rentTone = valueIconPair("اجاره");
@@ -239,10 +239,12 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
     params.set("offset", "0");
     params.set("sortBy", sortBy);
     params.set("sortDir", "desc");
+    // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
+    params.set("tenantId", tenantId ?? "tabriz");
 
     const res = await api<TxResponse>(`/api/crm/transactions?${params.toString()}`);
     return res;
-  }, [applied, sortBy]);
+  }, [applied, sortBy, tenantId]);
 
   const { data, loading, reload } = useTileData(fetchTransactions, {
     errorTitle: "خطا در دریافت معاملات",

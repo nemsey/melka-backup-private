@@ -24,6 +24,7 @@
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { tenantDbValue } from "@/lib/tenants";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
@@ -77,6 +78,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const sp = request.nextUrl.searchParams;
+    // PN-044/فاز ۴ (شورا-ن۰۸۸) — tenant همین رندر: 'melketun' → دادهٔ ملکتون؛
+    // پیش‌فرض/هر چیز دیگر → 'melk-tabriz' (رفتار فعلی — صفر شکستن).
+    const tenantId = tenantDbValue(sp.get("tenantId"));
     // P6525 — نرمال‌سازی مرکزی: ارقام فارسی/عربی/لاتین + حروف ي/ك — نتیجه همیشه یکسان
     const code = normalizeFilterInput(sp.get("code")) || undefined;
     const realtorName = normalizeFilterInput(sp.get("realtorName")) || undefined;
@@ -121,7 +125,8 @@ export async function GET(request: NextRequest) {
     // PN-027 · ۵-پ-۴ (جلسهٔ ۰۳۴): پیش‌فرض خاموش — فقط با enrich=1 صریح.
     // کش ۵ دقیقه‌ای: همان کد در پنجرهٔ کش دوباره شبکه نمی‌زند (حذف enrichment اضافی).
     // پس‌زمینه: daemon کاتالوگ هر چرخه غنی‌سازی می‌کند — تازگی داده بدون هزینهٔ جست‌وجو.
-    const enrichExplicit = sp.get("enrich") === "1";
+    // غنی‌سازی هدفمند فقط برای tenant تبریز معنا دارد (زنجیرهٔ ARM) — ملکتون بی‌رابطه است
+    const enrichExplicit = sp.get("enrich") === "1" && tenantId === "melk-tabriz";
     if (enrichExplicit && code && guard.armTokens?.accessToken && !enrichedRecently(code)) {
       try {
         const targeted = await repo.listArmCatalog({ code }, 5);
@@ -139,6 +144,7 @@ export async function GET(request: NextRequest) {
     const access = resolveEntityAccess(guard, "property");
     const { rows, total } = await repo.listArmCatalog(
       {
+        tenantId,
         code, realtorName, ownerName, priceFrom, priceTo, address, tradeTypes, statuses, activityFrom, activityTo,
         // PN-002 گام ۱ — ستون‌های تازه
         rentalType, viewCountFrom, viewCountTo, meterageFrom, meterageTo, roomsFrom, roomsTo,

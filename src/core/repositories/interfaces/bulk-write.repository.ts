@@ -293,6 +293,8 @@ export interface ArmRequestCatalogRow {
  *  (بند ۲ دستور): کد، کارشناس، مالک (نام/موبایل)، قیمت (از/تا)، آدرس/منطقه،
  *  دسته‌بندی، وضعیت (ده‌حالته)، بازهٔ آخرین فعالیت */
 export interface ArmListingCatalogFilter {
+  /** PN-044/فاز ۴ — مقدار ستون tenantId در DB ('melk-tabriz' | 'melketun'). undefined → تبریز */
+  tenantId?: string;
   code?: string;
   realtorName?: string;
   /** مالک: نام یا موبایل (contains نرمال‌شده) */
@@ -337,6 +339,8 @@ export interface ArmListingCatalogFilter {
  *  (بند ۲ دستور): کد، کارشناس، متقاضی (نام/موبایل)، قیمت (از/تا)، مناطق،
  *  دسته‌بندی، وضعیت (شش‌حالته)، بازهٔ تاریخ ثبت */
 export interface ArmRequestCatalogFilter {
+  /** PN-044/فاز ۴ — مقدار ستون tenantId در DB ('melk-tabriz' | 'melketun'). undefined → تبریز */
+  tenantId?: string;
   code?: string;
   realtorName?: string;
   /** متقاضی: نام یا موبایل (contains نرمال‌شده) */

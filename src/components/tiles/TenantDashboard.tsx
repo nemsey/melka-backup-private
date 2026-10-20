@@ -67,6 +67,8 @@ export function TenantDashboard({ tenantId }: TenantDashboardProps) {
     userRole === 'OWNER' || !tileAccess || tileAccess.tiles.includes(id) || id === 'settings'
 
   // props هر کاشی فرزند — همان ادغام تنظیمات TileShell (پیش‌فرض + ذخیره‌شده)
+  // PN-044/فاز ۴ (شورا-ن۰۸۸): tenantId به M1-M4 تزریق می‌شود — کاشی‌های
+  // چند-مستأجری داده را با آن فیلتر می‌کنند (default 'tabriz' → صفر شکستن).
   const childPropsFor = (tileId: string): TilePageProps => {
     const def = tileRegistry.get(tileId)
     const defaults: Record<string, string | number | boolean> = {}
@@ -76,6 +78,7 @@ export function TenantDashboard({ tenantId }: TenantDashboardProps) {
       onSettingsChange: (patch) => setTileSettings(tileId, patch),
       userRole,
       onBack: goBack,
+      tenantId,
     }
   }
 
