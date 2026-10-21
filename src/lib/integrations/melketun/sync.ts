@@ -38,6 +38,7 @@ import fs from "fs";
 import path from "path";
 import { db } from "@/lib/db";
 import { recordMelketunConnection } from "@/lib/integrations/melketun";
+import { stripProtectedNulls } from "@/lib/integrations/melketun/protected-nulls"; // G1/G2 (DIR-PN048-007)
 
 const SECRET_FILE = path.join(process.cwd(), "upload/.runtime/melketun-secrets.json");
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -657,14 +658,16 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
         }
         const data = filingToProperty(f, runId, expertNameOf(f.assignedUser), enrichByCode.get((f.code ?? "").trim()) ?? null);
         try {
-          await db.propertyRecord.upsert({ where: { id: data.id }, create: data, update: data });
+          // G1/G2 (DIR-PN048-007): update افزودنی — null هرگز روی دادهٔ پر نمی‌نشیند
+          await db.propertyRecord.upsert({ where: { id: data.id }, create: data, update: stripProtectedNulls(data) });
         } catch (e) {
           // P2002 (کد تکراری): رکورد موجود با همین کد — از sync قدیمی (نمای خصوصی
           // PN-046) با id متفاوت. ادغام صادقانه: همان رکورد بر اساس کد آپدیت می‌شود
           // (id قدیمی حفظ · ownerNote دست‌نخورده — قانون دادهٔ مقدس).
           if ((e as { code?: string }).code !== "P2002") throw e;
           const { id: _drop, createdAt: _c, ...rest } = data;
-          await db.propertyRecord.update({ where: { propertyCode: data.propertyCode }, data: rest });
+          // G1/G2: ادغام هم افزودنی — rest بدون nullها (فیلد غنی‌سازی غایب ≠ پاک کردن دادهٔ پر)
+          await db.propertyRecord.update({ where: { propertyCode: data.propertyCode }, data: stripProtectedNulls(rest) });
           result.skippedDuplicates.listings++;
         }
         result.upserted.listings++;
@@ -685,12 +688,14 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
         }
         const data = potentialToRequest(p, runId, expertNameOf(p.assignedUser));
         try {
-          await db.requestRecord.upsert({ where: { id: data.id }, create: data, update: data });
+          // G1/G2 (DIR-PN048-007): update افزودنی — متقاضی پر هرگز پاک نمی‌شود
+          await db.requestRecord.upsert({ where: { id: data.id }, create: data, update: stripProtectedNulls(data) });
         } catch (e) {
           // P2002 (کد درخواست تکراری) — ادغام بر اساس requestCode (ادغام صادقانه)
           if ((e as { code?: string }).code !== "P2002") throw e;
           const { id: _drop, createdAt: _c, ...rest } = data;
-          await db.requestRecord.update({ where: { requestCode: data.requestCode }, data: rest });
+          // G1/G2: ادغام افزودنی — rest بدون nullها
+          await db.requestRecord.update({ where: { requestCode: data.requestCode }, data: stripProtectedNulls(rest) });
           result.skippedDuplicates.requests++;
         }
         result.upserted.requests++;
@@ -750,7 +755,8 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
           extractionBatchId: runId,
           normalizationVersion: "pn047-v3",
         };
-        await db.expertRecord.upsert({ where: { id: data.id }, create: data, update: data });
+        // G1/G2 (DIR-PN048-007): آپدیت افزودنی — موبایل/نام کارشناس پر هرگز پاک نمی‌شود
+        await db.expertRecord.upsert({ where: { id: data.id }, create: data, update: stripProtectedNulls(data) });
         // ── آینهٔ ExpertProfile (PN-044/کشف §۱۴): کاشی M10 کارشناسان از این جدول می‌خواند —
         // بدون این آینه فهرست ملکتون خالی می‌ماند. نگاشت: roleTitle=نقش CRM ·
         // branchTitle=شعبهٔ اکثریت فعالیت · businessTitle=کسب‌وکار پایه · شهر=تبریز (صادقانه).
@@ -774,7 +780,8 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
             syncedAt: now,
             createdAt: now,
           },
-          update: {
+          // G1/G2 (DIR-PN048-007): mobile=null در sync بعدی موبایل حل‌شدهٔ قبلی را پاک نکند
+          update: stripProtectedNulls({
             tenantId: MELKETUN_TENANT_ID,
             personnelCode: data.personnelCode,
             fullName: data.fullName,
@@ -786,7 +793,7 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
             state: "آذربایجان شرقی",
             active: true,
             syncedAt: now,
-          },
+          }),
         });
         result.upserted.experts++;
       } catch (e) {

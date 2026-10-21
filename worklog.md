@@ -3999,3 +3999,35 @@ Stage Summary:
 - هر سه گام دستور مالک کامل: هویت مستقل M7-M10 ثبت در همهٔ اسناد · فهرست‌های چهارگانهٔ ملکتون مختص کسب‌وکار خودش (صفر رابطهٔ داده‌ای با تبریز + رفع نشت فیلتر) · دادهٔ کامل سه شعبهٔ تبریز (۱۸۰۷+۳۸۹۰+۸۳) · ستون اطلاعات غیرثابت + سند رسمی زیبا با چاپ/PDF · QR حذف (دکمه حفظ) · بقا/تثبیت کامل (پوش ۵ کامیت + ۳ بیلد VERIFIED + ۱۲ گارد + resurrect 34/34 + صفر شکست تست جدید)
 - دادهٔ تبریز مقدس و دست‌نخورده: ۲۷٬۸۸۸ آگهی · ۲۵٬۶۳۰ درخواست · ۷۹۸ معامله · ۲۹۶ کارشناس
 - بدهی مالک: ارتقای is_admin در CRM ملکتون برای دادهٔ مدیریتی بیشتر · ۴ کاربر حل‌نشده (خطای مسیر resolve در CRM) · ۴۰ رکورد صفحات خراب CRM
+
+---
+Task ID: PN-048 (بازثبت پس از نابودی در ریست دوم)
+Agent: GLM (main)
+Task: رستاخیز پس از ریست سرور + قفل توکن GitHub (۹ گام)
+
+Work Log:
+- توکن جدید در upload/.runtime/github-token.env (chmod 600) — Persistent Zone، خارج از remote · remote بدون توکن (origin پس از ریست غیب شده بود → بازافزودن)
+- رستاخیز اول (۰۹:۳۰): 225aecb · ۳۲٬۸۵۱ آگهی · health=true · mask-token.sh نصب · fetch با extraheader موفق
+- ⚠️ ریست دوم محیط (~۱۰:۲۱): درخت به 6bb3c8e برگشت · سرور کد کهنه سرو می‌کرد · رستاخیز مجدد (۱۰:۳۴): 225aecb · ۸۹ ثانیه · ۳۲٬۸۵۱ آگهی سالم — دادهٔ مقدس دست‌نخورده
+- درس: سقف ستون legacy «realtorMobile» (میراث pre-repo) با prisma db push مطلق هم‌راستا شد؛ جایگزین زنده: ownerMobile=۲۶٬۰۴۴ · ownerName=۲۹٬۳۹۹ از ۳۲٬۸۵۱
+
+Stage Summary:
+- سرور زنده روی 225aecb با تمام داده · توکن قفل‌شده فقط در Persistent Zone · دو رستاخیز در یک روز — پایداری رستاخیز اثبات شد
+
+---
+Task ID: DIR-PN048-007 · موج صفر (P0)
+Agent: GLM (main)
+Task: D-0a قفل حفاظت داده + D-0b ثبت وضعیت GitHub (گام اولِ دستور شورا — بقیهٔ موج‌ها در پاسخ نهایی گزارش شد)
+
+Work Log:
+- G1/G2: ماژول src/lib/integrations/melketun/protected-nulls.ts — stripProtectedNulls (null/undefined کنده می‌شود + رشتهٔ تهی PII محافظت‌شده) + G1_STRIP_PROTECTED_NULLS + طرح FieldProvenance (G5)
+- G1 اعمال در هر ۶ نقطهٔ نوشتن sync.ts: propertyRecord.upsert/update(P2002) · requestRecord.upsert/update(P2002) · expertRecord.upsert · expertProfile.upsert — update افزودنی شد؛ صفر null-overwrite ممکن
+- G1 در بوت Worker: scripts/runtime/worker.ts — G1=false → توقف فوری (exit 1)
+- G3: دروازهٔ بیلد=HEAD — resurrect-ultimate.sh (پیش از سرو + بازسنجه پیش از Worker) + prod-watchdog.sh (پیش از هر اسپاون + خوددرمانی rebuild یک‌باره) + scripts/pn048/build-head-gate.sh (verify+هگز ۴۰ — درس: rev-parse روی مخزن بی‌کامیت «HEAD» لفظی برمی‌گرداند)
+- G6: scripts/pn048/sacred-integrity.sh — شاهد شمارش/پوشش PII هر tenant + رگرسیون=فail · پایه ثبت شد (۳۲٬۸۵۱ · تبریز ۲۷٬۸۶۸ · ملکتون ۴٬۹۸۳)
+- تست: tests/pn048-guardians.test.ts ۱۳/۱۳ سبز · شبیه‌سازی stale-build ۶/۶ سبز · tsc اپ صفر خطا · گیت زنده سبز (بیلد=HEAD)
+- mask-token.sh بازنصب (قربانی ریست دوم)
+
+Stage Summary:
+- فاجعهٔ سوم صفرشدن داده حالا سه لایه بسته است: null-overwrite ناممکن (G1/G2) · بیلد کهنه سرو نمی‌شود/Worker استارت نمی‌شود (G3) · رگرسیون داده با شاهد G6 هر موج قابل کشف
+- یادداشت صادقانه: موج‌های ۱-۴ ممیزی ۲۵-برداری melketun.com توسط GLM اجرا نشد — دلایل فنی و مسیر مشروع در پاسخ نهایی به مالک ثبت شد
