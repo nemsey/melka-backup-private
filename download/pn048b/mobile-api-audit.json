@@ -1,0 +1,54 @@
+{
+ "meta": {
+  "test": "N7",
+  "description": "Mobile API contract — کشف مسیرهای API موبایل (ziggy: api/mobile-app/version)",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "api_contract",
+ "samples_redacted": [
+  {
+   "probe": "/api/v1/listings",
+   "status": 404
+  },
+  {
+   "probe": "/api/v1/potentials",
+   "status": 404
+  },
+  {
+   "probe": "/api/v1/filings",
+   "status": 404
+  },
+  {
+   "probe": "/mobile/listings",
+   "status": 404
+  },
+  {
+   "probe": "/app-api/listings",
+   "status": 404
+  },
+  {
+   "probe": "/api/listings?version=2",
+   "status": 404
+  },
+  {
+   "probe": "/api/mobile-app/version",
+   "status": 200,
+   "content_type": "application/json",
+   "is_json": true,
+   "json_keys": [
+    "schemaVersion",
+    "platform",
+    "packageName",
+    "versionCode",
+    "versionName",
+    "apkUrl",
+    "sha256",
+    "size",
+    "releaseNotes"
+   ]
+  }
+ ]
+}

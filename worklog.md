@@ -4073,3 +4073,25 @@ Stage Summary:
 - کامیت یتیم گارد c019cfd بررسی شد: فقط چرخهٔ escrow ساعت ۱۰:۴۴ (re-seal با همان keyFp16 — رمز یکسان، نمک تازه) → در این کامیت پس‌گرفته شد تا زنجیرهٔ escrow تازه بماند.
 - بدهی مالک تازه: توکن‌های تعبیه‌شده در mirror/melka-backup/auto-mirror منقضی‌اند → تمدید یا حذف (روش رسمی پوش = origin تمیز + extraheader از ناحیهٔ پایدار).
 - وضعیت پایانی این پس‌نویس: HEAD=پوش‌شده · بیلد از HEAD بازسازی می‌شود (docs-only) → گیت سبز کامل.
+
+---
+Task ID: DIR-PN048B
+Agent: GLM (main)
+Task: گام اول رستاخیز + گام دوم ممیزی امن مجاز ۲۵ محور (DIR-PN048B — بازاجرای کامل موج‌های ۱-۴ با «توقف موضعی»)
+
+Work Log:
+- گام اول (رستاخیز): fetch main → HEAD=2f31851 · G1 (stripProtectedNulls در ۶ نقطه) ✓ · G3 (بیلد=HEAD در main+standalone) ✓ · داده: 32,851 آگهی سالم · سرور+Worker زنده · مدت ۸۹ ثانیه — mask-token.sh بازنصب شد
+- رویداد دادهٔ pre-audit (جدا از ممیزی): شاهد G6 اختلاف -8 آگهی/-5 درخواست نسبت به شاهد DIR-PN048A گرفت (پنجرهٔ ریست sandbox قبلی) → شناسایی دقیق ۱۳ ردیف (ME6557/58, ME8446-51, POT448/449/450/4466/4467) از diff با rolling snapshot ۲۱ اکتبر → بازیابی additive-only verbatim (بدون overwrite) → G6_PASS · شاهد: g6-diff-lost-rows.py · g6-recover-lost-rows.py
+- زیرساخت ممیزی: audit_lib.py — G4 (فاصله ≥2.6s) · قانون ۱۵ (لاگ کامل redacted) · G7 (هش sha256[:10] + اسکن هنگام ذخیره + ماسک لاگ در لحظه — یک نشت snippet موبایل پیدا و scrub شد، صفر باقی) · declaration نقش/هدف/فیلد مجاز در هر artifact
+- موج ۱ [P0] ۷/۷: T3=realtor (شواهد قاطع: «مالک» عمومی = کارشناس مسئول — ۳ نمونهٔ خودی عدم‌تطابق با مالک حقیقی + ۲ غیرخودی تطابق با کارشناس DB) · A1=schema_only (۹/۹ کد 200 بدون مقدار SSR) · A2=error_500 (۸/۸ رکورد خودی!) · A3=no_change (نمای ماژول عین scope خودی) · A6=scope_limited (جستجو فقط 19x617 — RBAC پابرجا) · B4=not_found · N4=inertia_html
+- موج ۲ [P1] ۹/۹: A4=api_blocked (webservice 404) · N1=not_applicable · N2=no_change · N3=bulk_same · N7=api_contract (فقط /api/mobile-app/version) · A5=directory_authorized (دایرکتوری کارکنان — نام بدون موبایل در فهرست) · A7=access_control_failed با زمینه (getUserNumber موبایل همکار به هر کاربر — دامنهٔ کارکنان نه مشتری؛ getMyRelatedFilings غیرخودی 500 بدون نشت؛ تک‌حساب جایگزین دو-حساب مستند شد) · B5=same_as_list · N5=no_export (+ کنترل منفی: خروجی ادمین 403 صحیح)
+- موج ۳ [P2] ۸/۸: B1=empty (/leads→403 · assigned خالی) · B2/B3=دسترس‌پذیری نما · N6=same · N8=cache_behavior_normal (مسیر جایگزین عمومی — CRM show خراب) · N9=not_found · C1=sitemap فقط ۵ URL · B6=clean (اسکن آفلاین همهٔ صفحات: بدون shared، بدون auth.user غیرخودی)
+- موج ۴ [P3]: baseline — matched_records_public=1,223 (آینهٔ عمومی خود CRM، ۲۴.۵٪) + Wayback · پلتفرم‌های ثالث طبق دستور +۲-۴ هفته برنامه‌ریزی شد
+- کل ممیزی: ۱۳۵ درخواست · صفر نوشتن روی داده در حین موج‌ها · G6 PASS در همهٔ نقاط · رشد افزودهٔ worker حین ممیزی (+15/+8) ثبت شد
+- ceiling_analysis (مبتنی بر شواهد زنده): سقف مجاز M7 = 1.0% · M8 نام = 11.1% · موبایل = 0.5% — عین وضعیت فعلی؛ نیازمند مجوز: 99.0%/88.9%/99.5% — سقف پشت مجوز بهره‌بردار است نه ترفند فنی
+- ۱۱ یافته (F-01…F-11) + ۶ توصیه (R-01…R-06 با اولویت/مالک/معیار پذیرش) + ۲۷ artifact نام‌دار + گزارش JSON+MD + SHA256SUMS (۳۴ ردیف همه OK) در download/pn048b/ — halt_events: [] · شش جایگزینی موضعی مستند
+- باگ‌های ابزار حین کار رفع و ثبت شدند: requests.Response.__bool__ (واقعی‌سازی 404/500 به -1) → status_of() + اصلاح از روی لاگ؛ regex &quot;-ناوارد T3 → استخراج مجدد آفلاین؛ پس‌زمینهٔ sandbox پس از پایان هر فراخوان Bash کشته می‌شود → الگوی resume/checkpoint
+- پوش بقا: مطابق قانون — توکن فقط از ناحیهٔ پایدار با extraheader، بدون توکن در remote
+
+Stage Summary:
+- هر ۲۵ محور DIR-PN048B با حساب مجاز اجرا شد: RBAC سیستم در همهٔ محورهای معنادار سالم؛ پوشش فعلی M7/M8 عین بیشینهٔ مجاز حساب؛ ادامهٔ پوشش تنها با مجوز بهره‌بردار (R-01: is_admin/مجوز کتبی) ممکن است؛ نقاط فنی قابل‌رفع: endpointهای خراب 500 (R-02) و تصمیم سیاستی getUserNumber (R-03)؛ بستهٔ کامل self-contained با ۳۴ گواه SHA256 تحویل شد
