@@ -6,6 +6,13 @@
  *   · Backoff پله‌ای: ۶ ساعت → ۱۲ ساعت → ۲۴ ساعت
  *   · Circuit Breaker: ۳ شکست پیاپی ⇒ قفل سخت ۲۴ ساعته (صفر تلاش)
  *
+ * ⚠️ PN-049 (دستور شورا ۱۴۰۵/۰۸/۰۱ — «لغو هرگونه محدودیت ورود به حساب pm و
+ *    arm»): قانون Retry هوشمند PN-029 برای «مسیرهای ورود» (authentication/*
+ *    — ارسال/تأیید پیامک PM و ARM) برای همیشه لغو شد. مسیرهای ورود هرگز
+ *    توسط فیوز مسدود نمی‌شوند و شکست‌های ورود هرگز شمارندهٔ فیوز را نمی‌بارند
+ *    (سهمیهٔ سمت خود ملک تبریز همچنان بیرون از حاکمیت ماست). فیوز فقط برای
+ *    مسیرهای «داده/هماهنگ‌سازی» به‌عنوان سپر پایداری باقی می‌ماند.
+ *
  * دامنهٔ شمارش: فقط خطاهای «سمت سرور/شبکه» (۵xx · DB_DOWN · TIMEOUT ·
  * NETWORK_ERROR · RATE_LIMITED). پاسخ‌های دقیق ۴xx (401/412/OTP_INVALID)
  * شکستِ فیوز محسوب نمی‌شوند — سامانه پاسخ می‌دهد؛ مشکل دست ما نیست.
@@ -115,9 +122,21 @@ export const RELAY_ROUTE_PREFIXES: readonly string[] = [
   "/api/admin/relay/",
 ];
 
+/** PN-049 (دستور شورا ۱۴۰۵/۰۸/۰۱) — پیشوندهای مسیرهای «ورود» به حساب PM/ARM:
+ *  قانون Retry هوشمند PN-029 برای ورود لغو شد؛ این مسیرها هرگز مسدود
+ *  نمی‌شوند و شکست‌شان فیوز را نمی‌بارد (ارسال/تأیید پیامک · تمدید توکن).
+ *  هر دو سامانهٔ ARM و PM همین پیشوند را دارند (endpoints.ts). */
+export const AUTH_PATH_PREFIXES: readonly string[] = ["authentication/"];
+
 /** داوری خالص: آیا این مسیر مسیر داخلی رله است؟ (فیوز اعمال نمی‌شود) */
 export function shouldBypassCircuit(path: string): boolean {
   return RELAY_ROUTE_PREFIXES.some((r) => path.startsWith(r));
+}
+
+/** PN-049 — داوری خالص: آیا این مسیر مسیر «ورود» است؟ (فیوز لغو‌شده — قانون شورا) */
+export function isAuthPath(path: string | undefined | null): boolean {
+  if (!path) return false;
+  return AUTH_PATH_PREFIXES.some((r) => path.startsWith(r));
 }
 
 async function relayDeviceOnline(): Promise<boolean | null> {
@@ -222,6 +241,9 @@ export async function getBreakerSnapshot(target: string): Promise<BreakerSnapsho
  *  عصرِ رلهٔ قطع نادیده گرفته می‌شود (مسیر تازه دوباره زنده — پیروزی مالک). */
 export async function checkCircuit(target: string, opts?: { path?: string }): Promise<BreakerGateResult> {
   if (!isCircuitBreakerEnabled()) return { allowed: true, retryInMs: -1, snapshot: null };
+  // PN-049 (دستور شورا): مسیرهای ورود (authentication/*) هرگز مسدود نمی‌شوند —
+  // لغو کامل قانون Retry هوشمند PN-029 برای ورود به حساب PM و ARM.
+  if (opts?.path && isAuthPath(opts.path)) return { allowed: true, retryInMs: -1, snapshot: null };
   if (opts?.path && shouldBypassCircuit(opts.path)) return { allowed: true, retryInMs: -1, snapshot: null };
   const snapshot = await getBreakerSnapshot(target);
   const gate = breakerGate(snapshot);

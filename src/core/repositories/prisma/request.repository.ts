@@ -178,6 +178,13 @@ export class PrismaRequestRepository implements RequestRepository {
         ? { tenantId: "melketun" }
         : { tenantId: filter.tenantId ?? "melk-tabriz", source: "arm" };
 
+    // PN-049/گام ۲-الف (قانون حساب کاربری) — کاربر غیر-مالک فقط رکوردهای
+    // ثبت‌شده توسط خودش را می‌بیند (مالک = صفر فیلتر؛ نام تهی = fail-closed هیچ).
+    if (filter.registrarNameNorm !== undefined) {
+      if (filter.registrarNameNorm === "") where.id = "__pn049_deny_all__";
+      else where.actorNameNorm = filter.registrarNameNorm;
+    }
+
     // P6530/گام ۲ — فیلترهای SQL: وضعیت (IN یا NOT IN برای «سایر») · دسته‌بندی · تاریخ · قیمت
     const statuses = filter.statuses ?? [];
     if (filter.statusesIncludesOther && (filter.statusesExcluded ?? []).length > 0) {

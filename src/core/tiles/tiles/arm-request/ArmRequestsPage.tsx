@@ -183,7 +183,7 @@ const TRADE_CATEGORIES: readonly string[] = ["خرید", "پیش خرید", "ر�
 const MAX_AUTO_SLICES = 10;
 const AUTO_SLICE_ROWS = 25;
 
-export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back, tenantId }: TilePageProps) {
+export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, onBack: _back, tenantId }: TilePageProps) {
   const { toast } = useToast();
   // PN-011 خامسا-۲ — بار کاشی از M5 (کد درخواست) یک‌بار در ساخت مقصد مصرف می‌شود؛
   // فیلتر و اعمال هر دو از همان ابتدا پر می‌شوند ⇒ اولین واکشی خودش جست‌وجو است.
@@ -954,6 +954,13 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
             )}
+            {/* PN-049/گام ۲-الف — قانون حساب کاربری: برای کاربر غیر-مالک، فهرست به
+                رکوردهای ثبت‌شده توسط خودش محدود است (مالک = همهٔ رکوردها) */}
+            {userRole !== "OWNER" && (
+              <Badge variant="outline" className="gap-1 text-[11px] border-amber-300 text-amber-700 bg-amber-50" title="قانون حساب کاربری PN-049 — کنترل حساب کاربر">
+                نمای شخصی — فقط رکوردهای ثبت‌شده توسط شما
+              </Badge>
+            )}
           </CardHeader>
           <CardContent className="p-0">
             <div className="rounded-lg border">
@@ -1133,7 +1140,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                         )}
                         {/* ۷ — مناطق (نکته ۲: فقط نام مناطق؛ >۳ = فایل مناطق P6526/ب) */}
                         <TableCell className="whitespace-normal">
-                          <AreasFileCell requestCode={r.requestCode} areaNames={r.areaNames} />
+                          <AreasFileCell requestCode={r.requestCode} areaNames={r.areaNames} tenant={tenantId ?? "tabriz"} />
                         </TableCell>
                         {/* ۷-ب — نوع ملک درخواستی (P6546/گام دوم — از جزئیات ARM) */}
                         {/* PN-011 ثانیاً — رنگ از رجیستری (قانون ۱۲): هر مقدار نوع ملک رنگ یکتای خود را دارد */}

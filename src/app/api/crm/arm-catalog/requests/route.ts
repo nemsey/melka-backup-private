@@ -16,6 +16,8 @@
  *
  * دامنه (P6.5-10): موجودیت arm-request تجمیعی است — مالک همه را بدون فیلتر
  * می‌بیند (شاهد owner.read).
+ * PN-049/گام ۲-الف (قانون حساب کاربری): کاربر غیر-مالک فقط رکوردهای
+ * ثبت‌شده توسط خودش را می‌بیند (registrarNameNorm از catalogUserScope).
  */
 
 import { NextRequest } from "next/server";
@@ -23,7 +25,7 @@ import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { tenantDbValue } from "@/lib/tenants";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
-import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
+import { ownerLoginPath, resolveEntityAccess, catalogUserScope } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
 import { getRequestRepository, getIntegrationRepository, getExpertRepository } from "@/core/repositories";
 import { enrichArmRequests } from "@/lib/melk-api/arm-catalog";
@@ -144,6 +146,8 @@ export async function GET(request: NextRequest) {
     }
 
     const access = resolveEntityAccess(guard, "arm-request");
+    // PN-049/گام ۲-الف — قانون حساب کاربری: مالک همه؛ کاربر فقط رکوردهای خودش
+    const catalogScope = catalogUserScope(guard);
     const { rows, total } = await repo.listArmCatalog(
       {
         tenantId,
@@ -154,6 +158,8 @@ export async function GET(request: NextRequest) {
         urgentOnly, luxuryOnly, occasionOnly,
         propertyTypes: propertyTypes.length > 0 ? propertyTypes : undefined,
         buildingTypes: buildingTypes.length > 0 ? buildingTypes : undefined,
+        // PN-049 — دامنهٔ حساب کاربری (مالک: undefined = صفر فیلتر)
+        registrarNameNorm: catalogScope.kind === "OWN" ? catalogScope.nameNorm : undefined,
       },
       limit
     );

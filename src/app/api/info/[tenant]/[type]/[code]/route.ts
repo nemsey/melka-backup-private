@@ -15,6 +15,9 @@
  * PN-047/گام دوم-۱: ?format=json → سند ساختاری InfoDoc برای UI زیبای
  * فایل اطلاعات (همانند فایل قرارداد) — فایل متنی همچنان روی دیسک regenerate
  * می‌شود (شاهد PN-045 دست‌نخورده).
+ * PN-049/گام ۲-الف (قانون حساب کاربری): برای type=listing/request و نشست
+ * غیر-مالک، فایل فقط وقتی باز می‌شود که رکورد توسط خود کاربر ثبت شده باشد
+ * (عین دامنهٔ فهرست‌ها — مالک: صفر فیلتر).
  */
 
 import { NextRequest } from "next/server";
@@ -24,10 +27,13 @@ import { MelkApiError } from "@/lib/melk-api/types";
 import {
   generateInfoDoc,
   generateInfoFile,
+  infoRecordRegistrarRaw,
   isInfoTenant,
   isInfoType,
   isValidInfoCode,
 } from "@/lib/info-files/generator";
+import { catalogUserScope } from "@/lib/access/scope";
+import { normalizeFilterInput } from "@/lib/normalize-input";
 
 /** type → کاشیِ همان فهرست (مرز دسترسی — عین الگوی owner-notes) */
 const TYPE_TILE: Record<string, "arm-listings" | "arm-requests" | "transactions-contracts" | "experts"> = {
@@ -60,6 +66,24 @@ export async function GET(
 
   const tileAccess = await requireTileAccessFor(guard, TYPE_TILE[type]);
   if (tileAccess instanceof MelkApiError) return errorResponse(tileAccess);
+
+  // PN-049/گام ۲-الف — قانون حساب کاربری: فایل اطلاعاتِ رکورد فقط برای ثبت‌کنندهٔ خودش
+  // (و مالک) باز است — عین دامنهٔ فهرست‌ها؛ نشت از مسیر مستقیم کد ناممکن.
+  const infoScope = catalogUserScope(guard);
+  if (infoScope.kind === "OWN" && (type === "listing" || type === "request")) {
+    const registrarRaw = await infoRecordRegistrarRaw(tenant, type, code);
+    const registrarNorm = normalizeFilterInput(registrarRaw ?? "");
+    if (registrarNorm !== infoScope.nameNorm) {
+      return errorResponse(
+        new MelkApiError(
+          "FORBIDDEN",
+          "این رکورد توسط شما ثبت نشده است — طبق قانون حساب کاربری، فایل اطلاعات فقط برای رکوردهای خود شما باز است (PN-049).",
+          403,
+          false
+        )
+      );
+    }
+  }
 
   try {
     // PN-047/گام دوم-۱ — حالت سند ساختاری برای UI زیبا (فایل قرارداد-گونه)

@@ -22,6 +22,7 @@ import {
   breakerKeyFromBaseUrl,
   checkCircuit,
   circuitLockedError,
+  isAuthPath,
   isBreakerFailure,
   recordBreakerFailure,
   recordBreakerSuccess,
@@ -99,7 +100,10 @@ function classifyServerFailure(status: number, bodyText: string): MelkApiError {
 export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<ArmCallResult<T>> {
   // ---- گارد ۲: فیوز قطع‌کننده (قانون Retry هوشمند — PN-029 مرحلهٔ ۶) ----
   // PN-041-R (شورا-ن۰۶۸·بند ۲.۳): مسیر هم پاس می‌شود — روتهای رله مستثنی‌اند
+  // PN-049 (دستور شورا ۱۴۰۵/۰۸/۰۱): مسیرهای «ورود» (authentication/*) نیز مستثنی‌اند
+  // — لغو کامل قانون Retry هوشمند PN-029 برای ورود به حساب PM و ARM.
   const target = breakerKeyFromBaseUrl(opts.baseUrl);
+  const isAuth = isAuthPath(opts.path); // ورود: نه قفل می‌خورد، نه شمارنده می‌بارد
   const gate = await checkCircuit(target, { path: opts.path });
   if (!gate.allowed) throw circuitLockedError(gate);
 
@@ -181,7 +185,8 @@ export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<Ar
         );
       }
       // PN-029 — موفقیت واقعی: بازنشانی فیوز میزبان (شمارش پیاپی صفر می‌شود)
-      await recordBreakerSuccess(target);
+      // PN-049: مسیرهای ورود شمارنده را تغییر نمی‌دهند (ورود لغو-محدود است)
+      if (!isAuth) await recordBreakerSuccess(target);
       return { data: (envelope?.data ?? (envelope as unknown as T)) as T, message: envelope?.message };
     } catch (err) {
       if (err instanceof MelkApiError) {
@@ -206,7 +211,8 @@ export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<Ar
     if (refined.code === "DB_DOWN") lastError = refined;
   }
   // PN-029 — شکست سمت سرور/شبکه: ثبت در فیوز (backoff ۶/۱۲/۲۴س · ۳ پیاپی = قفل ۲۴س)
-  if (lastError && isBreakerFailure(lastError)) await recordBreakerFailure(target);
+  // PN-049 (دستور شورا): شکستِ «مسیر ورود» هرگز فیوز را نمی‌بارد — ورود بدون محدودیت
+  if (!isAuth && lastError && isBreakerFailure(lastError)) await recordBreakerFailure(target);
   throw lastError ?? new MelkApiError("UNKNOWN", "خطای نامشخص در ارتباط با سامانه ملک تبریز.", 500, false);
 }
 

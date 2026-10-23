@@ -14,6 +14,7 @@ import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { tenantDbValue } from "@/lib/tenants";
+import { catalogUserScope } from "@/lib/access/scope";
 import { normalizeFilterInput } from "@/lib/normalize-input";
 import {
   getPropertyRecordRepository,
@@ -76,6 +77,10 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
 
   const { entity } = await ctx.params;
   const sp = request.nextUrl.searchParams;
+  // PN-049/گام ۲-الف — قانون حساب کاربری: خروجی اکسل هم عین فهرست دامنه می‌گیرد —
+  // کاربر غیر-مالک فقط رکوردهای خودش را خروجی می‌گیرد؛ مالک همه را.
+  const exportScope = catalogUserScope(guard);
+  const exportRegistrar = exportScope.kind === "OWN" ? exportScope.nameNorm : undefined;
   // PN-044/فاز ۴ (شورا-ن۰۸۸) — tenant همین خروجی: 'melketun' → دادهٔ ملکتون؛
   // پیش‌فرض/هر چیز دیگر → 'melk-tabriz' (رفتار فعلی — صفر شکستن).
   const tenantKey = sp.get("tenantId");
@@ -98,6 +103,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
           code, realtorName, ownerName, address,
           priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")),
           rentalType: sp.get("rentalType") === "rental" ? "rental" : sp.get("rentalType") === "sale" ? "sale" : undefined,
+          registrarNameNorm: exportRegistrar,
         },
         25000
       );
@@ -137,7 +143,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       const customerName = normalizeFilterInput(sp.get("customerName")) || undefined;
       const areaName = normalizeFilterInput(sp.get("areaName")) || undefined;
       const { rows } = await repo.listArmCatalog(
-        { tenantId, code, realtorName, customerName, areaName, priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")) },
+        { tenantId, code, realtorName, customerName, areaName, priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")), registrarNameNorm: exportRegistrar },
         25000
       );
       const branchOf = await branchResolver();

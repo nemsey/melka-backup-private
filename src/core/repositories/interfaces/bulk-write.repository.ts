@@ -337,6 +337,9 @@ export interface ArmListingCatalogFilter {
   stateName?: string;
   /** نوع ملک (propertyTypeName) */
   propertyTypes?: string[];
+  /** PN-049/گام ۲-الف (قانون حساب کاربری) — نام نرمال‌شدهٔ ثبت‌کننده:\n   *  برای نشست‌های غیر-مالک، فهرست فقط به رکوردهای ثبت‌شده توسط خود کاربر محدود می‌شود
+   *  (مطابقت دقیق با realtorNameNorm)؛ مالک (کد مستر) هرگز فیلتر نمی‌خورد. */
+  registrarNameNorm?: string;
 }
 
 /** فیلتر کاتالوگ درخواست‌های ARM — P6530/گام ۲: فیلتر بر اساس «تمام ستون‌های فهرست»
@@ -396,6 +399,10 @@ export interface ArmRequestCatalogFilter {
   buildingTypes?: string[];
   /** محله (contains روی lineNames) */
   lineName?: string;
+  /** PN-049/گام ۲-الف (قانون حساب کاربری) — نام نرمال‌شدهٔ ثبت‌کننده:
+   *  برای نشست‌های غیر-مالک، فهرست فقط به رکوردهای ثبت‌شده توسط خود کاربر محدود می‌شود
+   *  (مطابقت دقیق با actorNameNorm)؛ مالک (کد مستر) هرگز فیلتر نمی‌خورد. */
+  registrarNameNorm?: string;
 }
 
 /** شمارش وضعیت غنی‌سازی کاتالوگ */

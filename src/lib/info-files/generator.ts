@@ -128,6 +128,24 @@ async function findRecord(tenant: InfoTenant, type: InfoType, code: string): Pro
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+/**
+ * PN-049/گام ۲-الف — نام خام «ثبت‌کنندهٔ» رکورد برای قانون حساب کاربری:
+ * کاربر غیر-مالک فقط فایل اطلاعات رکوردهای ثبت‌شده توسط خودش را می‌بیند
+ * (عین دامنهٔ فهرست‌ها: listing → ownerName · request → actorName).
+ * transaction/expert → null (تجمیعی §۵.۳ — خارج از قانون حساب کاربری کاتالوگ).
+ * رکورد نبود → null (فراخواننده 404 را از روی found جداگانه هندل می‌کند).
+ */
+export async function infoRecordRegistrarRaw(
+  tenant: InfoTenant,
+  type: InfoType,
+  code: string
+): Promise<string | null> {
+  if (type !== "listing" && type !== "request") return null;
+  const r = await findRecord(tenant, type, code);
+  if (!r) return null;
+  return ((type === "listing" ? r.ownerName : r.actorName) as string | null | undefined) ?? null;
+}
+
 /** فیلدهای استاندارد هر نوع — برچسب فارسی + مقدار نرمال‌شده */
 function standardFields(type: InfoType, r: Record<string, unknown>): [string, unknown][] {
   switch (type) {

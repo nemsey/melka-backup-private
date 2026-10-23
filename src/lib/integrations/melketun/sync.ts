@@ -41,11 +41,11 @@ import { recordMelketunConnection } from "@/lib/integrations/melketun";
 import { stripProtectedNulls } from "@/lib/integrations/melketun/protected-nulls"; // G1/G2 (DIR-PN048-007)
 
 const SECRET_FILE = path.join(process.cwd(), "upload/.runtime/melketun-secrets.json");
-const REQUEST_TIMEOUT_MS = 30_000;
-const PAGE_DELAY_MS = 350; // ادب در برابر سرور (rate-limit risk #4 — CRM زیر فشار ۵۰۰ می‌دهد)
+export const REQUEST_TIMEOUT_MS = 30_000;
+export const PAGE_DELAY_MS = 350; // ادب در برابر سرور (rate-limit risk #4 — CRM زیر فشار ۵۰۰ می‌دهد)
 const MAX_PAGES = 500; // سقف ایمن (کشف: filings=۱۴۸ صفحه · potentials=~۳۹۴ صفحه)
 /** صفحات خراب پایدار CRM (۵۰۰ دائمی) — skip صادقانه (کشف PN-047) */
-const KNOWN_BAD_POTENTIAL_PAGES = new Set<number>([339, 372, 385, 390]);
+export const KNOWN_BAD_POTENTIAL_PAGES = new Set<number>([339, 372, 385, 390]);
 
 /** کلید tenant ملکتون در جداول مشترک. تبریز = 'melk-tabriz' (P6.5-02 §۱۴ — دست‌نخورده). */
 export const MELKETUN_TENANT_ID = "melketun" as const;
@@ -205,6 +205,24 @@ function toMeterage(raw: unknown): number | null {
   return v !== null && v > 0 ? v : null; // متراژ ۰ = تهی واقعی است (صادقانه)
 }
 
+// ── PN-049/گام ۱-الف — تجزیهٔ مناطق چندگانهٔ CRM ملکتون ─────────────────────
+/**
+ * رشتهٔ خام مناطق CRM ملکتون به‌صورت «آبرسان , دارایی , رضانژاد جنوبی»
+ * (جداکنندهٔ «,» لاتین و «،» فارسی) می‌آید؛ شواهد DB: ۷۵۹ رکورد از ۱٬۱۱۳
+ * رکورد دارای-منطقه، رشتهٔ چندمنطقه‌ای‌اند. تجزیهٔ نادرست قبلی کل رشته را
+ * «یک منطقه» ذخیره می‌کرد و سلول «فایل مناطق» (>۳ منطقه — P6526/ب) هرگز
+ * برای ملکتون فعال نمی‌شد؛ با تجزیهٔ صحیح، ستون مناطق ملکتون عین ستون
+ * مناطق فهرست درخواست ملک تبریز رفتار می‌کند (۱-۳ درون‌خطی · >۳ فایل).
+ * نیم‌فاصله و پرانتز درون‌نام حفظ می‌شود — فقط جداکننده‌ها بریده می‌شوند.
+ */
+export function parseMelketunAreas(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return String(raw)
+    .split(/[،,]/)
+    .map((s) => s.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
 // ── پارس تاریخ شمسی CRM ملکتون → Date ─────────────────────────────────────
 import { jalaliToGregorian as melJalaliToGregorian } from "@/lib/jalali";
 const MELKETUN_MONTHS: Record<string, number> = {
@@ -226,7 +244,8 @@ function parseMelketunJalali(raw: unknown): Date | null {
 }
 
 // ── لاگین نشست (فاز ۰ تأیید: POST /login-store) ────────────────────────────
-async function crmLogin(baseUrl: string, username: string, password: string, errors: string[]): Promise<CookieJar> {
+// PN-049/گام ۳ — export برای اسکریپت سینک تکه‌ای (resume/checkpoint)؛ منبع یگانه.
+export async function crmLogin(baseUrl: string, username: string, password: string, errors: string[]): Promise<CookieJar> {
   const jar = new CookieJar();
 
   const loginPage = await fetch(`${baseUrl}/login`, {
@@ -300,7 +319,7 @@ interface ModuleFetchResult {
   badPages: number[];
 }
 
-async function fetchModule(
+export async function fetchModule(
   baseUrl: string,
   jar: CookieJar,
   pagePath: (n: number) => string,
@@ -362,10 +381,10 @@ async function fetchFunnel(baseUrl: string, jar: CookieJar, funnelPath: string, 
 }
 
 // ── حل نام/موبایل کاربران vtiger (با کش پایدار RefListCache) ────────────────
-interface ResolvedUser { name: string | null; mobile: string | null }
+export interface ResolvedUser { name: string | null; mobile: string | null }
 const USER_CACHE_KEY = "melketun-users";
 
-async function resolveVtigerUsers(
+export async function resolveVtigerUsers(
   baseUrl: string,
   jar: CookieJar,
   vtigerIds: string[],
@@ -412,7 +431,7 @@ async function resolveVtigerUsers(
 }
 
 // ── نگاشت فیلدها ─────────────────────────────────────────────────────────────
-interface FilingRow {
+export interface FilingRow {
   id: string; full_id?: string; name?: string; code?: string; saleType?: string; fileType?: string;
   area?: string; price?: string | number; prepayment?: string; rent?: string; size?: string | number;
   assignedUser?: string; phone?: string; agency?: string; source?: string; status?: string;
@@ -422,16 +441,16 @@ interface FilingRow {
 interface PotentialRow {
   id: string; full_id?: string; code?: string; potentialName?: string; customerType?: string;
   price?: string | number; rent?: number | string; prepayment?: number | string; areas?: string;
-  contactName?: string; agency?: string; assignedUser?: string; propertyType?: string;
+  contactName?: string; contactMobile?: string; agency?: string; assignedUser?: string; propertyType?: string;
   createdTime?: string; starred?: boolean; status?: string; source?: string;
 }
 
-interface MyFilingRow {
+export interface MyFilingRow {
   code?: string; owner_name?: string; owner_phone?: string; price?: string;
   address?: string; longitude?: string; latitude?: string;
 }
 
-function filingToProperty(f: FilingRow, runId: string, expertName: string | null, ownerEnrich?: MyFilingRow | null) {
+export function filingToProperty(f: FilingRow, runId: string, expertName: string | null, ownerEnrich?: MyFilingRow | null) {
   const saleType = f.saleType?.trim() || null;
   const fileType = f.fileType?.trim() || null;
   const area = f.area?.trim() || null;
@@ -463,8 +482,10 @@ function filingToProperty(f: FilingRow, runId: string, expertName: string | null
     status: f.status?.trim() || null,
     // کارشناس مسئول (حل‌شده از vtiger)؛ بدون حل → آژانس (الگوی کاتالوگ M7)
     ownerName: expertName ?? agency,
-    // مالک واقعی — از غنی‌سازی myFilings (۴۹ آگهی خصوصی)؛ عین دادهٔ خام CRM
-    rawOwnerName: ownerEnrich?.owner_name?.trim() ?? null,
+    // مالک واقعی — از غنی‌سازی myFilings (آگهی‌های خصوصی در دسترس)؛ اگر نمای CRM
+    // برای حساب مدیر فیلد مالک بدهد، خودکار جاری می‌شود (PN-049/گام ۲-ب —
+    // آمادگی حساب مدیر؛ نمای عمومی فعلی این فیلد را نمی‌دهد — شاهد buffer)
+    rawOwnerName: ownerEnrich?.owner_name?.trim() ?? (f.ownerName?.trim() || null),
     ownerMobile: ownerEnrich?.owner_phone?.replace(/\D/g, "") ?? f.phone?.replace(/\D/g, "") ?? null,
     address: ownerEnrich?.address?.trim() ?? null, // آدرس دقیق (فقط برای ۴۹ آگهی خصوصیِ در دسترس)
     areaName: area,
@@ -508,14 +529,21 @@ function potentialToRequest(p: PotentialRow, runId: string, expertName: string |
     fullId: p.full_id ?? p.id,
   };
   const priceVal = toFloat(p.price);
+  // PN-049/گام ۱-الف — مناطق چندگانهٔ CRM به آرایهٔ تمیز تجزیه می‌شوند
+  // (قبلاً کل رشتهٔ «آ , ب , ج» به‌عنوان یک منطقه ذخیره می‌شد — ریشهٔ شکایت مالک)
+  const areaNames = parseMelketunAreas(p.areas);
 
   return {
     id: p.id, // شناسهٔ vtiger ('13x…') — بدون تصادم با cuid های ARM
     requestCode: p.code?.trim() || p.id, // 'POT4396' — بدون تصادم با کدهای عددی ARM
     source: "melketun-crm",
     customerName: p.contactName?.trim() || null,
+    // PN-049/گام ۲-ب — آمادگی حساب مدیر: اگر نمای CRM برای حساب‌های با دسترسی
+    // بالاتر موبایل متقاضی بدهد، خودکار جاری می‌شود؛ نمای عمومی فعلی این فیلد
+    // نمی‌دهد (شاهد buffer ۱۴۰۵/۰۸/۰۱) — این مسیر برای حساب فعلی بی‌اثر است.
+    customerMobile: p.contactMobile?.replace(/\D/g, "") || null,
     title: p.potentialName?.trim() || null,
-    areaNamesJson: p.areas ? JSON.stringify([p.areas]) : null,
+    areaNamesJson: areaNames.length > 0 ? JSON.stringify(areaNames) : null,
     propertyTypeName: p.propertyType?.trim() || null,
     tradeTypeName: p.customerType?.includes("اجاره") ? "رهن و اجاره" : p.customerType?.includes("خرید") ? "فروش" : null,
     priceFrom: priceVal,
