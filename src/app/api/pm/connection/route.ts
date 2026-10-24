@@ -159,7 +159,16 @@ export async function POST(request: NextRequest) {
               personnelCode: code,
               lastError: e.message,
             });
-            throw new MelkApiError("UNKNOWN", `ارسال پیامک PM ناموفق بود: ${e.message}`, 502, false);
+            // PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲): صفر محدودیت در ورود PM — خطای
+            // شبکه گذراست (رله/سرور مبدأ)؛ راهنمای شفاف برای کاربر.
+            const transient = e.code === "NETWORK_ERROR" || e.code === "TIMEOUT" || e.retryable === true;
+            throw new MelkApiError(
+              "UNKNOWN",
+              `ارسال پیامک PM ناموفق بود: ${e.message}` +
+                (transient ? " — این خطای شبکه‌ای گذراست و محدودیتی در کار نیست؛ همین حالا دوباره تلاش کنید." : ""),
+              502,
+              false
+            );
           }
         },
       });

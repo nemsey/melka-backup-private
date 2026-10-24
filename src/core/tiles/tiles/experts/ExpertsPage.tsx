@@ -36,7 +36,7 @@ import {
   RefreshCw, CheckCircle2, IdCard, CalendarClock, BriefcaseBusiness, FileSpreadsheet, UserCheck, Phone,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TileCoverageTable, useTileData, FilterGroup, FilterChip, type DataSourceInfo } from "@/components/app/shared";
+import { KpiCard, TileCoverageTable, useTileData, FilterGroup, FilterChip, ExcelImportButton, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob } from "@/lib/client/api";
 import { faNumber, faJalaliShort } from "@/lib/format";
@@ -544,6 +544,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
             >
               <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
             </Button>
+            {/* PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲ — آپلود اکسل «کلیهٔ فهرست‌های چهارگانه») —
+                فهرست کارشناسان (M4/M10) هم عین سه فهرست دیگر بارگذاری اکسل دارد */}
+            <ExcelImportButton entity="experts" compact tenantId={tenantId ?? "tabriz"} onImported={() => void reload()} />
           </div>
           {rows.length > 0 && <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>}
         </CardHeader>

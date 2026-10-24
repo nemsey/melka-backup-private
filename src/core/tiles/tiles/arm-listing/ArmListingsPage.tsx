@@ -980,8 +980,8 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
               </Button>
-              {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
-              <ExcelImportButton entity="listings" compact onImported={() => void load()} />
+              {/* PN-003 گام ۴-۲ + PN-051 — بارگذاری اکسل کل فهرست (ایمپورت در tenant همین فهرست) */}
+              <ExcelImportButton entity="listings" compact tenantId={tenantId ?? "tabriz"} onImported={() => void load()} />
             </div>
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>

@@ -39,6 +39,7 @@ import path from "path";
 import { db } from "@/lib/db";
 import { recordMelketunConnection } from "@/lib/integrations/melketun";
 import { stripProtectedNulls } from "@/lib/integrations/melketun/protected-nulls"; // G1/G2 (DIR-PN048-007)
+import { logEvent } from "@/lib/logger"; // PN-051 — شاهد ادغام دو-نمایی (تنها نقطهٔ لاگ: src/lib/logger)
 
 const SECRET_FILE = path.join(process.cwd(), "upload/.runtime/melketun-secrets.json");
 export const REQUEST_TIMEOUT_MS = 30_000;
@@ -482,9 +483,9 @@ export function filingToProperty(f: FilingRow, runId: string, expertName: string
     status: f.status?.trim() || null,
     // کارشناس مسئول (حل‌شده از vtiger)؛ بدون حل → آژانس (الگوی کاتالوگ M7)
     ownerName: expertName ?? agency,
-    // مالک واقعی — از غنی‌سازی myFilings (آگهی‌های خصوصی در دسترس)؛ اگر نمای CRM
-    // برای حساب مدیر فیلد مالک بدهد، خودکار جاری می‌شود (PN-049/گام ۲-ب —
-    // آمادگی حساب مدیر؛ نمای عمومی فعلی این فیلد را نمی‌دهد — شاهد buffer)
+    // مالک واقعی — اولویت ۱: غنی‌سازی myFilings (آگهی‌های خصوصی) · اولویت ۲:
+    // PN-051 ادغام نمای خصوصی (f.ownerName از Melketunfilingplus) · با حساب
+    // مدیر CRM این فیلد برای همهٔ آگهی‌ها جاری می‌شود (دستور شورا ۱۴۰۵/۰۸/۰۲)
     rawOwnerName: ownerEnrich?.owner_name?.trim() ?? (f.ownerName?.trim() || null),
     ownerMobile: ownerEnrich?.owner_phone?.replace(/\D/g, "") ?? f.phone?.replace(/\D/g, "") ?? null,
     address: ownerEnrich?.address?.trim() ?? null, // آدرس دقیق (فقط برای ۴۹ آگهی خصوصیِ در دسترس)
@@ -515,7 +516,7 @@ export function filingToProperty(f: FilingRow, runId: string, expertName: string
   };
 }
 
-function potentialToRequest(p: PotentialRow, runId: string, expertName: string | null) {
+export function potentialToRequest(p: PotentialRow, runId: string, expertName: string | null) {
   const inputs = {
     customerType: p.customerType ?? null,
     rent: p.rent ?? null,
@@ -538,9 +539,8 @@ function potentialToRequest(p: PotentialRow, runId: string, expertName: string |
     requestCode: p.code?.trim() || p.id, // 'POT4396' — بدون تصادم با کدهای عددی ARM
     source: "melketun-crm",
     customerName: p.contactName?.trim() || null,
-    // PN-049/گام ۲-ب — آمادگی حساب مدیر: اگر نمای CRM برای حساب‌های با دسترسی
-    // بالاتر موبایل متقاضی بدهد، خودکار جاری می‌شود؛ نمای عمومی فعلی این فیلد
-    // نمی‌دهد (شاهد buffer ۱۴۰۵/۰۸/۰۱) — این مسیر برای حساب فعلی بی‌اثر است.
+    // موبایل متقاضی — PN-051: از ادغام نمای خصوصی + نقشهٔ contacts/potentials
+    // (نام→موبایل) پر می‌شود؛ با اعتبارنامهٔ مدیر CRM پوشش کامل می‌شود.
     customerMobile: p.contactMobile?.replace(/\D/g, "") || null,
     title: p.potentialName?.trim() || null,
     areaNamesJson: areaNames.length > 0 ? JSON.stringify(areaNames) : null,
@@ -912,6 +912,120 @@ export async function syncMelketun(): Promise<SyncResult> {
       "potentials", errors,
       KNOWN_BAD_POTENTIAL_PAGES,
     );
+
+    // ── PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲ — تکمیل ستون «مالک ملک» و «متقاضی»):
+    //    ادغام افزودنیِ «نمای خصوصی» در ردیف‌های عمومی. نمای خصوصی برای هر
+    //    حساب فقط رکوردهای همان حساب را می‌دهد (RBAC سمت CRM) ولی فیلدهای
+    //    مالک را دارد: filings خصوصی → ownerName/phone (مالک واقعی) ·
+    //    potentials خصوصی → contactName (متقاضی) · contacts/{filings,potentials}
+    //    → نقشهٔ نام→موبایل برای شمارهٔ تماس. با اعتبارنامهٔ مدیر CRM (از
+    //    تنظیمات → اتصال به ملکتون) همین مسیر همهٔ رکوردها را پوشش می‌دهد.
+    //    شکست نماها هرگز سینک عمومی را نمی‌شکند (بهترین-تلاش — بی‌صدا). ──
+    try {
+      const privFilings = await fetchModule(
+        base, jar,
+        (n) => `/Melketunfilingplus${n > 1 ? `/${n}` : ""}`,
+        "filings", [],
+      );
+      const privPotentials = await fetchModule(
+        base, jar,
+        (n) => `/Potentials${n > 1 ? `/${n}` : ""}`,
+        "potentials", [],
+      );
+      const contactsFilings = await fetchModule(
+        base, jar,
+        (n) => `/contacts/filings${n > 1 ? `/${n}` : ""}`,
+        "contacts", [],
+      );
+      const contactsPotentials = await fetchModule(
+        base, jar,
+        (n) => `/contacts/potentials${n > 1 ? `/${n}` : ""}`,
+        "contacts", [],
+      );
+
+      // نقشه‌های ادغام — کلید: id (فضای مشترک vtiger '71x…'/'13x…') + fallback کد
+      const privFilingById = new Map<string, InertiaRow>();
+      const privFilingByCode = new Map<string, InertiaRow>();
+      for (const r of privFilings.rows) {
+        privFilingById.set(String(r.id ?? ""), r);
+        const c = String(r.code ?? "").trim();
+        if (c) privFilingByCode.set(c, r);
+      }
+      const privPotById = new Map<string, InertiaRow>();
+      const privPotByCode = new Map<string, InertiaRow>();
+      for (const r of privPotentials.rows) {
+        privPotById.set(String(r.id ?? ""), r);
+        const c = String(r.code ?? "").trim();
+        if (c) privPotByCode.set(c, r);
+      }
+      const phoneOfFilingContact = new Map<string, string>();
+      for (const r of contactsFilings.rows) {
+        const nm = String(r.ownerName ?? "").trim();
+        const ph = String(r.phone ?? "").replace(/\D/g, "");
+        if (nm && ph && !phoneOfFilingContact.has(nm)) phoneOfFilingContact.set(nm, ph);
+      }
+      const phoneOfPotContact = new Map<string, string>();
+      for (const r of contactsPotentials.rows) {
+        const nm = String(r.ownerName ?? "").trim();
+        const ph = String(r.phone ?? "").replace(/\D/g, "");
+        if (nm && ph && !phoneOfPotContact.has(nm)) phoneOfPotContact.set(nm, ph);
+      }
+
+      // ادغام آگهی‌ها: مالک واقعی (ownerName نمای خصوصی → rawOwnerName) + موبایل
+      let mergedFilings = 0;
+      for (const f of filingsResult.rows) {
+        const priv = privFilingById.get(String(f.id ?? "")) ?? privFilingByCode.get(String(f.code ?? "").trim());
+        if (!priv) continue;
+        const owner = String(priv.ownerName ?? "").trim();
+        const phone = String(priv.phone ?? "").replace(/\D/g, "");
+        let touched = false;
+        if (owner && !String(f.ownerName ?? "").trim()) { (f as InertiaRow).ownerName = owner; touched = true; }
+        if (phone && !String(f.phone ?? "").replace(/\D/g, "")) { (f as InertiaRow).phone = phone; touched = true; }
+        if (!phone && owner) {
+          const byName = phoneOfFilingContact.get(owner);
+          if (byName && !String(f.phone ?? "").replace(/\D/g, "")) { (f as InertiaRow).phone = byName; touched = true; }
+        }
+        if (touched) mergedFilings++;
+      }
+
+      // ادغام درخواست‌ها: متقاضی (contactName نمای خصوصی) + موبایل متقاضی
+      let mergedPots = 0;
+      for (const p of potentialsResult.rows) {
+        const priv = privPotById.get(String(p.id ?? "")) ?? privPotByCode.get(String(p.code ?? "").trim());
+        if (priv) {
+          const cname = String(priv.contactName ?? "").trim();
+          if (cname && !String(p.contactName ?? "").trim()) { (p as InertiaRow).contactName = cname; mergedPots++; }
+        }
+        if (!String(p.contactMobile ?? "").replace(/\D/g, "")) {
+          const nm = String(p.contactName ?? "").trim();
+          const ph = nm ? phoneOfPotContact.get(nm) : undefined;
+          if (ph) { (p as InertiaRow).contactMobile = ph; mergedPots++; }
+        }
+      }
+      logEvent({
+        category: "sync",
+        operation: "melketun-private-view-merge",
+        status: "ok",
+        detail: {
+          privateFilings: privFilings.rows.length,
+          mergedFilings,
+          privatePotentials: privPotentials.rows.length,
+          mergedPots,
+          contactMapFilings: phoneOfFilingContact.size,
+          contactMapPotentials: phoneOfPotContact.size,
+        },
+      });
+    } catch (e) {
+      // بهترین-تلاش — شکست نمای خصوصی هرگز سینک عمومی را نمی‌شکند
+      logEvent({
+        category: "sync",
+        operation: "melketun-private-view-merge",
+        status: "fail",
+        level: "warn",
+        errorCode: "PRIVATE_VIEW_SKIPPED",
+        detail: { reason: e instanceof Error ? e.message.slice(0, 160) : String(e).slice(0, 160) },
+      });
+    }
 
     // ── M9: قیف فروش (بینش معاملات — CRM ماژول مستقل ندارد، صادقانه) ──
     const filingsFunnel = await fetchFunnel(base, jar, "/Melketunfilingplus/funnel", "funnelData");

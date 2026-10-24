@@ -692,7 +692,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
               <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
             </Button>
             {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
-            <ExcelImportButton entity="transactions" compact onImported={() => void fetchTransactions()} />
+            <ExcelImportButton entity="transactions" compact tenantId={tenantId ?? "tabriz"} onImported={() => void fetchTransactions()} />
           </div>
           {rows && rows.length > 0 && (
             <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
