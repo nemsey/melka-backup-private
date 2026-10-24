@@ -146,9 +146,14 @@ export async function POST(request: NextRequest) {
             if (e.code !== "RATE_LIMITED") {
               await recordAttempt(code, "REQUEST_OTP_ARM", false, ip).catch(() => undefined);
             }
+            // PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲): این مسیر هیچ محدودیتی ندارد؛
+            // خطای شبکه گذراست (رله/سرور مبدأ لحظه‌ای در دسترس نبود) — راهنمای
+            // شفاف برای کاربر تا آن را با «محدودیت» اشتباه نگیرد.
+            const transient = e.code === "NETWORK_ERROR" || e.code === "TIMEOUT" || e.retryable === true;
             throw new MelkApiError(
               e.code,
-              `ارسال پیامک ARM ناموفق بود: ${e.message}`,
+              `ارسال پیامک ARM ناموفق بود: ${e.message}` +
+                (transient ? " — این خطای شبکه‌ای گذراست و محدودیتی در کار نیست؛ همین حالا دوباره «دریافت کد پیامکی» را بزنید." : ""),
               e.httpStatus >= 400 && e.httpStatus < 600 ? e.httpStatus : 502,
               false
             );

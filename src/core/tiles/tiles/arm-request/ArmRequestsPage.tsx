@@ -949,7 +949,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, on
                 <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
               </Button>
               {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
-              <ExcelImportButton entity="requests" compact onImported={() => void load()} />
+              <ExcelImportButton entity="requests" compact tenantId={tenantId ?? "tabriz"} onImported={() => void load()} />
             </div>
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
