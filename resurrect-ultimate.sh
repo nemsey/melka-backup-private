@@ -83,14 +83,24 @@ FORT="$REPO/upload/.data/custom.db"
 mkdir -p "$REPO/db" "$REPO/upload/.data"
 
 if is_sqlite "$LIVE"; then
-  # دادهٔ مقدس: زنده سالم است؛ فقط اگر قلعه پرتر بود (بازنشانیِ محیط به DB کهنه) قلعه می‌برد
-  LC=$(rowcount "$LIVE"); FC=$(rowcount "$FORT")
-  if [ "$FC" -gt "$LC" ] 2>/dev/null; then
+  # دادهٔ مقدس: زنده سالم است؛ اگر «هر» لایهٔ پایدار دیگری پرتر بود (بازنشانیِ محیط
+  # به DB کهنه — رویداد واقعی ۲۰۲۶-۱۰-۲۴: زنده=۳۲٬۸۵۱ · چرخشی=۳۲٬۸۷۴) غنی‌ترین می‌برد.
+  # (PN-050 · قانون بقا: زندهٔ عقب‌مانده = رستاخیز داده از بهترین لایه)
+  LC=$(rowcount "$LIVE")
+  BEST="$LIVE"; BESTC=$LC; BESTN="زنده"
+  FC=$(rowcount "$FORT")
+  if [ "$FC" -gt "$BESTC" ] 2>/dev/null; then BEST="$FORT"; BESTC=$FC; BESTN="قلعه"; fi
+  R=$(ls -t "$REPO"/upload/.data/rolling/live-*.db 2>/dev/null | head -1 || true)
+  if [ -n "$R" ] && is_sqlite "$R"; then
+    RC=$(rowcount "$R")
+    if [ "$RC" -gt "$BESTC" ] 2>/dev/null; then BEST="$R"; BESTC=$RC; BESTN="چرخشی"; fi
+  fi
+  if [ "$BEST" != "$LIVE" ]; then
     mv -f "$LIVE" "$LIVE.stale-$(date -u +%Y%m%dT%H%M%SZ)"
-    cp -f "$FORT" "$LIVE"
-    echo "  ✓ قلعه پرتر بود (قلعه=$FC > زنده=$LC) — زنده از قلعه بازگردانده شد"
+    cp -f "$BEST" "$LIVE"
+    echo "  ✓ لایهٔ $BESTN پرتر بود ($BESTN=$BESTC > زنده=$LC) — زنده از $BESTN بازگردانده شد"
   else
-    echo "  ✓ دیتابیس زندهٔ محلی سالم است ($LC آگهی) — صفر مداخله (دادهٔ مقدس)"
+    echo "  ✓ دیتابیس زندهٔ محلی سالم و غنی‌ترین است ($LC آگهی) — صفر مداخله (دادهٔ مقدس)"
   fi
 fi
 if ! is_sqlite "$LIVE"; then
@@ -98,11 +108,13 @@ if ! is_sqlite "$LIVE"; then
     mv -f "$LIVE" "$LIVE.broken-$(date -u +%Y%m%dT%H%M%SZ)" 2>/dev/null || true
   fi
   SRC=""
-  if is_sqlite "$FORT"; then
+  # PN-050: غنی‌ترین لایهٔ معتبر برنده می‌شود — قلعه می‌توانست کهنه‌تر از چرخشی باشد
+  R=$(ls -t "$REPO"/upload/.data/rolling/live-*.db 2>/dev/null | head -1 || true)
+  ROK=""; { [ -n "$R" ] && is_sqlite "$R"; } && ROK="$R"
+  if is_sqlite "$FORT" && { [ -z "$ROK" ] || [ "$(rowcount "$FORT")" -ge "$(rowcount "$ROK")" ] 2>/dev/null; }; then
     SRC="$FORT"; echo "  ⚠️ دیتابیس زنده یافت نشد — بازگردانی از قلعهٔ پایدار (upload/.data)…"
-  else
-    R=$(ls -t "$REPO"/upload/.data/rolling/live-*.db 2>/dev/null | head -1 || true)
-    if [ -n "$R" ] && is_sqlite "$R"; then SRC="$R"; echo "  ⚠️ بازگردانی از بکاپ چرخشی…"; fi
+  elif [ -n "$ROK" ]; then
+    SRC="$ROK"; echo "  ⚠️ دیتابیس زنده یافت نشد — بازگردانی از بکاپ چرخشی (غنی‌تر از قلعه یا یگانه)…"
   fi
   if [ -z "$SRC" ]; then
     for K in $(ls -td "$REPO"/upload/.survival/P*/ 2>/dev/null || true); do
