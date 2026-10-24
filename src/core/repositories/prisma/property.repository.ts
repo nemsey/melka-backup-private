@@ -123,6 +123,15 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     limit: number
   ): Promise<{ rows: ArmListingCatalogRow[]; total: number }> {
     const where: Prisma.PropertyRecordWhereInput = {};
+    // PN-044/فاز ۴ (شورا-ن۰۸۸) — جداسازی tenant: پیش‌فرض 'melk-tabriz' (تمام دادهٔ
+    // فعلی همین است — صفر شکستن) ⇒ دادهٔ ملکتون هرگز به کاشی‌های تبریز نشت نمی‌کند.
+    where.tenantId = filter.tenantId ?? "melk-tabriz";
+    // PN-049/گام ۲-الف (قانون حساب کاربری) — کاربر غیر-مالک فقط رکوردهای
+    // ثبت‌شده توسط خودش را می‌بیند (مالک = صفر فیلتر؛ نام تهی = fail-closed هیچ).
+    if (filter.registrarNameNorm !== undefined) {
+      if (filter.registrarNameNorm === "") where.id = "__pn049_deny_all__";
+      else where.realtorNameNorm = filter.registrarNameNorm;
+    }
     // P6521/M1 + P6530 — فیلتر وضعیت: مقادیر خام قانون‌مند (listingStateRawValues) — دقیق، بدون تخمین
     if (filter.statuses && filter.statuses.length > 0) where.status = { in: filter.statuses };
     // P6530/گام ۱ — دسته‌بندی (دقیق — مقادیر خام سامانه)
@@ -285,20 +294,24 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     return { rows, total: matched.length };
   }
 
-  /** P6521/M1 — توزیع وضعیت‌های خام برای بینش شش‌حالته (groupBy status) */
-  async statusBreakdown(): Promise<Array<{ status: string | null; count: number }>> {
+  /** P6521/M1 — توزیع وضعیت‌های خام برای بینش شش‌حالته (groupBy status)
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz'؛ پیش از این بدون فیلتر
+   *  بود و بینش وضعیت داشبورد ملکتون اعداد تبریز را نشان می‌داد (نشت بین-tenant). */
+  async statusBreakdown(tenantId: string = "melk-tabriz"): Promise<Array<{ status: string | null; count: number }>> {
     const grouped = await this.client.propertyRecord.groupBy({
       by: ["status"],
+      where: { tenantId },
       _count: { _all: true },
     });
     return grouped.map((g) => ({ status: g.status, count: g._count._all }));
   }
 
-  /** شمارش غنی‌سازی — extractionBatchId تهی = در انتظار لایه ۲ */
-  async countEnrichment(): Promise<EnrichmentCounts> {
+  /** شمارش غنی‌سازی — extractionBatchId تهی = در انتظار لایه ۲
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz' (سازگار عقبه) */
+  async countEnrichment(tenantId: string = "melk-tabriz"): Promise<EnrichmentCounts> {
     const [total, pending] = await Promise.all([
-      this.client.propertyRecord.count(),
-      this.client.propertyRecord.count({ where: { extractionBatchId: null } }),
+      this.client.propertyRecord.count({ where: { tenantId } }),
+      this.client.propertyRecord.count({ where: { tenantId, extractionBatchId: null } }),
     ]);
     return { total, pending, complete: total - pending };
   }

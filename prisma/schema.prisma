@@ -175,6 +175,7 @@ model TransactionRecord {
   @@index([contractDate])
   @@index([propertyCode])
   @@index([requestCode])
+  @@index([tenantId])
 }
 
 /// کارشناسان (realtors/list) — عین ساختار users-list خود سامانه ARM
@@ -214,6 +215,7 @@ model ExpertRecord {
   @@index([fullName])
   @@index([role])
   @@index([businessTitle])
+  @@index([tenantId])
 }
 
 /// تعاملات مشاوران با یکدیگر — عین ساختار realtor-interactions سامانه ARM:
@@ -1035,6 +1037,8 @@ model TransactionEnrichment {
 ///   عمق contactInfo: contactInfo.address + telephoneNumber + postalCode + voip + city/state — نمونهٔ ۱۲/۱۲ پر
 /// ستون‌های الزامی مالک + ستون‌های کشف‌شده، همگی در این یک مدل.
 model ExpertProfile {
+  /// PN-044 multi-tenant — آماده‌سازی چند-مستأجری (الگوی P6.5-02 §۱۴: nullable + default، بدون منطق فعال)
+  tenantId String? @default("melk-tabriz")
   /// شناسهٔ مشترک با ExpertRecord.id و سامانه PM/ARM (_id)
   id               String   @id
   /// کدپرسنلی (مثال: 410031320) — عین فیلد code رجیستری PM
@@ -1090,6 +1094,7 @@ model ExpertProfile {
   @@index([personnelCode])
   @@index([branchTitle])
   @@index([fullName])
+  @@index([tenantId])
 }
 
 /// PN-008 BLOCK 7 — مدیریت دسترسی کدپرسنلی‌ها به داشبورد (تنظیمات عمومی مالک)
@@ -1335,6 +1340,12 @@ model RequestRecord {
   priceFrom           Float?
   /// P6530/گام ۲ — سقف قیمت متقاضی (تومان) از جزئیات ARM (ستون فهرست M2)
   priceTo             Float?
+  /// PN-046/گام اول-۱ (§۱۴ افزودنی) — بودجهٔ رهن/پیش‌پرداخت درخواست ملکتون
+  /// (prepayment خود CRM — ستون فهرست M2 ملکتون؛ برای ARM تهی می‌ماند)
+  depositBudget       Float?
+  /// PN-046/گام اول-۱ (§۱۴ افزودنی) — بودجهٔ اجارهٔ درخواست ملکتون
+  /// (rent خود CRM — ستون فهرست M2 ملکتون؛ برای ARM تهی می‌ماند)
+  rentBudget          Float?
   /// توضیحات مشتری (عین خود سامانه)
   customerDescription String?
 
@@ -1435,6 +1446,7 @@ model RequestRecord {
   @@index([customerNameNorm])
   @@index([sanadNamesNorm])
   @@index([actorNameNorm])
+  @@index([tenantId])
 }
 
 /// رویداد درخواست — «ثبت رویداد» عین خود سامانه (request-events/create):

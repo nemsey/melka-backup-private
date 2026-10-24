@@ -338,22 +338,23 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
     // M6/M7 حذف شدند؛ ظرف حذف شد — هشت کاشی همه در ریشهٔ هوم‌اند
     expect(tileRegistry.get("market-index")).toBeUndefined();
     expect(tileRegistry.get("data-coverage")).toBeUndefined();
-    expect(tileRegistry.listChildren("management-dashboard", "OWNER")).toEqual([]);
+    // PN-043/فاز ۲ (شورا-ن۰۸۷): M1-M4 درون ظرف tenant-dashboards — شش کاشی ریشه
+    expect(tileRegistry.listChildren("tenant-dashboards", "OWNER").map((t) => t.id)).toEqual([
+      "arm-listings", "arm-requests", "transactions-contracts", "experts",
+    ]);
     const ids = tileRegistry.listRoot("OWNER").map((t) => t.id);
     expect(ids).toEqual([
-      "file-finder",           // ۱ فایل یابی
-      "arm-listings",          // ۲ آگهی
-      "arm-requests",          // ۳ درخواست
-      "transactions-contracts", // ۴ معاملات
-      "experts",               // ۵ کارشناسان
-      "smart-matching",        // ۶ تطبیق
-      "learning-tier",         // ۷ مغز
-      "settings",              // ۸ تنظیمات
+      "file-finder",              // ۱ فایل یابی
+      "smart-matching",           // ۲ تطبیق
+      "learning-tier",            // ۳ مغز
+      "settings",                 // ۴ تنظیمات
+      "tenant-dashboard-tabriz",  // ۵ داشبورد ملک تبریز
+      "tenant-dashboard-melketun", // ۶ داشبورد ملکتون
     ]);
     // ترتیب عددی هم عین فهرست مالک است
-    expect(tileRegistry.get("smart-matching")!.order).toBe(6);
-    expect(tileRegistry.get("learning-tier")!.order).toBe(7);
-    expect(tileRegistry.get("settings")!.order).toBe(8);
+    expect(tileRegistry.get("smart-matching")!.order).toBe(2); // PN-043: تطبیق دوم
+    expect(tileRegistry.get("learning-tier")!.order).toBe(3);  // PN-043: مغز سوم
+    expect(tileRegistry.get("settings")!.order).toBe(4);       // PN-043: تنظیمات چهارم
   });
 
   test("E-4) پروژهٔ Worker آمادهٔ دیپلوی است (wrangler.toml + deploy.sh + README)", () => {

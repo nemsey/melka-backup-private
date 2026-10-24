@@ -147,9 +147,48 @@ bunx prisma generate
 bunx prisma db push --accept-data-loss
 bun run build
 
+# ─── ۵-ب) G3 — دروازهٔ سخت بیلد=HEAD (DIR-PN048-007 · موج صفر · D-0a) ───
+# درس رویداد ریست ۱۰:۲۱ امروز: درخت قدیمی + بیلد کهنه → سرور کد کهنه سرو می‌کرد.
+# از این پس: بیلد باید دقیقاً از HEAD فعلی باشد وگرنه Worker استارت نمی‌شود
+# (قانون توقف: «build != HEAD و Worker استارت شد → توقف فوری»).
+HEAD_SHA=$(git rev-parse --verify HEAD 2>/dev/null || echo "")
+if ! printf '%s' "$HEAD_SHA" | grep -qE '^[0-9a-f]{40}$'; then HEAD_SHA=""; fi
+BUILD_SHA=$(jq -r '.gitSha // empty' "$REPO/.next/fingerprint.json" 2>/dev/null || echo "")
+STANDALONE_BUILD_SHA=$(jq -r '.gitSha // empty' "$REPO/.next/standalone/.next/fingerprint.json" 2>/dev/null || echo "")
+if [ -z "$BUILD_SHA" ] || [ -z "$HEAD_SHA" ] || [ "$HEAD_SHA" != "$BUILD_SHA" ] || [ "$HEAD_SHA" != "$STANDALONE_BUILD_SHA" ]; then
+  echo "❌ G3 GATE: بیلد ≠ HEAD — بیلد کهنه سرو/Worker استارت نمی‌شود (drift: HEAD=$HEAD_SHA · main-build=$BUILD_SHA · standalone=$STANDALONE_BUILD_SHA)"
+  exit 1
+fi
+echo "  ✓ G3: بیلد = HEAD ($(git rev-parse --short HEAD)) — هم در main هم در standalone"
+
+# G1 (Worker boot precondition): محافظ stripProtectedNulls باید در سورس باشد
+SYNC_GUARD="$REPO/src/lib/integrations/melketun/protected-nulls.ts"
+if [ ! -f "$SYNC_GUARD" ] || ! grep -q "G1_STRIP_PROTECTED_NULLS = true" "$SYNC_GUARD" \
+   || ! grep -q "stripProtectedNulls" "$REPO/src/lib/integrations/melketun/sync.ts"; then
+  echo "❌ G1 GATE: stripProtectedNulls در مسیرهای upsert یافت نشد — Worker استارت نمی‌شود (قانون دادهٔ مقدس)"
+  exit 1
+fi
+echo "  ✓ G1: محافظ stripProtectedNulls حاضر است (protected-nulls.ts + ۶ نقطهٔ upsert)"
+
 # ─── ۶) راه‌اندازی سرور (دیمن double-fork + ری‌استارت خودکار ۵ث) ───
 echo "— راه‌اندازی سرور…"
 bash scripts/start-prod.sh
+
+# ─── ۶-ب) تأیید مجدد G3 پیش از استارت Worker ───
+# (بین start-prod و Worker، درخت تغییر نکرده باشد — سنجهٔ نهایی همان‌طور که مالک خواست)
+HEAD_SHA2=$(git rev-parse --verify HEAD 2>/dev/null || echo "")
+if ! printf '%s' "$HEAD_SHA2" | grep -qE '^[0-9a-f]{40}$'; then HEAD_SHA2=""; fi
+if [ -z "$HEAD_SHA2" ] || [ "$HEAD_SHA2" != "$BUILD_SHA" ]; then
+  echo "❌ G3 RE-CHECK: HEAD حین راه‌اندازی تغییر کرد (HEAD=$HEAD_SHA2 · BUILD=$BUILD_SHA) — Worker استارت نمی‌شود"
+  exit 1
+fi
+
+# PN-042-D: Worker restart (پس از رستاخیز)
+pkill -f "scripts/runtime/worker" 2>/dev/null || true
+sleep 1
+nohup bun scripts/runtime/worker.ts > /tmp/worker-restart.log 2>&1 &
+sleep 2
+echo "✅ Worker restarted"
 
 # ─── ۷) تأیید — پیام موفقیت فقط با شاهد زنده ───
 EXPECT=$(git rev-parse --short HEAD)
@@ -171,5 +210,11 @@ if [ "${VERSION:0:${#EXPECT}}" != "$EXPECT" ]; then
 fi
 trap - EXIT
 T1=$(date +%s)
+ROWCOUNT_FINAL=$(python3 -c "import sqlite3; print(sqlite3.connect('db/custom.db').execute('SELECT COUNT(*) FROM PropertyRecord').fetchone()[0])" 2>/dev/null || echo 0)
+if [ "$ROWCOUNT_FINAL" -lt 1000 ]; then
+  echo "❌ FATAL: PropertyRecord=$ROWCOUNT_FINAL < 1000 — data restoration failed"
+  exit 1
+fi
+echo "✅ Data verified: $ROWCOUNT_FINAL PropertyRecord"
 echo "✅ RESURRECTION COMPLETE — Version: ${VERSION} — مدت: $((T1-T0)) ثانیه"
 echo "✅ رستاخیز کامل شد. منبع حقیقت: $RAW_URL"

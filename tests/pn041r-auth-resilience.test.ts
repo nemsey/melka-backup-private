@@ -194,10 +194,14 @@ describe("PN-041-R · G) UI تنظیمات رله — ۸ سنجه", () => {
     expect(src).toContain("layers?.map");
   });
 
-  test("G-2 سنجهٔ ۲: تولید کد نصب + QR", () => {
+  test("G-2 سنجهٔ ۲: تولید کد نصب (دستور — PN-047/گام دوم-۲: QR به دستور مالک حذف شد)", () => {
     const src = read(section);
     expect(src).toContain("/api/admin/relay/enroll");
-    expect(src).toContain("/api/admin/relay/qr?text=");
+    expect(src).toContain("کپی دستور نصب");
+    // دستور مالک ۱۴۰۵/۰۷/۲۹ (PN-047): بخش QR کد نصب از تنظیمات رله حذف شد —
+    // دکمهٔ تولید کد نصب + دستور + کپی پابرجا (درس ۰۵۴: دکمه حذف نشود)
+    expect(src).not.toContain("/api/admin/relay/qr?text=");
+    expect(src).not.toContain("اسکن با دوربین");
   });
 
   test("G-3 سنجهٔ ۳: راهنمای MIUI تصویری", () => {

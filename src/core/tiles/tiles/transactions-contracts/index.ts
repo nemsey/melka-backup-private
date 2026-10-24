@@ -28,7 +28,8 @@ export const transactionsContractsTile = defineTile({
   icon: FileCheck2,
   accent: "m3",
   component: lazyPage(() => import("./TransactionsContractsPage")),
-  order: 4, // PN-038/۲.۵ — ترتیب جدید هوم: معاملات چهارم
+  order: 4, // M3 — ترتیب درون ظرف tenant-dashboards: معاملات سومِ داشبورد (PN-043/فاز ۲)
+  container: "tenant-dashboards", // PN-043/فاز ۲ (شورا-ن۰۸۷): از هوم ریشه به داشبوردهای tenant — wrapper، نه تکرار
   agent: {
     tileId: "transactions-contracts",
     // P6526/پ — عین ایجنت واقعی (P6.5-14: INFO_COVERAGE جای CONTACT_COVERAGE نشست؛

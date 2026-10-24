@@ -43,6 +43,8 @@ import { faNumber, faJalaliShort } from "@/lib/format";
 import { branchBadgeClass, valueSoftClass, valueSolidClass } from "@/lib/value-colors";
 import { faDigits } from "@/lib/jalali";
 import { expertFamilyStats, expertWithBranchCount } from "@/core/agent/analyzers";
+// PN-046/گام اول-۲ (دستور مالک: ستون اطلاعات در «تمامی» فهرست‌ها) — فهرست کارشناسان (M4)
+import { InfoButton } from "@/components/info/InfoButton";
 
 /** ردیف فهرست تازه — عین ExpertProfileRow سرور */
 interface ExRow {
@@ -128,8 +130,11 @@ const EMPTY_CHIPS: ChipFilters = {
   city: [],
 };
 
-export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
+export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back, tenantId }: TilePageProps) {
   const { toast } = useToast();
+  // PN-047/گام اول-۲ — فهرست مختص کسب‌وکار ملکتون (M10): ستون‌های سمت/شهر از CRM ·
+  // ستون‌های تبریز-محور (مبایعه/اجاره/استخدام/آدرس/مدیر/تلفن ثابت/…) پنهان
+  const isMelketun = tenantId === "melketun";
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   // PN-011 ثالثاً — فیلترهای چندانتخابی چیپی (اعمال خودکار با هر کلیک)
@@ -147,6 +152,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
 
   const fetchExperts = useCallback(async (): Promise<ExResponse> => {
     const params = new URLSearchParams();
+    // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
+    params.set("tenantId", tenantId ?? "tabriz");
     const set = (k: keyof Filters, v: string) => { if (v) params.set(k, v); };
     set("q", applied.q);
     set("fullName", applied.fullName);
@@ -171,7 +178,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
     for (const c of chips.city) params.append("city", c);
     params.set("limit", "5000");
     return api<ExResponse>(`/api/experts?${params.toString()}`);
-  }, [applied, chips]);
+  }, [applied, chips, tenantId]);
 
   const { data, loading, reload } = useTileData(fetchExperts, {
     errorTitle: "خطا در دریافت فهرست کارشناسان",
@@ -238,18 +245,39 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
       {/* ایجنت هوشمند */}
       <AgentPanel tileId="experts" />
 
-      {/* شاخص‌ها — رنگ بخش M4 (فیروزه‌ای) */}
+      {/* شاخص‌ها — رنگ بخش M4 (فیروزه‌ای) · ملکتون M10: شاخص‌های مختص CRM (PN-047) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <KpiCard label="کل کارشناسان و کارکنان" value={loading ? undefined : faNumber(total)} icon={Users} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
-        <KpiCard label="دارای شعبه" value={loading ? undefined : faNumber(kpis.withBranch)} icon={Network} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
-        <KpiCard label="مجموع مبایعه نامه" value={loading ? undefined : faNumber(kpis.saleTotal)} sub="شامل پیش‌فروش" icon={FileSignature} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
-        <KpiCard label="مجموع اجاره نامه" value={loading ? undefined : faNumber(kpis.rentTotal)} sub="شامل تمدید اجاره" icon={Banknote} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+        <KpiCard label={isMelketun ? "کل کارشناسان ملکتون (CRM)" : "کل کارشناسان و کارکنان"} value={loading ? undefined : faNumber(total)} icon={Users} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+        <KpiCard label={isMelketun ? "دارای شعبهٔ فعال" : "دارای شعبه"} value={loading ? undefined : faNumber(kpis.withBranch)} icon={Network} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+        {isMelketun ? (
+          <>
+            <KpiCard label="دارای موبایل در CRM" value={loading ? undefined : faNumber(rows.filter((r) => r.mobile).length)} sub="از تمام کارشناسان" icon={Phone} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+            <KpiCard label="حساب‌های شعبه/مدیریتی CRM" value={loading ? undefined : faNumber(rows.filter((r) => (r.roleTitle ?? "").includes("شعبه") || (r.roleTitle ?? "").includes("مدیر") || (r.roleTitle ?? "").includes("کنترل")).length)} sub="عین ماژول specialists" icon={BriefcaseBusiness} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+          </>
+        ) : (
+          <>
+            <KpiCard label="مجموع مبایعه نامه" value={loading ? undefined : faNumber(kpis.saleTotal)} sub="شامل پیش‌فروش" icon={FileSignature} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+            <KpiCard label="مجموع اجاره نامه" value={loading ? undefined : faNumber(kpis.rentTotal)} sub="شامل تمدید اجاره" icon={Banknote} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+          </>
+        )}
       </div>
 
       {/* جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
       <TileCoverageTable tileKey="m4" accentClass="text-sec-m4-700" />
 
-      {/* ─── بروزرسانی فهرست (زنجیرهٔ سه‌مرحله‌ای PM) ─── */}
+      {/* ─── بروزرسانی فهرست — تبریز: زنجیرهٔ سه‌مرحله‌ای PM · ملکتون: همگام‌سازی CRM (Worker ۶س — PN-047) ─── */}
+      {isMelketun ? (
+        <Card className="border-sec-m4-200 bg-sec-m4-50" id="m10-melketun-sync-note">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
+              <Building2 className="w-4 h-4 shrink-0 mt-0.5 text-sec-m4-700" aria-hidden />
+              فهرست M10 کارشناسان ملکتون از ماژول specialists CRM ملکتون (۸۳ کاربر — کشف PN-047) استخراج می‌شود و
+              با هر همگام‌سازی ملکتون (Worker ۶-ساعته یا دکمهٔ همگام‌سازی در فهرست آگهی‌های ملکتون) تازه می‌شود —
+              زنجیرهٔ بروزرسانی PM مخصوص کارشناسان ملک تبریز است و برای ملکتون اجرا نمی‌شود.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
       <Card className="border-sec-m4-200 bg-sec-m4-50" id="m4-update-section">
         <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -278,8 +306,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
           )}
         </CardContent>
       </Card>
-
-      {/* ─── فیلتر فهرست (تمام ستون‌ها) — PN-009 مرحله F: گروه‌بندی منطقی + آکاردئون موبایل ─── */}
+      )}
       <Card className="border-sec-m4-200" id="m4-filter-section">
         <CardHeader className="py-4">
           <button
@@ -317,12 +344,14 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="exf-code">کدپرسنلی</Label>
-                <Input id="exf-code" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} placeholder="مثل 410031320" dir="ltr" />
+                <Input id="exf-code" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} placeholder={isMelketun ? "مثل MELK-41" : "مثل 410031320"} dir="ltr" />
               </div>
+              {!isMelketun && (
               <div className="space-y-1.5">
                 <Label htmlFor="exf-voip">شماره داخلی</Label>
                 <Input id="exf-voip" value={filters.voipExtension} onChange={(e) => setF("voipExtension", e.target.value)} placeholder="داخلی" dir="ltr" />
               </div>
+              )}
             </div>
           </FilterGroup>
           {/* سازمانی — PN-011 ثالثاً: فیلترهای چندگانه به شکل چیپ (همانند دسته‌بندی — دستور مالک) */}
@@ -344,6 +373,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   />
                 ))}
               </div>
+              {/* ملکتون M10: سمت‌های CRM · تبریز: سمت‌های PM — هر دو tenant-scoped (PN-047) */}
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">سمت:</span>
                 {options.roles.map((r) => (
@@ -357,6 +387,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   />
                 ))}
               </div>
+              {!isMelketun && (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">همکاری:</span>
                 {options.employmentTypes.map((e) => (
@@ -384,6 +415,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   solidClass={valueSolidClass("تعیین نشده")}
                 />
               </div>
+              )}
               {options.managers.length > 0 ? (
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">مدیر:</span>
@@ -416,7 +448,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               ) : null}
             </div>
           </FilterGroup>
-          {/* تماس و نشانی */}
+          {/* تماس و نشانی — تبریز؛ ملکتون این فیلدها را در CRM ندارد (PN-047) */}
+          {!isMelketun && (
           <FilterGroup label="تماس و نشانی">
             {/* PN-028/خامساً-ف — دوتایی */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -434,7 +467,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               </div>
             </div>
           </FilterGroup>
-          {/* بازهٔ استخدام + شمارش قرارداد */}
+          )}
+          {/* بازهٔ استخدام + شمارش قرارداد — تبریز؛ ملکتون CRM این مفاهیم را ندارد (PN-047) */}
+          {!isMelketun && (
           <FilterGroup label="بازهٔ استخدام و شمارش قرارداد">
             {/* PN-028/خامساً-ف — دوتایی */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -461,6 +496,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               </div>
             </div>
           </FilterGroup>
+          )}
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={applyFilters} className="gap-1.5 bg-sec-m4-500 hover:bg-sec-m4-500/90 text-sec-m4-fg"><Search className="w-3.5 h-3.5" aria-hidden /> اعمال فیلتر</Button>
             <Button size="sm" variant="outline" onClick={clearFilters} className="gap-1.5" disabled={!anyFilterActive}>
@@ -485,6 +521,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               className="gap-1.5 h-7 text-[11px]"
               onClick={() => {
                 const params = new URLSearchParams();
+                // PN-044/فاز ۴ — خروجی اکسل هم tenant همین رندر را می‌گیرد
+                params.set("tenantId", tenantId ?? "tabriz");
                 const set = (k: string, v: string) => { if (v && v !== "all") params.set(k, v); };
                 set("q", applied.q); set("fullName", applied.fullName); set("mobile", applied.mobile);
                 set("personnelCode", applied.personnelCode);
@@ -517,18 +555,32 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   <TableHead className="w-10">ردیف</TableHead>
                   <TableHead className="min-w-40">کارشناس</TableHead>
                   <TableHead className="min-w-24">کد پرسنلی</TableHead>
-                  <TableHead className="min-w-24">شعبه</TableHead>
-                  <TableHead className="min-w-24">مبایعه نامه</TableHead>
-                  <TableHead className="min-w-24">اجاره نامه</TableHead>
-                  <TableHead className="min-w-24">تاریخ استخدام</TableHead>
-                  <TableHead className="min-w-36">آدرس کارشناس</TableHead>
-                  <TableHead className="min-w-24">سمت پرسنلی</TableHead>
-                  <TableHead className="min-w-24">نوع همکاری</TableHead>
-                  <TableHead className="min-w-24">مدیر</TableHead>
-                  <TableHead className="min-w-24">تلفن ثابت</TableHead>
-                  <TableHead className="min-w-20">کد پستی</TableHead>
-                  <TableHead className="min-w-16">داخلی</TableHead>
+                  <TableHead className="min-w-24">{isMelketun ? "شعبه ملکتون" : "شعبه"}</TableHead>
+                  {isMelketun ? (
+                    <>
+                      {/* ستون‌های مخصوص M10 ملکتون — از دادهٔ واقعی CRM specialists (PN-047) */}
+                      <TableHead className="min-w-28">سمت در CRM</TableHead>
+                      <TableHead className="min-w-20">شهر</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead className="min-w-24">مبایعه نامه</TableHead>
+                      <TableHead className="min-w-24">اجاره نامه</TableHead>
+                      <TableHead className="min-w-24">تاریخ استخدام</TableHead>
+                      <TableHead className="min-w-36">آدرس کارشناس</TableHead>
+                      <TableHead className="min-w-24">سمت پرسنلی</TableHead>
+                      <TableHead className="min-w-24">نوع همکاری</TableHead>
+                      <TableHead className="min-w-24">مدیر</TableHead>
+                      <TableHead className="min-w-24">تلفن ثابت</TableHead>
+                      <TableHead className="min-w-20">کد پستی</TableHead>
+                      <TableHead className="min-w-16">داخلی</TableHead>
+                    </>
+                  )}
                   <TableHead className="min-w-20">وضعیت</TableHead>
+                  {/* اطلاعات (PN-046/گام اول-۲: ستون اطلاعات در تمامی فهرست‌ها — فایل متنی کامل هر کد پرسنلی)
+                      ⚠ قانون ساختاری (دستور مالک/گام اول-۳): ستون «اطلاعات» همیشه آخرین ستون این فهرست است —
+                      هر ستون جدیدی در آینده باید «قبل از» همین ستون افزوده شود. سنجاق چپ (RTL) — همیشه قابل‌رویت. */}
+                  <TableHead className="w-24">اطلاعات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
@@ -570,6 +622,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         <span className="text-muted-foreground font-bold">-</span>
                       )}
                     </TableCell>
+                    {/* مبایعه/اجاره/استخدام/آدرس/سمت/همکاری/مدیر/تلفن/پستی/داخلی — فقط تبریز
+                        ملکتون M10: سمت در CRM + شهر (دادهٔ واقعی specialists — PN-047) */}
+                    {!isMelketun && (<>
                     {/* مبایعه نامه = تعداد + پیش‌فروش (الزامی مالک) */}
                     <TableCell className="text-center font-bold tabular-nums">
                       <span className={r.saleCount > 0 ? "text-sec-m4-700" : "text-muted-foreground"}>{faNumber(r.saleCount)}</span>
@@ -618,9 +673,32 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                     <TableCell className="whitespace-nowrap text-xs tabular-nums" dir="ltr">{dash(r.postalCode)}</TableCell>
                     {/* داخلی */}
                     <TableCell className="whitespace-nowrap text-xs tabular-nums" dir="ltr">{dash(r.voipExtension)}</TableCell>
+                    </>)}
+                    {isMelketun && (<>
+                      {/* سمت در CRM ملکتون — عین specialists CRM (PN-047) */}
+                      <TableCell className="whitespace-nowrap">
+                        {r.roleTitle ? (
+                          <Badge variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(r.roleTitle)}`}>
+                            <BriefcaseBusiness className="w-2.5 h-2.5" aria-hidden /> {r.roleTitle}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground font-bold">-</span>
+                        )}
+                      </TableCell>
+                      {/* شهر — همهٔ شعب ملکتون در سطح شهر تبریز (دستور مالک PN-047) */}
+                      <TableCell className="whitespace-nowrap">
+                        <Badge variant="outline" className="gap-1 text-[11px] border-0" title="همهٔ شعب ملکتون در سطح شهر تبریز">
+                          <MapPin className="w-3 h-3" aria-hidden /> {dash(r.city)}
+                        </Badge>
+                      </TableCell>
+                    </>)}
                     {/* وضعیت */}
                     <TableCell>
                       <Badge variant={r.active ? "default" : "secondary"} className="text-[10px]">{r.active ? "فعال" : "غیرفعال"}</Badge>
+                    </TableCell>
+                    {/* اطلاعات: همیشه آخرین سلول (قانون ساختاری گام اول-۳) — فایل متنی کامل */}
+                    <TableCell>
+                      <InfoButton tenant={tenantId ?? "tabriz"} type="expert" code={r.personnelCode ?? ""} />
                     </TableCell>
                   </TableRow>
                 )}
@@ -631,6 +709,14 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
             <div className="p-4 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           )}
           {!loading && rows.length === 0 && <EmptyState hasFilters={anyFilterActive} onClearFilters={clearFilters} />}
+          {/* PN-047/گام اول-۳ — صداقت ملکتون: کارشناسان از CRM استخراج شد (۸۳ کارشناس specialists)؛
+              این پیام فقط وقتی داده‌ای نباشد ظاهر می‌شود (مثلاً پیش از نخستین sync) */}
+          {!loading && rows.length === 0 && tenantId === "melketun" && (
+            <p className="text-[11px] text-muted-foreground leading-relaxed text-center px-4 pb-3">
+              هنوز کارشناس ملکتونی از CRM استخراج نشده — دکمهٔ همگام‌سازی یا Worker ۶-ساعته فهرست M10 را از
+              ماژول specialists CRM ملکتون پر می‌کند (کشف مسیر PN-047). کارشناسان ملک تبریز دست‌نخورده‌اند.
+            </p>
+          )}
           {viewMode === "cards" && rows.length > 0 && (
             <p className="text-[10px] text-muted-foreground text-center pt-2">{faNumber(rows.length)} ردیف — نمایش جدولی</p>
           )}

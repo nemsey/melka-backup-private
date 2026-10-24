@@ -54,8 +54,8 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const roots = tileRegistry.listRoot("OWNER");
     expect(roots.map((t) => t.title)).toEqual([
-      "فایل یابی", "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "مغز", "تنظیمات",
-    ]); // PN-038/فاز ۲: هشت کاشی ریشه با نام‌های کوتاه
+      "فایل یابی", "تطبیق", "مغز", "تنظیمات", "داشبورد ملک تبریز", "داشبورد ملکتون",
+    ]); // PN-043/فاز ۲ (شورا-ن۰۸۷): شش کاشی ریشه — M1-M4 درون داشبوردهای tenant (wrapper، نه تکرار)
   });
 
   test("۰-۲) نمای مشاور همان ترتیب هوم را دارد (تنظیمات/داشبورد عمومی‌اند)", async () => {
@@ -66,15 +66,17 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
     expect(consultantRoots).toEqual(ownerRoots.filter((t) => t !== "تطبیق" && t !== "مغز"));
   });
 
-  // P6545/گام۲ (جلسه ۰۳۳): چهار کاشی تازهٔ M5-M8 به داشبورد مدیریتی افزوده شدند
-  test("۰-۳) داشبورد مدیریتی — هشت کاشی M1 تا M8 با نام‌ها و ترتیب (PN-003: m5 تطبیق + m6 یادگیری)", async () => {
+  // PN-043/فاز ۲ (شورا-ن۰۸۷): داشبوردهای tenant — M1-M4 درون ظرف مشترک tenant-dashboards
+  test("۰-۳) ظرف tenant-dashboards — چهار کاشی M1-M4 درون داشبوردهای tenant (wrapper)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    // PN-038/۲.۲: ظرف حذف شد — فرزندی وجود ندارد؛ هشت کاشی در ریشهٔ هوم‌اند
-    const children = tileRegistry.listChildren("management-dashboard", "OWNER");
-    expect(children).toEqual([]);
+    // PN-043: M1-M4 با container="tenant-dashboards" — رندر مشترک درون دو داشبورد (wrapper، نه تکرار)
+    const children = tileRegistry.listChildren("tenant-dashboards", "OWNER");
+    expect(children.map((t) => t.title)).toEqual(["آگهی", "درخواست", "معاملات", "کارشناسان"]);
     const roots = tileRegistry.listRoot("OWNER");
-    expect(roots.map((t) => t.title)).toEqual(["فایل یابی", "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "مغز", "تنظیمات"]);
-    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(roots.map((t) => t.id)).toEqual([
+      "file-finder", "smart-matching", "learning-tier", "settings", "tenant-dashboard-tabriz", "tenant-dashboard-melketun",
+    ]);
+    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
   test("۰-۴) کاشی‌های M5/M6/M7 در رجیستری فعال ثبت نشده‌اند (حذف نما — فاز ۷/۸/۹)", async () => {

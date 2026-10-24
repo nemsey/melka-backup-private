@@ -7,7 +7,9 @@
  *
  * ۸ سنجهٔ مصوب شورا-ن۰۶۸ (بخش ۳ سند):
  *   ۱) وضعیت دقیق ۳ لایه (نبض گوشی · فعالیت مسیر · تازگی داده/بکاپ) — همهٔ نقش‌ها
- *   ۲) دکمهٔ «تولید کد نصب» + QR + دستور (فقط OWNER — درس ۰۵۴: دکمه حذف نشود)
+ *   ۲) دکمهٔ «تولید کد نصب» + دستور (فقط OWNER — درس ۰۵۴: دکمه حذف نشود؛
+ *      PN-047/گام دوم-۲: نمایش QR کد نصب به دستور مالک حذف شد — مسیر نصب =
+ *      کپی دستور در Termux، همچنان سه‌گامی پایین همین بخش)
  *   ۳) راهنمای تصویری MIUI (MiuiWakeLockGuide — دلیل قطعی ۱)
  *   ۴) نمایش Timeout تطبیقی + Long-Polling ۱۰۰ث (بند ۲.۲+۲.۴)
  *   ۵) دکمهٔ «تست اتصال» بدون نیاز به نقش مالک (هر نشست فعال)
@@ -22,7 +24,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Smartphone, Activity, Copy, ShieldCheck, KeyRound, Wifi, Timer, ScanLine, HeartPulse, Database, Gauge } from "lucide-react";
+import { Loader2, Smartphone, Activity, Copy, ShieldCheck, KeyRound, Wifi, Timer, HeartPulse, Database, Gauge } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { faDateTime, faNumber } from "@/lib/format";
 import { useAppStore } from "@/lib/client/store";
@@ -270,7 +272,9 @@ export function RelaySetupSection() {
       </div>
       {test && <p className="text-xs text-muted-foreground leading-relaxed">{test.interpretation}</p>}
 
-      {/* سنجهٔ ۲ — تولید کد نصب + QR + دستور (OWNER — درس ۰۵۴) */}
+      {/* سنجهٔ ۲ — تولید کد نصب + دستور (OWNER — درس ۰۵۴: دکمه حذف نشود)
+          PN-047/گام دوم-۲ (دستور مالک ۱۴۰۵/۰۷/۲۹): بخش QR کد نصب حذف شد —
+          مسیر اثبات‌شدهٔ نصب همان کپی/پیست دستور در Termux است. */}
       {isOwner && !enroll ? (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
           <p className="text-xs leading-relaxed text-muted-foreground">
@@ -291,37 +295,23 @@ export function RelaySetupSection() {
             کد نصب صادر شد: {enroll.label}{" "}
             <span className="font-mono text-[10px] text-muted-foreground" dir="ltr">({enroll.deviceId})</span>
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* QR — سمت چپ: اسکن از صفحهٔ دوم گوشی (بدون کپی) */}
-            <div className="shrink-0 rounded-md bg-white border p-2 w-fit" aria-label="QR کد نصب">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`/api/admin/relay/qr?text=${encodeURIComponent(enroll.bootstrapUrl)}`}
-                alt="QR کد نصب رله"
-                width={140}
-                height={140}
-                className="block"
-              />
-              <p className="text-[9px] text-muted-foreground text-center mt-1 flex items-center justify-center gap-1">
-                <ScanLine className="w-3 h-3" aria-hidden /> اسکن با دوربین گوشی
-              </p>
+          {/* PN-047/گام دوم-۲ (دستور مالک ۱۴۰۵/۰۷/۲۹): بخش QR کد نصب حذف شد —
+              مسیر اثبات‌شدهٔ نصب = کپی/پیست دستور در Termux (درس ۰۵۴: دکمهٔ تولید حفظ) */}
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              اعتبار تا <b>{faDateTime(enroll.enrollExpires)}</b> — تا{" "}
+              <b>{faNumber(enroll.maxAttempts ?? 3)} بار</b> قابل استفاده (کد بخشنده). اگر تلاش اول خطا داد،
+              همان کد را دوباره پیست کنید.
+            </p>
+            <div className="rounded-md bg-card border p-2">
+              <p className="text-[10px] text-muted-foreground mb-1">دستور نصب — کپی و در Termux پیست کنید:</p>
+              <code className="text-[11px] font-mono break-all leading-relaxed block" dir="ltr">
+                {enroll.installCommand}
+              </code>
             </div>
-            <div className="flex-1 space-y-2 min-w-0">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                اعتبار تا <b>{faDateTime(enroll.enrollExpires)}</b> — تا{" "}
-                <b>{faNumber(enroll.maxAttempts ?? 3)} بار</b> قابل استفاده (کد بخشنده). اگر تلاش اول خطا داد،
-                همان کد را دوباره پیست کنید.
-              </p>
-              <div className="rounded-md bg-card border p-2">
-                <p className="text-[10px] text-muted-foreground mb-1">دستور نصب — کپی و در Termux پیست کنید:</p>
-                <code className="text-[11px] font-mono break-all leading-relaxed block" dir="ltr">
-                  {enroll.installCommand}
-                </code>
-              </div>
-              <Button size="sm" variant="outline" className="gap-2" onClick={() => void copyCommand()}>
-                <Copy className="w-3.5 h-3.5" aria-hidden /> کپی دستور نصب
-              </Button>
-            </div>
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => void copyCommand()}>
+              <Copy className="w-3.5 h-3.5" aria-hidden /> کپی دستور نصب
+            </Button>
           </div>
         </div>
       ) : null}

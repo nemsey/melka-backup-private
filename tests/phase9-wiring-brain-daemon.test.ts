@@ -330,19 +330,20 @@ describe("PHASE 9 §۱۱ → PN-038 — هوم یک‌پارچه (گارد جه�
     await import("@/core/tiles/bootstrap");
   });
 
-  test("۱۱-۱ → PN-03۸/۲.۵: هوم = هشت کاشی با نام‌های کوتاه به ترتیب الزامی مالک", async () => {
+  test("۱۱-۱ → PN-043/۲.۵: هوم = شش کاشی ریشه به ترتیب الزامی مالک (wrapper tenant)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     expect(tileRegistry.listRoot("OWNER").map((t) => t.title)).toEqual([
-      "فایل یابی", "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "مغز", "تنظیمات",
-    ]);
+      "فایل یابی", "تطبیق", "مغز", "تنظیمات", "داشبورد ملک تبریز", "داشبورد ملکتون",
+    ]); // PN-043/فاز ۲ (شورا-ن۰۸۷): شش ریشه — M1-M4 درون داشبوردهای tenant
   });
 
-  test("۱۱-۲ → PN-03۸: ظرف داشبورد مدیریتی حذف شد — هشت کاشی همه در ریشهٔ هوم‌اند", async () => {
+  test("۱۱-۲ → PN-043: ظرف قدیمی حذف؛ M1-M4 درون ظرف tenant-dashboards", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    expect(tileRegistry.listChildren("management-dashboard", "OWNER")).toEqual([]);
     expect(tileRegistry.get("management-dashboard")).toBeUndefined();
+    const children = tileRegistry.listChildren("tenant-dashboards", "OWNER");
+    expect(children.map((t) => t.title)).toEqual(["آگهی", "درخواست", "معاملات", "کارشناسان"]); // PN-043: ظرف زنده
     const roots = tileRegistry.listRoot("OWNER");
-    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6]); // PN-043: شش ریشه
   });
 
   test("۱۱-۳ → PN-03۸/۲.۲: ماژول صفحهٔ داشبورد مدیریتی فیزیکی حذف شد (داده DB مقدس)", () => {

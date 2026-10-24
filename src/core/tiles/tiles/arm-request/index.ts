@@ -23,7 +23,8 @@ export const armRequestTile = defineTile({
   icon: ClipboardList,
   accent: "m2",
   component: lazyPage(() => import("./ArmRequestsPage")),
-  order: 3, // PN-038/۲.۵ — ترتیب جدید هوم: درخواست سوم
+  order: 3, // M2 — ترتیب درون ظرف tenant-dashboards: درخواست دومِ داشبورد (PN-043/فاز ۲)
+  container: "tenant-dashboards", // PN-043/فاز ۲ (شورا-ن۰۸۷): از هوم ریشه به داشبوردهای tenant — wrapper، نه تکرار
   agent: {
     tileId: "arm-requests",
     insightDomains: ["VOLUME", "TOP_EXPERTS", "COMPOSITION", "COVERAGE", "FRESHNESS"],

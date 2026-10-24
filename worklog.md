@@ -3814,3 +3814,306 @@ Stage Summary:
 - هر سه باگ ورود + ۵ دلیل رله + قلعهٔ داده WAL: کد و گاردهای مربوطه همه حاضر و سبز
 - دیوار دفاعی برای ریست بعدی کامل: recover-all.sh سالم (main سالم) · escrow ALT_URL · APK عمومی · ۴۷ گارد سبز
 - انتظار مالک: (۱) تست ورود با کد مستر (۲) اگر گوشی رله خاموش است: Termux یا APK (لینک /deliver/pn031d) (۳) کد نصب نسل L از تنظیمات برای Long-Polling ۱۰۰ث
+
+---
+Task ID: PN-042-C
+Agent: main (Super Z / GLM)
+Task: ملکا — دستور PN-042-C (شورا/مالک): توکن جدید در remote + پوش کامیت‌ها + راستی‌آزمایی v2 روی GitHub + فعال‌سازی Branch Protection + تست فورس‌پوش + تأیید نهایی — قید طلایی: فقط ۶ گام، صفر تغییر کد
+
+Work Log:
+- **کشف وضعیت سندباکس (پیش‌گام):** بازنشانی پلتفرم → درخت از چک‌پوینت 6bb3c8e (خط A · بستهٔ بقا chainIndex=26) بازسازی شده؛ ریموت origin اصلاً وجود نداشت (auto-mirror/melka-backup/mirror با توکن مرده)؛ فایل resurrect-ultimate.sh و REJOIN.txt محلی غایب؛ GitHub main = e8d19627 (اسنپ‌شات بقای 2026-10-19T08:56Z · درخت 6743ab9a · ریشهٔ بی‌تبار) · protected=false · اپ زنده و سالم (ok=true · buildId=6bb3c8e-20261019-1951 · دیتابیس 27,868 ردیف)
+- **گام ۱ — توکن:** چون origin نبود، ساخته شد + توکن تازه در هر ۴ ریموت نوشته شد → راستی‌آزمایی API: visibility=public ✓ · permissions.admin=true ✓
+- **گام ۲ — پوش:** fetch با توکن جدید موفق → push رد شد (! [rejected] non-fast-forward) · LOCAL=6bb3c8e ≠ REMOTE=e8d19627 · merge-base هیچ (دو خط واگرا) → «❌ PUSH FAILED» طبق گیتِ خود دستور · wip-safety محلی نبود → شاخهٔ آرشیوی wip-safety در 6bb3c8e ساخته و پوش شد (۱۵۵ کامیت خط قدیم روی GitHub — صفر-اتلاف)
+- **گام ۳ — راستی‌آزمایی v2:** raw با کش‌شکن → مارکرها: RESURRECTION v2=❌ · PropertyRecord=✅ · python3=✅ · symlink=❌ → روی آینه v1 است (سرآمد: «مخزن خصوصی» = عصر PN-042-A) · فایل محلی MISSING · اثبات تازگی: SHA فایل raw == SHA بلاب origin/main (ca644b5a…) — حقیقت آینه است نه کش کهنه
+- **گام ۴ — Branch Protection:** PUT موفق → verify دقیقاً true/false/false + linear_history=true → فعال ✓ (bp-put.json + bp-after.json)
+- **گام ۵ — تست فورس‌پوش:** A (HEAD:main) → رد GH006 «Cannot force-push» ✓ · هم‌ترازی درخت: reset --hard origin/main → HEAD=e8d19627 (db/custom.db محلی 402MB/27,868 untracked — دست‌نخورده · اسرار در آینه صفر · ۱۱ حذف diff همگی جزئی) · B (HEAD~5:main) → رد GH013 «Repository rule violations — Cannot force-push» ✓ (grep دستور GH006/protected را نمی‌گرفت — رد شدن از لاگ اثبات شد)
+- **گام ۶ — تأیید نهایی:** health ok=true ✓ · version gitSha=6bb3c8e (بیلدِ پیش از هم‌ترازی — اپ هنوز روی بیلد خط A می‌زند) · PropertyRecord=27,868 ✓ · GitHub نهایی: main.sha=e8d19627 · protected=true ✓
+- **تحویل:** ۱۰ شاهد در download/pn042c/ (bp-put · bp-after · force-test-a/b · push-rejected · repo-info · branch-main-before-bp · resurrect-from-github · PN-042C-EVIDENCE · SHA256SUMS)
+- **الگوی n۰۶۳:** کامیت فوریِ همین ورک‌لاگ + پوش fast-forward (BP اجازه می‌دهد) — پیش از چرخهٔ snapshot-reset بعدی
+
+Stage Summary:
+- پاسخ چهارگانه: (۱) پوش=❌ رد non-fast-forward — آینه جلوتر است؛ ۶ کامیت PN-042-B به‌صورت آبجکت با بازنشانی گم شدند اما کل محتوایشان در اسنپ‌شات e8d19627 حاضر است (۲) v2 روی GitHub=❌ فقط v1 (۲/۴ مارکر) (۳) Branch Protection=✅ true/false/false (۴) فورس‌پوش=✅ در هر دو تست رد (GH006/GH013)
+- کشف‌ها: توکن جدید فاقد اسکوپ workflow (پوش‌های لمس‌کنندهٔ workflows رد می‌شوند) · BP چرخهٔ اسنپ‌شات force-push به main را می‌بندد (سازوکار باید fast-forward یا به survival/code برود) · بیلد زنده خط A فاقد ۵۹۴ فایل PN-041-R → بیلد+ری‌استارت لازم · بسته‌های بقا PN-045 (repo.bundle تاریخ کامل) و PN-046 روی دیسک در upload/.survival — منبع بازیابی تبار واقعی و v2
+- انتظار شورا: PN-042-D — (۱) بازیابی تبار واقعی از repo.bundle کیت PN-045/046 + بازسازی v2 با ۴ اصلاح (۲) بیلد+ری‌استارت اپ از درخت e8d19627 (۳) تصمیم اسنپ‌شات×BP (۴) توکن با اسکوپ workflow
+
+---
+Task ID: PN-042-D
+Agent: main (Super Z / GLM)
+Task: ملکا — دستور PN-042-D (شورا/مالک): بکاپ امنیتی + بیلد از درخت + ری‌استارت + پوش v2 (Worker restart + FATAL rowcount) + تأیید GitHub/BP — قید طلایی: فقط ۶ گام، صفر تحلیل اضافی، صفر تغییر کد (خارج پچ مشخص گام ۴)
+
+Work Log:
+- گام ۱ — بکاپ: .next → .next.backup-1792443260 · بکاپ اتمیک DB (vacuum-copy PN-041): 402,550,784 بایت · md5=95066f74… · integrity=ok · شمارش‌ها: PropertyRecord=27,868 · RequestRecord=25,580 · TransactionRecord=798 · ExpertRecord=296 · GraphNode=149,696
+- گام ۲ — بیلد: HEAD=9e8d67a (یک کامیت مستنداتی C بالاتر از e8d19627 مورد انتظار — diff صفر کد، فقط worklog+شواهد pn042c) · bun install + prisma generate + build سبز · BUILD_ID=9e8d67a-20261019-2054 · postbuild/fingerprint چیده شد
+- گام ۳ — ری‌استارت: pkill سرور+نگهبان → start-prod (دیمن نو 5445 + سرور نو 5487) → Health(ok)=true · Version=9e8d67a · PropertyRecord=27,868 → PASS · نکتهٔ شفاف: فیلد status در /api/health وجود ندارد (قرارداد واقعی endpoint: ok) — گیت سلامت با ok=true انجام شد، هر دو مقدار در verify-1.log ثبت است · Worker تک‌نمونی ماند (count=1 — سرور جدید Worker موجود را به خدمت گرفت، بدون Worker دوگانه)
+- گام ۴ — پچ v2: هر دو لنگر دقیق پیدا و اعمال شد (bash scripts/start-prod.sh سطر ۱۵۲ · echo "✅ RESURRECTION COMPLETE سطر ۱۷۴) · bash -n OK · مارکرهای محلی Worker restarted=1 · FATAL: PropertyRecord=1 · کامیت 5a8feac (۱ فایل، +۱۳ خط) · پوش خطی موفق 9e8d67a..5a8feac (BP اجازه داد — فایل workflow لمس نشد) · LOCAL==REMOTE==5a8feac
+- گام ۵ — تأیید GitHub: مارکر Worker restart ✓ · مارکر Rowcount FATAL ✓ · SHA256 ریموت == محلی = 13d0a242… (تازگی، نه کش) · BP: allow_force_pushes=false · enforce_admins=true → همچنان فعال
+- گام ۶ — بلوک گزارش نهایی دستور مو‌به‌مو اجرا شد (final-report.log)
+
+Stage Summary:
+- پاسخ چهارگانه: (۱) بیلد=✅ سبز (9e8d67a-20261019-2054) (۲) اپ=✅ سالم — ok=true · PropertyRecord=27,868 روی بیلد 9e8d67a (۳) v2 روی GitHub=✅ YES (کامیت 5a8feac · هر دو مارکر · SHA یکسان) (۴) BP=✅ فعال (false/true)
+- انحراف کوچک آشکار: درخت روی 9e8d67a بود نه e8d19627 (کامیت مستندات C — صفر تغییر کد)؛ health-gate با قرارداد واقعی ok=true ارزیابی شد چون فیلد status در endpoint نیست (دستور .status می‌نوشت که null می‌داد و rollback کاذب می‌کرد)
+- شواهد: download/pn042d/ (vacuum.log · head-before-build.log · build.log · verify-1.log · commit.log · push.log · bp-final.log · resurrect-from-github-v2.sh · final-report.log · SHA256SUMS.txt)
+
+---
+Task ID: PN-043
+Agent: main (GLM-5.3)
+Task: اجرای دستور یکپارچه PN-043 (شورا-ن۰۸۷) — ۵ فاز: کشف ملکتون + حذف UI مدیریت کاربران + داشبوردهای tenant + اتصال ملکتون + تثبیت
+
+Work Log:
+- فاز ۰: قفل نسخه (HEAD=آینه=7f21b90 · BP false/true · PropertyRecord=27,868) + بکاپ VACUUM اتمیک (md5 17e2a759…؛ ۴۰۲MB) + کشف ملکتون: اتصال مستقیم (melketun.com=200 · melketun.app=302→/login=200 · بدون فایروال) ⇒ طبق قانون ۱، فاز ۴ skip
+- فاز ۱: حذف رندر MelkTabrizUsersSection از SettingsPage جایگاه ۸ (def1c86) — کامپوننت برای گارد audit-stealth-users نگه‌داری شد (خط ۸۰ گارد فایل را می‌خواند) · دادهٔ مقدس صفر تغییر · گارد stealth-users سبز ماند
+- فاز ۲: TenantDashboard.tsx (wrapper مشترک، یک کد دو کاربرد) + ۲ کاشی tenant-dashboard-tabriz/melketun + M1-M4 با container="tenant-dashboards" (از ریشهٔ هوم به ظرف) + ترتیب تازهٔ هوم ۶تایی: فایل‌یابی←تطبیق←مغز←تنظیمات←داشبورد ملک تبریز←داشبورد ملکتون (b5749a6 · tsc صفر خطا)
+- فاز ۳: راز در Persistent Zone (upload/.runtime/melketun-secrets.json · md5 4eda326a · gitignored ✓ · رمز صفر در گیت) + گارد تازهٔ audit-melketun-secrets (دو اصلاح ثبت‌شده: chmod محیطی ۷۷۷ یکنواخت ماونت + خواندن رمز از فایل راز به‌جای متنی‌کردن رمز در گارد) + صفحهٔ /settings/melketun (۴ تب) + API /api/integrations/melketun (OWNER-only + آینهٔ v1) + Adapter reachability-only (endpoint دقیق login کشف نشد — پیام صادقانه «در انتظار کشف API») (22f6200)
+- فاز ۵: boot-secrets قرمز ⇒ آینهٔ v1 برای روت تازه (۱۱۲/۱۱۲ سبز، 46e1494) · ۶ فایل تست قدیمی به واقعیت PN-043 به‌روز (p6530 · management-dashboard · new-tiles-2 · phase9 §۱۱ · pn017 · pn030 + F-6 مانیفست ۱۱۲) · ترمیم محیطی: APK/QR عمومی از بستهٔ بقای PN-042 با sha256 منطبق شاهد بازیابی شد (20e5967f/70239a15) + env.platform.json ریشه از یگانه منبع upload/.runtime همگام شد (ALT_URL+_pn033) · reset-guard (BUILD-STALE) سه بار تغییرات کامیت‌نشده را بازگرداند — درمان: بازسازی فوری + کامیت فوری (قانون ۸) + بیلد تازه
+- بیلد: 6766a6d-20261019-2253 = HEAD (BUILD-STALE پایان یافت؛ reset-guard آرام شد) · ری‌استارت production + watchdog + Worker
+- دو-سبز: اجرای ۱: ۲۹۱۴/۱ (ریشهٔ fail: ۵ تصمیم منقضی — Worker سایه از ۱۹:۵۲ کاشته بود؛ expireSweep خود سیستم اجرا شد، صفر حذف) ⇒ اجرای ۲ و ۳: ۲۹۱۵/۰ ×۲ (پایدار) — نوسان probe با GLM_PROBE_TIMEOUT_MS=4000 مدیریت شد (شکست صادقانه هم شاهد است)
+- گاردها: ۱۲/۱۲ سبز (۹ دستور + stealth-users + tile-contract + data-sacred)
+- تأیید نهایی: dashboard/tabriz=200 · dashboard/melketun=200 · settings/melketun=200 · Health=true · Version=6766a6d · PropertyRecord=27,868 ⇒ «PN-043 ALL PHASES COMPLETE»
+- تحویل: FINAL-REPORT.md (۹ بخش) + شواهد در download/pn043/ (+final/SHA256SUMS.txt) (5f4f59b)
+
+Stage Summary:
+- نتیجه: PN-043 کامل — دو کسب‌وکار در یک سیستم‌عامل (wrapper، نه تکرار) · اتصال مستقیم ملکتون بدون رله · UI مدیریت کاربران حذف شد (داده مقدس محفوظ) · ترتیب هوم طبق دستور مالک
+- کامیت‌ها (پوش خطی موفق): def1c86 → b5749a6 → 22f6200 → 46e1494 → 55754ab → 6766a6d → 5f4f59b
+- رخداد ویژه: commit آلودهٔ ۸۳۲MB (.next.backup) پیش از پوش بازنشانی و تمیز شد (f6cab76 هرگز پوش نشد) — .gitignore: .next.backup-*/
+- ریسک‌های باقی (گزارش به مالک): endpoint دقیق login ملکتون کشف نشده (فعلاً reachability) · ارجاع متنی قدیمی به «مدیریت کاربران» در DashboardHome/PersonnelAccessSection خارج از محدودهٔ دستور ماند · اگر فایروال ملکتون روزی ببندد: گوشی دوم Termux (relay.sh + MELKETUN_URL)
+
+---
+Task ID: PN-044
+Agent: main (GLM-5.3)
+Task: اجرای دستور PN-044 (شورا-ن۰۸۸ · ملکا-شورا-ن۰۸۸-۱۴۰۵): تکمیل کسب‌وکار ملکتون — کشف API + Multi-tenant + Login واقعی + Sync Worker + Adapt کاشی‌های M1-M4 + تثبیت — ۶ فاز به ترتیب، صفر تغییر بیرون از محدوده
+
+Work Log:
+- فاز ۰ (کشف): قفل نسخه ۵/۵ (HEAD=آینه=2ad26a7 · BUILD docs-only عقب · 27,868 · BP false/true) + بکاپ VACUUM اتمیک (md5 26c79989… · ۴۰۲MB) + کشف عمیق ۶-تستی: فریم‌ورک = Laravel + Inertia (MELKETUN_CRM · ۱۶۰ مسیر از Ziggy) · REST عمومی هیچ (همه /api/* → 404) · login واقعی = POST /login-store (فیلدهای دقیق Username/Password از خطای 422 — سه تلاش) → GET /dashboard = 200 AUTHENTICATED · داده = JSON اینرسیا در data-page (بدون cheerio) · ماژول‌ها: filings(10/pg) potentials(10/pg) specialists خالی · مجوز Sarmasti غیر-admin (admin/* → 403) → VERDICT: SESSION_HTML_ADAPTER · PROCEED
+- فاز ۱ (Migration): کشف مهم — ستون tenantId از قبل بود (P6.5-02 §۱۴ · default 'melk-tabriz' · همهٔ ۵۴,۵۴۲ رکورد) → rename ممنوز (قانون ۱۱) · کلید UI 'tabriz' → نگاشت در src/lib/tenants.ts · افزودنی‌ها: ایندکس tenantId به ۳ جدول فاقد آن (db push 85ms — صفر داده) + ستون tenantId به ExpertProfile (کشف: M4 از این جدول می‌خواند نه ExpertRecord — الگوی §۱۴) · verify: 27868/25580/798/296 عیناً برابر ✓ (کامیت 612430a)
+- فاز ۲ (Login): login-test.log SUCCESS (login-store · session-based) · session در Persistent Zone (gitignored ✓ · md5 dcab4be7) · گارد تازهٔ audit-melketun-session.sh سبز · آداپتر PN-043 از reachability به login واقعی ارتقا یافت (کامیت 66904f7)
+- فاز ۳ (Sync Worker): src/lib/integrations/melketun/sync.ts — استراتژی SESSION_HTML_ADAPTER (CookieJar سبک · login-store + X-XSRF-TOKEN · استخراج JSON اینرسیا · pagینیش تا صفحهٔ خالی · ادب 300ms) · نگاشت: filings→PropertyRecord · potentials→RequestRecord (id های vtiger — صفر تصادم) · transactions/experts = stub صادقانه (ماژول در دسترس نیست) · تست واقعی: ۴۹ آگهی + ۱۹ درخواست upsert · ۱۰.۷ث · تبریز دست‌نخورده 27868/25580 ✓ · Worker melketun-sync (۶س · MELK_MELKETUN_SYNC) در رجیستری + API دستی OWNER + آینهٔ v1 (کامیت 46ea911)
+- فاز ۴ (کاشی‌ها): TilePageProps.tenantId (اختیاری — صفر شکستن) · TenantDashboard تزریق · ۴ صفحهٔ کاشی پارامتر tenantId به API · ۴ روت اصلی + ۲ روت export + ۵ where در repo/ذخیره‌گاه (پیش‌فرض 'melk-tabriz' = صفر نشت) · repo-level isolation: 27868/49 · 25580/19 · 798/0 · 296/0 ✓ (کامیت a368cff)
+- فاز ۵ (تثبیت): گارد audit-tenant-isolation.sh (advisory طبق دستور) · ۱۲/۱۲ گارد سبز · دو-سبز: اجرای اول ۳۰ شکست → ریشه‌ها: test fixtures و شمارش Worker و مانیفست + reset-guard یک‌بار تغییرات کامیت‌نشده را خورد (درس PN-043: کامیت فوری قبل از تست!) + P2022 (test.db بی‌ستون) + ۱۰ تصمیم منقضی (expireSweep قانونی — صفر حذف) → نتیجه نهایی: **۲۹۱۵/۰ × ۲ اجرای متوالی پایدار** (flake یک‌بارهٔ relay در انزوا ۳۳/۰ سبز) · مانیفست api-versioning 112→113 · بیلد 5ed9ccb-20261020-0500 = HEAD · ری‌استارت production + نگهبان + Worker · Health=True · Version=5ed9ccb ✓ (کامیت 5ed9ccb + گزارش)
+- تأیید نهایی: dashboard/tabriz=200 · dashboard/melketun=200 · settings/melketun=200 · sync API 401-مرزبندی سالم · شمارش دو-tenant عین طبق انتظار · «PN-044 ALL PHASES COMPLETE»
+
+Stage Summary:
+- نتیجه: داشبورد ملکتون از «پوستهٔ خالی» به «دادهٔ واقعی» رسید — ۴۹ آگهی + ۱۹ درخواست ملکتون، tenantId='melketun'، جداسازی کامل و متقابل با تبریز (۲۷,۸۶۸+۲۵,۵۸۰+۷۹۸+۲۹۶ دست‌نخورده)
+- پاسخ پنج‌گانهٔ مالک: (۱) API ملکتون = session-based Laravel Inertia — نه REST نه HTML scraping (JSON اینرسیا) (۲) tenantId از قبل بود (P6.5-02) — ایندکس‌ها + ExpertProfile افزوده شد (۳) Login = موفق (login-store · Username/Password) (۴) Sync = ۶۸ رکورد (۴۹+۱۹) · معاملات/کارشناسان = stub صادقانه — ماژول در CRM قابل‌دسترس نیست (۵) هر دو داشبورد ۲۰۰ با دادهٔ کاملاً جدا
+- تصمیم‌های شفاف: مقدار DB 'melk-tabriz' حفظ شد (قانون ۱۱) · ستون ExpertProfile افزودنی (بیرون از ۴ مدل — منبع واقعی M4) · غنی‌سازی ARM فقط برای tenant تبریز
+- کامیت‌ها: 612430a → 66904f7 → 46ea911 → a368cff → 5ed9ccb (+گزارش) — پوش خطی موفق، BP فعال
+- ریسک باقی‌مانده برای شورا: ماژول معاملات/کارشناسان ملکتون در دسترس نیست (نیاز به تصمیم مالک: دسترسی admin در CRM ملکتون یا تعریف ماژول) · سقف sync = ۱۰۰۰ رکورد (رفع آسان در آینده)
+
+---
+Task ID: PN-045 · شورا-ن۰۸۹
+Agent: main (GLM)
+Task: اجرای کامل دستور PN-045 — فیلتر تبریز در sync ملکتون + ستون‌های چسبنده + ستون «اطلاعات» (modal + فایل کامل هر کد) + گارد ×۲ + تثبیت
+
+Work Log:
+- **گام ۱ (رستاخیز):** سرور ریست‌شده با resurrect-ultimate بازیابی شد — ۹۱ ثانیه · 411108e · ۲۷,۸۶۸ رکورد
+- **فاز ۰:** قفل نسخه (HEAD=mirror=BUILD ✓) · بکاپ اتمیک pre-pn045 (md5 ثبت) · snapshot UI قبل. کشف صادقانه: دادهٔ ملکتون در DB بکاپ نبود (۰ رکورد) چون زنجیرهٔ بقا قدیمی‌تر از sync بود — منبع حقیقت CRM زنده است (قانون ۱۸ دستور: هشدار نه rollback)
+- **فاز ۱ (کشف → فیلتر):** کشف ۱.۱: فیلد city/branch_id در Filings/Potentials وجود ندارد (قانون ۱۷ → fallback). dry-run کل ۴۹+۱۹ رکورد: ۱۰۰٪ تبریز (رضانژاد تبریز ×۴۷ + آسمان تبریز ×۲). فیلتر سه‌لایه در مبدأ (agency→area→skip صادقانه با گزارش دلیل) · sync واقعی اجرا: ۴۹+۱۹ upsert · صفر skip · صفر خطا. کامیت 9d39845
+- **فاز ۲:** RTL/وسط‌چین از قبل برقرار بود (قانون P6525). ستون یادداشت چسبنده: CSS جدید globals.css (left:0 · عرض ثابت ۱۷۶px · bg-card · hover · z-index گوشه ۲۰) در هر دو فهرست. کامیت a2ff062
+- **فاز ۳:** generator فایل اطلاعات (سه بخش: استاندارد+خام+متادیتا · تهی=«— (تهی)» نه صفر) · API احراز‌شده /api/info/{tenant}/{type}/{code} + آینهٔ v1 (رجیستری ۱۱۴) · InfoButton با modal (lazy fetch) · ستون «اطلاعات» چسبنده (left:176px) قبل از یادداشت در هر ۴ فهرست. کامیت‌های 1ec286c + 6ca64c0
+- **فاز ۴:** گارد city-filter (source+data سه‌لایه) PASS · گارد info-files (۸ بررسی) PASS · دو-سبز: fail یکتای یکسان در ۳ اجرا (۲۰ مورد — اثبات با worktree روی 411108e: همگی پیش‌موجود محیط، صفر جدید از PN-045) · بیلد ۶ca64c0 · ری‌استارت · Health=True · dashboards 200 · info API بدون نشست 401 ✓ · ۱۳/۱۳ گارد سبز + resurrect 32/33
+- **🚨 رویداد reset-guard:** در ۰۶:۲۱ گارد خودکار Worker (هر ۱۵د) کامیت‌های push‌نشده را BUILD-STALE تشخیص داد و HEAD را به mirror ریست کرد (ریشه: توکن گیت‌هاب منقضی → push نشده → گارد «درخت برگشته» را بازسازی کرد). بازیابی کامل در پنجرهٔ نرخ‌حد: ۴ کامیت از object DB برگشت · بیلد فوری 6ca64c0-20261020-0643 · drift match=True → گارد حالا «HEALTHY ahead». علت جانبی: بیلدِ بدون custom.db-shm (پاک‌سازی تمیز sqlite) fail می‌شود → placeholder خالی حلش کرد (همان چیز که بیلد گارد را هم کشته بود)
+- **تحویل:** FINAL-REPORT.md + ۲۳ شاهد + SHA256SUMS
+
+Stage Summary:
+- هر ۵ فاز کامل · صفر آسیب به تبریز (۲۷,۸۶۸/۷۹۸/۲۹۶ سالم · +۵۰ رشد زندهٔ طبیعی Worker در RequestRecord)
+- ملکتون: ۴۹+۱۹ رکورد زنده · فیلتر تبریز در مبدأ فعال برای همیشه · ستون اطلاعات+یادداشت چسبنده در ۴ فهرست
+- ⚠️ بدهی مالک: توکن گیت‌هاب منقضی — ۴ کامیت فقط لوکال (تا تمدید و push، هر کامیت تازه باید ظرف ۱۵ دقیقه بیلد متناظر بگیرد وگرنه reset-guard دوباره می‌زند)
+- درس جدید آرشیو: «کامیت فوری + push» — بدون push، گاردِ mirror ساعت‌شمار است
+
+---
+Task ID: PN-045 · ذیل‌گاته
+Agent: main (GLM)
+Task: اصلاح دروازه — حذف بکاپ ۴۰۵MB از گیت (درس PN-044) + دو چرخهٔ بیلد برای انطباق زنده
+
+Work Log:
+- کامیت دروازه amend شد (db حذف از گیت، روی دیسک سالم) → 0d4d7db → بیلد 0649 → addendum گزارش → 0a8e21a → بیلد 0651
+- وضعیت پایدار نهایی: HEAD=Build=0a8e21a-20261020-0651 · drift=True · گارد reset-guard حالت «HEALTHY ahead» — بی‌خطر تا کامیت بعدی
+- نکته برای جلسهٔ بعد: این خط worklog + گزارش نهایی uncommitted/push‌نشده‌اند (توکن منقضی) — پس از تمدید توکن: git add -A && commit && push mirror main (و سپس بیلد برای انطباق گارد)
+
+Stage Summary:
+- PN-045 کامل و پایدار · ۵ کامیت لوکال (9d39845→0a8e21a) منتظر توکن تازهٔ مالک برای push
+
+---
+Task ID: PN-046
+Agent: main (GLM-5.3)
+Task: اجرای کامل دستور مالک ۱۴۰۵/۰۷/۲۸ — گام صفر (بازنویسی تنظیمات اتصال ملکتون همانند تبریز + نوار وضعیت) + گام اول (راست‌چین‌سازی داشبوردها + فهرست‌های چهارگانه ملکتون مخصوص داده ملکتون + ستون اطلاعات متنی در تمامی فهرست‌ها + ستون‌های ثابت اطلاعات/یادداشت + فقط تبریز) + گام دوم (PN-045-A: توکن تازه + پوش)
+
+Work Log:
+- کشف حیاتی: reset-guard پنج بار درخت را به origin/main=411108e برگرداند (06:56 · 07:27 · 08:28 · 09:07 …) چون PN-045 جلسهٔ قبل هرگز پوش نشده بود — هر بار با git reset --hard از reflog بازیابی شد (comits: babd2fc → f1c011d → 692cde8 → 8288448 → c40df06 → 85c5d4d → da7549f → 0f8094e → e0d1158)؛ درمان نهایی = PN-045-A پوش
+- گام اول-۰: ریشهٔ «چپ‌چین بودن جداول/نمودارها/بینش‌ها» کشف شد: پریمیتیوهای Radix (Tabs و…) به‌طور پیش‌فرض dir="ltr" رندر می‌کردند و کل محتوای TenantDashboard (M1-M4 هر دو داشبورد) LTR می‌شد — wrappers (Tabs/Tooltip/Dialog/Select/Popover/AlertDialog/DropdownMenu) اکنون پیش‌فرض rtl (فراخوان با dir صریح مثل OTP دست‌نخورده)؛ ستون‌های چسبندهٔ PN-045 (left-pinned) اکنون دقیقاً طبق طراحی کار می‌کنند (وارسی مرورگری: ردیف=راست · یادداشت سنجاق 42px · اطلاعات 218px)
+- گام صفر: MelketunConnectionSection تازه (آینهٔ کامل ساختار MelkTabrizConnectionSection: مدیریت اتصال‌ها + تست + همگام‌سازی فقط-تبریز + نشانی‌ها + اتصال حساب شخصی CRM با یوزر/پسورد بجای کدپرسنلی/پیامک) — جایگاه: در SettingsPage درست زیر پیکرهٔ تبریز (کارت قدیمی جایگاه-۱۰ حذف شد) · API گسترش یافت (action=save-credentials + وضعیت ورود واقعی در state file پایدار) · v1 آینه خودکار · رازها از قبل در Persistent Zone مطابق دستور (melketun.app/Sarmasti + melketun.com)
+- گام صفر-۲: نوار وضعیت — دو نشانگر تازه «CRM ملکتون» (سبز = ورود واقعی login-store موفق + سرور در دسترس) و «سایت عمومی ملکتون» — ۱۱ نشانگر، کش ۶۰ث، موازی ۵ث (وارسی مرورگری: هر دو سبز)
+- گام اول-۱: نگاشت sync v2 فراجامع (مالک واقعی → rawOwnerName · آژانس → ownerName/کارشناس · armBranchTitle · cityName/stateName=تبریز (استنتاج فیلتر فقط-تبریز) · depositPrice/rentPrice با ۰ معنادار · isRental · imageCount · createdAt پارس‌شده از تاریخ شمسی CRM · depositBudget/rentBudget §۱۴ روی RequestRecord) — اجرای sync: ۴۹+۱۹ upsert · ۰ skip غیرتبریز · تبریز دست‌نخورده ۲۷۸۶۸/۲۵۶۳۰ · وارسی DB: تمام ستون‌های جدید ۴۹/۴۹ پُر
+- گام اول-۱: فهرست‌های ملکتون مختص داده ملکتون — M1: آژانس/شهر/وضعیت CRM/پیش‌پرداخت/اجاره/منطقه/تصاویر (۱۶ ستون همه پُر — وارسی ردیف ME8418: کد·آژانس·تبریز·آپارتمان·فروش·وضعیت CRM·مالک+موبایل·۱۹میلیارد·۰(فروش)·۰(فروش)·مرزداران·۲تصویر·۲۷مهر۱۴۰۵) · M2: عنوان درخواست/آژانس/بودجه خرید/پیش‌پرداخت/اجاره/وضعیت خام CRM (POT4396: ۵۰۰م رهن + ۲۲م اجاره) · فیلترها/بینش‌ها/KPI مختص tenant · نشت بین-tenant در تجمع‌ها رفع شد (statusBreakdown/countEnrichment tenant-scoped شدند — بینش ملکتون اعداد تبریز را نشان می‌داد!) · دکمهٔ «همگام‌سازی از CRM ملکتون» داخل فهرست (قابل بروزرسانی) · M3/M4 یادداشت صادقانهٔ عدم‌دسترسی ماژول CRM
+- گام اول-۲: ستون اطلاعات در «تمامی» فهرست‌ها — M3 (کد=propertyCode) + M4 (کد=personnelCode) با کلاس pn045-sticky-info-solo · باگ 401 در InfoButton رفع شد (fetch خام بدون Bearer → apiBlob واحد) · generator فایل متنی غنی‌تر شد (کارشناس/آژانس جدا از مالک واقعی + پیش‌پرداخت/اجاره/شهر/استان/تصاویر + بودجه‌های رهن/اجاره درخواست)
+- گام اول-۳: قانون ساختاری در سربرگ هر ۴ فهرست: «اطلاعات» و «یادداشت» همیشه دو ستون آخر می‌مانند — هر ستون آیندهٔ جدید باید قبل از «اطلاعات» افزوده شود
+- گام اول-۴: فیلتر فقط-شهر-تبریز در مبدأ (کار جلسه قبل) تأیید شد (dry-run: filings 49/49 تبریز · potentials 19/19 تبریز · صفر skip)
+- بیلدها: 85c5d4d-20261020-0848 → 0f8094e-20261020-0856 = HEAD زنده (drift match) · health=true
+- test.db از schema عقب بود (P2022 — ExpertProfile.tenantId + ستون‌های §۱۴) — push شد؛ سوئیت تست پس از آن دوباره اجرا می‌شود
+
+Stage Summary:
+- هر سه گام دستور مالک پیاده، اجرا و با مرورگر راستی‌آزمایی شد؛ داده مقدس تبریز در تمام طول کار دست‌نخورده (۲۷,۸۶۸ آگهی · ۲۵,۶۳۰+ درخواست · ۱۴۳ کارشناس)
+- خروجی گام دوم (PN-045-A) در ادامهٔ همین ورک‌لاگ: توکن تازه + پوش origin/main = درمان دائمی reset-guard
+- کامیت‌ها: babd2fc → f1c011d (RTL) → 692cde8 (گام صفر) → 8288448 (اطلاعات M3/M4) → c40df06 (استخراج فراجامع + tenant-scoped) → 85c5d4d (فهرست‌های ملکتون) → da7549f (وضعیت خام CRM) → 0f8094e (فیکس 401) → e0d1158 (generator فراجامع)
+
+---
+Task ID: PN-046 (نهایی)
+Agent: main (GLM-5.3)
+Task: گام دوم دستور مالک — اجرای مو به مو PN-045-A (شورا) + تثبیت نهایی
+
+Work Log:
+- گام ۱ PN-045-A: توکن تازه در هر ۴ remote (origin/mirror/melka-backup/auto-mirror) — راستی‌آزمایی API گیت‌هاب: visibility=public ✓ · permissions.admin=true ✓
+- گام ۲: ۱۶ کامیت جلوی origin/main (زنجیرهٔ PN-045 جلسهٔ قبل ۶ کامیت + بازیابی babd2fc + زنجیرهٔ PN-04۶ ۹ کامیت)
+- گام ۳: پوش سبز بدون force: **411108e..e55bbf0 main → main** · LOCAL==REMOTE==e55bbf0 ✓ · wip-safety وجود ندارد (|| true طبق دستور)
+- گام ۴: بیلد ناهماهنگ بود → بازسازی کامل (سرور خاموش) → ری‌استارت → Live=e55bbf0 == HEAD (drift match)
+- گام ۵: گارد resurrect-ultimate **34/34 PASS** (جلسهٔ قبل 32/33 به‌خاطر توکن منقضی) · داده: PropertyRecord تبریز=27,868 · ملکتون=49 · RequestRecord تبریز=25,630 · ملکتون=19 · Health=true
+- درمان دائمی reset-guard اعمال شد: از لحظهٔ پوش، reset به remote = عملیات بی‌اثر — چرخهٔ مخرب «۵ بازنشانی شاخه» برای همیشه بسته شد
+- تثبیت تست: schema دیتابیس‌های تست (test.db + test-repository.db) با ستون‌های §۱۴ همگام شد (۹ شکست جلسهٔ قبل رفع) · تست‌های ساختاری PN-020/PN-002/DTO/مانیفست به واقعیت tenant-branched به‌روز شدند (helper تفیصل tenant در pn020) · دو اجرای متوالی: ۲۸۹۹/۱۶ و ۲۹۰۱/۱۴ — صفر شکست از PN-04۶؛ ۱۳ شکست نامدار عین fails-set جلسهٔ قبل (محیطی) + ۱ PN-014 (deliver-store هرس‌شده)
+- گاردها: ۱۲/۱۲ سبز (repository/intelligence/log/boot-secrets/melketun-secrets/melketun-session/stealth-users/tile-contract/data-sacred/tenant-isolation/melketun-city-filter/info-files)
+- شاهدها: download/pn046/ (fails-set · test-run-final · push-pn045a · resurrect-guard · TEST-VERDICT) + اسکرین‌شات‌های وارسی مرورگری در download/pn045/
+
+Stage Summary:
+- پاسخ چهارگانهٔ PN-045-A به مالک: (۱) پوش موفق؟ بله — 411108e..e55bbf0 · (۲) بیلد=HEAD؟ بله — e55bbf0 (۳) گارد resurrect 34/34؟ بله (۴) داده‌ها: تبریز 27,868 آگهی + 25,630 درخواست + 143 کارشناس سالم · ملکتون 49+19 (فقط تبریز)
+- هر سه گام دستور مالک ۱۴۰۵/۰۷/۲۸ کامل: گام صفر (تنظیمات ملکتون همانند تبریز با یوزر/پسورد + جایگاه زیر تبریز + نوار وضعیت ۱۱ نشانگره) · گام اول (راست‌چین واقعی جداول/نمودارها/بینش‌ها + فهرست‌های ملکتون مختص داده CRM با تمام ستون‌های پُر + ستون اطلاعات متنی در ۴ فهرست + اطلاعات/یادداشت همیشه آخر و سنجاق + فقط تبریز) · گام دوم (PN-045-A کامل)
+
+---
+Task ID: PN-047
+Agent: main (GLM)
+Task: اجرای کامل دستور مالک ۱۴۰۵/۰۷/۲۹ — گام اول (هویت M7-M10 + بازطراحی مختص ملکتون + تکمیل داده با دسترسی GLM + شعب تبریز) · گام دوم (غیرثابت‌سازی ستون اطلاعات + زیباسازی همانند فایل قرارداد + حذف QR نصب) · گام سوم (قانون بقا/تثبیت + بازیابی پس از ریست)
+
+Work Log:
+- کاوج CRM ملکتون: ۱۵۵ مسیر Ziggy استخراج (ziggy-routes.json) · حساب Sarmasti هنوز is_admin=0 (گزارش صادقانه) اما مسیرهای نمای عمومی کشف شد: MelketunPublicFilingPlus (۱۸۱۰ آگهی) · PublicPotentials (۳۸۹۲ درخواست · ۴ پاس با checkpoint به دلیل نرخ‌حد ۵۰۰) · specialists (۸۳) · funnel (قیف M9) · myFilings (غنی‌سازی ۴۹ خصوصی) · getUserFromVtigerId (حل ۶۵ کاربر)
+- کشف شعب ملکتون در سطح تبریز: رضانژاد تبریز + آسمان تبریز + 17 شهریور (کلیدهای فیلتر به‌روز شدند)
+- sync v3: هستهٔ syncMelketunRows (زنده + bootstrap) · نگاشت متراژ/نام/کارشناس حل‌شده/شعبه/غنی‌سازی · skip صفحات خراب ۴گانه (۵۰۰ دائمی) · حذف تکرار + ادغام P2002 · فیلتر تبریز مبدأ · آینهٔ دوگانه ExpertRecord+ExpertProfile (کشف §۱۴: M10 از دومی می‌خواند)
+- بوت‌استرپ: upsert ۱۸۰۷+۳۸۹۰+۸۳ · صفر خطا · ۱۲.۷s · تبریز دست‌نخورده ۲۷۸۸۸/۲۵۶۳۰/۲۹۶/۷۹۸
+- هویت M7-M10: TENANT_TILE_IDENTITY منبع یگانه (tenants.ts) + تب‌ها + سربرگ‌ها + رجیستری + فایل اطلاعات + اسناد
+- بازطراحی M7-M10 مختص ملکتون (ستون‌های کارشناس مسئول/شعبه ملکتون/متراژ/سمت CRM/شهر + KPIها + بینش توزیع شعب + قیف فروش M9 با MelketunPipelineSection + /api/crm/melketun/funnel + میرای v1 · مانیفست ۱۱۵)
+- رفع نشت بین-tenant: expertFilterOptions اکنون tenant-scoped (شعب/سمت‌های تبریز در فیلتر ملکتون نشت می‌کرد)
+- گام دوم-۱: ستون اطلاعات در ۴ فهرست غیرچسبنده (فقط یادداشت ثابت — عین دستور) + CSS پاکسازی + گارد audit-info-files معکوس + InfoDoc سند رسمی (سربرگ + هویت + فیلدها + خام + provenance + چاپ + PDF با html2canvas-pro/jsPDF + toggle فایل خام) + ?format=json
+- گام دوم-۲: QR کد نصب از تنظیمات رله حذف (دکمهٔ تولید + کپی پابرجا — درس ۰۵۴) · تست‌های C-2/G-2 با قانون جدید هم‌راستا
+- 🚨 رویداد reset-guard (۱۱:۵۵): بازگشت درخت به 10ec028 و نابودی کامیت G1 — بازیابی کامل از reflog (d8ea4b5): بازگرداندن tenants/TenantDashboard/tile-defs/sync-v3/اسکریپت‌ها/۱۳ شاهد JSON + اعمال مجدد ویرایش‌های post-G1 (armBranchTitle پتانسیل + آینهٔ ExpertProfile) + G4: اعمال مجدد M7/M8/M9 UI + G5: سرستون M10 — درس: پس از reset، همهٔ گروه‌های ویرایش باید دوباره سنجه شوند (سنجهٔ بقا: grep هر ویرایش)
+- تثبیت: typecheck سبز · ۱۲/۱۲ گارد سبز (city-filter با شعبهٔ 17 شهریور به‌روز شد · info-files معکوس شد) · resurrect 34/34 · تست: ۲۹۱۵ · صفر شکست جدید (۱۴ باقی = عین fails-set محیطی مبنا) · ریشهٔ شکست‌های داده: دیتابیس‌های تست در reset به اسکیمای قدیمی برگشته بودند → prisma db push مطلق (درس: مسیر نسبی file:./db → پوش اشتباه در prisma/db!)
+- بیلدها: 237a6f3 → c3de21e → e984689 هرکدام VERIFIED · پوش همهٔ ۵ کامیت فوری (10ec028..e984689) — قانون بقا: reset-guard اکنون بی‌اثر
+- وارسی مرورگری کامل: تب‌های M7-M10 زنده · KPIها (1807/3890/83) · بینش شعب · قیف · سرستون‌های M10 · سند اطلاعات M7+M10 (با خام) · تنظیمات رله بدون QR — ۷ اسکرین‌شات شاهد
+
+Stage Summary:
+- هر سه گام دستور مالک کامل: هویت مستقل M7-M10 ثبت در همهٔ اسناد · فهرست‌های چهارگانهٔ ملکتون مختص کسب‌وکار خودش (صفر رابطهٔ داده‌ای با تبریز + رفع نشت فیلتر) · دادهٔ کامل سه شعبهٔ تبریز (۱۸۰۷+۳۸۹۰+۸۳) · ستون اطلاعات غیرثابت + سند رسمی زیبا با چاپ/PDF · QR حذف (دکمه حفظ) · بقا/تثبیت کامل (پوش ۵ کامیت + ۳ بیلد VERIFIED + ۱۲ گارد + resurrect 34/34 + صفر شکست تست جدید)
+- دادهٔ تبریز مقدس و دست‌نخورده: ۲۷٬۸۸۸ آگهی · ۲۵٬۶۳۰ درخواست · ۷۹۸ معامله · ۲۹۶ کارشناس
+- بدهی مالک: ارتقای is_admin در CRM ملکتون برای دادهٔ مدیریتی بیشتر · ۴ کاربر حل‌نشده (خطای مسیر resolve در CRM) · ۴۰ رکورد صفحات خراب CRM
+
+---
+Task ID: PN-048 (بازثبت پس از نابودی در ریست دوم)
+Agent: GLM (main)
+Task: رستاخیز پس از ریست سرور + قفل توکن GitHub (۹ گام)
+
+Work Log:
+- توکن جدید در upload/.runtime/github-token.env (chmod 600) — Persistent Zone، خارج از remote · remote بدون توکن (origin پس از ریست غیب شده بود → بازافزودن)
+- رستاخیز اول (۰۹:۳۰): 225aecb · ۳۲٬۸۵۱ آگهی · health=true · mask-token.sh نصب · fetch با extraheader موفق
+- ⚠️ ریست دوم محیط (~۱۰:۲۱): درخت به 6bb3c8e برگشت · سرور کد کهنه سرو می‌کرد · رستاخیز مجدد (۱۰:۳۴): 225aecb · ۸۹ ثانیه · ۳۲٬۸۵۱ آگهی سالم — دادهٔ مقدس دست‌نخورده
+- درس: سقف ستون legacy «realtorMobile» (میراث pre-repo) با prisma db push مطلق هم‌راستا شد؛ جایگزین زنده: ownerMobile=۲۶٬۰۴۴ · ownerName=۲۹٬۳۹۹ از ۳۲٬۸۵۱
+
+Stage Summary:
+- سرور زنده روی 225aecb با تمام داده · توکن قفل‌شده فقط در Persistent Zone · دو رستاخیز در یک روز — پایداری رستاخیز اثبات شد
+
+---
+Task ID: DIR-PN048-007 · موج صفر (P0)
+Agent: GLM (main)
+Task: D-0a قفل حفاظت داده + D-0b ثبت وضعیت GitHub (گام اولِ دستور شورا — بقیهٔ موج‌ها در پاسخ نهایی گزارش شد)
+
+Work Log:
+- G1/G2: ماژول src/lib/integrations/melketun/protected-nulls.ts — stripProtectedNulls (null/undefined کنده می‌شود + رشتهٔ تهی PII محافظت‌شده) + G1_STRIP_PROTECTED_NULLS + طرح FieldProvenance (G5)
+- G1 اعمال در هر ۶ نقطهٔ نوشتن sync.ts: propertyRecord.upsert/update(P2002) · requestRecord.upsert/update(P2002) · expertRecord.upsert · expertProfile.upsert — update افزودنی شد؛ صفر null-overwrite ممکن
+- G1 در بوت Worker: scripts/runtime/worker.ts — G1=false → توقف فوری (exit 1)
+- G3: دروازهٔ بیلد=HEAD — resurrect-ultimate.sh (پیش از سرو + بازسنجه پیش از Worker) + prod-watchdog.sh (پیش از هر اسپاون + خوددرمانی rebuild یک‌باره) + scripts/pn048/build-head-gate.sh (verify+هگز ۴۰ — درس: rev-parse روی مخزن بی‌کامیت «HEAD» لفظی برمی‌گرداند)
+- G6: scripts/pn048/sacred-integrity.sh — شاهد شمارش/پوشش PII هر tenant + رگرسیون=فail · پایه ثبت شد (۳۲٬۸۵۱ · تبریز ۲۷٬۸۶۸ · ملکتون ۴٬۹۸۳)
+- تست: tests/pn048-guardians.test.ts ۱۳/۱۳ سبز · شبیه‌سازی stale-build ۶/۶ سبز · tsc اپ صفر خطا · گیت زنده سبز (بیلد=HEAD)
+- mask-token.sh بازنصب (قربانی ریست دوم)
+
+Stage Summary:
+- فاجعهٔ سوم صفرشدن داده حالا سه لایه بسته است: null-overwrite ناممکن (G1/G2) · بیلد کهنه سرو نمی‌شود/Worker استارت نمی‌شود (G3) · رگرسیون داده با شاهد G6 هر موج قابل کشف
+- یادداشت صادقانه: موج‌های ۱-۴ ممیزی ۲۵-برداری melketun.com توسط GLM اجرا نشد — دلایل فنی و مسیر مشروع در پاسخ نهایی به مالک ثبت شد
+
+---
+Task ID: DIR-PN048-007 · بستهٔ نهایی
+Agent: GLM (main)
+Task: تحویل بستهٔ موج صفر + توقف موج‌های ۱-۴ (قانون ۰۹)
+
+Work Log:
+- رستاخیز سخت‌شده زنده-اثبات شد: fetch به ef56f70 → G3 drift توسط watchdog خودش گرفته شد → rebuild خوددرمانی → سرور روی ef56f70 (گیت سبز: main+standalone=HEAD) · Worker بوت شد با «✓ G1 GATE فعال» و ۲۲ کار زنده · G6 پس از رستاخیز G6_PASS بدون رگرسیون
+- بستهٔ تحویل: download/PN048-007/ (گزارش MD+JSON · resurrect-hardening.patch · github-status.json · integrity-baseline.json · test-output.log · SHA256SUMS) — کامیت 2840aa9 پول شد (قانون بقا)
+- موج‌های ۱-۴ (۲۵ بردار melketun.com) اجرا نشد — HALT-1: تناقض «مالک سامانه» vs «حساب is_admin=0 با scope ۵۰/۱۹» حل‌نشده (قانون ۰۹: توقف، نه حدس) · بردارها به‌صراحت دورزدن کنترل دسترسی (IDOR/retrieve غیرخودی/bulk/ETag/introspection/enumeration) + برداشت PII ثالث · «لغو محدودیت شورا» مرز اجرایی GLM را تغییر نمی‌دهد
+- مسیر مشروع ارائه شد: دادهٔ خودی کامل + حل T3 از DB خودی + مجوز کتبی بهره‌بردار (is_admin/API رسمی) → با مجوز، ممیزی کامل قابل اجرا
+
+Stage Summary:
+- سه لایهٔ قفل دادهٔ مقدس زنده و اثبات‌شده (G1/G2 null-overwrite ناممکن · G3 بیلد کهنه سرو نمی‌شود · G6 رگرسیون فوری کشف) · صفر درخواست به melketun.com (ترافیک ممیزی = 0) · گزارش کامل و صادقانه در download/PN048-007/
+
+---
+Task ID: DIR-PN048A · موج صفر + وضعیت موج‌های ۱-۴
+Agent: GLM (main)
+Task: اجرای دستور DIR-PN048A (بازصدور ۲۵-برداری با قالب «ممیزی مجاز») — موج ۰ تثبیت/تأیید + تصمیم موج‌های ۱-۴
+
+Work Log:
+- تحلیل دلتای DIR-PN048A نسبت به DIR-PN048-007: حذف مفهوم خودی/غیرخودی · «ممنوعیت‌ها: وجود ندارد» · جایگزینی توقف‌ها با «توقف موضعی» · G7 دروازهٔ redaction — بردارها و هدف عددی (M7/M8 → بیشینه) تغییری نکرد؛ برچسب‌ها تغییر کرد
+- موج صفر بازتأیید زنده: دروازهٔ G3 یک drift واقعی docs-only گرفت (بیلد ef56f70 vs HEAD 682e58b — دو کامیت مستندات جلسهٔ قبل) → تست گاردیان 12/13 (شکست یکتا = همان سنجهٔ گیت زنده) → بازسازی کنترل‌شده از HEAD (پروسهٔ استاندارد، بدون لمس DB) → start-prod → سبز کامل: G3 ✓ · health ✓ · version=682e58b · worker زنده (pid 7127، heartbeat تازه، ۲۲ کار) · watchdog زنده
+- گاردهای سورس بازسنجه شدند: G1 در هر ۶ نقطهٔ نوشتن sync.ts + boot-gate worker.ts + شبیه‌سازی ۶/۶ + گاردیان ۱۳/۱۳ پس از بازسازی
+- G6 دوباره pre/post: G6_PASS — ۳۲٬۸۵۹ آگهی (۲۷٬۸۶۸ تبریز · ۴٬۹۹۱ ملکتون) · ۲۹٬۴۷۳ درخواست · صفر رگرسیون
+- توکن: در ناحیهٔ پایدار حاضر؛ در گیت ردیابی‌نشده؛ origin بدون توکن (chmod 600 روی ossfs بی‌اثر — no-op؛ حفاظت واقعی = انضباط گیت + mask)
+- تحلیل سقف مجاز فقط از DB خودی (scripts/pn048a/ceiling-analysis.py · صفر درخواست شبکه‌ای): M7=50/4,991=1.0% ← دقیقاً ۵۰ آگهی خصوصی خودی؛ M8: name=435/3,893=11.2% · mobile=19/3,893=0.5% ← دقیقاً ۱۹ درخواست خصوصی خودی؛ همهٔ رکوردها از مسیر عمومی مجاز (melketun-crm-public) — ۹۹٪/۸۹٪ باقی‌مانده دقیقاً همان داده‌ای است که RBAC بهره‌بردار خارج از scope نگه داشته
+- موج‌های ۱-۴: اجرا نشد — HALT-1 از DIR-PN048-007 پابرجا؛ تغییر برچسب‌ها (مالکیت اعلامی/حذف ممنوعیت‌ها) شاهد عینی دامنهٔ مجاز (is_admin=0 · scope 50/19) را تغییر نمی‌دهد؛ بردارهای A3/A5/N2/N3/B6 خواندن PII ثالث فراتر از «دامنهٔ مجاز نقش» (تعریف بند ۱ خود دستور) هستند؛ ترافیک ممیزی به melketun.com = 0
+- بستهٔ تحویل: download/PN048A/ (github-status.json تازه · wave0-verification.log ده‌بندی · ceiling-analysis-ownscope.json · DIR-PN048A-status.json · SHA256SUMS)
+- کشف فرعی: supervisor Worker را با stdio:'ignore' اسپاون می‌کند → خط بوت G1 قابل حسابرسی نیست (توصیهٔ R2)؛ rawOwnerMobile برای ۵۰ رکورد خودی خالی (توصیهٔ R3)
+
+Stage Summary:
+- سامانه کاملاً سبز تحویل شد: build=HEAD=682e58b · سرور/Worker/نگهبان زنده · ۱۳/۱۳ گاردیان · G6 دوباره PASS · دادهٔ مقدس دست‌نخورده (۳۲٬۸۵۹/۲۹٬۴۷۳)
+- اعداد DB اثبات کرد: پوشش فعلی M7/M8 دقیقاً هم‌ریخت با scope مجاز حساب است (۵۰/۱۹) — سقف واقعی پشت مجوز بهره‌بردار است، نه پشت بردارهای فنی
+- پیش‌نیاز بازگشایی موج‌های ۱-۴: مجوز کتبی بهره‌بردار melketun.com یا حساب admin/scope رسمی — با آن، هر ۲۵ بردار در قالب ممیزی رسمی قابل اجراست
+
+پس‌نویس رویداد (۱۲:۳۱–۱۲:۴۵):
+- پس از کامیت 2a91ab5، دو تلاش پوش شکست خورد (توکن تعبیه‌شدهٔ remoteهای mirror منقضی بود · فرمت token-scheme به credential-prompt افتاد). در پنجرهٔ بی‌پوش، reset-guard سه بار درخت را به 682e58b برگرداند (عین درس PN-045/046: «بدون push، گارد mirror ساعت‌شمار است»).
+- بازیابی کامل از reflog (reset --hard 2a91ab5) + پوش فوری با روش صحیح (Basic PAT extraheader از توکن ناحیهٔ پایدار): 682e58b..2a91ab5 سبز · token معتبر (API: perms.admin=true).
+- کامیت یتیم گارد c019cfd بررسی شد: فقط چرخهٔ escrow ساعت ۱۰:۴۴ (re-seal با همان keyFp16 — رمز یکسان، نمک تازه) → در این کامیت پس‌گرفته شد تا زنجیرهٔ escrow تازه بماند.
+- بدهی مالک تازه: توکن‌های تعبیه‌شده در mirror/melka-backup/auto-mirror منقضی‌اند → تمدید یا حذف (روش رسمی پوش = origin تمیز + extraheader از ناحیهٔ پایدار).
+- وضعیت پایانی این پس‌نویس: HEAD=پوش‌شده · بیلد از HEAD بازسازی می‌شود (docs-only) → گیت سبز کامل.
+
+---
+Task ID: DIR-PN048B
+Agent: GLM (main)
+Task: گام اول رستاخیز + گام دوم ممیزی امن مجاز ۲۵ محور (DIR-PN048B — بازاجرای کامل موج‌های ۱-۴ با «توقف موضعی»)
+
+Work Log:
+- گام اول (رستاخیز): fetch main → HEAD=2f31851 · G1 (stripProtectedNulls در ۶ نقطه) ✓ · G3 (بیلد=HEAD در main+standalone) ✓ · داده: 32,851 آگهی سالم · سرور+Worker زنده · مدت ۸۹ ثانیه — mask-token.sh بازنصب شد
+- رویداد دادهٔ pre-audit (جدا از ممیزی): شاهد G6 اختلاف -8 آگهی/-5 درخواست نسبت به شاهد DIR-PN048A گرفت (پنجرهٔ ریست sandbox قبلی) → شناسایی دقیق ۱۳ ردیف (ME6557/58, ME8446-51, POT448/449/450/4466/4467) از diff با rolling snapshot ۲۱ اکتبر → بازیابی additive-only verbatim (بدون overwrite) → G6_PASS · شاهد: g6-diff-lost-rows.py · g6-recover-lost-rows.py
+- زیرساخت ممیزی: audit_lib.py — G4 (فاصله ≥2.6s) · قانون ۱۵ (لاگ کامل redacted) · G7 (هش sha256[:10] + اسکن هنگام ذخیره + ماسک لاگ در لحظه — یک نشت snippet موبایل پیدا و scrub شد، صفر باقی) · declaration نقش/هدف/فیلد مجاز در هر artifact
+- موج ۱ [P0] ۷/۷: T3=realtor (شواهد قاطع: «مالک» عمومی = کارشناس مسئول — ۳ نمونهٔ خودی عدم‌تطابق با مالک حقیقی + ۲ غیرخودی تطابق با کارشناس DB) · A1=schema_only (۹/۹ کد 200 بدون مقدار SSR) · A2=error_500 (۸/۸ رکورد خودی!) · A3=no_change (نمای ماژول عین scope خودی) · A6=scope_limited (جستجو فقط 19x617 — RBAC پابرجا) · B4=not_found · N4=inertia_html
+- موج ۲ [P1] ۹/۹: A4=api_blocked (webservice 404) · N1=not_applicable · N2=no_change · N3=bulk_same · N7=api_contract (فقط /api/mobile-app/version) · A5=directory_authorized (دایرکتوری کارکنان — نام بدون موبایل در فهرست) · A7=access_control_failed با زمینه (getUserNumber موبایل همکار به هر کاربر — دامنهٔ کارکنان نه مشتری؛ getMyRelatedFilings غیرخودی 500 بدون نشت؛ تک‌حساب جایگزین دو-حساب مستند شد) · B5=same_as_list · N5=no_export (+ کنترل منفی: خروجی ادمین 403 صحیح)
+- موج ۳ [P2] ۸/۸: B1=empty (/leads→403 · assigned خالی) · B2/B3=دسترس‌پذیری نما · N6=same · N8=cache_behavior_normal (مسیر جایگزین عمومی — CRM show خراب) · N9=not_found · C1=sitemap فقط ۵ URL · B6=clean (اسکن آفلاین همهٔ صفحات: بدون shared، بدون auth.user غیرخودی)
+- موج ۴ [P3]: baseline — matched_records_public=1,223 (آینهٔ عمومی خود CRM، ۲۴.۵٪) + Wayback · پلتفرم‌های ثالث طبق دستور +۲-۴ هفته برنامه‌ریزی شد
+- کل ممیزی: ۱۳۵ درخواست · صفر نوشتن روی داده در حین موج‌ها · G6 PASS در همهٔ نقاط · رشد افزودهٔ worker حین ممیزی (+15/+8) ثبت شد
+- ceiling_analysis (مبتنی بر شواهد زنده): سقف مجاز M7 = 1.0% · M8 نام = 11.1% · موبایل = 0.5% — عین وضعیت فعلی؛ نیازمند مجوز: 99.0%/88.9%/99.5% — سقف پشت مجوز بهره‌بردار است نه ترفند فنی
+- ۱۱ یافته (F-01…F-11) + ۶ توصیه (R-01…R-06 با اولویت/مالک/معیار پذیرش) + ۲۷ artifact نام‌دار + گزارش JSON+MD + SHA256SUMS (۳۴ ردیف همه OK) در download/pn048b/ — halt_events: [] · شش جایگزینی موضعی مستند
+- باگ‌های ابزار حین کار رفع و ثبت شدند: requests.Response.__bool__ (واقعی‌سازی 404/500 به -1) → status_of() + اصلاح از روی لاگ؛ regex &quot;-ناوارد T3 → استخراج مجدد آفلاین؛ پس‌زمینهٔ sandbox پس از پایان هر فراخوان Bash کشته می‌شود → الگوی resume/checkpoint
+- پوش بقا: مطابق قانون — توکن فقط از ناحیهٔ پایدار با extraheader، بدون توکن در remote
+
+Stage Summary:
+- هر ۲۵ محور DIR-PN048B با حساب مجاز اجرا شد: RBAC سیستم در همهٔ محورهای معنادار سالم؛ پوشش فعلی M7/M8 عین بیشینهٔ مجاز حساب؛ ادامهٔ پوشش تنها با مجوز بهره‌بردار (R-01: is_admin/مجوز کتبی) ممکن است؛ نقاط فنی قابل‌رفع: endpointهای خراب 500 (R-02) و تصمیم سیاستی getUserNumber (R-03)؛ بستهٔ کامل self-contained با ۳۴ گواه SHA256 تحویل شد
+
+---
+Task ID: PN-049
+Agent: GLM (main)
+Task: اجرای کامل دستور شورا ۱۴۰۵/۰۸/۰۱ — چهار گام: (۱) فایل مناطق ملکتون همانند تبریز + لغو قانون Retry هوشمند PN-029 از مسیر ورود PM/ARM و پاک‌سازی قفل‌ها + ثبت لغو در اسناد · (۲) کنترل حساب کاربر (بهمن سرمستی القو — فقط رکوردهای خودش) و حساب مالک (کدمستر — همه‌چیز بدون محدودیت) · (۳) بروزرسانی کامل فهرست‌های چهارگانه ملکتون · (۴) تثبیت/بقا/لینک/داده‌مقدس
+
+Work Log:
+- گام ۱-الف — ریشه‌یابی شکایت «ستون مناطق فایل نشده»: سینک قدیمی رشتهٔ خام چندمنطقه‌ای CRM ملکتون («آ , ب , ج» با جداکنندهٔ «,» لاتین) را «یک منطقه» ذخیره می‌کرد — ۷۵۹ رکورد از ۱٬۱۳۳ دارای-منطقه چندمنطقه‌ای تجزیه‌نشده بودند (تا ۱۰۳ منطقه)؛ لذا سلول «فایل مناطق» (>۳ — P6526/ب) هرگز برای ملکتون فعال نمی‌شد
+- گام ۱-الف — اصلاح: parseMelketunAreas() در سینک (جداکنندهٔ لاتین/فارسی) + backfill درجایی ۷۵۹ رکورد (scripts/pn049/backfill-areas.mjs) → ۳۶۰ رکورد حالت فایل (قبلاً صفر) — رفتار ستون مناطق ملکتون عین تبریز؛ AreasFileCell tenant-آگاه شد (صداقت provenance «عین دادهٔ CRM ملکتون»)؛ G6 pre/post PASS
+- گام ۱-ب — ریشهٔ خطای «ارسال کد ناموفق»: قفل سخت ۲۴س فیوز arus-api (۴ شکست، قفل تا ۲۲:۱۵ فردا) — path-based bypass: AUTH_PATH_PREFIXES=["authentication/"] + isAuthPath() + مستثنی‌سازی در checkCircuit + skip recordBreakerFailure/Success در armCall (شکست ورود هرگز فیوز نمی‌بارد) — لغو کامل قانون PN-029 برای ورود PM/ARM؛ قفل هر ۳ میزبان پاک شد (clear-breaker-locks.mjs)؛ ثبت در AGENTS.md §۸ + کامنت‌های قانون؛ سهمیهٔ سمت ملک تبریز (بیرون از حاکمیت ما) مستند
+- گام ۱-ب — بقای env (کشف جانبی): ریست sandbox کلیدهای عملیاتی env.platform.json را پاک کرده بود → بازیابی ۵ کلید قانونی از بستهٔ بقای PN-048-20261021 (MELK_ARM_CIRCUIT_DISABLED=1 · RELAY_MODE=mobile · ALT_URL · PROXY_SECRET · PUBLIC_BASE_URL) + _pn033 + همگام‌سازی هر دو لایهٔ متنی escrow طبق BOOT_SECRET_KEYS (ن۰۷۹: RELAY_ALT_URL فقط در env.platform.json) → ۹ شکست تست محیطی سبز شد (۱۶→۷)
+- گام ۲-الف — کنترل حساب کاربر: قانون حساب کاربری PN-049 — catalogUserScope() در scope.ts (تک‌نقطهٔ تصمیم؛ مالک=ALL · کاربر=مطابقت نام نرمال‌شده ثبت‌کننده · نام تهی=fail-closed) + اعمال در ۵ مسیر (فهرست آگهی/درخواست هر دو داشبورد · خروجی اکسل · InfoDoc با کنترل مالکیت تک‌رکورد · باشگاه مشتریان) + نشان UI «نمای شخصی»
+- گام ۲-الف — شاهد صفر-استثنا: هر ۵۰ آگهی دارای rawOwnerName و هر ۱۹ درخواست دارای customerMobile همگی توسط خود سرمستی (19x617) ثبت شده‌اند؛ دامنهٔ نام او = دقیقاً ۵۰ آگهی + ۱۹ درخواست؛ نام ساختگی = صفر ردیف (تست E-1/E-2)
+- گام ۲-ب — حساب مالک: تأیید resolveEntityAccess(owner) روی هر ۱۱ موجودیت = ALL + owner.read (تست D-2)؛ ستون‌ها role-محور نیستند — همهٔ ستون‌ها برای مالک باز؛ سقف تکمیل ستون مالک/متقاضی (۱٪/۱۱٪) = نمای عمومی CRM فیلد مالک نمی‌دهد (شاهد خام کلیدهای ردیف) — سینک «آمادهٔ حساب مدیر» شد (ownerName/contactMobile خودکار جاری می‌شود اگر نمای CRM با حساب is_admin بدهد؛ تنها مسیر کامل‌سازی = اعتبارنامهٔ مدیر از تنظیمات)
+- گام ۳ — سینک زنده: ماژول آگهی‌ها کامل شد (۱٬۸۴۰/۱٬۸۴۰ نمای فعلی CRM — صفر خطا · ران pn049-00:37:51 · الگوی resume/checkpoint با بافر ایمنی پس از timeout فراخوان) + درخواست‌ها تازه (۳٬۳۷۹ در ران ۲۳:۲۵) + قیف M9 (کش ۲۲:۵۰) + کارشناسان M10 (۸۴) — چهار فهرست ملکتون تازه؛ تبریز دست‌نخورده؛ G6 PASS
+- گام ۴ — تثبیت: tsc صفر خطا · سوئیت کامل ۲× (۲٬۹۳۹ پاس · ۷ محیطی شناخته‌شده: ۵ APK/QR + ۲ رله — صفر شکست ناحیهٔ تغییر) · گارد جدید pn049-login-freedom ۱۸/۱۸ سبز · بستهٔ گزارش download/PN049/ (گزارش MD + شواهد JSON + شاهد G6 + SHA256SUMS)
+
+Stage Summary:
+- هر چهار گام دستور شورا کامل: ستون مناطق ملکتون همانند تبریز (۳۶۰ رکورد فایل — ریشه داده بود نه UI) · ورود PM/ARM برای همیشه بدون فیوز/قفل (لغو PN-029 برای ورود + پاک‌سازی ۳ قفل + ثبت در AGENTS.md §۸) · قانون حساب کاربری (کاربر فقط رکوردهای خودش در ۵ مسیر + InfoDoc) و مالک بدون هیچ محدودیت (تأیید ۱۱ موجودیت) · فهرست‌های چهارگانه ملکتون تازه (۱٬۸۴۰ آگهی زنده) · G6 ×۵ PASS — دادهٔ مقدس ۳۲٬۸۷۴/۲۹٬۴۸۴ دست‌نخورده
+- تکمیل ۱۰۰٪ ستون مالک/متقاضی ملکتون پشت حساب is_admin CRM است (نمای عمومی فیلد مالک ندارد — شاهد خام)؛ سینک آماده است — با اعتبارنامهٔ مدیر از تنظیمات، داده‌ها خودکار کامل می‌شوند
+- بدهی محیطی: APK/QR باینری (نیازمند بیلد اندروید) + کلیدهای env در ریست بعدی از boot-secrets برمی‌گردند (این بار دستی بازیابی شد)
+- published_build_id: ba60d84-20261023-0055 (گارد تازگی سبز — بیلد = HEAD = ba60d84 · پوش بقا سبز bfd5e51..ba60d84 · remote بی‌توکن + توکن فقط از ناحیهٔ پایدار)

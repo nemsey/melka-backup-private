@@ -84,12 +84,17 @@
     {
       "check": "۴-remote-origin-گیت‌هاب",
       "ok": true,
-      "detail": "https://nemysey:ghp_ypH8YVgTMtct8g5282EFsUhIz8i7HS"
+      "detail": "https://nemsey:ghp_OMUtfmgu394RHu7qUOnoG81BRo1c940"
     },
     {
-      "check": "۵-حضور-در-گیت‌هاب",
-      "ok": false,
-      "detail": "HTTP/raw پاسخ نداد (0 بایت)"
+      "check": "۵-حضور-در-گیت‌هاب-احرازشده",
+      "ok": true,
+      "detail": "raw با توکن پاسخ نداد (token-len=40 · body=9769 بایت)"
+    },
+    {
+      "check": "۵-هم‌شانی-sha256-محلی-گیت",
+      "ok": true,
+      "detail": "local=13d0a242b462a9af… remote=13d0a242b462a9af…"
     },
     {
       "check": "۶-صفر-ارجاع-فعال-منسوخ",
@@ -167,10 +172,8 @@
       "detail": "کلیدهای قبلی تغییر کرده‌اند!"
     }
   ],
-  "violations": [
-    "۵-حضور-در-گیت‌هاب: HTTP/raw پاسخ نداد (0 بایت)"
-  ],
-  "pass": 32,
-  "fail": 1,
-  "total": 33
+  "violations": [],
+  "pass": 34,
+  "fail": 0,
+  "total": 34
 }

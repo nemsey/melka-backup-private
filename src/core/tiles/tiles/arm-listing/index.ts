@@ -24,7 +24,8 @@ export const armListingTile = defineTile({
   icon: Building2,
   accent: "m1",
   component: lazyPage(() => import("./ArmListingsPage")),
-  order: 2, // PN-038/۲.۵ — ترتیب جدید هوم: آگهی دوم
+  order: 2, // M1 — ترتیب درون ظرف tenant-dashboards: آگهی اولِ داشبورد (PN-043/فاز ۲)
+  container: "tenant-dashboards", // PN-043/فاز ۲ (شورا-ن۰۸۷): از هوم ریشه به داشبوردهای tenant — wrapper، نه تکرار
   agent: {
     tileId: "arm-listings",
     insightDomains: ["VOLUME", "TOP_EXPERTS", "REGION", "COVERAGE", "FRESHNESS", "VISIT_ATTENTION"],

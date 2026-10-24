@@ -178,6 +178,24 @@ while true; do
     fi
   fi
 
+  # ─── G3 (DIR-PN048-007 · موج صفر): دروازهٔ بیلد=HEAD پیش از هر اسپاون ───
+  # درس رویداد ریست ۱۰:۲۱ ۲۰۲۶-۱۰-۲۱: درخت کهنه + بیلد کهنه بدون هیچ سنجه‌ای
+  # سرو می‌شد. اکنون: fingerprint بیلد باید = HEAD باشد؛ در غیر این صورت یک‌بار
+  # بازسازی (خوددرمانی — همان الگوی chunk-guard) و اگر باز هم ناهمخوان بود،
+  # سرو با هشدار CRITICAL ادامه می‌یابد (قانون ۱۱: بوت هرگز نمی‌ایستد) اما
+  # درخواست دادهٔ sync/Worker قدیمی هرگز روی دادهٔ مقدس اجرا نمی‌شود (G1 در بوت Worker).
+  if [ -x /home/z/my-project/scripts/pn048/build-head-gate.sh ]; then
+    if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
+      echo "[G3-gate] $(date '+%F %T') بیلد ≠ HEAD — بازسازی خوددرمانی آغاز" >> "$LOG"
+      (cd /home/z/my-project && bun run build) >> "$LOG" 2>&1
+      if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
+        echo "[G3-gate] $(date '+%F %T') CRITICAL: بازسازی هم ناهمخوان — سرور بالا می‌آید اما کد کهنه است (رستاخیز رسمی لازم)" >> "$LOG"
+      else
+        echo "[G3-gate] $(date '+%F %T') بازسازی موفق — بیلد = HEAD برقرار" >> "$LOG"
+      fi
+    fi
+  fi
+
   # ═══ PN-041-R (شورا-ن۰۶۸): دیتابیس زنده روی دیسک محلی (WAL) ═══
   # معماری موردعلاقهٔ شورا: WAL local + سنک ۵دقیقه‌ای به upload/ (بکاپ چرخشی).
   # شاهد ابطال FUSE-DELETE (۱۱:۴۳): ۵۱۲×P1008 + دو ژورنال داغ روی ossfs.
