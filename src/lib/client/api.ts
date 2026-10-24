@@ -36,35 +36,8 @@ export function bindAuth(getToken: () => string | null, handle401: () => void): 
   onUnauthorized = handle401;
 }
 
-/** مهلت پیش‌فرض درخواست‌های «سبک» — میلی‌ثانیه (۲۰ ثانیه · شورا-ن۰۶۸)
- * PN-041-R (فاز ۱·بند ۱.۵ + فاز ۲·بند ۲.۴): مهلت تطبیقی —
- *   · سبک (ورود/اعتبارسنجی/متادیتا): ۲۰ ثانیه — شکست سریع با پیام صادقانه
- *   · سنگین (فهرست‌ها/کاتالوگ/همگام‌سازی): ۱۵۰ ثانیه — زیر بودجهٔ رله
- * پیش از این همه‌چیز ۹۰ث صبر می‌کرد — با رلهٔ قطع، کاربر ۹۰ث در تاریکی می‌ماند. */
-const LIGHT_TIMEOUT_MS = 20_000;
-const HEAVY_TIMEOUT_MS = 150_000;
-const DEFAULT_TIMEOUT_MS = LIGHT_TIMEOUT_MS;
-
-/** مسیرهای «سنگین» — فهرست‌های صفحه‌بندی‌دار و همگام‌سازی (۱۵۰ث) */
-const HEAVY_PATH_PATTERNS: readonly (string | RegExp)[] = [
-  "/crm/arm-catalog/listings",
-  "/crm/arm-catalog/requests",
-  "/listings",
-  "/requests",
-  "/sync",
-  "/experts",
-  "/matching/search",
-  "/graphs",
-];
-
-/** داوری مسیر → مهلت — سبک ۲۰ث · سنگین ۱۵۰ث (آزمون‌پذیر · خالص) */
-export function getAdaptiveTimeoutMs(path: string): number {
-  const p = path.split("?")[0];
-  if (HEAVY_PATH_PATTERNS.some((pat) => (typeof pat === "string" ? p.includes(pat) : pat.test(p)))) {
-    return HEAVY_TIMEOUT_MS;
-  }
-  return LIGHT_TIMEOUT_MS;
-}
+/** مهلت پیش‌فرض درخواست‌ها — میلی‌ثانیه (۹۰ ثانیه) */
+const DEFAULT_TIMEOUT_MS = 90_000;
 
 /** PN-013/مرحلهٔ ۶ — شناسهٔ همبستگی درخواست: هر فراخوانی UI یک شناسهٔ
  *  ‎x-request-id‎ می‌سازد؛ سرور همان را در لاگ/متریک و پاسخ برمی‌گرداند
@@ -87,8 +60,7 @@ export async function api<T = unknown>(
   if (useAuth && token) headers.Authorization = `Bearer ${token}`;
 
   // P6530/گام ۶ — مهلت الزامی: هیچ درخواستی بی‌پایان معلق نمی‌ماند
-  // PN-041-R: مهلت تطبیقی مسیرمحور — مگر آنکه فراخواننده صریح تعیین کند
-  const timeoutMs = init.timeoutMs ?? getAdaptiveTimeoutMs(path);
+  const timeoutMs = init.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -103,12 +75,9 @@ export async function api<T = unknown>(
     });
   } catch (err) {
     if ((err as Error)?.name === "AbortError") {
-      const isLight = timeoutMs <= LIGHT_TIMEOUT_MS;
       throw new ApiClientError(
         "TIMEOUT",
-        isLight
-          ? "پاسخ سرور در مهلت ۲۰ ثانیه دریافت نشد — رلهٔ گوشی خاموش یا بی‌پاسخ است. Termux را باز کنید و دوباره بزنید."
-          : "پاسخ سرور در مهلت ۱۵۰ ثانیه دریافت نشد (فهرست سنگین). بروزرسانی در پس‌زمینه ادامه دارد — دقایقی دیگر دوباره بزنید؛ عملیات از همان نقطهٔ قطع‌شده ادامه می‌یابد.",
+        "پاسخ سرور در مهلت مقرر دریافت نشد (مهلت ۹۰ ثانیه). بروزرسانی در پس‌زمینه ادامه دارد — دقایقی دیگر دوباره بروزرسانی را بزنید؛ عملیات از همان نقطهٔ قطع‌شده ادامه می‌یابد.",
         504
       );
     }

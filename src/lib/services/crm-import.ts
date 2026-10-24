@@ -11,19 +11,12 @@
  *
  * کلیدهای طبیعی: آگهی→کد آگهی · درخواست→کد درخواست · کارشناس→کد پرسنلی (یا نام)
  * · معامله→(کد ملک، کد درخواست، تاریخ معامله)
- *
- * PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲ — کنترل آپلود اکسل فهرست‌های چهارگانهٔ هر دو
- * داشبورد): پارامتر tenantId — رکوردهای تازهٔ ایمپورت در همان tenant فهرستِ
- * بارگذاری‌شده ثبت می‌شوند ('melketun' ⇒ ملکتون · پیش‌فرض ⇒ ملک تبریز).
- * به‌روزرسانی رکوردهای موجود از طریق کلید یگانه انجام می‌شود و tenant دست‌نخورده
- * می‌ماند (قانون دادهٔ مقدس — هرگز جابه‌جا نمی‌شود).
  */
 
 import { db } from "@/lib/db";
 import { normalizeFaDigits } from "@/lib/normalize-input";
 import { jalaliToDate } from "@/lib/jalali";
 import { MelkApiError } from "@/lib/melk-api/types";
-import { tenantDbValue } from "@/lib/tenants";
 
 export const MAX_ROWS = 25_000;
 
@@ -141,7 +134,7 @@ export function emptyResult(entity: string, fileName: string): ImportResult {
 
 /* ============================ آگهی‌ها (listings) ============================ */
 
-async function importListings(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
+async function importListings(sheet: SheetData, result: ImportResult): Promise<void> {
   const H = "کد آگهی";
   for (const row of sheet.rows) {
     const code = digitsOnly(cellText(row.get(H)));
@@ -194,7 +187,7 @@ async function importListings(sheet: SheetData, result: ImportResult, tenantId: 
         result.updated++;
       } else {
         await db.propertyRecord.create({
-          data: { id: `import-${code}`, propertyCode: code, tenantId, ...data },
+          data: { id: `import-${code}`, propertyCode: code, ...data },
         });
         result.created++;
       }
@@ -207,7 +200,7 @@ async function importListings(sheet: SheetData, result: ImportResult, tenantId: 
 
 /* ============================ درخواست‌ها (requests) ============================ */
 
-async function importRequests(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
+async function importRequests(sheet: SheetData, result: ImportResult): Promise<void> {
   const H = "کد درخواست";
   for (const row of sheet.rows) {
     const code = digitsOnly(cellText(row.get(H)));
@@ -265,7 +258,7 @@ async function importRequests(sheet: SheetData, result: ImportResult, tenantId: 
         result.updated++;
       } else {
         await db.requestRecord.create({
-          data: { requestCode: code, actorCode: "import", source: "excel-import", tenantId, ...data },
+          data: { requestCode: code, actorCode: "import", source: "excel-import", ...data },
         });
         result.created++;
       }
@@ -278,7 +271,7 @@ async function importRequests(sheet: SheetData, result: ImportResult, tenantId: 
 
 /* ============================ معاملات (transactions) ============================ */
 
-async function importTransactions(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
+async function importTransactions(sheet: SheetData, result: ImportResult): Promise<void> {
   for (const row of sheet.rows) {
     const propertyCode = digitsOnly(cellText(row.get("کد ملک")));
     const requestCodeRaw = digitsOnly(cellText(row.get("کد درخواست")));
@@ -322,7 +315,7 @@ async function importTransactions(sheet: SheetData, result: ImportResult, tenant
         await db.transactionRecord.create({
           data: {
             id: `tx-import-${Date.now().toString(36)}-${result.created}`,
-            propertyCode, requestCode, rawDate, contractDate, tenantId, ...data,
+            propertyCode, requestCode, rawDate, contractDate, ...data,
           },
         });
         result.created++;
@@ -336,7 +329,7 @@ async function importTransactions(sheet: SheetData, result: ImportResult, tenant
 
 /* ============================ کارشناسان (experts) ============================ */
 
-async function importExperts(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
+async function importExperts(sheet: SheetData, result: ImportResult): Promise<void> {
   for (const row of sheet.rows) {
     let code = digitsOnly(cellText(row.get("کد پرسنلی")));
     if (code === "-" || code === "0") code = "";
@@ -383,7 +376,6 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
             mobile: (data.mobile as string) || "",
             role: (data.role as string) || "کارشناس",
             businessTitle: (data.businessTitle as string) || "",
-            tenantId,
             createdAt: new Date(),
             ...data,
           },
@@ -401,19 +393,13 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
 
 export type ImportEntity = "listings" | "requests" | "transactions" | "experts";
 
-/** اجرای ایمپورت کامل یک موجودیت — tenantId فهرستِ بارگذاری‌شده (PN-051) */
-export async function runImport(
-  entity: ImportEntity,
-  sheet: SheetData,
-  fileName: string,
-  tenantKey?: string | null
-): Promise<ImportResult> {
+/** اجرای ایمپورت کامل یک موجودیت (عین رفتار قبلی روت — صفر تغییر رفتار) */
+export async function runImport(entity: ImportEntity, sheet: SheetData, fileName: string): Promise<ImportResult> {
   const result = emptyResult(entity, fileName);
-  const tenantId = tenantDbValue(tenantKey ?? undefined); // 'melketun' | 'melk-tabriz'
   result.total = sheet.rows.length;
-  if (entity === "listings") await importListings(sheet, result, tenantId);
-  else if (entity === "requests") await importRequests(sheet, result, tenantId);
-  else if (entity === "transactions") await importTransactions(sheet, result, tenantId);
-  else await importExperts(sheet, result, tenantId);
+  if (entity === "listings") await importListings(sheet, result);
+  else if (entity === "requests") await importRequests(sheet, result);
+  else if (entity === "transactions") await importTransactions(sheet, result);
+  else await importExperts(sheet, result);
   return result;
 }
