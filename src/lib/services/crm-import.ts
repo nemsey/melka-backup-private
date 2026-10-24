@@ -144,7 +144,9 @@ export function emptyResult(entity: string, fileName: string): ImportResult {
 async function importListings(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
   const H = "کد آگهی";
   for (const row of sheet.rows) {
-    const code = digitsOnly(cellText(row.get(H)));
+    // PN-051 — کلید با «قالب کامل» خوانده می‌شود (ME#### ملکتون را digitsOnly
+    // قبلی می‌بُرید و رکورد تکراری با کد ناقص می‌ساخت؛ کدهای عددی ARM دست‌نخورده)
+    const code = cellText(row.get(H));
     if (!code) {
       result.skipped++;
       if (result.errors.length < 12) result.errors.push(`ردیف بدون «${H}» نادیده گرفته شد`);
@@ -210,7 +212,8 @@ async function importListings(sheet: SheetData, result: ImportResult, tenantId: 
 async function importRequests(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
   const H = "کد درخواست";
   for (const row of sheet.rows) {
-    const code = digitsOnly(cellText(row.get(H)));
+    // PN-051 — قالب کامل حفظ می‌شود (POT#### ملکتون) — عین گام ۱-ب listings
+    const code = cellText(row.get(H));
     if (!code) {
       result.skipped++;
       if (result.errors.length < 12) result.errors.push(`ردیف بدون «${H}» نادیده گرفته شد`);
@@ -280,8 +283,9 @@ async function importRequests(sheet: SheetData, result: ImportResult, tenantId: 
 
 async function importTransactions(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
   for (const row of sheet.rows) {
-    const propertyCode = digitsOnly(cellText(row.get("کد ملک")));
-    const requestCodeRaw = digitsOnly(cellText(row.get("کد درخواست")));
+    // PN-051 — قالب کامل حفظ می‌شود (کد ملک ملکتون ME####)
+    const propertyCode = cellText(row.get("کد ملک"));
+    const requestCodeRaw = cellText(row.get("کد درخواست"));
     const requestCode = requestCodeRaw || null;
     if (!propertyCode) {
       result.skipped++;
@@ -340,7 +344,13 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
   for (const row of sheet.rows) {
     let code = digitsOnly(cellText(row.get("کد پرسنلی")));
     if (code === "-" || code === "0") code = "";
-    const fullName = cellText(row.get("نام و نام خانوادگی"));
+    // PN-051 — الگوی خروجی اکسل خودمان دو هدر نام دارد: «کارشناس» (خروجی
+    // /api/experts/export) و «نام و نام خانوادگی» (الگوی قدیمی) — هر دو پذیرفته
+    // می‌شوند تا رفت‌وبرگشت (round-trip) همیشه هم‌کلید باشد.
+    const fullName =
+      cellText(row.get("نام و نام خانوادگی")) ||
+      cellText(row.get("کارشناس")) ||
+      "";
     if (!code && !fullName) {
       result.skipped++;
       if (result.errors.length < 12) result.errors.push("ردیف بدون «کد پرسنلی» و «نام» نادیده گرفته شد");
@@ -351,6 +361,13 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
     const existing = code
       ? await db.expertRecord.findUnique({ where: { personnelCode: code } })
       : await db.expertRecord.findFirst({ where: { fullName } });
+    // PN-051 — قانون دادهٔ مقدس: بدون تطابق کلید و بدون نام، هرگز رکورد
+    // «بدون نام» ساخته نمی‌شود (شاهد خرابی round-trip قبلی: ۲۲۷ رکورد بی‌نام)
+    if (!existing && !fullName) {
+      result.skipped++;
+      if (result.errors.length < 12) result.errors.push(`ردیف کد ${code}: نامی برای ایجاد رکورد تازه نیست — نادیده گرفته شد`);
+      continue;
+    }
 
     const data: Record<string, unknown> = {};
     const put = (header: string, field: string, value: unknown) => {
@@ -359,8 +376,10 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
     };
     put("نام و نام خانوادگی", "fullName", fullName || undefined);
     put("موبایل", "mobile", digitsOnly(cellText(row.get("موبایل"))) || undefined);
-    put("نقش", "role", cellText(row.get("نقش")) || undefined);
-    put("کسب‌وکار/شعبه", "businessTitle", cellText(row.get("کسب‌وکار/شعبه")) || undefined);
+    // PN-051 — هدرهای جایگزین الگوی خروجی خودمان: «نقش» یا «سمت پرسنلی» ·
+    // «کسب‌وکار/شعبه» یا «شعبه» — رفت‌وبرگشت کامل بدون گم‌شدن ستون
+    put("نقش", "role", cellText(row.get("نقش")) || cellText(row.get("سمت پرسنلی")) || undefined);
+    put("کسب‌وکار/شعبه", "businessTitle", cellText(row.get("کسب‌وکار/شعبه")) || cellText(row.get("شعبه")) || undefined);
     const activeTxt = cellText(row.get("وضعیت"));
     if (activeTxt === "فعال") data.active = true;
     if (activeTxt === "غیرفعال") data.active = false;

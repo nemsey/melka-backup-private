@@ -67,6 +67,30 @@ describe("PN-051 · گام ۱-ب — دانلود/آپلود اکسل فهرست
     expect(src).toContain("propertyCode, requestCode, rawDate, contractDate, tenantId, ...data"); // transactions
   });
 
+  test("۱-ب-۱-ب) کلید طبیعی با قالب کامل حفظ می‌شود (ME####/POT#### ملکتون) — ریشهٔ خرابی round-trip", () => {
+    const src = read("src/lib/services/crm-import.ts");
+    // listings/requests/transactions: digitsOnly قبلی پیشوند حروفی را می‌بُرید و
+    // رکورد تکراری می‌ساخت — PN-051 قالب کامل را نگه می‌دارد
+    const listingsBlock = src.slice(src.indexOf("importListings"), src.indexOf("importRequests"));
+    expect(listingsBlock).toContain('const code = cellText(row.get(H));');
+    expect(listingsBlock).not.toContain("digitsOnly(cellText(row.get(H)))");
+    const requestsBlock = src.slice(src.indexOf("importRequests"), src.indexOf("importTransactions"));
+    expect(requestsBlock).toContain('const code = cellText(row.get(H));');
+    const txBlock = src.slice(src.indexOf("importTransactions"), src.indexOf("importExperts"));
+    expect(txBlock).toContain('const propertyCode = cellText(row.get("کد ملک"));');
+  });
+
+  test("۱-ب-۱-پ) ایمپورت کارشناسان: هر دو هدر نام + ممنوعیت رکورد «بدون نام»", () => {
+    const src = read("src/lib/services/crm-import.ts");
+    const expertsBlock = src.slice(src.indexOf("importExperts"));
+    // الگوی خروجی خودمان «کارشناس» + الگوی قدیمی «نام و نام خانوادگی»
+    expect(expertsBlock).toContain('cellText(row.get("نام و نام خانوادگی")) ||');
+    expect(expertsBlock).toContain('cellText(row.get("کارشناس")) ||');
+    // قانون دادهٔ مقدس: بدون کلیدِ منطبق و بدون نام، ایجاد ممنوع
+    expect(expertsBlock).toContain("if (!existing && !fullName)");
+    expect(expertsBlock).toContain('هرگز رکورد');
+  });
+
   test("۱-ب-۲) روت ایمپورت tenantId را از query می‌خواند", () => {
     const src = read("src/app/api/crm/import/[entity]/route.ts");
     expect(src).toContain('searchParams.get("tenantId")');
