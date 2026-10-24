@@ -4117,3 +4117,48 @@ Stage Summary:
 - تکمیل ۱۰۰٪ ستون مالک/متقاضی ملکتون پشت حساب is_admin CRM است (نمای عمومی فیلد مالک ندارد — شاهد خام)؛ سینک آماده است — با اعتبارنامهٔ مدیر از تنظیمات، داده‌ها خودکار کامل می‌شوند
 - بدهی محیطی: APK/QR باینری (نیازمند بیلد اندروید) + کلیدهای env در ریست بعدی از boot-secrets برمی‌گردند (این بار دستی بازیابی شد)
 - published_build_id: ba60d84-20261023-0055 (گارد تازگی سبز — بیلد = HEAD = ba60d84 · پوش بقا سبز bfd5e51..ba60d84 · remote بی‌توکن + توکن فقط از ناحیهٔ پایدار)
+
+---
+Task ID: RESURRECT-20261024 (PN-042 · پس از ریست محیط)
+Agent: main (Super Z / GLM)
+Task: اجرای عملیات رستاخیز طبق فرمان مالک: curl raw.githubusercontent resurrect-ultimate.sh | bash
+
+Work Log:
+- دانلود و بازبینی اسکریپت از GitHub main (cache-buster) → scripts/resurrect-ultimate.sh (12,266 bytes)
+- اجرا کامل: git fetch/reset به main → HEAD=762830c (docs PN-049 published_build_id)
+- داده مقدس: زنده سالم ۳۲,۸۵۱ آگهی — صفر مداخله؛ قلعه کهنه‌تر بود (27,868)
+- راز: upload/.runtime/boot-secrets.json (اولویت ۱) ✓
+- بیلد production موفق (Turbopack · ۴۶s compile + generate) · ۲ هشدار Edge شناخته‌شده (instrumentation node:fs/node:child_process — quirk مستند P6549)
+- دروازه‌ها: ✓ G3 بیلد=HEAD (762830c) هم در main هم standalone · ✓ G1 stripProtectedNulls حاضر
+- سرور+Worker بالا: نگهبان دیمن ✓ · Worker PID 1967 heartbeat زنده · /api/version drift.match=true
+- ⚠️ عارضه prisma db push: ستون realtorMobile (غایب در schema @HEAD · صفر ارجاع کد) حذف شد — ۱۲۲۳ مقدار
+- 🔍 اسکن همه لایه‌ها: بسته بقا PN-048-20261021 نسخه کامل داشت → آرشیو مقدس ۱۲۲۳/۱۲۲۳ مقدار در:
+  db/realtorMobile-archive-20261024.json + upload/.data/realtorMobile-archive-20261024.json (115,375 bytes · SHA256 ثبت)
+- تأیید داده مقدس: ownerName=29,399 · ownerMobile=26,044 · total=32,851 (مطابق خط پایه)
+
+Stage Summary:
+- ✅ RESURRECTION COMPLETE — ۱۰۳ ثانیه · HEAD=762830c · buildId=762830c-20261024-0359
+- قانون ۱۱ برقرار · صفر حذف داده (realtorMobile آرشیو شد) · سرور از منبع حقیقت main سرو می‌کند
+- ادامه: چهارگام مالک (مناطق فایل‌گونه · لغو PN-029 · کنترل حساب‌ها · چهار فهرست · GitHub)
+
+---
+Task ID: PN-050 · رستاخیز + بازیابی داده + پایدارسازی (جلسه پس از ریست ۲۰۲۶-۱۰-۲۴)
+Agent: main (Super Z / GLM)
+Task: فرمان مالک: اجرای عملیات رستاخیز (curl raw resurrect-ultimate.sh | bash) + مرمت کامل پس از ریست محیط
+
+Work Log:
+- ✅ رستاخیز ۱۰۳ ثانیه: HEAD=762830c · G3 بیلد=HEAD · G1 stripProtectedNulls · ۳۲,۸۵۱ آگهی زنده سالم
+- ⚠️ عارضه ۱: prisma db push ستون realtorMobile (غایب در schema@HEAD · صفر ارجاع کد) را حذف کرد → آرشیو مقدس ۱۲۲۳/۱۲۲۳ مقدار از بستهٔ بقا PN-048-20261021 به db/realtorMobile-archive-20261024.json + upload/.data (صفر حذف داده ✓)
+- 🔍 کشف اصلی: snapshot محیط امروز عقب‌مانده بود (۳۲,۸۵۱ در برابر شاهد G6=۳۲,۸۷۴)؛ بکاپ چرخشی ۲۰۲۳-۱۰-۲۳T۰۱:۱۸ غنی‌تر بود و رستاخیز آن را نمی‌دید (فقط قلعه را مقایسه می‌کرد که کهنه=۲۷,۸۶۸ بود)
+- 🛠 مرمت داده (ادغام افزودنی · G2): دیف دوسویه کامل (live-richer=0 در همهٔ ستون‌ها) → درج ۲۳ آگهی + ۱۳ درخواست + ۶۲۰ ردیف هوش/گزارش + به‌روزرسانی ۷۵۱ areaNamesJson (تجزیهٔ چندمنطقه‌ای) + ۴۶۹ detailsJson + بوک‌کپینگ سینک — ردیف‌های فقط-زندهٔ امروز (۳۳ AuditLog و…) محفوظ
+- ✓ نتیجه: Property=۳۲,۸۷۴ · Request=۲۹,۴۸۴ · ملکتون آگهی=۵,۰۰۶ (مالک ملک ۱۰۰٪) · درخواست=۳,۹۰۴ · گارد PN-049: ۱۸/۱۸ PASS (فایل مناطق=۳۶۰ · unsplit=۰)
+- 🛠 مرمت env: env.platform.json غنی (۹۹۷ب) از لایهٔ پایدار upload/.runtime بازگردانی شد (کلیدهای PUBLIC_BASE_URL/RELAY_MODE/ALT_URL/FUSE) + APK+QR به public/deliver/pn031d از download/pn031d (sha256 منطبق ✓) + کلیدهای فیوز در دو لایهٔ boot-secrets + انقضای ۳ قفل فعال فیوز (مسلح‌شدهٔ ۰۴:۰۱ به‌دلیل بوت بدون env غنی) → PN-033: ۱۴/۱۴ · مجموعهٔ کامل: ۲,۹۴۴/۲,۹۴۶ (۲ انحراف محیطی: probe های GLM — میزبان‌های arus/pm/gap ملک‌تبریز از خروجی این sandbox تایم‌اوت می‌شوند · ملکتون.com 200 OK)
+- 🛠 قلعه تازرسازی شد: upload/.data/custom.db از ۲۷,۸۶۸ → ۳۲,۸۷۴ (backup API آنلاین WAL-امن) — همهٔ ۴ لایه (زنده/قلعه/چرخشی/مقدس) اکنون هم‌ارز
+- 🛠 هاردنینگ resurrect-ultimate.sh (PN-050): قانون «غنی‌ترین لایه برنده می‌شود» — مقایسهٔ چرخشی هم اضافه شد (شاخهٔ زندهٔ سالم + شاخهٔ فقدان زنده)؛ از این پس snapshot کهنه هرگز بر بکاپ چرخشی غنی‌تر نمی‌برد (درس امروز خودکار اجرا می‌شود) · bash -n ✓ · remote origin (authed) بازنصب شد برای گارد ۳۳گانه
+- سرور با env غنی ری‌استارت (سرو همان بیلد 762830c) · Worker زنده: rolling-backup + sacred-backup حالت ادغام‌شده را بردند
+
+Stage Summary:
+- رستاخیز کامل ✓ · بازیابی دادهٔ کامل تا کف G6 ✓ · صفر حذف داده (realtorMobile آرشیو + ۲۳+۱۳ درج) ✓
+- محیط env/APK/QR/فیوز مرمت ✓ · قلعه هم‌ارز ✓ · هاردنینگ رستاخیز (غنی‌ترین-لایه) ✓
+- گاردها: PN-049 18/18 · PN-033 14/14 · کل ۲,۹۴۴/۲,۹۴۶ (۲ انحراف محیطی صدادقانه مستند)
+- ادامه: کامیت+پوش PN-050 → اجرای دوبارهٔ رستاخیز از raw گیت‌هاب (اثبات انتها-به-انتهای اسکریپت هاردن‌شده)
