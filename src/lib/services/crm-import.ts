@@ -20,7 +20,7 @@
  */
 
 import { db } from "@/lib/db";
-import { normalizeFaDigits } from "@/lib/normalize-input";
+import { normalizeFaDigits, normalizeFilterInput } from "@/lib/normalize-input";
 import { jalaliToDate } from "@/lib/jalali";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { tenantDbValue } from "@/lib/tenants";
@@ -341,6 +341,24 @@ async function importTransactions(sheet: SheetData, result: ImportResult, tenant
 /* ============================ کارشناسان (experts) ============================ */
 
 async function importExperts(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
+  // PN-051 — تطبیق بر پایهٔ نقشه (جدول کوچک؛ حذف N+1): کد خام → ارقام → نامِ
+  // نرمال‌شده (normalizeFilterInput = منبع یگانه — ریشهٔ خطای ۱۵ رکورد:
+  // فاصلهٔ دوتایی «مهراب  اکبریان» در برابر تک‌فاصلهٔ DB)
+  const allExperts = await db.expertRecord.findMany({ select: { id: true, personnelCode: true, fullName: true } });
+  const byRawCode = new Map<string, string>();
+  const byDigitCode = new Map<string, string>();
+  const byNormName = new Map<string, string>();
+  for (const e of allExperts) {
+    const raw = (e.personnelCode ?? "").trim();
+    if (raw && !byRawCode.has(raw)) byRawCode.set(raw, e.id);
+    const digits = digitsOnly(raw);
+    if (digits && !byDigitCode.has(digits)) byDigitCode.set(digits, e.id);
+    const nm = normalizeFilterInput(e.fullName ?? "");
+    if (nm && !byNormName.has(nm)) byNormName.set(nm, e.id);
+  }
+  const idOf = (rawCode: string, digitCode: string, fullName: string): string | null =>
+    byRawCode.get(rawCode) ?? byDigitCode.get(digitCode) ?? byNormName.get(normalizeFilterInput(fullName)) ?? null;
+
   for (const row of sheet.rows) {
     let code = digitsOnly(cellText(row.get("کد پرسنلی")));
     if (code === "-" || code === "0") code = "";
@@ -357,24 +375,16 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
       continue;
     }
 
-    // PN-051 — زنجیرهٔ تطبیق کامل رفت‌وبرگشت:
+    // PN-051 — زنجیرهٔ تطبیق رفت‌وبرگشت:
     //   ۱) کد خامِ خروجی (مثل MELK-15 ملکتون — عین کلید DB)
     //   ۲) کدِ ارقام‌خالص (سازگاری الگوهای قدیمی عددی)
-    //   ۳) نام کامل (کدهای نمایشی تبریز مثل 410031035 با «بدون-کد-…» DB فرق دارند)
+    //   ۳) نام نرمال‌شده (کدهای نمایشی تبریز ۴۱۰… با «بدون-کد-…» DB فرق دارند
+    //      و نام خروجی گاهی فاصلهٔ دوتایی دارد)
     const rawCode = cellText(row.get("کد پرسنلی"));
-    let existing = null as null | { id: string };
-    if (rawCode) {
-      existing = (await db.expertRecord.findUnique({ where: { personnelCode: rawCode } }).catch(() => null)) ?? null;
-    }
-    if (!existing && code) {
-      existing = (await db.expertRecord.findUnique({ where: { personnelCode: code } }).catch(() => null)) ?? null;
-    }
-    if (!existing && fullName) {
-      existing = (await db.expertRecord.findFirst({ where: { fullName } }).catch(() => null)) ?? null;
-    }
+    const existingId = idOf(rawCode, code, fullName);
     // PN-051 — قانون دادهٔ مقدس: بدون تطابق کلید و بدون نام، هرگز رکورد
     // «بدون نام» ساخته نمی‌شود (شاهد خرابی round-trip قبلی: ۲۲۷ رکورد بی‌نام)
-    if (!existing && !fullName) {
+    if (!existingId && !fullName) {
       result.skipped++;
       if (result.errors.length < 12) result.errors.push(`ردیف کد ${code}: نامی برای ایجاد رکورد تازه نیست — نادیده گرفته شد`);
       continue;
@@ -400,8 +410,8 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
       continue;
     }
     try {
-      if (existing) {
-        await db.expertRecord.update({ where: { id: existing.id }, data });
+      if (existingId) {
+        await db.expertRecord.update({ where: { id: existingId }, data });
         result.updated++;
       } else {
         // PN-051 — رکورد تازه با «کد خام» ساخته می‌شود (MELK-15 نه 15) —

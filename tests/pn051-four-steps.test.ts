@@ -80,15 +80,20 @@ describe("PN-051 · گام ۱-ب — دانلود/آپلود اکسل فهرست
     expect(txBlock).toContain('const propertyCode = cellText(row.get("کد ملک"));');
   });
 
-  test("۱-ب-۱-پ) ایمپورت کارشناسان: هر دو هدر نام + ممنوعیت رکورد «بدون نام»", () => {
+  test("۱-ب-۱-پ) ایمپورت کارشناسان: هر دو هدر نام + زنجیرهٔ تطبیق + ممنوعیت رکورد «بدون نام»", () => {
     const src = read("src/lib/services/crm-import.ts");
     const expertsBlock = src.slice(src.indexOf("importExperts"));
     // الگوی خروجی خودمان «کارشناس» + الگوی قدیمی «نام و نام خانوادگی»
     expect(expertsBlock).toContain('cellText(row.get("نام و نام خانوادگی")) ||');
     expect(expertsBlock).toContain('cellText(row.get("کارشناس")) ||');
+    // زنجیرهٔ تطبیق سه‌مرحله‌ای: کد خام → ارقام → نام نرمال‌شده (منبع یگانه)
+    expect(expertsBlock).toContain("byRawCode");
+    expect(expertsBlock).toContain("byDigitCode");
+    expect(expertsBlock).toContain("byNormName");
+    expect(expertsBlock).toContain("normalizeFilterInput");
     // قانون دادهٔ مقدس: بدون کلیدِ منطبق و بدون نام، ایجاد ممنوع
-    expect(expertsBlock).toContain("if (!existing && !fullName)");
-    expect(expertsBlock).toContain('هرگز رکورد');
+    expect(expertsBlock).toContain("if (!existingId && !fullName)");
+    expect(expertsBlock).toContain("هرگز رکورد");
   });
 
   test("۱-ب-۲) روت ایمپورت tenantId را از query می‌خواند", () => {
