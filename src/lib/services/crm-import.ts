@@ -357,10 +357,21 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
       continue;
     }
 
-    // کلید: کد پرسنلی؛ اگر نبود، جست‌وجو با نام (رکوردهای «-» خروجی اکسل)
-    const existing = code
-      ? await db.expertRecord.findUnique({ where: { personnelCode: code } })
-      : await db.expertRecord.findFirst({ where: { fullName } });
+    // PN-051 — زنجیرهٔ تطبیق کامل رفت‌وبرگشت:
+    //   ۱) کد خامِ خروجی (مثل MELK-15 ملکتون — عین کلید DB)
+    //   ۲) کدِ ارقام‌خالص (سازگاری الگوهای قدیمی عددی)
+    //   ۳) نام کامل (کدهای نمایشی تبریز مثل 410031035 با «بدون-کد-…» DB فرق دارند)
+    const rawCode = cellText(row.get("کد پرسنلی"));
+    let existing = null as null | { id: string };
+    if (rawCode) {
+      existing = (await db.expertRecord.findUnique({ where: { personnelCode: rawCode } }).catch(() => null)) ?? null;
+    }
+    if (!existing && code) {
+      existing = (await db.expertRecord.findUnique({ where: { personnelCode: code } }).catch(() => null)) ?? null;
+    }
+    if (!existing && fullName) {
+      existing = (await db.expertRecord.findFirst({ where: { fullName } }).catch(() => null)) ?? null;
+    }
     // PN-051 — قانون دادهٔ مقدس: بدون تطابق کلید و بدون نام، هرگز رکورد
     // «بدون نام» ساخته نمی‌شود (شاهد خرابی round-trip قبلی: ۲۲۷ رکورد بی‌نام)
     if (!existing && !fullName) {
@@ -393,7 +404,9 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
         await db.expertRecord.update({ where: { id: existing.id }, data });
         result.updated++;
       } else {
-        const newCode = code || `بدون-کد-${(fullName ?? "").replace(/\s+/g, "-").slice(0, 40) || Date.now().toString(36)}`;
+        // PN-051 — رکورد تازه با «کد خام» ساخته می‌شود (MELK-15 نه 15) —
+        // کلید عین قالب خروجی/ورودی؛ بدون کد ⇒ کد ساختگی از نام
+        const newCode = rawCode || code || `بدون-کد-${(fullName ?? "").replace(/\s+/g, "-").slice(0, 40) || Date.now().toString(36)}`;
         await db.expertRecord.create({
           data: {
             id: `import-${newCode}-${Date.now().toString(36)}`,

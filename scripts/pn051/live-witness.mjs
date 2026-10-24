@@ -32,6 +32,22 @@ async function api(pathname, opts = {}) {
   return { status: res.status, json, text };
 }
 
+async function fetchWithRetry(url, opts, tries = 3) {
+  let lastErr = null;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await fetch(url, { ...opts, signal: AbortSignal.timeout(opts.timeoutMs ?? 120_000) });
+    } catch (e) {
+      lastErr = e;
+      // اکسل‌های بزرگ ممکن است لحظه‌ای سرور را به سقف حافظه ببرند — نگهبان
+      // خودکار تا ~۱۰ث ری‌استارت می‌کند؛ تلاش مجدد پس از مکث
+      console.log(`  [retry] ${url.slice(0, 60)} → ${e.message} — انتظار ۱۵ث و تلاش مجدد (${i + 1}/${tries})`);
+      await new Promise((r) => setTimeout(r, 15_000));
+    }
+  }
+  throw lastErr;
+}
+
 async function main() {
   const report = { login: {}, lists: {}, exports: {}, imports: {}, connections: {}, summary: {} };
 
@@ -99,7 +115,7 @@ async function main() {
   for (const tenant of TENANTS) {
     for (const [entity, mk] of Object.entries(EXPORTS)) {
       const key = `${entity}:${tenant}`;
-      const res = await fetch(`${BASE}${mk(tenant)}`, { headers: auth, signal: AbortSignal.timeout(120_000) });
+      const res = await fetchWithRetry(`${BASE}${mk(tenant)}`, { headers: auth, timeoutMs: 120_000 });
       if (!res.ok) {
         report.exports[key] = { ok: false, status: res.status };
         console.log(`[witness] EXPORT ${key} → HTTP ${res.status} ❌`);
