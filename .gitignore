@@ -114,3 +114,7 @@ server.log.*.gz
 download/pn044/*.db
 /download/*/pre-*.db
 /download/*/*.db
+
+# PN-052: دیتابیس کهنه‌شدهٔ رستاخیز (زندهٔ جایگزین‌شده — هرگز وارد گیت نمی‌شود)
+db/custom.db.stale-*
+db/custom.db.broken-*
