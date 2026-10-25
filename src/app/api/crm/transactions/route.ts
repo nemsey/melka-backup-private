@@ -33,7 +33,6 @@ import { findExpertNameByPersonnelCode } from "@/lib/experts/profile-store";
 // P6547/گام سوم-۴ — شعبهٔ مشاوران از سامانهٔ PM برای ستون تجمیع حق‌السهم
 import { readPmBranchMap } from "@/lib/branch-store";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
-import { tenantDbValue } from "@/lib/tenants";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
 // P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
@@ -83,9 +82,6 @@ export async function GET(request: NextRequest) {
     const seed = await ensureSeeded(guard.armTokens?.accessToken, { background: true });
     const syncState = await getSyncState();
     const sp = request.nextUrl.searchParams;
-    // PN-044/فاز ۴ (شورا-ن۰۸۸) — tenant همین رندر: 'melketun' → دادهٔ ملکتون؛
-    // پیش‌فرض/هر چیز دیگر → 'melk-tabriz' (رفتار فعلی — صفر شکستن).
-    const tenantId = tenantDbValue(sp.get("tenantId"));
 
     // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت؛ سقف ۲۵٬۰۰۰ فقط گارد ایمنی سرور است (عین دو کاتالوگ ARM)
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
@@ -108,7 +104,6 @@ export async function GET(request: NextRequest) {
     // فیلتر + خلاصه چهارگانه از انبار — عین منطق where قبلی (buildTransactionWhere)
     const { rows, total, summary } = await getTransactionRepository().listWithSummary({
       filter: {
-        tenantId,
         dateFrom: sp.get("dateFrom") ?? undefined,
         dateTo: sp.get("dateTo") ?? undefined,
         propertyCode,
