@@ -7,20 +7,11 @@ import { cn } from "@/lib/utils"
 
 function Tabs({
   className,
-  /**
-   * PN-046/گام اول-۰ (دستور مالک — راست‌چین‌سازی داشبوردها):
-   * Radix به‌طور پیش‌فرض dir="ltr" روی ریشهٔ Tabs رندر می‌کرد و کل محتوای
-   * داشبورد ملک تبریز/ملکتون (جداول، نمودارها، بینش‌ها) چپ‌چین می‌شد.
-   * پیش‌فرض این اپ تماماً فارسی است → rtl؛ فراخوان‌هایی که dir صریح داده‌اند
-   * (مثل OTP) همچنان مقدار خودشان را می‌گیرند.
-   */
-  dir = "rtl",
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Root>) {
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
-      dir={dir}
       className={cn("flex flex-col gap-2", className)}
       {...props}
     />
