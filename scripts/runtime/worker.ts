@@ -19,6 +19,16 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  // ۲-ب) G1 GATE (DIR-PN048-007 · موج صفر): Worker بدون محافظ دادهٔ مقدس
+  // حق استارت ندارد — stripProtectedNulls باید در مسیرهای upsert فعال باشد.
+  // قانون توقف: «Worker بدون stripProtectedNulls → توقف فوری».
+  const { G1_STRIP_PROTECTED_NULLS } = await import("@/lib/integrations/melketun/protected-nulls");
+  if (G1_STRIP_PROTECTED_NULLS !== true) {
+    console.error("[worker] ❌ G1 GATE: stripProtectedNulls غیرفعال — توقف فوری (قانون دادهٔ مقدس · DIR-PN048-007)");
+    process.exit(1);
+  }
+  console.log("[worker] ✓ G1 GATE: stripProtectedNulls فعال — دادهٔ مقدس در برابر null-overwrite محافظت است");
+
   // ۲) اتصال DB (تنبل — همان کلاینت رسمی برنامه)
   const { db } = await import("@/lib/db");
 

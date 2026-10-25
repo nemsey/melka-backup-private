@@ -1,0 +1,85 @@
+{
+  "label": "baseline",
+  "rootPid": 10058,
+  "peakMB": 2135.1,
+  "peakProcesses": 5,
+  "peakTop": [
+    {
+      "pid": 10061,
+      "rssMB": 986.1,
+      "cmd": "node /home/z/my-project/node_modules/.bin/next build "
+    },
+    {
+      "pid": 10146,
+      "rssMB": 973.1,
+      "cmd": "/usr/bin/node /home/z/my-project/node_modules/next/dist/compiled/jest-worker/processChild."
+    },
+    {
+      "pid": 10130,
+      "rssMB": 165.1,
+      "cmd": "node /home/z/my-project/.next/build/postcss.js 45789 "
+    },
+    {
+      "pid": 10058,
+      "rssMB": 7.9,
+      "cmd": "bun run build "
+    },
+    {
+      "pid": 10060,
+      "rssMB": 3.0,
+      "cmd": "/usr/bin/bash -c next build && cp -r .next/static .next/standalone/.next/ && cp -r public "
+    }
+  ],
+  "durationSec": 57.1,
+  "timeline": [
+    {
+      "t": 0.0,
+      "mb": 38.2
+    },
+    {
+      "t": 5.0,
+      "mb": 636.0
+    },
+    {
+      "t": 10.0,
+      "mb": 903.5
+    },
+    {
+      "t": 15.0,
+      "mb": 1263.3
+    },
+    {
+      "t": 20.0,
+      "mb": 1386.4
+    },
+    {
+      "t": 25.0,
+      "mb": 1527.8
+    },
+    {
+      "t": 30.0,
+      "mb": 1786.8
+    },
+    {
+      "t": 35.1,
+      "mb": 1723.7
+    },
+    {
+      "t": 40.1,
+      "mb": 2083.2
+    },
+    {
+      "t": 45.1,
+      "mb": 1692.9
+    },
+    {
+      "t": 50.1,
+      "mb": 1880.6
+    },
+    {
+      "t": 55.1,
+      "mb": 682.8
+    }
+  ],
+  "finishedAt": "2026-10-06T05:42:32.441779+00:00"
+}

@@ -1,0 +1,163 @@
+{
+ "meta": {
+  "test": "A1",
+  "description": "potential-edit — props بازرسی برای ۱۰ شناسهٔ مجاز خودی",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "schema_only",
+ "samples_redacted": [
+  {
+   "code": "POT4396",
+   "status": 200,
+   "component": "auth/potentials/EditPotential",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "fieldLists",
+    "id"
+   ],
+   "record_keys": [],
+   "customer_name_field_present": false,
+   "mobile_like_field_present": true
+  },
+  {
+   "code": "POT4395",
+   "status": 200,
+   "component": "auth/potentials/EditPotential",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "fieldLists",
+    "id"
+   ],
+   "record_keys": [],
+   "customer_name_field_present": false,
+   "mobile_like_field_present": true
+  },
+  {
+   "code": "POT4394",
+   "status": 200,
+   "component": "auth/potentials/EditPotential",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "fieldLists",
+    "id"
+   ],
+   "record_keys": [],
+   "customer_name_field_present": false,
+   "mobile_like_field_present": true
+  },
+  {
+   "code": "POT4393",
+   "status": 200,
+   "component": "auth/potentials/EditPotential",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "fieldLists",
+    "id"
+   ],
+   "record_keys": [],
+   "customer_name_field_present": false,
+   "mobile_like_field_present": true
+  },
+  {
+   "code": "POT4392",
+   "status": 200,
+   "component": "auth/potentials/EditPotential",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "fieldLists",
+    "id"
+   ],
+   "record_keys": [],
+   "customer_name_field_present": false,
+   "mobile_like_field_present": true
+  },
+  {
+   "code": "POT4391",
+   "status": 200,
+   "component": "auth/potentials/EditPotential",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "fieldLists",
+    "id"
+   ],
+   "record_keys": [],
+   "customer_name_field_present": false,
+   "mobile_like_field_present": true
+  },
+  {
+   "code": "POT4390",
+   "status": 200,
+   "component": "auth/potentials/EditPotential",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "fieldLists",
+    "id"
+   ],
+   "record_keys": [],
+   "customer_name_field_present": false,
+   "mobile_like_field_present": true
+  },
+  {
+   "code": "POT4389",
+   "status": 200,
+   "component": "auth/potentials/EditPotential",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "fieldLists",
+    "id"
+   ],
+   "record_keys": [],
+   "customer_name_field_present": false,
+   "mobile_like_field_present": true
+  },
+  {
+   "code": "POT4388",
+   "status": 200,
+   "component": "auth/potentials/EditPotential",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "fieldLists",
+    "id"
+   ],
+   "record_keys": [],
+   "customer_name_field_present": false,
+   "mobile_like_field_present": true
+  },
+  {
+   "code": "POT4396",
+   "status": 404,
+   "path": "/Potentials/{id}/edit",
+   "verdict_sample": "literal_path"
+  }
+ ]
+}

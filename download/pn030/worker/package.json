@@ -1,0 +1,13 @@
+{
+  "name": "melka-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PN-030 — پروکسی عبوری ملک تبریز روی Cloudflare Workers (شورای عالی ملکا · جلسهٔ فوق‌العاده ۰۳۵ · لایهٔ ۱)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
