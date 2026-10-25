@@ -18,19 +18,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, MessageSquareText, ArrowRight, RotateCw } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
-import { pollRelayJob } from "@/lib/client/relay-job";
 import { useAppStore } from "@/lib/client/store";
 import { faDigits } from "@/lib/format";
 
 const OTP_EXPIRY_SECONDS = 180;
-
-/** شکل نشست تحویلی از مسیر کار async (secret یک‌بارمصرف) یا پاسخ سنک قدیم */
-interface OtpLoginUser {
-  personnelCode: string;
-  displayName: string;
-  role: "OWNER" | "CONSULTANT";
-  expiresAt: string;
-}
 
 export function OtpScreen() {
   const { toast } = useToast();
@@ -63,46 +54,17 @@ export function OtpScreen() {
       if (!pendingCode) return;
       setLoading(true);
       try {
-        // PN-035 (شورا-ن۰۵۷ · فاز ۳+۴): verify نیز async شد — پاسخ فوری {jobId}؛
-        // تأیید در پس‌زمینه از مسیر رله انجام می‌شود؛ نشست (توکن) به‌صورت
-        // «یک‌بارمصرف» در نخستین polling موفق تحویل می‌شود (رمز AES-256-GCM).
-        const res = await api<{ ok: boolean; jobId?: string; token?: string; user?: OtpLoginUser }>(
-          "/api/auth/verify-otp",
-          {
-            method: "POST",
-            body: { personnelCode: pendingCode, otp: value },
-            auth: false,
-            timeoutMs: 10_000,
-          }
-        );
-        // سازگاری عقبه — سرور نسل قبل مستقیم توکن می‌داد
-        if (res.token && res.user) {
-          await login(res.token, res.user);
-          toast({ title: `خوش آمدید، ${res.user.displayName}`, description: "ورود با موفقیت انجام شد." });
-          return;
-        }
-        if (!res.jobId) throw new ApiClientError("UNKNOWN", "پاسخ سرور قابل تفسیر نیست.", 500);
-        const out = await pollRelayJob(res.jobId, { auth: false, attempts: 60 });
-        const secret = (out.secret ?? null) as { token?: string; user?: OtpLoginUser } | null;
-        if (out.ok && out.kind === "done" && secret?.token && secret.user) {
-          await login(secret.token, secret.user);
-          toast({ title: `خوش آمدید، ${secret.user.displayName}`, description: "ورود با موفقیت انجام شد." });
-        } else if (out.ok && out.kind === "done") {
-          // راز یک‌بارمصرف قبلاً تحویل شده (poll تکراری) — کد تازه لازم است
-          setOtp("");
-          toast({
-            title: "این کد قبلاً بررسی شد",
-            description: "نشست این کد پیش‌تر صادر شده — برای ورود دوباره، کد جدید بگیرید.",
-            variant: "destructive",
-          });
-        } else {
-          setOtp("");
-          toast({
-            title: out.kind === "expired" ? "بررسی کد طول کشید" : "کد تأیید نشد",
-            description: out.error?.message ?? "خطای غیرمنتظره در تأیید کد.",
-            variant: "destructive",
-          });
-        }
+        const res = await api<{
+          ok: boolean;
+          token: string;
+          user: { personnelCode: string; displayName: string; role: "OWNER" | "CONSULTANT"; expiresAt: string };
+        }>("/api/auth/verify-otp", {
+          method: "POST",
+          body: { personnelCode: pendingCode, otp: value },
+          auth: false,
+        });
+        await login(res.token, res.user);
+        toast({ title: `خوش آمدید، ${res.user.displayName}`, description: "ورود با موفقیت انجام شد." });
       } catch (err) {
         const e = err as ApiClientError;
         setOtp("");
@@ -118,37 +80,17 @@ export function OtpScreen() {
     if (!pendingCode) return;
     setResending(true);
     try {
-      // PN-035: ارسال مجدد نیز async — بازنشانی خوش‌بینانهٔ شمارش معکوس؛
-      // نتیجه در پس‌زمینه poll می‌شود و در صورت خطا به کاربر می‌رسد.
-      const res = await api<{ ok: boolean; jobId?: string }>("/api/auth/request-otp", {
+      await api<{ ok: boolean }>("/api/auth/request-otp", {
         method: "POST",
         body: { personnelCode: pendingCode },
         auth: false,
-        timeoutMs: 10_000,
       });
       setRemaining(OTP_EXPIRY_SECONDS);
       setOtp("");
-      if (res.jobId) {
-        toast({
-          title: "در حال ارسال کد جدید…",
-          description: "کد جدید از مسیر رلهٔ موبایل در راه است.",
-        });
-        void pollRelayJob(res.jobId, { auth: false, attempts: 60 }).then((out) => {
-          if (out.ok) {
-            toast({
-              title: "کد جدید ارسال شد",
-              description: "کد تأیید جدید از سامانه ملک تبریز پیامک شد.",
-            });
-          } else if (out.kind === "failed") {
-            toast({ title: "ارسال مجدد ناموفق", description: out.error?.message ?? "خطای ارسال کد.", variant: "destructive" });
-          }
-        });
-      } else {
-        toast({
-          title: "کد جدید ارسال شد",
-          description: "کد تأیید جدید از سامانه ملک تبریز پیامک شد.",
-        });
-      }
+      toast({
+        title: "کد جدید ارسال شد",
+        description: "کد تأیید جدید از سامانه ملک تبریز پیامک شد.",
+      });
     } catch (err) {
       const e = err as ApiClientError;
       toast({ title: "ارسال مجدد ناموفق", description: e.message, variant: "destructive" });
@@ -218,12 +160,6 @@ export function OtpScreen() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> در حال بررسی کد…
                 </div>
-              )}
-
-              {!loading && (
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  بررسی کد از مسیر رلهٔ موبایل انجام می‌شود — چند لحظه کوتاه.
-                </p>
               )}
             </div>
 
