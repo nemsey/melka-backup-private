@@ -1,0 +1,27 @@
+{
+ "phase": "PN-031-HOTFIX · فاز ۳ — تولید مجدد QR و دستور (جلسهٔ فوری ۰۳۸)",
+ "generatedAt": "2026-10-12T10:08:53.104Z",
+ "publicUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+ "invalidated": {
+  "oldBootstrapCode": "cff39acdd8… (کامل در صورت‌جلسهٔ ۰۳۸) — منقضی طبیعی ۰۹:۲۸Z + ابطال رسمی",
+  "orphanDevices": [
+   "poco-f3-420b75"
+  ]
+ },
+ "newEnrollment": {
+  "deviceId": "poco-f3-1c663e",
+  "label": "Poco F3",
+  "installCommand": "pkg install -y curl openssl jq && curl -fsSL \"https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=46a377085260db22d010ec9357ee6a0eb221\" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh",
+  "bootstrapUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=46a377085260db22d010ec9357ee6a0eb221",
+  "enrollExpires": "2026-10-12T10:38:53.015Z",
+  "validityMinutes": 30,
+  "singleUse": true,
+  "note": "کد یک‌بارمصرف ۳۰دقیقه‌ای است — اگر منقضی شد، مالک از تنظیمات ملکا (بخش رلهٔ موبایل) دکمهٔ راه‌اندازی را دوباره بزند؛ اکنون همان دکمه هم URL عمومی می‌سازد."
+ },
+ "files": [
+  "qr-install-command.png",
+  "qr-install-command.svg",
+  "regenerated.json"
+ ],
+ "verdict": "PASS — کد تازه از روت واقعی و از URL عمومی صادر شد"
+}

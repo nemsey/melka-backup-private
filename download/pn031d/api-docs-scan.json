@@ -1,0 +1,69 @@
+{
+  "ts": "20261013T130123Z",
+  "target": "arus-api.melketabriz.ir",
+  "paths": [
+    "/openapi.json",
+    "/swagger.json",
+    "/api/docs",
+    "/api/openapi",
+    "/api/v1/docs",
+    "/api/swagger",
+    "/api/explorer",
+    "/api"
+  ],
+  "results": [
+    {
+      "url": "https://arus-api.melketabriz.ir/openapi.json",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8010
+    },
+    {
+      "url": "https://arus-api.melketabriz.ir/swagger.json",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8388
+    },
+    {
+      "url": "https://arus-api.melketabriz.ir/api/docs",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8192
+    },
+    {
+      "url": "https://arus-api.melketabriz.ir/api/openapi",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8010
+    },
+    {
+      "url": "https://arus-api.melketabriz.ir/api/v1/docs",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8010
+    },
+    {
+      "url": "https://arus-api.melketabriz.ir/api/swagger",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8047
+    },
+    {
+      "url": "https://arus-api.melketabriz.ir/api/explorer",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8005
+    },
+    {
+      "url": "https://arus-api.melketabriz.ir/api",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8010
+    }
+  ],
+  "summary": {
+    "probed": 8,
+    "reachable": 0,
+    "reachableList": []
+  }
+}

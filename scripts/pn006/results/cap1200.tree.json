@@ -1,0 +1,55 @@
+{
+  "label": "cap1200",
+  "rootPid": 10545,
+  "peakMB": 2020.7,
+  "peakProcesses": 3,
+  "peakTop": [
+    {
+      "pid": 10547,
+      "rssMB": 1850.2,
+      "cmd": "node node_modules/.bin/next build --experimental-build-mode compile "
+    },
+    {
+      "pid": 10602,
+      "rssMB": 168.6,
+      "cmd": "node /home/z/my-project/.next/build/postcss.js 39809 "
+    },
+    {
+      "pid": 10545,
+      "rssMB": 1.9,
+      "cmd": "/bin/bash --noprofile --norc "
+    }
+  ],
+  "durationSec": 34.0,
+  "timeline": [
+    {
+      "t": 0.0,
+      "mb": 33.0
+    },
+    {
+      "t": 5.0,
+      "mb": 668.3
+    },
+    {
+      "t": 10.0,
+      "mb": 1003.5
+    },
+    {
+      "t": 15.0,
+      "mb": 1302.3
+    },
+    {
+      "t": 20.0,
+      "mb": 1380.6
+    },
+    {
+      "t": 25.0,
+      "mb": 1594.3
+    },
+    {
+      "t": 30.0,
+      "mb": 2020.7
+    }
+  ],
+  "finishedAt": "2026-10-06T05:45:55.187164+00:00"
+}

@@ -142,11 +142,11 @@ export function logAuth(operation: "login" | "logout" | "otp-failed", opts: { us
   });
 }
 
-/** رویداد همگام‌سازی — آغاز/پایان/شکست (روی هر دو مسیر legacy و incremental) */
-export function logSync(operation: "sync-run", opts: { status: LogStatus; mode: "legacy" | "incremental"; duration?: number | null; errorCode?: string | null; detail?: Record<string, unknown> } & Partial<LogEventInput>): void {
+/** رویداد همگام‌سازی — آغاز/پایان/شکست + رویدادهای قانون دادهٔ مقدس (PN-038/۱.۴) */
+export function logSync(operation: "sync-run" | "sacred-stale-report" | "sacred-reset-keep", opts: { status: LogStatus; mode?: "legacy" | "incremental"; duration?: number | null; errorCode?: string | null; detail?: Record<string, unknown> } & Partial<LogEventInput>): void {
   // PN-013/مرحلهٔ ۶ — متریک استاندارد sync.duration (فقط رویدادهای دارای مدت)
   if (typeof opts.duration === "number" && Number.isFinite(opts.duration)) {
-    recordMetric("sync.duration", opts.duration, { mode: opts.mode, status: opts.status });
+    recordMetric("sync.duration", opts.duration, { mode: opts.mode ?? "incremental", status: opts.status });
   }
   logEvent({
     category: "sync",
