@@ -40,6 +40,9 @@ import type { EnrichedCandidate, MatchSummary } from "@/core/matching/match-anal
 import { bucketOf, type MatchBucket } from "@/core/matching/match-analysis";
 import { MatchCard, matchPriceLabel } from "./MatchCard";
 import { MatchDetailsDialog } from "./MatchDetailsDialog";
+// PN-028/رابعاً — پروندهٔ حرفه‌ای (فایل درخواست/فایل آگهی) + دیالوگ رد با دلایل
+import { MatchFileSheet } from "./MatchFileSheet";
+import { MatchRejectDialog } from "./MatchRejectDialog";
 
 /* ───────── انواع پاسخ ───────── */
 
@@ -98,6 +101,10 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
   const [bucket, setBucket] = useState<MatchBucket>("hunt");
   const [feedback, setFeedback] = useState<Record<string, "accepted" | "rejected">>({});
   const [details, setDetails] = useState<EnrichedCandidate | null>(null);
+  // PN-028/رابعاً-الف/ب — پروندهٔ حرفه‌ای سطر مقابل (فایل درخواست/فایل آگهی)
+  const [fileSheet, setFileSheet] = useState<{ code: string; kind: "request" | "listing" } | null>(null);
+  // PN-028/رابعاً-ج — دیالوگ رد با دلایل ساختاریافته
+  const [rejectCandidate, setRejectCandidate] = useState<EnrichedCandidate | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showScores = settings.showReasons !== false;
 
@@ -197,15 +204,20 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
   const openInTile = useCallback(
     (code: string) => {
       const tileId = tab === "listing" ? "arm-requests" : "arm-listings";
-      openTile(tileId, "management-dashboard", { code });
+      openTile(tileId, null, { code }); // PN-038/فاز ۲: ظرف حذف شد — بازگشت به هوم
     },
     [tab, openTile],
   );
 
+  /** PN-028/رابعاً-الف/ب — باز کردن پروندهٔ حرفه‌ای کامل (فایل درخواست/فایل آگهی) */
+  const openFile = useCallback((code: string, kind: "request" | "listing") => {
+    setFileSheet({ code, kind });
+  }, []);
+
   const openSourceInTile = useCallback(() => {
     if (!result?.sourceInfo) return;
     const tileId = result.direction === "listing_to_request" ? "arm-listings" : "arm-requests";
-    openTile(tileId, "management-dashboard", { code: result.sourceInfo.code });
+    openTile(tileId, null, { code: result.sourceInfo.code }); // PN-038/فاز ۲
   }, [result, openTile]);
 
   const candidatesInBucket = useMemo(
@@ -394,7 +406,8 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
                             feedbackState={feedback[c.requestId]}
                             onDetails={setDetails}
                             onAccept={(x) => void sendFeedback(x, "accepted")}
-                            onReject={(x) => void sendFeedback(x, "rejected")}
+                            onReject={(x) => setRejectCandidate(x)}
+                            onOpenFile={openFile}
                             onOpenInTile={openInTile}
                           />
                         ))}
@@ -431,9 +444,32 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
         weightsUsed={result?.weightsUsed ?? {}}
         feedbackState={details ? feedback[details.requestId] : undefined}
         onAccept={(c) => { void sendFeedback(c, "accepted"); }}
-        onReject={(c) => { void sendFeedback(c, "rejected"); }}
-        onOpenInTile={openInTile}
+        onReject={(c) => { setDetails(null); setRejectCandidate(c); }}
+        onOpenFile={openFile}
         onClose={() => setDetails(null)}
+      />
+
+      {/* PN-028/رابعاً-الف/ب — پروندهٔ حرفه‌ای کامل: فایل درخواست / فایل آگهی */}
+      <MatchFileSheet
+        open={fileSheet !== null}
+        onOpenChange={(v) => { if (!v) setFileSheet(null); }}
+        kind={fileSheet?.kind ?? "request"}
+        code={fileSheet?.code ?? null}
+      />
+
+      {/* PN-028/رابعاً-ج — دیالوگ رد با دلایل ساختاریافته (چندانتخابی + سایر) */}
+      <MatchRejectDialog
+        open={rejectCandidate !== null}
+        onOpenChange={(v) => { if (!v) setRejectCandidate(null); }}
+        direction={result?.direction ?? "listing_to_request"}
+        listingCode={rejectCandidate?.listingCode ?? null}
+        requestCode={rejectCandidate?.info?.code ?? rejectCandidate?.requestId ?? null}
+        score={rejectCandidate?.score ?? null}
+        factors={(rejectCandidate?.analysis ?? []).map((f) => ({ factor: f.label, value: f.value }))}
+        onRejected={() => {
+          if (rejectCandidate) setFeedback((f) => ({ ...f, [rejectCandidate.requestId]: "rejected" }));
+          setRejectCandidate(null);
+        }}
       />
     </div>
   );

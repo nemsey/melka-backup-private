@@ -1,0 +1,24 @@
+{
+ "scenario": "H-large-sync",
+ "kind": "cmd",
+ "ts": "2026-10-05T18:54:38+0000",
+ "mem_available_before_mb": 487.1,
+ "next_server_rss_before_mb": 2943.1,
+ "command": [
+  "/usr/local/bin/bun",
+  "test",
+  "tests/phase65-b3-coverage10k.test.ts"
+ ],
+ "exit_code": 0,
+ "wall_ms": 441,
+ "tree_rss_peak_mb": 107.3,
+ "system_cpu_pct_avg": 226.8,
+ "free_min_mb": 416.1,
+ "srv_rss_peak_mb": 2943.1,
+ "oom_after": [],
+ "stdout_tail": "bun test v1.3.14 (0d9b296a)\n  [B.3-۲۱K] حفظ خام=100.0% · پوشش مشتق‌سازی=100.0% · مشتق‌پذیر=۵۰٬۷۴۲ · موفق=۵۰٬۷۴۲ · موبایل نامعتبر (رد صادقانه)=258 · نقض idempotency=0\n",
+ "stderr_tail": "\ntests/phase65-b3-coverage10k.test.ts:\n(pass) D.3 — پوشش مقیاس‌بستهٔ قواعد سه‌لایهٔ B.3 (۲۱K ردیف، seed ۱۴۰۵) > حفظ خام ۱۰۰٪ + پوشش مشتق‌سازی ≥ ۹۵٪ + idempotency + deterministic [350.78ms]\n\n 1 pass\n 0 fail\n 11 expect() calls\nRan 1 test across 1 file. [433.00ms]\n",
+ "mem_available_after_mb": 485.8,
+ "next_server_rss_after_mb": 2935.0,
+ "db_openers_after": 3
+}
