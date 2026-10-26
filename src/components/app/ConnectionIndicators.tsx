@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * نوار نشانگرهای اتصال — ده چراغ سبز/قرمز (P6546/گام صفر)
+ * نوار نشانگرهای اتصال — یازده چراغ سبز/قرمز (P6546/گام صفر + PN-046/گام صفر)
  * ------------------------------------------------------
  * هر اتصالِ تنظیم‌شده در تنظیمات عمومی، اینجا به‌صورت چراغ نشان داده می‌شود:
  * سبز = برقرار | قرمز = قطع — با تازه‌سازی خودکار هر ۶۰ ثانیه
  * ۱. حساب شخصی ARM  ۲. API ARM  ۳. حساب شخصی PM  ۴. API PM
  * ۵. سامانه عمومی ملک تبریز  ۶. API GAP
- * ۷. API دیوار  ۸. حساب شخصی دیوار  ۹. حساب اینستاگرام
+ * ۷. CRM ملکتون (ورود واقعی یوزر/پسورد — PN-046)  ۸. سایت عمومی ملکتون (PN-046)
+ * ۹. API دیوار  ۱۰. حساب شخصی دیوار  ۱۱. حساب اینستاگرام
  *
  * جلسهٔ ۰۳۳ (دستور مالک): چراغ «حساب GAP» حذف شد (بخش اتصال GAP هم از تنظیمات حذف شد).
  *
@@ -16,7 +17,7 @@
  *   variant="compact" → درون TileShell بالای همهٔ کاشی‌ها (نوار فشردهٔ چرخان)
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,8 @@ const LABELS_FA: Record<string, string> = {
   pmApi: "اتصال به api سامانه pm",
   melkPublicApi: "اتصال به سامانه عمومی ملک تبریز",
   gapApi: "اتصال به api سامانه gap",
+  melketunCrm: "اتصال به CRM ملکتون (حساب شخصی یوزر/پسورد)",
+  melketunPublic: "اتصال به سایت عمومی ملکتون",
   divarApi: "اتصال به api دیوار",
   divarAccount: "اتصال به حساب شخصی دیوار",
   instagramAccount: "اتصال به حساب اینستاگرام",
@@ -53,13 +56,15 @@ const LABELS_SHORT_FA: Record<string, string> = {
   pmApi: "API PM",
   melkPublicApi: "سامانه عمومی ملک",
   gapApi: "API GAP",
+  melketunCrm: "CRM ملکتون",
+  melketunPublic: "سایت عمومی ملکتون",
   divarApi: "API دیوار",
   divarAccount: "حساب دیوار",
   instagramAccount: "اینستاگرام",
 };
 
-/** ترتیب مالک: سامانه‌های ملک تبریز اول، سپس دیوار و اینستاگرام */
-const ORDER = ["armAccount", "armApi", "pmAccount", "pmApi", "melkPublicApi", "gapApi", "divarApi", "divarAccount", "instagramAccount"];
+/** ترتیب مالک: سامانه‌های ملک تبریز اول، سپس ملکتون (PN-046)، سپس دیوار و اینستاگرام */
+const ORDER = ["armAccount", "armApi", "pmAccount", "pmApi", "melkPublicApi", "gapApi", "melketunCrm", "melketunPublic", "divarApi", "divarAccount", "instagramAccount"];
 const TOTAL = ORDER.length;
 
 export function ConnectionIndicators({ variant = "full" }: { variant?: "full" | "compact" }) {
@@ -68,16 +73,23 @@ export function ConnectionIndicators({ variant = "full" }: { variant?: "full" | 
   const [indicators, setIndicators] = useState<IndicatorState[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
+  /** PN-028 — آیا دست‌کم یک بار دادهٔ نشانگرها دریافت شد (برای تلاش دوم بی‌صدا) */
+  const gotDataRef = useRef(false);
 
   const load = useCallback(
     async (silent = true) => {
       if (!silent) setLoading(true);
       try {
-        const res = await api<{ ok: boolean; indicators: IndicatorState[] }>("/api/indicators");
+        // PN-028/اولاً — مهلت کوتاه ۱۵ ثانیه (پیش از این ۹۰): نشانگرها هرگز نباید
+        // مرورگر را معلق کنند؛ سرور از این پس موازی/کش‌شده پاسخ فوری می‌دهد
+        const res = await api<{ ok: boolean; indicators: IndicatorState[] }>("/api/indicators", { timeoutMs: 15_000 });
         const sorted = [...res.indicators].sort((a, b) => ORDER.indexOf(a.key) - ORDER.indexOf(b.key));
         setIndicators(sorted);
+        gotDataRef.current = true;
         setLastRefresh(new Date().toISOString());
       } catch (err) {
+        // PN-028/اولاً — بارگذاری خودکار (بوت/تایمر ۶۰ث) هرگز toast خطا نمی‌دهد؛
+        // فقط کلیک صریح «بررسی» توسط کاربر، خطا را گزارش می‌کند
         if (!silent) {
           const e = err as ApiClientError;
           toast({ title: "خطا در بررسی اتصال‌ها", description: e.message, variant: "destructive" });
@@ -90,9 +102,16 @@ export function ConnectionIndicators({ variant = "full" }: { variant?: "full" | 
   );
 
   useEffect(() => {
-    void load(false);
+    // PN-028/اولاً — نخستین بار بی‌صدا؛ در شکست گذرا، یک تلاش دوم بعد از ۵ ثانیه
+    void load(true);
+    const retryTimer = setTimeout(() => {
+      if (!gotDataRef.current) void load(true);
+    }, 5_000);
     const timer = setInterval(() => void load(true), 60_000);
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(retryTimer);
+      clearInterval(timer);
+    };
   }, [load]);
 
   const connectedCount = indicators?.filter((i) => i.connected).length ?? 0;
