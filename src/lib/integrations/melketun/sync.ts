@@ -922,25 +922,44 @@ export async function syncMelketun(): Promise<SyncResult> {
     //    تنظیمات → اتصال به ملکتون) همین مسیر همهٔ رکوردها را پوشش می‌دهد.
     //    شکست نماها هرگز سینک عمومی را نمی‌شکند (بهترین-تلاش — بی‌صدا). ──
     try {
-      const privFilings = await fetchModule(
-        base, jar,
+      // PN-054 (قانون مالک: «استخراج داده‌ها به هر شکل ممکن»): نماهای خصوصی
+      // و مخاطبین در انتهای خزش ~۱۰۰ صفحه‌ای عمومی فراخوانی می‌شوند — دقیقاً
+      // جایی که CRM بیشترین فشار را دیده و rate-limit گذرا می‌دهد (شاهد:
+      // سینک ۰۷:۲۷ امروز → privateFilings=0 و مخاطبین ۴۵ از ۵۳، در حالی که
+      // همان اندپوینت با ورود تازه ۵۳ ردیف داد). درمان: هر نمای خصوصی که
+      // «با خطا» خالی برگشت، یک‌بار با ورودِ تازه (نشست سبک) دوباره واکشی
+      // می‌شود؛ خطاها نیز دیگر در آرایهٔ دورریز بلعیده نمی‌شوند و در رویداد
+      // لاگِ ادغام ثبت می‌شوند (قانون ۱۴ — گزارش صادقانه).
+      const fetchPriv = async (
+        pagePath: (n: number) => string,
+        propKey: string,
+      ): Promise<{ rows: InertiaRow[]; badPages: number[]; retried: string }> => {
+        const errs: string[] = [];
+        let r = await fetchModule(base, jar, pagePath, propKey, errs);
+        let retried = "";
+        if (r.rows.length === 0 && errs.length > 0) {
+          retried = errs.join(" · ").slice(0, 120);
+          await sleep(2_500); // خنک‌سازی rate-limit پیش از تلاش دوم
+          const jar2 = await crmLogin(base, username, password, []);
+          r = await fetchModule(base, jar2, pagePath, propKey, errs);
+        }
+        return { rows: r.rows, badPages: r.badPages, retried };
+      };
+      const privFilings = await fetchPriv(
         (n) => `/Melketunfilingplus${n > 1 ? `/${n}` : ""}`,
-        "filings", [],
+        "filings",
       );
-      const privPotentials = await fetchModule(
-        base, jar,
+      const privPotentials = await fetchPriv(
         (n) => `/Potentials${n > 1 ? `/${n}` : ""}`,
-        "potentials", [],
+        "potentials",
       );
-      const contactsFilings = await fetchModule(
-        base, jar,
+      const contactsFilings = await fetchPriv(
         (n) => `/contacts/filings${n > 1 ? `/${n}` : ""}`,
-        "contacts", [],
+        "contacts",
       );
-      const contactsPotentials = await fetchModule(
-        base, jar,
+      const contactsPotentials = await fetchPriv(
         (n) => `/contacts/potentials${n > 1 ? `/${n}` : ""}`,
-        "contacts", [],
+        "contacts",
       );
 
       // نقشه‌های ادغام — کلید: id (فضای مشترک vtiger '71x…'/'13x…') + fallback کد
@@ -1008,6 +1027,12 @@ export async function syncMelketun(): Promise<SyncResult> {
         status: "ok",
         detail: {
           privateFilings: privFilings.rows.length,
+          retriedViews: [
+            privFilings.retried,
+            privPotentials.retried,
+            contactsFilings.retried,
+            contactsPotentials.retried,
+          ].filter(Boolean),
           mergedFilings,
           privatePotentials: privPotentials.rows.length,
           mergedPots,
