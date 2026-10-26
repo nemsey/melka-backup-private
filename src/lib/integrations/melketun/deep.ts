@@ -158,8 +158,8 @@ export async function syncMelketunDeep(): Promise<DeepSyncResult> {
   ]).catch(() => [[], []] as [{ id: string }[], { id: string }[]]);
 
   // فیلتر در حافظه (notIn بزرگ در SQLite پرهزینه است — فیلتر نرم پس از fetch)
-  const potQueue = potentials.map((p) => p.id).filter((id) => !doneSet.has(id) && !brokenSet.has(id));
-  const filQueue = filings.map((f) => f.id).filter((id) => !doneSet.has(id) && !brokenSet.has(id));
+  const potQueue = potentials.map((p) => p.id).filter((id) => !doneSet.has(id) && !brokenSet.has(id)).slice(0, PER_CYCLE_CAP);
+  const filQueue = filings.map((f) => f.id).filter((id) => !doneSet.has(id) && !brokenSet.has(id)).slice(0, PER_CYCLE_CAP);
 
   if (!potQueue.length && !filQueue.length) {
     result.durationMs = Date.now() - t0;
