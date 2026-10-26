@@ -36,7 +36,6 @@ import { syncMelkPublicCatalog } from "./melk-public";
 import { syncTypeRegistries } from "./type-registry";
 // PN-010 — کانال وضعیت مشترک Worker (فقط fs/path — بدون چرخهٔ وابستگی)
 import { readWorkerStatus } from "@/core/runtime/worker-status";
-// PN-029 — حالت آفلینی ملک تبریز (توقف تلاشهای خودکار)
 
 /** فاصلهٔ پیش‌فرض تیک‌ها — دقیقه (PN-002 نکته ۵: لغو محدودیت — ۳→۱) */
 const DEFAULT_INTERVAL_MINUTES = 1;
@@ -273,54 +272,40 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
         }
       }
         // برش محدود فهرست آگهی‌ها + درخواست‌ها (هر دو checkpointدار — ازسرگیری خودکار)
-        // PN-039 (گام ۲) — تناوب ترتیب برش‌ها: تیک‌های فرد «درخواست‌ها» جلو می‌افتند
-        // (ریشهٔ قحطی: درخواست‌ها همیشه پشت موج آگهی‌ها بودند و TTLخور می‌شدند)
-        const runListingsSlice = async () => {
-          try {
-            const lres = await syncArmListingsCatalog(armTokens.accessToken, { maxPages: PAGES_PER_TICK });
-            result.listingsPages = lres.pages;
-            await jobs.upsert({
-              jobId: JOB_IDS.catalogListings,
-              jobKind: "catalog",
-              status: lres.checkpoint?.phase === "complete" ? "done" : "running",
-              lastCompletedPage: lres.checkpoint?.lastCompletedPage ?? 0,
-              totalPages: lres.checkpoint?.totalPages ?? 0,
-              detail: { pages: lres.pages, created: lres.created, updated: lres.updated, resumedFromPage: lres.resumedFromPage, cycleId: lres.cycleId },
-            });
-            // P6545/BLOCK 1.4 — رویداد فرصت برای آگهی‌های تازه (صفر اجرای خودکار)
-            if (lres.created > 0) await emitEvent("listing.created", { created: lres.created, pages: lres.pages, cycleId: lres.cycleId });
-          } catch (e) {
-            s.status.lastError = (e as { code?: string })?.code ?? "LISTINGS_SLICE_FAILED";
-            s.consecutiveFails += 1;
-            await jobs.upsert({ jobId: JOB_IDS.catalogListings, jobKind: "catalog", status: "failed", detail: { error: s.status.lastError } }).catch(() => {});
-          }
-        };
-        const runRequestsSlice = async () => {
-          try {
-            const rres = await syncArmRequestsCatalog(armTokens.accessToken, { maxPages: PAGES_PER_TICK });
-            result.requestsPages = rres.pages;
-            await jobs.upsert({
-              jobId: JOB_IDS.catalogRequests,
-              jobKind: "catalog",
-              status: rres.checkpoint?.phase === "complete" ? "done" : "running",
-              lastCompletedPage: rres.checkpoint?.lastCompletedPage ?? 0,
-              totalPages: rres.checkpoint?.totalPages ?? 0,
-              detail: { pages: rres.pages, created: rres.created, updated: rres.updated, resumedFromPage: rres.resumedFromPage, cycleId: rres.cycleId },
-            });
-            if (rres.created > 0) await emitEvent("request.created", { created: rres.created, pages: rres.pages, cycleId: rres.cycleId });
-          } catch (e) {
-            s.status.lastError = (e as { code?: string })?.code ?? "REQUESTS_SLICE_FAILED";
-            s.consecutiveFails += 1;
-            await jobs.upsert({ jobId: JOB_IDS.catalogRequests, jobKind: "catalog", status: "failed", detail: { error: s.status.lastError } }).catch(() => {});
-          }
-        };
-        if (s.status.ticks % 2 === 1) {
-          // تیک فرد: درخواست‌ها اول — پایان گرسنگی ساختاری (PN-039/گام ۲)
-          await runRequestsSlice();
-          await runListingsSlice();
-        } else {
-          await runListingsSlice();
-          await runRequestsSlice();
+        try {
+          const lres = await syncArmListingsCatalog(armTokens.accessToken, { maxPages: PAGES_PER_TICK });
+          result.listingsPages = lres.pages;
+          await jobs.upsert({
+            jobId: JOB_IDS.catalogListings,
+            jobKind: "catalog",
+            status: lres.checkpoint?.phase === "complete" ? "done" : "running",
+            lastCompletedPage: lres.checkpoint?.lastCompletedPage ?? 0,
+            totalPages: lres.checkpoint?.totalPages ?? 0,
+            detail: { pages: lres.pages, created: lres.created, updated: lres.updated, resumedFromPage: lres.resumedFromPage, cycleId: lres.cycleId },
+          });
+          // P6545/BLOCK 1.4 — رویداد فرصت برای آگهی‌های تازه (صفر اجرای خودکار)
+          if (lres.created > 0) await emitEvent("listing.created", { created: lres.created, pages: lres.pages, cycleId: lres.cycleId });
+        } catch (e) {
+          s.status.lastError = (e as { code?: string })?.code ?? "LISTINGS_SLICE_FAILED";
+          s.consecutiveFails += 1;
+          await jobs.upsert({ jobId: JOB_IDS.catalogListings, jobKind: "catalog", status: "failed", detail: { error: s.status.lastError } }).catch(() => {});
+        }
+        try {
+          const rres = await syncArmRequestsCatalog(armTokens.accessToken, { maxPages: PAGES_PER_TICK });
+          result.requestsPages = rres.pages;
+          await jobs.upsert({
+            jobId: JOB_IDS.catalogRequests,
+            jobKind: "catalog",
+            status: rres.checkpoint?.phase === "complete" ? "done" : "running",
+            lastCompletedPage: rres.checkpoint?.lastCompletedPage ?? 0,
+            totalPages: rres.checkpoint?.totalPages ?? 0,
+            detail: { pages: rres.pages, created: rres.created, updated: rres.updated, resumedFromPage: rres.resumedFromPage, cycleId: rres.cycleId },
+          });
+          if (rres.created > 0) await emitEvent("request.created", { created: rres.created, pages: rres.pages, cycleId: rres.cycleId });
+        } catch (e) {
+          s.status.lastError = (e as { code?: string })?.code ?? "REQUESTS_SLICE_FAILED";
+          s.consecutiveFails += 1;
+          await jobs.upsert({ jobId: JOB_IDS.catalogRequests, jobKind: "catalog", status: "failed", detail: { error: s.status.lastError } }).catch(() => {});
         }
         // برش غنی‌سازی (تماس مالک/متقاضی + مناطق + قیمت + دسته‌بندی)
         try {

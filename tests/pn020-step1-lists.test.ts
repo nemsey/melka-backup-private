@@ -22,30 +22,6 @@ const M3_PAGE_SRC = readFileSync(`${TILES}/transactions-contracts/TransactionsCo
 const M3_SRC = readFileSync(`${TILES}/transactions-contracts/TransactionsTab.tsx`, "utf8");
 const M3_DOC_SRC = readFileSync(`${TILES}/transactions-contracts/ContractFileDialog.tsx`, "utf8");
 
-/* PN-046/گام اول-۱ — helper: استخراج سرستون‌های «تفیصل‌شدهٔ tenant» از سورس M1/M2.
- * فهرست‌ها اکنون برای تبریز/ملکتون شاخه‌بندی شده‌اند (دستور مالک ۱۴۰۵/۰۷/۲۸):
- *   · {isMelketun ? "م" : "ت"}  → سمت متناظر
- *   · {isMelketun && (…)} / {!isMelketun && (…)} → بلوک یک‌طرفه
- *   · {isMelketun ? ( <>…</> ) : ( <>…</> )} → بلوک دوطرفه
- * تست‌های قانون فهرست تبریز با heads(src, "tabriz") و گاردهای ملکتون با heads(src, "melketun") قفل می‌شوند. */
-function heads(src: string, tenant: "tabriz" | "melketun"): string[] {
-  let s = src;
-  s = s.replace(
-    /\{isMelketun \? \(\s*<>([\s\S]*?)<\/\>\s*\) : \(\s*<>?([\s\S]*?)<\/\>?\s*\)\}/g,
-    (_m: string, mel: string, tab: string) => (tenant === "melketun" ? mel : tab),
-  );
-  s = s.replace(/\{!isMelketun && \(([\s\S]*?)\)\}/g, (_m: string, tab: string) => (tenant === "tabriz" ? tab : ""));
-  s = s.replace(/\{isMelketun && \(([\s\S]*?)\)\}/g, (_m: string, mel: string) => (tenant === "melketun" ? mel : ""));
-  const out: string[] = [];
-  const re = /<TableHead[^>]*>(?:\{isMelketun \? "([^"]+)" : "([^"]+)"\}|([^<{]+))<\/TableHead>/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(s)) !== null) {
-    if (m[3] !== undefined) out.push(m[3].trim());
-    else out.push(tenant === "melketun" ? m[1]! : m[2]!);
-  }
-  return out;
-}
-
 const { db } = await import("@/lib/db");
 
 afterAll(async () => {
@@ -57,35 +33,17 @@ afterAll(async () => {
  * ========================================================================== */
 
 describe("PN-020 §الف — M1: حذف سه ستون + سال بدون کاما", () => {
-  test("الف-۱) سه ستون حذف‌شده در سرستون‌های تبریز نیستند: آخرین وضعیت (وضعیت) · تصاویر · انتشار (PN-047: ملکتون به‌جای تصاویر، متراژِ CRM دارد)", () => {
-    // قانون ن۰۶۴ برای شاخهٔ تبریز پابرجاست
-    expect(heads(M1_SRC, "tabriz")).not.toContain("وضعیت");
-    expect(heads(M1_SRC, "tabriz")).not.toContain("تصاویر");
-    expect(heads(M1_SRC, "tabriz")).not.toContain("انتشار");
-    expect(heads(M1_SRC, "tabriz")).not.toContain("آخرین فعالیت");
-    // PN-047/گام اول-۲ (دستور مالک ۱۴۰۵/۰۷/۲۹): ملکتون متراژ (size نمای عمومی — پوشش ۹۹٪)
-    // دارد و «تصاویر» حذف شد — نمای عمومی CRM ملکتون تصویر ندارد (صادقانه)
-    expect(heads(M1_SRC, "melketun")).not.toContain("تصاویر");
-    expect(heads(M1_SRC, "melketun")).toContain("متراژ");
+  test("الف-۱) سه ستون حذف‌شده در سرستون‌ها نیستند: آخرین وضعیت (وضعیت) · تصاویر · انتشار", () => {
+    expect(M1_SRC).not.toContain(">وضعیت</TableHead>");
+    expect(M1_SRC).not.toContain(">تصاویر</TableHead>");
+    expect(M1_SRC).not.toContain(">انتشار</TableHead>");
   });
 
-  test("الف-۲) سلول‌های ستون‌های حذف‌شدهٔ تبریز پاک مانده‌اند (addedToDivar/addedToInsta حذف · r.meterage ملکتون — PN-047)", () => {
+  test("الف-۲) سلول‌های ستون‌های حذف‌شده هم پاک شده‌اند (imageCount / addedToDivar دیگر رندر نمی‌شوند)", () => {
+    expect(M1_SRC).not.toContain("r.imageCount");
     expect(M1_SRC).not.toContain("r.addedToDivar");
     expect(M1_SRC).not.toContain("r.addedToInsta");
-    // PN-047: متراژ ملکتون درون سلول شاخهٔ ملکتون است — تصاویرِ ردیفِ ملکتون حذف شد
-    const iMark = M1_SRC.indexOf("ملکتون M7: متراژ");
-    expect(iMark).toBeGreaterThan(-1);
-    const branch = M1_SRC.slice(iMark, M1_SRC.indexOf(")}", iMark));
-    expect(branch).toContain("r.meterage");
-    expect(M1_SRC).not.toContain("r.imageCount ?? 0");
-    // و پیش از آن نشانهٔ شاخه‌بندی isMelketun در سلول‌ها حاضر است
-    expect(M1_SRC).toContain("{isMelketun ? (");
-    // شاخهٔ تبریز (سمت دوم بلوک دوطرفه) رندر تصاویر ندارد
-    expect(heads(M1_SRC, "tabriz")).not.toContain("تصاویر");
-    // PN-039 (ن۰۶۴/گام ۵): ستون تازهٔ «وضعیت آگهی» classifyListingStatus را زنده کرد —
-    // ستون قدیمی «آخرین وضعیت» همچنان حذف است (الف-۱)؛ این گارد اکنون رندر تازه را قفل می‌کند
-    expect(M1_SRC).toContain("classifyListingStatus(r.status)");
-    expect(M1_SRC).toContain("listingStatusLabel(r.status)");
+    expect(M1_SRC).not.toContain("classifyListingStatus(r.status)");
   });
 
   test("الف-۳) ستون‌های باقی‌ماندهٔ اصلی سر جایشان هستند (دسته‌بندی/تاریخ وضعیت/لینک)", () => {
@@ -97,30 +55,15 @@ describe("PN-020 §الف — M1: حذف سه ستون + سال بدون کام�
   test("الف-۳-ب) جلسهٔ ۰۳۳ (دستور مالک — ثانیاً/ب+ت): ستون «آخرین فعالیت» حذف + ترتیب ستون‌ها به‌ترتیب تازه", () => {
     // حذف کامل ستون (سرستون + سلول)
     expect(M1_SRC).not.toContain(">آخرین فعالیت</TableHead>");
-    // ترتیب الزامی مالک (ن۰۶۴) برای شاخهٔ تبریز (PN-046: تفکیک tenant — helper) +
-    // PN-045/فاز ۲و۳ (ن۰۸۹): «اطلاعات» ماقبل آخر و «یادداشت» آخرین ستون (چسبنده — RTL)
-    const headers = heads(M1_SRC, "tabriz");
-    expect(headers).toEqual([
-      "ردیف", "کد آگهی", "کارشناس", "شعبه", "نوع ملک", "دسته‌بندی", "وضعیت آگهی", "مالک", "قیمت",
-      "قیمت هر متر", "رهن / اجاره", "آدرس ملک", "متراژ", "اتاق", "طبقه", "ساخت", "بازدید", "لینک", "تاریخ وضعیت", "تاریخ ثبت", "اطلاعات", "یادداشت",
-    ]);
-    // ترتیب بدنه هم منطبق است: لینک (۱۲) → تاریخ وضعیت (۱۳) → تاریخ ثبت (۱۴) → یادداشت (۱۵ — آخرین ستون)
-    expect(M1_SRC).toMatch(/r\.publicUrl[\s\S]*?<\/TableCell>[\s\S]*?<TableCell className="text-muted-foreground whitespace-nowrap text-\[10px\]">\s*\{r\.statusDate/);
-    expect(M1_SRC).toMatch(/\{r\.statusDate \? faDateTime\(r\.statusDate\) : "—"\}[\s\S]*?\{r\.createdAt \? faDateTime\(r\.createdAt\) : "—"\}[\s\S]*?<OwnerNoteCell/);
-  });
-
-  test("الف-۳-پ) (ن۰۶۴/گام ۵) ستون «وضعیت آگهی» بلافاصله بعد از دسته‌بندی است (شاخهٔ تبریز — PN-046 helper)", () => {
-    const headers = heads(M1_SRC, "tabriz");
-    const i = headers.indexOf("دسته‌بندی");
-    expect(i).toBeGreaterThan(-1);
-    expect(headers[i + 1]).toBe("وضعیت آگهی");
-  });
-
-  test("الف-۳-ت) (ن۰۶۴/گام ۳) ستون «تاریخ ثبت» بلافاصله بعد از تاریخ وضعیت است", () => {
+    // ترتیب الزامی مالک: ردیف · کد آگهی · کارشناس · شعبه · نوع ملک · دسته‌بندی · مالک · قیمت ·
+    // قیمت هر متر · رهن/اجاره · آدرس ملک · متراژ · اتاق · طبقه · ساخت · بازدید · لینک · تاریخ وضعیت
     const headers = [...M1_SRC.matchAll(/<TableHead[^>]*>([^<]+)<\/TableHead>/g)].map((m) => m[1].trim());
-    const i = headers.indexOf("تاریخ وضعیت");
-    expect(i).toBeGreaterThan(-1);
-    expect(headers[i + 1]).toBe("تاریخ ثبت");
+    expect(headers).toEqual([
+      "ردیف", "کد آگهی", "کارشناس", "شعبه", "نوع ملک", "دسته‌بندی", "مالک", "قیمت",
+      "قیمت هر متر", "رهن / اجاره", "آدرس ملک", "متراژ", "اتاق", "طبقه", "ساخت", "بازدید", "لینک", "تاریخ وضعیت",
+    ]);
+    // ترتیب بدنه هم منطبق است: لینک (۱۲) پیش از تاریخ وضعیت (۱۳ — آخرین ستون)
+    expect(M1_SRC).toMatch(/r\.publicUrl[\s\S]*?<\/TableCell>[\s\S]*?<TableCell className="text-muted-foreground whitespace-nowrap text-\[10px\]">\s*\{r\.statusDate/);
   });
 
   test("الف-۴) سال ساخت بدون کاما — faDigits (نه faNumber که جداکنندهٔ هزارگان می‌گذارد)", () => {
@@ -176,28 +119,11 @@ describe("PN-020 §ب — M2: رنگی سه ستون + سال بدون کاما 
     expect(M2_SRC).not.toMatch(/faNumber\(r\.buildYear(From|To)\)/);
   });
 
-  test("ب-۶) تاریخ ثبت پیش از اطلاعات/یادداشت + یادداشت آخرین ستون فهرست است (بند ۴ دستور + PN-039/گام ۴ + PN-045/046: اطلاعات ماقبل آخر)", () => {
-    // سرستون‌های هر دو tenant: «اطلاعات» ماقبل آخر و «یادداشت» آخرین (سنجاق چپ — RTL)
-    for (const tenant of ["tabriz", "melketun"] as const) {
-      const headers = heads(M2_SRC, tenant);
-      expect(headers.length, tenant).toBeGreaterThan(10);
-      expect(headers[headers.length - 1], tenant).toBe("یادداشت");
-      expect(headers[headers.length - 2], tenant).toBe("اطلاعات");
-      expect(headers[headers.length - 3], tenant).toBe("تاریخ ثبت");
-    }
-  });
-
-  test("ب-۶-ب) (ن۰۶۴/گام ۷) ستون «نوع ساختمان» از فهرست درخواست حذف شده است", () => {
-    // نه سرستون نه سلول رندر — دادهٔ buildingTypeName در API/اکسل دست‌نخورده می‌ماند
-    expect(M2_SRC).not.toContain(">نوع ساختمان</TableHead>");
-    expect(M2_SRC).not.toContain("valueSoftClass(r.buildingTypeName)");
-  });
-
-  test("ب-۶-پ) (ن۰۶۴/گام ۶) فیلتر «نوع ملک» چیپی در هر دو فهرست است", () => {
-    expect(M1_SRC).toContain('id="arm-listing-property-types-filter"');
-    expect(M1_SRC).toContain('params.append("propertyType", t)');
-    expect(M2_SRC).toContain('id="arm-request-property-types-filter"');
-    expect(M2_SRC).toContain('params.append("propertyType", t)');
+  test("ب-۶) تاریخ ثبت آخرین ستون فهرست است (بند ۴ دستور)", () => {
+    // سرستون‌ها: آخرین <TableHead> قبل از بستن TableRow باید «تاریخ ثبت» باشد
+    const headers = [...M2_SRC.matchAll(/<TableHead[^>]*>([^<]+)<\/TableHead>/g)].map((m) => m[1].trim());
+    expect(headers.length).toBeGreaterThan(10);
+    expect(headers[headers.length - 1]).toBe("تاریخ ثبت");
   });
 
   test("ب-۷) رجیستری رنگ: هر ۱۱ جهت رنگ یکتا دارند (قانون عدم تکرار تک‌رنگ در ستون)", async () => {

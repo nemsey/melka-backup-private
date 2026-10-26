@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ملکا — آفلاین</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root { color-scheme: light dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Vazirmatn, "Noto Sans Arabic", Tahoma, sans-serif;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #f7f5ef; color: #1c2b33;
+    padding: 24px; text-align: center;
+  }
+  @media (prefers-color-scheme: dark) { body { background: #10171c; color: #e8ede9; } }
+  .card {
+    max-width: 420px; width: 100%;
+    background: rgba(255,255,255,.86);
+    border: 1px solid rgba(28,43,51,.14);
+    border-radius: 20px;
+    padding: 40px 28px;
+    box-shadow: 0 12px 40px rgba(28,43,51,.08);
+  }
+  @media (prefers-color-scheme: dark) { .card { background: rgba(23,32,38,.9); border-color: rgba(232,237,233,.14); } }
+  .mark {
+    width: 64px; height: 64px; margin: 0 auto 18px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #0f766e, #134e4a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 800; color: #fbbf24;
+  }
+  h1 { font-size: 19px; margin-bottom: 10px; }
+  p { font-size: 13.5px; line-height: 2; opacity: .82; margin-bottom: 8px; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:#f59e0b; margin-inline-start:6px; vertical-align:middle; }
+  button {
+    margin-top: 14px; cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    padding: 11px 26px; border-radius: 12px; border: 0;
+    background: linear-gradient(135deg, #0f766e, #115e59); color: #fff;
+  }
+  button:active { transform: scale(.98); }
+  .hint { font-size: 11.5px; opacity: .6; margin-top: 14px; }
+</style>
+</head>
+<body>
+  <main class="card" role="main">
+    <div class="mark" aria-hidden="true">م</div>
+    <h1>اتصال شبکه قطع است<span class="dot" aria-hidden="true"></span></h1>
+    <p>ملکا اکنون آفلاین است و به سامانهٔ ملک تبریز دسترسی ندارد.</p>
+    <p>این صفحه از کش مرورگر خوانده می‌شود — به‌محض بازگشت اینترنت، دوباره تلاش کنید؛ داده‌های حساس هرگز روی دستگاه کش نمی‌شوند.</p>
+    <button onclick="location.replace('/')">تلاش دوباره</button>
+    <p class="hint">اکوسیستم هوشمند ملک ایران — ملکا</p>
+  </main>
+  <script>
+    /* بازگشت خودکار هنگام وصل شدن شبکه — بدون تداخل با تعامل کاربر */
+    window.addEventListener("online", function () { location.replace("/"); });
+    /* تلاش دوره‌ای هر ۱۵ ثانیه (فقط تا وقتی این صفحه باز است) */
+    var timer = setInterval(function () {
+      fetch("/api/health", { cache: "no-store" }).then(function (r) { if (r.ok) { clearInterval(timer); location.replace("/"); } }).catch(function () {});
+    }, 15000);
+  </script>
+</body>
+</html>
