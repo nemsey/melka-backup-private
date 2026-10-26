@@ -156,13 +156,6 @@ describe("HOTFIX-01 — چرخش کلید رمزنگاری (rotateEncryptionKeys
     const { __internal } = await import("@/lib/auth/key-rotation");
     const { db } = await import("@/lib/db");
 
-    // PN-031-E — ایزوله‌سازی سوئیت (الگوی مستقر phase65): مقادیر رمزنگاری‌شدهٔ سوئیت‌های
-    // دیگر (با کلید خودشان) چرخش را «unreadable» و گزارش را ok=false می‌کنند —
-    // ترتیب اجرای فایل‌ها پس از بازنشانی محیط عوض شده بود و این تست ترتیب-وابسته شده بود.
-    await db.armConnection.deleteMany({}).catch(() => undefined);
-    await db.divarConnection.deleteMany({}).catch(() => undefined);
-    await db.pmConnection.deleteMany({}).catch(() => undefined);
-
     // رمزنگاری یک توکن نمونه با کلید قدیمی (عین فرمت سرور)
     const oldKeyBuf = __internal.keyFromSecret(OLD_KEY);
     const plaintext = "eyJhbGciOiJIUzI1NiJ9.arm-rotation-test-token";

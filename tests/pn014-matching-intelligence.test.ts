@@ -195,7 +195,7 @@ describe("PN-014 — ۷: غنی‌سازی سرتاسری (قرارداد سرو
         { ...cand({ score: 0.8 }), listingCode: "L1", requestLabel: "خرید آپارتمان ولیعصر" },
         { ...cand({ score: 0.55, requestId: "r2", signalCoverage: 0.4 }), requestLabel: "خرید ویلا" },
       ],
-      weightsUsed: { priceDistance: 0.25, geoProximity: 0.15, meterageFit: 0.2, freshness: 0.15, expertHistory: 0.1, propertyTypeMatch: 0.15, roomsFit: 0.05, floorFit: 0.04, buildAgeFit: 0.04 },
+      weightsUsed: { priceDistance: 0.25, geoProximity: 0.15, meterageFit: 0.2, freshness: 0.15, expertHistory: 0.1, propertyTypeMatch: 0.15 },
       tier: 3,
       evaluatedAt: new Date().toISOString(),
       weightsSource: "base",
