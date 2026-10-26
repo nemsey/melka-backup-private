@@ -197,16 +197,18 @@ export async function syncMelketunDeep(): Promise<DeepSyncResult> {
       }
 
       // ادغام مالک از relatedFilings (هر آگهی مرتبط)
+      // ⚠️ نگاشت ستون‌ها: rawOwnerName = مالک واقعی · ownerName = کارشناس
+      // (لایهٔ repository: realtorName←ownerName · ownerName←rawOwnerName)
       for (const f of rf) {
         const fid = String(f.id ?? "");
         const ownerName = String(f.ownerName ?? "").trim();
         const phone = String(f.phone ?? "").replace(/\D/g, "");
         if (!fid || (!ownerName && phone.length < 10)) continue;
         try {
-          const existing = await db.propertyRecord.findUnique({ where: { id: fid }, select: { ownerName: true, ownerMobile: true, tenantId: true } });
+          const existing = await db.propertyRecord.findUnique({ where: { id: fid }, select: { rawOwnerName: true, ownerMobile: true, tenantId: true } });
           if (!existing || existing.tenantId !== "melketun") continue;
           const pdata: Record<string, string> = {};
-          if (!existing.ownerName && ownerName) pdata.ownerName = ownerName;
+          if (!existing.rawOwnerName && ownerName) pdata.rawOwnerName = ownerName;
           if (!existing.ownerMobile && phone.length >= 10) pdata.ownerMobile = phone;
           if (Object.keys(pdata).length) {
             await db.propertyRecord.update({ where: { id: fid }, data: pdata });
@@ -253,7 +255,8 @@ export async function syncMelketunDeep(): Promise<DeepSyncResult> {
       const ownerAddress = val(f, "cf_1685");
 
       const data: Record<string, string> = {};
-      if (ownerName) data.ownerName = ownerName;
+      // ⚠️ نگاشت ستون‌ها: rawOwnerName = مالک واقعی · ownerName = کارشناس (دست‌نخورده)
+      if (ownerName) data.rawOwnerName = ownerName;
       if (ownerMobile.length >= 10) data.ownerMobile = ownerMobile;
       const existing = await db.propertyRecord.findUnique({ where: { id: fid }, select: { address: true } });
       if (ownerAddress && !existing?.address) data.address = ownerAddress;

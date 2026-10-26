@@ -106,15 +106,16 @@ const report = {
 // ─── ۲) آگهی‌ها (PropertyRecord) ───
 {
   // الف) مستقیم از filing-details
+  // ⚠️ نگاشت ستون‌ها: rawOwnerName = مالک واقعی · ownerName = کارشناس (دست‌نخورده)
   const ids = [...filMap.keys()];
   for (let i = 0; i < ids.length; i++) {
     const fid = ids[i];
     const r = filMap.get(fid)!;
     try {
-      const existing = await db.propertyRecord.findUnique({ where: { id: fid }, select: { ownerName: true, ownerMobile: true, address: true, tenantId: true } });
+      const existing = await db.propertyRecord.findUnique({ where: { id: fid }, select: { rawOwnerName: true, ownerMobile: true, address: true, tenantId: true } });
       if (!existing || existing.tenantId !== "melketun") continue;
       const data: Record<string, string> = {};
-      if (r.ownerName) data.ownerName = r.ownerName;
+      if (r.ownerName) data.rawOwnerName = r.ownerName;
       if (r.ownerMobile?.length >= 10) data.ownerMobile = r.ownerMobile;
       if (r.ownerAddress && !existing.address) data.address = r.ownerAddress;
       if (Object.keys(data).length) {
@@ -130,6 +131,7 @@ const report = {
   }
 
   // ب) غیرمستقیم از relatedFilings — فقط آگهی‌هایی که هنوز مالک/موبایل ندارند
+  // ⚠️ rawOwnerName = مالک واقعی · ownerName (کارشناس) دست‌نخورده می‌ماند
   const relIds = [...ownerFromRelated.keys()];
   for (let i = 0; i < relIds.length; i++) {
     const key = relIds[i];
@@ -137,11 +139,11 @@ const report = {
     try {
       // کلید = id (71x...) یا filingNo (ME...) — propertyCode یکتای سراسری است
       const existing = key.startsWith("71x")
-        ? await db.propertyRecord.findUnique({ where: { id: key }, select: { id: true, ownerMobile: true, ownerName: true, tenantId: true } })
-        : (await db.propertyRecord.findUnique({ where: { propertyCode: key }, select: { id: true, ownerMobile: true, ownerName: true, tenantId: true } }));
+        ? await db.propertyRecord.findUnique({ where: { id: key }, select: { id: true, rawOwnerName: true, ownerMobile: true, tenantId: true } })
+        : (await db.propertyRecord.findUnique({ where: { propertyCode: key }, select: { id: true, rawOwnerName: true, ownerMobile: true, tenantId: true } }));
       if (!existing || existing.tenantId !== "melketun") continue;
       const data: Record<string, string> = {};
-      if (!existing.ownerName && info.ownerName) data.ownerName = info.ownerName;
+      if (!existing.rawOwnerName && info.ownerName) data.rawOwnerName = info.ownerName;
       if (!existing.ownerMobile && info.ownerMobile?.length >= 10) data.ownerMobile = info.ownerMobile;
       if (Object.keys(data).length) {
         await db.propertyRecord.update({ where: { id: existing.id }, data });

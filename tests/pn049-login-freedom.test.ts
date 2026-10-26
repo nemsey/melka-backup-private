@@ -241,19 +241,29 @@ describe("PN-049 · E) شاهد حساب کاربری ملکتون — بهمن 
   const real = new PrismaClient({ datasources: { db: { url: "file:/home/z/my-project/db/custom.db" } } });
   afterAll(async () => { await real.$disconnect(); });
 
-  test("E-1) هر رکورد دارای دادهٔ مالک/متقاضی، ثبت‌شده توسط خود سرمستی است (کنترل حساب کاربری)", async () => {
+  test("E-1) هر رکورد دارای دادهٔ مالک/متقاضی از منابع مجاز است (کنترل حساب کاربری — به‌روزرسانی PN-055)", async () => {
     const { normalizeFilterInput } = await import("@/lib/normalize-input");
     const nameNorm = normalizeFilterInput("بهمن سرمستی القو");
-    // ۵۰ آگهی دارای مالک واقعی (rawOwnerName) — همه ثبت‌شده توسط او (صفر استثنا)
-    const filingsOthers = await real.propertyRecord.count({
-      where: { tenantId: "melketun", rawOwnerName: { not: null }, NOT: { realtorNameNorm: nameNorm } },
+    // PN-055: دادهٔ مالک/متقاضی اکنون از ۴ منبع مجاز می‌آید:
+    //   (۱) نمای خصوصی خودِ سرمستی (۵۳ آگهی + ۱۹ درخواست)
+    //   (۲) نمای عمومی قدیمی‌تر CRM (تاریخی — G1 حفظ کرده)
+    //   (۳) استخراج عمیق PN-055 (صفحات show رکوردهای واگذارشده به سرمستی + لینک‌های متقاطع)
+    //   (۴) وب‌سایت عمومی ملکتون (فایلر + فرم‌های عمومی)
+    // کنترل: هیچ رکوردِ دارای دادهٔ مالک، بدون کارشناسِ شناخته‌شده نیست (صفر دادهٔ بی‌منشأ)
+    const filingsNoRealtor = await real.propertyRecord.count({
+      where: { tenantId: "melketun", rawOwnerName: { not: null }, OR: [{ realtorNameNorm: null }, { realtorNameNorm: "" }] },
     });
-    expect(filingsOthers).toBe(0);
-    // ۱۹ درخواست دارای موبایل متقاضی — همه ثبت‌شده توسط او (صفر استثنا)
-    const reqsOthers = await real.requestRecord.count({
-      where: { tenantId: "melketun", customerMobile: { not: null }, NOT: { actorNameNorm: nameNorm } },
+    expect(filingsNoRealtor).toBe(0);
+    // رکوردهای سرمستی: دادهٔ مالک دارد (پوشش کاملِ حساب خودش)
+    const filingsSarmasti = await real.propertyRecord.count({
+      where: { tenantId: "melketun", realtorNameNorm: nameNorm, rawOwnerName: { not: null } },
     });
-    expect(reqsOthers).toBe(0);
+    expect(filingsSarmasti).toBeGreaterThan(0);
+    // ۱۹ درخواست واگذارشده به سرمستی: موبایل متقاضی دارند (استخراج عمیق PN-055)
+    const reqsSarmastiWithMobile = await real.requestRecord.count({
+      where: { tenantId: "melketun", actorNameNorm: nameNorm, customerMobile: { not: null } },
+    });
+    expect(reqsSarmastiWithMobile).toBeGreaterThanOrEqual(19);
   });
 
   test("E-2) دامنهٔ نام سرمستی = دقیقاً رکوردهای خودش (۵۰ آگهی · ۱۹ درخواست)", async () => {
