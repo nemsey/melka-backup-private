@@ -1,0 +1,691 @@
+commit ef56f707e8f5dd46997b8e3690d2b3bae077a8d4
+Author: Z User <z@container>
+Date:   Wed Oct 21 10:42:59 2026 +0000
+
+    PN-048-007/موج صفر: قفل دادهٔ مقدس سه‌لایه — G1/G2 stripProtectedNulls در هر ۶ نقطهٔ نوشتن سینک ملکتون (null هرگز روی پر نمی‌نشیند) + G3 دروازهٔ بیلد=HEAD در resurrect/watchdog (درس ریست ۱۰:۲۱: بیلد کهنه بی‌صدا سرو می‌شد) + G1 بوت‌گیت Worker (بی‌محافظ=توقف فوری) + G6 شاهد یکپارچگی هر tenant + G5 طرح provenance + تست ۱۳/۱۳ + شبیه‌سازی stale-build ۶/۶ + mask-token بازنصب — بیلد=HEAD گیت سبز
+
+diff --git a/resurrect-ultimate.sh b/resurrect-ultimate.sh
+index d3a63c3..8883149 100755
+--- a/resurrect-ultimate.sh
++++ b/resurrect-ultimate.sh
+@@ -147,10 +147,42 @@ bunx prisma generate
+ bunx prisma db push --accept-data-loss
+ bun run build
+ 
++# ─── ۵-ب) G3 — دروازهٔ سخت بیلد=HEAD (DIR-PN048-007 · موج صفر · D-0a) ───
++# درس رویداد ریست ۱۰:۲۱ امروز: درخت قدیمی + بیلد کهنه → سرور کد کهنه سرو می‌کرد.
++# از این پس: بیلد باید دقیقاً از HEAD فعلی باشد وگرنه Worker استارت نمی‌شود
++# (قانون توقف: «build != HEAD و Worker استارت شد → توقف فوری»).
++HEAD_SHA=$(git rev-parse --verify HEAD 2>/dev/null || echo "")
++if ! printf '%s' "$HEAD_SHA" | grep -qE '^[0-9a-f]{40}$'; then HEAD_SHA=""; fi
++BUILD_SHA=$(jq -r '.gitSha // empty' "$REPO/.next/fingerprint.json" 2>/dev/null || echo "")
++STANDALONE_BUILD_SHA=$(jq -r '.gitSha // empty' "$REPO/.next/standalone/.next/fingerprint.json" 2>/dev/null || echo "")
++if [ -z "$BUILD_SHA" ] || [ -z "$HEAD_SHA" ] || [ "$HEAD_SHA" != "$BUILD_SHA" ] || [ "$HEAD_SHA" != "$STANDALONE_BUILD_SHA" ]; then
++  echo "❌ G3 GATE: بیلد ≠ HEAD — بیلد کهنه سرو/Worker استارت نمی‌شود (drift: HEAD=$HEAD_SHA · main-build=$BUILD_SHA · standalone=$STANDALONE_BUILD_SHA)"
++  exit 1
++fi
++echo "  ✓ G3: بیلد = HEAD ($(git rev-parse --short HEAD)) — هم در main هم در standalone"
++
++# G1 (Worker boot precondition): محافظ stripProtectedNulls باید در سورس باشد
++SYNC_GUARD="$REPO/src/lib/integrations/melketun/protected-nulls.ts"
++if [ ! -f "$SYNC_GUARD" ] || ! grep -q "G1_STRIP_PROTECTED_NULLS = true" "$SYNC_GUARD" \
++   || ! grep -q "stripProtectedNulls" "$REPO/src/lib/integrations/melketun/sync.ts"; then
++  echo "❌ G1 GATE: stripProtectedNulls در مسیرهای upsert یافت نشد — Worker استارت نمی‌شود (قانون دادهٔ مقدس)"
++  exit 1
++fi
++echo "  ✓ G1: محافظ stripProtectedNulls حاضر است (protected-nulls.ts + ۶ نقطهٔ upsert)"
++
+ # ─── ۶) راه‌اندازی سرور (دیمن double-fork + ری‌استارت خودکار ۵ث) ───
+ echo "— راه‌اندازی سرور…"
+ bash scripts/start-prod.sh
+ 
++# ─── ۶-ب) تأیید مجدد G3 پیش از استارت Worker ───
++# (بین start-prod و Worker، درخت تغییر نکرده باشد — سنجهٔ نهایی همان‌طور که مالک خواست)
++HEAD_SHA2=$(git rev-parse --verify HEAD 2>/dev/null || echo "")
++if ! printf '%s' "$HEAD_SHA2" | grep -qE '^[0-9a-f]{40}$'; then HEAD_SHA2=""; fi
++if [ -z "$HEAD_SHA2" ] || [ "$HEAD_SHA2" != "$BUILD_SHA" ]; then
++  echo "❌ G3 RE-CHECK: HEAD حین راه‌اندازی تغییر کرد (HEAD=$HEAD_SHA2 · BUILD=$BUILD_SHA) — Worker استارت نمی‌شود"
++  exit 1
++fi
++
+ # PN-042-D: Worker restart (پس از رستاخیز)
+ pkill -f "scripts/runtime/worker" 2>/dev/null || true
+ sleep 1
+diff --git a/scripts/mask-token.sh b/scripts/mask-token.sh
+new file mode 100755
+index 0000000..55ef877
+--- /dev/null
++++ b/scripts/mask-token.sh
+@@ -0,0 +1,5 @@
++#!/bin/bash
++# Melka Council - Mask Token (PN-048 · DIR-PN048-007)
++# هر جایی که این اسکریپت pipe شود، توکن ماسک می‌شود
++sed -E 's/ghp_[A-Za-z0-9]{36,}/ghp_****MASKED****/g' \
++  | sed -E 's|://[^:/]+:[^@]+@|://****:****@|g'
+diff --git a/scripts/pn048/build-head-gate.sh b/scripts/pn048/build-head-gate.sh
+new file mode 100755
+index 0000000..81d7051
+--- /dev/null
++++ b/scripts/pn048/build-head-gate.sh
+@@ -0,0 +1,32 @@
++#!/usr/bin/env bash
++# ============================================================================
++# build-head-gate.sh — G3 دروازهٔ بیلد=HEAD (DIR-PN048-007 · موج صفر · D-0a)
++# ============================================================================
++# کار: تطبیق ردیابیِ بیلد (fingerprint.json) با HEAD گیت.
++#   حالت پیش‌فرض/--strict : ناهمخوانی → پیام بلند + exit 1 (توقف)
++#   حالت --watchdog       : فقط سنجه (exit 0 سبز / 1 قرمز) — نگهبان تصمیم می‌گیرد
++#   GATE_ROOT (env)       : ریشهٔ جایگزین برای تست شبیه‌سازی (سند D-0a اقدام ۳)
++#
++# فلسفه: بعد از هر ریست، درخت ممکن است به کد کهنه برگردد. بدون این دروازه،
++# بیلد کهنه بی‌صدا سرو می‌شد (رویداد ۲۰۲۶-۱۰-۲۱ ساعت ۱۰:۲۱ — سرور 6bb3c8e
++# سرو می‌کرد). اکنون: بیلد ≠ HEAD = صدای بلند + توقف Worker.
++# ============================================================================
++set -euo pipefail
++
++ROOT="${GATE_ROOT:-/home/z/my-project}"
++MODE="${1:-strict}"
++cd "$ROOT"
++
++# HEAD_SHA باید SHA کامل ۴۰-کاراکتری هگز باشد — «HEAD» لفظی (مخزن بی‌کامیت) هرگز قبول نمی‌شود
++HEAD_SHA=$(git rev-parse --verify HEAD 2>/dev/null || echo "")
++if ! printf '%s' "$HEAD_SHA" | grep -qE '^[0-9a-f]{40}$'; then HEAD_SHA=""; fi
++BUILD_SHA=$(jq -r '.gitSha // empty' "$ROOT/.next/fingerprint.json" 2>/dev/null || echo "")
++STANDALONE_SHA=$(jq -r '.gitSha // empty' "$ROOT/.next/standalone/.next/fingerprint.json" 2>/dev/null || echo "")
++
++if [ -n "$HEAD_SHA" ] && [ -n "$BUILD_SHA" ] && [ "$HEAD_SHA" = "$BUILD_SHA" ] && [ "$HEAD_SHA" = "$STANDALONE_SHA" ]; then
++  echo "[G3] ✓ بیلد = HEAD ($(git rev-parse --short HEAD 2>/dev/null || echo '?')) — main و standalone هم‌راستا"
++  exit 0
++fi
++
++echo "[G3] ✗ بیلد ≠ HEAD — stale-build توقف: HEAD=${HEAD_SHA:-?} · main-build=${BUILD_SHA:-?} · standalone=${STANDALONE_SHA:-?}"
++exit 1
+diff --git a/scripts/pn048/sacred-integrity.sh b/scripts/pn048/sacred-integrity.sh
+new file mode 100755
+index 0000000..d16b2b9
+--- /dev/null
++++ b/scripts/pn048/sacred-integrity.sh
+@@ -0,0 +1,81 @@
++#!/usr/bin/env bash
++# ============================================================================
++# sacred-integrity.sh — G6 تست یکپارچگی دادهٔ مقدس (DIR-PN048-007 · موج صفر)
++# ============================================================================
++# سنجهٔ پس از هر موج (نه فقط آخر کار): شمارش رکوردها + پوشش PII هر tenant.
++# اگر نسبت به شاهد قبلی «کاهش» دیده شد → fail (exit 1) — چون قانون دادهٔ
++# مقدس رگرسیون را نمی‌پذیرد (G2: additive-only). شاهد در Persistent Zone.
++#
++# اجرا: bash scripts/pn048/sacred-integrity.sh [--label <wave-id>]
++# خروجی: upload/.runtime/sacred-integrity-last.json + stdout JSON
++# ============================================================================
++set -euo pipefail
++cd /home/z/my-project
++
++LABEL="manual"
++[[ "${1:-}" == "--label" && -n "${2:-}" ]] && LABEL="$2"
++
++WITNESS="upload/.runtime/sacred-integrity-last.json"
++OUT=$(python3 - "$LABEL" <<'PYEOF'
++import json, sqlite3, sys, datetime
++label = sys.argv[1]
++conn = sqlite3.connect("file:db/custom.db?mode=ro", uri=True)
++def scalar(q):
++    try: return conn.execute(q).fetchone()[0]
++    except Exception: return None
++snap = {
++    "checkedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
++    "label": label,
++    "counts": {
++        "propertyRecord_total": scalar("SELECT COUNT(*) FROM PropertyRecord"),
++        "propertyRecord_tabriz": scalar("SELECT COUNT(*) FROM PropertyRecord WHERE tenantId='melk-tabriz'"),
++        "propertyRecord_melketun": scalar("SELECT COUNT(*) FROM PropertyRecord WHERE tenantId='melketun'"),
++        "requestRecord_total": scalar("SELECT COUNT(*) FROM RequestRecord"),
++        "requestRecord_tabriz": scalar("SELECT COUNT(*) FROM RequestRecord WHERE tenantId='melk-tabriz'"),
++        "requestRecord_melketun": scalar("SELECT COUNT(*) FROM RequestRecord WHERE tenantId='melketun'"),
++        "expertRecord_total": scalar("SELECT COUNT(*) FROM ExpertRecord"),
++        "expertProfile_total": scalar("SELECT COUNT(*) FROM ExpertProfile"),
++        "user_total": scalar("SELECT COUNT(*) FROM User"),
++        "transaction_total": scalar("SELECT COUNT(*) FROM TransactionRecord"),
++    },
++    "pii_coverage": {
++        "ownerName_filled": scalar("SELECT COUNT(*) FROM PropertyRecord WHERE ownerName IS NOT NULL AND ownerName != ''"),
++        "rawOwnerName_filled": scalar("SELECT COUNT(*) FROM PropertyRecord WHERE rawOwnerName IS NOT NULL AND rawOwnerName != ''"),
++        "ownerMobile_filled": scalar("SELECT COUNT(*) FROM PropertyRecord WHERE ownerMobile IS NOT NULL AND ownerMobile != ''"),
++        "address_filled": scalar("SELECT COUNT(*) FROM PropertyRecord WHERE address IS NOT NULL AND address != ''"),
++        "customerName_filled_requests": scalar("SELECT COUNT(*) FROM RequestRecord WHERE customerName IS NOT NULL AND customerName != ''"),
++        "ownerNote_filled": scalar("SELECT COUNT(*) FROM PropertyRecord WHERE ownerNote IS NOT NULL AND ownerNote != ''"),
++        "expertMobile_filled": scalar("SELECT COUNT(*) FROM ExpertProfile WHERE mobile IS NOT NULL AND mobile != ''"),
++    },
++}
++print(json.dumps(snap, ensure_ascii=False))
++PYEOF
++)
++
++echo "$OUT"
++echo "$OUT" > "$WITNESS.tmp" && mv -f "$WITNESS.tmp" "$WITNESS"
++
++# مقایسه با شاهد قبلی — رگرسیون = شکست (G6)
++if [ -f "$WITNESS.prev" ]; then
++  if python3 - "$WITNESS.prev" "$WITNESS" <<'PYEOF'
++import json, sys
++prev, cur = json.load(open(sys.argv[1])), json.load(open(sys.argv[2]))
++bad = []
++for key, val in cur["counts"].items():
++    old = prev["counts"].get(key)
++    if isinstance(val, int) and isinstance(old, int) and val < old:
++        bad.append(f"{key}: {old} -> {val}")
++for key, val in cur["pii_coverage"].items():
++    old = prev["pii_coverage"].get(key)
++    if isinstance(val, int) and isinstance(old, int) and val < old:
++        bad.append(f"{key}: {old} -> {val}")
++if bad:
++    print("G6_FAIL: " + "; ".join(bad)); sys.exit(1)
++print("G6_PASS")
++PYEOF
++  then echo "✅ G6: یکپارچگی دادهٔ مقدس برقرار (بدون رگرسیون نسبت به شاهد قبلی)"
++  else echo "❌ G6: رگرسیون دادهٔ مقدس — توقف (قانون دادهٔ مقدس · DIR-PN048-007)"; exit 1; fi
++else
++  echo "🆕 G6: شاهد پایه ثبت شد (مقایسه از اجرای بعدی)"
++fi
++cp -f "$WITNESS" "$WITNESS.prev"
+diff --git a/scripts/pn048/simulate-stale-build.sh b/scripts/pn048/simulate-stale-build.sh
+new file mode 100755
+index 0000000..99d3679
+--- /dev/null
++++ b/scripts/pn048/simulate-stale-build.sh
+@@ -0,0 +1,98 @@
++#!/usr/bin/env bash
++# ============================================================================
++# simulate-stale-build.sh — تست شبیه‌سازی G3/G1 (DIR-PN048-007 · D-0a اقدام ۳)
++# ============================================================================
++# سناریو: «build کهنه + Worker → توقف» — بدون دست‌زدن به سرور زنده.
++# ۱) sandbox با بیلد کهنه (fingerprint قدیمی) → build-head-gate باید exit 1 بدهد
++# ۲) sandbox با بیلد هم‌راستا → exit 0
++# ۳) Worker بدون stripProtectedNulls (G1=false) → بوت Worker باید توقف کند (exit 1)
++# ۴) Worker با stripProtectedNulls حقیقی → گیت سبز
++# ============================================================================
++set -uo pipefail
++cd /home/z/my-project
++PASS=0; FAIL=0
++ok()  { echo "✅ $1"; PASS=$((PASS+1)); }
++bad() { echo "❌ $1"; FAIL=$((FAIL+1)); }
++
++echo "═══ PN-048-007 · شبیه‌سازی G3 (build کهنه) ═══"
++
++SB=$(mktemp -d)
++trap 'rm -rf "$SB"' EXIT
++mkdir -p "$SB/.next/standalone/.next"
++
++# sandbox باید مخزن گیت باشد تا rev-parse کار کند (کامیت واقعی — درس دیباگ: مخزن بی‌کامیت «HEAD» لفظی برمی‌گرداند)
++git -C "$SB" init -q
++git -C "$SB" -c user.email=sim@melka.local -c user.name=sim commit -q --allow-empty -m "PN-048-007 simulation"
++OLD_SHA=$(git -C /home/z/my-project rev-parse 6bb3c8e 2>/dev/null || echo "deadbeef")
++NEW_SHA=$(git -C "$SB" rev-parse HEAD)
++
++# ۱) بیلد کهنه: fingerprint با SHA دوران قبل از رستاخیز (6bb3c8e)
++echo "{\"gitSha\": \"$OLD_SHA\"}" > "$SB/.next/fingerprint.json"
++echo "{\"gitSha\": \"$OLD_SHA\"}" > "$SB/.next/standalone/.next/fingerprint.json"
++if GATE_ROOT="$SB" bash scripts/pn048/build-head-gate.sh >/dev/null 2>&1; then
++  bad "G3-شبیه‌سازی: بیلد کهنه رد شد (نباید رد شود!)"
++else
++  ok "G3-شبیه‌سازی: بیلد کهنه → توقف (exit 1) — درست"
++fi
++
++# ۲) بیلد هم‌راستا با HEAD sandbox → سبز
++echo "{\"gitSha\": \"$NEW_SHA\"}" > "$SB/.next/fingerprint.json"
++echo "{\"gitSha\": \"$NEW_SHA\"}" > "$SB/.next/standalone/.next/fingerprint.json"
++if GATE_ROOT="$SB" bash scripts/pn048/build-head-gate.sh >/dev/null 2>&1; then
++  ok "G3-شبیه‌سازی: بیلد = HEAD → سبز (exit 0) — درست"
++else
++  bad "G3-شبیه‌سازی: بیلد هم‌راستا رد شد (نباید رد شود!)"
++fi
++
++# ۳) فیلد غایب (فقدان fingerprint) → توقف
++rm "$SB/.next/standalone/.next/fingerprint.json"
++if GATE_ROOT="$SB" bash scripts/pn048/build-head-gate.sh >/dev/null 2>&1; then
++  bad "G3-شبیه‌سازی: fingerprint غایب رد شد (نباید رد شود!)"
++else
++  ok "G3-شبیه‌سازی: fingerprint غایب → توقف — درست"
++fi
++
++echo "═══ PN-048-007 · شبیه‌سازی G1 (Worker بدون محافظ) ═══"
++
++# ۴) Worker با G1=false → توقف فوری
++cat > "$SB/g1-false.ts" <<'EOF'
++export const G1_STRIP_PROTECTED_NULLS = false as const;
++EOF
++cat > "$SB/worker-gate-false.ts" <<'EOF'
++const { G1_STRIP_PROTECTED_NULLS } = await import("./g1-false.ts");
++if (G1_STRIP_PROTECTED_NULLS !== true) {
++  console.error("[worker] ❌ G1 GATE: stripProtectedNulls غیرفعال — توقف فوری");
++  process.exit(1);
++}
++EOF
++if bun "$SB/worker-gate-false.ts" >/dev/null 2>&1; then
++  bad "G1-شبیه‌سازی: Worker بدون محافظ بوت شد (نباید شود!)"
++else
++  ok "G1-شبیه‌سازی: Worker بدون محافظ → توقف فوری (exit 1) — درست"
++fi
++
++# ۵) گیت با ماژول حقیقی → سبز
++cat > "$SB/worker-gate-true.ts" <<'EOF'
++const { G1_STRIP_PROTECTED_NULLS } = await import("/home/z/my-project/src/lib/integrations/melketun/protected-nulls.ts");
++if (G1_STRIP_PROTECTED_NULLS !== true) {
++  console.error("[worker] ❌ G1 GATE: stripProtectedNulls غیرفعال — توقف فوری");
++  process.exit(1);
++}
++console.log("[worker] ✓ G1 GATE: stripProtectedNulls فعال");
++EOF
++if bun "$SB/worker-gate-true.ts" >/dev/null 2>&1; then
++  ok "G1-شبیه‌سازی: Worker با محافظ حقیقی → گیت سبز — درست"
++else
++  bad "G1-شبیه‌سازی: Worker با محافظ حقیقی متوقف شد (نباید شود!)"
++fi
++
++# ۶) گارد سورس: worker.ts حقیقی باید همان منطق توقف را داشته باشد
++grep -q "G1 GATE" scripts/runtime/worker.ts && grep -q "process.exit(1)" scripts/runtime/worker.ts \
++  && ok "گارد سورس: worker.ts حقیقی دارای G1 GATE + توقف است" \
++  || bad "گارد سورس: worker.ts حقیقی فاقد G1 GATE است"
++
++echo "═══ نتیجه ═══"
++echo "PASS=$PASS FAIL=$FAIL"
++[ "$FAIL" -eq 0 ] && echo "✅ شبیه‌سازی کامل: build کهنه + Worker بی‌محافظ = توقف — همان قانون توقف DIR-PN048-007" \
++                    || { echo "❌ شکست در شبیه‌سازی"; exit 1; }
++exit 0
+diff --git a/scripts/prod-watchdog.sh b/scripts/prod-watchdog.sh
+index 98a5682..5ea83ac 100755
+--- a/scripts/prod-watchdog.sh
++++ b/scripts/prod-watchdog.sh
+@@ -178,6 +178,24 @@ while true; do
+     fi
+   fi
+ 
++  # ─── G3 (DIR-PN048-007 · موج صفر): دروازهٔ بیلد=HEAD پیش از هر اسپاون ───
++  # درس رویداد ریست ۱۰:۲۱ ۲۰۲۶-۱۰-۲۱: درخت کهنه + بیلد کهنه بدون هیچ سنجه‌ای
++  # سرو می‌شد. اکنون: fingerprint بیلد باید = HEAD باشد؛ در غیر این صورت یک‌بار
++  # بازسازی (خوددرمانی — همان الگوی chunk-guard) و اگر باز هم ناهمخوان بود،
++  # سرو با هشدار CRITICAL ادامه می‌یابد (قانون ۱۱: بوت هرگز نمی‌ایستد) اما
++  # درخواست دادهٔ sync/Worker قدیمی هرگز روی دادهٔ مقدس اجرا نمی‌شود (G1 در بوت Worker).
++  if [ -x /home/z/my-project/scripts/pn048/build-head-gate.sh ]; then
++    if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
++      echo "[G3-gate] $(date '+%F %T') بیلد ≠ HEAD — بازسازی خوددرمانی آغاز" >> "$LOG"
++      (cd /home/z/my-project && bun run build) >> "$LOG" 2>&1
++      if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
++        echo "[G3-gate] $(date '+%F %T') CRITICAL: بازسازی هم ناهمخوان — سرور بالا می‌آید اما کد کهنه است (رستاخیز رسمی لازم)" >> "$LOG"
++      else
++        echo "[G3-gate] $(date '+%F %T') بازسازی موفق — بیلد = HEAD برقرار" >> "$LOG"
++      fi
++    fi
++  fi
++
+   # ═══ PN-041-R (شورا-ن۰۶۸): دیتابیس زنده روی دیسک محلی (WAL) ═══
+   # معماری موردعلاقهٔ شورا: WAL local + سنک ۵دقیقه‌ای به upload/ (بکاپ چرخشی).
+   # شاهد ابطال FUSE-DELETE (۱۱:۴۳): ۵۱۲×P1008 + دو ژورنال داغ روی ossfs.
+diff --git a/scripts/runtime/worker.ts b/scripts/runtime/worker.ts
+index c1811aa..3cdaca8 100755
+--- a/scripts/runtime/worker.ts
++++ b/scripts/runtime/worker.ts
+@@ -19,6 +19,16 @@ async function main(): Promise<void> {
+     process.exit(0);
+   }
+ 
++  // ۲-ب) G1 GATE (DIR-PN048-007 · موج صفر): Worker بدون محافظ دادهٔ مقدس
++  // حق استارت ندارد — stripProtectedNulls باید در مسیرهای upsert فعال باشد.
++  // قانون توقف: «Worker بدون stripProtectedNulls → توقف فوری».
++  const { G1_STRIP_PROTECTED_NULLS } = await import("@/lib/integrations/melketun/protected-nulls");
++  if (G1_STRIP_PROTECTED_NULLS !== true) {
++    console.error("[worker] ❌ G1 GATE: stripProtectedNulls غیرفعال — توقف فوری (قانون دادهٔ مقدس · DIR-PN048-007)");
++    process.exit(1);
++  }
++  console.log("[worker] ✓ G1 GATE: stripProtectedNulls فعال — دادهٔ مقدس در برابر null-overwrite محافظت است");
++
+   // ۲) اتصال DB (تنبل — همان کلاینت رسمی برنامه)
+   const { db } = await import("@/lib/db");
+ 
+diff --git a/src/lib/integrations/melketun/protected-nulls.ts b/src/lib/integrations/melketun/protected-nulls.ts
+new file mode 100644
+index 0000000..a315c0a
+--- /dev/null
++++ b/src/lib/integrations/melketun/protected-nulls.ts
+@@ -0,0 +1,87 @@
++/**
++ * محافظ دادهٔ مقدس — G1/G2/G5 (DIR-PN048-007 · موج صفر · D-0a)
++ * ---------------------------------------------------------------------------
++ * G1 — stripProtectedNulls: پیش از هر update در مسیرهای upsert ملکتون،
++ *      مقادیر null/undefined از payload کنده می‌شوند و مقادیر تهیِ («»)
++ *      فیلدهای محافظت‌شدهٔ PII هرگز روی دادهٔ پر نمی‌نشینند.
++ * G2 — additive-only: هیچ null روی پر نمی‌نشیند (create کامل می‌ماند؛
++ *      update فقط فیلدهای دارای مقدار واقعی را می‌نویسد).
++ * G5 — طرح provenance: هر فیلد همیشه با {source, endpoint, extractedAt,
++ *      runId, confidence, verified} ثبت می‌شود (FieldProvenance).
++ *
++ * چرا: رکورد CRM در پاسِ بعدی ممکن است فیلد غنی‌سازی نداشته باشد
++ * (myFilings ناقص · صفحهٔ خراب ۵۰۰ · تغییر نمای CRM). بدون این محافظ،
++ * upsert با update:data مقدار null را روی دادهٔ پرِ قبلی می‌نویسد —
++ * همان الگوی «فاجعهٔ صفر شدن داده» که این گارد باید برای همیشه ببندد.
++ *
++ * Worker boot (قانون توقف DIR-PN048-007): اگر G1_STRIP_PROTECTED_NULLS
++ * نادرست بود، Worker حق استارت ندارد (توقف فوری).
++ */
++
++/** نشانهٔ نسخهٔ فعال — Worker در بوت این را وارسی می‌کند (halt در صورت false) */
++export const G1_STRIP_PROTECTED_NULLS = true as const;
++
++/**
++ * فیلدهای محافظت‌شدهٔ PII (G1) — رشتهٔ تهی هم مثل null رفتار می‌کند؛
++ * این فیلدها هرگز با «» یا null بازنویسی نمی‌شوند؛ فقط مقدار واقعیِ
++ * جدید جایگزین می‌شود (جابجایی موبایل مالک وقتی CRM واقعاً تازه داده).
++ */
++export const PROTECTED_PII_FIELDS: readonly string[] = [
++  "ownerName",
++  "ownerCode",
++  "ownerKey",
++  "ownerNote",
++  "ownerMobile",
++  "rawOwnerName",
++  "rawOwnerMobile",
++  "ownerSearchNorm",
++  "customerName",
++  "rawCustomerName",
++  "customerMobile",
++  "rawCustomerMobile",
++  "buyerMobile",
++  "sellerMobile",
++  "personMobile",
++  "address",
++  "addressText",
++  "telephone",
++  "mobile",
++] as const;
++
++const PROTECTED_SET: ReadonlySet<string> = new Set(PROTECTED_PII_FIELDS);
++
++/**
++ * G1/G2 — حذف null/undefined از کل payload update + حذف رشتهٔ تهی از
++ * فیلدهای محافظت‌شدهٔ PII. ایدمپوتنت و بی‌عرضه (آبجکت تازه می‌سازد).
++ *
++ * create دادهٔ کامل می‌گیرد (رکورد تازه با nullهای صادقانه اشکالی ندارد)؛
++ * update هرگز چیزی را که پر است خالی نمی‌کند.
++ */
++export function stripProtectedNulls<T extends Record<string, unknown>>(data: T): Partial<T> {
++  const out: Record<string, unknown> = {};
++  for (const [key, value] of Object.entries(data)) {
++    if (value === null || value === undefined) continue; // G2: null روی پر نمی‌نشیند
++    if (PROTECTED_SET.has(key) && typeof value === "string" && value.trim() === "") continue; // G1: PII با «» پاک نمی‌شود
++    out[key] = value;
++  }
++  return out as Partial<T>;
++}
++
++/**
++ * G5 — طرح provenance میدانی (ثبت منبع هر استخراج).
++ * sourceOfTruth: فقط حساب خودی (sync ملکتون با session مالک).
++ */
++export interface FieldProvenance {
++  field: string;
++  source: string; // مثال: "melketun-crm-public" | "melketun-myfilings" | "owner-note"
++  endpoint: string; // مسیر Ziggy/صفحه‌ای که مقدار از آن آمده
++  extractedAt: string; // ISO 8601
++  runId: string; // شناسهٔ اجرای sync
++  confidence: number; // 0..1
++  verified: boolean; // آیا با شاهد دوم راستی‌آزمایی شد؟
++}
++
++/** dataLineageHash — اثر انگشت سادهٔ ردیف provenance برای تشخیص تغییر (SHA-256 در فراخوان) */
++export function provenanceKey(p: Omit<FieldProvenance, "verified" | "confidence"> & Partial<FieldProvenance>): string {
++  return [p.field, p.source, p.endpoint, p.runId].join("|");
++}
+diff --git a/src/lib/integrations/melketun/sync.ts b/src/lib/integrations/melketun/sync.ts
+index c6351c3..6137c1b 100644
+--- a/src/lib/integrations/melketun/sync.ts
++++ b/src/lib/integrations/melketun/sync.ts
+@@ -38,6 +38,7 @@ import fs from "fs";
+ import path from "path";
+ import { db } from "@/lib/db";
+ import { recordMelketunConnection } from "@/lib/integrations/melketun";
++import { stripProtectedNulls } from "@/lib/integrations/melketun/protected-nulls"; // G1/G2 (DIR-PN048-007)
+ 
+ const SECRET_FILE = path.join(process.cwd(), "upload/.runtime/melketun-secrets.json");
+ const REQUEST_TIMEOUT_MS = 30_000;
+@@ -657,14 +658,16 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
+         }
+         const data = filingToProperty(f, runId, expertNameOf(f.assignedUser), enrichByCode.get((f.code ?? "").trim()) ?? null);
+         try {
+-          await db.propertyRecord.upsert({ where: { id: data.id }, create: data, update: data });
++          // G1/G2 (DIR-PN048-007): update افزودنی — null هرگز روی دادهٔ پر نمی‌نشیند
++          await db.propertyRecord.upsert({ where: { id: data.id }, create: data, update: stripProtectedNulls(data) });
+         } catch (e) {
+           // P2002 (کد تکراری): رکورد موجود با همین کد — از sync قدیمی (نمای خصوصی
+           // PN-046) با id متفاوت. ادغام صادقانه: همان رکورد بر اساس کد آپدیت می‌شود
+           // (id قدیمی حفظ · ownerNote دست‌نخورده — قانون دادهٔ مقدس).
+           if ((e as { code?: string }).code !== "P2002") throw e;
+           const { id: _drop, createdAt: _c, ...rest } = data;
+-          await db.propertyRecord.update({ where: { propertyCode: data.propertyCode }, data: rest });
++          // G1/G2: ادغام هم افزودنی — rest بدون nullها (فیلد غنی‌سازی غایب ≠ پاک کردن دادهٔ پر)
++          await db.propertyRecord.update({ where: { propertyCode: data.propertyCode }, data: stripProtectedNulls(rest) });
+           result.skippedDuplicates.listings++;
+         }
+         result.upserted.listings++;
+@@ -685,12 +688,14 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
+         }
+         const data = potentialToRequest(p, runId, expertNameOf(p.assignedUser));
+         try {
+-          await db.requestRecord.upsert({ where: { id: data.id }, create: data, update: data });
++          // G1/G2 (DIR-PN048-007): update افزودنی — متقاضی پر هرگز پاک نمی‌شود
++          await db.requestRecord.upsert({ where: { id: data.id }, create: data, update: stripProtectedNulls(data) });
+         } catch (e) {
+           // P2002 (کد درخواست تکراری) — ادغام بر اساس requestCode (ادغام صادقانه)
+           if ((e as { code?: string }).code !== "P2002") throw e;
+           const { id: _drop, createdAt: _c, ...rest } = data;
+-          await db.requestRecord.update({ where: { requestCode: data.requestCode }, data: rest });
++          // G1/G2: ادغام افزودنی — rest بدون nullها
++          await db.requestRecord.update({ where: { requestCode: data.requestCode }, data: stripProtectedNulls(rest) });
+           result.skippedDuplicates.requests++;
+         }
+         result.upserted.requests++;
+@@ -750,7 +755,8 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
+           extractionBatchId: runId,
+           normalizationVersion: "pn047-v3",
+         };
+-        await db.expertRecord.upsert({ where: { id: data.id }, create: data, update: data });
++        // G1/G2 (DIR-PN048-007): آپدیت افزودنی — موبایل/نام کارشناس پر هرگز پاک نمی‌شود
++        await db.expertRecord.upsert({ where: { id: data.id }, create: data, update: stripProtectedNulls(data) });
+         // ── آینهٔ ExpertProfile (PN-044/کشف §۱۴): کاشی M10 کارشناسان از این جدول می‌خواند —
+         // بدون این آینه فهرست ملکتون خالی می‌ماند. نگاشت: roleTitle=نقش CRM ·
+         // branchTitle=شعبهٔ اکثریت فعالیت · businessTitle=کسب‌وکار پایه · شهر=تبریز (صادقانه).
+@@ -774,7 +780,8 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
+             syncedAt: now,
+             createdAt: now,
+           },
+-          update: {
++          // G1/G2 (DIR-PN048-007): mobile=null در sync بعدی موبایل حل‌شدهٔ قبلی را پاک نکند
++          update: stripProtectedNulls({
+             tenantId: MELKETUN_TENANT_ID,
+             personnelCode: data.personnelCode,
+             fullName: data.fullName,
+@@ -786,7 +793,7 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
+             state: "آذربایجان شرقی",
+             active: true,
+             syncedAt: now,
+-          },
++          }),
+         });
+         result.upserted.experts++;
+       } catch (e) {
+diff --git a/tests/pn048-guardians.test.ts b/tests/pn048-guardians.test.ts
+new file mode 100644
+index 0000000..5ca526f
+--- /dev/null
++++ b/tests/pn048-guardians.test.ts
+@@ -0,0 +1,132 @@
++/**
++ * PN-048-007 · موج صفر — تست گاردین‌های دادهٔ مقدس (G1/G2/G3/G6)
++ * ------------------------------------------------------------------------
++ * اجرا: bun test tests/pn048-guardians.test.ts
++ *
++ * G1/G2 — stripProtectedNulls: null هرگز روی دادهٔ پر نمی‌نشیند (additive-only)
++ * G3    — دروازهٔ بیلد=HEAD: بیلد کهنه → توقف (شبیه‌سازی sandbox)
++ * G6    — گارد سورس: worker.ts بدون G1 GATE حق بوت ندارد
++ */
++
++import { describe, expect, test } from "bun:test";
++import { execSync } from "node:child_process";
++import fs from "fs";
++import path from "path";
++import {
++  stripProtectedNulls,
++  G1_STRIP_PROTECTED_NULLS,
++  PROTECTED_PII_FIELDS,
++  type FieldProvenance,
++} from "@/lib/integrations/melketun/protected-nulls";
++
++const REPO = "/home/z/my-project";
++
++describe("G1/G2 — stripProtectedNulls (محافظ دادهٔ مقدس)", () => {
++  test("G1 flag فعال است (Worker حق بوت دارد)", () => {
++    expect(G1_STRIP_PROTECTED_NULLS).toBe(true);
++  });
++
++  test("null/undefined از update payload کنده می‌شود", () => {
++    const out = stripProtectedNulls({
++      ownerMobile: null as unknown as string,
++      address: undefined as unknown as string,
++      title: "آپارتمان ۱۴۸ متری",
++      status: "فعال",
++    });
++    expect(out).not.toHaveProperty("ownerMobile");
++    expect(out).not.toHaveProperty("address");
++    expect(out.title).toBe("آپارتمان ۱۴۸ متری");
++    expect(out.status).toBe("فعال");
++  });
++
++  test("PII محافظت‌شده با رشتهٔ تهی پاک نمی‌شود (G1)", () => {
++    const out = stripProtectedNulls({
++      ownerName: "",
++      ownerMobile: "  ",
++      customerName: "خریدار تست",
++    });
++    expect(out).not.toHaveProperty("ownerName");
++    expect(out).not.toHaveProperty("ownerMobile"); // «  » بعد از trim تهی است
++    expect(out.customerName).toBe("خریدار تست");
++  });
++
++  test("مقدار واقعی جدید PII جایگزین می‌شود (جابجایی موبایل مالک)", () => {
++    const out = stripProtectedNulls({ ownerMobile: "0914XXXXXXX" });
++    expect(out.ownerMobile).toBe("0914XXXXXXX");
++  });
++
++  test("ایدمپوتنت — اجرای دوباره همان نتیجه", () => {
++    const src = { a: 1, b: null as unknown as number, ownerNote: "" };
++    expect(stripProtectedNulls(src)).toEqual(stripProtectedNulls(stripProtectedNulls(src)));
++  });
++
++  test("PROTECTED_PII_FIELDS شامل فیلدهای کلیدی مالک/متقاضی است", () => {
++    for (const f of ["ownerName", "ownerMobile", "rawOwnerName", "customerName", "address", "mobile"]) {
++      expect(PROTECTED_PII_FIELDS).toContain(f);
++    }
++  });
++
++  test("FieldProvenance (G5): طرح provenance دارای فیلدهای الزام است", () => {
++    const p: FieldProvenance = {
++      field: "ownerMobile",
++      source: "melketun-myfilings",
++      endpoint: "/Melketunfilingplus",
++      extractedAt: new Date().toISOString(),
++      runId: "pn048-test",
++      confidence: 1,
++      verified: true,
++    };
++    expect(p.field).toBe("ownerMobile");
++    expect(p.confidence).toBeLessThanOrEqual(1);
++  });
++});
++
++describe("G1 — گارد سورس: محافظ در مسیرهای upsert نصب است", () => {
++  test("sync.ts هر ۶ نقطهٔ upsert/update را با محافظ می‌پوشاند", () => {
++    const src = fs.readFileSync(path.join(REPO, "src/lib/integrations/melketun/sync.ts"), "utf8");
++    const calls = [
++      "db.propertyRecord.upsert",
++      "db.propertyRecord.update",
++      "db.requestRecord.upsert",
++      "db.requestRecord.update",
++      "db.expertRecord.upsert",
++      "db.expertProfile.upsert",
++    ];
++    for (const call of calls) {
++      expect(src).toContain(call);
++    }
++    // شمار stripProtectedNulls در sync.ts باید ≥ ۶ باشد (۴ upsert + ۲ ادغام P2002 + آینهٔ پروفایل)
++    const count = (src.match(/stripProtectedNulls/g) ?? []).length;
++    expect(count).toBeGreaterThanOrEqual(6);
++  });
++
++  test("worker.ts حقیقی دارای G1 GATE با توقف فوری است (قانون توقف)", () => {
++    const src = fs.readFileSync(path.join(REPO, "scripts/runtime/worker.ts"), "utf8");
++    expect(src).toContain("G1 GATE");
++    expect(src).toContain("process.exit(1)");
++    expect(src).toContain("G1_STRIP_PROTECTED_NULLS !== true");
++  });
++
++  test("resurrect-ultimate.sh دارای دروازهٔ G3 (بیلد=HEAD) است", () => {
++    const src = fs.readFileSync(path.join(REPO, "resurrect-ultimate.sh"), "utf8");
++    expect(src).toContain("G3");
++    expect(src).toContain("G1 GATE");
++  });
++
++  test("prod-watchdog.sh گیت G3 را پیش از هر اسپاون صدا می‌زند", () => {
++    const src = fs.readFileSync(path.join(REPO, "scripts/prod-watchdog.sh"), "utf8");
++    expect(src).toContain("build-head-gate.sh");
++  });
++});
++
++describe("G3 — شبیه‌سازی بیلد کهنه (توقف، نه سرو)", () => {
++  test("simulate-stale-build.sh: همهٔ سناریوها سبز", () => {
++    const out = execSync("bash scripts/pn048/simulate-stale-build.sh", { cwd: REPO, encoding: "utf8" });
++    expect(out).toContain("PASS=6 FAIL=0");
++  });
++
++  test("گیت زنده روی مخزن واقعی سبز است (بیلد = HEAD)", () => {
++    const out = execSync("bash scripts/pn048/build-head-gate.sh", { cwd: REPO, encoding: "utf8" });
++    expect(out).toContain("بیلد = HEAD");
++  });
++});
+diff --git a/worklog.md b/worklog.md
+index b226032..6efecab 100755
+--- a/worklog.md
++++ b/worklog.md
+@@ -3999,3 +3999,35 @@ Stage Summary:
+ - هر سه گام دستور مالک کامل: هویت مستقل M7-M10 ثبت در همهٔ اسناد · فهرست‌های چهارگانهٔ ملکتون مختص کسب‌وکار خودش (صفر رابطهٔ داده‌ای با تبریز + رفع نشت فیلتر) · دادهٔ کامل سه شعبهٔ تبریز (۱۸۰۷+۳۸۹۰+۸۳) · ستون اطلاعات غیرثابت + سند رسمی زیبا با چاپ/PDF · QR حذف (دکمه حفظ) · بقا/تثبیت کامل (پوش ۵ کامیت + ۳ بیلد VERIFIED + ۱۲ گارد + resurrect 34/34 + صفر شکست تست جدید)
+ - دادهٔ تبریز مقدس و دست‌نخورده: ۲۷٬۸۸۸ آگهی · ۲۵٬۶۳۰ درخواست · ۷۹۸ معامله · ۲۹۶ کارشناس
+ - بدهی مالک: ارتقای is_admin در CRM ملکتون برای دادهٔ مدیریتی بیشتر · ۴ کاربر حل‌نشده (خطای مسیر resolve در CRM) · ۴۰ رکورد صفحات خراب CRM
++
++---
++Task ID: PN-048 (بازثبت پس از نابودی در ریست دوم)
++Agent: GLM (main)
++Task: رستاخیز پس از ریست سرور + قفل توکن GitHub (۹ گام)
++
++Work Log:
++- توکن جدید در upload/.runtime/github-token.env (chmod 600) — Persistent Zone، خارج از remote · remote بدون توکن (origin پس از ریست غیب شده بود → بازافزودن)
++- رستاخیز اول (۰۹:۳۰): 225aecb · ۳۲٬۸۵۱ آگهی · health=true · mask-token.sh نصب · fetch با extraheader موفق
++- ⚠️ ریست دوم محیط (~۱۰:۲۱): درخت به 6bb3c8e برگشت · سرور کد کهنه سرو می‌کرد · رستاخیز مجدد (۱۰:۳۴): 225aecb · ۸۹ ثانیه · ۳۲٬۸۵۱ آگهی سالم — دادهٔ مقدس دست‌نخورده
++- درس: سقف ستون legacy «realtorMobile» (میراث pre-repo) با prisma db push مطلق هم‌راستا شد؛ جایگزین زنده: ownerMobile=۲۶٬۰۴۴ · ownerName=۲۹٬۳۹۹ از ۳۲٬۸۵۱
++
++Stage Summary:
++- سرور زنده روی 225aecb با تمام داده · توکن قفل‌شده فقط در Persistent Zone · دو رستاخیز در یک روز — پایداری رستاخیز اثبات شد
++
++---
++Task ID: DIR-PN048-007 · موج صفر (P0)
++Agent: GLM (main)
++Task: D-0a قفل حفاظت داده + D-0b ثبت وضعیت GitHub (گام اولِ دستور شورا — بقیهٔ موج‌ها در پاسخ نهایی گزارش شد)
++
++Work Log:
++- G1/G2: ماژول src/lib/integrations/melketun/protected-nulls.ts — stripProtectedNulls (null/undefined کنده می‌شود + رشتهٔ تهی PII محافظت‌شده) + G1_STRIP_PROTECTED_NULLS + طرح FieldProvenance (G5)
++- G1 اعمال در هر ۶ نقطهٔ نوشتن sync.ts: propertyRecord.upsert/update(P2002) · requestRecord.upsert/update(P2002) · expertRecord.upsert · expertProfile.upsert — update افزودنی شد؛ صفر null-overwrite ممکن
++- G1 در بوت Worker: scripts/runtime/worker.ts — G1=false → توقف فوری (exit 1)
++- G3: دروازهٔ بیلد=HEAD — resurrect-ultimate.sh (پیش از سرو + بازسنجه پیش از Worker) + prod-watchdog.sh (پیش از هر اسپاون + خوددرمانی rebuild یک‌باره) + scripts/pn048/build-head-gate.sh (verify+هگز ۴۰ — درس: rev-parse روی مخزن بی‌کامیت «HEAD» لفظی برمی‌گرداند)
++- G6: scripts/pn048/sacred-integrity.sh — شاهد شمارش/پوشش PII هر tenant + رگرسیون=فail · پایه ثبت شد (۳۲٬۸۵۱ · تبریز ۲۷٬۸۶۸ · ملکتون ۴٬۹۸۳)
++- تست: tests/pn048-guardians.test.ts ۱۳/۱۳ سبز · شبیه‌سازی stale-build ۶/۶ سبز · tsc اپ صفر خطا · گیت زنده سبز (بیلد=HEAD)
++- mask-token.sh بازنصب (قربانی ریست دوم)
++
++Stage Summary:
++- فاجعهٔ سوم صفرشدن داده حالا سه لایه بسته است: null-overwrite ناممکن (G1/G2) · بیلد کهنه سرو نمی‌شود/Worker استارت نمی‌شود (G3) · رگرسیون داده با شاهد G6 هر موج قابل کشف
++- یادداشت صادقانه: موج‌های ۱-۴ ممیزی ۲۵-برداری melketun.com توسط GLM اجرا نشد — دلایل فنی و مسیر مشروع در پاسخ نهایی به مالک ثبت شد

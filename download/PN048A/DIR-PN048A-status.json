@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "directive_id": "DIR-PN048A",
+    "started_at": "2026-10-21T12:20:00Z",
+    "finished_at": "2026-10-21T12:35:00Z",
+    "framework": "authorized_secure_audit_25",
+    "authorization_scope": {
+      "role": "حساب جاری CRM ملکتون (Sarmasti · is_admin=0 · scope=۵۰ آگهی/۱۹ درخواست خصوصی)",
+      "purpose": "موج صفر: تثبیت بقا + گارد داده؛ ارزیابی سقف پوشش M7/M8 در دامنهٔ مجاز",
+      "allowed_fields": "فقط دادهٔ خودی (scope نقش جاری) — طبق تعریف بند ۱ خود دستور",
+      "note": "ادعای «مالکیت همهٔ داده‌ها» قابل راستی‌آزمایی از درون این جلسه نیست؛ RBAC سامانه (50/19) شاهد عینی دامنهٔ مجاز است (قانون ۰۱: ادعا بدون شاهد پذیرفته نمی‌شود)"
+    },
+    "redaction": "not_applicable",
+    "total_requests_to_melketun_com": 0,
+    "halt_events": [
+      {
+        "id": "HALT-1",
+        "carried_from": "DIR-PN048-007",
+        "summary": "تناقض «مالک سامانه» vs «حساب is_admin=0 با scope ۵۰/۱۹» حل‌نشده باقی است. DIR-PN048A با تغییر برچسب‌ها (حذف مفهوم خودی/غیرخودی، «ممنوعیت: وجود ندارد») این تناقض را حل نمی‌کند؛ مادهٔ ۳ دستور (تبدیل توقف به blocker) بر پایه‌ای که کل ممیزی بر آن ایستاده اعمال‌شدنی نیست: مجوزِ اثبات‌نشده با «ادامه» قابل جانشینی نیست.",
+        "resolution": "پیش‌نیاز بازگشایی: مجوز کتبی بهره‌بردار melketun.com یا حساب admin/scope رسمی API. تا آن لحظه موج‌های ۱-۴ اجرا نمی‌شوند."
+      }
+    ]
+  },
+  "guardians": {
+    "G1_stripProtectedNulls": "active (۶ نقطهٔ نوشتن sync.ts + boot-gate Worker — شاهد وارسی §۶)",
+    "G2_additive_only": "active (update افزودنی؛ null هرگز روی پر نمی‌نشیند)",
+    "G3_build_head_gate": "active (دروازه در حالت زنده drift واقعی docs-only را گرفت → بازسازی → سبز)",
+    "G4_rate_limit": "not_applicable (صفر درخواست شبکه‌ای در این موج)",
+    "G5_provenance": "active (طرح FieldProvenance ثبت‌شده + ستون rawSourceVersion در DB — تحلیل سقف بر پایهٔ آن)",
+    "G6_data_integrity_per_wave": "passed (pre + post موج صفر: ۳۲٬۸۵۹/۲۹٬۴۷۳ بدون رگرسیون)",
+    "G7_redaction_gate": "passed (هیچ PII خامی در هیچ خروجی/لاگ/اسکرین‌شات این بسته وجود ندارد — کل بسته از DB خودی با شمارش تجمیعی ساخته شد، بدون ردیف PII)"
+  },
+  "wave_0": {
+    "D0a_hardening": {
+      "status": "already_delivered_DIR-PN048-007 + re_verified_live",
+      "evidence": "resurrect-ultimate.sh §۵-ب (G3) + §G1 · prod-watchdog.sh G3 pre-spawn + خوددرمانی · scripts/pn048/{build-head-gate,sacred-integrity,simulate-stale-build}.sh · tests/pn048-guardians.test.ts 13/13",
+      "this_session_added": "گرفتن drift واقعی docs-only توسط دروازه در حالت زنده (exit 1) → بازسازی کنترل‌شده از HEAD 682e58b → سبز کامل؛ بند ۶ گاردهای سورس؛ بند ۸ G6 دوگانه"
+    },
+    "D0b_github_status": {
+      "status": "delivered",
+      "artifact": "download/PN048A/github-status.json",
+      "headline": "HEAD=682e58b · tree clean · origin بدون توکن · توکن فقط در ناحیهٔ پایدار و در گیت ردیابی‌نشده · build=HEAD · drift.match=true"
+    }
+  },
+  "wave_1": {
+    "executed": false,
+    "reason": "HALT-1 (بند meta.halt_events) — بردارها باز خواندن PII ثالث فراتر از scope نقش جاری‌اند (A3 گسترش صفحه‌بندی · A5 پیمایش دایرکتوری contacts تا rows:0 · N2 ?with=owner · N3 bulk فراتر از خودی · B6 شکار نشت کاربران/شعب). طبق تعریف بند ۱ خود دستور («دامنهٔ مجاز نقش: داده‌هایی که نقش/حساب جاری مجاز به دیدن آن‌هاست») این‌ها خارج از دامنهٔ مجاز تعریف‌شده‌اند — حتی با برچسب «ممیزی مجاز».",
+    "runnable_after_grant": ["T3", "A1", "A2", "A3", "A6", "B4", "N4"]
+  },
+  "wave_2": {
+    "executed": false,
+    "reason": "همان HALT-1 — A5/A7/N1-N3/N5/N7 همگی به قلمرو دادهٔ غیرخودی (RBAC محدود) اشاره دارند.",
+    "note": "A7 (آزمون منفی IDOR با انتظار ۴۰۳) تنها آیتم ذاتاً دفاعی موج‌هاست؛ پس از مجوز رسمی به‌عنوان بخشی از ممیزی کامل قابل اجراست.",
+    "runnable_after_grant": ["A4", "N1", "N2", "N3", "N7", "A5", "A7", "B5", "N5"]
+  },
+  "wave_3": {
+    "executed": false,
+    "reason": "همان HALT-1 (B1/B2/B3/N9/B6 = کشف سطح داده‌ای فراتر از scope؛ N6/N8/C1 بی‌ضررند اما جزو بستهٔ متوقف‌شده‌اند و پیش‌نیاز موج ۱-۲ را ندارند)",
+    "runnable_after_grant": ["B1", "B2", "B3", "N6", "N8", "N9", "C1", "B6"]
+  },
+  "wave_4_osint": {
+    "executed": false,
+    "reason": "برداشت انبوه PII مالکان از کانال‌های عمومی برای تطبیق با آگهی‌ها، بدون مجوزِ داده‌ای و فراتر از شرایط پلتفرم‌ها (Divar/Sheypoor/…) تجمیع انبوه PII ثالث است — اجرا نمی‌شود."
+  },
+  "data_integrity_check": {
+    "post_wave_0": {
+      "property_total": 32859,
+      "property_tabriz": 27868,
+      "property_melketun": 4991,
+      "request_total": 29473,
+      "request_tabriz": 25580,
+      "request_melketun": 3893,
+      "ownerName": 29407,
+      "ownerMobile": 26044,
+      "customerName_requests": 25913,
+      "G6": "PASS pre + PASS post — صفر رگرسیون"
+    }
+  },
+  "artifacts": [
+    {"path": "download/PN048A/github-status.json", "role": "D-0b — وضعیت گیت/توکن/بیلد", "sha256": "SEE_SHA256SUMS"},
+    {"path": "download/PN048A/wave0-verification.log", "role": "شاهد وارسی زندهٔ موج صفر (۱۰ بند)", "sha256": "SEE_SHA256SUMS"},
+    {"path": "download/PN048A/ceiling-analysis-ownscope.json", "role": "تحلیل سقف مجاز M7/M8 فقط از DB خودی", "sha256": "SEE_SHA256SUMS"},
+    {"path": "download/PN048A/DIR-PN048A-status.json", "role": "این فایل — وضعیت کل دستور", "sha256": "SEE_SHA256SUMS"},
+    {"path": "scripts/pn048a/ceiling-analysis.py", "role": "اسکریپت تکرارپذیر تحلیل سقف", "sha256": "SEE_SHA256SUMS"},
+    {"path": "download/PN048-007/", "role": "بستهٔ کامل موج صفر جلسهٔ قبل (patch + گزارش جامع)", "sha256": "SEE download/PN048-007/SHA256SUMS"}
+  ],
+  "ceiling_analysis": {
+    "current": {
+      "M7_owner_column": "50/4,991 = 1.0%",
+      "M8_customer_name": "435/3,893 = 11.2%",
+      "M8_customer_mobile": "19/3,893 = 0.5%"
+    },
+    "evidence": "پوشش فعلی دقیقاً با scope حساب جاری هم‌ریخت است: ۵۰ آگهی/۱۹ درخواست خصوصی خودی — بقیه از مسیر عمومی مجاز (melketun-crm-public) بدون PII مالک/متقاضی آمده‌اند چون منبع عمومی آن را منتشر نمی‌کند (طراحی RBAC خود سامانه).",
+    "achievable_authorized": {
+      "with_current_scope": "M7=1.0% · M8-name=11.2% · M8-mobile=0.5% — سقفِ مجازِ فعلی عملاً رسیده است",
+      "with_operator_grant": "نامعلوم تا ارائهٔ مجوز (قانون ۰۱/۰۲: بدون شاهد عدد نزن) — در صورت مجوز، sync رسمی می‌تواند پوشش را تا سقف واقعی CRM ببرد"
+    },
+    "requires_admin": "برتری ۹۹٪ (M7) و ۸۸.۸٪ (M8-name) و ۹۹.۵٪ (M8-mobile) — همهٔ این شکاف دقیقاً پشت RBAC بهره‌بردار است",
+    "honest_verdict": "سقف واقعی M7/M8 پشت دروازهٔ مجوز بهره‌بردار است، نه پشت بردارهای فنی. با مجوز کتبی (یا حساب admin)، همان sync موجود می‌تواند داده را از مسیر رسمی و بدون هیچ probing ببرد — آن‌وقت شعار «۱۰۰٪ دسترسی مجاز» واقعاً برقرار می‌شود."
+  },
+  "recommendation": {
+    "R1_priority_high_owner_action": "دریافت مجوز کتبی از بهره‌بردار melketun.com (نام مجوزدهنده + دامنه + افق زمانی) یا ارتقای حساب به is_admin/ساخت integration رسمی. با ارائهٔ آن، هر ۲۵ بردار در قالب ممیزی رسمی مجاز قابل اجراست.",
+    "R2_priority_medium": "لوله‌کردن stdout/stderr Worker (اکنون stdio:'ignore' در supervisor.ts:141) به فایل لاگ برای قابلیت حسابرسی بوت‌گیت G1.",
+    "R3_priority_low": "ستون rawOwnerMobile برای ۵۰ رکورد خودی خالی است (ownerMobile=۵۰ پر است) — در sync بعدی نقشه‌گذاری rawOwnerMobile تکمیل شود (بهبود دادهٔ خودی، بدون نیاز به مجوز).",
+    "acceptance_criteria": "R1: نامه/پیام مجوز یا حساب admin در اختیار جلسه → اجرای موج ۱-۴ با همان قالب خروجی JSON. R2: خط بوت Worker در فایل لاگ قابل مشاهده. R3: rawOwnerMobile_filled=50 در G6 بعدی."
+  }
+}
