@@ -115,7 +115,7 @@ function loadSecrets(): MelketunSecrets {
 }
 
 // ── Cookie jar سبک (بدون وابستگی خارجی) ─────────────────────────────────────
-class CookieJar {
+export class CookieJar {
   private jar = new Map<string, string>();
 
   absorb(res: Response) {
@@ -1091,6 +1091,20 @@ export async function syncMelketun(): Promise<SyncResult> {
     result.errors.unshift(...errors); // خطاهای فاز fetch هم گزارش می‌شوند
     result.ok = result.errors.length === 0;
     result.durationMs = Date.now() - t0; // زمان کل (fetch + upsert)
+
+    // ── PN-055: فاز عمیق — استخراج جزئیات (متقاضی+مالک+موبایل) از صفحات show ──
+    // قانون مالک: «استخراج داده‌ها به هر شکل ممکن» + موتور دو-نمایی —
+    // صفحات /Potentials/show و /Melketunfilingplus/show دادهٔ خصوصیِ شعبهٔ
+    // خودمان را می‌دهند. هرگز سینک اصلی را نمی‌شکند (try/catch ایزوله).
+    try {
+      const { syncMelketunDeep } = await import("./deep");
+      const deep = await syncMelketunDeep();
+      (result as unknown as { deep?: unknown }).deep = deep;
+    } catch (deepErr) {
+      // خطای فاز عمیق = عقب‌ماندن غنی‌سازی، نه شکست سینک — ثبت و ادامه
+      result.errors.push(`deep-phase (soft-fail): ${String(deepErr).slice(0, 100)}`);
+    }
+
     return result;
   } catch (e) {
     loginOnly.errors.push(e instanceof Error ? e.message : String(e));
