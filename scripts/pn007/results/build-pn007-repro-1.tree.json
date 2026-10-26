@@ -1,0 +1,64 @@
+{
+  "label": "pn007-repro-1",
+  "rootPid": 2585,
+  "peakMB": 2025.0,
+  "peakProcesses": 4,
+  "peakTop": [
+    {
+      "pid": 2588,
+      "rssMB": 1834.7,
+      "cmd": "node /home/z/my-project/node_modules/.bin/next build --experimental-build-mode compile "
+    },
+    {
+      "pid": 2656,
+      "rssMB": 178.9,
+      "cmd": "node /home/z/my-project/.next/build/postcss.js 38533 "
+    },
+    {
+      "pid": 2585,
+      "rssMB": 8.2,
+      "cmd": "bun run build "
+    },
+    {
+      "pid": 2587,
+      "rssMB": 3.1,
+      "cmd": "/usr/bin/bash -c RAYON_NUM_THREADS=1 next build --experimental-build-mode compile && RAYON"
+    }
+  ],
+  "durationSec": 40.0,
+  "timeline": [
+    {
+      "t": 0.0,
+      "mb": 40.5
+    },
+    {
+      "t": 5.0,
+      "mb": 627.3
+    },
+    {
+      "t": 10.0,
+      "mb": 927.6
+    },
+    {
+      "t": 15.0,
+      "mb": 1316.6
+    },
+    {
+      "t": 20.0,
+      "mb": 1411.7
+    },
+    {
+      "t": 25.0,
+      "mb": 1491.0
+    },
+    {
+      "t": 30.0,
+      "mb": 1786.8
+    },
+    {
+      "t": 35.0,
+      "mb": 87.1
+    }
+  ],
+  "finishedAt": "2026-10-06T08:54:24.924464+00:00"
+}

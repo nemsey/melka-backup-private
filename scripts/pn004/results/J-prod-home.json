@@ -1,0 +1,19 @@
+{
+ "scenario": "J-prod-home",
+ "kind": "http",
+ "ts": "2026-10-05T19:04:15+0000",
+ "mem_available_before_mb": 3453.5,
+ "next_server_rss_before_mb": 0.0,
+ "method": "GET",
+ "url": "http://localhost:3000/",
+ "http_code": 200,
+ "resp_bytes": 11915,
+ "wall_ms": 7,
+ "error": null,
+ "srv_rss_peak_mb": 0.0,
+ "free_min_mb": 3453.2,
+ "samples_n": 1,
+ "mem_available_after_mb": 3452.9,
+ "next_server_rss_after_mb": 0.0,
+ "db_openers_after": 2
+}
