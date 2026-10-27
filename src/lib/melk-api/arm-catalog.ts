@@ -66,8 +66,11 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const MAX_PAGES = 500;
 
 /** مهلت فهرست — سرور ARM برای فهرست درخواست‌ها هزینهٔ ثابت ~۵ثانیه‌ای دارد
- * (پروب: limit=50 در ۵٫۱ثانیه؛ limit=500 تا ۶۰ثانیه و بیش از مهلت) */
-const LIST_TIMEOUT_MS = 45_000;
+ * (پروب: limit=50 در ۵٫۱ثانیه؛ limit=500 تا ۶۰ثانیه و بیش از مهلت)
+ * PN-036 (شورا-ن۰۵۸ · فاز ۴): ۴۵ ← ۷۵ ثانیه — مسیر رله: curl ۶۰ث گوشی +
+ * صف‌گذاری + ارسال نتیجه؛ مهلت سرور باید از مهلت گوشی بلندتر باشد (در
+ * نسل J گوشی در ۲۵ث می‌شکست و سرور هنوز ۲۰ ثانیه دیگر منتظر می‌ماند). */
+const LIST_TIMEOUT_MS = 75_000;
 
 type RawRow = Record<string, unknown>;
 
@@ -420,6 +423,9 @@ export interface ArmCatalogSyncResult {
   /** P6.5-11 (بند ب) — ازسرگیری: اطلاعات چرخه و نقطهٔ ادامه */
   resumedFromPage?: number;
   cycleId?: string;
+  /** PN-028/خامساً-الف — گذر سرِ تازه: شمار رکوردهای صفحهٔ ۱ (تازه‌ترین‌های منبع)
+ *  که پیش از ادامهٔ چرخهٔ ناتمام upsert شدند (صفر = چرخه از صفحهٔ ۱ شروع شد) */
+  freshHead?: number;
   checkpoint?: {
     lastCompletedPage: number;
     totalPages: number;
@@ -600,7 +606,10 @@ export async function syncArmListingsCatalog(
 ): Promise<ArmCatalogSyncResult> {
   const started = Date.now();
   const repo = opts.repos?.property ?? getPropertyRecordRepository();
-  const pageSize = Math.min(Math.max(opts.pageSize ?? 500, 1), 500);
+  const pageSize = Math.min(Math.max(opts.pageSize ?? 50, 1), 100);
+  // PN-036 (شورا-ن۰۵۸ · فاز ۴): pageSize پیش‌فرض ۵۰۰ ← ۵۰ — پاسخ ۵۰۰رکوردی
+  // (تا ۵+ مگابایت) هم curl ۲۵ثانیه‌ای گوشی را می‌شکست (خطای ۲۸ مکرر مالک)،
+  // هم ARG_MAX jq؛ سقف clamp هم ۵۰۰ ← ۱۰۰ کاهش یافت (۵۰ عین رفتار خود سامانه پایدار است)
   const maxPages = Math.min(opts.maxPages ?? MAX_PAGES, MAX_PAGES);
   const runId = `p6510-listings-${randomUUID().slice(0, 8)}`;
   const out: ArmCatalogSyncResult = {
@@ -618,6 +627,37 @@ export async function syncArmListingsCatalog(
   let lastCompleted = cycle.lastCompletedPage;
   let savedTotalAtSource = savedCp?.totalAtSource ?? 0;
   let reachedEndPage = 1;
+
+  // ═══ PN-028/خامساً-الف — گذر سرِ تازه (Fresh-Head pass) ═══
+  // شاهد داده: فهرست ARM «جدیدترین‌اول» است (صعود کدآگهی با extractedA در نخستین
+  // چرخه = ۰٫۰). رکوردهای امروز/ساعات اخیر همیشه در صفحهٔ ۱ اند؛ اما ازسرگیریِ
+  // checkpoint از میانهٔ فهرست ادامه می‌کرد ⇒ موارد تازه فقط پس از دور کامل به
+  // فهرست می‌رسید (تاخیر چندساعته/چندکلیکی). درمان: هر اجرا که از صفحهٔ >۱ ادامه
+  // می‌دهد، نخست یک صفحهٔ ۱ کامل می‌خواند و upsert می‌کند (بی‌اثر و idempotent)
+  // — پس با همان اولین کلیکِ «بروزرسانی»، موارد امروز در فهرست اند.
+  if (cycle.startPage > 1) {
+    try {
+      const head = await fetchListPage(token, MELK_ENDPOINTS.arm.propertiesList, 1, pageSize, savedTotalAtSource);
+      const headInputs = head.rows
+        .map((r) => mapArmPropertyListRow(r))
+        .filter((r): r is PropertyBulkInput => r !== null);
+      if (headInputs.length > 0) {
+        const headStats = await repo.upsertBulk(headInputs, { sourceRunId: runId });
+        out.fetched += headInputs.length;
+        out.created += headStats.created;
+        out.updated += headStats.updated;
+        out.duplicates += headStats.duplicates;
+        out.errors += headStats.errors;
+        out.freshHead = headInputs.length;
+      }
+      if (head.total > 0) {
+        out.totalAtSource = head.total;
+        savedTotalAtSource = savedTotalAtSource || head.total;
+      }
+    } catch {
+      // گذر سرِ تازه بهترین-تلاش است — شکستش هرگز چرخهٔ اصلی را متوقف نمی‌کند
+    }
+  }
 
   try {
     let page = cycle.startPage;
@@ -697,6 +737,36 @@ export async function syncArmRequestsCatalog(
   let lastCompleted = cycle.lastCompletedPage;
   let savedTotalAtSource = savedCp?.totalAtSource ?? 0;
   let reachedEndPage = 1;
+
+  // ═══ PN-028/خامساً-الف — گذر سرِ تازه (Fresh-Head pass) — عین آگهی‌ها ═══
+  // فهرست درخواست‌های ARM نیز «جدیدترین‌اول» است؛ رکوردهای امروز در صفحهٔ ۱.
+  // هر ازسرگیریِ میانهٔ چرخه، نخست صفحهٔ ۱ را upsert می‌کند تا موارد تازه با
+  // همان اولین کلیکِ بروزرسانی در فهرست M2 ظاهر شوند (idempotent — بی‌اثر).
+  if (startPage > 1) {
+    try {
+      const { loadTypeMaps } = await import("./type-registry");
+      const headMaps = await loadTypeMaps().catch(() => undefined);
+      const head = await fetchListPage(token, MELK_ENDPOINTS.arm.requestsList, 1, pageSize, savedTotalAtSource);
+      const headInputs = head.rows
+        .map((r) => mapArmRequestListRow(r, headMaps))
+        .filter((r): r is ArmRequestBulkRow => r !== null);
+      if (headInputs.length > 0) {
+        const headStats = await repo.upsertArmBulk(headInputs, { sourceRunId: runId });
+        out.fetched += headInputs.length;
+        out.created += headStats.created;
+        out.updated += headStats.updated;
+        out.duplicates += headStats.duplicates;
+        out.errors += headStats.errors;
+        out.freshHead = headInputs.length;
+      }
+      if (head.total > 0) {
+        out.totalAtSource = head.total;
+        savedTotalAtSource = savedTotalAtSource || head.total;
+      }
+    } catch {
+      // گذر سرِ تازه بهترین-تلاش است — شکستش هرگز چرخهٔ اصلی را متوقف نمی‌کند
+    }
+  }
 
   try {
     let page = startPage;

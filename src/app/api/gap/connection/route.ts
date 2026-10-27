@@ -18,7 +18,7 @@ import { errorResponse, requireRole, requireSessionAsync } from "@/lib/auth/guar
 import { MelkApiError } from "@/lib/melk-api/types";
 import { audit } from "@/lib/auth/session";
 import { encryptSecret } from "@/lib/auth/crypto";
-import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
+import { recordAttempt } from "@/lib/auth/rate-limiter";
 import { classifySmsSendFailure } from "@/lib/melk-api/sms";
 import { armCall } from "@/lib/melk-api/client";
 import { getMelkApiConfig } from "@/lib/melk-api/config";
@@ -70,11 +70,8 @@ export async function POST(request: NextRequest) {
       if (!code || code.length < 3) {
         return errorResponse(new MelkApiError("UNKNOWN", "کد پرسنلی معتبر وارد کنید.", 400, false));
       }
-      // گارد نرخ محلی مستقل جریان GAP (۳ پیامک/۱۰ دقیقه؛ جدا از ARM/PM)
-      const rate = await checkRate(code, "REQUEST_OTP_GAP", ip);
-      if (!rate.allowed) {
-        return errorResponse(new MelkApiError("RATE_LIMITED", rate.reason ?? "درخواست بیش از حد مجاز.", 429, false));
-      }
+      // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال) — گارد نرخ محلی
+      // جریان GAP برافتاد؛ recordAttempt تنها رد حسابرسی می‌ماند.
       try {
         await armCall<unknown>({
           method: "GET",
@@ -133,11 +130,8 @@ export async function POST(request: NextRequest) {
       if (otp.length < 4 || otp.length > 8) {
         return errorResponse(new MelkApiError("UNKNOWN", "کد پیامکی باید ۴ تا ۸ رقم باشد.", 400, false));
       }
-      // گارد نرخ تأیید مستقل جریان GAP (۵ تأیید/۱۵ دقیقه + قفل)
-      const rate = await checkRate(code, "VERIFY_OTP_GAP", ip);
-      if (!rate.allowed) {
-        return errorResponse(new MelkApiError("RATE_LIMITED", rate.reason ?? "تلاش بیش از حد مجاز.", 429, false));
-      }
+      // PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال) — گارد نرخ تأیید
+      // جریان GAP برافتاد؛ recordAttempt تنها رد حسابرسی می‌ماند.
       try {
         const res = await armCall<{
           token?: string;

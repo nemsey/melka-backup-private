@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, KeyRound, ShieldCheck, Smartphone, Building2 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
+import { pollRelayJob } from "@/lib/client/relay-job";
 import { useAppStore } from "@/lib/client/store";
 import { enDigits } from "@/lib/format";
 
@@ -39,16 +40,40 @@ export function AuthScreen() {
     }
     setLoading(true);
     try {
-      const res = await api<{ ok: boolean; expiresInSeconds: number; source?: string }>(
+      // PN-035 (شورا-ن۰۵۷ · فاز ۳+۴): الگوی Async — پاسخ فوری {jobId}؛
+      // صفحهٔ OTP «همان لحظه» نمایش داده می‌شود (Eager UI) و نتیجهٔ ارسال
+      // پیامک در پس‌زمینه poll می‌شود — پایان 502 دروازه روی جریان ورود.
+      const res = await api<{ ok: boolean; jobId?: string; expiresInSeconds?: number }>(
         "/api/auth/request-otp",
-        { method: "POST", body: { personnelCode: code }, auth: false }
+        { method: "POST", body: { personnelCode: code }, auth: false, timeoutMs: 10_000 }
       );
       setPendingPersonnelCode(code);
       setStage("otp");
-      toast({
-        title: "کد پیامکی ارسال شد",
-        description: "کد تأیید ۴ رقمی به شماره موبایل ثبت‌شده در سامانه ملک تبریز پیامک شد.",
-      });
+      if (res.jobId) {
+        toast({
+          title: "در حال ارسال پیامک…",
+          description: "فیلد کد تأیید آماده است — پیامک از مسیر رلهٔ موبایل در راه است.",
+        });
+        void pollRelayJob<{ expiresInSeconds?: number }>(res.jobId, { auth: false, attempts: 60 }).then((out) => {
+          if (out.ok) {
+            toast({
+              title: "کد پیامکی ارسال شد",
+              description: "کد تأیید ۴ رقمی به شماره موبایل ثبت‌شده در سامانه ملک تبریز پیامک شد.",
+            });
+          } else if (out.kind === "failed") {
+            toast({
+              title: "ارسال پیامک ناموفق",
+              description: out.error?.message ?? "خطای ارسال کد پیامکی.",
+              variant: "destructive",
+            });
+          }
+        });
+      } else {
+        toast({
+          title: "کد پیامکی ارسال شد",
+          description: "کد تأیید ۴ رقمی به شماره موبایل ثبت‌شده در سامانه ملک تبریز پیامک شد.",
+        });
+      }
     } catch (err) {
       const e = err as ApiClientError;
       toast({ title: "خطا در ارسال کد", description: e.message, variant: "destructive" });

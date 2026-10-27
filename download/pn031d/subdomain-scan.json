@@ -1,0 +1,204 @@
+{
+  "ts": "20261013T130123Z",
+  "method": "DNS A/AAAA (resolver سندباکس · بدون brute-force واژه‌نامه‌ای سنگین)",
+  "candidates": [
+    "api.melketabriz.ir",
+    "app.melketabriz.ir",
+    "m.melketabriz.ir",
+    "admin.melketabriz.ir",
+    "mobile.melketabriz.ir",
+    "developer.melketabriz.ir",
+    "docs.melketabriz.ir",
+    "sso.melketabriz.ir",
+    "login.melketabriz.ir",
+    "portal.melketabriz.ir",
+    "old.melketabriz.ir",
+    "backup.melketabriz.ir",
+    "api.melketabriz.com",
+    "app.melketabriz.com",
+    "m.melketabriz.com",
+    "admin.melketabriz.com",
+    "mobile.melketabriz.com",
+    "developer.melketabriz.com",
+    "docs.melketabriz.com",
+    "sso.melketabriz.com",
+    "login.melketabriz.com",
+    "portal.melketabriz.com",
+    "old.melketabriz.com",
+    "backup.melketabriz.com",
+    "melketabriz.ir",
+    "melketabriz.com"
+  ],
+  "results": [
+    {
+      "name": "melketabriz.ir",
+      "ipv4": [
+        "46.100.93.175"
+      ],
+      "ipv6": [],
+      "error": null
+    },
+    {
+      "name": "api.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "app.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "m.melketabriz.ir",
+      "ipv4": [
+        "46.100.93.175"
+      ],
+      "ipv6": [],
+      "error": null
+    },
+    {
+      "name": "admin.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "mobile.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "developer.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "docs.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "sso.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "login.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "portal.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "old.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "backup.melketabriz.ir",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "melketabriz.com",
+      "ipv4": [
+        "46.100.93.175"
+      ],
+      "ipv6": [],
+      "error": null
+    },
+    {
+      "name": "api.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "app.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "m.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "admin.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "mobile.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "developer.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "docs.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "sso.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "login.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "portal.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "old.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    },
+    {
+      "name": "backup.melketabriz.com",
+      "ipv4": [],
+      "ipv6": [],
+      "error": "NXDOMAIN_or_resolver"
+    }
+  ],
+  "summary": {
+    "queried": 26,
+    "resolved": 3,
+    "uniqueIpv4": [
+      "46.100.93.175"
+    ],
+    "ipv6Any": false
+  }
+}

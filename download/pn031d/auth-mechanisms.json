@@ -1,0 +1,30 @@
+{
+  "ts": "20261013T130123Z",
+  "wellKnown": {
+    "/.well-known/oauth-authorization-server": {
+      "url": "https://arus-api.melketabriz.ir/.well-known/oauth-authorization-server",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8009
+    },
+    "/.well-known/openid-configuration": {
+      "url": "https://arus-api.melketabriz.ir/.well-known/openid-configuration",
+      "reachable": false,
+      "error": "URLError",
+      "latencyMs": 8010
+    }
+  },
+  "knownFromProject": {
+    "mechanism": "کد پرسنلی + رمز یک‌بارمصرف پیامکی (OTP)",
+    "usedBy": [
+      "ARM (arus-api /api/apm)",
+      "PM (pm-api)",
+      "GAP (gap-api)"
+    ],
+    "note": "سازوکار ورود رسمیِ سامانه‌ها از پیمایش پیشین پروژه مستند است؛ خودِ URLها از این سرور در دسترس نیستند (بلاک جغرافیایی)."
+  },
+  "summary": {
+    "/.well-known/oauth-authorization-server": false,
+    "/.well-known/openid-configuration": false
+  }
+}

@@ -1,0 +1,45 @@
+{
+ "phase": "PN-031-HOTFIX · تست زندهٔ URL عمومی (فاز ۴ دستور جلسهٔ ۰۳۸)",
+ "testedAt": "2026-10-12T10:08:13Z",
+ "publicUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+ "method": "همهٔ درخواست‌ها فقط از URL عمومی (اینترنت) — مسیر کامل واقعی مالک: ورود مدیر → ثبت دستگاه → دانلود اسکریپت",
+ "steps": {
+  "1_bootstrapBogusCode": {
+   "expect": "403",
+   "got": "403",
+   "verdict": "PASS"
+  },
+  "2_masterLogin": {
+   "expect": "200",
+   "verdict": "PASS"
+  },
+  "3_enrollViaPublicUrl": {
+   "expect": "200",
+   "got": "200",
+   "installCommandContainsPublicUrlOnly": true,
+   "installCommandContainsInternal": false,
+   "verdict": "PASS"
+  },
+  "4_bootstrapDownloadViaPublicUrl": {
+   "expect": "200 — عین curl گوشی مالک",
+   "got": "200",
+   "scriptServerUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+   "scriptInternalAddresses": 0,
+   "scriptBashSyntaxValid": true,
+   "scriptSha256": "7e42e50cc72244de4f99ee81b5bf5a52b3913d8e6144b9adc66f9be49e64f3ec",
+   "scriptBytes": 5655,
+   "verdict": "PASS"
+  },
+  "5_codeSingleUse": {
+   "expect": "403 در تلاش دوم",
+   "got": "403",
+   "verdict": "PASS"
+  },
+  "6_testDeviceRevoked": {
+   "deviceId": "hotfix-live-test-050c22",
+   "httpStatus": "200"
+  }
+ },
+ "verdict": "PASS — کل زنجیرهٔ مالک از اینترنت با نشانی عمومی کار می‌کند",
+ "note": "دستگاه آزمایشی (hotfix-live-test) پس از تست ابطال شد؛ کد نهایی مالک جداگانه و دست‌نخورده صادر می‌شود ( regenerated.json )"
+}

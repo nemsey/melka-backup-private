@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">رلهٔ ملکا</string>
+    <string name="app_subtitle">اتصال ملکا به ملک تبریز</string>
+
+    <!-- وضعیت -->
+    <string name="status_not_setup">راه‌اندازی نشده</string>
+    <string name="status_not_setup_hint">دکمهٔ «اتصال با QR» را بزنید و کد QR بخش «رلهٔ موبایل» تنظیمات ملکا را اسکن کنید — یا «ورود دستی کد».</string>
+    <string name="status_inactive">غیرفعال</string>
+    <string name="status_inactive_hint">دکمهٔ «فعال» را بزنید تا رله شروع به کار کند.</string>
+    <string name="status_online">رلهٔ ملکا فعال است</string>
+    <string name="status_connecting">در حال اتصال…</string>
+    <string name="status_restarting">خودترمیمی…</string>
+    <string name="status_restarting_hint">سرویس در حال راه‌اندازی مجدد است (MIUI آن را بسته بود). چند لحظه صبر کنید.</string>
+    <string name="status_detail">موفق: %1$d · خطا: %2$d · آخرین وضعیت: %3$s</string>
+    <string name="device_line">دستگاه: %1$s</string>
+
+    <!-- دکمه‌ها -->
+    <string name="btn_activate">فعال</string>
+    <string name="btn_deactivate">غیرفعال</string>
+    <string name="btn_scan">اتصال با QR</string>
+    <string name="btn_manual">ورود دستی کد</string>
+    <string name="btn_miui">راهنمای بقا در MIUI</string>
+    <string name="btn_battery">استثنای بهینه‌سازی باتری</string>
+    <string name="btn_disconnect">قطع اتصال و حذف اعتبارنامه</string>
+    <string name="connect">اتصال</string>
+    <string name="cancel">انصراف</string>
+    <string name="close">بستن</string>
+
+    <!-- راه‌اندازی -->
+    <string name="hint_server">نشانی سرور ملکا (https://…)</string>
+    <string name="hint_code">کد راه‌اندازی (از تنظیمات ملکا)</string>
+    <string name="manual_title">ورود دستی</string>
+    <string name="enrolling">در حال ثبت دستگاه روی سرور ملکا…</string>
+    <string name="enroll_ok">نصب کامل شد ✓ — رله فعال است. کد راه‌اندازی مصرف شد.</string>
+    <string name="enroll_fail">ثبت دستگاه ناموفق بود.</string>
+    <string name="err_bad_qr">این QR مال راه‌اندازی رلهٔ ملکا نیست. از تنظیمات ملکا، بخش «رلهٔ موبایل»، دکمهٔ راه‌اندازی را بزنید و QR تازه را اسکن کنید.</string>
+    <string name="err_bad_input">نشانی سرور یا کد راه‌اندازی کامل نیست.</string>
+    <string name="disconnect_title">قطع اتصال</string>
+    <string name="disconnect_message">رله خاموش می‌شود و اعتبارنامهٔ این گوشی از حافظهٔ امن پاک می‌شود. برای وصل شدن مجدد، از تنظیمات ملکا کد تازه بگیرید.</string>
+    <string name="disconnect">قطع و حذف</string>
+
+    <!-- MIUI -->
+    <string name="miui_title">بقا در MIUI (۳ قدم، یک‌بار برای همیشه)</string>
+    <string name="miui_steps">۱) تنظیمات گوشی → Battery → App battery saver → «رلهٔ ملکا» → No restrictions\n\n۲) تنظیمات گوشی → Apps → Manage apps → «رلهٔ ملکا» → Autostart را روشن کنید\n\n۳) در صفحهٔ Recent apps، روی آیکن اپ طولانی بزنید و Lock (قفل) را فعال کنید\n\nسپس دکمهٔ «استثنای بهینه‌سازی باتری» همین صفحه را یک‌بار بزنید.</string>
+    <string name="open_miui_settings">باز کردن تنظیمات باتری MIUI</string>
+    <string name="battery_ok">استثنای باتری از قبل فعال است ✓</string>
+
+    <!-- اعلان -->
+    <string name="notif_channel">رلهٔ ملکا</string>
+    <string name="notif_channel_desc">وضعیت دائمی رلهٔ اتصال ملکا به ملک تبریز</string>
+    <string name="notif_title">رلهٔ ملکا فعال است</string>
+    <string name="notif_starting">در حال اتصال به سرور ملکا…</string>
+    <string name="notif_active">رلهٔ ملکا فعال است</string>
+    <string name="notif_stats">%1$d موفق · %2$d خطا</string>
+    <string name="notif_tap_to_activate">رلهٔ ملکا متوقف شده — برای فعال‌سازی لمس کنید</string>
+
+    <!-- پانوشت -->
+    <string name="footer">این اپ فقط درخواست‌های امضاشدهٔ سرور ملکا را به سامانه‌های ملک تبریز (https://*.melketabriz.ir) منتقل می‌کند — صفر دسترسی به هر سامانهٔ دیگر · صفر لاگ محتوا</string>
+    <string name="scanner_prompt">QR راه‌اندازی را از تنظیمات ملکا اسکن کنید</string>
+</resources>

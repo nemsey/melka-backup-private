@@ -45,6 +45,22 @@ else
     bun scripts/pn012/escrow-manager.ts restore 2>&1 | tee -a dev-recovery.log || true
   fi
 
+  # ۱-ب) PN-031-E — بازیابی مسیر سرو تحویل‌ها (public/deliver) اگر بازنشانی پلتفرم آن را زد
+  #      منبع حقیقت: download/ + upload/.survival (طبق .gitignore بند ۹۵)؛ اینجا فقط کپی سرو.
+  if [[ ! -f public/deliver/pn031d/melka-relay.apk && -f download/pn031d/melka-relay.apk ]]; then
+    mkdir -p public/deliver/pn031d
+    cp -f download/pn031d/melka-relay.apk download/pn031d/qr-apk.png download/pn031d/qr-apk.svg download/pn031d/OWNER-GUIDE.html public/deliver/pn031d/ 2>/dev/null || true
+    echo "[dev-entry] public/deliver/pn031d از منبع حقیقت download/pn031d بازگردانده شد (APK + QR)"
+  fi
+
+  # ۱-ج/۱-د) ═══ PN-042 (جلسهٔ ۰۷۰): دکترین رستاخیز — صفر بازیابی خودکار در بوت ═══
+  #      سازوکارهای بازیابی موازی محلی (سپر عالی + گارد قلعه + دستور یک‌خطی قدیمی)
+  #      حذف شدند. منبع حقیقت کد: GitHub main. بازیابی فقط با فرمان مالک
+  #      (قانون «مجری کور») انجام می‌شود — بوت با هر درختی که دارد بالا
+  #      می‌آید (قانون ۱۱) و دیتابیس را watchdog محلی-اول تأمین می‌کند.
+  echo "[dev-entry] راهنمای رستاخیز پس از ریست (مخزن خصوصی — raw توکن می‌خواهد · کشف PN-042-A):"
+  echo "  set -a; . upload/.mirror/credentials.env; set +a; TOKEN=\$(printf '%s' \"\$MIRROR_URL_AUTHED\" | sed -n 's#https://[^:]*:\([^@]*\)@.*#\1#p'); curl -fsSL -H \"Authorization: token \$TOKEN\" \"https://raw.githubusercontent.com/nemsey/melka-backup-private/main/resurrect-ultimate.sh?t=\$(date +%s)\" | bash"
+
   # ۲) بیلد در صورت نبود
   if [[ ! -f .next/standalone/server.js ]]; then
     echo "[dev-entry] بیلد production…"

@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-17T13:20:00Z",
+  "phase": "PN-038/۵.۲ — بازآزمون داوری Tier ۴ (جلسهٔ دوم)",
+  "context": "چرخهٔ یادگیری دوباره در ۱۲:۴۸ توسط Worker جلسهٔ دوم اجرا شد (زیر قانون «حفظ بروزرسانی»)",
+  "freshRun": {
+    "ranAt": "2026-10-17T12:48:56.583Z",
+    "predictions": 846,
+    "linked": 846,
+    "brierScore": 0.2392,
+    "verdict": "ABOVE_BASELINE",
+    "source": "intelligence-data/loop-latest.json"
+  },
+  "condition": {
+    "rule": "Brier ≤ ۰٫۲۰ (شورا-ن۰۶۳)",
+    "threshold": 0.2,
+    "measured_session1": 0.2256,
+    "measured_session2": 0.2392
+  },
+  "decision": "HOLD",
+  "decisionFa": "هر دو اندازه‌گیری بالای آستانه — Tier ۳ حفظ می‌شود؛ ارتقا فقط با رأی شورا پس از رسیدن Brier ≤ ۰٫۲۰",
+  "ok": true
+}
