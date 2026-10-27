@@ -27,4 +27,5 @@ export { TopRankingTable, type RankRow } from "./top-ranking-table";
 export { ExcelImportButton } from "./excel-import-button";
 // PN-009 مرحله B — زبان طراحی مشترک فیلترها (چیپ یکدست + گروه برچسب‌دار)
 export { FilterChip, type FilterChipProps } from "./FilterChip";
+export { OwnerNoteCell, type OwnerNoteCellProps } from "./OwnerNoteCell";
 export { FilterGroup, type FilterGroupProps } from "./FilterGroup";

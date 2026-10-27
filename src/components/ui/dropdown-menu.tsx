@@ -7,9 +7,11 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function DropdownMenu({
+  /** PN-046/گام اول-۰ — محتوای فارسیِ داخل این پریمیتیو راست‌چین است (پیش‌فرض Radix=ltr بود) */
+  dir = "rtl",
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" dir={dir} {...props} />
 }
 
 function DropdownMenuPortal({

@@ -61,6 +61,8 @@ function toInData(i: InteractionUpsertInput): Record<string, unknown> {
 function buildExpertWhere(filter?: ExpertListFilter): Prisma.ExpertRecordWhereInput {
   const where: Prisma.ExpertRecordWhereInput = {};
   if (!filter) return where;
+  // PN-044/فاز ۴ — جداسازی tenant (هنگام presence فیلتر؛ undefined = رفتار قبلی)
+  if (filter.tenantId) where.tenantId = filter.tenantId;
   if (filter.fullName) where.fullName = { contains: filter.fullName };
   if (filter.mobile) where.mobile = { contains: filter.mobile };
   if (filter.personnelCode) where.personnelCode = { contains: filter.personnelCode };

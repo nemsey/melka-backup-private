@@ -1,0 +1,202 @@
+{
+  "phase": "PN-036 فاز ۴ — endpoint های سنگین: تشخیص + درمان",
+  "at": "2026-10-16T20:46:26.483Z",
+  "diagnosis": {
+    "slowRoundtrips": [
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/realtor-reports/traded-count",
+        "httpStatus": 200,
+        "seconds": 265.9,
+        "bodyKB": 32
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/public/statics/enums-persian",
+        "httpStatus": 200,
+        "seconds": 202.5,
+        "bodyKB": 4
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/properties/details/62b6b352d",
+        "httpStatus": 200,
+        "seconds": 202.5,
+        "bodyKB": 1
+      },
+      {
+        "path": "gap-api.melketabriz.ir/api/",
+        "httpStatus": 404,
+        "seconds": 202.5,
+        "bodyKB": 0
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/realtor-reports/traded-count",
+        "httpStatus": 200,
+        "seconds": 202.5,
+        "bodyKB": 32
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/properties/owner/62fd3e00c13",
+        "httpStatus": 200,
+        "seconds": 184.4,
+        "bodyKB": 1
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/realtor-reports/traded-count",
+        "httpStatus": 200,
+        "seconds": 184.4,
+        "bodyKB": 32
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/realtor-reports/traded-count",
+        "httpStatus": 200,
+        "seconds": 184.4,
+        "bodyKB": 14
+      },
+      {
+        "path": "pm-api.melketabriz.ir/api/public/portalInfo",
+        "httpStatus": 200,
+        "seconds": 184.4,
+        "bodyKB": 0
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/public/statics/enums-persian",
+        "httpStatus": 200,
+        "seconds": 184.4,
+        "bodyKB": 4
+      },
+      {
+        "path": "gap-api.melketabriz.ir/api/",
+        "httpStatus": 404,
+        "seconds": 184.4,
+        "bodyKB": 0
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apu/properties/list?page=1&limit",
+        "httpStatus": 200,
+        "seconds": 184.4,
+        "bodyKB": 3
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/realtor-reports/traded-count",
+        "httpStatus": 200,
+        "seconds": 184.4,
+        "bodyKB": 14
+      },
+      {
+        "path": "pm-api.melketabriz.ir/api/authentication/otp/410031320",
+        "httpStatus": 412,
+        "seconds": 184.4,
+        "bodyKB": 0
+      },
+      {
+        "path": "pm-api.melketabriz.ir/api/authentication/otp/410031320",
+        "httpStatus": 412,
+        "seconds": 184.4,
+        "bodyKB": 0
+      }
+    ],
+    "curl28ByPath": [
+      {
+        "path": "pm-api.melketabriz.ir/api/public/portalInfo",
+        "failures": 2
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/public/statics/enums-persian",
+        "failures": 2
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apu/properties/list?page=1&limit",
+        "failures": 2
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/trade-overviews/info/6ad08da",
+        "failures": 2
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/requests/list?page=288&limit",
+        "failures": 2
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/requests/list?page=1&limit=5",
+        "failures": 2
+      },
+      {
+        "path": "gap-api.melketabriz.ir/api/",
+        "failures": 1
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/properties/owner/61d45fcd852",
+        "failures": 1
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/properties/list?page=1&limit",
+        "failures": 1
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/properties/details/61d45fcd8",
+        "failures": 1
+      }
+    ],
+    "curl28Total": 16,
+    "largestBodies": [
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/realtor-reports/traded-count",
+        "maxBodyKB": 32
+      },
+      {
+        "path": "pm-api.melketabriz.ir/api/authentication/otp/login",
+        "maxBodyKB": 20
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/authentication/otp/login",
+        "maxBodyKB": 16
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apu/properties/list?page=1&limit",
+        "maxBodyKB": 5
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/public/statics/enums-persian",
+        "maxBodyKB": 4
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/properties/owner/632c329743e",
+        "maxBodyKB": 4
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/trade-overviews/info/6ad077c",
+        "maxBodyKB": 2
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/properties/owner/63286be948f",
+        "maxBodyKB": 2
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/properties/owner/61dd64c0e0d",
+        "maxBodyKB": 2
+      },
+      {
+        "path": "arus-api.melketabriz.ir/api/apm/properties/owner/61d45fcd852",
+        "maxBodyKB": 1
+      }
+    ],
+    "conclusion": "مسیرهای سنگین = فهرست‌ها (properties/requests/list با limit=۵۰۰/۱۰۰) + statics/enums + portalInfo — پاسخ‌های چند-مگابایتی هم curl ۲۵ث را می‌شکستند (خطای 28) هم jq ARG_MAX را (پاسخ base64 در آرگومان خط فرمان)"
+  },
+  "treatment": {
+    "perItemTimingLogs": "هر آیتم: «✓ METHOD path → HTTP CODE در DURث» یا «⚔ METHOD path → خطای curl N پس از DURث» — مسیر بدون کوئری (صفر لاگ محتوا)",
+    "adaptiveTimeout": "is_interactive → ۱۵ث (OTP) · بقیه ۶۰ث + تلاش دوم با ۵ث فاصله برای خطای ۲۸",
+    "pageSize": [
+      {
+        "catalog": "ARM listings (arm-catalog.ts)",
+        "before": "پیش‌فرض ۵۰۰ · clamp ۵۰۰",
+        "after": "پیش‌فرض ۵۰ · clamp ۱۰۰ — عین رفتار خود سامانه (limit=50 در ۵.۱ث پایدار)"
+      },
+      {
+        "catalog": "PM عمومی (melk-public.ts)",
+        "before": "پیش‌فرض ۱۰۰ · clamp ۱۰۰",
+        "after": "پیش‌فرض ۵۰ · clamp ۵۰"
+      }
+    ],
+    "serverListTimeout": "۴۵ → ۷۵ث (ARM listings) · ۳۰ → ۷۵ث (melk-public) — مهلت سرور بلندتر از مهلت گوشی (۶۰ث)",
+    "relayWait": "RELAY_WAIT_DEFAULT_MS: ۳۰ ← ۱۱۰ث — کارهای پس‌زمینه برای فهرست‌های سنگین زمان واقعی می‌گیرند"
+  }
+}

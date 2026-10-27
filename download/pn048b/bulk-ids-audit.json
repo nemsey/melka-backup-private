@@ -1,0 +1,37 @@
+{
+ "meta": {
+  "test": "N3",
+  "description": "bulk IDs — فقط شناسه‌های مجاز خودی (enumeration ممنوع)",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "bulk_same",
+ "samples_redacted": [
+  {
+   "probe": "filings-ids-array",
+   "status": 200,
+   "rows_page": 10,
+   "note": "rows همان صفحهٔ عادی = param نادیده (expected)"
+  },
+  {
+   "probe": "potentials-ids-array",
+   "status": 200,
+   "rows_page": 10,
+   "note": "rows همان صفحهٔ عادی = param نادیده (expected)"
+  },
+  {
+   "probe": "filings-ids-csv",
+   "status": 200,
+   "rows_page": 10,
+   "note": "rows همان صفحهٔ عادی = param نادیده (expected)"
+  },
+  {
+   "probe": "potentials-id-csv",
+   "status": 200,
+   "rows_page": 10,
+   "note": "rows همان صفحهٔ عادی = param نادیده (expected)"
+  }
+ ]
+}

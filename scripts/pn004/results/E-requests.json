@@ -1,0 +1,19 @@
+{
+ "scenario": "E-requests",
+ "kind": "http",
+ "ts": "2026-10-05T18:53:47+0000",
+ "mem_available_before_mb": 555.4,
+ "next_server_rss_before_mb": 2899.9,
+ "method": "GET",
+ "url": "http://localhost:3000/api/requests",
+ "http_code": 401,
+ "resp_bytes": 130,
+ "wall_ms": 280,
+ "error": null,
+ "srv_rss_peak_mb": 2905.0,
+ "free_min_mb": 554.0,
+ "samples_n": 2,
+ "mem_available_after_mb": 551.4,
+ "next_server_rss_after_mb": 2907.8,
+ "db_openers_after": 3
+}

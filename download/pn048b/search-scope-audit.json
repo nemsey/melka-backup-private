@@ -1,0 +1,141 @@
+{
+ "meta": {
+  "test": "A6",
+  "description": "search scope — آیا جستجو فقط در دامنهٔ مجاز برمی‌گردد؟",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "scope_limited",
+ "substitution_note": "جستجوی نام اشخاص (آبرسان/نصر) با واژه‌های عمومی (آپارتمان/خریدار) جایگزین شد — همان سنجهٔ scope با حداقل قرینهٔ PII ثالث؛ منع enumeration و رعایت G7.",
+ "verdict_criterion": "نتیجهٔ جستجو شامل ردیف‌های متعلق به کاربران دیگر = scope_authorized (عرض دامنه)؛ فقط خودی/عمومی = scope_limited",
+ "samples_redacted": [
+  {
+   "probe": "filing-search-apartment",
+   "status": 200,
+   "rows_page": 10,
+   "assigned_user_distribution": {
+    "19x617": 10
+   },
+   "any_own_rows": true,
+   "row_keys": [
+    "id",
+    "full_id",
+    "code",
+    "saleType",
+    "fileType",
+    "area",
+    "ownerName",
+    "price",
+    "prepayment",
+    "rent",
+    "assignedUser",
+    "phone",
+    "agency",
+    "source",
+    "status",
+    "createdTime",
+    "images"
+   ]
+  },
+  {
+   "probe": "filing-search-kharidar",
+   "status": 200,
+   "rows_page": 0,
+   "assigned_user_distribution": {},
+   "any_own_rows": false,
+   "row_keys": []
+  },
+  {
+   "probe": "pot-search-apartment",
+   "status": 200,
+   "rows_page": 10,
+   "assigned_user_distribution": {
+    "19x617": 10
+   },
+   "any_own_rows": true,
+   "row_keys": [
+    "full_id",
+    "id",
+    "code",
+    "potentialName",
+    "customerType",
+    "price",
+    "rent",
+    "prepayment",
+    "areas",
+    "contactName",
+    "agency",
+    "assignedUser",
+    "propertyType",
+    "createdTime",
+    "starred",
+    "status"
+   ]
+  },
+  {
+   "probe": "pot-search-kharidar",
+   "status": 200,
+   "rows_page": 0,
+   "assigned_user_distribution": {},
+   "any_own_rows": false,
+   "row_keys": []
+  },
+  {
+   "probe": "filing-search-value-param",
+   "status": 200,
+   "rows_page": 10,
+   "assigned_user_distribution": {
+    "19x617": 10
+   },
+   "any_own_rows": true,
+   "row_keys": [
+    "id",
+    "full_id",
+    "code",
+    "saleType",
+    "fileType",
+    "area",
+    "ownerName",
+    "price",
+    "prepayment",
+    "rent",
+    "assignedUser",
+    "phone",
+    "agency",
+    "source",
+    "status",
+    "createdTime",
+    "images"
+   ]
+  },
+  {
+   "probe": "pot-q-param",
+   "status": 200,
+   "rows_page": 10,
+   "assigned_user_distribution": {
+    "19x617": 10
+   },
+   "any_own_rows": true,
+   "row_keys": [
+    "full_id",
+    "id",
+    "code",
+    "potentialName",
+    "customerType",
+    "price",
+    "rent",
+    "prepayment",
+    "areas",
+    "contactName",
+    "agency",
+    "assignedUser",
+    "propertyType",
+    "createdTime",
+    "starred",
+    "status"
+   ]
+  }
+ ]
+}

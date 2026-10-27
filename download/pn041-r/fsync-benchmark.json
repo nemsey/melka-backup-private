@@ -1,0 +1,77 @@
+{
+  "ts": "2026-10-18T11:48:14.965Z",
+  "results": [
+    {
+      "path": "fuse(ossfs)",
+      "journal": "DELETE",
+      "synchronous": "FULL",
+      "timesMs": [
+        85,
+        82,
+        95,
+        85,
+        86,
+        102,
+        102,
+        94
+      ],
+      "avgMs": 91,
+      "maxMs": 102,
+      "hung": false
+    },
+    {
+      "path": "fuse(ossfs)",
+      "journal": "DELETE",
+      "synchronous": "NORMAL",
+      "timesMs": [
+        83,
+        80,
+        96,
+        63,
+        64,
+        66,
+        62,
+        61
+      ],
+      "avgMs": 72,
+      "maxMs": 96,
+      "hung": false
+    },
+    {
+      "path": "fuse(ossfs)",
+      "journal": "DELETE",
+      "synchronous": "OFF",
+      "timesMs": [
+        33,
+        42,
+        34,
+        33,
+        36,
+        33,
+        32,
+        33
+      ],
+      "avgMs": 35,
+      "maxMs": 42,
+      "hung": false
+    },
+    {
+      "path": "local-disk",
+      "journal": "WAL",
+      "synchronous": "NORMAL",
+      "timesMs": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "avgMs": 0,
+      "maxMs": 0,
+      "hung": false
+    }
+  ]
+}

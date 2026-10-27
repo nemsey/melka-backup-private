@@ -1,0 +1,68 @@
+{
+ "meta": {
+  "test": "A2",
+  "description": "filing-edit — بازرسی ownerName/ownerMobile/address با redaction · تفکیک ۴۰۳ از ۵۰۰",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "error_500",
+ "breakdown": {
+  "200": 0,
+  "403": 0,
+  "5xx": 8
+ },
+ "samples_redacted": [
+  {
+   "code": "ME8439",
+   "status": 500,
+   "status_class": "500_server_error"
+  },
+  {
+   "code": "ME8418",
+   "status": 500,
+   "status_class": "500_server_error"
+  },
+  {
+   "code": "ME8415",
+   "status": 500,
+   "status_class": "500_server_error"
+  },
+  {
+   "code": "ME8414",
+   "status": 500,
+   "status_class": "500_server_error"
+  },
+  {
+   "code": "ME8413",
+   "status": 500,
+   "status_class": "500_server_error"
+  },
+  {
+   "code": "ME8365",
+   "status": 500,
+   "status_class": "500_server_error"
+  },
+  {
+   "code": "ME8330",
+   "status": 500,
+   "status_class": "500_server_error"
+  },
+  {
+   "code": "ME8329",
+   "status": 500,
+   "status_class": "500_server_error"
+  },
+  {
+   "code": "ME8439",
+   "status": 404,
+   "path": "/Melketunfilingplus/{id}/edit"
+  },
+  {
+   "code": "ME8439",
+   "status": 404,
+   "path": "/Melketunfilingplus/edit/{id}"
+  }
+ ]
+}
