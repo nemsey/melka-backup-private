@@ -86,7 +86,7 @@ describe("PN-016 · مدل دامنهٔ کاربران", () => {
   test("ماتریس پیش‌فرض: VIEWER فقط خواندن · GUEST هیچ", async () => {
     const { defaultPermissionsForRole } = await import("@/lib/users/user-model");
     const viewer = defaultPermissionsForRole("VIEWER");
-    expect(viewer.length).toBe(10);
+    expect(viewer.length).toBe(7); // PN-038: هفت کاشی قابل‌مدیریت هوم یک‌پارچه
     expect(viewer.every((p) => p.canRead && !p.canWrite && !p.canDelete && !p.canExport && !p.canSync)).toBe(true);
     expect(defaultPermissionsForRole("GUEST")).toHaveLength(0);
   });
@@ -191,7 +191,7 @@ describe("PN-016 · resolvePersonnelLoginUser", () => {
     expect(r.legacyRole).toBe("CONSULTANT");
     expect(r.isNewlyProvisioned).toBe(true);
     const perms = await db.userPermission.findMany({ where: { userId: r.user.id } });
-    expect(perms.length).toBe(10); // VIEWER: همهٔ کاشی‌ها فقط-خواندن
+    expect(perms.length).toBe(7); // VIEWER: همهٔ کاشی‌ها فقط-خواندن (PN-038: ۷ کاشی)
   });
 
   test("کاربر غیرفعال → isActive=false (روت ورود باید 403 بدهد)", async () => {
@@ -272,7 +272,7 @@ describe("PN-016 · مرز روت‌های مدیریت کاربران", () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(Array.isArray(body.rows)).toBe(true);
-    expect(body.registry.length).toBe(10);
+    expect(body.registry.length).toBe(7); // PN-038: ۷ کاشی
     expect(body.roles.map((r: { id: string }) => r.id)).toEqual(["OWNER", "MANAGER", "EXPERT", "VIEWER", "GUEST"]);
   });
 
@@ -289,7 +289,7 @@ describe("PN-016 · مرز روت‌های مدیریت کاربران", () => {
     TEST_USERS.push(body.user.id);
     expect(body.user.role).toBe("MANAGER");
     const perms = await db.userPermission.findMany({ where: { userId: body.user.id } });
-    expect(perms.length).toBe(10); // MANAGER: همهٔ کاشی‌ها
+    expect(perms.length).toBe(7); // MANAGER: همهٔ کاشی‌ها (PN-038: ۷ کاشی)
 
     // نقش مالک env از POST نمی‌تواند کم شود (قانون هویت دوگانه)
     await db.user.deleteMany({ where: { personnelCode: "410099950" } });

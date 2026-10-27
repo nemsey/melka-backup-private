@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-18T12:00:31.974257+00:00",
+  "operation": "PN-041-R live-db switch: ossfs(FUSE/DELETE) → local-disk(WAL)",
+  "justification": "شورا-ن۰۶۸ معماری موردعلاقه: WAL local + sync 5min — گزینهٔ FUSE-DELETE با ۵۱۲×P1008 و دو ژورنال داغ ابطال شد",
+  "oldLocalPreserved": [
+    "custom.db.pre-pn041r-20261018T120006Z"
+  ],
+  "localDb": {
+    "size": 399208448
+  },
+  "vacuumWitness": "db-switch-vacuum.json",
+  "envUrl": "file:/home/z/my-project/db/custom.db?connection_limit=1&socket_timeout=30",
+  "relayAltUrl": "https://c1vdh8442240-d.space-z.ai",
+  "records": {
+    "PropertyRecord": 27868,
+    "RequestRecord": 25580,
+    "TransactionRecord": 792,
+    "ExpertRecord": 293,
+    "GraphNode": 149359
+  },
+  "integrity": "ok"
+}

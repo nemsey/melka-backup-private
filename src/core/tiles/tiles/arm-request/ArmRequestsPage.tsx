@@ -46,7 +46,9 @@ import {
   Landmark, PieChart, Banknote, Tag, CalendarDays, Network, Filter, MapPinned, Award, Building2, Home,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup } from "@/components/app/shared";
+import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup, OwnerNoteCell } from "@/components/app/shared";
+// PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: پنجره‌ای به دادهٔ خام (modal + فایل کامل هر کد)
+import { InfoButton } from "@/components/info/InfoButton";
 // PN-011 ثالثاً — شعبه چندانتخابی چیپی؛ Select تک‌انتخابی حذف شد
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
@@ -82,10 +84,16 @@ interface RequestRow {
   customerMobile: string | null;
   priceFrom: number | null;
   priceTo: number | null;
+  /** PN-046/گام اول-۱ — بودجهٔ رهن/پیش‌پرداخت درخواست ملکتون (CRM prepayment) */
+  depositBudget: number | null;
+  /** PN-046/گام اول-۱ — بودجهٔ اجارهٔ درخواست ملکتون (CRM rent) */
+  rentBudget: number | null;
   tradeTypeName: string | null;
   /** P6546/گام دوم — نوع ملک درخواستی + نوع ساختمان (از جزئیات ARM) */
   propertyTypeName: string | null;
   buildingTypeName: string | null;
+  /** PN-039 (گام ۴) — یادداشت مالک (آخرین ستون فهرست) */
+  ownerNote: string | null;
   areaNames: string[];
   lineNames: string[];
   branch: string;
@@ -175,7 +183,7 @@ const TRADE_CATEGORIES: readonly string[] = ["خرید", "پیش خرید", "ر�
 const MAX_AUTO_SLICES = 10;
 const AUTO_SLICE_ROWS = 25;
 
-export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
+export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, onBack: _back, tenantId }: TilePageProps) {
   const { toast } = useToast();
   // PN-011 خامسا-۲ — بار کاشی از M5 (کد درخواست) یک‌بار در ساخت مقصد مصرف می‌شود؛
   // فیلتر و اعمال هر دو از همان ابتدا پر می‌شوند ⇒ اولین واکشی خودش جست‌وجو است.
@@ -192,6 +200,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   /** شعبه‌های انتخاب‌شدهٔ فیلتر چندانتخابی (PN-011 ثالثاً — چیپ همانند دسته‌بندی) */
   const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
+  /** PN-039 (گام ۶) — نوع‌های ملک انتخاب‌شدهٔ فیلتر چندانتخابی (چیپ) */
+  const [selectedPropertyTypes, setSelectedPropertyTypes] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(
     // قانون ۰۳۵-B/ت-۵: آکاردئون در موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
@@ -207,6 +217,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
+    // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
+    params.set("tenantId", tenantId ?? "tabriz");
     // P6525 — نرمال‌سازی مرکزی
     if (applied.code) params.set("code", normalizeFilterInput(applied.code));
     if (applied.realtorName) params.set("realtorName", normalizeFilterInput(applied.realtorName));
@@ -222,6 +234,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     for (const t of selectedTrades) params.append("tradeType", t);
     // PN-011 ثالثاً — شعبه چندانتخابی (چیپ): چند مقدار هم‌زمان
     for (const b of selectedBranches) params.append("branch", b);
+    // PN-039 (گام ۶) — نوع ملک چندانتخابی (چیپ)
+    for (const t of selectedPropertyTypes) params.append("propertyType", t);
     try {
       const res = await api<RequestsResponse>(`/api/crm/arm-catalog/requests?${params.toString()}`);
       setData(res);
@@ -232,7 +246,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     } finally {
       setLoading(false);
     }
-  }, [applied, selectedStates, selectedTrades, selectedBranches]);
+  }, [applied, selectedStates, selectedTrades, selectedBranches, selectedPropertyTypes, tenantId]);
 
   useEffect(() => {
     setLoading(true);
@@ -300,6 +314,24 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     setSelectedBranches((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
   }, []);
 
+  /** PN-039 (گام ۶) — تاگل یک نوع ملک در فیلتر چندانتخابی (اعمال خودکار) */
+  const togglePropertyType = useCallback((t: string) => {
+    setSelectedPropertyTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }, []);
+
+  /** PN-039 (گام ۴) — به‌روزرسانی یادداشت ردیف در state پس از ذخیرهٔ موفق */
+  const updateRowNote = useCallback((id: string, note: string | null) => {
+    setData((prev) => (prev ? { ...prev, rows: prev.rows.map((r) => (r.id === id ? { ...r, ownerNote: note } : r)) } : prev));
+    toast({ title: "یادداشت ذخیره شد", description: "یادداشت مالک روی درخواست ثبت شد." });
+  }, [toast]);
+
+  /** PN-039 (گام ۶) — وجه نوع ملک برای چیپ‌ها: مقادیر یکتای فهرست بارخورده + انتخاب‌های جاری */
+  const propertyTypeFacet = useMemo(() => {
+    const set = new Set<string>(selectedPropertyTypes);
+    for (const r of data?.rows ?? []) if (r.propertyTypeName) set.add(r.propertyTypeName);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "fa"));
+  }, [data, selectedPropertyTypes]);
+
   const doSync = useCallback(async () => {
     setSyncing(true);
     try {
@@ -314,7 +346,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
       toast({
         title: "بروزرسانی درخواست‌ها از سامانه‌های ملک تبریز انجام شد",
         description: list
-          ? `${faNumber(list.fetched)} درخواست از مجموع ${faNumber(list.totalAtSource)} درخواست سامانه ARM در این برش (۵۰ صفحه) خوانده شد و برش تکمیل جزئیات (حدود ۵۰۰ رکورد: متقاضی، مناطق، قیمت، دسته‌بندی، نوع ملک، نوع ساختمان) هم اجرا شد. ادامهٔ بروزرسانی از همان صفحه‌ای که تمام شده بود، ازسر گرفته می‌شود.`
+          ? `${faNumber(list.fetched)} درخواست از مجموع ${faNumber(list.totalAtSource)} درخواست سامانه ARM در این برش (۵۰ صفحه) خوانده شد و برش تکمیل جزئیات (حدود ۵۰۰ رکورد: متقاضی، مناطق، قیمت، دسته‌بندی، نوع ملک) هم اجرا شد. ادامهٔ بروزرسانی از همان صفحه‌ای که تمام شده بود، ازسر گرفته می‌شود.`
           : "بروزرسانی اجرا شد.",
       });
       await load();
@@ -326,6 +358,36 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
     }
   }, [toast, load]);
 
+  // PN-046/گام اول-۱ (دستور مالک): فهرست درخواست‌های ملکتون مختص داده‌های CRM ملکتون
+  const isMelketun = tenantId === "melketun";
+  // «قابل بروزرسانی»: همگام‌سازی دستی از CRM ملکتون (همان مسیر Worker شش‌ساعته)
+  const [melketunSyncing, setMelketunSyncing] = useState(false);
+  const doMelketunSync = useCallback(async () => {
+    setMelketunSyncing(true);
+    try {
+      const res = await api<{
+        ok: boolean;
+        upserted: { listings: number; requests: number };
+        skippedByCityFilter: { listings: number; requests: number };
+        errors: string[];
+      }>("/api/integrations/melketun/sync", { method: "POST", timeoutMs: 300_000 });
+      if (res.ok) {
+        toast({
+          title: "همگام‌سازی ملکتون موفق",
+          description: `${faNumber(res.upserted.requests)} درخواست (فقط شهر تبریز) تازه شد — ${faNumber(res.skippedByCityFilter.requests)} ردیف غیرتبریز رد شد.`,
+        });
+      } else {
+        toast({ title: "همگام‌سازی ناموفق", description: res.errors?.[0] ?? "خطای CRM ملکتون", variant: "destructive" });
+      }
+      await load();
+    } catch (err) {
+      const e = err as ApiClientError;
+      toast({ title: "همگام‌سازی ناموفق", description: e.message, variant: "destructive" });
+    } finally {
+      setMelketunSyncing(false);
+    }
+  }, [toast, load]);
+
   const rows = data?.rows ?? [];
   const enrichment = data?.enrichment ?? { total: 0, pending: 0, complete: 0 };
   const statusCounts = data?.statusCounts;
@@ -333,6 +395,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
   const coveragePct = enrichment.total > 0 ? Math.round((enrichment.complete / enrichment.total) * 100) : 0;
   const todayCount = rows.filter((r) => r.createdAt && Date.now() - new Date(r.createdAt).getTime() < 86400_000).length;
   const activeRealtors = new Set(rows.map((r) => r.actorName).filter(Boolean)).size;
+  // PN-047/گام اول-۴ — شعب ثبت‌کنندهٔ ملکتون (سه شعبهٔ سطح تبریز) از دادهٔ واقعی درخواست‌ها
+  const melketunBranchCount = useMemo(() => new Set(rows.map((r) => r.armBranchTitle).filter(Boolean)).size, [rows]);
   const stateFilterActive = selectedStates.length > 0;
   const anyFilterActive =
     stateFilterActive ||
@@ -397,10 +461,10 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
 
       {/* شاخص‌ها — رنگ بخش M2 (کهربایی روشن) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <KpiCard label="کل درخواست‌های ملک تبریز" value={loading ? undefined : faNumber(data?.total ?? 0)} icon={ClipboardList} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
-        <KpiCard label="اطلاعات متقاضی و مناطق تکمیل‌شده" value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
+        <KpiCard label={isMelketun ? "کل درخواست‌های ملکتون (همهٔ شعب تبریز)" : "کل درخواست‌های ملک تبریز"} value={loading ? undefined : faNumber(data?.total ?? 0)} icon={ClipboardList} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
+        <KpiCard label={isMelketun ? "استخراج کامل از CRM ملکتون" : "اطلاعات متقاضی و مناطق تکمیل‌شده"} value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
         <KpiCard label="درخواست امروز" value={loading ? undefined : faNumber(todayCount)} icon={CalendarDays} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
-        <KpiCard label="کارشناسان ثبت‌کننده" value={loading ? undefined : faNumber(activeRealtors)} icon={Users} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
+        <KpiCard label={isMelketun ? "شعب ثبت‌کنندهٔ ملکتون" : "کارشناسان ثبت‌کننده"} value={loading ? undefined : faNumber(melketunBranchCount || activeRealtors)} icon={Network} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
       </div>
 
       {/* بینش توزیع وضعیت شش‌حالته (گام ۲ بند ۳) */}
@@ -409,9 +473,29 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
           <div className="flex items-center gap-2.5">
             <PieChart className="w-5 h-5 text-sec-m2-700 shrink-0" aria-hidden />
             <div>
-              <p className="text-sm font-bold">توزیع وضعیت درخواست‌ها (نظام شش‌حالته)</p>
+              <p className="text-sm font-bold">{isMelketun ? "توزیع وضعیت درخواست‌ها در CRM ملکتون" : "توزیع وضعیت درخواست‌ها (نظام شش‌حالته)"}</p>
             </div>
           </div>
+          {isMelketun ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" id="melketun-request-states-insight">
+              {(() => {
+                const counts = new Map<string, number>();
+                for (const r of rows) {
+                  const s = (r.status ?? "بدون وضعیت").trim() || "بدون وضعیت";
+                  counts.set(s, (counts.get(s) ?? 0) + 1);
+                }
+                const list = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+                const total = rows.length || 1;
+                return list.map(([s, n]) => (
+                  <div key={s} className="rounded-xl border bg-muted/40 p-2.5 text-start" title={`وضعیت خام CRM ملکتون: ${s}`}>
+                    <p className="text-[11px] font-medium leading-4">{s}</p>
+                    <p className="text-base font-extrabold tabular-nums mt-0.5">{faNumber(n)}</p>
+                    <p className="text-[10px] tabular-nums text-muted-foreground">{faNumber(Math.round((n / total) * 100))}٪</p>
+                  </div>
+                ));
+              })()}
+            </div>
+          ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" id="arm-request-states-insight">
             {REQUEST_STATES.map((s) => {
               const n = statusCounts?.[s.key] ?? 0;
@@ -434,6 +518,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
               );
             })}
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -442,7 +527,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
         {/* P6546/گام دوم-۲ — جدول ۱۰ کارشناسان پردرخواست */}
         <TopRankingTable
           id="m2-top-realtors"
-          title="جدول ۱۰ کارشناسان پردرخواست ملک تبریز"
+          title={isMelketun ? "جدول کارشناسان پردرخواست ملکتون" : "جدول ۱۰ کارشناسان پردرخواست ملک تبریز"}
           rows={topRealtors}
           countLabel="کارشناس"
           icon={Award}
@@ -451,7 +536,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
         {/* P6546/گام دوم-۳ — جدول ۱۰ قطب‌های درخواست */}
         <TopRankingTable
           id="m2-top-hubs"
-          title="جدول ۱۰ قطب‌های درخواست در مناطق تبریز"
+          title={isMelketun ? "جدول قطب‌های درخواست ملکتون در مناطق تبریز" : "جدول ۱۰ قطب‌های درخواست در مناطق تبریز"}
           rows={topHubs}
           countLabel="منطقه"
           icon={MapPinned}
@@ -469,13 +554,20 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
             <div className="flex items-center gap-2.5 min-w-0">
               <ClipboardList className="w-5 h-5 text-sec-m2-700 shrink-0" aria-hidden />
               <div className="min-w-0">
-                <p className="text-sm font-bold">بروزرسانی درخواست‌ها از سامانه‌های ملک تبریز</p>
+                <p className="text-sm font-bold">{isMelketun ? "بروزرسانی درخواست‌ها از CRM ملکتون (فقط شهر تبریز)" : "بروزرسانی درخواست‌ها از سامانه‌های ملک تبریز"}</p>
               </div>
             </div>
+            {isMelketun ? (
+              <Button onClick={() => void doMelketunSync()} disabled={melketunSyncing} className="gap-2 shrink-0 bg-sec-m2-500 hover:bg-sec-m2-500/90 text-sec-m2-fg">
+                {melketunSyncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
+                همگام‌سازی از CRM ملکتون
+              </Button>
+            ) : (
             <Button onClick={() => void doSync()} disabled={syncing} className="gap-2 shrink-0 bg-sec-m2-500 hover:bg-sec-m2-500/90 text-sec-m2-fg">
               {syncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
               بروزرسانی از سامانه
             </Button>
+            )}
           </div>
 
           {/* بند ۴.۲ — تاریخ و ساعت دقیق آخرین بروزرسانی + پوشش منبع (مهم ۳: شفافیت ۲۰،۳۹۲) */}
@@ -540,7 +632,9 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
 
           {filtersOpen && (
             <>
-              {/* PN-009 مرحله D — گروه‌بندی منطقی فیلترها (قانون ۶.۱): وضعیت → دسته‌بندی → شناسه و اشخاص → قیمت و بازه */}
+              {/* PN-009 مرحله D — گروه‌بندی منطقی فیلترها (قانون ۶.۱): وضعیت → دسته‌بندی → شناسه و اشخاص → قیمت و بازه
+                  PN-046/گام اول-۱ — شش‌حالتهٔ ARM مختص تبریز؛ برای ملکتون پنهان */}
+              {!isMelketun && (
               <FilterGroup
                 label="وضعیت درخواست (چندانتخابی — شش‌حالته)"
                 hint={stateFilterActive ? `${faNumber(selectedStates.length)} حالت انتخاب شده — ${faNumber(rows.length)} درخواست مطابق` : undefined}
@@ -573,6 +667,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                   ))}
                 </div>
               </FilterGroup>
+              )}
 
               {/* دسته‌بندی — چندانتخابی (نکته ۴) */}
               <FilterGroup
@@ -594,7 +689,28 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                 </div>
               </FilterGroup>
 
-              {/* شعبه — PN-011 ثالثاً: فیلتر چندانتخابی چیپی (همانند دسته‌بندی — دستور مالک) */}
+              {/* PN-039 (گام ۶) — نوع ملک — چندانتخابی چیپی (مقادیر از کاتالوگ زنده) */}
+              <FilterGroup
+                label="نوع ملک (چندانتخابی)"
+                hint={selectedPropertyTypes.length > 0 ? `${faNumber(selectedPropertyTypes.length)} نوع انتخاب شده` : undefined}
+              >
+                <div className="flex flex-wrap gap-1.5" id="arm-request-property-types-filter">
+                  {propertyTypeFacet.map((t) => (
+                    <FilterChip
+                      key={t}
+                      label={t}
+                      active={selectedPropertyTypes.includes(t)}
+                      onToggle={() => togglePropertyType(t)}
+                      softClass={valueSoftClass(t)}
+                      solidClass={valueSolidClass(t)}
+                    />
+                  ))}
+                </div>
+              </FilterGroup>
+
+              {/* شعبه — PN-011 ثالثاً: فیلتر چندانتخابی چیپی (همانند دسته‌بندی — دستور مالک)
+                  PN-046/گام اول-۱ — شعبه‌های چهارگانهٔ تبریز برای ملکتون کاربرد ندارند؛ پنهان */}
+              {!isMelketun && (
               <FilterGroup
                 label="شعبهٔ ثبت‌کننده (چندانتخابی)"
                 hint={selectedBranches.length > 0 ? `${faNumber(selectedBranches.length)} شعبه انتخاب شده` : undefined}
@@ -635,6 +751,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                   />
                 </div>
               </FilterGroup>
+              )}
 
               {/* فیلترهای متنی/عددی تمام ستون‌ها — P6546/گام پنجم-ب: چیدمان جمع‌وجور + بازه‌های روبروهم */}
               <form
@@ -645,7 +762,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                 }}
               >
               <FilterGroup label="شناسه، اشخاص و مناطق">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
+                {/* PN-028/خامساً-ف (دستور مالک) — فیلدهای متنی دوتایی: هر ردیف دو فیلد روبروهم */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                 <div className="space-y-1.5">
                   <Label htmlFor="arm-request-code">کد درخواست</Label>
                   <Input
@@ -801,9 +919,12 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
         </Card>
       ) : (
         <Card>
-          <CardHeader className="py-4 flex flex-col items-center gap-1">
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-              <CardTitle className="text-base text-center">فهرست درخواست‌ها</CardTitle>
+          {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
+              ردیف ۱: عنوان «فهرست درخواست» وسط‌چین
+              ردیف ۲: «اکسل کل فهرست» (راست) + «بارگذاری اکسل» (چپ) */}
+          <CardHeader className="py-4 flex flex-col items-center gap-2">
+            <CardTitle className="text-base text-center">فهرست درخواست</CardTitle>
+            <div className="w-full flex items-center justify-between gap-3 flex-wrap">
               {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
               <Button
                 variant="outline"
@@ -811,6 +932,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                 className="gap-1.5 h-7 text-[11px]"
                 onClick={() => {
                   const p = new URLSearchParams();
+                  // PN-044/فاز ۴ — خروجی اکسل هم tenant همین رندر را می‌گیرد
+                  p.set("tenantId", tenantId ?? "tabriz");
                   if (applied.code) p.set("code", applied.code);
                   if (applied.realtorName) p.set("realtorName", applied.realtorName);
                   if (applied.customerName) p.set("customerName", applied.customerName);
@@ -826,10 +949,17 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                 <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
               </Button>
               {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
-              <ExcelImportButton entity="requests" compact onImported={() => void load()} />
+              <ExcelImportButton entity="requests" compact tenantId={tenantId ?? "tabriz"} onImported={() => void load()} />
             </div>
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
+            )}
+            {/* PN-049/گام ۲-الف — قانون حساب کاربری: برای کاربر غیر-مالک، فهرست به
+                رکوردهای ثبت‌شده توسط خودش محدود است (مالک = همهٔ رکوردها) */}
+            {userRole !== "OWNER" && (
+              <Badge variant="outline" className="gap-1 text-[11px] border-amber-300 text-amber-700 bg-amber-50" title="قانون حساب کاربری PN-049 — کنترل حساب کاربر">
+                نمای شخصی — فقط رکوردهای ثبت‌شده توسط شما
+              </Badge>
             )}
           </CardHeader>
           <CardContent className="p-0">
@@ -839,17 +969,37 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                   <TableRow>
                     <TableHead className="w-10">ردیف</TableHead>
                     <TableHead className="min-w-20">کد درخواست</TableHead>
-                    <TableHead className="min-w-28">کارشناس</TableHead>
-                    <TableHead className="min-w-24">شعبه</TableHead>
+                    {/* PN-046/گام اول-۱ + PN-047/گام اول-۲ — ملکتون: عنوان درخواست + کارشناس مسئول حل‌شده + شعبهٔ ملکتون */}
+                    {isMelketun && <TableHead className="min-w-36">عنوان درخواست</TableHead>}
+                    <TableHead className="min-w-28">{isMelketun ? "کارشناس مسئول" : "کارشناس"}</TableHead>
+                    {isMelketun ? (
+                      <TableHead className="min-w-24">شعبه ملکتون</TableHead>
+                    ) : (
+                      <TableHead className="min-w-24">شعبه</TableHead>
+                    )}
                     <TableHead className="min-w-36">متقاضی</TableHead>
-                    {/* P6546/گام پنجم-ت-۴ — ستون قیمت با نام «قیمت» و قالب از/تا */}
-                    <TableHead className="min-w-40">قیمت</TableHead>
+                    {/* P6546/گام پنجم-ت-۴ — ستون قیمت و قالب از/تا · ملکتون: بودجه خرید */}
+                    <TableHead className="min-w-40">{isMelketun ? "بودجه خرید" : "قیمت"}</TableHead>
+                    {/* PN-046/گام اول-۱ — ملکتون: بودجهٔ رهن و اجاره (هر دو از دادهٔ واقعی CRM پُر) */}
+                    {isMelketun && (
+                      <>
+                        <TableHead className="min-w-24">پیش‌پرداخت</TableHead>
+                        <TableHead className="min-w-24">اجاره</TableHead>
+                      </>
+                    )}
                     <TableHead className="min-w-36">مناطق</TableHead>
                     {/* P6546/گام دوم — ستون‌های غنی‌شده از ساختار ثبت درخواست ARM */}
                     <TableHead className="min-w-24">نوع ملک</TableHead>
-                    <TableHead className="min-w-24">نوع ساختمان</TableHead>
+                    {/* PN-039 (گام ۷) — ستون «نوع ساختمان» به دستور مالک حذف شد (داده در API/اکسل دست‌نخورده) */}
                     <TableHead className="min-w-24">دسته‌بندی</TableHead>
-                    <TableHead className="min-w-28">وضعیت</TableHead>
+                    <TableHead className="min-w-28">{isMelketun ? "وضعیت CRM" : "وضعیت"}</TableHead>
+                    {!isMelketun && (
+                      <>
+                    {/* P6547/گام دوم — ستون سند/نوع ساخت/جهت (PN-028/خامساً-پ — دستور مالک:
+                        سند، نوع ساخت و جهت بی‌درنگ پس از وضعیت و پیش از فوریت) */}
+                    <TableHead className="min-w-28">سند</TableHead>
+                    <TableHead className="min-w-24">نوع ساخت</TableHead>
+                    <TableHead className="min-w-28">جهت</TableHead>
                     {/* P6547/گام دوم — ستون فوریت (urgent خود ردیف فهرست ARM — PN-020/گام اول-ب: رنگی) */}
                     <TableHead className="min-w-20">فوریت</TableHead>
                     {/* PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM */}
@@ -857,12 +1007,19 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                     <TableHead className="min-w-20">اتاق</TableHead>
                     <TableHead className="min-w-20">طبقه</TableHead>
                     <TableHead className="min-w-24">ساخت</TableHead>
-                    <TableHead className="min-w-28">سند</TableHead>
-                    <TableHead className="min-w-24">نوع ساخت</TableHead>
-                    <TableHead className="min-w-28">جهت</TableHead>
                     <TableHead className="min-w-24">معاوضه</TableHead>
+                      </>
+                    )}
                     {/* PN-020/گام اول-ب (بند ۴) — تاریخ ثبت، آخرین ستون فهرست است */}
                     <TableHead className="min-w-28">تاریخ ثبت</TableHead>
+                    {/* PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: نمایش فایل کامل دادهٔ هر کد
+                        (سند رسمی + دادهٔ خام + متادیتا) — ماقبل آخر (غیرچسبنده — PN-047)
+                        ⚠ قانون ساختاری (دستور مالک/گام اول-۳): «اطلاعات» و «یادداشت» همیشه دو ستون آخر می‌مانند —
+                        هر ستون جدید در آینده باید «قبل از» ستون اطلاعات افزوده شود. */}
+                    <TableHead className="w-24">اطلاعات</TableHead>
+                    {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک)
+                        PN-045/فاز ۲ — ستون چسبندهٔ چپ (RTL: آخرین ستون = چپ‌ترین) */}
+                    <TableHead className="min-w-32 w-44 pn045-sticky-note">یادداشت</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
@@ -880,6 +1037,14 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                           </span>
                           {showTitles && r.title && <p className="text-[11px] text-muted-foreground mt-0.5 max-w-44 truncate mx-auto">{r.title}</p>}
                         </TableCell>
+                        {/* PN-046/گام اول-۱ — ملکتون: عنوان درخواست (potentialName خود CRM) */}
+                        {isMelketun && (
+                          <TableCell className="whitespace-normal max-w-48">
+                            <span className="text-[11px] font-medium leading-relaxed" title={r.title ?? undefined}>
+                              {r.title ?? "—"}
+                            </span>
+                          </TableCell>
+                        )}
                         {/* ۳ — کارشناس */}
                         <TableCell>
                           <span className="inline-flex items-center gap-1.5 font-bold">
@@ -887,7 +1052,18 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             {r.actorName ?? "ثبت نشده در سامانه"}
                           </span>
                         </TableCell>
-                        {/* ۴ — شعبه */}
+                        {/* ۴ — تبریز: شعبهٔ کارشناس (PM) · ملکتون M8: شعبهٔ ملکتون (سه شعبهٔ سطح تبریز — PN-047) */}
+                        {isMelketun ? (
+                          <TableCell className="whitespace-nowrap">
+                            {r.armBranchTitle ? (
+                              <Badge variant="outline" className="gap-1 text-[11px] border-0" title="شعبهٔ ملکتون — همگی در سطح شهر تبریز (دستور مالک PN-047)">
+                                <Network className="w-3 h-3" aria-hidden /> {r.armBranchTitle}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-[11px]">—</span>
+                            )}
+                          </TableCell>
+                        ) : (
                         <TableCell>
                           {r.branch && r.branch !== BRANCH_UNSET ? (
                             <Badge variant="outline" className={`gap-1 text-[11px] border-0 ${branchBadgeClass(r.branch)}`} title="شعبهٔ کارشناس — از سامانهٔ PM">
@@ -897,6 +1073,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[11px]">{BRANCH_UNSET}</span>
                           )}
                         </TableCell>
+                        )}
                         {/* ۵ — متقاضی: نام + موبایل زیر نام (نکته ۱ + مهم ۴ — عین الگوی M3) */}
                         <TableCell className="whitespace-normal">
                           {r.customerName ? (
@@ -936,9 +1113,34 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">در نوبت تکمیل</span>
                           )}
                         </TableCell>
+                        {/* PN-046/گام اول-۱ — ملکتون: بودجهٔ رهن/اجاره از CRM (هر دو از دادهٔ واقعی پُر) */}
+                        {isMelketun && (
+                          <>
+                            <TableCell className="whitespace-nowrap">
+                              {typeof r.depositBudget === "number" ? (
+                                <span className="inline-flex items-center gap-1 font-medium tabular-nums text-[11px]" title={`پیش‌پرداخت CRM: ${faAmountFull(r.depositBudget)} — تومان`}>
+                                  <Banknote className="w-3 h-3 text-sec-m2-700 shrink-0" aria-hidden />
+                                  {r.depositBudget > 0 ? faAmountFull(r.depositBudget, "") : "۰"}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground text-[10px]">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {typeof r.rentBudget === "number" ? (
+                                <span className="inline-flex items-center gap-1 font-medium tabular-nums text-[11px]" title={`اجارهٔ ماهانهٔ CRM: ${faAmountFull(r.rentBudget)} — تومان`}>
+                                  <Banknote className="w-3 h-3 text-sec-m2-700 shrink-0" aria-hidden />
+                                  {r.rentBudget > 0 ? faAmountFull(r.rentBudget, "") : "۰"}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground text-[10px]">—</span>
+                              )}
+                            </TableCell>
+                          </>
+                        )}
                         {/* ۷ — مناطق (نکته ۲: فقط نام مناطق؛ >۳ = فایل مناطق P6526/ب) */}
                         <TableCell className="whitespace-normal">
-                          <AreasFileCell requestCode={r.requestCode} areaNames={r.areaNames} />
+                          <AreasFileCell requestCode={r.requestCode} areaNames={r.areaNames} tenant={tenantId ?? "tabriz"} />
                         </TableCell>
                         {/* ۷-ب — نوع ملک درخواستی (P6546/گام دوم — از جزئیات ARM) */}
                         {/* PN-011 ثانیاً — رنگ از رجیستری (قانون ۱۲): هر مقدار نوع ملک رنگ یکتای خود را دارد */}
@@ -951,16 +1153,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۷-پ — نوع ساختمان (P6546/گام دوم — PN-011 ثانیاً: رنگ از رجیستری) */}
-                        <TableCell className="whitespace-nowrap">
-                          {r.buildingTypeName ? (
-                            <Badge variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(r.buildingTypeName)}`}>
-                              <Home className="w-2.5 h-2.5" aria-hidden /> {r.buildingTypeName}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">—</span>
-                          )}
-                        </TableCell>
+                        {/* PN-039 (گام ۷) — سلول «نوع ساختمان» به دستور مالک حذف شد */}
                         {/* ۸ — دسته‌بندی (نکته ۴) */}
                         <TableCell className="whitespace-nowrap">
                           {r.tradeTypeName ? (
@@ -971,7 +1164,18 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[11px]">در نوبت تکمیل</span>
                           )}
                         </TableCell>
-                        {/* ۹ — وضعیت (شش‌حالته) */}
+                        {/* ۹ — وضعیت (شش‌حالته) · ملکتون: وضعیت خام CRM خودش (PN-046/گام اول-۱) */}
+                        {isMelketun ? (
+                          <TableCell>
+                            {r.status ? (
+                              <Badge variant="secondary" className="text-[11px] border" title={`وضعیت خام CRM ملکتون: ${r.status}`}>
+                                {r.status}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        ) : (
                         <TableCell>
                           {r.status ? (
                             <Badge variant="secondary" className={`text-[11px] border ${requestStateBadgeClass(stateKey)}`} title={REQUEST_STATE_BY_KEY.get(stateKey)?.hint}>
@@ -980,6 +1184,41 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
+                        </TableCell>
+                        )}
+                        {/* ۱۰ تا معاوضه — ستون‌های تبریز (PN-046: ملکتون معادل CRM ندارد) */}
+                        {!isMelketun && (
+                          <>{/* ۱۰ — سند (جلسهٔ ۰۳۳ / ثانیاً-الف: رنگی — هر سند رنگ یکتای خود از رجیستری: شش‌دانگ/در دست اقدام/قراردادی/قولنامه) */}
+                        <TableCell className="whitespace-normal max-w-32">
+                          {r.sanadNames ? (
+                            <span className="inline-flex flex-wrap items-center justify-center gap-1 leading-relaxed">
+                              {parseNameList(r.sanadNames).map((name, idx) => (
+                                <Badge key={`${name}-${idx}`} variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(name)}`} title={`نوع سند درخواستی: ${name} — عین فرم ثبت ARM`}>
+                                  {name}
+                                </Badge>
+                              ))}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۱ — نوع ساخت (PN-020/گام اول-ب: رنگی — هر مقدار نشان رنگی یکتا از رجیستری: شخصی/مجتمع/برج) */}
+                        <TableCell className="whitespace-normal max-w-28">
+                          {r.constructTypeNames ? (
+                            <span className="inline-flex flex-wrap items-center justify-center gap-1 leading-relaxed">
+                              {parseNameList(r.constructTypeNames).map((name, idx) => (
+                                <Badge key={`${name}-${idx}`} variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(name)}`} title={`نوع ساخت: ${name} — عین فرم ثبت ARM`}>
+                                  {name}
+                                </Badge>
+                              ))}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </TableCell>
+                        {/* ۱۲ — جهت (PN-020/گام اول-ب: رنگی + فایل‌گونه برای موارد زیاد — عین الگوی فایل مناطق) */}
+                        <TableCell className="whitespace-normal max-w-32">
+                          <SideFileCell requestCode={r.requestCode} sideNames={r.sideNames} />
                         </TableCell>
                         {/* P6547/گام دوم — فوریت + جدیت (PN-020/گام اول-ب: هر دو حالت رنگی از رجیستری — فوری=نارنجی · عادی=خاکستری) */}
                         <TableCell className="whitespace-nowrap">
@@ -999,7 +1238,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                           </div>
                         </TableCell>
                         {/* PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM */}
-                        {/* ۱۱ — متراژ (از/تا) */}
+                        {/* ۱۴ — متراژ (از/تا) */}
                         <TableCell className="whitespace-nowrap text-[10px]">
                           {r.spaceFrom !== null || r.spaceTo !== null ? (
                             <span className="tabular-nums font-medium" title="متراژ درخواستی (از/تا) — عین فرم ثبت سامانه ARM">
@@ -1009,7 +1248,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۱۲ — اتاق (از/تا) */}
+                        {/* ۱۵ — اتاق (از/تا) */}
                         <TableCell className="whitespace-nowrap text-[10px]">
                           {r.roomsFrom !== null || r.roomsTo !== null ? (
                             <span className="tabular-nums">
@@ -1019,7 +1258,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۱۳ — طبقه (از/تا) */}
+                        {/* ۱۶ — طبقه (از/تا) */}
                         <TableCell className="whitespace-nowrap text-[10px]">
                           {r.floorFrom !== null || r.floorTo !== null ? (
                             <span className="tabular-nums">
@@ -1029,7 +1268,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۱۴ — سال ساخت (از/تا — جلالی · PN-020/گام اول-ب: بدون کاما — سال با جداکنندهٔ هزارگان «۱،۴۰۳» غلط است) */}
+                        {/* ۱۷ — سال ساخت (از/تا — جلالی · PN-020/گام اول-ب: بدون کاما — سال با جداکنندهٔ هزارگان «۱،۴۰۳» غلط است) */}
                         <TableCell className="whitespace-nowrap text-[10px]">
                           {r.buildYearFrom !== null || r.buildYearTo !== null ? (
                             <span className="tabular-nums">
@@ -1039,38 +1278,6 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۱۵ — سند (جلسهٔ ۰۳۳ / ثانیاً-الف: رنگی — هر سند رنگ یکتای خود از رجیستری: شش‌دانگ/در دست اقدام/قراردادی/قولنامه) */}
-                        <TableCell className="whitespace-normal max-w-32">
-                          {r.sanadNames ? (
-                            <span className="inline-flex flex-wrap items-center justify-center gap-1 leading-relaxed">
-                              {parseNameList(r.sanadNames).map((name, idx) => (
-                                <Badge key={`${name}-${idx}`} variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(name)}`} title={`نوع سند درخواستی: ${name} — عین فرم ثبت ARM`}>
-                                  {name}
-                                </Badge>
-                              ))}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">—</span>
-                          )}
-                        </TableCell>
-                        {/* ۱۶ — نوع ساخت (PN-020/گام اول-ب: رنگی — هر مقدار نشان رنگی یکتا از رجیستری: شخصی/مجتمع/برج) */}
-                        <TableCell className="whitespace-normal max-w-28">
-                          {r.constructTypeNames ? (
-                            <span className="inline-flex flex-wrap items-center justify-center gap-1 leading-relaxed">
-                              {parseNameList(r.constructTypeNames).map((name, idx) => (
-                                <Badge key={`${name}-${idx}`} variant="secondary" className={`gap-1 text-[10px] border-0 ${valueSoftClass(name)}`} title={`نوع ساخت: ${name} — عین فرم ثبت ARM`}>
-                                  {name}
-                                </Badge>
-                              ))}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">—</span>
-                          )}
-                        </TableCell>
-                        {/* ۱۷ — جهت (PN-020/گام اول-ب: رنگی + فایل‌گونه برای موارد زیاد — عین الگوی فایل مناطق) */}
-                        <TableCell className="whitespace-normal max-w-32">
-                          <SideFileCell requestCode={r.requestCode} sideNames={r.sideNames} />
-                        </TableCell>
                         {/* ۱۸ — معاوضه */}
                         <TableCell className="whitespace-normal text-[10px] max-w-24">
                           {r.changeWithNames && r.changeWithNames !== "مایل نیستم" ? (
@@ -1079,12 +1286,30 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole: _r
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        {/* ۱۹ — تاریخ ثبت (PN-020/گام اول-ب بند ۴: آخرین ستون فهرست — عین دستور مالک) */}
+                          </>
+                        )}
+                        {/* ۱۹ — تاریخ ثبت (PN-020/گام اول-ب بند ۴: عین دستور مالک — اکنون پیش از یادداشت) */}
                         <TableCell className="text-muted-foreground whitespace-nowrap">
                           <span className="inline-flex items-center gap-1.5">
                             <CalendarDays className="w-3.5 h-3.5 shrink-0" aria-hidden />
                             {r.createdAt ? faDateTime(r.createdAt) : "—"}
                           </span>
+                        </TableCell>
+                        {/* ۲۰ — PN-045/فاز ۳ — ستون «اطلاعات»: دکمهٔ 📋 نمایش → فایل کامل در modal
+                            چسبندهٔ ماقبل آخر (RTL: بلافاصله راستِ یادداشت) · lazy fetch — فقط هنگام کلیک */}
+                        <TableCell>
+                          <InfoButton tenant={tenantId ?? "tabriz"} type="request" code={r.requestCode} />
+                        </TableCell>
+                        {/* ۲۱ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline
+                            PN-045/فاز ۲ — سلول چسبندهٔ چپ (عرض ثابت w-44 = 176px — قانون ۱۱) */}
+                        <TableCell className="whitespace-normal pn045-sticky-note" data-owner-note-column-cell={r.id}>
+                          <OwnerNoteCell
+                            id={r.id}
+                            entity="request"
+                            value={r.ownerNote}
+                            onSaved={(note) => updateRowNote(r.id, note)}
+                            onError={(msg) => toast({ title: "خطا در ذخیرهٔ یادداشت", description: msg, variant: "destructive" })}
+                          />
                         </TableCell>
                       </TableRow>
                     );
