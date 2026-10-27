@@ -55,7 +55,7 @@ import { api, apiBlob, downloadBlob } from "@/lib/client/api";
 import { useToast } from "@/hooks/use-toast";
 import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/core/agent/analyzers";
 import { classifyContract, CONTRACT_KIND_FILTER_LABELS, CONTRACT_KIND_FILTER_VALUES } from "@/lib/contract-classify";
-import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull } from "@/lib/format";
+import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
 // P6547/گام پنجم — نظام رنگ مشترک فیلتر↔فهرست (هارمونی تضمینی) + شعبهٔ PM در حق‌السهم
 // PN-009 مرحله E — رنگ KPI/چارت/سرستون‌ها نیز از رجیستری یگانه (قانون ۱۲/۱۴ دستور)
 import { branchBadgeClass, valueSoftClass, valueSolidClass, valueIconPair, valueChartVar } from "@/lib/value-colors";
@@ -231,8 +231,8 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
     // P6530/گام ۳ — فیلترهای تمام ستون‌ها
     if (applied.sellerName) params.set("sellerName", applied.sellerName);
     if (applied.buyerName) params.set("buyerName", applied.buyerName);
-    if (applied.priceFrom) params.set("priceFrom", applied.priceFrom);
-    if (applied.priceTo) params.set("priceTo", applied.priceTo);
+    if (applied.priceFrom) params.set("priceFrom", parsePriceInput(applied.priceFrom));
+    if (applied.priceTo) params.set("priceTo", parsePriceInput(applied.priceTo));
     // PN-011 ثالثاً — فایل قرارداد چیپی: فقط وقتی «دقیقاً یک» گزینه انتخاب شده فیلتر می‌شود (هر دو = همه)
     if (applied.hasContracts.length === 1) params.set("hasContract", applied.hasContracts[0]);
     // BLOCK D — نوع قرارداد چندگانه: ?contractType=…&contractType=… (تهی = همه)
@@ -600,8 +600,8 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
             <div className="space-y-1.5">
               <Label>قیمت (تومان)</Label>
               <div className="grid grid-cols-2 gap-2">
-                <Input id="f-priceFrom" aria-label="قیمت از (تومان)" inputMode="numeric" placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", e.target.value)} className="text-[11px] font-bold" />
-                <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", e.target.value)} className="text-[11px] font-bold" />
+                <Input id="f-priceFrom" aria-label="قیمت از (تومان)" inputMode="numeric" placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", formatPriceInput(e.target.value))} className="text-[11px] font-bold" />
+                <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", formatPriceInput(e.target.value))} className="text-[11px] font-bold" />
               </div>
             </div>
             {/* فایل قرارداد — PN-011 ثالثاً: چیپ چندانتخابی (همانند دسته‌بندی — دستور مالک) */}

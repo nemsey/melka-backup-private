@@ -162,7 +162,11 @@ describe("PN-051 · گام ۲ — سینک ملکتون دو-نمایی: تکم�
 
   test("۲-۴) نگاشت فیلدها: ownerName خصوصی → rawOwnerName (ستون مالک ملک UI)", () => {
     const src = read("src/lib/integrations/melketun/sync.ts");
-    expect(src).toContain("rawOwnerName: ownerEnrich?.owner_name?.trim() ?? (f.ownerName?.trim() || null)");
+    // PN-056/نکتهٔ ۲ مالک: fallback عمومی فایلر (f.ownerName = «کارشناس واگذارشده») حذف شد —
+    // fountain انحصاراً از منابع خصوصی CRM می‌نویسد (ownerEnrich + privateOwnerName از ادغام نمای خصوصی)
+    expect(src).toContain('rawOwnerName: ownerEnrich?.owner_name?.trim() ?? (String((f as unknown as InertiaRow).privateOwnerName ?? "").trim() || null)');
+    expect(src).toContain('ownerMobile: ownerEnrich?.owner_phone?.replace(/\\D/g, "") ?? (String((f as unknown as InertiaRow).privateOwnerPhone ?? "").replace(/\\D/g, "") || null)');
+    expect(src).not.toContain("?? (f.ownerName?.trim() || null)");
     expect(src).toContain("customerName: p.contactName?.trim() || null");
   });
 });

@@ -53,7 +53,7 @@ import { InfoButton } from "@/components/info/InfoButton";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
-import { faDateTime, faNumber, faAmountFull } from "@/lib/format";
+import { faDateTime, faNumber, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
 // PN-009 مرحله C — رنگ وضعیت‌ها هم از رجیستری یگانه (منبع حقیقت واحد)
 import { valueSoftClass, valueSolidClass, branchBadgeClass, listingStateBadgeClass } from "@/lib/value-colors";
@@ -214,8 +214,8 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     if (applied.branch) params.set("branch", applied.branch);
     if (applied.ownerName) params.set("ownerName", normalizeFilterInput(applied.ownerName));
     if (applied.address) params.set("address", normalizeFilterInput(applied.address));
-    if (applied.priceFrom) params.set("priceFrom", applied.priceFrom);
-    if (applied.priceTo) params.set("priceTo", applied.priceTo);
+    if (applied.priceFrom) params.set("priceFrom", parsePriceInput(applied.priceFrom));
+    if (applied.priceTo) params.set("priceTo", parsePriceInput(applied.priceTo));
     if (applied.activityFrom) params.set("activityFrom", applied.activityFrom);
     if (applied.activityTo) params.set("activityTo", applied.activityTo);
     // فیلترهای چندانتخابی — اعمال خودکار با هر کلیک
@@ -852,7 +852,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                       id="arm-listing-price-from"
                       aria-label="قیمت از (تومان)"
                       value={filters.priceFrom}
-                      onChange={(e) => setF("priceFrom", e.target.value)}
+                      onChange={(e) => setF("priceFrom", formatPriceInput(e.target.value))}
                       placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰"
                       inputMode="numeric"
                       autoComplete="off"
@@ -862,7 +862,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                       id="arm-listing-price-to"
                       aria-label="قیمت تا (تومان)"
                       value={filters.priceTo}
-                      onChange={(e) => setF("priceTo", e.target.value)}
+                      onChange={(e) => setF("priceTo", formatPriceInput(e.target.value))}
                       placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰"
                       inputMode="numeric"
                       autoComplete="off"

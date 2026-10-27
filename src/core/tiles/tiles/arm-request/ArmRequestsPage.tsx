@@ -53,7 +53,7 @@ import { InfoButton } from "@/components/info/InfoButton";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
-import { faDateTime, faNumber, faAmountFull } from "@/lib/format";
+import { faDateTime, faNumber, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
 import { valueSoftClass, valueSolidClass, branchBadgeClass, requestStateBadgeClass } from "@/lib/value-colors";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانه
@@ -225,8 +225,8 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, on
     if (applied.branch) params.set("branch", applied.branch);
     if (applied.customerName) params.set("customerName", normalizeFilterInput(applied.customerName));
     if (applied.areaName) params.set("areaName", normalizeFilterInput(applied.areaName));
-    if (applied.priceFrom) params.set("priceFrom", applied.priceFrom);
-    if (applied.priceTo) params.set("priceTo", applied.priceTo);
+    if (applied.priceFrom) params.set("priceFrom", parsePriceInput(applied.priceFrom));
+    if (applied.priceTo) params.set("priceTo", parsePriceInput(applied.priceTo));
     if (applied.dateFrom) params.set("dateFrom", applied.dateFrom);
     if (applied.dateTo) params.set("dateTo", applied.dateTo);
     // فیلترهای چندانتخابی — اعمال خودکار
@@ -821,7 +821,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, on
                       id="arm-request-price-from"
                       aria-label="قیمت از (تومان)"
                       value={filters.priceFrom}
-                      onChange={(e) => setF("priceFrom", e.target.value)}
+                      onChange={(e) => setF("priceFrom", formatPriceInput(e.target.value))}
                       placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰"
                       inputMode="numeric"
                       autoComplete="off"
@@ -831,7 +831,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, on
                       id="arm-request-price-to"
                       aria-label="قیمت تا (تومان)"
                       value={filters.priceTo}
-                      onChange={(e) => setF("priceTo", e.target.value)}
+                      onChange={(e) => setF("priceTo", formatPriceInput(e.target.value))}
                       placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰"
                       inputMode="numeric"
                       autoComplete="off"
