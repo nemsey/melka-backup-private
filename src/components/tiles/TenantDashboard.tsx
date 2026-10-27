@@ -111,10 +111,35 @@ export function TenantDashboard({ tenantId }: TenantDashboardProps) {
 
   // همان منابع دادهٔ TileShell — نقش، دسترسی و تنظیمات از store (بدون منطق جدید)
   const userRole = useAppStore((s) => s.user?.role ?? 'CONSULTANT')
+  const hasUser = useAppStore((s) => !!s.user)
   const tileAccess = useAppStore((s) => s.tileAccess)
   const goBack = useAppStore((s) => s.goBack)
   const rawSettings = useAppStore((s) => s.tileSettings)
   const setTileSettings = useAppStore((s) => s.setTileSettings)
+
+  // PN-050 · مسیر مستقیم URL: پیش از boot هیچ کاشی رندر نشود — گرنه fetchهای
+  // بی‌نشست کاشی‌ها ۴۰۱ می‌خورند و handler جهانی، نشستِ معتبرِ در حال بازیابی را
+  // با logout می‌کُشد (درس زندهٔ این جلسه: DELETE /api/auth/session از رقابت boot).
+  // در SPA ریشه همین گیت با stage انجام می‌شود؛ اینجا برای مسیر مستقیم لازم است.
+  const [sessionReady, setSessionReady] = useState(hasUser)
+  useEffect(() => {
+    if (hasUser) {
+      setSessionReady(true)
+      return
+    }
+    let alive = true
+    void useAppStore
+      .getState()
+      .boot()
+      .catch(() => undefined)
+      .finally(() => {
+        if (alive) setSessionReady(!!useAppStore.getState().user)
+      })
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasUser])
 
   // فرزندان ظرف tenant-dashboards به ترتیب نمایش
   // (M1 آگهی · M2 درخواست · M3 معاملات · M4 کارشناسان — بر اساس order خود کاشی‌ها)
@@ -173,7 +198,18 @@ export function TenantDashboard({ tenantId }: TenantDashboardProps) {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      {!sessionReady ? (
+        <div
+          className="rounded-2xl border border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center space-y-2"
+          data-testid="tenant-session-boot"
+        >
+          <p className="text-sm font-bold">در حال بازیابی نشست…</p>
+          <p className="text-xs text-muted-foreground">
+            اگر این پیام ماندگار شد، از صفحهٔ اصلی با کد مدیر وارد شوید و دوباره این داشبورد را باز کنید.
+          </p>
+        </div>
+      ) : (
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid w-full grid-cols-4">
           {/* PN-047/گام اول-۱ — هویت مستقل: ملکتون M7-M10 · تبریز M1-M4 (منبع یگانه: TENANT_TILE_IDENTITY) */}
           {(['listings', 'requests', 'transactions', 'experts'] as const).map((kind) => (
@@ -193,6 +229,7 @@ export function TenantDashboard({ tenantId }: TenantDashboardProps) {
         <TabsContent value="transactions">{renderTile(transactionsTile, 'transactions')}</TabsContent>
         <TabsContent value="experts">{renderTile(expertsTile, 'experts')}</TabsContent>
       </Tabs>
+      )}
     </div>
   )
 }

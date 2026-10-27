@@ -112,6 +112,7 @@ export default function MelketunChangesPage() {
   const [confirmRow, setConfirmRow] = useState<RecentChangeRow | null>(null)
   const [detail, setDetail] = useState<RecordChangesResponse | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const hasUser = useAppStore((s) => !!s.user)
 
   const loadList = useCallback(async () => {
     try {
@@ -140,25 +141,43 @@ export default function MelketunChangesPage() {
     }
   }, [])
 
-  useEffect(() => {
-    void loadList()
-  }, [loadList])
-
-  useEffect(() => {
-    void loadBadge()
-  }, [loadBadge])
-
-  // مسیر مستقیم URL (بدون SPA): بازیابی نشست از secure storage — الگوی boot خود app
+  // PN-050 · درس جلسه: هیچ api احراز-شده‌ای پیش از boot شلیک نشود — گرنه ۴۰1
+  // handler جهانی logout را صدا می‌زند و نشستِ در حال بازیابی را می‌کُشد.
   useEffect(() => {
     const st = useAppStore.getState()
-    if (!st.user) {
-      void st.boot().then(() => {
-        void loadList()
-        void loadBadge()
+    if (st.user) return // نشست حاضر (SPA/بازیابی پیشین) — بارگیری مستقیم
+    let alive = true
+    void st
+      .boot()
+      .then(() => {
+        if (alive && useAppStore.getState().user) {
+          void loadList()
+          void loadBadge()
+        } else if (alive) {
+          setAuthError(true)
+          setRows([])
+        }
       })
+      .catch(() => {
+        if (alive) {
+          setAuthError(true)
+          setRows([])
+        }
+      })
+    return () => {
+      alive = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // بارگیری فقط وقتی نشست حاضر است (SPA یا پس از boot)
+  useEffect(() => {
+    if (hasUser) void loadList()
+  }, [loadList, hasUser])
+
+  useEffect(() => {
+    if (hasUser) void loadBadge()
+  }, [loadBadge, hasUser])
 
   const openDetail = useCallback(async (row: RecentChangeRow) => {
     try {
