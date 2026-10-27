@@ -646,6 +646,19 @@ model PropertyRecord {
   /// (سینک ARM هرگز این ستون را نمی‌نویسد — قانون دادهٔ مقدس)
   ownerNote      String?
 
+  // ===================== PN-050 (دستور ۲ · DIR-PN050-001) — ستون‌های provenance =====================
+  /// JSON نقشهٔ فیلد → {value, source, confidence, at} — آخرین مقدارِ پذیرفته‌شدهٔ سینک
+  /// (مبنای قانون برتری به‌روزرسانی متخصص + هدف بازگردانی). SQLite Json ندارد → String.
+  lastSyncedValue String?
+  /// زمان آخرین پذیرش مقدار سینک (سطح رکورد)
+  lastSyncedAt    DateTime?
+  /// آخرین منبعی که تغییری پذیرفت (CRM_private | melketun-crm-public | owner)
+  lastModifiedBy  String?
+  /// زمان آخرین تغییر پذیرفته‌شده (سطح رکورد) — پنل «تغییرات اخیر» + badge از اینجا می‌شمارد
+  lastModifiedAt  DateTime?
+  /// JSON آرایهٔ تغییرات پذیرفته‌شده [{field, from, to, kind, at, runId}] — سقف ۱۰۰ مدخل (آخرین‌ها می‌مانند)
+  fieldChanges    String?
+
   // ---------- PN-027 · ۵-پ-۲ — ستون‌های سایهٔ نرمال برای فیلتر متنی سطح-SQL ----------
   /// norm(ownerName) — فیلتر «کارشناس/مغایر» M1 (پیش‌تر JS روی ۲۷٫۸k ردیف)
   realtorNameNorm  String?
@@ -659,6 +672,9 @@ model PropertyRecord {
   @@index([createdAt]) // ایندکس ۴ از §۴
   @@index([ownerCode]) // پشتیبان ConsultantScope
   @@index([tenantId])
+  // PN-050 (دستور ۲) — ایندکس‌های provenance
+  @@index([lastSyncedAt])
+  @@index([lastModifiedAt])
   // PN-027 · ۵-پ-۲ — ایندکس ستون‌های نرمال (پیشوند/دقیق؛ contains روی سطح SQLite می‌ماند)
   @@index([realtorNameNorm])
   @@index([ownerSearchNorm])
@@ -1388,6 +1404,19 @@ model RequestRecord {
   ownerNote String?
   events RequestEventRecord[]
 
+  // ===================== PN-050 (دستور ۲ · DIR-PN050-001) — ستون‌های provenance =====================
+  /// JSON نقشهٔ فیلد → {value, source, confidence, at} — آخرین مقدارِ پذیرفته‌شدهٔ سینک
+  /// (مبنای قانون برتری به‌روزرسانی متخصص + هدف بازگردانی). SQLite Json ندارد → String.
+  lastSyncedValue String?
+  /// زمان آخرین پذیرش مقدار سینک (سطح رکورد)
+  lastSyncedAt    DateTime?
+  /// آخرین منبعی که تغییری پذیرفت (CRM_private | melketun-crm-public | owner)
+  lastModifiedBy  String?
+  /// زمان آخرین تغییر پذیرفته‌شده (سطح رکورد) — پنل «تغییرات اخیر» + badge از اینجا می‌شمارد
+  lastModifiedAt  DateTime?
+  /// JSON آرایهٔ تغییرات پذیرفته‌شده [{field, from, to, kind, at, runId}] — سقف ۱۰۰ مدخل (آخرین‌ها می‌مانند)
+  fieldChanges    String?
+
   /// P6.5-02 (§۵.۳) — شعبه انتساب Scope
   branchId             String?
   /// P6.5-02 (§۱۴ مصوبه شورا) — آماده‌سازی چند-مستأجری — nullable + default، بدون منطق فعال
@@ -1447,6 +1476,9 @@ model RequestRecord {
   @@index([sanadNamesNorm])
   @@index([actorNameNorm])
   @@index([tenantId])
+  // PN-050 (دستور ۲) — ایندکس‌های provenance
+  @@index([lastSyncedAt])
+  @@index([lastModifiedAt])
 }
 
 /// رویداد درخواست — «ثبت رویداد» عین خود سامانه (request-events/create):

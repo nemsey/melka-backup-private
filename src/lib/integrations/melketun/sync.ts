@@ -39,6 +39,7 @@ import path from "path";
 import { db } from "@/lib/db";
 import { recordMelketunConnection } from "@/lib/integrations/melketun";
 import { stripProtectedNulls } from "@/lib/integrations/melketun/protected-nulls"; // G1/G2 (DIR-PN048-007)
+import { upsertRecordWithMerge } from "@/lib/merge"; // PN-050 · دستور ۳ — قانون برتری متخصص + provenance
 import { logEvent } from "@/lib/logger"; // PN-051 — شاهد ادغام دو-نمایی (تنها نقطهٔ لاگ: src/lib/logger)
 
 const SECRET_FILE = path.join(process.cwd(), "upload/.runtime/melketun-secrets.json");
@@ -605,6 +606,13 @@ export interface PrefetchedRows {
   /** کش حل‌شدهٔ کاربران vtiger (ممکن است ناقص باشد — skip صادقانه) */
   users: Record<string, ResolvedUser>;
   funnel: { filings: Record<string, unknown> | null; potentials: Record<string, unknown> | null };
+  /**
+   * PN-050 · دستور ۳ — زمان دادهٔ ورودی: سینک زنده = now (پیش‌فرض) ·
+   * bootstrap از شاهدهای کاوش = زمان استخراج شاهد (قدیمی).
+   * قانون ب (shouldAcceptExpertUpdate) دادهٔ قدیمی‌تر از lastSyncedAt را رد می‌کند
+   * تا شاهد کهنه، مقدار تازهٔ CRM را له نکند.
+   */
+  dataModifiedAt?: Date | null;
 }
 
 /**
@@ -628,6 +636,20 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
     durationMs: 0,
   };
   const runId = `pn047-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`;
+  // PN-050 · دستور ۳ — زمان داده: سینک زنده = اکنون · bootstrap = زمان شاهد (dataModifiedAt)
+  const dataAt = rows.dataModifiedAt ?? new Date();
+  // PN-050 · دستور ۵ — ژورنال اپلیکیشن: نیت پیش از batch؛ committed پس از پایان بی‌کرش.
+  // kill -9 وسط کار → intent بدون committed می‌ماند → بوت Worker دوباره اجرا می‌کند (سناریوی D).
+  try {
+    const { writeIntent } = await import("@/lib/journal");
+    writeIntent(runId, "melketun-sync", {
+      listings: rows.filings.length,
+      requests: rows.potentials.length,
+      experts: rows.specialists.length,
+    });
+  } catch {
+    // ژورنال ناتوان (فقط-خواندنی؟) — سینک ادامه می‌یابد (قانون ۱۱: بوت/سرو نمی‌ایستد)
+  }
 
   try {
     const expertNameOf = (vt: unknown): string | null => {
@@ -685,19 +707,11 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
           continue;
         }
         const data = filingToProperty(f, runId, expertNameOf(f.assignedUser), enrichByCode.get((f.code ?? "").trim()) ?? null);
-        try {
-          // G1/G2 (DIR-PN048-007): update افزودنی — null هرگز روی دادهٔ پر نمی‌نشیند
-          await db.propertyRecord.upsert({ where: { id: data.id }, create: data, update: stripProtectedNulls(data) });
-        } catch (e) {
-          // P2002 (کد تکراری): رکورد موجود با همین کد — از sync قدیمی (نمای خصوصی
-          // PN-046) با id متفاوت. ادغام صادقانه: همان رکورد بر اساس کد آپدیت می‌شود
-          // (id قدیمی حفظ · ownerNote دست‌نخورده — قانون دادهٔ مقدس).
-          if ((e as { code?: string }).code !== "P2002") throw e;
-          const { id: _drop, createdAt: _c, ...rest } = data;
-          // G1/G2: ادغام هم افزودنی — rest بدون nullها (فیلد غنی‌سازی غایب ≠ پاک کردن دادهٔ پر)
-          await db.propertyRecord.update({ where: { propertyCode: data.propertyCode }, data: stripProtectedNulls(rest) });
-          result.skippedDuplicates.listings++;
-        }
+        // PN-050 · دستور ۳ — upsert دارای قانون: mergeField (الف→ه) + provenance +
+        // audit expert_override. G1/G2 در عمق merge.ts هم فعال است (stripProtectedNulls).
+        // ادغام P2002-قدیم (هم-کد با id متفاوت — سینک نما-خصوصی PN-046) داخل merge انجام می‌شود.
+        const mergedUpsert = await upsertRecordWithMerge({ entity: "property", data, runId, modifiedAt: dataAt });
+        if (mergedUpsert.duplicateMerged) result.skippedDuplicates.listings++;
         result.upserted.listings++;
       } catch (e) {
         result.errors.push(`upsert filing ${f.id}: ${e instanceof Error ? e.message : String(e)}`.slice(0, 160));
@@ -715,17 +729,9 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
           continue;
         }
         const data = potentialToRequest(p, runId, expertNameOf(p.assignedUser));
-        try {
-          // G1/G2 (DIR-PN048-007): update افزودنی — متقاضی پر هرگز پاک نمی‌شود
-          await db.requestRecord.upsert({ where: { id: data.id }, create: data, update: stripProtectedNulls(data) });
-        } catch (e) {
-          // P2002 (کد درخواست تکراری) — ادغام بر اساس requestCode (ادغام صادقانه)
-          if ((e as { code?: string }).code !== "P2002") throw e;
-          const { id: _drop, createdAt: _c, ...rest } = data;
-          // G1/G2: ادغام افزودنی — rest بدون nullها
-          await db.requestRecord.update({ where: { requestCode: data.requestCode }, data: stripProtectedNulls(rest) });
-          result.skippedDuplicates.requests++;
-        }
+        // PN-050 · دستور ۳ — همان قانون: متقاضی/موبایل = CRM خصوصی (قانون ۰۵)
+        const mergedUpsert = await upsertRecordWithMerge({ entity: "request", data, runId, modifiedAt: dataAt });
+        if (mergedUpsert.duplicateMerged) result.skippedDuplicates.requests++;
         result.upserted.requests++;
       } catch (e) {
         result.errors.push(`upsert potential ${p.id}: ${e instanceof Error ? e.message : String(e)}`.slice(0, 160));
@@ -855,6 +861,20 @@ export async function syncMelketunRows(rows: PrefetchedRows): Promise<SyncResult
     result.ok = result.errors.length === 0;
   } catch (e) {
     result.errors.push(e instanceof Error ? e.message : String(e));
+  }
+
+  // PN-050 · دستور ۵ — تکمیل batch: committed + checkpoint(WAL TRUNCATE)
+  // فقط وقتی فرایند تا اینجا زنده مانده باشد نوشته می‌شود (kill -9 → pending → replay).
+  try {
+    const { writeCommitted } = await import("@/lib/journal");
+    writeCommitted(runId, "melketun-sync", {
+      upserted: result.upserted,
+      errors: result.errors.length,
+    });
+    const { checkpointWal } = await import("@/lib/db");
+    await checkpointWal(db as unknown as Parameters<typeof checkpointWal>[0]);
+  } catch {
+    // بهترین-تلاش — سینک خودش کامل شده است
   }
 
   result.durationMs = Date.now() - t0;
