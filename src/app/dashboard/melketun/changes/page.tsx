@@ -22,6 +22,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
+import { api, ApiClientError } from '@/lib/client/api'
+import { useAppStore } from '@/lib/client/store' // bindAuth — نشست Bearer از ذخیرهٔ SPA
 import { faJalaliShortDateTime } from '@/lib/format'
 import { faDigits } from '@/lib/jalali'
 
@@ -100,6 +102,7 @@ function showValue(v: unknown): string {
 
 export default function MelketunChangesPage() {
   const { toast } = useToast()
+  const userRole = useAppStore((s) => s.user?.role ?? null) // همچنین bindAuth را فعال می‌کند
   const [range, setRange] = useState<RangeKey>('24h')
   const [kind, setKind] = useState<ChangeKind | 'all'>('all')
   const [rows, setRows] = useState<RecentChangeRow[] | null>(null)
@@ -114,16 +117,15 @@ export default function MelketunChangesPage() {
     try {
       const q = new URLSearchParams({ range })
       if (kind !== 'all') q.set('type', kind)
-      const res = await fetch(`/api/records/changes?${q.toString()}`, { cache: 'no-store' })
-      if (res.status === 401 || res.status === 403) {
+      const json = await api<{ ok: boolean; items?: RecentChangeRow[] }>(`/api/records/changes?${q.toString()}`)
+      setRows(json.items ?? [])
+      setAuthError(false)
+    } catch (e) {
+      if (e instanceof ApiClientError && (e.status === 401 || e.status === 403)) {
         setAuthError(true)
         setRows([])
         return
       }
-      const json = (await res.json()) as { ok: boolean; items?: RecentChangeRow[] }
-      setRows(json.items ?? [])
-      setAuthError(false)
-    } catch {
       setRows([])
     }
   }, [range, kind])
@@ -131,11 +133,8 @@ export default function MelketunChangesPage() {
   // badge ۲۴ساعت — همیشه، مستقل از فیلتر
   const loadBadge = useCallback(async () => {
     try {
-      const res = await fetch('/api/records/changes?range=24h&countOnly=1', { cache: 'no-store' })
-      if (res.ok) {
-        const json = (await res.json()) as { ok: boolean; count?: number }
-        setCount24h(json.count ?? 0)
-      }
+      const json = await api<{ ok: boolean; count?: number }>('/api/records/changes?range=24h&countOnly=1')
+      setCount24h(json.count ?? 0)
     } catch {
       /* badge صادقانه خالی می‌ماند */
     }
@@ -151,13 +150,9 @@ export default function MelketunChangesPage() {
 
   const openDetail = useCallback(async (row: RecentChangeRow) => {
     try {
-      const res = await fetch(`/api/records/${encodeURIComponent(row.id)}/changes?entity=${row.entity}`, { cache: 'no-store' })
-      if (res.ok) {
-        setDetail((await res.json()) as RecordChangesResponse)
-        setDetailOpen(true)
-      } else {
-        toast({ title: 'بارگیری جزئیات ناموفق بود.' })
-      }
+      const json = await api<RecordChangesResponse>(`/api/records/${encodeURIComponent(row.id)}/changes?entity=${row.entity}`)
+      setDetail(json)
+      setDetailOpen(true)
     } catch {
       toast({ title: 'بارگیری جزئیات ناموفق بود.' })
     }
@@ -166,20 +161,15 @@ export default function MelketunChangesPage() {
   const doRevert = useCallback(async (row: RecentChangeRow) => {
     setBusyRevert(row.id + row.field)
     try {
-      const res = await fetch(`/api/records/${encodeURIComponent(row.id)}/revert`, {
+      const json = await api<{ ok?: boolean; message?: string; error?: string }>(`/api/records/${encodeURIComponent(row.id)}/revert`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entity: row.entity, field: row.field, confirm: true }),
+        body: { entity: row.entity, field: row.field, confirm: true },
       })
-      const json = (await res.json()) as { ok?: boolean; message?: string; error?: string }
-      if (res.ok && json.ok) {
-        toast({ title: 'بازگردانی شد ✓', description: `${fieldFa(row.field)} → مقدار پیشین` })
-        await Promise.all([loadList(), loadBadge()])
-      } else {
-        toast({ title: 'بازگردانی نشد', description: json.error ?? json.message ?? 'خطای نامشخص' })
-      }
-    } catch {
-      toast({ title: 'بازگردانی نشد', description: 'خطای شبکه' })
+      toast({ title: 'بازگردانی شد ✓', description: `${fieldFa(row.field)} → مقدار پیشین` })
+      await Promise.all([loadList(), loadBadge()])
+    } catch (e) {
+      const msg = e instanceof ApiClientError ? e.message : 'خطای شبکه'
+      toast({ title: 'بازگردانی نشد', description: msg })
     } finally {
       setBusyRevert(null)
       setConfirmRow(null)
@@ -202,6 +192,7 @@ export default function MelketunChangesPage() {
             <h1 className="text-2xl font-bold">تغییرات اخیر — داشبورد ملکتون</h1>
             <p className="text-xs text-muted-foreground mt-1">
               تاریخچهٔ اثبات‌شدهٔ تغییرات فیلدها (provenance) — ویرایش متخصص، غنی‌سازی و بازگردانی
+              {userRole === 'OWNER' ? ' · نمای مالک' : userRole ? '' : ' · بدون نشست'}
             </p>
           </div>
           <div className="flex items-center gap-2">

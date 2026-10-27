@@ -22,6 +22,7 @@ import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { tileRegistry } from '@/core/tiles/tile-registry'
 import { useAppStore } from '@/lib/client/store'
+import { api } from '@/lib/client/api'
 import type { TilePageProps } from '@/core/tiles/tile-contract'
 import { faDigits } from '@/lib/jalali'
 import {
@@ -54,12 +55,12 @@ function ChangesBadge24h() {
   const [count, setCount] = useState<number | null>(null)
   useEffect(() => {
     let alive = true
-    fetch('/api/records/changes?range=24h&countOnly=1', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { ok?: boolean; count?: number } | null) => {
+    // کلاینت رسمی app (api) — نشست Bearer از bindAuth ذخیرهٔ SPA می‌آید (قانون ۱۰/۱۴)
+    api<{ ok?: boolean; count?: number }>('/api/records/changes?range=24h&countOnly=1')
+      .then((j) => {
         if (alive && j?.ok) setCount(j.count ?? 0)
       })
-      .catch(() => undefined)
+      .catch(() => undefined) // خطا/عدم ورود → badge خاموش و صادقانه مخفی
     return () => {
       alive = false
     }
