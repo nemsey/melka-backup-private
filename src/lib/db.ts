@@ -38,7 +38,7 @@ export function resolveLiveDbPath(dbUrl: string | undefined, fallback = 'db/cust
  * (bun:sqlite فقط در اسکریپت‌های runtime، نه در باندل Next).
  * journal_mode ماندگار است (خاصیت فایل DB)؛ بقیه per-connection (فراخوانی مکرر بی‌ضرر).
  */
-export async function ensureDurabilityPragmas(client: PrismaClient, dbPath?: string | null): Promise<{ journalMode: string }> {
+export async function ensureDurabilityPragmas(client: PrismaClient, dbPath?: string | null): Promise<{ journalMode: string; synchronous?: number | string; walAutocheckpoint?: number | string }> {
   // ۱) مسیر زنده: محلی → WAL · FUSE → DELETE (دکترین PN-041-R — درس ۰۹:۰۱/۱۱:۴۳)
   const path = dbPath ?? resolveLiveDbPath(undefined)
   const wanted = path ? (isFusePath(path) ? 'DELETE' : 'WAL') : null
@@ -53,25 +53,45 @@ export async function ensureDurabilityPragmas(client: PrismaClient, dbPath?: str
     }
   }
 
-  // ۲) synchronous=FULL · wal_autocheckpoint=100 — روی اتصال(های) Prisma
+  // ۲) synchronous=FULL · wal_autocheckpoint=100 — روی اتصال(های) Prisma.
+  // نکتهٔ SQLite (درس تست PN-050): هر PRAGMA مقدار-دار «ردیف» برمی‌گرداند →
+  // باید از queryRawUnsafe رفت (executeRawUnsafe: «returned results not allowed»)؛
+  // و چون درایور گاهی ردیفِ خودِ SET را خالی برمی‌گرداند، مقدار با «خواندنِ بازگشتی»
+  // جداگانه شاهد می‌شود (honest witness — هر عدد = شاهد + مخرج).
   try {
-    await client.$executeRawUnsafe('PRAGMA synchronous=FULL;')
-    await client.$executeRawUnsafe('PRAGMA wal_autocheckpoint=100;')
+    await client.$queryRawUnsafe('PRAGMA synchronous=FULL;')
+    await client.$queryRawUnsafe('PRAGMA wal_autocheckpoint=100;')
+    const syncRows = (await client.$queryRawUnsafe('PRAGMA synchronous;')) as Array<{ synchronous?: number | string }>
+    const walRows = (await client.$queryRawUnsafe('PRAGMA wal_autocheckpoint;')) as Array<{ wal_autocheckpoint?: number | string }>
+    return {
+      journalMode,
+      synchronous: syncRows?.[0]?.synchronous,
+      walAutocheckpoint: walRows?.[0]?.wal_autocheckpoint,
+    }
   } catch {
     // مسیر تست/FUSE — بی‌صدا
+    return { journalMode }
   }
-  return { journalMode }
 }
 
 /**
  * پس از هر commit سنگین (batch سینک): TRUNCATE کردن WAL تا فایل .db-wal
  * بلافاصله خالی شود (معیار پذیرش دستور ۵). فقط وقتی WAL فعال است معنا دارد.
+ * (PRAGMA wal_checkpoint ردیف برمی‌گرداند → queryRawUnsafe — درس تست PN-050)
  */
-export async function checkpointWal(client: PrismaClient): Promise<void> {
+export async function checkpointWal(client: PrismaClient): Promise<{ busy: number; log: number; checkpointed: number } | null> {
   try {
-    await client.$executeRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE);')
+    const rows = (await client.$queryRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE);')) as Array<{
+      busy?: number
+      log?: number
+      checkpointed?: number
+    }>
+    return rows?.[0]
+      ? { busy: Number(rows[0].busy ?? 0), log: Number(rows[0].log ?? 0), checkpointed: Number(rows[0].checkpointed ?? 0) }
+      : null
   } catch {
     // DELETE-mode/FUSE — چیزی برای truncate نیست
+    return null
   }
 }
 
