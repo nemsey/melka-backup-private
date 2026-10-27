@@ -483,11 +483,11 @@ export function filingToProperty(f: FilingRow, runId: string, expertName: string
     status: f.status?.trim() || null,
     // کارشناس مسئول (حل‌شده از vtiger)؛ بدون حل → آژانس (الگوی کاتالوگ M7)
     ownerName: expertName ?? agency,
-    // مالک واقعی — اولویت ۱: غنی‌سازی myFilings (آگهی‌های خصوصی) · اولویت ۲:
-    // PN-051 ادغام نمای خصوصی (f.ownerName از Melketunfilingplus) · با حساب
-    // مدیر CRM این فیلد برای همهٔ آگهی‌ها جاری می‌شود (دستور شورا ۱۴۰۵/۰۸/۰۲)
-    rawOwnerName: ownerEnrich?.owner_name?.trim() ?? (f.ownerName?.trim() || null),
-    ownerMobile: ownerEnrich?.owner_phone?.replace(/\D/g, "") ?? f.phone?.replace(/\D/g, "") ?? null,
+    // مالک واقعی — PN-056: فقط منابع CRM خصوصی (myFilings/enrich + نمای خصوصی ادغام‌شده).
+    // ⚠️ fallback عمومی f.ownerName/f.phone حذف شد: در فهرست عمومی CRM این فیلدها
+    // = کارشناسِ واگذارشده (فایلر) بودند → آلودگی ستون مالک (۱٬۱۹۳ ردیف — نکتهٔ ۲ مالک).
+    rawOwnerName: ownerEnrich?.owner_name?.trim() ?? (String((f as unknown as InertiaRow).privateOwnerName ?? "").trim() || null),
+    ownerMobile: ownerEnrich?.owner_phone?.replace(/\D/g, "") ?? (String((f as unknown as InertiaRow).privateOwnerPhone ?? "").replace(/\D/g, "") || null),
     address: ownerEnrich?.address?.trim() ?? null, // آدرس دقیق (فقط برای ۴۹ آگهی خصوصیِ در دسترس)
     areaName: area,
     propertyTypeName: fileType,
@@ -991,6 +991,8 @@ export async function syncMelketun(): Promise<SyncResult> {
       }
 
       // ادغام آگهی‌ها: مالک واقعی (ownerName نمای خصوصی → rawOwnerName) + موبایل
+      // ⚠️ PN-056: در فیلدهای اختصاصی privateOwnerName/privateOwnerPhone — نه f.ownerName/f.phone
+      // (آن فیلدهای عمومی = کارشناس فایلر؛ هرگز نباید مبنای ستون مالک شوند — نکتهٔ ۲ مالک)
       let mergedFilings = 0;
       for (const f of filingsResult.rows) {
         const priv = privFilingById.get(String(f.id ?? "")) ?? privFilingByCode.get(String(f.code ?? "").trim());
@@ -998,11 +1000,11 @@ export async function syncMelketun(): Promise<SyncResult> {
         const owner = String(priv.ownerName ?? "").trim();
         const phone = String(priv.phone ?? "").replace(/\D/g, "");
         let touched = false;
-        if (owner && !String(f.ownerName ?? "").trim()) { (f as InertiaRow).ownerName = owner; touched = true; }
-        if (phone && !String(f.phone ?? "").replace(/\D/g, "")) { (f as InertiaRow).phone = phone; touched = true; }
+        if (owner && !String((f as InertiaRow).privateOwnerName ?? "").trim()) { (f as InertiaRow).privateOwnerName = owner; touched = true; }
+        if (phone && !String((f as InertiaRow).privateOwnerPhone ?? "").replace(/\D/g, "")) { (f as InertiaRow).privateOwnerPhone = phone; touched = true; }
         if (!phone && owner) {
           const byName = phoneOfFilingContact.get(owner);
-          if (byName && !String(f.phone ?? "").replace(/\D/g, "")) { (f as InertiaRow).phone = byName; touched = true; }
+          if (byName && !String((f as InertiaRow).privateOwnerPhone ?? "").replace(/\D/g, "")) { (f as InertiaRow).privateOwnerPhone = byName; touched = true; }
         }
         if (touched) mergedFilings++;
       }

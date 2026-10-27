@@ -26,11 +26,11 @@ describe("PN-055 · موتور استخراج عمیق — ساختار", () => 
     expect(src).toContain("419");
   });
 
-  test("۴) دکترین بدون نابودی: موبایل خالی هرگز دادهٔ موجود را پاک نمی‌کند + نگاشت ستون‌ها (PN-055 ترمیم)", () => {
-    // در ادغام درخواست: فقط مقدار غیرخالی نوشته می‌شود
-    expect(src).toContain("if (customerMobile.length >= 10) data.customerMobile = customerMobile;");
-    // در ادغام آگهی مستقیم: فقط غیرخالی
-    expect(src).toContain("if (ownerMobile.length >= 10) data.ownerMobile = ownerMobile;");
+  test("۴) دکترین بدون نابودی: موبایل خالی هرگز دادهٔ موجود را پاک نمی‌کند + نگاشت ستون‌ها (PN-055 ترمیم + PN-056 گارد نکتهٔ ۲)", () => {
+    // در ادغام درخواست: فقط مقدار غیرخالیِ غیر-کارشناسی نوشته می‌شود (PN-056 گارد)
+    expect(src).toContain("if (customerMobile.length >= 10 && !applicantIsConsultant) data.customerMobile = customerMobile;");
+    // در ادغام آگهی مستقیم: فقط غیرخالیِ غیر-کارشناسی (PN-056 گارد)
+    expect(src).toContain("if (ownerMobile.length >= 10 && !ownerIsConsultant) data.ownerMobile = ownerMobile;");
     // در relatedFilings: فقط وقتی موجود خالی است
     expect(src).toContain("if (!existing.ownerMobile && phone.length >= 10)");
     // ⚠️ نگاشت ستون‌ها: مالک واقعی → rawOwnerName (نه ownerName که ستون کارشناس است)
