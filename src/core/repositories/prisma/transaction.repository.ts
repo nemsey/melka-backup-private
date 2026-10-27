@@ -45,9 +45,6 @@ function toTxData(t: TransactionUpsertInput): Record<string, unknown> {
 export function buildTransactionWhere(filter?: TransactionListFilter): Prisma.TransactionRecordWhereInput {
   const where: Prisma.TransactionRecordWhereInput = {};
   if (!filter) return where;
-  // PN-044/فاز ۴ (شورا-ن۰۸۸) — جداسازی tenant: پیش‌فرض 'melk-tabriz' (تمام دادهٔ
-  // فعلی همین است — صفر شکستن) ⇒ دادهٔ ملکتون هرگز به کاشی‌های تبریز نشت نمی‌کند.
-  where.tenantId = filter.tenantId ?? "melk-tabriz";
   const { dateFrom, dateTo, propertyCode, requestCode, contractHolo, matchKind } = filter;
   if (dateFrom || dateTo) {
     // P6.5-15 (رفع F5 — ملکا-شورا-۱۴۰۵-۰۱۸) — مرز روز به وقت تهران (+03:30):
