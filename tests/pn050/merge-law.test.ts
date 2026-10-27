@@ -376,3 +376,37 @@ describe("PN-050 · نرمال‌سازی و برابری", () => {
     expect(CONFIDENCE[SOURCE_CRM_PRIVATE]).toBeLessThanOrEqual(1);
   });
 });
+
+describe("PN-050 · درس production — مقایسهٔ مقداری Date (خاتمه enrichmentهای from==to)", () => {
+  test("دو Date با زمان برابر → unchanged (نه enrichment)", () => {
+    const d1 = new Date("2026-10-20T20:59:00.000Z");
+    const d2 = new Date("2026-10-20T20:59:00.000Z");
+    const res = mergeField({
+      field: "createdAt",
+      incoming: { value: d1, source: SOURCE_CRM_PUBLIC, confidence: 0.75, modifiedAt: NOW },
+      existing: { value: d2, confidence: 0.75, lastSyncedValue: d2, lastSyncedAt: EARLIER },
+    });
+    expect(res.accepted).toBe(false);
+    expect(res.reason).toBe("unchanged");
+  });
+
+  test("Date در برابر رشتهٔ ISO برابر → unchanged (Prisma Date در برابر JSON string)", () => {
+    const res = mergeField({
+      field: "createdAt",
+      incoming: { value: "2026-10-20T20:59:00.000Z", source: SOURCE_CRM_PUBLIC, confidence: 0.75, modifiedAt: NOW },
+      existing: { value: new Date("2026-10-20T20:59:00.000Z"), confidence: 0.75, lastSyncedValue: "2026-10-20T20:59:00.000Z", lastSyncedAt: EARLIER },
+    });
+    expect(res.accepted).toBe(false);
+    expect(res.reason).toBe("unchanged");
+  });
+
+  test("Date با زمان متفاوت → پذیرش عادی (تازه واقعاً تازه)", () => {
+    const res = mergeField({
+      field: "createdAt",
+      incoming: { value: new Date("2026-10-21T10:00:00.000Z"), source: SOURCE_CRM_PUBLIC, confidence: 0.75, modifiedAt: NOW },
+      existing: { value: new Date("2026-10-20T20:59:00.000Z"), confidence: 0.75, lastSyncedValue: new Date("2026-10-20T20:59:00.000Z"), lastSyncedAt: EARLIER },
+    });
+    expect(res.accepted).toBe(true);
+    expect(res.reason).toBe("newest");
+  });
+});
