@@ -3,20 +3,19 @@
  * ---------------------------------------------------------------------------
  * POST { entity: "property" | "request", field: string, confirm: true }
  *
- * بازگردانی = نوشتن مقدارِ «پیش از آخرین تغییر پذیرفته‌شده» (from آخرین مدخل
- * fieldChanges؛ در نبود آن lastSyncedValue) + ثبت رد حسابرسی manual_revert.
- *
+ * بازگردانی = نوشتن مقدارِ «پیش از آخرین تغییر پذیرفته‌شده» (منطق: src/lib/merge.ts)
+ * + ثبت رد حسابرسی manual_revert (بدون PII خام — قانون ۱۰).
  * خط قرمز (قانون ۰۴): هدف null/تهی هرگز روی مقدار پر نمی‌نشیند → 409 با دلیل.
- * تأیید صریح (confirm=true) الزامی است — بازگردانی عملیات مالک است، نه سینک.
- *
+ * تأیید صریح (confirm=true) الزامی است.
  * گارد: نشست + دسترسی کاشی متناظر (M7/M8) — همان الگوی owner-notes.
+ * مرز مخزن (PN-012 BLOCK 1): صفر db.* در روت — منطق در سرویس RecordsChanges.
  */
 
 import { NextRequest } from "next/server";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { MelkApiError } from "@/lib/melk-api/types";
-import { revertRecordField } from "@/lib/merge";
+import { revertRecord, RecordsChangesError } from "@/lib/services/records-changes";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +46,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
   const entity = typeof body.entity === "string" ? body.entity : null;
   const field = typeof body.field === "string" ? body.field : null;
   const tile = entity ? ENTITY_TILE[entity] : undefined;
-  if (!tile || !field) {
+  if (!tile || !entity || !field) {
     return errorResponse(new MelkApiError("UNKNOWN", "موجودیت (property | request) و نام فیلد الزامی است.", 400, false));
   }
   if (body.confirm !== true) {
@@ -56,25 +55,25 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
   const tileAccess = await requireTileAccessFor(guard, tile);
   if (tileAccess instanceof MelkApiError) return errorResponse(tileAccess);
 
-  const outcome = await revertRecordField({
-    entity: entity as "property" | "request",
-    id,
-    field,
-    actor: guard.personnelCode,
-  });
-
-  if (!outcome.ok) {
-    const reason = FA_REASON[outcome.reason] ?? "بازگردانی ناممکن.";
-    return errorResponse(new MelkApiError("UNKNOWN", reason, outcome.reason === "not_found" ? 404 : 409, false));
+  try {
+    const outcome = await revertRecord(id, entity, field, guard.personnelCode);
+    if (!outcome.ok) {
+      const reason = FA_REASON[outcome.reason] ?? "بازگردانی ناممکن.";
+      return errorResponse(new MelkApiError("UNKNOWN", reason, outcome.status, false));
+    }
+    return Response.json({
+      ok: true,
+      entity,
+      id,
+      field,
+      revertedTo: outcome.revertedTo,
+      change: outcome.change,
+      message: "فیلد بازگردانی شد و رد حسابرسی (manual_revert) ثبت شد.",
+    });
+  } catch (e) {
+    if (e instanceof RecordsChangesError) {
+      return errorResponse(new MelkApiError("UNKNOWN", e.message, e.status, false));
+    }
+    return errorResponse(new MelkApiError("UNKNOWN", (e as Error)?.message ?? "خطای بازگردانی", 500, false));
   }
-
-  return Response.json({
-    ok: true,
-    entity,
-    id,
-    field,
-    revertedTo: outcome.revertedTo,
-    change: outcome.change,
-    message: "فیلد بازگردانی شد و رد حسابرسی (manual_revert) ثبت شد.",
-  });
 }

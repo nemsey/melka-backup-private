@@ -50,7 +50,15 @@ export function normValue(v: unknown): unknown {
 
 /** برابری مقادیر بعد از نرمال‌سازی (null ≡ undefined ≡ «») */
 export function valuesEqual(a: unknown, b: unknown): boolean {
-  return normValue(a) === normValue(b);
+  const x = normValue(a);
+  const y = normValue(b);
+  // درس production PN-050: Prisma ستون‌های DateTime را «شیء Date» برمی‌گرداند —
+  // مقایسهٔ مرجعی دو Date با زمان برابر را نابرار می‌گرفت و همان-مقدارها به‌عنوان
+  // enrichment ثبت می‌شدند (from == to). مقایسهٔ مقداری (epoch ms):
+  if (x instanceof Date && y instanceof Date) return x.getTime() === y.getTime();
+  if (x instanceof Date && typeof y === "string") return x.getTime() === new Date(y).getTime();
+  if (y instanceof Date && typeof x === "string") return y.getTime() === new Date(x).getTime();
+  return x === y;
 }
 
 // ─── قانون ب: پذیرش اجباری به‌روزرسانی متخصص ────────────────────────────────
