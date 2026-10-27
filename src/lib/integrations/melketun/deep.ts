@@ -36,8 +36,108 @@ export interface DeepSyncResult {
   requestsMobileFilled: number;
   filingsOwnerFilled: number;
   filingsFromRelated: number;
+  /** PN-056 (نکتهٔ ۲ مالک): نوشتنی که نام/موبایل کارشناس را در ستون مالک/متقاضی مسدود کرد */
+  consultantBlocked: number;
   errors: string[];
   durationMs: number;
+}
+
+// ── PN-056: گارد خلوص ستون مالک/متقاضی (نکتهٔ ۲ مالک) ─────────────────────
+// نام/موبایل کارشناس هرگز در rawOwnerName/ownerMobile (ستون مالک) و
+// rawCustomerName/customerMobile (ستون متقاضی) نوشته نمی‌شود.
+// منابع حقیقت کارشناسان: melketun-users (کاربران CRM · قطعی) +
+// ExpertRecord ملکتون (قطعی) + melketun-website-filers (فایلرِ هر کد — شاهد سطری).
+interface ConsultantGuard {
+  /** نام‌های قطعی کارشناس (users + ExpertRecord) */
+  names: Set<string>;
+  /** موبایل‌های قطعی کارشناس */
+  mobiles: Set<string>;
+  /** کد آگهی → نام فایلر (شاهد سطری) */
+  filerByCode: Map<string, string>;
+  /** کد آگهی → موبایل فایلر (شاهد سطری) */
+  filerMobileByCode: Map<string, string>;
+}
+
+const normId = (s: unknown): string =>
+  String(s ?? "").replace(/[\s\u200c\u200f\u200e]+/g, " ").trim();
+
+const last10 = (s: unknown): string => {
+  const d = String(s ?? "").replace(/\D/g, "");
+  return d.length >= 10 ? d.slice(-10) : "";
+};
+
+export { normId, last10 };
+
+async function loadConsultantGuard(): Promise<ConsultantGuard> {
+  const guard: ConsultantGuard = { names: new Set(), mobiles: new Set(), filerByCode: new Map(), filerMobileByCode: new Map() };
+  const usersRow = await db.refListCache.findUnique({ where: { key: "melketun-users" } }).catch(() => null);
+  if (usersRow?.dataJson) {
+    try {
+      const users = JSON.parse(usersRow.dataJson) as Record<string, { name?: unknown; mobile?: unknown }>;
+      for (const u of Object.values(users)) {
+        const n = normId(u?.name);
+        const m = last10(u?.mobile);
+        if (n && n.length >= 3) guard.names.add(n);
+        if (m) guard.mobiles.add(m);
+      }
+    } catch { /* کش ناقص — گارد با آنچه هست کار می‌کند */ }
+  }
+  const filersRow = await db.refListCache.findUnique({ where: { key: "melketun-website-filers" } }).catch(() => null);
+  if (filersRow?.dataJson) {
+    try {
+      const filers = JSON.parse(filersRow.dataJson) as Record<string, { filerName?: unknown; filerMobile?: unknown }>;
+      for (const [code, u] of Object.entries(filers)) {
+        const c = code.replace(/^["']+|["']+$/g, "").trim();
+        const n = normId(u?.filerName);
+        const m = last10(u?.filerMobile);
+        if (c && n) guard.filerByCode.set(c, n);
+        if (c && m) guard.filerMobileByCode.set(c, m);
+      }
+    } catch { /* کش ناقص */ }
+  }
+  // PN-056 — کارشناسان ثبت‌کنندهٔ وب‌سایت (آرایهٔ [نام، موبایل] — قطعی: شاهد دوبعدی درونی)
+  const ownersRow = await db.refListCache.findUnique({ where: { key: "melketun-website-owners" } }).catch(() => null);
+  if (ownersRow?.dataJson) {
+    try {
+      const owners = JSON.parse(ownersRow.dataJson) as [string, string][];
+      for (const o of owners) {
+        const n = normId(o?.[0]);
+        const m = last10(o?.[1]);
+        if (n && n.length >= 3) guard.names.add(n);
+        if (m) guard.mobiles.add(m);
+      }
+    } catch { /* کش ناقص */ }
+  }
+  const experts = await db.expertRecord.findMany({
+    where: { tenantId: "melketun" },
+    select: { fullName: true, rawFullName: true, mobile: true, rawMobile: true },
+  }).catch(() => []);
+  for (const e of experts) {
+    const n = normId(e.rawFullName ?? e.fullName);
+    const m = last10(e.rawMobile ?? e.mobile);
+    if (n && n.length >= 3) guard.names.add(n);
+    if (m) guard.mobiles.add(m);
+  }
+  return guard;
+}
+
+/** آیا این مقدار مالک/متقاضی، کارشناس است؟ (شاهد سطری اول؛ سپس رجیستری قطعی — نکتهٔ ۲ مالک) */
+export function isConsultantIdentity(
+  guard: ConsultantGuard,
+  name: string,
+  mobile: string,
+  propertyCode?: string | null,
+): boolean {
+  const n = normId(name);
+  const m = last10(mobile);
+  const c = String(propertyCode ?? "").replace(/^["']+|["']+$/g, "").trim();
+  if (c) {
+    if (n && n === guard.filerByCode.get(c)) return true; // فایلرِ همین آگهی
+    if (m && m === guard.filerMobileByCode.get(c)) return true;
+  }
+  if (n && guard.names.has(n)) return true; // نامِ قطعی کارشناس — سخت‌گیرانه (نکتهٔ ۲)
+  if (m && guard.mobiles.has(m)) return true; // موبایلِ قطعی کارشناس
+  return false;
 }
 
 interface DeepState {
@@ -123,7 +223,7 @@ export async function syncMelketunDeep(): Promise<DeepSyncResult> {
   const t0 = Date.now();
   const result: DeepSyncResult = {
     ok: true, crawledPotentials: 0, crawledFilings: 0, brokenPotentials: 0, brokenFilings: 0,
-    requestsMobileFilled: 0, filingsOwnerFilled: 0, filingsFromRelated: 0, errors: [], durationMs: 0,
+    requestsMobileFilled: 0, filingsOwnerFilled: 0, filingsFromRelated: 0, consultantBlocked: 0, errors: [], durationMs: 0,
   };
 
   let secrets: SecretShape;
@@ -140,6 +240,9 @@ export async function syncMelketunDeep(): Promise<DeepSyncResult> {
   const state = await loadState();
   const doneSet = new Set(state.doneIds);
   const brokenSet = new Set(state.brokenIds);
+
+  // PN-056 — گارد خلوص ستون مالک/متقاضی (نکتهٔ ۲ مالک): یک‌بار در هر چرخه بارگذاری
+  const guard = await loadConsultantGuard();
 
   // انتخاب صف: تازه‌ترین رکوردهای (سقف درشت) — فیلتر خزش‌نشده در حافظه
   const [potentials, filings] = await Promise.all([
@@ -187,10 +290,14 @@ export async function syncMelketunDeep(): Promise<DeepSyncResult> {
       const customerName = val(pot, "cf_pcf_snf_2638") || val(pot, "cf_2165");
       const customerMobile = val(pot, "cf_pcf_irm_1179").replace(/\D/g, "");
 
+      // PN-056 — گارد نکتهٔ ۲: نام/موبایل کارشناس هرگز در ستون متقاضی نمی‌نشیند
+      const applicantIsConsultant = isConsultantIdentity(guard, customerName, customerMobile);
+      if (applicantIsConsultant) result.consultantBlocked++;
+
       // ادغام متقاضی (غنی‌سازی بدون نابودی)
       const data: Record<string, string> = {};
-      if (customerName) data.customerName = customerName;
-      if (customerMobile.length >= 10) data.customerMobile = customerMobile;
+      if (customerName && !applicantIsConsultant) data.customerName = customerName;
+      if (customerMobile.length >= 10 && !applicantIsConsultant) data.customerMobile = customerMobile;
       if (Object.keys(data).length) {
         await db.requestRecord.update({ where: { id: pid }, data });
         if (data.customerMobile) result.requestsMobileFilled++;
@@ -204,6 +311,12 @@ export async function syncMelketunDeep(): Promise<DeepSyncResult> {
         const ownerName = String(f.ownerName ?? "").trim();
         const phone = String(f.phone ?? "").replace(/\D/g, "");
         if (!fid || (!ownerName && phone.length < 10)) continue;
+        // PN-056 — شاهد سطری: کد فایلینگ + مشاورِ همان رکورد مرتبط
+        const rfCode = String(f.filingNo ?? "").replace(/^["']+|["']+$/g, "").trim();
+        const rfConsultant = String(f.consultantName ?? "").trim();
+        const rowScopeHit = (ownerName && rfConsultant && ownerName === rfConsultant)
+          || isConsultantIdentity(guard, ownerName, phone, rfCode);
+        if (rowScopeHit) { result.consultantBlocked++; continue; }
         try {
           const existing = await db.propertyRecord.findUnique({ where: { id: fid }, select: { rawOwnerName: true, ownerMobile: true, tenantId: true } });
           if (!existing || existing.tenantId !== "melketun") continue;
@@ -254,15 +367,20 @@ export async function syncMelketunDeep(): Promise<DeepSyncResult> {
       const ownerMobile = val(f, "cf_pcf_irm_1706").replace(/\D/g, "");
       const ownerAddress = val(f, "cf_1685");
 
+      const existing = await db.propertyRecord.findUnique({ where: { id: fid }, select: { address: true, propertyCode: true } });
+      // PN-056 — گارد نکتهٔ ۲: نام/موبایل کارشناس هرگز در ستون مالک نمی‌نشیند
+      // (شاهد سطری: فایلرِ همین کد؛ سپس رجیستری قطعی users/ExpertRecord)
+      const ownerIsConsultant = isConsultantIdentity(guard, ownerName, ownerMobile, existing?.propertyCode);
+      if (ownerIsConsultant) result.consultantBlocked++;
+
       const data: Record<string, string> = {};
       // ⚠️ نگاشت ستون‌ها: rawOwnerName = مالک واقعی · ownerName = کارشناس (دست‌نخورده)
-      if (ownerName) data.rawOwnerName = ownerName;
-      if (ownerMobile.length >= 10) data.ownerMobile = ownerMobile;
-      const existing = await db.propertyRecord.findUnique({ where: { id: fid }, select: { address: true } });
+      if (ownerName && !ownerIsConsultant) data.rawOwnerName = ownerName;
+      if (ownerMobile.length >= 10 && !ownerIsConsultant) data.ownerMobile = ownerMobile;
       if (ownerAddress && !existing?.address) data.address = ownerAddress;
       if (Object.keys(data).length) {
         await db.propertyRecord.update({ where: { id: fid }, data });
-        if (ownerName || ownerMobile.length >= 10) result.filingsOwnerFilled++;
+        if (!ownerIsConsultant && (ownerName || ownerMobile.length >= 10)) result.filingsOwnerFilled++;
       }
       state.doneIds.push(fid);
       result.crawledFilings++;
