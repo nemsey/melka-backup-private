@@ -184,17 +184,10 @@ describe("B.1 — sync با سروری که بازه را الزامی می‌ک
       c.path === "realtor-reports/supply-demand"
     );
     expect(reportCalls.length).toBeGreaterThanOrEqual(4);
-    // PN-038/1.4: همیشه incremental ⇒ گذر پنجرهٔ ۲۱روزهٔ اخیر (خامساً-ث) نیز
-    // realtor-reports صدا می‌زند با بازهٔ تازه‌تر — هر دو قالب ISO مجازند.
-    let fullRangeCalls = 0;
     for (const c of reportCalls) {
-      const sd = c.query.get("startDate");
-      expect(sd).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/); // قالب ISO
+      expect(c.query.get("startDate")).toBe("2018-01-01T00:00:00.000Z");
       expect(c.query.get("endDate")).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
-      if (sd === "2018-01-01T00:00:00.000Z") fullRangeCalls++;
     }
-    // چرخهٔ تاریخی اصلی همچنان با مبدأ مستند ۲۰۱۸ اجرا می‌شود
-    expect(fullRangeCalls).toBeGreaterThanOrEqual(1);
   });
 
   test("رگرسیون: endpointهای بدون-بازه (realtors/visits/trade-overviews) بازه نمی‌گیرند", () => {
@@ -209,11 +202,11 @@ describe("B.1 — sync با سروری که بازه را الزامی می‌ک
   test("رگرسیون B.4: مسیر تعاملات بدون /list + رکوردش در پایگاه (سه‌لایه B.3)", async () => {
     // مسیر قدیمی غلط هرگز صدا زده نشده است
     expect(calls.some((c) => c.path === "realtor-reports/realtor-interactions/list")).toBe(false);
-    // مسیر درست با بازهٔ ISO صدا زده شده است (کامل یا پنجرهٔ ۲۱روزه — PN-038)
+    // مسیر درست با بازهٔ کامل صدا زده شده است
     const good = calls.filter((c) => c.path === "realtor-reports/realtor-interactions");
     expect(good.length).toBeGreaterThanOrEqual(1);
     for (const c of good) {
-      expect(c.query.get("startDate")).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(c.query.get("startDate")).toBe("2018-01-01T00:00:00.000Z");
     }
     // لایهٔ خام B.3: نام خام عین منبع + نرمال مشتق
     const row = await db.interactionRecord.findFirst();
