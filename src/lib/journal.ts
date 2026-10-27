@@ -88,7 +88,10 @@ export function listPendingBatches(): JournalIntent[] {
     if (fs.existsSync(path.join(dir, `${intent.batchId}.committed`))) continue;
     pending.push(intent);
   }
-  return pending.sort((a, b) => (a.startedAt < b.startedAt ? -1 : 1));
+  return pending.sort((a, b) => {
+    if (a.startedAt === b.startedAt) return a.batchId < b.batchId ? -1 : 1; // tiebreak پایدار — درس تست PN-050
+    return a.startedAt < b.startedAt ? -1 : 1;
+  });
 }
 
 export interface ReplayResult {

@@ -129,11 +129,14 @@ describe("PN-050 · دستور ۵ — ژورنال اپلیکیشن (intent/comm
 });
 
 describe("PN-050 · دستور ۵ — دوام دیسک (پراگماها روی DB تست)", () => {
-  test("ensureDurabilityPragmas: WAL روی دیسک محلی فعال می‌شود", async () => {
+  test("ensureDurabilityPragmas: WAL + synchronous=FULL + wal_autocheckpoint=100 با شاهد مقدار", async () => {
     const { db } = await import("@/lib/db");
     const { ensureDurabilityPragmas } = await import("@/lib/db");
     const res = await ensureDurabilityPragmas(db, join(REPO, "db/test.db"));
     expect(["wal", "delete"]).toContain(res.journalMode);
+    // شاهد مقدار واقعی (درس PN-050: executeRaw روی PRAGMA مقدار-دار خطا می‌داد و بی‌صدا قورت می‌شد)
+    expect(Number(res.synchronous)).toBe(2); // FULL
+    expect(Number(res.walAutocheckpoint)).toBe(100);
   });
 
   test("مسیر FUSE شناسایی و DELETE می‌ماند (دکترین PN-041-R)", async () => {
@@ -142,7 +145,7 @@ describe("PN-050 · دستور ۵ — دوام دیسک (پراگماها روی
     expect(isFusePath("/home/z/my-project/db/custom.db")).toBe(false);
   });
 
-  test("checkpointWal بدون خطا اجرا می‌شود (WAL → TRUNCATE)", async () => {
+  test("checkpointWal: پس از نوشتن WAL خالی می‌شود (معیار پذیرش دستور ۵)", async () => {
     const { db } = await import("@/lib/db");
     const { checkpointWal } = await import("@/lib/db");
     await db.refListCache.upsert({
@@ -150,7 +153,9 @@ describe("PN-050 · دستور ۵ — دوام دیسک (پراگماها روی
       create: { key: "pn050-wal-test", dataJson: "{}" },
       update: { dataJson: "{}" },
     });
-    await checkpointWal(db);
+    const cp = await checkpointWal(db);
+    expect(cp).not.toBeNull();
+    if (cp) expect(cp.log).toBe(0); // صفر قاب در WAL پس از TRUNCATE
     const walPath = join(REPO, "db/test.db-wal");
     if (existsSync(walPath)) {
       const { statSync } = await import("node:fs");

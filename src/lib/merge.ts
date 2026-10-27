@@ -572,7 +572,10 @@ export async function revertRecordField(opts: RevertOpts): Promise<RevertOutcome
 
   const changes = parseFieldChanges(row.fieldChanges);
   const prov = parseProvenanceMap(row.lastSyncedValue);
-  const latest = [...changes].reverse().find((c) => c.field === opts.field);
+  // هدف بازگردانی = مقدارِ پیش از «آخرین تغییر سینک» (expert_override/enrichment)؛
+  // خود manual_revert هدف نیست (وگرنه بازگردانیِ بازگردانی = پینگ‌پنگ بی‌نهایت —
+  // درس تست PN-050: بازگردانی دوباره باید idempotent باشد → no_target).
+  const latest = [...changes].reverse().find((c) => c.field === opts.field && c.kind !== "manual_revert");
   const target = latest ? latest.from : prov[opts.field]?.value ?? null;
 
   const current = normValue(row[opts.field]);
