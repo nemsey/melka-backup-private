@@ -17,11 +17,13 @@
  * (store) خوانده می‌شود — ادغام تنظیمات پیش‌فرض + تنظیمات ذخیره‌شدهٔ کاربر.
  */
 
-import { useState, type ComponentType } from 'react'
+import { useEffect, useState, type ComponentType } from 'react'
+import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { tileRegistry } from '@/core/tiles/tile-registry'
 import { useAppStore } from '@/lib/client/store'
 import type { TilePageProps } from '@/core/tiles/tile-contract'
+import { faDigits } from '@/lib/jalali'
 import {
   TENANT_TILE_IDENTITY,
   TILE_KIND_FA,
@@ -42,6 +44,38 @@ const TENANTS = {
 
 /** ظرف مشترک کاشی‌های M1-M4 (container در تعریف خود کاشی‌ها) */
 export const TENANT_CONTAINER = 'tenant-dashboards'
+
+/**
+ * PN-050 · دستور ۴ — badge تغییرات ۲۴ساعت (فقط ملکتون — خاستگاه provenance).
+ * شمارش از /api/records/changes?countOnly=1 (فیلتر ۲۴h روی fieldChanges).
+ * خطا/عدم ورود → badge خاموش و صادقانه مخفی (هیچ ادعای بی‌شاهد).
+ */
+function ChangesBadge24h() {
+  const [count, setCount] = useState<number | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/records/changes?range=24h&countOnly=1', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { ok?: boolean; count?: number } | null) => {
+        if (alive && j?.ok) setCount(j.count ?? 0)
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [])
+  if (count === null) return null
+  return (
+    <Link
+      href="/dashboard/melketun/changes"
+      className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
+      data-testid="melketun-changes-badge"
+      title="پنل «تغییرات اخیر» — ویرایش متخصص، غنی‌سازی و بازگردانی"
+    >
+      تغییرات ۲۴ ساعت: {faDigits(count)}
+    </Link>
+  )
+}
 
 /** کارت صادقانهٔ بدون-دسترسی — همان لحن پیام خالی هوم (PN-016) */
 function NoAccessCard() {
@@ -116,11 +150,14 @@ export function TenantDashboard({ tenantId }: TenantDashboardProps) {
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">{tenant.label}</h1>
-        <span className="text-sm bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">
-          {tenant.badge} · {tenant.identityRange}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {tenantId === 'melketun' && <ChangesBadge24h />}
+          <span className="text-sm bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">
+            {tenant.badge} · {tenant.identityRange}
+          </span>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>

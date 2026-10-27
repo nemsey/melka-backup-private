@@ -1,6 +1,80 @@
 import { PrismaClient } from '@prisma/client'
 import { requestNormColumns, propertyNormColumns } from './search-norm'
 
+// ===================== PN-050 · دستور ۵ — دوام دیسک (WAL + checkpoint) =====================
+/**
+ * PN-050 (DIR-PN050-001 · دستور ۵) — دفاع در عمق داده:
+ *   journal_mode=WAL (دیسک محلی) / DELETE (FUSE/ossfs — دکترین PN-041-R) ·
+ *   synchronous=FULL · wal_autocheckpoint=100 · PRAGMA wal_checkpoint(TRUNCATE)
+ *   پس از هر batch-commit (از مسیر journal.writeCommitted).
+ *
+ * مرزها (صادقانه):
+ *   · journal_mode خاصیتِ «فایل DB» است و ماندگار است — یک بار تنظیم کافی است.
+ *   · synchronous/wal_autocheckpoint per-connection اند — روی اتصال‌های
+ *     Prisma با $executeRawUnsafe تنظیم می‌شوند (ایدمپوتنت؛ فراخوانی مکرر بی‌ضرر).
+ *   · مسیر FUSE (upload/) هرگز WAL نمی‌گیرد — درس ۰۹:۰۱/۱۱:۴۳ شورا-ن۰۶۸
+ *     (mmap آلوده + fsync بی‌نهایت) → همان‌جا DELETE می‌ماند.
+ */
+
+/** آیا مسیر DB روی لایهٔ پایدار FUSE است؟ (→ journal_mode=DELETE) */
+export function isFusePath(p: string): boolean {
+  return p.includes('/upload/')
+}
+
+/** مسیر فایل DB زنده از DATABASE_URL (پارامترهای اتصال کنده می‌شوند) */
+export function resolveLiveDbPath(dbUrl: string | undefined, fallback = 'db/custom.db'): string | null {
+  const url = dbUrl ?? process.env.DATABASE_URL ?? ''
+  if (url.startsWith('file:')) {
+    const bare = url.slice(5).split('?')[0]
+    if (bare && !bare.includes('test')) return bare
+    if (bare && bare.includes('test')) return null // تست — پراگما لازم ندارد
+  }
+  return url ? null : fallback || null
+}
+
+/**
+ * تنظیم پراگماهای دوام — ایدمپوتنت، بی‌صدا در شکست (بوت هرگز برای pragma نمی‌ایستد).
+ * همه از خود Prisma ($executeRawUnsafe/$queryRawUnsafe) — بدون وابستگی باندل
+ * (bun:sqlite فقط در اسکریپت‌های runtime، نه در باندل Next).
+ * journal_mode ماندگار است (خاصیت فایل DB)؛ بقیه per-connection (فراخوانی مکرر بی‌ضرر).
+ */
+export async function ensureDurabilityPragmas(client: PrismaClient, dbPath?: string | null): Promise<{ journalMode: string }> {
+  // ۱) مسیر زنده: محلی → WAL · FUSE → DELETE (دکترین PN-041-R — درس ۰۹:۰۱/۱۱:۴۳)
+  const path = dbPath ?? resolveLiveDbPath(undefined)
+  const wanted = path ? (isFusePath(path) ? 'DELETE' : 'WAL') : null
+
+  let journalMode = 'unknown'
+  if (wanted) {
+    try {
+      const rows = (await client.$queryRawUnsafe(`PRAGMA journal_mode=${wanted};`)) as Array<{ journal_mode?: string }>
+      journalMode = String(rows?.[0]?.journal_mode ?? wanted).toLowerCase()
+    } catch {
+      // best-effort — بوت ادامه می‌یابد (Prisma خودش ژورنال معتبر برمی‌دارد)
+    }
+  }
+
+  // ۲) synchronous=FULL · wal_autocheckpoint=100 — روی اتصال(های) Prisma
+  try {
+    await client.$executeRawUnsafe('PRAGMA synchronous=FULL;')
+    await client.$executeRawUnsafe('PRAGMA wal_autocheckpoint=100;')
+  } catch {
+    // مسیر تست/FUSE — بی‌صدا
+  }
+  return { journalMode }
+}
+
+/**
+ * پس از هر commit سنگین (batch سینک): TRUNCATE کردن WAL تا فایل .db-wal
+ * بلافاصله خالی شود (معیار پذیرش دستور ۵). فقط وقتی WAL فعال است معنا دارد.
+ */
+export async function checkpointWal(client: PrismaClient): Promise<void> {
+  try {
+    await client.$executeRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE);')
+  } catch {
+    // DELETE-mode/FUSE — چیزی برای truncate نیست
+  }
+}
+
 /**
  * پیکربندی لاگ Prisma — HOTFIX-06 (D1)
  * ------------------------------------------------------

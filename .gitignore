@@ -118,3 +118,7 @@ download/pn044/*.db
 # PN-052: دیتابیس کهنه‌شدهٔ رستاخیز (زندهٔ جایگزین‌شده — هرگز وارد گیت نمی‌شود)
 db/custom.db.stale-*
 db/custom.db.broken-*
+
+# PN-050 — بکاپ گرم محلی (۹۲۵MB) هرگز داخل گیت نمی‌رود (آینه سقف ۹۹MB)
+db/custom.db.pn050-pre-migration*
+backups/backup-*.db-journal

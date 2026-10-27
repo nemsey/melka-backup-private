@@ -143,6 +143,32 @@ export async function register(): Promise<void> {
     }
   }
 
+  // ---------- ۳-الف) PN-050 · دستور ۵ — پراگماهای دوام دیسک سرور ----------
+  // journal_mode=WAL (دیسک محلی · DELETE روی FUSE — دکترین PN-041-R) +
+  // synchronous=FULL + wal_autocheckpoint=100 — ایدمپوتنت؛ شکست بوت را نمی‌ایستاند.
+  // (Worker همین را در بوت خودش هم اجرا می‌کند — هر دو فرایند یکسان می‌بینند.)
+  if (!(process.env.DATABASE_URL ?? "").includes("test")) {
+    try {
+      const { db } = await import("@/lib/db");
+      const { ensureDurabilityPragmas } = await import("@/lib/db");
+      const pragmas = await ensureDurabilityPragmas(db);
+      logEvent({
+        category: "system",
+        operation: "pn050-durability-pragmas",
+        status: "ok",
+        detail: { journalMode: pragmas.journalMode, synchronous: "FULL", walAutocheckpoint: 100 },
+      });
+    } catch (e) {
+      logEvent({
+        level: "warn",
+        category: "system",
+        operation: "pn050-durability-pragmas",
+        status: "fail",
+        detail: { reason: e instanceof Error ? e.message.slice(0, 160) : String(e).slice(0, 160) },
+      });
+    }
+  }
+
   // ---------- ۳-ب) PN-010 فاز ۲: معماری Runtime «یک Web + یک Worker» ----------
   // دیمن‌های درون‌فرایندی (مغز هوشمند + پایدارساز کاتالوگ) به فرایند Worker
   // منتقل شدند (BLOCK 4) — اینجا فقط RuntimeSupervisor سبک (BLOCK 3):

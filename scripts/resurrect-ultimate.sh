@@ -21,8 +21,14 @@
 #     فقدان/عقب‌ماندگی، بهترین لایهٔ پایدار برمی‌گردد:
 #       db/custom.db (زنده) → upload/.data/custom.db (قلعه) →
 #       upload/.data/rolling/live-*.db (چرخشی) → upload/.survival/P*/ (بقا)
+#   - PN-050 (دستور ۱ · DIR-PN050-001) — معماری UNION جایگزین منطق MAX شد:
+#     هیچ لایه‌ای دیگر جایگزین زندهٔ سالم نمی‌شود؛ همهٔ لایه‌های پایدار
+#     «رکوردهای خود را افزود می‌کنند» (INSERT OR IGNORE — صفر بازنویسی/حذف).
+#     سناریوی پذیرش: زنده=۳۲٬۸۵۱ · چرخشی=۳۳٬۰۰۲ → زنده=۳۳٬۰۰۲ (نه ۳۲٬۸۵۱).
 #   - معماری دادهٔ شورا-ن۰۶۸: زنده = db/custom.db (WAL دیسک محلی · سریع) ·
 #     قلعه = upload/.data (ossfs پایدار · سنک ۵دقیقه‌ای Worker).
+#   - ossfs بیمار (درس PN-041-R): هر منبع UNION با timeout مستقل — skip
+#     صادقانه، نه ایستادن بوت (قانون ۱۱).
 #   - قانون ۱۱ (بوت هرگز نمی‌ایستد): اگر این اجرا ناکام بماند، در خروج،
 #     سرور از بیلد موجودِ محلی دوباره سرو می‌شود.
 # ============================================================================
@@ -113,7 +119,12 @@ else
   echo "  ⚠️ fetch گیت‌هاب ناموفق (قانون ۱۱) — ادامه با درخت محلی $(git rev-parse --short HEAD 2>/dev/null || echo '?')"
 fi
 
-# ─── ۳) بازیابی دیتابیس (اولویت: زنده → قلعه → چرخشی → بقا) ───
+# ─── ۳) بازیابی دیتابیس — معماری UNION (PN-050 · دستور ۱ · DIR-PN050-001) ───
+# پایان منطق «پرترین لایه برنده و جایگزین می‌شود» (MAX → replace).
+#   زندهٔ سالم     → UNION افزودنی با همهٔ لایه‌های پایدار (هیچ رکوردی حذف/بازنویسی نمی‌شود)
+#   زندهٔ غایب/خراب → بوت‌استرپ از نخستین منبعِ معتبر به‌ترتیب اولویت، سپس UNION با بقیه
+# هر منبع: یک فراخوان اتمی (تراکنش per-source) با timeout مستقل — کرش وسط کار →
+# ROLLBACK خودکار؛ ossfs بیمار → skip صادقانه، اتحاد در رستاخیز بعدی.
 is_sqlite() { [ -s "$1" ] && [ "$(head -c 15 "$1" 2>/dev/null)" = "SQLite format 3" ]; }
 rowcount() { python3 -c "
 import sqlite3, sys
@@ -126,55 +137,79 @@ except Exception:
 
 LIVE="$REPO/db/custom.db"
 FORT="$REPO/upload/.data/custom.db"
+UNION_SCRIPT="$REPO/scripts/pn050/merge_union.py"
+UNION_TIMEOUT_S="${MELKA_UNION_TIMEOUT_S:-240}"
 mkdir -p "$REPO/db" "$REPO/upload/.data"
 
+# منابع UNION به‌ترتیب اولویت: قلعه (سنک ۵دقیقه‌ای) · جدیدترین چرخشی · جدیدترین بقا
+R=""
+{ R=$(ls -t "$REPO"/upload/.data/rolling/live-*.db 2>/dev/null | head -1 || true); } 2>/dev/null
+{ [ -n "$R" ] && is_sqlite "$R"; } 2>/dev/null || R=""
+S=""
+for K in $(ls -td "$REPO"/upload/.survival/P*/ 2>/dev/null || true); do
+  for CAND in "${K}db/custom.db" "${K}custom.db"; do
+    if is_sqlite "$CAND"; then S="$CAND"; break 2; fi
+  done
+done
+
+# UNION یک منبع — اتمی + timeout + skip صادقانه (سطر JSON خروجی = شاهد روی لاگ)
+union_one() {
+  # $1=مسیر منبع · $2=برچسب لایه
+  [ -n "$1" ] || return 1
+  echo "  ⤳ UNION با لایهٔ $2: $1"
+  local out rc
+  out=$(timeout "$UNION_TIMEOUT_S" python3 "$UNION_SCRIPT" --live "$LIVE" --source "$1" 2>&1) && rc=0 || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    echo "  ✓ UNION با $2 کامل شد — شاهد: $(printf '%s' "$out" | tail -1 | head -c 300)"
+    return 0
+  fi
+  echo "  ⚠️ UNION با $2 ناتمام/تایم‌اوت (rc=$rc · سقف ${UNION_TIMEOUT_S}s — ossfs بیمار؟) — skip صادقانه؛ اتحاد در رستاخیز بعدی"
+  printf '%s' "$out" | tail -2 | head -c 300; echo
+  return 1
+}
+
 if is_sqlite "$LIVE"; then
-  # دادهٔ مقدس: زنده سالم است؛ اگر «هر» لایهٔ پایدار دیگری پرتر بود (بازنشانیِ محیط
-  # به DB کهنه — رویداد واقعی ۲۰۲۶-۱۰-۲۴: زنده=۳۲٬۸۵۱ · چرخشی=۳۲٬۸۷۴) غنی‌ترین می‌برد.
-  # (PN-050 · قانون بقا: زندهٔ عقب‌مانده = رستاخیز داده از بهترین لایه)
   LC=$(rowcount "$LIVE")
-  BEST="$LIVE"; BESTC=$LC; BESTN="زنده"
-  FC=$(rowcount "$FORT")
-  if [ "$FC" -gt "$BESTC" ] 2>/dev/null; then BEST="$FORT"; BESTC=$FC; BESTN="قلعه"; fi
-  R=$(ls -t "$REPO"/upload/.data/rolling/live-*.db 2>/dev/null | head -1 || true)
-  if [ -n "$R" ] && is_sqlite "$R"; then
-    RC=$(rowcount "$R")
-    if [ "$RC" -gt "$BESTC" ] 2>/dev/null; then BEST="$R"; BESTC=$RC; BESTN="چرخشی"; fi
+  echo "  ✓ دیتابیس زندهٔ سالم ($LC آگهی) — صفر مداخله روی رکوردهای موجود (قانون بقا · PN-050)"
+  # UNION افزودنی: هر لایه فقط «می‌افزاید» — رکورد موجود هرگز بازنویسی نمی‌شود
+  if is_sqlite "$FORT"; then union_one "$FORT" "قلعه" || true; else echo "  ⚠️ قلعه نامعتبر/ناموجود — skip"; fi
+  if [ -n "$R" ]; then union_one "$R" "چرخشی" || true; else echo "  ⚠️ چرخشی نامعتبر/ناموجود — skip"; fi
+  if [ -n "$S" ]; then union_one "$S" "بقا" || true; else echo "  ℹ️ بستهٔ بقا لازم نبود (قلعه/چرخشی حاضرند یا ناموجودند)"; fi
+  LC2=$(rowcount "$LIVE")
+  if [ "$LC2" -lt "$LC" ]; then
+    echo "❌ FATAL: UNION شمارش را کاهش داد ($LC → $LC2) — نقض قانون بقا؛ توقف"
+    exit 1
   fi
-  if [ "$BEST" != "$LIVE" ]; then
-    mv -f "$LIVE" "$LIVE.stale-$(date -u +%Y%m%dT%H%M%SZ)"
-    cp -f "$BEST" "$LIVE"
-    echo "  ✓ لایهٔ $BESTN پرتر بود ($BESTN=$BESTC > زنده=$LC) — زنده از $BESTN بازگردانده شد"
-  else
-    echo "  ✓ دیتابیس زندهٔ محلی سالم و غنی‌ترین است ($LC آگهی) — صفر مداخله (دادهٔ مقدس)"
-  fi
+  echo "  ✓ پس از UNION: $LC2 آگهی (پیش از UNION: $LC — رشدی/برابر، هرگز کاهشی)"
 fi
 if ! is_sqlite "$LIVE"; then
   if [ -e "$LIVE" ]; then
     mv -f "$LIVE" "$LIVE.broken-$(date -u +%Y%m%dT%H%M%SZ)" 2>/dev/null || true
   fi
-  SRC=""
-  # PN-050: غنی‌ترین لایهٔ معتبر برنده می‌شود — قلعه می‌توانست کهنه‌تر از چرخشی باشد
-  R=$(ls -t "$REPO"/upload/.data/rolling/live-*.db 2>/dev/null | head -1 || true)
-  ROK=""; { [ -n "$R" ] && is_sqlite "$R"; } && ROK="$R"
-  if is_sqlite "$FORT" && { [ -z "$ROK" ] || [ "$(rowcount "$FORT")" -ge "$(rowcount "$ROK")" ] 2>/dev/null; }; then
-    SRC="$FORT"; echo "  ⚠️ دیتابیس زنده یافت نشد — بازگردانی از قلعهٔ پایدار (upload/.data)…"
-  elif [ -n "$ROK" ]; then
-    SRC="$ROK"; echo "  ⚠️ دیتابیس زنده یافت نشد — بازگردانی از بکاپ چرخشی (غنی‌تر از قلعه یا یگانه)…"
-  fi
-  if [ -z "$SRC" ]; then
-    for K in $(ls -td "$REPO"/upload/.survival/P*/ 2>/dev/null || true); do
-      for CAND in "${K}db/custom.db" "${K}custom.db"; do
-        if is_sqlite "$CAND"; then SRC="$CAND"; break 2; fi
-      done
-    done
-    [ -n "$SRC" ] && echo "  ⚠️ بازگردانی از بستهٔ بقا…"
+  SRC=""; SRCN=""
+  if is_sqlite "$FORT"; then SRC="$FORT"; SRCN="قلعهٔ پایدار"
+  elif [ -n "$R" ] && is_sqlite "$R"; then SRC="$R"; SRCN="چرخشی"
+  elif [ -n "$S" ]; then SRC="$S"; SRCN="بقا"
   fi
   if [ -n "$SRC" ]; then
-    cp -f "$SRC" "$LIVE"
-    echo "  ✓ دیتابیس از «$SRC» بازگردانده شد ($(rowcount "$LIVE") آگهی)"
+    echo "  ⚠️ دیتابیس زنده یافت نشد — بوت‌استرپ از $SRCN…"
+    # کپی اتمی: tmp + mv — کپی ناتمام هرگز سرور تغذیه نمی‌کند
+    if timeout "$UNION_TIMEOUT_S" cp -f "$SRC" "$LIVE.bootstrap-tmp"; then
+      mv -f "$LIVE.bootstrap-tmp" "$LIVE"
+      echo "  ✓ بوت‌استرپ از $SRCN کامل شد ($(rowcount "$LIVE") آگهی)"
+    else
+      rm -f "$LIVE.bootstrap-tmp" 2>/dev/null || true
+      echo "  ⚠️ کپی $SRCN ناتمام/تایم‌اوت — skip صادقانه"
+    fi
   else
-    echo "  ⚠️ هشدار: هیچ دیتابیسی یافت نشد. سرور با دیتابیس خالی بالا می‌آید."
+    echo "  ⚠️ هشدار: هیچ دیتابیس معتبری یافت نشد. سرور با دیتابیس خالی بالا می‌آید."
+  fi
+  # بوت‌استرپ موفق → UNION با بقیهٔ لایه‌ها (مبنای بوت‌استرپ حذف می‌شود — خودش در live است)
+  if is_sqlite "$LIVE" && [ -n "$SRC" ]; then
+    { [ "$SRC" != "$FORT" ] && is_sqlite "$FORT" && union_one "$FORT" "قلعه"; } || true
+    { [ -n "$R" ] && [ "$SRC" != "$R" ] && union_one "$R" "چرخشی"; } || true
+    { [ -n "$S" ] && [ "$SRC" != "$S" ] && union_one "$S" "بقا"; } || true
+    echo "  ✓ پس از UNION با بقیهٔ لایه‌ها: $(rowcount "$LIVE") آگهی"
   fi
 fi
 
