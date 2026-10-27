@@ -6,14 +6,14 @@
  * — مبنا برای دکمهٔ «بازگردانی» در پنل «تغییرات اخیر».
  *
  * گارد: نشست + دسترسی کاشی متناظر (M7 آگهی / M8 درخواست).
+ * مرز مخزن (PN-012 BLOCK 1): صفر db.* در روت — منطق در سرویس RecordsChanges.
  */
 
 import { NextRequest } from "next/server";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { MelkApiError } from "@/lib/melk-api/types";
-import { db } from "@/lib/db";
-import { parseFieldChanges, parseProvenanceMap, PROPERTY_FIELD_SPECS, REQUEST_FIELD_SPECS } from "@/lib/merge";
+import { getRecordChanges, RecordsChangesError } from "@/lib/services/records-changes";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +27,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
   if (guard instanceof MelkApiError) return errorResponse(guard);
 
   const { id } = await ctx.params;
-  const url = new URL(request.url);
-  const entity = url.searchParams.get("entity") ?? "property";
+  const entity = new URL(request.url).searchParams.get("entity") ?? "property";
   const tile = ENTITY_TILE[entity];
   if (!tile) {
     return errorResponse(new MelkApiError("UNKNOWN", "موجودیت نامعتبر (property | request).", 400, false));
@@ -36,65 +35,13 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
   const tileAccess = await requireTileAccessFor(guard, tile);
   if (tileAccess instanceof MelkApiError) return errorResponse(tileAccess);
 
-  const specs = entity === "property" ? PROPERTY_FIELD_SPECS : REQUEST_FIELD_SPECS;
-  const trackedFields = Object.keys(specs);
-
-  // سرگروه مشترک + snapshot فیلدهای tracked (مقدار فعلی کنار تاریخچه)
-  const headSelect = {
-    id: true, title: true,
-    fieldChanges: true, lastSyncedValue: true, lastSyncedAt: true,
-    lastModifiedBy: true, lastModifiedAt: true,
-  } as const;
-
-  const record =
-    entity === "property"
-      ? await db.propertyRecord.findFirst({
-          where: { id },
-          select: {
-            ...headSelect,
-            propertyCode: true,
-            ...(buildSelect(trackedFields) as unknown as Record<string, never>),
-          },
-        })
-      : await db.requestRecord.findFirst({
-          where: { id },
-          select: {
-            ...headSelect,
-            requestCode: true,
-            ...(buildSelect(trackedFields) as unknown as Record<string, never>),
-          },
-        });
-
-  if (!record) {
-    return errorResponse(new MelkApiError("NOT_FOUND", "رکورد موردنظر یافت نشد.", 404, false));
+  try {
+    const result = await getRecordChanges(id, entity);
+    return Response.json(result);
+  } catch (e) {
+    if (e instanceof RecordsChangesError) {
+      return errorResponse(new MelkApiError("UNKNOWN", e.message, e.status, false));
+    }
+    return errorResponse(new MelkApiError("UNKNOWN", (e as Error)?.message ?? "خطای تاریخچهٔ رکورد", 500, false));
   }
-
-  const code = (record as { propertyCode?: string | null; requestCode?: string | null }).propertyCode
-    ?? (record as { requestCode?: string | null }).requestCode ?? null;
-
-  const current: Record<string, unknown> = {};
-  for (const f of trackedFields) {
-    current[f] = (record as unknown as Record<string, unknown>)[f] ?? null;
-  }
-
-  return Response.json({
-    ok: true,
-    entity,
-    id: record.id,
-    code,
-    title: (record as { title?: string | null }).title ?? null,
-    trackedFields,
-    current,
-    fieldChanges: parseFieldChanges((record as { fieldChanges?: string | null }).fieldChanges),
-    lastSyncedValue: parseProvenanceMap((record as { lastSyncedValue?: string | null }).lastSyncedValue),
-    lastSyncedAt: (record as { lastSyncedAt?: Date | null }).lastSyncedAt?.toISOString() ?? null,
-    lastModifiedBy: (record as { lastModifiedBy?: string | null }).lastModifiedBy ?? null,
-    lastModifiedAt: (record as { lastModifiedAt?: Date | null }).lastModifiedAt?.toISOString() ?? null,
-  });
-}
-
-function buildSelect(fields: string[]): Record<string, true> {
-  const sel: Record<string, true> = {};
-  for (const f of fields) sel[f] = true;
-  return sel;
 }
