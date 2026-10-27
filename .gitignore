@@ -50,10 +50,7 @@ local-*
 *.log
 dev.log
 dev.out.log
-# PN-031-B (شورا-ن۰۳۹ — درس بازنشانی هشتم): الگوی لخت «test» هر دایرکتوری
-# هم‌نام را می‌بلعد — روت admin/relay/test از PN-031 هرگز کامیت نشد و در
-# بازنشانی پلتفرم حذف شد. لنگر به ریشهٔ مخزن محدود شد.
-/test/
+test
 prompt
 
 server.log
@@ -100,21 +97,3 @@ download/*.tar.gz
 # عمداً خارج از public تا خط لولهٔ انتشار پلتفرم آن را داخل بستهٔ استقرار نکشد (P6528)
 /deliver-store/
 db/postgres-test/
-
-# PN-031 — بکاپهای پیش-اجرا در db/ (قانون: داده در upload/، نه در git)
-db/pre-*.db
-db/custom.db.pre-pn041r-*
-db/custom.db-journal
-db/custom.db.broken-*
-
-# PN-043 (شورا-ن۰۸۷): evidence dir — db backups & runtime logs stay out of git
-download/pn043/*.db
-server.log.*.gz
-.next.backup-*/
-download/pn044/*.db
-/download/*/pre-*.db
-/download/*/*.db
-
-# PN-052: دیتابیس کهنه‌شدهٔ رستاخیز (زندهٔ جایگزین‌شده — هرگز وارد گیت نمی‌شود)
-db/custom.db.stale-*
-db/custom.db.broken-*
