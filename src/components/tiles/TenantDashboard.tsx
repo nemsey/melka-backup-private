@@ -55,12 +55,24 @@ function ChangesBadge24h() {
   const [count, setCount] = useState<number | null>(null)
   useEffect(() => {
     let alive = true
-    // کلاینت رسمی app (api) — نشست Bearer از bindAuth ذخیرهٔ SPA می‌آید (قانون ۱۰/۱۴)
-    api<{ ok?: boolean; count?: number }>('/api/records/changes?range=24h&countOnly=1')
-      .then((j) => {
+    const go = async () => {
+      // مسیر مستقیم URL (بدون SPA): بازیابی نشست از secure storage — الگوی boot خود app
+      const st = useAppStore.getState()
+      if (!st.user) {
+        try {
+          await st.boot()
+        } catch {
+          /* بدون نشست → badge صادقانه مخفی */
+        }
+      }
+      try {
+        const j = await api<{ ok?: boolean; count?: number }>('/api/records/changes?range=24h&countOnly=1')
         if (alive && j?.ok) setCount(j.count ?? 0)
-      })
-      .catch(() => undefined) // خطا/عدم ورود → badge خاموش و صادقانه مخفی
+      } catch {
+        /* خطا/عدم ورود → badge خاموش و صادقانه مخفی */
+      }
+    }
+    void go()
     return () => {
       alive = false
     }

@@ -148,6 +148,18 @@ export default function MelketunChangesPage() {
     void loadBadge()
   }, [loadBadge])
 
+  // مسیر مستقیم URL (بدون SPA): بازیابی نشست از secure storage — الگوی boot خود app
+  useEffect(() => {
+    const st = useAppStore.getState()
+    if (!st.user) {
+      void st.boot().then(() => {
+        void loadList()
+        void loadBadge()
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const openDetail = useCallback(async (row: RecentChangeRow) => {
     try {
       const json = await api<RecordChangesResponse>(`/api/records/${encodeURIComponent(row.id)}/changes?entity=${row.entity}`)
