@@ -82,22 +82,20 @@ describe("G1/G2 — stripProtectedNulls (محافظ دادهٔ مقدس)", () =>
 });
 
 describe("G1 — گارد سورس: محافظ در مسیرهای upsert نصب است", () => {
-  test("sync.ts هر ۶ نقطهٔ upsert/update را با محافظ می‌پوشاند", () => {
+  test("sync.ts هر مسیر نوشتن رکورد را با قانون ادغام/محافظ می‌پوشاند (PN-050 · دستور ۳)", () => {
     const src = fs.readFileSync(path.join(REPO, "src/lib/integrations/melketun/sync.ts"), "utf8");
-    const calls = [
-      "db.propertyRecord.upsert",
-      "db.propertyRecord.update",
-      "db.requestRecord.upsert",
-      "db.requestRecord.update",
-      "db.expertRecord.upsert",
-      "db.expertProfile.upsert",
-    ];
-    for (const call of calls) {
-      expect(src).toContain(call);
-    }
-    // شمار stripProtectedNulls در sync.ts باید ≥ ۶ باشد (۴ upsert + ۲ ادغام P2002 + آینهٔ پروفایل)
-    const count = (src.match(/stripProtectedNulls/g) ?? []).length;
-    expect(count).toBeGreaterThanOrEqual(6);
+    // آگهی/درخواست از این پس از مسیر قانون‌دار می‌گذرند (mergeField الف→ه + provenance + audit)
+    expect(src).toContain("upsertRecordWithMerge");
+    expect(src).toContain('entity: "property"');
+    expect(src).toContain('entity: "request"');
+    // مسیرهای مستقیم باقی‌مانده (کارشناس/پروفایل) همچنان با محافظ G1/G2
+    expect(src).toContain("db.expertRecord.upsert");
+    expect(src).toContain("db.expertProfile.upsert");
+    expect(src).toContain("stripProtectedNulls");
+    // merge.ts خودش هم محافظ را صدا می‌زند (دفاع در عمق — قانون ۱۴)
+    const mergeSrc = fs.readFileSync(path.join(REPO, "src/lib/merge.ts"), "utf8");
+    expect(mergeSrc).toContain("stripProtectedNulls");
+    expect(mergeSrc).toContain("shouldAcceptExpertUpdate"); // قانون ۰۵ — متخصص همیشه برنده
   });
 
   test("worker.ts حقیقی دارای G1 GATE با توقف فوری است (قانون توقف)", () => {
