@@ -1,0 +1,16 @@
+{
+  "phase": "PN-031 · قانون لینک — وارسی دسترس‌پذیری تحویل",
+  "checkedAt": "2026-10-12T08:22:11Z",
+  "files": {
+    "ok": 13,
+    "total": 13,
+    "missingOrEmpty": "none"
+  },
+  "liveRoutes": {
+    "ok": 7,
+    "total": 7,
+    "dead": "none",
+    "note": "کدهای 401/403 = روت زنده با احراز صحیح؛ 000 = مرده"
+  },
+  "verdict": "PASS"
+}

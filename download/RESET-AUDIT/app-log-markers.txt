@@ -1,0 +1,100 @@
+# DIR-RESET-AUDIT-001 — منبع ۳: نشانگرهای شروع‌مجدد در لاگ‌های اپلیکیشن
+# همهٔ ردیف‌ها: UTC + IRST (قانون ۰۲) — اسکراب‌شده از token (قانون ۱۰)
+
+## رویدادهای ریست تأییدشده (worklog.md + resurrect-daemon.log + مهرهای buildId)
+R-03 · UTC 2026-10-25 13:46:00 · تهران 2026-10-25 17:16:00 (یکشنبه 17:16) · علت=session_start
+    شاهد: worklog:PN-053 «رستاخیز پس از ریست سوم امروز» + buildId 10ac8d6-20261025-1346
+R-08 · UTC 2026-10-26 07:16:00 · تهران 2026-10-26 10:46:00 (دوشنبه 10:46) · علت=session_start
+    شاهد: worklog:PN-054 «رستاخیز پس از ریست هشتم»
+R-09 · UTC 2026-10-26 20:16:00 · تهران 2026-10-26 23:46:00 (دوشنبه 23:46) · علت=session_start
+    شاهد: worklog:PN-055 «رستاخیز نهم»
+R-10 · UTC 2026-10-27 05:37:00 · تهران 2026-10-27 09:07:00 (سه‌شنبه 09:07) · علت=session_start
+    شاهد: worklog:PN-056 «رستاخیز پس از ریست دهم» + buildId edf60c5-20261027-0601
+R-11 · UTC 2026-10-27 08:12:56 · تهران 2026-10-27 11:42:56 (سه‌شنبه 11:42) · علت=session_start
+    شاهد: resurrect-daemon.log جلسهٔ قبل + buildId 3572b32-20261027-0813
+R-12 · UTC 2026-10-27 13:46:02 · تهران 2026-10-27 17:16:02 (سه‌شنبه 17:16) · علت=session_start
+    شاهد: resurrect-daemon.log این جلسه + buildId 3572b32-20261027-1346
+
+## مهرهای بازسازی همان-درخت (probable)
+M-01 · UTC 2026-10-17 07:23:00 · تهران 2026-10-17 10:53:00
+    شاهد: buildId 1425ee0-20261017-0723 (بازسازی همان درخت)
+M-02 · UTC 2026-10-17 19:37:00 · تهران 2026-10-17 23:07:00
+    شاهد: buildId 1425ee0-20261017-1937 (بازسازی همان درخت)
+M-03 · UTC 2026-10-18 02:13:00 · تهران 2026-10-18 05:43:00
+    شاهد: buildId 1425ee0-20261018-0213 (بازسازی همان درخت)
+M-04 · UTC 2026-10-20 06:51:00 · تهران 2026-10-20 10:21:00
+    شاهد: buildId 0a8e21a-20261020-0651
+M-05 · UTC 2026-10-20 08:56:00 · تهران 2026-10-20 12:26:00
+    شاهد: buildId 0f8094e-20261020-0856
+
+## استخراج خام worklog (سطرهای Task ID دارای «ریست»)
+  Task ID: PN-048 (بازثبت پس از نابودی در ریست دوم)
+  Task ID: PN-050 · رستاخیز + بازیابی داده + پایدارسازی (جلسه پس از ریست ۲۰۲۶-۱۰-۲۴)
+  Task ID: PN-052 · چهارگام کامل پس از ریست دوم (جلسهٔ ۱۴۰۵/۰۸/۰۳ · ۲۰۲۶-۱۰-۲۵)
+  Task ID: PN-053 · رستاخیز پس از ریست سوم امروز (۲۰۲۶-۱۰-۲۵ · ۱۳:۴۶)
+  Task ID: PN-054 · رستاخیز پس از ریست هشتم + ترمیم استحکام استخراج نمای خصوصی (۲۰۲۶-۱۰-۲۶ · ۰۷:۱۶)
+  Task ID: PN-056 · رستاخیز پس از ریست دهم + خلوص ستون مالک/متقاضی (نکتهٔ ۲ مالک) (۲۰۲۶-۱۰-۲۷ · ۰۵:۳۷)
+  Task ID: PN-057 · رستاخیز پس از ریست یازدهم + راستی‌آزمایی سه‌نکته‌ای کامل (۲۰۲۶-۱۰-۲۷ · ۱۳:۴۶)
+
+## resurrect-daemon.log (اسکراب‌شده)
+🚀 [2026-10-28T09:43:54Z] شروع رستاخیز نهایی از گیت‌هاب (PN-042)…
+— دریافت کد از گیت‌هاب…
+From https://github.com/nemsey/melka-backup-private
+ * branch            main       -> FETCH_HEAD
+HEAD is now at bda2712 4d4341c2-1967-4dca-a71f-f81d6da14221
+  HEAD اکنون: bda2712
+  ✓ دیتابیس زندهٔ سالم (32851 آگهی) — صفر مداخله روی رکوردهای موجود (قانون بقا · PN-050)
+  ⤳ UNION با لایهٔ قلعه: /home/z/my-project/upload/.data/custom.db
+  ✓ UNION با قلعه کامل شد — شاهد: {"status": "UNION_OK", "live": "/home/z/my-project/db/custom.db", "before": {"PropertyRecord": 32851, "RequestRecord": 29471}, "after": {"PropertyRecord": 32874, "RequestRecord": 29484}, "sources": [{"path": "/home/z/my-project/upload/.data/custom.db", "tables": {"AuditLog": {"status": "merged", "so
+  ⤳ UNION با لایهٔ چرخشی: /home/z/my-project/upload/.data/rolling/live-2026-10-28T09-04-48-364.db
+  ✓ UNION با چرخشی کامل شد — شاهد: {"status": "UNION_OK", "live": "/home/z/my-project/db/custom.db", "before": {"PropertyRecord": 32874, "RequestRecord": 29484}, "after": {"PropertyRecord": 33451, "RequestRecord": 29887}, "sources": [{"path": "/home/z/my-project/upload/.data/rolling/live-2026-10-28T09-04-48-364.db", "tables": {"Audit
+  ⤳ UNION با لایهٔ بقا: /home/z/my-project/upload/.survival/PN-048-20261021/db/custom.db
+  ✓ UNION با بقا کامل شد — شاهد: {"status": "UNION_OK", "live": "/home/z/my-project/db/custom.db", "before": {"PropertyRecord": 33451, "RequestRecord": 29887}, "after": {"PropertyRecord": 33451, "RequestRecord": 29887}, "sources": [{"path": "/home/z/my-project/upload/.survival/PN-048-20261021/db/custom.db", "tables": {"AuditLog": {
+  ✓ پس از UNION: 33451 آگهی (پیش از UNION: 32851 — رشدی/برابر، هرگز کاهشی)
+✅ Secret source: upload/.runtime/boot-secrets.json (priority 1)
+— نصب وابستگی‌ها و بیلد…
+[0.03ms] ".env.local", ".env"
+bun install v1.3.14 (0d9b296a)
+Saved lockfile
+
+$ prisma generate
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 306ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+
++ @types/qrcode@1.5.6
++ qrcode@1.5.4
+
+26 packages installed [2.50s]
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 387ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+⚠️  There might be data loss when applying the changes:
+
+  • You are about to drop the column `realtorMobile` on the `PropertyRecord` table, which still contains 1223 non-null values.
+
+
+
+🚀  Your database is now in sync with your Prisma schema. Done in 589ms
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 300ms
+
+$ mkdir -p upload/.runtime && date +%s > upload/.runtime/BUILD_RUNNING; { NODE_OPTIONS=--max-old-space-size=3000 RAYON_NUM_THREADS=1 next build --experimental-build-mode compile && NODE_OPTIONS=--max-old-space-size=3000 RAYON_NUM_THREADS=1 next build --experimental-build-mode generate && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/ && (cp env.platform.json .next/standalone/ 2>/dev/null || true) && rm -rf .next/standalone/backups .next/standalone/db .next/standalone/prisma/db .next/standalone/download .next/standalone/skills .next/standalone/scripts .next/standalone/tool-results .next/standalone/docs .next/standalone/examples .next/standalone/tests .next/standalone/bun.lock .next/

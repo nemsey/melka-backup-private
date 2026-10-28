@@ -1,0 +1,83 @@
+{
+  "at": "2026-10-13T03:59:32.059103Z",
+  "step": "گام ۳ — راستی‌آزمایی روت‌های رله پس از احیا (PN-031-B)",
+  "baseUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+  "expected": "هر روت زنده با احراز (401/403/405) — نه 404",
+  "results": [
+    {
+      "method": "GET",
+      "path": "/api/mobile-relay/bootstrap?code=probe-pn031b",
+      "http": 403,
+      "alive": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile-relay/poll",
+      "http": 403,
+      "alive": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile-relay/result",
+      "http": 403,
+      "alive": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/relay/enroll",
+      "http": 401,
+      "alive": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/relay/status",
+      "http": 401,
+      "alive": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/relay/revoke",
+      "http": 401,
+      "alive": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/relay/qr",
+      "http": 401,
+      "alive": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/relay/browser-poll",
+      "http": 405,
+      "alive": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/relay/browser-result",
+      "http": 401,
+      "alive": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/mobile-relay/bootstrap?code=probe-pn031b",
+      "http": 403,
+      "alive": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/mobile-relay/poll",
+      "http": 403,
+      "alive": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/relay/status",
+      "http": 401,
+      "alive": true
+    }
+  ],
+  "aliveCount": 12,
+  "totalCount": 12,
+  "verdict": "PASS"
+}

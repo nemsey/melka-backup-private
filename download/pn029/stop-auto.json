@@ -1,0 +1,70 @@
+{
+  "phase": "PN-029 · مرحلهٔ ۲ — توقف فوری همهٔ تلاش‌های خودکار (L1/L7)",
+  "executedAt": "2026-10-11T08:38:46.507765Z",
+  "flag": {
+    "name": "MELK_ARM_OFFLINE",
+    "value": "1",
+    "durableSource": "env.platform.json + .env.local"
+  },
+  "daemonStop": {
+    "oldWorkerPid": 1465,
+    "killedAt": "2026-10-11T08:33:50Z (pkill -f scripts/runtime/worker.ts)",
+    "newWorkerPid": 3371,
+    "respawnedBy": "RuntimeSupervisor (liveness timer)",
+    "registeredJobs": [
+      "intelligence-cycle",
+      "mirror-cycle",
+      "log-rotate",
+      "backup-rotation",
+      "privacy-guard",
+      "size-guard",
+      "preview-guard",
+      "reset-guard",
+      "drift-guard",
+      "decision-shadow",
+      "policy-eval",
+      "diagnosis-cycle",
+      "disk-guard",
+      "memory-consolidation",
+      "ip-log"
+    ],
+    "catalogCycleRegistered": false,
+    "catalogCycleExpected": false,
+    "ipLogJobRegistered": true
+  },
+  "auditWitness": {
+    "action": "ARM_OFFLINE_MODE",
+    "actor": "worker:boot",
+    "detail": {
+      "note": "توقف فوری همهٔ تلاش‌های خودکار به سامانه‌های ملک تبریز (PN-029 مرحلهٔ ۲)",
+      "flag": "MELK_ARM_OFFLINE=1",
+      "stopped": [
+        "catalog-cycle"
+      ],
+      "kept": [
+        "intelligence-cycle",
+        "mirror-cycle",
+        "log-rotate",
+        "backup-rotation",
+        "guards"
+      ],
+      "reason": "اول تشخیص، بعد اقدام — دکترین شورای عالی ملکا (جلسهٔ فوق‌العاده ۰۳۳)"
+    },
+    "recordedAt": 1791707824430
+  },
+  "defenseInDepth": [
+    "jobs.ts: catalog-cycle در حالت آفلینی ثبت نمی‌شود",
+    "catalog-daemon.ts: گارد درون تیک (offlineSkip) حتی اگر مستقیم صدا زده شود",
+    "instrumentation.ts: حلقهٔ MELK_BACKGROUND_SYNC در حالت آفلینی خاموش می‌ماند",
+    "client.ts armCall: گارد ARM_OFFLINE پیش از هر فراخوانی (تنها استثنا: bypassOffline مالک)",
+    "client.ts probeGet: گارد آفلینی روی همهٔ پروب‌ها (استثنا: live=1 دکمهٔ تست)",
+    "indicators.ts: چهار نشانگر ملک تبریز در حالت آفلینی صفر پروب"
+  ],
+  "firstContainerIp": {
+    "ip": "47.57.232.232",
+    "source": "api.ipify.org",
+    "detectedAt": 1791707870256
+  },
+  "keptJobsRationale": "mirror-cycle (GitHub — غیرملک‌تبریزی؛ قانون تثبیت ۰۳۱) و همهٔ کارهای محلی پابرجا — صفر قطع خدمت",
+  "m1toM5FromLocalDb": true
+}

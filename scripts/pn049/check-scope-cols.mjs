@@ -1,0 +1,15 @@
+import { PrismaClient } from '@prisma/client';
+const p = new PrismaClient({ datasources: { db: { url: 'file:/home/z/my-project/db/custom.db' } } });
+const tSample = await p.propertyRecord.findMany({ where: { tenantId: 'melk-tabriz' }, select: { propertyCode: true, ownerCode: true }, take: 4 });
+console.log('tabriz property ownerCode samples:', JSON.stringify(tSample));
+const tOwnerCodeFilled = await p.propertyRecord.count({ where: { tenantId: 'melk-tabriz', NOT: [{ ownerCode: null }] } });
+console.log('tabriz properties with ownerCode filled:', tOwnerCodeFilled);
+const mOwnerCode = await p.propertyRecord.count({ where: { tenantId: 'melketun', NOT: [{ ownerCode: null }] } });
+console.log('melketun properties with ownerCode filled:', mOwnerCode);
+const tActorFilled = await p.requestRecord.findMany({ where: { tenantId: 'melk-tabriz' }, select: { actorCode: true }, take: 3000 });
+const codes = [...new Set(tActorFilled.map(r => r.actorCode).filter(Boolean))];
+console.log('tabriz request actorCode samples:', JSON.stringify(codes.slice(0, 10)));
+const mActorFilled = await p.requestRecord.findMany({ where: { tenantId: 'melketun' }, select: { actorCode: true }, take: 60 });
+const mCodes = [...new Set(mActorFilled.map(r => r.actorCode))];
+console.log('melketun request actorCode samples:', JSON.stringify(mCodes.slice(0, 14)));
+await p.$disconnect();

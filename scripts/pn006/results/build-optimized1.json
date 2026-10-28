@@ -1,0 +1,38 @@
+{
+  "label": "optimized1",
+  "exitCode": 0,
+  "wallSec": 51,
+  "treePeakMB": 2200.3,
+  "treePeakProcesses": 5,
+  "treePeakTop": [
+    {
+      "pid": 10273,
+      "rssMB": 1854.7,
+      "cmd": "node /home/z/my-project/node_modules/.bin/next build "
+    },
+    {
+      "pid": 10331,
+      "rssMB": 173.3,
+      "cmd": "node /home/z/my-project/.next/build/postcss.js 40469 "
+    },
+    {
+      "pid": 10348,
+      "rssMB": 161.2,
+      "cmd": "/usr/bin/node /home/z/my-project/node_modules/next/dist/compiled/jest-worker/processChild."
+    },
+    {
+      "pid": 10270,
+      "rssMB": 8.0,
+      "cmd": "bun run build "
+    },
+    {
+      "pid": 10272,
+      "rssMB": 3.0,
+      "cmd": "/usr/bin/bash -c next build && cp -r .next/static .next/standalone/.next/ && cp -r public "
+    }
+  ],
+  "prodServerRSSDuringBuildMB": 197,
+  "buildLogTail": " | ○  (Static)   prerendered as static content | ƒ  (Dynamic)  server-rendered on demand",
+  "method": "tree-sampler (sum RSS of full process tree, 1s interval) — /usr/bin/time unavailable in container",
+  "finishedAt": "2026-10-06T05:43:47.786005+00:00"
+}
