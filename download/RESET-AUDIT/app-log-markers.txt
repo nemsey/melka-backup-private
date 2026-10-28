@@ -37,20 +37,20 @@ M-05 · UTC 2026-10-20 08:56:00 · تهران 2026-10-20 12:26:00
   Task ID: PN-057 · رستاخیز پس از ریست یازدهم + راستی‌آزمایی سه‌نکته‌ای کامل (۲۰۲۶-۱۰-۲۷ · ۱۳:۴۶)
 
 ## resurrect-daemon.log (اسکراب‌شده)
-🚀 [2026-10-28T14:26:09Z] شروع رستاخیز نهایی از گیت‌هاب (PN-042)…
+🚀 [2026-10-28T20:12:08Z] شروع رستاخیز نهایی از گیت‌هاب (PN-042)…
 — دریافت کد از گیت‌هاب…
 From https://github.com/nemsey/melka-backup-private
  * branch            main       -> FETCH_HEAD
-HEAD is now at 726e908 fix(PN-042-A): align root resurrect-ultimate.sh with sanctioned PN-050 UNION version (sha 462fe8a1) — root had drifted to forbidden pre-PN-050 MAX/replace version (sha 8fa080c5) served by raw URL; restores documented invariant 'root = raw = official path'
-  HEAD اکنون: 726e908
+HEAD is now at 918efcd 2195cd21-f0c2-4725-9e92-2517710336b5
+  HEAD اکنون: 918efcd
   ✓ دیتابیس زندهٔ سالم (32851 آگهی) — صفر مداخله روی رکوردهای موجود (قانون بقا · PN-050)
   ⤳ UNION با لایهٔ قلعه: /home/z/my-project/upload/.data/custom.db
   ✓ UNION با قلعه کامل شد — شاهد: {"status": "UNION_OK", "live": "/home/z/my-project/db/custom.db", "before": {"PropertyRecord": 32851, "RequestRecord": 29471}, "after": {"PropertyRecord": 32874, "RequestRecord": 29484}, "sources": [{"path": "/home/z/my-project/upload/.data/custom.db", "tables": {"AuditLog": {"status": "merged", "so
-  ⤳ UNION با لایهٔ چرخشی: /home/z/my-project/upload/.data/rolling/live-2026-10-28T11-46-40-666.db
-  ✓ UNION با چرخشی کامل شد — شاهد: {"status": "UNION_OK", "live": "/home/z/my-project/db/custom.db", "before": {"PropertyRecord": 32874, "RequestRecord": 29484}, "after": {"PropertyRecord": 33459, "RequestRecord": 29904}, "sources": [{"path": "/home/z/my-project/upload/.data/rolling/live-2026-10-28T11-46-40-666.db", "tables": {"Audit
+  ⤳ UNION با لایهٔ چرخشی: /home/z/my-project/upload/.data/rolling/live-2026-10-28T16-20-49-006.db
+  ✓ UNION با چرخشی کامل شد — شاهد: {"status": "UNION_OK", "live": "/home/z/my-project/db/custom.db", "before": {"PropertyRecord": 32874, "RequestRecord": 29484}, "after": {"PropertyRecord": 33460, "RequestRecord": 29909}, "sources": [{"path": "/home/z/my-project/upload/.data/rolling/live-2026-10-28T16-20-49-006.db", "tables": {"Audit
   ⤳ UNION با لایهٔ بقا: /home/z/my-project/upload/.survival/PN-048-20261021/db/custom.db
-  ✓ UNION با بقا کامل شد — شاهد: {"status": "UNION_OK", "live": "/home/z/my-project/db/custom.db", "before": {"PropertyRecord": 33459, "RequestRecord": 29904}, "after": {"PropertyRecord": 33459, "RequestRecord": 29904}, "sources": [{"path": "/home/z/my-project/upload/.survival/PN-048-20261021/db/custom.db", "tables": {"AuditLog": {
-  ✓ پس از UNION: 33459 آگهی (پیش از UNION: 32851 — رشدی/برابر، هرگز کاهشی)
+  ✓ UNION با بقا کامل شد — شاهد: {"status": "UNION_OK", "live": "/home/z/my-project/db/custom.db", "before": {"PropertyRecord": 33460, "RequestRecord": 29909}, "after": {"PropertyRecord": 33460, "RequestRecord": 29909}, "sources": [{"path": "/home/z/my-project/upload/.survival/PN-048-20261021/db/custom.db", "tables": {"AuditLog": {
+  ✓ پس از UNION: 33460 آگهی (پیش از UNION: 32851 — رشدی/برابر، هرگز کاهشی)
 ✅ Secret source: upload/.runtime/boot-secrets.json (priority 1)
 — نصب وابستگی‌ها و بیلد…
 [0.03ms] ".env.local", ".env"
@@ -61,21 +61,21 @@ $ prisma generate
 Environment variables loaded from .env
 Prisma schema loaded from prisma/schema.prisma
 
-✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 427ms
+✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 369ms
 
 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
-Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
 
 
 + @types/qrcode@1.5.6
 + qrcode@1.5.4
 
-26 packages installed [2.90s]
+26 packages installed [2.40s]
 Environment variables loaded from .env
 Prisma schema loaded from prisma/schema.prisma
 
-✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 281ms
+✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 277ms
 
 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
@@ -91,10 +91,10 @@ Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/cust
 
 
 
-🚀  Your database is now in sync with your Prisma schema. Done in 597ms
+🚀  Your database is now in sync with your Prisma schema. Done in 579ms
 
 Running generate... (Use --skip-generate to skip the generators)
 [2K[1A[2K[GRunning generate... - Prisma Client
-[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 310ms
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 283ms
 
-$ mkdir -p upload/.runtime && date +%s > upload/.runtime/BUILD_RUNNING; { NODE_OPTIONS=--max-old-space-size=3000 RAYON_NUM_THREADS=1 next build --experimental-build-mode compile && NODE_OPTIONS=--max-old-space-size=3000 RAYON_NUM_THREADS=1 next build --experimental-build-mode generate && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/ && (cp env.platform.json .next/standalone/ 2>/dev/null || true) && rm -rf .next/standalone/backups .next/standalone/db .next/standalone
+$ mkdir -p upload/.runtime && date +%s > upload/.runtime/BUILD_RUNNING; { NODE_OPTIONS=--max-old-space-size=3000 RAYON_NUM_THREADS=1 next build --experimental-build-mode compile && NODE_OPTIONS=--max-old-space-size=3000 RAYON_NUM_THREADS=1 next build --experimental-build-mode generate && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/ && (cp env.platform.json .next/standalone/ 2>/dev/null || true) && rm -rf .next/standalone/backups .next/standalone/db .next/standalone/prisma/db .next/standalone/download .next/standalone/skills .next/standalone/scripts .next/standalone/tool-results .next/standalone/docs .next/standalone/examples .next/standalone/tests .next/standalone/bun.lock .next/standalone/dev.log .next/standalone/server.log .
