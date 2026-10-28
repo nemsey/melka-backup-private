@@ -1,8 +1,0 @@
-{
-  "directive": "PN-050 (دستور ۲ · DIR-PN050-001)",
-  "name": "add_provenance",
-  "createdAt": "2026-10-28T00:00:00Z",
-  "note": "افزودنی-تنها — ۱۰ ستون + ۴ ایندکس روی PropertyRecord/RequestRecord. اعمال رسمی پروژه از مسیر prisma db push است (سنت db push، بدون migrations table)؛ این پوشه شاهد SQL مهاجرت برای ممیزی است.",
-  "warmBackup": "db/custom.db.pn050-pre-migration",
-  "warmBackupSha256": "59428227284a8a3f4083bd8d88a7ac7d7542b2fcb2cad2433047d331933c602d"
-}
