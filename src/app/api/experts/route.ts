@@ -12,6 +12,7 @@
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { tenantDbValue } from "@/lib/tenants";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { normalizeFilterInput } from "@/lib/normalize-input";
 import { listExpertProfiles, expertFilterOptions, type ExpertProfileFilter } from "@/lib/experts/profile-store";
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
     const cities = (sp.getAll("city") || []).map((v) => normalizeFilterInput(v)).filter(Boolean);
     const actives = (sp.getAll("active") || []).filter((v) => v === "true" || v === "false").map((v) => v === "true");
     const filter: ExpertProfileFilter = {
+      tenantId: tenantDbValue(sp.get("tenantId")), // PN-044/فاز ۴ — چند-مستأجری
       q: str(sp.get("q")),
       fullName: str(sp.get("fullName")),
       mobile: str(sp.get("mobile")),
@@ -77,7 +79,10 @@ export async function GET(request: NextRequest) {
       offset: num(sp.get("offset")) ?? 0,
     };
 
-    const [{ rows, total }, options] = await Promise.all([listExpertProfiles(filter), expertFilterOptions()]);
+    const [{ rows, total }, options] = await Promise.all([
+      listExpertProfiles(filter),
+      expertFilterOptions(filter.tenantId ?? "melk-tabriz"), // PN-047 — گزینه‌های فیلتر tenant-scoped (رفع نشت تبریز→ملکتون)
+    ]);
 
     // شفافیت منبع داده
     const lastSyncedAt = rows.length > 0 ? rows.reduce<string | null>((acc, r) => (acc === null || r.syncedAt < acc ? r.syncedAt : acc), null) : null;

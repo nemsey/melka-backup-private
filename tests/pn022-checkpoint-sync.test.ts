@@ -179,15 +179,16 @@ describe("PN-022-A/اولاً-۳ · کارخانهٔ خانواده و اعما�
 
 /* ═══════ ۴) جاروی سنگ‌قبرها و تعویق آن ═══════ */
 describe("PN-022-A/اولاً-۳ · جاروی معوق در ازسرگیری", () => {
-  test("ج-۱) sweepFamilyStale: ردیف محو‌شدهٔ منبع با کلیدهای کامل حذف می‌شود", async () => {
+  test("ج-۱ → PN-038/۱.۴: sweepFamilyStale فقط گزارش می‌دهد — ردیف محو‌شدهٔ منبع زنده می‌ماند (قانون مقدس)", async () => {
     const { sweepFamilyStale, buildMainSyncFamily } = await import("@/lib/melk-api/sync");
-    // سه ردیف موجود، جارو با کلیدهای فقط دو تای اول → سومی سنگ‌قبر
+    // سه ردیف موجود، گزارش با کلیدهای فقط دو تای اول → سومی «محو‌شده از منبع»
     await db.transactionRecord.deleteMany({ where: { id: { startsWith: "pn022cp-" } } });
     const { applyMainSyncFamily } = await import("@/lib/melk-api/sync");
     await applyMainSyncFamily("run-sw-1", buildMainSyncFamily("transactions", [txRow("pn022cp-tx-a"), txRow("pn022cp-tx-b"), txRow("pn022cp-tx-c")] as never[], "run-sw-1", { fetched: true }));
     const stale = await sweepFamilyStale(buildMainSyncFamily("transactions", [txRow("pn022cp-tx-a"), txRow("pn022cp-tx-b")] as never[], "run-sw-1", { fetched: true }));
-    expect(stale).toBe(1); // pn022cp-tx-c حذف شد
-    expect(await db.transactionRecord.count({ where: { id: { startsWith: "pn022cp-" } } })).toBe(2);
+    expect(stale).toBe(1); // شمرده شد (pn022cp-tx-c محو‌شده از منبع)
+    // قانون دادهٔ مقدس: حذف نشد — هر سه ردیف زنده‌اند
+    expect(await db.transactionRecord.count({ where: { id: { startsWith: "pn022cp-" } } })).toBe(3);
   });
 
   test("ج-۲) نامهٔ مردهٔ باز از جارو محافظت می‌شود (regression P6.5-03)", async () => {
@@ -202,10 +203,10 @@ describe("PN-022-A/اولاً-۳ · جاروی معوق در ازسرگیری", 
     expect(await db.transactionRecord.count({ where: { id: "pn022cp-tx-b" } })).toBe(1);
   });
 
-  test("ج-۳) قید صحت جارو: کلیدهای ناقص چرخهٔ ازسرگیری هرگز جارو نمی‌کنند — در سورس مستند است", async () => {
+  test("ج-۳) قید صحت گزارش: کلیدهای ناقص چرخهٔ ازسرگیری هرگز گزارش نمی‌کنند — در سورس مستند است", async () => {
     const src = (await import("node:fs")).readFileSync("src/lib/melk-api/sync.ts", "utf8");
-    expect(src).toContain("تنها چرخهٔ کاملِ تازه (نه ازسرگیری‌شده)");
     expect(src).toContain("resumed === false");
+    expect(src).toContain("sacredNoDelete"); // PN-038: حذف ممنوع
   });
 });
 
