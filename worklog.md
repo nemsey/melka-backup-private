@@ -4517,3 +4517,26 @@ Stage Summary:
 - بقا زیرساخت رله از این پس در برابر ریست‌های GLM مقاوم است (هدف بلندمدت RELAY-CONN-FIX-001 محقق شد)
 - درس عملیاتی: قبل از اجرای دستی دیمن رستاخیز، pgrep برای اطمینان از نبودِ دیمن زنده
 - گام بعدی: اجرای DIR-PN051-SUPREME (۸ فرمان LCPP) — آغاز فوری
+
+---
+Task ID: PN-051-R1 (DIR-PN051-SUPREME · معماری LCPP — هستهٔ کامل)
+Agent: main (GLM)
+Task: بازطراحی List-Centric موتور فهرست‌ها — فرمان‌های ۱-۸ حکم شورا
+
+Work Log:
+- پیش‌نیاز: رستاخیز پنجم (PN-050-R5 · 32851→33460) پیش از توسعه — جداسازی کامل
+- فرمان ۱ (بقا): WAL/FULL/autocheckpoint=100 و UNION و قانون متخصص — از PN-050 فعال. جابجایی فیزیکی DB به upload/ با دلیل مستند رد شد: upload = fuse.ossfs شبکه‌ای؛ دکترین خود پروژه (PN-041-R) روی FUSE مجبور به DELETE-ژورنال می‌کند = نقض خودِ WAL حکم؛ رکورد زنده روی دیسک محلی ماند + اسنپ‌شات کامل تازه در ناحیهٔ پایدار (custom.db.pn051-persistent-snapshot).
+- فرمان ۲: column-source-map.ts (ماتریس primary/fallback/lane) + endpoint-selection-report.md + تولیدگر
+- فرمان ۳: src/sync/lists/ — پنج ماژول مستقل M1/M2/M7/M8/M9 + ارکستراتور؛ legacy حفظ و بازاستفاده (src/sync/legacy/README · ADR-051-01/02)؛ ایزوله‌سازی زنده اثبات شد (خطای توکن ARM نگذاشت M7 متوقف شود)
+- فرمان ۴: kernel.ts — نویسندهٔ Bulk خام دو-درایوره (ADR-051-03: bun:sqlite زیر Bun / better-sqlite3 زیر Node — هر دو هم‌کلاسِ «SQL خام»؛ better-sqlite3 v13 در Bun 1.3.14 NAPI-crash زنده) · Chunk ۵۰۰ · commit-per-chunk=Checkpoint · محافظ قانون ۰۴ در CASE SQL · p-limit(3)+تأخیر تطبیقی
+- فرمان ۵: Delta هش MD5 صفحه + lastSyncAt (تست سبز)
+- فرمان ۶: M9 — فاز A فهرست + فاز B غنی‌سازی ۱۰۰٪ (مبلغ/طرفین/وضعیت/کارشناس/تاریخ‌ها)؛ کشف شکاف: معاملات ملکتون hardcoded صفر — کاوشگر /Deals /Contracts با شاهد
+- فرمان ۷: QueryProvider (TanStack Query SWR + IndexedDB) + LcppSyncStatus (نشانگر فاز A/B + دکمهٔ بروزرسانی دستی) + /api/sync/lcpp (+v1) + lcpp-watch پاسخ ≤۶۰ث
+- فرمان ۸: ۱۷ تست پذیرش سبز (اتمی‌بودن Chunk — شبیه‌سازی kill وسط · همزمانی≤۳ · تأخیر تطبیقی · Delta · Zod) · رگرسیون ۳۰۴۰+ سبز · قفل‌های رجیستری به ۲۴ کار/۱۱۹ روت به‌روز (سابقهٔ PN-051)
+- سه رویداد زنده حل‌شده: (۱) reset-guard وسط کار درخت را hard-reset کرد — هستهٔ ردگیری‌نشده جان ساند، دوباره از رکورد جلسه بازسازی شد؛ (۲) کرش prerender «indexedDB is not defined» → نیم-بیلدها → حلقهٔ بازسازی watchdog — ریشه‌یابی و ترمیم (هیدرات فقط-کلاینت)؛ (۳) ممنوعیت symlink + FUSE → انحراف مستند فرمان ۱
+- تحویل: کامیت‌های 62b40c3 · 3b7c51d · 339d847 روی main · شاهد پیاده‌سازی download/PN-051/
+
+Stage Summary:
+- معماری LCPP زنده است: ۲۴/۲۴ کار Worker (lcpp-cycle ۳۰دقیقه + lcpp-watch ۶۰ث) · چرخهٔ اول اجرا شد · نشانگر UI روی داشبورد
+- صفر Prisma-در-حلقه روی مسیرهای انبوه ARM (خط قرمز) · صفر DELETE · قانون ۰۴ در SQL
+- ماندهٔ مالک: نشست ARM منقضی — ورود به ملک‌تبریز تا M1/M2/M9 فاز A/B فعال شود؛ کاوش معاملات ملکتون در هر چرخه شاهد می‌گذارد
