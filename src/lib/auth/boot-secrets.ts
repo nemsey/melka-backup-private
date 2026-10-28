@@ -37,11 +37,29 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync, chmodSy
 import path from "node:path";
 import { createHash, randomBytes, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
 
-/** کلیدهای مدیریت‌شده — نام‌ها عمداً صریح‌اند (مستند در KEYS.md بستهٔ بقا) */
+/** کلیدهای مدیریت‌شده — نام‌ها عمداً صریح‌اند (مستند در KEYS.md بستهٔ بقا)
+ *  PN-031-HOTFIX (شورا-ن۰۳۸): MELK_PUBLIC_BASE_URL راز نیست — نشانی عمومی
+ *  سرور برای URLهای مصرف بیرونی (گوشی/QR) است؛ اما همان نیاز بقای سه‌لایه را
+ *  دارد (بازنشانی محیط env.platform.json را می‌زداید)؛ بدون آن روت‌های رله
+ *  fail-closed می‌شوند. جزو fail-fast بوت «نیست» (تولید تصادفی هم ممنوع).
+ *  PN-031-B (شورا-ن۰۳۹ — درس بازنشانی هشتم): چهار کلید عملیاتی رله/پروکسی
+ *  نیز جزو escrow شدند — بازنشانی پلتفرم env.platform.json را زد و پرچم
+ *  آفلینی + حالت رله + راز HMAC + نشانی Worker بی‌سرپریدند؛ از این پس از
+ *  escrow سه‌لایه بازمی‌گردند. هیچ‌کدام تولید تصادفی نمی‌شوند (restore-only). */
 export const BOOT_SECRET_KEYS = [
   "MELK_TOKEN_KEY",
   "MASTER_ACCESS_CODE",
   "OWNER_PERSONNEL_CODES",
+  "MELK_PUBLIC_BASE_URL",
+  "MELK_PROXY_SECRET",
+  "MELK_ARM_RELAY_MODE",
+  "MELK_ARM_OFFLINE",
+  // PN-033 (جلسهٔ ۰۵۴ · پاکسازی نهایی): خاموشی دائمی فیوز PN-029 —
+  // پیکربندی حیاتیِ بقا (نه راز): بدون آن، پس از بازنشانی env پلتفرم
+  // فیوز دوباره مسلح می‌شود و سه شکست پیاپی، قفل ۲۴ ساعتهٔ مالک را
+  // برمی‌گرداند. MELK_ARM_PROXY_URL و MELK_RELAY_ALT_URL (دوران Worker)
+  // حذف شدند — مسیر یگانه: رلهٔ Termux.
+  "MELK_ARM_CIRCUIT_DISABLED",
 ] as const;
 
 export type BootSecretKey = (typeof BOOT_SECRET_KEYS)[number];
@@ -285,6 +303,14 @@ function regenerateEnvPlatform(repoRoot: string, secrets: EscrowData, databaseUr
     if (!hadFile) {
       existing._comment =
         "PN-011: بازسازی/همگام‌شده توسط گارد خوددرمانی راز (upload/.runtime/boot-secrets.json) — gitignored; مقادیر واقعی.";
+      // PN-031-I (جلسهٔ ۰۵۰ · درس بازگشت دهم): بازنشانی پلتفرم فایل را کلاً
+      // می‌زداید و کلیدهای مستندسازی «_» را می‌سوزاند — تستهای قفل ترتیب
+      // (pn030 E-2 / pn031 D-2) قرمز می‌شدند. کلیدهای مستندسازی (بدون راز)
+      // از اینجا همیشه بازمی‌گردند.
+      existing._pn030 =
+        "شورا-ن۰۳۵ · لایهٔ ۱: MELK_ARM_PROXY_URL = Worker کلادفلر عبوری — پس از کشف بلاک جغرافیاییِ خود کلودفلر، مسیر فعال رلهٔ موبایل (PN-031) شد؛ راز HMAC: MELK_PROXY_SECRET.";
+      existing._pn031 =
+        "شورا-ن۰۳۷ · رلهٔ موبایل ملکا: MELK_ARM_RELAY_MODE=mobile (گوشی مالک با IP ایرانی) — قفل ترتیب MELK_ARM_OFFLINE تا تست تونل زنده.";
     }
     const tmp = `${envPlatformPath}.tmp`;
     writeFileSync(tmp, JSON.stringify(existing, null, 2) + "\n", { encoding: "utf8", mode: 0o600 });

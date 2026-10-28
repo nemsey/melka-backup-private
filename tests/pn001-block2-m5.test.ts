@@ -53,10 +53,13 @@ describe("PN-001/B2.1 — گام پنجم: اطلاعات کامل گزینه‌
   let listingMatch: Awaited<ReturnType<typeof findListingWithMatch>>;
   let requestMatch: Awaited<ReturnType<typeof findRequestWithMatch>>;
 
+  // ن۰۶۳: مهلت سخاوتمندانه — این تست روی custom.db واقعی (۳۱۸MB) کار می‌کند و
+  // هم‌زمان با کارهای سنگین Worker (بکاپ مقدس ۱۵دقیقه‌ای VACUUM + backup-rotation)
+  // می‌گذرد؛ واریانس بارِ اثبات‌شدهٔ سابقهٔ PN-010/PN-036 → ۶۰ث (قبلی: پیش‌فرض ۵ث)
   beforeAll(async () => {
     listingMatch = await findListingWithMatch();
     requestMatch = await findRequestWithMatch();
-  });
+  }, 60_000);
 
   test("گ-۵-۱ شاهد پیش‌نیاز: تطبیق واقعی موجود است (آگهی→درخواست)", () => {
     expect(listingMatch).not.toBeNull();
@@ -191,6 +194,7 @@ describe("PN-001/B2.1 — گام پنجم: اطلاعات کامل گزینه‌
 
   /* ── شاهد ن۰۰۱: ۵ تطبیق واقعی + خروجی m5-matching.json ── */
 
+  // ن۰۶۳: مهلت سخاوتمندانه (۵ تطبیق واقعی روی custom.db ۳۱۸MB زیر بار Worker — سابقهٔ PN-010/PN-036)
   test("گ-۵-۱۹ شاهد ۵ تطبیق واقعی (آگهی→درخواست) + m5-matching.json", async () => {
     const engine = new MatchingEngine({ db: real, tier: 3 });
     const listings = await real.propertyRecord.findMany({
@@ -220,8 +224,9 @@ describe("PN-001/B2.1 — گام پنجم: اطلاعات کامل گزینه‌
       JSON.stringify({ case: "PN-001", block: "2.1", witness: "گام پنجم — اطلاعات کامل گزینه‌ها", generatedAt: new Date().toISOString(), realMatches: matches }, null, 2),
       "utf8",
     );
-  });
+  }, 60_000);
 
+  // ن۰۶۳: مهلت سخاوتمندانه — همان گ-۵-۱۹ (تطبیق‌های واقعی روی DB زنده)
   test("گ-۵-۲۰ شاهد ۵ تطبیق واقعی (درخواست→آگهی)", async () => {
     const engine = new MatchingEngine({ db: real, tier: 3 });
     const requests = await real.requestRecord.findMany({

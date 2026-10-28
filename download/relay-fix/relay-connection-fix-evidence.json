@@ -1,0 +1,48 @@
+{
+  "schema": "melka-relay-connection-fix-evidence",
+  "generatedAt": "2026-10-28T15:32:00Z",
+  "task": "رفع ناتصالی رلهٔ ترموکس (Termux) — نشانی VPC غیرقابل‌دسترس در دستور نصب",
+  "trigger": "گزارش مالک + اسکرین‌شات Termux: curl (28) Failed to connect ... after 32184 ms — Poco F3 · 2026-10-28 18:22 IRST",
+  "diagnosis": {
+    "symptom": "curl (28) Failed to connect to ws-eccdd-a-a-dc-hlsirbfftv.cn-hongkong-vpc.fcapp.run:80 after 32184 ms",
+    "badUrlFromScreenshot": "http://ws-eccdd-a-a-dc-hlsirbfftv.cn-hongkong-vpc.fcapp.run/api/mobile-relay/bootstrap?code=0b65ee55eff290482cfa4b64d6647eb8a3bd",
+    "badUrlVerifiedAgainst": "RelayDevice cmvs8dbhf0004ok4rck9vm2my (enrollCode=0b65ee55… · صادرشده امروز · attemptCount=0 — دانلود هرگز به سرور نرسید)",
+    "rootCause": [
+      "نشانی ws-eccdd-*.cn-hongkong-vpc.fcapp.run نقطهٔ انتهایی داخلیِ VPC زیرساخت پیش‌نمایش است — از اینترنت عمومی مسیریابی ندارد (و http:80 هم برای FC نامعتبر است) → SYN بی‌پاسخ → تایم‌اوت ۳۲ثانیه‌ای گوشی.",
+      "این نشانی هرگز در کد/مستندات پروژه نیست — توسط getPublicBaseUrl در لحظهٔ صدور کد نصب از هدر x-forwarded-host زنجیرهٔ پراکسی برداشته شد.",
+      "چرا fallback فعال شد؟ scripts/pn012/escrow-manager.ts با فهرست سفید ۴کلیدی قدیمی، در هر بوت/اسپاون کل فایل‌های escrow را بازنویسی می‌کرد و کلیدهای عملیاتی رله (MELK_PUBLIC_BASE_URL و…) را می‌زد — پس از سه بازنشانی محیط امروز، همهٔ لایه‌های escrow تهی از این کلیدها بودند.",
+      "منبع حقیقتِ مقدار صحیح: upload/.runtime/env.platform.json (نسخهٔ بازماندهٔ پیش از ریست) — MELK_PUBLIC_BASE_URL=https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai"
+    ],
+    "collateralFound": "همان ریشهٔ زدایش کلید، فیوز PN-029 را مسلح کرده بود (MELK_ARM_CIRCUIT_DISABLED غایب) → سه قفل ۲۴ساعتهٔ فعال روی میزبان‌های arus/pm/gap-api.melketabriz.ir در پنجرهٔ کهنگی ۱۳:۱۱ UTC ایجاد شد (ناوردای A-3 نقض)."
+  },
+  "actions": [
+    "scripts/fix-relay-public-url.py (ابزار ماندگار): بازگردانی fill-missing پنج کلید در چهار مکان (.env.local · env.platform.json · db/.runtime/boot-secrets.json · upload/.runtime/boot-secrets.json) — کلیدهای: MELK_PUBLIC_BASE_URL · MELK_RELAY_ALT_URL · MELK_PROXY_SECRET · MELK_ARM_RELAY_MODE=mobile · MELK_ARM_CIRCUIT_DISABLED=1 — پشتیبان پیش از تغییر: upload/.runtime/relay-fix-backup-20261028T152303Z/",
+    "ترمیم ریشه (کد): scripts/pn012/escrow-manager.ts — SECRET_FIELDS از ۴ به ۹ کلید (هم‌ترازی با BOOT_SECRET_KEYS + MELK_SYNC_MODE) + بازگردانی کلیدهای عملیاتی در rebuildEnvPlatform — MELK_ARM_PROXY_URL و MELK_RELAY_ALT_URL عمداً خارج (قرارداد B-3/B-4 · PN-033/PN-041-R)",
+    "اجرای scripts/fix-pn033-fuse.py (ابزار رسمی نرمال‌سازی پس از ریست): انقضای ۳ قفل مسلح (lockUntil/nextAttemptAt → یک ساعت پیش · consecutiveFailures=0 · صفر حذف) — قفل‌های باقی‌مانده: 0",
+    "بازچرخی env.escrow.enc (لایهٔ رمزنگاری‌شدهٔ گیت) با مجموع تازه بدون کلید دوران Worker",
+    "ری‌استارت سرور: kill 4059 → نگهبان respawn → PID 5743 (~۶ ثانیه — بوت درونی applyPlatformEnvFallbacks + ensureBootSecrets کلیدها را از دیسک تازه خواند)",
+    "ری‌استارت Worker: PID 4403 → 6251 (قفل runtime:worker با رعایت TTL ۹۰ثانیه‌ای تصرف شد — الگوی رسمی رستاخیز)"
+  ],
+  "verification": {
+    "bootstrapRoute_localDummyCode": "HTTP 403 {reason:invalid} — نه 503 server-url (تعیین نشانی سبز)",
+    "bootstrapRoute_hostileVpcHeaders": "HTTP 403 — با هدر x-forwarded-host داخلی VPC هم env برنده است (اولویت ۱)",
+    "bootstrapRoute_publicChainLikeTermux": "HTTP 403 reason:invalid در 90ms از https://preview-chat-…space-z.ai — دقیقاً مسیر ترموکس، اتصال TCP/TLS/HTTP سبز",
+    "realEnroll_installCommand": "pkg install -y curl openssl-tool jq && curl --http1.1 -A \"Mozilla/5.0 (Linux; Android 13; Poco F3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36\" -fsSL \"https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=ed33a8a90c3d146c3538e4a3e409a3a4844b\" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh",
+    "realEnroll_device": "poco-f3-197068 · کد بخشندهٔ ۳تلاشی · انقضا 2026-10-28T15:54:53Z — هر ۳ تلاش برای مالک محفوظ ماند (هیچ دانولدی مصرف نشد)",
+    "sanity": "preview domain ✓ · fcapp.run غایب ✓ · https ✓",
+    "escrowStatus": "consistent=true — envLocal ↔ db ↔ upload ↔ رمزنگاری‌شده، اثر انگشت یکسان",
+    "regressionTests": "tests/platform-env-fallback + pn011-boot-secrets + pn012-escrow-redundancy + pn033-cleanup → 42 pass · 0 fail (پیش از اصلاح: 2 fail)",
+    "postRestartHealth": {
+      "watchdog": "PID 3036",
+      "server": "PID 5743 — gitSha=f72c628=HEAD · buildId=f72c628-20261028-1433",
+      "worker": "PID 6251 — ۲۳ کارِ ثبت‌شده · قفل runtime:worker زنده",
+      "home": "HTTP 200 در 42ms",
+      "sacredDataUnchanged": "Property=33,460 · Request=29,909 · Expert=395 · User=4 · AuditLog=7,586 · Transaction=806 · journal_mode=wal — صفر حذف/کاهش از عمد؛ فقط به‌روزرسانی طبیعی کارگران"
+    }
+  },
+  "durability": "کلیدها اکنون در هر سه لایهٔ escrow (db/.runtime · upload/.runtime · env.escrow.enc رمزنگاری‌شده در گیت) + env.platform.json + .env.local ساکن‌اند و scripts/pn012/escrow-manager.ts دیگر آن‌ها را نمی‌زند → بازنشانی‌های بعدی، خودشان بازیابی می‌کنند (الگوی PN-011/012)",
+  "ownerNotes": [
+    "دستور نصب اصلاح‌شده در verification.realEnroll_installCommand تا ۱۵:۵۴ UTC (۱۹:۲۴ IRST) معتبر است — پس از آن از تنظیمات ملکا (بخش رلهٔ موبایل) دکمهٔ راه‌اندازی را دوباره بزنید؛ فرمان تازه از همین مسیر صحیح ساخته می‌شود.",
+    "نشانی در دستور نصب باید همیشه با https://preview-chat-... شروع شود؛ اگر دوباره ws-eccdd یا fcapp.run دیدید یعنی env غنی دوباره زدوده شده — هر سه لایهٔ escrow اکنون خودش را ترمیم می‌کند و با یک ری‌استارت سرور (kill فرایند standalone) برمی‌گردد."
+  ]
+}

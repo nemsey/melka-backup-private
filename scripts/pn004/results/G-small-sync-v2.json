@@ -1,0 +1,27 @@
+{
+ "scenario": "G-small-sync-v2",
+ "kind": "cmd",
+ "ts": "2026-10-05T19:14:24+0000",
+ "mem_available_before_mb": 3407.2,
+ "next_server_rss_before_mb": 0.0,
+ "command": [
+  "/usr/local/bin/bun",
+  "test",
+  "tests/phase65-bulk-import.test.ts"
+ ],
+ "exit_code": 0,
+ "wall_ms": 12532,
+ "tree_rss_peak_mb": 107.3,
+ "system_cpu_pct_avg": 25.3,
+ "free_min_mb": 3345.6,
+ "srv_rss_peak_mb": 0.0,
+ "oom_after": [
+  "[ 3381.930108] python3 invoked oom-killer: gfp_mask=0x100dca(GFP_HIGHUSER_MOVABLE|__GFP_ZERO), order=0, oom_score_adj=0",
+  "[ 3381.930458] Out of memory: Killed process 4442 (python3) total-vm:4234448kB, anon-rss:3681252kB, file-rss:9576kB, shmem-rss:0kB, UID:1001 pgtables:7304kB oom_score_adj:0"
+ ],
+ "stdout_tail": "bun test v1.3.14 (0d9b296a)\nprisma:error \nInvalid `prisma.transactionRecord.create()` invocation:\n\n{\n  data: {\n    id: \"p6503-tx-2099\",\n    contractDate: new Date(\"2024-06-01T10:00:00.000Z\"),\n    propertyCustomer: \"فروشنده 2099\",\n    requestCode: \"R2099\",\n    requestCustomer: \"خریدار 2099\",\n    contractHolo: \"H2099\",\n    suggestedPropertyCount: 1,\n    eventsCount: 2,\n    rawSourceVersion: null,\n    extractedAt: new Date(\"2026-10-05T19:14:28.605Z\"),\n    extractionBatchId: \"9fba687b-79b8-4461-94bb-080e111d37fb\",\n    normalizationVersion: \"p65-04-v2\",\n    sourceRunId: \"9fba687b-79b8-4461-94bb-080e111d37fb\",\n+   propertyCode: String\n  }\n}\n\nArgument `propertyCode` is missing.\n",
+ "stderr_tail": "-۳ — Idempotency مطلق (§۱.۶ + §۲.۴) > merge non-null (§۲.۴) — فیلد تهیِ جدید، مقدار موجود را پاک نمی‌کند [8.90ms]\n(pass) P6.5-03-۴ — Rate limiting در خط لوله (صفر فشار به مبدأ) > ۵ صفحه با rateLimitMs=100 — هر فاصله پایان-پاسخ تا درخواست بعدی ≥ 100ms [416.31ms]\n(pass) P6.5-03-۵ — Retry با طبقه‌بندی خطا (§۱.۷) > ۵۰۰، ۵۰۰، موفق در سوم — تأخیرهای دقیق [2000, 4000] [403.16ms]\n(pass) P6.5-03-۵ — Retry با طبقه‌بندی خطا (§۱.۷) > ۴۰۰ (غیرقابل retry) → صفر خواب، صفر تلاش مجدد، FAILED فوری + checkpoint صفحه قبل [204.76ms]\n(pass) P6.5-03-۵ — Retry با طبقه‌بندی خطا (§۱.۷) > 429 با Retry-After — تأخیر = max(سیاست, Retry-After) [200.68ms]\n(pass) P6.5-03-۵ — Retry با طبقه‌بندی خطا (§۱.۷) > خطای دائمی پس از ۵ retry — ۶ فراخوانی + دنباله کامل [2,4,8,16,30] + FAILED [1001.85ms]\n(pass) P6.5-03-۶ — رگرسیون هم‌زیستی sync افزایشی + Bulk (§۱.۹ + کشف P6.5-03) > پس از Bulk، sync افزایشی هیچ رکورد Bulk را حذف نمی‌کند؛ سنگ‌قبر غیر-Bulk جارو می‌شود [628.12ms]\n(pass) P6.5-03-۷ — سینک مخزن سایر موجودیت‌ها (قرارداد هفت‌گانه) > expert + interaction + visit + contract + listing + request: upsertBulk با merge non-null و کلید طبیعی [22.50ms]\n\n 23 pass\n 0 fail\n 223 expect() calls\nRan 23 tests across 1 file. [12.52s]\n",
+ "mem_available_after_mb": 3409.8,
+ "next_server_rss_after_mb": 0.0,
+ "db_openers_after": 6
+}
