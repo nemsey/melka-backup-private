@@ -1,16 +1,16 @@
 /**
- * حالت همگام‌سازی — P2-04 → PN-038 (قانون دادهٔ مقدس)
+ * حالت همگام‌سازی — P2-04 (Feature Flag)
  * ------------------------------------------------------
- * PN-038/۱.۴ (شورا-ن۰۶۳): مسیر legacy (deleteMany + createMany) برای همیشه
- * بازنشسته شد — «هیچ دادهٔ قبلی حذف نمی‌شود». تنها حالت: incremental
- * (upsert بر کلید طبیعی + نقطهٔ ازسرگیری + نامهٔ مرده).
- * مقدار MELK_SYNC_MODE=legacy دیگر بی‌اثر است (پارامتر حفظ شد تا اسکریپت‌های
- * محیطی قدیمی نشکنند).
+ * MELK_SYNC_MODE=legacy       → رفتار فعلی: deleteMany + createMany اتمیک (پیش‌فرض)
+ * MELK_SYNC_MODE=incremental  → upsert بر کلید طبیعی + نقطهٔ ازسرگیری + نامهٔ مرده
+ *
+ * ⚠️ پیش‌فرض legacy است و تا PHASE 4 (پس از اعتبارسنجی میدانی) تغییر نمی‌کند.
+ * هر دو مسیر در تست‌ها پوشش داده شده‌اند (tests/phase2-sync.test.ts).
  */
 
 export type SyncMode = "legacy" | "incremental";
 
-/** خواندن حالت از محیط — همیشه incremental (قانون دادهٔ مقدس PN-038) */
+/** خواندن حالت از محیط — هر مقدار غیر از "incremental" یعنی legacy */
 export function syncMode(): SyncMode {
-  return "incremental";
+  return process.env.MELK_SYNC_MODE === "incremental" ? "incremental" : "legacy";
 }

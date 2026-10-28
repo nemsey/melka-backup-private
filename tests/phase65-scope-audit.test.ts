@@ -467,7 +467,7 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
     }
   });
 
-  test("RequestRecordDTO — ۷۹ کلید (P6547 + PN-002/گام۲: +۲۱ ستون M2 + PN-027 نرمال×۳)؛ ستون‌های P6.5-02/03/04/10 + P6530/گام ۲ + خام‌های B.3 در دنباله", async () => {
+  test("RequestRecordDTO — ۷۴ کلید (P6547 + PN-002/گام۲: +۲۱ ستون M2 + PN-027 نرمال×۳)؛ ستون‌های P6.5-02/03/04/10 + P6530/گام ۲ + خام‌های B.3 در دنباله", async () => {
     const c = await getTestClient();
     await seed(c);
     try {
@@ -476,19 +476,11 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
       // P6530/گام ۲ — دو ستون تازهٔ بازهٔ قیمت متقاضی (بعد از inputsJson)
       // P6547/گام دوم — سه ستون تازه: urgent/luxury/changeable (پس از جدیت مشتری)
       // PN-002/گام ۲ — ۲۱ ستون تازهٔ M2 در دنبالهٔ مدل (پس از normalizationVersion)
-      expect(keys.length).toBe(81); // events رابطه است — در findFirst نمی‌آید · PN-027 · ۵-پ-۱: +۳ نرمال · PN-039/گام ۴: +۱ ownerNote · PN-046/گام اول-۱: +۲ بودجه · PN-050 (دستور ۲): +۵ provenance
-      // PN-039 (گام ۴) — یادداشت مالک بلافاصله پس از updatedAt
-      expect(keys[keys.indexOf("updatedAt") + 1]).toBe("ownerNote");
-      // PN-050 (دستور ۲) — پنج ستون provenance بلافاصله پس از ownerNote
-      const on = keys.indexOf("ownerNote");
-      expect(keys.slice(on + 1, on + 6)).toEqual([
-        "lastSyncedValue", "lastSyncedAt", "lastModifiedBy", "lastModifiedAt", "fieldChanges",
-      ]);
+      expect(keys.length).toBe(73); // events رابطه است — در findFirst نمی‌آید · PN-027 · ۵-پ-۱: +۳ ستون نرمال
       // P6547 — سه ستون تازه بلافاصله پس از جدیت مشتری (userSeriousityName)
       const ui = keys.indexOf("urgent");
       expect(keys.slice(ui - 1, ui + 3)).toEqual(["userSeriousityName", "urgent", "luxury", "changeable"]);
-      // PN-046/گام اول-۱ — بودجهٔ رهن/اجاره بلافاصله پس از بازهٔ قیمت (priceFrom/priceTo → depositBudget/rentBudget)
-      expect(keys.slice(18, 23)).toEqual(["inputsJson", "priceFrom", "priceTo", "depositBudget", "rentBudget"]);
+      expect(keys.slice(18, 21)).toEqual(["inputsJson", "priceFrom", "priceTo"]);
       // PN-002/گام ۲ — ۲۱ ستون M2 در انتهای مدل · PN-027 · ۵-پ-۱ — +۳ ستون سایهٔ نرمال
       expect(keys.slice(-24)).toEqual([
         "spaceFrom", "spaceTo", "roomsFrom", "roomsTo", "floorFrom", "floorTo",
@@ -539,10 +531,6 @@ describe("P6.5-02 — آینه DTO/ردیف (ترتیب کلیدها عین Sche
         "isRental", "depositPrice", "rentPrice", "viewCount", "imageCount",
         "addedToDivar", "addedToInsta", "isReposted", "isTarget", "armBranchTitle",
         "stateName", "cityName", "publicUrl", "statusDate",
-        // PN-039 (گام ۴) — یادداشت مالک
-        "ownerNote",
-        // PN-050 (دستور ۲) — پنج ستون provenance (قانون برتری متخصص + پنل تغییرات)
-        "lastSyncedValue", "lastSyncedAt", "lastModifiedBy", "lastModifiedAt", "fieldChanges",
         // PN-027 · ۵-پ-۲ — سه ستون سایهٔ نرمال
         "realtorNameNorm", "ownerSearchNorm", "addressSearchNorm",
       ]);

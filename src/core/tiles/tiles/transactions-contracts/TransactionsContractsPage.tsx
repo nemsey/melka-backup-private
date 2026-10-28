@@ -56,7 +56,7 @@ const STAGE_LABELS: Record<string, string> = {
   aborted: "قطع شد — از همان نقطه ادامه می‌یابد",
 };
 
-export function TransactionsContractsPage({ settings, tenantId }: TilePageProps) {
+export function TransactionsContractsPage({ settings }: TilePageProps) {
   const { toast } = useToast();
   const [syncing, setSyncing] = useState(false);
   const [job, setJob] = useState<TxSyncResponse["job"]>(null);
@@ -227,8 +227,7 @@ export function TransactionsContractsPage({ settings, tenantId }: TilePageProps)
       <AgentPanel tileId="transactions-contracts" />
 
       {/* تک‌نمای فهرست معاملات — بخش بروزرسانی به‌عنوان prop (ترتیب الزامی: بینش‌ها → جداول → پوشش → بروزرسانی → فیلتر → فهرست) */}
-      {/* PN-044/فاز ۴ — tenant این رندر به تک‌نما می‌رسد (داشبورد ملکتون فقط دادهٔ ملکتون) */}
-      <TransactionsTab sortBy={sortBy} showCharts={showCharts} updateSection={updateSection} syncDoneSignal={syncDoneSignal} tenantId={tenantId} />
+      <TransactionsTab sortBy={sortBy} showCharts={showCharts} updateSection={updateSection} syncDoneSignal={syncDoneSignal} />
     </div>
   );
 };
