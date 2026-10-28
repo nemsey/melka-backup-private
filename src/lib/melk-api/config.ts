@@ -38,6 +38,9 @@ export interface MelkApiConfig {
   accApiBase: string;
   /** مهلت پاسخ درخواست (میلی‌ثانیه) */
   timeoutMs: number;
+  /** PN-036 (شورا-ن۰۵۸ · فاز ۳): مهلت جریان‌های تعاملی (OTP/ورود) — رفت‌وبرگشت رله
+   * ۹۰ث پیش‌فرض؛ env MELK_INTERACTIVE_TIMEOUT_MS (محیط تست: ۳۰۰ برای شکست‌سریع PN-013/D5) */
+  interactiveTimeoutMs: number;
   /** تعداد تلاش مجدد خودکار برای خطاهای شبکه/5xx */
   maxRetries: number;
   /** کد ورود مدیر (مالک) — فقط سمت سرور استفاده می‌شود */
@@ -102,6 +105,7 @@ export function getMelkApiConfig(): MelkApiConfig {
     pmApiBase: env("MELK_PM_API_BASE", "https://pm-api.melketabriz.ir/api/"),
     accApiBase: env("MELK_ACC_API_BASE", "https://fm-api.melketabriz.ir/"),
     timeoutMs: Number(env("MELK_API_TIMEOUT_MS", "25000")),
+    interactiveTimeoutMs: Math.max(Number(env("MELK_INTERACTIVE_TIMEOUT_MS", "90000")), 1_000),
     maxRetries: Number(env("MELK_API_MAX_RETRIES", "2")),
     masterCode: env("MASTER_ACCESS_CODE", ""), // SEC-1: بدون fallback — در production با assertProductionSecrets اجباری می‌شود
     managerPersonnelCode: env("MANAGER_CODE", ""), // P6.5-04-i: بدون fallback — صریح یا غیرفعال

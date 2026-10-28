@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-18T07:49:15.483Z",
+  "tool": "vacuum-copy (PN-041)",
+  "source": "/home/z/my-project/db/custom.db",
+  "target": "/home/z/my-project/backups/pn041-lock-vacuum-20261018T074912Z.db",
+  "bytes": 398561280,
+  "md5": "70d7e0d1c5f650f0446b3654bb33b766",
+  "integrity": "ok",
+  "counts": {
+    "PropertyRecord": 27864,
+    "RequestRecord": 25580,
+    "TransactionRecord": 792,
+    "ExpertRecord": 293,
+    "GraphNode": 149359
+  },
+  "durationMs": 3294
+}

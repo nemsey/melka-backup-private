@@ -1,0 +1,32 @@
+{
+  "phase": "PN-034 (شورا-ن۰۵۵ · قانون مالک: صفر محدودیت اتصال)",
+  "at": "2026-10-16T11:56:43.675Z",
+  "backup": {
+    "file": "backups/pre-pn034-20261016T115609Z.db",
+    "md5": "48adf7491aa1ca00fb1b4a46da319eba",
+    "bytes": 329838592,
+    "integrity": "ok"
+  },
+  "dbLocks": {
+    "otpRateLimitRows": [
+      {
+        "scope": "code:410031320",
+        "attempts": 1,
+        "lockedUntil": "2026-10-16T15:37:24.329Z"
+      },
+      {
+        "scope": "ip:21.0.0.1",
+        "attempts": 1,
+        "lockedUntil": "2026-10-16T15:37:24.329Z"
+      }
+    ],
+    "note": "این قفلها با حذف جدول OtpRateLimit (قانون صفر-محدودیت) نابود می‌شوند"
+  },
+  "relayDevices": [
+    {
+      "deviceId": "poco-f3-b816dd",
+      "lastSeenAt": "2026-10-16T11:56:29.885Z"
+    }
+  ],
+  "verdict": "ENTER"
+}

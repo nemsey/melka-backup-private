@@ -1,0 +1,33 @@
+{
+  "label": "final",
+  "exitCode": 0,
+  "wallSec": 38,
+  "treePeakMB": 1978.9,
+  "treePeakProcesses": 4,
+  "treePeakTop": [
+    {
+      "pid": 10927,
+      "rssMB": 1798.1,
+      "cmd": "node /home/z/my-project/node_modules/.bin/next build --experimental-build-mode compile "
+    },
+    {
+      "pid": 11019,
+      "rssMB": 169.2,
+      "cmd": "node /home/z/my-project/.next/build/postcss.js 36051 "
+    },
+    {
+      "pid": 10924,
+      "rssMB": 8.6,
+      "cmd": "bun run build "
+    },
+    {
+      "pid": 10926,
+      "rssMB": 3.1,
+      "cmd": "/usr/bin/bash -c RAYON_NUM_THREADS=1 next build --experimental-build-mode compile && RAYON"
+    }
+  ],
+  "prodServerRSSDuringBuildMB": 176,
+  "buildLogTail": " | ○  (Static)   prerendered as static content | ƒ  (Dynamic)  server-rendered on demand",
+  "method": "tree-sampler (sum RSS of full process tree, 1s interval) — /usr/bin/time unavailable in container",
+  "finishedAt": "2026-10-06T05:49:24.441058+00:00"
+}
