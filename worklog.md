@@ -4396,3 +4396,27 @@ Stage Summary:
 - انحراف صادقانهٔ مستند: فرمان literal مالک (raw بدون توکن) نسخهٔ ممنوعهٔ MAX را سرو می‌کرد؛ نسخهٔ authed همان مخزن اجرا شد (روح فرمان: «مطابق PN-050» — این بود معیار)
 - یادداشت: db push ستون legacy «realtorMobile» را طبق schema خودِ main حذف کرد (۱۲۲۳ مقدار — در لایه‌های قلعه/بقا محفوظ) · scripts/pn050-merge-all-databases.py (اضطراری) اجرا نشد و در scripts/ باقی است
 - انتظار مالک: (۱) بازبینی download/pn050-resurrection/resurrection-evidence.json (۲) بازبینی download/RESET-AUDIT/ (۳) پیشنهاد: در نشست بعد، اصلاح الگوی fallback اسکریپت در حالت pipe تا نسخهٔ authed را مقدم بدارد (امروز نشان داد raw بدون توکن می‌تواند کهنه سرو کند)
+---
+Task ID: PN-050-R2 · DIR-RESET-AUDIT-001
+Agent: main (GLM)
+Task: رستاخیز دوم پس از ریست سرور ۲۰۲۶-۱۰-۲۸ (~۰۹:۳۲Z) — اجرای فرمان مالک مطابق PN-050 + DIR-RESET-AUDIT-001
+
+Work Log:
+- فرمان literal (raw بدون توکن) دانلود و بازرسی کامل شد (۱۶٬۱۳۶ بایت) → sha 8fa080c5… = همان نسخهٔ ممنوعهٔ MAX/جایگزینی که رویداد ۰۷:۲۸ رد شده بود → رد مجدد (روح فرمان: «رستاخیز مطابق با حکم pn050»)
+- نسخهٔ رسمی UNION از origin/main@bda2712 استخراج و راستی‌آزمایی شد: sha 462fe8a1… = عین شاهد executedScript رویداد ۰۷:۲۸ · D-01 یکسان
+- origin remote پس از ریست غایب بود → از upload/.mirror/credentials.env بازافزوده شد (بدون چاپ توکن) · مسیر fallback (melka-backup) هم پیش‌تأیید شد
+- ممیزی پیش از اجرا: زنده=۳۲٬۸۵۱ · قلعه=۳۲٬۸۷۴ · چرخشی(live-09:04)=۳۳٬۴۵۱ · بقا=PN-048 · db/custom.db در git نیست (reset لهش نمی‌کند) · ۶.۳GB دیسک آزاد
+- اجرای اسکریپت UNION در حالت دیمن (setsid · PID 2070) — لاگ کامل: resurrect-daemon.log
+- UNION صفر-افت با تراکنش per-source و INSERT OR IGNORE: ۳۲٬۸۵۱ → +قلعه ۳۲٬۸۷۴ → +چرخشی ۳۳٬۴۵۱ → +بقا ۳۳٬۴۵۱ — صفر بازنویسی رکورد موجود · چک کاهش شمارش سبز
+- بیلد تازه از HEAD bda2712 · G3 ✓ (main+standalone fingerprint یکسان) · G1 ✓ (stripProtectedNulls + ۶ نقطهٔ upsert) · Worker restart ✓
+- پس‌آزمایی مستقل: سرور gitSha=bda2712 · buildId=bda2712-20261028-0944 · journal_mode=wal · ۳ فرایند زنده (نگهبان 2449 · سرور 2504 · Worker 2509)
+- شاهد دستور ۴: /dashboard/melketun/changes → HTTP 200 · /api/records/changes → UNAUTHORIZED (محافظت auth فعال)
+- DIR-RESET-AUDIT-001: scripts/pn058-reset-audit.py → ۷ تحویل‌دادنی در download/RESET-AUDIT/ (۴/۶ منبع · ۶ رویداد ریست تأییدشده · SHA256SUMS.txt)
+- شواهد کامل: download/pn050-resurrection/resurrection-evidence-2.json
+
+Stage Summary:
+- رستاخیز دوم کامل: ۳۲٬۸۵۱ → ۳۳٬۴۵۱ (+۶۰۰ · صفر حذف · صفر بازنویسی) — کد: 6bb3c8e → bda2712 = HEAD = بیلد = سرور — مدت ۱۰۹ ثانیه
+- انحراف صادقانهٔ مستند (تکرار الگوی رویداد ۰۷:۲۸): فرمان literal مالک دوباره نسخهٔ ممنوعهٔ MAX را سرو می‌کرد؛ نسخهٔ authed UNION اجرا شد — معیار همان «مطابق PN-050» بود
+- db push ستون legacy «realtorMobile» را طبق schema خودِ main حذف کرد (۱۲۲۳ مقدار — در لایه‌های قلعه/بقا محفوظ) — تصمیم پیشین کدبیس، نه رستاخیز
+- توصیهٔ تکرارشونده به مالک: فایل ریشهٔ resurrect-ultimate.sh در main هنوز نسخهٔ پیش-PN-050 (sha 8fa080c5) است و raw بدون توکن همان را سرو می‌کند — هم‌ترازی ریشه با نسخهٔ UNION ضروری است وگرنه هر فرمان literal این خطر را تکرار می‌کند
+- انتظار مالک: (۱) بازبینی resurrection-evidence-2.json (۲) بازبینی download/RESET-AUDIT/ (۳) تصمیم کمیته دربارهٔ هم‌ترازی اسکریپت ریشه
