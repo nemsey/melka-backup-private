@@ -4445,3 +4445,26 @@ Stage Summary:
 - db push ستون legacy «realtorMobile» را طبق schema خودِ main حذف کرد (۱۲۲۳ مقدار — در لایه‌های قلعه/بقا محفوظ) — تصمیم پیشین کدبیس
 - پیشنهاد نشست بعد: در حالت pipe اسکریپت، نسخهٔ محلیِ هم‌sha با main به دانلود مجدد ترجیح داده شود (دفاع در برابر relic لبه)
 - انتظار مالک: (۱) بازبینی resurrection-evidence-3.json (۲) تصمیم دربارهٔ بازگشایی فرمان literal authed (۳) صرف‌نظر از ?t= در URL چون لبهٔ CDN آن را نادیده می‌گیرد
+---
+Task ID: RELAY-CONN-FIX-001
+Agent: main (GLM)
+Task: رفع ناتصلی رلهٔ موبایل ترموکس — دستور نصب نشانی داخلی VPC می‌ساخت (curl 28 · Poco F3 · ۲۰۲۶-۱۰-۲۸)
+
+Work Log:
+- علامت: اسکرین‌شات مالک — curl (28) Failed to connect to ws-eccdd-a-a-dc-hlsirbfftv.cn-hongkong-vpc.fcapp.run:80 after 32184 ms · کد = enrollCode دستگاه امروز (attemptCount=0 — درخواست هرگز به سرور نرسید)
+- تشخیص: نشانی VPC داخلی زیرساخت پیش‌نمایش، غیرقابل‌مسیریابی از اینترنت (http:80 بی‌اعتبار برای FC)؛ این نشانی در هیچ فایل پروژه نیست — در لحظهٔ صدور کد از هدر x-forwarded-host زنجیرهٔ پراکسی برداشته شد (getPublicBaseUrl fallback)
+- ریشه: scripts/pn012/escrow-manager.ts با فهرست سفید ۴کلیدی، در هر بوت/اسپاون فایل‌های escrow را بازنویسی و کلیدهای عملیاتی رله را می‌زد → پس از سه بازنشانی امروز، MELK_PUBLIC_BASE_URL از همهٔ لایه‌ها تهی شد. منبع حقیقتِ مقدار: upload/.runtime/env.platform.json بازمانده (preview-chat-35e0018b…space-z.ai)
+- آسیب جانبی همان ریشه: MELK_ARM_CIRCUIT_DISABLED هم زدوده شده بود → فیوز PN-029 مسلح → سه قفل ۲۴ساعتهٔ فعال روی arus/pm/gap-api.melketabriz.ir (نقض ناوردای A-3 · ساخته ۱۳:۱۱ UTC در پنجرهٔ کهنگی)
+- بازگردانی (ابزار ماندگار scripts/fix-relay-public-url.py · fill-missing · پشتیبان: upload/.runtime/relay-fix-backup-20261028T152303Z): MELK_PUBLIC_BASE_URL + MELK_PROXY_SECRET + MELK_ARM_RELAY_MODE=mobile + MELK_ARM_CIRCUIT_DISABLED=1 در چهار مکان (.env.local · env.platform.json · دو escrow متنی)؛ MELK_RELAY_ALT_URL فقط env.platform.json/.env.local (قرارداد B-3/B-4)
+- ترمیم ریشه (کد): SECRET_FIELDS در escrow-manager.ts از ۴ به ۹ کلید (هم‌تراز BOOT_SECRET_KEYS + MELK_SYNC_MODE) + بازگردانی کلیدها در rebuildEnvPlatform؛ کلیدهای دوران Worker عمداً خارج
+- نرمال‌سازی رسمی: scripts/fix-pn033-fuse.py → انقضای ۳ قفل مسلح (صفر حذف) · بازچرخی env.escrow.enc با مجموع تازه
+- ری‌استارت‌ها: سرور 4059 → 5743 (نگهبان · ~۶ث · بوت درونی کلیدها را از دیسک خواند) · Worker 4403 → 6251 (قفل TTL تصرف شد)
+- تأیید: bootstrap محلی با کد ساختگی → 403 invalid (نه 503) · با هدر خصمانهٔ VPC هم env برنده · زنجیرهٔ عمومی کامل (https://preview-chat-… · --http1.1 · UA مرورگر = دقیقاً مسیر ترموکس) → 403 در 90ms · enroll واقعی (poco-f3-197068): installCommand اکنون https://preview-chat-35e0018b… دارد و fcapp.run غایب · escrow status consistent=true
+- رگرسیون: ۴ پروندهٔ مرتبط (platform-env-fallback · pn011 · pn012 · pn033) → ۴۲ pass · 0 fail (پیش از اصلاح: 2 fail)
+
+Stage Summary:
+- اتصال رله تعمیر شد: نشانی دستور نصب از نقطهٔ انتهایی داخلی VPC غیرقابل‌دسترس به نشانی عمومی https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai برگشت
+- ریشه برای همیشه رفع شد: escrow-manager دیگر کلیدهای عملیاتی رله را نمی‌زند؛ هر سه لایهٔ escrow (دو متنی + رمزنگاری‌شدهٔ گیت) کلیدها را حمل می‌کنند → بازنشانی‌های آینده خودترمیم
+- فیوز PN-029 مجدداً برای همیشه خاموش + ۳ قفل ۲۴ساعتهٔ مسلح‌شده در پنجرهٔ ریست منقضی شد (ناوردای A-3 سبز)
+- دستور نصب آمادهٔ مصرف برای مالک صادر شد (poco-f3-197068 · کد بخشندهٔ ۳تلاشی · انقضای ۱۵:۵۴Z) — هیچ تلاشی مصرف نشد؛ هر ۳ برای گوشی محفوظ
+- انتظار مالک: (۱) اجرای دستور نصب در ترمیوکس پیش از ۱۹:۲۴ IRST یا صدور کد تازه از تنظیمات (۲) بازبینی download/relay-fix/relay-connection-fix-evidence.json
