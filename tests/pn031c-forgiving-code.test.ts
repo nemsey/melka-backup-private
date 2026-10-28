@@ -311,7 +311,7 @@ describe("PN-031-C · F) سازگاری ساختاری — روت تازه، ر�
     const manifest = JSON.parse(readFileSync(join(REPO, "download/pn012/api-versioning.json"), "utf8"));
     // PN-035 (ن۰۵۷): +۱ روت relay/job/[id] · PN-038 (ن۰۶۳): +۱ glm/probe +۱ relay/health
     // PN-039 (ن۰۶۴/گام ۴): +۱ owner-notes/[entity]/[id] — یادداشت مالک M1/M2
-    expect(manifest.totalRoutes).toBe(115); // PN-043: +integrations/melketun · PN-044: +integrations/melketun/sync · PN-045/فاز ۳: +api/v1/info (114) · PN-047: +crm/melketun/funnel (115)
+    expect(manifest.totalRoutes).toBe(119); // PN-047: 115 · RELAY-CONN-FIX-001: +۳ روت · PN-051 (DIR-PN051-SUPREME): +api/sync/lcpp (119) — بازتولید با مولد رسمی generate-v1-aliases
     // ن۰۶۳: بازتولید مانیفست با مولد رسمی (generate-v1-aliases) — نام فیلد: aliasOf
     const key = (r: { aliasOf?: string; original?: string }) => r.aliasOf ?? r.original ?? "";
     expect(manifest.routes.some((r: { aliasOf?: string; original?: string }) => key(r) === "/api/admin/relay/code-status")).toBe(true);

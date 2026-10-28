@@ -118,6 +118,8 @@ export const WORKER_JOB_IDS = {
   relayHealthCheck: "relay-health-check",
   dbHealthProbe: "db-health-probe", // PN-041-R · شورا-ن۰۶۸ — خوددرمانی DB قفل‌شده
   melketunSync: "melketun-sync", // PN-044 · شورا-ن۰۸۸ — هماهنگ‌سازی CRM ملکتون (۶ ساعت)
+  lcppCycle: "lcpp-cycle", // PN-051 — خط‌لوله فهرست‌های List-Centric (۳۰ دقیقه)
+  lcppWatch: "lcpp-watch", // PN-051 · فرمان ۷ — پاسخ ≤۶۰ث به «بروزرسانی دستی» مالک
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -385,6 +387,45 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       run: async (database) => {
         const { runIntelligenceDaemonTick } = await import("@/lib/intelligence/daemon");
         return runIntelligenceDaemonTick(database);
+      },
+    });
+  }
+
+  // ── PN-051 · DIR-PN051-SUPREME — خط‌لوله فهرست‌های List-Centric (LCPP) ──
+  // فرمان ۳/۴/۵/۶: پنج ماژول مستقل + فاز A/B + Bulk upsert خام + Delta.
+  // چرخهٔ منظم (پیش‌فرض ۳۰ دقیقه — MELK_LCPP_INTERVAL_MINUTES · حداقل ۵).
+  if (process.env.MELK_LCPP !== "disabled") {
+    const lcppIntervalMinutes = envInt("MELK_LCPP_INTERVAL_MINUTES", 30, 5);
+    jobs.push({
+      id: WORKER_JOB_IDS.lcppCycle,
+      title: "خط‌لوله فهرست‌های LCPP (PN-051)",
+      intervalMs: lcppIntervalMinutes * 60_000,
+      firstRunDelayMs: 90_000,
+      run: async (database) => {
+        const { runLcppCycle } = await import("@/sync/lists");
+        const result = await runLcppCycle(database);
+        return (result ?? { skipped: true }) as unknown as Record<string, unknown>;
+      },
+      toDomain: (result) => {
+        if (result && typeof result === "object") return result as Record<string, unknown>;
+        return {};
+      },
+    });
+    // فرمان ۷ — «بروزرسانی دستی» مالک: پاسخ ≤۶۰ثانیه (پرچم → اجرای فوری چرخه)
+    jobs.push({
+      id: WORKER_JOB_IDS.lcppWatch,
+      title: "نگهبان درخواست فوری LCPP (فرمان ۷)",
+      intervalMs: 60_000,
+      firstRunDelayMs: 45_000,
+      run: async (database) => {
+        const { peekForceRefresh, runLcppCycle } = await import("@/sync/lists");
+        if (!peekForceRefresh()) return { idle: true } as unknown as Record<string, unknown>;
+        const result = await runLcppCycle(database);
+        return (result ?? { skipped: true }) as unknown as Record<string, unknown>;
+      },
+      toDomain: (result) => {
+        if (result && typeof result === "object") return result as Record<string, unknown>;
+        return {};
       },
     });
   }
