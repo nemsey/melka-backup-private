@@ -7,6 +7,7 @@
  *
  * ترتیب الزامی بخش‌ها (دستور مالک — گام صفر-۷):
  *   ۱. اتصال به ملک تبریز (پیکرهٔ یکپارچهٔ همهٔ سامانه‌های ملک تبریز: مدیریت + ARM + PM + GAP + سامانه عمومی)
+ *   ۱-ب. اتصال به ملکتون (PN-046/گام صفر — پیکرهٔ یکپارچهٔ همانند تبریز، جایگاه: درست زیر تبریز؛ حساب شخصی = یوزر + پسورد)
  *   ۲. اتصال به دیوار
  *   ۳. اتصال به اینستاگرام
  *   ۴. مغز هوشمند و یادگیر ملکا
@@ -20,6 +21,9 @@ import { BookOpen, PenLine } from "lucide-react";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 // P6546/گام صفر — پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز»
 import { MelkTabrizConnectionSection } from "./MelkTabrizConnectionSection";
+// PN-046/گام صفر (دستور مالک ۱۴۰۵/۰۷/۲۸) — پیکرهٔ یکپارچهٔ «اتصال به ملکتون»:
+// همانند الگوی تبریز ولی با حساب شخصی یوزر/پسورد — جایگاه: درست زیر پیکرهٔ تبریز
+import { MelketunConnectionSection } from "./MelketunConnectionSection";
 import { DivarConnectionSection } from "./DivarConnectionSection";
 import { InstagramConnectionSection } from "./InstagramConnectionSection";
 import { BrainStatusSection } from "./BrainStatusSection";
@@ -27,10 +31,12 @@ import { BrainStatusSection } from "./BrainStatusSection";
 import { OpportunityJobsSection } from "./OpportunityJobsSection";
 // P6546/گام صفر-۶ — حساب کاربری و تنظیمات کلی (ادغام چهار بخش)
 import { AccountGeneralSection } from "./AccountGeneralSection";
-// PN-017 (شورا-ن۰۲۱ الف): بخش شاهکار «مدیریت کاربران ملک تبریز» — جایگاه ۸ (جابه‌جایی با دسترسی کارشناسان)
-import { MelkTabrizUsersSection } from "./MelkTabrizUsersSection";
+// PN-043-F1 (شورا-ن۰۸۷): UI «مدیریت کاربران ملک تبریز» از تنظیمات حذف شد — دادهٔ مقدس در DB محفوظ
+// (کامپوننت MelkTabrizUsersSection نگه‌داری شده — گارد audit-stealth-users فایل را می‌خواند)
 // PN-017 (شورا-ن۰۲۱ ب): «مدیریت دسترسی کارشناسان ملکا» — جایگاه ۹ (لایهٔ قدیمی PN-008 BLOCK 7)
 import { PersonnelAccessSection } from "./PersonnelAccessSection";
+// PN-031-B (شورا-ن۰۳۹): بنر تازگی سرور — «سرور روی HEAD است» / هشدار جبران خودکار
+import { BuildFreshnessBanner } from "./BuildFreshnessBanner";
 
 export function SettingsPage({ onBack }: TilePageProps) {
   void onBack; // بازگشت از پوستهٔ کاشی مدیریت می‌شود
@@ -46,8 +52,15 @@ export function SettingsPage({ onBack }: TilePageProps) {
         </CardContent>
       </Card>
 
+      {/* PN-031-B (شورا-ن۰۳۹): بنر تازگی سرور — بالای همهٔ بخش‌ها (فقط مالک) */}
+      <BuildFreshnessBanner />
+
       {/* ۱ — اتصال به ملک تبریز (پیکرهٔ یکپارچه — گام صفر-۳) */}
       <MelkTabrizConnectionSection />
+
+      {/* ۱-ب — PN-046/گام صفر (دستور مالک): اتصال به ملکتون — پیکرهٔ یکپارچه،
+          درست «زیر» پیکرهٔ یکپارچهٔ اتصال سامانه‌های ملک تبریز (نکتهٔ دستور) */}
+      <MelketunConnectionSection />
 
       {/* ۲ — اتصال به دیوار */}
       <DivarConnectionSection />
@@ -64,8 +77,7 @@ export function SettingsPage({ onBack }: TilePageProps) {
       {/* ۷ — حساب کاربری و تنظیمات کلی (ادغام: حساب + تم + زبان + راهنما — گام صفر-۶) */}
       <AccountGeneralSection />
 
-      {/* ۸ — PN-017 (دستور مالک ۱۴۰۵/۰۷/۱۹): شاهکار «مدیریت کاربران ملک تبریز» (جایگاه پیشین دسترسی کارشناسان — جابه‌جایی کامل) */}
-      <MelkTabrizUsersSection />
+      {/* ۸ — PN-043-F1 (شورا-ن۰۸۷): «مدیریت کاربران ملک تبریز» حذف شد (UI حذف · دادهٔ مقدس در DB محفوظ) */}
 
       {/* ۹ — PN-017 (دستور مالک ۱۴۰۵/۰۷/۱۹): «مدیریت دسترسی کارشناسان ملکا» (جایگاه پیشین مدیریت کاربران — جابه‌جایی کامل) */}
       <PersonnelAccessSection />

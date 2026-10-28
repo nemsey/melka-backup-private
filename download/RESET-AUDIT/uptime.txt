@@ -1,0 +1,26 @@
+# DIR-RESET-AUDIT-001 — منبع ۲: uptime/proc + منبع ۵: PID history
+
+$ uptime -s
+2026-10-28 21:16:25
+
+$ cat /proc/uptime
+681.33 280.51
+
+$ cat /proc/stat | grep btime
+btime 1793222185
+
+$ who -b
+system boot  Oct 28 21:16
+
+$ last reboot
+/bin/sh: 1: last: not found
+
+بوت ماشین: 2026-10-28 21:16:25 UTC = 2026-10-29 00:46:25 IRST (پنجشنبه 00:46)
+مبنای ISO: btime=1793222185 (681 ثانیه uptime در لحظهٔ ممیزی)
+
+$ ps -eo pid,lstart,cmd (سرویس‌های زنده)
+2547 Wed Oct 28 21:25:27 2026 bash /home/z/my-project/scripts/prod-watchdog.sh
+ 2997 Wed Oct 28 21:27:00 2026 bun /home/z/my-project/.next/standalone/server.js
+ 3008 Wed Oct 28 21:27:00 2026 /usr/local/bin/bun /home/z/my-project/scripts/runtime/worker.ts
+
+تفسیر: بوت ماشین ۲۰۲۶-۱۰-۲۷ ۱۵:۵۴ IRST بود؛ ریستِ نشست ۱۷:۱۶ IRST — دو لایهٔ مستقل
