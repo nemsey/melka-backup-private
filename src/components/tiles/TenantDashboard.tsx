@@ -20,6 +20,8 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { QueryProvider } from '@/components/app/QueryProvider'
+import { LcppSyncStatus } from '@/components/tiles/LcppSyncStatus'
 import { tileRegistry } from '@/core/tiles/tile-registry'
 import { useAppStore } from '@/lib/client/store'
 import { api } from '@/lib/client/api'
@@ -197,6 +199,11 @@ export function TenantDashboard({ tenantId }: TenantDashboardProps) {
           </span>
         </div>
       </div>
+
+      {/* PN-051 · فرمان ۴/۷ — نشانگر فاز A/B + بروزرسانی دستی (خط قرمز: هرگز صفحهٔ بی‌نشانگر) */}
+      <QueryProvider>
+        <LcppSyncStatus />
+      </QueryProvider>
 
       {!sessionReady ? (
         <div

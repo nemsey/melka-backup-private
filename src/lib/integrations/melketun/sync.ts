@@ -157,7 +157,7 @@ function unescapeHtml(s: string): string {
 }
 
 /** HTML صفحهٔ Inertia → props (JSON تمیز داخل data-page — بدون cheerio) */
-function extractInertiaProps(html: string): Record<string, unknown> | null {
+export function extractInertiaProps(html: string): Record<string, unknown> | null {
   const m = html.match(/<div[^>]*id="app"[^>]*data-page="([^"]*)"/);
   if (!m) return null;
   try {
