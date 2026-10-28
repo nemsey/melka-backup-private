@@ -4420,3 +4420,28 @@ Stage Summary:
 - db push ستون legacy «realtorMobile» را طبق schema خودِ main حذف کرد (۱۲۲۳ مقدار — در لایه‌های قلعه/بقا محفوظ) — تصمیم پیشین کدبیس، نه رستاخیز
 - توصیهٔ تکرارشونده به مالک: فایل ریشهٔ resurrect-ultimate.sh در main هنوز نسخهٔ پیش-PN-050 (sha 8fa080c5) است و raw بدون توکن همان را سرو می‌کند — هم‌ترازی ریشه با نسخهٔ UNION ضروری است وگرنه هر فرمان literal این خطر را تکرار می‌کند
 - انتظار مالک: (۱) بازبینی resurrection-evidence-2.json (۲) بازبینی download/RESET-AUDIT/ (۳) تصمیم کمیته دربارهٔ هم‌ترازی اسکریپت ریشه
+---
+Task ID: PN-050-R3 · DIR-RESET-AUDIT-001
+Agent: main (GLM)
+Task: رستاخیز سوم پس از ریست سرور ۲۰۲۶-۱۰-۲۸ (~۱۲:۱۰Z) + اصلاح ریشهٔ خطر (PN-042-A) — مطابق PN-050 + DIR-RESET-AUDIT-001
+
+Work Log:
+- فرمان literal (raw بدون توکن) دانلود شد → sha 8fa080c5… = نسخهٔ ممنوعهٔ MAX/جایگزینی (رد سوم) — لاگ کامل بازرسی در شواهد
+- ارزیابی وضعیت: زنده=۳۲٬۸۵۱ · قلعه=۳۲٬۸۷۴ · چرخشی(11:46)=۳۳٬۴۵۹ · HEAD=6bb3c8e · origin غایب (بازافزوده از credentials.env بدون چاپ توکن) · سرور stale از 12:10
+- **اصلاح ریشه (کامیت 726e908)**: هم‌ترازی resurrect-ultimate.sh ریشه با نسخهٔ رسمی UNION (sha 8fa080c5 → 462fe8a1) — byte-copy، صفر منطق جدید؛ اجرای توصیهٔ مستند دو نشست قبل؛ بازگرداندن ناوردای «root = raw = مسیر رسمی»
+- راستی‌آزمایی اصلاح: origin/main pushed_at 14:24:58Z · raw با توکن = 462fe8a1 (تازه) · API: مخزن عمومی، default_branch=main
+- **کشف CDN**: raw بدون توکن از لبهٔ cache-hkg حتی با ?t= و پس از انقضای max-age=300 همان relic کهنه (8fa080c5) را سرو می‌کند — تا همگرایی، فرمان literal فقط با هدر Authorization ایمن است (الگوی مستند سربرگ اسکریپت)
+- اجرای رستاخیز UNION با اسکریپت رسمی محلیِ راستی‌آزمایی‌شده (بایت‌به‌بایت همان ریشهٔ جدید) — دیمن setsid · PID 2696 — لاگ: resurrect-daemon.log
+- UNION صفر-افت: ۳۲٬۸۵۱ → +قلعه ۳۲٬۸۷۴ → +چرخشی(11:46) ۳۳٬۴۵۹ → +بقا ۳۳٬۴۵۹ — INSERT OR IGNORE · چک کاهش سبز
+- بیلد تازه از HEAD 726e908 · G3 ✓ (main+standalone) · G1 ✓ (stripProtectedNulls + ۶ نقطهٔ upsert) · Worker restart ✓
+- پس‌آزمایی مستقل: سرور gitSha=726e908 · buildId=726e908-20261028-1426 · journal_mode=wal · ۳ فرایند زنده (نگهبان 3036 · سرور 3091 · Worker 3096)
+- DIR-RESET-AUDIT-001: scripts/pn058-reset-audit.py → ۷ تحویل‌دادنی در download/RESET-AUDIT/ (۴/۶ منبع · ۶ رویداد ریست · شکاف جاری ۰)
+- شواهد کامل: download/pn050-resurrection/resurrection-evidence-3.json
+
+Stage Summary:
+- رستاخیز سوم کامل: ۳۲٬۸۵۱ → ۳۳٬۴۵۹ (+۶۰۸ · صفر حذف · صفر بازنویسی) — کد: 6bb3c8e → 726e908 = HEAD = بیلد = سرور — مدت ۱۰۸ ثانیه
+- **ریشهٔ خطر برای همیشه رفع شد**: فایل ریشه در main از این پس نسخهٔ UNION است؛ فرمان literal مالک پس از همگرایی CDN بی‌خطر خواهد بود
+- کشف صادقانهٔ جدید: relic لبهٔ CDN برای raw بدون توکن — در فاصلهٔ گذار، فرمان literal باید authed اجرا شود (الگوی سربرگ اسکریپت)
+- db push ستون legacy «realtorMobile» را طبق schema خودِ main حذف کرد (۱۲۲۳ مقدار — در لایه‌های قلعه/بقا محفوظ) — تصمیم پیشین کدبیس
+- پیشنهاد نشست بعد: در حالت pipe اسکریپت، نسخهٔ محلیِ هم‌sha با main به دانلود مجدد ترجیح داده شود (دفاع در برابر relic لبه)
+- انتظار مالک: (۱) بازبینی resurrection-evidence-3.json (۲) تصمیم دربارهٔ بازگشایی فرمان literal authed (۳) صرف‌نظر از ?t= در URL چون لبهٔ CDN آن را نادیده می‌گیرد
