@@ -26,7 +26,6 @@ import { buildCustomerDirectory, directoryStats, filterDirectory, type Directory
 import type { CustomerClubSummary, ContractRealtorShare } from "@/lib/melk-api/types";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
-import { catalogUserScope } from "@/lib/access/scope";
 
 function parseJson<T>(raw: string | null | undefined, fallback: T): T {
   if (!raw) return fallback;
@@ -131,13 +130,7 @@ export async function GET(request: NextRequest) {
       if (t.requestCustomer) parties.push({ fullName: t.requestCustomer, role: "BUYER", source: "transaction", date });
     }
     // مالکان آگهی‌های ARM (لایهٔ ۲ غنی‌شده — ownerName/ownerMobile عین کاتالوگ)
-    // PN-049/گام ۲-الف — قانون حساب کاربری: دامنهٔ فهرست‌ها اینجا هم برقرار است —
-    // کاربر غیر-مالک فقط حضور مشتریان رکوردهای خودش را می‌بیند؛ مالک همه را.
-    const clubScope = catalogUserScope(guard);
-    const armListingRows = await getPropertyRecordRepository().listArmCatalog(
-      { registrarNameNorm: clubScope.kind === "OWN" ? clubScope.nameNorm : undefined },
-      25000
-    );
+    const armListingRows = await getPropertyRecordRepository().listArmCatalog({}, 25000);
     for (const row of armListingRows.rows) {
       if (row.ownerName || row.ownerMobile) {
         parties.push({
@@ -150,10 +143,7 @@ export async function GET(request: NextRequest) {
       }
     }
     // درخواست‌دهندگان ARM (کاتالوگ — customerName + customerMobile)
-    const armRequestRows = await getRequestRepository().listArmCatalog(
-      { registrarNameNorm: clubScope.kind === "OWN" ? clubScope.nameNorm : undefined },
-      25000
-    );
+    const armRequestRows = await getRequestRepository().listArmCatalog({}, 25000);
     for (const r of armRequestRows.rows) {
       if (r.customerName || r.customerMobile) {
         parties.push({

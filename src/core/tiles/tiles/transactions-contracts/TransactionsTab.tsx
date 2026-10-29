@@ -55,7 +55,7 @@ import { api, apiBlob, downloadBlob } from "@/lib/client/api";
 import { useToast } from "@/hooks/use-toast";
 import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/core/agent/analyzers";
 import { classifyContract, CONTRACT_KIND_FILTER_LABELS, CONTRACT_KIND_FILTER_VALUES } from "@/lib/contract-classify";
-import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
+import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull } from "@/lib/format";
 // P6547/گام پنجم — نظام رنگ مشترک فیلتر↔فهرست (هارمونی تضمینی) + شعبهٔ PM در حق‌السهم
 // PN-009 مرحله E — رنگ KPI/چارت/سرستون‌ها نیز از رجیستری یگانه (قانون ۱۲/۱۴ دستور)
 import { branchBadgeClass, valueSoftClass, valueSolidClass, valueIconPair, valueChartVar } from "@/lib/value-colors";
@@ -63,14 +63,11 @@ import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { ContractFileDialog, type ContractDocData } from "./ContractFileDialog";
-import { MelketunPipelineSection } from "./MelketunPipelineSection";
 // PN-020/گام اول-ج۱ — برچسب فارسی وضعیت معامله از لایهٔ غنی‌سازی
 import { txStatusLabel } from "@/lib/melk-api/tx-enrichment";
 // P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
 import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
 import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
-// PN-046/گام اول-۲ (دستور مالک: ستون اطلاعات در «تمامی» فهرست‌ها) — فهرست معاملات (M3)
-import { InfoButton } from "@/components/info/InfoButton";
 
 
 /** برچسب فارسی سری‌های نمودار روند (B.۱ — ملکا-شورا-۱۴۰۵-۰۱۸) */
@@ -201,7 +198,7 @@ interface TxResponse {
 
 const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
 
-export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSignal, tenantId }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode; syncDoneSignal?: number; tenantId?: "tabriz" | "melketun" }) {
+export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSignal }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode; syncDoneSignal?: number }) {
   // PN-009 مرحله E — لحن‌های معنایی از رجیستری: مبایعه‌نامه=سبز، اجاره=بنفش (هم‌خانوادهٔ چیپ/ستون)
   const saleTone = valueIconPair("مبایعه‌نامه");
   const rentTone = valueIconPair("اجاره");
@@ -231,8 +228,8 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
     // P6530/گام ۳ — فیلترهای تمام ستون‌ها
     if (applied.sellerName) params.set("sellerName", applied.sellerName);
     if (applied.buyerName) params.set("buyerName", applied.buyerName);
-    if (applied.priceFrom) params.set("priceFrom", parsePriceInput(applied.priceFrom));
-    if (applied.priceTo) params.set("priceTo", parsePriceInput(applied.priceTo));
+    if (applied.priceFrom) params.set("priceFrom", applied.priceFrom);
+    if (applied.priceTo) params.set("priceTo", applied.priceTo);
     // PN-011 ثالثاً — فایل قرارداد چیپی: فقط وقتی «دقیقاً یک» گزینه انتخاب شده فیلتر می‌شود (هر دو = همه)
     if (applied.hasContracts.length === 1) params.set("hasContract", applied.hasContracts[0]);
     // BLOCK D — نوع قرارداد چندگانه: ?contractType=…&contractType=… (تهی = همه)
@@ -242,12 +239,10 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
     params.set("offset", "0");
     params.set("sortBy", sortBy);
     params.set("sortDir", "desc");
-    // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
-    params.set("tenantId", tenantId ?? "tabriz");
 
     const res = await api<TxResponse>(`/api/crm/transactions?${params.toString()}`);
     return res;
-  }, [applied, sortBy, tenantId]);
+  }, [applied, sortBy]);
 
   const { data, loading, reload } = useTileData(fetchTransactions, {
     errorTitle: "خطا در دریافت معاملات",
@@ -377,28 +372,6 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
 
   // قانون ۰۳۵-B/ج-۸ — کشیدن برای تازه‌سازی
   const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void fetchTransactions());
-
-  // PN-047/گام اول-۲ — ملکتون: نمای مختص کسب‌وکار (خط لولهٔ فروش CRM) جایگزین
-  // بخش‌های تبریز-محور می‌شود؛ فهرست زیر آن صادقانه خالی است (صفر معامله در CRM).
-  if (tenantId === "melketun") {
-    return (
-      <div className="space-y-6">
-        <PtrIndicator innerRef={ptrRef} spinning={ptrSpinning} />
-        <MelketunPipelineSection />
-        {/* حالت خالی فهرست — صادقانه (۰ معامله در CRM ملکتون) */}
-        <Card>
-          <CardContent className="p-6 text-center space-y-2" id="m9-melketun-empty">
-            <p className="text-sm font-bold">فهرست معاملات ملکتون: صفر رکورد (عین CRM)</p>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              هیچ پرونده‌ای در CRM ملکتون به مرحلهٔ «قرارداد» یا «معاملهٔ موفق» قیف فروش نرسیده است — به محض
-              ثبت نخستین معامله در CRM و اجرای همگام‌سازی بعدی، رکوردها این‌جا ظاهر می‌شوند.
-              داده‌های ملک تبریز کاملاً دست‌نخورده‌اند (جداسازی tenant — PN-044).
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -550,10 +523,9 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
         </CardHeader>
         {(!isMobile || filtersOpen) && (
         <CardContent>
-          {/* PN-028/خامساً-ف (دستور مالک) — فیلدهای متنی دوتایی: هر ردیف دو فیلد روبروهم */}
           <form
             id="m3-filters-form"
-            className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
             onSubmit={(e) => {
               e.preventDefault();
               setApplied({ ...filters });
@@ -600,8 +572,8 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
             <div className="space-y-1.5">
               <Label>قیمت (تومان)</Label>
               <div className="grid grid-cols-2 gap-2">
-                <Input id="f-priceFrom" aria-label="قیمت از (تومان)" inputMode="numeric" placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", formatPriceInput(e.target.value))} className="text-[11px] font-bold" />
-                <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", formatPriceInput(e.target.value))} className="text-[11px] font-bold" />
+                <Input id="f-priceFrom" aria-label="قیمت از (تومان)" inputMode="numeric" placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", e.target.value)} className="text-[11px] font-bold" />
+                <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", e.target.value)} className="text-[11px] font-bold" />
               </div>
             </div>
             {/* فایل قرارداد — PN-011 ثالثاً: چیپ چندانتخابی (همانند دسته‌بندی — دستور مالک) */}
@@ -670,11 +642,9 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
           کد ملک/کد درخواست فقط کد (دستور ۱ و ۲ مالک)؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
       <Card>
         {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین */}
-        {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
-            ردیف ۱: عنوان «فهرست معاملات» وسط‌چین · ردیف ۲: اکسل کل فهرست + بارگذاری اکسل */}
-        <CardHeader className="py-4 flex flex-col items-center gap-2">
-          <CardTitle className="text-base text-center">فهرست معاملات</CardTitle>
-          <div className="w-full flex items-center justify-between gap-3 flex-wrap">
+        <CardHeader className="py-4 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <CardTitle className="text-base text-center">فهرست معاملات</CardTitle>
             {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
             <Button
               variant="outline"
@@ -692,7 +662,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
               <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
             </Button>
             {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
-            <ExcelImportButton entity="transactions" compact tenantId={tenantId ?? "tabriz"} onImported={() => void fetchTransactions()} />
+            <ExcelImportButton entity="transactions" compact onImported={() => void fetchTransactions()} />
           </div>
           {rows && rows.length > 0 && (
             <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
@@ -720,9 +690,6 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                   setApplied(EMPTY_FILTERS);
                 }}
               />
-              {/* PN-047 — پیام قدیمی ملکتون حذف شد: نمای M9 ملکتون در بالای همین
-                  کامپوننت early-return می‌شود (MelketunPipelineSection) و هرگز
-                  به این بخش تبریز-محور نمی‌رسد. */}
             </div>
           ) : (
             <Table>
@@ -763,10 +730,6 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                     <TableHead>شماره هولوگرام</TableHead>
                     {/* ۱۱ — فایل قرارداد */}
                     <TableHead className="min-w-32">فایل قرارداد</TableHead>
-                    {/* ۱۲ — اطلاعات (PN-046/گام اول-۲: ستون اطلاعات در تمامی فهرست‌ها — فایل متنی کامل هر کد)
-                        ⚠ قانون ساختاری (دستور مالک/گام اول-۳): ستون «اطلاعات» همیشه آخرین ستون این فهرست است —
-                        هر ستون جدیدی در آینده باید «قبل از» همین ستون افزوده شود. سنجاق چپ (RTL) — همیشه قابل‌رویت. */}
-                    <TableHead className="w-24">اطلاعات</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -974,10 +937,6 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                           <FileText className="w-3.5 h-3.5 text-primary" aria-hidden />
                           {t.contractType || t.agency ? "مشاهده و دانلود" : "مشاهده سند"}
                         </Button>
-                      </TableCell>
-                      {/* ۱۲ — اطلاعات: همیشه آخرین سلول (قانون ساختاری گام اول-۳) — فایل متنی کامل */}
-                      <TableCell>
-                        <InfoButton tenant={tenantId ?? "tabriz"} type="transaction" code={t.propertyCode} />
                       </TableCell>
                     </TableRow>
                     );

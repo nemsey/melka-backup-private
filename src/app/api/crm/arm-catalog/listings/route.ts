@@ -24,9 +24,8 @@
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
-import { tenantDbValue } from "@/lib/tenants";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
-import { ownerLoginPath, resolveEntityAccess, catalogUserScope } from "@/lib/access/scope";
+import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
 import { getPropertyRecordRepository, getIntegrationRepository, getExpertRepository } from "@/core/repositories";
 import { enrichArmListings } from "@/lib/melk-api/arm-catalog";
@@ -78,9 +77,6 @@ export async function GET(request: NextRequest) {
 
   try {
     const sp = request.nextUrl.searchParams;
-    // PN-044/فاز ۴ (شورا-ن۰۸۸) — tenant همین رندر: 'melketun' → دادهٔ ملکتون؛
-    // پیش‌فرض/هر چیز دیگر → 'melk-tabriz' (رفتار فعلی — صفر شکستن).
-    const tenantId = tenantDbValue(sp.get("tenantId"));
     // P6525 — نرمال‌سازی مرکزی: ارقام فارسی/عربی/لاتین + حروف ي/ك — نتیجه همیشه یکسان
     const code = normalizeFilterInput(sp.get("code")) || undefined;
     const realtorName = normalizeFilterInput(sp.get("realtorName")) || undefined;
@@ -125,8 +121,7 @@ export async function GET(request: NextRequest) {
     // PN-027 · ۵-پ-۴ (جلسهٔ ۰۳۴): پیش‌فرض خاموش — فقط با enrich=1 صریح.
     // کش ۵ دقیقه‌ای: همان کد در پنجرهٔ کش دوباره شبکه نمی‌زند (حذف enrichment اضافی).
     // پس‌زمینه: daemon کاتالوگ هر چرخه غنی‌سازی می‌کند — تازگی داده بدون هزینهٔ جست‌وجو.
-    // غنی‌سازی هدفمند فقط برای tenant تبریز معنا دارد (زنجیرهٔ ARM) — ملکتون بی‌رابطه است
-    const enrichExplicit = sp.get("enrich") === "1" && tenantId === "melk-tabriz";
+    const enrichExplicit = sp.get("enrich") === "1";
     if (enrichExplicit && code && guard.armTokens?.accessToken && !enrichedRecently(code)) {
       try {
         const targeted = await repo.listArmCatalog({ code }, 5);
@@ -142,18 +137,13 @@ export async function GET(request: NextRequest) {
 
     // P6.5-04-i — دامنه فقط از helper مرکزی (تجمیعی §۵.۳؛ مالک ⇒ شاهد owner.read)
     const access = resolveEntityAccess(guard, "property");
-    // PN-049/گام ۲-الف — قانون حساب کاربری: مالک همه؛ کاربر فقط رکوردهای خودش
-    const catalogScope = catalogUserScope(guard);
     const { rows, total } = await repo.listArmCatalog(
       {
-        tenantId,
         code, realtorName, ownerName, priceFrom, priceTo, address, tradeTypes, statuses, activityFrom, activityTo,
         // PN-002 گام ۱ — ستون‌های تازه
         rentalType, viewCountFrom, viewCountTo, meterageFrom, meterageTo, roomsFrom, roomsTo,
         addedToDivar, addedToInsta, lineName, stateName,
         propertyTypes: propertyTypes.length > 0 ? propertyTypes : undefined,
-        // PN-049 — دامنهٔ حساب کاربری (مالک: undefined = صفر فیلتر)
-        registrarNameNorm: catalogScope.kind === "OWN" ? catalogScope.nameNorm : undefined,
       },
       limit
     );
@@ -192,10 +182,9 @@ export async function GET(request: NextRequest) {
 
     await witnessScopedRead(guard, "property", total, access.isOwnerRead, ownerLoginPath(guard));
 
-    // PN-046/گام اول-۱ — تجمع‌ها tenant-scoped: بینش وضعیت/غنی‌سازی هر داشبورد از دادهٔ خودش
-    const counts = await repo.countEnrichment(tenantId);
+    const counts = await repo.countEnrichment();
     // P6530/گام ۱ — بینش توزیع ده‌حالته (بند ۳ — همیشه از کل کاتالوگ، مستقل از فیلتر فعال)
-    const breakdown = await repo.statusBreakdown(tenantId);
+    const breakdown = await repo.statusBreakdown();
     const statusCounts = rollupStatusCounts(breakdown.map((b) => [b.status, b.count] as [string | null, number]));
 
     // ---- P6530/گام ۱ — وضعیت بروزرسانی (بند ۴.۲: تاریخ/ساعت دقیق آخرین بروزرسانی + نقطهٔ ادامه) ----
