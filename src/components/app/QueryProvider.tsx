@@ -6,9 +6,10 @@
  * یک QueryClient برای زیردرخت داشبورد:
  *   · staleTime 60s → در بازهٔ تازگی از کش فوری جواب (revalidate پس‌زمینه) — SWR
  *   · refetchOnWindowFocus → بازگشت به تب = تازگی بی‌درنگ
- *   · پایدارسازی به IndexedDB (idb-keyval) — دسترسی آفلاین + boot سریع:
- *     هیدرات یک‌باره در ساخت (await لازم نیست — سنجاق می‌شود و cache تازه می‌شود)
- * مزیت بر fetch دستی قدیمی: صفر درخواست تکراری بین کاشی‌ها (dedup کلید query).
+ *   · پایدارسازی به IndexedDB (idb-keyval) — دسترسی آفلاین + boot سریع
+ * ⊙ درس زندهٔ بیلد ۲۰۲۶-۱۰-۲۸ ۲۲:۴۰ (Error: indexedDB is not defined در
+ *   prerender /dashboard/melketun): هیدرات IndexedDB هرگز در مسیر رندر نیست —
+ *   فقط در useEffect (client-only). سازندهٔ QueryClient صافِ نابی است.
  */
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -19,7 +20,8 @@ const PERSIST_KEY = 'melka-query-cache-v1'
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   const [client] = useState(() => {
-    const qc = new QueryClient({
+    // ⊙ صافِ ناب — صفر دسترسی به browser API (SSR/prerender امن)
+    return new QueryClient({
       defaultOptions: {
         queries: {
           staleTime: 60_000, // SWR: در بازهٔ تازگی → کش فوری + revalidate پس‌زمینه
@@ -29,25 +31,31 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         },
       },
     })
-    // هیدرات آفلاین — بهترین-تلاش (IndexedDB در برخی مرورگرها غایب/سهمیه‌پر)
+  })
+
+  // هیدرات آفلاین — فقط سمت کلاینت (useEffect هرگز در SSR اجرا نمی‌شود)
+  useEffect(() => {
+    let cancelled = false
     void get(PERSIST_KEY)
       .then((cached) => {
-        if (cached && Array.isArray(cached)) {
-          for (const entry of cached) {
-            try {
-              qc.setQueryData(entry.queryKey, entry.data, { updatedAt: entry.updatedAt })
-            } catch {
-              /* ردیف معیوب کش — نادیده */
-            }
+        if (cancelled || !cached || !Array.isArray(cached)) return
+        for (const entry of cached) {
+          try {
+            client.setQueryData(entry.queryKey, entry.data, { updatedAt: entry.updatedAt })
+          } catch {
+            /* ردیف معیوب کش — نادیده */
           }
         }
       })
       .catch(() => {})
-    return qc
-  })
+    return () => {
+      cancelled = true
+    }
+  }, [client])
 
-  // پایدارسازی — debounce ۲s (نه روی هر تغییر — نظم ذخیره)
+  // پایدارسازی — debounce ۲s (client-only)
   useEffect(() => {
+    let saveTimer: ReturnType<typeof setTimeout> | undefined
     const save = () => {
       const cache = client.getQueryCache()
       const entries = cache
@@ -58,10 +66,13 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       void set(PERSIST_KEY, entries).catch(() => {})
     }
     const unsub = client.getQueryCache().subscribe(() => {
-      window.clearTimeout((window as unknown as { __melkaQSave?: number }).__melkaQSave)
-      ;(window as unknown as { __melkaQSave?: number }).__melkaQSave = window.setTimeout(save, 2_000)
+      clearTimeout(saveTimer)
+      saveTimer = setTimeout(save, 2_000)
     })
-    return unsub
+    return () => {
+      clearTimeout(saveTimer)
+      unsub()
+    }
   }, [client])
 
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
