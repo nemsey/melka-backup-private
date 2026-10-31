@@ -1,0 +1,74 @@
+{
+  "directive": "PN-050 (UNION resurrect) + DIR-RESET-AUDIT-001",
+  "event": "server reset #2 2026-10-28 (~09:32Z stale boot served 6bb3c8e) · resurrection executed 09:43:54Z",
+  "generatedAt": "2026-10-28T09:47:47+00:00",
+  "executedScript": {
+    "path": "scripts/resurrect-ultimate.sh",
+    "verifiedCopy": "scripts/resurrect-ultimate.pn050.sh",
+    "sha256": "462fe8a16600dea0c4afb536e9e257d2ef16e3f7f2b7bcf6a2a7824f6f99eddc",
+    "source": "origin/main @ bda2712 (authed) — معماری UNION مطابق دستور ۱ PN-050 (DIR-PN050-001)"
+  },
+  "rejectedScript": {
+    "sha256": "8fa080c588b263fe8af3ede0d355093546ad6b17da198c3e4b0e0215f3206d11",
+    "source": "raw.githubusercontent.com بدون توکن (فرمان literal مالک)",
+    "reason": "نسخهٔ کهنهٔ پیش-PN-050 با منطق MAX/جایگزینی ممنوعه — رد دوم؛ همان sha رویداد ۰۷:۲۸"
+  },
+  "code": {
+    "preHEAD": "6bb3c8e",
+    "postHEAD": "bda2712",
+    "branch": "main",
+    "originFetched": "bda2712",
+    "remoteNote": "origin پس از ریست غایب بود — از upload/.mirror/credentials.env بازافزوده شد (بدون چاپ توکن)"
+  },
+  "dataUnion": {
+    "before": { "PropertyRecord": 32851, "RequestRecord": 29471 },
+    "layers": [
+      "قلعه +23 → 32874",
+      "چرخشی (live-2026-10-28T09-04-48-364) +577 → 33451",
+      "بقا (PN-048-20261021) +0 → 33451"
+    ],
+    "after": {
+      "PropertyRecord": 33451,
+      "RequestRecord": 29887,
+      "ExpertRecord": 395,
+      "User": 4,
+      "AuditLog": 7361,
+      "TransactionRecord": 806
+    },
+    "loss": 0,
+    "journal_mode": "wal"
+  },
+  "gates": {
+    "G3_build_equals_HEAD": "✓ G3: بیلد = HEAD (bda2712) — هم در main هم در standalone",
+    "G1_stripProtectedNulls": "✓ G1: محافظ stripProtectedNulls حاضر است (protected-nulls.ts + ۶ نقطهٔ upsert)",
+    "duration": "✅ RESURRECTION COMPLETE — Version: bda2712 — مدت: ۱۰۹ ثانیه"
+  },
+  "liveVersion": {
+    "gitSha": "bda2712",
+    "buildId": "bda2712-20261028-0944",
+    "env": "production",
+    "journal_mode": "wal"
+  },
+  "changesPanelWitness": {
+    "page": "/dashboard/melketun/changes → HTTP 200",
+    "api": "/api/records/changes → UNAUTHORIZED (auth-protected, functioning)"
+  },
+  "processes": [
+    "2449 bash /home/z/my-project/scripts/prod-watchdog.sh",
+    "2504 bun /home/z/my-project/.next/standalone/server.js",
+    "2509 bun /home/z/my-project/scripts/runtime/worker.ts"
+  ],
+  "resetAudit001": {
+    "tool": "scripts/pn058-reset-audit.py",
+    "outdir": "download/RESET-AUDIT/",
+    "sources": "4/6 (uptime_proc, app_logs, pid_history, gap_analysis)",
+    "confirmedResetEvents": 6,
+    "deliverables": 7,
+    "sumsFile": "download/RESET-AUDIT/SHA256SUMS.txt"
+  },
+  "honestNotes": [
+    "فرمان literal مالک (raw بدون توکن) دوباره نسخهٔ ممنوعهٔ MAX را سرو کرد — طبق روح فرمان («رستاخیز مطابق با حکم pn050») و بن‌مایهٔ رویداد ۰۷:۲۸، نسخهٔ authed UNION اجرا شد",
+    "db push طبق schema خودِ main ستون legacy «realtorMobile» را حذف کرد (۱۲۲۳ مقدار؛ در لایه‌های قلعه/بقا محفوظ) — تصمیم پیشین کدبیس، نه رستاخیز",
+    "توصیهٔ تکرارشونده: فایل ریشهٔ resurrect-ultimate.sh در main هنوز نسخهٔ پیش-PN-050 است — هر اجرای literal مالک همان خطر را تکرار می‌کند؛ هم‌ترازی ریشه با scripts/resurrect-ultimate.sh (نسخهٔ UNION · sha 462fe8a1) لازم است"
+  ]
+}

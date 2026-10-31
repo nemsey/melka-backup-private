@@ -39,3 +39,17 @@ if (!process.env.MELK_TOKEN_KEY) {
 if (!process.env.MELK_API_TIMEOUT_MS) {
   process.env.MELK_API_TIMEOUT_MS = "300";
 }
+
+// PN-036 (شورا-ن۰۵۸ · فاز ۳): بودجهٔ تعاملی (OTP) هم همین قرارداد را می‌گیرد —
+// بدون این، بودجهٔ ۹۰ثانیه‌ای production روی تست‌های شبکه‌محور (۶-ج) نشت می‌کرد
+// و ۳۰ثانیه تا timeout تست صبر می‌شد. شکست سریع در محیط تست: ~۳۰۰ms.
+if (!process.env.MELK_INTERACTIVE_TIMEOUT_MS) {
+  process.env.MELK_INTERACTIVE_TIMEOUT_MS = "300";
+}
+
+// PN-029 (شورا-ن۰۳۳): حالت آفلینی ملک تبریز هرگز نباید در جلسهٔ تست فعال باشد —
+// پرچم عملیاتیِ production است (env.platform.json). تستهای خودِ PN-029 آن را
+// موقتاً و کنترل‌شده روشن/خاموش می‌کنند.
+if (process.env.MELK_ARM_OFFLINE) {
+  delete process.env.MELK_ARM_OFFLINE;
+}

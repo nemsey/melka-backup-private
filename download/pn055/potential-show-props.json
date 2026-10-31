@@ -1,0 +1,540 @@
+{
+  "errors": {},
+  "name": "MELKETUN_CRM",
+  "quote": {
+    "message": "I have not failed. I've just found 10,000 ways that won't work.",
+    "author": "Thomas Edison"
+  },
+  "auth": {
+    "user": {
+      "id": 41,
+      "v_tiger_id": 617,
+      "first_name": "بهمن",
+      "last_name": "سرمستی القو",
+      "role_name": "کارشناس فروش رنج A شعبه رضانژاد تبریز",
+      "is_admin": 0,
+      "user_name": "Sarmasti",
+      "email": "ehsandev@iran.ir",
+      "created_at": "2026-09-19T13:49:56.000000Z",
+      "updated_at": "2026-10-26T13:10:26.000000Z",
+      "branch_id": 2,
+      "permissions": [],
+      "roles": [
+        {
+          "id": 2,
+          "name": "consultant",
+          "guard_name": "web",
+          "created_at": "2026-09-23T17:46:32.000000Z",
+          "updated_at": "2026-09-23T17:46:32.000000Z",
+          "pivot": {
+            "model_type": "App\\Models\\User",
+            "model_id": 41,
+            "role_id": 2
+          }
+        }
+      ]
+    },
+    "unreadNotificationsCount": 4,
+    "permissions": [
+      "CrmContacts",
+      "FilingContacts",
+      "PotentialContacts",
+      "canCreateServiceRequest",
+      "canCreateValuationRequest",
+      "canDeleteServiceRequest",
+      "canDeleteValuationRequest",
+      "canEditFillServiceRequest",
+      "canEditFillValuationRequest",
+      "canEditServiceRequest",
+      "canEditValuationRequest",
+      "canFillServiceRequest",
+      "canFillValuationRequest",
+      "canWatchCourse",
+      "canWatchCourseCategory",
+      "createContentCreation",
+      "deleteContentCreation",
+      "editContentCreation",
+      "filings",
+      "potentials",
+      "services",
+      "valuations",
+      "watchContentCreation"
+    ]
+  },
+  "potential": {
+    "amount": {
+      "title": "قیمت پیشنهادی",
+      "value": "0.00000000"
+    },
+    "cf_1204": {
+      "title": "نوع مشتری",
+      "value": "خریدار"
+    },
+    "cf_1287": {
+      "title": "اولویت درخواستهای خرید",
+      "value": "دارای سند  ,  حتما آسانسور دار  ,  حتما پارکینگ دار  ,  جنوبی"
+    },
+    "cf_1289": {
+      "title": "نوع فایل",
+      "value": "آپارتمان"
+    },
+    "cf_2165": {
+      "title": "نام خانوادگی",
+      "value": "تبریزی"
+    },
+    "cf_2536": {
+      "title": "حداکثر بودجه خریدار",
+      "value": "145000000000.00000"
+    },
+    "cf_2538": {
+      "title": "حدود متراژ",
+      "value": "105"
+    },
+    "cf_2540": {
+      "title": "تعداد خواب",
+      "value": "0"
+    },
+    "cf_2548": {
+      "title": "حدود مبلغ رهن",
+      "value": "0.00000"
+    },
+    "cf_2550": {
+      "title": "حدود مبلغ اجاره",
+      "value": "0.00000"
+    },
+    "cf_2581": {
+      "title": "تاریخ تولد",
+      "value": ""
+    },
+    "cf_2597": {
+      "title": "شعبه",
+      "value": "رضانژاد تبریز"
+    },
+    "cf_2610": {
+      "title": "نام و نام خانوادگی معرف",
+      "value": ""
+    },
+    "cf_2856": {
+      "title": "وضعیت مشتری",
+      "value": "فعال"
+    },
+    "cf_3374": {
+      "title": "توضیحات اصلی",
+      "value": "متراژ بالای 105 متر، دوخوابه، سال ساخت و طبقه مهم نیست واحدی تمییز باشه، تک واحدی باشه"
+    },
+    "cf_3380": {
+      "title": "وضعیت ارجاع",
+      "value": ""
+    },
+    "cf_3929": {
+      "title": "مناطق-تبریز ",
+      "value": "مرزداران  ,  نصر"
+    },
+    "cf_3955": {
+      "title": "وضعیت فایل نظارت",
+      "value": ""
+    },
+    "cf_4256": {
+      "title": "نام و نام خانوادگی مالک",
+      "value": ""
+    },
+    "cf_4260": {
+      "title": "آدرس مالک",
+      "value": ""
+    },
+    "cf_4262": {
+      "title": "وضعیت ملک بازدیدی",
+      "value": ""
+    },
+    "cf_4264": {
+      "title": "کد فایل",
+      "value": ""
+    },
+    "cf_4278": {
+      "title": "نتیجه بازدید",
+      "value": ""
+    },
+    "cf_pcf_dtf_4185": {
+      "title": "زمان سرویس1",
+      "value": "0000-00-00 00:00:00"
+    },
+    "cf_pcf_dtf_4189": {
+      "title": "زمان سرویس2",
+      "value": "0000-00-00 00:00:00"
+    },
+    "cf_pcf_dtf_4191": {
+      "title": "زمان سرویس3",
+      "value": "0000-00-00 00:00:00"
+    },
+    "cf_pcf_dtf_4279": {
+      "title": "تاریخ و زمان بازدید",
+      "value": "0000-00-00 00:00:00"
+    },
+    "cf_pcf_icf_2532": {
+      "title": "شهر",
+      "value": "0"
+    },
+    "cf_pcf_irm_1179": {
+      "title": "شماره موبایل",
+      "value": "09143080189"
+    },
+    "cf_pcf_irm_1814": {
+      "title": "تلفن ثابت",
+      "value": ""
+    },
+    "cf_pcf_irm_2611": {
+      "title": "موبایل معرف",
+      "value": ""
+    },
+    "cf_pcf_irm_4257": {
+      "title": "شماره همراه مالک",
+      "value": ""
+    },
+    "cf_pcf_snf_2638": {
+      "title": "نام مشتری",
+      "value": "تبریزی"
+    },
+    "closingdate": {
+      "title": "حداکثر فرصت رسیدگی",
+      "value": "2026-11-21"
+    },
+    "contact_id": {
+      "title": "نام مخاطب",
+      "value": ""
+    },
+    "createdtime": {
+      "title": "زمان ایجاد",
+      "value": "2026-10-15 00:09:24"
+    },
+    "isconvertedfromlead": {
+      "title": "تبدیل شده از مشتری احتمالی",
+      "value": "0"
+    },
+    "leadsource": {
+      "title": "منبع مشتری",
+      "value": "فایل یابی کارشناس فروش"
+    },
+    "modifiedby": {
+      "title": "آخرین ویرایش انجام شده به وسیله",
+      "value": "19x1"
+    },
+    "modifiedtime": {
+      "title": "زمان ویرایش",
+      "value": "2026-10-15 00:30:33"
+    },
+    "potential_no": {
+      "title": "کد مشتری ",
+      "value": "POT4385"
+    },
+    "potentialname": {
+      "title": "عنوان مشتری ",
+      "value": ""
+    },
+    "probability": {
+      "title": "احتمال موفقیت (%)",
+      "value": "0.000"
+    },
+    "sales_stage": {
+      "title": "مرحله فروش",
+      "value": "جدید"
+    },
+    "creator": {
+      "title": "ایجاد کننده",
+      "value": "19x617"
+    },
+    "assigned_user_id": {
+      "title": "ارجاع به",
+      "value": "19x617"
+    },
+    "starred": {
+      "title": "ستاره دار",
+      "value": "0"
+    },
+    "tags": {
+      "title": "tags",
+      "value": ""
+    },
+    "id": {
+      "title": "potentialid",
+      "value": "13x402006"
+    }
+  },
+  "relatedFilings": [
+    {
+      "wsid": "",
+      "id": "71x353981",
+      "filingNo": "ME7933",
+      "saleType": "فروش",
+      "fileType": "آپارتمان",
+      "area": "نصر",
+      "ownerName": "ارکان",
+      "price": "14280000000",
+      "prepayment": "0",
+      "rent": "0",
+      "metre": "119",
+      "assignedUser": "19x617",
+      "phone": "09143001533",
+      "consultantName": "",
+      "consultantPhone": "",
+      "agency": "رضانژاد تبریز",
+      "source": "فایل یابی کارشناسان",
+      "status": "آماده بازدید/ فعال",
+      "createdTime": "2026-09-28 18:54:42",
+      "addressDescription": "کوی نصر ساختمان صبا",
+      "longitude": "46.31485234767514",
+      "latitude": "38.07410994908501",
+      "images": [
+        "storage/2026/October/week3/404175_353977_1.jpg",
+        "storage/2026/October/week3/404176_353978_2.jpg",
+        "storage/2026/October/week3/404177_353979_3.jpg",
+        "storage/2026/October/week3/404178_353980_4.jpg"
+      ]
+    },
+    {
+      "wsid": "",
+      "id": "71x353999",
+      "filingNo": "ME7934",
+      "saleType": "فروش",
+      "fileType": "آپارتمان",
+      "area": "مرزداران",
+      "ownerName": "رضایی",
+      "price": "14000000000",
+      "prepayment": "0",
+      "rent": "0",
+      "metre": "117",
+      "assignedUser": "19x617",
+      "phone": "09141935680",
+      "consultantName": "",
+      "consultantPhone": "",
+      "agency": "رضانژاد تبریز",
+      "source": "فایل یابی کارشناسان",
+      "status": "آماده بازدید/ فعال",
+      "createdTime": "2026-09-28 19:04:10",
+      "addressDescription": "مرزداران بلوار باقرخان برج پانیذ 1",
+      "longitude": "46.31485234767514",
+      "latitude": "38.07410994908501",
+      "images": [
+        "storage/2026/October/week3/404170_353996_3.jpg",
+        "storage/2026/October/week3/404171_353997_2.jpg",
+        "storage/2026/October/week3/404172_353998_1.jpg"
+      ]
+    },
+    {
+      "wsid": "",
+      "id": "71x388300",
+      "filingNo": "ME7975",
+      "saleType": "فروش",
+      "fileType": "آپارتمان",
+      "area": "مرزداران",
+      "ownerName": "جلالی",
+      "price": "15800000000",
+      "prepayment": "0",
+      "rent": "0",
+      "metre": "96",
+      "assignedUser": "19x617",
+      "phone": "09149257840",
+      "consultantName": "",
+      "consultantPhone": "",
+      "agency": "رضانژاد تبریز",
+      "source": "حضوری(آسمان تبریز)",
+      "status": "آماده بازدید/ فعال",
+      "createdTime": "2026-09-30 18:30:11",
+      "addressDescription": "مرزداران برج ابریشم",
+      "longitude": null,
+      "latitude": null,
+      "images": [
+        "storage/2026/September/week5/388292_4.JPG",
+        "storage/2026/September/week5/388293_3.JPG",
+        "storage/2026/September/week5/388294_6.JPG",
+        "storage/2026/September/week5/388295_5.JPG",
+        "storage/2026/September/week5/388298_2.JPG",
+        "storage/2026/September/week5/388299_1.JPG"
+      ]
+    },
+    {
+      "wsid": "",
+      "id": "71x388311",
+      "filingNo": "ME7976",
+      "saleType": "فروش",
+      "fileType": "آپارتمان",
+      "area": "مرزداران",
+      "ownerName": "جلالی",
+      "price": "15800000000",
+      "prepayment": "0",
+      "rent": "0",
+      "metre": "96",
+      "assignedUser": "19x617",
+      "phone": "09149257840",
+      "consultantName": "",
+      "consultantPhone": "",
+      "agency": "رضانژاد تبریز",
+      "source": "حضوری(آسمان تبریز)",
+      "status": "آماده بازدید/ فعال",
+      "createdTime": "2026-09-30 18:30:32",
+      "addressDescription": "مرزداران برج ابریشم",
+      "longitude": "46.31485234767514",
+      "latitude": "38.07410994908501",
+      "images": [
+        "storage/2026/October/week3/404150_388292_4.jpg",
+        "storage/2026/October/week3/404151_388293_3_(1).jpg",
+        "storage/2026/October/week3/404152_388293_3.jpg",
+        "storage/2026/October/week3/404153_388294_6.jpg",
+        "storage/2026/October/week3/404154_388295_5.jpg",
+        "storage/2026/October/week3/404155_388298_2.jpg"
+      ]
+    },
+    {
+      "wsid": "",
+      "id": "71x392405",
+      "filingNo": "ME8067",
+      "saleType": "فروش",
+      "fileType": "آپارتمان",
+      "area": "نصر",
+      "ownerName": "لطفی",
+      "price": "16500000000",
+      "prepayment": "0",
+      "rent": "0",
+      "metre": "108",
+      "assignedUser": "19x458",
+      "phone": "09143332877",
+      "consultantName": "",
+      "consultantPhone": "",
+      "agency": "رضانژاد تبریز",
+      "source": "فایل یابی کارشناسان",
+      "status": "آماده بازدید/ فعال",
+      "createdTime": "2026-10-05 13:12:06",
+      "addressDescription": "نصر هنر نور",
+      "longitude": null,
+      "latitude": null,
+      "images": [
+        "storage/2026/October/week1/392404_IMG_20260630_183800_914.jpg"
+      ]
+    },
+    {
+      "wsid": "",
+      "id": "71x395907",
+      "filingNo": "ME8172",
+      "saleType": "فروش",
+      "fileType": "آپارتمان",
+      "area": "مرزداران",
+      "ownerName": "کاظمیان",
+      "price": "14000000000",
+      "prepayment": "0",
+      "rent": "0",
+      "metre": "100",
+      "assignedUser": "19x617",
+      "phone": "09303926556",
+      "consultantName": "",
+      "consultantPhone": "",
+      "agency": "رضانژاد تبریز",
+      "source": "فایل یابی پشتیبان",
+      "status": "آماده بازدید/ فعال",
+      "createdTime": "2026-10-08 11:41:27",
+      "addressDescription": "مرزداران برج ابریشم",
+      "longitude": "46.31485234767514",
+      "latitude": "38.07410994908501",
+      "images": [
+        "storage/2026/October/week2/395901_4.jpg",
+        "storage/2026/October/week2/395902_5.jpg",
+        "storage/2026/October/week2/395903_3.jpg",
+        "storage/2026/October/week2/395904_1.jpg",
+        "storage/2026/October/week2/395905_2.jpg",
+        "storage/2026/October/week2/395906_6.jpg"
+      ]
+    },
+    {
+      "wsid": "",
+      "id": "71x395946",
+      "filingNo": "ME8173",
+      "saleType": "فروش",
+      "fileType": "آپارتمان",
+      "area": "نصر",
+      "ownerName": "فرجی",
+      "price": "15000000000",
+      "prepayment": "0",
+      "rent": "0",
+      "metre": "113",
+      "assignedUser": "19x617",
+      "phone": "09370582430",
+      "consultantName": "",
+      "consultantPhone": "",
+      "agency": "رضانژاد تبریز",
+      "source": "فایل یابی پشتیبان",
+      "status": "آماده بازدید/ فعال",
+      "createdTime": "2026-10-08 11:47:29",
+      "addressDescription": "کوی نصر دانش9",
+      "longitude": "46.31485234767514",
+      "latitude": "38.07410994908501",
+      "images": [
+        "storage/2026/October/week2/395942_3.jpg",
+        "storage/2026/October/week2/395943_1.jpg",
+        "storage/2026/October/week2/395944_2.jpg",
+        "storage/2026/October/week2/395945_4.jpg"
+      ]
+    },
+    {
+      "wsid": "",
+      "id": "71x407051",
+      "filingNo": "ME8439",
+      "saleType": "فروش",
+      "fileType": "آپارتمان",
+      "area": "نصر",
+      "ownerName": "اقای مرادی",
+      "price": "14500000000",
+      "prepayment": "0",
+      "rent": "0",
+      "metre": "116",
+      "assignedUser": "19x617",
+      "phone": "09106948002",
+      "consultantName": "",
+      "consultantPhone": "",
+      "agency": "رضانژاد تبریز",
+      "source": "فایل یابی پشتیبان",
+      "status": "آماده بازدید/ فعال",
+      "createdTime": "2026-10-20 16:48:55",
+      "addressDescription": "کوی نصر ، هنرسوم",
+      "longitude": "46.31485234767514",
+      "latitude": "38.07410994908501",
+      "images": [
+        "storage/2026/October/week3/407046_2.webp",
+        "storage/2026/October/week3/407047_3.webp",
+        "storage/2026/October/week3/407048_4.webp",
+        "storage/2026/October/week3/407049_5.webp",
+        "storage/2026/October/week3/407050_7.webp",
+        "storage/2026/October/week3/407062_1.webp"
+      ]
+    },
+    {
+      "wsid": "",
+      "id": "71x409590",
+      "filingNo": "ME8489",
+      "saleType": "فروش",
+      "fileType": "آپارتمان",
+      "area": "مرزداران",
+      "ownerName": "آقای سهراب پور",
+      "price": "14000000000",
+      "prepayment": "0",
+      "rent": "0",
+      "metre": "96",
+      "assignedUser": "19x617",
+      "phone": "09356650670",
+      "consultantName": "",
+      "consultantPhone": "",
+      "agency": "رضانژاد تبریز",
+      "source": "فایل یابی کارشناسان",
+      "status": "آماده بازدید/ فعال",
+      "createdTime": "2026-10-25 00:40:39",
+      "addressDescription": "مرزداران برج ابریشم بلوکB",
+      "longitude": "46.31485234767514",
+      "latitude": "38.07410994908501",
+      "images": [
+        "storage/2026/October/week4/409584_1000029535.jpg",
+        "storage/2026/October/week4/409585_1000029536.jpg",
+        "storage/2026/October/week4/409586_1000029537.jpg",
+        "storage/2026/October/week4/409587_1000029540.jpg",
+        "storage/2026/October/week4/409588_1000029539.jpg",
+        "storage/2026/October/week4/409589_1000029538.jpg"
+      ]
+    }
+  ]
+}
