@@ -1,8 +1,8 @@
 {
   "meta": {
     "directive_id": "DIR-RESET-AUDIT-001",
-    "generated_at_utc": "2026-10-28T21:27:47Z",
-    "generated_at_tehran": "2026-10-29 00:57:47 IRST",
+    "generated_at_utc": "2026-10-31T14:01:32Z",
+    "generated_at_tehran": "2026-10-31 17:31:32 IRST",
     "server_tz": "UTC",
     "audit_period_days": 4,
     "audit_period_note": "افق شواهد = ۲۰۲۶-۱۰-۲۴ تا ۲۰۲۶-۱۰-۲۷ (لاگ‌های قدیمی‌تر در خودِ ریست‌ها پاک می‌شوند؛ worklog ماندگار ۴ روز اخیر را پوشش می‌دهد) — درخواست ۳۰روزه صداقتاً غیرقابل‌احراز است",
@@ -22,10 +22,10 @@
   },
   "boot_history": [
     {
-      "boot_id": "btime-1793222185",
-      "boot_time_utc": "2026-10-28 21:16:25",
-      "boot_time_tehran": "2026-10-29 00:46:25",
-      "tehran_clock": "00:46",
+      "boot_id": "btime-1793452929",
+      "boot_time_utc": "2026-10-31 13:22:09",
+      "boot_time_tehran": "2026-10-31 16:52:09",
+      "tehran_clock": "16:52",
       "uptime_before_reboot_sec": null,
       "cause_detected": "unknown (اولین بوت قابل‌مشاهده — journalctl در دسترس نیست)"
     }
@@ -218,15 +218,21 @@
   ],
   "gap_analysis": {
     "log_window_utc": [
-      "2026-10-28 21:27:01",
-      "2026-10-28 21:27:47"
+      "2026-10-31 13:52:06",
+      "2026-10-31 14:01:30"
     ],
-    "total_gaps_over_5min": 0,
-    "gaps": [],
+    "total_gaps_over_5min": 1,
+    "gaps": [
+      {
+        "gap_start_utc": "2026-10-31 13:52:59",
+        "gap_end_utc": "2026-10-31 13:57:59",
+        "duration_sec": 300.0
+      }
+    ],
     "gaps_likely_reboots": 0
   },
   "infrastructure_findings": {
-    "machine_boot_vs_session_reset": "بوت ماشین امروز 2026-10-28 21:16:25 UTC = 2026-10-29 00:46:25 IRST بود ولی ریست نشست ۸۱ دقیقه بعد (2026-10-27 13:46:02 UTC) رخ داد → دو لایهٔ مستقل",
+    "machine_boot_vs_session_reset": "بوت ماشین امروز 2026-10-31 13:22:09 UTC = 2026-10-31 16:52:09 IRST بود ولی ریست نشست ۸۱ دقیقه بعد (2026-10-27 13:46:02 UTC) رخ داد → دو لایهٔ مستقل",
     "survivability_proven": "سینک پس‌زمینهٔ جداشده (setsid) جلسهٔ قبل، از مرزِ شکست ابزارها عبور کرد و +۴ رکورد افزود (آگهی ملکتون ۵,۰۸۸→۵,۰۹۲) — دیمن‌های جداشده از ریست نشست جان سالم می‌برند",
     "watchdog": "نگهبان production + سرور + Worker همگی پس از هر رستاخیز خودبازسازی می‌شوند (resurrect-ultimate.sh)"
   },
@@ -241,7 +247,7 @@
   "evidence_manifest": [
     {
       "path": "download/RESET-AUDIT/reset-patterns.md",
-      "sha256": "e44004dd2b369a33cbe35b990deb24995960b3d8812692de3481686e2af51059"
+      "sha256": "87f44421e60e7709769a99566bc08854c3dd941f58c3c6ba98e9ac5a7f207b1c"
     },
     {
       "path": "download/RESET-AUDIT/journalctl-boots.txt",
@@ -249,15 +255,15 @@
     },
     {
       "path": "download/RESET-AUDIT/uptime.txt",
-      "sha256": "e06fcb39aed5a2a3775331cf7d10bc0c01c1b84e4de34b2315dc94457b220f25"
+      "sha256": "259a75e2f2c38e230962348bd7c504d69a940d123822e08c03cef6a66395b697"
     },
     {
       "path": "download/RESET-AUDIT/app-log-markers.txt",
-      "sha256": "00cb70fd8eeedcc7bfec2175381c1214fcf5b50b14505caae8be1078f6d17a35"
+      "sha256": "975c07d87cc67f0206687d2b54eb466972ac65de59c447c30eabf4b3bb18ef5e"
     },
     {
       "path": "download/RESET-AUDIT/gap-analysis.csv",
-      "sha256": "a2f9eafc57afa6ef16aaae6e47065ff273da8ac3308801a8a7894d7d21f50665"
+      "sha256": "1438a796e38f358a67987b9eb40126e4dcbc4459f921cee61b88975405916fbf"
     },
     {
       "path": "download/RESET-AUDIT/SHA256SUMS.txt",
