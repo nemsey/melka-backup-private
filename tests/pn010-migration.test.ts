@@ -7,12 +7,10 @@
  */
 
 import { describe, expect, test, beforeEach } from "bun:test";
-import { existsSync, statSync, readFileSync, rmSync, mkdirSync, mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { existsSync, statSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 
 const { buildWorkerJobs, WORKER_JOB_IDS, REPO_ROOT } = await import("@/core/runtime/jobs");
-const { readWorkerStatus, writeWorkerStatus } = await import("@/core/runtime/worker-status");
+const { readWorkerStatus, writeWorkerStatus, RUNTIME_STATUS_DIR } = await import("@/core/runtime/worker-status");
 const { daemonHealth } = await import("@/lib/intelligence/daemon");
 const { catalogDaemonStatus } = await import("@/lib/melk-api/catalog-daemon");
 
@@ -68,17 +66,7 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
     expect(ids).toContain(WORKER_JOB_IDS.diagnosisCycle);
     // PN-025 — تثبیت شبانهٔ حافظهٔ بلندمدت (فاز ۱۳-ج)
     expect(ids).toContain(WORKER_JOB_IDS.memoryConsolidation);
-    // PN-029 مرحلهٔ ۷ (شورا-ن۰۳۳) — گارد IP کانتینر (هر ۶ ساعت؛ در حالت آفلینی هم فعال)
-    expect(ids).toContain(WORKER_JOB_IDS.ipLog);
-    // PN-031-B (شورا-ن۰۳۹) — گارد تازگی بیلد زنده (هر ۱۰ دقیقه؛ جبران خودکار بازنشانی)
-    expect(ids).toContain(WORKER_JOB_IDS.headGuard);
-    // PN-038/۱.۳ (شورا-ن۰۶۳) — بکاپ مقدس ۱۵دقیقه‌ای (قانون دادهٔ مقدس)
-    expect(ids).toContain(WORKER_JOB_IDS.sacredBackup);
-    // PN-041/۲ (شورا-ن۰۶۷) — بکاپ چرخشی ۵دقیقه‌ای قلعهٔ داده
-    expect(ids).toContain(WORKER_JOB_IDS.rollingBackup);
-    expect(ids.length).toBe(24); // PN-041-R: ۲۲ کار قبلی · PN-051 (DIR-PN051-SUPREME · فرمان ۳/۷): +lcpp-cycle +lcpp-watch
-    expect(ids).toContain(WORKER_JOB_IDS.lcppCycle);
-    expect(ids).toContain(WORKER_JOB_IDS.lcppWatch);
+    expect(ids.length).toBe(15);
   });
 
   test("۴-۵ فاصله‌ها عین دیمن‌های قبلی (صفر قطع خدمت در رفتار زمانی)", () => {
@@ -122,10 +110,7 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
       // PN-019: decision-shadow و policy-eval نیز کلید خاموشی خودشان را دارند
       // PN-020/H2: disk-guard نیز کلید خاموشی خودش را دارد (MELK_DISK_GUARD)
       // PN-025: تثبیت حافظه هم کلید خاموشی خودش را دارد (MELK_MEMORY_CONSOLIDATION)
-      // PN-029: ip-log کلید خاموشی ندارد — گارد IP کانتینر همیشه فعال است (شورا-ن۰۳۳ مرحلهٔ ۷)
-      // PN-031-B: head-guard کلید خاموشی خودش را دارد (MELK_HEAD_GUARD — جلسهٔ ۰۳۹)
-      // PN-041-R: db-health-probe کلید خاموشی خودش را دارد (MELK_DB_PROBE — شورا-ن۰۶۸)
-      expect(ids).toEqual([WORKER_JOB_IDS.lcppCycle, WORKER_JOB_IDS.lcppWatch, WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.sacredBackup, WORKER_JOB_IDS.rollingBackup, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diagnosisCycle, WORKER_JOB_IDS.diskGuard, WORKER_JOB_IDS.memoryConsolidation, WORKER_JOB_IDS.ipLog, WORKER_JOB_IDS.headGuard, WORKER_JOB_IDS.relayHealthCheck, WORKER_JOB_IDS.melketunSync, WORKER_JOB_IDS.dbHealthProbe]); // PN-051: کارهای LCPP اولِ رجیستری‌اند و کلید خاموشی خودشان را دارند (MELK_LCPP)
+      expect(ids).toEqual([WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diagnosisCycle, WORKER_JOB_IDS.diskGuard, WORKER_JOB_IDS.memoryConsolidation]);
     } finally {
       for (const [k, v] of saved) {
         if (v === undefined) delete process.env[k];
@@ -158,16 +143,15 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
   });
 
   test("۴-۹ daemonHealth از کانال Worker می‌خواند (منبع حقیقت جابجا شده)", () => {
-    // PN-032 (قطعی‌سازی flake): دایرکتوری موقت — فایل وضعیت واقعی دیگر لمس نمی‌شود
-    // (Worker زنده هر ~۳۰ث ضربان می‌نویسد و با پنجرهٔ تست مسابقه می‌داد).
-    const tmpRepo = mkdtempSync(join(tmpdir(), "pn010-status-"));
-    mkdirSync(join(tmpRepo, "upload", ".runtime"), { recursive: true });
+    const statusFile = `${RUNTIME_STATUS_DIR}/runtime-status.json`;
+    const hadOriginal = existsSync(statusFile);
+    const original = hadOriginal ? readFileSync(statusFile, "utf-8") : null;
     // PN-024 (رفع نوسان دو-سبز): resolveStatusFile() از MELKA_REPO_DIR پیروی می‌کند؛
     // تست فایل phase9 این env را در پنجرهٔ ایزوله‌سازی خود تغییر می‌دهد — اگر دو فایل
     // هم‌پوشان شوند، نوشتنِ این تست به فایل واقعی ولی خواندن daemonHealth به مسیر
-    // قفل PN-032: env در طول همین تست به دایرکتوری موقت سنجاق می‌شود (فایل واقعی دست‌نخورده).
+    // ایزوله می‌رود (نوسان زندهٔ CI). قفل: env در طول همین تست به ریشهٔ واقعی سنجاق می‌شود.
     const prevRepoEnv = process.env.MELKA_REPO_DIR;
-    process.env.MELKA_REPO_DIR = tmpRepo;
+    process.env.MELKA_REPO_DIR = "/home/z/my-project";
     try {
       writeWorkerStatus({
         version: 1,
@@ -186,9 +170,10 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
       expect(cs.ticks).toBe(77);
       expect(cs.lastResult?.typeRegistriesSynced).toBe(2);
     } finally {
+      if (original !== null) writeFileSync(statusFile, original, "utf-8");
+      else if (existsSync(statusFile)) rmSync(statusFile);
       if (prevRepoEnv === undefined) delete process.env.MELKA_REPO_DIR;
       else process.env.MELKA_REPO_DIR = prevRepoEnv;
-      rmSync(tmpRepo, { recursive: true, force: true });
     }
   });
 

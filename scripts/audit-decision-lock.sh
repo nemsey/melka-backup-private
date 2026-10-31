@@ -45,9 +45,8 @@ for needle, label in [
     ("export function buildDecisionLock", "ساخت قفل"),
     ("ttlSeconds: (7 * 24 * 3600)", "TTL هفت‌روزه"),
     ("cooldownHours: 48", "Cooldown ۴۸ ساعت"),
-    ("ratePerDay: 10", "سقف روزانه ۱۰ (حالت سقف‌دار)"),
-    ("ratePerCategory: 3", "سقف دسته‌ای ۳ (حالت سقف‌دار)"),
-    ("ANALYSIS_RATE_UNLIMITED", "پرچم تحلیل نامحدود فاز طرح (PN-028)"),
+    ("ratePerDay: 10", "سقف روزانه ۱۰"),
+    ("ratePerCategory: 3", "سقف دسته‌ای ۳"),
 ]:
     if needle not in lock:
         violations.append(f"کمربند ناقص: {label} ({needle!r} یافت نشد)")
@@ -108,8 +107,7 @@ if 'requireRole(request, "OWNER"' not in owner_route:
 checks.append({"check": "۷) روت‌ها + گاردها", "ok": True})
 
 # ─── ۸) UI سه کاشی — AdviceCard ───
-# ن۰۶۳ (PN-038/فاز ۲): MarketIndexPage حذف شد (کاشی M6 از هوم رفت؛ دادهٔ DB و روت API ماند — قانون دادهٔ مقدس)
-for f in ["src/core/tiles/tiles/smart-matching/SmartMatchingPage.tsx", "src/core/tiles/tiles/file-finder/FileFinderPage.tsx"]:
+for f in ["src/core/tiles/tiles/smart-matching/SmartMatchingPage.tsx", "src/core/tiles/tiles/file-finder/FileFinderPage.tsx", "src/core/tiles/tiles/market-index/MarketIndexPage.tsx"]:
     src = open(f, encoding="utf-8").read()
     if "AdviceCard" not in src:
         violations.append(f"کاشی حیاتی AdviceCard ندارد: {f}")
@@ -118,18 +116,14 @@ if "سامانه هرگز خودش اجرا نمی‌کند" not in card:
     violations.append("AdviceCard جملهٔ احترام (صفر اجرا) ندارد")
 checks.append({"check": "۸) AdviceCard سه کاشی", "ok": True})
 
-# ─── دریل منفی ۱ (PN-028/ثانیاً — فاز طرح): اسپم شمارشی دیگر قفل نمی‌کند (تحلیل نامحدود)؛ دریل ضد-تکرار TTL ───
+# ─── دریل منفی ۱: spam — ۱۱ توصیه در روز ⇒ قفل rate-day ───
 # ─── دریل منفی ۲: TTL منقضی ⇒ هرگز ارائه نمی‌شود ───
 drill = subprocess.run(
     ["bun", "-e", """
-const { evaluateLock, evaluateTtl, ANALYSIS_RATE_UNLIMITED } = require("./src/core/intelligence/decision-lock.ts");
-// PN-028 (فاز طرح و توسعه): محدودیت تعداد تحلیل رفع شد — یازدهمین توصیهٔ روز هم عبور می‌کند
-if (!ANALYSIS_RATE_UNLIMITED) { console.error("پرچم تحلیل نامحدود خاموش است — دستور فاز طرح نقض شده"); process.exit(1); }
+const { evaluateLock, evaluateTtl } = require("./src/core/intelligence/decision-lock.ts");
+// اسپم: یازدهمین توصیهٔ روز ⇒ قفل
 const spam = evaluateLock({ hoursSinceLastAdvice: 100, evidenceChangedSinceLast: false, advisorCountToday: 10, categoryCountToday: 0 });
-if (spam.locked) { console.error("قفل شمارشی در فاز طرح فعال ماند: " + JSON.stringify(spam)); process.exit(1); }
-// ضد-تکرار (هنوز برقرار): توصیهٔ تکراری فوری ⇒ TTL
-const dup = evaluateLock({ hoursSinceLastAdvice: 0, evidenceChangedSinceLast: false, advisorCountToday: 999, categoryCountToday: 999 });
-if (!(dup.locked && dup.reason === "ttl")) { console.error("قفل ضد-تکرار TTL خاموش شد: " + JSON.stringify(dup)); process.exit(1); }
+if (!(spam.locked && spam.reason === "rate-day")) { console.error("spam قرمز نشد: " + JSON.stringify(spam)); process.exit(1); }
 // TTL: توصیهٔ ۸ روزه ⇒ منقضی
 const ttl = evaluateTtl("2026-10-01T00:00:00Z", "2026-10-09T00:00:00Z");
 if (!ttl.expired) { console.error("TTL منقضی نشد"); process.exit(1); }
@@ -140,7 +134,7 @@ console.log("DRILL-OK");
 drill_ok = drill.returncode == 0 and "DRILL-OK" in drill.stdout
 if not drill_ok:
     violations.append(f"دریل منفی کمربند شکست: {drill.stderr.strip()[:120]}")
-checks.append({"check": "۹) دریل منفی — تحلیل نامحدود فاز طرح + ضد-تکرار TTL برقرار", "ok": drill_ok})
+checks.append({"check": "۹) دریل منفی — spam ⇒ قرمز + TTL منقضی", "ok": drill_ok})
 
 result = {
     "workOrder": "PN-025/مرحلهٔ۱۰ — گارد decision-lock (گارد ۳۰)",
