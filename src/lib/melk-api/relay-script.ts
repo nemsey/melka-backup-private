@@ -617,17 +617,33 @@ while true; do
 
   OK=\$(printf '%s' "$RESP" | jq -r '.ok // empty' 2>/dev/null)
   if [ "$OK" != "true" ]; then
-    NET_FAILS=0
     ERRMSG=\$(printf '%s' "$RESP" | jq -r '.error // empty' 2>/dev/null)
     MISSING=\$(printf '%s' "$RESP" | jq -r 'if (.missing // []) | length > 0 then (.missing | join("، ")) else empty end' 2>/dev/null)
     if [ -n "$ERRMSG" ]; then
+      # پاسخ JSON معتبر از سرور خودمان (قرارداد خطای احراز) — سرور در دسترس است؛
+      # رفتار پیشین: ۳۰ث صبر، بدون چرخش مسیر
+      NET_FAILS=0
       if [ -n "$MISSING" ]; then
         log "خطای سرور: \$ERRMSG — هدرهای نایافته: \$MISSING — ۳۰ ثانیه صبر"
       else
         log "خطای سرور: \$ERRMSG — ۳۰ ثانیه صبر"
       fi
     else
-      log "پاسخ غیرمنتظره: \$(printf '%s' "$RESP" | head -c 160) — ۳۰ ثانیه صبر"
+      # R7 (فرمان ۲۰۲۶-۱۱-۰۱ — درس توقف رله): پاسخ بدون قرارداد JSON (صفحهٔ خطای
+      # HTML پروکسی/۵۰۰) یعنی «مسیر حمل‌ونقل خراب است» نه «سرور خطای معتبر داد» —
+      # پیش‌تر این حالت با خواب ۳۰ث روی همان مسیر می‌ماند و اگر مسیر جایگزین مرده
+      # بود، رله برای همیشه همان‌جا گیر می‌کرد (وقت توقف ۱۹:۴۶ همین روز). اکنون
+      # مثل خطای شبکه شمرده می‌شود: شمارش NET_FAILS + چرخش مسیر در آستانه +
+      # backoff واقعی → بازگشت خودکار به مسیر اصلی.
+      NET_FAILS=\$((NET_FAILS+1))
+      local_idx=\$(( NET_FAILS < 4 ? NET_FAILS - 1 : 4 ))
+      delay="\${RETRY_DELAYS[\$local_idx]:-30}"
+      log "پاسخ غیرمنتظره (مسیر حمل‌ونقل خراب؟): \$(printf '%s' "$RESP" | head -c 120) — \$delay ثانیه دیگر (خطای پیاپی: \$NET_FAILS)"
+      if [ "$URL_COUNT" -gt 1 ] && [ "$NET_FAILS" -ge "$ALT_FAIL_THRESHOLD" ] && [ "\$(( NET_FAILS % ALT_FAIL_THRESHOLD ))" -eq 0 ]; then
+        URL_IDX=\$(( (URL_IDX + 1) % URL_COUNT ))
+        log "سوئیچ به مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) — تلاش بعدی از آنجا"
+      fi
+      sleep "\$delay"; continue
     fi
     ST=\$(printf '%s' "$RESP" | jq -r '.serverTime // empty' 2>/dev/null)
     if [ -n "$ST" ] && [ "$ERRMSG" = "stale request" ]; then
