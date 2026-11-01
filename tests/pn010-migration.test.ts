@@ -125,7 +125,7 @@ describe("PN-010 BLOCK 4 — مهاجرت دیمن‌ها به Worker", () => {
       // PN-029: ip-log کلید خاموشی ندارد — گارد IP کانتینر همیشه فعال است (شورا-ن۰۳۳ مرحلهٔ ۷)
       // PN-031-B: head-guard کلید خاموشی خودش را دارد (MELK_HEAD_GUARD — جلسهٔ ۰۳۹)
       // PN-041-R: db-health-probe کلید خاموشی خودش را دارد (MELK_DB_PROBE — شورا-ن۰۶۸)
-      expect(ids).toEqual([WORKER_JOB_IDS.lcppCycle, WORKER_JOB_IDS.lcppWatch, WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.sacredBackup, WORKER_JOB_IDS.rollingBackup, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diagnosisCycle, WORKER_JOB_IDS.diskGuard, WORKER_JOB_IDS.memoryConsolidation, WORKER_JOB_IDS.ipLog, WORKER_JOB_IDS.headGuard, WORKER_JOB_IDS.relayHealthCheck, WORKER_JOB_IDS.melketunSync, WORKER_JOB_IDS.dbHealthProbe]); // PN-051: کارهای LCPP اولِ رجیستری‌اند و کلید خاموشی خودشان را دارند (MELK_LCPP)
+      expect(ids).toEqual([WORKER_JOB_IDS.lcppCycle, WORKER_JOB_IDS.lcppWatch, WORKER_JOB_IDS.divarFileTtl, WORKER_JOB_IDS.logRotate, WORKER_JOB_IDS.sacredBackup, WORKER_JOB_IDS.rollingBackup, WORKER_JOB_IDS.previewGuard, WORKER_JOB_IDS.resetGuard, WORKER_JOB_IDS.driftGuard, WORKER_JOB_IDS.decisionShadow, WORKER_JOB_IDS.policyEval, WORKER_JOB_IDS.diagnosisCycle, WORKER_JOB_IDS.diskGuard, WORKER_JOB_IDS.memoryConsolidation, WORKER_JOB_IDS.ipLog, WORKER_JOB_IDS.headGuard, WORKER_JOB_IDS.relayHealthCheck, WORKER_JOB_IDS.dbHealthProbe]); // PN-051 + PN-059: کلید خاموشی خودشان را دارند (MELK_LCPP · MELK_DIVAR_FILE_TTL)
     } finally {
       for (const [k, v] of saved) {
         if (v === undefined) delete process.env[k];

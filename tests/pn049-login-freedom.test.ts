@@ -79,71 +79,6 @@ describe("PN-049 · A) لغو محدودیت ورود PM/ARM — قانون Retr
 
 // ───────────────────── B) فایل مناطق ملکتون (گام ۱-الف) ─────────────────────
 
-describe("PN-049 · B) ستون مناطق فهرست درخواست ملکتون — تجزیهٔ چندمنطقه‌ای همانند تبریز", () => {
-  // شاهد دادهٔ تولیدی — الگوی مجاز p6545: کلاینت جدا فقط-خواندنی روی custom.db
-  // (تست‌های اصلی هرگز production را لمس نمی‌کنند — preload-guard)
-  const real = new PrismaClient({ datasources: { db: { url: "file:/home/z/my-project/db/custom.db" } } });
-  afterAll(async () => { await real.$disconnect(); });
-  test("B-1) parseMelketunAreas — رشتهٔ خام CRM به آرایهٔ تمیز تجزیه می‌شود", async () => {
-    const { parseMelketunAreas } = await import("@/lib/integrations/melketun/sync");
-    // شاهد DB: رشتهٔ خام با جداکنندهٔ «,» لاتین
-    expect(parseMelketunAreas("آبرسان , دارایی , رضانژاد جنوبی")).toEqual(["آبرسان", "دارایی", "رضانژاد جنوبی"]);
-    // جداکنندهٔ فارسی هم پشتیبانی می‌شود
-    expect(parseMelketunAreas("آبرسان، دمشقیه")).toEqual(["آبرسان", "دمشقیه"]);
-    // نیم‌فاصله/پرانتز درون‌نام حفظ
-    expect(parseMelketunAreas("خیابان امام خمینی (آبرسان - منصور)")).toEqual(["خیابان امام خمینی (آبرسان - منصور)"]);
-    // تهی و تنها-جداکننده
-    expect(parseMelketunAreas(null)).toEqual([]);
-    expect(parseMelketunAreas("")).toEqual([]);
-    expect(parseMelketunAreas("  ,  , ")).toEqual([]);
-  });
-
-  test("B-2) سینک دیگر کل رشته را «یک منطقه» ذخیره نمی‌کند", () => {
-    const sync = readFileSync("src/lib/integrations/melketun/sync.ts", "utf8");
-    expect(sync).toContain("export function parseMelketunAreas");
-    expect(sync).toContain("const areaNames = parseMelketunAreas(p.areas)");
-    expect(sync).toContain("areaNamesJson: areaNames.length > 0 ? JSON.stringify(areaNames) : null");
-    // الگوی قدیمی ممنوع
-    expect(sync).not.toContain("JSON.stringify([p.areas])");
-  });
-
-  test("B-3) AreasFileCell — provenance منبع tenant-آگاه (صداقت قانون ۱۴)", () => {
-    const cell = readFileSync("src/core/tiles/tiles/arm-request/AreasFileCell.tsx", "utf8");
-    expect(cell).toContain("melketun: \"عین دادهٔ CRM ملکتون\"");
-    expect(cell).toContain("tabriz: \"عین دادهٔ سامانه ARM ملک تبریز\"");
-    expect(cell).toContain("tenant = \"tabriz\"");
-  });
-
-  test("B-4) ArmRequestsPage — tenant به سلول فایل مناطق پاس می‌شود", () => {
-    const page = readFileSync("src/core/tiles/tiles/arm-request/ArmRequestsPage.tsx", "utf8");
-    expect(page).toContain('<AreasFileCell requestCode={r.requestCode} areaNames={r.areaNames} tenant={tenantId ?? "tabriz"} />');
-  });
-
-  test("B-5) شاهد داده: رکوردهای چندمنطقه‌ای ملکتون در DB واقعی تجزیه شدند", async () => {
-    const rows = await real.requestRecord.findMany({
-      where: { tenantId: "melketun", areaNamesJson: { not: null } },
-      select: { areaNamesJson: true },
-      take: 4000,
-    });
-    expect(rows.length).toBeGreaterThan(1000); // ≈۱۱۳۳ رکورد دارای-منطقه
-    // هیچ رکوردی نباید رشتهٔ چندمنطقه‌ای تجزیه‌نشده («x , y») داشته باشد
-    const unsplit = rows.filter((r) => {
-      try {
-        const arr = JSON.parse(r.areaNamesJson ?? "[]");
-        return Array.isArray(arr) && arr.length === 1 && /[،,]/.test(arr[0]);
-      } catch { return true; }
-    });
-    expect(unsplit.length).toBe(0);
-    // و دست‌کم ۳۰۰ رکورد در حالت «فایل» (>۳ منطقه — عین رفتار تبریز) است
-    const fileMode = rows.filter((r) => {
-      try { return JSON.parse(r.areaNamesJson ?? "[]").length > 3; } catch { return false; }
-    });
-    expect(fileMode.length).toBeGreaterThanOrEqual(300);
-  });
-});
-
-// ───────────────────── C) دادهٔ مقدس (G6) — رگرسیون صفر در همین دستور ─────────────────────
-
 describe("PN-049 · C) دادهٔ مقدس — شاهد یکپارچگی پس از backfill مناطق", () => {
   const real = new PrismaClient({ datasources: { db: { url: "file:/home/z/my-project/db/custom.db" } } });
   afterAll(async () => { await real.$disconnect(); });
@@ -155,12 +90,12 @@ describe("PN-049 · C) دادهٔ مقدس — شاهد یکپارچگی پس ا
       real.requestRecord.count(),
       real.requestRecord.count({ where: { tenantId: "melketun" } }),
     ]);
-    // شاهد pn049-areas-pre/post (G6_PASS): backfill فقط رشته‌ها را درجاً تجزیه کرد.
-    // قانون G2 (افزودنی): شمارش فقط می‌تواند رشد کند — کف = شاهد G6 جلسهٔ ۱۴۰۵/۰۸/۰۱
-    expect(propertyTotal).toBeGreaterThanOrEqual(32874);
-    expect(propertyMelketun).toBeGreaterThanOrEqual(5006);
-    expect(requestTotal).toBeGreaterThanOrEqual(29484);
-    expect(requestMelketun).toBeGreaterThanOrEqual(3904);
+    // PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): دادهٔ ملکتون حذف شد — شمارش tenant ملکتون باید
+    // صفر باشد و کل تبریز دست‌نخورده بماند (کف = شاهد G6 منهای ردیف‌های ملکتون).
+    expect(propertyMelketun).toBe(0);
+    expect(requestMelketun).toBe(0);
+    expect(propertyTotal).toBeGreaterThanOrEqual(27800);
+    expect(requestTotal).toBeGreaterThanOrEqual(25500);
   });
 });
 
@@ -234,51 +169,5 @@ describe("PN-049 · D) قانون حساب کاربری — کاربر فقط ر
     expect(reqPage).toContain("نمای شخصی — فقط رکوردهای ثبت‌شده توسط شما");
     expect(listPage).toContain('userRole !== "OWNER"');
     expect(listPage).toContain("نمای شخصی — فقط رکوردهای ثبت‌شده توسط شما");
-  });
-});
-
-describe("PN-049 · E) شاهد حساب کاربری ملکتون — بهمن سرمستی القو روی دیتای واقعی", () => {
-  const real = new PrismaClient({ datasources: { db: { url: "file:/home/z/my-project/db/custom.db" } } });
-  afterAll(async () => { await real.$disconnect(); });
-
-  test("E-1) هر رکورد دارای دادهٔ مالک/متقاضی از منابع مجاز است (کنترل حساب کاربری — به‌روزرسانی PN-055)", async () => {
-    const { normalizeFilterInput } = await import("@/lib/normalize-input");
-    const nameNorm = normalizeFilterInput("بهمن سرمستی القو");
-    // PN-055: دادهٔ مالک/متقاضی اکنون از ۴ منبع مجاز می‌آید:
-    //   (۱) نمای خصوصی خودِ سرمستی (۵۳ آگهی + ۱۹ درخواست)
-    //   (۲) نمای عمومی قدیمی‌تر CRM (تاریخی — G1 حفظ کرده)
-    //   (۳) استخراج عمیق PN-055 (صفحات show رکوردهای واگذارشده به سرمستی + لینک‌های متقاطع)
-    //   (۴) وب‌سایت عمومی ملکتون (فایلر + فرم‌های عمومی)
-    // کنترل: هیچ رکوردِ دارای دادهٔ مالک، بدون کارشناسِ شناخته‌شده نیست (صفر دادهٔ بی‌منشأ)
-    const filingsNoRealtor = await real.propertyRecord.count({
-      where: { tenantId: "melketun", rawOwnerName: { not: null }, OR: [{ realtorNameNorm: null }, { realtorNameNorm: "" }] },
-    });
-    expect(filingsNoRealtor).toBe(0);
-    // رکوردهای سرمستی: دادهٔ مالک دارد (پوشش کاملِ حساب خودش)
-    const filingsSarmasti = await real.propertyRecord.count({
-      where: { tenantId: "melketun", realtorNameNorm: nameNorm, rawOwnerName: { not: null } },
-    });
-    expect(filingsSarmasti).toBeGreaterThan(0);
-    // ۱۹ درخواست واگذارشده به سرمستی: موبایل متقاضی دارند (استخراج عمیق PN-055)
-    const reqsSarmastiWithMobile = await real.requestRecord.count({
-      where: { tenantId: "melketun", actorNameNorm: nameNorm, customerMobile: { not: null } },
-    });
-    expect(reqsSarmastiWithMobile).toBeGreaterThanOrEqual(19);
-  });
-
-  test("E-2) دامنهٔ نام سرمستی = دقیقاً رکوردهای خودش (۵۰ آگهی · ۱۹ درخواست)", async () => {
-    const { normalizeFilterInput } = await import("@/lib/normalize-input");
-    const nameNorm = normalizeFilterInput("بهمن سرمستی القو");
-    const [listings, requests] = await Promise.all([
-      real.propertyRecord.count({ where: { tenantId: "melketun", realtorNameNorm: nameNorm } }),
-      real.requestRecord.count({ where: { tenantId: "melketun", actorNameNorm: nameNorm } }),
-    ]);
-    expect(listings).toBeGreaterThanOrEqual(50);
-    expect(requests).toBeGreaterThanOrEqual(19);
-    // نام ساختگی = صفر ردیف (fail-closed در عمل)
-    const bogus = await real.requestRecord.count({
-      where: { tenantId: "melketun", actorNameNorm: normalizeFilterInput("کاربر ساختگی آزمون") },
-    });
-    expect(bogus).toBe(0);
   });
 });

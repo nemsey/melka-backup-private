@@ -255,13 +255,13 @@ fi
 echo "  ✓ G3: بیلد = HEAD ($(git rev-parse --short HEAD)) — هم در main هم در standalone"
 
 # G1 (Worker boot precondition): محافظ stripProtectedNulls باید در سورس باشد
-SYNC_GUARD="$REPO/src/lib/integrations/melketun/protected-nulls.ts"
-if [ ! -f "$SYNC_GUARD" ] || ! grep -q "G1_STRIP_PROTECTED_NULLS = true" "$SYNC_GUARD" \
-   || ! grep -q "stripProtectedNulls" "$REPO/src/lib/integrations/melketun/sync.ts"; then
-  echo "❌ G1 GATE: stripProtectedNulls در مسیرهای upsert یافت نشد — Worker استارت نمی‌شود (قانون دادهٔ مقدس)"
+# PN-059: مسیر از پوشهٔ ملکتونِ حذف‌شده به مسیر عمومی منتقل شد (حذف کامل کاشی ملکتون)
+SYNC_GUARD="$REPO/src/lib/integrations/protected-nulls.ts"
+if [ ! -f "$SYNC_GUARD" ] || ! grep -q "G1_STRIP_PROTECTED_NULLS = true" "$SYNC_GUARD"; then
+  echo "❌ G1 GATE: stripProtectedNulls در سورس یافت نشد — Worker استارت نمی‌شود (قانون دادهٔ مقدس)"
   exit 1
 fi
-echo "  ✓ G1: محافظ stripProtectedNulls حاضر است (protected-nulls.ts + ۶ نقطهٔ upsert)"
+echo "  ✓ G1: محافظ stripProtectedNulls حاضر است (protected-nulls.ts)"
 
 # ─── ۶) راه‌اندازی سرور (دیمن double-fork + ری‌استارت خودکار ۵ث) ───
 echo "— راه‌اندازی سرور…"

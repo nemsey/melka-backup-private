@@ -9,7 +9,7 @@
  * PN-047/گام دوم-۱ (دستور مالک: «فایل ایجاد شده در آن زیباسازی شود همانند
  * فایل موجود در فایل قرارداد در فهرست معاملات»): سند ساختاری InfoDoc از
  * ?format=json → قالب رسمی همانند ContractFileDialog:
- *   · سربرگ رسمی (کسب‌وکار + کد هویت کاشی M1…M10 + کد رکورد + تاریخ تولید)
+ *   · سربرگ رسمی (کسب‌وکار + کد هویت کاشی M1…M4 + کد رکورد + تاریخ تولید)
  *   · جدول فیلدهای استاندارد (دو ستون خط‌دار)
  *   · دادهٔ خام منبع (بخش جمع‌شونده)
  *   · متادیتای استخراج + پاورقی شفافیت
@@ -31,8 +31,8 @@ import { faDateTime } from "@/lib/format";
 import { faDigits } from "@/lib/jalali";
 
 export interface InfoButtonProps {
-  /** 'tabriz' | 'melketun' — tenant همین رندر (پیش‌فرض tabriz — صفر نشت) */
-  tenant: "tabriz" | "melketun";
+  /** tenant همین رندر — PN-059: پس از حذف ملکتون تنها tabriz زنده است */
+  tenant?: "tabriz";
   /** "listing" (فهرست آگهی) | "request" (فهرست درخواست) | … */
   type: "listing" | "request" | "transaction" | "expert";
   /** کد رکورد همان‌طور که در فهرست دیده می‌شود (propertyCode/requestCode) */
@@ -47,10 +47,10 @@ interface InfoDocField {
 interface InfoDoc {
   ok: true;
   found: boolean;
-  tenant: "tabriz" | "melketun";
+  tenant: "tabriz";
   type: string;
   code: string;
-  /** «M7 · آگهی ملکتون» / «M1 · آگهی ملک تبریز» */
+  /** «M1 · آگهی ملک تبریز» */
   tileIdentity: string;
   tileCode: string;
   tenantLabel: string;
@@ -75,10 +75,9 @@ function smartValue(v: string): string {
 
 const BUSINESS_FA: Record<string, string> = {
   tabriz: "مشاور املاک ملک تبریز",
-  melketun: "مشاور املاک ملکتون",
 };
 
-export function InfoButton({ tenant, type, code }: InfoButtonProps) {
+export function InfoButton({ tenant = "tabriz", type, code }: InfoButtonProps) {
   const [open, setOpen] = useState(false);
   const [doc, setDoc] = useState<InfoDoc | null>(null);
   const [loading, setLoading] = useState(false);
@@ -254,7 +253,7 @@ export function InfoButton({ tenant, type, code }: InfoButtonProps) {
                 ) : (
                 /* ══ سند رسمی زیبا — همانند فایل قرارداد (دستور مالک PN-047) ══ */
                 <div ref={docRef} className="bg-white text-neutral-900 rounded-xl border p-6 text-[13px] leading-7" dir="rtl">
-                  {/* سربرگ رسمی — کسب‌وکار + هویت کاشی (M1…M10) + کد + تاریخ */}
+                  {/* سربرگ رسمی — کسب‌وکار + هویت کاشی (M1…M4) + کد + تاریخ */}
                   <div className="text-center border-b-2 border-neutral-800 pb-3 mb-4">
                     <p className="text-lg font-bold">{BUSINESS_FA[doc.tenant] ?? doc.tenantLabel}</p>
                     <p className="text-sm mt-1 font-semibold text-teal-800 flex items-center justify-center gap-2 flex-wrap">

@@ -117,9 +117,9 @@ export const WORKER_JOB_IDS = {
   rollingBackup: "rolling-backup", // PN-041 · شورا-ن۰۶۷ — لایهٔ ۲ قلعهٔ داده
   relayHealthCheck: "relay-health-check",
   dbHealthProbe: "db-health-probe", // PN-041-R · شورا-ن۰۶۸ — خوددرمانی DB قفل‌شده
-  melketunSync: "melketun-sync", // PN-044 · شورا-ن۰۸۸ — هماهنگ‌سازی CRM ملکتون (۶ ساعت)
   lcppCycle: "lcpp-cycle", // PN-051 — خط‌لوله فهرست‌های List-Centric (۳۰ دقیقه)
   lcppWatch: "lcpp-watch", // PN-051 · فرمان ۷ — پاسخ ≤۶۰ث به «بروزرسانی دستی» مالک
+  divarFileTtl: "divar-file-ttl", // PN-059 · رابع — TTL سه‌روزهٔ فایل‌های بی‌اقدام فایل‌یابی
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -425,6 +425,28 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       },
       toDomain: (result) => {
         if (result && typeof result === "object") return result as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Divar File TTL → Worker (تازه — PN-059 · دستور مالک رابع ۱۴۰۵/۰۸/۱۱) ──
+  // فایل‌های بی‌اقدام فایل‌یابی (شکار/پیگیری/بررسی · status='active') پس از
+  // سه روز حذف می‌شوند؛ موارد جدید از اسکن بعدی جایگزین می‌گردند.
+  // مستثنای مجاز قانون دادهٔ مقدس: حکم صریح مالک + شاهد AuditLog.
+  // خاموشی: MELK_DIVAR_FILE_TTL=disabled
+  if (process.env.MELK_DIVAR_FILE_TTL !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.divarFileTtl,
+      title: "TTL سه‌روزهٔ فایل‌های بی‌اقدام فایل‌یابی (PN-059 · رابع)",
+      intervalMs: 60 * 60_000, // هر ساعت
+      firstRunDelayMs: 5 * 60_000, // نخستین پاکسازی ۵ دقیقه پس از بوت
+      run: async () => {
+        const { runDivarFileTtl } = await import("@/lib/divar/ttl");
+        return runDivarFileTtl() as unknown as Record<string, unknown>;
+      },
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
         return {};
       },
     });
@@ -795,28 +817,6 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       run: async (_database) => {
         const { runRelayHealthCheckJob } = await import("@/lib/relay/health");
         return runRelayHealthCheckJob();
-      },
-      toDomain: (r) => {
-        if (r && typeof r === "object") return r as Record<string, unknown>;
-        return {};
-      },
-    });
-  }
-
-  // ── Melketun Sync → Worker (تازه — PN-044/شورا-ن۰۸۸ · فاز ۳) ──
-  // کش دادهٔ ملکتون از CRM (Laravel Inertia · نشست‌محور) → جداول مشترک با
-  // tenantId='melketun'. الگوی ARM: چرخهٔ ۶ ساعت · فقط upsert (صفر حذف — قانون ۶).
-  // استراتژی SESSION_HTML_ADAPTER — کشف فاز ۰: login-store + JSON اینرسیا.
-  // خاموشی: MELK_MELKETUN_SYNC=disabled
-  if (process.env.MELK_MELKETUN_SYNC !== "disabled") {
-    jobs.push({
-      id: WORKER_JOB_IDS.melketunSync,
-      title: "هماهنگ‌سازی ملکتون (CRM → tenantId='melketun') — PN-044/۳",
-      intervalMs: 6 * 60 * 60_000, // همان ARM/Mirror — ۶ ساعت (ریسک #۴: rate limit)
-      firstRunDelayMs: 10 * 60_000, // نخستین sync ۱۰ دقیقه پس از بوت
-      run: async (_database) => {
-        const { syncMelketun } = await import("@/lib/integrations/melketun/sync");
-        return syncMelketun();
       },
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

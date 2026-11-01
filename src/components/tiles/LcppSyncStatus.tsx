@@ -36,12 +36,11 @@ interface LcppStatusUi {
   lists: Record<string, LcppListStatusUi>
 }
 
+// PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): فهرست‌های ملکتون (M7/M8) حذف شدند
 const LIST_TITLES: Record<string, string> = {
   'm1-arm-listings': 'آگهی ملک‌تبریز (M1)',
   'm2-arm-requests': 'درخواست ملک‌تبریز (M2)',
   'm9-transactions': 'معاملات (M9)',
-  'm7-melketun-listings': 'آگهی ملکتون (M7)',
-  'm8-melketun-requests': 'درخواست ملکتون (M8)',
 }
 
 const CHIP_CLASS: Record<string, string> = {

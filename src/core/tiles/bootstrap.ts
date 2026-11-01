@@ -22,11 +22,13 @@ import "@/core/tiles/tiles/experts";
 // کانتینر «داشبورد مدیریتی» حذف شد و M1-M5 + M8 به ریشهٔ هوم رفتند؛
 // کاشی‌های قدیمی «آگهی ملکا» و «درخواست ملکا» از هوم حذف شدند.
 // PN-043/فاز ۲ (شورا-ن۰۸۷): یکپارچه‌سازی داشبوردها —
-// کاشی‌های M1-M4 به ظرف tenant-dashboards رفتند و درون دو داشبورد
-// «داشبورد ملک تبریز» و «داشبورد ملکتون» (wrapper مشترک) رندر می‌شوند.
-// ترتیب جدید هوم: فایل یابی ← تطبیق ← مغز ← تنظیمات ← داشبورد ملک تبریز ← داشبورد ملکتون.
+// کاشی‌های M1-M4 به ظرف tenant-dashboards رفتند و درون «داشبورد ملک تبریز»
+// (wrapper مشترک) رندر می‌شوند.
+// ترتیب هوم: فایل یابی ← تطبیق ← مغز ← تنظیمات ← داشبورد ملک تبریز.
 // روت مستقیم کاشی‌های M1-M4 (رجیستری + lazyPage) دست‌نخورده باقی می‌ماند.
 // دادهٔ همهٔ کاشی‌های حذف/ادغام‌شده در پایگاه ماندگار است (قانون دادهٔ مقدس).
+// PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): کاشی «داشبورد ملکتون» به‌کلی حذف شد —
+// به‌همراه همهٔ داده‌های tenant ملکتون (حکم صریح مالک؛ شاهد در AuditLog).
 import "@/core/tiles/tiles/file-finder";
 // P6.5-12 (بند ب مرحلهٔ قبل): کاشی «مشتریان ملک تبریز» حذف شد —
 // دادهٔ مشتریان و ماژول‌های تحلیلی در پایگاه/کتابخانه ماندگارند (قانون دادهٔ مقدس)
@@ -36,9 +38,8 @@ import "@/core/tiles/tiles/arm-request";
 import "@/core/tiles/tiles/smart-matching";
 import "@/core/tiles/tiles/learning-tier";
 import "@/core/tiles/tiles/settings";
-// PN-043/فاز ۲+۳ (شورا-ن۰۸۷) — داشبوردهای tenant (wrapper مشترک M1-M4): یک کد، دو کاربرد
+// PN-043/فاز ۲+۳ (شورا-ن۰۸۷) — داشبورد tenant (wrapper مشترک M1-M4)
 import "@/core/tiles/tiles/tenant-dashboard-tabriz";
-import "@/core/tiles/tiles/tenant-dashboard-melketun";
 
 export { transactionsContractsTile } from "@/core/tiles/tiles/transactions-contracts";
 export { expertsTile } from "@/core/tiles/tiles/experts";
@@ -50,6 +51,5 @@ export { armRequestTile } from "@/core/tiles/tiles/arm-request";
 export { smartMatchingTile } from "@/core/tiles/tiles/smart-matching";
 export { learningTierTile } from "@/core/tiles/tiles/learning-tier";
 export { settingsTile } from "@/core/tiles/tiles/settings";
-// PN-043/فاز ۲+۳ (شورا-ن۰۸۷) — داشبوردهای tenant
+// PN-043/فاز ۲+۳ (شورا-ن۰۸۷) — داشبورد tenant
 export { tenantDashboardTabrizTile } from "@/core/tiles/tiles/tenant-dashboard-tabriz";
-export { tenantDashboardMelketunTile } from "@/core/tiles/tiles/tenant-dashboard-melketun";

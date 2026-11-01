@@ -17,7 +17,7 @@ import {
   G1_STRIP_PROTECTED_NULLS,
   PROTECTED_PII_FIELDS,
   type FieldProvenance,
-} from "@/lib/integrations/melketun/protected-nulls";
+} from "@/lib/integrations/protected-nulls";
 
 const REPO = "/home/z/my-project";
 
@@ -69,7 +69,7 @@ describe("G1/G2 — stripProtectedNulls (محافظ دادهٔ مقدس)", () =>
   test("FieldProvenance (G5): طرح provenance دارای فیلدهای الزام است", () => {
     const p: FieldProvenance = {
       field: "ownerMobile",
-      source: "melketun-myfilings",
+      source: "arm-owner",
       endpoint: "/Melketunfilingplus",
       extractedAt: new Date().toISOString(),
       runId: "pn048-test",
@@ -82,22 +82,6 @@ describe("G1/G2 — stripProtectedNulls (محافظ دادهٔ مقدس)", () =>
 });
 
 describe("G1 — گارد سورس: محافظ در مسیرهای upsert نصب است", () => {
-  test("sync.ts هر مسیر نوشتن رکورد را با قانون ادغام/محافظ می‌پوشاند (PN-050 · دستور ۳)", () => {
-    const src = fs.readFileSync(path.join(REPO, "src/lib/integrations/melketun/sync.ts"), "utf8");
-    // آگهی/درخواست از این پس از مسیر قانون‌دار می‌گذرند (mergeField الف→ه + provenance + audit)
-    expect(src).toContain("upsertRecordWithMerge");
-    expect(src).toContain('entity: "property"');
-    expect(src).toContain('entity: "request"');
-    // مسیرهای مستقیم باقی‌مانده (کارشناس/پروفایل) همچنان با محافظ G1/G2
-    expect(src).toContain("db.expertRecord.upsert");
-    expect(src).toContain("db.expertProfile.upsert");
-    expect(src).toContain("stripProtectedNulls");
-    // merge.ts خودش هم محافظ را صدا می‌زند (دفاع در عمق — قانون ۱۴)
-    const mergeSrc = fs.readFileSync(path.join(REPO, "src/lib/merge.ts"), "utf8");
-    expect(mergeSrc).toContain("stripProtectedNulls");
-    expect(mergeSrc).toContain("shouldAcceptExpertUpdate"); // قانون ۰۵ — متخصص همیشه برنده
-  });
-
   test("worker.ts حقیقی دارای G1 GATE با توقف فوری است (قانون توقف)", () => {
     const src = fs.readFileSync(path.join(REPO, "scripts/runtime/worker.ts"), "utf8");
     expect(src).toContain("G1 GATE");

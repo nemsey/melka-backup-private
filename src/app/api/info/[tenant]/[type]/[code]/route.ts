@@ -53,7 +53,7 @@ export async function GET(
   const { tenant, type, code } = await ctx.params;
 
   if (!isInfoTenant(tenant)) {
-    return errorResponse(new MelkApiError("UNKNOWN", "tenant نامعتبر است (tabriz | melketun).", 400, false));
+    return errorResponse(new MelkApiError("UNKNOWN", "tenant نامعتبر است (tabriz).", 400, false));
   }
   if (!isInfoType(type)) {
     return errorResponse(

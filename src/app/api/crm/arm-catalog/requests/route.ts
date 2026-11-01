@@ -81,8 +81,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const sp = request.nextUrl.searchParams;
-    // PN-044/فاز ۴ (شورا-ن۰۸۸) — tenant همین رندر: 'melketun' → دادهٔ ملکتون؛
-    // پیش‌فرض/هر چیز دیگر → 'melk-tabriz' (رفتار فعلی — صفر شکستن).
+    // PN-059: tenant ملکتون حذف شد — همیشه 'melk-tabriz' (تک-tenant).
     const tenantId = tenantDbValue(sp.get("tenantId"));
     // P6525 — نرمال‌سازی مرکزی
     const code = normalizeFilterInput(sp.get("code")) || undefined;

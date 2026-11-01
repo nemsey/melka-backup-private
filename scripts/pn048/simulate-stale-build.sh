@@ -73,7 +73,7 @@ fi
 
 # ۵) گیت با ماژول حقیقی → سبز
 cat > "$SB/worker-gate-true.ts" <<'EOF'
-const { G1_STRIP_PROTECTED_NULLS } = await import("/home/z/my-project/src/lib/integrations/melketun/protected-nulls.ts");
+const { G1_STRIP_PROTECTED_NULLS } = await import("/home/z/my-project/src/lib/integrations/protected-nulls.ts");
 if (G1_STRIP_PROTECTED_NULLS !== true) {
   console.error("[worker] ❌ G1 GATE: stripProtectedNulls غیرفعال — توقف فوری");
   process.exit(1);

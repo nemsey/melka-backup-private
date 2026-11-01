@@ -125,11 +125,10 @@ describe("PN-031-I · ب) لایهٔ ۳ — مسیر جایگزین واکِر /
     expect(workerSrc).toContain('"path not allowed", 403');
   });
 
-  test("ب-۷: (ن۰۵۴→ن۰۶۸) MELK_RELAY_ALT_URL به env برگشت — مسیر جایگزین پایدار publish", () => {
-    // PN-041-R (شورا-ن۰۶۸ · دلیل ۵): URL publish پایدار = fallback پس از ریست
+  test("ب-۷: (ن۰۵۴→ن۰۶۸→R7) MELK_RELAY_ALT_URL خلع شد — مسیر مردهٔ پیش‌نمایش حذف", () => {
+    // R7 (۲۰۲۶-۱۱-۰۱): ALT پیش‌نمایش کهنه (۵۰۰/HTML) از env حذف شد؛ تنها مسیر: رلهٔ اصلی
     const envPlatform = readFileSync(join(REPO, "env.platform.json"), "utf8");
-    expect(envPlatform).toContain('"MELK_RELAY_ALT_URL"');
-    expect(envPlatform).toContain("https://c1vdh8442240-d.space-z.ai");
+    expect(envPlatform).not.toContain('"MELK_RELAY_ALT_URL"');
     // فیوز همچنان مهار (ن۰۵۴ پابرجا)
     expect(envPlatform).toContain('"MELK_ARM_CIRCUIT_DISABLED"');
     // boot-secrets: کلید حیاتی فیوز (ALT_URL هرگز راز نیست — env کافی است)

@@ -81,11 +81,9 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
   // کاربر غیر-مالک فقط رکوردهای خودش را خروجی می‌گیرد؛ مالک همه را.
   const exportScope = catalogUserScope(guard);
   const exportRegistrar = exportScope.kind === "OWN" ? exportScope.nameNorm : undefined;
-  // PN-044/فاز ۴ (شورا-ن۰۸۸) — tenant همین خروجی: 'melketun' → دادهٔ ملکتون؛
-  // پیش‌فرض/هر چیز دیگر → 'melk-tabriz' (رفتار فعلی — صفر شکستن).
-  const tenantKey = sp.get("tenantId");
-  const tenantId = tenantDbValue(tenantKey);
-  const tenantLabel = tenantKey === "melketun" ? "ملکتون" : "ملک تبریز";
+  // PN-059: tenant ملکتون حذف شد — همیشه 'melk-tabriz' (تک-tenant).
+  const tenantId = tenantDbValue(sp.get("tenantId"));
+  const tenantLabel = "ملک تبریز";
 
   try {
     let buffer: Buffer;

@@ -170,13 +170,9 @@ export class PrismaRequestRepository implements RequestRepository {
     filter: ArmRequestCatalogFilter,
     limit: number
   ): Promise<{ rows: ArmRequestCatalogRow[]; total: number }> {
-    // PN-044/فاز ۴ (شورا-ن۰۸۸) — جداسازی tenant: ملکتون (source='melketun-crm')
-    // بدون فیلتر source؛ تبریز همان رفتار قبلی (source='arm') + tenant.
-    // پیش‌فرض 'melk-tabriz' — تمام دادهٔ فعلی همین است ⇒ صفر شکستن، صفر نشت.
+    // PN-059: tenant ملکتون حذف شد — همیشه تبریز (source='arm' + tenant).
     const where: Prisma.RequestRecordWhereInput =
-      filter.tenantId === "melketun"
-        ? { tenantId: "melketun" }
-        : { tenantId: filter.tenantId ?? "melk-tabriz", source: "arm" };
+      { tenantId: filter.tenantId ?? "melk-tabriz", source: "arm" };
 
     // PN-049/گام ۲-الف (قانون حساب کاربری) — کاربر غیر-مالک فقط رکوردهای
     // ثبت‌شده توسط خودش را می‌بیند (مالک = صفر فیلتر؛ نام تهی = fail-closed هیچ).
@@ -412,10 +408,9 @@ export class PrismaRequestRepository implements RequestRepository {
   }
 
   /** شمارش غنی‌سازی درخواست‌های ARM — extractionBatchId تهی = در انتظار لایه ۲
-   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz'؛ برای ملکتون شمارش روی
-   *  tenantId (source='melketun-crm') — پیش از این عدد تبریز به ملکتون نشت می‌کرد. */
-  async countArmEnrichment(tenantId: string = "melk-tabriz"): Promise<EnrichmentCounts> {
-    const whereArm: Prisma.RequestRecordWhereInput = tenantId === "melk-tabriz" ? { source: "arm" } : { tenantId };
+   *  PN-059: تک-tenant — شمارش همیشه روی source='arm' (ملکتون حذف شد). */
+  async countArmEnrichment(_tenantId: string = "melk-tabriz"): Promise<EnrichmentCounts> {
+    const whereArm: Prisma.RequestRecordWhereInput = { source: "arm" };
     const [total, pending] = await Promise.all([
       this.client.requestRecord.count({ where: whereArm }),
       this.client.requestRecord.count({ where: { ...whereArm, extractionBatchId: null } }),

@@ -83,8 +83,7 @@ export async function GET(request: NextRequest) {
     const seed = await ensureSeeded(guard.armTokens?.accessToken, { background: true });
     const syncState = await getSyncState();
     const sp = request.nextUrl.searchParams;
-    // PN-044/فاز ۴ (شورا-ن۰۸۸) — tenant همین رندر: 'melketun' → دادهٔ ملکتون؛
-    // پیش‌فرض/هر چیز دیگر → 'melk-tabriz' (رفتار فعلی — صفر شکستن).
+    // PN-059: tenant ملکتون حذف شد — همیشه 'melk-tabriz' (تک-tenant).
     const tenantId = tenantDbValue(sp.get("tenantId"));
 
     // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت؛ سقف ۲۵٬۰۰۰ فقط گارد ایمنی سرور است (عین دو کاتالوگ ARM)

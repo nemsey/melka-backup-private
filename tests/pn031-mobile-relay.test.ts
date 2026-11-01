@@ -348,14 +348,13 @@ describe("PN-031 · D) UI، env و اسکریپت Termux", () => {
     expect(section).toContain("راهنمای ۳ خطی");
   });
 
-  test("D-2) env.platform.json — MELK_ARM_RELAY_MODE=mobile + کلید مستندسازی _pn033 (پاکسازی ن۰۵۴)", async () => {
+  test("D-2) env.platform.json — MELK_ARM_RELAY_MODE=mobile (پاکسازی ن۰۵۴ → خلع ALT در R7)", async () => {
     const raw = JSON.parse(readFileSync(join(REPO, "env.platform.json"), "utf8")) as Record<string, unknown>;
     expect(raw.MELK_ARM_RELAY_MODE).toBe("mobile");
-    expect(typeof raw._pn033).toBe("string");
-    expect(String(raw._pn033)).toContain("شورا-ن۰۵۴");
-    // PN-033 (ن۰۵۴): کلیدهای Worker حذف + خاموشی فیوز · PN-041-R (ن۰۶۸): ALT_URL برگشت
+    // R7 (۲۰۲۶-۱۱-۰۱): _pn033 و ALT_URL مرده در پاکسازی env حذف شدند — تنها _comment زنده است
+    expect(typeof raw._comment).toBe("string");
     expect(raw).not.toHaveProperty("MELK_ARM_PROXY_URL");
-    expect(raw.MELK_RELAY_ALT_URL).toBe("https://c1vdh8442240-d.space-z.ai");
+    expect(raw.MELK_RELAY_ALT_URL ?? "").toBe("");
     expect(raw.MELK_ARM_CIRCUIT_DISABLED).toBe("1");
   });
 

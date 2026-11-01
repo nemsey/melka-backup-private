@@ -4,7 +4,9 @@
  * فرمان ۴: «فاز A همهٔ فهرست‌ها (ستون‌های حیاتی ≤۱ دقیقه) → سپس فاز B (جزئیات)»
  * فرمان ۳: List-Centric — خطای هر فهرست هرگز چرخه را نمی‌ایستاند (جزیره‌بندی).
  * اولویت (فرمان ۸ بند ۳): criticalها اول — M1 (آگهی) · M2 (درخواست) · M9 (معاملات)
- * سپس M7/M8 (ملکتون — وابسته به اتصال CRM).
+ *
+ * PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): فهرست‌های ملکتون (M7/M8) حذف شدند
+ * (حذف کامل کاشی ملکتون + داده‌هایش) — چرخه فقط ARM ملک‌تبریز است.
  *
  * گاردها:
  *   · MELK_LCPP=disabled → چرخه خاموش
@@ -19,15 +21,11 @@ import { markCycleStart, markCycleEnd, peekForceRefresh, clearForceRefresh } fro
 export * from "./kernel";
 export { LIST_ID as M1_LIST_ID, fastPass as m1FastPass, deepPass as m1DeepPass } from "./arm-listings";
 export { LIST_ID as M2_LIST_ID, fastPass as m2FastPass, deepPass as m2DeepPass } from "./arm-requests";
-export { LIST_ID as M7_LIST_ID, fastPass as m7FastPass } from "./melketun-listings";
-export { LIST_ID as M8_LIST_ID, fastPass as m8FastPass } from "./melketun-requests";
-export { LIST_ID as M9_LIST_ID, fastPass as m9FastPass, deepPass as m9DeepPass, probeMelketunDeals } from "./transactions";
+export { LIST_ID as M9_LIST_ID, fastPass as m9FastPass, deepPass as m9DeepPass } from "./transactions";
 
 import { fastPass as m1FastPass, deepPass as m1DeepPass } from "./arm-listings";
 import { fastPass as m2FastPass, deepPass as m2DeepPass } from "./arm-requests";
-import { fastPass as m7FastPass } from "./melketun-listings";
-import { fastPass as m8FastPass } from "./melketun-requests";
-import { fastPass as m9FastPass, deepPass as m9DeepPass, probeMelketunDeals } from "./transactions";
+import { fastPass as m9FastPass, deepPass as m9DeepPass } from "./transactions";
 import { updateListStatus } from "./kernel";
 
 export interface LcppCycleResult {
@@ -38,15 +36,12 @@ export interface LcppCycleResult {
     m1: { fetched: number; written: number; skippedPages: number } | { error: string };
     m2: { fetched: number; written: number; skippedPages: number } | { error: string };
     m9: { fetched: number; written: number; skippedPages: number } | { error: string };
-    m7: { fetched: number; upserted: number; skippedUnchanged: boolean } | { error: string };
-    m8: { fetched: number; upserted: number; skippedUnchanged: boolean } | { error: string };
   };
   phaseB: {
     m1: { candidates: number; enriched: number } | { error: string };
     m2: { candidates: number; enriched: number } | { error: string };
     m9: { candidates: number; enriched: number } | { error: string };
   };
-  melketunDealsProbe?: { totalRows: number; routes: number };
   forcedByOwner: boolean;
   ok: boolean;
   errors: string[];
@@ -133,26 +128,6 @@ export async function runLcppCycle(db: PrismaClient): Promise<LcppCycleResult | 
     }
   }
 
-  // ملکتون — مستقل از توکن ARM (نشست CRM خودش)
-  let m7: LcppCycleResult["phaseA"]["m7"];
-  try {
-    const r = await m7FastPass();
-    m7 = { fetched: r.fetched, upserted: r.upserted, skippedUnchanged: r.skippedUnchanged };
-  } catch (e) {
-    m7 = { error: String((e as Error)?.message ?? e).slice(0, 150) };
-    errors.push(`M7: ${m7.error}`);
-    updateListStatus("m7-melketun-listings", { phase: "error", error: m7.error });
-  }
-  let m8: LcppCycleResult["phaseA"]["m8"];
-  try {
-    const r = await m8FastPass();
-    m8 = { fetched: r.fetched, upserted: r.upserted, skippedUnchanged: r.skippedUnchanged };
-  } catch (e) {
-    m8 = { error: String((e as Error)?.message ?? e).slice(0, 150) };
-    errors.push(`M8: ${m8.error}`);
-    updateListStatus("m8-melketun-requests", { phase: "error", error: m8.error });
-  }
-
   // ═══ فاز B — Deep-Pass (فرمان ۴): تکمیل جزئیات ═══
   let b1: LcppCycleResult["phaseB"]["m1"] = { error: "token unavailable" };
   let b2: LcppCycleResult["phaseB"]["m2"] = { error: "token unavailable" };
@@ -181,15 +156,6 @@ export async function runLcppCycle(db: PrismaClient): Promise<LcppCycleResult | 
     }
   }
 
-  // کاوش معاملات ملکتون (فرمان ۶) — بهترین-تلاش، هرگز چرخه را نمی‌شکند
-  let melketunDealsProbe: LcppCycleResult["melketunDealsProbe"];
-  try {
-    const probe = await probeMelketunDeals();
-    melketunDealsProbe = { totalRows: probe.totalRows, routes: probe.routes.length };
-  } catch (e) {
-    errors.push(`M9-probe: ${String(e).slice(0, 120)}`);
-  }
-
   cycleLock = false;
   const ok = errors.length === 0;
   markCycleEnd(ok ? "done" : "error");
@@ -198,9 +164,8 @@ export async function runLcppCycle(db: PrismaClient): Promise<LcppCycleResult | 
     cycleId,
     startedAt,
     finishedAt: new Date().toISOString(),
-    phaseA: { m1, m2, m9, m7, m8 },
+    phaseA: { m1, m2, m9 },
     phaseB: { m1: b1, m2: b2, m9: b9 },
-    melketunDealsProbe,
     forcedByOwner: forced,
     ok,
     errors,

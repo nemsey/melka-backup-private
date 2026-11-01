@@ -63,7 +63,7 @@ import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { ContractFileDialog, type ContractDocData } from "./ContractFileDialog";
-import { MelketunPipelineSection } from "./MelketunPipelineSection";
+// PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): MelketunPipelineSection حذف شد (حذف کامل ملکتون)
 // PN-020/گام اول-ج۱ — برچسب فارسی وضعیت معامله از لایهٔ غنی‌سازی
 import { txStatusLabel } from "@/lib/melk-api/tx-enrichment";
 // P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
@@ -201,7 +201,7 @@ interface TxResponse {
 
 const EMPTY_RESPONSE: TxResponse = { rows: [], total: 0, summary: null as unknown as Summary, dataSource: null as unknown as DataSourceInfo };
 
-export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSignal, tenantId }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode; syncDoneSignal?: number; tenantId?: "tabriz" | "melketun" }) {
+export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSignal }: { sortBy: string; showCharts: boolean; updateSection?: React.ReactNode; syncDoneSignal?: number }) {
   // PN-009 مرحله E — لحن‌های معنایی از رجیستری: مبایعه‌نامه=سبز، اجاره=بنفش (هم‌خانوادهٔ چیپ/ستون)
   const saleTone = valueIconPair("مبایعه‌نامه");
   const rentTone = valueIconPair("اجاره");
@@ -242,12 +242,9 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
     params.set("offset", "0");
     params.set("sortBy", sortBy);
     params.set("sortDir", "desc");
-    // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
-    params.set("tenantId", tenantId ?? "tabriz");
-
     const res = await api<TxResponse>(`/api/crm/transactions?${params.toString()}`);
     return res;
-  }, [applied, sortBy, tenantId]);
+  }, [applied, sortBy]);
 
   const { data, loading, reload } = useTileData(fetchTransactions, {
     errorTitle: "خطا در دریافت معاملات",
@@ -377,28 +374,6 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
 
   // قانون ۰۳۵-B/ج-۸ — کشیدن برای تازه‌سازی
   const { ptrRef, refreshing: ptrSpinning } = usePullToRefresh(() => void fetchTransactions());
-
-  // PN-047/گام اول-۲ — ملکتون: نمای مختص کسب‌وکار (خط لولهٔ فروش CRM) جایگزین
-  // بخش‌های تبریز-محور می‌شود؛ فهرست زیر آن صادقانه خالی است (صفر معامله در CRM).
-  if (tenantId === "melketun") {
-    return (
-      <div className="space-y-6">
-        <PtrIndicator innerRef={ptrRef} spinning={ptrSpinning} />
-        <MelketunPipelineSection />
-        {/* حالت خالی فهرست — صادقانه (۰ معامله در CRM ملکتون) */}
-        <Card>
-          <CardContent className="p-6 text-center space-y-2" id="m9-melketun-empty">
-            <p className="text-sm font-bold">فهرست معاملات ملکتون: صفر رکورد (عین CRM)</p>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              هیچ پرونده‌ای در CRM ملکتون به مرحلهٔ «قرارداد» یا «معاملهٔ موفق» قیف فروش نرسیده است — به محض
-              ثبت نخستین معامله در CRM و اجرای همگام‌سازی بعدی، رکوردها این‌جا ظاهر می‌شوند.
-              داده‌های ملک تبریز کاملاً دست‌نخورده‌اند (جداسازی tenant — PN-044).
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -692,7 +667,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
               <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
             </Button>
             {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
-            <ExcelImportButton entity="transactions" compact tenantId={tenantId ?? "tabriz"} onImported={() => void fetchTransactions()} />
+            <ExcelImportButton entity="transactions" compact onImported={() => void fetchTransactions()} />
           </div>
           {rows && rows.length > 0 && (
             <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
@@ -720,9 +695,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                   setApplied(EMPTY_FILTERS);
                 }}
               />
-              {/* PN-047 — پیام قدیمی ملکتون حذف شد: نمای M9 ملکتون در بالای همین
-                  کامپوننت early-return می‌شود (MelketunPipelineSection) و هرگز
-                  به این بخش تبریز-محور نمی‌رسد. */}
+              {/* PN-059 — نمای مخصوص ملکتون حذف شد (حذف کامل ملکتون — دستور مالک ۱۴۰۵/۰۸/۱۱). */}
             </div>
           ) : (
             <Table>
@@ -977,7 +950,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                       </TableCell>
                       {/* ۱۲ — اطلاعات: همیشه آخرین سلول (قانون ساختاری گام اول-۳) — فایل متنی کامل */}
                       <TableCell>
-                        <InfoButton tenant={tenantId ?? "tabriz"} type="transaction" code={t.propertyCode} />
+                        <InfoButton type="transaction" code={t.propertyCode} />
                       </TableCell>
                     </TableRow>
                     );

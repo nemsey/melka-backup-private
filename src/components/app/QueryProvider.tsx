@@ -8,7 +8,7 @@
  *   · refetchOnWindowFocus → بازگشت به تب = تازگی بی‌درنگ
  *   · پایدارسازی به IndexedDB (idb-keyval) — دسترسی آفلاین + boot سریع
  * ⊙ درس زندهٔ بیلد ۲۰۲۶-۱۰-۲۸ ۲۲:۴۰ (Error: indexedDB is not defined در
- *   prerender /dashboard/melketun): هیدرات IndexedDB هرگز در مسیر رندر نیست —
+ *   prerender مسیرهای داشبورد): هیدرات IndexedDB هرگز در مسیر رندر نیست —
  *   فقط در useEffect (client-only). سازندهٔ QueryClient صافِ نابی است.
  */
 

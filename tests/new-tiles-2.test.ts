@@ -328,7 +328,7 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     const ids = tileRegistry.listRoot("OWNER").map((t) => t.id);
     expect(ids).toEqual([
       "file-finder", "smart-matching", "learning-tier", "settings",
-      "tenant-dashboard-tabriz", "tenant-dashboard-melketun",
+      "tenant-dashboard-tabriz",
     ]); // PN-043/فاز ۲ (شورا-ن۰۸۷): شش ریشه — M1-M4 درون داشبوردهای tenant
     // PN-043: M1-M4 درون ظرف tenant-dashboards (wrapper — نه تکرار)
     expect(tileRegistry.listChildren("tenant-dashboards", "OWNER").map((t) => t.id)).toEqual([
