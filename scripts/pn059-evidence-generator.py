@@ -92,6 +92,12 @@ ev = {
         "liveProof": {
             "script": "scripts/pn059-test-relay-connection.ts",
             "result": "۲× HTTP 200 از arus-api از مسیر رلهٔ موبایل: traded-count در ۸٫۰ث · realtors/list در ۲۵٫۷ث (زیر مهلت قدیمی ۲۵ث می‌مرد — عین باگ)",
+            "fullSyncResult": {
+                "ok": True, "durationMin": 2.7, "transactions": 818, "experts": 199,
+                "interactions": 0, "visits": 2, "supplyDemand": 5, "contracts": 1,
+                "note": "سینک کامل شش‌خانواده از مسیر رلهٔ موبایل در ۲٫۷ دقیقه — SyncState پاک شد (lastSuccessAt=22:48:57Z · attempts=0) · ۲۰ معاملهٔ تازه",
+                "checkpoints": "transactions 9/9 · experts 3/3 · visits 1/1 · supply-demand 1/1 — همه complete",
+            },
             "queueAfterRestart": relay_stats,
         },
         "breakerState": "consecutiveFailures=0 · nextAttemptAt=null · lockUntil=null (هر سه میزبان)",

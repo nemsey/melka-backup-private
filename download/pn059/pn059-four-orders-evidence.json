@@ -1,9 +1,9 @@
 {
   "schema": "melka-pn059-four-orders-evidence",
-  "generatedAt": "2026-11-01T22:21:42+00:00",
+  "generatedAt": "2026-11-01T22:49:59+00:00",
   "trigger": "فرمان چهارجانیهٔ مالک ۲۰۲۶-۱۱-۰۲ (۱۴۰۵/۰۸/۱۱): (۱) حذف کامل کاشی ملکتون + همهٔ داده‌ها + مواردش در بروزرسانی سریع اطلاعات حیاتی (۲) رفع کامل عدم اتصال api ملک‌تبریز (۳) حذف خودکار فایل‌های بی‌اقدام فایل‌یابی پس از ۳ روز (۴) قانون تثبیت/بقا/دادهٔ مقدس/لینک در پایان گزارش",
-  "commit": "43ba21eff34ee11a3718203bdb0e086d9526a57e",
-  "remoteMain": "43ba21eff34ee11a3718203bdb0e086d9526a57e",
+  "commit": "8d2c07ff3f2e3f30f0d16424f8465a487abb96c5",
+  "remoteMain": "8d2c07ff3f2e3f30f0d16424f8465a487abb96c5",
   "buildFingerprint": "43ba21eff34e",
   "order1_melketunRemoval": {
     "scope": "کاشی «داشبورد ملکتون» (wrapper M7-M10) + صفحه‌های /dashboard/melketun و /settings/melketun + ۶ روت API (integrations/crm ملکتون + records/changes) + بخش اتصال تنظیمات + خط لولهٔ M7/M8 + کاوش معاملات ملکتون + کار Worker ملکتون + زیرسیستم provenance/تغییرات (merge.ts) + فایل‌های راز/وضعیت ران‌تایم",
@@ -26,7 +26,7 @@
       "tabrizUntouched": {
         "PropertyRecord": 28377,
         "RequestRecord": 25979,
-        "ExpertRecord": 304,
+        "ExpertRecord": 307,
         "ExpertProfile": 143
       }
     },
@@ -85,9 +85,21 @@
     "liveProof": {
       "script": "scripts/pn059-test-relay-connection.ts",
       "result": "۲× HTTP 200 از arus-api از مسیر رلهٔ موبایل: traded-count در ۸٫۰ث · realtors/list در ۲۵٫۷ث (زیر مهلت قدیمی ۲۵ث می‌مرد — عین باگ)",
+      "fullSyncResult": {
+        "ok": true,
+        "durationMin": 2.7,
+        "transactions": 818,
+        "experts": 199,
+        "interactions": 0,
+        "visits": 2,
+        "supplyDemand": 5,
+        "contracts": 1,
+        "note": "سینک کامل شش‌خانواده از مسیر رلهٔ موبایل در ۲٫۷ دقیقه — SyncState پاک شد (lastSuccessAt=22:48:57Z · attempts=0) · ۲۰ معاملهٔ تازه",
+        "checkpoints": "transactions 9/9 · experts 3/3 · visits 1/1 · supply-demand 1/1 — همه complete"
+      },
       "queueAfterRestart": {
-        "dispatched": 4,
-        "done": 5155,
+        "dispatched": 1,
+        "done": 5825,
         "expired": 994,
         "failed": 65
       }
@@ -112,9 +124,9 @@
   "order4_laws": {
     "tabitStabilization": {
       "auditPinCheck": "PASS ۷/۷ (صفر pin کد واقعی در کد زنده)",
-      "commit": "43ba21eff34ee11a3718203bdb0e086d9526a57e",
+      "commit": "8d2c07ff3f2e3f30f0d16424f8465a487abb96c5",
       "pushedToMirror": true,
-      "buildEqualsHead": "[G3] ✓ بیلد = HEAD (43ba21e) — main و standalone هم‌راستا"
+      "buildEqualsHead": "[G3] ✗ بیلد ≠ HEAD — stale-build توقف: HEAD=8d2c07ff3f2e3f30f0d16424f8465a487abb96c5 · main-build=43ba21eff34ee11a3718203bdb0e086d9526a57e · standalone=43ba21eff34ee11a3718203bdb0e086d9526a57e"
     },
     "baqaSurvival": {
       "package": "upload/.survival/PN-059-20261101",
@@ -124,10 +136,10 @@
       "counts": {
         "PropertyRecord": 28377,
         "RequestRecord": 25979,
-        "ExpertRecord": 304,
+        "ExpertRecord": 307,
         "User": 4,
-        "AuditLog": 8689,
-        "TransactionRecord": 817
+        "AuditLog": 8702,
+        "TransactionRecord": 818
       },
       "quickCheck": "ok",
       "journalMode": "wal",
@@ -137,7 +149,7 @@
   },
   "workerJobs": {
     "lcpp-cycle": {
-      "running": true,
+      "running": false,
       "runs": 1,
       "lastError": null
     },
@@ -153,16 +165,16 @@
     },
     "relay-health-check": {
       "running": false,
-      "runs": 4,
+      "runs": 9,
       "lastError": null
     }
   },
   "syncStateAfterRestart": {
-    "lastSyncedAt": 1793562587692,
-    "lastSuccessAt": 1792392379102,
-    "lastError": "ارتباط با سامانه ملک تبریز برقرار نشد.",
-    "lastErrorCode": "NETWORK_ERROR",
-    "attempts": 22
+    "lastSyncedAt": 1793573173850,
+    "lastSuccessAt": 1793573337274,
+    "lastError": null,
+    "lastErrorCode": null,
+    "attempts": 0
   },
   "notesForOwner": "چرخهٔ کاتالوگ در حال پردازش صفحات ازسرگیری‌شده است؛ نخستین سینک شش‌خانوادهٔ تازه (تیک ۵) با اولویت ۲ و مهلت ۱۱۰ث اجرا می‌شود و SyncState را پاک می‌کند."
 }
