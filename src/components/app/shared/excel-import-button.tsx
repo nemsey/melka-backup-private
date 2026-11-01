@@ -26,6 +26,9 @@ interface ExcelImportButtonProps {
   compact?: boolean;
   /** تازه‌سازی داده‌های صفحه پس از ایمپورت موفق */
   onImported?: () => void;
+  /** PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲) — tenant همین فهرست: 'melketun' ⇒ ملکتون؛
+   *  رکوردهای تازه در همان داشبوردِ فهرستِ بارگذاری‌شده ثبت می‌شوند */
+  tenantId?: "tabriz" | "melketun";
 }
 
 interface ImportResponse {
@@ -38,7 +41,7 @@ interface ImportResponse {
   fileName: string;
 }
 
-export function ExcelImportButton({ entity, label = "بارگذاری اکسل", compact = false, onImported }: ExcelImportButtonProps) {
+export function ExcelImportButton({ entity, label = "بارگذاری اکسل", compact = false, onImported, tenantId }: ExcelImportButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
@@ -56,7 +59,8 @@ export function ExcelImportButton({ entity, label = "بارگذاری اکسل",
     }
     setBusy(true);
     try {
-      const res = await apiUpload<ImportResponse>(`/api/crm/import/${entity}`, file);
+      const q = tenantId === "melketun" ? "?tenantId=melketun" : "";
+      const res = await apiUpload<ImportResponse>(`/api/crm/import/${entity}${q}`, file);
       const detail =
         `از ${faNumber(res.total)} ردیف — ${faNumber(res.created)} ایجاد، ${faNumber(res.updated)} بروزرسانی، ${faNumber(res.skipped)} نادیده` +
         (res.errors.length > 0 ? ` · ${faNumber(res.errors.length)} خطا (نمونه: ${res.errors[0]})` : "");

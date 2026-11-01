@@ -1,0 +1,14 @@
+# melka-proxy — پیکربندی Cloudflare Workers (PN-030 · شورا-ن۰۳۵ · لایهٔ ۱)
+# راه‌اندازی مالک: ۱۵ ثانیه — bash deploy.sh را اجرا کنید و OAuth را در مرورگر تأیید کنید.
+
+name = "melka-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# پلن رایگان: ۱۰۰٬۰۰۰ درخواست/روز — صفر هزینه (قانون اساسی شورا)
+# راز MELKA_PROXY_SECRET با دستور زیر نصب می‌شود (هرگز در این فایل نوشته نمی‌شود):
+#   npx wrangler secret put MELKA_PROXY_SECRET
+#   ← همان مقدار MELK_PROXY_SECRET در env.platform.json کانتینر ملکا
+
+[observability]
+enabled = true

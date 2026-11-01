@@ -1,0 +1,39 @@
+{
+ "meta": {
+  "test": "B1",
+  "description": "leads — index/assigned/show با scope مجاز",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "empty",
+ "samples_redacted": [
+  {
+   "probe": "leads-index",
+   "status": 403
+  },
+  {
+   "probe": "leads-assigned",
+   "status": 200,
+   "component": "auth/leads/Index",
+   "prop_keys": [
+    "errors",
+    "name",
+    "quote",
+    "auth",
+    "leads",
+    "isAssignedView",
+    "canWatch",
+    "filters",
+    "types",
+    "canCreate",
+    "canEdit",
+    "canDelete",
+    "canAssign"
+   ],
+   "rows_page": 0
+  }
+ ],
+ "finding": "/leads → 403 (مرز مجوز برقرار) · /leads/assigned → 200 با rows:0 (سرنوشتهٔ خودی: خالی) — RBAC درست کار می‌کند"
+}

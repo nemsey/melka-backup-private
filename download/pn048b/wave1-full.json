@@ -1,0 +1,897 @@
+{
+ "T3": {
+  "meta": {
+   "test": "T3",
+   "description": "منشأ owner.mobile در سایت عمومی — ۵ نمونهٔ مجاز (صفحات عمومی)",
+   "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+   "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+   "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+   "redaction_level": "hash"
+  },
+  "verdict": "realtor",
+  "finding": "نمای «مالک» سایت عمومی = کارشناس مسئول آگهی (agent) است، نه مالک واقعی ملک — شاهد: هر ۳ نمونهٔ own: نام/موبایل صفحه با rawOwnerName/ownerMobile حقیقی هم‌خوانی ندارد و ۲ نمونهٔ non-own با نام کارشناس حل‌شدهٔ DB (ownerName=expertName) هم‌خوان است. نتیجهٔ سقف: مسیر عمومی برای M7 (مالک واقعی) هیچ افزودهٔ مجازی ندارد؛ فقط realtor contact.",
+  "samples_redacted": [
+   {
+    "code": "ME8439",
+    "kind": "own",
+    "http": 200,
+    "public_owner_name": {
+     "initial": "ب",
+     "hash": "d24353571d"
+    },
+    "public_owner_mobile": {
+     "hash": "a67f2ee3cd"
+    },
+    "public_owner_siteid": "871",
+    "truth_owner_name_hash": "8d047a52c5",
+    "truth_owner_mobile_hash": "a97c2d2b90",
+    "match_owner_name": false,
+    "match_owner_mobile": false,
+    "origin_sample": "realtor"
+   },
+   {
+    "code": "ME8415",
+    "kind": "own",
+    "http": 200,
+    "public_owner_name": {
+     "initial": "ب",
+     "hash": "d24353571d"
+    },
+    "public_owner_mobile": {
+     "hash": "a67f2ee3cd"
+    },
+    "public_owner_siteid": "871",
+    "truth_owner_name_hash": "a47b258c91",
+    "truth_owner_mobile_hash": "b2826f8f2c",
+    "match_owner_name": false,
+    "match_owner_mobile": false,
+    "origin_sample": "realtor"
+   },
+   {
+    "code": "ME8442",
+    "kind": "non_own",
+    "http": 200,
+    "public_owner_name": {
+     "initial": "آ",
+     "hash": "36b302ed0c"
+    },
+    "public_owner_mobile": {
+     "hash": "25b509f0c4"
+    },
+    "public_owner_siteid": "238",
+    "truth_owner_name_hash": null,
+    "truth_owner_mobile_hash": null,
+    "match_owner_name": null,
+    "match_owner_mobile": null,
+    "origin_sample": "realtor",
+    "match_db_expert_display_name": true
+   },
+   {
+    "code": "ME8441",
+    "kind": "non_own",
+    "http": 200,
+    "public_owner_name": {
+     "initial": "آ",
+     "hash": "36b302ed0c"
+    },
+    "public_owner_mobile": {
+     "hash": "25b509f0c4"
+    },
+    "public_owner_siteid": "238",
+    "truth_owner_name_hash": null,
+    "truth_owner_mobile_hash": null,
+    "match_owner_name": null,
+    "match_owner_mobile": null,
+    "origin_sample": "realtor",
+    "match_db_expert_display_name": true
+   }
+  ],
+  "_t3_postfix": {
+   "at": "2026-10-22T22:50:00Z",
+   "reason": "regex اولیه &quot;-aware نبود (کلاس [^,&] با & برخورد می‌کرد) — استخراج مجدد آفلاین از صفحات ذخیره‌شده با آن‌اسکیپ کامل",
+   "new_requests": 0
+  }
+ },
+ "A1": {
+  "meta": {
+   "test": "A1",
+   "description": "potential-edit — props بازرسی برای ۱۰ شناسهٔ مجاز خودی",
+   "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+   "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+   "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+   "redaction_level": "hash"
+  },
+  "verdict": "schema_only",
+  "samples_redacted": [
+   {
+    "code": "POT4396",
+    "status": 200,
+    "component": "auth/potentials/EditPotential",
+    "prop_keys": [
+     "errors",
+     "name",
+     "quote",
+     "auth",
+     "fieldLists",
+     "id"
+    ],
+    "record_keys": [],
+    "customer_name_field_present": false,
+    "mobile_like_field_present": true
+   },
+   {
+    "code": "POT4395",
+    "status": 200,
+    "component": "auth/potentials/EditPotential",
+    "prop_keys": [
+     "errors",
+     "name",
+     "quote",
+     "auth",
+     "fieldLists",
+     "id"
+    ],
+    "record_keys": [],
+    "customer_name_field_present": false,
+    "mobile_like_field_present": true
+   },
+   {
+    "code": "POT4394",
+    "status": 200,
+    "component": "auth/potentials/EditPotential",
+    "prop_keys": [
+     "errors",
+     "name",
+     "quote",
+     "auth",
+     "fieldLists",
+     "id"
+    ],
+    "record_keys": [],
+    "customer_name_field_present": false,
+    "mobile_like_field_present": true
+   },
+   {
+    "code": "POT4393",
+    "status": 200,
+    "component": "auth/potentials/EditPotential",
+    "prop_keys": [
+     "errors",
+     "name",
+     "quote",
+     "auth",
+     "fieldLists",
+     "id"
+    ],
+    "record_keys": [],
+    "customer_name_field_present": false,
+    "mobile_like_field_present": true
+   },
+   {
+    "code": "POT4392",
+    "status": 200,
+    "component": "auth/potentials/EditPotential",
+    "prop_keys": [
+     "errors",
+     "name",
+     "quote",
+     "auth",
+     "fieldLists",
+     "id"
+    ],
+    "record_keys": [],
+    "customer_name_field_present": false,
+    "mobile_like_field_present": true
+   },
+   {
+    "code": "POT4391",
+    "status": 200,
+    "component": "auth/potentials/EditPotential",
+    "prop_keys": [
+     "errors",
+     "name",
+     "quote",
+     "auth",
+     "fieldLists",
+     "id"
+    ],
+    "record_keys": [],
+    "customer_name_field_present": false,
+    "mobile_like_field_present": true
+   },
+   {
+    "code": "POT4390",
+    "status": 200,
+    "component": "auth/potentials/EditPotential",
+    "prop_keys": [
+     "errors",
+     "name",
+     "quote",
+     "auth",
+     "fieldLists",
+     "id"
+    ],
+    "record_keys": [],
+    "customer_name_field_present": false,
+    "mobile_like_field_present": true
+   },
+   {
+    "code": "POT4389",
+    "status": 200,
+    "component": "auth/potentials/EditPotential",
+    "prop_keys": [
+     "errors",
+     "name",
+     "quote",
+     "auth",
+     "fieldLists",
+     "id"
+    ],
+    "record_keys": [],
+    "customer_name_field_present": false,
+    "mobile_like_field_present": true
+   },
+   {
+    "code": "POT4388",
+    "status": 200,
+    "component": "auth/potentials/EditPotential",
+    "prop_keys": [
+     "errors",
+     "name",
+     "quote",
+     "auth",
+     "fieldLists",
+     "id"
+    ],
+    "record_keys": [],
+    "customer_name_field_present": false,
+    "mobile_like_field_present": true
+   },
+   {
+    "code": "POT4396",
+    "status": 404,
+    "path": "/Potentials/{id}/edit",
+    "verdict_sample": "literal_path"
+   }
+  ]
+ },
+ "A2": {
+  "meta": {
+   "test": "A2",
+   "description": "filing-edit — بازرسی ownerName/ownerMobile/address با redaction · تفکیک ۴۰۳ از ۵۰۰",
+   "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+   "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+   "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+   "redaction_level": "hash"
+  },
+  "verdict": "error_500",
+  "breakdown": {
+   "200": 0,
+   "403": 0,
+   "5xx": 8
+  },
+  "samples_redacted": [
+   {
+    "code": "ME8439",
+    "status": 500,
+    "status_class": "500_server_error"
+   },
+   {
+    "code": "ME8418",
+    "status": 500,
+    "status_class": "500_server_error"
+   },
+   {
+    "code": "ME8415",
+    "status": 500,
+    "status_class": "500_server_error"
+   },
+   {
+    "code": "ME8414",
+    "status": 500,
+    "status_class": "500_server_error"
+   },
+   {
+    "code": "ME8413",
+    "status": 500,
+    "status_class": "500_server_error"
+   },
+   {
+    "code": "ME8365",
+    "status": 500,
+    "status_class": "500_server_error"
+   },
+   {
+    "code": "ME8330",
+    "status": 500,
+    "status_class": "500_server_error"
+   },
+   {
+    "code": "ME8329",
+    "status": 500,
+    "status_class": "500_server_error"
+   },
+   {
+    "code": "ME8439",
+    "status": 404,
+    "path": "/Melketunfilingplus/{id}/edit"
+   },
+   {
+    "code": "ME8439",
+    "status": 404,
+    "path": "/Melketunfilingplus/edit/{id}"
+   }
+  ]
+ },
+ "A3": {
+  "meta": {
+   "test": "A3",
+   "description": "پارامترهای Vtiger — کشف محدودیت صفحه‌بندی (نه دور زدن scope)",
+   "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+   "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+   "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+   "redaction_level": "hash"
+  },
+  "verdict": "no_change",
+  "note": "هدف: کشف محدودیت صفحه‌بندی در دامنهٔ مجاز، نه دور زدن scope",
+  "samples_redacted": [
+   {
+    "probe": "filing-baseline",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "id",
+     "full_id",
+     "code",
+     "saleType",
+     "fileType",
+     "area",
+     "ownerName",
+     "price",
+     "prepayment",
+     "rent",
+     "assignedUser",
+     "phone",
+     "agency",
+     "source",
+     "status",
+     "createdTime",
+     "images"
+    ],
+    "component": "auth/filings/Melketunfilingplus"
+   },
+   {
+    "probe": "filing-viewname-All",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "id",
+     "full_id",
+     "code",
+     "saleType",
+     "fileType",
+     "area",
+     "ownerName",
+     "price",
+     "prepayment",
+     "rent",
+     "assignedUser",
+     "phone",
+     "agency",
+     "source",
+     "status",
+     "createdTime",
+     "images"
+    ],
+    "component": "auth/filings/Melketunfilingplus"
+   },
+   {
+    "probe": "filing-pageSize-100",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "id",
+     "full_id",
+     "code",
+     "saleType",
+     "fileType",
+     "area",
+     "ownerName",
+     "price",
+     "prepayment",
+     "rent",
+     "assignedUser",
+     "phone",
+     "agency",
+     "source",
+     "status",
+     "createdTime",
+     "images"
+    ],
+    "component": "auth/filings/Melketunfilingplus"
+   },
+   {
+    "probe": "filing-filter-all",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "id",
+     "full_id",
+     "code",
+     "saleType",
+     "fileType",
+     "area",
+     "ownerName",
+     "price",
+     "prepayment",
+     "rent",
+     "assignedUser",
+     "phone",
+     "agency",
+     "source",
+     "status",
+     "createdTime",
+     "images"
+    ],
+    "component": "auth/filings/Melketunfilingplus"
+   },
+   {
+    "probe": "filing-scope-all",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "id",
+     "full_id",
+     "code",
+     "saleType",
+     "fileType",
+     "area",
+     "ownerName",
+     "price",
+     "prepayment",
+     "rent",
+     "assignedUser",
+     "phone",
+     "agency",
+     "source",
+     "status",
+     "createdTime",
+     "images"
+    ],
+    "component": "auth/filings/Melketunfilingplus"
+   },
+   {
+    "probe": "filing-status-all",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "id",
+     "full_id",
+     "code",
+     "saleType",
+     "fileType",
+     "area",
+     "ownerName",
+     "price",
+     "prepayment",
+     "rent",
+     "assignedUser",
+     "phone",
+     "agency",
+     "source",
+     "status",
+     "createdTime",
+     "images"
+    ],
+    "component": "auth/filings/Melketunfilingplus"
+   },
+   {
+    "probe": "pot-baseline",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "full_id",
+     "id",
+     "code",
+     "potentialName",
+     "customerType",
+     "price",
+     "rent",
+     "prepayment",
+     "areas",
+     "contactName",
+     "agency",
+     "assignedUser",
+     "propertyType",
+     "createdTime",
+     "starred",
+     "status"
+    ],
+    "component": "auth/potentials/Potentials"
+   },
+   {
+    "probe": "pot-viewname-All",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "full_id",
+     "id",
+     "code",
+     "potentialName",
+     "customerType",
+     "price",
+     "rent",
+     "prepayment",
+     "areas",
+     "contactName",
+     "agency",
+     "assignedUser",
+     "propertyType",
+     "createdTime",
+     "starred",
+     "status"
+    ],
+    "component": "auth/potentials/Potentials"
+   },
+   {
+    "probe": "pot-pageSize-100",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "full_id",
+     "id",
+     "code",
+     "potentialName",
+     "customerType",
+     "price",
+     "rent",
+     "prepayment",
+     "areas",
+     "contactName",
+     "agency",
+     "assignedUser",
+     "propertyType",
+     "createdTime",
+     "starred",
+     "status"
+    ],
+    "component": "auth/potentials/Potentials"
+   },
+   {
+    "probe": "pot-search-empty",
+    "status": 200,
+    "rows_page": 10,
+    "pagination_meta": "None",
+    "row_keys": [
+     "full_id",
+     "id",
+     "code",
+     "potentialName",
+     "customerType",
+     "price",
+     "rent",
+     "prepayment",
+     "areas",
+     "contactName",
+     "agency",
+     "assignedUser",
+     "propertyType",
+     "createdTime",
+     "starred",
+     "status"
+    ],
+    "component": "auth/potentials/Potentials"
+   }
+  ]
+ },
+ "A6": {
+  "meta": {
+   "test": "A6",
+   "description": "search scope — آیا جستجو فقط در دامنهٔ مجاز برمی‌گردد؟",
+   "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+   "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+   "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+   "redaction_level": "hash"
+  },
+  "verdict": "scope_limited",
+  "substitution_note": "جستجوی نام اشخاص (آبرسان/نصر) با واژه‌های عمومی (آپارتمان/خریدار) جایگزین شد — همان سنجهٔ scope با حداقل قرینهٔ PII ثالث؛ منع enumeration و رعایت G7.",
+  "verdict_criterion": "نتیجهٔ جستجو شامل ردیف‌های متعلق به کاربران دیگر = scope_authorized (عرض دامنه)؛ فقط خودی/عمومی = scope_limited",
+  "samples_redacted": [
+   {
+    "probe": "filing-search-apartment",
+    "status": 200,
+    "rows_page": 10,
+    "assigned_user_distribution": {
+     "19x617": 10
+    },
+    "any_own_rows": true,
+    "row_keys": [
+     "id",
+     "full_id",
+     "code",
+     "saleType",
+     "fileType",
+     "area",
+     "ownerName",
+     "price",
+     "prepayment",
+     "rent",
+     "assignedUser",
+     "phone",
+     "agency",
+     "source",
+     "status",
+     "createdTime",
+     "images"
+    ]
+   },
+   {
+    "probe": "filing-search-kharidar",
+    "status": 200,
+    "rows_page": 0,
+    "assigned_user_distribution": {},
+    "any_own_rows": false,
+    "row_keys": []
+   },
+   {
+    "probe": "pot-search-apartment",
+    "status": 200,
+    "rows_page": 10,
+    "assigned_user_distribution": {
+     "19x617": 10
+    },
+    "any_own_rows": true,
+    "row_keys": [
+     "full_id",
+     "id",
+     "code",
+     "potentialName",
+     "customerType",
+     "price",
+     "rent",
+     "prepayment",
+     "areas",
+     "contactName",
+     "agency",
+     "assignedUser",
+     "propertyType",
+     "createdTime",
+     "starred",
+     "status"
+    ]
+   },
+   {
+    "probe": "pot-search-kharidar",
+    "status": 200,
+    "rows_page": 0,
+    "assigned_user_distribution": {},
+    "any_own_rows": false,
+    "row_keys": []
+   },
+   {
+    "probe": "filing-search-value-param",
+    "status": 200,
+    "rows_page": 10,
+    "assigned_user_distribution": {
+     "19x617": 10
+    },
+    "any_own_rows": true,
+    "row_keys": [
+     "id",
+     "full_id",
+     "code",
+     "saleType",
+     "fileType",
+     "area",
+     "ownerName",
+     "price",
+     "prepayment",
+     "rent",
+     "assignedUser",
+     "phone",
+     "agency",
+     "source",
+     "status",
+     "createdTime",
+     "images"
+    ]
+   },
+   {
+    "probe": "pot-q-param",
+    "status": 200,
+    "rows_page": 10,
+    "assigned_user_distribution": {
+     "19x617": 10
+    },
+    "any_own_rows": true,
+    "row_keys": [
+     "full_id",
+     "id",
+     "code",
+     "potentialName",
+     "customerType",
+     "price",
+     "rent",
+     "prepayment",
+     "areas",
+     "contactName",
+     "agency",
+     "assignedUser",
+     "propertyType",
+     "createdTime",
+     "starred",
+     "status"
+    ]
+   }
+  ]
+ },
+ "B4": {
+  "meta": {
+   "test": "B4",
+   "description": "properties/GetFromVTiger با session مجاز — ?id/?code/?type با شناسه‌های خودی",
+   "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+   "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+   "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+   "redaction_level": "hash"
+  },
+  "verdict": "not_found",
+  "samples_redacted": [
+   {
+    "probe": "crm?id=own",
+    "status": 404,
+    "content_type": "text/html; charset=UTF-8",
+    "json_body": false
+   },
+   {
+    "probe": "crm?code=own",
+    "status": 404,
+    "content_type": "text/html; charset=UTF-8",
+    "json_body": false
+   },
+   {
+    "probe": "crm?type=listing",
+    "status": 404,
+    "content_type": "text/html; charset=UTF-8",
+    "json_body": false
+   },
+   {
+    "probe": "public?id=own",
+    "status": 404,
+    "content_type": "text/html; charset=UTF-8",
+    "json_body": false
+   }
+  ],
+  "finding": "مسیر /property/GetFromVTiger روی هر دو هاست (CRM + عمومی) وجود ندارد (404) — یافته: endpoint منقضی/حذف‌شده"
+ },
+ "N4": {
+  "meta": {
+   "test": "N4",
+   "description": "قرارداد JSON — XHR / ?format=json / Accept روی لیست و جزئیات مجاز",
+   "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+   "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+   "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+   "redaction_level": "hash"
+  },
+  "verdict": "inertia_html",
+  "samples_redacted": [
+   {
+    "endpoint": "list-filings",
+    "variant": "xhr",
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "is_json": false,
+    "inertia_component": "auth/filings/Melketunfilingplus"
+   },
+   {
+    "endpoint": "list-filings",
+    "variant": "accept-json",
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "is_json": false,
+    "inertia_component": "auth/filings/Melketunfilingplus"
+   },
+   {
+    "endpoint": "list-potentials",
+    "variant": "xhr",
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "is_json": false,
+    "inertia_component": "auth/potentials/Potentials"
+   },
+   {
+    "endpoint": "list-potentials",
+    "variant": "accept-json",
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "is_json": false,
+    "inertia_component": "auth/potentials/Potentials"
+   },
+   {
+    "endpoint": "detail-own-filing",
+    "variant": "xhr",
+    "status": 500,
+    "content_type": "text/html; charset=utf-8",
+    "is_json": false,
+    "inertia_component": "errors/Error500"
+   },
+   {
+    "endpoint": "detail-own-filing",
+    "variant": "accept-json",
+    "status": 500,
+    "content_type": "text/html; charset=utf-8",
+    "is_json": false,
+    "inertia_component": "errors/Error500"
+   },
+   {
+    "endpoint": "detail-own-potential",
+    "variant": "xhr",
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "is_json": false,
+    "inertia_component": "auth/potentials/PublicPotentials"
+   },
+   {
+    "endpoint": "detail-own-potential",
+    "variant": "accept-json",
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "is_json": false,
+    "inertia_component": "auth/potentials/PublicPotentials"
+   }
+  ]
+ },
+ "_corrections": {
+  "at": "2026-10-22T22:45:00Z",
+  "reason": "requests.Response.__bool__ == `ok` → «if r else -1» خطا برای 404/500؛ اصلاح از روی لاگ (شاهد قانون ۱۵)",
+  "fixed": [
+   {
+    "test": "A1",
+    "sample": "POT4396",
+    "status_-1_to": 404
+   },
+   {
+    "test": "A2",
+    "path": "/Melketunfilingplus/{id}/edit",
+    "status_-1_to": 404
+   },
+   {
+    "test": "A2",
+    "path": "/Melketunfilingplus/edit/{id}",
+    "status_-1_to": 404
+   },
+   {
+    "test": "B4",
+    "probe": "crm?id=own",
+    "status_-1_to": 404
+   },
+   {
+    "test": "B4",
+    "probe": "crm?code=own",
+    "status_-1_to": 404
+   },
+   {
+    "test": "B4",
+    "probe": "crm?type=listing",
+    "status_-1_to": 404
+   },
+   {
+    "test": "B4",
+    "probe": "public?id=own",
+    "status_-1_to": 404
+   },
+   {
+    "test": "B4",
+    "verdict": "permission_required → not_found"
+   }
+  ]
+ }
+}

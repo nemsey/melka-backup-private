@@ -1,0 +1,44 @@
+{
+ "phase": "PN-031-F · فاز D — کد تازهٔ مالک + QR",
+ "issuedAt": "2026-10-14T08:25:50Z",
+ "device": {
+  "deviceId": "poco-f3-352f68",
+  "label": "Poco F3 مالک"
+ },
+ "enrollCode": "0fa47ba6fa5b650a4a8cd2d20a0648739124",
+ "expiresAt": "2026-10-14T08:55:50.921Z",
+ "installCommand": "pkg install -y curl openssl jq && curl -fsSL \"https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=0fa47ba6fa5b650a4a8cd2d20a0648739124\" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh",
+ "qr": {
+  "png640": "/deliver/pn031e/qr-install.png",
+  "settingsSvgRoute": "200 با احراز (مسیر UI)"
+ },
+ "linksChecked": [
+  {
+   "name": "bootstrap-با-کد",
+   "status": 200,
+   "url": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=0fa47ba6fa5b650a4a8cd2d20a0648739124"
+  },
+  {
+   "name": "qr-install.png",
+   "status": 200,
+   "url": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/deliver/pn031e/qr-install.png"
+  },
+  {
+   "name": "qr-apk.svg",
+   "status": 200,
+   "url": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/deliver/pn031d/qr-apk.svg"
+  },
+  {
+   "name": "melka-relay.apk",
+   "status": 200,
+   "url": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/deliver/pn031d/melka-relay.apk"
+  }
+ ],
+ "codeStatusInSettings": "installing",
+ "ownerGuide": {
+  "path": "/deliver/pn031e/OWNER-GUIDE.html",
+  "status": 200
+ },
+ "serverBuild": "f28c601-20261014-0824 (= HEAD)",
+ "verdict": "PASS"
+}

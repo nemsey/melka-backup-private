@@ -1,0 +1,38 @@
+{
+  "at": "2026-10-17T11:48:01.493Z",
+  "phase": "PN-038/۶.۱ — پاکسازی کدهای مرده",
+  "items": [
+    {
+      "target": "Offline-mode",
+      "verdict": "REMOVED",
+      "evidence": [
+        "src/lib/melk-api/offline-mode.ts حذف فیزیکی شد",
+        "گاردها از client.ts (armCall گارد ۱ + probeGet) · provider.ts · catalog-daemon.ts · indicators.ts · instrumentation.ts · jobs.ts برداشته شد",
+        "connection-overview: فیلد offlineMode → false ثابت (سازگاری شکل پاسخ)",
+        "پرچم MELK_ARM_OFFLINE از ن۰۵۴ خاموش بود — کدِ زحمت‌ساز بدون اثر"
+      ],
+      "tests": "pn029 A بخش بازنویسی (۴ تست حذف-محور) · D-3 · E-1 · pn030 F-1"
+    },
+    {
+      "target": "Old OTP",
+      "verdict": "ALREADY-REMOVED (PN-029/۰۳۴ — راستی‌آمایی مجدد)",
+      "evidence": [
+        "src/lib/auth/otp-lock.ts وجود ندارد",
+        "ماژول rate-limit قدیمی و روت otp-burn برافتاده‌اند (تست‌های pn029 C)",
+        "صفر ردی از قفل تک‌بارمصرف در مسیرهای ورود"
+      ]
+    },
+    {
+      "target": "Cloudflare (melka-proxy)",
+      "verdict": "KEPT — زنده است، مرده نیست",
+      "evidence": [
+        "لایهٔ ۳ مسیر جایگزین رله: ALT_SERVER_URL → https://<proxy>.workers.dev/relay (نسل I به بعد)",
+        "گارد audit-mobile-relay.sh سورس واکِر را وارسی می‌کند (۲ قانون)",
+        "تست‌های pn030 B + pn031i ب-۴..ب-۶ سورس واکِر را قفل کردند",
+        "توکن دیپلوی cloudflare-token.env توسط بسته‌های بقا کپی می‌شود"
+      ],
+      "note": "دکترین «اول تشخیص، بعد اقدام»: حذف این لایه = شکستن ۳ فایل تست + گارد + قابلیت مسیر جایگزین. شاهد برای جلسهٔ بعدی شورا."
+    }
+  ],
+  "regression": "tsc صفر · تست‌های affected سبز"
+}

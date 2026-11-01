@@ -16,6 +16,9 @@
  */
 
 import type { MatchCandidate, MatchResult } from "./matching-engine";
+
+// باز-صادرکردن نوع برای مصرف‌کنندگان (تست PN-028 و کاشی تطبیق)
+export type { MatchResult };
 import { ALERT_SCORE_THRESHOLD } from "./matching-engine";
 
 /* ───────────────────────── ۰) نرمال‌سازی جست‌وجوی فارسی ───────────────────────── */
@@ -117,7 +120,8 @@ export interface FactorAnalysis {
   evidenceBacked: boolean;
 }
 
-/** کلیدهای عوامل موتور → برچسب و رنگ — ترتیب عین reasons موتور */
+/** کلیدهای عوامل موتور → برچسب و رنگ — ترتیب عین reasons موتور
+ *  PN-028/رابعاً-د — سه عامل تازهٔ فراکامل (اتاق/طبقه/ساخت) */
 const FACTOR_META: Record<string, { label: string; tone: FactorAnalysis["tone"] }> = {
   "فاصله قیمت": { label: "فاصله قیمت", tone: "underprice" },
   "نزدیکی جغرافیایی": { label: "نزدیکی جغرافیایی", tone: "location" },
@@ -125,6 +129,9 @@ const FACTOR_META: Record<string, { label: string; tone: FactorAnalysis["tone"] 
   "تازگی آگهی": { label: "تازگی آگهی", tone: "location" },
   "سابقه کارشناس": { label: "سابقه کارشناس", tone: "other" },
   "تطابق نوع ملک": { label: "تطابق نوع ملک", tone: "personal" },
+  "تناسب اتاق": { label: "تناسب اتاق", tone: "personal" },
+  "تناسب طبقه": { label: "تناسب طبقه", tone: "location" },
+  "تناسب سال ساخت": { label: "تناسب سال ساخت", tone: "other" },
 };
 
 /** تحلیل تجزیه‌شدهٔ امتیازدهی یک کاندیدا — عین «تحلیل هوشمند امتیازدهی» فایل‌یابی */
@@ -189,6 +196,20 @@ export function predictMatchRejectionReasons(
   const meterage = byFactor.get("تناسب متراژ");
   if (meterage && meterage.value < 0.6 && !/خنثی/.test(meterage.note)) {
     out.push({ key: "meterage-off", title: "متراژ ملک خارج از بازهٔ درخواست است", likely: 60, hint: meterage.note });
+  }
+
+  // PN-028/رابعاً-د — دلایل رد از عوامل تازهٔ فراکامل
+  const rooms = byFactor.get("تناسب اتاق");
+  if (rooms && rooms.value < 0.6 && !/خنثی/.test(rooms.note)) {
+    out.push({ key: "rooms-off", title: "تعداد اتاق با خواستهٔ مشتری نمی‌خواند", likely: 50, hint: rooms.note });
+  }
+  const floor = byFactor.get("تناسب طبقه");
+  if (floor && floor.value < 0.6 && !/خنثی/.test(floor.note)) {
+    out.push({ key: "floor-off", title: "طبقهٔ ملک خارج از بازهٔ درخواست است", likely: 45, hint: floor.note });
+  }
+  const age = byFactor.get("تناسب سال ساخت");
+  if (age && age.value < 0.6 && !/خنثی/.test(age.note)) {
+    out.push({ key: "age-off", title: "سال ساخت ملک با انتظار مشتری فاصله دارد", likely: 45, hint: age.note });
   }
 
   const freshness = byFactor.get("تازگی آگهی");
@@ -259,9 +280,70 @@ function faScore(n: number): string {
   return new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 2 }).format(n);
 }
 
+/* ───────────────────────── ۵-ب) تحلیل چندوجهی (PN-028/رابعاً-د — فراکامل) ───────────────────────── */
+
+export interface MatchDimension {
+  /** کلید بعد */
+  key: "financial" | "spatial" | "physical" | "human" | "temporal";
+  label: string;
+  hint: string;
+  /** امتیاز بعد ۰ تا ۱ — میانگین موزون عوامل همان بعد */
+  value: number;
+  /** عوامل سازندهٔ بعد */
+  factors: string[];
+}
+
+/** نگاشت عامل → بعد پنج‌گانهٔ تحلیل چندوجهی */
+const FACTOR_TO_DIMENSION: Record<string, MatchDimension["key"]> = {
+  "فاصله قیمت": "financial",
+  "نزدیکی جغرافیایی": "spatial",
+  "تناسب متراژ": "physical",
+  "تازگی آگهی": "temporal",
+  "سابقه کارشناس": "human",
+  "تطابق نوع ملک": "physical",
+  "تناسب اتاق": "physical",
+  "تناسب طبقه": "physical",
+  "تناسب سال ساخت": "physical",
+};
+
+const DIMENSION_META: Record<MatchDimension["key"], { label: string; hint: string }> = {
+  financial: { label: "بُعد مالی", hint: "تلاقی قیمت و بودجه — ستون فقرات تصمیم اقتصادی" },
+  spatial: { label: "بُعد مکانی", hint: "منطقه و نزدیکی جغرافیایی — سلیقهٔ مکان متقاضی" },
+  physical: { label: "بُعد فیزیکی", hint: "نوع ملک · متراژ · اتاق · طبقه · سال ساخت — تناسب عینی کالای ملک" },
+  human: { label: "بُعد انسانی", hint: "سابقه و اعتبار کارشناس سمت مقابل — ریسک اجرای معامله" },
+  temporal: { label: "بُعد زمانی", hint: "تازگی داده و فوریت — پنجرهٔ عمل‌پذیری معامله" },
+};
+
+/** تحلیل چندوجهی یک کاندیدا — پنج بعد مستقل با امتیاز موزون (سرور می‌سازد، کلاینت نمایش می‌دهد) */
+export function dimensionsOf(candidate: Pick<MatchCandidate, "reasons">): MatchDimension[] {
+  const buckets = new Map<MatchDimension["key"], { sum: number; weight: number; factors: string[] }>();
+  for (const r of candidate.reasons) {
+    const key = FACTOR_TO_DIMENSION[r.factor];
+    if (!key) continue;
+    const cur = buckets.get(key) ?? { sum: 0, weight: 0, factors: [] };
+    cur.sum += r.value * r.weight;
+    cur.weight += r.weight;
+    if (!cur.factors.includes(r.factor)) cur.factors.push(r.factor);
+    buckets.set(key, cur);
+  }
+  const order: MatchDimension["key"][] = ["financial", "spatial", "physical", "human", "temporal"];
+  return order
+    .filter((k) => buckets.has(k))
+    .map((k) => {
+      const b = buckets.get(k)!;
+      return {
+        key: k,
+        label: DIMENSION_META[k].label,
+        hint: DIMENSION_META[k].hint,
+        value: Math.round((b.weight > 0 ? b.sum / b.weight : 0) * 100) / 100,
+        factors: b.factors,
+      };
+    });
+}
+
 /* ───────────────────────── ۶) غنی‌سازی سرتاسری ───────────────────────── */
 
-/** کاندیدای غنی‌شده — همان داده + بند + تحلیل + پیش‌بینی + پیشنهاد تصمیم */
+/** کاندیدای غنی‌شده — همان داده + بند + تحلیل + پیش‌بینی + پیشنهاد تصمیم + ابعاد چندوجهی */
 export interface EnrichedCandidate extends MatchCandidate {
   listingCode?: string;
   requestLabel?: string;
@@ -269,6 +351,8 @@ export interface EnrichedCandidate extends MatchCandidate {
   decision: DecisionSuggestion;
   analysis: FactorAnalysis[];
   predictions: RejectionPrediction[];
+  /** PN-028/رابعاً-د — تحلیل چندوجهی پنج‌گانه (مالی/مکانی/فیزیکی/انسانی/زمانی) */
+  dimensions: MatchDimension[];
 }
 
 /** غنی‌سازی کامل نتیجهٔ موتور برای سرو در کلاینت (فقط در سرور اجرا شود) */
@@ -282,6 +366,7 @@ export function enrichMatchResult(result: MatchResult): {
     decision: decisionSuggestion(c.score),
     analysis: analyzeMatchScoring(c),
     predictions: predictMatchRejectionReasons(c),
+    dimensions: dimensionsOf(c),
   }));
   return { candidates, summary: matchSummary(result) };
 }

@@ -15,6 +15,18 @@
  */
 
 import { MelkApiError, type NestEnvelope } from "./types";
+// PN-030 (شورا-ن۰۳۵): نقطهٔ یگانهٔ خروج — همهٔ فراخوانی‌های ملک تبریز از proxyFetch می‌گذرند.
+// بدون MELK_ARM_PROXY_URL رفتار عین fetch مستقیم است (سازگاری کامل با PN-029).
+import { proxyFetch } from "./proxy";
+import {
+  breakerKeyFromBaseUrl,
+  checkCircuit,
+  circuitLockedError,
+  isAuthPath,
+  isBreakerFailure,
+  recordBreakerFailure,
+  recordBreakerSuccess,
+} from "./circuit-breaker";
 
 export interface HttpRequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -26,6 +38,8 @@ export interface HttpRequestOptions {
   maxRetries: number;
   headers?: Record<string, string>;
   query?: Record<string, string | number | undefined | null>;
+  /** PN-029 — فقط برای فراخوانی صریح مالک (تک‌تلاش OTP)؛ هیچ مسیر خودکاری عبور نمی‌کند */
+  bypassOffline?: boolean;
 }
 
 /** پوشه درخواست/پاسخ استانداردشده */
@@ -84,6 +98,15 @@ function classifyServerFailure(status: number, bodyText: string): MelkApiError {
  * خطاهای ۴xx غیرقابل تلاش مجددند؛ ۵xx/شبکه با backoff تلاش می‌شوند.
  */
 export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<ArmCallResult<T>> {
+  // ---- گارد ۲: فیوز قطع‌کننده (قانون Retry هوشمند — PN-029 مرحلهٔ ۶) ----
+  // PN-041-R (شورا-ن۰۶۸·بند ۲.۳): مسیر هم پاس می‌شود — روتهای رله مستثنی‌اند
+  // PN-049 (دستور شورا ۱۴۰۵/۰۸/۰۱): مسیرهای «ورود» (authentication/*) نیز مستثنی‌اند
+  // — لغو کامل قانون Retry هوشمند PN-029 برای ورود به حساب PM و ARM.
+  const target = breakerKeyFromBaseUrl(opts.baseUrl);
+  const isAuth = isAuthPath(opts.path); // ورود: نه قفل می‌خورد، نه شمارنده می‌بارد
+  const gate = await checkCircuit(target, { path: opts.path });
+  if (!gate.allowed) throw circuitLockedError(gate);
+
   const base = opts.baseUrl.replace(/\/$/, "");
   const qs = buildQuery(opts.query);
   const url = `${base}/${opts.path.replace(/^\//, "")}${qs}`;
@@ -94,7 +117,8 @@ export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<Ar
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
     try {
-      const res = await fetch(url, {
+      // PN-030 — نقطهٔ یگانه: در صورت پیکربندی، عبور از پروکسی ابری (HMAC + whitelist)
+      const res = await proxyFetch(url, {
         method: opts.method ?? "GET",
         signal: controller.signal,
         headers: {
@@ -160,6 +184,9 @@ export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<Ar
           false
         );
       }
+      // PN-029 — موفقیت واقعی: بازنشانی فیوز میزبان (شمارش پیاپی صفر می‌شود)
+      // PN-049: مسیرهای ورود شمارنده را تغییر نمی‌دهند (ورود لغو-محدود است)
+      if (!isAuth) await recordBreakerSuccess(target);
       return { data: (envelope?.data ?? (envelope as unknown as T)) as T, message: envelope?.message };
     } catch (err) {
       if (err instanceof MelkApiError) {
@@ -181,8 +208,11 @@ export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<Ar
   // اگر خطای ۵xx بود و متن Mongoose داشت، دقیق‌تر گزارش شود
   if (lastError?.code === "SERVER_ERROR" && lastBodyText) {
     const refined = classifyServerFailure(lastError.httpStatus, lastBodyText);
-    if (refined.code === "DB_DOWN") return Promise.reject(refined);
+    if (refined.code === "DB_DOWN") lastError = refined;
   }
+  // PN-029 — شکست سمت سرور/شبکه: ثبت در فیوز (backoff ۶/۱۲/۲۴س · ۳ پیاپی = قفل ۲۴س)
+  // PN-049 (دستور شورا): شکستِ «مسیر ورود» هرگز فیوز را نمی‌بارد — ورود بدون محدودیت
+  if (!isAuth && lastError && isBreakerFailure(lastError)) await recordBreakerFailure(target);
   throw lastError ?? new MelkApiError("UNKNOWN", "خطای نامشخص در ارتباط با سامانه ملک تبریز.", 500, false);
 }
 
@@ -193,20 +223,57 @@ export async function melkFetch<T>(opts: HttpRequestOptions): Promise<T> {
 }
 
 /** سنجش تک‌فراخوانی (GET) برای پایش زنده — بدون تلاش مجدد */
-export async function probeGet(baseUrl: string, path: string, timeoutMs = 8000): Promise<{ ok: boolean; httpStatus: number; latencyMs: number; bodyText: string }> {
+export interface ProbeResult {
+  ok: boolean;
+  httpStatus: number;
+  latencyMs: number;
+  bodyText: string;
+  /** PN-029 — پروب به‌خاطر حالت آفلاین انجام نشد */
+  offlineMode?: boolean;
+  /** PN-029 — پروب به‌خاطر فیوز بسته انجام نشد (پیام دقیق در circuitDetail) */
+  circuitLocked?: boolean;
+  circuitDetail?: string;
+}
+
+export async function probeGet(
+  baseUrl: string,
+  path: string,
+  timeoutMs = 8000,
+  _opts?: { bypassOffline?: boolean } // PN-038/۶.۱: پارامتر حفظ شد (سازگاری فراخوان‌ها) — گارد حذف شد
+): Promise<ProbeResult> {
+  const target = breakerKeyFromBaseUrl(baseUrl);
+  const gate = await checkCircuit(target);
+  if (!gate.allowed) {
+    return {
+      ok: false,
+      httpStatus: 0,
+      latencyMs: -1,
+      bodyText: "",
+      circuitLocked: true,
+      circuitDetail: circuitLockedError(gate).message,
+    };
+  }
   const url = `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
   const started = Date.now();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, {
+    // PN-030 — نقطهٔ یگانه: پروب هم در صورت پیکربندی از پروکسی می‌گذرد
+    const res = await proxyFetch(url, {
       method: "GET",
       signal: controller.signal,
       headers: { Accept: "application/json" },
       cache: "no-store",
     });
     const bodyText = await res.text().catch(() => "");
+    // PN-029 — ۵xx = شکست فیوز (سرویس پشتیبان پایین است؛ کوبیدن درِ او فایده ندارد)
+    if (res.status >= 500) await recordBreakerFailure(target);
+    else await recordBreakerSuccess(target);
     return { ok: res.ok || res.status < 500 || bodyText.length > 0, httpStatus: res.status, latencyMs: Date.now() - started, bodyText };
+  } catch (err) {
+    // خطای شبکه/TLS — شکست فیوز ثبت و سپس خطا به صداکننده می‌رسد (قرارداد قبلی)
+    await recordBreakerFailure(target);
+    throw err;
   } finally {
     clearTimeout(timer);
   }

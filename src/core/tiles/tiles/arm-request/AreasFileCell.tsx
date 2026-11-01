@@ -29,7 +29,14 @@ import { faDigits, faNumber } from "@/lib/format";
 /** آستانهٔ فایل‌شدن — بیش از این تعداد، مناطق به شکل «فایل» نمایش داده می‌شوند */
 export const AREAS_FILE_THRESHOLD = 3;
 
-export function AreasFileCell({ requestCode, areaNames }: { requestCode: string; areaNames: string[] }) {
+/** منبع دادهٔ سند مناطق — صداقت provenance (قانون ۱۴):
+ *  تبریز = سامانهٔ ARM ملک تبریز · ملکتون = CRM ملکتون (PN-049/گام ۱-الف) */
+const AREAS_SOURCE_FA: Record<string, string> = {
+  tabriz: "عین دادهٔ سامانه ARM ملک تبریز",
+  melketun: "عین دادهٔ CRM ملکتون",
+};
+
+export function AreasFileCell({ requestCode, areaNames, tenant = "tabriz" }: { requestCode: string; areaNames: string[]; tenant?: string }) {
   const [open, setOpen] = useState(false);
 
   // هنوز از سامانه تکمیل نشده — جای‌نگهدار شفاف
@@ -68,7 +75,7 @@ export function AreasFileCell({ requestCode, areaNames }: { requestCode: string;
         open={open}
         onOpenChange={setOpen}
         title={`فایل مناطق — درخواست کد ${faDigits(requestCode)}`}
-        description={`${faNumber(areaNames.length)} منطقهٔ منتخب این درخواست — عین دادهٔ سامانه ARM ملک تبریز`}
+        description={`${faNumber(areaNames.length)} منطقهٔ منتخب این درخواست — ${AREAS_SOURCE_FA[tenant] ?? AREAS_SOURCE_FA.tabriz}`}
       >
         {/* سند مناطق — فهرست شماره‌دار با اسکرول داخلی (سند بلند، ردیف جدول را نمی‌کشد) */}
         <div

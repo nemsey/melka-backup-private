@@ -1,0 +1,19 @@
+{
+ "scenario": "E-listings",
+ "kind": "http",
+ "ts": "2026-10-05T18:53:47+0000",
+ "mem_available_before_mb": 559.8,
+ "next_server_rss_before_mb": 2896.0,
+ "method": "GET",
+ "url": "http://localhost:3000/api/listings",
+ "http_code": 401,
+ "resp_bytes": 130,
+ "wall_ms": 22,
+ "error": null,
+ "srv_rss_peak_mb": 2896.0,
+ "free_min_mb": 559.5,
+ "samples_n": 1,
+ "mem_available_after_mb": 554.9,
+ "next_server_rss_after_mb": 2899.9,
+ "db_openers_after": 3
+}

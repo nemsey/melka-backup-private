@@ -1,0 +1,32 @@
+VERDICT: PASS
+N-031-C · دروازهٔ پایانی زنده (جلسهٔ فوق‌العاده ۰۴۰)",
+ "testedAt": "2026-10-13T06:18:14Z",
+ "publicUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+ "testA": {
+  "name": "چرخهٔ شکست→موفقیت با همان کد (پایان ۴۰۳)",
+  "attempt1Download": "200",
+  "attempt2SameCode": "200 — همان کد دوباره کار کرد (باگ جلسهٔ ۰۴۰ رفع شد)",
+  "signedPoll": "200/204 — عین اسکریپت گوشی از اینترنت",
+  "codeStatusAfterPoll": "enrolled",
+  "attempt3AfterEnroll": "403 reason=used (سوختن واقعی پس از نصب)",
+  "verdict": "PASS"
+ },
+ "testB": {
+  "name": "سقف ۳ تلاش",
+  "threeDownloads": "200 × 3",
+  "fourthAttempt": "403 reason=limit",
+  "verdict": "PASS"
+ },
+ "testC": {
+  "name": "head-guard جبران خودکار",
+  "liveCheck": "OK build-equals-head",
+  "simulationWitness": "PASS",
+  "verdict": "PASS"
+ },
+ "devices": {
+  "testA": "pn031c-live-a-755d54",
+  "testB": "pn031c-live-b-f08595",
+  "cleanup": "هر دو ابطال شدند"
+ },
+ "verdict": "PASS — هر سه تست دروازهٔ سند ۰۴۰ از URL عمومی سبز"
+}

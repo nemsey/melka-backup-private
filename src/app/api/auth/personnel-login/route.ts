@@ -7,13 +7,17 @@
  *   · سایر کدها ⇒ رجیستری User (PN-016): نقش از User.role؛ بدون User →
  *     ساخت خودکار VIEWER (کمترین امتیاز — بند ۵.۲.۳ مسیر ۲)
  *   · User غیرفعال ⇒ رد ورود 403 (دفاع عمقی)
- * نرخ‌سنج: همان سبد VERIFY_OTP (هر دو مسیر ورود پرسنلی سهمیهٔ واحد دارند — ضد بروت‌فورس).
+ *
+ * PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲ — «لغو هرگونه محدودیت در ورود به حساب PM و ARM»):
+ *   درگاه نرخ/قفل قبلی (checkRate VERIFY_OTP) به‌کلی برافتاد — عین مسیرهای
+ *   request-otp و verify-otp که از PN-034 بی‌درگاه‌اند. recordAttempt فقط رد
+ *   حسابرسی می‌ماند (AuditLog/OtpAttempt) و هرگز مسدود نمی‌کند.
  */
 
 import { NextRequest } from "next/server";
 import { getMelkProvider } from "@/lib/melk-api/provider";
 import { isValidOtpFormat, isValidPersonnelCodeFormat } from "@/lib/auth/crypto";
-import { checkRate, recordAttempt } from "@/lib/auth/rate-limiter";
+import { recordAttempt } from "@/lib/auth/rate-limiter";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse } from "@/lib/auth/guard";
 import { createSession, audit } from "@/lib/auth/session";
@@ -39,10 +43,8 @@ export async function POST(request: NextRequest) {
     }
 
     const ip = clientIp(request); // PN-008 BLOCK 3 — Trusted Proxy
-    const rate = await checkRate(personnelCode, "VERIFY_OTP", ip);
-    if (!rate.allowed) {
-      throw new MelkApiError("RATE_LIMITED", rate.reason ?? "تلاش بیش از حد مجاز.", 429, false);
-    }
+    // PN-051 — صفر محدودیت ورود PM/ARM (دستور شورا ۱۴۰۵/۰۸/۰۲):
+    // هیچ درگاه نرخی وجود ندارد؛ تلاش‌ها فقط برای حسابرسی ثبت می‌شوند.
 
     // ✅ تأیید در سامانه واقعی ARM (عین verify-otp)
     const provider = getMelkProvider();

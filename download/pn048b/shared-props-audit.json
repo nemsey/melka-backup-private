@@ -1,0 +1,38 @@
+{
+ "meta": {
+  "test": "B6",
+  "description": "Inertia shared props — بازرسی آفلاین همهٔ صفحات ذخیره‌شدهٔ مجاز",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "clean",
+ "pages_scanned": 46,
+ "props_frequency": {
+  "errors": 44,
+  "name": 44,
+  "quote": 44,
+  "auth": 44,
+  "page": 16,
+  "filings": 9,
+  "fieldLists": 9,
+  "id": 9,
+  "potentials": 7,
+  "ziggy": 5,
+  "sidebarOpen": 5,
+  "data": 5,
+  "pageLocation": 5,
+  "headTags": 5,
+  "bottom_tag": 5,
+  "canCreate": 4,
+  "canEdit": 4,
+  "canDelete": 4,
+  "keyWord": 4,
+  "canFill": 3
+ },
+ "users_leak_pages": [],
+ "branches_leak_pages": [],
+ "finding": "هیچ کلید shared و هیچ auth.user غیر-خودی در هیچ صفحهٔ ذخیره‌شدهٔ مجاز یافت نشد — props متداول: errors/name/quote/auth (فقط حساب خود کاربر)",
+ "new_requests": 0
+}

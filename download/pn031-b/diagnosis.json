@@ -1,0 +1,67 @@
+{
+  "at": "2026-10-13T03:57:00Z",
+  "document": "ملکا-شورا-ن۰۳۹-۱۴۰۵ · PN-031-B · گام ۱ — تشخیص",
+  "verdict": "RESET-EIGHTH-CONFIRMED — سرور زنده ≠ HEAD؛ بیلد baked کهنه سرو می‌شود",
+  "witnesses": {
+    "w1_live_build": {
+      "url": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/version",
+      "buildId": "1425ee0-20261012-1954",
+      "gitSha": "1425ee07bfdb63530fec84fda67a1314cb0a1867",
+      "gitCommittedAt": "2026-10-10T19:21:42Z",
+      "builtAt": "2026-10-12T19:54:40.850Z",
+      "source": "baked",
+      "http": 200,
+      "note": "بیلد کهنهٔ دوران PN-027 (کامیت ۱۰ اکتبر) — روت‌های رله و UI رله در آن وجود ندارد"
+    },
+    "w2_git_head": {
+      "head": "00779e9ade0690465271fdd21a33848b7cb9c985",
+      "note": "شامل کل PN-031 (رلهٔ موبایل + ۱۰ روت + UI) و PN-031-HOTFIX (getPublicBaseUrl) و کامیت اسنپ‌شات پلتفرم",
+      "platformSnapshotCommit": {
+        "sha": "00779e9",
+        "message": "21984f55-feb2-40ca-8087-5e02eb086bd6 (UUID خالص — الگوی اسنپ‌شات خودکار پلتفرم)",
+        "content": "فقط آرتیفکت‌های رانتایم (db/test، شاهدهای guards، escrow، intelligence-data، لاگ‌ها) — صفر تغییر سورس"
+      }
+    },
+    "w3_relay_routes_404": {
+      "method": "curl عمومی",
+      "results": {
+        "/api/mobile-relay/bootstrap": 404,
+        "/api/mobile-relay/admin/status": 404,
+        "/api/version": 200
+      },
+      "note": "روت‌های رله در بیلد کهنه وجود ندارند — علت خطای ۴۰۴ Termux مالک (هم‌خوان با اسکرین‌شات جلسهٔ ۰۳۹)"
+    },
+    "w4_running_process": {
+      "server": "bun /home/z/my-project/.next/standalone/server.js (PID 1526 · شروع Oct12)",
+      "dotNextBuildId": "1425ee0-20261012-1954",
+      "note": ".next فعلی روی دیسک = همان بیلد کهنهٔ baked است — پلتفرم آن را از کش بازگردانده و سرور از آن اجرا می‌شود"
+    },
+    "w5_existing_guards_gap": {
+      "resetGuard": {
+        "verdict": "HEALTHY equal (false-negative)",
+        "witness": "upload/.runtime/reset-guard.json @ 2026-10-13T03:50:22Z",
+        "why": "این گارد «درخت گیت» را با آینهٔ گیت مقایسه می‌کند (هر دو 00779e9) — درخت گیت سالم است؛ چیزی که برگشته .next/بیلد زنده است، نه گیت"
+      },
+      "previewGuard": {
+        "verdict": "STALE — تشخیص درست اما فقط هشدار",
+        "evidence": "AuditLog: «preview کهنه است: دامنه 1425ee0 سرو می‌کند اما HEAD محلی 00779e9» — تکرار هر ۱۵ دقیقه از لحظهٔ بازنشانی",
+        "why": "این گارد تشخیص می‌دهد ولی هیچ توانایی بیلد/ری‌استارت ندارد — دقیقاً شکافی که head-guard تازه می‌بندد"
+      }
+    }
+  },
+  "rootCause": "بازنشانی هشتم پلتفرم: کانتینر/بیلد از کش پلتفرم به snapshot کهنه (کامیت 1425ee0 · ساخته‌شده 19:54Z) برگشته؛ درخت گیت و دیتابیس محلی دست‌نخورده و سالم مانده‌اند",
+  "impact": {
+    "ownerTermux404": "روت bootstrap در بیلد کهنه نیست → 404",
+    "relayUiMissing": "RelaySetupSection در بیلد کهنه نیست → بخش «رلهٔ موبایل» در تنظیمات نیست",
+    "versionRollback": "ورژن اپ در ظاهر چند نسخه عقب — هر سه علامت مالک یک ریشه دارند",
+    "m1toM5": "بدون آسیب — از دیتابیس محلی کار می‌کنند (صفر قطع خدمت)"
+  },
+  "fix": "بیلد تازه از HEAD=00779e9 + ری‌استارت سرور → سپس مکانیزم پیشگیری head-guard (جلسهٔ ۰۳۹)",
+  "backup": {
+    "file": "db/pre-pn031b-20261013T035611Z.db",
+    "bytes": 327856128,
+    "md5": "52966d8510cb6ed948526e1ebab805c9",
+    "integrity": "ok",
+    "type": "VACUUM گرم پیش از هر تغییر"
+  }
+}

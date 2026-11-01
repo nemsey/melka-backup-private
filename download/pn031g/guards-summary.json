@@ -1,0 +1,16 @@
+{
+ "phase": "PN-031-G · دروازهٔ نهایی (سند ۰۴۷) — نتیجهٔ نهایی پس از توالی پایانی",
+ "at": "2026-10-14T16:13:12Z",
+ "doubleGreen": {
+  "run1": "2741/0",
+  "run2": "2741/0",
+  "note": "رکورد جدید · قبلی ۲۷۲۴ · +۱۷ تست PN-031-G"
+ },
+ "tsc": "صفر خطا",
+ "lint": "صفر خطا",
+ "guards44": "۴۴/۴۴ سبز — ۴۱ گارد ممیزی + mirror-sync (PASS پس از push آینه) + head-guard check (OK build-equals-head) + تکرارپذیری (REPRODUCIBLE · ۶/۶)",
+ "liveGate": "PASS — download/pn031g/live-relay-test.json (204 امضاشده · ۵+ چرخهٔ صفرخطا · صفر رد پس از G.5)",
+ "survivalPackage": "chainIndex=34 · PN-035-20261014 · ۴۹۰ قلم · لنگر به مانیفست ۳۳ (600b7eeb…)",
+ "ownerDelivery": "poco-f3-ea8e15 · ۳/۳ تلاش · شاهد owner-delivery.json",
+ "note": "بیلد نهایی پس از این کامیت انجام می‌شود (پروتکل ۹۹۹f162) — سرور با دیمون double-fork (start-prod-daemon.py) زنده می‌ماند"
+}

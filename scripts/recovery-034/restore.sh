@@ -97,9 +97,23 @@ step "گام ۴: جایگزینی کامل DB از بستهٔ بقا"
 DBMD5=$(md5sum "$PKG/custom.db" | awk '{print $1}')
 step "md5 بستهٔ DB: $DBMD5"
 [ "$DBMD5" = "b597ef10042ebdb4e5d4162565c6b69e" ] || die "md5 بستهٔ DB ناسازگار"
-cp -a "$PKG/custom.db" "$REPO/db/custom.db" && step "db/custom.db ← بسته ($(stat -c %s "$REPO/db/custom.db") bytes)"
-cp -a "$PKG/test.db" "$REPO/db/test.db" && step "db/test.db ← بسته"
-rm -f "$REPO/db/custom.db-wal" "$REPO/db/custom.db-shm" 2>/dev/null
+# PN-038/۱.۲ — گارد دادهٔ مقدس (شورا-ن۰۶۳): دیتابیس زندهٔ جدیدتر/پرتر هرگز
+# با بکاپ قدیمی جایگزین نمی‌شود. ریشهٔ گم‌شدن داده در ریست سرور همین cp بود.
+if bun "$REPO/scripts/recovery/sacred-data-guard.ts" "$PKG/custom.db" --live "$REPO/db/custom.db" >>"$LOG" 2>&1; then
+  step "گارد مقدس: ALLOW — جایگزینی مجاز"
+  cp -a "$PKG/custom.db" "$REPO/db/custom.db" && step "db/custom.db ← بسته ($(stat -c %s "$REPO/db/custom.db") bytes)"
+  cp -a "$PKG/test.db" "$REPO/db/test.db" && step "db/test.db ← بسته"
+  rm -f "$REPO/db/custom.db-wal" "$REPO/db/custom.db-shm" 2>/dev/null
+else
+  GRC=$?
+  if [ "$GRC" -eq 2 ]; then
+    step "گارد مقدس: BLOCK — دیتابیس زنده مقدس‌تر از بسته است؛ جایگزینی متوقف شد (PN-038/۱.۲)"
+    step "گارد مقدس: زنده حفظ شد — فقط کد بازیابی می‌شود؛ داده سر جای خود می‌ماند"
+  else
+    step "گارد مقدس: خطا ($GRC) — محافظه‌کارانه: زنده حفظ شد، جایگزینی رد شد"
+  fi
+  cp -a "$REPO/db/custom.db" "$BK/db-sacred-kept-$(date -u +%H%M%S).db" 2>/dev/null || true
+fi
 
 # ── گام ۵: راستی‌آزمایی env ──
 E1=$(md5sum "$REPO/.env" | awk '{print $1}'); E2=$(md5sum "$PKG/env.txt" | awk '{print $1}')

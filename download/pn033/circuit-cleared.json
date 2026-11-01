@@ -1,0 +1,65 @@
+{
+  "phase": "PN-033 · فاز ۱ — رفع قفل سخت فیوز (شورا-ن۰۵۴)",
+  "at": "2026-10-16T10:16:54.666Z",
+  "before": {
+    "count": 3,
+    "records": [
+      {
+        "target": "arus-api.melketabriz.ir",
+        "consecutiveFailures": 7,
+        "totalFailures": 10,
+        "lockUntil": "2026-10-16T22:04:38.753Z",
+        "nextAttemptAt": "2026-10-16T22:04:38.753Z",
+        "wasLocked": true
+      },
+      {
+        "target": "gap-api.melketabriz.ir",
+        "consecutiveFailures": 6,
+        "totalFailures": 6,
+        "lockUntil": "2026-10-16T22:15:36.314Z",
+        "nextAttemptAt": "2026-10-16T22:15:36.314Z",
+        "wasLocked": true
+      },
+      {
+        "target": "pm-api.melketabriz.ir",
+        "consecutiveFailures": 6,
+        "totalFailures": 6,
+        "lockUntil": "2026-10-16T22:15:36.313Z",
+        "nextAttemptAt": "2026-10-16T22:15:36.313Z",
+        "wasLocked": true
+      }
+    ],
+    "activeHardLocks": [
+      "arus-api.melketabriz.ir",
+      "gap-api.melketabriz.ir",
+      "pm-api.melketabriz.ir"
+    ]
+  },
+  "action": {
+    "deletedRecords": 3,
+    "method": "prisma.circuitBreakerState.deleteMany({})"
+  },
+  "after": {
+    "count": 0
+  },
+  "gateVerification": {
+    "hosts": {
+      "arus-api.melketabriz.ir": {
+        "allowed": true,
+        "retryInMs": -1
+      },
+      "pm-api.melketabriz.ir": {
+        "allowed": true,
+        "retryInMs": -1
+      },
+      "gap-api.melketabriz.ir": {
+        "allowed": true,
+        "retryInMs": -1
+      }
+    },
+    "allAllowed": true,
+    "note": "checkCircuit روی DB زنده پس از حذف — درگاه باز"
+  },
+  "envNote": "MELK_ARM_CIRCUIT_DISABLED=1 در فاز ۴ به env اضافه می‌شود — فیوز برای همیشه خاموش (پیش‌فرض سند ن۰۵۴ · بخش ۲-الف/۴.۳)",
+  "verdict": "CIRCUIT-CLEARED"
+}

@@ -196,7 +196,10 @@ export async function syncMelkPublicCatalog(
   const started = Date.now();
   const cfg = getMelkApiConfig();
   const repo = opts.repos?.property ?? getPropertyRecordRepository();
-  const pageSize = Math.min(Math.max(opts.pageSize ?? 100, 1), 100);
+  const pageSize = Math.min(Math.max(opts.pageSize ?? 50, 1), 50);
+  // PN-036 (شورا-ن۰۵۸ · فاز ۴): pageSize ۱۰۰ ← ۵۰ — فهرست عمومی apu با limit=۱۰۰
+  // در مسیر رله مرتب تایم‌اوت می‌خورد (curl 28 مکرر مالک — شکار در صف: ۱۶۲ تلاش)؛
+  // نصف‌کردن صفحه پاسخ را سبک و مهلت ۶۰ثانیه‌ای گوشی را کافی می‌کند
   const maxPages = Math.min(opts.maxPages ?? MAX_PAGES, MAX_PAGES);
   const runId = `p6546-melk-public-${randomUUID().slice(0, 8)}`;
   const enrichDetails = opts.enrichDetails ?? true;
@@ -217,7 +220,8 @@ export async function syncMelkPublicCatalog(
         path: MELK_ENDPOINTS.melkPublic.propertiesList,
         baseUrl: cfg.melkPublicApiBase,
         query: { page, limit: pageSize },
-        timeoutMs: 30000,
+        // PN-036: ۳۰ ← ۷۵ث — هم‌تراز مهلت گوشی (۶۰ث) + سربار رله
+        timeoutMs: 75_000,
         maxRetries: 1,
       });
       const rows = Array.isArray(res.data?.list) ? res.data.list : [];

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- مونوگرام «م» ملکا — پس‌زمینهٔ زمردین، نشان سفید -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,70L36,46L42,46L46,56L50,46L54,56L58,46L64,46L64,70L58,70L58,57L54,66L50,66L46,57L46,70L36,70Z M70,70L70,50L66,50L66,44L78,44L78,70L70,70Z" />
+</vector>

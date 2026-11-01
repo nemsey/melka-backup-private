@@ -117,8 +117,21 @@ describe("HOTFIX-04/B1 — try/catch روت‌ها با پاکت فارسی", ()
 // B2 — قفل خود-تمدیدشونده RATE_LIMITED
 // ==========================================================================
 
-describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی‌کند", () => {
-  test("request-otp: ۵ تلاش سریع → ۳ اول موفق، ۴ و ۵ RATE_LIMITED و رکورد شکست جدید ساخته نمی‌شود", async () => {
+describe("HOTFIX-04/B2 — (ن۰۵۵/ن۰۵۷) قانون مالک: صفر محدودیت — مسیرهای ورود بدون قفل · الگوی Async", () => {
+  /** PN-035 (شورا-ن۰۵۷): روت‌های ورود async شدند — پاسخ فوری {jobId}؛ کارِ رله
+   *  در پس‌زمینه. این تست‌ها با provider شبیه‌سازی‌شده کارها را تا پایان
+   *  دنب می‌کنند (درین قبل از بازگردانی provider — تماس واقعی ممنوع). */
+  const drainJob = async (jobId: string): Promise<void> => {
+    const { getRelayJobForClient } = await import("@/lib/melk-api/relay-jobs");
+    for (let t = 0; t < 60; t++) {
+      const v = await getRelayJobForClient(jobId, null);
+      if (v.ok && (v.job?.status === "done" || v.job?.status === "consumed" || v.job?.status === "failed")) return;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error("job did not settle in 6s");
+  };
+
+  test("request-otp: (ن۰۵۷) الگوی Async — ۵ تلاش سریع → ۵ پاسخ فوری ۲۰۰+jobId (<۱ث) · کارها در پس‌زمینه به provider شبیه‌سازی‌شده می‌رسند (صفر 429 محلی)", async () => {
     const { NextRequest } = await import("next/server");
     const { getMelkProvider } = await import("@/lib/melk-api/provider");
     const route = await import("@/app/api/auth/request-otp/route");
@@ -131,6 +144,7 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
     provider.requestOtp = async () => ({ ok: true, expiresInSeconds: 120, message: "شبیه‌سازی تست" });
 
     const statuses: number[] = [];
+    const jobIds: string[] = [];
     try {
       for (let i = 0; i < 5; i++) {
         const req = new NextRequest("http://localhost/api/auth/request-otp", {
@@ -139,34 +153,24 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
         });
         const res = await route.POST(req);
         statuses.push(res.status);
+        const body = (await res.json()) as { ok: boolean; jobId?: string };
+        jobIds.push(body.jobId ?? "");
       }
+      // PN-035 (شورا-ن۰۵۷ · فاز ۳): پاسخ فوری — سنجهٔ ۶: < ۱ ثانیه · پایان 502 دروازه
+      expect(statuses).toEqual([200, 200, 200, 200, 200]);
+      expect(jobIds.every((j) => j.length >= 8)).toBe(true);
+      // کارهای پس‌زمینه با provider شبیه‌سازی‌شده تمام می‌شوند (درین قبل از بازگردانی)
+      for (const j of jobIds) await drainJob(j);
     } finally {
       provider.requestOtp = original;
     }
 
-    // پیکربندی: otpRequestMax=3 در پنجره ۱۰ دقیقه
-    expect(statuses.slice(0, 3)).toEqual([200, 200, 200]);
-    expect(statuses[3]).toBe(429);
-    expect(statuses[4]).toBe(429);
-
-    // هسته رفع باگ: تلاش‌های «ردشده توسط محدودساز» رکورد جدید نساخته‌اند
+    // رد حسابرسی هر ۵ تلاش پس از اتمام کارها ثبت شده (شاهد — نه سپر)
     const attempts = await db.otpAttempt.count({ where: { personnelCode: code, kind: "REQUEST_OTP" } });
-    expect(attempts).toBe(3); // قبل از رفع: 5 می‌شد (قفل خود-تمدیدشونده)
-
-    // تلاش ششم و هفتم هم RATE_LIMITED (قفل جدیدی ایجاد نشد ولی قفل موجود پابرجاست)
-    for (let i = 0; i < 2; i++) {
-      const req = new NextRequest("http://localhost/api/auth/request-otp", {
-        method: "POST",
-        body: JSON.stringify({ personnelCode: code }),
-      });
-      const res = await route.POST(req);
-      expect(res.status).toBe(429);
-    }
-    const attemptsAfter = await db.otpAttempt.count({ where: { personnelCode: code, kind: "REQUEST_OTP" } });
-    expect(attemptsAfter).toBe(3); // همچنان ۳ — پنجره لغزان ثابت مانده
+    expect(attempts).toBe(5);
   });
 
-  test("verify-otp: ۵ شکست متوالی → قفل؛ تلاش‌های بیشتر در حالت قفل رکورد نمی‌سازند", async () => {
+  test("verify-otp: (ن۰۵۷) الگوی Async — ۷ شکست متوالی → ۷ پاسخ فوری ۲۰۰+jobId · کارها در پس‌زمینه با خطای ۴۰۱ provider می‌رسند (صفر 429 محلی)", async () => {
     const { NextRequest } = await import("next/server");
     const { getMelkProvider } = await import("@/lib/melk-api/provider");
     const { MelkApiError } = await import("@/lib/melk-api/types");
@@ -182,6 +186,7 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
     };
 
     const statuses: number[] = [];
+    const jobIds: string[] = [];
     try {
       for (let i = 0; i < 7; i++) {
         const req = new NextRequest("http://localhost/api/auth/verify-otp", {
@@ -190,19 +195,22 @@ describe("HOTFIX-04/B2 — قفل RATE_LIMITED خودش را تمدید نمی�
         });
         const res = await route.POST(req);
         statuses.push(res.status);
+        const body = (await res.json()) as { ok: boolean; jobId?: string };
+        jobIds.push(body.jobId ?? "");
       }
+      // PN-035 (فاز ۳): پاسخ فوری ۲۰۰+jobId — «کد اشتباه» دیگر گرهٔ HTTP را ۴۰۱ نمی‌کند؛
+      // خطا در کار ثبت می‌شود و اپ آن را با polling می‌خواند (پایان 502 دروازه)
+      expect(statuses).toEqual([200, 200, 200, 200, 200, 200, 200]);
+      expect(jobIds.every((j) => j.length >= 8)).toBe(true);
+      // کارها با provider شبیه‌سازی‌شده (پرتاب ۴۰۱) تمام می‌شوند — هر ۷ شکسته
+      for (const j of jobIds) await drainJob(j);
     } finally {
       provider.verifyOtp = original;
     }
 
-    // ۵ شکست واقعی (401) سپس قفل (429)
-    expect(statuses.slice(0, 5)).toEqual([401, 401, 401, 401, 401]);
-    expect(statuses[5]).toBe(429);
-    expect(statuses[6]).toBe(429);
-
-    // هسته رفع باگ: فقط ۵ رکورد شکست وجود دارد — تلاش ۶ و ۷ (RATE_LIMITED) رکورد نساخته‌اند
+    // رد حسابرسی هر ۷ شکست پس از اتمام کارها ثبت شده (شاهد — نه سپر)
     const fails = await db.otpAttempt.count({ where: { personnelCode: code, kind: "VERIFY_OTP", success: false } });
-    expect(fails).toBe(5); // قبل از رفع: 7 می‌شد
+    expect(fails).toBe(7);
   });
 });
 

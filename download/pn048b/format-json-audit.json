@@ -1,0 +1,77 @@
+{
+ "meta": {
+  "test": "N4",
+  "description": "قرارداد JSON — XHR / ?format=json / Accept روی لیست و جزئیات مجاز",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "inertia_html",
+ "samples_redacted": [
+  {
+   "endpoint": "list-filings",
+   "variant": "xhr",
+   "status": 200,
+   "content_type": "text/html; charset=utf-8",
+   "is_json": false,
+   "inertia_component": "auth/filings/Melketunfilingplus"
+  },
+  {
+   "endpoint": "list-filings",
+   "variant": "accept-json",
+   "status": 200,
+   "content_type": "text/html; charset=utf-8",
+   "is_json": false,
+   "inertia_component": "auth/filings/Melketunfilingplus"
+  },
+  {
+   "endpoint": "list-potentials",
+   "variant": "xhr",
+   "status": 200,
+   "content_type": "text/html; charset=utf-8",
+   "is_json": false,
+   "inertia_component": "auth/potentials/Potentials"
+  },
+  {
+   "endpoint": "list-potentials",
+   "variant": "accept-json",
+   "status": 200,
+   "content_type": "text/html; charset=utf-8",
+   "is_json": false,
+   "inertia_component": "auth/potentials/Potentials"
+  },
+  {
+   "endpoint": "detail-own-filing",
+   "variant": "xhr",
+   "status": 500,
+   "content_type": "text/html; charset=utf-8",
+   "is_json": false,
+   "inertia_component": "errors/Error500"
+  },
+  {
+   "endpoint": "detail-own-filing",
+   "variant": "accept-json",
+   "status": 500,
+   "content_type": "text/html; charset=utf-8",
+   "is_json": false,
+   "inertia_component": "errors/Error500"
+  },
+  {
+   "endpoint": "detail-own-potential",
+   "variant": "xhr",
+   "status": 200,
+   "content_type": "text/html; charset=utf-8",
+   "is_json": false,
+   "inertia_component": "auth/potentials/PublicPotentials"
+  },
+  {
+   "endpoint": "detail-own-potential",
+   "variant": "accept-json",
+   "status": 200,
+   "content_type": "text/html; charset=utf-8",
+   "is_json": false,
+   "inertia_component": "auth/potentials/PublicPotentials"
+  }
+ ]
+}

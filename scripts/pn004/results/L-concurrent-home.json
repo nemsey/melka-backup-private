@@ -1,0 +1,42 @@
+{
+ "scenario": "L-concurrent-home",
+ "kind": "parallel",
+ "ts": "2026-10-05T18:54:06+0000",
+ "mem_available_before_mb": 508.8,
+ "next_server_rss_before_mb": 2928.0,
+ "url": "http://localhost:3000/",
+ "concurrency": 5,
+ "requests": [
+  {
+   "code": 200,
+   "ms": 151,
+   "err": null
+  },
+  {
+   "code": 200,
+   "ms": 148,
+   "err": null
+  },
+  {
+   "code": 200,
+   "ms": 89,
+   "err": null
+  },
+  {
+   "code": 200,
+   "ms": 133,
+   "err": null
+  },
+  {
+   "code": 200,
+   "ms": 75,
+   "err": null
+  }
+ ],
+ "wall_ms": 152,
+ "srv_rss_peak_mb": 2928.0,
+ "free_min_mb": 508.8,
+ "mem_available_after_mb": 513.6,
+ "next_server_rss_after_mb": 2922.8,
+ "db_openers_after": 3
+}

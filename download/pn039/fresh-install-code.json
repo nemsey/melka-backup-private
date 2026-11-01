@@ -1,0 +1,29 @@
+{
+  "phase": "PN-036 (شورا-ن۰۵۸) — کد نصب تازهٔ مالک",
+  "at": "2026-10-17T21:23:30.982Z",
+  "pn": "PN-036",
+  "generation": "K",
+  "deviceLabel": "poco-f3-owner",
+  "deviceId": "poco-f3-822b8f",
+  "maxAttempts": 3,
+  "validityMinutes": 30,
+  "installCommand": "pkg install -y curl openssl-tool jq && curl --http1.1 -A \"Mozilla/5.0 (Linux; Android 13; Poco F3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36\" -fsSL \"https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=85686feaea95b3d11827e652b9f6b20226df\" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh",
+  "bootstrapUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=85686feaea95b3d11827e652b9f6b20226df",
+  "enrollExpires": "2026-10-17T21:53:30.917Z",
+  "servedScriptVerified": {
+    "httpStatus": 200,
+    "marker": true,
+    "rawfileJqFix": true,
+    "batch20": true,
+    "expressLane": true,
+    "adaptiveTimeout": true,
+    "replayDrop": true,
+    "allPass": true
+  },
+  "ownerSteps": [
+    "۱) در Termux فعلی (نسل J): Ctrl+C — توقف رلهٔ کهنه",
+    "۲) دستور installCommand را پیست کنید و Enter بزنید",
+    "۳) منتظر «✓ اتصال تأیید شد — رلهٔ ملکا فعال است (مسیر اصلی)» — این نسل K است",
+    "۴) اپ ملکا → تنظیمات ← اتصال به ملک تبریز ← PM: کدپرسنلی ۴۱۰۰۳۱۳۲۰ ← ارسال کد"
+  ]
+}

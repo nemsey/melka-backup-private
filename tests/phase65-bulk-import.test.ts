@@ -587,8 +587,9 @@ describe("P6.5-03-۶ — رگرسیون هم‌زیستی sync افزایشی + 
       const overlapped = await db.transactionRecord.findUnique({ where: { id: `${PREFIX}-tx-9000` } });
       expect(overlapped!.eventsCount).toBe(7);
       expect(overlapped!.sourceRunId).not.toBeNull();
-      // سنگ‌قبر غیر-Bulk جارو شد (رفتار v1 حفظ)
-      expect(await db.transactionRecord.findUnique({ where: { id: staleId } })).toBeNull();
+      // سنگ‌قبر غیر-Bulk: قانون دادهٔ مقدس PN-038 — دیگر حذف نمی‌شود (فقط گزارش)
+      const staleRow = await db.transactionRecord.findUnique({ where: { id: staleId } });
+      expect(staleRow).not.toBeNull(); // PN-038/۱.۴: نگه داشته می‌شود (sacred-keep)
       // رکورد تازه sync نشست (sourceRunId تهی — مسیر sync)
       const fresh = await db.transactionRecord.findUnique({ where: { id: `${PREFIX}-tx-fresh` } });
       expect(fresh).not.toBeNull();

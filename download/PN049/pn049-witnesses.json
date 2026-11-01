@@ -1,0 +1,18 @@
+{
+ "step1a_areas": {
+  "rowsWithAreas": 1133,
+  "fileMode_gt3": 360,
+  "split_fixed": 759
+ },
+ "step2_coverage": {
+  "m7_ownerColumn_filled": 50,
+  "m7_total": 5006,
+  "m8_applicant_name_filled": 435,
+  "m8_mobile_filled": 19,
+  "m8_total": 3904
+ },
+ "step3_freshness": {
+  "filings_pn049_run": 1837,
+  "requests_fresh_tonight": 3379
+ }
+}

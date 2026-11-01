@@ -31,14 +31,18 @@ export interface RequestRepository {
   upsertArmBulk(rows: ArmRequestBulkRow[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
   /** P6.5-10 — کاتالوگ تک‌صفحه‌ای درخواست‌های ARM با فیلتر کد/نام کارشناس (جدیدترین اول) */
   listArmCatalog(filter: ArmRequestCatalogFilter, limit: number): Promise<{ rows: ArmRequestCatalogRow[]; total: number }>;
-  /** P6530/گام ۲ (بند ۳) — توزیع وضعیت‌های خام درخواست‌های ARM برای بینش شش‌حالته */
-  statusBreakdownArm(): Promise<Array<{ status: string | null; count: number }>>;
-  /** P6.5-10 — شمارش غنی‌سازی درخواست‌های ARM: total / pending / complete */
-  countArmEnrichment(): Promise<EnrichmentCounts>;
+  /** P6530/گام ۲ (بند ۳) — توزیع وضعیت‌های خام درخواست‌های ARM برای بینش شش‌حالته
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz' (سازگار عقبه) */
+  statusBreakdownArm(tenantId?: string): Promise<Array<{ status: string | null; count: number }>>;
+  /** P6.5-10 — شمارش غنی‌سازی درخواست‌های ARM: total / pending / complete
+   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz' (سازگار عقبه) */
+  countArmEnrichment(tenantId?: string): Promise<EnrichmentCounts>;
   /** P6.5-11 (بند ب) — شمارش کل رکوردهای کاتالوگ ARM (source='arm') — مبنای بوت‌استرپ checkpoint */
   countArmSource(): Promise<number>;
   /** P6.5-10 — برش ردیف‌های در انتظار غنی‌سازی (جدیدترین اول؛ rowIds = هدفگذاری دقیق) */
   listPendingArmEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]>;
   /** P6.5-11 (بند پ-۵) — تماس درخواست‌دهنده بر اساس کددرخواست‌ها (دسته‌ای؛ source='arm') */
   findArmRequesterContactsByCodes(requestCodes: string[]): Promise<Array<{ requestCode: string; customerName: string | null; customerMobile: string | null }>>;
+  /** PN-039 (گام ۴) — ثبت/پاک‌سازی یادداشت مالک — تنها مسیر نوشتن این ستون (قانون دادهٔ مقدس) */
+  updateOwnerNote(id: string, note: string | null): Promise<{ id: string; ownerNote: string | null }>;
 }

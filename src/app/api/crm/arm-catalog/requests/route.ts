@@ -16,13 +16,16 @@
  *
  * دامنه (P6.5-10): موجودیت arm-request تجمیعی است — مالک همه را بدون فیلتر
  * می‌بیند (شاهد owner.read).
+ * PN-049/گام ۲-الف (قانون حساب کاربری): کاربر غیر-مالک فقط رکوردهای
+ * ثبت‌شده توسط خودش را می‌بیند (registrarNameNorm از catalogUserScope).
  */
 
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { tenantDbValue } from "@/lib/tenants";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
-import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
+import { ownerLoginPath, resolveEntityAccess, catalogUserScope } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
 import { getRequestRepository, getIntegrationRepository, getExpertRepository } from "@/core/repositories";
 import { enrichArmRequests } from "@/lib/melk-api/arm-catalog";
@@ -47,13 +50,18 @@ import { readOwnerBranchMap, readPmBranchMap } from "@/lib/branch-store";
 // تکرار نمی‌شود؛ daemon کاتالوگ هر چرخه داده را تازه می‌کند — ۶۰ث << چرخهٔ daemon.
 // قید: صفر تغییر شکل پاسخ — فقط منبع محاسبهٔ همان فیلدها کش می‌شود.
 type M2Aggregates = { counts: { total: number; pending: number; complete: number }; breakdown: Array<{ status: string | null; count: number }> };
-let m2AggCache: { data: M2Aggregates; expiresAt: number } | null = null;
+// PN-046/گام اول-۱ — کش per-tenant (پیش از این کش سراسری بود و عدد تبریز به ملکتون نشت می‌کرد)
+let m2AggCache: Map<string, { data: M2Aggregates; expiresAt: number }> = new Map();
 const M2_AGG_TTL_MS = 60 * 1000;
-async function getM2Aggregates(repo: { countArmEnrichment(): Promise<M2Aggregates["counts"]>; statusBreakdownArm(): Promise<M2Aggregates["breakdown"]> }): Promise<M2Aggregates> {
-  if (m2AggCache && m2AggCache.expiresAt > Date.now()) return m2AggCache.data;
-  const [counts, breakdown] = await Promise.all([repo.countArmEnrichment(), repo.statusBreakdownArm()]);
+async function getM2Aggregates(
+  repo: { countArmEnrichment(tenantId?: string): Promise<M2Aggregates["counts"]>; statusBreakdownArm(tenantId?: string): Promise<M2Aggregates["breakdown"]> },
+  tenantId: string,
+): Promise<M2Aggregates> {
+  const hit = m2AggCache.get(tenantId);
+  if (hit && hit.expiresAt > Date.now()) return hit.data;
+  const [counts, breakdown] = await Promise.all([repo.countArmEnrichment(tenantId), repo.statusBreakdownArm(tenantId)]);
   const data: M2Aggregates = { counts, breakdown };
-  m2AggCache = { data, expiresAt: Date.now() + M2_AGG_TTL_MS };
+  m2AggCache.set(tenantId, { data, expiresAt: Date.now() + M2_AGG_TTL_MS });
   return data;
 }
 
@@ -73,6 +81,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const sp = request.nextUrl.searchParams;
+    // PN-044/فاز ۴ (شورا-ن۰۸۸) — tenant همین رندر: 'melketun' → دادهٔ ملکتون؛
+    // پیش‌فرض/هر چیز دیگر → 'melk-tabriz' (رفتار فعلی — صفر شکستن).
+    const tenantId = tenantDbValue(sp.get("tenantId"));
     // P6525 — نرمال‌سازی مرکزی
     const code = normalizeFilterInput(sp.get("code")) || undefined;
     const realtorName = normalizeFilterInput(sp.get("realtorName")) || undefined;
@@ -135,8 +146,11 @@ export async function GET(request: NextRequest) {
     }
 
     const access = resolveEntityAccess(guard, "arm-request");
+    // PN-049/گام ۲-الف — قانون حساب کاربری: مالک همه؛ کاربر فقط رکوردهای خودش
+    const catalogScope = catalogUserScope(guard);
     const { rows, total } = await repo.listArmCatalog(
       {
+        tenantId,
         code, realtorName, customerName, areaName, priceFrom, priceTo, tradeTypes, statuses, statusesIncludesOther, statusesExcluded, dateFrom, dateTo,
         // PN-002 گام ۲ — ستون‌های تازه
         lineName, sanad, constructType, side,
@@ -144,6 +158,8 @@ export async function GET(request: NextRequest) {
         urgentOnly, luxuryOnly, occasionOnly,
         propertyTypes: propertyTypes.length > 0 ? propertyTypes : undefined,
         buildingTypes: buildingTypes.length > 0 ? buildingTypes : undefined,
+        // PN-049 — دامنهٔ حساب کاربری (مالک: undefined = صفر فیلتر)
+        registrarNameNorm: catalogScope.kind === "OWN" ? catalogScope.nameNorm : undefined,
       },
       limit
     );
@@ -179,7 +195,7 @@ export async function GET(request: NextRequest) {
     await witnessScopedRead(guard, "arm-request", total, access.isOwnerRead, ownerLoginPath(guard));
 
     // PN-027 · ۵-پ-۶ — تجمع‌های کمکی از کش ۶۰ثانه (زیر چرخهٔ daemon)؛ در سرد = همان دو کوئری
-    const { counts, breakdown } = await getM2Aggregates(repo);
+    const { counts, breakdown } = await getM2Aggregates(repo, tenantId);
     // P6530/گام ۲ (بند ۳) — بینش توزیع شش‌حالته از کل کاتالوگ
     const statusCounts = rollupRequestStatusCounts(breakdown.map((b) => [b.status, b.count] as [string | null, number]));
 

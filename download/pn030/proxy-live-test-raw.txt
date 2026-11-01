@@ -1,0 +1,13 @@
+=== PN-030 live-test 2026-10-12T06:15:42Z ===
+--- A) مستقیم: سه میزبان ملک تبریز ---
+DIRECT arus-api.melketabriz.ir -> 000 @ -1s
+DIRECT pm-api.melketabriz.ir -> 000 @ -1s
+DIRECT gap-api.melketabriz.ir -> 000 @ -1s
+--- B) کنترل‌های دیفرانسیل ---
+CONTROL github -> 200|0.271858
+CONTROL divar  -> 403|0.723068
+--- P) آمادگی Worker ---
+worker src=present toml=present deploy=present-executable secret=ok64 proxyUrl='https://melka-proxy.nemsey-ns.workers.dev'
+--- T) عبوری از پروکسی: https://melka-proxy.nemsey-ns.workers.dev ---
+PROXY->ARM -> 000|12.002423000|-1
+--- VERDICT: KEEP (پاسخ غیرمنتظره از پروکسی: 000 — بررسی دستی قبل از برداشتن پرچم) ---

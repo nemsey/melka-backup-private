@@ -1,0 +1,71 @@
+{
+  "at": "2026-10-17T12:42:54.311Z",
+  "task": "PN-038 فاز ۰ — قفل ورود (جلسهٔ دوم، بعد از مرگ جلسهٔ اول)",
+  "backup": {
+    "path": "/home/z/my-project/backups/pre-pn038-20261017T124600Z.Z.db",
+    "md5": "ae2855ffe082584ce2ce7e24dedccf20",
+    "sizeMB": "318.6",
+    "vacuum": "ERR \nInvalid `prisma.$queryRawUnsafe()` invocation:\n\n\nRaw query failed. Code: `1`. Message: `output file already exists`",
+    "sourceDb": "/home/z/my-project/db/custom.db"
+  },
+  "liveDb": {
+    "integrity": [
+      {
+        "integrity_check": "ok"
+      }
+    ],
+    "sacredCounts": {
+      "ArmListing": "NO-TABLE",
+      "ArmRequest": "NO-TABLE",
+      "PmTransaction": "NO-TABLE",
+      "PmExpert": "NO-TABLE",
+      "PmHire": "NO-TABLE",
+      "RelayJob": 4,
+      "GlmProbe": 4,
+      "ArmConnection": 4,
+      "PmConnection": 0,
+      "AppSession": "NO-TABLE"
+    }
+  },
+  "live": {
+    "health": {
+      "ok": true,
+      "mode": "real",
+      "armApiBase": "https://arus-api.melketabriz.ir/api/apm/",
+      "pmApiBase": "https://pm-api.melketabriz.ir/api/",
+      "masterAuth": "env",
+      "masterLayersConsistent": true,
+      "time": "2026-10-17T12:42:54.280Z"
+    },
+    "buildId": "1425ee0-20261017-0723",
+    "versionFingerprint": {
+      "gitSha": "1425ee07bfdb63530fec84fda67a1314cb0a1867",
+      "buildId": "1425ee0-20261017-0723"
+    }
+  },
+  "relay": "\nInvalid `prisma.relayDevice.findMany()` invocation in\n/home/z/my-project/scripts/pn038/entry-lock.ts:54:46\n\n  51 // 4) رله: دستگاه‌ها + کارهای اخیر + گروه وضعیت\n  52 let relay: any = \"ERR\";\n  53 try {\n→ 54   const devices = await prisma.relayDevice.findMany({\n         orderBy: {\n           id: \"des",
+  "git": {
+    "head": "6631a037cb05a4f5a5ef1611fd6c313a7a0c3793",
+    "headSubject": "feat(PN-038 · فاز ۲ · بازطراحی UI): هوم یک‌پارچه — حذف M6/M7/ظرف/کاشی‌های قدیمی ملکا · ۸ کاشی ریشه با نام‌های کوتاه و تر",
+    "dirty": [
+      "D server.log.20261016T174306Z.gz",
+      "?? scripts/pn038/entry-lock.ts",
+      "?? server.log.20261017T122830Z.gz"
+    ],
+    "note": "درخت روی فاز ۲ (6631a03)؛ فازهای ۳-۶ جلسهٔ مرده در reflog: ec20da0 → d930d67 + snapshot 323f061"
+  },
+  "findings": {
+    "liveVersionVerdict": "FAIL-PLANNED-FIX: بیلد زنده 1425ee0-20261017-0723 (کامیت ۱۰ اکتبر) — پلتفرم ساعت ۰۷:۲۳ درخت را به 1425ee0 برگرداند (بازگشت چهاردهم)؛ جلسهٔ اول درخت را بازیابی و فازهای ۱-۶ را کامیت کرد اما پیش از بیلد/ری‌استارت مرد — سرور زنده هنوز نسخهٔ پیش از PN-036 است",
+    "resetGuard1224": "reset-guard در ۱۲:۲۴ (BUILD-STALE + ahead-of-mirror) درخت را به 6631a03 = main آینه برگرداند؛ گارد دادهٔ مقدس فاز ۱ BLOCK کرد (live-richer-rowcounts) و دیتابیس زنده نجات یافت — شاهد زندهٔ کارکرد قانون دادهٔ مقدس",
+    "deadSessionCommits": [
+      "ec20da0",
+      "6be4086",
+      "3893db5",
+      "3c505f6",
+      "f3d10d7",
+      "c95fda4",
+      "d930d67"
+    ],
+    "recoveryPlan": "git reset --hard d930d67 → پوش فوری آینه (سپر در برابر چرخهٔ بعدی reset-guard ~۱۲:۵۴) → دو-سبز → بیلد → ری‌استارت سرور و Worker"
+  }
+}

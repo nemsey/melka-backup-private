@@ -1,6 +1,6 @@
 {
  "task": "PN-016 — گارد audit-activity-log",
- "at": "2026-10-10T05:42:12.000455+00:00",
+ "at": "2026-10-28T22:02:41.165605+00:00",
  "checks": [
   {
    "check": "بدون فعالیت یتیم",
@@ -13,7 +13,7 @@
   },
   {
    "check": "ورودهای اخیر ثبت‌شده",
-   "usersWithRecentLogin": 2
+   "usersWithRecentLogin": 0
   },
   {
    "check": "UserSession ↔ Session پیوند",
