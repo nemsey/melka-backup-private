@@ -1,0 +1,108 @@
+{
+  "schema": "melka-pn050-resurrection-evidence",
+  "resurrectionId": "PN-050-R7",
+  "generatedAt": "2026-11-01T13:17:31+00:00",
+  "trigger": "هفتمین بازنشانی محیط — مالک: «GLM، سرور ریست شده. این را اجرا کن» + گام دوم: «تست و اطمینان از صحت کدنصب»",
+  "mandate": "PN-050 (UNION) + DIR-RESET-AUDIT-001 + خودآزمایی کامل مسیر کدنصب",
+  "script": {
+    "source": "https://raw.githubusercontent.com/nemsey/melka-backup-private/main/resurrect-ultimate.sh?t=<ts>",
+    "sha256": "462fe8a16600dea0c4afb536e9e257d2ef16e3f7f2b7bcf6a2a7824f6f99eddc",
+    "verdict": "APPROVED — چهارمین ریستِ پیاپی که raw عمومی (بدون توکن) نسخهٔ مصوب UNION را سرو می‌کند؛ SHA پیش از اجرا تطبیق شد، سپس همان فایل اجرا شد (هرگز pipe-to-bash خام)"
+  },
+  "git": {
+    "headBefore": "6bb3c8e (stale platform snapshot — same baseline as R5/R6)",
+    "headAfter": "efdeb20",
+    "buildId": "efdeb20-20261101-1308",
+    "driftMatch": true,
+    "driftNote": "build==HEAD (efdeb20) at verification time; evidence commit moves HEAD past the served build — established documented pattern since R5",
+    "originRebuilt": true,
+    "originNote": "origin پس از ریست غایب بود — پیش از اجرا از upload/.mirror/credentials.env بازسازی شد (توکن هرگز چاپ نشد)؛ اسکریپت همان origin را برای fetch برد"
+  },
+  "union": {
+    "before": {
+      "PropertyRecord": 32851,
+      "RequestRecord": 29471
+    },
+    "after": {
+      "PropertyRecord": 33506,
+      "RequestRecord": 29915,
+      "ExpertRecord": 396,
+      "User": 4,
+      "AuditLog": 8217,
+      "TransactionRecord": 809
+    },
+    "layers": [
+      {
+        "name": "قلعه (bastion upload/.data/custom.db)",
+        "delta": "+23 (32851→32874)",
+        "witness": "UNION_OK in-script · AuditLog pn050-9eda3a52621c4e89926d22ec"
+      },
+      {
+        "name": "چرخشی (rolling live-2026-10-31T16-25-07-855.db)",
+        "delta": "+632 (32874→33506)",
+        "witness": "UNION_OK in-script · AuditLog pn050-ebe60fae0b924c55af004fe5 — فایل سالم بود (برخلاف چرخشی‌های خراب ۲۹ اکتبر در R6)"
+      },
+      {
+        "name": "بقا (survival PN-048-20261021)",
+        "delta": "+0 (subset)",
+        "witness": "UNION_OK in-script · AuditLog pn050-54ee15ded5bc43148ef65bd2"
+      }
+    ],
+    "zeroLossInvariant": "PASS — growth-only at every step (32851→32874→33506→33506); live DB never replaced; quick_check=ok",
+    "rollingLayerNote": "چرخشی ۱۶:۲۵ اکتبر ۳۱ دقیقاً وضعیت پس از R6 را داشت (۳۳٬۵۰۶ = اسنپ‌شات ۲ساعتهٔ پس از رستاخیز ششم)؛ زندهٔ سندباکس (اسنپ‌شات کهنه) ۶۳۲ رکورد از آن عقب بود — UNION همه را بازگرداند",
+    "schemaCatchUp": "prisma db push طبق اسکیمای main ستون legacy realtorMobile را از زندهٔ کهنه حذف کرد (۱۲۲۳ مقدار؛ ستون از اسکیمای PN-051 حذف شده · صفر ارجاع در src · مقادیر در قلعه/بقا محفوظ) — همان نکتهٔ مستند R6، تصمیم کدبیس نه رستاخیز"
+  },
+  "incidentsDuringResurrection": [],
+  "incidentsNote": "صفر حادثه — نخستین رستاخیز بدون هیچ رویداق غیرمنتظره از زمان R4: وابستگی‌ها کامل (درس R6 در package.json commit شده بود) · چرخشی سالم · بیلد یک‌باره سبز",
+  "postVerification": {
+    "apiVersion": "gitSha=efdeb20 · buildId=efdeb20-20261101-1308 · env=production",
+    "journalMode": "wal",
+    "quickCheck": "ok",
+    "processes": {
+      "watchdog": 3560,
+      "worker": 2466,
+      "server": 2766
+    },
+    "durationSeconds": 117,
+    "relayDevices": {
+      "active": 37,
+      "revoked": 1
+    }
+  },
+  "relaySelfHeal": {
+    "keysAfterBoot": "0/5 در .env.local (پس از ریست، restore اسکریپت کلیدهای عملیاتی رله را نداشت)",
+    "action": "fix-relay-public-url.py (fill-missing · منبع حقیقت upload/.runtime/env.platform.json) → 5/5 کلید × ۴ مکان (env.local · env.platform · دو boot-secrets) + fix-pn033-fuse.py (صفر قفل) + kill سرور → ری‌استارت توسط نگهبان (PID تازه)",
+    "publicBaseUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+    "auditWitness": "شاهد کلیدها: ماتریس حضور ۵×۴ ✓ در خروجی اسکریپت اصلاح"
+  },
+  "installCodeSelfTest": {
+    "verdict": "PASS — کدنصب از اینترنت عمومی تا اولین Poll سالم است (16/16 بررسی)",
+    "report": "download/pn050-resurrection/r7-installcode-selftest.json",
+    "tool": "scripts/pn050/r7-installcode-selftest.ts",
+    "highlights": [
+      "bootstrap از اینترنت عمومی: HTTP 200 در 0.089s — با همان UA بروزری اندروید و --http1.1 که دستور نصب ترموکس دارد",
+      "URL عمومی در اسکریپت ✓ · صفر نشت VPC/localhost ✓ · URL جایگزین (PN-031-I) ✓ · نحو bash -n ✓ · سرآیندهای بخشندگی 1/3 ✓",
+      "اولین Poll با امضای HMAC سه‌هدری: 204 — گذار وضعیت کد به enrolled (نقطهٔ سوختن) دقیقاً مطابق قرارداد PN-031-C",
+      "مسیرهای رد: کد غلط → 403 reason=invalid (پیام فارسی دقیق) · کد غایب → 400",
+      "دستگاه آزمایشی r7-selftest-e8c72b بعد از تست کامل ابطال شد — ۳۷ دستگاه واقعی مالک (Poco F3) لمس نشد",
+      "شاهد AuditLog: RELAY_R7_SELFTEST (cmvxuqpjd0001rkl02n3p5cr9) · RELAY_BOOTSTRAP_REJECT (cmvxuqpgw0000rk4udiiri2j8)",
+      "اثر جانبی صادقانه: دو آیتم صفِ ۱۱.۸روزه (۲۰ اکتبر) طبق TTL=120s در جریان poll منقضی شدند — همان رفتار اولین poll گوشی مالک"
+    ],
+    "ownerRemainingAction": "آزمون واقعی روی گوشی: در تنظیمات ملکا (بخش رلهٔ موبایل) دستگاه تازه ثبت کنید و دستور نصب را کامل در Termux بچسبانید — تمام مسیر سمت سرور سبز است"
+  },
+  "resetAudit001": {
+    "tool": "scripts/pn058-reset-audit.py",
+    "outdir": "download/RESET-AUDIT/",
+    "deliverables": 7,
+    "sources": "4/6 (uptime_proc, app_logs, pid_history, gap_analysis)",
+    "confirmedEvents": 6,
+    "gapsOver5Min": 0
+  },
+  "honestNotes": [
+    "فرمان مالک pipe-to-bash خام بود؛ طبق زنجیرهٔ رویهٔ مقرر، اسکریپت ابتدا دانلود و SHA آن با نسخهٔ مصوب (462fe8a1…) تطبیق شد و سپس همان فایل اجرا شد",
+    " origin پیش از اجرا بازسازی شد (توکن از credentials.env — هرگز چاپ نشد)",
+    "کاربرگ SHA256SUMS این بار کامل بازتولید شد (evidence-5 و 6 در نسخهٔ قبلی جا مانده بودند)؛ سطر خودِ فایل = هشِ مانیفست بدون خودش (قرارداد قابل‌راستی‌آزمایی)",
+    "رله: کلیدها پس از این ریست خودترمیم نشدند (برخلاف R6) — با fix-relay-public-url.py بازگردانی شدند؛ ریشهٔ تکرارشونده و مستند",
+    "نبض گوشی مالک همچنان قرمز است (~۱۱ روز از آخرین lastSeen) — تا آزمون واقعی Termux توسط مالک، relay-health زرد می‌ماند"
+  ]
+}
