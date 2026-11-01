@@ -56,7 +56,7 @@ describe("PN-051 · گام ۱-الف — لغو هرگونه محدودیت ور
 
 // ─────────────── گام اول-ب: اکسل هر ۸ فهرست (۴ موجودیت × ۲ داشبورد) ───────────────
 
-describe("PN-051 · گام ۱-ب — دانلود/آپلود اکسل فهرست‌های چهارگانهٔ هر دو داشبورد", () => {
+describe("PN-051 · گام ۱-ب — دانلود/آپلود اکسل فهرست‌های چهارگانه (PN-059: تک-داشبورد تبریز)", () => {
   test("۱-ب-۱) سرویس ایمپورت tenantId را می‌پذیرد و در رکوردهای تازه می‌نویسد", () => {
     const src = read("src/lib/services/crm-import.ts");
     expect(src).toContain("tenantKey?: string | null");
@@ -96,16 +96,9 @@ describe("PN-051 · گام ۱-ب — دانلود/آپلود اکسل فهرست
     expect(expertsBlock).toContain("هرگز رکورد");
   });
 
-  test("۱-ب-۲) روت ایمپورت tenantId را از query می‌خواند", () => {
+  test("۱-ب-۲) روت ایمپورت — PN-059: همیشه ملک تبریز (tenantId بازنشسته)", () => {
     const src = read("src/app/api/crm/import/[entity]/route.ts");
-    expect(src).toContain('searchParams.get("tenantId")');
-    expect(src).toContain("runImport(entity as ImportEntity, sheet, file.name, tenantKey)");
-  });
-
-  test("۱-ب-۳) دکمهٔ بارگذاری اکسل tenant را می‌فرستد (ملکتون ⇒ ?tenantId=melketun)", () => {
-    const src = read("src/components/app/shared/excel-import-button.tsx");
-    expect(src).toContain('tenantId?: "tabriz" | "melketun"');
-    expect(src).toContain("?tenantId=melketun");
+    expect(src).toContain("runImport(entity as ImportEntity, sheet, file.name, null)");
   });
 
   test("۱-ب-۴) هر چهار فهرست دکمهٔ بارگذاری اکسل دارد (آگهی/درخواست/معاملات/کارشناسان)", () => {
@@ -120,53 +113,15 @@ describe("PN-051 · گام ۱-ب — دانلود/آپلود اکسل فهرست
       ["کارشناسان", experts, '"experts"'],
     ] as const) {
       expect(src).toContain(`ExcelImportButton entity=${entity}`);
-      expect(src).toContain('tenantId={tenantId ?? "tabriz"}');
       void name;
     }
   });
 
-  test("۱-ب-۵) خروجی اکسل هر ۸ مسیر tenant را می‌پذیرد (۴ موجودیت × ۲ داشبورد)", () => {
+  test("۱-ب-۵) خروجی اکسل tenant را می‌پذیرد (تک-tenant — PN-059)", () => {
     const crmExport = read("src/app/api/crm/export/[entity]/route.ts");
     expect(crmExport).toContain('sp.get("tenantId")');
     expect(crmExport).toContain("tenantDbValue");
     const expertsExport = read("src/app/api/experts/export/route.ts");
     expect(expertsExport).toContain("tenantId");
-  });
-});
-
-// ─────────────── گام دوم: سینک دو-نمایی (مالک ملک/متقاضی) ───────────────
-
-describe("PN-051 · گام ۲ — سینک ملکتون دو-نمایی: تکمیل ستون مالک ملک/متقاضی", () => {
-  test("۲-۱) سینک نمای خصوصی filings را واکشی می‌کند (مالک واقعی + موبایل)", () => {
-    const src = read("src/lib/integrations/melketun/sync.ts");
-    expect(src).toContain("`/Melketunfilingplus${n > 1 ? `/${n}` : \"\"}`");
-    expect(src).toContain("privFilingById");
-    expect(src).toContain("privFilingByCode");
-  });
-
-  test("۲-۲) سینک نمای خصوصی potentials را واکشی می‌کند (متقاضی + موبایل از contacts)", () => {
-    const src = read("src/lib/integrations/melketun/sync.ts");
-    expect(src).toContain("`/Potentials${n > 1 ? `/${n}` : \"\"}`");
-    expect(src).toContain("`/contacts/potentials${n > 1 ? `/${n}` : \"\"}`");
-    expect(src).toContain("`/contacts/filings${n > 1 ? `/${n}` : \"\"}`");
-    expect(src).toContain("phoneOfPotContact");
-    expect(src).toContain("phoneOfFilingContact");
-  });
-
-  test("۲-۳) ادغام افزودنی است — شکست نمای خصوصی سینک عمومی را نمی‌شکند", () => {
-    const src = read("src/lib/integrations/melketun/sync.ts");
-    // شکست نمای خصوصی فقط رویداد لاگ می‌سازد (best-effort) — سینک عمومی ادامه می‌یابد
-    expect(src).toContain("PRIVATE_VIEW_SKIPPED");
-    expect(src).not.toContain("console.warn"); // تنها نقطهٔ لاگ: src/lib/logger (گارد P2-05)
-  });
-
-  test("۲-۴) نگاشت فیلدها: ownerName خصوصی → rawOwnerName (ستون مالک ملک UI)", () => {
-    const src = read("src/lib/integrations/melketun/sync.ts");
-    // PN-056/نکتهٔ ۲ مالک: fallback عمومی فایلر (f.ownerName = «کارشناس واگذارشده») حذف شد —
-    // fountain انحصاراً از منابع خصوصی CRM می‌نویسد (ownerEnrich + privateOwnerName از ادغام نمای خصوصی)
-    expect(src).toContain('rawOwnerName: ownerEnrich?.owner_name?.trim() ?? (String((f as unknown as InertiaRow).privateOwnerName ?? "").trim() || null)');
-    expect(src).toContain('ownerMobile: ownerEnrich?.owner_phone?.replace(/\\D/g, "") ?? (String((f as unknown as InertiaRow).privateOwnerPhone ?? "").replace(/\\D/g, "") || null)');
-    expect(src).not.toContain("?? (f.ownerName?.trim() || null)");
-    expect(src).toContain("customerName: p.contactName?.trim() || null");
   });
 });

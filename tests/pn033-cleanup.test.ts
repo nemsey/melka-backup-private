@@ -86,11 +86,11 @@ describe("PN-033 · A) فیوز قطع‌کننده — خاموشی دائمی 
 // ───────────────────── B) env — پایان دوران Worker ─────────────────────
 
 describe("PN-033 · B) env — پاکسازی کلیدهای دوران Worker", () => {
-  test("B-1) env.platform.json — صفر کلید Worker + فیوز خاموش + حالت رله (+ALT_URL ن۰۶۸)", () => {
-    // PN-041-R (شورا-ن۰۶۸ · دلیل ۵): MELK_RELAY_ALT_URL = URL publish پایدار برمی‌گردد
+  test("B-1) env.platform.json — صفر کلید Worker + فیوز خاموش + حالت رله (ALT خلع‌شده — R7)", () => {
+    // PN-059/R7 (۲۰۲۶-۱۱-۰۱): MELK_RELAY_ALT_URL پیش‌نمایشِ مرده (۵۰۰/HTML) بود و خلع شد
     const env = readJson("env.platform.json");
     expect(env).not.toHaveProperty("MELK_ARM_PROXY_URL");
-    expect(env.MELK_RELAY_ALT_URL).toBe("https://c1vdh8442240-d.space-z.ai");
+    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("");
     expect(env.MELK_ARM_RELAY_MODE).toBe("mobile");
     expect(env.MELK_ARM_CIRCUIT_DISABLED).toBe("1");
   });
@@ -98,7 +98,7 @@ describe("PN-033 · B) env — پاکسازی کلیدهای دوران Worker",
   test("B-2) env.platform.json.example — همگام با فایل زنده", () => {
     const ex = read("env.platform.json.example");
     expect(ex).not.toContain('"MELK_ARM_PROXY_URL"');
-    expect(ex).toContain('"MELK_RELAY_ALT_URL"'); // ن۰۶۸: مسیر جایگزین پایدار
+    expect(ex).not.toContain('"MELK_RELAY_ALT_URL"'); // R7: مسیر جایگزین مرده خلع شد
     expect(ex).toContain('"MELK_ARM_CIRCUIT_DISABLED"');
     expect(ex).toContain('"MELK_ARM_RELAY_MODE"');
     expect(JSON.parse(ex)).toBeTruthy(); // JSON معتبر (خط ولگرد قبلی نمونه پاک شد)

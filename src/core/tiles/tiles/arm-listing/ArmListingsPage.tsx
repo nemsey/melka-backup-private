@@ -172,7 +172,7 @@ const TRADE_CATEGORIES: readonly string[] = ["فروش", "پیش فروش", "ر�
 const MAX_AUTO_SLICES = 10;
 const AUTO_SLICE_ROWS = 25;
 
-export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, onBack: _back, tenantId }: TilePageProps) {
+export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, onBack: _back }: TilePageProps) {
   const { toast } = useToast();
   // PN-011 خامسا-۲ — بار کاشی از M5 (کد ملک) یک‌بار در ساخت مقصد مصرف می‌شود؛
   // فیلتر و اعمال هر دو از همان ابتدا پر می‌شوند ⇒ اولین واکشی خودش جست‌وجو است.
@@ -207,7 +207,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
   const load = useCallback(async () => {
     const params = new URLSearchParams();
     // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
-    params.set("tenantId", tenantId ?? "tabriz");
     // P6525 — نرمال‌سازی مرکزی: نتیجهٔ ارقام فارسی/عربی/لاتین همیشه یکسان
     if (applied.code) params.set("code", normalizeFilterInput(applied.code));
     if (applied.realtorName) params.set("realtorName", normalizeFilterInput(applied.realtorName));
@@ -235,7 +234,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     } finally {
       setLoading(false);
     }
-  }, [applied, selectedStates, selectedTrades, selectedBranches, selectedPropertyTypes, tenantId]);
+  }, [applied, selectedStates, selectedTrades, selectedBranches, selectedPropertyTypes]);
 
   useEffect(() => {
     setLoading(true);
@@ -347,50 +346,14 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     }
   }, [toast, load]);
 
-  // PN-046/گام اول-۱ — «قابل بروزرسانی» مالک: همگام‌سازی دستی فهرست ملکتون از CRM (همان مسیر Worker شش‌ساعته)
-  const [melketunSyncing, setMelketunSyncing] = useState(false);
-  const doMelketunSync = useCallback(async () => {
-    setMelketunSyncing(true);
-    try {
-      const res = await api<{
-        ok: boolean;
-        upserted: { listings: number; requests: number };
-        skippedByCityFilter: { listings: number; requests: number };
-        errors: string[];
-      }>("/api/integrations/melketun/sync", { method: "POST", timeoutMs: 300_000 });
-      if (res.ok) {
-        toast({
-          title: "همگام‌سازی ملکتون موفق",
-          description: `${faNumber(res.upserted.listings)} آگهی (فقط شهر تبریز) تازه شد — ${faNumber(res.skippedByCityFilter.listings)} ردیف غیرتبریز رد شد.`,
-        });
-      } else {
-        toast({ title: "همگام‌سازی ناموفق", description: res.errors?.[0] ?? "خطای CRM ملکتون", variant: "destructive" });
-      }
-      await load();
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "همگام‌سازی ناموفق", description: e.message, variant: "destructive" });
-    } finally {
-      setMelketunSyncing(false);
-    }
-  }, [toast, load]);
 
   const rows = data?.rows ?? [];
-  // PN-046/گام اول-۱ (دستور مالک): فهرست داشبورد ملکتون مختص داده‌های استخراجی از CRM ملکتون —
-  // ستون‌های بی‌دادهٔ CRM (متراژ/اتاق/طبقه/ساخت/بازدید/لینک) حذف و ستون‌های پُر از داده جایگزین می‌شوند.
-  const isMelketun = tenantId === "melketun";
   const enrichment = data?.enrichment ?? { total: 0, pending: 0, complete: 0 };
   const statusCounts = data?.statusCounts;
   const lastUpdate = data?.lastUpdate ?? null;
   const coveragePct = enrichment.total > 0 ? Math.round((enrichment.complete / enrichment.total) * 100) : 0;
   const todayCount = rows.filter((r) => r.createdAt && Date.now() - new Date(r.createdAt).getTime() < 86400_000).length;
   const activeRealtors = new Set(rows.map((r) => r.realtorName).filter(Boolean)).size;
-  // PN-047/گام اول-۴ — شعب فعال ملکتون (سه شعبهٔ سطح شهر تبریز) از دادهٔ واقعی آگهی‌ها
-  const melketunBranches = useMemo(() => {
-    const s = new Set<string>();
-    for (const r of rows) if (r.armBranchTitle) s.add(r.armBranchTitle);
-    return s;
-  }, [rows]);
   const stateFilterActive = selectedStates.length > 0;
   const anyFilterActive =
     stateFilterActive ||
@@ -442,10 +405,10 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
 
       {/* شاخص‌ها — رنگ بخش M1 (سبز یشمی) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <KpiCard label={isMelketun ? "کل آگهی‌های ملکتون (همهٔ شعب تبریز)" : "کل آگهی‌های ملک تبریز"} value={loading ? undefined : faNumber(data?.total ?? 0)} icon={Home} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
-        <KpiCard label={isMelketun ? "استخراج کامل از CRM ملکتون" : "اطلاعات مالک و آدرس تکمیل‌شده"} value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
-        <KpiCard label={isMelketun ? "شعب فعال ملکتون" : "آگهی امروز"} value={loading ? undefined : (isMelketun ? faNumber(melketunBranches.size) : faNumber(todayCount))} icon={isMelketun ? Network : Clock} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
-        <KpiCard label={isMelketun ? "کارشناسان مسئول" : "کارشناسان فعال"} value={loading ? undefined : faNumber(activeRealtors)} icon={Users} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
+        <KpiCard label={"کل آگهی‌های ملک تبریز"} value={loading ? undefined : faNumber(data?.total ?? 0)} icon={Home} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
+        <KpiCard label={"اطلاعات مالک و آدرس تکمیل‌شده"} value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
+        <KpiCard label={"آگهی امروز"} value={loading ? undefined : (faNumber(todayCount))} icon={Clock} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
+        <KpiCard label={"کارشناسان فعال"} value={loading ? undefined : faNumber(activeRealtors)} icon={Users} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
       </div>
 
       {/* بینش توزیع وضعیت ده‌حالته (گام ۱ بند ۳) */}
@@ -454,30 +417,11 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
           <div className="flex items-center gap-2.5">
             <PieChart className="w-5 h-5 text-sec-m1-700 shrink-0" aria-hidden />
             <div>
-              <p className="text-sm font-bold">{isMelketun ? "توزیع وضعیت آگهی‌ها در CRM ملکتون" : "توزیع وضعیت آگهی‌ها (نظام ده‌حالته)"}</p>
+              <p className="text-sm font-bold">{"توزیع وضعیت آگهی‌ها (نظام ده‌حالته)"}</p>
             </div>
           </div>
-          {isMelketun && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" id="melketun-listing-states-insight">
-              {(() => {
-                const counts = new Map<string, number>();
-                for (const r of rows) {
-                  const s = (r.status ?? "بدون وضعیت").trim() || "بدون وضعیت";
-                  counts.set(s, (counts.get(s) ?? 0) + 1);
-                }
-                const list = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
-                const total = rows.length || 1;
-                return list.map(([s, n]) => (
-                  <div key={s} className="rounded-xl border bg-muted/40 p-2.5 text-start" title={`وضعیت خام CRM ملکتون: ${s}`}>
-                    <p className="text-[11px] font-medium leading-4">{s}</p>
-                    <p className="text-base font-extrabold tabular-nums mt-0.5">{faNumber(n)}</p>
-                    <p className="text-[10px] tabular-nums text-muted-foreground">{faNumber(Math.round((n / total) * 100))}٪</p>
-                  </div>
-                ));
-              })()}
-            </div>
-          )}
-          {!isMelketun && (
+          
+          {(
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" id="arm-listing-states-insight">
             {LISTING_STATES.map((s) => {
               const n = statusCounts?.[s.key] ?? 0;
@@ -513,52 +457,14 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
 
       {/* PN-047/گام اول-۴ — بینش توزیع شعب ملکتون (نمودار مختص کسب‌وکار ملکتون —
           «ملکتون در سطح شهر تبریز دارای شعب مختلف است» عین دستور مالک) */}
-      {isMelketun && (
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center gap-2.5">
-              <Network className="w-5 h-5 text-sec-m1-700 shrink-0" aria-hidden />
-              <div>
-                <p className="text-sm font-bold">توزیع آگهی‌های ملکتون به تفکیک شعبه (همگی در سطح شهر تبریز)</p>
-                <p className="text-[11px] text-muted-foreground">منبع: نمای عمومی CRM ملکتون — همگام‌سازی PN-047</p>
-              </div>
-            </div>
-            <div className="space-y-2" id="melketun-listing-branches-insight">
-              {(() => {
-                const counts = new Map<string, number>();
-                for (const r of rows) {
-                  const b = (r.armBranchTitle ?? "بدون شعبه").trim() || "بدون شعبه";
-                  counts.set(b, (counts.get(b) ?? 0) + 1);
-                }
-                const list = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-                const total = rows.length || 1;
-                return list.map(([branch, n]) => (
-                  <div key={branch} className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium w-28 shrink-0 truncate" title={branch}>{branch}</span>
-                    <div className="flex-1 h-6 rounded-md bg-muted/50 overflow-hidden relative">
-                      <div
-                        className="h-full rounded-md bg-sec-m1-500/70"
-                        style={{ width: `${Math.max(4, Math.round((n / total) * 100))}%` }}
-                        aria-label={`${branch}: ${n} آگهی`}
-                      />
-                      <span className="absolute inset-y-0 right-2 flex items-center text-[10px] font-bold tabular-nums" dir="rtl">
-                        {faNumber(n)} آگهی · {faNumber(Math.round((n / total) * 100))}٪
-                      </span>
-                    </div>
-                  </div>
-                ));
-              })()}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      
 
       {/* ============ جداول و نمودارها (P6546/گام پنجم-الف-۳ — ترتیب الزامی: بینش‌ها → جداول → پوشش → بروزرسانی → فیلتر → فهرست) ============ */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4" id="m1-tables-section">
         {/* P6546/گام یک-۲ — جدول ۱۰ کارشناسان پرآگهی */}
         <TopRankingTable
           id="m1-top-realtors"
-          title={isMelketun ? "جدول کارشناسان پرآگهی ملکتون" : "جدول ۱۰ کارشناسان پرآگهی ملک تبریز"}
+          title={"جدول ۱۰ کارشناسان پرآگهی ملک تبریز"}
           rows={topRealtors}
           countLabel="کارشناس"
           icon={Award}
@@ -567,7 +473,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
         {/* P6546/گام یک-۳ — جدول ۱۰ قطب‌های عرضه آگه */}
         <TopRankingTable
           id="m1-top-hubs"
-          title={isMelketun ? "جدول قطب‌های عرضه آگه ملکتون در مناطق تبریز" : "جدول ۱۰ قطب‌های عرضه آگه در مناطق تبریز"}
+          title={"جدول ۱۰ قطب‌های عرضه آگه در مناطق تبریز"}
           rows={topHubs}
           countLabel="منطقه"
           icon={MapPinned}
@@ -585,15 +491,10 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
             <div className="flex items-center gap-2.5 min-w-0">
               <Building2 className="w-5 h-5 text-sec-m1-700 shrink-0" aria-hidden />
               <div className="min-w-0">
-                <p className="text-sm font-bold">{isMelketun ? "بروزرسانی آگهی‌ها از CRM ملکتون (فقط شهر تبریز)" : "بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز"}</p>
+                <p className="text-sm font-bold">{"بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز"}</p>
               </div>
             </div>
-            {isMelketun ? (
-              <Button onClick={() => void doMelketunSync()} disabled={melketunSyncing} className="gap-2 shrink-0 bg-sec-m1-500 hover:bg-sec-m1-500/90 text-sec-m1-fg">
-                {melketunSyncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
-                همگام‌سازی از CRM ملکتون
-              </Button>
-            ) : (
+            {(
             <Button onClick={() => void doSync()} disabled={syncing} className="gap-2 shrink-0 bg-sec-m1-500 hover:bg-sec-m1-500/90 text-sec-m1-fg">
               {syncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
               بروزرسانی از سامانه
@@ -665,7 +566,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
             <>
               {/* PN-009 مرحله C — گروه‌بندی منطقی فیلترها (قانون ۶.۱): وضعیت → دسته‌بندی → شناسه و اشخاص → قیمت و بازه
                   PN-046/گام اول-۱ — ده‌حالتهٔ ARM مختص تبریز است؛ برای ملکتون پنهان می‌شود */}
-              {!isMelketun && (
+              {(
               <FilterGroup
                 label="وضعیت آگهی (چندانتخابی — ده‌حالته)"
                 hint={stateFilterActive ? `${faNumber(selectedStates.length)} حالت انتخاب شده — ${faNumber(rows.length)} آگهی مطابق` : undefined}
@@ -741,7 +642,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
 
               {/* شعبه — PN-011 ثالثاً: فیلتر چندانتخابی چیپی (همانند دسته‌بندی — دستور مالک)
                   PN-046/گام اول-۱ — شعبه‌های چهارگانهٔ تبریز برای ملکتون کاربرد ندارند؛ پنهان */}
-              {!isMelketun && (
+              {(
               <FilterGroup
                 label="شعبهٔ کارشناس (چندانتخابی)"
                 hint={selectedBranches.length > 0 ? `${faNumber(selectedBranches.length)} شعبه انتخاب شده` : undefined}
@@ -808,12 +709,12 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="arm-listing-realtor">{isMelketun ? "آژانس" : "کارشناس"}</Label>
+                  <Label htmlFor="arm-listing-realtor">{"کارشناس"}</Label>
                   <Input
                     id="arm-listing-realtor"
                     value={filters.realtorName}
                     onChange={(e) => setF("realtorName", e.target.value)}
-                    placeholder={isMelketun ? "نمونه: رضانژاد تبریز" : "نمونه: شهریار بابایان"}
+                    placeholder="نمونه: شهریار بابایان"
                     autoComplete="off"
                     className="font-bold"
                   />
@@ -965,7 +866,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                 onClick={() => {
                   const p = new URLSearchParams();
                   // PN-044/فاز ۴ — خروجی اکسل هم tenant همین رندر را می‌گیرد
-                  p.set("tenantId", tenantId ?? "tabriz");
                   if (filters.code) p.set("code", filters.code);
                   if (filters.realtorName) p.set("realtorName", filters.realtorName);
                   if (filters.ownerName) p.set("ownerName", filters.ownerName);
@@ -981,7 +881,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                 <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
               </Button>
               {/* PN-003 گام ۴-۲ + PN-051 — بارگذاری اکسل کل فهرست (ایمپورت در tenant همین فهرست) */}
-              <ExcelImportButton entity="listings" compact tenantId={tenantId ?? "tabriz"} onImported={() => void load()} />
+              <ExcelImportButton entity="listings" compact onImported={() => void load()} />
             </div>
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
@@ -1005,25 +905,16 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                     {/* PN-046/گام اول-۱ — فهرست ملکتون مختص داده‌های CRM + PN-047/گام اول-۲:
                         realtorName = کارشناس مسئول حل‌شده از vtiger (نه آژانس) · شعبهٔ ملکتون (۳ شعبهٔ فعال)
                         · متراژ جدید (size نمای عمومی — پوشش ۹۹٪) · تصاویر حذف (نمای عمومی تصویر ندارد) */}
-                    <TableHead className="min-w-28">{isMelketun ? "کارشناس مسئول" : "کارشناس"}</TableHead>
-                    <TableHead className="min-w-24">{isMelketun ? "شعبه ملکتون" : "شعبه"}</TableHead>
+                    <TableHead className="min-w-28">{"کارشناس"}</TableHead>
+                    <TableHead className="min-w-24">{"شعبه"}</TableHead>
                     <TableHead className="min-w-24">نوع ملک</TableHead>
                     <TableHead className="min-w-24">دسته‌بندی</TableHead>
                     {/* PN-039 (گام ۵) — ستون «وضعیت آگهی» بعد از دسته‌بندی (دستور مالک) */}
-                    <TableHead className="min-w-28">{isMelketun ? "وضعیت CRM" : "وضعیت آگهی"}</TableHead>
+                    <TableHead className="min-w-28">{"وضعیت آگهی"}</TableHead>
                     <TableHead className="min-w-36">مالک</TableHead>
                     {/* P6546/گام پنجم-ت-۴ — ستون قیمت با نام «قیمت» و قالب ۹،۰۰۰،۰۰۰،۰۰۰ */}
                     <TableHead className="min-w-32">قیمت</TableHead>
-                    {isMelketun ? (
-                      <>
-                        {/* ستون‌های مخصوص ملکتون M7 — همه از دادهٔ واقعی CRM پُر می‌شوند (دستور مالک: تمام ستون‌ها دارای داده)
-                            PN-047: متراژ (فیلد size نمای عمومی — پوشش ۹۹٪) جایگزین تصاویر (نمای عمومی تصویر ندارد) */}
-                        <TableHead className="min-w-24">پیش‌پرداخت</TableHead>
-                        <TableHead className="min-w-24">اجاره</TableHead>
-                        <TableHead className="min-w-28">منطقه</TableHead>
-                        <TableHead className="min-w-20">متراژ</TableHead>
-                      </>
-                    ) : (
+                    {(
                       <>
                         <TableHead className="min-w-28">قیمت هر متر</TableHead>
                         {/* PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM */}
@@ -1076,17 +967,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                           </span>
                         </TableCell>
                         {/* ۴ — تبریز: شعبهٔ کارشناس (PM) · ملکتون M7: شعبهٔ ملکتون (سه شعبهٔ فعال در سطح شهر تبریز — PN-047) */}
-                        {isMelketun ? (
-                          <TableCell className="whitespace-nowrap">
-                            {r.armBranchTitle ? (
-                              <Badge variant="outline" className="gap-1 text-[11px] border-0" title="شعبهٔ ملکتون — همهٔ شعب در سطح شهر تبریز (دستور مالک PN-047)">
-                                <Network className="w-3 h-3" aria-hidden /> {r.armBranchTitle}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground text-[11px]">—</span>
-                            )}
-                          </TableCell>
-                        ) : (
+                        {(
                         <TableCell>
                           {r.branch && r.branch !== BRANCH_UNSET ? (
                             <Badge variant="outline" className={`gap-1 text-[11px] border-0 ${branchBadgeClass(r.branch)}`} title="شعبهٔ کارشناس — از سامانهٔ PM">
@@ -1174,18 +1055,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                           )}
                         </TableCell>
                         {/* ۸-ب — تبریز: قیمت هر متر · ملکتون: پیش‌پرداخت (پیش‌پرداخت CRM — ۰ هم دادهٔ واقعی است) */}
-                        {isMelketun ? (
-                          <TableCell className="whitespace-nowrap">
-                            {typeof r.depositPrice === "number" ? (
-                              <span className="inline-flex items-center gap-1 font-medium tabular-nums text-[11px]" title={`پیش‌پرداخت CRM: ${faAmountFull(r.depositPrice)} — تومان`}>
-                                <Banknote className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
-                                {r.depositPrice > 0 ? faAmountFull(r.depositPrice, "") : "۰ (فروش)"}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-[10px]">—</span>
-                            )}
-                          </TableCell>
-                        ) : (
+                        {(
                         <TableCell className="whitespace-nowrap">
                           {typeof r.pricePerMeter === "number" && r.pricePerMeter > 0 ? (
                             <span className="inline-flex items-center gap-1 font-medium tabular-nums text-[11px]" title={`${faAmountFull(r.pricePerMeter)} — تومان هر مترمربع`}>
@@ -1198,18 +1068,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                         </TableCell>
                         )}
                         {/* ۸-ب-002 گام ۱ — تبریز: رهن / اجاره · ملکتون: اجارهٔ CRM (۰ = فروش) */}
-                        {isMelketun ? (
-                          <TableCell className="whitespace-nowrap">
-                            {typeof r.rentPrice === "number" ? (
-                              <span className="inline-flex items-center gap-1 font-medium tabular-nums text-[11px]" title={`اجارهٔ ماهانهٔ CRM: ${faAmountFull(r.rentPrice)} — تومان`}>
-                                <Banknote className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
-                                {r.rentPrice > 0 ? faAmountFull(r.rentPrice, "") : "۰ (فروش)"}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-[10px]">—</span>
-                            )}
-                          </TableCell>
-                        ) : (
+                        {(
                         <TableCell className="whitespace-nowrap">
                           {typeof r.depositPrice === "number" && r.depositPrice > 0 ? (
                             <span className="inline-flex flex-col items-center gap-0.5 tabular-nums text-[10px]" title={`رهن: ${faAmountFull(r.depositPrice)}${typeof r.rentPrice === "number" && r.rentPrice > 0 ? ` — اجاره: ${faAmountFull(r.rentPrice)}` : ""} — تومان`}>
@@ -1222,14 +1081,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                         </TableCell>
                         )}
                         {/* ۱۰ — تبریز: آدرس ملک · ملکتون: منطقهٔ CRM */}
-                        {isMelketun ? (
-                          <TableCell className="whitespace-nowrap">
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium" title="منطقه در CRM ملکتون">
-                              <MapPin className="w-3 h-3 text-sec-m1-700 shrink-0" aria-hidden />
-                              {r.areaName ?? "—"}
-                            </span>
-                          </TableCell>
-                        ) : (
+                        {(
                         <TableCell className="whitespace-normal">
                           <span className="inline-flex items-start gap-1 leading-relaxed">
                             <MapPin className="w-3 h-3 text-sec-m1-700 mt-0.5 shrink-0" aria-hidden />
@@ -1244,17 +1096,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                         )}
                         {/* ۱۰-ب — ملکتون M7: متراژ (فیلد size نمای عمومی CRM — پوشش ۹۹٪ · PN-047)
                             تبریز: متراژ/اتاق/طبقه/ساخت/بازدید/لینک/تاریخ وضعیت */}
-                        {isMelketun ? (
-                          <TableCell className="whitespace-nowrap text-center">
-                            {typeof r.meterage === "number" && r.meterage > 0 ? (
-                              <span className="inline-flex items-center gap-1 tabular-nums text-[11px] font-medium" title="مترمربع — فیلد size نمای عمومی CRM ملکتون">
-                                <Ruler className="w-3 h-3 text-sec-m1-700" aria-hidden /> {faNumber(r.meterage)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-[10px]">—</span>
-                            )}
-                          </TableCell>
-                        ) : (
+                        {(
                           <>
                         {/* ۱۰-ب — متراژ */}
                         <TableCell className="whitespace-nowrap">
@@ -1339,7 +1181,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                         {/* ۱۵ — PN-045/فاز ۳ — ستون «اطلاعات»: دکمهٔ 📋 نمایش → فایل کامل در modal
                             چسبندهٔ ماقبل آخر (RTL: بلافاصله راستِ یادداشت) · lazy fetch — فقط هنگام کلیک */}
                         <TableCell>
-                          <InfoButton tenant={tenantId ?? "tabriz"} type="listing" code={r.propertyCode} />
+                          <InfoButton type="listing" code={r.propertyCode} />
                         </TableCell>
                         {/* ۱۶ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline
                             PN-045/فاز ۲ — سلول چسبندهٔ چپ (عرض ثابت w-44 = 176px — قانون ۱۱) */}

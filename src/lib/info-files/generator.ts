@@ -28,7 +28,7 @@ import { db } from "@/lib/db";
 import { TENANT_DB_VALUES, tileIdentityLabel, tileIdentityCode, type TenantKey, type TenantTileKind } from "@/lib/tenants";
 
 export type InfoType = "listing" | "request" | "transaction" | "expert";
-export type InfoTenant = TenantKey; // 'tabriz' | 'melketun'
+export type InfoTenant = TenantKey; // PN-059: تنها 'tabriz' (ملکتون حذف شد)
 
 const INFO_ROOT = path.join(process.cwd(), "deliver-store", "info");
 
@@ -54,7 +54,6 @@ const TYPE_LABELS: Record<InfoType, string> = {
 
 const TENANT_LABELS: Record<InfoTenant, string> = {
   tabriz: "ملک تبریز (ARM/PM — سامانهٔ داخلی)",
-  melketun: "ملکتون (CRM — Laravel)",
 };
 
 /** تهی/خالی → «— (تهی)» — هرگز صفر (اصل ۱: صفر = دروغ) */
@@ -310,7 +309,7 @@ export function isInfoType(v: string): v is InfoType {
 }
 
 export function isInfoTenant(v: string): v is InfoTenant {
-  return v === "tabriz" || v === "melketun";
+  return v === "tabriz";
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

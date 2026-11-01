@@ -72,6 +72,13 @@ export const RELAY_PRIORITY_INTERACTIVE = 5;
  *  (اولویت ۰) در TTL ۱۲۰ث انقضا می‌خورد (۴۷۲ expired شاهد). اولویت ۱ = گوشی در
  *  هر poll اول اینها را برمی‌دارد (ترتیب priority DESC) و مقدم بر OTP (۵) نیست. */
 export const RELAY_PRIORITY_CATALOG_REQUESTS = 1;
+/** PN-059 (دستور مالک ۲۰۲۶-۱۱-۰۲ — رفع کامل عدم اتصال): اولویت سینک اصلی
+ *  شش‌خانوادهٔ CRM (realtor-reports/* · realtors/list · visits/list ·
+ *  trade-overviews/*). ریشهٔ شکایت: صفحات سینک اصلی با اولویت ۰ پشت موجِ
+ *  غنی‌سازی LCPP (details/owner انبوه) می‌ایستادند؛ مهلت می‌سوخت و سینک
+ *  با NETWORK_ERROR «ارتباط برقرار نشد» می‌مرد در حالی که رله زنده بود.
+ *  اولویت ۲ = مقدم بر موج حجیم (۰) و کاتالوگ (۱)، تابع OTP (۵). */
+export const RELAY_PRIORITY_MAIN_SYNC = 2;
 /** هدرهای عبوری مجاز — عین FORWARD_REQUEST_HEADERS سمت Worker */
 export const RELAY_FORWARD_HEADERS: readonly string[] = ["authorization", "content-type", "accept"];
 
@@ -473,6 +480,15 @@ export function relayPriorityForUrl(url: string): number {
   try {
     const p = new URL(url).pathname;
     if (/\/authentication\/otp(\/|$)/i.test(p)) return RELAY_PRIORITY_INTERACTIVE;
+    // PN-059 — سینک اصلی شش‌خانوادهٔ CRM: مقدم بر موج غنی‌سازی انبوه
+    if (
+      /\/realtor-reports\//i.test(p) ||
+      /\/realtors\/list(\/|$)/i.test(p) ||
+      /\/visits\/list(\/|$)/i.test(p) ||
+      /\/trade-overviews\//i.test(p)
+    ) {
+      return RELAY_PRIORITY_MAIN_SYNC;
+    }
     if (/\/requests\/list(\/|$)/i.test(p)) return RELAY_PRIORITY_CATALOG_REQUESTS;
   } catch {
     /* نشانی نامعتبر — اولویت پیش‌فرض */

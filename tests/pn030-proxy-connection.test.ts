@@ -249,7 +249,7 @@ describe("PN-030 · C) نقطهٔ یگانهٔ خروج (client.ts)", () => {
   const ROUTE = readFileSync(join(REPO, "src/app/api/connection/status/route.ts"), "utf8");
 
   test("C-1) هر دو نقطهٔ شبکه (armCall + probeGet) از proxyFetch می‌گذرند — صفر fetch مستقیم باقی", () => {
-    expect(CLIENT).toContain('import { proxyFetch } from "./proxy"');
+    expect(CLIENT).toMatch(/import \{ proxyFetch[^}]*\} from "\.\/proxy";/); // PN-059: isMelkTabrizHost هم وارد شد (مهلت رله‌آگاه)
     // هر دو فراخوانی شبکه به proxyFetch تبدیل شده‌اند
     const direct = CLIENT.match(/await fetch\(/g) ?? [];
     expect(direct.length).toBe(0); // صفر فراخوانی مستقیم در لایهٔ client
@@ -325,12 +325,13 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
     // مسیر یگانه: رلهٔ موبایل Termux؛ کلیدهای Worker از env حذف شدند و فیوز PN-029 خاموش است.
     expect(env.MELK_ARM_RELAY_MODE ?? "").toBe("mobile");
     expect(env).not.toHaveProperty("MELK_ARM_PROXY_URL");
-    // PN-041-R (شورا-ن۰۶۸ · دلیل ۵): مسیر جایگزین پایدار برمی‌گردد — URL publish
-    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("https://c1vdh8442240-d.space-z.ai");
+    // PN-059/R7 (خلع ALT مرده — جلسهٔ ۲۰۲۶-۱۱-۰۱): مسیر جایگزینِ پیش‌نمایشِ کهنه
+    // (۵۰۰/HTML) از env حذف شد؛ رله فقط از مسیر اصلی می‌رود.
+    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("");
     expect(env.MELK_ARM_OFFLINE ?? "").toBe("");
     expect(env.MELK_ARM_CIRCUIT_DISABLED ?? "").toBe("1");
-    // مستندسازی پاکسازی در همان فایل
-    expect(env._pn033 ?? "").toContain("شورا-ن۰۵۴");
+    // مستندسازی — کلید _pn033 در پاکسازی env (خلع ALT · R7) حذف شد؛ تنها _comment زنده است
+    expect(typeof env._comment).toBe("string");
   });
 
   test("E-3 → PN-038/۲.۵: ترتیب هشت کاشی هوم — فایل یابی، آگهی، درخواست، معاملات، کارشناسان، تطبیق، مغز، تنظیمات", async () => {
@@ -349,7 +350,6 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
       "learning-tier",            // ۳ مغز
       "settings",                 // ۴ تنظیمات
       "tenant-dashboard-tabriz",  // ۵ داشبورد ملک تبریز
-      "tenant-dashboard-melketun", // ۶ داشبورد ملکتون
     ]);
     // ترتیب عددی هم عین فهرست مالک است
     expect(tileRegistry.get("smart-matching")!.order).toBe(2); // PN-043: تطبیق دوم

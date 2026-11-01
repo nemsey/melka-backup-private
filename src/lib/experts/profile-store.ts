@@ -55,7 +55,7 @@ export interface ExpertProfileRow {
 
 /** فیلتر تمام ستون‌ها — هر ستون فهرست، فیلدر مستقل دارد */
 export interface ExpertProfileFilter {
-  /** PN-044/فاز ۴ — مقدار ستون tenantId در DB ('melk-tabriz' | 'melketun'). undefined → تبریز */
+  /** مقدار ستون tenantId در DB — PN-059: تنها 'melk-tabriz' زنده است */
   tenantId?: string;
   q?: string;
   fullName?: string;

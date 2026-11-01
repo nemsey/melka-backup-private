@@ -30,10 +30,9 @@ import { faDigits, faNumber } from "@/lib/format";
 export const AREAS_FILE_THRESHOLD = 3;
 
 /** منبع دادهٔ سند مناطق — صداقت provenance (قانون ۱۴):
- *  تبریز = سامانهٔ ARM ملک تبریز · ملکتون = CRM ملکتون (PN-049/گام ۱-الف) */
+ *  تبریز = سامانهٔ ARM ملک تبریز (PN-059: ملکتون حذف شد) */
 const AREAS_SOURCE_FA: Record<string, string> = {
   tabriz: "عین دادهٔ سامانه ARM ملک تبریز",
-  melketun: "عین دادهٔ CRM ملکتون",
 };
 
 export function AreasFileCell({ requestCode, areaNames, tenant = "tabriz" }: { requestCode: string; areaNames: string[]; tenant?: string }) {

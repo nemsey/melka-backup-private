@@ -25,7 +25,6 @@ const ROOT_EXPECTED = [
   "learning-tier",               // مغز
   "settings",                    // تنظیمات
   "tenant-dashboard-tabriz",     // داشبورد ملک تبریز (ظرف wrapper)
-  "tenant-dashboard-melketun",   // داشبورد ملکتون (ظرف wrapper)
 ];
 
 /** PN-043 — کاشی‌های M1-M4 درون ظرف tenant-dashboards (داشبوردهای tenant) */
@@ -47,7 +46,6 @@ const TITLES_EXPECTED: Record<string, string> = {
   "learning-tier": "مغز",
   "settings": "تنظیمات",
   "tenant-dashboard-tabriz": "داشبورد ملک تبریز",
-  "tenant-dashboard-melketun": "داشبورد ملکتون",
 };
 
 describe("معماری هوم یک‌پارچه (PN-038/فاز ۲)", () => {
@@ -72,7 +70,7 @@ describe("معماری هوم یک‌پارچه (PN-038/فاز ۲)", () => {
     // هیچ کاشی ثبت‌شده‌ای پسوند قدیمی ندارد
     for (const t of tileRegistry.listAll("OWNER")) {
       expect(t.title).not.toContain("ملکا");
-      if (t.id !== "tenant-dashboard-tabriz" && t.id !== "tenant-dashboard-melketun") {
+      if (t.id !== "tenant-dashboard-tabriz") {
         expect(t.title).not.toContain("ملک تبریز"); // PN-043: نام کامل داشبوردهای tenant به دستور مالک است
       }
     }

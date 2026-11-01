@@ -25,7 +25,8 @@ export function journalDir(): string {
   return process.env.MELKA_JOURNAL_DIR ?? path.join(process.cwd(), "upload/.runtime/journal");
 }
 
-export type JournalKind = "melketun-sync" | "generic";
+/** PN-059: نوع «melketun-sync» حذف شد (حذف کامل ملکتون) — تنها kind زنده: generic */
+export type JournalKind = "generic";
 
 export interface JournalIntent {
   batchId: string;

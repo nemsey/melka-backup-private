@@ -35,15 +35,15 @@ describe("PN-050 · دستور ۵ — ژورنال اپلیکیشن (intent/comm
   test("writeIntent فایل .intent می‌سازد؛ committed تا پایش pending می‌ماند", async () => {
     freshDir("t1");
     const { writeIntent, listPendingBatches, writeCommitted } = await import("@/lib/journal");
-    writeIntent("batch-1", "melketun-sync", { listings: 100 });
-    writeIntent("batch-2", "melketun-sync", { listings: 50 });
+    writeIntent("batch-1", "generic", { listings: 100 });
+    writeIntent("batch-2", "generic", { listings: 50 });
 
     let pending = listPendingBatches();
     expect(pending.map((p) => p.batchId)).toEqual(["batch-1", "batch-2"]);
-    expect(pending[0].kind).toBe("melketun-sync");
+    expect(pending[0].kind).toBe("generic");
     expect(pending[0].meta).toEqual({ listings: 100 });
 
-    writeCommitted("batch-1", "melketun-sync", { upserted: 100 });
+    writeCommitted("batch-1", "generic", { upserted: 100 });
     pending = listPendingBatches();
     expect(pending.map((p) => p.batchId)).toEqual(["batch-2"]); // batch-1 دیگر pending نیست
   });
@@ -51,7 +51,7 @@ describe("PN-050 · دستور ۵ — ژورنال اپلیکیشن (intent/comm
   test("replay: batch ناتمام (kill -9 وسط سینک) دوباره اجرا و کامل می‌شود", async () => {
     freshDir("t2");
     const { writeIntent, listPendingBatches, replayPendingBatches } = await import("@/lib/journal");
-    writeIntent("batch-5-of-10", "melketun-sync", { listings: 120 }); // همان که kill -9 خورد
+    writeIntent("batch-5-of-10", "generic", { listings: 120 }); // همان که kill -9 خورد
 
     const seen: string[] = [];
     const res = await replayPendingBatches({
@@ -68,7 +68,7 @@ describe("PN-050 · دستور ۵ — ژورنال اپلیکیشن (intent/comm
   test("replay شکست‌خورده: batch ناتمام می‌ماند تا بوت بعدی (ضد گم‌شدگی)", async () => {
     freshDir("t3");
     const { writeIntent, replayPendingBatches, listPendingBatches } = await import("@/lib/journal");
-    writeIntent("batch-fail", "melketun-sync");
+    writeIntent("batch-fail", "generic");
 
     const res = await replayPendingBatches({
       onBatch: async () => {
@@ -87,9 +87,9 @@ describe("PN-050 · دستور ۵ — ژورنال اپلیکیشن (intent/comm
     const old = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
     writeFileSync(
       join(dir, "batch-old.intent"),
-      JSON.stringify({ batchId: "batch-old", kind: "melketun-sync", startedAt: old }),
+      JSON.stringify({ batchId: "batch-old", kind: "generic", startedAt: old }),
     );
-    writeIntent("batch-fresh", "melketun-sync"); // ...و یک batch تازه که عادی اجرا شود
+    writeIntent("batch-fresh", "generic"); // ...و یک batch تازه که عادی اجرا شود
 
     const seen: string[] = [];
     const res = await replayPendingBatches({
@@ -120,7 +120,7 @@ describe("PN-050 · دستور ۵ — ژورنال اپلیکیشن (intent/comm
     const dir = freshDir("t6");
     const { writeIntent } = await import("@/lib/journal");
     const { readFileSync } = await import("node:fs");
-    writeIntent("batch-pii", "melketun-sync", { listings: 10, requests: 5 });
+    writeIntent("batch-pii", "generic", { listings: 10, requests: 5 });
     const raw = readFileSync(join(dir, "batch-pii.intent"), "utf8");
     expect(raw).not.toContain("09"); // هیچ موبایل خامی
     expect(raw).not.toContain("ownerMobile");

@@ -135,6 +135,13 @@ PYEOF
 }
 
 # ── اجرا ──
+# PN-059 (قانون ۹ — پارک اتمی): حین پارک/CI، این گارد هرگز درخت را reset نمی‌کند
+# (عین audit-head-guard.sh بند ۱۵۰ — دکترین: rebuild/reset قفل است تا پایان پارک).
+if [ -f "$REPO/upload/.runtime/PARK_ACTIVE" ] || [ -f "$REPO/upload/.runtime/CI_RUNNING" ]; then
+  echo "[reset-guard] PARK/CI فعال — وارسی و بازیابی موکول (قانون ۹ پارک اتمی)"
+  write_state check "PARK-HOLD (قانون ۹)" "$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo '?')" "?" "park-hold" "پارک اتمی فعال — reset قفل است"
+  exit 0
+fi
 VERDICT_LINE=""; DETECT_CODE=0
 detect > /tmp/pn015-reset-guard-detect.txt 2>&1 || DETECT_CODE=$?
 VERDICT_LINE="$(cat /tmp/pn015-reset-guard-detect.txt)"

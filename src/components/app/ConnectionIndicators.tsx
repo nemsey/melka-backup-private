@@ -41,8 +41,6 @@ const LABELS_FA: Record<string, string> = {
   pmApi: "اتصال به api سامانه pm",
   melkPublicApi: "اتصال به سامانه عمومی ملک تبریز",
   gapApi: "اتصال به api سامانه gap",
-  melketunCrm: "اتصال به CRM ملکتون (حساب شخصی یوزر/پسورد)",
-  melketunPublic: "اتصال به سایت عمومی ملکتون",
   divarApi: "اتصال به api دیوار",
   divarAccount: "اتصال به حساب شخصی دیوار",
   instagramAccount: "اتصال به حساب اینستاگرام",
@@ -56,15 +54,13 @@ const LABELS_SHORT_FA: Record<string, string> = {
   pmApi: "API PM",
   melkPublicApi: "سامانه عمومی ملک",
   gapApi: "API GAP",
-  melketunCrm: "CRM ملکتون",
-  melketunPublic: "سایت عمومی ملکتون",
   divarApi: "API دیوار",
   divarAccount: "حساب دیوار",
   instagramAccount: "اینستاگرام",
 };
 
-/** ترتیب مالک: سامانه‌های ملک تبریز اول، سپس ملکتون (PN-046)، سپس دیوار و اینستاگرام */
-const ORDER = ["armAccount", "armApi", "pmAccount", "pmApi", "melkPublicApi", "gapApi", "melketunCrm", "melketunPublic", "divarApi", "divarAccount", "instagramAccount"];
+/** ترتیب مالک: سامانه‌های ملک تبریز اول، سپس دیوار و اینستاگرام (ملکتون حذف شد — PN-059) */
+const ORDER = ["armAccount", "armApi", "pmAccount", "pmApi", "melkPublicApi", "gapApi", "divarApi", "divarAccount", "instagramAccount"];
 const TOTAL = ORDER.length;
 
 export function ConnectionIndicators({ variant = "full" }: { variant?: "full" | "compact" }) {

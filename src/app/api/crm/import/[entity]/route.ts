@@ -46,10 +46,8 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ entity
     }
 
     const sheet = await readSheet(buffer);
-    // PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲) — ایمپورت در tenant فهرستِ بارگذاری‌شده:
-    // tenantId=melketun ⇒ رکوردهای تازه در ملکتون؛ پیش‌فرض ⇒ ملک تبریز.
-    const tenantKey = request.nextUrl.searchParams.get("tenantId");
-    const result = await runImport(entity as ImportEntity, sheet, file.name, tenantKey);
+    // PN-059: tenant ملکتون حذف شد — ایمپورت همیشه در ملک تبریز.
+    const result = await runImport(entity as ImportEntity, sheet, file.name, null);
 
     return Response.json(result);
   } catch (err) {

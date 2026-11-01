@@ -319,9 +319,9 @@ describe("PN-031-B/D — سازگاری و قراردادها", () => {
     expect((env.MELK_ARM_OFFLINE ?? "")).toBe(""); // PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): پرچم آفلاین حذف شد
     expect(env.MELK_ARM_RELAY_MODE ?? "").toBe("mobile");
     expect(env.MELK_PROXY_SECRET ?? "").toMatch(/^[0-9a-f]{64}$/);
-    // PN-033 (ن۰۵۴): کلیدهای Worker حذف · PN-041-R (ن۰۶۸·دلیل ۵): ALT_URL publish برگشت
+    // PN-033 (ن۰۵۴): کلیدهای Worker حذف · R7 (۲۰۲۶-۱۱-۰۱): ALT_URL مرده خلع شد
     expect(env).not.toHaveProperty("MELK_ARM_PROXY_URL");
-    expect(env.MELK_RELAY_ALT_URL).toBe("https://c1vdh8442240-d.space-z.ai");
+    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("");
     expect(env.MELK_ARM_CIRCUIT_DISABLED ?? "").toBe("1");
     expect(env.MELK_PUBLIC_BASE_URL ?? "").toMatch(/^https:\/\/preview-/);
   });

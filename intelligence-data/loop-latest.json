@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-11-01T20:11:18.008Z",
+  "ranAt": "2026-11-01T21:11:20.957Z",
   "tileId": "arm-listing",
   "predictions": 860,
   "positiveOutcomes": 430,
@@ -10,10 +10,10 @@
     "windowDays": 3650,
     "sampleSize": 860,
     "verdict": "ABOVE_BASELINE",
-    "computedAt": "2026-11-01T20:11:18.008Z",
+    "computedAt": "2026-11-01T21:11:20.957Z",
     "unresolvablePairs": 0,
     "target": "probability",
-    "brierScore": 0.2399,
+    "brierScore": 0.2398,
     "calibration": [
       {
         "bucket": "0.0-0.2",
@@ -41,7 +41,7 @@
         "observed": 0
       }
     ],
-    "lift": 0.0405
+    "lift": 0.0406
   },
   "reproduction": {
     "source": "arm.melketabriz.ir (PropertyRecord واقعی)",

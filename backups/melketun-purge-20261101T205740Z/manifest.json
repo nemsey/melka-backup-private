@@ -1,0 +1,55 @@
+{
+  "schema": "melka-pn059-melketun-purge",
+  "generatedAt": "2026-11-01T20:57:40.334378+00:00",
+  "ownerOrder": "دستور مالک ۱۴۰۵/۰۸/۱۱ (۲۰۲۶-۱۱-۰۲): کاشی ملکتون به‌طور کامل حذف شود به همراه کلیهٔ داده‌های ملکتون",
+  "database": "/home/z/my-project/db/custom.db",
+  "tables": {
+    "PropertyRecord": {
+      "archived": 5181,
+      "file": "PropertyRecord.jsonl"
+    },
+    "RequestRecord": {
+      "archived": 4006,
+      "file": "RequestRecord.jsonl"
+    },
+    "ExpertRecord": {
+      "archived": 92,
+      "file": "ExpertRecord.jsonl"
+    },
+    "ExpertProfile": {
+      "archived": 92,
+      "file": "ExpertProfile.jsonl"
+    },
+    "AuditLog": {
+      "archived": 6,
+      "file": "AuditLog.jsonl"
+    },
+    "RequestEventRecord": {
+      "archived": 0,
+      "file": "RequestEventRecord.jsonl"
+    }
+  },
+  "sha256": {
+    "PropertyRecord.jsonl": "9da90c4324014ea9f1df276d1e196950a03740162374292a9505f4c2aa0598b4",
+    "RequestRecord.jsonl": "f00cc52b8e1465f8a7614098fe83f6d819f3c10dee1783087cbc46cff7d3aad1",
+    "ExpertRecord.jsonl": "90b9a02163948f1eb6bd43def0fc00f6c90a1c08a7ae47368c49df3ade8cd74f",
+    "ExpertProfile.jsonl": "e9cf78c52e8d53831f3c95f9141113056bd6f67364253c86464751a1c27d9192",
+    "AuditLog.jsonl": "05dd4b7d3c2a44e9c14f72a41be2801b35fd1b5b4ea1c0328638047d8f0de043",
+    "RequestEventRecord.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "verification": {
+    "melketunRemaining": 0,
+    "tabrizPost": {
+      "PropertyRecord": 28376,
+      "RequestRecord": 25929,
+      "ExpertRecord": 304,
+      "ExpertProfile": 143
+    },
+    "expected": {
+      "PropertyRecord": 28376,
+      "RequestRecord": 25929,
+      "ExpertRecord": 304,
+      "ExpertProfile": 143
+    }
+  }
+}

@@ -21,9 +21,7 @@ import { BookOpen, PenLine } from "lucide-react";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 // P6546/گام صفر — پیکرهٔ یکپارچهٔ «اتصال به ملک تبریز»
 import { MelkTabrizConnectionSection } from "./MelkTabrizConnectionSection";
-// PN-046/گام صفر (دستور مالک ۱۴۰۵/۰۷/۲۸) — پیکرهٔ یکپارچهٔ «اتصال به ملکتون»:
-// همانند الگوی تبریز ولی با حساب شخصی یوزر/پسورد — جایگاه: درست زیر پیکرهٔ تبریز
-import { MelketunConnectionSection } from "./MelketunConnectionSection";
+// PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): بخش «اتصال به ملکتون» حذف شد (حذف کامل ملکتون)
 import { DivarConnectionSection } from "./DivarConnectionSection";
 import { InstagramConnectionSection } from "./InstagramConnectionSection";
 import { BrainStatusSection } from "./BrainStatusSection";
@@ -57,10 +55,6 @@ export function SettingsPage({ onBack }: TilePageProps) {
 
       {/* ۱ — اتصال به ملک تبریز (پیکرهٔ یکپارچه — گام صفر-۳) */}
       <MelkTabrizConnectionSection />
-
-      {/* ۱-ب — PN-046/گام صفر (دستور مالک): اتصال به ملکتون — پیکرهٔ یکپارچه،
-          درست «زیر» پیکرهٔ یکپارچهٔ اتصال سامانه‌های ملک تبریز (نکتهٔ دستور) */}
-      <MelketunConnectionSection />
 
       {/* ۲ — اتصال به دیوار */}
       <DivarConnectionSection />

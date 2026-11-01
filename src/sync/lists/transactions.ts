@@ -8,10 +8,8 @@
  *               نوع · مبلغ (contractPrice/contractRent) · خریدار (نام+موبایل) ·
  *               فروشنده (نام+موبایل) · مشاوران+حق‌السهم · عنوان/آدرس ملک ·
  *               وضعیت · تاریخ سند/تحویل (۱۰۰٪ ستون‌های حکم)
- *   · سمت ملکتون (CRM): کاوش مسیرهای Inertia (/Deals · /Contracts · ...) —
- *       تاکنون صفر رکورد (hardcoded 0 در sync قدیمی — مستند در legacy).
- *       این ماژول مسیرها را با الگوی کشف PN-047 امتحان می‌کند؛ یافته‌ها در
- *       upload/.runtime/lcpp-m9-melketun-probe.json شاهد می‌شوند.
+ * PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): کاوش مسیرهای معاملات ملکتون حذف شد —
+ * سمت ملکتون به‌کلی بازنشسته (حذف کامل کاشی ملکتون + داده‌هایش).
  *
  * سه تابع اختصاصی: fetch (هشت گارد معیوب + p-limit(3) + Delta هش) ·
  * validate (Zod: id الزامی) · merge (kernel خام — عین ستون‌های toTxData).
@@ -264,78 +262,4 @@ export async function deepPass(
   } finally {
     if (ownsWriter) writer.close();
   }
-}
-
-// ─── کاوش ملکتون (فرمان ۶ بند ۲) — Inertia /Deals · /Contracts ─────────────
-
-export interface MelketunProbeResult {
-  probedAt: string;
-  routes: Array<{ path: string; status: number | string; rowsFound: number; propKeys: string[]; note?: string }>;
-  totalRows: number;
-}
-
-/** مسیرهای نامزد بر اساس الگوی کشف PN-047 (MelketunPublicFilingPlus · Potentials) */
-export const MELKETUN_DEAL_CANDIDATE_PATHS: readonly { path: string; propKeys: readonly string[] }[] = [
-  { path: "/Deals", propKeys: ["deals", "data"] },
-  { path: "/Contracts", propKeys: ["contracts", "data"] },
-  { path: "/MelketunDeals", propKeys: ["deals", "data"] },
-  { path: "/MelketunContracts", propKeys: ["contracts", "data"] },
-  { path: "/deals", propKeys: ["deals", "data"] },
-  { path: "/contracts", propKeys: ["contracts", "data"] },
-];
-
-/**
- * کاوش زندهٔ مسیرهای معاملات ملکتون — صفر رکورد تاکنون (hardcoded 0 قدیمی).
- * شاهدها: upload/.runtime/lcpp-m9-melketun-probe.json — برای گزارش نهایی فرمان ۶.
- * هرگز نمی‌شکند: 404/500 → صرفاً ثبت یافته.
- */
-export async function probeMelketunDeals(): Promise<MelketunProbeResult> {
-  const out: MelketunProbeResult = { probedAt: new Date().toISOString(), routes: [], totalRows: 0 };
-  try {
-    // بارگذاری تنبل — شکست import/لاگین هرگز فراخواننده را نمی‌شکند
-    const mod = await import("@/lib/integrations/melketun/sync");
-    const { existsSync, readFileSync, writeFileSync } = await import("node:fs");
-    const { join } = await import("node:path");
-    // loadSecrets صادرنشده — خواندن مستقیم فایل راز (عین الگوی ماژول · Persistent Zone)
-    const secretFile = join(process.env.MELKA_REPO_DIR ?? "/home/z/my-project", "upload/.runtime/melketun-secrets.json");
-    const raw = existsSync(secretFile) ? JSON.parse(readFileSync(secretFile, "utf8")) : null;
-    if (!raw?.crm?.base_url) {
-      out.routes.push({ path: "—", status: "secrets-unavailable", rowsFound: 0, propKeys: [], note: "ملکتون متصل نیست (راز غایب) — کاوش موکول به اتصال" });
-      return out;
-    }
-    const base = String(raw.crm.base_url).replace(/\/$/, "");
-    const errors: string[] = [];
-    const jar = await mod.crmLogin(base, String(raw.crm.username), String(raw.crm.password), errors);
-    if (errors.some((e) => e.startsWith("POST /login-store") || e.startsWith("login verify"))) {
-      out.routes.push({ path: "—", status: "login-failed", rowsFound: 0, propKeys: [], note: errors.join(" · ").slice(0, 150) });
-      return out;
-    }
-    for (const candidate of MELKETUN_DEAL_CANDIDATE_PATHS) {
-      try {
-        const res = await fetch(`${base}${candidate.path}`, { headers: { Cookie: jar.header() } });
-        if (res.status !== 200) {
-          out.routes.push({ path: candidate.path, status: res.status, rowsFound: 0, propKeys: [] });
-          continue;
-        }
-        const html = await res.text();
-        const props = mod.extractInertiaProps(html);
-        const keys = props ? Object.keys(props).slice(0, 10) : [];
-        let rowsFound = 0;
-        for (const pk of candidate.propKeys) {
-          const bucket = props?.[pk] as { data?: unknown[] } | undefined;
-          if (bucket && Array.isArray(bucket.data)) rowsFound += bucket.data.length;
-        }
-        out.routes.push({ path: candidate.path, status: 200, rowsFound, propKeys: keys });
-        out.totalRows += rowsFound;
-      } catch (e) {
-        out.routes.push({ path: candidate.path, status: String(e).slice(0, 60), rowsFound: 0, propKeys: [] });
-      }
-    }
-    // شاهد برای گزارش نهایی فرمان ۶
-    const witness = join(process.env.MELKA_REPO_DIR ?? "/home/z/my-project", "upload/.runtime/lcpp-m9-melketun-probe.json");
-    writeFileSync(witness, JSON.stringify(out, null, 1), "utf8");
-  } catch (e) {
-    out.routes.push({ path: "—", status: String(e).slice(0, 120), rowsFound: 0, propKeys: [] });
-  }
-  return out;
 }

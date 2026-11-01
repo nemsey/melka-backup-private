@@ -22,26 +22,19 @@ const M3_PAGE_SRC = readFileSync(`${TILES}/transactions-contracts/TransactionsCo
 const M3_SRC = readFileSync(`${TILES}/transactions-contracts/TransactionsTab.tsx`, "utf8");
 const M3_DOC_SRC = readFileSync(`${TILES}/transactions-contracts/ContractFileDialog.tsx`, "utf8");
 
-/* PN-046/گام اول-۱ — helper: استخراج سرستون‌های «تفیصل‌شدهٔ tenant» از سورس M1/M2.
- * فهرست‌ها اکنون برای تبریز/ملکتون شاخه‌بندی شده‌اند (دستور مالک ۱۴۰۵/۰۷/۲۸):
- *   · {isMelketun ? "م" : "ت"}  → سمت متناظر
- *   · {isMelketun && (…)} / {!isMelketun && (…)} → بلوک یک‌طرفه
- *   · {isMelketun ? ( <>…</> ) : ( <>…</> )} → بلوک دوطرفه
- * تست‌های قانون فهرست تبریز با heads(src, "tabriz") و گاردهای ملکتون با heads(src, "melketun") قفل می‌شوند. */
-function heads(src: string, tenant: "tabriz" | "melketun"): string[] {
-  let s = src;
-  s = s.replace(
-    /\{isMelketun \? \(\s*<>([\s\S]*?)<\/\>\s*\) : \(\s*<>?([\s\S]*?)<\/\>?\s*\)\}/g,
-    (_m: string, mel: string, tab: string) => (tenant === "melketun" ? mel : tab),
-  );
-  s = s.replace(/\{!isMelketun && \(([\s\S]*?)\)\}/g, (_m: string, tab: string) => (tenant === "tabriz" ? tab : ""));
-  s = s.replace(/\{isMelketun && \(([\s\S]*?)\)\}/g, (_m: string, mel: string) => (tenant === "melketun" ? mel : ""));
+/* PN-059 — helper: استخراج سرستون‌ها از سورس M1/M2 (تک-tenant؛ ملکتون حذف شد).
+ * شکل‌های ممکن پس از حذف شاخه‌ها: متن خام · {"…"} · JSX یک‌خطی. */
+function heads(src: string, _tenant?: "tabriz"): string[] {
   const out: string[] = [];
-  const re = /<TableHead[^>]*>(?:\{isMelketun \? "([^"]+)" : "([^"]+)"\}|([^<{]+))<\/TableHead>/g;
+  const re = /<TableHead\b[^>]*>([\s\S]*?)<\/TableHead>/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(s)) !== null) {
-    if (m[3] !== undefined) out.push(m[3].trim());
-    else out.push(tenant === "melketun" ? m[1]! : m[2]!);
+  while ((m = re.exec(src)) !== null) {
+    const inner = m[1]!
+      .replace(/\{"/, "").replace(/"\}/, "")
+      .replace(/[<>{}]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (inner) out.push(inner);
   }
   return out;
 }
@@ -63,23 +56,14 @@ describe("PN-020 §الف — M1: حذف سه ستون + سال بدون کام�
     expect(heads(M1_SRC, "tabriz")).not.toContain("تصاویر");
     expect(heads(M1_SRC, "tabriz")).not.toContain("انتشار");
     expect(heads(M1_SRC, "tabriz")).not.toContain("آخرین فعالیت");
-    // PN-047/گام اول-۲ (دستور مالک ۱۴۰۵/۰۷/۲۹): ملکتون متراژ (size نمای عمومی — پوشش ۹۹٪)
-    // دارد و «تصاویر» حذف شد — نمای عمومی CRM ملکتون تصویر ندارد (صادقانه)
-    expect(heads(M1_SRC, "melketun")).not.toContain("تصاویر");
-    expect(heads(M1_SRC, "melketun")).toContain("متراژ");
   });
 
   test("الف-۲) سلول‌های ستون‌های حذف‌شدهٔ تبریز پاک مانده‌اند (addedToDivar/addedToInsta حذف · r.meterage ملکتون — PN-047)", () => {
     expect(M1_SRC).not.toContain("r.addedToDivar");
     expect(M1_SRC).not.toContain("r.addedToInsta");
-    // PN-047: متراژ ملکتون درون سلول شاخهٔ ملکتون است — تصاویرِ ردیفِ ملکتون حذف شد
-    const iMark = M1_SRC.indexOf("ملکتون M7: متراژ");
-    expect(iMark).toBeGreaterThan(-1);
-    const branch = M1_SRC.slice(iMark, M1_SRC.indexOf(")}", iMark));
-    expect(branch).toContain("r.meterage");
     expect(M1_SRC).not.toContain("r.imageCount ?? 0");
-    // و پیش از آن نشانهٔ شاخه‌بندی isMelketun در سلول‌ها حاضر است
-    expect(M1_SRC).toContain("{isMelketun ? (");
+    // PN-059: شاخه‌بندی isMelketun به‌کلی حذف شد — نشانه‌ای باقی نمانده
+    expect(M1_SRC).not.toContain("isMelketun");
     // شاخهٔ تبریز (سمت دوم بلوک دوطرفه) رندر تصاویر ندارد
     expect(heads(M1_SRC, "tabriz")).not.toContain("تصاویر");
     // PN-039 (ن۰۶۴/گام ۵): ستون تازهٔ «وضعیت آگهی» classifyListingStatus را زنده کرد —
@@ -177,13 +161,13 @@ describe("PN-020 §ب — M2: رنگی سه ستون + سال بدون کاما 
   });
 
   test("ب-۶) تاریخ ثبت پیش از اطلاعات/یادداشت + یادداشت آخرین ستون فهرست است (بند ۴ دستور + PN-039/گام ۴ + PN-045/046: اطلاعات ماقبل آخر)", () => {
-    // سرستون‌های هر دو tenant: «اطلاعات» ماقبل آخر و «یادداشت» آخرین (سنجاق چپ — RTL)
-    for (const tenant of ["tabriz", "melketun"] as const) {
-      const headers = heads(M2_SRC, tenant);
-      expect(headers.length, tenant).toBeGreaterThan(10);
-      expect(headers[headers.length - 1], tenant).toBe("یادداشت");
-      expect(headers[headers.length - 2], tenant).toBe("اطلاعات");
-      expect(headers[headers.length - 3], tenant).toBe("تاریخ ثبت");
+    // سرستون‌ها (تک-tenant — PN-059): «اطلاعات» ماقبل آخر و «یادداشت» آخرین (سنجاق چپ — RTL)
+    {
+      const headers = heads(M2_SRC, "tabriz");
+      expect(headers.length).toBeGreaterThan(10);
+      expect(headers[headers.length - 1]).toBe("یادداشت");
+      expect(headers[headers.length - 2]).toBe("اطلاعات");
+      expect(headers[headers.length - 3]).toBe("تاریخ ثبت");
     }
   });
 

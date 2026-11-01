@@ -63,8 +63,8 @@ export const SOURCE_ENDPOINTS: Record<SourceLane, string> = {
   arm_list: "ARM: properties/list · requests/list · trade-overviews/list (صفحه‌بندی؛ خودِ فهرست — صفر هزینهٔ اضافه)",
   arm_details: "ARM: properties/details/{id} · requests/details/{id} (آدرس دقیق + مشخصات)",
   arm_owner: "ARM: properties/owner/{id} · requests/applicant/{id} (نام/موبایل مالک یا متقاضی)",
-  crm_private: "Melketun CRM: myFilings funnel (نمای خصوصی کارشناس — ویرایش مستقیم؛ Law 05 برنده)",
-  crm_public: "Melketun CRM: filings module (نمای عمومی آگهی‌ها)",
+  crm_private: "CRM قدیمی ملکتون: myFilings funnel (تاریخی — PN-059: مسیر حذف شد)",
+  crm_public: "CRM قدیمی ملکتون: filings module (تاریخی — PN-059: مسیر حذف شد)",
   public_site: "melketabriz.com/apu — صفحات عمومی ملک تبریز (پوشش کدهای غایب از فهرست ARM)",
   title_nlp: "پارس عنوان آگهی (بدون فراخوانی شبکه — استخراج محلی)",
   tx_overview: "ARM: trade-overviews/list (ردیف فهرست صورت‌وضعیت — طرفین پایه)",
@@ -292,7 +292,6 @@ ${Object.entries(SOURCE_ENDPOINTS)
 
 ## مصرف‌کننده‌ها
 - \`src/sync/lists/arm-listings.ts\` (M1) · \`arm-requests.ts\` (M2) · \`transactions.ts\` (M9) — مسیر ARM
-- \`src/sync/lists/melketun-listings.ts\` (M7) · \`melketun-requests.ts\` (M8) — مسیر CRM ملکتون
 - هستهٔ اجرا: \`src/sync/lists/kernel.ts\` (bulk upsert · همزمانی ۳ · تأخیر تطبیقی · delta)
 `;
 }
