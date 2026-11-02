@@ -28,7 +28,8 @@ rm -rf "$PKG"
 mkdir -p "$PKG/db" "$PKG/evidence"
 
 # ── ۱) فایل‌های ریشه ──
-cp AGENTS.md package.json bun.lock schema.prisma worklog.md "$PKG/"
+cp AGENTS.md package.json bun.lock worklog.md "$PKG/"
+cp prisma/schema.prisma "$PKG/schema.prisma"
 [ -f env.platform.json ] && cp env.platform.json "$PKG/" || true
 
 # ── ۲) شاهدهای بیلد ──
