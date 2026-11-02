@@ -1,15 +1,18 @@
 /* Service Worker — ملکا (اکوسیستم هوشمند ملک ایران) (نسخهٔ ۷ — پایدار + شاهد بیلد P6519)
-   راهبرد اصلاح‌شده پس از ریشه‌یابی «بالا نیامدن اپ»:
-   - HTML و صفحات و اسکریپت‌های Next: همیشه شبکه (network-first) → هرگز HTML کهنه Serve نمی‌شود
+   PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳ · «حالت آفلینی را در اپلیکیشن حذف کن»):
+   - حالت آفلاین حذف شد: دیگر هیچ پوستهٔ آفلاین (offline.html)، هیچ جانشین کش
+     برای ناوبری، و هیچ پاسخ ساختگی OFFLINE برای API وجود ندارد.
+   - سرور در دسترس نباشد؟ خطای واقعی مرورگر دیده می‌شود — صدق، نه پوشش آفلاین.
+   - HTML و صفحات و اسکریپت‌های Next: همیشه شبکه (network-only) → هرگز HTML کهنه Serve نمی‌شود
    - کش فقط برای فایل‌های تغییرناپذیر (فونت/آیکن/مانیفست)
    - به‌روزرسانی خودکار SW با skipWaiting + clients.claim
-   - پاک‌سازی کامل کش‌های نسخه‌های قدیمی (v1/v2) هنگام فعال‌سازی */
+   - پاک‌سازی کامل کش‌های نسخه‌های قدیمی (v1/v2 و کش‌های آفلاین قبلی) هنگام فعال‌سازی */
 
 /* P6519 (دستور شورا — BLOCK B): نسخه‌بندی کش با BUILD_ID زنده.
    نام کش = "melk-dash-v7-<buildId>-static"؛ buildId از /api/version خوانده
    می‌شود ⇒ هر بیلد تازه، کش تازهٔ خودش را می‌سازد و activate کش‌های بیلدهای
    قبلی را پاک می‌کند. اگر endpoint در دسترس نباشد، برچسب "unknown"
-   (رفتار عین نسخهٔ قبل). HTML همچنان هرگز کش نمی‌شود (network-first). */
+   (رفتار عین نسخهٔ قبل). HTML همچنان هرگز کش نمی‌شود (network-only). */
 const BASE_VERSION = "melk-dash-v7";
 
 /* نام کش ایستا — پس از نخستین resolveVersionTag با BUILD_ID واقعی جایگزین می‌شود */
@@ -29,7 +32,7 @@ async function resolveVersionTag() {
       }
     }
   } catch {
-    /* آفلاین/خطا — همان برچسب unknown می‌ماند (رفتار ایمن نسخهٔ قبل) */
+    /* سرور در دسترس نیست — همان برچسب unknown می‌ماند (رفتار ایمن نسخهٔ قبل) */
   }
 }
 
@@ -38,9 +41,9 @@ function ensureVersionResolved() {
   return versionPromise;
 }
 
-/* فقط دارایی‌های واقعاً تغییرناپذیر — بدون HTML و بدون چانک‌های Next */
+/* فقط دارایی‌های واقعاً تغییرناپذیر — بدون HTML و بدون چانک‌های Next
+   (PN-031-E: offline.html از فهرست حذف شد — پوستهٔ آفلاین دیگر وجود ندارد) */
 const IMMUTABLE_ASSETS = [
-  "/offline.html", /* PN-016: پوستهٔ آفلاین استاتیک — بدون چانک/داده (HTML اپ هرگز کش نمی‌شود) */
   "/manifest.json",
   "/icons/icon.svg",
   "/icons/icon-192.png",
@@ -69,7 +72,8 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  /* حذف هر کشی که متعلق به نسخه جاری نیست — شامل melk-dash-v1 که عامل صفحه سفید بود */
+  /* حذف هر کشی که متعلق به نسخه جاری نیست — شامل melk-dash-v1 که عامل صفحه سفید بود
+     و کش‌های آفلاین بیلدهای قبلی (offline.html کش‌شده) که PN-031-E پاکشان می‌کند */
   event.waitUntil(
     ensureVersionResolved()
       .then(() => caches.keys())
@@ -96,21 +100,10 @@ self.addEventListener("fetch", (event) => {
   /* فقط GET همسان‌مبدأ */
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
 
-  /* رابط‌های برنامه‌نویسی: همیشه شبکه؛ داده حساس هرگز کش نمی‌شود */
+  /* رابط‌های برنامه‌نویسی: همیشه شبکه؛ داده حساس هرگز کش نمی‌شود
+     (PN-031-E: پاسخ ساختگی آفلاین 503 حذف شد — خطای واقعی شبکه دیده می‌شود) */
   if (url.pathname.startsWith("/api/")) {
-    event.respondWith(
-      fetch(request).catch(
-        () =>
-          new Response(
-            JSON.stringify({
-              ok: false,
-              code: "OFFLINE",
-              message: "آفلاین هستید.",
-            }),
-            { status: 503, headers: { "Content-Type": "application/json" } }
-          )
-      )
-    );
+    /* عمداً respondWith نمی‌کنیم — درخواست مستقیم به شبکه می‌رود */
     return;
   }
 
@@ -138,27 +131,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  /* هر چیز دیگر — به‌ویژه HTML و /_next/... : شبکه مقدم؛ کش تنها جانشین آفلاین است */
-  event.respondWith(
-    fetch(request)
-      .then((res) => {
-        /* HTML هرگز کش نمی‌شود تا چانک‌های کهنه Serve نشود */
-        return res;
-      })
-      .catch(() =>
-        caches.match(request).then((cached) => {
-          if (cached) return cached;
-          /* PN-016 — Offline Mode واقعی: ناوبری آفلاین → پوستهٔ آفلاین برنددار
-             (HTML اپ همچنان هرگز کش نمی‌شود؛ این صفحه استاتیک بدون چانک/داده است) */
-          if (request.mode === "navigate") {
-            return caches.match("/offline.html").then(
-              (shell) => shell || new Response("", { status: 503 })
-            );
-          }
-          return caches.match("/").then((root) => root || new Response("", { status: 503 }));
-        })
-      )
-  );
+  /* هر چیز دیگر — به‌ویژه HTML و /_next/... : فقط شبکه
+     (PN-031-E: HTML هرگز کش نمی‌شود؛ جانشین آفلاین ناوبری حذف شد —
+     سرور در دسترس نباشد، خطای واقعی مرورگر نمایش داده می‌شود) */
+  /* عمداً respondWith نمی‌کنیم — ناوبری مستقیم به شبکه می‌رود */
 });
 
 /* پیام ریست کش از دکمه «ریست اتصال» */

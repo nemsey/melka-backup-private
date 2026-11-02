@@ -8,6 +8,8 @@
  *   · کارشناسان برتر سه‌ستونی — فقط نام + تعداد (BLOCK C)
  *   · فیلتر نوع قرارداد: ۵ گزینهٔ چندانتخابی (BLOCK D)
  *   · ۱۱ ستون به ترتیب دقیق دستور + ساده‌سازی کد ملک/کد درخواست (دستور ۱ و ۲ مالک)
+ *     PN-060 (دستورات الف و ب مالک): زیر کد ملک نام کارشناس ثبت‌کنندهٔ آگهی +
+ *     زیر کد درخواست نام کارشناس ثبت‌کنندهٔ درخواست (قالب: کد / نام زیر آن)
  *   · فیلترها: اعمال خودکار debounce ۳۰۰ms + نشانگر جستجو + پیام خالی + پاک‌کردن (BLOCK F)
  * تک‌صفحه‌ای و بی‌نهایت (P6.5-09) — همهٔ ردیف‌ها در یک پاسخ واحد.
  */
@@ -55,7 +57,7 @@ import { api, apiBlob, downloadBlob } from "@/lib/client/api";
 import { useToast } from "@/hooks/use-toast";
 import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/core/agent/analyzers";
 import { classifyContract, CONTRACT_KIND_FILTER_LABELS, CONTRACT_KIND_FILTER_VALUES } from "@/lib/contract-classify";
-import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull } from "@/lib/format";
+import { faNumber, faJalaliShort, faMonthLabel, faPercent, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
 // P6547/گام پنجم — نظام رنگ مشترک فیلتر↔فهرست (هارمونی تضمینی) + شعبهٔ PM در حق‌السهم
 // PN-009 مرحله E — رنگ KPI/چارت/سرستون‌ها نیز از رجیستری یگانه (قانون ۱۲/۱۴ دستور)
 import { branchBadgeClass, valueSoftClass, valueSolidClass, valueIconPair, valueChartVar } from "@/lib/value-colors";
@@ -63,11 +65,14 @@ import { faDigits, dateToJalali } from "@/lib/jalali";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { JalaliDatePicker } from "@/components/ui/jalali-date-picker";
 import { ContractFileDialog, type ContractDocData } from "./ContractFileDialog";
+// PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): MelketunPipelineSection حذف شد (حذف کامل ملکتون)
 // PN-020/گام اول-ج۱ — برچسب فارسی وضعیت معامله از لایهٔ غنی‌سازی
 import { txStatusLabel } from "@/lib/melk-api/tx-enrichment";
 // P6549/قانون ۰۳۵-B — کشیدن برای تازه‌سازی + حالت‌های طراحی‌شده
 import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
 import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
+// PN-046/گام اول-۲ (دستور مالک: ستون اطلاعات در «تمامی» فهرست‌ها) — فهرست معاملات (M3)
+import { InfoButton } from "@/components/info/InfoButton";
 
 
 /** برچسب فارسی سری‌های نمودار روند (B.۱ — ملکا-شورا-۱۴۰۵-۰۱۸) */
@@ -92,6 +97,11 @@ interface TxRow {
   ownerMobile: string | null;
   requesterName: string | null;
   requesterMobile: string | null;
+  // ---- PN-060 (دستورات الف و ب مالک) — کارشناس ثبت‌کننده زیر کدملک/کددرخواست ----
+  /** نام کارشناس ثبت‌کنندهٔ آگهی (زیر کد ملک — relatedRealtor رجیستری آگهی‌ها) */
+  propertyRegistrarName: string | null;
+  /** نام کارشناس ثبت‌کنندهٔ درخواست (زیر کد درخواست — actorName کاتالوگ ARM) */
+  requestRegistrarName: string | null;
   // ---- P6.5-14 (BLOCK C) — فروشنده/خریدار مستقل از صورت‌وضعیت خود معامله ----
   sellerName: string | null;
   sellerMobile: string | null;
@@ -228,8 +238,8 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
     // P6530/گام ۳ — فیلترهای تمام ستون‌ها
     if (applied.sellerName) params.set("sellerName", applied.sellerName);
     if (applied.buyerName) params.set("buyerName", applied.buyerName);
-    if (applied.priceFrom) params.set("priceFrom", applied.priceFrom);
-    if (applied.priceTo) params.set("priceTo", applied.priceTo);
+    if (applied.priceFrom) params.set("priceFrom", parsePriceInput(applied.priceFrom));
+    if (applied.priceTo) params.set("priceTo", parsePriceInput(applied.priceTo));
     // PN-011 ثالثاً — فایل قرارداد چیپی: فقط وقتی «دقیقاً یک» گزینه انتخاب شده فیلتر می‌شود (هر دو = همه)
     if (applied.hasContracts.length === 1) params.set("hasContract", applied.hasContracts[0]);
     // BLOCK D — نوع قرارداد چندگانه: ?contractType=…&contractType=… (تهی = همه)
@@ -239,7 +249,6 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
     params.set("offset", "0");
     params.set("sortBy", sortBy);
     params.set("sortDir", "desc");
-
     const res = await api<TxResponse>(`/api/crm/transactions?${params.toString()}`);
     return res;
   }, [applied, sortBy]);
@@ -523,9 +532,10 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
         </CardHeader>
         {(!isMobile || filtersOpen) && (
         <CardContent>
+          {/* PN-028/خامساً-ف (دستور مالک) — فیلدهای متنی دوتایی: هر ردیف دو فیلد روبروهم */}
           <form
             id="m3-filters-form"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3"
             onSubmit={(e) => {
               e.preventDefault();
               setApplied({ ...filters });
@@ -572,8 +582,8 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
             <div className="space-y-1.5">
               <Label>قیمت (تومان)</Label>
               <div className="grid grid-cols-2 gap-2">
-                <Input id="f-priceFrom" aria-label="قیمت از (تومان)" inputMode="numeric" placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", e.target.value)} className="text-[11px] font-bold" />
-                <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", e.target.value)} className="text-[11px] font-bold" />
+                <Input id="f-priceFrom" aria-label="قیمت از (تومان)" inputMode="numeric" placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰" value={filters.priceFrom} onChange={(e) => setF("priceFrom", formatPriceInput(e.target.value))} className="text-[11px] font-bold" />
+                <Input id="f-priceTo" aria-label="قیمت تا (تومان)" inputMode="numeric" placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰" value={filters.priceTo} onChange={(e) => setF("priceTo", formatPriceInput(e.target.value))} className="text-[11px] font-bold" />
               </div>
             </div>
             {/* فایل قرارداد — PN-011 ثالثاً: چیپ چندانتخابی (همانند دسته‌بندی — دستور مالک) */}
@@ -639,12 +649,14 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
       </Card>
 
       {/* جدول فهرست معاملات — BLOCK E (ملکا-شورا-۱۴۰۵-۰۱۸): ترتیب دقیق ۱۱ ستون؛
-          کد ملک/کد درخواست فقط کد (دستور ۱ و ۲ مالک)؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
+          کد ملک/کد درخواست: کد + نام کارشناس ثبت‌کننده زیر کد (دستور ۱ و ۲ مالک + PN-060 الف/ب)؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
       <Card>
         {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین */}
-        <CardHeader className="py-4 flex flex-col items-center gap-1">
-          <div className="flex items-center gap-2 flex-wrap justify-center">
-            <CardTitle className="text-base text-center">فهرست معاملات</CardTitle>
+        {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
+            ردیف ۱: عنوان «فهرست معاملات» وسط‌چین · ردیف ۲: اکسل کل فهرست + بارگذاری اکسل */}
+        <CardHeader className="py-4 flex flex-col items-center gap-2">
+          <CardTitle className="text-base text-center">فهرست معاملات</CardTitle>
+          <div className="w-full flex items-center justify-between gap-3 flex-wrap">
             {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
             <Button
               variant="outline"
@@ -690,6 +702,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                   setApplied(EMPTY_FILTERS);
                 }}
               />
+              {/* PN-059 — نمای مخصوص ملکتون حذف شد (حذف کامل ملکتون — دستور مالک ۱۴۰۵/۰۸/۱۱). */}
             </div>
           ) : (
             <Table>
@@ -698,16 +711,16 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                     {/* ترتیب الزامی E.۱ — ۱۶ ستون (۱۱ اصلی + ۵ تازهٔ PN-020/گام اول-ج) */}
                     <TableHead className="w-12">ردیف</TableHead>
                     <TableHead>تاریخ معامله</TableHead>
-                    {/* ۳ — کد ملک: فقط کد (E.۲ — دستور ۱ مالک) */}
-                    <TableHead className="min-w-24">
+                    {/* ۳ — کد ملک: کد + نام کارشناس ثبت‌کنندهٔ آگهی زیر کد (E.۲ + PN-060 دستور الف مالک) */}
+                    <TableHead className="min-w-28">
                       <span className="inline-flex items-center gap-1"><Home className="w-3.5 h-3.5" aria-hidden /> کد ملک</span>
                     </TableHead>
                     {/* ۳-ب — عنوان ملک (PN-020/گام اول-ج — property.title صورت‌وضعیت، پوشش ۱۰۰٪) */}
                     <TableHead className="min-w-40">عنوان ملک</TableHead>
                     {/* ۴ — فروشنده: نام + موبایل زیر نام (E.۴) */}
                     <TableHead className="min-w-40">فروشنده</TableHead>
-                    {/* ۵ — کد درخواست: فقط کد (E.۳ — دستور ۲ مالک) */}
-                    <TableHead className="min-w-24">
+                    {/* ۵ — کد درخواست: کد + نام کارشناس ثبت‌کنندهٔ درخواست زیر کد (E.۳ + PN-060 دستور ب مالک) */}
+                    <TableHead className="min-w-28">
                       <span className="inline-flex items-center gap-1"><Inbox className="w-3.5 h-3.5" aria-hidden /> کد درخواست</span>
                     </TableHead>
                     {/* ۶ — خریدار: نام + موبایل زیر نام (E.۵) */}
@@ -730,6 +743,10 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                     <TableHead>شماره هولوگرام</TableHead>
                     {/* ۱۱ — فایل قرارداد */}
                     <TableHead className="min-w-32">فایل قرارداد</TableHead>
+                    {/* ۱۲ — اطلاعات (PN-046/گام اول-۲: ستون اطلاعات در تمامی فهرست‌ها — فایل متنی کامل هر کد)
+                        ⚠ قانون ساختاری (دستور مالک/گام اول-۳): ستون «اطلاعات» همیشه آخرین ستون این فهرست است —
+                        هر ستون جدیدی در آینده باید «قبل از» همین ستون افزوده شود. سنجاق چپ (RTL) — همیشه قابل‌رویت. */}
+                    <TableHead className="w-24">اطلاعات</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -746,10 +763,22 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                       </TableCell>
                       {/* ۲ — تاریخ معامله (جلالی) */}
                       <TableCell className="whitespace-nowrap text-xs font-medium">{faJalaliShort(t.contractDate)}</TableCell>
-                      {/* ۳ — کد ملک: فقط کد — بدون نام و موبایل (E.۲؛
-                          مالک = فروشنده و در ستون فروشنده می‌آید) */}
-                      <TableCell className="text-xs whitespace-nowrap">
-                        <code className="font-mono font-semibold" dir="ltr">{faDigits(t.propertyCode)}</code>
+                      {/* ۳ — کد ملک: کد + نام کارشناس ثبت‌کنندهٔ آگهی زیر کد (E.۲؛ PN-060 دستور الف مالک:
+                          «در زیر کدملک نام کارشناس ثبت کننده آگهی» — قالب: کد / نام زیر آن) */}
+                      <TableCell className="text-xs whitespace-normal">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <code className="font-mono font-semibold" dir="ltr">{faDigits(t.propertyCode)}</code>
+                          {t.propertyRegistrarName ? (
+                            <span
+                              className="truncate max-w-32 text-[10px] font-medium leading-tight text-foreground/75"
+                              title={`کارشناس ثبت‌کنندهٔ آگهی: ${t.propertyRegistrarName}`}
+                            >
+                              {t.propertyRegistrarName}
+                            </span>
+                          ) : (
+                            <span className="text-[9px] leading-tight text-muted-foreground/60" title="کارشناس ثبت‌کنندهٔ آگهی در کاتالوگ موجود نیست">—</span>
+                          )}
+                        </div>
                       </TableCell>
                       {/* ۳-ب — عنوان ملک (PN-020/گام اول-ج — عین عنوان ثبت‌شده در سامانه؛ آدرس کامل در tooltip) */}
                       <TableCell className="whitespace-normal max-w-48">
@@ -781,11 +810,23 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                           <span className="text-muted-foreground text-[10px]">در انتظار غنی‌سازی</span>
                         )}
                       </TableCell>
-                      {/* ۵ — کد درخواست: فقط کد — بدون نام و موبایل (E.۳؛
-                          درخواست‌دهنده = خریدار و در ستون خریدار می‌آید) */}
-                      <TableCell className="text-xs whitespace-nowrap">
+                      {/* ۵ — کد درخواست: کد + نام کارشناس ثبت‌کنندهٔ درخواست زیر کد (E.۳؛ PN-060 دستور ب مالک:
+                          «در زیر کددرخواست نام کارشناس ثبت کننده درخواست» — قالب: کد / نام زیر آن) */}
+                      <TableCell className="text-xs whitespace-normal">
                         {t.requestCode ? (
-                          <code className="font-mono font-semibold" dir="ltr">{faDigits(t.requestCode)}</code>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <code className="font-mono font-semibold" dir="ltr">{faDigits(t.requestCode)}</code>
+                            {t.requestRegistrarName ? (
+                              <span
+                                className="truncate max-w-32 text-[10px] font-medium leading-tight text-foreground/75"
+                                title={`کارشناس ثبت‌کنندهٔ درخواست: ${t.requestRegistrarName}`}
+                              >
+                                {t.requestRegistrarName}
+                              </span>
+                            ) : (
+                              <span className="text-[9px] leading-tight text-muted-foreground/60" title="کارشناس ثبت‌کنندهٔ درخواست در کاتالوگ موجود نیست">—</span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -937,6 +978,10 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                           <FileText className="w-3.5 h-3.5 text-primary" aria-hidden />
                           {t.contractType || t.agency ? "مشاهده و دانلود" : "مشاهده سند"}
                         </Button>
+                      </TableCell>
+                      {/* ۱۲ — اطلاعات: همیشه آخرین سلول (قانون ساختاری گام اول-۳) — فایل متنی کامل */}
+                      <TableCell>
+                        <InfoButton type="transaction" code={t.propertyCode} />
                       </TableCell>
                     </TableRow>
                     );

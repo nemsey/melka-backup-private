@@ -1,0 +1,64 @@
+# ============================================================
+# forbid-rollback.yml — گارد بازگشت نسخه (PN-042 · جلسهٔ ۰۷۰ · بند ۳.۱)
+# ------------------------------------------------------------
+# دکترین: main گیت‌هاب منبع حقیقت کد ملکاست — هرگز اجازهٔ بازگشت
+# به عقب داده نمی‌شود (جلوگیری از تکرار حادثهٔ بازنشانی ۲۰۲۶-۱۰-۱۹).
+#
+# سازوکار (لایهٔ دوم — خودترمیم‌کننده):
+#   در هر push به main، اگر HEAD تازه اجدادِ HEAD قبلی باشد
+#   (یعنی main با force-push به عقب برگشته)، بلافاصله HEAD قبلی
+#   را force-push برمی‌گرداند و این run را عمداً قرمز می‌کند.
+#
+# محدودیت صادقانه (بند ۳.۲): جلوگیریٔ «کامل» از force-push فقط با
+#   Branch Protection از پنل گیت‌هاب (فعال‌سازی دستی مالک) ممکن است؛
+#   این Action لایهٔ خودکار است و اگر BP فعال باشد، نقش نگهبان
+#   دوم را دارد و اگر نباشد، تنها دیوار است.
+# ============================================================
+name: forbid-rollback
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: forbid-rollback
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: داوری جهت push + ترمیم خودکار بازگشت
+        run: |
+          set -uo pipefail
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+          echo "BEFORE=$BEFORE"
+          echo "AFTER=$AFTER"
+          if [ "${{ github.event_name }}" != "push" ]; then
+            echo "ℹ️ اجرای دستی — فقط گزارش وضعیت (بدون داوری جهت)"
+            exit 0
+          fi
+          if [[ ! "$BEFORE" =~ ^[0-9a-f]{40}$ ]] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || [ "$BEFORE" = "$AFTER" ]; then
+            echo "✅ push عادی (نخستین کامیت شاخه یا بدون تغییر جهت) — سبز"
+            exit 0
+          fi
+          # آبجکت BEFORE پس از force-push یتیم است — واکشی صریح (GitHub allowAnySHA)
+          git fetch --force origin "$BEFORE" 2>/dev/null || echo "⚠️ fetch BEFORE ناموفق"
+          if git merge-base --is-ancestor "$AFTER" "$BEFORE" 2>/dev/null; then
+            echo "🚨 ROLLBACK DETECTED: main به عقب برگشت ($AFTER اجداد $BEFORE است) — ترمیم خودکار…"
+            if git push --force origin "$BEFORE":refs/heads/main; then
+              echo "🚨 main به $BEFORE (نسخهٔ جلوتر) بازگردانده شد. این run عمداً قرمز است."
+            else
+              echo "🚨 ترمیم خودکار ناکام (Branch Protection?) — دخالت دستی مالک لازم است."
+            fi
+            exit 1
+          fi
+          echo "✅ push رو به جلو — سبز"

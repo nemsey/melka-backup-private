@@ -26,6 +26,8 @@ interface ExcelImportButtonProps {
   compact?: boolean;
   /** تازه‌سازی داده‌های صفحه پس از ایمپورت موفق */
   onImported?: () => void;
+  /** PN-059: tenant ملکتون حذف شد — ایمپورت همیشه در ملک تبریز ثبت می‌شود */
+  tenantId?: "tabriz";
 }
 
 interface ImportResponse {

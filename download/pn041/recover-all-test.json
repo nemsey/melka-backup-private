@@ -1,0 +1,37 @@
+{
+  "at": "2026-10-18T08:14:31Z",
+  "phase": "PN-041 فاز ۵ (شورا-ن۰۶۷) — آزمون شبیه‌سازی ریست سرور",
+  "scenario": "قلعهٔ داده (upload/.data/custom.db) حذف شد — دقیقاً مثل ریست پلتفرم که منطقهٔ قدیمی را می‌پاکید",
+  "steps": [
+    "۱) توقف تمیز سرور/نگهبان (شبیهٔ لحظهٔ ریست)",
+    "۲) اسنپ‌شات چرخشی تازه: upload/.data/rolling/live-2026-10-18T08-12-25-330.db (۲۷۸۶۴ رکورد · integrity ok)",
+    "۳) حذف شبیه‌سازی‌شدهٔ قلعه (holdout به /tmp منتقل شد — نه حذف واقعی)",
+    "۴) گارد قلعه check → MISSING (کد ۲ — تشخیص صحیح)",
+    "۵) گارد قلعه recover → احیا از لایهٔ چرخشی با VACUUM INTO اتمی (کد ۰)",
+    "۶) مقایسهٔ holdout با احیاشده: هر ۵ جدول + integrity یکسان (IDENTICAL=true)",
+    "۷) بوت مجدد سرور روی قلعهٔ احیاشده: health 200 · relay 401 زنده"
+  ],
+  "dataPreservation": {
+    "PropertyRecord": "27864 → 27864",
+    "RequestRecord": "25580 → 25580",
+    "TransactionRecord": "792 → 792",
+    "ExpertRecord": "293 → 293",
+    "GraphNode": "149359 → 149359",
+    "integrity": "ok → ok",
+    "verdict": "IDENTICAL — صفر گم‌شدن داده"
+  },
+  "recoveryChain": [
+    "لایهٔ ۱: upload/.data/custom.db (قلعه — با ریست پاک نمی‌شود)",
+    "لایهٔ ۲: upload/.data/rolling/ (چرخشی ۵دقیقه‌ای — منبع این دریل)",
+    "لایهٔ ۲.۵: upload/.data/sacred/ (مقدس ۱۵دقیقه‌ای)",
+    "لایهٔ ۳: upload/.survival/P*/ (بسته‌های بقا)",
+    "لایهٔ ۴: GitHub Release db-* (ابر — آخرین پناه)"
+  ],
+  "maxDataLossWindow": "۵ دقیقه (فاصلهٔ چرخشی)",
+  "ownerOneLiner": "bash scripts/recovery/recover-all.sh — بازیابی جامع کد+دیتا در یک دستور",
+  "bootAutomation": "dev-entry بند ۱-د: گارد قلعه در «هر» بوت کانتینر خودکار اجرا می‌شود (بدون دخالت مالک)",
+  "lessons": [
+    "باگ کشف و رفع در دریل: probe با || true کد خروج را می‌بلعید → HEALTHY کاذب (درس: کد خروجِ پروب قرارداد است)",
+    "شیر دیسک ossfs: statfs روی fuse سهمیهٔ منفی می‌دهد → داوری از ریشهٔ کانتینر (ترمیم شد)"
+  ]
+}

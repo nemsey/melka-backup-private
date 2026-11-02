@@ -1,0 +1,16 @@
+{
+  "funnelData": {
+    "empty": 0,
+    "newFiles": 16,
+    "firstCall": 0,
+    "NeedsAssessment": 0,
+    "FileSuggested": 0,
+    "visit": 1,
+    "negotiation": 0,
+    "agreement": 0,
+    "contract": 0,
+    "win": 0,
+    "loose": 0,
+    "stopped": 0
+  }
+}

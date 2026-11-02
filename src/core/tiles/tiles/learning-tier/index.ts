@@ -13,15 +13,14 @@ import { Brain } from "lucide-react";
 export const learningTierTile = defineTile({
   id: "learning-tier",
   version: "1.0.0",
-  title: "مغز ملکا — یادگیری و Tier",
+  title: "مغز", // PN-038/۲.۴ — نام کوتاه
   tagline: "M6 — Tier مستقل مدل‌ها، روند یادگیری، تصمیم‌های در انتظار شورا و تختهٔ سیاه",
   description:
     "پنل یادگیری مغز ملکا: Tier فعلی با نوار پیشرفت و نتیجه‌های باقی‌مانده تا Tier بعدی، اثر ترمیم مصوب جلسه ۰۳۳ (بازکالیبراسیون)، تصمیم‌ها و ترمیم‌های در انتظار تأیید شورا (صفر اجرای خودکار)، نمایشگر رویدادهای بین‌کاشی (تختهٔ سیاه) و خلاصهٔ ۲۵ بررسی خودتشخیصی با وضعیت هر بررسی.",
   icon: Brain,
   accent: "m8",
   component: lazyPage(() => import("./LearningTierPage")),
-  order: 6,
-  container: "management-dashboard",
+  order: 3, // PN-043/فاز ۲ (شورا-ن۰۸۷) — ترتیب جدید هوم: مغز سوم
   minRole: "OWNER",
   agent: {
     tileId: "learning-tier",

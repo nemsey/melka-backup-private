@@ -1,0 +1,54 @@
+{
+  "phase": "PN-029 · مرحلهٔ ۸ — مکانیزم OTP تک‌وراث",
+  "evidencedAt": "2026-10-11T09:45:02.107243+00:00",
+  "law": {
+    "lockHours": 6,
+    "domains": [
+      "کد پرسنلی (code:…)",
+      "IP (ip:…)"
+    ],
+    "burnSemantics": "تلاش پیش از فراخوانی سوزانده می‌شود — حتی شکست شبکه، تلاش را مصرف کرده است",
+    "ownerPath": "POST /api/admin/otp-burn (فقط OWNER + confirm صریح + bypassOffline) — تنها مسیر عبور آگاهانه از حالت آفلینی",
+    "audit": "OTP_BURN_OWNER در AuditLog",
+    "policy": "درخواستهای عادی request-otp هم پس از تلاش اول، تا ۶ ساعت OTP_LOCKED (429) می‌گیرند"
+  },
+  "tests": [
+    "C-1 داوری قفل باز",
+    "C-2 رد درون پنجره با زمان دقیق",
+    "C-3 رفت‌وبرگشت DB دو دامنه"
+  ],
+  "productionState": [],
+  "recentOtpAudit": [
+    {
+      "action": "OTP_REQUESTED",
+      "actor": "410031338",
+      "detail": "arm.melketabriz.ir SMS dispatched",
+      "createdAt": 1791296803360
+    },
+    {
+      "action": "OTP_REQUESTED",
+      "actor": "410031338",
+      "detail": "arm.melketabriz.ir SMS dispatched",
+      "createdAt": 1791281733935
+    },
+    {
+      "action": "OTP_REQUESTED",
+      "actor": "410031319",
+      "detail": "arm.melketabriz.ir SMS dispatched",
+      "createdAt": 1791280846426
+    },
+    {
+      "action": "OTP_REQUESTED",
+      "actor": "410031320",
+      "detail": "arm.melketabriz.ir SMS dispatched",
+      "createdAt": 1791228658621
+    },
+    {
+      "action": "OTP_REQUESTED",
+      "actor": "410031320",
+      "detail": "arm.melketabriz.ir SMS dispatched",
+      "createdAt": 1791223908909
+    }
+  ],
+  "note": "جدول تولیدی خالی است — هیچ تلاشی از سمت ما انجام نشده (صفر تلاش خودکار ✓). نخستین OTP فقط با تصمیم صریح مالک پس از صبر ۲۴-۴۸ ساعتهٔ مصوب."
+}

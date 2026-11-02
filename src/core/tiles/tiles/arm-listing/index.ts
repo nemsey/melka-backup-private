@@ -17,15 +17,15 @@ import { Building2 } from "lucide-react";
 export const armListingTile = defineTile({
   id: "arm-listings",
   version: "2.0.0",
-  title: "آگهی ملک تبریز",
+  title: "آگهی", // PN-038/۲.۴ — نام کوتاه
   tagline: "M1 — رجیستری کامل آگهی‌های سامانه ARM: کد آگهی، کارشناس، شعبه، مالک و تماس او، قیمت، آدرس دقیق، دسته‌بندی، وضعیت ده‌حالته — با فیلتر تمام ستون‌ها و بروزرسانی زنده از خود سامانه",
   description:
     "همهٔ آگهی‌های ثبت‌شده در «سامانه مدیریت آگهی و درخواست» (آرم) ملک تبریز در یک لیست تک‌صفحه‌ای و بی‌نهایت: کد آگهی، نام و نام خانوادگی کارشناس مسؤول، نام و نام خانوادگی مالک ملک، شماره تماس مالک ملک و آدرس ملک. فیلتر بر اساس کد آگهی و نام کارشناس؛ استخراج و بروزرسانی مستقیم از خود سامانه (فهرست کامل + غنی‌سازی زنجیره‌ای اطلاعات تماس مالک و آدرس دقیق) و ایجنت هوشمند یادگیرندهٔ مولتی‌بینش با تحلیل حجم، کارشناسان پرآگهی، توزیع منطقه‌ای، پوشش اطلاعات و تازگی ثبت.",
   icon: Building2,
   accent: "m1",
   component: lazyPage(() => import("./ArmListingsPage")),
-  order: 1,
-  container: "management-dashboard",
+  order: 2, // M1 — ترتیب درون ظرف tenant-dashboards: آگهی اولِ داشبورد (PN-043/فاز ۲)
+  container: "tenant-dashboards", // PN-043/فاز ۲ (شورا-ن۰۸۷): از هوم ریشه به داشبوردهای tenant — wrapper، نه تکرار
   agent: {
     tileId: "arm-listings",
     insightDomains: ["VOLUME", "TOP_EXPERTS", "REGION", "COVERAGE", "FRESHNESS", "VISIT_ATTENTION"],

@@ -1,0 +1,64 @@
+{
+  "pn": "PN-040 · گام ۴ — سپر دفاعی گیت‌هاب (GitHub Shield)",
+  "at": "2026-10-18T06:50:00Z",
+  "councilSpec": "جلسهٔ ۰۶۶ · بند ۲.۲: «سپری که پس از هر ریست، سرور را مجبور می‌کند از گیت‌هاب (که همیشه آخرین نسخه است) کد بگیرد و سریع بالا بیاید» + Boot Guard (اسکریپت هنگام بالا آمدن کانتینر) + GitHub Action برای اطلاع‌رسانی فوری",
+  "step_4_1_supreme_guard_script": {
+    "file": "scripts/recovery/github-supreme-guard.sh (chmod +x · bash -n سبز)",
+    "modes": "check (تشخیص) · recover (بازیابی نرخ‌محدود ۳۰دقیقه · FORCE_RECOVER · DRILL)",
+    "originRemote": "remote «origin» → github.com/nemsey/melka-backup-private.git (هر سه ریموتِ موجود همان مخزن‌اند — origin نام رسمی مرجع شد)",
+    "witnessFile": "upload/.runtime/github-supreme-guard.json",
+    "recoveryLog": "upload/.survival/recovery-log.jsonl (kind: supreme-guard-*)"
+  },
+  "step_4_2_recovery_logic": {
+    "canonicalFlow": "git ls-remote origin main → checkout -B main <هدف> → bun install → bun run build → خاتمه سرور (درس OOM) → دیمن‌سازی نگهبان (درس reap) → وارسی مهر /api/version → پوش باز-هم‌ترازی در rollback",
+    "threeDetectionLayers": [
+      "ب) MIRROR-ROLLBACK — داور مستقل K3: پیمایش ۸ اسنپ‌شات بقای survival/code؛ نخستین sha ثبت‌شده که در تبار origin/main نیست = کد سالم گم‌شده (بستن حفرهٔ سلامتِ دروغینِ آینهٔ برگشته)",
+      "الف) DRIFT-behind — HEAD محلی ≠ origin/main (بازنشانی repo.tar)",
+      "س) BUILD-STALE — درخت سالم + بیلد زنده کهنه (حفرهٔ بازگشت دهم)"
+    ],
+    "sacredDataLaw": "دیتابیس هرگز لمس نمی‌شود (gitignored) — پس از هر بازیابی شاهد گارد مقدس ثبت می‌شود",
+    "law11": "قطع گیت‌هاب/شکست بیلد → سرو از نسخهٔ محلی — بوت هرگز نمی‌ایستد"
+  },
+  "firstRealRecoveryLive": {
+    "at": "2026-10-18T06:34Z",
+    "trigger": "BUILD-STALE — بیلد زنده d823557 در برابر HEAD 5a9b3e0",
+    "execution": "FORCE_RECOVER=1 recover → checkout -B main → شاهد مقدس → توقف تمیز نگهبان (فلگ .prod-stop — درس OOM: سرور ۱.۲GB رم‌گرفته بود و بیلد ۳GB با OOM-137 می‌مرد) → بیلد سبز → دیمن‌سازی تازه",
+    "verifiedStamp": "مهر زنده = هدف (5a9b3e0a20e58b7848c5e8bf5cf4374a3a01a7e5) ✓ — خروجی ۰",
+    "afterFixCheck": "پس از رفع دو باگ (متغیر ORIGIN_MAIN_SHA بدون $ · نرمال‌سازی sha کوتاه/کامل) → check = HEALTHY (خروج ۰) روی مخزن واقعی — صفر مثبت کاذب",
+    "logEvidence": "upload/.survival/recovery-log.jsonl → supreme-guard-recovered"
+  },
+  "step_4_3_reset_guard_to_github": {
+    "changes": [
+      "remote_url() — اولویت: remote origin (GitHub) → MIRROR_REMOTE_URL → credentials.env آینه",
+      "recover — واگذاری بازیابی سنگین به سپر عالی (fallback مسیر داخلی برای مخازن ساختگی تست PN-015)",
+      "قرارداد PN-015 حفظ شد: تست‌های pn015-reset-guard.test.ts هر ۶ سناریو PASS (فیکسچر بدون origin → fallback env)"
+    ],
+    "witness": "git diff در کامیت گام ۴"
+  },
+  "step_4_4_version_route_drift": {
+    "file": "src/app/api/version/route.ts",
+    "newKey": "drift { available, headSha, buildSha, match, checkedAt } — افزودنی؛ هر ۹ کلید قبلی دست‌نخورده (قرارداد پایدار ن۰۰۷)",
+    "normalization": "مقایسهٔ پیشوندی در کوتاه‌ترین طول مشترک (بیلد sha کوتاه ۷ · HEAD زنده کامل ۴۰) — باگ طول‌ها در اجرای واقعی کشف و رفع شد",
+    "pattern": "import دینامیک node:fs فقط در مسیر nodejs (درس P6549) · مخزن با MELKA_REPO_DIR (قرارداد قلاب P6548)",
+    "liveBehaviorTest": "tests/pn040-github-shield.test.ts > ۴.۴-ج — سه حالت: کامل=کامل ✓ · کوتاه=کامل ✓ · متفاوت ✗"
+  },
+  "bootGuard": {
+    "file": "scripts/pn006/dev-entry.sh — بند ۱-ج",
+    "logic": "هر بوتِ کانتینر (bun run dev → production) نخست سپر را recover می‌خواند؛ اگر بازنشانی پلتفرم درخت را عقب برده باشد، همین بوت با کد سالمِ گیت‌هاب بیلد و سرو می‌شود — نرخ‌حد در خود سپر",
+    "meaning": "«اسکریپت هنگام بالا آمدن کانتینر» بند ۲.۲ شورا — بدون دخالت انسانی"
+  },
+  "githubAction": {
+    "file": ".github/workflows/github-shield-alert.yml",
+    "schedule": "هر ۳۰ دقیقه + workflow_dispatch",
+    "arbitration": "HEAD مخزن (گیت‌هاب) در برابر /api/version زنده (gitSha + drift.match)",
+    "onDrift": "Issue فوری با دستور بازیابی یک‌خطی: bash scripts/recovery/github-supreme-guard.sh recover",
+    "honestLimit": "مخزن خصوصی — فعال‌بودن Actions در تنظیمات گیت‌هاب لازم است؛ سرور بی‌دسترسی → skip بی‌خطا (قانون ۱۱)"
+  },
+  "testsAndGuards": {
+    "newTests": "tests/pn040-github-shield.test.ts — ۱۴ تست (فیکسچر واقعی گیت + سناریوی K3 کامل + رفتار drift)",
+    "doubleGreen": "۲۸۸۲/۰ ×۲ پیاپی (۸۹.۴ث · ۸۳.۴ث) — ۲۸۶۸ پیش‌موجود + ۱۴ تازه",
+    "honestFlakyNote": "تلاش نخست سوئیت ۵ شکست نژ-محور Prisma (Engine is not yet connected — گرمای بار) در pn019-phase9/pn002-tiles/phase65-sync-bugfix داشت؛ لاگ کامل در tests-run-attempt0-flaky.log نگه داشته شد — دو اجرای پیاپی پس از آن کاملاً پاک",
+    "guards": "۴۷/۴۷ سبز (۴۵ پیش‌موجود + audit-github-shield ۲۰/۲۰ + supreme-guard check) — download/pn040/guards-summary.json"
+  },
+  "ownerOneCommandRecovery": "bash scripts/recovery/github-supreme-guard.sh recover — هر ریست ~۲ دقیقه (یا صرفاً ری‌استارت کانتینر — قلاب بوت خودش سپر را اجرا می‌کند)"
+}

@@ -1,0 +1,44 @@
+{
+  "at": "2026-10-18T12:17:40.216Z",
+  "phase": "PN-041-R · فاز ۴ · بند ۴.۴ — تست بار ۱۰۰ همزمان",
+  "architecture": "live db روی دیسک محلی WAL · connection_limit=1 · socket_timeout=30",
+  "masterLogin100": {
+    "ok": 100,
+    "fail": 0,
+    "p50Ms": 694,
+    "p95Ms": 728,
+    "totalMs": 729,
+    "note": "اجرأ نخست — همهٔ ۱۰۰ ورود موفق (سخت‌ترین حالت: ۱۰۰ نویسندهٔ همزمان)؛ پس از آن نرخ‌سنج ورود فعال شد = امنیت کار می‌کند"
+  },
+  "results": [
+    {
+      "name": "health ×100 (light reader)",
+      "ok": 100,
+      "fail": 0,
+      "p50": 178,
+      "p95": 199,
+      "max": 201,
+      "totalMs": 202
+    },
+    {
+      "name": "indicators ×100 (heavy reader + session)",
+      "ok": 100,
+      "fail": 0,
+      "p50": 1093,
+      "p95": 1365,
+      "max": 2009,
+      "totalMs": 2010
+    },
+    {
+      "name": "auth/session ×100 (read+rotate)",
+      "ok": 100,
+      "fail": 0,
+      "p50": 146,
+      "p95": 242,
+      "max": 243,
+      "totalMs": 244
+    }
+  ],
+  "verdict": "PASS",
+  "note": "پیش از PN-041-R: هر نوشتن خطر قفل P1008 داشت (۵۱۲ شاهد امروز) — اکنون صفر خطا"
+}

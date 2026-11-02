@@ -1,0 +1,79 @@
+{
+  "schema": "melka-pn050-resurrection-evidence",
+  "resurrectionId": "PN-050-R6",
+  "generatedAt": "2026-10-31T14:04:00Z",
+  "trigger": "ششمین بازنشانی محیط — مالک: «GLM، سرور ریست شده. این را اجرا کن» + فرمان curl خام",
+  "mandate": "PN-050 (UNION) + DIR-RESET-AUDIT-001",
+  "script": {
+    "source": "https://raw.githubusercontent.com/nemsey/melka-backup-private/main/resurrect-ultimate.sh?t=<ts>",
+    "sha256": "462fe8a16600dea0c4afb536e9e257d2ef16e3f7f2b7bcf6a2a7824f6f99eddc",
+    "verdict": "APPROVED — third consecutive reset where the raw URL serves the sanctioned UNION version; root script at origin/main@38a191e verified byte-identical before execution"
+  },
+  "git": {
+    "headBefore": "6bb3c8e (stale platform snapshot — same baseline as R5)",
+    "headAfter": "38a191e",
+    "buildId": "38a191e-20261031-1340",
+    "driftMatch": true,
+    "driftNote": "build==HEAD at verification time; evidence commits move HEAD past the served build — established documented pattern since R5",
+    "originRebuilt": false,
+    "originNote": "remotes intact (melka-backup); push of stale main correctly rejected non-FF by GitHub at boot — no clobber of R5/PN-051 history"
+  },
+  "union": {
+    "before": { "PropertyRecord": 32851, "RequestRecord": 29471 },
+    "after": { "PropertyRecord": 33506, "RequestRecord": 29915, "ExpertRecord": 396, "User": 4, "AuditLog": 8078, "TransactionRecord": 809 },
+    "layers": [
+      { "name": "قلعه (bastion)", "delta": "+23 (32851→32874)", "witness": "UNION_OK in-script" },
+      { "name": "چرخشی (rolling 2026-10-29T10-37)", "delta": "+0 in-script (UNION_PARTIAL → atomic rollback)", "witness": "B-tree corruption — see incidents[2]" },
+      { "name": "اسنپ‌شات پایدار runtime (custom.db.pn051-persistent-snapshot)", "delta": "+586 (32874→33460) — post-schema-sync re-run", "witness": "UNION_OK, audit pn050-5e6522fe2d414d4ba8f9409b" },
+      { "name": "بقا (survival PN-048)", "delta": "+0 (subset)", "witness": "UNION_OK in-script" },
+      { "name": "بازیابی جراحی چرخشی (strict-read)", "delta": "+356 rows across 12 tables (incl. RequestRecord 13x9422, AuditLog +226)", "witness": "audit pn050r6-1793455257605 · 105 honest-skips on corrupt pages · 0 invalid" }
+    ],
+    "zeroLossInvariant": "PASS — growth-only at every step; live DB never replaced; quick_check=ok",
+    "postResurrectionGrowth": "+46 PropertyRecord / +4 RequestRecord from live sync between server-up and evidence time (app actively syncing)",
+    "schemaCatchUp": "prisma db push applied the PN-051 schema onto the stale Oct-19 live: dropped realtorMobile (1223 non-null values in the stale base; the column has been absent from schema.prisma since the Oct 28-29 PN-051 session; zero references in src/; values remain recoverable from fortress/survival layers if ever needed)"
+  },
+  "incidentsDuringResurrection": [
+    {
+      "event": "build failure — missing dependencies",
+      "description": "PN-051 session (Oct 29, commits 62b40c3..38a191e) committed code importing @tanstack/react-query, idb-keyval and better-sqlite3 without the matching package.json entries — their mid-session reset-guard hard-reset lost the manifest while node_modules survived (their documented 'untracked core' incident). Symptom here: resurrection build rc=1 → Law-11 fallback → watchdog chunk-guard crash-loop until the manifest was restored.",
+      "resolution": "bun add @tanstack/react-query@5.105.0 + idb-keyval@6.3.0 + better-sqlite3@13.0.3 → build 38a191e-20261031-1340 green → server+worker up. package.json+bun.lock committed in this push (fix commit).",
+      "lesson": "before committing a tree that added imports, verify `bun install` in a fresh clone — build=HEAD only holds with a complete manifest."
+    },
+    {
+      "event": "B-tree corruption in all Oct-29 rolling backups",
+      "description": "live-2026-10-29T10-37/10-32/10-26 share 'Rowid out of order' anomalies (trees 147/6/151, four cells; the 10:26 file will not even open) — consistent with the prior session's documented FUSE/ossfs write deviation (PN-041-R doctrine). merge_union rolled the whole source back (per-source atomicity), producing the in-script UNION_PARTIAL.",
+      "resolution": "two-stage: (a) UNION with the intact runtime snapshot after schema sync (+586 → 33460); (b) surgical strict-read recovery over the corrupt rolling — every candidate row must decode as strict UTF-8 AND pass structural validation (PK sane, epoch/ISO timestamps, length bounds) before INSERT OR IGNORE: 356 recovered, 105 honest-skipped on corrupt pages, 0 invalid. Blob-twin remediation: 324 duplicate rows from the buggy first recovery pass deleted (0 blob values remain; final sweep clean).",
+      "lesson": "sick sources get honest skips (Law 11), never block the boot; surgical recovery must decode-and-append (not decode-test-and-append-bytes)."
+    },
+    {
+      "event": "UTF-8 repair passes on a working copy",
+      "description": "7 invalid-TEXT values (fieldChanges ×6, detailsJson ×1 — mojibake from the Oct-29 sync window) sanitized with errors='replace' in a disposable COPY of the rolling layer only; the sacred rolling files were never modified.",
+      "resolution": "copy deleted after recovery; originals intact in upload/.data/rolling/."
+    }
+  ],
+  "postVerification": {
+    "apiVersion": "gitSha=38a191e · buildId=38a191e-20261031-1340 · env=production",
+    "journalMode": "wal",
+    "quickCheck": "ok",
+    "processes": { "watchdog": 2319, "server": 3042, "worker": 3053 },
+    "blobSweep": "0 blob-typed values across all recovered tables"
+  },
+  "relaySelfHealVerified": {
+    "headline": "SECOND consecutive self-heal — relay ops keys survived via the R4 escrow re-churn lineage, no manual fix",
+    "keysInEnvPlatform": "4/4 SET (MELK_PUBLIC_BASE_URL · MELK_PROXY_SECRET · MELK_ARM_RELAY_MODE · MELK_ARM_CIRCUIT_DISABLED; 11 keys total)",
+    "publicUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/version → HTTP 200 in 0.074s",
+    "manualFixNeeded": false,
+    "relayHealth": "yellow — phone heartbeat red (last beat ~11 days ago): Termux client offline awaiting the owner's fresh install-code test; relay queue 2 pending (non-blocking, infrastructure-side)"
+  },
+  "audit": {
+    "dir": "download/RESET-AUDIT/",
+    "deliverables": 7,
+    "summary": "sources 4/6 · confirmed reset events 6 · gaps>5min in current log: 1 (the reset window itself)"
+  },
+  "honestNotes": [
+    "Baseline 32851 identical across R4/R5/R6 — the platform keeps restoring the same stale snapshot; each resurrection re-merges the same deltas.",
+    "105 AuditLog rows from the Oct-28 22:14 → Oct-29 10:37 window sit on corrupt pages and are unrecoverable from the rolling layer (honest skip; older layers predate the window).",
+    "PN-051 commands 1-7 (62b40c3..38a191e) build and serve green after the deps fix; the prior session's 17 acceptance tests were not re-run here — owner ARM session expired (carried-over pending item: login to melk-tabriz to activate M1/M2/M9 phase A/B).",
+    "Worker wrote three fresh rolling backups of the healthy resurrected DB during this resurrection (13:41/13:46/13:52) — the rolling layer is live again from a clean base."
+  ]
+}

@@ -45,7 +45,8 @@
     "skills",
     "capacitor.config.ts",
     "scripts",
-    "docs/archive"
+    "docs/archive",
+    "download"
   ]
 }
 

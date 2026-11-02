@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "login": "master (boot-secrets)",
+  "section": "settings-mobile-relay",
+  "card": {
+    "hasCard": true,
+    "hasDownload": true,
+    "hasQrBtn": true,
+    "hasTermuxFlow": true,
+    "hasTunnel": true
+  },
+  "qrRendered": "svgs>=1 after click",
+  "shots": [
+    "screens/02-relay-apk-card.png",
+    "screens/03-relay-apk-qr.png"
+  ]
+}

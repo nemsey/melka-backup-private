@@ -1,0 +1,129 @@
+{
+ "scenario": "Z-final-sys",
+ "kind": "sys",
+ "ts": "2026-10-05T19:17:31+0000",
+ "mem_available_before_mb": 1992.2,
+ "next_server_rss_before_mb": 1700.2,
+ "meminfo_kb": {
+  "MemTotal": 4138564,
+  "MemFree": 455524,
+  "MemAvailable": 2039988,
+  "Buffers": 33224,
+  "Cached": 1659252,
+  "SwapTotal": 0,
+  "SwapFree": 0,
+  "Slab": 103968,
+  "KernelStack": 4096,
+  "PageTables": 15900
+ },
+ "loadavg": "0.43 0.80 0.55 1/256 4116",
+ "proc_count": 16,
+ "db_openers": 2,
+ "cgroup": {
+  "cgroup_v1_mem_limit_bytes": "4294967296",
+  "cgroup_v1_mem_usage_bytes": "3470856192",
+  "cgroup_v1_cpu_quota_us": "-1",
+  "cgroup_v1_cpu_period_us": "100000",
+  "cpuset_cpus": "0-1",
+  "cgroup_v2_mem_max": ""
+ },
+ "processes": [
+  {
+   "pid": 1,
+   "rss_mb": 1.0,
+   "comm": "tini",
+   "ppid": 0
+  },
+  {
+   "pid": 2,
+   "rss_mb": 22.9,
+   "comm": "caddy",
+   "ppid": 1
+  },
+  {
+   "pid": 3944,
+   "rss_mb": 8.1,
+   "comm": "bun",
+   "ppid": 1
+  },
+  {
+   "pid": 3945,
+   "rss_mb": 3.0,
+   "comm": "bash",
+   "ppid": 3944
+  },
+  {
+   "pid": 3947,
+   "rss_mb": 73.9,
+   "comm": "MainThread",
+   "ppid": 3945
+  },
+  {
+   "pid": 3948,
+   "rss_mb": 1.0,
+   "comm": "tee",
+   "ppid": 3945
+  },
+  {
+   "pid": 3961,
+   "rss_mb": 1700.2,
+   "comm": "next-server (v1",
+   "ppid": 3947
+  },
+  {
+   "pid": 4003,
+   "rss_mb": 177.1,
+   "comm": "MainThread",
+   "ppid": 3961
+  },
+  {
+   "pid": 4111,
+   "rss_mb": 1.0,
+   "comm": "sh",
+   "ppid": 920
+  },
+  {
+   "pid": 4112,
+   "rss_mb": 4.0,
+   "comm": "su",
+   "ppid": 4111
+  },
+  {
+   "pid": 4114,
+   "rss_mb": 3.1,
+   "comm": "bash",
+   "ppid": 4112
+  },
+  {
+   "pid": 4115,
+   "rss_mb": 18.9,
+   "comm": "python3",
+   "ppid": 4114
+  },
+  {
+   "pid": 4116,
+   "rss_mb": 1.9,
+   "comm": "grep",
+   "ppid": 4114
+  },
+  {
+   "pid": 883,
+   "rss_mb": 14.2,
+   "comm": "uv",
+   "ppid": 2
+  },
+  {
+   "pid": 920,
+   "rss_mb": 121.3,
+   "comm": "python",
+   "ppid": 883
+  }
+ ],
+ "oom_lines": [
+  "[ 3381.930108] python3 invoked oom-killer: gfp_mask=0x100dca(GFP_HIGHUSER_MOVABLE|__GFP_ZERO), order=0, oom_score_adj=0",
+  "[ 3381.930458] Out of memory: Killed process 4442 (python3) total-vm:4234448kB, anon-rss:3681252kB, file-rss:9576kB, shmem-rss:0kB, UID:1001 pgtables:7304kB oom_score_adj:0"
+ ],
+ "mem_available_after_mb": 1991.9,
+ "next_server_rss_after_mb": 1700.2,
+ "db_openers_after": 2
+}

@@ -47,6 +47,22 @@ export interface RequesterContactLookup {
   customerMobile: string | null;
 }
 
+/** PN-060 (دستور الف مالک) — کارشناس ثبت‌کنندهٔ آگهی از رجیستری آگهی‌های ARM
+ *  (PropertyRecord.ownerCode/ownerName یعنی relatedRealtor — متمایز از rawOwnerName که مالک واقعی است) */
+export interface PropertyRegistrarLookup {
+  propertyCode: string;
+  registrarCode: string | null;
+  registrarName: string | null;
+}
+
+/** PN-060 (دستور ب مالک) — کارشناس ثبت‌کنندهٔ درخواست از کاتالوگ درخواست‌های ARM
+ *  (RequestRecord.actorCode/actorName = relatedRealtor ردیف فهرست ARM) */
+export interface RequestRegistrarLookup {
+  requestCode: string;
+  registrarCode: string | null;
+  registrarName: string | null;
+}
+
 /** قرارداد مرتبط از انبار قراردادها (فیلدهای لازم برای متن و حق‌السهم) */
 export interface ContractLookup {
   contractHolo: string | null;
@@ -172,6 +188,13 @@ export type EnrichedTxRow<R extends TxSourceRow = TxSourceRow> = R & {
   paymentTerms: TxPaymentTermsSummary | null;
   /** جدول کامل پرداخت‌ها + مبالغ جانبی برای سند قرارداد (دیالوگ) */
   paymentSchedule: TxPaymentSchedule | null;
+  // ==========================================================================
+  // PN-060 (دستورات الف و ب مالک) — کارشناس ثبت‌کننده زیر کدملک و کددرخواست
+  // ==========================================================================
+  /** نام کارشناس ثبت‌کنندهٔ آگهی (زیر کد ملک — PropertyRecord.ownerName/relatedRealtor) */
+  propertyRegistrarName: string | null;
+  /** نام کارشناس ثبت‌کنندهٔ درخواست (زیر کد درخواست — RequestRecord.actorName/relatedRealtor) */
+  requestRegistrarName: string | null;
 };
 
 // ==========================================================================
@@ -468,6 +491,10 @@ export interface EnrichContext {
   agencies?: AgencyLookup[];
   /** P6.5-14 (BLOCK C) — غنی‌سازی معامله‌محور (بر اساس txId — بالاترین اولویت) */
   txInfo?: TxInfoLookup[];
+  /** PN-060 (دستور الف) — کارشناس ثبت‌کنندهٔ آگهی بر اساس کد ملک (دسته‌ای) */
+  propertyRegistrars?: PropertyRegistrarLookup[];
+  /** PN-060 (دستور ب) — کارشناس ثبت‌کنندهٔ درخواست بر اساس کد درخواست (دسته‌ای) */
+  requestRegistrars?: RequestRegistrarLookup[];
   /** P6547/گام سوم-۴ — نقشهٔ نام→شعبهٔ مشاوران (branchId.title سامانهٔ PM)
    *  برای درج شعبه در هر رکورد ستون «تجمیع حق‌السهم مشاوران» (قالب: نام + شعبه + درصد) */
   branchByConsultant?: Record<string, string> | null;
@@ -517,6 +544,9 @@ export function matchContractForTx(
 export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: EnrichContext): EnrichedTxRow<R>[] {
   const ownerByCode = new Map(ctx.owners.map((o) => [o.propertyCode, o]));
   const requesterByCode = new Map(ctx.requesters.map((r) => [r.requestCode, r]));
+  // PN-060 — ایندکس کارشناسان ثبت‌کننده: کد ملک → آگهی · کد درخواست → درخواست
+  const propertyRegistrarByCode = new Map((ctx.propertyRegistrars ?? []).map((p) => [p.propertyCode, p]));
+  const requestRegistrarByCode = new Map((ctx.requestRegistrars ?? []).map((r) => [r.requestCode, r]));
   const contractIndex = buildContractIndex(ctx.contracts);
   // P6.5-14 (BLOCK C) — ایندکس غنی‌سازی معامله‌محور بر اساس txId
   const txInfoById = new Map((ctx.txInfo ?? []).map((t) => [t.txId, t]));
@@ -550,6 +580,11 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
   return rows.map((tx) => {
     const owner = tx.propertyCode ? ownerByCode.get(tx.propertyCode) : undefined;
     const requester = tx.requestCode ? requesterByCode.get(tx.requestCode) : undefined;
+    // PN-060 — کارشناس ثبت‌کنندهٔ آگهی/درخواست (فقط خواندن؛ نام عین سامانه ARM)
+    const propertyRegistrar = tx.propertyCode ? propertyRegistrarByCode.get(tx.propertyCode) : undefined;
+    const requestRegistrar = tx.requestCode ? requestRegistrarByCode.get(tx.requestCode) : undefined;
+    const propertyRegistrarName = propertyRegistrar?.registrarName?.trim() || null;
+    const requestRegistrarName = requestRegistrar?.registrarName?.trim() || null;
     const { contract, by } = matchContractForTx(tx, contractIndex);
     const agency = tx.propertyCode ? agencyByProperty.get(tx.propertyCode) ?? null : null;
     const info = txInfoById.get(tx.id) ?? null;
@@ -666,6 +701,9 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
       propertyTitle: info?.propertyTitle?.trim() || contract?.propertyTitle?.trim() || null,
       propertyAddress: info?.propertyAddress?.trim() || contract?.propertyAddress?.trim() || null,
       ...financial,
+      // PN-060 (دستورات الف و ب) — کارشناس ثبت‌کننده زیر کدملک/کددرخواست فهرست معاملات
+      propertyRegistrarName,
+      requestRegistrarName,
     };
   });
 }

@@ -178,8 +178,47 @@ while true; do
     fi
   fi
 
+  # ─── G3 (DIR-PN048-007 · موج صفر): دروازهٔ بیلد=HEAD پیش از هر اسپاون ───
+  # درس رویداد ریست ۱۰:۲۱ ۲۰۲۶-۱۰-۲۱: درخت کهنه + بیلد کهنه بدون هیچ سنجه‌ای
+  # سرو می‌شد. اکنون: fingerprint بیلد باید = HEAD باشد؛ در غیر این صورت یک‌بار
+  # بازسازی (خوددرمانی — همان الگوی chunk-guard) و اگر باز هم ناهمخوان بود،
+  # سرو با هشدار CRITICAL ادامه می‌یابد (قانون ۱۱: بوت هرگز نمی‌ایستد) اما
+  # درخواست دادهٔ sync/Worker قدیمی هرگز روی دادهٔ مقدس اجرا نمی‌شود (G1 در بوت Worker).
+  if [ -x /home/z/my-project/scripts/pn048/build-head-gate.sh ]; then
+    if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
+      echo "[G3-gate] $(date '+%F %T') بیلد ≠ HEAD — بازسازی خوددرمانی آغاز" >> "$LOG"
+      (cd /home/z/my-project && bun run build) >> "$LOG" 2>&1
+      if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
+        echo "[G3-gate] $(date '+%F %T') CRITICAL: بازسازی هم ناهمخوان — سرور بالا می‌آید اما کد کهنه است (رستاخیز رسمی لازم)" >> "$LOG"
+      else
+        echo "[G3-gate] $(date '+%F %T') بازسازی موفق — بیلد = HEAD برقرار" >> "$LOG"
+      fi
+    fi
+  fi
+
+  # ═══ PN-041-R (شورا-ن۰۶۸): دیتابیس زنده روی دیسک محلی (WAL) ═══
+  # معماری موردعلاقهٔ شورا: WAL local + سنک ۵دقیقه‌ای به upload/ (بکاپ چرخشی).
+  # شاهد ابطال FUSE-DELETE (۱۱:۴۳): ۵۱۲×P1008 + دو ژورنال داغ روی ossfs.
+  # FALLBACK: اگر محلی غایب بود → قلعهٔ ossfs (تا گارد قلعه در بوت احیا کند).
+  # پراگماهای اتصال: connection_limit=1 (پراگماهای بوت چسبیده می‌مانند) +
+  # socket_timeout=30s (صفر P1008 بر اثر عملیات سنگین).
+  LOCAL_DB="/home/z/my-project/db/custom.db"
+  FORTRESS_DB="/home/z/my-project/upload/.data/custom.db"
+  LEGACY_DB="/home/z/my-project/db/custom.db"
+  LIVE_DB_URL="file:$LOCAL_DB?connection_limit=1&socket_timeout=30"
+  if [ ! -s "$LOCAL_DB" ] || [ "$(head -c 15 "$LOCAL_DB" 2>/dev/null)" != "SQLite format 3" ]; then
+    if [ -s "$FORTRESS_DB" ] && [ "$(head -c 15 "$FORTRESS_DB" 2>/dev/null)" = "SQLite format 3" ]; then
+      LIVE_DB_URL="file:$FORTRESS_DB?connection_limit=1&socket_timeout=30"
+      echo "[watchdog] $(date '+%F %T') دیسک محلی غایب — سرو موقت از قلعهٔ ossfs (گارد بوت احیا می‌کند)" >> "$LOG"
+    else
+      echo "[watchdog] $(date '+%F %T') هیچ DB موجود نیست — بوت تازه از schema" >> "$LOG"
+    fi
+  fi
+  # PN-008/PN-041: حالت ژورنال مناسبِ مسیر پیش از اسپاون — ایدمپوتنت
+  # (قلعه روی fuse/ossfs → DELETE · دیسک محلی → WAL — درس شکست WAL روی FUSE ۰۹:۰۱)
+  DATABASE_URL="$LIVE_DB_URL" bun /home/z/my-project/scripts/pn008/ensure-wal.ts >/dev/null 2>&1 || true
   PORT=3000 HOSTNAME=0.0.0.0 NODE_ENV=production \
-    DATABASE_URL="file:/home/z/my-project/db/custom.db" \
+    DATABASE_URL="$LIVE_DB_URL" \
     MELKA_REPO_DIR="/home/z/my-project" \
     bun /home/z/my-project/.next/standalone/server.js >> "$LOG" 2>&1
   CODE=$?

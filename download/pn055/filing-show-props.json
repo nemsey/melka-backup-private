@@ -1,0 +1,609 @@
+{
+  "errors": {},
+  "name": "MELKETUN_CRM",
+  "quote": {
+    "message": "Waste no more time arguing what a good man should be, be one.",
+    "author": "Marcus Aurelius"
+  },
+  "auth": {
+    "user": {
+      "id": 41,
+      "v_tiger_id": 617,
+      "first_name": "بهمن",
+      "last_name": "سرمستی القو",
+      "role_name": "کارشناس فروش رنج A شعبه رضانژاد تبریز",
+      "is_admin": 0,
+      "user_name": "Sarmasti",
+      "email": "ehsandev@iran.ir",
+      "created_at": "2026-09-19T13:49:56.000000Z",
+      "updated_at": "2026-10-26T13:10:26.000000Z",
+      "branch_id": 2,
+      "permissions": [],
+      "roles": [
+        {
+          "id": 2,
+          "name": "consultant",
+          "guard_name": "web",
+          "created_at": "2026-09-23T17:46:32.000000Z",
+          "updated_at": "2026-09-23T17:46:32.000000Z",
+          "pivot": {
+            "model_type": "App\\Models\\User",
+            "model_id": 41,
+            "role_id": 2
+          }
+        }
+      ]
+    },
+    "unreadNotificationsCount": 4,
+    "permissions": [
+      "CrmContacts",
+      "FilingContacts",
+      "PotentialContacts",
+      "canCreateServiceRequest",
+      "canCreateValuationRequest",
+      "canDeleteServiceRequest",
+      "canDeleteValuationRequest",
+      "canEditFillServiceRequest",
+      "canEditFillValuationRequest",
+      "canEditServiceRequest",
+      "canEditValuationRequest",
+      "canFillServiceRequest",
+      "canFillValuationRequest",
+      "canWatchCourse",
+      "canWatchCourseCategory",
+      "createContentCreation",
+      "deleteContentCreation",
+      "editContentCreation",
+      "filings",
+      "potentials",
+      "services",
+      "valuations",
+      "watchContentCreation"
+    ]
+  },
+  "filing": {
+    "cf_1649": {
+      "title": "منبع فایل",
+      "value": "فایل یابی کارشناسان"
+    },
+    "cf_1651": {
+      "title": "نوع فایل",
+      "value": "آپارتمان"
+    },
+    "cf_1653": {
+      "title": "نوع واگذاری",
+      "value": "فروش"
+    },
+    "cf_1657": {
+      "title": "قیمت کل",
+      "value": 14280000000
+    },
+    "cf_1659": {
+      "title": "مبلغ ودیعه",
+      "value": 0
+    },
+    "cf_1661": {
+      "title": "مبلغ اجاره",
+      "value": 0
+    },
+    "cf_1663": {
+      "title": "تعداد کل طبقات",
+      "value": "14"
+    },
+    "cf_1665": {
+      "title": "طبقه",
+      "value": "6"
+    },
+    "cf_1667": {
+      "title": "تعداد واحد در طبقه",
+      "value": "4"
+    },
+    "cf_1669": {
+      "title": "متراژ",
+      "value": "119"
+    },
+    "cf_1671": {
+      "title": "موقعیت ملک",
+      "value": "جنوبی"
+    },
+    "cf_1673": {
+      "title": "تعداد اتاق",
+      "value": "2"
+    },
+    "cf_1675": {
+      "title": "متراژ عرصه",
+      "value": "0.00"
+    },
+    "cf_1681": {
+      "title": "سال ساخت",
+      "value": "1395"
+    },
+    "cf_1685": {
+      "title": "آدرس مالک",
+      "value": "کوی نصر ساختمان صبا"
+    },
+    "cf_1687": {
+      "title": "نوع سند",
+      "value": "تک برگ"
+    },
+    "cf_1689": {
+      "title": "امکانات",
+      "value": ""
+    },
+    "cf_1691": {
+      "title": "وضعیت سکونت",
+      "value": "سکونت مالک"
+    },
+    "cf_1693": {
+      "title": "تاریخ تحویل ملک",
+      "value": ""
+    },
+    "cf_1695": {
+      "title": "سیستم گرمایش",
+      "value": "پکیج ،رادیات"
+    },
+    "cf_1697": {
+      "title": "سیستم سرمایش",
+      "value": ""
+    },
+    "cf_1704": {
+      "title": "نام خانوادگی مالک",
+      "value": "ارکان"
+    },
+    "cf_1710": {
+      "title": "تلفن ثابت",
+      "value": ""
+    },
+    "cf_1714": {
+      "title": "تاریخ تولد",
+      "value": ""
+    },
+    "cf_2171": {
+      "title": "شعبه",
+      "value": "رضانژاد تبریز"
+    },
+    "cf_2614": {
+      "title": "معرف",
+      "value": ""
+    },
+    "cf_2643": {
+      "title": "حداکثر فرصت کارشناسی",
+      "value": "2026-09-28"
+    },
+    "cf_2860": {
+      "title": "وضعیت فایل",
+      "value": "آماده بازدید/ فعال"
+    },
+    "cf_3306": {
+      "title": "ارسال پیامک به مشتری",
+      "value": "1"
+    },
+    "cf_3310": {
+      "title": "ارسال پیامک به ارجاع شدگان",
+      "value": "1"
+    },
+    "cf_3312": {
+      "title": "ارسال فایل به پیام رسان بله و سایت ملکتون",
+      "value": "1"
+    },
+    "cf_3382": {
+      "title": "توضیحات اصلی",
+      "value": "دسترسی عالی به همه امکانات روزمره زندگی ، دوربین مدار بسته ، نگهبانی"
+    },
+    "cf_3845": {
+      "title": "آدرس",
+      "value": "کوی نصر ساختمان صبا"
+    },
+    "cf_3909": {
+      "title": "منطقه",
+      "value": "نصر"
+    },
+    "cf_3957": {
+      "title": "وضعیت فایل نظارت",
+      "value": ""
+    },
+    "cf_4038": {
+      "title": "مرحله",
+      "value": "کارشناسی شده"
+    },
+    "cf_4123": {
+      "title": "تور مجازی",
+      "value": ""
+    },
+    "cf_4266": {
+      "title": "نام مشتری",
+      "value": ""
+    },
+    "cf_4268": {
+      "title": "کد مشتری",
+      "value": ""
+    },
+    "cf_4272": {
+      "title": "معرف مشتری",
+      "value": ""
+    },
+    "cf_4274": {
+      "title": "نتیجه بازدید",
+      "value": ""
+    },
+    "cf_pcf_aff_3751": {
+      "title": "قیمت متر مربع",
+      "value": 120000000
+    },
+    "cf_pcf_aff_3893": {
+      "title": "عنوان اصلی",
+      "value": "آپارتمان-119متری"
+    },
+    "cf_pcf_dtf_2590": {
+      "title": "تاریخ و زمان هماهنگ شده برای کارشناسی",
+      "value": "2026-09-28 18:48:00"
+    },
+    "cf_pcf_dtf_4263": {
+      "title": "تایخ و ساعت بازدید",
+      "value": "0000-00-00 00:00:00"
+    },
+    "cf_pcf_gps_1683": {
+      "title": "موقعیت مکانی",
+      "value": "38.07410994908501,46.31485234767514"
+    },
+    "cf_pcf_icf_3926": {
+      "title": "شهر",
+      "value": "0"
+    },
+    "cf_pcf_irm_1706": {
+      "title": "شماره موبایل",
+      "value": "09143001533"
+    },
+    "cf_pcf_irm_4269": {
+      "title": "شماره موبایل مشتری",
+      "value": ""
+    },
+    "cf_pcf_muf_3650": {
+      "title": "تصاویر فایل(حداکثر 6 فایل)",
+      "value": [
+        "storage/2026/October/week3/404175_353977_1.jpg",
+        "storage/2026/October/week3/404176_353978_2.jpg",
+        "storage/2026/October/week3/404177_353979_3.jpg",
+        "storage/2026/October/week3/404178_353980_4.jpg"
+      ]
+    },
+    "cf_pcf_snf_1702": {
+      "title": "نام",
+      "value": ""
+    },
+    "cf_team": {
+      "title": "ارجاع به چند کاربر",
+      "value": ""
+    },
+    "createdtime": {
+      "title": "زمان ایجاد",
+      "value": "06 مهر 1405، ساعت 18:54"
+    },
+    "melketunfilingplusno": {
+      "title": "کد فایل",
+      "value": "ME7933"
+    },
+    "modifiedby": {
+      "title": "آخرین ویرایش انجام شده به وسیله",
+      "value": "19x617"
+    },
+    "modifiedtime": {
+      "title": "زمان ویرایش",
+      "value": "2026-10-17 18:04:26"
+    },
+    "name": {
+      "title": "عنوان فایل",
+      "value": ""
+    },
+    "created_user_id": {
+      "title": "ایجاد شده توسط",
+      "value": "19x617"
+    },
+    "assigned_user_id": {
+      "title": "ارجاع به",
+      "value": "19x617"
+    },
+    "starred": {
+      "title": "ستاره دار",
+      "value": "0"
+    },
+    "tags": {
+      "title": "tags",
+      "value": ""
+    },
+    "id": {
+      "title": "melketunfilingplusid",
+      "value": "71x353981"
+    }
+  },
+  "relatedPotentials": [
+    {
+      "wsid": "",
+      "id": "13x309385",
+      "potentialNo": "POT3539",
+      "potentialName": "درخواست آپارتمان در نصر  ,  مرزداران  ,  یاغچیان",
+      "customerType": "خریدار",
+      "price": "15000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "نصر  ,  مرزداران  ,  یاغچیان",
+      "contactName": "مشتری طاهر نیا",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x166",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-07-29 19:43:32",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x333287",
+      "potentialNo": "POT3827",
+      "potentialName": "خواهان خرید اپارتمان/بالاتر از راهنمایی/حدود 14تومان",
+      "customerType": "خریدار",
+      "price": "15000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "زعفرانیه  ,  ولیعصر جنوبی  ,  نصر  ,  یاغچیان",
+      "contactName": "ناصری",
+      "agency": "آسمان تبریز",
+      "assignedUser": "19x550",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-08-20 11:29:43",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x343192",
+      "potentialNo": "POT3985",
+      "potentialName": "فوری/خرید آپارتمان/زیر14تومان/شرق تبریز",
+      "customerType": "خریدار",
+      "price": "13500000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "دادگستری  ,  ولیعصر جنوبی  ,  نصر  ,  مرزداران  ,  ویلاشهر  ,  فرشته جنوبی",
+      "contactName": "فتوحی",
+      "agency": "آسمان تبریز",
+      "assignedUser": "19x623",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-09-07 17:30:54",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x346144",
+      "potentialNo": "POT4036",
+      "potentialName": "درخواست آپارتمان در آبرسان  ,  دمشقیه  ,  بلوار ائل‌گلی  ,  ابوریحان  ,  ارتش جنوبی  ,  ارتش شمالی  ,  استانداری  ,  خیابان امام  ,  خیابان امام خمینی (آبرسان - منصور)  ,  امیر کبیر  ,  انصاری فر  ,  بارون آواک  ,  باغ فردوس  ,  شهرک باغمیشه  ,  باغچه بان  ,  بزرگمهر  ,  بهادری  ,  تربیت  ,  تختی  ,  تپلی باغ  ,  جبارنایب  ,  خیابان جدیری  ,  دادگستری  ,  دانشگاه  ,  دوزدوزانی  ,  دکتر قریب  ,  رجایی شهر  ,  رضانژاد شمالی  ,  کوی سهند  ,  سهند (آبرسان)  ,  سیدلر  ,  شریعتی جنوبی  ,  شریعتی شمالی  ,  شهناز  ,  شهید رجایی  ,  خیابان شهید قره‌باغی  ,  پاستور  ,  پاستور جدید  ,  پروین اعتصامی  ,  13 آبان  ,  17 شهریور  ,  17 شهریور جدید  ,  17 شهریور قدیم  ,  ولیعصر  ,  ویلاشهر  ,  منظریه  ,  الهیه  ,  فرشته شمالی  ,  فرشته جنوبی  ,  الهی پرست  ,  فردوس  ,  میرداماد  ,  گلباد  ,  ماندانا  ,  پاستور قدیم  ,  منصور  ,  رضانژاد جنوبی  ,  قطران  ,  کوی فیروز  ,  خیام  ,  مقصودیه  ,  کلانتر کوچه  ,  گلگشت  ,  فدک  ,  میدان ساعت  ,  آسمان  ,  استاد معین  ,  بارنج  ,  توانیر  ,  توانیر جنوبی  ,  توانیر شمالی  ,  جدیری شمالی  ,  جدیری جنوبی  ,  دمشقیه شرقی  ,  دمشقیه غربی  ,  خیابان سعدی  ,  سه راه امین  ,  35 متری سینا  ,  آخر شهناز  ,  پاستور جدید (ارتش - شریعتی)  ,  پرواز  ,  گلشهر  ,  13 آبان  ,  17 شهریور قدیم  ,  17 شهریور جدید  ,  29 بهمن  ,  ولیعصر جنوبی  ,  نصر  ,  خاوران  ,  یاغچیان  ,  ولیعصر 2  ,  حافظ  ,  گلکار  ,  گلپارک  ,  مرزداران",
+      "customerType": "خریدار",
+      "price": "13000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "آبرسان  ,  دمشقیه  ,  بلوار ائل‌گلی  ,  ابوریحان  ,  ارتش جنوبی  ,  ارتش شمالی  ,  استانداری  ,  خیابان امام  ,  خیابان امام خمینی (آبرسان - منصور)  ,  امیر کبیر  ,  انصاری فر  ,  بارون آواک  ,  باغ فردوس  ,  شهرک باغمیشه  ,  باغچه بان  ,  بزرگمهر  ,  بهادری  ,  تربیت  ,  تختی  ,  تپلی باغ  ,  جبارنایب  ,  خیابان جدیری  ,  دادگستری  ,  دانشگاه  ,  دوزدوزانی  ,  دکتر قریب  ,  رجایی شهر  ,  رضانژاد شمالی  ,  کوی سهند  ,  سهند (آبرسان)  ,  سیدلر  ,  شریعتی جنوبی  ,  شریعتی شمالی  ,  شهناز  ,  شهید رجایی  ,  خیابان شهید قره‌باغی  ,  پاستور  ,  پاستور جدید  ,  پروین اعتصامی  ,  13 آبان  ,  17 شهریور  ,  17 شهریور جدید  ,  17 شهریور قدیم  ,  ولیعصر  ,  ویلاشهر  ,  منظریه  ,  الهیه  ,  فرشته شمالی  ,  فرشته جنوبی  ,  الهی پرست  ,  فردوس  ,  میرداماد  ,  گلباد  ,  ماندانا  ,  پاستور قدیم  ,  منصور  ,  رضانژاد جنوبی  ,  قطران  ,  کوی فیروز  ,  خیام  ,  مقصودیه  ,  کلانتر کوچه  ,  گلگشت  ,  فدک  ,  میدان ساعت  ,  آسمان  ,  استاد معین  ,  بارنج  ,  توانیر  ,  توانیر جنوبی  ,  توانیر شمالی  ,  جدیری شمالی  ,  جدیری جنوبی  ,  دمشقیه شرقی  ,  دمشقیه غربی  ,  خیابان سعدی  ,  سه راه امین  ,  35 متری سینا  ,  آخر شهناز  ,  پاستور جدید (ارتش - شریعتی)  ,  پرواز  ,  گلشهر  ,  13 آبان  ,  17 شهریور قدیم  ,  17 شهریور جدید  ,  29 بهمن  ,  ولیعصر جنوبی  ,  نصر  ,  خاوران  ,  یاغچیان  ,  ولیعصر 2  ,  حافظ  ,  گلکار  ,  گلپارک  ,  مرزداران",
+      "contactName": "عسگری",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x638",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-09-15 13:01:26",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x389045",
+      "potentialNo": "POT4237",
+      "potentialName": "خواهان خرید آپارتمان/بلوک 3،5،9/بودجه تا 12.5تومان",
+      "customerType": "خریدار",
+      "price": "12500000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "ولیعصر جنوبی  ,  نصر  ,  مرزداران  ,  یاغچیان",
+      "contactName": "ریحانی راد",
+      "agency": "آسمان تبریز",
+      "assignedUser": "19x454",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-01 19:39:19",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x401986",
+      "potentialNo": "POT4384",
+      "potentialName": "درخواست آپارتمان در مرزداران  ,  نصر",
+      "customerType": "خریدار",
+      "price": "15000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "مرزداران  ,  نصر",
+      "contactName": "اکبرپور",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x617",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-15 00:02:41",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x402006",
+      "potentialNo": "POT4385",
+      "potentialName": "درخواست آپارتمان در مرزداران  ,  نصر",
+      "customerType": "خریدار",
+      "price": "14500000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "مرزداران  ,  نصر",
+      "contactName": "تبریزی",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x617",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-15 00:09:24",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x402011",
+      "potentialNo": "POT4386",
+      "potentialName": "درخواست آپارتمان در مرزداران  ,  نصر  ,  زعفرانیه  ,  میرداماد",
+      "customerType": "خریدار",
+      "price": "15000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "مرزداران  ,  نصر  ,  زعفرانیه  ,  میرداماد",
+      "contactName": "نقی لو سرهنگ نیروی انتظامی",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x617",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-15 00:14:06",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x402020",
+      "potentialNo": "POT4387",
+      "potentialName": "درخواست آپارتمان در نصر",
+      "customerType": "خریدار",
+      "price": "16000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "نصر",
+      "contactName": "خانم محمدی",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x617",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-15 00:20:49",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x402025",
+      "potentialNo": "POT4388",
+      "potentialName": "درخواست آپارتمان در مرزداران  ,  نصر",
+      "customerType": "خریدار",
+      "price": "15000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "مرزداران  ,  نصر",
+      "contactName": "آقای مرتضایی",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x617",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-15 00:25:14",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x402042",
+      "potentialNo": "POT4390",
+      "potentialName": "درخواست آپارتمان در نصر  ,  شهرک باغمیشه",
+      "customerType": "خریدار",
+      "price": "14000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "نصر  ,  شهرک باغمیشه",
+      "contactName": "فرنود",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x617",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-15 00:39:53",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x402058",
+      "potentialNo": "POT4393",
+      "potentialName": "درخواست آپارتمان در نصر  ,  مرزداران",
+      "customerType": "خریدار",
+      "price": "15000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "نصر  ,  مرزداران",
+      "contactName": "خانم رستمی",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x617",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-15 00:56:43",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x402065",
+      "potentialNo": "POT4394",
+      "potentialName": "درخواست آپارتمان در نصر  ,  مرزداران",
+      "customerType": "خریدار",
+      "price": "15000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "نصر  ,  مرزداران",
+      "contactName": "خانم خیرخواه",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x617",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-15 01:06:28",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x403747",
+      "potentialNo": "POT4425",
+      "potentialName": "خریدار 13",
+      "customerType": "خریدار",
+      "price": "13000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "رشدیه  ,  ولیعصر جنوبی  ,  ولی امر  ,  فرشته جنوبی  ,  فرشته شمالی  ,  الهیه  ,  الهی پرست  ,  آبرسان  ,  استانداری  ,  نصر  ,  تختی  ,  دادگستری  ,  پرواز  ,  ولیعصر 2",
+      "contactName": "حقی",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x628",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-17 12:51:23",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x406010",
+      "potentialNo": "POT4457",
+      "potentialName": "درخواست آپارتمان در آبرسان  ,  آسمان  ,  استانداری  ,  شهرک باغمیشه  ,  باغچه بان  ,  بزرگمهر  ,  تختی  ,  تپلی باغ  ,  دادگستری  ,  رضانژاد شمالی  ,  پرواز  ,  ولیعصر  ,  ولیعصر جنوبی  ,  نصر  ,  یاغچیان  ,  الهیه  ,  ولی امر  ,  فرشته شمالی  ,  فرشته جنوبی",
+      "customerType": "خریدار",
+      "price": "15500000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "آبرسان  ,  آسمان  ,  استانداری  ,  شهرک باغمیشه  ,  باغچه بان  ,  بزرگمهر  ,  تختی  ,  تپلی باغ  ,  دادگستری  ,  رضانژاد شمالی  ,  پرواز  ,  ولیعصر  ,  ولیعصر جنوبی  ,  نصر  ,  یاغچیان  ,  الهیه  ,  ولی امر  ,  فرشته شمالی  ,  فرشته جنوبی",
+      "contactName": "موسوی",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x628",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-19 13:31:42",
+      "starred": false,
+      "status": "فعال"
+    },
+    {
+      "wsid": "",
+      "id": "13x411259",
+      "potentialNo": "POT4488",
+      "potentialName": "100 متر نصر یاغچیان مرزداران",
+      "customerType": "خریدار",
+      "price": "16000000000",
+      "rent": "0",
+      "prepayment": "0",
+      "areas": "نصر  ,  مرزداران  ,  یاغچیان  ,  میرداماد  ,  فرشته شمالی  ,  فرشته جنوبی",
+      "contactName": "میرزا",
+      "agency": "رضانژاد تبریز",
+      "assignedUser": "19x652",
+      "propertyType": "آپارتمان",
+      "createdTime": "2026-10-26 14:33:47",
+      "starred": false,
+      "status": "فعال"
+    }
+  ]
+}
