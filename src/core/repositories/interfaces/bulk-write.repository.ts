@@ -438,6 +438,10 @@ export interface PropertyRecordRepository {
   listPendingEnrichment(maxRows: number, rowIds?: string[]): Promise<PendingEnrichmentRow[]>;
   /** P6.5-11 (بند پ-۵) — تماس مالک ملک بر اساس کدآگهی‌ها (دسته‌ای؛ برای ستون‌های فهرست معاملات) */
   findOwnerContactsByCodes(propertyCodes: string[]): Promise<Array<{ propertyCode: string; ownerName: string | null; ownerMobile: string | null }>>;
+  /** PN-060 (دستور الف) — کارشناس ثبت‌کنندهٔ آگهی بر اساس کدآگهی‌ها (دسته‌ای؛ فقط خواندن).
+   *  منبع: ownerCode/ownerName رجیستری آگهی‌ها (relatedRealtor — کارشناس ثبت‌کننده عین سامانه ARM؛
+   *  متمایز از rawOwnerName = مالک واقعی ملک). */
+  findRegistrarNamesByCodes(propertyCodes: string[]): Promise<Array<{ propertyCode: string; registrarCode: string | null; registrarName: string | null }>>;
   /** P6546/گام صفر — کدهای موجود از میان فهرست داده‌شده (تشخیص کدهای غایب از سامانهٔ عمومی) */
   findExistingCodes(codes: string[]): Promise<string[]>;
   /** P6546/گام پنجم — به‌روزرسانی هدفمند ردیف‌ها (فقط فیلدهای داده‌شده؛ برای غنی‌سازی چند-منبعی) */
