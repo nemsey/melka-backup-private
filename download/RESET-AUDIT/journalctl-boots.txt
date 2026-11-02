@@ -1,6 +1,0 @@
-# DIR-RESET-AUDIT-001 — منبع ۱: systemd journal
-# وضعیت: unavailable — محیط کانتینری بدون journal (قانون ۰۳: ثبت، نه حدس)
-
-$ journalctl --list-boots --no-pager -n 50
-No journal files were found.
-No boot found.

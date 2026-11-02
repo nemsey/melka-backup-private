@@ -170,16 +170,7 @@ export class PrismaRequestRepository implements RequestRepository {
     filter: ArmRequestCatalogFilter,
     limit: number
   ): Promise<{ rows: ArmRequestCatalogRow[]; total: number }> {
-    // PN-059: tenant ملکتون حذف شد — همیشه تبریز (source='arm' + tenant).
-    const where: Prisma.RequestRecordWhereInput =
-      { tenantId: filter.tenantId ?? "melk-tabriz", source: "arm" };
-
-    // PN-049/گام ۲-الف (قانون حساب کاربری) — کاربر غیر-مالک فقط رکوردهای
-    // ثبت‌شده توسط خودش را می‌بیند (مالک = صفر فیلتر؛ نام تهی = fail-closed هیچ).
-    if (filter.registrarNameNorm !== undefined) {
-      if (filter.registrarNameNorm === "") where.id = "__pn049_deny_all__";
-      else where.actorNameNorm = filter.registrarNameNorm;
-    }
+    const where: Prisma.RequestRecordWhereInput = { source: "arm" };
 
     // P6530/گام ۲ — فیلترهای SQL: وضعیت (IN یا NOT IN برای «سایر») · دسته‌بندی · تاریخ · قیمت
     const statuses = filter.statuses ?? [];
@@ -296,9 +287,6 @@ export class PrismaRequestRepository implements RequestRepository {
         buildingTypeName: true,
         priceFrom: true,
         priceTo: true,
-        // PN-046/گام اول-۱ — بودجهٔ رهن/اجارهٔ ملکتون (افزودنی §۱۴)
-        depositBudget: true,
-        rentBudget: true,
         extractedAt: true,
         createdAt: true,
         updatedAt: true,
@@ -324,8 +312,6 @@ export class PrismaRequestRepository implements RequestRepository {
         cityName: true,
         platform: true,
         customerDescription: true,
-        // PN-039 (گام ۴) — یادداشت مالک (فقط از مسیر PATCH مالک نوشته می‌شود)
-        ownerNote: true,
       },
     });
 
@@ -369,9 +355,6 @@ export class PrismaRequestRepository implements RequestRepository {
       buildingTypeName: r.buildingTypeName,
       priceFrom: r.priceFrom,
       priceTo: r.priceTo,
-      // PN-046/گام اول-۱ — بودجهٔ رهن/اجارهٔ ملکتون
-      depositBudget: r.depositBudget,
-      rentBudget: r.rentBudget,
       paymentMethodName: r.userPaymentMethodName,
       seriousnessName: r.userSeriousityName,
       urgent: r.urgent,
@@ -402,18 +385,16 @@ export class PrismaRequestRepository implements RequestRepository {
       cityName: r.cityName,
       platform: r.platform,
       customerDescription: r.customerDescription,
-      ownerNote: r.ownerNote ?? null,
     }));
     return { rows, total: matched.length };
   }
 
-  /** شمارش غنی‌سازی درخواست‌های ARM — extractionBatchId تهی = در انتظار لایه ۲
-   *  PN-059: تک-tenant — شمارش همیشه روی source='arm' (ملکتون حذف شد). */
-  async countArmEnrichment(_tenantId: string = "melk-tabriz"): Promise<EnrichmentCounts> {
+  /** شمارش غنی‌سازی درخواست‌های ARM — extractionBatchId تهی = در انتظار لایه ۲ */
+  async countArmEnrichment(): Promise<EnrichmentCounts> {
     const whereArm: Prisma.RequestRecordWhereInput = { source: "arm" };
     const [total, pending] = await Promise.all([
       this.client.requestRecord.count({ where: whereArm }),
-      this.client.requestRecord.count({ where: { ...whereArm, extractionBatchId: null } }),
+      this.client.requestRecord.count({ where: { source: "arm", extractionBatchId: null } }),
     ]);
     return { total, pending, complete: total - pending };
   }
@@ -423,12 +404,11 @@ export class PrismaRequestRepository implements RequestRepository {
     return this.client.requestRecord.count({ where: { source: "arm" } });
   }
 
-  /** P6530/گام ۲ (بند ۳) — توزیع وضعیت‌های خام درخواست‌های ARM (status × count) برای بینش شش‌حالته
-   *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz'؛ برای ملکتون روی tenantId */
-  async statusBreakdownArm(tenantId: string = "melk-tabriz"): Promise<Array<{ status: string | null; count: number }>> {
+  /** P6530/گام ۲ (بند ۳) — توزیع وضعیت‌های خام درخواست‌های ARM (status × count) برای بینش شش‌حالته */
+  async statusBreakdownArm(): Promise<Array<{ status: string | null; count: number }>> {
     const grouped = await this.client.requestRecord.groupBy({
       by: ["status"],
-      where: tenantId === "melk-tabriz" ? { source: "arm" } : { tenantId },
+      where: { source: "arm" },
       _count: { _all: true },
     });
     return grouped.map((g) => ({ status: g.status, count: g._count._all }));
@@ -464,33 +444,5 @@ export class PrismaRequestRepository implements RequestRepository {
     return records
       .filter((r): r is { requestCode: string; customerName: string | null; customerMobile: string | null } => r.requestCode !== null)
       .map((r) => ({ requestCode: r.requestCode as string, customerName: r.customerName, customerMobile: r.customerMobile }));
-  }
-
-  /** PN-060 (دستور ب مالک) — کارشناس ثبت‌کنندهٔ درخواست بر اساس کددرخواست‌ها (دسته‌ای؛ source='arm')
-   * فقط خواندن ستون‌های موجود — هیچ نوشتنی انجام نمی‌شود (قانون دادهٔ خام/مقدس).
-   * actorCode/actorName = relatedRealtor ردیف فهرست ARM (کارشناس ثبت‌کننده عین سامانه). */
-  async findArmRegistrarNamesByCodes(
-    requestCodes: string[]
-  ): Promise<Array<{ requestCode: string; registrarCode: string | null; registrarName: string | null }>> {
-    if (requestCodes.length === 0) return [];
-    const codes = [...new Set(requestCodes)].filter((c) => c !== "");
-    if (codes.length === 0) return [];
-    const records = await this.client.requestRecord.findMany({
-      where: { source: "arm", requestCode: { in: codes } },
-      select: { requestCode: true, actorCode: true, actorName: true },
-    });
-    return records
-      .filter((r): r is { requestCode: string; actorCode: string | null; actorName: string | null } => r.requestCode !== null)
-      .map((r) => ({ requestCode: r.requestCode as string, registrarCode: r.actorCode, registrarName: r.actorName }));
-  }
-
-  /** PN-039 (گام ۴) — یادداشت مالک: تنها مسیر نوشتن این ستون — سینک ARM هرگز نمی‌نویسد */
-  async updateOwnerNote(id: string, note: string | null): Promise<{ id: string; ownerNote: string | null }> {
-    const row = await this.client.requestRecord.update({
-      where: { id },
-      data: { ownerNote: note },
-      select: { id: true, ownerNote: true },
-    });
-    return { id: row.id, ownerNote: row.ownerNote ?? null };
   }
 }

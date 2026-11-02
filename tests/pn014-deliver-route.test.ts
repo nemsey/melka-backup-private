@@ -14,7 +14,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GET, HEAD } from "@/app/deliver/[...path]/route";
@@ -121,15 +121,8 @@ describe("PN-014/D2 — مسیر سرو تحویل (/deliver/[...path])", () => 
   test("۶: ساختار مخزن پروژه — تحویل‌های تاریخی حاضرند (قانون فایل v3)", () => {
     const store = join(process.env.MELKA_REPO_DIR ?? "/home/z/my-project", "deliver-store");
     if (!existsSync(store)) return; // محیط بدون مخزن — آزمون‌های موقت بالا کافی‌اند
-    // سیاست هرس دیسک (PN-020/H2): تنها نسل‌های اخیر نگه داشته می‌شوند؛
-    // آزمون «حداقل یک نسل کامل تحویل» را می‌سنجد (قانون فایل v3).
-    // PN-031-F: الگوی نسل‌ها از pn014/pn025 به pn031c/pn031d/pn031e تکامل یافت —
-    // پسوند حرفی بخشی از نام‌گذاری رسمی نسل‌هاست (قصد آزمون تغییر نکرده).
-    const gens = readdirSync(store).filter((d) => /^pn\d+[a-z0-9]*$/.test(d)).sort();
-    expect(gens.length).toBeGreaterThanOrEqual(1);
-    const latest = gens[gens.length - 1];
-    expect(existsSync(join(store, latest))).toBe(true);
-    const files = readdirSync(join(store, latest));
-    expect(files.length).toBeGreaterThanOrEqual(6); // گزارش + شواهد + zip
+    expect(existsSync(join(store, "PN-013-ALL.zip"))).toBe(true);
+    expect(existsSync(join(store, "PN-013-SHA256SUMS.txt"))).toBe(true);
+    expect(existsSync(join(store, "pn013"))).toBe(true);
   });
 });

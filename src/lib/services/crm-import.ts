@@ -11,19 +11,12 @@
  *
  * کلیدهای طبیعی: آگهی→کد آگهی · درخواست→کد درخواست · کارشناس→کد پرسنلی (یا نام)
  * · معامله→(کد ملک، کد درخواست، تاریخ معامله)
- *
- * PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲ — کنترل آپلود اکسل فهرست‌های چهارگانهٔ هر دو
- * داشبورد): پارامتر tenantId — رکوردهای تازهٔ ایمپورت در همان tenant فهرستِ
- * بارگذاری‌شده ثبت می‌شوند ('melketun' ⇒ ملکتون · پیش‌فرض ⇒ ملک تبریز).
- * به‌روزرسانی رکوردهای موجود از طریق کلید یگانه انجام می‌شود و tenant دست‌نخورده
- * می‌ماند (قانون دادهٔ مقدس — هرگز جابه‌جا نمی‌شود).
  */
 
 import { db } from "@/lib/db";
-import { normalizeFaDigits, normalizeFilterInput } from "@/lib/normalize-input";
+import { normalizeFaDigits } from "@/lib/normalize-input";
 import { jalaliToDate } from "@/lib/jalali";
 import { MelkApiError } from "@/lib/melk-api/types";
-import { tenantDbValue } from "@/lib/tenants";
 
 export const MAX_ROWS = 25_000;
 
@@ -141,12 +134,10 @@ export function emptyResult(entity: string, fileName: string): ImportResult {
 
 /* ============================ آگهی‌ها (listings) ============================ */
 
-async function importListings(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
+async function importListings(sheet: SheetData, result: ImportResult): Promise<void> {
   const H = "کد آگهی";
   for (const row of sheet.rows) {
-    // PN-051 — کلید با «قالب کامل» خوانده می‌شود (ME#### ملکتون را digitsOnly
-    // قبلی می‌بُرید و رکورد تکراری با کد ناقص می‌ساخت؛ کدهای عددی ARM دست‌نخورده)
-    const code = cellText(row.get(H));
+    const code = digitsOnly(cellText(row.get(H)));
     if (!code) {
       result.skipped++;
       if (result.errors.length < 12) result.errors.push(`ردیف بدون «${H}» نادیده گرفته شد`);
@@ -196,7 +187,7 @@ async function importListings(sheet: SheetData, result: ImportResult, tenantId: 
         result.updated++;
       } else {
         await db.propertyRecord.create({
-          data: { id: `import-${code}`, propertyCode: code, tenantId, ...data },
+          data: { id: `import-${code}`, propertyCode: code, ...data },
         });
         result.created++;
       }
@@ -209,11 +200,10 @@ async function importListings(sheet: SheetData, result: ImportResult, tenantId: 
 
 /* ============================ درخواست‌ها (requests) ============================ */
 
-async function importRequests(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
+async function importRequests(sheet: SheetData, result: ImportResult): Promise<void> {
   const H = "کد درخواست";
   for (const row of sheet.rows) {
-    // PN-051 — قالب کامل حفظ می‌شود (POT#### ملکتون) — عین گام ۱-ب listings
-    const code = cellText(row.get(H));
+    const code = digitsOnly(cellText(row.get(H)));
     if (!code) {
       result.skipped++;
       if (result.errors.length < 12) result.errors.push(`ردیف بدون «${H}» نادیده گرفته شد`);
@@ -268,7 +258,7 @@ async function importRequests(sheet: SheetData, result: ImportResult, tenantId: 
         result.updated++;
       } else {
         await db.requestRecord.create({
-          data: { requestCode: code, actorCode: "import", source: "excel-import", tenantId, ...data },
+          data: { requestCode: code, actorCode: "import", source: "excel-import", ...data },
         });
         result.created++;
       }
@@ -281,11 +271,10 @@ async function importRequests(sheet: SheetData, result: ImportResult, tenantId: 
 
 /* ============================ معاملات (transactions) ============================ */
 
-async function importTransactions(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
+async function importTransactions(sheet: SheetData, result: ImportResult): Promise<void> {
   for (const row of sheet.rows) {
-    // PN-051 — قالب کامل حفظ می‌شود (کد ملک ملکتون ME####)
-    const propertyCode = cellText(row.get("کد ملک"));
-    const requestCodeRaw = cellText(row.get("کد درخواست"));
+    const propertyCode = digitsOnly(cellText(row.get("کد ملک")));
+    const requestCodeRaw = digitsOnly(cellText(row.get("کد درخواست")));
     const requestCode = requestCodeRaw || null;
     if (!propertyCode) {
       result.skipped++;
@@ -326,7 +315,7 @@ async function importTransactions(sheet: SheetData, result: ImportResult, tenant
         await db.transactionRecord.create({
           data: {
             id: `tx-import-${Date.now().toString(36)}-${result.created}`,
-            propertyCode, requestCode, rawDate, contractDate, tenantId, ...data,
+            propertyCode, requestCode, rawDate, contractDate, ...data,
           },
         });
         result.created++;
@@ -340,55 +329,21 @@ async function importTransactions(sheet: SheetData, result: ImportResult, tenant
 
 /* ============================ کارشناسان (experts) ============================ */
 
-async function importExperts(sheet: SheetData, result: ImportResult, tenantId: string): Promise<void> {
-  // PN-051 — تطبیق بر پایهٔ نقشه (جدول کوچک؛ حذف N+1): کد خام → ارقام → نامِ
-  // نرمال‌شده (normalizeFilterInput = منبع یگانه — ریشهٔ خطای ۱۵ رکورد:
-  // فاصلهٔ دوتایی «مهراب  اکبریان» در برابر تک‌فاصلهٔ DB)
-  const allExperts = await db.expertRecord.findMany({ select: { id: true, personnelCode: true, fullName: true } });
-  const byRawCode = new Map<string, string>();
-  const byDigitCode = new Map<string, string>();
-  const byNormName = new Map<string, string>();
-  for (const e of allExperts) {
-    const raw = (e.personnelCode ?? "").trim();
-    if (raw && !byRawCode.has(raw)) byRawCode.set(raw, e.id);
-    const digits = digitsOnly(raw);
-    if (digits && !byDigitCode.has(digits)) byDigitCode.set(digits, e.id);
-    const nm = normalizeFilterInput(e.fullName ?? "");
-    if (nm && !byNormName.has(nm)) byNormName.set(nm, e.id);
-  }
-  const idOf = (rawCode: string, digitCode: string, fullName: string): string | null =>
-    byRawCode.get(rawCode) ?? byDigitCode.get(digitCode) ?? byNormName.get(normalizeFilterInput(fullName)) ?? null;
-
+async function importExperts(sheet: SheetData, result: ImportResult): Promise<void> {
   for (const row of sheet.rows) {
     let code = digitsOnly(cellText(row.get("کد پرسنلی")));
     if (code === "-" || code === "0") code = "";
-    // PN-051 — الگوی خروجی اکسل خودمان دو هدر نام دارد: «کارشناس» (خروجی
-    // /api/experts/export) و «نام و نام خانوادگی» (الگوی قدیمی) — هر دو پذیرفته
-    // می‌شوند تا رفت‌وبرگشت (round-trip) همیشه هم‌کلید باشد.
-    const fullName =
-      cellText(row.get("نام و نام خانوادگی")) ||
-      cellText(row.get("کارشناس")) ||
-      "";
+    const fullName = cellText(row.get("نام و نام خانوادگی"));
     if (!code && !fullName) {
       result.skipped++;
       if (result.errors.length < 12) result.errors.push("ردیف بدون «کد پرسنلی» و «نام» نادیده گرفته شد");
       continue;
     }
 
-    // PN-051 — زنجیرهٔ تطبیق رفت‌وبرگشت:
-    //   ۱) کد خامِ خروجی (مثل MELK-15 ملکتون — عین کلید DB)
-    //   ۲) کدِ ارقام‌خالص (سازگاری الگوهای قدیمی عددی)
-    //   ۳) نام نرمال‌شده (کدهای نمایشی تبریز ۴۱۰… با «بدون-کد-…» DB فرق دارند
-    //      و نام خروجی گاهی فاصلهٔ دوتایی دارد)
-    const rawCode = cellText(row.get("کد پرسنلی"));
-    const existingId = idOf(rawCode, code, fullName);
-    // PN-051 — قانون دادهٔ مقدس: بدون تطابق کلید و بدون نام، هرگز رکورد
-    // «بدون نام» ساخته نمی‌شود (شاهد خرابی round-trip قبلی: ۲۲۷ رکورد بی‌نام)
-    if (!existingId && !fullName) {
-      result.skipped++;
-      if (result.errors.length < 12) result.errors.push(`ردیف کد ${code}: نامی برای ایجاد رکورد تازه نیست — نادیده گرفته شد`);
-      continue;
-    }
+    // کلید: کد پرسنلی؛ اگر نبود، جست‌وجو با نام (رکوردهای «-» خروجی اکسل)
+    const existing = code
+      ? await db.expertRecord.findUnique({ where: { personnelCode: code } })
+      : await db.expertRecord.findFirst({ where: { fullName } });
 
     const data: Record<string, unknown> = {};
     const put = (header: string, field: string, value: unknown) => {
@@ -397,10 +352,8 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
     };
     put("نام و نام خانوادگی", "fullName", fullName || undefined);
     put("موبایل", "mobile", digitsOnly(cellText(row.get("موبایل"))) || undefined);
-    // PN-051 — هدرهای جایگزین الگوی خروجی خودمان: «نقش» یا «سمت پرسنلی» ·
-    // «کسب‌وکار/شعبه» یا «شعبه» — رفت‌وبرگشت کامل بدون گم‌شدن ستون
-    put("نقش", "role", cellText(row.get("نقش")) || cellText(row.get("سمت پرسنلی")) || undefined);
-    put("کسب‌وکار/شعبه", "businessTitle", cellText(row.get("کسب‌وکار/شعبه")) || cellText(row.get("شعبه")) || undefined);
+    put("نقش", "role", cellText(row.get("نقش")) || undefined);
+    put("کسب‌وکار/شعبه", "businessTitle", cellText(row.get("کسب‌وکار/شعبه")) || undefined);
     const activeTxt = cellText(row.get("وضعیت"));
     if (activeTxt === "فعال") data.active = true;
     if (activeTxt === "غیرفعال") data.active = false;
@@ -410,13 +363,11 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
       continue;
     }
     try {
-      if (existingId) {
-        await db.expertRecord.update({ where: { id: existingId }, data });
+      if (existing) {
+        await db.expertRecord.update({ where: { id: existing.id }, data });
         result.updated++;
       } else {
-        // PN-051 — رکورد تازه با «کد خام» ساخته می‌شود (MELK-15 نه 15) —
-        // کلید عین قالب خروجی/ورودی؛ بدون کد ⇒ کد ساختگی از نام
-        const newCode = rawCode || code || `بدون-کد-${(fullName ?? "").replace(/\s+/g, "-").slice(0, 40) || Date.now().toString(36)}`;
+        const newCode = code || `بدون-کد-${(fullName ?? "").replace(/\s+/g, "-").slice(0, 40) || Date.now().toString(36)}`;
         await db.expertRecord.create({
           data: {
             id: `import-${newCode}-${Date.now().toString(36)}`,
@@ -425,7 +376,6 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
             mobile: (data.mobile as string) || "",
             role: (data.role as string) || "کارشناس",
             businessTitle: (data.businessTitle as string) || "",
-            tenantId,
             createdAt: new Date(),
             ...data,
           },
@@ -443,19 +393,13 @@ async function importExperts(sheet: SheetData, result: ImportResult, tenantId: s
 
 export type ImportEntity = "listings" | "requests" | "transactions" | "experts";
 
-/** اجرای ایمپورت کامل یک موجودیت — tenantId فهرستِ بارگذاری‌شده (PN-051) */
-export async function runImport(
-  entity: ImportEntity,
-  sheet: SheetData,
-  fileName: string,
-  tenantKey?: string | null
-): Promise<ImportResult> {
+/** اجرای ایمپورت کامل یک موجودیت (عین رفتار قبلی روت — صفر تغییر رفتار) */
+export async function runImport(entity: ImportEntity, sheet: SheetData, fileName: string): Promise<ImportResult> {
   const result = emptyResult(entity, fileName);
-  const tenantId = tenantDbValue(tenantKey ?? undefined); // 'melketun' | 'melk-tabriz'
   result.total = sheet.rows.length;
-  if (entity === "listings") await importListings(sheet, result, tenantId);
-  else if (entity === "requests") await importRequests(sheet, result, tenantId);
-  else if (entity === "transactions") await importTransactions(sheet, result, tenantId);
-  else await importExperts(sheet, result, tenantId);
+  if (entity === "listings") await importListings(sheet, result);
+  else if (entity === "requests") await importRequests(sheet, result);
+  else if (entity === "transactions") await importTransactions(sheet, result);
+  else await importExperts(sheet, result);
   return result;
 }

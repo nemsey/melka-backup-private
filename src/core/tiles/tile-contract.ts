@@ -34,11 +34,6 @@ export interface TilePageProps {
   userRole: "OWNER" | "CONSULTANT";
   /** بازگشت به خانه داشبورد */
   onBack: () => void;
-  /**
-   * tenant این رندر — PN-059: پس از حذف کامل ملکتون تنها 'tabriz' زنده است.
-   * (پیش‌فرض 'tabriz' — نگه‌داری پارامتر برای سازگاری TileShell/داشبورد.)
-   */
-  tenantId?: "tabriz";
 }
 
 /** اتصال ایجنت هوشمند کاشی — null برای کاشی‌های بدون ایجنت (مثل تنظیمات) */

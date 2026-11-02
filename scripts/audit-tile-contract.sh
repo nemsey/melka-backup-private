@@ -37,9 +37,8 @@ checks.append({"check": "قرارداد TileDefinition در سورس", "ok": not
 # ─── ۲) همهٔ کاشی‌های موجود: فایل index با defineTile ───
 tiles_dir = "src/core/tiles/tiles"
 tiles = sorted(d for d in os.listdir(tiles_dir) if os.path.isdir(os.path.join(tiles_dir, d)))
-# ن۰۶۳ (PN-038/فاز ۲): هوم یک‌پارچه — M6/M7/ظرف حذف + ۲ کاشی کهنهٔ ملکا از هوم رفت → ۱۱
-if len(tiles) < 11:
-    violations.append(f"شمار کاشی‌ها غیرمنتظره: {len(tiles)} (< ۱۱ خط پایهٔ ن۰۶۳)")
+if len(tiles) < 14:
+    violations.append(f"شمار کاشی‌ها غیرمنتظره: {len(tiles)} (< ۱۴ خط پایه)")
 ids = []
 id_folder_mismatches = []   # واقعیت موروثی — ثبت اطلاعاتی (id پایدار عمومی است؛ تغییر = شکستن تنظیمات)
 for t in tiles:

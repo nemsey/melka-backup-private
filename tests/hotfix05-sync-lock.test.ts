@@ -156,8 +156,8 @@ describe("HOTFIX-05 — قفل همزمانی sync (B6)", () => {
 // ۴+۵) یکسان‌سازی reset
 // ==========================================================================
 
-describe("HOTFIX-05 → PN-038 — ریست بدون حذف (قانون دادهٔ مقدس)", () => {
-  test("PN-038/۱.۴: clearCrmCacheTables داده را نگه می‌دارد (sacred-keep)", async () => {
+describe("HOTFIX-05 — یکسان‌سازی reset (۶ جدول، تابع واحد)", () => {
+  test("clearCrmCacheTables هر ۶ جدول را پاک می‌کند", async () => {
     await seedOneRowEach();
     const beforeCounts = await countAll();
     expect(beforeCounts[0]).toBeGreaterThanOrEqual(1);
@@ -166,27 +166,17 @@ describe("HOTFIX-05 → PN-038 — ریست بدون حذف (قانون داده
     const { clearCrmCacheTables } = await import("@/lib/melk-api/sync");
     const clear = await clearCrmCacheTables();
 
-    // P6527 → PN-038: بکاپ شاهد ساخته می‌شود و داده می‌ماند
-    expect(clear.mode).toBe("sacred-keep");
+    // P6527 — شبکهٔ ایمنی: با دادهٔ غیرخالی، بکاپ خودکار ساخته می‌شود (و پاک تست)
     expect(clear.backupFile).toBeTruthy();
     const { existsSync, rmSync } = await import("node:fs");
     expect(existsSync(clear.backupFile!)).toBe(true);
     rmSync(clear.backupFile!, { force: true });
 
-    // قانون دادهٔ مقدس: داده سر جای خود می‌ماند (سینک مجدد با upsert روی همان داده)
     const after = await countAll();
-    expect(after[0]).toBeGreaterThanOrEqual(beforeCounts[0]);
-    expect(after[5]).toBeGreaterThanOrEqual(beforeCounts[5]);
-    // پاک‌سازی دادهٔ تست (در خود تست مجاز)
-    await db.transactionRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
-    await db.contractRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
-    await db.expertRecord.deleteMany({ where: { personnelCode: { startsWith: "b6-" } } });
-    await db.interactionRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
-    await db.visitRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
-    await db.supplyDemandRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
+    expect(after).toEqual([0, 0, 0, 0, 0, 0]);
   });
 
-  test("connection/reset با withData=true: داده می‌ماند (sacred-keep) + resync شفاف", async () => {
+  test("connection/reset با withData=true همان ۶ جدول را از طریق تابع واحد پاک می‌کند", async () => {
     const { NextRequest } = await import("next/server");
     const { createSession } = await import("@/lib/auth/session");
     const route = await import("@/app/api/connection/reset/route");
@@ -194,7 +184,7 @@ describe("HOTFIX-05 → PN-038 — ریست بدون حذف (قانون داده
     const { token } = await createSession(
       { personnelCode: "950002", displayName: "تست reset", role: "OWNER" },
       { ip: "127.0.0.1" },
-      null // بدون توکن ARM → resync خطای شفاف می‌دهد ولی داده می‌ماند
+      null // بدون توکن ARM → resync خطای شفاف می‌دهد ولی پاک‌سازی انجام می‌شود
     );
     createdSessions.push(token);
 
@@ -209,23 +199,14 @@ describe("HOTFIX-05 → PN-038 — ریست بدون حذف (قانون داده
     const body = (await res.json()) as { ok: boolean; backupFile?: string; resync: { ok: boolean; errorCode?: string } };
     expect(body.ok).toBe(true);
     expect(body.resync.ok).toBe(false); // بدون توکن ARM — پیام شفاف
-    // P6527 → PN-038: بکاپ شاهد در پاسخ روت برمی‌گردد (پاک تست پس از اثبات)
+    // P6527 — بکاپ خودکار در پاسخ روت برمی‌گردد (پاک تست پس از اثبات)
     expect(body.backupFile).toBeTruthy();
     const { existsSync, rmSync } = await import("node:fs");
     expect(existsSync(body.backupFile!)).toBe(true);
     rmSync(body.backupFile!, { force: true });
 
-    // قانون دادهٔ مقدس (PN-038): داده سر جای خود می‌ماند
     const after = await countAll();
-    expect(after[0]).toBeGreaterThanOrEqual(1);
-    expect(after[5]).toBeGreaterThanOrEqual(1);
-    // پاک‌سازی دادهٔ تست
-    await db.transactionRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
-    await db.contractRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
-    await db.expertRecord.deleteMany({ where: { personnelCode: { startsWith: "b6-" } } });
-    await db.interactionRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
-    await db.visitRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
-    await db.supplyDemandRecord.deleteMany({ where: { id: { startsWith: "b6-" } } });
+    expect(after).toEqual([0, 0, 0, 0, 0, 0]); // هر ۶ جدول (نه ۳ جدول قدیمی)
   });
 
   test("سورس: connection/reset دیگر deleteMany inline ندارد — فقط تابع واحد", async () => {
