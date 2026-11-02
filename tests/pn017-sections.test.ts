@@ -46,17 +46,6 @@ beforeAll(async () => {
   await db.user.deleteMany({ where: { personnelCode: { startsWith: "9600" } } });
   await db.userActivity.deleteMany({});
   await db.userSession.deleteMany({});
-  // PN-031: کاربر نمایان آزمایشی — نمای کلی (overview.total) به آن وابسته است؛
-  // پس از بازسازی test.db با db:push دیگر کاربران مانده از دورهای قبلی وجود ندارند
-  await db.user.deleteMany({ where: { personnelCode: "970017" } });
-  await db.user.create({
-    data: {
-      personnelCode: "970017",
-      fullName: "کاربر نمایان آزمون ن۰۱۷",
-      role: "EXPERT",
-      isActive: true,
-    },
-  });
   // ردیف PM آزمایشی (شعبه/سمت غیرواقعی اما معتبر — پس از تست حذف کامل می‌شود)
   await db.expertProfile.deleteMany({ where: { personnelCode: TEST_PM_CODE } });
   await db.expertProfile.create({
@@ -78,7 +67,6 @@ afterAll(async () => {
     await db.session.deleteMany({ where: { tokenHash: sha(t) } }).catch(() => undefined);
   }
   await db.user.deleteMany({ where: { personnelCode: { startsWith: "9600" } } });
-  await db.user.deleteMany({ where: { personnelCode: "970017" } });
   await db.expertProfile.deleteMany({ where: { personnelCode: TEST_PM_CODE } });
   await db.userActivity.deleteMany({});
   await db.userSession.deleteMany({});
@@ -89,13 +77,12 @@ afterAll(async () => {
 describe("PN-017 · جابه‌جایی دو بخش تنظیمات (دستور مالک)", () => {
   const settings = readFileSync("src/core/tiles/tiles/settings/SettingsPage.tsx", "utf8");
 
-  test("PN-043-F1 — UI «مدیریت کاربران ملک تبریز» از تنظیمات حذف شد؛ جایگاه ۹ محفوظ (دادهٔ مقدس)", () => {
-    // PN-043/فاز ۱ (شورا-ن۰۸۷): حذف نما نه حذف داده — رندر از SettingsPage برداشته شد
-    expect(settings).not.toContain("<MelkTabrizUsersSection />");
-    expect(settings).toContain("PN-043-F1"); // شاهد حذفِ مستند در سورس
-    expect(settings).toContain("<PersonnelAccessSection />"); // جایگاه ۹ (دسترسی کارشناسان) محفوظ
-    // کامپوننت نگه‌داری شده — گارد audit-stealth-users فایل را می‌خواند؛ داده در DB محفوظ (قانون ۶)
-    expect(existsSync("src/core/tiles/tiles/settings/MelkTabrizUsersSection.tsx")).toBe(true);
+  test("جایگاه ۸ = شاهکار «مدیریت کاربران ملک تبریز» و جایگاه ۹ = «مدیریت دسترسی کارشناسان ملکا»", () => {
+    const posMelk = settings.indexOf("<MelkTabrizUsersSection />");
+    const posPa = settings.indexOf("<PersonnelAccessSection />");
+    expect(posMelk).toBeGreaterThan(0);
+    expect(posPa).toBeGreaterThan(0);
+    expect(posMelk).toBeLessThan(posPa); // شاهکار پیش از دسترسی کارشناسان
   });
 
   test("عنوان بخش شاهکار: «مدیریت کاربران ملک تبریز» + توضیح دپارتمان", () => {

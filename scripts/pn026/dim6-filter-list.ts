@@ -5,7 +5,7 @@ import { Database } from "bun:sqlite";
 
 const BASE = "http://localhost:3000";
 const envLocal = readFileSync("/home/z/my-project/.env.local", "utf8");
-const masterCode = envLocal.match(/MASTER_ACCESS_CODE\s*=\s*"?([0-9]{8})"?/)?.[1] ?? "";
+const masterCode = envLocal.match(/MASTER_ACCESS_CODE\s*=\s*"?([0-9]{8})"?/)?.[1]!;
 const login = await fetch(`${BASE}/api/auth/master-login`, {
   method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ masterCode }),
 }).then((r) => r.json() as Promise<{ token: string }>);

@@ -7,18 +7,16 @@
  * کارکرد تطبیق:
  *   · شمارهٔ ردیف (قانون مالک: هر فهرستی شماره‌دار است)
  *   · تراشهٔ بند سه‌گانه (شکار/پیگیری/بررسی) + امتیاز — عین سطل‌های فایل‌یابی
- *   · نوارهای امتیاز تفکیکی ۹عامله با همان پالت زمرد/کهربا/رز/فیروزه
- *   · تحلیل چندوجهی پنج‌گانه (PN-028/رابعاً-د) روی خود کارت
- *   · پیشنهاد تصمیم هوشمند روی هر کارت + پذیرش / رد با دلیل (حلقهٔ یادگیری)
- *   · چهار کنش (PN-028/رابعاً-الف/ب/ج): فایل درخواست/فایل آگهی · جزئیات تحلیل ·
- *     پذیرش · رد با دلایل ساختاریافته
+ *   · نوارهای امتیاز تفکیکی شش‌عامله با همان پالت زمرد/کهربا/رز/فیروزه
+ *   · پیشنهاد تصمیم هوشمند روی هر کارت + دکمه‌های پذیرش/رد (حلقهٔ یادگیری)
+ *   · چهار کنش: مشاهده در کاشی · جزئیات تحلیل · پذیرش · رد
  */
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  FileText, Info, ThumbsUp, ThumbsDown, MapPin, Ruler, UserRound, Wallet, Clock, Sparkles, Gauge, ListFilter, Brain, Compass,
+  ExternalLink, Info, ThumbsUp, ThumbsDown, MapPin, Ruler, UserRound, Wallet, Clock, Sparkles, Gauge, ListFilter, Brain,
 } from "lucide-react";
 import { faDigits, faAmountFull, faRelative } from "@/lib/format";
 import { branchBadgeClass } from "@/lib/value-colors";
@@ -58,15 +56,6 @@ const DECISION_TONES: Record<string, string> = {
   muted: "bg-muted text-muted-foreground border",
 };
 
-/** رنگ هر بعد چندوجهی — پنج‌گانه (PN-028/رابعاً-د) */
-const DIMENSION_STYLES: Record<string, { bar: string; text: string }> = {
-  financial: { bar: "bg-gradient-to-l from-emerald-600 to-emerald-400", text: "text-emerald-700 dark:text-emerald-400" },
-  spatial: { bar: "bg-gradient-to-l from-teal-600 to-cyan-500", text: "text-teal-700 dark:text-teal-400" },
-  physical: { bar: "bg-gradient-to-l from-amber-600 to-amber-400", text: "text-amber-700 dark:text-amber-400" },
-  human: { bar: "bg-gradient-to-l from-rose-600 to-rose-400", text: "text-rose-700 dark:text-rose-400" },
-  temporal: { bar: "bg-gradient-to-l from-violet-600 to-violet-400", text: "text-violet-700 dark:text-violet-400" },
-};
-
 /** قیمت گزینه — عدد یا بازهٔ از/تا (عین نمایش پیشین) */
 export function matchPriceLabel(info: { priceFrom: number | null; priceTo: number | null }): string {
   if (info.priceFrom == null && info.priceTo == null) return "—";
@@ -92,21 +81,6 @@ function FactorBar({ label, value, weight, note, tone }: { label: string; value:
   );
 }
 
-/** نوار بعد چندوجهی — پنج‌گانه (مالی/مکانی/فیزیکی/انسانی/زمانی) */
-function DimensionBar({ label, value, hint }: { label: string; value: number; hint: string }) {
-  const key = label.includes("مالی") ? "financial" : label.includes("مکانی") ? "spatial" : label.includes("فیزیکی") ? "physical" : label.includes("انسانی") ? "human" : "temporal";
-  const style = DIMENSION_STYLES[key] ?? DIMENSION_STYLES.physical;
-  return (
-    <div className="flex items-center gap-2" title={hint}>
-      <span className="text-[10px] text-muted-foreground w-14 shrink-0">{label}</span>
-      <div className="grow h-1.5 rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full ${style.bar} transition-all duration-500`} style={{ width: `${Math.round(value * 100)}%` }} />
-      </div>
-      <span className={`text-[10px] font-bold tabular-nums w-8 text-end ${style.text}`}>{faDigits(Math.round(value * 100))}٪</span>
-    </div>
-  );
-}
-
 export function MatchCard({
   candidate,
   index,
@@ -116,7 +90,6 @@ export function MatchCard({
   onDetails,
   onAccept,
   onReject,
-  onOpenFile,
   onOpenInTile,
 }: {
   candidate: EnrichedCandidate;
@@ -128,8 +101,6 @@ export function MatchCard({
   onDetails: (c: EnrichedCandidate) => void;
   onAccept: (c: EnrichedCandidate) => void;
   onReject: (c: EnrichedCandidate) => void;
-  /** PN-028/رابعاً-الف/ب — باز کردن پروندهٔ حرفه‌ای (فایل درخواست/فایل آگهی) */
-  onOpenFile: (code: string, kind: "request" | "listing") => void;
   onOpenInTile: (code: string) => void;
 }) {
   const bucket = MATCH_BUCKET_STYLES[candidate.bucket];
@@ -209,17 +180,6 @@ export function MatchCard({
         ) : null}
       </div>
 
-      {showScores && candidate.dimensions ? (
-        <div className="rounded-lg border border-sec-m5-200 bg-sec-m5-50/40 p-2.5 space-y-1.5" aria-label="تحلیل چندوجهی پنج‌گانه">
-          <p className="text-[10px] font-extrabold flex items-center gap-1 text-sec-m5-700 dark:text-sec-m5-400">
-            <Compass className="w-3.5 h-3.5" aria-hidden /> تحلیل چندوجهی (مالی · مکانی · فیزیکی · انسانی · زمانی)
-          </p>
-          {candidate.dimensions.map((d) => (
-            <DimensionBar key={d.key} label={d.label} value={d.value} hint={`${d.hint} — عوامل: ${d.factors.join("، ")}`} />
-          ))}
-        </div>
-      ) : null}
-
       {showScores ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 pt-1 border-t">
           {candidate.analysis.map((f) => (
@@ -247,22 +207,13 @@ export function MatchCard({
         <Button variant="secondary" size="sm" className="gap-1.5" onClick={() => onDetails(candidate)} aria-label="جزئیات تحلیل با تحلیل هوشمند امتیازدهی و پیش‌بینی دلایل رد">
           <Info className="w-3.5 h-3.5" aria-hidden /> جزئیات تحلیل
         </Button>
-        {/* PN-028/رابعاً-الف/ب — «فایل درخواست»/«فایل آگهی»: پروندهٔ حرفه‌ای کامل سطر مقابل */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 hover:border-sec-m5-400 hover:text-sec-m5-600 font-bold"
-          onClick={() => info && onOpenFile(info.code, isL2R ? "request" : "listing")}
-          disabled={!info}
-          aria-label={`فایل ${isL2R ? "درخواست" : "آگهی"} ${faDigits(info?.code ?? "")} — پروندهٔ کامل حرفه‌ای`}
-        >
-          <FileText className="w-3.5 h-3.5" aria-hidden /> فایل {isL2R ? "درخواست" : "آگهی"}
+        <Button variant="outline" size="sm" className="gap-1.5 hover:border-primary/50 hover:text-primary" onClick={() => info && onOpenInTile(info.code)} disabled={!info} aria-label={`مشاهده در کاشی ${isL2R ? "درخواست" : "آگهی"} با کد از پیش‌جست‌وجوشده`}>
+          <ExternalLink className="w-3.5 h-3.5" aria-hidden /> مشاهده در کاشی {isL2R ? "درخواست" : "آگهی"}
         </Button>
         <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900" onClick={() => onAccept(candidate)} disabled={feedbackState !== undefined} aria-label="پذیرش تطبیق — سوخت حلقهٔ یادگیری وزن‌ها">
           <ThumbsUp className="w-3.5 h-3.5" aria-hidden /> پذیرش
         </Button>
-        {/* PN-028/رابعاً-ج — رد با دلایل ساختاریافته (دیالوگ چندانتخابی + سایر) */}
-        <Button variant="outline" size="sm" className="gap-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900" onClick={() => onReject(candidate)} disabled={feedbackState !== undefined} aria-label="رد پیشنهاد تطبیق با انتخاب دلایل — سوخت یادگیری مغز ملکا">
+        <Button variant="outline" size="sm" className="gap-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900" onClick={() => onReject(candidate)} disabled={feedbackState !== undefined} aria-label="رد تطبیق — سوخت حلقهٔ یادگیری وزن‌ها">
           <ThumbsDown className="w-3.5 h-3.5" aria-hidden /> رد
         </Button>
       </div>

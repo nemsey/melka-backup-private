@@ -30,7 +30,6 @@ import {
   type ScopeClause,
   type ScopeFilter,
 } from "@/core/repositories";
-import { normalizeFilterInput } from "@/lib/normalize-input";
 
 // ===================== موجودیت‌های تحت دامنه =====================
 
@@ -85,8 +84,6 @@ export interface AccessSession {
   /** دامنهٔ داده (§۵.۱): OWNER | BRANCH | CONSULTANT */
   accessScope?: string | null;
   branchId?: string | null;
-  /** PN-049/گام ۲-الف — نام نمایشی کاربر (برای قانون حساب کاربری کاتالوگ‌ها) */
-  displayName?: string | null;
 }
 
 // ===================== نتیجهٔ دامنه =====================
@@ -107,30 +104,6 @@ export interface EntityAccess<E extends ScopeEntity = ScopeEntity> {
 export function isOwnerSession(session: AccessSession): boolean {
   if (session.role === "OWNER") return true;
   return session.accessScope === "OWNER";
-}
-
-/**
- * PN-049/گام ۲ (دستور مالک ۱۴۰۵/۰۸/۰۱) — قانون حساب کاربری برای فهرست‌های کاتالوگ
- * (آگهی/درخواست — هر دو داشبورد):
- *   · مالک (کد مستر): { kind: "ALL" } — صفر فیلتر، همهٔ رکوردها (قانون عدم محدودیت مالک).
- *   · کاربر (غیر-مالک): { kind: "OWN", nameNorm } — فقط رکوردهای ثبت‌شده توسط خودش
- *     (مطابقت دقیق نام نرمال‌شده با ثبت‌کنندهٔ رکورد — actorNameNorm/realtorNameNorm).
- * نام تهی برای غیر-مالک = DENY (fail-closed — هیچ ردیفی؛ صادقانه و امن).
- * نکته: کاتالوگ‌ها نام ثبت‌کننده را دارند اما «کد» یکتا نه (actorCode تبریز = 'arm')؛
- * نامِ نرمال‌شدهٔ نمایشی از ARM/CRM همان هویتی است که سامانه خودشان برای کارشناس
- * ثبت کرده‌اند — منطبق‌ترین کلید موجود (قانون ۱۴: صداقت نسبت به داده).\n */
-export type CatalogUserScope = { kind: "ALL" } | { kind: "OWN"; nameNorm: string };
-
-export function catalogUserScope(session: AccessSession): CatalogUserScope {
-  if (isOwnerSession(session)) return { kind: "ALL" };
-  // نرمال‌سازی با منبع یگانه (قانون یکسان‌سازی ورودی — AGENTS.md §۶)
-  const nameNorm = normalizeFilterInput(session.displayName ?? "");
-  return { kind: "OWN", nameNorm };
-}
-
-/** شکل متن دامنهٔ کاتالوگ برای AuditLog (بدون داده حساس) */
-export function describeCatalogScope(scope: CatalogUserScope): string {
-  return scope.kind === "ALL" ? "catalog=ALL (owner)" : `catalog=OWN (registrar match; nameNorm=${"len:" + scope.nameNorm.length})`;
 }
 
 /**

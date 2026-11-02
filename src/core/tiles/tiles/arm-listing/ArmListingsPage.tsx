@@ -47,13 +47,11 @@ import {
   CalendarDays, TrendingUp, Award, MapPinned, Globe, FileSpreadsheet, Eye, ExternalLink,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup, OwnerNoteCell } from "@/components/app/shared";
-// PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: پنجره‌ای به دادهٔ خام (modal + فایل کامل هر کد)
-import { InfoButton } from "@/components/info/InfoButton";
+import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
-import { faDateTime, faNumber, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
+import { faDateTime, faNumber, faAmountFull } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
 // PN-009 مرحله C — رنگ وضعیت‌ها هم از رجیستری یگانه (منبع حقیقت واحد)
 import { valueSoftClass, valueSolidClass, branchBadgeClass, listingStateBadgeClass } from "@/lib/value-colors";
@@ -62,8 +60,6 @@ import { normalizeFilterInput } from "@/lib/normalize-input";
 import {
   LISTING_STATES,
   LISTING_STATE_BY_KEY,
-  classifyListingStatus,
-  listingStatusLabel,
   type ListingStateKey,
 } from "@/lib/listing-status";
 import { TABRIZ_BRANCHES, BRANCH_UNSET } from "@/lib/branches";
@@ -107,8 +103,6 @@ interface ListingRow {
   cityName: string | null;
   publicUrl: string | null;
   statusDate: string | null;
-  /** PN-039 (گام ۴) — یادداشت مالک (آخرین ستون فهرست) */
-  ownerNote: string | null;
 }
 
 interface Enrichment {
@@ -172,7 +166,7 @@ const TRADE_CATEGORIES: readonly string[] = ["فروش", "پیش فروش", "ر�
 const MAX_AUTO_SLICES = 10;
 const AUTO_SLICE_ROWS = 25;
 
-export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, onBack: _back }: TilePageProps) {
+export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
   const { toast } = useToast();
   // PN-011 خامسا-۲ — بار کاشی از M5 (کد ملک) یک‌بار در ساخت مقصد مصرف می‌شود؛
   // فیلتر و اعمال هر دو از همان ابتدا پر می‌شوند ⇒ اولین واکشی خودش جست‌وجو است.
@@ -189,8 +183,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   /** شعبه‌های انتخاب‌شدهٔ فیلتر چندانتخابی (PN-011 ثالثاً — چیپ همانند دسته‌بندی) */
   const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
-  /** PN-039 (گام ۶) — نوع‌های ملک انتخاب‌شدهٔ فیلتر چندانتخابی (چیپ) */
-  const [selectedPropertyTypes, setSelectedPropertyTypes] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(
     // قانون ۰۳۵-B/ت-۵: آکاردئون در موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
@@ -206,15 +198,14 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
-    // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
     // P6525 — نرمال‌سازی مرکزی: نتیجهٔ ارقام فارسی/عربی/لاتین همیشه یکسان
     if (applied.code) params.set("code", normalizeFilterInput(applied.code));
     if (applied.realtorName) params.set("realtorName", normalizeFilterInput(applied.realtorName));
     if (applied.branch) params.set("branch", applied.branch);
     if (applied.ownerName) params.set("ownerName", normalizeFilterInput(applied.ownerName));
     if (applied.address) params.set("address", normalizeFilterInput(applied.address));
-    if (applied.priceFrom) params.set("priceFrom", parsePriceInput(applied.priceFrom));
-    if (applied.priceTo) params.set("priceTo", parsePriceInput(applied.priceTo));
+    if (applied.priceFrom) params.set("priceFrom", applied.priceFrom);
+    if (applied.priceTo) params.set("priceTo", applied.priceTo);
     if (applied.activityFrom) params.set("activityFrom", applied.activityFrom);
     if (applied.activityTo) params.set("activityTo", applied.activityTo);
     // فیلترهای چندانتخابی — اعمال خودکار با هر کلیک
@@ -222,8 +213,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     for (const t of selectedTrades) params.append("tradeType", t);
     // PN-011 ثالثاً — شعبه چندانتخابی (چیپ): چند مقدار هم‌زمان
     for (const b of selectedBranches) params.append("branch", b);
-    // PN-039 (گام ۶) — نوع ملک چندانتخابی (چیپ)
-    for (const t of selectedPropertyTypes) params.append("propertyType", t);
     try {
       const res = await api<ListingsResponse>(`/api/crm/arm-catalog/listings?${params.toString()}`);
       setData(res);
@@ -234,7 +223,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     } finally {
       setLoading(false);
     }
-  }, [applied, selectedStates, selectedTrades, selectedBranches, selectedPropertyTypes]);
+  }, [applied, selectedStates, selectedTrades, selectedBranches]);
 
   useEffect(() => {
     setLoading(true);
@@ -302,24 +291,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     setSelectedBranches((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
   }, []);
 
-  /** PN-039 (گام ۶) — تاگل یک نوع ملک در فیلتر چندانتخابی (اعمال خودکار) */
-  const togglePropertyType = useCallback((t: string) => {
-    setSelectedPropertyTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
-  }, []);
-
-  /** PN-039 (گام ۴) — به‌روزرسانی یادداشت ردیف در state پس از ذخیرهٔ موفق */
-  const updateRowNote = useCallback((id: string, note: string | null) => {
-    setData((prev) => (prev ? { ...prev, rows: prev.rows.map((r) => (r.id === id ? { ...r, ownerNote: note } : r)) } : prev));
-    toast({ title: "یادداشت ذخیره شد", description: "یادداشت مالک روی آگهی ثبت شد." });
-  }, [toast]);
-
-  /** PN-039 (گام ۶) — وجه نوع ملک برای چیپ‌ها: مقادیر یکتای کاتالوگ بارخورده + انتخاب‌های جاری */
-  const propertyTypeFacet = useMemo(() => {
-    const set = new Set<string>(selectedPropertyTypes);
-    for (const r of data?.rows ?? []) if (r.propertyTypeName) set.add(r.propertyTypeName);
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "fa"));
-  }, [data, selectedPropertyTypes]);
-
   const doSync = useCallback(async () => {
     setSyncing(true);
     try {
@@ -345,7 +316,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
       setSyncing(false);
     }
   }, [toast, load]);
-
 
   const rows = data?.rows ?? [];
   const enrichment = data?.enrichment ?? { total: 0, pending: 0, complete: 0 };
@@ -405,10 +375,10 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
 
       {/* شاخص‌ها — رنگ بخش M1 (سبز یشمی) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <KpiCard label={"کل آگهی‌های ملک تبریز"} value={loading ? undefined : faNumber(data?.total ?? 0)} icon={Home} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
-        <KpiCard label={"اطلاعات مالک و آدرس تکمیل‌شده"} value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
-        <KpiCard label={"آگهی امروز"} value={loading ? undefined : (faNumber(todayCount))} icon={Clock} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
-        <KpiCard label={"کارشناسان فعال"} value={loading ? undefined : faNumber(activeRealtors)} icon={Users} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
+        <KpiCard label="کل آگهی‌های ملک تبریز" value={loading ? undefined : faNumber(data?.total ?? 0)} icon={Home} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
+        <KpiCard label="اطلاعات مالک و آدرس تکمیل‌شده" value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
+        <KpiCard label="آگهی امروز" value={loading ? undefined : faNumber(todayCount)} icon={Clock} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
+        <KpiCard label="کارشناسان فعال" value={loading ? undefined : faNumber(activeRealtors)} icon={Users} iconWrapperClassName="bg-sec-m1-50" iconColorClassName="text-sec-m1-700" />
       </div>
 
       {/* بینش توزیع وضعیت ده‌حالته (گام ۱ بند ۳) */}
@@ -417,11 +387,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
           <div className="flex items-center gap-2.5">
             <PieChart className="w-5 h-5 text-sec-m1-700 shrink-0" aria-hidden />
             <div>
-              <p className="text-sm font-bold">{"توزیع وضعیت آگهی‌ها (نظام ده‌حالته)"}</p>
+              <p className="text-sm font-bold">توزیع وضعیت آگهی‌ها (نظام ده‌حالته)</p>
             </div>
           </div>
-          
-          {(
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" id="arm-listing-states-insight">
             {LISTING_STATES.map((s) => {
               const n = statusCounts?.[s.key] ?? 0;
@@ -451,20 +419,15 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
               </p>
             </div>
           </div>
-          )}
         </CardContent>
       </Card>
-
-      {/* PN-047/گام اول-۴ — بینش توزیع شعب ملکتون (نمودار مختص کسب‌وکار ملکتون —
-          «ملکتون در سطح شهر تبریز دارای شعب مختلف است» عین دستور مالک) */}
-      
 
       {/* ============ جداول و نمودارها (P6546/گام پنجم-الف-۳ — ترتیب الزامی: بینش‌ها → جداول → پوشش → بروزرسانی → فیلتر → فهرست) ============ */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4" id="m1-tables-section">
         {/* P6546/گام یک-۲ — جدول ۱۰ کارشناسان پرآگهی */}
         <TopRankingTable
           id="m1-top-realtors"
-          title={"جدول ۱۰ کارشناسان پرآگهی ملک تبریز"}
+          title="جدول ۱۰ کارشناسان پرآگهی ملک تبریز"
           rows={topRealtors}
           countLabel="کارشناس"
           icon={Award}
@@ -473,7 +436,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
         {/* P6546/گام یک-۳ — جدول ۱۰ قطب‌های عرضه آگه */}
         <TopRankingTable
           id="m1-top-hubs"
-          title={"جدول ۱۰ قطب‌های عرضه آگه در مناطق تبریز"}
+          title="جدول ۱۰ قطب‌های عرضه آگه در مناطق تبریز"
           rows={topHubs}
           countLabel="منطقه"
           icon={MapPinned}
@@ -484,22 +447,20 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
       {/* P6546/گام پنجم-الف-۲ — جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
       <TileCoverageTable tileKey="m1" accentClass="text-sec-m1-700" />
 
-      {/* بخش بروزرسانی آگهی (گام ۱ بند ۴) — تبریز: زنجیرهٔ ARM · ملکتون: همگام‌سازی از CRM (PN-046/گام اول-۱) */}
+      {/* بخش بروزرسانی آگهی (گام ۱ بند ۴) — زنجیرهٔ ARM + تاریخ دقیق + ادامه از نقطهٔ قطع */}
       <Card className="border-sec-m1-200 bg-sec-m1-50">
         <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <Building2 className="w-5 h-5 text-sec-m1-700 shrink-0" aria-hidden />
               <div className="min-w-0">
-                <p className="text-sm font-bold">{"بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز"}</p>
+                <p className="text-sm font-bold">بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز</p>
               </div>
             </div>
-            {(
             <Button onClick={() => void doSync()} disabled={syncing} className="gap-2 shrink-0 bg-sec-m1-500 hover:bg-sec-m1-500/90 text-sec-m1-fg">
               {syncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
               بروزرسانی از سامانه
             </Button>
-            )}
           </div>
 
           {/* بند ۴.۲ — تاریخ و ساعت دقیق آخرین بروزرسانی + نقطهٔ ادامه */}
@@ -564,9 +525,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
 
           {filtersOpen && (
             <>
-              {/* PN-009 مرحله C — گروه‌بندی منطقی فیلترها (قانون ۶.۱): وضعیت → دسته‌بندی → شناسه و اشخاص → قیمت و بازه
-                  PN-046/گام اول-۱ — ده‌حالتهٔ ARM مختص تبریز است؛ برای ملکتون پنهان می‌شود */}
-              {(
+              {/* PN-009 مرحله C — گروه‌بندی منطقی فیلترها (قانون ۶.۱): وضعیت → دسته‌بندی → شناسه و اشخاص → قیمت و بازه */}
               <FilterGroup
                 label="وضعیت آگهی (چندانتخابی — ده‌حالته)"
                 hint={stateFilterActive ? `${faNumber(selectedStates.length)} حالت انتخاب شده — ${faNumber(rows.length)} آگهی مطابق` : undefined}
@@ -599,7 +558,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                   ))}
                 </div>
               </FilterGroup>
-              )}
 
               {/* دسته‌بندی — چندانتخابی (نکته ۴) */}
               <FilterGroup
@@ -621,28 +579,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                 </div>
               </FilterGroup>
 
-              {/* PN-039 (گام ۶) — نوع ملک — چندانتخابی چیپی (مقادیر از کاتالوگ زنده) */}
-              <FilterGroup
-                label="نوع ملک (چندانتخابی)"
-                hint={selectedPropertyTypes.length > 0 ? `${faNumber(selectedPropertyTypes.length)} نوع انتخاب شده` : undefined}
-              >
-                <div className="flex flex-wrap gap-1.5" id="arm-listing-property-types-filter">
-                  {propertyTypeFacet.map((t) => (
-                    <FilterChip
-                      key={t}
-                      label={t}
-                      active={selectedPropertyTypes.includes(t)}
-                      onToggle={() => togglePropertyType(t)}
-                      softClass={valueSoftClass(t)}
-                      solidClass={valueSolidClass(t)}
-                    />
-                  ))}
-                </div>
-              </FilterGroup>
-
-              {/* شعبه — PN-011 ثالثاً: فیلتر چندانتخابی چیپی (همانند دسته‌بندی — دستور مالک)
-                  PN-046/گام اول-۱ — شعبه‌های چهارگانهٔ تبریز برای ملکتون کاربرد ندارند؛ پنهان */}
-              {(
+              {/* شعبه — PN-011 ثالثاً: فیلتر چندانتخابی چیپی (همانند دسته‌بندی — دستور مالک) */}
               <FilterGroup
                 label="شعبهٔ کارشناس (چندانتخابی)"
                 hint={selectedBranches.length > 0 ? `${faNumber(selectedBranches.length)} شعبه انتخاب شده` : undefined}
@@ -683,7 +620,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                   />
                 </div>
               </FilterGroup>
-              )}
 
               {/* فیلترهای متنی/عددی تمام ستون‌ها — P6546/گام پنجم-ب: چیدمان جمع‌وجور + بازه‌های روبروهم */}
               <form
@@ -694,8 +630,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                 }}
               >
               <FilterGroup label="شناسه و اشخاص">
-                {/* PN-028/خامساً-ف (دستور مالک) — فیلدهای متنی دوتایی: هر ردیف دو فیلد روبروهم */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
                 <div className="space-y-1.5">
                   <Label htmlFor="arm-listing-code">کد آگهی</Label>
                   <Input
@@ -709,7 +644,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="arm-listing-realtor">{"کارشناس"}</Label>
+                  <Label htmlFor="arm-listing-realtor">کارشناس</Label>
                   <Input
                     id="arm-listing-realtor"
                     value={filters.realtorName}
@@ -753,7 +688,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                       id="arm-listing-price-from"
                       aria-label="قیمت از (تومان)"
                       value={filters.priceFrom}
-                      onChange={(e) => setF("priceFrom", formatPriceInput(e.target.value))}
+                      onChange={(e) => setF("priceFrom", e.target.value)}
                       placeholder="از ۹،۰۰۰،۰۰۰،۰۰۰"
                       inputMode="numeric"
                       autoComplete="off"
@@ -763,7 +698,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                       id="arm-listing-price-to"
                       aria-label="قیمت تا (تومان)"
                       value={filters.priceTo}
-                      onChange={(e) => setF("priceTo", formatPriceInput(e.target.value))}
+                      onChange={(e) => setF("priceTo", e.target.value)}
                       placeholder="تا ۱۲،۰۰۰،۰۰۰،۰۰۰"
                       inputMode="numeric"
                       autoComplete="off"
@@ -852,12 +787,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
       ) : (
         <Card>
           {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین (الگوی فهرست معاملات) */}
-          {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
-              ردیف ۱: عنوان «فهرست آگهی» وسط‌چین
-              ردیف ۲: «اکسل کل فهرست» (راست) + «بارگذاری اکسل» (چپ) */}
-          <CardHeader className="py-4 flex flex-col items-center gap-2">
-            <CardTitle className="text-base text-center">فهرست آگهی</CardTitle>
-            <div className="w-full flex items-center justify-between gap-3 flex-wrap">
+          <CardHeader className="py-4 flex flex-col items-center gap-1">
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              <CardTitle className="text-base text-center">فهرست آگهی‌ها</CardTitle>
               {/* PN-002 گام ۶-۲ — خروجی اکسل کل فهرست */}
               <Button
                 variant="outline"
@@ -865,7 +797,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                 className="gap-1.5 h-7 text-[11px]"
                 onClick={() => {
                   const p = new URLSearchParams();
-                  // PN-044/فاز ۴ — خروجی اکسل هم tenant همین رندر را می‌گیرد
                   if (filters.code) p.set("code", filters.code);
                   if (filters.realtorName) p.set("realtorName", filters.realtorName);
                   if (filters.ownerName) p.set("ownerName", filters.ownerName);
@@ -880,18 +811,11 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
               </Button>
-              {/* PN-003 گام ۴-۲ + PN-051 — بارگذاری اکسل کل فهرست (ایمپورت در tenant همین فهرست) */}
+              {/* PN-003 گام ۴-۲ — بارگذاری اکسل کل فهرست (ایمپورت) */}
               <ExcelImportButton entity="listings" compact onImported={() => void load()} />
             </div>
             {rows.length > 0 && (
               <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>
-            )}
-            {/* PN-049/گام ۲-الف — قانون حساب کاربری: برای کاربر غیر-مالک، فهرست به
-                رکوردهای ثبت‌شده توسط خودش محدود است (مالک = همهٔ رکوردها) */}
-            {userRole !== "OWNER" && (
-              <Badge variant="outline" className="gap-1 text-[11px] border-amber-300 text-amber-700 bg-amber-50" title="قانون حساب کاربری PN-049 — کنترل حساب کاربر">
-                نمای شخصی — فقط رکوردهای ثبت‌شده توسط شما
-              </Badge>
             )}
           </CardHeader>
           <CardContent className="p-0">
@@ -902,45 +826,26 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                     {/* جلسهٔ ۰۳۳ (دستور مالک — ثانیاً/ت): ترتیب ستون‌ها + حذف «آخرین فعالیت» */}
                     <TableHead className="w-10">ردیف</TableHead>
                     <TableHead className="min-w-20">کد آگهی</TableHead>
-                    {/* PN-046/گام اول-۱ — فهرست ملکتون مختص داده‌های CRM + PN-047/گام اول-۲:
-                        realtorName = کارشناس مسئول حل‌شده از vtiger (نه آژانس) · شعبهٔ ملکتون (۳ شعبهٔ فعال)
-                        · متراژ جدید (size نمای عمومی — پوشش ۹۹٪) · تصاویر حذف (نمای عمومی تصویر ندارد) */}
-                    <TableHead className="min-w-28">{"کارشناس"}</TableHead>
-                    <TableHead className="min-w-24">{"شعبه"}</TableHead>
+                    <TableHead className="min-w-28">کارشناس</TableHead>
+                    <TableHead className="min-w-24">شعبه</TableHead>
                     <TableHead className="min-w-24">نوع ملک</TableHead>
                     <TableHead className="min-w-24">دسته‌بندی</TableHead>
-                    {/* PN-039 (گام ۵) — ستون «وضعیت آگهی» بعد از دسته‌بندی (دستور مالک) */}
-                    <TableHead className="min-w-28">{"وضعیت آگهی"}</TableHead>
                     <TableHead className="min-w-36">مالک</TableHead>
                     {/* P6546/گام پنجم-ت-۴ — ستون قیمت با نام «قیمت» و قالب ۹،۰۰۰،۰۰۰،۰۰۰ */}
                     <TableHead className="min-w-32">قیمت</TableHead>
-                    {(
-                      <>
-                        <TableHead className="min-w-28">قیمت هر متر</TableHead>
-                        {/* PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM */}
-                        <TableHead className="min-w-20">رهن / اجاره</TableHead>
-                        <TableHead className="min-w-44">آدرس ملک</TableHead>
-                        {/* P6546/گام یک — ستون‌های غنی‌شده از ساختار ثبت آگهی ARM + سامانهٔ عمومی */}
-                        <TableHead className="min-w-20">متراژ</TableHead>
-                        <TableHead className="min-w-16">اتاق</TableHead>
-                        <TableHead className="min-w-16">طبقه</TableHead>
-                        <TableHead className="min-w-20">ساخت</TableHead>
-                        <TableHead className="min-w-16">بازدید</TableHead>
-                        <TableHead className="min-w-16">لینک</TableHead>
-                        {/* PN-020/گام اول-الف بند ۴ + جلسهٔ ۰۳۳ — تاریخ وضعیت، آخرین ستون فهرست */}
-                        <TableHead className="min-w-24">تاریخ وضعیت</TableHead>
-                      </>
-                    )}
-                    {/* PN-039 (گام ۳) — تاریخ دقیق ایجاد آگهی (createdAt) — برای ملکتون = تاریخ ثبت واقعی CRM (شمسی پارس‌شده) */}
-                    <TableHead className="min-w-36">تاریخ ثبت</TableHead>
-                    {/* PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: نمایش فایل کامل دادهٔ هر کد
-                        (سند رسمی + دادهٔ خام + متادیتا) — ماقبل آخر (غیرچسبنده — PN-047)
-                        ⚠ قانون ساختاری (دستور مالک/گام اول-۳): «اطلاعات» و «یادداشت» همیشه دو ستون آخر می‌مانند —
-                        هر ستون جدید در آینده باید «قبل از» ستون اطلاعات افزوده شود. */}
-                    <TableHead className="w-24">اطلاعات</TableHead>
-                    {/* PN-039 (گام ۴) — یادداشت مالک — آخرین ستون فهرست (دستور مالک)
-                        PN-045/فاز ۲ — ستون چسبندهٔ چپ (RTL: آخرین ستون = چپ‌ترین) */}
-                    <TableHead className="min-w-32 w-44 pn045-sticky-note">یادداشت</TableHead>
+                    <TableHead className="min-w-28">قیمت هر متر</TableHead>
+                    {/* PN-002 گام ۱ — ستون‌های تازه از خود ردیف فهرست ARM */}
+                    <TableHead className="min-w-20">رهن / اجاره</TableHead>
+                    <TableHead className="min-w-44">آدرس ملک</TableHead>
+                    {/* P6546/گام یک — ستون‌های غنی‌شده از ساختار ثبت آگهی ARM + سامانهٔ عمومی */}
+                    <TableHead className="min-w-20">متراژ</TableHead>
+                    <TableHead className="min-w-16">اتاق</TableHead>
+                    <TableHead className="min-w-16">طبقه</TableHead>
+                    <TableHead className="min-w-20">ساخت</TableHead>
+                    <TableHead className="min-w-16">بازدید</TableHead>
+                    <TableHead className="min-w-16">لینک</TableHead>
+                    {/* PN-020/گام اول-الف بند ۴ + جلسهٔ ۰۳۳ — تاریخ وضعیت، آخرین ستون فهرست */}
+                    <TableHead className="min-w-24">تاریخ وضعیت</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* P6527 — رندر پنجره‌ای: تمام ردیف‌ها در یک اسکرول، فقط دیدنی‌ها در DOM */}
@@ -966,8 +871,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                             {r.realtorName ?? "ثبت نشده در سامانه"}
                           </span>
                         </TableCell>
-                        {/* ۴ — تبریز: شعبهٔ کارشناس (PM) · ملکتون M7: شعبهٔ ملکتون (سه شعبهٔ فعال در سطح شهر تبریز — PN-047) */}
-                        {(
+                        {/* ۴ — شعبه (نکته ۲) */}
                         <TableCell>
                           {r.branch && r.branch !== BRANCH_UNSET ? (
                             <Badge variant="outline" className={`gap-1 text-[11px] border-0 ${branchBadgeClass(r.branch)}`} title="شعبهٔ کارشناس — از سامانهٔ PM">
@@ -977,7 +881,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                             <span className="text-muted-foreground text-[11px]">{BRANCH_UNSET}</span>
                           )}
                         </TableCell>
-                        )}
                         {/* ۵ — نوع ملک (P6546/گام یک — propertyTypeName از جزئیات + apu) */}
                         {/* PN-011 ثانیاً — رنگ از رجیستری (قانون ۱۲): هر مقدار نوع ملک رنگ یکتای خود را دارد */}
                         <TableCell className="whitespace-nowrap">
@@ -998,23 +901,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                             </Badge>
                           ) : (
                             <span className="text-muted-foreground text-[11px]">در نوبت تکمیل</span>
-                          )}
-                        </TableCell>
-                        {/* ۶-ب — PN-039 (گام ۵) — وضعیت آگهی: بعد از دسته‌بندی (دستور مالک) —
-                            نگاشت قانون ده‌حالتهٔ P6530؛ خارج از ده‌گانه = متن خام با Badge خنثی */}
-                        <TableCell className="whitespace-nowrap" data-listing-status-cell={r.id}>
-                          {r.status ? (
-                            <Badge
-                              variant="secondary"
-                              className={`gap-1 text-[10px] border-0 ${(() => {
-                                const k = classifyListingStatus(r.status);
-                                return k ? listingStateBadgeClass(k) : "";
-                              })()}`}
-                            >
-                              <History className="w-2.5 h-2.5" aria-hidden /> {listingStatusLabel(r.status)}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
                         {/* ۷ — مالک: نام + موبایل زیر نام (نکته ۱ + نکته بسیار مهم ۴ — عین الگوی فروشنده/خریدار M3) */}
@@ -1054,8 +940,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                             <span className="text-muted-foreground text-[10px]">ثبت نشده</span>
                           )}
                         </TableCell>
-                        {/* ۸-ب — تبریز: قیمت هر متر · ملکتون: پیش‌پرداخت (پیش‌پرداخت CRM — ۰ هم دادهٔ واقعی است) */}
-                        {(
+                        {/* ۸-ب — قیمت هر متر (P6546/گام یک — از فهرست سامانهٔ عمومی + جزئیات ARM) */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.pricePerMeter === "number" && r.pricePerMeter > 0 ? (
                             <span className="inline-flex items-center gap-1 font-medium tabular-nums text-[11px]" title={`${faAmountFull(r.pricePerMeter)} — تومان هر مترمربع`}>
@@ -1066,9 +951,8 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                             <span className="text-muted-foreground text-[10px]">—</span>
                           )}
                         </TableCell>
-                        )}
-                        {/* ۸-ب-002 گام ۱ — تبریز: رهن / اجاره · ملکتون: اجارهٔ CRM (۰ = فروش) */}
-                        {(
+                        {/* ۸-ب-002 گام ۱ — ستون‌های تازه */}
+                        {/* ۹ — رهن / اجاره (آگهی‌های رهن‌واجاره‌ای) */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.depositPrice === "number" && r.depositPrice > 0 ? (
                             <span className="inline-flex flex-col items-center gap-0.5 tabular-nums text-[10px]" title={`رهن: ${faAmountFull(r.depositPrice)}${typeof r.rentPrice === "number" && r.rentPrice > 0 ? ` — اجاره: ${faAmountFull(r.rentPrice)}` : ""} — تومان`}>
@@ -1079,9 +963,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                             <span className="text-muted-foreground text-[10px]">{r.isRental ? "اجاره‌ای" : "—"}</span>
                           )}
                         </TableCell>
-                        )}
-                        {/* ۱۰ — تبریز: آدرس ملک · ملکتون: منطقهٔ CRM */}
-                        {(
+                        {/* ۱۰ — آدرس ملک (منطقه، کوی، پلاک) */}
                         <TableCell className="whitespace-normal">
                           <span className="inline-flex items-start gap-1 leading-relaxed">
                             <MapPin className="w-3 h-3 text-sec-m1-700 mt-0.5 shrink-0" aria-hidden />
@@ -1093,11 +975,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                             </span>
                           </span>
                         </TableCell>
-                        )}
-                        {/* ۱۰-ب — ملکتون M7: متراژ (فیلد size نمای عمومی CRM — پوشش ۹۹٪ · PN-047)
-                            تبریز: متراژ/اتاق/طبقه/ساخت/بازدید/لینک/تاریخ وضعیت */}
-                        {(
-                          <>
                         {/* ۱۰-ب — متراژ */}
                         <TableCell className="whitespace-nowrap">
                           {typeof r.meterage === "number" && r.meterage > 0 ? (
@@ -1171,28 +1048,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                         {/* ۱۳ — تاریخ وضعیت (آخرین ستون — دستور جلسهٔ ۰۳۳) */}
                         <TableCell className="text-muted-foreground whitespace-nowrap text-[10px]">
                           {r.statusDate ? faDateTime(r.statusDate) : "—"}
-                        </TableCell>
-                          </>
-                        )}
-                        {/* ۱۴ — PN-039 (گام ۳) — تاریخ ثبت: دقیق‌ترین لحظهٔ ایجاد آگهی در سامانهٔ ملکا (createdAt) */}
-                        <TableCell className="text-muted-foreground whitespace-nowrap text-[10px]" data-registered-at-cell={r.id}>
-                          {r.createdAt ? faDateTime(r.createdAt) : "—"}
-                        </TableCell>
-                        {/* ۱۵ — PN-045/فاز ۳ — ستون «اطلاعات»: دکمهٔ 📋 نمایش → فایل کامل در modal
-                            چسبندهٔ ماقبل آخر (RTL: بلافاصله راستِ یادداشت) · lazy fetch — فقط هنگام کلیک */}
-                        <TableCell>
-                          <InfoButton type="listing" code={r.propertyCode} />
-                        </TableCell>
-                        {/* ۱۶ — PN-039 (گام ۴) — یادداشت مالک: آخرین ستون فهرست · قابل ویرایش inline
-                            PN-045/فاز ۲ — سلول چسبندهٔ چپ (عرض ثابت w-44 = 176px — قانون ۱۱) */}
-                        <TableCell className="whitespace-normal pn045-sticky-note" data-owner-note-column-cell={r.id}>
-                          <OwnerNoteCell
-                            id={r.id}
-                            entity="property"
-                            value={r.ownerNote}
-                            onSaved={(note) => updateRowNote(r.id, note)}
-                            onError={(msg) => toast({ title: "خطا در ذخیرهٔ یادداشت", description: msg, variant: "destructive" })}
-                          />
                         </TableCell>
 </TableRow>
                     );

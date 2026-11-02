@@ -36,15 +36,13 @@ import {
   RefreshCw, CheckCircle2, IdCard, CalendarClock, BriefcaseBusiness, FileSpreadsheet, UserCheck, Phone,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TileCoverageTable, useTileData, FilterGroup, FilterChip, ExcelImportButton, type DataSourceInfo } from "@/components/app/shared";
+import { KpiCard, TileCoverageTable, useTileData, FilterGroup, FilterChip, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, apiSync, apiBlob, downloadBlob } from "@/lib/client/api";
 import { faNumber, faJalaliShort } from "@/lib/format";
 import { branchBadgeClass, valueSoftClass, valueSolidClass } from "@/lib/value-colors";
 import { faDigits } from "@/lib/jalali";
 import { expertFamilyStats, expertWithBranchCount } from "@/core/agent/analyzers";
-// PN-046/گام اول-۲ (دستور مالک: ستون اطلاعات در «تمامی» فهرست‌ها) — فهرست کارشناسان (M4)
-import { InfoButton } from "@/components/info/InfoButton";
 
 /** ردیف فهرست تازه — عین ExpertProfileRow سرور */
 interface ExRow {
@@ -132,9 +130,7 @@ const EMPTY_CHIPS: ChipFilters = {
 
 export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role, onBack: _back }: TilePageProps) {
   const { toast } = useToast();
-  // PN-047/گام اول-۲ — فهرست مختص کسب‌وکار ملکتون (M10): ستون‌های سمت/شهر از CRM ·
-  // ستون‌های تبریز-محور (مبایعه/اجاره/استخدام/آدرس/مدیر/تلفن ثابت/…) پنهان
-    const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   // PN-011 ثالثاً — فیلترهای چندانتخابی چیپی (اعمال خودکار با هر کلیک)
   const [chips, setChips] = useState<ChipFilters>(EMPTY_CHIPS);
@@ -151,7 +147,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
 
   const fetchExperts = useCallback(async (): Promise<ExResponse> => {
     const params = new URLSearchParams();
-    // PN-044/فاز ۴ — فیلتر چند-مستأجری: داشبورد ملکتون فقط دادهٔ ملکتون می‌بیند
     const set = (k: keyof Filters, v: string) => { if (v) params.set(k, v); };
     set("q", applied.q);
     set("fullName", applied.fullName);
@@ -243,23 +238,18 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
       {/* ایجنت هوشمند */}
       <AgentPanel tileId="experts" />
 
-      {/* شاخص‌ها — رنگ بخش M4 (فیروزه‌ای) · ملکتون M10: شاخص‌های مختص CRM (PN-047) */}
+      {/* شاخص‌ها — رنگ بخش M4 (فیروزه‌ای) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <KpiCard label={"کل کارشناسان و کارکنان"} value={loading ? undefined : faNumber(total)} icon={Users} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
-        <KpiCard label={"دارای شعبه"} value={loading ? undefined : faNumber(kpis.withBranch)} icon={Network} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
-        {(
-          <>
-            <KpiCard label="مجموع مبایعه نامه" value={loading ? undefined : faNumber(kpis.saleTotal)} sub="شامل پیش‌فروش" icon={FileSignature} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
-            <KpiCard label="مجموع اجاره نامه" value={loading ? undefined : faNumber(kpis.rentTotal)} sub="شامل تمدید اجاره" icon={Banknote} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
-          </>
-        )}
+        <KpiCard label="کل کارشناسان و کارکنان" value={loading ? undefined : faNumber(total)} icon={Users} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+        <KpiCard label="دارای شعبه" value={loading ? undefined : faNumber(kpis.withBranch)} icon={Network} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+        <KpiCard label="مجموع مبایعه نامه" value={loading ? undefined : faNumber(kpis.saleTotal)} sub="شامل پیش‌فروش" icon={FileSignature} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
+        <KpiCard label="مجموع اجاره نامه" value={loading ? undefined : faNumber(kpis.rentTotal)} sub="شامل تمدید اجاره" icon={Banknote} iconWrapperClassName="bg-sec-m4-50" iconColorClassName="text-sec-m4-700" />
       </div>
 
       {/* جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
       <TileCoverageTable tileKey="m4" accentClass="text-sec-m4-700" />
 
-      {/* ─── بروزرسانی فهرست — تبریز: زنجیرهٔ سه‌مرحله‌ای PM · ملکتون: همگام‌سازی CRM (Worker ۶س — PN-047) ─── */}
-      {(
+      {/* ─── بروزرسانی فهرست (زنجیرهٔ سه‌مرحله‌ای PM) ─── */}
       <Card className="border-sec-m4-200 bg-sec-m4-50" id="m4-update-section">
         <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -288,7 +278,8 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
           )}
         </CardContent>
       </Card>
-      )}
+
+      {/* ─── فیلتر فهرست (تمام ستون‌ها) — PN-009 مرحله F: گروه‌بندی منطقی + آکاردئون موبایل ─── */}
       <Card className="border-sec-m4-200" id="m4-filter-section">
         <CardHeader className="py-4">
           <button
@@ -314,8 +305,7 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
           </FilterGroup>
           {/* هویت پرسنلی */}
           <FilterGroup label="هویت پرسنلی">
-            {/* PN-028/خامساً-ف (دستور مالک) — فیلدهای متنی دوتایی: هر ردیف دو فیلد روبروهم */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="exf-name">کارشناس (نام)</Label>
                 <Input id="exf-name" value={filters.fullName} onChange={(e) => setF("fullName", e.target.value)} placeholder="نام کارشناس" />
@@ -326,14 +316,12 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="exf-code">کدپرسنلی</Label>
-                <Input id="exf-code" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} placeholder={"مثل 410031320"} dir="ltr" />
+                <Input id="exf-code" value={filters.personnelCode} onChange={(e) => setF("personnelCode", e.target.value)} placeholder="مثل 410031320" dir="ltr" />
               </div>
-              {(
               <div className="space-y-1.5">
                 <Label htmlFor="exf-voip">شماره داخلی</Label>
                 <Input id="exf-voip" value={filters.voipExtension} onChange={(e) => setF("voipExtension", e.target.value)} placeholder="داخلی" dir="ltr" />
               </div>
-              )}
             </div>
           </FilterGroup>
           {/* سازمانی — PN-011 ثالثاً: فیلترهای چندگانه به شکل چیپ (همانند دسته‌بندی — دستور مالک) */}
@@ -355,7 +343,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   />
                 ))}
               </div>
-              {/* ملکتون M10: سمت‌های CRM · تبریز: سمت‌های PM — هر دو tenant-scoped (PN-047) */}
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">سمت:</span>
                 {options.roles.map((r) => (
@@ -369,7 +356,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   />
                 ))}
               </div>
-              {(
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">همکاری:</span>
                 {options.employmentTypes.map((e) => (
@@ -397,7 +383,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   solidClass={valueSolidClass("تعیین نشده")}
                 />
               </div>
-              )}
               {options.managers.length > 0 ? (
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-[11px] font-bold text-muted-foreground w-14 shrink-0">مدیر:</span>
@@ -430,11 +415,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               ) : null}
             </div>
           </FilterGroup>
-          {/* تماس و نشانی — تبریز؛ ملکتون این فیلدها را در CRM ندارد (PN-047) */}
-          {(
+          {/* تماس و نشانی */}
           <FilterGroup label="تماس و نشانی">
-            {/* PN-028/خامساً-ف — دوتایی */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="exf-address">آدرس</Label>
                 <Input id="exf-address" value={filters.address} onChange={(e) => setF("address", e.target.value)} placeholder="بخشی از آدرس" />
@@ -449,12 +432,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               </div>
             </div>
           </FilterGroup>
-          )}
-          {/* بازهٔ استخدام + شمارش قرارداد — تبریز؛ ملکتون CRM این مفاهیم را ندارد (PN-047) */}
-          {(
+          {/* بازهٔ استخدام + شمارش قرارداد */}
           <FilterGroup label="بازهٔ استخدام و شمارش قرارداد">
-            {/* PN-028/خامساً-ف — دوتایی */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label>استخدام</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -478,7 +458,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
               </div>
             </div>
           </FilterGroup>
-          )}
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={applyFilters} className="gap-1.5 bg-sec-m4-500 hover:bg-sec-m4-500/90 text-sec-m4-fg"><Search className="w-3.5 h-3.5" aria-hidden /> اعمال فیلتر</Button>
             <Button size="sm" variant="outline" onClick={clearFilters} className="gap-1.5" disabled={!anyFilterActive}>
@@ -492,18 +471,15 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
 
       {/* ─── فهرست کارشناسان ─── */}
       <Card>
-        {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
-            ردیف ۱: عنوان وسط‌چین · ردیف ۲: اکسل کل فهرست */}
-        <CardHeader className="py-4 flex flex-col items-center gap-2">
-          <CardTitle className="text-base text-center">فهرست کارشناسان و کارکنان</CardTitle>
-          <div className="w-full flex items-center justify-between gap-3 flex-wrap">
+        <CardHeader className="py-4 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <CardTitle className="text-base text-center">فهرست کارشناسان و کارکنان</CardTitle>
             <Button
               variant="outline"
               size="sm"
               className="gap-1.5 h-7 text-[11px]"
               onClick={() => {
                 const params = new URLSearchParams();
-                // PN-044/فاز ۴ — خروجی اکسل هم tenant همین رندر را می‌گیرد
                 const set = (k: string, v: string) => { if (v && v !== "all") params.set(k, v); };
                 set("q", applied.q); set("fullName", applied.fullName); set("mobile", applied.mobile);
                 set("personnelCode", applied.personnelCode);
@@ -525,9 +501,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
             >
               <FileSpreadsheet className="w-3.5 h-3.5" aria-hidden /> اکسل کل فهرست
             </Button>
-            {/* PN-051 (دستور شورا ۱۴۰۵/۰۸/۰۲ — آپلود اکسل «کلیهٔ فهرست‌های چهارگانه») —
-                فهرست کارشناسان (M4/M10) هم عین سه فهرست دیگر بارگذاری اکسل دارد */}
-            <ExcelImportButton entity="experts" compact onImported={() => void reload()} />
           </div>
           {rows.length > 0 && <Badge variant="secondary">{faNumber(rows.length)} ردیف — تک‌صفحه‌ای</Badge>}
         </CardHeader>
@@ -539,26 +512,18 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                   <TableHead className="w-10">ردیف</TableHead>
                   <TableHead className="min-w-40">کارشناس</TableHead>
                   <TableHead className="min-w-24">کد پرسنلی</TableHead>
-                  <TableHead className="min-w-24">{"شعبه"}</TableHead>
-                  {(
-                    <>
-                      <TableHead className="min-w-24">مبایعه نامه</TableHead>
-                      <TableHead className="min-w-24">اجاره نامه</TableHead>
-                      <TableHead className="min-w-24">تاریخ استخدام</TableHead>
-                      <TableHead className="min-w-36">آدرس کارشناس</TableHead>
-                      <TableHead className="min-w-24">سمت پرسنلی</TableHead>
-                      <TableHead className="min-w-24">نوع همکاری</TableHead>
-                      <TableHead className="min-w-24">مدیر</TableHead>
-                      <TableHead className="min-w-24">تلفن ثابت</TableHead>
-                      <TableHead className="min-w-20">کد پستی</TableHead>
-                      <TableHead className="min-w-16">داخلی</TableHead>
-                    </>
-                  )}
+                  <TableHead className="min-w-24">شعبه</TableHead>
+                  <TableHead className="min-w-24">مبایعه نامه</TableHead>
+                  <TableHead className="min-w-24">اجاره نامه</TableHead>
+                  <TableHead className="min-w-24">تاریخ استخدام</TableHead>
+                  <TableHead className="min-w-36">آدرس کارشناس</TableHead>
+                  <TableHead className="min-w-24">سمت پرسنلی</TableHead>
+                  <TableHead className="min-w-24">نوع همکاری</TableHead>
+                  <TableHead className="min-w-24">مدیر</TableHead>
+                  <TableHead className="min-w-24">تلفن ثابت</TableHead>
+                  <TableHead className="min-w-20">کد پستی</TableHead>
+                  <TableHead className="min-w-16">داخلی</TableHead>
                   <TableHead className="min-w-20">وضعیت</TableHead>
-                  {/* اطلاعات (PN-046/گام اول-۲: ستون اطلاعات در تمامی فهرست‌ها — فایل متنی کامل هر کد پرسنلی)
-                      ⚠ قانون ساختاری (دستور مالک/گام اول-۳): ستون «اطلاعات» همیشه آخرین ستون این فهرست است —
-                      هر ستون جدیدی در آینده باید «قبل از» همین ستون افزوده شود. سنجاق چپ (RTL) — همیشه قابل‌رویت. */}
-                  <TableHead className="w-24">اطلاعات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBodyVirtual rows={rows} rowKey={(r) => r.id}>
@@ -600,9 +565,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                         <span className="text-muted-foreground font-bold">-</span>
                       )}
                     </TableCell>
-                    {/* مبایعه/اجاره/استخدام/آدرس/سمت/همکاری/مدیر/تلفن/پستی/داخلی — فقط تبریز
-                        ملکتون M10: سمت در CRM + شهر (دادهٔ واقعی specialists — PN-047) */}
-                    {(<>
                     {/* مبایعه نامه = تعداد + پیش‌فروش (الزامی مالک) */}
                     <TableCell className="text-center font-bold tabular-nums">
                       <span className={r.saleCount > 0 ? "text-sec-m4-700" : "text-muted-foreground"}>{faNumber(r.saleCount)}</span>
@@ -651,15 +613,9 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
                     <TableCell className="whitespace-nowrap text-xs tabular-nums" dir="ltr">{dash(r.postalCode)}</TableCell>
                     {/* داخلی */}
                     <TableCell className="whitespace-nowrap text-xs tabular-nums" dir="ltr">{dash(r.voipExtension)}</TableCell>
-                    </>)}
-                    
                     {/* وضعیت */}
                     <TableCell>
                       <Badge variant={r.active ? "default" : "secondary"} className="text-[10px]">{r.active ? "فعال" : "غیرفعال"}</Badge>
-                    </TableCell>
-                    {/* اطلاعات: همیشه آخرین سلول (قانون ساختاری گام اول-۳) — فایل متنی کامل */}
-                    <TableCell>
-                      <InfoButton type="expert" code={r.personnelCode ?? ""} />
                     </TableCell>
                   </TableRow>
                 )}

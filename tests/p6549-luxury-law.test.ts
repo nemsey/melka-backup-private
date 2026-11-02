@@ -149,8 +149,7 @@ describe("۰۳۵-B/ج — اجزای ظاهری اجبارشده", () => {
     expect(swr).toContain("نسخهٔ جدید آماده است");
     expect(swr).toContain("SKIP_WAITING");
     expect(swr).toContain("/sw.js"); // PN-006 BLOCK 7.1: قفل روی sw.js (نسخهٔ ۷) — طبق مصوبهٔ P6519
-    // PN-031-E (دستور مالک ۱۴۰۵/۰۷/۲۳): نشان آفلاین از هدر حذف شد — حالت آفلاین از اپ برداشته شد
-    expect(read("src/components/app/AppHeader.tsx")).not.toContain("OfflineBadge");
+    expect(read("src/components/app/AppHeader.tsx")).toContain("<OfflineBadge />");
   });
   test("۶. Safe Area Support (notch + iOS) + viewport-fit", () => {
     expect(layout).toContain('viewportFit: "cover"');

@@ -47,29 +47,8 @@ const PATHS = {
   encMeta: path.join(ROOT, "env.escrow.meta.json"),
 } as const;
 
-/** فیلدهای رازِ بوت‌حیاتی + کلیدهای عملیاتی رله که escrow حمل می‌کند
- *  ترمیم ۲۰۲۶-۱۰-۲۸ (تشخیص اتصال ترموکس): این فهرست فقط ۴ کلید داشت؛
- *  writeEscrowFile کل فایل escrow را بازنویسی می‌کند و در هر بوت/اسپاون،
- *  کلیدهای عملیاتی رله را از escrow می‌زد → پس از بازنشانی محیط،
- *  getPublicBaseUrl به x-forwarded-host داخلیِ VPC سقوط می‌کرد و دستور نصب
- *  گوشی نشانیِ غیرقابل‌دسترس می‌گرفت (رلهٔ موبایل از کار می‌افتاد).
- *  هم‌ترازی با BOOT_SECRET_KEYS درونی (src/lib/auth/boot-secrets.ts) +
- *  MELK_SYNC_MODE؛ کلیدهای دوران Worker عمداً خارج ماندند (پایین).
- *  MELK_ARM_PROXY_URL عمداً غایب است (حذف قطعی PN-033 · دوران Worker پایان یافت).
- *  MELK_RELAY_ALT_URL نیز عمداً غایب است — طبق قرارداد B-3/B-4 (pn033) کلیدهای
- *  دوران Worker در لایه‌های boot-secrets نمی‌نشینند؛ این کلید طبق PN-041-R فقط
- *  در env.platform.json / .env.local زندگی می‌کند. */
-const SECRET_FIELDS = [
-  "MELK_TOKEN_KEY",
-  "MASTER_ACCESS_CODE",
-  "OWNER_PERSONNEL_CODES",
-  "MELK_SYNC_MODE",
-  "MELK_PUBLIC_BASE_URL", // PN-031-HOTFIX · شورا-ن۰۳۸ — نشانی عمومی (restore-only)
-  "MELK_PROXY_SECRET", // PN-031-B · شورا-ن۰۳۹ — راز HMAC لایهٔ پروکسی (restore-only)
-  "MELK_ARM_RELAY_MODE", // PN-031 · شورا-ن۰۳۷ — mobile
-  "MELK_ARM_OFFLINE", // پرچم عملیاتی آزمون تونل (restore-only — غالباً خالی)
-  "MELK_ARM_CIRCUIT_DISABLED", // PN-033 · شورا-ن۰۵۴ — خاموشی دائمی فیوز PN-029
-] as const;
+/** فیلدهای رازِ بوت‌حیاتی که escrow حمل می‌کند */
+const SECRET_FIELDS = ["MELK_TOKEN_KEY", "MASTER_ACCESS_CODE", "OWNER_PERSONNEL_CODES", "MELK_SYNC_MODE"] as const;
 
 /** پارامترهای KDF — scrypt سختِ حافظه (هر تلاش بروت‌فورس ~۱۰۰ms و پرهزینهٔ RAM) */
 const KDF = { N: 32768, r: 8, p: 1 } as const;
@@ -201,14 +180,6 @@ function rebuildEnvPlatform(secrets: Secrets): boolean {
       if (cur.MELK_TOKEN_KEY) return false; // سالم — دست نمی‌زنیم
     } catch { /* خراب → بازسازی */ }
   }
-  // ترمیم ۲۰۲۶-۱۰-۲۸: کلیدهای عملیاتی رله موجود در secrets نیز بازگردانی
-  // می‌شوند (fill-missing در بوت درونی تکمیلش می‌کند — سازگار با قرارداد PN-011)
-  const relayFields: Record<string, string> = {};
-  for (const f of SECRET_FIELDS) {
-    if (f === "MELK_TOKEN_KEY" || f === "MELK_SYNC_MODE") continue;
-    const v = secrets[f];
-    if (typeof v === "string" && v.trim()) relayFields[f] = v.trim();
-  }
   writeFileSync(
     PATHS.envPlatform,
     JSON.stringify(
@@ -219,7 +190,6 @@ function rebuildEnvPlatform(secrets: Secrets): boolean {
         MASTER_ACCESS_CODE: "00000000",
         DATABASE_URL: "file:/home/z/my-project/db/custom.db",
         MELK_SYNC_MODE: secrets.MELK_SYNC_MODE ?? "incremental",
-        ...relayFields,
       },
       null,
       2,

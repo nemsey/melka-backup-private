@@ -89,24 +89,22 @@ describe("P6.5-09 بند ۵-الف — سبدهای سهمیهٔ مستقل ور
     expect(arm.allowed).toBe(true);
   });
 
-  test("A4) (ن۰۵۵) قانون صفر-محدودیت: گارد نرخ PM در مسیر غیرفعال شد — ۳ ثبت‌شده ⇒ مسیر همچنان آزاد (بدون تماس شبکه)", async () => {
-    const { recordAttempt, checkRate } = await import("@/lib/auth/rate-limiter");
+  test("A4) گارد نرخ PM در مسیر فعال است: ۳ درخواست ثبت‌شده ⇒ درخواست چهارم 429 (بدون تماس شبکه)", async () => {
+    const { recordAttempt } = await import("@/lib/auth/rate-limiter");
     for (let i = 0; i < 3; i++) await recordAttempt("940200", "REQUEST_OTP_PM", true);
-    // سبدِ پر است (ماژول پابرجا) اما مسیر دیگر از آن نمی‌پرسد (قانون مالک ۰۵۵)
-    const verdict = await checkRate("940200", "REQUEST_OTP_PM");
-    expect(verdict.allowed).toBe(false);
     const s = await makeSession("OWNER");
     const { POST } = await import("@/app/api/pm/connection/route");
-    // سبد پر، ولی پاسخ 429 نیست — مسیر به سراغ armCall می‌رود و خطای شبکه می‌دهد
     const res = await POST(postReq(s.token, { action: "start-otp", personnelCode: "940200" }, "/api/pm/connection") as never);
-    expect(res.status).not.toBe(429); // صفر محدودیت — سقف محلی مرده
-    const body = (await res.json()) as { ok: boolean; code?: string };
-    expect(body.code ?? "").not.toBe("RATE_LIMITED");
+    expect(res.status).toBe(429);
+    const body = (await res.json()) as { ok: boolean; code: string };
+    expect(body.ok).toBe(false);
+    expect(body.code).toBe("RATE_LIMITED");
   });
 
-  test("A5) (ن۰۵۵) قانون صفر-محدودیت: مسیر ARM دیگر از هیچ سبدی نمی‌پرسد — هر دو سبد پر ⇒ باز هم آزاد", async () => {
+  test("A5) مسیر ARM از سبد ARM می‌پرسد: سبد ARM پر ⇒ 429؛ سبد ورودِ پرِ همان کد عامل نیست", async () => {
     const { recordAttempt } = await import("@/lib/auth/rate-limiter");
-    // هر دو سبدِ ورود و ARM برای این کد پر می‌شوند — پاسخ باید از provider بیاید نه گارد
+    // هر دو سبدِ ورود و ARM برای این کد پر می‌شوند — پاسخ 429 یعنی گاردِ «ARM» آن را داده
+    // (صفر تماس شبکه: پاسخ پیش از provider صادر می‌شود)
     for (let i = 0; i < 3; i++) {
       await recordAttempt("940300", "REQUEST_OTP", true);
       await recordAttempt("940300", "REQUEST_OTP_ARM", true);
@@ -114,21 +112,18 @@ describe("P6.5-09 بند ۵-الف — سبدهای سهمیهٔ مستقل ور
     const s = await makeSession("OWNER");
     const { POST } = await import("@/app/api/arm/connection/route");
     const res = await POST(postReq(s.token, { action: "start-otp", personnelCode: "940300" }) as never);
-    expect(res.status).not.toBe(429); // سبد پر عامل نیست — قانون مالک: صفر محدودیت
-    const body = (await res.json()) as { ok: boolean; code?: string };
-    expect(body.code ?? "").not.toBe("RATE_LIMITED");
+    expect(res.status).toBe(429);
+    const body = (await res.json()) as { ok: boolean; code: string };
+    expect(body.code).toBe("RATE_LIMITED");
   });
 
-  test("A6) (ن۰۵۵) سورس‌گارد: مسیرهای اتصال ARM/PM صفر checkRate — سبد فقط برای رد حسابرسی", async () => {
+  test("A6) سورس‌گارد: مسیر ARM فقط از سبد‌های *_ARM و مسیر PM فقط از سبد‌های *_PM می‌پرسد", async () => {
     const armSrc = readFileSync("src/app/api/arm/connection/route.ts", "utf8");
     const pmSrc = readFileSync("src/app/api/pm/connection/route.ts", "utf8");
-    const gapSrc = readFileSync("src/app/api/gap/connection/route.ts", "utf8");
-    expect(armSrc).not.toContain("checkRate");
-    expect(pmSrc).not.toContain("checkRate");
-    expect(gapSrc).not.toContain("checkRate");
-    // رد حسابرسی پابرجاست (recordAttempt — شاهد، نه سپر)
     expect(armSrc).toContain('"REQUEST_OTP_ARM"');
     expect(armSrc).toContain('"VERIFY_OTP_ARM"');
+    expect(armSrc).not.toContain('checkRate(code, "REQUEST_OTP"');
+    expect(armSrc).not.toContain('checkRate(code, "VERIFY_OTP"');
     expect(pmSrc).toContain('"REQUEST_OTP_PM"');
     expect(pmSrc).toContain('"VERIFY_OTP_PM"');
   });

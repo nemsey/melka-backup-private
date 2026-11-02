@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Sparkles, AlertTriangle, Brain, UserCheck, TrendingDown, MapPin, Ruler, Clock, ThumbsUp, ThumbsDown, ExternalLink, FileText, ShieldCheck } from "lucide-react";
+import { Sparkles, AlertTriangle, Brain, UserCheck, TrendingDown, MapPin, Ruler, Clock, ThumbsUp, ThumbsDown, ExternalLink, ShieldCheck } from "lucide-react";
 import { faDigits, faRelative } from "@/lib/format";
 import { branchBadgeClass } from "@/lib/value-colors";
 import type { EnrichedCandidate, FactorAnalysis } from "@/core/matching/match-analysis";
@@ -73,7 +73,7 @@ export function MatchDetailsDialog({
   feedbackState,
   onAccept,
   onReject,
-  onOpenFile,
+  onOpenInTile,
   onClose,
 }: {
   candidate: EnrichedCandidate | null;
@@ -85,8 +85,7 @@ export function MatchDetailsDialog({
   feedbackState: "accepted" | "rejected" | undefined;
   onAccept: (c: EnrichedCandidate) => void;
   onReject: (c: EnrichedCandidate) => void;
-  /** PN-028/رابعاً-الف/ب — باز کردن پروندهٔ حرفه‌ای */
-  onOpenFile: (code: string, kind: "request" | "listing") => void;
+  onOpenInTile: (code: string) => void;
   onClose: () => void;
 }) {
   const isL2R = direction === "listing_to_request";
@@ -136,8 +135,8 @@ export function MatchDetailsDialog({
                     )}
                   </span>
                   <span className="flex items-center">
-                    <Button size="sm" variant="ghost" className="h-5 gap-1 px-1.5 text-[10px] text-sec-m5-600" onClick={() => onOpenFile(candidate.info!.code, isL2R ? "request" : "listing")}>
-                      <FileText className="size-3" aria-hidden /> فایل {isL2R ? "درخواست" : "آگهی"}
+                    <Button size="sm" variant="ghost" className="h-5 gap-1 px-1.5 text-[10px] text-sec-m5-600" onClick={() => onOpenInTile(candidate.info!.code)}>
+                      <ExternalLink className="size-3" aria-hidden /> مشاهده در کاشی {isL2R ? "درخواست" : "آگهی"}
                     </Button>
                   </span>
                 </div>
@@ -180,26 +179,6 @@ export function MatchDetailsDialog({
                   {weightsSource === "learned" ? " — آموخته از بازخوردهای پذیرش/رد شما (حلقهٔ یادگیری)" : " — پایه؛ با هر پذیرش/رد شخصی می‌شود"}
                 </p>
               </div>
-
-              {/* PN-028/رابعاً-د — تحلیل چندوجهی پنج‌گانه (فراکامل) */}
-              {candidate.dimensions && candidate.dimensions.length > 0 ? (
-                <div>
-                  <h4 className="text-sm font-bold mb-2 flex items-center gap-1.5"><Brain className="w-4 h-4 text-sec-m5-500" aria-hidden /> تحلیل چندوجهی (مالی · مکانی · فیزیکی · انسانی · زمانی)</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {candidate.dimensions.map((d) => (
-                      <div key={d.key} className="rounded-xl border p-2.5 space-y-1.5" title={d.hint}>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-bold">{d.label}</span>
-                          <span className="text-xs font-extrabold tabular-nums text-sec-m5-600">{faDigits(Math.round(d.value * 100))}٪</span>
-                        </div>
-                        <Progress value={d.value * 100} className="h-1.5" indicatorClassName="bg-gradient-to-l from-sec-m5-600 to-sec-m5-400" aria-label={`${d.label}: ${Math.round(d.value * 100)} درصد`} />
-                        <p className="text-[10px] text-muted-foreground leading-4">{d.hint}</p>
-                        <p className="text-[10px] text-muted-foreground/80">عوامل: {d.factors.join("، ")}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
 
               {/* پیش‌بینی هوشمند دلایل احتمالی رد — عین فایل‌یابی */}
               <div>

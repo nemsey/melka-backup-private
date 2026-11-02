@@ -21,11 +21,11 @@ describe("PN-022-A/مرحلهٔ۳ · مهاجرت PostgreSQL (فقط تست)", (
     expect(src).not.toContain('env("DATABASE_URL")');
   });
 
-  test("پ-۲) توازن مدل‌ها: هر مدل در هر دو اسکیما (۷۰ — ن۰۵۵: −۱ OtpRateLimit · PN-025: +۳ · PN-031: +۲ رلهٔ موبایل · ن۰۵۷: +۱ RelayJob · ن۰۶۳: +۱ GlmProbe)", () => {
+  test("پ-۲) توازن مدل‌ها: هر مدل در هر دو اسکیما (۶۳ — PN-025: +۳ حافظه)", () => {
     const models = (p: string) => [...readFileSync(p, "utf8").matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]);
     const sq = models("prisma/schema.prisma");
     const pg = models("prisma/schema.postgres.prisma");
-    expect(sq.length).toBe(70); // 59 پایه + علّی PN-023-A + 3 حافظه PN-025 + 1 درس‌های رد PN-028 + 2 رلهٔ PN-031 + 1 RelayJob ن۰۵۷ + 1 GlmProbe ن۰۶۳ − 1 OtpRateLimit (ن۰۵۵ · صفر-محدودیت)
+    expect(sq.length).toBe(63); // 59 پایه + علّی PN-023-A + ۳ حافظه PN-025
     expect(new Set(pg)).toEqual(new Set(sq));
   });
 
@@ -196,7 +196,7 @@ describe("PN-022-A/مرحلهٔ۵ · سه گارد تازه", () => {
   test("گ-۲) گارد tile-contract: همهٔ کاشی‌های موجود با قرارداد سالم", () => {
     const r = JSON.parse(readFileSync("download/pn022/guards-tile-contract.json", "utf8"));
     expect(r.verdict).toBe("PASS");
-    expect(r.tiles.length).toBeGreaterThanOrEqual(11); // ن۰۶۳ (PN-038/فاز ۲): هوم یک‌پارچه — M6/M7/ظرف/دو کاشی کهنه حذف → ۱۱
+    expect(r.tiles.length).toBeGreaterThanOrEqual(14);
   });
 
   test("گ-۳) گارد feature-factory: مولد سالم (تولید آزمایشی + صفر overwrite + رد نام بد)", () => {

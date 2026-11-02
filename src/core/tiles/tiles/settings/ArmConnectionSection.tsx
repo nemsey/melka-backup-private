@@ -29,7 +29,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Smartphone, ShieldCheck, XCircle, Building2, RefreshCcw, RotateCcw, Unplug } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
-import { pollRelayJob } from "@/lib/client/relay-job";
 import { faDateTime, faNumber } from "@/lib/format";
 
 interface ArmConnectionResponse {
@@ -94,38 +93,13 @@ export function ArmConnectionSection({ embedded = false }: { embedded?: boolean 
     }
     setBusy(true);
     try {
-      // PN-035 (شورا-ن۰۵۷ · فاز ۳+۴ · Eager UI): پاسخ فوری {jobId}؛ فیلد کد
-      // تأیید «همان لحظه» نمایش داده می‌شود؛ نتیجهٔ ارسال پیامک در پس‌زمینه
-      // poll می‌شود — پایان 502 دروازهٔ Z.ai روی مسیر اتصال ARM.
-      const res = await api<{ ok: boolean; jobId?: string; message?: string; alreadySent?: boolean }>(
-        "/api/arm/connection",
-        {
-          method: "POST",
-          body: { action: "start-otp", personnelCode: trimmed },
-          timeoutMs: 10_000,
-        }
-      );
-      if (res.jobId) {
+      const res = await api<{ ok: boolean; message: string; alreadySent?: boolean }>("/api/arm/connection", {
+        method: "POST",
+        body: { action: "start-otp", personnelCode: trimmed },
+      });
+      if (res.ok) {
         setStage("otp");
-        setAlreadySentHint("");
-        toast({
-          title: "در حال ارسال پیامک…",
-          description: "فیلد کد تأیید آماده است — پیامک از مسیر رلهٔ موبایل در راه است.",
-        });
-        const out = await pollRelayJob<{ message?: string; alreadySent?: boolean }>(res.jobId, { attempts: 120 });
-        if (out.ok && out.result) {
-          setAlreadySentHint(out.result.alreadySent ? out.result.message ?? "" : "");
-          toast({
-            title: out.result.alreadySent ? "پیامک قبلاً ارسال شده" : "کد پیامکی ARM ارسال شد",
-            description: out.result.message,
-          });
-        } else if (out.kind === "failed") {
-          toast({ title: "ارسال کد ناموفق", description: out.error?.message ?? "خطای ارسال پیامک.", variant: "destructive" });
-        }
-      } else if (res.ok) {
-        // سازگاری عقبه — سرور نسل قبل مستقیم پاسخ می‌داد
-        setStage("otp");
-        setAlreadySentHint(res.alreadySent ? res.message ?? "" : "");
+        setAlreadySentHint(res.alreadySent ? res.message : "");
         toast({
           title: res.alreadySent ? "پیامک قبلاً ارسال شده" : "کد پیامکی ARM ارسال شد",
           description: res.message,
@@ -149,31 +123,16 @@ export function ArmConnectionSection({ embedded = false }: { embedded?: boolean 
     }
     setBusy(true);
     try {
-      // PN-035 (فاز ۳): verify نیز async — تأیید در پس‌زمینه از مسیر رله؛
-      // نتیجه (پیام موفقیت/خطا) با polling کار خوانده می‌شود.
-      const res = await api<{ ok: boolean; jobId?: string; message?: string }>("/api/arm/connection", {
+      const res = await api<{ ok: boolean; message: string }>("/api/arm/connection", {
         method: "POST",
         body: { action: "verify", personnelCode: personnelCode.trim(), otp: digits },
-        timeoutMs: 10_000,
       });
-      let ok = res.ok;
-      let message = res.message;
-      if (res.jobId) {
-        const out = await pollRelayJob<{ message?: string; user?: { displayName?: string } }>(res.jobId, { attempts: 120 });
-        if (out.ok && out.result) {
-          ok = true;
-          message = out.result.message;
-        } else {
-          ok = false;
-          message = out.error?.message ?? "تأیید ناموفق بود.";
-        }
-      }
       toast({
-        title: ok ? "اتصال سامانه ARM برقرار شد" : "تأیید ناموفق",
-        description: message,
-        variant: ok ? "default" : "destructive",
+        title: res.ok ? "اتصال سامانه ARM برقرار شد" : "تأیید ناموفق",
+        description: res.message,
+        variant: res.ok ? "default" : "destructive",
       });
-      if (ok) {
+      if (res.ok) {
         setCode("");
         setStage("code");
       }
@@ -359,7 +318,6 @@ export function ArmConnectionSection({ embedded = false }: { embedded?: boolean 
           </div>
           <p className="text-[10px] text-muted-foreground">
             کد برای کد پرسنلی {personnelCode || "—"} ارسال شده است. پس از تأیید، استخراج داده واقعی خودکار آغاز می‌شود.
-            تأیید از مسیر رلهٔ موبایل انجام می‌شود — چند لحظه کوتاه.
           </p>
           {alreadySentHint && (
             <p className="text-[10px] leading-relaxed rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 p-2">

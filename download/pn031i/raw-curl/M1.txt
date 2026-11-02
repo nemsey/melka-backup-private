@@ -1,8 +1,0 @@
-ARGS: --http2
-
-STDOUT:
-
-204 1.1 0.075320
-
-STDERR:
-

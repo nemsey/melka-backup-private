@@ -45,25 +45,6 @@ export function faMonthLabel(jalaliMonthKey: string): string {
   return `${["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"][m - 1]} ${faDigits(y)}`;
 }
 
-// ===================== ورودی فیلتر قیمت (کاما-گذاری زنده — PN-058) =====================
-
-/** فقط ارقام لاتین از ورودی (ارقام فارسی/عربی هم پذیرفته می‌شوند) */
-export function priceDigits(input: string): string {
-  return enDigits(String(input ?? "")).replace(/\D+/g, "");
-}
-
-/** کاما-گذاری سه‌رقمی زنده برای نمایش در فیلد قیمت: 9000000000 → 9,000,000,000 */
-export function formatPriceInput(input: string): string {
-  const d = priceDigits(input);
-  if (!d) return "";
-  return d.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-/** مقدار خام برای ارسال به API: کاما و ارقام غیرلاتین حذف می‌شوند */
-export function parsePriceInput(input: string): string {
-  return priceDigits(input);
-}
-
 // ===================== اعداد و مبالغ =====================
 
 const FA_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];

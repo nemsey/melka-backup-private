@@ -46,8 +46,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ entity
     }
 
     const sheet = await readSheet(buffer);
-    // PN-059: tenant ملکتون حذف شد — ایمپورت همیشه در ملک تبریز.
-    const result = await runImport(entity as ImportEntity, sheet, file.name, null);
+    const result = await runImport(entity as ImportEntity, sheet, file.name);
 
     return Response.json(result);
   } catch (err) {

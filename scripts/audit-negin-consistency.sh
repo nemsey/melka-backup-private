@@ -74,17 +74,17 @@ if "negin" in colors_json:
     violations.append("قانون ۶ نقض: colors.json (PN-011) آلوده شده")
 checks.append({"check": "۴ قانون ۶: صفر تغییر رنگ CANONICAL (value-colors + colors.json)", "ok": "negin" not in vc and "negin" not in colors_json})
 
-# ─── ۵) اعمال: TileCard + ۹ صفحه (ن۰۶۳: M6/M7 حذف) ───
+# ─── ۵) اعمال: TileCard + ۱۱ صفحه ───
 tile = open("src/components/app/TileCard.tsx", encoding="utf-8").read()
 if 'data-negin={a.gem}' not in tile:
     violations.append("TileCard دیتای نگین را رندر نمی‌کند (data-negin غایب)")
 if "negin-bar" not in tile:
     violations.append("TileCard میلهٔ نگین را رندر نمی‌کند")
-# ن۰۶۳ (PN-038/فاز ۲): M6 (market-index) و M7 (data-coverage) حذف شدند → ۹ صفحهٔ نگین‌دار
 pages = [
     "file-finder/FileFinderPage.tsx", "listing/ListingsPage.tsx", "request/RequestsPage.tsx",
     "arm-listing/ArmListingsPage.tsx", "arm-request/ArmRequestsPage.tsx", "transactions-contracts/TransactionsContractsPage.tsx",
     "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx", "learning-tier/LearningTierPage.tsx",
+    "market-index/MarketIndexPage.tsx", "data-coverage/DataCoveragePage.tsx",
 ]
 applied = []
 for p in pages:
@@ -96,8 +96,8 @@ for p in pages:
         if m.group(1) not in ids:
             violations.append(f"صفحهٔ {p} گوهر نامعتبر: {m.group(1)}")
         applied.append(m.group(1))
-if len(set(applied)) != 9:
-    violations.append(f"اعمال نگین یکتا نیست: {len(set(applied))}/۹ (ن۰۶۳: M6/M7 رفتند)")
+if len(set(applied)) != 11:
+    violations.append(f"اعمال نگین یکتا نیست: {len(set(applied))}/۱۱")
 checks.append({"check": "۵ اعمال: TileCard + ۱۱ صفحه با گوهر یکتا", "ok": len(set(applied)) == 11 and len(applied) == 11})
 
 result = {
