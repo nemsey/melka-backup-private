@@ -48,7 +48,7 @@ export interface RequesterContactLookup {
 }
 
 /** PN-060 (دستور الف مالک) — کارشناس ثبت‌کنندهٔ آگهی از رجیستری آگهی‌های ARM
- *  (PropertyRecord.ownerCode/ownerName = relatedRealtor — متمایز از rawOwnerName = مالک واقعی) */
+ *  (PropertyRecord.ownerCode/ownerName یعنی relatedRealtor — متمایز از rawOwnerName که مالک واقعی است) */
 export interface PropertyRegistrarLookup {
   propertyCode: string;
   registrarCode: string | null;
