@@ -345,6 +345,25 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     return records.map((r) => ({ propertyCode: r.propertyCode, ownerName: r.rawOwnerName, ownerMobile: r.ownerMobile }));
   }
 
+  // ---- PN-060 (دستور الف مالک) — کارشناس ثبت‌کنندهٔ آگهی (relatedRealtor رجیستری آگهی‌ها)
+  // فقط خواندن ستون‌های موجود — هیچ نوشتنی انجام نمی‌شود (قانون دادهٔ خام/مقدس).
+  // نکتهٔ نگاشت: ownerName = کارشناس ثبت‌کننده · rawOwnerName = مالک واقعی (عین unified-graph-service).
+  async findRegistrarNamesByCodes(
+    propertyCodes: string[]
+  ): Promise<Array<{ propertyCode: string; registrarCode: string | null; registrarName: string | null }>> {
+    if (propertyCodes.length === 0) return [];
+    const codes = [...new Set(propertyCodes)];
+    const records = await this.client.propertyRecord.findMany({
+      where: { propertyCode: { in: codes } },
+      select: { propertyCode: true, ownerCode: true, ownerName: true },
+    });
+    return records.map((r) => ({
+      propertyCode: r.propertyCode,
+      registrarCode: r.ownerCode,
+      registrarName: r.ownerName,
+    }));
+  }
+
   // ---- P6546/گام صفر — تشخیص کدهای غایب از سامانهٔ عمومی ----
   async findExistingCodes(codes: string[]): Promise<string[]> {
     if (codes.length === 0) return [];

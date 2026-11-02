@@ -466,6 +466,24 @@ export class PrismaRequestRepository implements RequestRepository {
       .map((r) => ({ requestCode: r.requestCode as string, customerName: r.customerName, customerMobile: r.customerMobile }));
   }
 
+  /** PN-060 (دستور ب مالک) — کارشناس ثبت‌کنندهٔ درخواست بر اساس کددرخواست‌ها (دسته‌ای؛ source='arm')
+   * فقط خواندن ستون‌های موجود — هیچ نوشتنی انجام نمی‌شود (قانون دادهٔ خام/مقدس).
+   * actorCode/actorName = relatedRealtor ردیف فهرست ARM (کارشناس ثبت‌کننده عین سامانه). */
+  async findArmRegistrarNamesByCodes(
+    requestCodes: string[]
+  ): Promise<Array<{ requestCode: string; registrarCode: string | null; registrarName: string | null }>> {
+    if (requestCodes.length === 0) return [];
+    const codes = [...new Set(requestCodes)].filter((c) => c !== "");
+    if (codes.length === 0) return [];
+    const records = await this.client.requestRecord.findMany({
+      where: { source: "arm", requestCode: { in: codes } },
+      select: { requestCode: true, actorCode: true, actorName: true },
+    });
+    return records
+      .filter((r): r is { requestCode: string; actorCode: string | null; actorName: string | null } => r.requestCode !== null)
+      .map((r) => ({ requestCode: r.requestCode as string, registrarCode: r.actorCode, registrarName: r.actorName }));
+  }
+
   /** PN-039 (گام ۴) — یادداشت مالک: تنها مسیر نوشتن این ستون — سینک ARM هرگز نمی‌نویسد */
   async updateOwnerNote(id: string, note: string | null): Promise<{ id: string; ownerNote: string | null }> {
     const row = await this.client.requestRecord.update({

@@ -179,17 +179,31 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
         rows: Array<Record<string, unknown>>;
       };
       const txRows = (rows?.rows ?? []) as Array<Record<string, unknown>>;
+      // PN-060 (دستورات الف و ب مالک) — کارشناس ثبت‌کننده زیر کدملک/کددرخواست عین فهرست:
+      // آگهی → PropertyRecord.ownerName (relatedRealtor) · درخواست → RequestRecord.actorName
+      const [propertyRegistrars, requestRegistrars] = await Promise.all([
+        getPropertyRecordRepository().findRegistrarNamesByCodes(
+          [...new Set(txRows.map((r) => String(r.propertyCode ?? "")).filter(Boolean))]
+        ),
+        getRequestRepository().findArmRegistrarNamesByCodes(
+          [...new Set(txRows.map((r) => String(r.requestCode ?? "")).filter(Boolean))]
+        ),
+      ]);
+      const propRegistrarByCode = new Map(propertyRegistrars.map((p) => [p.propertyCode, p.registrarName?.trim() || ""]));
+      const reqRegistrarByCode = new Map(requestRegistrars.map((r) => [r.requestCode, r.registrarName?.trim() || ""]));
       buffer = await buildXlsx(
         `معاملات ${tenantLabel}`,
         [
-          { header: "ردیف", width: 8 }, { header: "کد ملک", width: 12 }, { header: "مالک/فروشنده", width: 20 },
-          { header: "کد درخواست", width: 12 }, { header: "درخواست‌دهنده/خریدار", width: 20 },
+          { header: "ردیف", width: 8 }, { header: "کد ملک", width: 12 }, { header: "کارشناس ثبت‌کننده آگهی", width: 22 },
+          { header: "مالک/فروشنده", width: 20 },
+          { header: "کد درخواست", width: 12 }, { header: "کارشناس ثبت‌کننده درخواست", width: 22 }, { header: "درخواست‌دهنده/خریدار", width: 20 },
           { header: "تاریخ معامله", width: 14 }, { header: "شماره هولوگرام", width: 16 },
           { header: "آگهی پیشنهادی", width: 12 }, { header: "رویداد", width: 10 },
         ],
         txRows.map((r, i) => [
-          i + 1, String(r.propertyCode ?? ""), String(r.propertyCustomer ?? ""), String(r.requestCode ?? ""),
-          String(r.requestCustomer ?? ""), String(r.rawDate ?? r.contractDate ?? ""), String(r.contractHolo ?? ""),
+          i + 1, String(r.propertyCode ?? ""), propRegistrarByCode.get(String(r.propertyCode ?? "")) ?? "", String(r.propertyCustomer ?? ""),
+          String(r.requestCode ?? ""), reqRegistrarByCode.get(String(r.requestCode ?? "")) ?? "", String(r.requestCustomer ?? ""),
+          String(r.rawDate ?? r.contractDate ?? ""), String(r.contractHolo ?? ""),
           typeof r.suggestedPropertyCount === "number" ? r.suggestedPropertyCount : null,
           typeof r.eventsCount === "number" ? r.eventsCount : null,
         ])

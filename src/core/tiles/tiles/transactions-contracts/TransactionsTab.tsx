@@ -8,6 +8,8 @@
  *   · کارشناسان برتر سه‌ستونی — فقط نام + تعداد (BLOCK C)
  *   · فیلتر نوع قرارداد: ۵ گزینهٔ چندانتخابی (BLOCK D)
  *   · ۱۱ ستون به ترتیب دقیق دستور + ساده‌سازی کد ملک/کد درخواست (دستور ۱ و ۲ مالک)
+ *     PN-060 (دستورات الف و ب مالک): زیر کد ملک نام کارشناس ثبت‌کنندهٔ آگهی +
+ *     زیر کد درخواست نام کارشناس ثبت‌کنندهٔ درخواست (قالب: کد / نام زیر آن)
  *   · فیلترها: اعمال خودکار debounce ۳۰۰ms + نشانگر جستجو + پیام خالی + پاک‌کردن (BLOCK F)
  * تک‌صفحه‌ای و بی‌نهایت (P6.5-09) — همهٔ ردیف‌ها در یک پاسخ واحد.
  */
@@ -95,6 +97,11 @@ interface TxRow {
   ownerMobile: string | null;
   requesterName: string | null;
   requesterMobile: string | null;
+  // ---- PN-060 (دستورات الف و ب مالک) — کارشناس ثبت‌کننده زیر کدملک/کددرخواست ----
+  /** نام کارشناس ثبت‌کنندهٔ آگهی (زیر کد ملک — relatedRealtor رجیستری آگهی‌ها) */
+  propertyRegistrarName: string | null;
+  /** نام کارشناس ثبت‌کنندهٔ درخواست (زیر کد درخواست — actorName کاتالوگ ARM) */
+  requestRegistrarName: string | null;
   // ---- P6.5-14 (BLOCK C) — فروشنده/خریدار مستقل از صورت‌وضعیت خود معامله ----
   sellerName: string | null;
   sellerMobile: string | null;
@@ -642,7 +649,7 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
       </Card>
 
       {/* جدول فهرست معاملات — BLOCK E (ملکا-شورا-۱۴۰۵-۰۱۸): ترتیب دقیق ۱۱ ستون؛
-          کد ملک/کد درخواست فقط کد (دستور ۱ و ۲ مالک)؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
+          کد ملک/کد درخواست: کد + نام کارشناس ثبت‌کننده زیر کد (دستور ۱ و ۲ مالک + PN-060 الف/ب)؛ بدون صفحه‌بندی (تک‌صفحه‌ای) */}
       <Card>
         {/* P6525 — قانون فهرست: عنوان فهرست وسط‌چین */}
         {/* PN-028/خامساً-ب (دستور مالک) — چیدمان الزامی سربرگ فهرست:
@@ -704,16 +711,16 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                     {/* ترتیب الزامی E.۱ — ۱۶ ستون (۱۱ اصلی + ۵ تازهٔ PN-020/گام اول-ج) */}
                     <TableHead className="w-12">ردیف</TableHead>
                     <TableHead>تاریخ معامله</TableHead>
-                    {/* ۳ — کد ملک: فقط کد (E.۲ — دستور ۱ مالک) */}
-                    <TableHead className="min-w-24">
+                    {/* ۳ — کد ملک: کد + نام کارشناس ثبت‌کنندهٔ آگهی زیر کد (E.۲ + PN-060 دستور الف مالک) */}
+                    <TableHead className="min-w-28">
                       <span className="inline-flex items-center gap-1"><Home className="w-3.5 h-3.5" aria-hidden /> کد ملک</span>
                     </TableHead>
                     {/* ۳-ب — عنوان ملک (PN-020/گام اول-ج — property.title صورت‌وضعیت، پوشش ۱۰۰٪) */}
                     <TableHead className="min-w-40">عنوان ملک</TableHead>
                     {/* ۴ — فروشنده: نام + موبایل زیر نام (E.۴) */}
                     <TableHead className="min-w-40">فروشنده</TableHead>
-                    {/* ۵ — کد درخواست: فقط کد (E.۳ — دستور ۲ مالک) */}
-                    <TableHead className="min-w-24">
+                    {/* ۵ — کد درخواست: کد + نام کارشناس ثبت‌کنندهٔ درخواست زیر کد (E.۳ + PN-060 دستور ب مالک) */}
+                    <TableHead className="min-w-28">
                       <span className="inline-flex items-center gap-1"><Inbox className="w-3.5 h-3.5" aria-hidden /> کد درخواست</span>
                     </TableHead>
                     {/* ۶ — خریدار: نام + موبایل زیر نام (E.۵) */}
@@ -756,10 +763,22 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                       </TableCell>
                       {/* ۲ — تاریخ معامله (جلالی) */}
                       <TableCell className="whitespace-nowrap text-xs font-medium">{faJalaliShort(t.contractDate)}</TableCell>
-                      {/* ۳ — کد ملک: فقط کد — بدون نام و موبایل (E.۲؛
-                          مالک = فروشنده و در ستون فروشنده می‌آید) */}
-                      <TableCell className="text-xs whitespace-nowrap">
-                        <code className="font-mono font-semibold" dir="ltr">{faDigits(t.propertyCode)}</code>
+                      {/* ۳ — کد ملک: کد + نام کارشناس ثبت‌کنندهٔ آگهی زیر کد (E.۲؛ PN-060 دستور الف مالک:
+                          «در زیر کدملک نام کارشناس ثبت کننده آگهی» — قالب: کد / نام زیر آن) */}
+                      <TableCell className="text-xs whitespace-normal">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <code className="font-mono font-semibold" dir="ltr">{faDigits(t.propertyCode)}</code>
+                          {t.propertyRegistrarName ? (
+                            <span
+                              className="truncate max-w-32 text-[10px] font-medium leading-tight text-foreground/75"
+                              title={`کارشناس ثبت‌کنندهٔ آگهی: ${t.propertyRegistrarName}`}
+                            >
+                              {t.propertyRegistrarName}
+                            </span>
+                          ) : (
+                            <span className="text-[9px] leading-tight text-muted-foreground/60" title="کارشناس ثبت‌کنندهٔ آگهی در کاتالوگ موجود نیست">—</span>
+                          )}
+                        </div>
                       </TableCell>
                       {/* ۳-ب — عنوان ملک (PN-020/گام اول-ج — عین عنوان ثبت‌شده در سامانه؛ آدرس کامل در tooltip) */}
                       <TableCell className="whitespace-normal max-w-48">
@@ -791,11 +810,23 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
                           <span className="text-muted-foreground text-[10px]">در انتظار غنی‌سازی</span>
                         )}
                       </TableCell>
-                      {/* ۵ — کد درخواست: فقط کد — بدون نام و موبایل (E.۳؛
-                          درخواست‌دهنده = خریدار و در ستون خریدار می‌آید) */}
-                      <TableCell className="text-xs whitespace-nowrap">
+                      {/* ۵ — کد درخواست: کد + نام کارشناس ثبت‌کنندهٔ درخواست زیر کد (E.۳؛ PN-060 دستور ب مالک:
+                          «در زیر کددرخواست نام کارشناس ثبت کننده درخواست» — قالب: کد / نام زیر آن) */}
+                      <TableCell className="text-xs whitespace-normal">
                         {t.requestCode ? (
-                          <code className="font-mono font-semibold" dir="ltr">{faDigits(t.requestCode)}</code>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <code className="font-mono font-semibold" dir="ltr">{faDigits(t.requestCode)}</code>
+                            {t.requestRegistrarName ? (
+                              <span
+                                className="truncate max-w-32 text-[10px] font-medium leading-tight text-foreground/75"
+                                title={`کارشناس ثبت‌کنندهٔ درخواست: ${t.requestRegistrarName}`}
+                              >
+                                {t.requestRegistrarName}
+                              </span>
+                            ) : (
+                              <span className="text-[9px] leading-tight text-muted-foreground/60" title="کارشناس ثبت‌کنندهٔ درخواست در کاتالوگ موجود نیست">—</span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
