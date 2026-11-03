@@ -22,7 +22,10 @@ LIVE_BASE="$(basename "$LIVE_DB" .db)"
 if [[ "${MELK_AUTO_RECOVERY:-}" == "disabled" ]]; then exit 0; fi
 
 # ── گام ۰: ضدحلقه — بازیابی موفق در ۱۰ دقیقهٔ گذشته؟ ──
-LAST_OK=$(grep 'guard-recovery-ok' "$LOG" 2>/dev/null | tail -1 | sed -n 's/.*"at":"\([^"]*\)".*/\1/p')
+# PN-066: «-a» حیاتی است — لاگ حاوی بایت‌های غیرUTF-8 از خروجی ابزارهای
+# پایین‌دستی است و grep خاموشانه «binary file matches» می‌دهد و LAST_OK خالی
+# می‌شود → ضدحلقه هرگز فعال نمی‌شد → ری‌استارت بی‌پایان هر ~۳۲ ثانیه (۱۱-۰۳).
+LAST_OK=$(grep -a 'guard-recovery-ok' "$LOG" 2>/dev/null | tail -1 | sed -n 's/.*"at":"\([^"]*\)".*/\1/p')
 if [[ -n "$LAST_OK" ]]; then
   LAST_EP=$(date -d "$LAST_OK" +%s 2>/dev/null || echo 0)
   NOW_EP=$(date -u +%s)

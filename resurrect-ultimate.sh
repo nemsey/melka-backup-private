@@ -213,6 +213,33 @@ if ! is_sqlite "$LIVE"; then
   fi
 fi
 
+# ─── ۳-ب) PN-066 — همگام‌سازی هش کدمستر + بازسازی گراف‌ها ───
+# ریشهٔ بی‌ثباتی ۲۰۲۶-۱۱-۰۳ (حلقهٔ ری‌استارت ~۳۲ثانیه‌ای): UNION عمداً AppMeta
+# را بازنمی‌گرداند → masterCodeHash=NULL می‌ماند → وارسی auto-recovery هر بوت
+# «تخریب» می‌دید و بازیابی کامل می‌کرد. دو گام سخت‌افزاری:
+#   الف) هش SHA-256 کدمستر (از boot-secrets — همان زنجیرهٔ رسمی) در AppMeta
+#   ب) بازسازی سه گراف از دادهٔ زنده (UNION مشتقات را بازنمی‌گرداند)
+MASTER_ESCROW=""
+for _e in "db/.runtime/boot-secrets.json" "upload/.runtime/boot-secrets.json"; do
+  [ -f "$_e" ] && MASTER_ESCROW="$_e" && break
+done
+if [ -n "$MASTER_ESCROW" ]; then
+  python3 - "$MASTER_ESCROW" "$LIVE" <<'PYSYNC' 2>/dev/null || echo "  ⚠️ همگام‌سازی هش کدمستر ناموفق — بوت سرور آن را جبران می‌کند (PN-066 ۱-ت)"
+import hashlib, json, sqlite3, sys
+escrow, live = sys.argv[1], sys.argv[2]
+code = (json.load(open(escrow)).get("MASTER_ACCESS_CODE") or "").strip()
+if code:
+    h = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    con = sqlite3.connect(live, timeout=30)
+    con.execute("UPDATE AppMeta SET masterCodeHash=? WHERE id='singleton'", (h,))
+    con.commit(); con.close()
+    print("  ✓ هش کدمستر در AppMeta همگام شد (پایان سیگنال «تخریب» کاذب)")
+PYSYNC
+else
+  echo "  ⚠️ escrow کدمستر یافت نشد — بوت سرور هش را همگام می‌کند (PN-066 ۱-ت)"
+fi
+# (بازسازی گراف‌ها پس از گام ۵ اجرا می‌شود — نیازمند node_modules است)
+
 # ─── ۴) رازها و env (escrow سه‌مکانی — PN-012-B · اولویت PN-043-A) ───
 # Secret priority (PN-043-A · شورا-ن۰۷۹): منبع راز باید در لایهٔ پایدار باشد
 SECRET_FOUND=""
@@ -264,6 +291,22 @@ fi
 echo "  ✓ G1: محافظ stripProtectedNulls حاضر است (protected-nulls.ts)"
 
 # ─── ۶) راه‌اندازی سرور (دیمن double-fork + ری‌استارت خودکار ۵ث) ───
+# PN-066 — پیش از استارت: بازسازی سه گراف از دادهٔ زنده (اینجا node_modules
+# از گام ۵ حاضر است). بدون این، وارسی auto-recovery هر بوت graph-empty
+# می‌دید و بازیابی کامل راه می‌انداخت (ریشهٔ حلقهٔ ری‌استارت ۲۰۲۶-۱۱-۰۳).
+if [ -f scripts/pn005-rebuild-graphs.ts ] && command -v bun >/dev/null 2>&1; then
+  GN=$(python3 -c "import sqlite3;con=sqlite3.connect('$LIVE');print(con.execute('SELECT COUNT(*) FROM GraphNode').fetchone()[0]);con.close()" 2>/dev/null || echo 0)
+  if [ "${GN:-0}" = "0" ]; then
+    echo "  ⚳ بازسازی سه گراف از دادهٔ زنده (پایان سیگنال graph-empty)…"
+    if timeout 300 bun scripts/pn005-rebuild-graphs.ts >/tmp/resurrect-graph.log 2>&1; then
+      tail -3 /tmp/resurrect-graph.log | sed 's/^/    /'
+    else
+      echo "  ⚠️ بازسازی گراف ناتمام/تایم‌اوت — skip صادقانه (گراف در رستاخیز بعدی)"
+    fi
+  else
+    echo "  ✓ گراف‌ها از قبل ساخته‌اند ($GN گره) — بازسازی لازم نیست"
+  fi
+fi
 echo "— راه‌اندازی سرور…"
 bash scripts/start-prod.sh
 
