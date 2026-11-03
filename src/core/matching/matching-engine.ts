@@ -1,21 +1,25 @@
 /**
  * P6545 / گام ۲ — BLOCK 2.1: موتور تطبیق دوجهتهٔ ملکا (جلسه ۰۳۰ سؤال ۱۰)
  * ---------------------------------------------------------------------------
- * تب ۱ — آگهی → درخواست: ورودی کدملک، خروجی ۵ درخواست برتر با امتیاز و دلیل
- * تب ۲ — درخواست → آگهی: ورودی کد درخواست، خروجی ۵ آگهی برتر
+ * تب ۱ — آگهی → درخواست: ورودی کدملک، خروجی درخواست‌های برتر با امتیاز و دلیل
+ * تب ۲ — درخواست → آگهی: ورودی کد درخواست، خروجی آگهی‌های برتر
  *
  * فیلتر سخت (شرط لازم):
- *   · معکوس نوع معامله: فروش↔خرید/پیش‌خرید · رهن‌واجاره↔رهن/اجاره
+ *   · معکوس نوع معامله: فروش↔خرید/پیش‌خرید · رهن‌واجاره↔رهن/اجاره (PN-028: سیگنال ساختاری هم)
  *   · تلاقی قیمت (اگر بازهٔ درخواست معلوم باشد)
  *   · تلاقی منطقه (اگر مناطق درخواست معلوم باشد)
- *   · نوع ملک (اگر در عنوان درخواست نام برده باشد)
+ *   · نوع ملک — PN-028/رابعاً-ه/و: سخت و دوجهته («و لاغیر»): نوع مؤثر هر طرف
+ *     از ستون ساختاری فرم ARM (مقدم) یا کلیدواژه‌های عنوان؛ نوع قابل‌راستی‌آزمایی‌نشده = رد
  *   · وضعیت فعال: درخواست‌های زنده × آگهی‌های «منتشر شده»
  *
- * امتیاز نرم (۵ عامل عین جلسه ۰۳۳):
- *   فاصله قیمت + نزدیکی جغرافیایی + تناسب متراژ + تازگی + سابقه کارشناس
+ * امتیاز نرم — PN-028/رابعاً-د (فراهوشمند · فراکامل · چندوجهی — ۹ عامل):
+ *   فاصله قیمت + نزدیکی جغرافیایی + تناسب متراژ + تازگی + سابقه کارشناس +
+ *   تطابق نوع ملک + تناسب اتاق + تناسب طبقه + تناسب سال ساخت
  *
  * حلقهٔ یادگیری: پذیرش/رد هر تطبیق ثبت → پیامد → Evaluation → وزن‌های شخصی
  * (LearningEngine Tier-aware — صفر اجرای خودکار).
+ * PN-028/رابعاً-ج — جفت‌های ردشده (با دلایل ساختاریافته) هرگز دوباره پیشنهاد نمی‌شوند
+ * و دلایل پرتکرار رد، وزن عامل متناظر را در پیشنهادهای آینده تقویت می‌کنند.
  *
  * قید: آستانهٔ انتشار هشدار فرصت = ۰٫۷ (BLOCK 1.4) — فقط هشدار، صفر اجرا.
  */
@@ -29,8 +33,14 @@ export interface ListingProfile {
   propertyCode: string;
   tradeTypeName: string | null; // فروش | رهن و اجاره | …
   propertyTypeName: string | null; // آپارتمان | ویلا | زمین | مغازه | …
+  /** PN-028/رابعاً-و — عنوان آگهی برای استخراج نوع مؤثر در فقدان ستون ساختاری */
+  title: string | null;
   price: number | null;
   meterage: number | null;
+  /** PN-028/رابعاً-د — ابعاد فراکامل چندوجهی (ستون‌های ساختاری ARM) */
+  rooms: number | null;
+  floor: number | null;
+  buildYear: number | null;
   areaName: string | null;
   lineName: string | null;
   ownerCode: string | null; // کارشناس ثبت‌کننده
@@ -53,6 +63,15 @@ export interface RequestProfile {
   meterageTo: number | null;
   tradeIntent: TradeIntent; // استخراج‌شده از عنوان
   wantedPropertyTypes: string[]; // کلیدواژه‌های نوع ملک در عنوان
+  /** PN-028/رابعاً-د — ابعاد فراکامل چندوجهی: بازه‌های ساختاری فرم ARM */
+  roomsFrom: number | null;
+  roomsTo: number | null;
+  floorFrom: number | null;
+  floorTo: number | null;
+  buildYearFrom: number | null;
+  buildYearTo: number | null;
+  /** فوریت درخواست (urgent فرم ARM — سیگنال تازگی انسانی) */
+  urgent: boolean;
 }
 
 export type TradeIntent = "buy" | "rent" | "unknown";
@@ -129,16 +148,25 @@ export interface MatchWeights {
   freshness: number;
   expertHistory: number;
   propertyTypeMatch: number;
+  /** PN-028/رابعاً-د — ابعاد فراکامل چندوجهی */
+  roomsFit: number;
+  floorFit: number;
+  buildAgeFit: number;
 }
 
-/** وزن‌های پایه — مجموع = ۱ (Tier 0: همین پایه) */
+/** وزن‌های پایه — مجموع = ۱ (Tier 0: همین پایه)
+ *  PN-028/رابعاً-د: سه عامل تازه (اتاق/طبقه/ساخت) از دل ساختار فرم ARM؛
+ *  سه عامل کلاسیک تحلیل‌پذیر کمی سبک‌تر شدند تا مجموع دقیقاً ۱ بماند */
 export const BASE_MATCH_WEIGHTS: MatchWeights = {
-  priceDistance: 0.25,
-  geoProximity: 0.15,
-  meterageFit: 0.2,
-  freshness: 0.15,
-  expertHistory: 0.1,
+  priceDistance: 0.22,
+  geoProximity: 0.13,
+  meterageFit: 0.17,
+  freshness: 0.12,
+  expertHistory: 0.08,
   propertyTypeMatch: 0.15,
+  roomsFit: 0.05,
+  floorFit: 0.04,
+  buildAgeFit: 0.04,
 };
 
 /** آستانهٔ انتشار هشدار فرصت (BLOCK 1.4 — جلسه ۰۳۳) */
@@ -195,17 +223,47 @@ export function parseRequestTitle(title: string | null): {
   return { tradeIntent: intent, wantedPropertyTypes, meterageFrom, meterageTo };
 }
 
-/** معکوس نوع معامله: فروش↔خرید · رهن‌واجاره↔رهن */
+/** نرمال‌سازی نام نوع ملک برای مقایسه — ارجاع یگانهٔ هر دو جهت */
+export function normalizePropertyType(s: string | null | undefined): string {
+  return (s ?? "").replace(/[\s\u200c]+/g, "").replace(/[،,]/g, "،").trim();
+}
+
+/** آیا دو نام نوع ملک هم‌خانواده‌اند؟ (شمول دوطرفه پس از نرمال‌سازی)
+ *  مثال: «خانه،حیاط» ⊂ «خانه،حیاط،ویلایی» ✓ · «آپارتمان» ⊄ «زمین یا ملک کلنگی» ✗ */
+export function propertyTypesCompatible(a: string | null | undefined, b: string | null | undefined): boolean {
+  const na = normalizePropertyType(a);
+  const nb = normalizePropertyType(b);
+  if (!na || !nb) return false;
+  return na.includes(nb) || nb.includes(na);
+}
+
+/** نوع ملک مؤثر یک آگهی — ستون ساختاری، و در فقدانش کلیدواژه‌های عنوان (عین الگوی درخواست) */
+export function listingEffectivePropertyType(propertyTypeName: string | null, title: string | null): string | null {
+  if (propertyTypeName && propertyTypeName.trim()) return propertyTypeName;
+  if (!title) return null;
+  for (const { keywords, type } of PROPERTY_TYPE_KEYWORDS) {
+    if (keywords.some((k) => title.includes(k))) return type;
+  }
+  return null;
+}
+
+/** معکوس نوع معامله: فروش↔خرید · رهن‌واجاره↔رهن
+ *  PN-028/رابعاً-ه/و (دستور مالک — «و لاغیر»):
+ *  نوع معاملهٔ درخواست (tradeTypeName ساختاری فرم ARM = نوع معاملهٔ سمت مقابل:
+ *  درخواست «خرید» ⇄ آگهی «فروش») نیز به‌عنوان سیگنال سخت پذیرفته می‌شود —
+ *  پیش از این فقط «خرید/رهن» عنوان چک می‌شد و درخواست بدون کلیدواژهٔ عنوان،
+ *  آگهی‌های هر نوع معامله‌ای (حتی رهن و اجاره) را هم می‌گذراند. */
 export function dealTypeCompatible(listingTrade: string | null, intent: TradeIntent, requestTrade: string | null): boolean {
   const lt = listingTrade ?? "";
   if (intent === "buy") return lt.includes("فروش");
   if (intent === "rent") return lt.includes("رهن") || lt.includes("اجاره");
-  // نیت نامعلوم: اگر نام معاملهٔ غنی‌شده هست، همان معیار
+  // نیت نامعلوم: اگر نام معاملهٔ ساختاری هست، همان معیار (PN-028 — دقیق و سخت)
   if (requestTrade) {
-    if (requestTrade.includes("خرید") || requestTrade.includes("پیش")) return lt.includes("فروش");
+    if (requestTrade.includes("خرید") || requestTrade.includes("پیش") || requestTrade.includes("فروش")) return lt.includes("فروش");
     if (requestTrade.includes("رهن") || requestTrade.includes("اجاره")) return lt.includes("رهن") || lt.includes("اجاره");
+    if (requestTrade.includes("مشارکت")) return lt.includes("مشارکت");
   }
-  return true; // بدون سیگنال — فیلتر سخت رد نمی‌کند (نرم ارزیابی می‌شود)
+  return true; // بدون هیچ سیگنال — فیلتر سخت رد نمی‌کند (نرم ارزیابی می‌شود)
 }
 
 /** وضعیت‌های فعال درخواست (تقاضای زنده) */
@@ -227,6 +285,8 @@ export interface MatchingEngineOptions {
   candidateLimit?: number;
   /** PN-014 — سقف خروجی (پیش‌فرض TOP_N=5 برای سازگاری؛ کاشی جدید = ۲۰ برای بندبندی سه‌گانه) */
   topN?: number;
+  /** PN-028/رابعاً-ج — جفت‌های ردشده (کلید: listingCode|requestCode) که دیگر هرگز پیشنهاد نمی‌شوند */
+  rejectedPairs?: Set<string>;
 }
 
 export class MatchingEngine {
@@ -234,11 +294,14 @@ export class MatchingEngine {
   readonly tier: LearningTier;
   readonly weights: MatchWeights;
   private readonly topN: number;
+  /** PN-028/رابعاً-ج — جفت‌های ردشده: «کدآگهی|کددرخواست» */
+  private readonly rejectedPairs: Set<string>;
 
   constructor(opts: MatchingEngineOptions) {
     this.db = opts.db;
     this.tier = opts.tier ?? 3;
     this.topN = opts.topN ?? TOP_N;
+    this.rejectedPairs = opts.rejectedPairs ?? new Set();
     const w = { ...BASE_MATCH_WEIGHTS };
     if (opts.weights) Object.assign(w, opts.weights);
     // نرمال‌سازی مجموع روی ۱
@@ -247,11 +310,22 @@ export class MatchingEngine {
     this.weights = w;
   }
 
+  /** PN-028/رابعاً-ج — آیا این جفت قبلاً رد شده است؟ */
+  private isRejectedPair(listingCode: string | null | undefined, requestCode: string | null | undefined): boolean {
+    if (this.rejectedPairs.size === 0) return false;
+    if (!listingCode || !requestCode) return false;
+    return this.rejectedPairs.has(`${listingCode}|${requestCode}`);
+  }
+
   private toRequestProfile(r: {
     id: string; requestCode: string | null; title: string | null; customerName: string | null;
     status: string; tradeTypeName: string | null; propertyTypeName: string | null;
     priceFrom: number | null; priceTo: number | null; areaNamesJson: string | null;
     inputsJson?: string | null;
+    roomsFrom?: number | null; roomsTo?: number | null;
+    floorFrom?: number | null; floorTo?: number | null;
+    buildYearFrom?: number | null; buildYearTo?: number | null;
+    urgent?: boolean | null;
   }): RequestProfile {
     const parsed = parseRequestTitle(r.title);
     let areaNames: string[] = [];
@@ -280,6 +354,11 @@ export class MatchingEngine {
       priceFrom: r.priceFrom, priceTo: r.priceTo, areaNames,
       meterageFrom, meterageTo,
       tradeIntent: parsed.tradeIntent, wantedPropertyTypes: parsed.wantedPropertyTypes,
+      // PN-028/رابعاً-د — ابعاد ساختاری فرم ARM (ستون‌های مستقیم؛ صفر حدس)
+      roomsFrom: r.roomsFrom ?? null, roomsTo: r.roomsTo ?? null,
+      floorFrom: r.floorFrom ?? null, floorTo: r.floorTo ?? null,
+      buildYearFrom: r.buildYearFrom ?? null, buildYearTo: r.buildYearTo ?? null,
+      urgent: r.urgent === true, // ستون Boolean — نگهبان نوع
     };
   }
 
@@ -291,14 +370,15 @@ export class MatchingEngine {
     }
     const profile: ListingProfile = {
       propertyCode: listing.propertyCode, tradeTypeName: listing.tradeTypeName,
-      propertyTypeName: listing.propertyTypeName, price: listing.price,
-      meterage: listing.meterage, areaName: listing.areaName, lineName: listing.lineName,
+      propertyTypeName: listing.propertyTypeName, title: listing.title ?? null, price: listing.price,
+      meterage: listing.meterage, rooms: listing.rooms ?? null, floor: listing.floor ?? null, buildYear: listing.buildYear ?? null,
+      areaName: listing.areaName, lineName: listing.lineName,
       ownerCode: listing.ownerCode, status: listing.status, syncedAt: listing.syncedAt,
     };
     // کاندیداها: درخواست‌های فعال
     const rows = await this.db.requestRecord.findMany({
       where: { status: { in: ACTIVE_REQUEST_STATUSES } },
-      select: { id: true, requestCode: true, title: true, customerName: true, customerMobile: true, status: true, tradeTypeName: true, propertyTypeName: true, priceFrom: true, priceTo: true, areaNamesJson: true, inputsJson: true, updatedAt: true, actorName: true },
+      select: { id: true, requestCode: true, title: true, customerName: true, customerMobile: true, status: true, tradeTypeName: true, propertyTypeName: true, priceFrom: true, priceTo: true, areaNamesJson: true, inputsJson: true, updatedAt: true, actorName: true, roomsFrom: true, roomsTo: true, floorFrom: true, floorTo: true, buildYearFrom: true, buildYearTo: true, urgent: true },
       take: this.candidateLimit ?? 3000,
       orderBy: { updatedAt: "desc" },
     });
@@ -310,6 +390,8 @@ export class MatchingEngine {
     const scored: Array<MatchCandidate & { requestLabel: string }> = [];
     for (const r of rows) {
       const req = this.toRequestProfile(r);
+      // PN-028/رابعاً-ج — جفتِ قبلاً ردشده هرگز دوباره پیشنهاد نمی‌شود
+      if (this.isRejectedPair(profile.propertyCode, req.requestCode)) continue;
       const s = this.score(profile, req, ownerTx);
       // گام پنجم ن۰۰۱ + خامسا-۱ — گزینهٔ درخواست با اطلاعات کامل + کارشناس/شعبهٔ ثبت‌کننده
       const info: MatchOptionInfo = {
@@ -361,11 +443,15 @@ export class MatchingEngine {
       status: r.status, tradeTypeName: r.tradeTypeName, propertyTypeName: r.propertyTypeName,
       priceFrom: r.priceFrom, priceTo: r.priceTo, areaNamesJson: r.areaNamesJson,
       inputsJson: r.inputsJson,
+      roomsFrom: r.roomsFrom, roomsTo: r.roomsTo,
+      floorFrom: r.floorFrom, floorTo: r.floorTo,
+      buildYearFrom: r.buildYearFrom, buildYearTo: r.buildYearTo,
+      urgent: r.urgent,
     });
     // کاندیداها: آگهی‌های منتشرشده
     const rows = await this.db.propertyRecord.findMany({
       where: { status: "منتشر شده" },
-      select: { propertyCode: true, tradeTypeName: true, propertyTypeName: true, price: true, meterage: true, areaName: true, lineName: true, ownerCode: true, ownerName: true, ownerMobile: true, status: true, syncedAt: true, title: true },
+      select: { propertyCode: true, tradeTypeName: true, propertyTypeName: true, price: true, meterage: true, rooms: true, floor: true, buildYear: true, areaName: true, lineName: true, ownerCode: true, ownerName: true, ownerMobile: true, status: true, syncedAt: true, title: true },
       take: this.candidateLimit ?? 3000,
       orderBy: { syncedAt: "desc" },
     });
@@ -379,11 +465,14 @@ export class MatchingEngine {
     for (const row of rows) {
       const profile: ListingProfile = {
         propertyCode: row.propertyCode, tradeTypeName: row.tradeTypeName,
-        propertyTypeName: row.propertyTypeName, price: row.price, meterage: row.meterage,
+        propertyTypeName: row.propertyTypeName, title: row.title ?? null, price: row.price, meterage: row.meterage,
+        rooms: row.rooms ?? null, floor: row.floor ?? null, buildYear: row.buildYear ?? null,
         areaName: row.areaName, lineName: row.lineName, ownerCode: row.ownerCode,
         status: row.status, syncedAt: row.syncedAt,
       };
       const ownerTx = row.ownerCode ? txByOwner.get(row.ownerCode) ?? 0 : 0;
+      // PN-028/رابعاً-ج — جفتِ قبلاً ردشده هرگز دوباره پیشنهاد نمی‌شود
+      if (this.isRejectedPair(row.propertyCode, req.requestCode)) continue;
       const s = this.score(profile, req, ownerTx);
       // گام پنجم ن۰۰۱ + خامسا-۱ — گزینهٔ آگهی با اطلاعات کامل + کارشناس/شعبهٔ آگهی
       // (نکتهٔ نگاشت: PropertyRecord.ownerName در فهرست M1 نقش «کارشناس» را دارد)
@@ -444,19 +533,36 @@ export class MatchingEngine {
       hardFilterNotes.push(`تلاقی منطقه ✓ (${listing.areaName})`);
     }
 
-    // فیلتر سخت ۴ — نوع ملک (فقط وقتی در عنوان درخواست نام برده شده)
-    let typeHardPass = true;
-    const wantedTypes = req.wantedPropertyTypes.length > 0 ? req.wantedPropertyTypes : req.propertyTypeName ? [req.propertyTypeName] : [];
-    if (wantedTypes.length > 0 && listing.propertyTypeName) {
-      const normalize = (s: string) => s.replace(/\s+/g, "");
-      typeHardPass = wantedTypes.some((t) => normalize(listing.propertyTypeName ?? "").includes(normalize(t)) || normalize(t).includes(normalize(listing.propertyTypeName ?? "")));
-      if (!typeHardPass) return { requestId: req.id, score: 0, hardPassed: false, reasons: [], hardFilterNotes: [`نوع ملک ${listing.propertyTypeName} ≠ ${wantedTypes.join("/")}`], signalCoverage: 0 };
-      hardFilterNotes.push(`نوع ملک ✓ (${listing.propertyTypeName})`);
+    // فیلتر سخت ۴ — نوع ملک — PN-028/رابعاً-ه/و (دستور مالک: «و لاغیر»)
+    // نوع مؤثر درخواست: ستون ساختاری فرم ARM مقدم است؛ در فقدانش کلیدواژه‌های عنوان.
+    // نوع مؤثر آگهی: ستون ساختاری، در فقدانش عنوان.
+    // قاعدهٔ سخت دوجهته: هر طرف که نوعش معلوم است، طرف مقابل باید همان خانوادهٔ نوع باشد —
+    // نوع نامشخصِ طرف مقابل = رد (پیش از این آگهیِ بی‌نوع از فیلتر می‌گذشت و
+    // درخواست «خرید آپارتمان» زمین/ویلا هم می‌گرفت).
+    const requestEffectiveTypes = req.propertyTypeName && req.propertyTypeName.trim()
+      ? [req.propertyTypeName, ...req.wantedPropertyTypes.filter((t) => propertyTypesCompatible(t, req.propertyTypeName))]
+      : req.wantedPropertyTypes;
+    const listingEffectiveType = listingEffectivePropertyType(listing.propertyTypeName, listing.title);
+    const typesKnownOnRequestSide = requestEffectiveTypes.length > 0;
+    if (typesKnownOnRequestSide) {
+      if (!listingEffectiveType) {
+        // نوع آگهی قابل راستی‌آزمایی نیست ⇒ سخت رد (و لاغیر)
+        return { requestId: req.id, score: 0, hardPassed: false, reasons: [], hardFilterNotes: ["نوع ملک آگهی نامشخص — قابل تطبیق نیست"], signalCoverage: 0 };
+      }
+      const typeOk = requestEffectiveTypes.some((t) => propertyTypesCompatible(t, listingEffectiveType));
+      if (!typeOk) {
+        return { requestId: req.id, score: 0, hardPassed: false, reasons: [], hardFilterNotes: [`نوع ملک ${listingEffectiveType} ≠ ${requestEffectiveTypes.join("/")}`], signalCoverage: 0 };
+      }
+      hardFilterNotes.push(`نوع ملک ✓ (${listingEffectiveType})`);
+    } else if (listingEffectiveType) {
+      // درخواست بی‌سیگنالِ نوع + آگهی دارای نوع ⇒ سخت رد (تطبیق حدسی ممنوع)
+      return { requestId: req.id, score: 0, hardPassed: false, reasons: [], hardFilterNotes: ["نوع ملک درخواست نامشخص — قابل تطبیق نیست"], signalCoverage: 0 };
     }
+    const wantedTypes = requestEffectiveTypes;
 
     /* ── امتیاز نرم ── */
     // ۱) فاصله قیمت — ۱ اگر داخل بازه؛ خارج بازه با فاصلهٔ نسبی افت می‌کند؛ نامعلوم = خنثی ۰٫۵
-    const availableWeight = { price: false, geo: false, meterage: false, type: false };
+    const availableWeight = { price: false, geo: false, meterage: false, type: false, rooms: false, floor: false, age: false };
     let priceDistance = 0.5;
     if (req.priceFrom != null && req.priceTo != null && listing.price != null) {
       availableWeight.price = true;
@@ -500,16 +606,58 @@ export class MatchingEngine {
 
     // ۶) تطابق نوع ملک (نرم — وقتی فیلتر سخت سیگنالی نداشت)
     if (wantedTypes.length > 0) availableWeight.type = true;
-    const typeMatch = wantedTypes.length === 0 ? 0.5 : listing.propertyTypeName && wantedTypes.some((t) => listing.propertyTypeName!.includes(t) || t.includes(listing.propertyTypeName!)) ? 1 : 0;
-    reasons.push({ factor: "تطابق نوع ملک", value: round2(typeMatch), weight: round2(this.weights.propertyTypeMatch), note: listing.propertyTypeName ?? "نامعلوم" });
+    const typeMatch = wantedTypes.length === 0 ? 0.5 : listingEffectiveType && wantedTypes.some((t) => propertyTypesCompatible(t, listingEffectiveType)) ? 1 : 0;
+    reasons.push({ factor: "تطابق نوع ملک", value: round2(typeMatch), weight: round2(this.weights.propertyTypeMatch), note: listingEffectiveType ?? "نامعلوم" });
+
+    // ۷) تناسب اتاق — PN-028/رابعاً-د (فراکامل چندوجهی): داخل بازهٔ اتاق درخواست ۱؛ خارج بازه افت خطی؛ نامعلوم ۰٫۵
+    let roomsFit = 0.5;
+    if (req.roomsFrom != null && req.roomsTo != null && listing.rooms != null) {
+      availableWeight.rooms = true;
+      if (listing.rooms >= req.roomsFrom && listing.rooms <= req.roomsTo) roomsFit = 1;
+      else {
+        const span = Math.max(req.roomsTo - req.roomsFrom, 1);
+        const dist = listing.rooms < req.roomsFrom ? req.roomsFrom - listing.rooms : listing.rooms - req.roomsTo;
+        roomsFit = Math.max(0, 1 - dist / (span * 2));
+      }
+    }
+    reasons.push({ factor: "تناسب اتاق", value: round2(roomsFit), weight: round2(this.weights.roomsFit), note: req.roomsFrom != null ? `${req.roomsFrom} تا ${req.roomsTo} خواب` : "بدون بازهٔ اتاق (خنثی)" });
+
+    // ۸) تناسب طبقه — PN-028/رابعاً-د
+    let floorFit = 0.5;
+    if (req.floorFrom != null && req.floorTo != null && listing.floor != null) {
+      availableWeight.floor = true;
+      if (listing.floor >= req.floorFrom && listing.floor <= req.floorTo) floorFit = 1;
+      else {
+        const span = Math.max(req.floorTo - req.floorFrom, 1);
+        const dist = listing.floor < req.floorFrom ? req.floorFrom - listing.floor : listing.floor - req.floorTo;
+        floorFit = Math.max(0, 1 - dist / (span * 2));
+      }
+    }
+    reasons.push({ factor: "تناسب طبقه", value: round2(floorFit), weight: round2(this.weights.floorFit), note: req.floorFrom != null ? `طبقهٔ ${req.floorFrom} تا ${req.floorTo}` : "بدون بازهٔ طبقه (خنثی)" });
+
+    // ۹) تناسب سال ساخت — PN-028/رابعاً-د: بازهٔ ساخت درخواست (میلادی جلالی‌منبع = سال شمسی)
+    let buildAgeFit = 0.5;
+    if (req.buildYearFrom != null && req.buildYearTo != null && listing.buildYear != null) {
+      availableWeight.age = true;
+      if (listing.buildYear >= req.buildYearFrom && listing.buildYear <= req.buildYearTo) buildAgeFit = 1;
+      else {
+        const span = Math.max(req.buildYearTo - req.buildYearFrom, 1);
+        const dist = listing.buildYear < req.buildYearFrom ? req.buildYearFrom - listing.buildYear : listing.buildYear - req.buildYearTo;
+        buildAgeFit = Math.max(0, 1 - dist / (span * 2));
+      }
+    }
+    reasons.push({ factor: "تناسب سال ساخت", value: round2(buildAgeFit), weight: round2(this.weights.buildAgeFit), note: req.buildYearFrom != null ? `ساخت ${req.buildYearFrom} تا ${req.buildYearTo}` : "بدون بازهٔ ساخت (خنثی)" });
 
     const score = reasons.reduce((sum, r) => sum + r.value * r.weight, 0);
-    // پوشش سیگنال واقعی: کسر وزن عوامل با دادهٔ موجود (قیمت/منطقه/متراژ/نوع) + عوامل همیشه‌موجود (تازگی/سابقه)
+    // پوشش سیگنال واقعی: کسر وزن عوامل با دادهٔ موجود (قیمت/منطقه/متراژ/نوع/اتاق/طبقه/ساخت) + عوامل همیشه‌موجود (تازگی/سابقه)
     const signalWeight =
       (availableWeight.price ? this.weights.priceDistance : 0) +
       (availableWeight.geo ? this.weights.geoProximity : 0) +
       (availableWeight.meterage ? this.weights.meterageFit : 0) +
       (availableWeight.type ? this.weights.propertyTypeMatch : 0) +
+      (availableWeight.rooms ? this.weights.roomsFit : 0) +
+      (availableWeight.floor ? this.weights.floorFit : 0) +
+      (availableWeight.age ? this.weights.buildAgeFit : 0) +
       this.weights.freshness +
       (listing.ownerCode != null ? this.weights.expertHistory : 0);
     const signalCoverage = round2(Math.min(1, signalWeight));

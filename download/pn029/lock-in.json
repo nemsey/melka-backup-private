@@ -1,0 +1,25 @@
+{
+  "phase": "PN-029 · قفل ورود (بخش ۰ سند شورا-ن۰۳۳)",
+  "lockedAt": "2026-10-11T08:17:36Z",
+  "version": {
+    "gitHead": "ef799b7eff76ff79b8e904148bda21fd5bf3919e",
+    "buildId": "d5b37d4-20261011-0636",
+    "mirrorSync": "n/a",
+    "note": "HEAD شامل کامیت خودکار پلتفرم ef799b7 پس از مهر d5b37d4 است — زنجیرهٔ PN-028 سالم"
+  },
+  "preconditions": {
+    "healthHttp": "200",
+    "dbIntegrity": "ok",
+    "escrowThreeSeat": "env.platform.json + upload/.runtime/boot-secrets.json + env.escrow.enc — بررسی وجود: yes",
+    "diskFreePercent": "59",
+    "backup": { "file": "backups/pre-pn029-20261011T081734Z.db", "md5": "3400d050ecf56c5c4be840ae425281c7", "integrity": "ok" }
+  },
+  "ownerStatement": "سفارش PN-029 — بازیابی اتصال به سامانه‌های ملک تبریز. اول تشخیص، بعد اقدام. صفر تلاش خودکار.",
+  "riskPreAnalysis": [
+    { "risk": "IP بلاک درازمدت", "prob": "بالا", "impact": "critical", "mitigation": "توقف فوری تلاش‌ها (مرحلهٔ ۲)" },
+    { "risk": "منقضی‌شدن دائمی توکن‌ها", "prob": "متوسط", "impact": "high", "mitigation": "OTP تکی پس از پاک‌شدن rate limit (مرحلهٔ ۸)" },
+    { "risk": "تداخل با دیمن‌ها", "prob": "بالا", "impact": "critical", "mitigation": "پرچم MELK_ARM_OFFLINE + kill Worker (مرحلهٔ ۲)" },
+    { "risk": "اشتباه در تشخیص", "prob": "متوسط", "impact": "high", "mitigation": "شش آزمون مستقل (مرحلهٔ ۳)" },
+    { "risk": "فشار به تیم ملک تبریز", "prob": "متوسط", "impact": "high", "mitigation": "صبر ۲۴-۴۸ ساعت + متن تماس آماده (مرحلهٔ ۵)" }
+  ]
+}

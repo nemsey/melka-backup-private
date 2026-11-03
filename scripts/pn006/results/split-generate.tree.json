@@ -1,0 +1,31 @@
+{
+  "label": "split-generate",
+  "rootPid": 10745,
+  "peakMB": 277.5,
+  "peakProcesses": 3,
+  "peakTop": [
+    {
+      "pid": 10747,
+      "rssMB": 203.7,
+      "cmd": "node node_modules/.bin/next build --experimental-build-mode generate "
+    },
+    {
+      "pid": 10766,
+      "rssMB": 71.8,
+      "cmd": "/usr/bin/node /home/z/my-project/node_modules/next/dist/compiled/jest-worker/processChild."
+    },
+    {
+      "pid": 10745,
+      "rssMB": 1.9,
+      "cmd": "/bin/bash --noprofile --norc "
+    }
+  ],
+  "durationSec": 5.0,
+  "timeline": [
+    {
+      "t": 0.0,
+      "mb": 35.9
+    }
+  ],
+  "finishedAt": "2026-10-06T05:47:13.841905+00:00"
+}

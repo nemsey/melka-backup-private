@@ -33,7 +33,8 @@ const MAX_WINDOW = 200;
 /** کلمپ ضریب نسبت به پایه */
 const CLAMP = { min: 0.5, max: 1.5 };
 
-/** نام فارسی عامل ↔ کلید وزن — همان برچسب‌هایی که UI کارت امتیاز نشان می‌دهد */
+/** نام فارسی عامل ↔ کلید وزن — همان برچسب‌هایی که UI کارت امتیاز نشان می‌دهد
+ *  PN-028/رابعاً-د — سه عامل تازهٔ فراکامل (اتاق/طبقه/ساخت) */
 const FACTOR_TO_WEIGHT: Record<string, keyof MatchWeights> = {
   "فاصله قیمت": "priceDistance",
   "نزدیکی جغرافیایی": "geoProximity",
@@ -41,6 +42,9 @@ const FACTOR_TO_WEIGHT: Record<string, keyof MatchWeights> = {
   "تازگی آگهی": "freshness",
   "سابقه کارشناس": "expertHistory",
   "تطابق نوع ملک": "propertyTypeMatch",
+  "تناسب اتاق": "roomsFit",
+  "تناسب طبقه": "floorFit",
+  "تناسب سال ساخت": "buildAgeFit",
 };
 
 export interface LearnedWeights {
@@ -111,4 +115,58 @@ export async function computeLearnedMatchWeights(db: PrismaClient): Promise<Lear
   }));
 
   return { weights, feedbackCount: feedbacks.length, factors };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * PN-028/رابعاً-ج — درس‌های رد: دلایل ساختاریافتهٔ رد، وزن عامل متناظر را
+ * در پیشنهادهای تطبیقِ آینده تقویت می‌کنند (دستور مالک: مغز ملکا از گزینهٔ
+ * ردشده بیاموزد، بیاندیشد و همان اشتباه را تکرار نکند).
+ * شهود صادقانه: اگر ردها به‌خاطر «قیمت» بوده‌اند، وزن فاصلهٔ قیمت بالا می‌رود
+ * تا گزینه‌های با جابه‌جایی قیمت مشابه در آینده امتیاز کمتری بگیرند.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/** کلید دلیل رد (فرم دیالوگ رد) → عامل موتور که باید تقویت شود */
+export const REJECT_REASON_TO_FACTOR: Record<string, string> = {
+  price: "فاصله قیمت",
+  geo: "نزدیکی جغرافیایی",
+  meterage: "تناسب متراژ",
+  type: "تطابق نوع ملک",
+  rooms: "تناسب اتاق",
+  floor: "تناسب طبقه",
+  age: "تناسب سال ساخت",
+  stale: "تازگی آگهی",
+  expert: "سابقه کارشناس",
+};
+
+/** سقف تقویت هر عامل از دلایل رد (محافظه‌کارانه — ±۲۵٪) */
+const REJECT_BOOST_MAX = 0.25;
+/** تعداد ردِ لازم برای رسیدن به سقف تقویت (اثر تدریجی) */
+const REJECT_BOOST_SCALE = 20;
+
+/** اعمال درس‌های رد روی وزن‌ها — تابع خالص (تست‌پذیر) */
+export function applyRejectionLessonBoosts(
+  base: MatchWeights,
+  reasonCounts: Record<string, number>
+): MatchWeights {
+  const factorBoosts = new Map<string, number>();
+  for (const [reason, count] of Object.entries(reasonCounts)) {
+    const factor = REJECT_REASON_TO_FACTOR[reason];
+    if (!factor || count <= 0) continue;
+    const boost = Math.min(REJECT_BOOST_MAX, count / REJECT_BOOST_SCALE);
+    factorBoosts.set(factor, (factorBoosts.get(factor) ?? 0) + boost);
+  }
+  if (factorBoosts.size === 0) return base;
+
+  const out: MatchWeights = { ...base };
+  for (const [factor, boost] of factorBoosts) {
+    const key = FACTOR_TO_WEIGHT[factor];
+    if (!key) continue;
+    out[key] = base[key] * (1 + boost);
+  }
+  // نرمال‌سازی مجموع روی ۱
+  const total = Object.values(out).reduce((a, b) => a + b, 0);
+  if (total > 0 && Number.isFinite(total)) {
+    for (const k of Object.keys(out) as Array<keyof MatchWeights>) out[k] = out[k] / total;
+  }
+  return out;
 }

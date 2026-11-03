@@ -1,0 +1,45 @@
+{
+ "phase": "PN-031-F · فاز H — راستی‌آزمایی پس از بیلد نهایی",
+ "at": "2026-10-14T08:56:28Z",
+ "server": {
+  "buildId": "107fd208 (= HEAD)",
+  "health": 200
+ },
+ "linksOk": 8,
+ "linksChecked": [
+  {
+   "name": "PN-031-F-FINAL-REPORT.md",
+   "status": 200
+  },
+  {
+   "name": "melka-relay.apk",
+   "status": 200
+  },
+  {
+   "name": "qr-install.png",
+   "status": 200
+  },
+  {
+   "name": "OWNER-GUIDE.html",
+   "status": 200
+  },
+  {
+   "name": "tests-run1.log",
+   "status": 200
+  },
+  {
+   "name": "tests-run2.log",
+   "status": 200
+  },
+  {
+   "name": "guards-summary.json",
+   "status": 200
+  },
+  {
+   "name": "qr-apk.svg",
+   "status": 200
+  }
+ ],
+ "note": "همهٔ لینک‌ها از URL عمومی preview — مطابق قانون لینک",
+ "verdict": "PASS"
+}

@@ -1,0 +1,35 @@
+{
+  "phase": "PN-034 (شورا-ن۰۵۵) — احیای رلهٔ Termux با دکمهٔ بازگردانده‌شده",
+  "at": "2026-10-16T13:01:08.821Z",
+  "story": "مالک پس از اطمینان از ورژن زندهٔ اپ، از دکمهٔ «تولید کد نصب» کد تازه گرفت و در Termux پیست کرد — دستگاه poco-f3-6ea15e ثبت و در حال poll است (مسیر اثبات‌شدهٔ PN-031-I زنده برگشت)",
+  "devicesBefore": [
+    {
+      "deviceId": "poco-f3-6ea15e",
+      "lastSeenAt": "2026-10-16T13:00:09.767Z",
+      "servedCount": 14,
+      "enrollAttempts": 1
+    },
+    {
+      "deviceId": "poco-f3-b816dd",
+      "lastSeenAt": "2026-10-16T12:05:02.418Z",
+      "servedCount": 59,
+      "enrollAttempts": 1
+    }
+  ],
+  "devicesAfter": [
+    {
+      "deviceId": "poco-f3-6ea15e",
+      "lastSeenAt": "2026-10-16T13:00:09.767Z",
+      "online": true,
+      "servedCount": 14
+    }
+  ],
+  "queue": {
+    "pending": 9,
+    "done24": 175,
+    "failed24": 92
+  },
+  "deadDeviceRemoved": true,
+  "relayAlive": true,
+  "verdict": "RELAY-REBORN"
+}

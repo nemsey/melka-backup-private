@@ -13,6 +13,8 @@
 import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { tenantDbValue } from "@/lib/tenants";
+import { catalogUserScope } from "@/lib/access/scope";
 import { normalizeFilterInput } from "@/lib/normalize-input";
 import {
   getPropertyRecordRepository,
@@ -75,6 +77,13 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
 
   const { entity } = await ctx.params;
   const sp = request.nextUrl.searchParams;
+  // PN-049/گام ۲-الف — قانون حساب کاربری: خروجی اکسل هم عین فهرست دامنه می‌گیرد —
+  // کاربر غیر-مالک فقط رکوردهای خودش را خروجی می‌گیرد؛ مالک همه را.
+  const exportScope = catalogUserScope(guard);
+  const exportRegistrar = exportScope.kind === "OWN" ? exportScope.nameNorm : undefined;
+  // PN-059: tenant ملکتون حذف شد — همیشه 'melk-tabriz' (تک-tenant).
+  const tenantId = tenantDbValue(sp.get("tenantId"));
+  const tenantLabel = "ملک تبریز";
 
   try {
     let buffer: Buffer;
@@ -88,16 +97,18 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       const address = normalizeFilterInput(sp.get("address")) || undefined;
       const { rows } = await repo.listArmCatalog(
         {
+          tenantId,
           code, realtorName, ownerName, address,
           priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")),
           rentalType: sp.get("rentalType") === "rental" ? "rental" : sp.get("rentalType") === "sale" ? "sale" : undefined,
+          registrarNameNorm: exportRegistrar,
         },
         25000
       );
       const branchOf = await branchResolver();
 
       buffer = await buildXlsx(
-        "آگهی‌های ملک تبریز",
+        `آگهی‌های ${tenantLabel}`,
         [
           { header: "ردیف", width: 8 }, { header: "کد آگهی", width: 12 }, { header: "عنوان", width: 30 },
           { header: "کارشناس", width: 20 }, { header: "شعبه", width: 16 }, { header: "مالک", width: 20 },
@@ -130,13 +141,13 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       const customerName = normalizeFilterInput(sp.get("customerName")) || undefined;
       const areaName = normalizeFilterInput(sp.get("areaName")) || undefined;
       const { rows } = await repo.listArmCatalog(
-        { code, realtorName, customerName, areaName, priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")) },
+        { tenantId, code, realtorName, customerName, areaName, priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")), registrarNameNorm: exportRegistrar },
         25000
       );
       const branchOf = await branchResolver();
 
       buffer = await buildXlsx(
-        "درخواست‌های ملک تبریز",
+        `درخواست‌های ${tenantLabel}`,
         [
           { header: "ردیف", width: 8 }, { header: "کد درخواست", width: 12 }, { header: "عنوان", width: 30 },
           { header: "کارشناس", width: 20 }, { header: "شعبه", width: 16 }, { header: "متقاضی", width: 20 },
@@ -164,21 +175,35 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       filename = `melka-requests-${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else if (entity === "transactions") {
       const repo = getTransactionRepository();
-      const rows = (await repo.listWithSummary({ limit: 25000 })) as unknown as {
+      const rows = (await repo.listWithSummary({ filter: { tenantId }, limit: 25000 })) as unknown as {
         rows: Array<Record<string, unknown>>;
       };
       const txRows = (rows?.rows ?? []) as Array<Record<string, unknown>>;
+      // PN-060 (دستورات الف و ب مالک) — کارشناس ثبت‌کننده زیر کدملک/کددرخواست عین فهرست:
+      // آگهی → PropertyRecord.ownerName (relatedRealtor) · درخواست → RequestRecord.actorName
+      const [propertyRegistrars, requestRegistrars] = await Promise.all([
+        getPropertyRecordRepository().findRegistrarNamesByCodes(
+          [...new Set(txRows.map((r) => String(r.propertyCode ?? "")).filter(Boolean))]
+        ),
+        getRequestRepository().findArmRegistrarNamesByCodes(
+          [...new Set(txRows.map((r) => String(r.requestCode ?? "")).filter(Boolean))]
+        ),
+      ]);
+      const propRegistrarByCode = new Map(propertyRegistrars.map((p) => [p.propertyCode, p.registrarName?.trim() || ""]));
+      const reqRegistrarByCode = new Map(requestRegistrars.map((r) => [r.requestCode, r.registrarName?.trim() || ""]));
       buffer = await buildXlsx(
-        "معاملات ملک تبریز",
+        `معاملات ${tenantLabel}`,
         [
-          { header: "ردیف", width: 8 }, { header: "کد ملک", width: 12 }, { header: "مالک/فروشنده", width: 20 },
-          { header: "کد درخواست", width: 12 }, { header: "درخواست‌دهنده/خریدار", width: 20 },
+          { header: "ردیف", width: 8 }, { header: "کد ملک", width: 12 }, { header: "کارشناس ثبت‌کننده آگهی", width: 22 },
+          { header: "مالک/فروشنده", width: 20 },
+          { header: "کد درخواست", width: 12 }, { header: "کارشناس ثبت‌کننده درخواست", width: 22 }, { header: "درخواست‌دهنده/خریدار", width: 20 },
           { header: "تاریخ معامله", width: 14 }, { header: "شماره هولوگرام", width: 16 },
           { header: "آگهی پیشنهادی", width: 12 }, { header: "رویداد", width: 10 },
         ],
         txRows.map((r, i) => [
-          i + 1, String(r.propertyCode ?? ""), String(r.propertyCustomer ?? ""), String(r.requestCode ?? ""),
-          String(r.requestCustomer ?? ""), String(r.rawDate ?? r.contractDate ?? ""), String(r.contractHolo ?? ""),
+          i + 1, String(r.propertyCode ?? ""), propRegistrarByCode.get(String(r.propertyCode ?? "")) ?? "", String(r.propertyCustomer ?? ""),
+          String(r.requestCode ?? ""), reqRegistrarByCode.get(String(r.requestCode ?? "")) ?? "", String(r.requestCustomer ?? ""),
+          String(r.rawDate ?? r.contractDate ?? ""), String(r.contractHolo ?? ""),
           typeof r.suggestedPropertyCount === "number" ? r.suggestedPropertyCount : null,
           typeof r.eventsCount === "number" ? r.eventsCount : null,
         ])
@@ -186,12 +211,13 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       filename = `melka-transactions-${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else if (entity === "experts") {
       const repo = getExpertRepository();
-      const rows = await repo.findAll();
+      // PN-044/فاز ۴ — findAll بدون فیلتر tenant می‌بود؛ اکنون tenant همین خروجی
+      const { rows } = await repo.listWithInteractions({ filter: { tenantId }, limit: 5000 });
       // شمارش متقاطع آگهی (شاهکار M4) — PN-012 BLOCK 1: از سرویس
       const listingCount = await expertListingCounts();
 
       buffer = await buildXlsx(
-        "کارشناسان ملک تبریز",
+        `کارشناسان ${tenantLabel}`,
         [
           { header: "ردیف", width: 8 }, { header: "کد پرسنلی", width: 14 }, { header: "نام و نام خانوادگی", width: 24 },
           { header: "موبایل", width: 16 }, { header: "نقش", width: 20 }, { header: "کسب‌وکار/شعبه", width: 18 },

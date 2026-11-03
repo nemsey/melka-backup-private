@@ -362,30 +362,28 @@ describe("P6527 §۵ — حلقهٔ غنی‌سازی: وصلهٔ شمارنده
 });
 
 /* ==========================================================================
- * §۶ — شبکهٔ ایمنی ریست اتصال (حادثهٔ ۱۴۰۵/۰۷/۰۴: از دست رفتن ۷۳۹ معامله)
+ * §۶ → PN-038 — قانون دادهٔ مقدس: «ریست اتصال» دیگر هرگز حذف نمی‌کند
  * =============================================================================
- * شاهد: مالک در تنظیمات «ریست اتصال» زد (withData=true) → clearCrmCacheTables
- * شش جدول کش CRM را پاک کرد → توکن ARM مرده بود → داده بدون مسیر بازیابی از
- * دست رفت (پیش‌بکاپ = ۷۳۹ معامله، پس‌بکاپ = صفر). بازیابی P6527 انجام شد؛
- * این بخش تضمین می‌کند حادثه هرگز بدون بکاپ خودکار تکرار نشود.
+ * شاهد: مالک در تنظیمات «ریست اتصال» زد (withData=true) → پیش‌تر شش جدول
+ * پاک می‌شد (حادثهٔ ۱۴۰۵/۰۷/۰۴: ۷۳۹ معامله از دست رفت). PN-038/۱.۴ (شورا-ن۰۶۳)
+ * ریست را به «بازسازی روی داده» تغییر داد: داده می‌ماند + بکاپ شاهد + سینک
+ * مجدد با upsert روی همان داده.
  * ========================================================================== */
 
-describe("P6527 §۶ — بکاپ خودکار پیش از پاک‌سازی کش CRM", () => {
+describe("P6527 §۶ → PN-038 — ریست بدون حذف (قانون دادهٔ مقدس)", () => {
   const SYNC = readFileSync("/home/z/my-project/src/lib/melk-api/sync.ts", "utf8");
   const RESET = readFileSync("/home/z/my-project/src/app/api/connection/reset/route.ts", "utf8");
 
-  test("۶-۱) clearCrmCacheTables پیش از deleteMany: شمارش + VACUUM INTO بهترین-تلاش", () => {
-    // شمارش پیش از پاک‌سازی (بدون داده = بدون بکاپ بی‌مورد)
+  test("۶-۱) PN-038: clearCrmCacheTables دیگر deleteMany ندارد — mode=sacred-keep", () => {
+    // شمارش داده قبل از تصمیم بکاپ
     expect(SYNC).toMatch(/txCount \+ exCount \+ inCount \+ viCount \+ sdCount \+ ctCount > 0/);
-    // snapshot کامل پیش از پاک‌سازی
+    // snapshot شاهد (VACUUM INTO) موجود است
     expect(SYNC).toContain("VACUUM INTO");
-    // بکاپ بهترین-تلاش است — شکست آن ریست را نمی‌شکند
-    expect(SYNC).toMatch(/backupFile = undefined/);
-    // deleteMany ها پس از بلوک بکاپ می‌آیند
-    const backupIdx = SYNC.indexOf("pre-reset-");
-    const deleteIdx = SYNC.indexOf("await db.transactionRecord.deleteMany");
-    expect(backupIdx).toBeGreaterThan(-1);
-    expect(deleteIdx).toBeGreaterThan(backupIdx);
+    // هیچ deleteMany کدی در کل فایل نیست (کامنت‌ها مستثنا)
+    const codeLines = SYNC.split("\n").filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"));
+    expect(codeLines.filter((l) => l.includes("deleteMany("))).toEqual([]);
+    // حالت مقدس برمی‌گردد
+    expect(SYNC).toContain('mode: "sacred-keep"');
   });
 
   test("۶-۲) روت ریست: نام فایل بکاپ در پاسخ و رخداد حسابرسی برمی‌گردد", () => {
@@ -394,7 +392,7 @@ describe("P6527 §۶ — بکاپ خودکار پیش از پاک‌سازی ک�
     expect(RESET).toMatch(/audit\("CONNECTION_RESET"[\s\S]*?backup=/);
   });
 
-  test("۶-۳) زنده: پاک‌سازی با داده → فایل بکاپ ساخته می‌شود + جدول‌ها خالی + بازیافت‌پذیری", async () => {
+  test("۶-۳) زنده: ریست با داده → داده سر جای خود می‌ماند + بکاپ شاهد ساخته می‌شود", async () => {
     const { db } = await import("@/lib/db");
     const { clearCrmCacheTables } = await import("@/lib/melk-api/sync");
     const S = "p6527reset";
@@ -404,26 +402,20 @@ describe("P6527 §۶ — بکاپ خودکار پیش از پاک‌سازی ک�
     });
     const result = await clearCrmCacheTables();
     expect(result.cleared).toBe(true);
+    expect(result.mode).toBe("sacred-keep");
+    expect((result.rowsKept ?? 0)).toBeGreaterThanOrEqual(1);
     expect(result.backupFile).toBeTruthy();
-    // فایل بکاپ واقعاً موجود است و رکورد شاهد داخلش هست
+    // فایل بکاپ شاهد واقعاً موجود است
     const { existsSync, rmSync } = await import("node:fs");
     expect(existsSync(result.backupFile!)).toBe(true);
-    const { PrismaClient } = await import("@prisma/client");
-    const bk = new PrismaClient({ datasources: { db: { url: `file:${result.backupFile}` } } });
-    const n = await bk.transactionRecord.count({ where: { id: `${S}-tx` } });
-    await bk.$disconnect();
-    expect(n).toBe(1);
-    // جدول‌ها پاک شده‌اند
-    expect(await db.transactionRecord.count()).toBe(0);
-    // پاک‌سازی فایل شاهد تست
+    // داده حذف نشد — قانون مقدس (این ردیف + هر دادهٔ قبلی دیگر)
+    expect(await db.transactionRecord.count({ where: { id: `${S}-tx` } })).toBe(1);
     rmSync(result.backupFile!, { force: true });
+    await db.transactionRecord.deleteMany({ where: { id: { startsWith: S } } });
   });
 
-  test("۶-۴) زنده: پاک‌سازی بدون داده → بدون بکاپ بی‌مورد (backupFile تعریف‌نشده)", async () => {
-    const { clearCrmCacheTables } = await import("@/lib/melk-api/sync");
-    // جدول‌ها از تست ۶-۳ خالی‌اند
-    const result = await clearCrmCacheTables();
-    expect(result.cleared).toBe(true);
-    expect(result.backupFile).toBeUndefined();
+  test("۶-۴) بدون داده → بدون بکاپ بی‌مورد (سطح سورس: بازگشت زودهنگام بدون بکاپ)", async () => {
+    // جدول‌های خالی ⇒ بازگشت زودهنگام بدون بکاپ (عین رفتار قبلی — بدون وابستگی به وضعیت جهانی DB تست)
+    expect(SYNC).toMatch(/if \(!hasData\) return \{ cleared: true, mode: "sacred-keep", rowsKept: 0 \}/);
   });
 });

@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-16T17:49:35Z",
+  "pn": "PN-035",
+  "metric": "batch-sync-proof (سنجهٔ ۶ — دستهٔ ۱۰۰تایی + موازی)",
+  "testEvidence": {
+    "test": "pn035-relay-async B-1 — اجرای واقعی bash در برابر سرور آزمایشی",
+    "itemsServed": 30,
+    "resultPosts": 1,
+    "waves": "۴ موج × ۸ کارگر موازی (MAX_WORKERS=8)",
+    "gzipUsed": true,
+    "signatureOnWireBytes": "تأیید شد — HMAC(POST\\npath\\nsha256(gz)\\nts) دقیقاً برابر هدر X-Melka-Signature",
+    "deterministicOrder": "نام‌گذاری صفرپرشدهٔ فایل‌های نتیجه — ترتیب glob = ترتیب عددی"
+  },
+  "server": {
+    "claimRelayBatch": "برداشتن اتمیک تا ۱۰۰ آیتم (updateMany مقید به pending — بدون رقابت)",
+    "RELAY_MAX_BATCH": 100,
+    "priorityOrder": "priority DESC سپس enqueuedAt ASC (FIFO)"
+  },
+  "capacityBenchmark": "capacity-benchmark.json — ۱۰۰۰ رکورد ≈ ۴.۴ث (هدف <۳۰ث)",
+  "verdict": "PASS"
+}

@@ -1,0 +1,13 @@
+{
+ "meta": {
+  "test": "N1",
+  "description": "webservice retrieve — فقط IDهای مجاز؛ enumeration ممنوع",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "not_applicable",
+ "reason": "A4 login موفق نبود — retrieve اجرا نشد (قانون: بدون احراز، صفر دسترسی)",
+ "samples_redacted": []
+}

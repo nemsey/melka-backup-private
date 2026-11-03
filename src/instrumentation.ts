@@ -102,6 +102,23 @@ export async function register(): Promise<void> {
     });
   }
 
+  // ---------- ۱-پ) PN-041-R (شورا-ن۰۶۸ · فاز ۴): بهینه‌سازی SQLite در بوت ----------
+  // چهار پراگمای مصوب (busy_timeout=10000 · cache_size=-20000 · mmap_size=256MB
+  // · synchronous=NORMAL) + wal_autocheckpoint — روی اتصال یگانه در هر بوت.
+  // شکست هرگز بوت را نمی‌شکند (بهترین-تلاش + شاهد لاگ).
+  {
+    const { optimizeSqliteOnBoot } = await import("@/lib/db-optimize");
+    const { logEvent: logDb } = await import("@/lib/logger");
+    const r = await optimizeSqliteOnBoot();
+    logDb({
+      level: r.failed.length > 0 ? "warn" : "info",
+      category: "system",
+      operation: "sqlite-optimize-boot",
+      status: r.ok ? "ok" : "fail",
+      detail: { applied: r.applied, failed: r.failed, journalMode: r.journalMode },
+    });
+  }
+
   // ---------- ۲) چرخش کلید در صورت درخواست صریح (ROTATION_PENDING=true) ----------
   if (process.env.ROTATION_PENDING === "true") {
     const { rotateFromEnv } = await import("@/lib/auth/key-rotation");
@@ -122,6 +139,32 @@ export async function register(): Promise<void> {
         status: "fail",
         errorCode: "ROTATION_INCOMPLETE",
         detail: { error: report.error ?? "خطای نامشخص" },
+      });
+    }
+  }
+
+  // ---------- ۳-الف) PN-050 · دستور ۵ — پراگماهای دوام دیسک سرور ----------
+  // journal_mode=WAL (دیسک محلی · DELETE روی FUSE — دکترین PN-041-R) +
+  // synchronous=FULL + wal_autocheckpoint=100 — ایدمپوتنت؛ شکست بوت را نمی‌ایستاند.
+  // (Worker همین را در بوت خودش هم اجرا می‌کند — هر دو فرایند یکسان می‌بینند.)
+  if (!(process.env.DATABASE_URL ?? "").includes("test")) {
+    try {
+      const { db } = await import("@/lib/db");
+      const { ensureDurabilityPragmas } = await import("@/lib/db");
+      const pragmas = await ensureDurabilityPragmas(db);
+      logEvent({
+        category: "system",
+        operation: "pn050-durability-pragmas",
+        status: "ok",
+        detail: { journalMode: pragmas.journalMode, synchronous: "FULL", walAutocheckpoint: 100 },
+      });
+    } catch (e) {
+      logEvent({
+        level: "warn",
+        category: "system",
+        operation: "pn050-durability-pragmas",
+        status: "fail",
+        detail: { reason: e instanceof Error ? e.message.slice(0, 160) : String(e).slice(0, 160) },
       });
     }
   }
@@ -199,6 +242,10 @@ export async function register(): Promise<void> {
   // توکن ARM مشترک (SyncState.armTokenEnc) حذف شد؛ تا معرفی «حساب سرویس»
   // مجزا در PHASE 2، تایمر پس‌زمینه فقط با فعال‌سازی صریح (MELK_BACKGROUND_SYNC=enabled)
   // کار می‌کند و در آن حالت نیز با آخرین نشستِ «زنده و دارای توکن» و ثبت AuditLog.
+  // PN-029 (مرحلهٔ ۲) — L7: صفر تلاش خودکار در تولید بدون توکن سالم؛
+  // در حالت آفلینی ملک تبریز حلقهٔ پس‌زمینه حتی با MELK_BACKGROUND_SYNC=enabled
+  // نیز روشن نمی‌شود (قانون احتیاط اتصال خارجی — سند شورا-ن۰۳۳).
+  // PN-038/۶.۱: گارد حالت آفلینی حذف شد (پرچم از ن۰۵۴ خاموش است — کد مرده)
   if (process.env.MELK_BACKGROUND_SYNC === "enabled") {
     const { getMelkApiConfig } = await import("@/lib/melk-api/config");
     const cfg = getMelkApiConfig();

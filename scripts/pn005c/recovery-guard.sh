@@ -14,6 +14,11 @@ LOG="upload/.survival/recovery-log.jsonl"
 STAMP() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 logr() { printf '{"at":"%s","kind":"%s",%s}\n' "$(STAMP)" "$1" "$2" >> "$LOG" 2>/dev/null || true; }
 
+# PN-041 (شورا-ن۰۶۷): مسیر زندهٔ رسمی از حل‌کنندهٔ واحد — قلعه اول، قدیم fallback
+LIVE_DB="$(bash scripts/recovery/live-db-path.sh 2>/dev/null || echo /home/z/my-project/db/custom.db)"
+LIVE_DIR="$(dirname "$LIVE_DB")"
+LIVE_BASE="$(basename "$LIVE_DB" .db)"
+
 if [[ "${MELK_AUTO_RECOVERY:-}" == "disabled" ]]; then exit 0; fi
 
 # ── گام ۰: ضدحلقه — بازیابی موفق در ۱۰ دقیقهٔ گذشته؟ ──
@@ -28,9 +33,9 @@ if [[ -n "$LAST_OK" ]]; then
 fi
 
 # ── گام ۱: تشخیص تخریب ──
-NEEDS=$(python3 - <<'PYEOF'
+NEEDS=$(LIVE_DB="$LIVE_DB" python3 - <<'PYEOF'
 import sqlite3, os
-db = 'db/custom.db'
+db = os.environ.get('LIVE_DB', 'db/custom.db')
 if not os.path.exists(db):
     print('yes:db-missing'); raise SystemExit
 try:
@@ -88,16 +93,34 @@ fi
 # ── گام ۴: بکاپ وضعیت فعلی (هرگز بدون بکاپ — با WAL: هر سه فایل) ──
 TS=$(date -u +%Y-%m-%dT%H-%M-%S)
 # PN-008: DB در حالت WAL است — بدون -wal/-shm، کامیت‌های اخیر گم می‌شوند
+mkdir -p upload/dataset-backups
 for _f in "" "-wal" "-shm"; do
-  [[ -f "db/custom.db${_f}" ]] && cp "db/custom.db${_f}" "upload/dataset-backups/guard-pre-recovery-${TS}.db${_f}" 2>/dev/null || true
+  [[ -f "${LIVE_DB}${_f}" ]] && cp "${LIVE_DB}${_f}" "upload/dataset-backups/guard-pre-recovery-${TS}.db${_f}" 2>/dev/null || true
 done
 
 # ── گام ۵: بازگرداندن DB + env ──
-# PN-008: پیش از جایگزینی، WAL/SHM کهنهٔ DB قبلی حذف شود (خطر آلودگی/خرابی)
-rm -f db/custom.db-wal db/custom.db-shm
-if ! cp "$PKG_DB" db/custom.db; then
-  logr guard-recovery-fail '"cause":"db-copy-failed"'
-  exit 1
+# PN-038/۱.۲ — گارد دادهٔ مقدس (شورا-ن۰۶۳): پیش از هر جایگزینی DB، داوری
+# سه‌لایه (mtime + شمارش ردیف + سلامت). دیتابیس زندهٔ پرتر/جدیدتر = مقدس؛
+# جایگزینی با بستهٔ کهنه‌تر BLOCK می‌شود (ریشهٔ گم‌شدن داده در ریست‌ها).
+SACRED_VERDICT="allow"
+if [[ -x "$PWD/scripts/recovery/sacred-data-guard.ts" || -f "$PWD/scripts/recovery/sacred-data-guard.ts" ]] && command -v bun >/dev/null 2>&1; then
+  if ! bun scripts/recovery/sacred-data-guard.ts "$PKG_DB" --live "$LIVE_DB" 2>&1 | tee /tmp/pn038-sacred-guard.out; then
+    if [[ "${PIPESTATUS[0]}" -eq 2 ]]; then
+      SACRED_VERDICT="block"
+      logr sacred-data-guard-block '"where":"recovery-guard.sh","pkg":"'"$PKG_DB"'"'
+    fi
+  fi
+fi
+if [[ "$SACRED_VERDICT" == "block" ]]; then
+  echo "[recovery-guard] گارد مقدس: BLOCK — دیتابیس زنده حفظ شد (PN-038/۱.۲)؛ فقط کد/env بازیابی می‌شود"
+  # DB زنده ماند — WAL/SHM هم دست نمی‌خورند؛ expected-counts تازه از زنده
+else
+  # PN-008: پیش از جایگزینی، WAL/SHM کهنهٔ DB قبلی حذف شود (خطر آلودگی/خرابی)
+  rm -f "${LIVE_DB}-wal" "${LIVE_DB}-shm"
+  if ! cp "$PKG_DB" "$LIVE_DB"; then
+    logr guard-recovery-fail '"cause":"db-copy-failed"'
+    exit 1
+  fi
 fi
 if [[ ! -f .env.local && -f upload/.survival/env.local.template ]]; then
   cp upload/.survival/env.local.template .env.local
@@ -105,9 +128,9 @@ if [[ ! -f .env.local && -f upload/.survival/env.local.template ]]; then
 fi
 git checkout -- .env 2>/dev/null || true
 # شمارش‌های مورد انتظار برای وارسی‌های آیندهٔ auto-recovery
-python3 - <<'PYEOF' > upload/.survival/expected-counts.json 2>/dev/null || true
-import sqlite3, json, datetime
-con = sqlite3.connect('db/custom.db')
+python3 - LIVE_DB="$LIVE_DB" <<'PYEOF' > upload/.survival/expected-counts.json 2>/dev/null || true
+import sqlite3, json, datetime, os
+con = sqlite3.connect(os.environ.get('LIVE_DB', 'db/custom.db'))
 def c(t):
     try: return con.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0]
     except Exception: return 0

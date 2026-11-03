@@ -18,6 +18,8 @@ function PopoverTrigger({
 }
 
 function PopoverContent({
+  /** PN-046/گام اول-۰ — محتوای فارسیِ داخل این پریمیتیو راست‌چین است (پیش‌فرض Radix=ltr بود) */
+  dir = "rtl",
   className,
   align = "center",
   sideOffset = 4,
@@ -27,6 +29,7 @@ function PopoverContent({
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
         data-slot="popover-content"
+        dir={dir}
         align={align}
         sideOffset={sideOffset}
         className={cn(

@@ -9,6 +9,8 @@ import type { BulkUpsertOptions, BulkWriteStats } from "./bulk-write.repository"
 
 /** فیلترهای فهرست کارشناسان — عین پارامترهای روت crm/experts */
 export interface ExpertListFilter {
+  /** PN-044/فاز ۴ — مقدار ستون tenantId در DB ('melk-tabriz' | 'melketun'). undefined → بدون فیلتر tenant (رفتار قبلی) */
+  tenantId?: string;
   fullName?: string;
   mobile?: string;
   personnelCode?: string;

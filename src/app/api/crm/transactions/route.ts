@@ -33,6 +33,7 @@ import { findExpertNameByPersonnelCode } from "@/lib/experts/profile-store";
 // P6547/گام سوم-۴ — شعبهٔ مشاوران از سامانهٔ PM برای ستون تجمیع حق‌السهم
 import { readPmBranchMap } from "@/lib/branch-store";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
+import { tenantDbValue } from "@/lib/tenants";
 import { requireTileAccessFor } from "@/lib/access/personnel-access";
 // P6.5-04-i — دامنه فقط از helper مرکزی (تک‌نقطه تصمیم)
 import { ownerLoginPath, resolveEntityAccess } from "@/lib/access/scope";
@@ -82,6 +83,8 @@ export async function GET(request: NextRequest) {
     const seed = await ensureSeeded(guard.armTokens?.accessToken, { background: true });
     const syncState = await getSyncState();
     const sp = request.nextUrl.searchParams;
+    // PN-059: tenant ملکتون حذف شد — همیشه 'melk-tabriz' (تک-tenant).
+    const tenantId = tenantDbValue(sp.get("tenantId"));
 
     // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت؛ سقف ۲۵٬۰۰۰ فقط گارد ایمنی سرور است (عین دو کاتالوگ ARM)
     const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
@@ -104,6 +107,7 @@ export async function GET(request: NextRequest) {
     // فیلتر + خلاصه چهارگانه از انبار — عین منطق where قبلی (buildTransactionWhere)
     const { rows, total, summary } = await getTransactionRepository().listWithSummary({
       filter: {
+        tenantId,
         dateFrom: sp.get("dateFrom") ?? undefined,
         dateTo: sp.get("dateTo") ?? undefined,
         propertyCode,
@@ -122,12 +126,16 @@ export async function GET(request: NextRequest) {
     const txInfo = await getTransactionRepository().findInfoEnrichmentsByTxIds(rows.map((r) => r.id));
     const propertyCodes = [...new Set(rows.map((r) => r.propertyCode).filter(Boolean))];
     const requestCodes = [...new Set(rows.map((r) => r.requestCode).filter((c): c is string => Boolean(c)))];
-    const [owners, requesters, contractRows, agencyRows] = await Promise.all([
+    const [owners, requesters, contractRows, agencyRows, propertyRegistrars, requestRegistrars] = await Promise.all([
       getPropertyRecordRepository().findOwnerContactsByCodes(propertyCodes),
       getRequestRepository().findArmRequesterContactsByCodes(requestCodes),
       getContractRepository().findAll(),
       // P6.5-12 — کارگزاری‌های مرتبط (فایل قرارداد — بند ت)
       getContractRepository().listAgencyLookups(),
+      // PN-060 (دستور الف) — کارشناس ثبت‌کنندهٔ آگهی برای زیر کد ملک
+      getPropertyRecordRepository().findRegistrarNamesByCodes(propertyCodes),
+      // PN-060 (دستور ب) — کارشناس ثبت‌کنندهٔ درخواست برای زیر کد درخواست
+      getRequestRepository().findArmRegistrarNamesByCodes(requestCodes),
     ]);
     const contracts: ContractLookup[] = contractRows.map((c) => ({
       contractHolo: c.contractHolo,
@@ -166,6 +174,9 @@ export async function GET(request: NextRequest) {
       contracts,
       agencies,
       txInfo,
+      // PN-060 (دستورات الف و ب) — کارشناس ثبت‌کننده زیر کدملک/کددرخواست
+      propertyRegistrars,
+      requestRegistrars,
       // P6547/گام سوم-۴ — شعبهٔ هر مشاور از branchId.title واقعی سامانهٔ PM (قالب: نام + شعبه + درصد)
       branchByConsultant: await readPmBranchMap().catch(() => ({} as Record<string, string>)),
     });

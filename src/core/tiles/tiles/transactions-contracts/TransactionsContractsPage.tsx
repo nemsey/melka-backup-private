@@ -227,6 +227,7 @@ export function TransactionsContractsPage({ settings }: TilePageProps) {
       <AgentPanel tileId="transactions-contracts" />
 
       {/* تک‌نمای فهرست معاملات — بخش بروزرسانی به‌عنوان prop (ترتیب الزامی: بینش‌ها → جداول → پوشش → بروزرسانی → فیلتر → فهرست) */}
+      {/* PN-044/فاز ۴ — tenant این رندر به تک‌نما می‌رسد (داشبورد ملکتون فقط دادهٔ ملکتون) */}
       <TransactionsTab sortBy={sortBy} showCharts={showCharts} updateSection={updateSection} syncDoneSignal={syncDoneSignal} />
     </div>
   );

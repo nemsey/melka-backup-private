@@ -1,0 +1,13 @@
+▲ Next.js 16.1.3 (webpack)
+- Environments: .env.local, .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 29.2s
+  Running TypeScript ...
+Failed to compile.
+
+src/app/api/intelligence/status/route.ts
+Type error: Route "src/app/api/intelligence/status/route.ts" does not match the required types of a Next.js Route.
+  "ENGINES" is not a valid Route export field.
+
+Next.js build worker exited with code: 1 and signal: null

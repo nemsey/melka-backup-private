@@ -1,0 +1,22 @@
+{
+  "melketun-secrets.json": {
+    "size": 237,
+    "sha256": "a6684bcd0fa2fbe8dc691ae0be2695b38426f6b748559fef527793a3ed223b18",
+    "action": "deleted (no content archived — secrets never leave Persistent Zone)"
+  },
+  "melketun-connection-state.json": {
+    "size": 116,
+    "sha256": "e0fa83c746ae67580a80fd04f337ce3407403c7751c0581ca652e9975469df7b",
+    "action": "deleted (no content archived — secrets never leave Persistent Zone)"
+  },
+  "melketun-session.cookies": {
+    "size": 718,
+    "sha256": "d3682ac1c5d363d1e7dda56cbe6764101bc37403e63aba572fa154da4a6fa69a",
+    "action": "deleted (no content archived — secrets never leave Persistent Zone)"
+  },
+  "lcpp-m9-melketun-probe.json": {
+    "size": 614,
+    "sha256": "10829c50d2af1f69a857bb549d6793a639891a3a69f5ed19676ce14755248c24",
+    "action": "deleted (no content archived — secrets never leave Persistent Zone)"
+  }
+}

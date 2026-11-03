@@ -1,0 +1,180 @@
+{
+  "schema": "melka-pn059-four-orders-evidence",
+  "generatedAt": "2026-11-01T22:49:59+00:00",
+  "trigger": "فرمان چهارجانیهٔ مالک ۲۰۲۶-۱۱-۰۲ (۱۴۰۵/۰۸/۱۱): (۱) حذف کامل کاشی ملکتون + همهٔ داده‌ها + مواردش در بروزرسانی سریع اطلاعات حیاتی (۲) رفع کامل عدم اتصال api ملک‌تبریز (۳) حذف خودکار فایل‌های بی‌اقدام فایل‌یابی پس از ۳ روز (۴) قانون تثبیت/بقا/دادهٔ مقدس/لینک در پایان گزارش",
+  "commit": "8d2c07ff3f2e3f30f0d16424f8465a487abb96c5",
+  "remoteMain": "8d2c07ff3f2e3f30f0d16424f8465a487abb96c5",
+  "buildFingerprint": "43ba21eff34e",
+  "order1_melketunRemoval": {
+    "scope": "کاشی «داشبورد ملکتون» (wrapper M7-M10) + صفحه‌های /dashboard/melketun و /settings/melketun + ۶ روت API (integrations/crm ملکتون + records/changes) + بخش اتصال تنظیمات + خط لولهٔ M7/M8 + کاوش معاملات ملکتون + کار Worker ملکتون + زیرسیستم provenance/تغییرات (merge.ts) + فایل‌های راز/وضعیت ران‌تایم",
+    "dataPurged": {
+      "rowsDeleted": 9377,
+      "byTable": {
+        "PropertyRecord": 5181,
+        "RequestRecord": 4006,
+        "ExpertRecord": 92,
+        "ExpertProfile": 92,
+        "AuditLog": 6,
+        "RequestEventRecord": 0
+      },
+      "melketunRemaining": {
+        "PropertyRecord": 0,
+        "RequestRecord": 0,
+        "ExpertRecord": 0,
+        "ExpertProfile": 0
+      },
+      "tabrizUntouched": {
+        "PropertyRecord": 28377,
+        "RequestRecord": 25979,
+        "ExpertRecord": 307,
+        "ExpertProfile": 143
+      }
+    },
+    "archive": {
+      "dir": "backups/melketun-purge-20261101T205740Z",
+      "files": [
+        "AuditLog.jsonl",
+        "ExpertProfile.jsonl",
+        "ExpertRecord.jsonl",
+        "PropertyRecord.jsonl",
+        "RequestEventRecord.jsonl",
+        "RequestRecord.jsonl"
+      ],
+      "sha256": {
+        "AuditLog.jsonl": "05dd4b7d3c2a44e9c14f72a41be2801b35fd1b5b4ea1c0328638047d8f0de043",
+        "ExpertProfile.jsonl": "e9cf78c52e8d53831f3c95f9141113056bd6f67364253c86464751a1c27d9192",
+        "ExpertRecord.jsonl": "90b9a02163948f1eb6bd43def0fc00f6c90a1c08a7ae47368c49df3ade8cd74f",
+        "PropertyRecord.jsonl": "9da90c4324014ea9f1df276d1e196950a03740162374292a9505f4c2aa0598b4",
+        "RequestEventRecord.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "RequestRecord.jsonl": "f00cc52b8e1465f8a7614098fe83f6d819f3c10dee1783087cbc46cff7d3aad1"
+      },
+      "note": "رازها (secrets/cookies) هرگز آرشیو محتوایی نشدند — فقط متادیتا + sha256 (قانون ۱۲/۱۸)"
+    },
+    "auditWitness": [
+      {
+        "action": "MELKETUN_PURGE",
+        "actor": "owner-directive-PN059",
+        "recordCount": 9377,
+        "detail": "tables=PropertyRecord,RequestRecord,ExpertRecord,ExpertProfile,AuditLog+RequestEventRecord rows=9377 archive=backups/melketun-purge-20261101T205740Z",
+        "createdAt": "2026-11-01T20:57:40.973Z"
+      }
+    ],
+    "vitalInfoQuickUpdate": {
+      "section": "نشانگر «بروزرسانی سریع اطلاعات حیاتی» (LcppSyncStatus — فاز A/B) در هر کاشی",
+      "removed": [
+        "m7-melketun-listings (آگهی ملکتون)",
+        "m8-melketun-requests (درخواست ملکتون)"
+      ],
+      "remaining": [
+        "m1-arm-listings (آگهی ملک‌تبریز)",
+        "m2-arm-requests (درخواست ملک‌تبریز)",
+        "m9-transactions (معاملات)"
+      ],
+      "orchestrator": "چرخهٔ LCPP اکنون فقط M1/M2/M9 (ARM) — ملکتون از صادرات/واردات/دیسپچ حذف شد"
+    },
+    "tests": "۱۶ فایل تست به‌روزرسانی/حذف شد؛ ۵ فایل تماماً ملکتونی حذف؛ tsc سبز"
+  },
+  "order2_melkTabrizConnection": {
+    "symptom": "SyncState=NETWORK_ERROR «ارتباط با سامانه ملک تبریز برقرار نشد» · ۲۲ تلاش ناموفق از ۲۰ اکتبر — در حالی که رله زنده بود (۴٬۳۹۵ job موفق تا ۲۰۲۶-۱۱-۰۱)",
+    "rootCause": "دو لایه: (۱) armCall با AbortController مهلت ۲۵ث (MELK_API_TIMEOUT_MS) انتظار رله را می‌کشت — لایهٔ رله برای صف‌بندی تا ۱۱۰ث طراحی شده بود (RELAY_WAIT_DEFAULT_MS · PN-036) ولی سیگنال فراخوان در ۲۵ث قطع می‌کرد → RelayOfflineError → NETWORK_ERROR؛ شاهد زنده: صفحهٔ realtors/list در آزمون ۲۵٫۷ث طول کشید (زیر مهلت قدیمی می‌مرد). (۲) صفحات سینک اصلی شش‌خانواده با اولویت ۰ پشت موج غنی‌سازی LCPP (properties/details + owner انبوه — ۹۶۴ آیتم expired شاهد ازدحام)",
+    "fixes": [
+      "client.ts — مهلت مؤثر رله‌آگاه: max(مهلت فراخوان، ۱۱۰ث) وقتی مسیر رله‌ای است (TTL صف ۱۲۰ث)",
+      "relay.ts — RELAY_PRIORITY_MAIN_SYNC=۲ برای realtor-reports/* · realtors/list · visits/list · trade-overviews/* (مقدم بر موج حجیم ۰ و کاتالوگ ۱، تابع OTP ۵)",
+      "بازنشانی ۳ ردیف کهنهٔ فیوز (عصر اتصال مستقیم بلاک‌شده) + شاهد AuditLog — فیوز از env خاموش است و رله اثبات‌شده"
+    ],
+    "liveProof": {
+      "script": "scripts/pn059-test-relay-connection.ts",
+      "result": "۲× HTTP 200 از arus-api از مسیر رلهٔ موبایل: traded-count در ۸٫۰ث · realtors/list در ۲۵٫۷ث (زیر مهلت قدیمی ۲۵ث می‌مرد — عین باگ)",
+      "fullSyncResult": {
+        "ok": true,
+        "durationMin": 2.7,
+        "transactions": 818,
+        "experts": 199,
+        "interactions": 0,
+        "visits": 2,
+        "supplyDemand": 5,
+        "contracts": 1,
+        "note": "سینک کامل شش‌خانواده از مسیر رلهٔ موبایل در ۲٫۷ دقیقه — SyncState پاک شد (lastSuccessAt=22:48:57Z · attempts=0) · ۲۰ معاملهٔ تازه",
+        "checkpoints": "transactions 9/9 · experts 3/3 · visits 1/1 · supply-demand 1/1 — همه complete"
+      },
+      "queueAfterRestart": {
+        "dispatched": 1,
+        "done": 5825,
+        "expired": 994,
+        "failed": 65
+      }
+    },
+    "breakerState": "consecutiveFailures=0 · nextAttemptAt=null · lockUntil=null (هر سه میزبان)"
+  },
+  "order3_fileFinderTtl": {
+    "rule": "DivarAd با status='active' (مالک اقدامی نکرده) و firstSeenAt < now−72h → حذف؛ همهٔ سه سطل (hunt/follow/review)؛ فایل‌های اقدام‌شده (registered/rejected) مقدس‌اند و می‌مانند",
+    "implementation": "src/lib/divar/ttl.ts + کار Worker divar-file-ttl (ساعتی · خاموشی: MELK_DIVAR_FILE_TTL=disabled) + شاهد AuditLog بدون PII (قانون ۱۰)",
+    "replacement": "اسکن بعدی دیوار توکن‌های تازه را با firstSeenAt تازه می‌آورد — موارد جدید به‌طور طبیعی جایگزین می‌شوند",
+    "firstRun": {
+      "ok": true,
+      "deleted": 36,
+      "remainingActive": 65,
+      "scannedAt": "2026-11-01T22:09:16.953Z"
+    },
+    "bucketsAfter": {
+      "follow": 34,
+      "hunt": 31
+    }
+  },
+  "order4_laws": {
+    "tabitStabilization": {
+      "auditPinCheck": "PASS ۷/۷ (صفر pin کد واقعی در کد زنده)",
+      "commit": "8d2c07ff3f2e3f30f0d16424f8465a487abb96c5",
+      "pushedToMirror": true,
+      "buildEqualsHead": "[G3] ✗ بیلد ≠ HEAD — stale-build توقف: HEAD=8d2c07ff3f2e3f30f0d16424f8465a487abb96c5 · main-build=43ba21eff34ee11a3718203bdb0e086d9526a57e · standalone=43ba21eff34ee11a3718203bdb0e086d9526a57e"
+    },
+    "baqaSurvival": {
+      "package": "upload/.survival/PN-059-20261101",
+      "chain": "chainIndex=48 → prev=R7-20261101 (47)"
+    },
+    "sacredData": {
+      "counts": {
+        "PropertyRecord": 28377,
+        "RequestRecord": 25979,
+        "ExpertRecord": 307,
+        "User": 4,
+        "AuditLog": 8702,
+        "TransactionRecord": 818
+      },
+      "quickCheck": "ok",
+      "journalMode": "wal",
+      "growthOnlyNote": "تنها کاهش ثبت‌شده: حذف ملکتون به حکم صریح مالک (۹٬۳۷۷ ردیف با آرشیو SHA256دار + شاهد AuditLog) و TTL فایل‌های بی‌اقدام به حکم رابع"
+    },
+    "link": "LINKS.json در بستهٔ بقا + این شاهد (remote main = HEAD = بیلد زنده)"
+  },
+  "workerJobs": {
+    "lcpp-cycle": {
+      "running": false,
+      "runs": 1,
+      "lastError": null
+    },
+    "divar-file-ttl": {
+      "running": false,
+      "runs": 1,
+      "lastError": null
+    },
+    "catalog-cycle": {
+      "running": true,
+      "runs": 1,
+      "lastError": null
+    },
+    "relay-health-check": {
+      "running": false,
+      "runs": 9,
+      "lastError": null
+    }
+  },
+  "syncStateAfterRestart": {
+    "lastSyncedAt": 1793573173850,
+    "lastSuccessAt": 1793573337274,
+    "lastError": null,
+    "lastErrorCode": null,
+    "attempts": 0
+  },
+  "notesForOwner": "چرخهٔ کاتالوگ در حال پردازش صفحات ازسرگیری‌شده است؛ نخستین سینک شش‌خانوادهٔ تازه (تیک ۵) با اولویت ۲ و مهلت ۱۱۰ث اجرا می‌شود و SyncState را پاک می‌کند."
+}

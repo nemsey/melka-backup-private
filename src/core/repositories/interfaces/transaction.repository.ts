@@ -9,6 +9,8 @@ import type { BulkUpsertOptions, BulkWriteStats } from "./bulk-write.repository"
 
 /** فیلترهای فهرست معاملات — عین پارامترهای روت (خالص، بدون Prisma) */
 export interface TransactionListFilter {
+  /** PN-044/فاز ۴ — مقدار ستون tenantId در DB ('melk-tabriz' | 'melketun'). undefined → تبریز */
+  tenantId?: string;
   /** از این تاریخ (yyyy-MM-dd) */
   dateFrom?: string;
   /** تا این تاریخ (yyyy-MM-dd) */

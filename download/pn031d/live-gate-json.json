@@ -1,0 +1,44 @@
+{
+  "ok": true,
+  "ts": "2026-10-13T13:42:18.707Z",
+  "base": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+  "checks": [
+    {
+      "name": "بوت‌استرپ JSON با کد معتبر → 200 + راز دستگاه",
+      "pass": true,
+      "detail": {
+        "status": 200,
+        "deviceId": "pn031d-live-a35459",
+        "hasSecret": true,
+        "serverUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+        "ms": 89
+      }
+    },
+    {
+      "name": "کد جعلی → 403 + reason=invalid (پیام فارسی)",
+      "pass": true,
+      "detail": {
+        "status": 403,
+        "reason": "invalid",
+        "error": "کد نامعتبر — چنین کدی صادر نشده است (ناقص کپی شده یا غلط است)."
+      }
+    },
+    {
+      "name": "دانلود APK عمومی → 200 + sha256 منطبق",
+      "pass": true,
+      "detail": {
+        "status": 200,
+        "bytes": 5587965,
+        "shaMatch": true
+      }
+    },
+    {
+      "name": "health عمومی → 200",
+      "pass": true,
+      "detail": {
+        "status": 200,
+        "ms": 45
+      }
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Database } = require("bun:sqlite");
 const db = new Database("/home/z/my-project/db/custom.db", { readonly: true });
 const tx = db.query("SELECT DISTINCT ownerName FROM TransactionRecord WHERE ownerName IS NOT NULL LIMIT 5").all();

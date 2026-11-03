@@ -1,0 +1,12 @@
+{
+ "phase": "PN-031-F · فاز H — گاردهای نهایی",
+ "at": "2026-10-14T08:55:48Z",
+ "guardsPass": 44,
+ "guardsTotal": 44,
+ "guardsFail": 0,
+ "breakdown": "۴۲ اسکریپت audit-*.sh (۳ سخت‌گیر با --strict) + head-guard check (OK build-equals-head) + اجرای دوم تکرارپذیری (دو-سبز گاردها)",
+ "buildId": "107fd20-20261014-0844 (زنده = HEAD)",
+ "mirror": "GitHub mirror همگام (107fd20)",
+ "raw": "guards-raw.txt",
+ "verdict": "44/44 PASS"
+}

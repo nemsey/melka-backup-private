@@ -255,7 +255,13 @@ export async function runDivarScan(input: { force?: boolean } = {}): Promise<Sca
 
     for (const item of uniqueQueue) {
       const existing = knownMap.get(item.token);
-      const newChangeKeyGuess = `${item.token}|${item.priceText ?? "np"}`;
+      // R7 (فرمان مالک ۲۰۲۶-۱۱-۰۱ — اصلاح مکانیسم فایل‌یابی): priceText کارت جست‌وجو
+      // متن خام فارسی است («۱۳,۶۰۰,۰۰۰,۰۰۰ تومان») ولی changeKey ذخیره‌شده از
+      // priceTotalِ تجزیه‌شدهٔ عددی است (13600000000) — این دو هرگز برابر نبودند، پس
+      // هر اسکن جزئیات «همهٔ» آگهی‌های شناخته‌شده را دوباره می‌گرفت (~۶۰٪ سهمیهٔ fetch
+      // هدر می‌رفت). اکنون حدس هم در همان فضای عددی تجزیه می‌شود → آگهی شناخته‌شدهٔ
+      // بی‌تغییر فقط lastSeen می‌گیرد و سهمیهٔ fetch برای عمق بیشتر آزاد می‌شود.
+      const newChangeKeyGuess = `${item.token}|${parsePriceToman(item.priceText) ?? "np"}`;
       if (existing && existing.changeKey === newChangeKeyGuess) {
         // آگهی شناخته‌شده بدون تغییر مهم — فقط دیدن دوباره ثبت می‌شود
         await db.divarAd.update({

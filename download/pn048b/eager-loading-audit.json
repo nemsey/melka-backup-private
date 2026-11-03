@@ -1,0 +1,154 @@
+{
+ "meta": {
+  "test": "N2",
+  "description": "eager loading به‌عنوان contract test — ?with/?include/?load",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "no_change",
+ "samples_redacted": [
+  {
+   "probe": "/Potentials?with=contacts",
+   "status": 200,
+   "row_keys": [
+    "full_id",
+    "id",
+    "code",
+    "potentialName",
+    "customerType",
+    "price",
+    "rent",
+    "prepayment",
+    "areas",
+    "contactName",
+    "agency",
+    "assignedUser",
+    "propertyType",
+    "createdTime",
+    "starred",
+    "status"
+   ],
+   "rows_page": 10
+  },
+  {
+   "probe": "/Potentials?include=contact",
+   "status": 200,
+   "row_keys": [
+    "full_id",
+    "id",
+    "code",
+    "potentialName",
+    "customerType",
+    "price",
+    "rent",
+    "prepayment",
+    "areas",
+    "contactName",
+    "agency",
+    "assignedUser",
+    "propertyType",
+    "createdTime",
+    "starred",
+    "status"
+   ],
+   "rows_page": 10
+  },
+  {
+   "probe": "/Potentials?load=details",
+   "status": 200,
+   "row_keys": [
+    "full_id",
+    "id",
+    "code",
+    "potentialName",
+    "customerType",
+    "price",
+    "rent",
+    "prepayment",
+    "areas",
+    "contactName",
+    "agency",
+    "assignedUser",
+    "propertyType",
+    "createdTime",
+    "starred",
+    "status"
+   ],
+   "rows_page": 10
+  },
+  {
+   "probe": "/Melketunfilingplus?with=owner",
+   "status": 200,
+   "row_keys": [
+    "id",
+    "full_id",
+    "code",
+    "saleType",
+    "fileType",
+    "area",
+    "ownerName",
+    "price",
+    "prepayment",
+    "rent",
+    "assignedUser",
+    "phone",
+    "agency",
+    "source",
+    "status",
+    "createdTime",
+    "images"
+   ],
+   "rows_page": 10
+  },
+  {
+   "probe": "/Melketunfilingplus?include=contact",
+   "status": 200,
+   "row_keys": [
+    "id",
+    "full_id",
+    "code",
+    "saleType",
+    "fileType",
+    "area",
+    "ownerName",
+    "price",
+    "prepayment",
+    "rent",
+    "assignedUser",
+    "phone",
+    "agency",
+    "source",
+    "status",
+    "createdTime",
+    "images"
+   ],
+   "rows_page": 10
+  },
+  {
+   "probe": "/Melketunfilingplus?with=details,contact",
+   "status": 200,
+   "row_keys": [
+    "id",
+    "full_id",
+    "code",
+    "saleType",
+    "fileType",
+    "area",
+    "ownerName",
+    "price",
+    "prepayment",
+    "rent",
+    "assignedUser",
+    "phone",
+    "agency",
+    "source",
+    "status",
+    "createdTime",
+    "images"
+   ],
+   "rows_page": 10
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+{
+  "phase": "PN-033 · فاز ۵.۵ — کد تازهٔ مالک (شورا-ن۰۵۴)",
+  "at": "2026-10-16T10:43:12.198Z",
+  "decision": "NOT-NEEDED",
+  "reasoning": "رلهٔ Termux زنده است و تنها یک دستگاه فعال در DB است — نصب تازه لازم نیست؛ مالک فقط کدپرسنلی + OTP را وارد می‌کند",
+  "relayState": {
+    "activeDevices": 1,
+    "keeperDeviceId": "poco-f3-b816dd",
+    "lastSeenAt": "2026-10-16T10:43:07.193Z",
+    "lastSeenAgeSec": 5,
+    "online": true,
+    "servedCount": 12
+  },
+  "fuseState": {
+    "circuitBreakerRows": 0,
+    "permanentOff": "MELK_ARM_CIRCUIT_DISABLED=1 (env.platform.json + escrow سه‌لایه)"
+  },
+  "futurePath": "اگر گوشی ری‌استارت شد یا Termux بسته شد: مالک از GLM دستور نصب تازه می‌گیرد (رویهٔ issue-owner-code.ts · ثبت دستگاه از UI حذف شد — سند ن۰۵۴)",
+  "ownerNextStep": "تنظیمات ← اتصال به ملک تبریز ← ورود مجدد ← کدپرسنلی ۴۱۰۰۳۱۳۲۰ ← ارسال کد ← OTP"
+}

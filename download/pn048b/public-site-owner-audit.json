@@ -1,0 +1,93 @@
+{
+ "meta": {
+  "test": "T3",
+  "description": "منشأ owner.mobile در سایت عمومی — ۵ نمونهٔ مجاز (صفحات عمومی)",
+  "role": "CRM user Sarmasti (v_tiger_id=617, is_admin=0, کارشناس فروش رضانژاد تبریز)",
+  "purpose": "DIR-PN048B authorized technical audit — RBAC boundary + coverage ceiling",
+  "allowed_fields": "fields legitimately returned by each audited endpoint to this account",
+  "redaction_level": "hash"
+ },
+ "verdict": "realtor",
+ "finding": "نمای «مالک» سایت عمومی = کارشناس مسئول آگهی (agent) است، نه مالک واقعی ملک — شاهد: هر ۳ نمونهٔ own: نام/موبایل صفحه با rawOwnerName/ownerMobile حقیقی هم‌خوانی ندارد و ۲ نمونهٔ non-own با نام کارشناس حل‌شدهٔ DB (ownerName=expertName) هم‌خوان است. نتیجهٔ سقف: مسیر عمومی برای M7 (مالک واقعی) هیچ افزودهٔ مجازی ندارد؛ فقط realtor contact.",
+ "samples_redacted": [
+  {
+   "code": "ME8439",
+   "kind": "own",
+   "http": 200,
+   "public_owner_name": {
+    "initial": "ب",
+    "hash": "d24353571d"
+   },
+   "public_owner_mobile": {
+    "hash": "a67f2ee3cd"
+   },
+   "public_owner_siteid": "871",
+   "truth_owner_name_hash": "8d047a52c5",
+   "truth_owner_mobile_hash": "a97c2d2b90",
+   "match_owner_name": false,
+   "match_owner_mobile": false,
+   "origin_sample": "realtor"
+  },
+  {
+   "code": "ME8415",
+   "kind": "own",
+   "http": 200,
+   "public_owner_name": {
+    "initial": "ب",
+    "hash": "d24353571d"
+   },
+   "public_owner_mobile": {
+    "hash": "a67f2ee3cd"
+   },
+   "public_owner_siteid": "871",
+   "truth_owner_name_hash": "a47b258c91",
+   "truth_owner_mobile_hash": "b2826f8f2c",
+   "match_owner_name": false,
+   "match_owner_mobile": false,
+   "origin_sample": "realtor"
+  },
+  {
+   "code": "ME8442",
+   "kind": "non_own",
+   "http": 200,
+   "public_owner_name": {
+    "initial": "آ",
+    "hash": "36b302ed0c"
+   },
+   "public_owner_mobile": {
+    "hash": "25b509f0c4"
+   },
+   "public_owner_siteid": "238",
+   "truth_owner_name_hash": null,
+   "truth_owner_mobile_hash": null,
+   "match_owner_name": null,
+   "match_owner_mobile": null,
+   "origin_sample": "realtor",
+   "match_db_expert_display_name": true
+  },
+  {
+   "code": "ME8441",
+   "kind": "non_own",
+   "http": 200,
+   "public_owner_name": {
+    "initial": "آ",
+    "hash": "36b302ed0c"
+   },
+   "public_owner_mobile": {
+    "hash": "25b509f0c4"
+   },
+   "public_owner_siteid": "238",
+   "truth_owner_name_hash": null,
+   "truth_owner_mobile_hash": null,
+   "match_owner_name": null,
+   "match_owner_mobile": null,
+   "origin_sample": "realtor",
+   "match_db_expert_display_name": true
+  }
+ ],
+ "_t3_postfix": {
+  "at": "2026-10-22T22:50:00Z",
+  "reason": "regex اولیه &quot;-aware نبود (کلاس [^,&] با & برخورد می‌کرد) — استخراج مجدد آفلاین از صفحات ذخیره‌شده با آن‌اسکیپ کامل",
+  "new_requests": 0
+ }
+}

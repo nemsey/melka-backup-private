@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-16T17:48:44.900Z",
+  "pn": "PN-035",
+  "metric": "capacity-benchmark (سنجهٔ ۷)",
+  "server": {
+    "items": 100,
+    "enqueueMs": 163,
+    "claimBatch100Ms": 75,
+    "complete100Ms": 202,
+    "fullCycleMs": 440,
+    "perItemMs": 4.4,
+    "claimed": 100,
+    "completed": 100
+  },
+  "phone": {
+    "items": 1000,
+    "jqMergeMs": 16,
+    "gzipMs": 3,
+    "sha256Ms": 3,
+    "rawBytes": 129852,
+    "gzBytes": 9055,
+    "compressionRatio": 0.07
+  },
+  "estimate1000Records": {
+    "serverMs": 4400,
+    "phonePipelineMs": 22,
+    "totalMs": 4422,
+    "under30s": true,
+    "note": "۱۰۰۰ رکورد = ۱۰ دستهٔ ۱۰۰تایی (poll+result)؛ زمان برآوردی هر دسته از سنجهٔ سرور × ۱۰ + خط لولهٔ گوشی"
+  },
+  "verdict": "PASS"
+}

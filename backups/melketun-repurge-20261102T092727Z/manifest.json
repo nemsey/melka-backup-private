@@ -1,0 +1,15 @@
+{
+  "type": "melketun_repurge",
+  "phase": "PN-063",
+  "reason": "UNION با قلعهٔ کهنهٔ 20261024 ردیف‌های حذف‌شدهٔ PN-059 را بازگرداند — حکم صریح مالک دوباره اجرا شد",
+  "archiveDir": "backups/melketun-repurge-20261102T092727Z",
+  "warmBackup": "backups/pre-melketun-repurge-20261102T092727Z.db",
+  "originalPurgeArchive": "backups/melketun-purge-20261101T205740Z (PN-059)",
+  "deleted": {
+    "PropertyRecord": 5006,
+    "RequestRecord": 3904,
+    "ExpertRecord": 84,
+    "ExpertProfile": 84
+  },
+  "at": "2026-11-02T09:27:36.289817+00:00"
+}

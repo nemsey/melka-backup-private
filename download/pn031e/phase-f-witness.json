@@ -1,0 +1,19 @@
+{
+ "phase": "PN-031-F · فاز F — head-guard",
+ "testedAt": "2026-10-14T08:30:25Z",
+ "F1_scriptComplete": "scripts/recovery/audit-head-guard.sh — check/rebuild · نرخ‌حد ۳۰دقیقه · قانون ۹ پارک/CI · AuditLog · تاریخچهٔ jsonl",
+ "F2_workerJob": "src/core/runtime/jobs.ts · id=headGuard · هر ۱۰ دقیقه (MELK_HEAD_GUARD_INTERVAL_MINUTES=10) · check→exit2→rebuild خودکار",
+ "F3_compensationTest": {
+  "scenario": "بیلد زنده واقعاً از HEAD عقب بود (زنده f28c601 ≠ HEAD 3745a29) — جبران خودکار اجرا شد",
+  "result": "VERIFIED · rebuild از HEAD · fingerprint=HEAD · ری‌استارت · تأیید نهایی: OK build-equals-head (exit=0)",
+  "witness": "upload/.runtime/head-guard.json + AuditLog(HEAD_GUARD_AUTOBUILD) + head-guard.jsonl",
+  "note": "تست با لت واقعی (غیر از دریل مصنوعی) — FORCE_RECOVER=1 برای عبور از نرخ‌حدِ شکست ۰۸:۲۰ (بیلد آن تلاش به‌دلیل گذرایی شکست خورده بود)"
+ },
+ "F4_greenBanner": {
+  "component": "src/core/tiles/tiles/settings/BuildFreshnessBanner.tsx",
+  "liveApiResponse": "verdict=FRESH · live.gitSha=3745a29 = gitHead · پیام: «سرور روی HEAD است — بیلد زنده با آخرین کد مخزن یکسان است»",
+  "autoRebuildsThisMonth": 23,
+  "note": "بنر در تنظیمات برای مالک سبز است"
+ },
+ "verdict": "PASS"
+}

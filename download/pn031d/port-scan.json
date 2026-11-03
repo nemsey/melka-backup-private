@@ -1,0 +1,121 @@
+{
+  "ts": "20261013T130123Z",
+  "tool": "python socket TCP connect (معادل nc -zv)",
+  "hosts": [
+    "arus-api.melketabriz.ir",
+    "pm-api.melketabriz.ir",
+    "gap-api.melketabriz.ir",
+    "www.melketabriz.ir"
+  ],
+  "ports": [
+    443,
+    8443,
+    80,
+    8080
+  ],
+  "results": [
+    {
+      "host": "arus-api.melketabriz.ir",
+      "port": 443,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "arus-api.melketabriz.ir",
+      "port": 8443,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "arus-api.melketabriz.ir",
+      "port": 80,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "arus-api.melketabriz.ir",
+      "port": 8080,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "pm-api.melketabriz.ir",
+      "port": 443,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "pm-api.melketabriz.ir",
+      "port": 8443,
+      "state": "refused",
+      "latencyMs": null
+    },
+    {
+      "host": "pm-api.melketabriz.ir",
+      "port": 80,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "pm-api.melketabriz.ir",
+      "port": 8080,
+      "state": "refused",
+      "latencyMs": null
+    },
+    {
+      "host": "gap-api.melketabriz.ir",
+      "port": 443,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "gap-api.melketabriz.ir",
+      "port": 8443,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "gap-api.melketabriz.ir",
+      "port": 80,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "gap-api.melketabriz.ir",
+      "port": 8080,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "www.melketabriz.ir",
+      "port": 443,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "www.melketabriz.ir",
+      "port": 8443,
+      "state": "refused",
+      "latencyMs": null
+    },
+    {
+      "host": "www.melketabriz.ir",
+      "port": 80,
+      "state": "timeout",
+      "latencyMs": null
+    },
+    {
+      "host": "www.melketabriz.ir",
+      "port": 8080,
+      "state": "refused",
+      "latencyMs": null
+    }
+  ],
+  "summary": {
+    "probed": 16,
+    "open": 0,
+    "timeoutOrRefused": 16,
+    "openList": []
+  },
+  "note": "زمان‌سنجی ۳ ثانیه؛ فاصلهٔ ۱۵۰ms بین هر اتصال برای ادب شبکه"
+}

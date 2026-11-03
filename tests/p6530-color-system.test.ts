@@ -42,7 +42,11 @@ function normalizeHex(c: string): string {
 // ---------- منبع حقیقت: سند colors.json (قاعده ۷ — شاهد) ----------
 
 const ROOT = join(import.meta.dir, "..");
-const colorsPath = join(ROOT, "scripts", "p6530", "colors.json");
+// PN-027/۵-ب-۳ — اسکریپت‌های تاریخی به docs/archive منتقل شدند؛ شاهد colors.json همان‌جاست.
+// جست‌وجوی هر دو مسیر (اصلی → آرشیو) — سازگاری دوطرفه.
+const colorsPath = existsSync(join(ROOT, "scripts", "p6530", "colors.json"))
+  ? join(ROOT, "scripts", "p6530", "colors.json")
+  : join(ROOT, "docs", "archive", "scripts", "p6530", "colors.json");
 const globalsPath = join(ROOT, "src", "app", "globals.css");
 const tailwindPath = join(ROOT, "tailwind.config.ts");
 
@@ -193,16 +197,16 @@ describe("گام صفر — نظام رنگ ۱۳ بخش (قاعده ۶)", () => 
   test("§۶ اعمال در رجیستری: هر کاشی فعال رنگ بخش اختصاصی خودش را دارد", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     await import("@/core/tiles/bootstrap");
+    // PN-038/فاز ۲: هشت کاشی ریشهٔ هوم یک‌پارچه (M6/M7/ظرف/ملکا-قدیمی حذف)
     const expected: Record<string, string> = {
       "arm-listings": "m1",
       "arm-requests": "m2",
       "transactions-contracts": "m3",
       experts: "m4",
       "file-finder": "finder",
-      listings: "melka-listing",
-      requests: "melka-request",
+      "smart-matching": "m5",
+      "learning-tier": "m8",
       settings: "settings",
-      "management-dashboard": "mgmt",
     };
     for (const [tileId, sectionKey] of Object.entries(expected)) {
       const tile = tileRegistry.get(tileId);
