@@ -59,41 +59,6 @@ export async function getMasterCodeHash(): Promise<string | null> {
   }
 }
 
-/**
- * PN-066 — همگام‌سازی هش کدمستر از env به DB در بوت (پایان حلقهٔ ری‌استارت).
- * ریشهٔ حادثهٔ ۲۰۲۶-۱۱-۰۳: بوتِ پس از ریست، DB تازه با masterCodeHash=NULL
- * می‌سازد (db:push) و UNION عمداً AppMeta را بازنمی‌گرداند؛ هیچ‌کس هش را
- * همگام نمی‌کرد → وارسی auto-recovery «تخریب محیط» تشخیص می‌داد → بازیابی
- * کامل هر ~۳۲ ثانیه → قطع نشست‌ها/رله و بی‌ثباتی سرتاسری. این تابع در هر
- * بوت هشِ SHA-256 کدِ env را در AppMeta می‌نشاند (همانی سه‌لایهٔ PN-002 —
- * «env مقدم است؛ هش بعداً همگام می‌شود» — حالا واقعاً همگام می‌شود).
- * فقط هش نوشته می‌شود؛ هرگز خود کد. شکست هرگز بوت را نمی‌شکند.
- */
-export async function syncMasterCodeHashFromEnv(): Promise<{
-  ok: boolean;
-  action: "synced" | "already-consistent" | "skipped-no-env-code" | "error";
-  error?: string;
-}> {
-  try {
-    const envCode = (process.env.MASTER_ACCESS_CODE ?? "").trim();
-    if (!isEnvCodeValid(envCode)) {
-      return { ok: true, action: "skipped-no-env-code" };
-    }
-    const expected = createHash("sha256").update(envCode, "utf8").digest("hex");
-    const current = await getMasterCodeHash();
-    if (current === expected) {
-      return { ok: true, action: "already-consistent" };
-    }
-    await db.appMeta.update({
-      where: { id: "singleton" },
-      data: { masterCodeHash: expected },
-    });
-    return { ok: true, action: "synced" };
-  } catch (err) {
-    return { ok: false, action: "error", error: String((err as Error)?.message ?? err) };
-  }
-}
-
 /** شمارش متقاطع آگهی هر کارشناس (شاهکار M4 — عین کوئری قبلی روت export) */
 export async function expertListingCounts(): Promise<Map<string, number>> {
   const grouped = await db.propertyRecord.groupBy({ by: ["ownerName"], _count: { _all: true } });

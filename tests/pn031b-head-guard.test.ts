@@ -309,9 +309,9 @@ describe("PN-031-B/D — سازگاری و قراردادها", () => {
     for (const k of ["MELK_PROXY_SECRET", "MELK_ARM_RELAY_MODE", "MELK_ARM_OFFLINE", "MELK_ARM_CIRCUIT_DISABLED"]) {
       expect(BOOT_SECRET_KEYS as readonly string[]).toContain(k);
     }
-    // PN-033 (ن۰۵۴): کلید مردهٔ Worker حذف ماند · PN-066: ALT واکر زنده بادوام شد
+    // PN-033 (شورا-ن۰۵۴): کلیدهای دوران Worker از escrow حذف شدند
     expect(BOOT_SECRET_KEYS as readonly string[]).not.toContain("MELK_ARM_PROXY_URL");
-    expect(BOOT_SECRET_KEYS as readonly string[]).toContain("MELK_RELAY_ALT_URL");
+    expect(BOOT_SECRET_KEYS as readonly string[]).not.toContain("MELK_RELAY_ALT_URL");
   });
 
   test("D-6: env.platform.json زنده — حالت رله + راز HMAC + بی‌Worker + بی‌پرچم آفلاینی + فیوز خاموش (ن۰۵۴)", () => {
@@ -321,7 +321,7 @@ describe("PN-031-B/D — سازگاری و قراردادها", () => {
     expect(env.MELK_PROXY_SECRET ?? "").toMatch(/^[0-9a-f]{64}$/);
     // PN-033 (ن۰۵۴): کلیدهای Worker حذف · R7 (۲۰۲۶-۱۱-۰۱): ALT_URL مرده خلع شد
     expect(env).not.toHaveProperty("MELK_ARM_PROXY_URL");
-    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("https://melka-proxy.nemsey-ns.workers.dev"); // PN-065/066: ALT واکر زنده — بادوام از escrow
+    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("");
     expect(env.MELK_ARM_CIRCUIT_DISABLED ?? "").toBe("1");
     expect(env.MELK_PUBLIC_BASE_URL ?? "").toMatch(/^https:\/\/preview-/);
   });

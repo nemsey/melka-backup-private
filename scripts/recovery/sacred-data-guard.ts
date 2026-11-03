@@ -169,17 +169,6 @@ if (!live.exists) {
   process.exit(0);
 }
 
-// ── لایهٔ ۰ (PN-066): شاهد پاک‌سازی — زندهٔ «تهی مطلق» هرگز مقدس نیست ──
-// ریشهٔ حادثهٔ ۲۰۲۶-۱۱-۰۳: بوتِ پس از ریست، DB تازهٔ خالی می‌سازد (db:push)؛
-// mtime آن از بستهٔ بقا جدیدتر است و قواعد قبلی «live-newer-unwitnessed-writes»
-// صادر می‌کردند → بازیابی داده بلاک می‌شد → برنامه با DB خالی بالا می‌آمد
-// (کاشی‌ها صفر، ورود بی‌داده). دیتابیسِ بدونِ هیچ رکوردی چیزی برای محافظت
-// ندارد؛ اگر نامزد داده دارد، جایگزینی فقط «می‌افزاید» (قانون بقا).
-const liveWitnessCounts = COUNT_TABLES.map((t) => Math.max(live.counts[t] ?? -1, 0));
-const liveTotalRecords = liveWitnessCounts.reduce((s, n) => s + n, 0);
-const candTotalRecords = COUNT_TABLES.map((t) => Math.max(candidate.counts[t] ?? -1, 0)).reduce((s, n) => s + n, 0);
-const liveIsWipedArtifact = liveTotalRecords === 0 && candTotalRecords > 0;
-
 // ── لایهٔ ۱: mtime ──
 const mtimeDeltaSec = (live.mtimeMs - candidate.mtimeMs) / 1000;
 const liveNewerByMtime = mtimeDeltaSec > GRACE_SECONDS;
@@ -212,12 +201,6 @@ if (candidateBroken && !liveBroken) {
   // زنده تخریب شده — بازیابی از نامزد سالم مجاز (خودِ بازیابی است)
   verdict = "ALLOW";
   reason = "live-broken-recover";
-} else if (liveIsWipedArtifact) {
-  // PN-066 — زنده تهی مطلق است (بوتِ پس از ریست) و نامزد داده دارد:
-  // چیزی برای محافظت نیست؛ mtimeِ تازهٔ زنده (مصنوعِ همین چند دقیقه پیش)
-  // نباید بازیابی داده را ببلعد. جایگزینی فقط می‌افزاید.
-  verdict = "ALLOW";
-  reason = "live-wiped-artifact";
 } else if (liveRicherTables > 0) {
   // زنده روی حداقل یک جدول پرتر است — دادهٔ ازدست‌رفتن قطعی
   verdict = "BLOCK";

@@ -125,18 +125,15 @@ describe("PN-031-I · ب) لایهٔ ۳ — مسیر جایگزین واکِر /
     expect(workerSrc).toContain('"path not allowed", 403');
   });
 
-  test("ب-۷: (ن۰۵۴→ن۰۶۸→PN-065/066) MELK_RELAY_ALT_URL زنده و بادوام — واکر کلادفلر از escرو بازمی‌گردد", () => {
-    // PN-065: ALT کهنهٔ مرده (R7) با واکر زندهٔ melka-proxy برگشت؛ PN-066 آن را جزو
-    // BOOT_SECRET_KEYS کرد تا پس از هر ریست از escrow خودکار بازگردد.
+  test("ب-۷: (ن۰۵۴→ن۰۶۸→R7) MELK_RELAY_ALT_URL خلع شد — مسیر مردهٔ پیش‌نمایش حذف", () => {
+    // R7 (۲۰۲۶-۱۱-۰۱): ALT پیش‌نمایش کهنه (۵۰۰/HTML) از env حذف شد؛ تنها مسیر: رلهٔ اصلی
     const envPlatform = readFileSync(join(REPO, "env.platform.json"), "utf8");
-    expect(envPlatform).toContain('"MELK_RELAY_ALT_URL"');
-    expect(envPlatform).toContain("https://melka-proxy.nemsey-ns.workers.dev");
+    expect(envPlatform).not.toContain('"MELK_RELAY_ALT_URL"');
     // فیوز همچنان مهار (ن۰۵۴ پابرجا)
     expect(envPlatform).toContain('"MELK_ARM_CIRCUIT_DISABLED"');
-    // boot-secrets: کلید حیاتی فیوز + ALT بادوام (PN-066)
+    // boot-secrets: کلید حیاتی فیوز (ALT_URL هرگز راز نیست — env کافی است)
     const bootSecrets = readFileSync(join(REPO, "src/lib/auth/boot-secrets.ts"), "utf8");
     expect(bootSecrets).toContain('"MELK_ARM_CIRCUIT_DISABLED"');
-    expect(bootSecrets).toContain('"MELK_RELAY_ALT_URL"');
   });
 
   test("ب-۸: bootstrap روت — altServerUrl هم به JSON اپ اندروید هم اسکریپت Termux", () => {

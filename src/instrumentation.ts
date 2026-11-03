@@ -119,26 +119,6 @@ export async function register(): Promise<void> {
     });
   }
 
-  // ---------- ۱-ت) PN-066: همگام‌سازی هش کدمستر env → AppMeta ----------
-  // پایان حلقهٔ ری‌استارت ۳۲ثانیه‌ای (ریشهٔ بی‌ثباتی ۲۰۲۶-۱۱-۰۳): بوت پس از
-  // ریست DB تازه با masterCodeHash=NULL دارد؛ auto-recovery آن را «تخریب»
-  // می‌دانست و هر بوت بازیابی کامل می‌کرد → سرور هر ~۳۲ ثانیه ری‌استارت می‌شد.
-  // اکنون هر بوت هش را از env (تضمین‌شده توسط ensureBootSecrets بالا) همگام
-  // می‌کند — وارسی بوت سبز می‌ماند و سرور بالا می‌ماند. شکست بوت را نمی‌شکند.
-  {
-    const { syncMasterCodeHashFromEnv } = await import("@/lib/services/master-auth");
-    const r = await syncMasterCodeHashFromEnv();
-    if (r.action !== "already-consistent") {
-      logEvent({
-        level: r.ok ? "info" : "warn",
-        category: "system",
-        operation: "master-hash-sync",
-        status: r.ok ? "ok" : "fail",
-        detail: { action: r.action, error: r.error ?? null, note: "PN-066 — همانی سه‌لایهٔ کدمستر در بوت" },
-      });
-    }
-  }
-
   // ---------- ۲) چرخش کلید در صورت درخواست صریح (ROTATION_PENDING=true) ----------
   if (process.env.ROTATION_PENDING === "true") {
     const { rotateFromEnv } = await import("@/lib/auth/key-rotation");

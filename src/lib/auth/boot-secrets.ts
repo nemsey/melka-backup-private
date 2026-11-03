@@ -60,12 +60,6 @@ export const BOOT_SECRET_KEYS = [
   // برمی‌گرداند. MELK_ARM_PROXY_URL و MELK_RELAY_ALT_URL (دوران Worker)
   // حذف شدند — مسیر یگانه: رلهٔ Termux.
   "MELK_ARM_CIRCUIT_DISABLED",
-  // PN-066 (۲۰۲۶-۱۱-۰۳ · بازگشت به تصمیم PN-065): مسیر جایگزین رله
-  // (واکِر کلادفلر melka-proxy) دوباره فعال شد — اما این‌بار «بادوام»:
-  // دفعه‌قبل فقط در env.platform.json نشست و هر ریست پلتفرم می‌زدودش؛
-  // اکنون جزو escrow سه‌لایه است تا پس از هر ریست خودکار بازگردد.
-  // راز نیست (نشانی عمومی است) — همان دستهٔ پیکربندی حیاتی بقا؛ restore-only.
-  "MELK_RELAY_ALT_URL",
 ] as const;
 
 export type BootSecretKey = (typeof BOOT_SECRET_KEYS)[number];

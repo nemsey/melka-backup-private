@@ -1,104 +1,102 @@
 {
   "case": "PN-005",
   "purpose": "recovery-rebuild-after-db-destruction",
-  "ranAt": "2026-11-03T06:16:57.601Z",
+  "ranAt": "2026-10-05T20:38:45.709Z",
   "graphs": {
     "property": {
       "graph": "property",
-      "nodes": 45981,
-      "edges": 60730,
+      "nodes": 12523,
+      "edges": 21637,
       "byNodeType": {
-        "area": 118,
-        "expert": 120,
-        "person": 17366,
-        "property": 28377
+        "area": 13,
+        "person": 1006,
+        "property": 11504
       },
       "byEdgeType": {
-        "listed_by": 4196,
-        "located_in": 28377,
-        "owned_by": 28157
+        "located_in": 11504,
+        "owned_by": 10133
       }
     },
     "people": {
       "graph": "people",
-      "nodes": 92386,
-      "edges": 55791,
+      "nodes": 29965,
+      "edges": 21926,
       "byNodeType": {
-        "expert": 442,
-        "person": 36931,
-        "property": 28157,
-        "request": 26038,
-        "transaction": 818
+        "expert": 293,
+        "person": 7809,
+        "property": 10133,
+        "request": 11650,
+        "transaction": 80
       },
       "byEdgeType": {
-        "bought": 800,
-        "owns": 28157,
-        "requested": 26038,
-        "sold": 796
+        "bought": 71,
+        "owns": 10133,
+        "requested": 11650,
+        "sold": 72
       }
     },
     "transaction": {
       "graph": "transaction",
-      "nodes": 3380,
-      "edges": 2703,
+      "nodes": 1859,
+      "edges": 1106,
       "byNodeType": {
-        "person": 1458,
-        "property": 815,
-        "request": 289,
-        "transaction": 818
+        "person": 135,
+        "property": 761,
+        "request": 199,
+        "transaction": 764
       },
       "byEdgeType": {
-        "bought": 800,
-        "involves_property": 818,
-        "involves_request": 289,
-        "sold": 796
+        "bought": 71,
+        "involves_property": 764,
+        "involves_request": 199,
+        "sold": 72
       }
     },
     "totals": {
-      "nodes": 141747,
-      "edges": 119224
+      "nodes": 44347,
+      "edges": 44669
     },
-    "buildMs": 13670
+    "buildMs": 4606
   },
   "alerts": {
     "backfill": {
       "source": "backfill",
-      "evaluated": 154,
-      "alertsCreated": 140,
+      "evaluated": 133,
+      "alertsCreated": 130,
       "topScores": [
-        0.96,
-        0.96,
         0.95,
-        0.94,
-        0.94,
-        0.94,
-        0.93,
-        0.93,
-        0.92,
-        0.92
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95,
+        0.95
       ]
     },
-    "total": 4428
+    "total": 130
   },
   "loop": {
-    "predictions": 936,
-    "outcomes": 936,
+    "predictions": 386,
+    "outcomes": 386,
     "summary": {
-      "ranAt": "2026-11-03T06:16:57.015Z",
+      "ranAt": "2026-10-05T20:38:45.506Z",
       "tileId": "arm-listing",
-      "predictions": 936,
-      "positiveOutcomes": 468,
-      "negativeOutcomes": 468,
-      "linked": 936,
+      "predictions": 386,
+      "positiveOutcomes": 193,
+      "negativeOutcomes": 193,
+      "linked": 386,
       "evaluation": {
         "tileId": "arm-listing",
         "windowDays": 3650,
-        "sampleSize": 936,
+        "sampleSize": 386,
         "verdict": "ABOVE_BASELINE",
-        "computedAt": "2026-11-03T06:16:57.015Z",
+        "computedAt": "2026-10-05T20:38:45.506Z",
         "unresolvablePairs": 0,
         "target": "probability",
-        "brierScore": 0.2396,
+        "brierScore": 0.2256,
         "calibration": [
           {
             "bucket": "0.0-0.2",
@@ -108,12 +106,12 @@
           {
             "bucket": "0.2-0.4",
             "predicted": 0.395,
-            "observed": 0.346
+            "observed": 0.252
           },
           {
             "bucket": "0.4-0.6",
-            "predicted": 0.487,
-            "observed": 0.703
+            "predicted": 0.492,
+            "observed": 1
           },
           {
             "bucket": "0.6-0.8",
@@ -126,7 +124,7 @@
             "observed": 0
           }
         ],
-        "lift": 0.0417
+        "lift": 0.0975
       },
       "reproduction": {
         "source": "arm.melketabriz.ir (PropertyRecord واقعی)",
