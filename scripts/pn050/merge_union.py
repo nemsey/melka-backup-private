@@ -75,15 +75,32 @@ UNION_TABLES = [
     # این جدول «حالت زنده» نیست — رکورد هویتی است (عین User)؛ بازگرداندنش
     # رکوردی حذف نمی‌کند و اعتبارنامهٔ گوشی زنده را زنده نگه می‌دارد.
     "RelayDevice",
+    # PN-068 (دستور مالک ۲۰۲۶-۱۱-۰۷: «اتصال به حساب‌های شخصی پس از هر ریست قطع
+    # می‌شود — پایدار کن») — اعتبارنامه‌های حساب‌های متصل:
+    #   · ArmConnection  — صندوقچهٔ توکن ARM (سامانه ملک تبریز)؛ ریشهٔ واقعی
+    #     «M1/M2/M9 این چرخه skip شد — ARM token unavailable» پس از هر ریست.
+    #   · DivarConnection · PmConnection · GapConnection — همین الگو برای دیوار/PM/GAP.
+    # چرا امن است: توکن‌ها AES-256-GCM با MELK_TOKEN_KEY رمز شده‌اند و کلید از
+    # escrow سه‌لایهٔ بوت (upload/.runtime/boot-secrets.json) زنده می‌ماند — یعنی
+    # رمزگشایی پس از ریست ممکن است. توکنِ مرده روی مقصد فقط «خطا/قطع» نشان می‌دهد
+    # (همان وضعیت امروز) و کاربر دوباره وصل می‌شود؛ توکنِ زنده = اتصال پایدار.
+    # ردیف revoked/expired هم عین خودش برمی‌گردد (وضعیت در خود ردیف است).
+    "ArmConnection", "DivarConnection", "PmConnection", "GapConnection",
+    # PN-068 — نشست‌های فعال: کوکی مرورگر مالک پس از ریست زنده می‌ماند (بدون
+    # ورود مجدد). tokenHash یک‌طرفه است؛ expiresAt/revoked در خود ردیف محفوظند
+    # (نشست منقضی/باطل‌شده هرگز زنده نمی‌شود). armTokenEnc هم با همان کلید
+    # escrow رمزگشایی می‌شود — زنجیرهٔ P6.5-11 در نخستین ورود بازسازی می‌شود.
+    "Session", "UserSession",
 ]
 
 # جدول‌های عمداً خارج از union (حالت/صف/مشتق — سند بالا)
+# PN-068: Session/UserSession/ArmConnection/DivarConnection/PmConnection/GapConnection
+# به UNION منتقل شدند (بقای اعتبارنامه‌ها و نشست‌ها — ریشهٔ قطعی اتصال پس از ریست).
 UNION_EXCLUDED_STATE = [
     "RelayQueue", "GraphNode", "GraphEdge",
-    "Session", "UserSession", "OtpAttempt",
+    "OtpAttempt",
     "JobLock", "SyncJobState", "SyncCheckpoint", "SyncState", "SyncDeadLetter",
-    "ArmConnection", "DivarConnection", "DivarSetting", "InstagramConnection", "PmConnection",
-    "GapConnection",
+    "DivarSetting", "InstagramConnection",
     "AppMeta",
 ]
 

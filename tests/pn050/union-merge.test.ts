@@ -229,4 +229,81 @@ describe("PN-050 · دستور ۱ — UNION رستاخیز (merge_union.py)", ()
     db.close();
     expect(codes).toEqual(["POT1", "POT2"]);
   });
+
+  // ═══ PN-068 (دستور مالک ۲۰۲۶-۱۱-۰۷: «اتصال به حساب‌های شخصی پس از هر ریست قطع می‌شود — پایدار کن») ═══
+  // ریشهٔ قطعی: جدول‌های اعتبارنامه (ArmConnection/DivarConnection/PmConnection/GapConnection)
+  // و نشست‌ها (Session/UserSession) از UNION کنار گذاشته شده بودند → پس از هر ریستِ
+  // پلتفرم، DB زنده خالی می‌شد و اتصال ARM/دیوار/PM قطع می‌شد (کد پرسنلی + پیامک دوباره).
+  test("PN-068: اعتبارنامه‌ها و نشست‌ها پس از ریست زنده می‌مانند (ArmConnection · DivarConnection · Session)", () => {
+    const live = join(TMP, "t8-live.db"); // شبیهٔ DB زندهٔ «تازه‌بوت‌شدهٔ خالی» پس از ریست
+    const roll = join(TMP, "t8-roll.db"); // لایهٔ چرخشی ۵دقیقه‌ای — رکوردهای پیش از ریست
+    makeDb(live, []);
+    makeDb(roll, []);
+
+    const CONNECTION_TABLES: Array<[string, string[]]> = [
+      // [جدول, ستون‌ها] — قیدهای یکتا عین schema واقعی (id PK · کلید طبیعی UNIQUE)
+      ["ArmConnection", ["id TEXT PRIMARY KEY", "ownerKey TEXT UNIQUE", "tokenEnc TEXT", "refreshTokenEnc TEXT", "status TEXT"]],
+      ["DivarConnection", ["id TEXT PRIMARY KEY", "method TEXT UNIQUE", "status TEXT", "tokenEnc TEXT"]],
+      ["PmConnection", ["id TEXT PRIMARY KEY", "status TEXT", "tokenEnc TEXT"]],
+      ["GapConnection", ["id TEXT PRIMARY KEY", "status TEXT", "tokenEnc TEXT"]],
+      ["Session", ["id TEXT PRIMARY KEY", "tokenHash TEXT UNIQUE", "personnelCode TEXT", "role TEXT", "expiresAt TEXT", "revoked TEXT"]],
+      ["UserSession", ["id TEXT PRIMARY KEY", "tokenHash TEXT UNIQUE", "expiresAt TEXT"]],
+    ];
+    const mk = (path: string, withRows: boolean) => {
+      const db = new Database(path);
+      for (const [t, cols] of CONNECTION_TABLES) {
+        db.exec(`CREATE TABLE ${t} (${cols.join(", ")})`);
+      }
+      if (withRows) {
+        db.prepare("INSERT INTO ArmConnection (id, ownerKey, tokenEnc, refreshTokenEnc, status) VALUES (?,?,?,?,?)")
+          .run("arm-1", "master", "ENC-TOKEN", "ENC-REFRESH", "connected");
+        db.prepare("INSERT INTO DivarConnection (id, method, status, tokenEnc) VALUES (?,?,?,?)")
+          .run("dv-1", "phone", "connected", "ENC-DIVAR");
+        db.prepare("INSERT INTO PmConnection (id, status, tokenEnc) VALUES (?,?,?)")
+          .run("pm-1", "connected", "ENC-PM");
+        db.prepare("INSERT INTO Session (id, tokenHash, personnelCode, role, expiresAt, revoked) VALUES (?,?,?,?,?,?)")
+          .run("s-1", "HASH-1", "56101", "CONSULTANT", "2030-01-01", "0");
+        db.prepare("INSERT INTO UserSession (id, tokenHash, expiresAt) VALUES (?,?,?)")
+          .run("us-1", "UHASH-1", "2030-01-01");
+      }
+      db.close();
+    };
+    mk(live, false); // زنده = خالی (پس از ریست پلتفرم)
+    mk(roll, true); // چرخشی = همهٔ اعتبارنامه‌ها و نشست‌های پیش از ریست
+
+    runMerge(live, [roll]);
+
+    const db = new Database(live, { readonly: true });
+    expect((db.prepare("SELECT COUNT(*) AS n FROM ArmConnection WHERE ownerKey='master' AND status='connected'").get() as { n: number }).n).toBe(1);
+    expect((db.prepare("SELECT COUNT(*) AS n FROM DivarConnection WHERE method='phone'").get() as { n: number }).n).toBe(1);
+    expect((db.prepare("SELECT COUNT(*) AS n FROM PmConnection").get() as { n: number }).n).toBe(1);
+    expect((db.prepare("SELECT COUNT(*) AS n FROM Session WHERE personnelCode='56101'").get() as { n: number }).n).toBe(1);
+    expect((db.prepare("SELECT COUNT(*) AS n FROM UserSession").get() as { n: number }).n).toBe(1);
+    db.close();
+  });
+
+  // PN-068 — ایدمپوتنس اعتبارنامه‌ها: ردیف موجود در live هرگز بازنویسی نمی‌شود
+  // (توکنِ تازه‌ترِ کاربرِ فعلی مقدم بر توکنِ کهنهٔ بکاپ است — INSERT OR IGNORE).
+  test("PN-068: ردیف اعتبارنامهٔ موجود در live بازنویسی نمی‌شود (توکن زنده مقدم بر بکاپ)", () => {
+    const live = join(TMP, "t9-live.db");
+    const roll = join(TMP, "t9-roll.db");
+    makeDb(live, []);
+    makeDb(roll, []);
+    const mk = (path: string, token: string) => {
+      const db = new Database(path);
+      db.exec("CREATE TABLE ArmConnection (id TEXT PRIMARY KEY, ownerKey TEXT UNIQUE, tokenEnc TEXT, refreshTokenEnc TEXT, status TEXT)");
+      db.prepare("INSERT INTO ArmConnection (id, ownerKey, tokenEnc, refreshTokenEnc, status) VALUES (?,?,?,?,?)")
+        .run("arm-1", "master", token, "REF", "connected");
+      db.close();
+    };
+    mk(live, "ENC-FRESH-TOKEN"); // کاربر پس از بوت دوباره وصل شده — توکن تازه در live
+    mk(roll, "ENC-STALE-TOKEN"); // بکاپ توکن کهنه دارد
+
+    runMerge(live, [roll]);
+
+    const db = new Database(live, { readonly: true });
+    const tok = (db.prepare("SELECT tokenEnc FROM ArmConnection WHERE ownerKey='master'").get() as { tokenEnc: string }).tokenEnc;
+    db.close();
+    expect(tok).toBe("ENC-FRESH-TOKEN"); // توکن کهنهٔ بکاپ آن را بازنویسی نکرد
+  });
 });
