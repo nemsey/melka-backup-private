@@ -132,6 +132,21 @@ describe("۰۳۵-B/ج — اجزای ظاهری اجبارشده", () => {
     expect(nav).toContain("min-h-11"); // تاچ ≥۴۴px
     expect(nav).toContain("md:hidden");
   });
+  test("۳-ب. PN-069 — ترکیب ۵ آیتم ناوبری پایین: فایل‌یابی · آگهی (ملک تبریز) · درخواست (ملک تبریز) · معاملات · تنظیمات", () => {
+    const nav = read("src/components/app/BottomNav.tsx");
+    // پنج آیتم الزامی مالک — آدرس هر دکمه = کاشی مربوطه (آگهی/درخواست = ملک تبریز)
+    expect(nav).toContain('id: "file-finder", label: "فایل‌یابی"');
+    expect(nav).toContain('id: "arm-listings", label: "آگهی"');
+    expect(nav).toContain('id: "arm-requests", label: "درخواست"');
+    expect(nav).toContain('id: "transactions-contracts", label: "معاملات"');
+    expect(nav).toContain('id: "settings", label: "تنظیمات"');
+    // آیتم‌های حذف‌شده به دستور مالک (هوم + آگهی/درخواست ملکا) نباید برگردند
+    expect(nav).not.toContain('label: "هوم"');
+    expect(nav).not.toContain('label: "آگهی ملکا"');
+    expect(nav).not.toContain('label: "درخواست ملکا"');
+    expect(nav).not.toContain('id: "listings"');
+    expect(nav).not.toContain('id: "requests"');
+  });
   test("۴. حالت‌های کامل: Skeleton + Empty + Error + Offline + Success Toast", () => {
     const states = read("src/components/app/shared/list-states.tsx");
     expect(states).toContain("EmptyState");
