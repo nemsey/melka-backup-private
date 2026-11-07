@@ -1,104 +1,104 @@
 {
   "case": "PN-005",
   "purpose": "recovery-rebuild-after-db-destruction",
-  "ranAt": "2026-11-03T06:16:57.601Z",
+  "ranAt": "2026-11-07T13:53:46.903Z",
   "graphs": {
     "property": {
       "graph": "property",
-      "nodes": 45981,
-      "edges": 60730,
+      "nodes": 46117,
+      "edges": 60878,
       "byNodeType": {
         "area": 118,
         "expert": 120,
-        "person": 17366,
-        "property": 28377
+        "person": 17453,
+        "property": 28426
       },
       "byEdgeType": {
         "listed_by": 4196,
-        "located_in": 28377,
-        "owned_by": 28157
+        "located_in": 28426,
+        "owned_by": 28256
       }
     },
     "people": {
       "graph": "people",
-      "nodes": 92386,
-      "edges": 55791,
+      "nodes": 92783,
+      "edges": 56018,
       "byNodeType": {
-        "expert": 442,
-        "person": 36931,
-        "property": 28157,
-        "request": 26038,
-        "transaction": 818
+        "expert": 449,
+        "person": 37097,
+        "property": 28256,
+        "request": 26160,
+        "transaction": 821
       },
       "byEdgeType": {
-        "bought": 800,
-        "owns": 28157,
-        "requested": 26038,
-        "sold": 796
+        "bought": 803,
+        "owns": 28256,
+        "requested": 26160,
+        "sold": 799
       }
     },
     "transaction": {
       "graph": "transaction",
-      "nodes": 3380,
-      "edges": 2703,
+      "nodes": 3393,
+      "edges": 2713,
       "byNodeType": {
-        "person": 1458,
-        "property": 815,
-        "request": 289,
-        "transaction": 818
+        "person": 1464,
+        "property": 818,
+        "request": 290,
+        "transaction": 821
       },
       "byEdgeType": {
-        "bought": 800,
-        "involves_property": 818,
-        "involves_request": 289,
-        "sold": 796
+        "bought": 803,
+        "involves_property": 821,
+        "involves_request": 290,
+        "sold": 799
       }
     },
     "totals": {
-      "nodes": 141747,
-      "edges": 119224
+      "nodes": 142293,
+      "edges": 119609
     },
-    "buildMs": 13670
+    "buildMs": 12910
   },
   "alerts": {
     "backfill": {
       "source": "backfill",
-      "evaluated": 154,
-      "alertsCreated": 140,
+      "evaluated": 323,
+      "alertsCreated": 317,
       "topScores": [
         0.96,
         0.96,
-        0.95,
-        0.94,
-        0.94,
-        0.94,
-        0.93,
-        0.93,
-        0.92,
-        0.92
+        0.96,
+        0.96,
+        0.96,
+        0.96,
+        0.96,
+        0.96,
+        0.96,
+        0.96
       ]
     },
-    "total": 4428
+    "total": 5250
   },
   "loop": {
-    "predictions": 936,
-    "outcomes": 936,
+    "predictions": 938,
+    "outcomes": 938,
     "summary": {
-      "ranAt": "2026-11-03T06:16:57.015Z",
+      "ranAt": "2026-11-07T13:53:46.374Z",
       "tileId": "arm-listing",
-      "predictions": 936,
-      "positiveOutcomes": 468,
-      "negativeOutcomes": 468,
-      "linked": 936,
+      "predictions": 938,
+      "positiveOutcomes": 469,
+      "negativeOutcomes": 469,
+      "linked": 938,
       "evaluation": {
         "tileId": "arm-listing",
         "windowDays": 3650,
-        "sampleSize": 936,
+        "sampleSize": 938,
         "verdict": "ABOVE_BASELINE",
-        "computedAt": "2026-11-03T06:16:57.015Z",
+        "computedAt": "2026-11-07T13:53:46.374Z",
         "unresolvablePairs": 0,
         "target": "probability",
-        "brierScore": 0.2396,
+        "brierScore": 0.2397,
         "calibration": [
           {
             "bucket": "0.0-0.2",
@@ -113,7 +113,7 @@
           {
             "bucket": "0.4-0.6",
             "predicted": 0.487,
-            "observed": 0.703
+            "observed": 0.702
           },
           {
             "bucket": "0.6-0.8",
@@ -126,7 +126,7 @@
             "observed": 0
           }
         ],
-        "lift": 0.0417
+        "lift": 0.0413
       },
       "reproduction": {
         "source": "arm.melketabriz.ir (PropertyRecord واقعی)",

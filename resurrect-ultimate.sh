@@ -141,7 +141,7 @@ UNION_SCRIPT="$REPO/scripts/pn050/merge_union.py"
 UNION_TIMEOUT_S="${MELKA_UNION_TIMEOUT_S:-240}"
 mkdir -p "$REPO/db" "$REPO/upload/.data"
 
-# منابع UNION به‌ترتیب اولویت: قلعه (سنک ۵دقیقه‌ای) · جدیدترین چرخشی · جدیدترین بقا
+# منابع UNION به‌ترتیب اولویت: قلعه (سنک ۵دقیقه‌ای) · جدیدترین چرخشی · تازه‌ترین مقدس · جدیدترین بقا
 R=""
 { R=$(ls -t "$REPO"/upload/.data/rolling/live-*.db 2>/dev/null | head -1 || true); } 2>/dev/null
 { [ -n "$R" ] && is_sqlite "$R"; } 2>/dev/null || R=""
@@ -150,6 +150,15 @@ for K in $(ls -td "$REPO"/upload/.survival/P*/ 2>/dev/null || true); do
   for CAND in "${K}db/custom.db" "${K}custom.db"; do
     if is_sqlite "$CAND"; then S="$CAND"; break 2; fi
   done
+done
+# PN-071 — لایهٔ مقدس (upload/.data/sacred/sacred-*.db): درس ریست ۲۰۲۶-۱۱-۰۷ ۱۳:۱۰ —
+# چرخشی/قلعه پس از ریست «خالی» بودند (Worker وضعیت تهی را سنک کرده بود) و تنها
+# اسنپ‌شات مقدسِ پیش از ریست (۳۶۱MB · ۲۸٬۴۲۶ آگهی) داده را داشت. انتخاب:
+# تازه‌ترین اسنپ‌شاتِ «ناخالی» (ترتیب نام = زمان‌دار ISO). قدیمی‌ترها عمداً
+# پارک می‌شوند — بازگرداندنشان رکوردهای هرس‌شدهٔ عمدی (پالایش ملکتون) را زنده می‌کند.
+C=""
+for CAND in $(ls "$REPO"/upload/.data/sacred/sacred-*.db 2>/dev/null | LC_ALL=C sort -r | head -5); do
+  if is_sqlite "$CAND" && [ "$(rowcount "$CAND")" -gt 0 ]; then C="$CAND"; break; fi
 done
 
 # UNION یک منبع — اتمی + timeout + skip صادقانه (سطر JSON خروجی = شاهد روی لاگ)
@@ -174,7 +183,8 @@ if is_sqlite "$LIVE"; then
   # UNION افزودنی: هر لایه فقط «می‌افزاید» — رکورد موجود هرگز بازنویسی نمی‌شود
   if is_sqlite "$FORT"; then union_one "$FORT" "قلعه" || true; else echo "  ⚠️ قلعه نامعتبر/ناموجود — skip"; fi
   if [ -n "$R" ]; then union_one "$R" "چرخشی" || true; else echo "  ⚠️ چرخشی نامعتبر/ناموجود — skip"; fi
-  if [ -n "$S" ]; then union_one "$S" "بقا" || true; else echo "  ℹ️ بستهٔ بقا لازم نبود (قلعه/چرخشی حاضرند یا ناموجودند)"; fi
+  if [ -n "$C" ]; then union_one "$C" "مقدس" || true; else echo "  ℹ️ اسنپ‌شات مقدسِ ناخالی یافت نشد"; fi
+  if [ -n "$S" ]; then union_one "$S" "بقا" || true; else echo "  ℹ️ بستهٔ بقا لازم نبود (لایه‌های دیگر حاضرند یا ناموجودند)"; fi
   LC2=$(rowcount "$LIVE")
   if [ "$LC2" -lt "$LC" ]; then
     echo "❌ FATAL: UNION شمارش را کاهش داد ($LC → $LC2) — نقض قانون بقا؛ توقف"
@@ -189,6 +199,7 @@ if ! is_sqlite "$LIVE"; then
   SRC=""; SRCN=""
   if is_sqlite "$FORT"; then SRC="$FORT"; SRCN="قلعهٔ پایدار"
   elif [ -n "$R" ] && is_sqlite "$R"; then SRC="$R"; SRCN="چرخشی"
+  elif [ -n "$C" ]; then SRC="$C"; SRCN="مقدس"
   elif [ -n "$S" ]; then SRC="$S"; SRCN="بقا"
   fi
   if [ -n "$SRC" ]; then
@@ -208,6 +219,7 @@ if ! is_sqlite "$LIVE"; then
   if is_sqlite "$LIVE" && [ -n "$SRC" ]; then
     { [ "$SRC" != "$FORT" ] && is_sqlite "$FORT" && union_one "$FORT" "قلعه"; } || true
     { [ -n "$R" ] && [ "$SRC" != "$R" ] && union_one "$R" "چرخشی"; } || true
+    { [ -n "$C" ] && [ "$SRC" != "$C" ] && union_one "$C" "مقدس"; } || true
     { [ -n "$S" ] && [ "$SRC" != "$S" ] && union_one "$S" "بقا"; } || true
     echo "  ✓ پس از UNION با بقیهٔ لایه‌ها: $(rowcount "$LIVE") آگهی"
   fi
