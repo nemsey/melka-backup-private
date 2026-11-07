@@ -1,7 +1,7 @@
 {
   "case": "PN-005",
   "purpose": "recovery-rebuild-after-db-destruction",
-  "ranAt": "2026-11-07T13:53:46.903Z",
+  "ranAt": "2026-11-07T15:08:11.550Z",
   "graphs": {
     "property": {
       "graph": "property",
@@ -58,7 +58,7 @@
       "nodes": 142293,
       "edges": 119609
     },
-    "buildMs": 12910
+    "buildMs": 12781
   },
   "alerts": {
     "backfill": {
@@ -78,13 +78,13 @@
         0.96
       ]
     },
-    "total": 5250
+    "total": 5642
   },
   "loop": {
     "predictions": 938,
     "outcomes": 938,
     "summary": {
-      "ranAt": "2026-11-07T13:53:46.374Z",
+      "ranAt": "2026-11-07T15:08:11.012Z",
       "tileId": "arm-listing",
       "predictions": 938,
       "positiveOutcomes": 469,
@@ -95,7 +95,7 @@
         "windowDays": 3650,
         "sampleSize": 938,
         "verdict": "ABOVE_BASELINE",
-        "computedAt": "2026-11-07T13:53:46.374Z",
+        "computedAt": "2026-11-07T15:08:11.012Z",
         "unresolvablePairs": 0,
         "target": "probability",
         "brierScore": 0.2397,
