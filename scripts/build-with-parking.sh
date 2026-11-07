@@ -67,6 +67,7 @@ PARK_PATHS=(
   "upload/.mirror"
   "upload/dataset-backups"
   "backups"
+  "download"
   "upload/.data/corruption-incident-pn070"
   "upload/.data/corruption-incident-pn069"
 )
