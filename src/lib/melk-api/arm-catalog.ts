@@ -72,6 +72,49 @@ const MAX_PAGES = 500;
  * نسل J گوشی در ۲۵ث می‌شکست و سرور هنوز ۲۰ ثانیه دیگر منتظر می‌ماند). */
 const LIST_TIMEOUT_MS = 75_000;
 
+/**
+ * PN-068 (دستور مالک ۲۰۲۶-۱۱-۰۷: «سرعت بروزرسانی فهرست‌ها با تاخیر زیاد
+ * انجام می‌شود … افزایش بده») — هم‌اندازهٔ تکهٔ موازی واکشی صفحات.
+ *
+ * چرا ۴؟ رلهٔ موبایل نسل M (PN-068) روی گوشی ۱۲ کارگر موازی دارد؛ هر
+ * صفحهٔ فهرست یک آیتم رله است و گوشی تا ۱۲ تای آن را همزمان اجرا می‌کند.
+ * مبدأ (سامانه ARM) چهار درخواست همزمان فهرست را بدون فشار می‌پذیرد —
+ * هم‌تراز با خط قرمز مستند LCPP (≤۵). پنجاه صفحهٔ سریِ ۳۰ثانیه‌ای =
+ * ۲۵ دقیقه؛ با تکه‌های ۴تایی ≈ ۶ دقیقه — چهار برابر تندتر.
+ */
+const PAGE_CHUNK_CONCURRENCY = 4;
+
+/**
+ * PN-068 — واکشی تکه‌ایِ موازی صفحات فهرست: تا `PAGE_CHUNK_CONCURRENCY`
+ * صفحه همزمان. نتایج در Map به‌کلید شمارهٔ صفحه برمی‌گردند؛ نخستین دلیل شکست
+ * هم برمی‌گردد تا فراخواننده عین semantics سریِ پیشین، خطای سخت را بالا بیندازد.
+ * صفحهٔ شکست‌خورده در Map نیست (checkpoint فقط پشت صفحهٔ موفق جلو می‌رود؛
+ * صفحات موازیِ بعد از شکست در چرخهٔ بعد دوباره واکشی می‌شوند — idempotent).
+ */
+async function fetchListPagesParallel(
+  token: string,
+  path: string,
+  pages: readonly number[],
+  pageSize: number,
+  knownTotalAtSource: number,
+  concurrency = PAGE_CHUNK_CONCURRENCY
+): Promise<{ results: Map<number, { rows: RawRow[]; total: number; totalPages: number }>; firstError: unknown | null }> {
+  const results = new Map<number, { rows: RawRow[]; total: number; totalPages: number }>();
+  let firstError: unknown | null = null;
+  for (let i = 0; i < pages.length; i += concurrency) {
+    const slice = pages.slice(i, i + concurrency);
+    const settled = await Promise.allSettled(
+      slice.map(async (p) => [p, await fetchListPage(token, path, p, pageSize, knownTotalAtSource)] as const)
+    );
+    for (const r of settled) {
+      if (r.status === "fulfilled") results.set(r.value[0], r.value[1]);
+      else if (firstError === null) firstError = r.reason;
+    }
+    if (i + concurrency < pages.length) await sleep(catalogRateMs());
+  }
+  return { results, firstError };
+}
+
 type RawRow = Record<string, unknown>;
 
 function pickStr(row: RawRow, keys: string[]): string | null {
@@ -661,29 +704,52 @@ export async function syncArmListingsCatalog(
 
   try {
     let page = cycle.startPage;
-    let endPage = page;
+    let endPage = 0; // از پاسخ نخستین صفحه تنظیم می‌شود (مرجع شمارش)
     const pagesBudget = cycle.resumed ? Math.max(1, maxPages - 1) : maxPages;
-    do {
-      const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.propertiesList, page, pageSize, savedTotalAtSource);
-      out.totalAtSource = total;
-      savedTotalAtSource = savedTotalAtSource || total;
-      endPage = Math.min(tp, page + pagesBudget - 1);
-      out.pages = page;
-      const inputs = rows
-        .map((r) => mapArmPropertyListRow(r))
-        .filter((r): r is PropertyBulkInput => r !== null);
-      out.fetched += inputs.length;
-      const stats = await repo.upsertBulk(inputs, { sourceRunId: runId });
-      out.created += stats.created;
-      out.updated += stats.updated;
-      out.duplicates += stats.duplicates;
-      out.errors += stats.errors;
-      // داده نوشته شد ⇒ حالا checkpoint جلو می‌رود (ترتیب حیاتی — حفره داده ممنوع)
-      lastCompleted = page;
-      await advanceCheckpoint("listings", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: lastCompleted, totalPages: tp, totalAtSource: total }, "in-progress");
-      page += 1;
-      if (page <= endPage) await sleep(catalogRateMs());
-    } while (page <= endPage);
+    // ═══ PN-068 — تکه‌های موازی: تا ۴ صفحه همزمان از نقطهٔ جاری ═══
+    // بودجهٔ صفحه از نقطهٔ شروعِ چرخه لنگر می‌شود (سقف نسبی — مستند درخواست‌ها)؛
+    // پردازش و checkpoint عین پیشین «به‌ترتیب صفحه» است — شکست صفحه، توقف در
+    // همان‌جا؛ خطای سخت (خطای armCall) بالا می‌رود (عین semantics سری).
+    let hardStop = false;
+    while (!hardStop) {
+      const chunkEnd = endPage > 0 ? Math.min(page + PAGE_CHUNK_CONCURRENCY - 1, endPage) : page;
+      const chunkPages: number[] = [];
+      for (let p = page; p <= chunkEnd; p += 1) chunkPages.push(p);
+      const { results: fetched, firstError } = await fetchListPagesParallel(
+        token, MELK_ENDPOINTS.arm.propertiesList, chunkPages, pageSize, savedTotalAtSource
+      );
+      for (const p of chunkPages) {
+        const r = fetched.get(p);
+        if (!r) {
+          // شکست این صفحه — عین رفتار سری: خطای سخت بالا می‌رود (catch بیرونی)
+          if (firstError !== null) throw firstError;
+          hardStop = true;
+          break;
+        }
+        const { rows, total, totalPages: tp } = r;
+        out.totalAtSource = total;
+        savedTotalAtSource = savedTotalAtSource || total;
+        if (endPage === 0) endPage = Math.min(tp, cycle.startPage + pagesBudget - 1);
+        else endPage = Math.min(endPage, cycle.startPage + pagesBudget - 1);
+        out.pages = p;
+        const inputs = rows
+          .map((rw) => mapArmPropertyListRow(rw))
+          .filter((rw): rw is PropertyBulkInput => rw !== null);
+        out.fetched += inputs.length;
+        const stats = await repo.upsertBulk(inputs, { sourceRunId: runId });
+        out.created += stats.created;
+        out.updated += stats.updated;
+        out.duplicates += stats.duplicates;
+        out.errors += stats.errors;
+        // داده نوشته شد ⇒ حالا checkpoint جلو می‌رود (ترتیب حیاتی — حفره داده ممنوع)
+        lastCompleted = p;
+        await advanceCheckpoint("listings", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: lastCompleted, totalPages: tp, totalAtSource: total }, "in-progress");
+      }
+      if (hardStop) break;
+      page = chunkPages[chunkPages.length - 1] + 1;
+      if (page > endPage) break;
+      await sleep(catalogRateMs());
+    }
     // چرخه به انتها رسید؟ (آخرین صفحهٔ کامل = totalPages) + گارد پوشش P6530/گام ۲:
     // علامت complete فقط با پوشش ≥ ۹۰٪ شمارش منبع — پاسخ معیوبِ «پایان زودرس» هرگز
     // چرخهٔ ناقص را کامل جا نمی‌زند (شاهد: چرخهٔ درخواست‌ها در صفحهٔ ۱۲۱ از ۴۰۸)
@@ -770,32 +836,52 @@ export async function syncArmRequestsCatalog(
 
   try {
     let page = startPage;
-    let endPage = page; // سقف نسبی: maxPages صفحه از نقطهٔ شروع (نه سقف مطلق شمارهٔ صفحه)
+    let endPage = 0; // سقف نسبی: maxPages صفحه از نقطهٔ شروع — از پاسخ نخستین صفحه
     const pagesBudget = cycle.resumed ? Math.max(1, maxPages - 1) : maxPages;
     // P6547/گام دوم — نقشه‌های شناسه→نام فهرست‌های مرجع (tradeType/buildingType/…) — یک‌بار در هر اجرا
     const { loadTypeMaps } = await import("./type-registry");
     const typeMaps = await loadTypeMaps().catch(() => undefined);
-    do {
-      const { rows, total, totalPages: tp } = await fetchListPage(token, MELK_ENDPOINTS.arm.requestsList, page, pageSize, savedTotalAtSource);
-      out.totalAtSource = total;
-      savedTotalAtSource = savedTotalAtSource || total;
-      endPage = Math.min(tp, page + pagesBudget - 1);
-      out.pages = page;
-      const inputs = rows
-        .map((r) => mapArmRequestListRow(r, typeMaps))
-        .filter((r): r is ArmRequestBulkRow => r !== null);
-      out.fetched += inputs.length;
-      const stats = await repo.upsertArmBulk(inputs, { sourceRunId: runId });
-      out.created += stats.created;
-      out.updated += stats.updated;
-      out.duplicates += stats.duplicates;
-      out.errors += stats.errors;
-      // داده نوشته شد ⇒ حالا checkpoint جلو می‌رود
-      lastCompleted = page;
-      await advanceCheckpoint("requests", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: lastCompleted, totalPages: tp, totalAtSource: total }, "in-progress");
-      page += 1;
-      if (page <= endPage) await sleep(catalogRateMs());
-    } while (page <= endPage);
+    // ═══ PN-068 — تکه‌های موازی: تا ۴ صفحه همزمان (عین آگهی‌ها) ═══
+    let hardStop = false;
+    while (!hardStop) {
+      const chunkEnd = endPage > 0 ? Math.min(page + PAGE_CHUNK_CONCURRENCY - 1, endPage) : page;
+      const chunkPages: number[] = [];
+      for (let p = page; p <= chunkEnd; p += 1) chunkPages.push(p);
+      const { results: fetched, firstError } = await fetchListPagesParallel(
+        token, MELK_ENDPOINTS.arm.requestsList, chunkPages, pageSize, savedTotalAtSource
+      );
+      for (const p of chunkPages) {
+        const r = fetched.get(p);
+        if (!r) {
+          // شکست این صفحه — عین رفتار سری: خطای سخت بالا می‌رود (catch بیرونی)
+          if (firstError !== null) throw firstError;
+          hardStop = true;
+          break;
+        }
+        const { rows, total, totalPages: tp } = r;
+        out.totalAtSource = total;
+        savedTotalAtSource = savedTotalAtSource || total;
+        if (endPage === 0) endPage = Math.min(tp, startPage + pagesBudget - 1);
+        else endPage = Math.min(endPage, startPage + pagesBudget - 1);
+        out.pages = p;
+        const inputs = rows
+          .map((rw) => mapArmRequestListRow(rw, typeMaps))
+          .filter((rw): rw is ArmRequestBulkRow => rw !== null);
+        out.fetched += inputs.length;
+        const stats = await repo.upsertArmBulk(inputs, { sourceRunId: runId });
+        out.created += stats.created;
+        out.updated += stats.updated;
+        out.duplicates += stats.duplicates;
+        out.errors += stats.errors;
+        // داده نوشته شد ⇒ حالا checkpoint جلو می‌رود
+        lastCompleted = p;
+        await advanceCheckpoint("requests", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: lastCompleted, totalPages: tp, totalAtSource: total }, "in-progress");
+      }
+      if (hardStop) break;
+      page = chunkPages[chunkPages.length - 1] + 1;
+      if (page > endPage) break;
+      await sleep(catalogRateMs());
+    }
     const finalCp = await integration.getSyncCheckpoint("requests");
     if (finalCp && finalCp.lastCompletedPage >= endPage) {
       // P6530/گام ۲ (نکتهٔ بسیار مهم ۳) — گارد پوشش: ۷٬۳۹۸ رکورد در برابر ۲۰٬۳۹۲ منبع
@@ -1051,6 +1137,9 @@ export function extractRequestAreas(payload: unknown): string[] {
  * غنی‌سازی برشی آگهی‌ها — تا maxRows ردیفِ در انتظار (جدیدترین اول):
  * owner → نام/موبایل مالک · details → آدرس دقیق و مشخصات.
  * ردیف‌های موفق/بی‌داده با extractionBatchId علامت می‌خورند (دیگر دوباره پرسیده نمی‌شوند).
+ * PN-068 (دستور مالک ۲۰۲۶-۱۱-۰۷): تکه‌های موازی ۴تایی — هر رکورد دو زنجیرهٔ
+ * مستقل خودش را دارد؛ خطای UNAUTHORIZED پس از پایان تکه بالا می‌رود (کل اجرا
+ * متوقف و تمدید می‌شود — عین semantics سری). کاری از سرور فقط upsert است.
  */
 export async function enrichArmListings(
   token: string,
@@ -1070,18 +1159,23 @@ export async function enrichArmListings(
   const counts = await repo.countEnrichment();
   out.total = counts.total;
 
-  for (const row of pending) {
-    out.attempted += 1;
-    const input: PropertyBulkInput = {
-      id: row.id,
-      propertyCode: row.naturalKey,
-      extractedAt: new Date(),
-      extractionBatchId: batchId,
-      normalizationVersion: "arm-catalog-v1",
-    };
-    let gotAny = false;
-    /** خطای نرم = قطعی نیست (شبکه/سرور) — اگر هر دو زنجیره نرم‌شکست خوردند، ردیف علامت نمی‌خورد */
-    let softFailures = 0;
+  // ═══ PN-068 — غنی‌سازی موازی: تکه‌های ۴تایی ═══
+  let unauthorizedErr: unknown = null;
+  for (let i = 0; i < pending.length; i += PAGE_CHUNK_CONCURRENCY) {
+    const slice = pending.slice(i, i + PAGE_CHUNK_CONCURRENCY);
+    const outcomes = await Promise.all(
+      slice.map(async (row): Promise<{ input: PropertyBulkInput; gotAny: boolean; softFailures: number } | "unauthorized"> => {
+        out.attempted += 1;
+        const input: PropertyBulkInput = {
+          id: row.id,
+          propertyCode: row.naturalKey,
+          extractedAt: new Date(),
+          extractionBatchId: batchId,
+          normalizationVersion: "arm-catalog-v1",
+        };
+        let gotAny = false;
+        /** خطای نرم = قطعی نیست (شبکه/سرور) — اگر هر دو زنجیره نرم‌شکست خوردند، ردیف علامت نمی‌خورد */
+        let softFailures = 0;
 
     // ---- مالک ملک: نام و نام خانوادگی + شماره تماس ----
     try {
@@ -1104,7 +1198,8 @@ export async function enrichArmListings(
       }
     } catch (err) {
       const e = err as { code?: string; httpStatus?: number; retryable?: boolean };
-      if (e?.code === "UNAUTHORIZED") throw err; // انقضای توکن — کل اجرا متوقف و تمدید می‌شود
+      // انقضای توکن — پس از پایان تکه بالا می‌رود: کل اجرا متوقف و تمدید می‌شود
+      if (e?.code === "UNAUTHORIZED") { unauthorizedErr = err; return "unauthorized"; }
       // خطای ۴xx (نتیجهٔ قطعی: رکورد حذف‌شده/مجوز) ⇒ علامت می‌خورد؛ ۵xx/شبکه/مهلت ⇒ نرم (تلاش در برش بعدی)
       if (!isDefinitive4xx(e)) softFailures += 1;
     }
@@ -1123,24 +1218,30 @@ export async function enrichArmListings(
       if (Object.keys(extras).length > 0) gotAny = true;
     } catch (err) {
       const e = err as { code?: string };
-      if (e?.code === "UNAUTHORIZED") throw err;
+      if (e?.code === "UNAUTHORIZED") { unauthorizedErr = err; return "unauthorized"; }
       softFailures += 1;
     }
 
-    // هر دو زنجیره قطعی نبود ⇒ بدون علامت؛ در برش بعدی دوباره تلاش می‌شود
-    if (softFailures >= 2) {
-      out.failed += 1;
-      await sleep(catalogRateMs());
-      continue;
-    }
-
-    const stats = await repo.upsertBulk([input], { sourceRunId: batchId });
-    if (stats.errors > 0) {
-      out.failed += 1;
-    } else if (gotAny) {
-      out.enriched += 1;
-    } else {
-      out.missingAtSource += 1;
+    return { input, gotAny, softFailures };
+      })
+    );
+    // انقضای توکن در این تکه؟ — کل اجرا متوقف (عین semantics سری)
+    if (unauthorizedErr !== null) throw unauthorizedErr;
+    for (const oc of outcomes) {
+      if (oc === "unauthorized") continue; // نگه‌دارندهٔ نوع — پس از throw بالا ناممکن
+      // هر دو زنجیره قطعی نبود ⇒ بدون علامت؛ در برش بعدی دوباره تلاش می‌شود
+      if (oc.softFailures >= 2) {
+        out.failed += 1;
+        continue;
+      }
+      const stats = await repo.upsertBulk([oc.input], { sourceRunId: batchId });
+      if (stats.errors > 0) {
+        out.failed += 1;
+      } else if (oc.gotAny) {
+        out.enriched += 1;
+      } else {
+        out.missingAtSource += 1;
+      }
     }
     await sleep(catalogRateMs());
   }
@@ -1155,6 +1256,7 @@ export async function enrichArmListings(
 /**
  * غنی‌سازی برشی درخواست‌ها — تا maxRows ردیفِ در انتظار (جدیدترین اول):
  * applicant → نام و نام خانوادگی + شماره تماس درخواست‌دهنده.
+ * PN-068: تکه‌های موازی ۴تایی (عین آگهی‌ها — خطای UNAUTHORIZED پس از تکه بالا می‌رود).
  */
 export async function enrichArmRequests(
   token: string,
@@ -1174,89 +1276,101 @@ export async function enrichArmRequests(
   const counts = await repo.countArmEnrichment();
   out.total = counts.total;
 
-  for (const row of pending) {
-    out.attempted += 1;
-    const input: ArmRequestBulkRow = {
-      id: row.id,
-      requestCode: row.naturalKey,
-      extractedAt: new Date(),
-      extractionBatchId: batchId,
-      normalizationVersion: "arm-catalog-v1",
-    };
-    let gotAny = false;
-    /** خطای نرم = قطعی نیست (شبکه/سرور) — ردیف علامت نمی‌خورد تا در برش بعدی دوباره تلاش شود */
-    let softFail = false;
-    try {
-      const app = await armCall<unknown>({
-        path: MELK_ENDPOINTS.arm.requestApplicant(row.id),
-        baseUrl: cfg.armApiBase,
-        token,
-        timeoutMs: 45_000,
-        maxRetries: 0,
-      });
-      const person = extractPersonInfo(app.data);
-      if (person) {
-        const rawName = pickStr((app.data ?? {}) as RawRow, ["fullName", "lastName"]);
-        const rawMobile = pickStr((app.data ?? {}) as RawRow, ["mobileNumber", "phoneNumber"]);
-        if (rawName) {
-          input.rawCustomerName = rawName;
-          input.customerName = rawName;
+  // ═══ PN-068 — غنی‌سازی موازی: تکه‌های ۴تایی ═══
+  let unauthorizedErr: unknown = null;
+  for (let i = 0; i < pending.length; i += PAGE_CHUNK_CONCURRENCY) {
+    const slice = pending.slice(i, i + PAGE_CHUNK_CONCURRENCY);
+    const outcomes = await Promise.all(
+      slice.map(async (row): Promise<{ input: ArmRequestBulkRow; gotAny: boolean; softFail: boolean } | "unauthorized"> => {
+        out.attempted += 1;
+        const input: ArmRequestBulkRow = {
+          id: row.id,
+          requestCode: row.naturalKey,
+          extractedAt: new Date(),
+          extractionBatchId: batchId,
+          normalizationVersion: "arm-catalog-v1",
+        };
+        let gotAny = false;
+        /** خطای نرم = قطعی نیست (شبکه/سرور) — ردیف علامت نمی‌خورد تا در برش بعدی دوباره تلاش شود */
+        let softFail = false;
+        try {
+          const app = await armCall<unknown>({
+            path: MELK_ENDPOINTS.arm.requestApplicant(row.id),
+            baseUrl: cfg.armApiBase,
+            token,
+            timeoutMs: 45_000,
+            maxRetries: 0,
+          });
+          const person = extractPersonInfo(app.data);
+          if (person) {
+            const rawName = pickStr((app.data ?? {}) as RawRow, ["fullName", "lastName"]);
+            const rawMobile = pickStr((app.data ?? {}) as RawRow, ["mobileNumber", "phoneNumber"]);
+            if (rawName) {
+              input.rawCustomerName = rawName;
+              input.customerName = rawName;
+            }
+            if (rawMobile) input.rawCustomerMobile = rawMobile;
+            if (person.mobile) input.customerMobile = normalizeMobile(rawMobile ?? person.mobile);
+            if (rawName || person.mobile) gotAny = true;
+          }
+        } catch (err) {
+          const e = err as { code?: string; httpStatus?: number; retryable?: boolean };
+          // انقضای توکن — پس از پایان تکه بالا می‌رود: کل اجرا متوقف و تمدید می‌شود
+          if (e?.code === "UNAUTHORIZED") { unauthorizedErr = err; return "unauthorized"; }
+          // ۴xx ⇒ نتیجهٔ قطعی (علامت می‌خورد)؛ ۵xx/شبکه/مهلت ⇒ نرم (برش بعدی)
+          softFail = !isDefinitive4xx(e);
         }
-        if (rawMobile) input.rawCustomerMobile = rawMobile;
-        if (person.mobile) input.customerMobile = normalizeMobile(rawMobile ?? person.mobile);
-        if (rawName || person.mobile) gotAny = true;
-      }
-    } catch (err) {
-      const e = err as { code?: string; httpStatus?: number; retryable?: boolean };
-      if (e?.code === "UNAUTHORIZED") throw err; // انقضای توکن — کل اجرا متوقف و تمدید می‌شود
-      // ۴xx ⇒ نتیجهٔ قطعی (علامت می‌خورد)؛ ۵xx/شبکه/مهلت ⇒ نرم (برش بعدی)
-      softFail = !isDefinitive4xx(e);
-    }
 
-    // P6521/M2 — منطقه‌های منتخب از جزئیات درخواست (بهترین-تلاش؛ خطا به غنی‌سازی تماس آسیب نمی‌زند)
-    if (!softFail) {
-      try {
-        const det = await armCall<unknown>({
-          path: MELK_ENDPOINTS.arm.requestDetails(row.id),
-          baseUrl: cfg.armApiBase,
-          token,
-          timeoutMs: 45_000,
-          maxRetries: 0,
-        });
-        const areaNames = extractRequestAreas(det.data);
-        if (areaNames.length > 0) {
-          input.areaNames = areaNames;
-          gotAny = true;
+        // P6521/M2 — منطقه‌های منتخب از جزئیات درخواست (بهترین-تلاش؛ خطا به غنی‌سازی تماس آسیب نمی‌زند)
+        if (!softFail) {
+          try {
+            const det = await armCall<unknown>({
+              path: MELK_ENDPOINTS.arm.requestDetails(row.id),
+              baseUrl: cfg.armApiBase,
+              token,
+              timeoutMs: 45_000,
+              maxRetries: 0,
+            });
+            const areaNames = extractRequestAreas(det.data);
+            if (areaNames.length > 0) {
+              input.areaNames = areaNames;
+              gotAny = true;
+            }
+            // P6530/گام ۲ (بند ۴.۱) — قیمت متقاضی از/تا + دسته‌بندی از جزئیات درخواست
+            const priceRange = extractRequestPriceRange(det.data);
+            if (priceRange.from !== null) input.priceFrom = priceRange.from;
+            if (priceRange.to !== null) input.priceTo = priceRange.to;
+            const tradeType = extractRequestTradeType(det.data);
+            if (tradeType) input.tradeTypeName = tradeType;
+            // P6546/گام دوم — نوع ملک درخواستی + نوع ساختمان از جزئیات درخواست (غنی‌سازی ستون‌های فهرست)
+            const propTypes = extractRequestPropertyTypes(det.data);
+            if (propTypes.propertyTypeName) input.propertyTypeName = propTypes.propertyTypeName;
+            if (propTypes.buildingTypeName) input.buildingTypeName = propTypes.buildingTypeName;
+            if (priceRange.from !== null || priceRange.to !== null || tradeType || propTypes.propertyTypeName) gotAny = true;
+          } catch {
+            /* جزئیات درخواست بهترین-تلاش است — بدون علامت‌گذاری ردیف */
+          }
         }
-        // P6530/گام ۲ (بند ۴.۱) — قیمت متقاضی از/تا + دسته‌بندی از جزئیات درخواست
-        const priceRange = extractRequestPriceRange(det.data);
-        if (priceRange.from !== null) input.priceFrom = priceRange.from;
-        if (priceRange.to !== null) input.priceTo = priceRange.to;
-        const tradeType = extractRequestTradeType(det.data);
-        if (tradeType) input.tradeTypeName = tradeType;
-        // P6546/گام دوم — نوع ملک درخواستی + نوع ساختمان از جزئیات درخواست (غنی‌سازی ستون‌های فهرست)
-        const propTypes = extractRequestPropertyTypes(det.data);
-        if (propTypes.propertyTypeName) input.propertyTypeName = propTypes.propertyTypeName;
-        if (propTypes.buildingTypeName) input.buildingTypeName = propTypes.buildingTypeName;
-        if (priceRange.from !== null || priceRange.to !== null || tradeType || propTypes.propertyTypeName) gotAny = true;
-      } catch {
-        /* جزئیات درخواست بهترین-تلاش است — بدون علامت‌گذاری ردیف */
+
+        return { input, gotAny, softFail };
+      })
+    );
+    // انقضای توکن در این تکه؟ — کل اجرا متوقف (عین semantics سری)
+    if (unauthorizedErr !== null) throw unauthorizedErr;
+    for (const oc of outcomes) {
+      if (oc === "unauthorized") continue; // نگه‌دارندهٔ نوع — پس از throw بالا ناممکن
+      if (oc.softFail) {
+        out.failed += 1;
+        continue;
       }
-    }
-
-    if (softFail) {
-      out.failed += 1;
-      await sleep(catalogRateMs());
-      continue;
-    }
-
-    const stats = await repo.upsertArmBulk([input], { sourceRunId: batchId });
-    if (stats.errors > 0) {
-      out.failed += 1;
-    } else if (gotAny) {
-      out.enriched += 1;
-    } else {
-      out.missingAtSource += 1;
+      const stats = await repo.upsertArmBulk([oc.input], { sourceRunId: batchId });
+      if (stats.errors > 0) {
+        out.failed += 1;
+      } else if (oc.gotAny) {
+        out.enriched += 1;
+      } else {
+        out.missingAtSource += 1;
+      }
     }
     await sleep(catalogRateMs());
   }
