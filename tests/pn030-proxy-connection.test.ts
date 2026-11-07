@@ -325,9 +325,9 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
     // مسیر یگانه: رلهٔ موبایل Termux؛ کلیدهای Worker از env حذف شدند و فیوز PN-029 خاموش است.
     expect(env.MELK_ARM_RELAY_MODE ?? "").toBe("mobile");
     expect(env).not.toHaveProperty("MELK_ARM_PROXY_URL");
-    // PN-059/R7 (خلع ALT مرده — جلسهٔ ۲۰۲۶-۱۱-۰۱): مسیر جایگزینِ پیش‌نمایشِ کهنه
-    // (۵۰۰/HTML) از env حذف شد؛ رله فقط از مسیر اصلی می‌رود.
-    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("");
+    // PN-065/066: ALT واکر زندهٔ کلادفلر برگشت و از escrow بادوام شد؛
+    // کلید مردهٔ واقعی فقط MELK_ARM_PROXY_URL است که هنوز حذف می‌ماند.
+    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("https://melka-proxy.nemsey-ns.workers.dev");
     expect(env.MELK_ARM_OFFLINE ?? "").toBe("");
     expect(env.MELK_ARM_CIRCUIT_DISABLED ?? "").toBe("1");
     // مستندسازی — کلید _pn033 در پاکسازی env (خلع ALT · R7) حذف شد؛ تنها _comment زنده است

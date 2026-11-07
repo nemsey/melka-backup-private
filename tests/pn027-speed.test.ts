@@ -151,9 +151,14 @@ describe("PN-027 · ۵-پ-۲ — ستون‌های نرمال M1 (هم‌ارز�
 });
 
 describe("PN-027 · ۵-پ-۸ — سقف RAM بیلد مستند در کد", () => {
-  test("سقف ۳۰۰۰MB در build script تنظیم شده", () => {
+  test("سقف RAM بیلد تنظیم شده (۲۰۴۸MB در build-with-parking — PN-070-هـ، جایگزین ۳۰۰۰MB قدیمی)", () => {
+    // PN-070-هـ (۲۰۲۶-۱۱-۰۷): build از package.json به scripts/build-with-parking.sh
+    // منتقل شد و سقف از ۳۰۰۰ به ۲۰۴۸MB کاهش یافت (جعبهٔ ۴GB — درمان OOM پنج‌گانه).
+    // این تست قرارداد جدید را قفل می‌کند: package.json به اسکریپت واگذار کرده + سقف ۲۰۴۸ نصب است.
     const pkg = readFileSync("/home/z/my-project/package.json", "utf8");
-    expect(pkg).toContain("--max-old-space-size=3000");
+    expect(pkg).toContain("bash scripts/build-with-parking.sh");
+    const build = readFileSync("/home/z/my-project/scripts/build-with-parking.sh", "utf8");
+    expect(build).toContain("--max-old-space-size=2048");
   });
 });
 

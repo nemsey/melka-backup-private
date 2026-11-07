@@ -32,30 +32,51 @@ function num(v: string | null): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** ساخت xlsx از ستون‌ها + ردیف‌ها */
+/**
+ * ساخت xlsx از ستون‌ها + ردیف‌ها — PN-070: جریانی (stream.xlsx.WorkbookWriter)
+ * ------------------------------------------------------------------
+ * ریشهٔ حادثه: نسخهٔ پیشین Workbook درون‌حافظه‌ای برای ۲۶٬۱۶۰ ردیف × ۳۳ ستون
+ * بیش از ۱٫۷GB RAM خورد و کرنل پروسهٔ سرور را OOM-kill کرد (جعبهٔ ۴GB) —
+ * دانلود اکسل هر فهرست بزرگ = مرگ سرور و ۵۰۲ لبه. WorkbookWriter ردیف‌ها را
+ * پشت‌سرهم در فایل موقت می‌نویسد و حافظه تقریباً ثابت می‌ماند.
+ */
 async function buildXlsx(
   sheetName: string,
   columns: Array<{ header: string; width?: number }>,
   rows: Array<Array<string | number | null>>
 ): Promise<Buffer> {
   const ExcelJS = (await import("exceljs")).default;
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "ملکا — اکوسیستم هوشمند ملک ایران";
-  const ws = wb.addWorksheet(sheetName, {
-    views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }],
-  });
-  ws.columns = columns.map((c) => ({ header: c.header, width: c.width ?? 18 }));
-  const header = ws.getRow(1);
-  header.font = { bold: true, size: 11 };
-  header.alignment = { vertical: "middle", horizontal: "center" };
-  for (const r of rows) ws.addRow(r);
-  ws.eachRow((row) => {
-    row.eachCell((cell) => {
-      if (typeof cell.value === "number" && Math.abs(cell.value) >= 1000) cell.numFmt = "#,##0";
+  const { mkdtemp, readFile, rm } = await import("fs/promises");
+  const { tmpdir } = await import("os");
+  const path = await import("path");
+  const dir = await mkdtemp(path.join(tmpdir(), "melka-export-"));
+  const file = path.join(dir, "export.xlsx");
+  try {
+    const wb = new ExcelJS.stream.xlsx.WorkbookWriter({
+      filename: file,
+      useStyles: true,
+      useSharedStrings: false, // رشتهٔ درون‌خطی — بدون جدول رشتهٔ مشترکِ حجیم
     });
-  });
-  const out = await wb.xlsx.writeBuffer();
-  return Buffer.from(out);
+    const ws = wb.addWorksheet(sheetName, {
+      views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }],
+    });
+    ws.columns = columns.map((c) => ({ width: c.width ?? 18 }));
+    const header = ws.addRow(columns.map((c) => c.header));
+    header.font = { bold: true, size: 11 };
+    header.alignment = { vertical: "middle", horizontal: "center" };
+    header.commit();
+    for (const r of rows) {
+      const row = ws.addRow(r);
+      row.eachCell((cell) => {
+        if (typeof cell.value === "number" && Math.abs(cell.value) >= 1000) cell.numFmt = "#,##0";
+      });
+      row.commit();
+    }
+    await wb.commit();
+    return await readFile(file);
+  } finally {
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 /** شعبهٔ کارشناس — زنجیرهٔ تفکیک مشترک با روت‌های فهرست */

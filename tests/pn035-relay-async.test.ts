@@ -7,7 +7,7 @@
  * قفل می‌کنند تا نسل‌های بعد چیزی را نشکنند:
  *
  *   A) ساختار اسکریپت نسل J (۱۱) — پالایش روش · دسته batch=100 · items[] ·
- *      نتیجهٔ دسته‌ای · retry×۳ + ذخیرهٔ محلی + TTL · gzip>۱KB · موج‌های ۸تایی ·
+ *      نتیجهٔ دسته‌ای · retry×۳ + ذخیرهٔ محلی + TTL · gzip>۱KB · موج‌های ۱۲تایی (نسل M · PN-068) ·
  *      نحو bash · امضای دوجهتهٔ آیتم · نشانگر نسل · دستور نصب پابرجا
  *   B) اجرای واقعی bash (۴) — اسکریپت واقعیِ تولیدشده در برابر سرور آزمایشی:
  *      دستهٔ ۳۰تایی در «یک» POST نتیجه (gzip) با امضای صحیح روی بایت‌های
@@ -49,10 +49,11 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("method $RMETHOD not allowed");
   });
 
-  test("A-2) poll دسته‌ای — wait=100 (نسل L · شورا-ن۰۶۸) · batch=20 (دستهٔ سبک)", () => {
+  test("A-2) poll دسته‌ای — wait=100 (نسل L · شورا-ن۰۶۸) · batch=24 (نسل M · PN-068)", () => {
     // PN-041-R (شورا-ن۰۶۸ · بند ۲.۲): Long-Polling ۱۰۰ث — کاهش درخواست ۴ برابر
+    // PN-068 (نسل M): batch=۲۴ — دو موج کامل ۱۲تایی در هر poll (حداکثر تیم ارسال/دریافت)
     expect(script).toContain('BODY="{\\"wait\\":100,\\"batch\\":$BATCH}"');
-    expect(script).toContain("BATCH=20");
+    expect(script).toContain("BATCH=24");
   });
 
   test("A-3) خواندن items[] + سازگاری عقبه (request تک‌آیتمی نسل‌های قدیم)", () => {
@@ -86,8 +87,9 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("gzip -c");
   });
 
-  test("A-7) موج‌های موازی — MAX_WORKERS=8 + wait بین موج‌ها (فاز ۵)", () => {
-    expect(script).toContain("MAX_WORKERS=8");
+  test("A-7) موج‌های موازی — MAX_WORKERS=12 (نسل M · PN-068) + wait بین موج‌ها (فاز ۵)", () => {
+    // PN-068: ۸ ← ۱۲ کارگر — فرمان مالک «تیم‌های ارسال و دریافت را به حداکثر برسان»
+    expect(script).toContain("MAX_WORKERS=12");
     expect(script).toContain("if [ $(( IDX % MAX_WORKERS )) -eq 0 ]; then");
     expect(script).toContain('process_item "$ITEM"');
   });
@@ -105,11 +107,13 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("امضای سرور نامعتبر");
   });
 
-  test("A-10) نشانگر نسل L (PN-041-R) و نسل K (PN-036) و ثابت‌های اعلامی در لاگ آغاز", () => {
-    // نسل L = Long-Polling ۱۰۰ث (شورا-ن۰۶۸) — نشانگر در سربرگ و لاگ آغاز
-    expect(script).toContain("نسل L · PN-041-R · شورای عالی ملکا ۰۶۸");
+  test("A-10) نشانگر نسل M (PN-068) و نسل L (PN-041-R) و نسل K (PN-036) و ثابت‌های اعلامی در لاگ آغاز", () => {
+    // نسل M = حداکثر تیم ارسال/دریافت (PN-068) — نشانگر در سربرگ و لاگ آغاز
+    expect(script).toContain("نسل M · PN-068");
+    expect(script).toContain("تیم حداکثری ۱۲ کارگر");
+    expect(script).toContain("نسل L: Long-Polling ۱۰۰ث");
     expect(script).toContain("نسل K: رفع jq ARG_MAX");
-    expect(script).toContain("نسل K: دسته batch=$BATCH · موج‌های $MAX_WORKERS کارگر · Express lane (OTP مقدم) · مهلت OTP=$LIGHT_TIMEOUTث / سنگین=$HEAVY_TIMEOUTث · تلاش دوم تایم‌اوت · رفع jq ARG_MAX (--rawfile + stdin)");
+    expect(script).toContain("نسل M: دسته batch=$BATCH · موج‌های $MAX_WORKERS کارگر · Express lane (OTP مقدم) · مهلت OTP=$LIGHT_TIMEOUTث / سنگین=$HEAVY_TIMEOUTث · تلاش دوم تایم‌اوت · رفع jq ARG_MAX (--rawfile + stdin)");
     expect(script).toContain("MELKA_CURL_TIMEOUT=110 signed_curl");
   });
 
@@ -131,9 +135,9 @@ describe("PN-036 · K) اسکریپت نسل K — رفع jq ARG_MAX + batch س�
     expect(script).toContain('base64 -w0 "$TMP" 2>/dev/null > "$B64F"');
   });
 
-  test("K-2) مهلت تطبیقی — تعاملی ۱۵ث / سنگین ۶۰ث (curl 28 → صفر)", () => {
+  test("K-2) مهلت تطبیقی — تعاملی ۱۵ث / سنگین ۵۰ث (نسل M · PN-068)", () => {
     expect(script).toContain("LIGHT_TIMEOUT=15");
-    expect(script).toContain("HEAVY_TIMEOUT=60");
+    expect(script).toContain("HEAVY_TIMEOUT=50");
     expect(script).toContain("is_interactive");
     expect(script).toContain('local MAX_TIME="$LIGHT_TIMEOUT"');
     expect(script).toContain('local MAX_TIME="$HEAVY_TIMEOUT"');
@@ -292,7 +296,7 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
 
     // poll دسته‌ای با بدنهٔ قراردادی — نسل L (شورا-ن۰۶۸): wait=100
     expect(polls.length).toBeGreaterThanOrEqual(1);
-    expect(Buffer.from(polls[0].body_b64, "base64").toString("utf8")).toBe('{"wait":100,"batch":20}');
+    expect(Buffer.from(polls[0].body_b64, "base64").toString("utf8")).toBe('{"wait":100,"batch":24}');
 
     // کل دسته در یک POST واحد
     expect(results.length).toBe(1);

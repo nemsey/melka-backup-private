@@ -86,42 +86,44 @@ describe("PN-033 · A) فیوز قطع‌کننده — خاموشی دائمی 
 // ───────────────────── B) env — پایان دوران Worker ─────────────────────
 
 describe("PN-033 · B) env — پاکسازی کلیدهای دوران Worker", () => {
-  test("B-1) env.platform.json — صفر کلید Worker + فیوز خاموش + حالت رله (ALT خلع‌شده — R7)", () => {
-    // PN-059/R7 (۲۰۲۶-۱۱-۰۱): MELK_RELAY_ALT_URL پیش‌نمایشِ مرده (۵۰۰/HTML) بود و خلع شد
+  test("B-1) env.platform.json — صفر کلید Worker مرده + فیوز خاموش + حالت رله (ALT زنده — PN-065/066)", () => {
+    // PN-059/R7: ALT کهنهٔ مرده (۵۰۰/HTML) خلع شد؛ PN-065 واکر زندهٔ تازه برگرداند و
+    // PN-066 آن را بادوام کرد (escrow) — کلید مردهٔ واقعی فقط MELK_ARM_PROXY_URL است.
     const env = readJson("env.platform.json");
     expect(env).not.toHaveProperty("MELK_ARM_PROXY_URL");
-    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("");
+    expect(env.MELK_RELAY_ALT_URL ?? "").toBe("https://melka-proxy.nemsey-ns.workers.dev");
     expect(env.MELK_ARM_RELAY_MODE).toBe("mobile");
     expect(env.MELK_ARM_CIRCUIT_DISABLED).toBe("1");
   });
 
   test("B-2) env.platform.json.example — همگام با فایل زنده", () => {
     const ex = read("env.platform.json.example");
-    expect(ex).not.toContain('"MELK_ARM_PROXY_URL"');
-    expect(ex).not.toContain('"MELK_RELAY_ALT_URL"'); // R7: مسیر جایگزین مرده خلع شد
+    expect(ex).not.toContain('"MELK_ARM_PROXY_URL"'); // کلید مردهٔ Worker هنوز حذف
+    expect(ex).toContain('"MELK_RELAY_ALT_URL"'); // PN-066: ALT زنده مستند و بادوام
     expect(ex).toContain('"MELK_ARM_CIRCUIT_DISABLED"');
     expect(ex).toContain('"MELK_ARM_RELAY_MODE"');
     expect(JSON.parse(ex)).toBeTruthy(); // JSON معتبر (خط ولگرد قبلی نمونه پاک شد)
   });
 
-  test("B-3) اسکرو سه‌لایه — لایه‌های متنی موجود همگام (کلید تازه جای کهنه · PN-043-A/شورا-ن۰۷۹: db/.runtime عمداً غایب — یگانه منبع متنی: upload/.runtime)", () => {
+  test("B-3) اسکرو سه‌لایه — لایه‌های متنی موجود همگام (کلید تازه جای کهنه · ALT بادوام PN-066)", () => {
     const layers = ["db/.runtime/boot-secrets.json", "upload/.runtime/boot-secrets.json"].filter((p) => existsSync(join(REPO, p)));
     expect(layers.length).toBeGreaterThan(0); // زنجیرهٔ سه‌لایه: حداقل یک لایهٔ متنی زنده
     for (const p of layers) {
       const esc = readJson(p);
       expect(esc).not.toHaveProperty("MELK_ARM_PROXY_URL");
-      expect(esc).not.toHaveProperty("MELK_RELAY_ALT_URL");
+      // PN-066: ALT واکر جزو escrow — پس از هر ریست خودکار بازمی‌گردد
+      expect(esc.MELK_RELAY_ALT_URL ?? "").toBe("https://melka-proxy.nemsey-ns.workers.dev");
       expect(esc.MELK_ARM_CIRCUIT_DISABLED).toBe("1");
       expect(esc.MELK_ARM_RELAY_MODE).toBe("mobile");
     }
   });
 
-  test("B-4) BOOT_SECRET_KEYS — کلید حیاتی تفته ثبت، کلیدهای Worker حذف", async () => {
+  test("B-4) BOOT_SECRET_KEYS — کلید حیاتی فیوز + ALT بادوام ثبت، کلید Worker مرده حذف", async () => {
     const { BOOT_SECRET_KEYS } = await import("@/lib/auth/boot-secrets");
     const keys = BOOT_SECRET_KEYS as readonly string[];
     expect(keys).toContain("MELK_ARM_CIRCUIT_DISABLED");
     expect(keys).not.toContain("MELK_ARM_PROXY_URL");
-    expect(keys).not.toContain("MELK_RELAY_ALT_URL");
+    expect(keys).toContain("MELK_RELAY_ALT_URL"); // PN-066: ALT واکر زنده — بادوام از escrow
   });
 
   test("B-5) شاهد env-cleanup.json موجود و PASS", () => {

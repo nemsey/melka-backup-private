@@ -12,7 +12,7 @@
 
 import { getMelkApiConfig, type MelkApiConfig } from "./config";
 import { MELK_ENDPOINTS } from "./endpoints";
-import { armCall, probeGet } from "./client";
+import { armCall, probeGet, type ProbeResult } from "./client";
 import {
   extractAddress,
   extractDetailItems,
@@ -477,123 +477,125 @@ class RealProvider implements MelkProvider {
     // در حالت آفلینی با live=true، پروب‌ها با bypassOffline زده می‌شوند
     const probeOpts = opts?.live ? { bypassOffline: true } : undefined;
 
-    // ۱) API اصلی ARM — سنجش با نقطه عمومی enums (بدون توکن، همان زنجیره nginx)
-    try {
-      const probe = await probeGet(this.config.armPublicApiBase, MELK_ENDPOINTS.armPublic.enums, 12000, probeOpts);
-      const dbUp = probe.httpStatus < 500 && !probe.bodyText.includes("MongooseError");
-      services.push({
+    // ═══ PN-068 — پنج پروب «موازی» (قبلاً سری: ۵×۱۲ث = تا ۶۰ث+ در هر
+    // بارگذاری صفحهٔ تنظیمات؛ در مسیر رله هر پروب یک آیتم صف است و گوشی
+    // آنها را همزمان اجرا می‌کند — پاسخ کامل در ~۱۲ث به‌جای دقیقه‌ها).
+    // نگاشت نتیجه به وضعیت هر سرویس عین پیشین است؛ فقط ترتیب اجرا عوض شد. ═══
+    type ProbeSpec = {
+      service: ArmServiceStatus["service"];
+      label: string;
+      run: () => Promise<ProbeResult>;
+      map: (p: ProbeResult) => ArmServiceStatus;
+      failDetail: string;
+    };
+    const specs: ProbeSpec[] = [
+      {
         service: "ARM_PUBLIC",
         label: "سامانه مدیریت آگهی و درخواست — بخش عمومی",
-        reachable: !probe.circuitLocked && !probe.offlineMode,
-        databaseUp: dbUp,
-        httpStatus: probe.httpStatus,
-        latencyMs: probe.latencyMs,
-        detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "پاسخ موفق" : "پایگاه داده سامانه آگهی و درخواست در دسترس نیست (خطای پایگاه داده/پنج‌صد و دو)",
-      });
-    } catch {
-      services.push({
-        service: "ARM_PUBLIC",
-        label: "سامانه مدیریت آگهی و درخواست — بخش عمومی",
-        reachable: false,
-        databaseUp: false,
-        latencyMs: -1,
-        detail: "دسترسی شبکه به arus-api.melketabriz.ir برقرار نشد.",
-      });
-    }
-
-    // ۲) API احراز هویت ARM — سنجش نقطه OTP (بدون توکن؛ کد تستی صرفاً برای بررسی سلامت مسیر)
-    try {
-      const probe = await probeGet(this.config.armApiBase, `authentication/otp/0`, 12000, probeOpts);
-      const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
-      services.push({
+        run: () => probeGet(this.config.armPublicApiBase, MELK_ENDPOINTS.armPublic.enums, 12000, probeOpts),
+        map: (probe) => {
+          const dbUp = probe.httpStatus < 500 && !probe.bodyText.includes("MongooseError");
+          return {
+            service: "ARM_PUBLIC",
+            label: "سامانه مدیریت آگهی و درخواست — بخش عمومی",
+            reachable: !probe.circuitLocked && !probe.offlineMode,
+            databaseUp: dbUp,
+            httpStatus: probe.httpStatus,
+            latencyMs: probe.latencyMs,
+            detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "پاسخ موفق" : "پایگاه داده سامانه آگهی و درخواست در دسترس نیست (خطای پایگاه داده/پنج‌صد و دو)",
+          };
+        },
+        failDetail: "دسترسی شبکه به arus-api.melketabriz.ir برقرار نشد.",
+      },
+      {
         service: "ARM_API",
         label: "سامانه مدیریت آگهی و درخواست — احراز هویت",
-        reachable: !probe.circuitLocked && !probe.offlineMode,
-        databaseUp: dbUp,
-        httpStatus: probe.httpStatus,
-        latencyMs: probe.latencyMs,
-        detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "مسیر احراز هویت فعال است" : "پایگاه داده سامانه آگهی و درخواست قطع است — ارسال پیامک ممکن نیست",
-      });
-    } catch {
-      services.push({
-        service: "ARM_API",
-        label: "سامانه مدیریت آگهی و درخواست — احراز هویت",
-        reachable: false,
-        databaseUp: false,
-        latencyMs: -1,
-        detail: "دسترسی شبکه به arus-api.melketabriz.ir برقرار نشد.",
-      });
-    }
-
-    // ۳) API سامانه پرسنلی PM
-    try {
-      const probe = await probeGet(this.config.pmApiBase, MELK_ENDPOINTS.pm.portalInfo, 12000, probeOpts);
-      const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
-      services.push({
+        run: () => probeGet(this.config.armApiBase, `authentication/otp/0`, 12000, probeOpts),
+        map: (probe) => {
+          const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
+          return {
+            service: "ARM_API",
+            label: "سامانه مدیریت آگهی و درخواست — احراز هویت",
+            reachable: !probe.circuitLocked && !probe.offlineMode,
+            databaseUp: dbUp,
+            httpStatus: probe.httpStatus,
+            latencyMs: probe.latencyMs,
+            detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "مسیر احراز هویت فعال است" : "پایگاه داده سامانه آگهی و درخواست قطع است — ارسال پیامک ممکن نیست",
+          };
+        },
+        failDetail: "دسترسی شبکه به arus-api.melketabriz.ir برقرار نشد.",
+      },
+      {
         service: "PM_API",
         label: "سامانه مدیریت پرسنلی",
-        reachable: !probe.circuitLocked && !probe.offlineMode,
-        databaseUp: dbUp,
-        httpStatus: probe.httpStatus,
-        latencyMs: probe.latencyMs,
-        detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "پاسخ موفق" : "پایگاه داده سامانه پرسنلی در دسترس نیست",
-      });
-    } catch {
-      services.push({
-        service: "PM_API",
-        label: "سامانه مدیریت پرسنلی",
-        reachable: false,
-        databaseUp: false,
-        latencyMs: -1,
-        detail: "دسترسی شبکه به pm-api.melketabriz.ir برقرار نشد.",
-      });
-    }
-
-    // ۴) API سامانه عمومی ملک تبریز (P6546/گام صفر) — بخش عمومی apu (بدون توکن)
-    try {
-      const probe = await probeGet(this.config.melkPublicApiBase, `${MELK_ENDPOINTS.melkPublic.propertiesList}?page=1&limit=1`, 12000, probeOpts);
-      const dbUp = probe.httpStatus === 200 && !probe.bodyText.includes("MongooseError");
-      services.push({
+        run: () => probeGet(this.config.pmApiBase, MELK_ENDPOINTS.pm.portalInfo, 12000, probeOpts),
+        map: (probe) => {
+          const dbUp = !probe.bodyText.includes("MongooseError") && probe.httpStatus !== 502;
+          return {
+            service: "PM_API",
+            label: "سامانه مدیریت پرسنلی",
+            reachable: !probe.circuitLocked && !probe.offlineMode,
+            databaseUp: dbUp,
+            httpStatus: probe.httpStatus,
+            latencyMs: probe.latencyMs,
+            detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "پاسخ موفق" : "پایگاه داده سامانه پرسنلی در دسترس نیست",
+          };
+        },
+        failDetail: "دسترسی شبکه به pm-api.melketabriz.ir برقرار نشد.",
+      },
+      {
         service: "MELK_PUBLIC_API",
         label: "سامانه عمومی ملک تبریز (melketabriz.com)",
-        reachable: !probe.circuitLocked && !probe.offlineMode,
-        databaseUp: dbUp,
-        httpStatus: probe.httpStatus,
-        latencyMs: probe.latencyMs,
-        detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "فهرست عمومی آگهی‌ها پاسخ می‌دهد" : "بخش عمومی سامانه ملک تبریز در دسترس نیست",
-      });
-    } catch {
-      services.push({
-        service: "MELK_PUBLIC_API",
-        label: "سامانه عمومی ملک تبریز (melketabriz.com)",
-        reachable: false,
-        databaseUp: false,
-        latencyMs: -1,
-        detail: "دسترسی شبکه به بخش عمومی arus-api.melketabriz.ir برقرار نشد.",
-      });
-    }
+        run: () => probeGet(this.config.melkPublicApiBase, `${MELK_ENDPOINTS.melkPublic.propertiesList}?page=1&limit=1`, 12000, probeOpts),
+        map: (probe) => {
+          const dbUp = probe.httpStatus === 200 && !probe.bodyText.includes("MongooseError");
+          return {
+            service: "MELK_PUBLIC_API",
+            label: "سامانه عمومی ملک تبریز (melketabriz.com)",
+            reachable: !probe.circuitLocked && !probe.offlineMode,
+            databaseUp: dbUp,
+            httpStatus: probe.httpStatus,
+            latencyMs: probe.latencyMs,
+            detail: probe.circuitLocked ? (probe.circuitDetail ?? "قفل فیوز فعال است — تلاش بعدی پس از پایان مهلت") : probe.offlineMode ? "حالت آفلینی — پروب متوقف (PN-029)" : dbUp ? "فهرست عمومی آگهی‌ها پاسخ می‌دهد" : "بخش عمومی سامانه ملک تبریز در دسترس نیست",
+          };
+        },
+        failDetail: "دسترسی شبکه به بخش عمومی arus-api.melketabriz.ir برقرار نشد.",
+      },
+      {
+        service: "GAP_API",
+        label: "سامانه گفت‌وگوی آنلاین (gap.melketabriz.ir)",
+        run: () => probeGet(this.config.gapApiBase, "", 12000, probeOpts),
+        map: (probe) => ({
+          service: "GAP_API",
+          label: "سامانه گفت‌وگوی آنلاین (gap.melketabriz.ir)",
+          reachable: probe.httpStatus > 0,
+          databaseUp: probe.httpStatus > 0,
+          httpStatus: probe.httpStatus,
+          latencyMs: probe.latencyMs,
+          detail: probe.httpStatus > 0 ? `سرور gap-api پاسخ می‌دهد (HTTP ${probe.httpStatus})` : "سرور gap-api.melketabriz.ir پاسخ نداد",
+        }),
+        failDetail: "دسترسی شبکه به gap-api.melketabriz.ir برقرار نشد.",
+      },
+    ];
 
-    // ۵) API سامانه گفت‌وگو GAP (P6546/گام صفر) — سرور Express؛ هر پاسخ HTTP = در دسترس
-    try {
-      const probe = await probeGet(this.config.gapApiBase, "", 12000, probeOpts);
-      services.push({
-        service: "GAP_API",
-        label: "سامانه گفت‌وگوی آنلاین (gap.melketabriz.ir)",
-        reachable: probe.httpStatus > 0,
-        databaseUp: probe.httpStatus > 0,
-        httpStatus: probe.httpStatus,
-        latencyMs: probe.latencyMs,
-        detail: probe.httpStatus > 0 ? `سرور gap-api پاسخ می‌دهد (HTTP ${probe.httpStatus})` : "سرور gap-api.melketabriz.ir پاسخ نداد",
-      });
-    } catch {
-      services.push({
-        service: "GAP_API",
-        label: "سامانه گفت‌وگوی آنلاین (gap.melketabriz.ir)",
-        reachable: false,
-        databaseUp: false,
-        latencyMs: -1,
-        detail: "دسترسی شبکه به gap-api.melketabriz.ir برقرار نشد.",
-      });
+    // اجرای موازی هر پنج پروب — شکست یکی بقیه را نمی‌شکند (allSettled)
+    const settled = await Promise.allSettled(specs.map((s) => s.run()));
+    for (let i = 0; i < specs.length; i += 1) {
+      const spec = specs[i];
+      const r = settled[i];
+      if (r.status === "fulfilled") {
+        services.push(spec.map(r.value));
+      } else {
+        services.push({
+          service: spec.service,
+          label: spec.label,
+          reachable: false,
+          databaseUp: false,
+          httpStatus: 0,
+          latencyMs: -1,
+          detail: spec.failDetail,
+        } as ArmServiceStatus);
+      }
     }
 
     const anyDbUp = services.some((s) => s.databaseUp);

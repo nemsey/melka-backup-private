@@ -345,6 +345,26 @@ export async function runRollingBackup(db: PrismaClient, options?: { keep?: numb
     const { writeFileSync } = await import("node:fs");
     writeFileSync(join(REPO_ROOT, "upload/.runtime/rolling-backups.json"), JSON.stringify({ ...manifest, kept, pruned: pruned.length, freeBytes: freeDiskBytes(dir), at: manifest.mtimeIso }, null, 2));
   } catch { /* شاهد بهترین-تلاش */ }
+
+  // ═══ PN-068 — تازه‌سازی قلعهٔ اصلی (upload/.data/custom.db) ═══
+  // قرارداد resurrect-ultimate (گام ۳): منبع UNION با اولویت یک «قلعه» است؛
+  // پس از معماری Worker جدید هیچ‌کس این کپی را نمی‌نوشت → هر ریست با «قلعهٔ
+  // ناموجود — skip» بوت می‌شد و بقا فقط به چرخشی/بقا-بسته متکی بود (شاهد زنده:
+  // ریست ۲۰۲۶-۱۱-۰۷). درمان: در هر چرخهٔ بکاپ چرخشی، اگر قلعه غایب/کهنه (>۵۰
+  // دقیقه) است، اسنپ‌شاتِ تازه‌ساختهٔ همین چرخه به‌صورت اتمیک (tmp+rename)
+  // روی قلعه کپی می‌شود — رستاخیزِ بعدی از لایهٔ یک شروع می‌کند.
+  try {
+    const fortress = join(REPO_ROOT, "upload/.data/custom.db");
+    let fortressAgeMs = Infinity;
+    try { fortressAgeMs = Date.now() - statSync(fortress).mtimeMs; } catch { fortressAgeMs = Infinity; }
+    if (fortressAgeMs > 50 * 60_000 && existsSync(target)) {
+      const tmpF = `${fortress}.tmp-${Date.now()}`;
+      const { copyFileSync, renameSync } = await import("node:fs");
+      copyFileSync(target, tmpF);
+      renameSync(tmpF, fortress);
+    }
+  } catch { /* قلعه بهترین-تلاش است — چرخشی/بقا همیشه زنده‌اند */ }
+
   await db.auditLog.create({
     data: {
       action: "ROLLING_BACKUP",
