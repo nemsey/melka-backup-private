@@ -265,9 +265,21 @@ export async function probeGet(
     };
   }
   const url = `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+  // ═══ PN-068 — مهلت رله‌آگاه پروب ═══
+  // در مسیر رلهٔ موبایل هر پروب یک آیتم صف است: صف‌گذاری + poll گوشی (تا ۱۰۰ث
+  // long-poll) + اجرا (~۵-۳۰ث) + ارسال نتیجه ≈ ۱۵-۴۰ث رفت‌وبرگشت. مهلت ۱۲ث
+  // پیشین هر پروب را پیش از بازگشت گوشی می‌کشت → وضعیت اتصال در حالت رله
+  // همیشه «قطع» نشان داده می‌شد (شاید زندهٔ امروز). در حالت رله برای میزبان‌های
+  // ملک‌تبریز، مهلت به حداکثرِ ۴۵ث بالا می‌رود (پاسخ صادقانه، نه سریع-و-دروغ).
+  let effectiveTimeoutMs = timeoutMs;
+  try {
+    if (relayModeActive() && isMelkTabrizHost(url)) {
+      effectiveTimeoutMs = Math.max(timeoutMs, 45_000);
+    }
+  } catch { /* تشخیص ناموفق — همان مهلت اصلی */ }
   const started = Date.now();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timer = setTimeout(() => controller.abort(), effectiveTimeoutMs);
   try {
     // PN-030 — نقطهٔ یگانه: پروب هم در صورت پیکربندی از پروکسی می‌گذرد
     const res = await proxyFetch(url, {
