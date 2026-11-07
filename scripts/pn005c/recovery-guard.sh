@@ -22,7 +22,10 @@ LIVE_BASE="$(basename "$LIVE_DB" .db)"
 if [[ "${MELK_AUTO_RECOVERY:-}" == "disabled" ]]; then exit 0; fi
 
 # ── گام ۰: ضدحلقه — بازیابی موفق در ۱۰ دقیقهٔ گذشته؟ ──
-LAST_OK=$(grep 'guard-recovery-ok' "$LOG" 2>/dev/null | tail -1 | sed -n 's/.*"at":"\([^"]*\)".*/\1/p')
+# PN-066: «-a» حیاتی است — لاگ حاوی بایت‌های غیرUTF-8 از خروجی ابزارهای
+# پایین‌دستی است و grep خاموشانه «binary file matches» می‌دهد و LAST_OK خالی
+# می‌شود → ضدحلقه هرگز فعال نمی‌شد → ری‌استارت بی‌پایان هر ~۳۲ ثانیه (۱۱-۰۳).
+LAST_OK=$(grep -a 'guard-recovery-ok' "$LOG" 2>/dev/null | tail -1 | sed -n 's/.*"at":"\([^"]*\)".*/\1/p')
 if [[ -n "$LAST_OK" ]]; then
   LAST_EP=$(date -d "$LAST_OK" +%s 2>/dev/null || echo 0)
   NOW_EP=$(date -u +%s)
@@ -96,6 +99,13 @@ TS=$(date -u +%Y-%m-%dT%H-%M-%S)
 mkdir -p upload/dataset-backups
 for _f in "" "-wal" "-shm"; do
   [[ -f "${LIVE_DB}${_f}" ]] && cp "${LIVE_DB}${_f}" "upload/dataset-backups/guard-pre-recovery-${TS}.db${_f}" 2>/dev/null || true
+done
+# PN-067 — سقف بکاپ گارد: فقط ۳ پکیج تازهٔ guard-pre-recovery نگه داشته می‌شود.
+# درس ریست ۱۱-۰۳: حلقهٔ بازیابیِ ناکام (بیلد‌شکست × guard) هر ~۳ دقیقه یک
+# بکاپ ۲۴۰MB ساخت → ۷.۵GB زباله → ریسک ENOSPC. هرس بعد از هر بکاپ.
+# توجه: فقط الگوی guard-pre-recovery را لمس می‌کند — بقیهٔ فایل‌های dataset-backups مقدس‌اند.
+ls -1t upload/dataset-backups/guard-pre-recovery-*.db 2>/dev/null | tail -n +4 | while read -r _old; do
+  rm -f "$_old" "${_old}-wal" "${_old}-shm"
 done
 
 # ── گام ۵: بازگرداندن DB + env ──

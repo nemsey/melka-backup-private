@@ -1,0 +1,133 @@
+{
+  "at": "2026-11-03T06:25:24.531894+00:00",
+  "base": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+  "steps": [
+    {
+      "step": "link-version",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "buildId": "a932d7d-20261103-0556",
+        "env": "production"
+      }
+    },
+    {
+      "step": "owner-login",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "role": "OWNER",
+        "name": "سید نعمت اله سیدی"
+      }
+    },
+    {
+      "step": "tiles-data-freshness",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "M1_ads": 28377,
+        "M2_requests": 26038,
+        "M3_transactions": 819,
+        "M4_experts": 307,
+        "customers": 55234
+      }
+    },
+    {
+      "step": "insight-listings",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "count": 2
+      }
+    },
+    {
+      "step": "insight-requests",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "count": 2
+      }
+    },
+    {
+      "step": "insight-transactions-contracts",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "count": 6
+      }
+    },
+    {
+      "step": "insight-experts",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "count": 4
+      }
+    },
+    {
+      "step": "M1-arm-listings-live",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "rows": 3,
+        "sample_id": "651191f81471010099b1cb94"
+      }
+    },
+    {
+      "step": "M2-arm-requests-live",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "rows": 3
+      }
+    },
+    {
+      "step": "install-code-A-generated",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "deviceId": "poco-f3-owner-73d2b0",
+        "expires": "2026-11-03T06:55:26.224Z",
+        "cmdHasPublicUrl": true,
+        "cmdHasVpcLeak": false
+      }
+    },
+    {
+      "step": "bootstrap-script-download",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "bytes": 26221,
+        "serverUrlPublic": true,
+        "vpcLeak": false,
+        "altUrlPresent": false,
+        "attemptsHeader": true
+      }
+    },
+    {
+      "step": "install-code-B-generated",
+      "ok": true,
+      "detail": {
+        "http": 200,
+        "deviceId": "poco-f3-owner-4dcd30",
+        "validityMinutes": 30,
+        "cmdHasPublicUrl": true,
+        "cmdHasVpcLeak": false
+      }
+    }
+  ],
+  "allPass": true,
+  "enrollForOwner": {
+    "installCommand": "pkg install -y curl openssl-tool jq && curl --http1.1 -A \"Mozilla/5.0 (Linux; Android 13; Poco F3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36\" -fsSL \"https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=e05038720eb9b4338b5f1151b363483231ee\" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh",
+    "bootstrapUrl": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=e05038720eb9b4338b5f1151b363483231ee",
+    "enrollExpires": "2026-11-03T06:55:26.381Z",
+    "maxAttempts": 3
+  },
+  "summary": {
+    "ownerLogin": true,
+    "tilesData": true,
+    "insights": 4,
+    "installCodeGenerated": true,
+    "bootstrapVerified": true
+  }
+}

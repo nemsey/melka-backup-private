@@ -2,280 +2,240 @@
   "case": "PN-001",
   "block": "2.1",
   "witness": "گام پنجم — اطلاعات کامل گزینه‌ها",
-  "generatedAt": "2026-11-01T21:53:18.308Z",
+  "generatedAt": "2026-11-03T06:53:36.467Z",
   "realMatches": [
     {
-      "listingCode": "17355",
+      "listingCode": "60976",
       "top": [
         {
-          "code": "54371",
-          "score": 0.92,
-          "ownerName": "اسماعیلی",
-          "mobile": "09144086112",
-          "region": "آخر عباسی، عباسی",
-          "priceFrom": 15000000000,
-          "priceTo": 20000000000,
-          "freshness": "2026-10-27T15:37:54.093Z"
+          "code": "5112",
+          "score": 0.68,
+          "ownerName": "علی بیرقی",
+          "mobile": "09330066303",
+          "region": "زعفرانیه، یاغچیان، باغچه بان",
+          "priceFrom": null,
+          "priceTo": null,
+          "freshness": "2026-11-02T02:16:23.229Z"
         },
         {
-          "code": "13493",
-          "score": 0.91,
-          "ownerName": "مهندس شکاری",
-          "mobile": "09906983390",
+          "code": "3534",
+          "score": 0.67,
+          "ownerName": "مهری فرامرزی",
+          "mobile": "09141065717",
+          "region": "ولیعصر جنوبی، ولیعصر، توانیر",
+          "priceFrom": null,
+          "priceTo": null,
+          "freshness": "2026-11-02T02:18:59.875Z"
+        },
+        {
+          "code": "3733",
+          "score": 0.63,
+          "ownerName": "سروری",
+          "mobile": "09143160188",
+          "region": "زعفرانیه، ولیعصر جنوبی، ولیعصر",
+          "priceFrom": null,
+          "priceTo": null,
+          "freshness": "2026-11-02T02:18:31.656Z"
+        },
+        {
+          "code": "6629",
+          "score": 0.63,
+          "ownerName": "نادر سرشت",
+          "mobile": "09141188628",
+          "region": "توانیر، ولیعصر",
+          "priceFrom": null,
+          "priceTo": null,
+          "freshness": "2026-11-02T02:13:54.798Z"
+        }
+      ]
+    },
+    {
+      "listingCode": "60260",
+      "top": [
+        {
+          "code": "6317",
+          "score": 0.88,
+          "ownerName": "کریم طلوعی",
+          "mobile": "09141098947",
+          "region": "زعفرانیه، یاغچیان، باغچه بان",
+          "priceFrom": 3000000000,
+          "priceTo": 35000000000,
+          "freshness": "2026-11-02T02:14:20.248Z"
+        },
+        {
+          "code": "5180",
+          "score": 0.72,
+          "ownerName": "خانم رحیم زاده",
+          "mobile": "09366417383",
           "region": "زعفرانیه، یاغچیان، باغچه بان",
           "priceFrom": 2000000000,
-          "priceTo": 35000000000,
-          "freshness": "2026-10-18T06:39:36.912Z"
-        },
-        {
-          "code": "15083",
-          "score": 0.91,
-          "ownerName": "هنرجو",
-          "mobile": "09122024200",
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": 15000000000,
           "priceTo": 25000000000,
-          "freshness": "2026-10-10T05:36:40.206Z"
-        },
-        {
-          "code": "14736",
-          "score": 0.89,
-          "ownerName": "محمدی",
-          "mobile": "09144005194",
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": 15000000000,
-          "priceTo": 21000000000,
-          "freshness": "2026-10-18T06:23:54.161Z"
-        },
-        {
-          "code": "14652",
-          "score": 0.88,
-          "ownerName": "حمید جانفشان",
-          "mobile": "09141156821",
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": 13000000000,
-          "priceTo": 50000000000,
-          "freshness": "2026-10-18T06:24:04.274Z"
+          "freshness": "2026-11-02T02:16:04.277Z"
         }
       ]
     },
     {
-      "listingCode": "18019",
+      "listingCode": "60282",
       "top": [
         {
-          "code": "13485",
-          "score": 0.81,
-          "ownerName": "دکتر پرتوی",
-          "mobile": "09143034794",
+          "code": "55099",
+          "score": 0.96,
+          "ownerName": "خالیچیاار",
+          "mobile": "09145811944",
+          "region": "ولیعصر، گلشهر، 35 متری سینا",
+          "priceFrom": 30000000000,
+          "priceTo": 36000000000,
+          "freshness": "2026-11-03T06:29:24.999Z"
+        },
+        {
+          "code": "55114",
+          "score": 0.96,
+          "ownerName": "خانم ناجی",
+          "mobile": "09147384529",
+          "region": "زعفرانیه، ولیعصر، ولیعصر جنوبی",
+          "priceFrom": 28000000000,
+          "priceTo": 35000000000,
+          "freshness": "2026-11-03T06:29:24.902Z"
+        },
+        {
+          "code": "55144",
+          "score": 0.96,
+          "ownerName": "خ  پناهی",
+          "mobile": "09149081487",
           "region": "ولیعصر",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-10-18T06:39:36.941Z"
+          "priceFrom": 20000000000,
+          "priceTo": 33000000000,
+          "freshness": "2026-11-03T06:29:24.830Z"
         },
         {
-          "code": "15050",
-          "score": 0.81,
-          "ownerName": "کریم زاده",
-          "mobile": "09144167987",
-          "region": "ولیعصر، توانیر، عباسی",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-10-10T05:36:40.277Z"
+          "code": "55192",
+          "score": 0.96,
+          "ownerName": "عاطفه درخشی",
+          "mobile": null,
+          "region": "ولیعصر، رشدیه، الهی پرست",
+          "priceFrom": 20000000000,
+          "priceTo": 40000000000,
+          "freshness": "2026-11-03T06:29:24.767Z"
         },
         {
-          "code": "15212",
-          "score": 0.81,
-          "ownerName": "سارخان زاده",
-          "mobile": "09144099654",
-          "region": "ولیعصر، توانیر، ولی امر",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-10-10T05:36:08.103Z"
-        },
-        {
-          "code": "16948",
-          "score": 0.81,
-          "ownerName": "چیت ساز",
-          "mobile": "09149169125",
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-10-10T05:28:26.487Z"
-        },
-        {
-          "code": "15144",
-          "score": 0.77,
-          "ownerName": "سید جلالی",
-          "mobile": "09144149088",
-          "region": "ولیعصر جنوبی، مرزداران، باغمیشه",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-10-10T05:36:25.276Z"
+          "code": "55219",
+          "score": 0.96,
+          "ownerName": "آقای عباس نژاد",
+          "mobile": null,
+          "region": "ولیعصر",
+          "priceFrom": 28000000000,
+          "priceTo": 32000000000,
+          "freshness": "2026-11-03T06:29:24.726Z"
         }
       ]
     },
     {
-      "listingCode": "18981",
+      "listingCode": "60292",
       "top": [
         {
-          "code": "54790",
-          "score": 0.92,
-          "ownerName": "عیشی",
-          "mobile": "09144139635",
-          "region": "الهی پرست، ولیعصر، ایل گلی",
-          "priceFrom": 50000000000,
-          "priceTo": 100000000000,
-          "freshness": "2026-10-27T16:45:59.936Z"
-        },
-        {
-          "code": "53906",
-          "score": 0.92,
-          "ownerName": "اقا نقی زاده",
-          "mobile": null,
+          "code": "55150",
+          "score": 0.93,
+          "ownerName": "دروگر",
+          "mobile": "09144126734",
           "region": "ولیعصر",
           "priceFrom": 60000000000,
-          "priceTo": 120000000000,
-          "freshness": "2026-10-27T15:38:18.668Z"
+          "priceTo": 80000000000,
+          "freshness": "2026-11-03T06:29:24.821Z"
         },
         {
-          "code": "13358",
-          "score": 0.91,
-          "ownerName": "حسام منیری",
-          "mobile": "09123473867",
-          "region": "ولیعصر جنوبی، ولیعصر، فردوس",
+          "code": "5459",
+          "score": 0.92,
+          "ownerName": "علی شجاع زاده",
+          "mobile": "09124394548",
+          "region": "فردوس، ولیعصر جنوبی، ولیعصر",
           "priceFrom": 10000000000,
-          "priceTo": 90000000000,
-          "freshness": "2026-10-18T06:42:33.256Z"
+          "priceTo": 150000000000,
+          "freshness": "2026-11-02T02:15:39.020Z"
         },
         {
-          "code": "16619",
-          "score": 0.9,
-          "ownerName": "پرهیزکار",
-          "mobile": "09141157829",
+          "code": "55109",
+          "score": 0.79,
+          "ownerName": "زهرا رضوی",
+          "mobile": "09912388263",
           "region": "ولیعصر",
-          "priceFrom": 20000000000,
-          "priceTo": 90000000000,
-          "freshness": "2026-10-10T05:29:50.897Z"
-        },
-        {
-          "code": "15363",
-          "score": 0.89,
-          "ownerName": "پرهیزکار",
-          "mobile": "09141157829",
-          "region": "ولیعصر",
-          "priceFrom": 20000000000,
-          "priceTo": 100000000000,
-          "freshness": "2026-10-10T05:35:25.791Z"
-        }
-      ]
-    },
-    {
-      "listingCode": "19084",
-      "top": [
-        {
-          "code": "54790",
-          "score": 0.92,
-          "ownerName": "عیشی",
-          "mobile": "09144139635",
-          "region": "الهی پرست، ولیعصر، ایل گلی",
-          "priceFrom": 50000000000,
-          "priceTo": 100000000000,
-          "freshness": "2026-10-27T16:45:59.936Z"
-        },
-        {
-          "code": "53825",
-          "score": 0.92,
-          "ownerName": "نهبنان",
-          "mobile": null,
-          "region": "ولیعصر، الهی پرست، خاوران",
-          "priceFrom": 50000000000,
-          "priceTo": 60000000000,
-          "freshness": "2026-10-27T15:38:18.744Z"
-        },
-        {
-          "code": "54089",
-          "score": 0.92,
-          "ownerName": "محمودی",
-          "mobile": "09143748832",
-          "region": "ولیعصر",
-          "priceFrom": 40000000000,
-          "priceTo": 60000000000,
-          "freshness": "2026-10-19T06:48:41.061Z"
-        },
-        {
-          "code": "13358",
-          "score": 0.91,
-          "ownerName": "حسام منیری",
-          "mobile": "09123473867",
-          "region": "ولیعصر جنوبی، ولیعصر، فردوس",
-          "priceFrom": 10000000000,
-          "priceTo": 90000000000,
-          "freshness": "2026-10-18T06:42:33.256Z"
-        },
-        {
-          "code": "13388",
-          "score": 0.91,
-          "ownerName": "اکرم سلاطین",
-          "mobile": "09919972980",
-          "region": "ولیعصر",
-          "priceFrom": 55000000000,
+          "priceFrom": 60000000000,
           "priceTo": 70000000000,
-          "freshness": "2026-10-18T06:40:26.314Z"
+          "freshness": "2026-11-03T06:29:24.985Z"
+        },
+        {
+          "code": "55111",
+          "score": 0.78,
+          "ownerName": "شرقی",
+          "mobile": "09123785286",
+          "region": "ولیعصر",
+          "priceFrom": 60000000000,
+          "priceTo": 70000000000,
+          "freshness": "2026-11-03T06:29:24.971Z"
+        },
+        {
+          "code": "5282",
+          "score": 0.75,
+          "ownerName": "سینا نوشین",
+          "mobile": "09127763771",
+          "region": "ولیعصر",
+          "priceFrom": 4300000000,
+          "priceTo": 5000000000000,
+          "freshness": "2026-11-02T02:15:48.096Z"
         }
       ]
     },
     {
-      "listingCode": "19571",
+      "listingCode": "60302",
       "top": [
         {
-          "code": "17895",
-          "score": 0.81,
-          "ownerName": "سیامک کاظمی",
+          "code": "3596",
+          "score": 0.95,
+          "ownerName": "آقای اسدی",
+          "mobile": "09149173846",
+          "region": "خاوران، ایل گلی، سهند (ایل گلی)",
+          "priceFrom": 2000000000,
+          "priceTo": 25000000000,
+          "freshness": "2026-11-02T02:18:59.774Z"
+        },
+        {
+          "code": "55130",
+          "score": 0.94,
+          "ownerName": "عبدی",
+          "mobile": "09030422697",
+          "region": "توانیر، ولیعصر، ولیعصر 2",
+          "priceFrom": 18000000000,
+          "priceTo": 22000000000,
+          "freshness": "2026-11-03T06:29:24.856Z"
+        },
+        {
+          "code": "55175",
+          "score": 0.94,
+          "ownerName": "جنت دوست",
           "mobile": null,
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-11-01T13:47:21.731Z"
+          "region": "خاوران، رشدیه، ولیعصر",
+          "priceFrom": 14000000000,
+          "priceTo": 20000000000,
+          "freshness": "2026-11-03T06:29:24.777Z"
         },
         {
-          "code": "12828",
-          "score": 0.81,
-          "ownerName": "جعفرپور",
-          "mobile": "09147409560",
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-10-18T06:46:05.838Z"
+          "code": "55214",
+          "score": 0.93,
+          "ownerName": "خانم رضایی",
+          "mobile": null,
+          "region": "35 متری سینا، استانداری، الهی پرست",
+          "priceFrom": 15000000000,
+          "priceTo": 28000000000,
+          "freshness": "2026-11-03T06:29:24.732Z"
         },
         {
-          "code": "12994",
-          "score": 0.81,
-          "ownerName": "خانم خیابانی",
-          "mobile": "09143195973",
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-10-18T06:43:52.063Z"
-        },
-        {
-          "code": "12999",
-          "score": 0.81,
-          "ownerName": "خانم سلیمی",
-          "mobile": "09141255855",
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-10-18T06:43:52.050Z"
-        },
-        {
-          "code": "13413",
-          "score": 0.81,
-          "ownerName": "عبدالهی",
-          "mobile": "09913786764",
-          "region": "زعفرانیه، یاغچیان، باغچه بان",
-          "priceFrom": null,
-          "priceTo": null,
-          "freshness": "2026-10-18T06:40:26.146Z"
+          "code": "2929",
+          "score": 0.93,
+          "ownerName": "تنهایی",
+          "mobile": "09144117789",
+          "region": "ولیعصر جنوبی، ولیعصر، توانیر",
+          "priceFrom": 17000000000,
+          "priceTo": 20000000000,
+          "freshness": "2026-11-02T02:19:47.556Z"
         }
       ]
     }
