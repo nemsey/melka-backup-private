@@ -138,7 +138,8 @@ export class RuntimeSupervisor {
         if (process.env.MELK_WORKER === "disabled") return;
         if (!isWorkerAlive()) {
           try {
-            const child = spawn(bunBinary(), [WORKER_ENTRY], {
+            // PN-053 (سبک‌سازی · RAM): --smol — سقف رشد heap ورکر (همان پچ سرور)
+            const child = spawn(bunBinary(), ["--smol", WORKER_ENTRY], {
               cwd: REPO_ROOT,
               detached: true,
               stdio: "ignore",
@@ -159,8 +160,9 @@ export class RuntimeSupervisor {
       return { ok: true, action: "already-alive" };
     }
     // ۲) فروش Worker — مستقل + بدون نگهداشتن والد (بقای دون‌والد؛ درس PN-004)
+    // PN-053 (سبک‌سازی · RAM): --smol روی هر دو مسیر spawn (boot + احیا)
     const spawnFn = options?.spawnFn ?? ((entry: string) =>
-      spawn(bunBinary(), [entry], {
+      spawn(bunBinary(), ["--smol", entry], {
         cwd: REPO_ROOT,
         detached: true,
         stdio: "ignore",

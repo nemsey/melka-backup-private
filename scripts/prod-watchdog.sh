@@ -167,7 +167,8 @@ while true; do
         --root /home/z/my-project \
         --witness /home/z/my-project/upload/.runtime/chunk-audit.json --quiet >> "$LOG" 2>&1; then
       echo "[chunk-guard] $(date '+%F %T') بیلد ناقص (خطر chunk 404) — بازسازی می‌کنم" >> "$LOG"
-      (cd /home/z/my-project && bun run build) >> "$LOG" 2>&1
+      # PN-053: nice — rebuild هرگز با سرویس‌دهی سرور رقابت CPU نکند
+      (cd /home/z/my-project && nice -n 19 bun run build) >> "$LOG" 2>&1
       if ! bash /home/z/my-project/scripts/audit-chunk-integrity.sh \
           --root /home/z/my-project \
           --witness /home/z/my-project/upload/.runtime/chunk-audit.json >> "$LOG" 2>&1; then
@@ -187,7 +188,8 @@ while true; do
   if [ -x /home/z/my-project/scripts/pn048/build-head-gate.sh ]; then
     if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
       echo "[G3-gate] $(date '+%F %T') بیلد ≠ HEAD — بازسازی خوددرمانی آغاز" >> "$LOG"
-      (cd /home/z/my-project && bun run build) >> "$LOG" 2>&1
+      # PN-053: nice — rebuild پس‌زمینه با اولویت پایین CPU
+      (cd /home/z/my-project && nice -n 19 bun run build) >> "$LOG" 2>&1
       if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
         echo "[G3-gate] $(date '+%F %T') CRITICAL: بازسازی هم ناهمخوان — سرور بالا می‌آید اما کد کهنه است (رستاخیز رسمی لازم)" >> "$LOG"
       else
@@ -217,10 +219,13 @@ while true; do
   # PN-008/PN-041: حالت ژورنال مناسبِ مسیر پیش از اسپاون — ایدمپوتنت
   # (قلعه روی fuse/ossfs → DELETE · دیسک محلی → WAL — درس شکست WAL روی FUSE ۰۹:۰۱)
   DATABASE_URL="$LIVE_DB_URL" bun /home/z/my-project/scripts/pn008/ensure-wal.ts >/dev/null 2>&1 || true
+  # PN-053 (سبک‌سازی · RAM): --smol — سقف رشد heap فرایند سرور؛ زیر ترافیک
+  # سنگین relay مشاهده شد RSS تا ۱.۳GB (VmHWM ۲.۱GB) بالید. bun از
+  # NODE_OPTIONS/--max-old-space-size پیروی نمی‌کند — معادل رسمی: --smol.
   PORT=3000 HOSTNAME=0.0.0.0 NODE_ENV=production \
     DATABASE_URL="$LIVE_DB_URL" \
     MELKA_REPO_DIR="/home/z/my-project" \
-    bun /home/z/my-project/.next/standalone/server.js >> "$LOG" 2>&1
+    bun --smol /home/z/my-project/.next/standalone/server.js >> "$LOG" 2>&1
   CODE=$?
   echo "[watchdog] $(date '+%F %T') سرور با کد $CODE متوقف شد — ری‌استارت پس از ۵ ثانیه" >> "$LOG"
   sleep 5

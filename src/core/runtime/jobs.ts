@@ -549,7 +549,9 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       id: WORKER_JOB_IDS.sacredBackup,
       title: "بکاپ مقدس ۱۵دقیقه‌ای (PN-038/۱.۳ + PN-041/۳)",
       intervalMs: envInt("MELK_SACRED_BACKUP_INTERVAL_MINUTES", 15, 5) * 60_000,
-      firstRunDelayMs: 30_000, // نخستین بکاپ مقدس نیم دقیقه پس از بوت
+      // PN-053 (استگر CPU): ۳۰s → ۱۲۰s — VACUUM ۵۳۶MB در نخستین دقایق بوت با
+      // گرم‌شدن سرور (JIT/prewarm/relay) هم‌زمان نمی‌شود؛ دکترین ۵دقیقه‌ای قلعه محفوظ
+      firstRunDelayMs: 120_000,
       run: async (database) => runSacredBackup(database),
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
@@ -566,7 +568,9 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       id: WORKER_JOB_IDS.rollingBackup,
       title: "بکاپ چرخشی ۵دقیقه‌ای قلعهٔ داده (PN-041/۲)",
       intervalMs: envInt("MELK_ROLLING_BACKUP_INTERVAL_MINUTES", 5, 5) * 60_000,
-      firstRunDelayMs: 15_000, // نخستین بکاپ چرخشی ۱۵ ثانیه پس از بوت
+      // PN-053 (استگر CPU): ۱۵s → ۶۰s — سنگین‌ترین کار بوت دیرتر شروع می‌شود تا
+      // شوک CPU/IO استارتاپ نرم شود (پنجرهٔ ریسک نخستین چرخه ~۶۰s — داخل دکترین ۵دقیقه‌ای)
+      firstRunDelayMs: 60_000,
       run: async (database) => runRollingBackup(database),
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

@@ -62,6 +62,10 @@ const nextConfig: NextConfig = {
    * ========================================================================== */
   outputFileTracingExcludes: {
     "*": [
+      /* PN-053 (سبک‌سازی): .git ردیابی نمی‌شود — ۹۰۲MB کپی زائد در هر بیلد.
+       * اثبات زائدبودن: api/version و همهٔ گاردها گیت را از MELKA_REPO_DIR
+       * (ریشهٔ اصلی) می‌خوانند، نه از standalone/.git. */
+      "./.git/**",
       "./backups/**",
       "./db/**",
       "./node_modules/@embedded-postgres/**",

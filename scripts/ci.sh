@@ -109,9 +109,9 @@ tail -1 /tmp/pn020-ci-audit17.log
 bash scripts/audit-stealth-users.sh > /tmp/pn021-ci-audit18.log 2>&1 || { echo "✗ گام ۵-ق: stealth-users (کارشناس فروش پنهان)"; tail -8 /tmp/pn021-ci-audit18.log; exit 1; }
 tail -1 /tmp/pn021-ci-audit18.log
 
-# PN-022-A (شورا-ن۰۲۵): سه گارد تازه — زیرساخت فاز ۱۲
-bash scripts/audit-postgres-compat.sh > /tmp/pn022-ci-audit19.log 2>&1 || { echo "✗ گام ۵-ر: postgres-compat (سازگاری مهاجرت PostgreSQL)"; tail -8 /tmp/pn022-ci-audit19.log; exit 1; }
-tail -1 /tmp/pn022-ci-audit19.log
+# PN-022-A (شورا-ن۰۲۵): گاردهای تازه — زیرساخت فاز ۱۲
+# PN-053 (سبک‌سازی): گام ۵-ر postgres-compat حذف شد — کاوش PG با انتخاب SQLite
+# (سوییچ PN-022-C) بسته و audit-postgres-compat.sh + pg-migrate آرشیو شدند.
 bash scripts/audit-tile-contract.sh > /tmp/pn022-ci-audit20.log 2>&1 || { echo "✗ گام ۵-ش: tile-contract (قرارداد کاشی)"; tail -8 /tmp/pn022-ci-audit20.log; exit 1; }
 tail -1 /tmp/pn022-ci-audit20.log
 bash scripts/audit-feature-factory.sh > /tmp/pn022-ci-audit21.log 2>&1 || { echo "✗ گام ۵-ص: feature-factory (کارخانهٔ کاشی)"; tail -8 /tmp/pn022-ci-audit21.log; exit 1; }
@@ -126,8 +126,7 @@ tail -1 /tmp/pn023a-ci-audit23.log
 # PN-024 (شورا-ن۰۳۱): چهار گارد تازه — J4 + J5 + نگین + پادواقع (مجموع ۲۷)
 bash scripts/audit-mirror-sync.sh > /tmp/pn024-ci-audit24.log 2>&1 || { echo "✗ گام ۵-غ: mirror-sync (J4 — همگامی آینهٔ GitHub)"; tail -8 /tmp/pn024-ci-audit24.log; exit 1; }
 tail -1 /tmp/pn024-ci-audit24.log
-bash scripts/audit-pg-cluster.sh > /tmp/pn024-ci-audit25.log 2>&1 || { echo "✗ گام ۵-خ: pg-cluster (J5 — پاک‌سازی PG تست > ۵۰۰MB)"; tail -8 /tmp/pn024-ci-audit25.log; exit 1; }
-tail -1 /tmp/pn024-ci-audit25.log
+# PN-053: گام ۵-خ pg-cluster آرشیو شد — خوشهٔ تست PG با بسته‌شدن کاوش (embedded-postgres حذف) دیگر ساخته نمی‌شود
 bash scripts/audit-negin-consistency.sh > /tmp/pn024-ci-audit26.log 2>&1 || { echo "✗ گام ۵-ت: negin-consistency (۱۱ گوهر سازگار + قانون ۶)"; tail -8 /tmp/pn024-ci-audit26.log; exit 1; }
 tail -1 /tmp/pn024-ci-audit26.log
 bash scripts/audit-counterfactual-purity.sh > /tmp/pn024-ci-audit27.log 2>&1 || { echo "✗ گام ۵-ث: counterfactual-purity (خلوص L3 + قفل auto_execute + مرز لایه)"; tail -8 /tmp/pn024-ci-audit27.log; exit 1; }
