@@ -219,14 +219,23 @@ while true; do
   # PN-008/PN-041: حالت ژورنال مناسبِ مسیر پیش از اسپاون — ایدمپوتنت
   # (قلعه روی fuse/ossfs → DELETE · دیسک محلی → WAL — درس شکست WAL روی FUSE ۰۹:۰۱)
   DATABASE_URL="$LIVE_DB_URL" bun /home/z/my-project/scripts/pn008/ensure-wal.ts >/dev/null 2>&1 || true
-  # PN-053 (سبک‌سازی · RAM): --smol — سقف رشد heap فرایند سرور؛ زیر ترافیک
-  # سنگین relay مشاهده شد RSS تا ۱.۳GB (VmHWM ۲.۱GB) بالید. bun از
-  # NODE_OPTIONS/--max-old-space-size پیروی نمی‌کند — معادل رسمی: --smol.
-  PORT=3000 HOSTNAME=0.0.0.0 NODE_ENV=production \
-    DATABASE_URL="$LIVE_DB_URL" \
-    MELKA_REPO_DIR="/home/z/my-project" \
-    bun --smol /home/z/my-project/.next/standalone/server.js >> "$LOG" 2>&1
+
+  # ═══ PN-054 (دستور ۱): ری‌استارت بدون قطعی — معماری socket-master ═══
+  # سوکت ۳۰۰۰ یک‌بار bind می‌شود و در socket-master می‌ماند؛ فرزندان سرور
+  # (node) روی fd ارث‌برده گوش می‌دهند (همان تکنیک PM2-cluster):
+  #   • کرش سرور → ری‌اسپاون با همان fd پس از ۱ ثانیه (خواب ۵→۱ ثانیه؛
+  #     صف backlog=511 هسته در وقفه اتصال‌های تازه را نگه می‌دارد → مشتری
+  #     فقط تأخیر می‌بیند، نه خطا).
+  #   • دیپلوی → scripts/pn054/deploy-zero-dt.sh (Blue/Green: سبز کنار آبی
+  #     بالا می‌آید → health → SIGTERM آبی → drain درخواست‌های در حال پرواز).
+  #   • دستور ۳: سقف heap سرور = --max-old-space-size=384 (داخل socket-master)
+  #     + مانیتور RAM هر ۵ دقیقه با هشدار در ۵۰۰MB.
+  # خروج socket-master (مثلاً EADDRINUSE گذرا) → همین حلقه پس از ۱ ثانیه
+  # دوباره تلاش می‌کند (گیت‌های بالا دوباره اجرا می‌شوند).
+  export DATABASE_URL="$LIVE_DB_URL"
+  export MELKA_REPO_DIR="/home/z/my-project"
+  python3 /home/z/my-project/scripts/pn054/socket-master.py >> "$LOG" 2>&1
   CODE=$?
-  echo "[watchdog] $(date '+%F %T') سرور با کد $CODE متوقف شد — ری‌استارت پس از ۵ ثانیه" >> "$LOG"
-  sleep 5
+  echo "[watchdog] $(date '+%F %T') socket-master با کد $CODE متوقف شد — تلاش مجدد پس از ۱ ثانیه" >> "$LOG"
+  sleep 1
 done

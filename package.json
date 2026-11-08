@@ -15,7 +15,7 @@
     "test": "NODE_ENV=test DATABASE_URL=file:/home/z/my-project/db/test.db MELK_TOKEN_KEY=test-only-key-not-a-real-secret MELK_API_TIMEOUT_MS=300 GLM_PROBE_TIMEOUT_MS=300 bun test tests/",
     "test:db:push": "DATABASE_URL=file:/home/z/my-project/db/test.db prisma db push --accept-data-loss",
     "postbuild": "bun run scripts/fingerprint.ts --write-next",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && (bash scripts/pn054/trim-node-modules.sh || true)",
     "ci": "bash scripts/ci.sh",
     "tile:new": "bun scripts/feature-factory/tile-new.ts"
   },

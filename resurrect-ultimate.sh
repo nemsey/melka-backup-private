@@ -93,6 +93,7 @@ trap 'rc=$?; if [ $rc -ne 0 ]; then echo "❌ [$(date -u +%FT%TZ)] رستاخی�
 touch .prod-stop 2>/dev/null || true     # فلگ توقف تمیز نگهبان
 pkill -f "standalone/server.js"     2>/dev/null || true
 pkill -f "prod-watchdog.sh"         2>/dev/null || true
+pkill -f "pn054/socket-master.py"   2>/dev/null || true   # PN-054: نگهدار سوکت (خاموشی تمیز با drain)
 pkill -f "scripts/runtime/worker.ts" 2>/dev/null || true
 sleep 2
 

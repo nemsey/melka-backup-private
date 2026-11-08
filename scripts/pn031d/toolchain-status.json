@@ -1,8 +1,0 @@
-{
-  "ok": true,
-  "jdk": "javac 17.0.12",
-  "sdk": { "platforms": "android-34", "buildTools": "34.0.0" },
-  "gradle": "8.9",
-  "base": "/home/z/android",
-  "finishedAt": "2026-10-13T13:17:35Z"
-}

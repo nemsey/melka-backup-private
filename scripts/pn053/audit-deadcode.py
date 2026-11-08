@@ -12,6 +12,9 @@ OUT = os.path.join(ROOT, "download/PN-053/audit-deadcode.json")
 
 # ── ۱) ریشه‌های زندهٔ قطعی (زنجیرهٔ حیات — هرگز حذف نمی‌شوند) ──
 ALIVE_ROOTS = [
+    # PN-054 (دستور ۲): رجیستری ابزارهای دستی = ریشهٔ رسمی —
+    # هر اسکریپتی که نامش در این فایل بیاید، از حذف‌های آینده مصون است.
+    "scripts/CLI-REGISTRY.md",
     "scripts/prod-watchdog.sh", "scripts/start-prod.sh", "scripts/start-prod-daemon.py",
     "scripts/build-with-parking.sh", "scripts/park-deliver.sh", "scripts/fingerprint.ts",
     "scripts/log-rotate.sh", "scripts/ci.sh", "scripts/resurrect-ultimate.sh",
@@ -19,11 +22,15 @@ ALIVE_ROOTS = [
     "scripts/verify-preview-version.sh", "scripts/perf-budget.sh", "scripts/regression-guard.sh",
     "scripts/resilient-test-runner.sh", "scripts/audit-disk-space.sh",
     "scripts/runtime/worker.ts",
+    # معماری PN-054 (دستور ۱): بدون قطعی
+    "scripts/pn054/socket-master.py", "scripts/pn054/listen-patch.cjs",
+    "scripts/pn054/deploy-zero-dt.sh", "scripts/pn054/test-zero-dt.sh",
+    "scripts/pn054/trim-node-modules.sh", "scripts/pn054/closure.sh",
 ]
 # پوشه‌های حیاتی به‌طور کامل زنده‌اند
 ALIVE_DIRS = ["scripts/recovery", "scripts/mirror", "scripts/runtime", "scripts/pn012",
               "scripts/pn041", "scripts/pn048", "scripts/pn008", "scripts/pn053",
-              "scripts/pn078", "scripts/feature-factory", "scripts/pg-migrate"]
+              "scripts/pn054", "scripts/pn078", "scripts/feature-factory"]
 
 SCAN_DIRS = ["src", "tests", "scripts"]
 
