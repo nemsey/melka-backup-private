@@ -94,6 +94,14 @@ function runShell(script: string, args: string[] = [], timeoutMs = 15 * 60_000):
   });
 }
 
+/** PN-078 (سبک‌سازی · آزادسازی رم): رها کردن page-cache فایل‌های بکاپ سرد.
+ *  بهترین-تلاش مطلق — شکست هرگز بکاپ را نمی‌شکند (قرارداد drop-cache.sh). */
+async function dropBackupFileCache(...files: string[]): Promise<void> {
+  const existing = files.filter((f) => f && existsSync(f));
+  if (existing.length === 0) return;
+  await runShell(join(REPO_ROOT, "scripts/pn078/drop-cache.sh"), existing, 60_000);
+}
+
 /** شناسه‌های کارها — منبع یگانه (تست‌ها همین را می‌خوانند) */
 export const WORKER_JOB_IDS = {
   intelligenceCycle: "intelligence-cycle",
@@ -191,6 +199,8 @@ export async function runBackupRotation(db: PrismaClient, options?: { keep?: num
       detail: JSON.stringify({ created: createdName, kept: kept.length, pruned: pruned.length, integrity }),
     },
   }).catch(() => undefined); // ثبت شاهد بهترین-تلاش است — چرخش بکاپ هرگز به‌خاطر آن نمی‌شکند
+  // PN-078 · آزادسازی رم: بکاپ چرخشی ۶ساعته نیز فایل سرد است — cache رها شود
+  await dropBackupFileCache(target);
   return { created: target, kept, pruned, integrity };
 }
 
@@ -253,6 +263,9 @@ export async function runSacredBackup(db: PrismaClient, options?: { keep?: numbe
     if (i < keep || files[i].f === createdName) kept.push(files[i].f);
     else { unlinkSync(join(dir, files[i].f)); pruned.push(files[i].f); }
   }
+  // PN-078 · آزادسازی رم: cache بکاپ تازهٔ سرد رها شود (fallback درون‌فرایندی
+  // زیرپروسهٔ vacuum-copy نیست — آن مسیر خودش fadvise دارد؛ اینجا پوشش هر دو)
+  await dropBackupFileCache(target);
   // شاهد پایدار برای گارد/آپ‌تایم — بهترین-تلاش
   try {
     const { writeFileSync } = await import("node:fs");
@@ -362,6 +375,8 @@ export async function runRollingBackup(db: PrismaClient, options?: { keep?: numb
       const { copyFileSync, renameSync } = await import("node:fs");
       copyFileSync(target, tmpF);
       renameSync(tmpF, fortress);
+      // PN-078 · آزادسازی رم: کپی قلعه ۵۳۶MB است — cache هر دو فایل سرد رها شود
+      await dropBackupFileCache(fortress, target);
     }
   } catch { /* قلعه بهترین-تلاش است — چرخشی/بقا همیشه زنده‌اند */ }
 
