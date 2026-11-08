@@ -25,7 +25,8 @@ SEEDS=(
   scripts/prod-watchdog.sh
   scripts/start-prod-daemon.py
   scripts/start-prod.sh
-  scripts/resurrect-ultimate.sh
+  resurrect-ultimate.sh
+  scripts/pn005-rebuild-graphs.ts
   scripts/runtime/worker.ts
   scripts/CLI-REGISTRY.md
   .github/workflows/db-backup.yml

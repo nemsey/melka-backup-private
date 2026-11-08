@@ -17,11 +17,11 @@ ALIVE_ROOTS = [
     "scripts/CLI-REGISTRY.md",
     "scripts/prod-watchdog.sh", "scripts/start-prod.sh", "scripts/start-prod-daemon.py",
     "scripts/build-with-parking.sh", "scripts/park-deliver.sh", "scripts/fingerprint.ts",
-    "scripts/log-rotate.sh", "scripts/ci.sh", "scripts/resurrect-ultimate.sh",
+    "scripts/log-rotate.sh", "scripts/ci.sh", "resurrect-ultimate.sh",
     "scripts/refresh-sync-tar.sh", "scripts/verify-deploy-freshness.sh",
     "scripts/verify-preview-version.sh", "scripts/perf-budget.sh", "scripts/regression-guard.sh",
     "scripts/resilient-test-runner.sh", "scripts/audit-disk-space.sh",
-    "scripts/runtime/worker.ts",
+    "scripts/runtime/worker.ts", "scripts/pn005-rebuild-graphs.ts",
     # معماری PN-054 (دستور ۱): بدون قطعی
     "scripts/pn054/socket-master.py", "scripts/pn054/listen-patch.cjs",
     "scripts/pn054/deploy-zero-dt.sh", "scripts/pn054/test-zero-dt.sh",
