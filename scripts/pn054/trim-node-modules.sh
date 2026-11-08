@@ -33,6 +33,32 @@ rm_quiet() {
 # ─── ۱) بسته‌های پلتفرمی بی‌استفاده ───
 rm_quiet node_modules/sharp
 rm_quiet node_modules/@img
+
+# ─── ۱-ب) خانوادهٔ pg یتیم (درس ریست ۲۰۲۶-۱۱-۰۸) ───
+# رویداد: بوت ۱۱:۳۴ با bun.lock کهنِ دوران pg-migrate نصب اجرا کرد و این خانواده
+# را برگرداند؛ رستاخیز ۱۱:۵۲ درخت را به قفل‌فایل رسمی برگرداند اما bun بستهٔ
+# اضافی را هرس نمی‌کند → ۹۶۰MB. این خانواده در bun.lock نیست، هیچ import‌ی در
+# src/ و scripts/ و tests/ ندارد (کاوش PG با بسته‌شدنش آرشیو شد — ci.sh گام ۵-خ).
+# حذف از این‌جا ایدمپوتنت و ماندگار است (postinstall هر نصب را پاک می‌کند).
+rm_quiet node_modules/@embedded-postgres
+rm_quiet node_modules/embedded-postgres
+rm_quiet node_modules/pg
+rm_quiet node_modules/pg-cloudflare
+rm_quiet node_modules/pg-connection-string
+rm_quiet node_modules/pg-int8
+rm_quiet node_modules/pg-pool
+rm_quiet node_modules/pg-protocol
+rm_quiet node_modules/pg-types
+rm_quiet node_modules/pgpass
+rm_quiet node_modules/postgres-array
+rm_quiet node_modules/postgres-bytea
+rm_quiet node_modules/postgres-date
+rm_quiet node_modules/postgres-interval
+rm_quiet node_modules/@types/pg
+rm_quiet node_modules/split2
+rm_quiet node_modules/xtend
+rm_quiet node_modules/async-exit-hook
+
 rm_quiet node_modules/@next/swc-linux-x64-musl
 rm_quiet node_modules/@next/swc-darwin-arm64
 rm_quiet node_modules/@next/swc-darwin-x64

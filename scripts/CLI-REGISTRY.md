@@ -35,7 +35,8 @@
 | `scripts/fingerprint.ts` | اثر انگشت بیلد (postbuild → .next) |
 | `scripts/ci.sh` | اجرای همهٔ گاردهای ممیزی CI |
 | `scripts/refresh-sync-tar.sh` | تازه‌سازی بستهٔ همگام‌سازی (sync-tar) |
-| `scripts/pn054/trim-node-modules.sh` | هرس وابستگی‌های پلتفرمی بی‌استفاده (postinstall) |
+| `scripts/pn054/trim-node-modules.sh` | هرس وابستگی‌های پلتفرمی بی‌استفاده (postinstall) + خانوادهٔ pg یتیم (درس ریست ۱۱-۰۸) |
+| `scripts/pn054/find-orphans.py` | تشخیص بسته‌های یتیم node_modules (خارج از bun.lock) — تشخیص پس‌رفت حجم |
 | `scripts/pn054/closure.sh` | تحلیل بستار ارجاعی (کدام اسکریپت زنده است) |
 | `scripts/pn054/consolidate.sh` | پاکسازی کنترل‌شدهٔ اسکریپت‌های جلسه‌ای (تک‌بار) |
 
