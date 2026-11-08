@@ -123,3 +123,6 @@ db/custom.db.broken-*
 db/custom.db.pn050-pre-migration*
 backups/backup-*.db-journal
 .zscripts/tarstage/
+
+# PN-054: قرنطینه خرابی (۶۱۵MB — فقط دیسک محلی، هرگز گیت)
+db/custom.db.CORRUPT-Q*
