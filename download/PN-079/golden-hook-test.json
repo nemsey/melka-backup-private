@@ -1,0 +1,63 @@
+{
+  "case": "PN-079 · آزمون قلاب طلایی: بقا داده بین دو ریست + kill -9 + رستاخیز + صفر اتلاف + drift",
+  "generatedAt": "2026-11-09T10:57:28.902405",
+  "marker": {
+    "id": "61921cc7c88839e4346390b0",
+    "propertyCode": "1001",
+    "chosen": "قدیمی‌ترین آگهی بدون یادداشت — پیش از ترمیم خارج از سقف ۲۵٬۰۰۰ (نامرئی در فهرست)"
+  },
+  "counts": {
+    "before_restart1": {
+      "PropertyRecord": 28668,
+      "RequestRecord": 26203,
+      "integrity": "ok"
+    },
+    "after_restart1": {
+      "PropertyRecord": 28668,
+      "RequestRecord": 26203,
+      "integrity": "ok"
+    },
+    "before_restart2": {
+      "PropertyRecord": 28668,
+      "RequestRecord": 26203,
+      "integrity": "ok"
+    },
+    "after_restart2": {
+      "PropertyRecord": 28668,
+      "RequestRecord": 26203,
+      "integrity": "ok"
+    }
+  },
+  "restart1": {
+    "elapsed_s": 127,
+    "drift": "TRUE",
+    "note": "شامل بیلد کامل (کد تازهٔ PN-079) — رستاخیز با کد جدید؛ drift=TRUE فقط بدلیل کامیت اسکریپت آزمون در میانهٔ آزمون (سرور=۱۴۹bae7 حاوی کل ترمیم آمار)"
+  },
+  "restart2": {
+    "elapsed_s": 49,
+    "drift": "FALSE",
+    "note": "بیلد کامل (کد اسکریپت آزمون) — چون HEAD میان آزمون جلو رفت"
+  },
+  "restart3_fastpath": {
+    "elapsed_s": 37,
+    "drift": "FALSE",
+    "note": "مسیر سریع (بیلد = HEAD) — سناریوی رایج ریست بدون تغییر کد؛ هدف <۴۵ث"
+  },
+  "T1_data_survival": {
+    "markerA_survived_restart1": "YES",
+    "markerB_written_between_restarts_survived_restart2": "YES",
+    "verdict": "PASS"
+  },
+  "T3_zero_loss": {
+    "verdict": "PASS"
+  },
+  "T2_resurrection": {
+    "fastpath_restart3_target_lt_45s": "PASS",
+    "restart1_with_build_s": 127,
+    "restart2_with_build_s": 49
+  },
+  "T4_drift": {
+    "verdict": "PASS",
+    "note": "ریست‌های ۲ و ۳ باید drift=FALSE باشند؛ ریست ۱ به‌دلیل کامیت میانهٔ آزمون drift ساختگی دارد (مستند در restart1.note)"
+  }
+}
