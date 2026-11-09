@@ -62,10 +62,13 @@ describe("PN-022-A/مرحلهٔ۳ · مهاجرت PostgreSQL (فقط تست)", (
     expect(b.verdict.honestNote).toContain("هم‌زمانی");
   });
 
-  test("پ-۷) خط لولهٔ مهاجرت: سه ابزار موجود", () => {
-    expect(existsSync("scripts/pg-migrate/pg-lifecycle.ts")).toBe(true);
-    expect(existsSync("scripts/pg-migrate/pg-migrate.ts")).toBe(true);
-    expect(existsSync("scripts/pg-migrate/pg-benchmark.ts")).toBe(true);
+  // پ-۷ (PN-053 · سبک‌سازی): خط لولهٔ مهاجرت PG آرشیو شد — کاوش با انتخاب SQLite
+  // (سوییچ PN-022-C) بسته شد؛ سه ابزار pg-migrate و embedded-postgres حذف شدند.
+  // شاهد تاریخی: download/pn022/pg/ + کامیت‌های گیت + docs/archive.
+  test("پ-۷) کاوش PG بسته شده — ابزارهای مهاجرت آرشیو (PN-053)", () => {
+    expect(existsSync("scripts/pg-migrate/pg-lifecycle.ts")).toBe(false);
+    expect(existsSync("scripts/pg-migrate/pg-migrate.ts")).toBe(false);
+    expect(existsSync("scripts/pg-migrate/pg-benchmark.ts")).toBe(false);
   });
 
   test("پ-۸) نقاط موتور-ویژه مهر خورده (سوییچ PN-022-C ردیابی‌پذیر)", () => {
@@ -204,23 +207,23 @@ describe("PN-022-A/مرحلهٔ۵ · سه گارد تازه", () => {
     expect(r.verdict).toBe("PASS");
   });
 
-  test("گ-۴) CI: سه گام تازه ۵-ر/ش/ص در ci.sh ثبت شده", () => {
+  test("گ-۴) CI: دو گام تازه ۵-ش/ص در ci.sh ثبت شده (۵-ر postgres-compat در PN-053 آرشیو شد)", () => {
     const ci = readFileSync("scripts/ci.sh", "utf8");
-    expect(ci).toContain("گام ۵-ر: postgres-compat");
     expect(ci).toContain("گام ۵-ش: tile-contract");
     expect(ci).toContain("گام ۵-ص: feature-factory");
   });
 
-  test("گ-۵) CI: مجموع گاردها در گام ۵ (۱۸ پایه + ۳ ن۲۲ + ۲ ن۲۳-الف + ۴ ن۰۲۴ + ۳ ن۰۲۵)", () => {
+  test("گ-۵) CI: مجموع گاردها در گام ۵ (۲۸ — ۳۰ منهای دو گارد PG آرشیو‌شده در PN-053)", () => {
     const ci = readFileSync("scripts/ci.sh", "utf8");
     // گام ۵ تا آغاز گام ۶ — گاردهای ساختاری (chunk-integrity در گام ۸ جدا است)
     const step5 = ci.slice(ci.indexOf("۵) Audit باغ"), ci.indexOf("── ۶) Perf Budget"));
     const count = (step5.match(/bash scripts\/audit-[a-z-]+\.sh/g) ?? []).length;
-    expect(count).toBe(30); // PN-025: ۲۷ + memory-lifecycle + unified-graph + decision-lock
+    expect(count).toBe(28); // PN-025: ۳۰ · PN-053: −۲ (postgres-compat + pg-cluster آرشیو)
   });
 
   test("گ-۶) اسکریپت‌های گارد اجرایی هستند", () => {
-    for (const g of ["audit-postgres-compat.sh", "audit-tile-contract.sh", "audit-feature-factory.sh"]) {
+    // PN-053: audit-postgres-compat.sh با بسته‌شدن کاوش PG آرشیو شد
+    for (const g of ["audit-tile-contract.sh", "audit-feature-factory.sh"]) {
       expect(existsSync(join("scripts", g))).toBe(true);
     }
   });

@@ -94,6 +94,14 @@ function runShell(script: string, args: string[] = [], timeoutMs = 15 * 60_000):
   });
 }
 
+/** PN-078 (سبک‌سازی · آزادسازی رم): رها کردن page-cache فایل‌های بکاپ سرد.
+ *  بهترین-تلاش مطلق — شکست هرگز بکاپ را نمی‌شکند (قرارداد drop-cache.sh). */
+async function dropBackupFileCache(...files: string[]): Promise<void> {
+  const existing = files.filter((f) => f && existsSync(f));
+  if (existing.length === 0) return;
+  await runShell(join(REPO_ROOT, "scripts/pn078/drop-cache.sh"), existing, 60_000);
+}
+
 /** شناسه‌های کارها — منبع یگانه (تست‌ها همین را می‌خوانند) */
 export const WORKER_JOB_IDS = {
   intelligenceCycle: "intelligence-cycle",
@@ -191,6 +199,8 @@ export async function runBackupRotation(db: PrismaClient, options?: { keep?: num
       detail: JSON.stringify({ created: createdName, kept: kept.length, pruned: pruned.length, integrity }),
     },
   }).catch(() => undefined); // ثبت شاهد بهترین-تلاش است — چرخش بکاپ هرگز به‌خاطر آن نمی‌شکند
+  // PN-078 · آزادسازی رم: بکاپ چرخشی ۶ساعته نیز فایل سرد است — cache رها شود
+  await dropBackupFileCache(target);
   return { created: target, kept, pruned, integrity };
 }
 
@@ -253,6 +263,9 @@ export async function runSacredBackup(db: PrismaClient, options?: { keep?: numbe
     if (i < keep || files[i].f === createdName) kept.push(files[i].f);
     else { unlinkSync(join(dir, files[i].f)); pruned.push(files[i].f); }
   }
+  // PN-078 · آزادسازی رم: cache بکاپ تازهٔ سرد رها شود (fallback درون‌فرایندی
+  // زیرپروسهٔ vacuum-copy نیست — آن مسیر خودش fadvise دارد؛ اینجا پوشش هر دو)
+  await dropBackupFileCache(target);
   // شاهد پایدار برای گارد/آپ‌تایم — بهترین-تلاش
   try {
     const { writeFileSync } = await import("node:fs");
@@ -362,6 +375,8 @@ export async function runRollingBackup(db: PrismaClient, options?: { keep?: numb
       const { copyFileSync, renameSync } = await import("node:fs");
       copyFileSync(target, tmpF);
       renameSync(tmpF, fortress);
+      // PN-078 · آزادسازی رم: کپی قلعه ۵۳۶MB است — cache هر دو فایل سرد رها شود
+      await dropBackupFileCache(fortress, target);
     }
   } catch { /* قلعه بهترین-تلاش است — چرخشی/بقا همیشه زنده‌اند */ }
 
@@ -534,7 +549,9 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       id: WORKER_JOB_IDS.sacredBackup,
       title: "بکاپ مقدس ۱۵دقیقه‌ای (PN-038/۱.۳ + PN-041/۳)",
       intervalMs: envInt("MELK_SACRED_BACKUP_INTERVAL_MINUTES", 15, 5) * 60_000,
-      firstRunDelayMs: 30_000, // نخستین بکاپ مقدس نیم دقیقه پس از بوت
+      // PN-053 (استگر CPU): ۳۰s → ۱۲۰s — VACUUM ۵۳۶MB در نخستین دقایق بوت با
+      // گرم‌شدن سرور (JIT/prewarm/relay) هم‌زمان نمی‌شود؛ دکترین ۵دقیقه‌ای قلعه محفوظ
+      firstRunDelayMs: 120_000,
       run: async (database) => runSacredBackup(database),
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
@@ -551,7 +568,9 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       id: WORKER_JOB_IDS.rollingBackup,
       title: "بکاپ چرخشی ۵دقیقه‌ای قلعهٔ داده (PN-041/۲)",
       intervalMs: envInt("MELK_ROLLING_BACKUP_INTERVAL_MINUTES", 5, 5) * 60_000,
-      firstRunDelayMs: 15_000, // نخستین بکاپ چرخشی ۱۵ ثانیه پس از بوت
+      // PN-053 (استگر CPU): ۱۵s → ۶۰s — سنگین‌ترین کار بوت دیرتر شروع می‌شود تا
+      // شوک CPU/IO استارتاپ نرم شود (پنجرهٔ ریسک نخستین چرخه ~۶۰s — داخل دکترین ۵دقیقه‌ای)
+      firstRunDelayMs: 60_000,
       run: async (database) => runRollingBackup(database),
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;

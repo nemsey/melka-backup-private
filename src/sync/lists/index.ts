@@ -78,14 +78,35 @@ export function lcppCycleRunning(): boolean {
   return cycleLock;
 }
 
-/**
- * چرخهٔ کامل: فاز A (همهٔ فهرست‌ها · حیاتی‌ها اول) → فاز B (غنی‌سازی M1/M2/M9).
- * ایزوله: هر فهرست در try خودش — خطا فقط در گزارش می‌نشیند.
- */
 export async function runLcppCycle(db: PrismaClient): Promise<LcppCycleResult | null> {
   if (process.env.MELK_LCPP === "disabled") return null;
   if (cycleLock) return null; // چرخهٔ قبلی زنده — رد بی‌صدا
   cycleLock = true;
+  // PN-053 (استگر CPU): نخستین چرخهٔ این فرایند با همزمانی ۱ — سرور با آرامش
+  // بالا بیاید؛ چرخه‌های بعدی به مقدار عادی (۳) برمی‌گردند. فرمان DIR-PN053 گام ۲-۳.
+  const isFirstCycleOfProcess = !firstCycleDone;
+  firstCycleDone = true;
+  if (isFirstCycleOfProcess) {
+    const { setLcppConcurrency } = await import("./kernel");
+    setLcppConcurrency(1);
+  }
+  try {
+    return await runLcppCycleInner(db);
+  } finally {
+    // PN-053: رهاسازی قفل در finally — حتی روی exception قفل هرگز گیر نمی‌کند
+    cycleLock = false;
+    if (isFirstCycleOfProcess) {
+      const { setLcppConcurrency, CONCURRENCY } = await import("./kernel");
+      setLcppConcurrency(CONCURRENCY);
+    }
+  }
+}
+
+/** چرخهٔ کامل: فاز A (همهٔ فهرست‌ها · حیاتی‌ها اول) → فاز B (غنی‌سازی M1/M2/M9).
+ * ایزوله: هر فهرست در try خودش — خطا فقط در گزارش می‌نشیند. */
+let firstCycleDone = false;
+async function runLcppCycleInner(db: PrismaClient): Promise<LcppCycleResult | null> {
+  // (قفل و خاموشی در پوشش runLcppCycle برداشته شد — این تابع فقط زیر پوشش اجرا می‌شود)
   const forced = peekForceRefresh();
   if (forced) clearForceRefresh();
   const cycleId = `lcpp-${Date.now().toString(36)}`;
@@ -156,7 +177,7 @@ export async function runLcppCycle(db: PrismaClient): Promise<LcppCycleResult | 
     }
   }
 
-  cycleLock = false;
+  // cycleLock در finally پوشش runLcppCycle رها می‌شود (PN-053)
   const ok = errors.length === 0;
   markCycleEnd(ok ? "done" : "error");
 

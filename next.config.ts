@@ -62,6 +62,10 @@ const nextConfig: NextConfig = {
    * ========================================================================== */
   outputFileTracingExcludes: {
     "*": [
+      /* PN-053 (سبک‌سازی): .git ردیابی نمی‌شود — ۹۰۲MB کپی زائد در هر بیلد.
+       * اثبات زائدبودن: api/version و همهٔ گاردها گیت را از MELKA_REPO_DIR
+       * (ریشهٔ اصلی) می‌خوانند، نه از standalone/.git. */
+      "./.git/**",
       "./backups/**",
       "./db/**",
       "./node_modules/@embedded-postgres/**",
@@ -94,6 +98,12 @@ const nextConfig: NextConfig = {
       "./upload/dataset-backups/**",
       "./upload/*.tar.gz",
       "./upload/*.md",
+      /* PN-076-ث — ریشهٔ ENOSPC پنجم/ششم (۲۰۲۶-۱۱-۰۸ صبح): upload/.data (قلعه/چرخشی/مقدس)
+       * هرگز از standalone خوانده نمی‌شود (سرور/Worker مسیرهای مطلق ریشهٔ ریپو را
+       * می‌خوانند؛ اسکریپت بیلد کپی standalone/upload/.data را باری آخر rm می‌کند)
+       * اما تراسر بی‌دلیل کل آن را کپی می‌کرد — با رشد لایهٔ مقدس (۹ اسنپ‌شات ×
+       * ~۵۰۰MB) کپیِ گذرا دیسک را پر کرد و بیلد را کشت. مستثنا = صفر کپی زائد. */
+      "./upload/.data/**",
       "./deliver-store/**",
       "./intelligence-data/**",
     ],

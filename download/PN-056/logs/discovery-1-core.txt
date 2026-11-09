@@ -1,0 +1,57 @@
+################ PN-056 DISCOVERY — 2026-11-09T05:26:31+00:00 ################
+(بازسازی‌شده از رونوشت جلسه — اصل این فایل در پاک‌سازی پنجرهٔ rebuild 05:26:31→05:27:05 از دست رفت؛ خودِ رویداد = شاهد خطر H2)
+
+===== PID 1 (container init) =====
+/usr/bin/tini -- /start.sh
+===== /proc/uptime =====
+7845.00 12794.77
+===== shell identity =====
+flags=hBs
+BASH_ENV=[] ENV=[]
+login_shell=NO
+shell_pid=13827 parent_pid=13825
+  PID CMD
+13825 su z -c /bin/bash --noprofile --norc
+shell_start_time: Mon Nov  9 05:26:30 2026
+
+===== HOME candidates =====
+total 1304
+drwxr-xr-x 1 z z       4096 Nov  9 03:16 .
+drwxr-xr-x 1 root root     4096 Nov  9 03:15 ..
+drwxr-xr-x 3 z z       4096 Nov  3 17:39 .agent-browser
+drwxr-xr-x 3 z z       4096 Nov  3 17:39 .bun
+drwxr-xr-x 1 z z       4096 Nov  9 03:16 .cache
+-rw-rw-r-- 1 z z         82 Nov  9 03:16 .gitconfig
+drwxr-xr-x 3 z z       4096 Nov  3 17:39 .local
+drwxr-xr-x 3 z z       4096 Nov  3 17:41 .npm
+drwxr-xr-x 4 z z       4096 Nov  3 17:40 .npm-global
+-rw------- 1 z z        27 Nov  3 17:40 .npmrc
+drwxr-xr-x 3 z z       4096 Nov  3 17:39 .venv
+drwx------ 2 root root     4096 Nov  9 03:15 .zai-reserve
+drwx------ 2 z z       4096 Nov  9 03:16 .zcode
+drwxr-xr-x 1 z z       4096 Nov  9 05:26 my-project
+lrwxrwxrwx 1 z z         36 Nov  3 17:41 node_modules -> /home/z/.npm-global/lib/node_modules
+-rw-r--r-- 1 z z       4641 Jun 10 10:15 pyproject.toml
+-rw-r--r-- 1 z z   1254855 Jun 10 10:15 uv.lock
+
+→ نکته‌های کلیدی: هیچ .bashrc/.profile/.bash_profile در /home/z وجود ندارد؛
+  .gitconfig و .cache در بوت امروز (03:16) بازنویسی شده‌اند؛ .zcode فقط AGENTS.md
+  هارنس دارد؛ .zai-reserve متعلق به root.
+
+===== .zscripts =====
+ls: cannot access '/.zscripts': No such file or directory
+ls: cannot access '/home/z/.zscripts': No such file or directory
+/home/z/my-project/.zscripts:
+total 60
+drwxr-xr-x 2 z z     4096 Nov  9 03:20 .
+drwxr-xr-x 1 z z     4096 Nov  9 05:26 ..
+-rwxrwxr-x 1 z z 7258 Nov  9 03:20 build.sh
+-rwxrwxr-x 1 z z  901 Nov  9 03:20 database-runtime-build.sh
+-rwxrwxr-x 1 z z 4168 Nov  9 03:20 dev.sh
+-rwxrwxr-x 1 z z 2365 Nov  9 03:20 mini-services-build.sh
+-rwxrwxr-x 1 z z 1951 Nov  9 03:20 mini-services-install.sh
+-rwxrwxr-x 1 z z 3326 Nov  9 03:20 mini-services-start.sh
+-rwxrwxr-x 1 z z 4190 Nov  9 03:20 python-runtime-build.sh
+-rwxrwxr-x 1 z z 4419 Nov  9 03:20 start.sh
+-rwxrwxr-x 1 z z     0 Nov  8 05:27 sync-tar-warnings.log
+-rwxrwxr-x 1 z z    54 Nov  9 03:20 sync-tar.md5

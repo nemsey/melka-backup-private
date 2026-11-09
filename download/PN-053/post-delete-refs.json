@@ -1,0 +1,263 @@
+{
+  "pg-benchmark.ts": [
+    "tests/pn022-infra.test.ts"
+  ],
+  "audit-postgres-compat.sh": [
+    "tests/pn022-infra.test.ts",
+    "scripts/ci.sh",
+    "worklog.md"
+  ],
+  "pg-migrate.ts": [
+    "tests/pn022-infra.test.ts"
+  ],
+  "pg-lifecycle.ts": [
+    "tests/pn022-infra.test.ts",
+    "scripts/audit-pg-cluster.sh"
+  ],
+  "build-survival-package.sh": [
+    "scripts/pn008/build-survival-package.sh"
+  ],
+  "block0.ts": [
+    "scripts/pn008/block0.ts"
+  ],
+  "p6545-shadow-check.ts": [
+    "MELKA-SKELETON-COMPLETE-v1.0.md"
+  ],
+  "p6545-execute-approved-repairs.ts": [
+    "MELKA-SKELETON-COMPLETE-v1.0.md"
+  ],
+  "p6527-vacuum-backup.ts": [
+    "MELKA-SKELETON-COMPLETE-v1.0.md"
+  ],
+  "run-outcome-loop-official.ts": [
+    "MELKA-SKELETON-COMPLETE-v1.0.md"
+  ],
+  "verify-p6504-schema.ts": [
+    "worklog.md"
+  ],
+  "p6511-night-transfer.ts": [
+    "worklog.md"
+  ],
+  "sim-test.sh": [
+    "worklog.md"
+  ],
+  "warm-backup.py": [
+    "worklog.md"
+  ],
+  "pn053-dbcount.py": [
+    "worklog.md"
+  ],
+  "test-owner-view.sh": [
+    "worklog.md"
+  ],
+  "pn056-deploy.sh": [
+    "worklog.md"
+  ],
+  "pn054-melketun-sync.ts": [
+    "worklog.md"
+  ],
+  "p6513-launch-daemon.py": [
+    "worklog.md"
+  ],
+  "live-sync.ts": [
+    "worklog.md"
+  ],
+  "delivery-failfast-proof.ts": [
+    "worklog.md"
+  ],
+  "move-tiles-to-management-dashboard.py": [
+    "worklog.md"
+  ],
+  "pn069-ui-verify.sh": [
+    "worklog.md"
+  ],
+  "ceiling-analysis.py": [
+    "worklog.md"
+  ],
+  "vault-status.ts": [
+    "worklog.md"
+  ],
+  "verify-p4-07.ts": [
+    "worklog.md"
+  ],
+  "pn054-ceiling.ts": [
+    "worklog.md"
+  ],
+  "pn053-owner-view.py": [
+    "worklog.md"
+  ],
+  "p3-d3-e2e.py": [
+    "worklog.md"
+  ],
+  "p6504i-first-sync.ts": [
+    "worklog.md"
+  ],
+  "deploy-with-token.sh": [
+    "worklog.md"
+  ],
+  "pn054-make-session.py": [
+    "worklog.md"
+  ],
+  "typecheck-baseline.sh": [
+    "worklog.md"
+  ],
+  "resolve-default-locations.ts": [
+    "worklog.md"
+  ],
+  "final-recovery.sh": [
+    "worklog.md"
+  ],
+  "restyle-gradient-pairs.py": [
+    "worklog.md"
+  ],
+  "probe-arm-structure.ts": [
+    "worklog.md"
+  ],
+  "pn054-deploy.sh": [
+    "worklog.md"
+  ],
+  "verify-p5-08.ts": [
+    "worklog.md"
+  ],
+  "pn005-rebuild-graphs.ts": [
+    "worklog.md"
+  ],
+  "verify-p6502-schema.ts": [
+    "worklog.md"
+  ],
+  "survival-package-32.sh": [
+    "worklog.md"
+  ],
+  "p6510-catalog-sync.ts": [
+    "worklog.md"
+  ],
+  "p6526-audit-list-law.py": [
+    "worklog.md"
+  ],
+  "probe-enums.ts": [
+    "worklog.md"
+  ],
+  "pn050-merge-all-databases.py": [
+    "worklog.md"
+  ],
+  "pn066-link-verify.py": [
+    "worklog.md"
+  ],
+  "pn056-audit-note2.py": [
+    "worklog.md"
+  ],
+  "restyle-turquoise-sweep.py": [
+    "worklog.md"
+  ],
+  "daemonize-watchdog.py": [
+    "worklog.md"
+  ],
+  "p6513-complete-transfer.ts": [
+    "worklog.md"
+  ],
+  "pn056-coverage.py": [
+    "worklog.md"
+  ],
+  "pn056-repair-malak.ts": [
+    "worklog.md"
+  ],
+  "purge_demo_data.py": [
+    "worklog.md"
+  ],
+  "backfill-areas.mjs": [
+    "worklog.md"
+  ],
+  "r7-installcode-selftest.ts": [
+    "worklog.md"
+  ],
+  "pn066-sync-master-hash.py": [
+    "worklog.md"
+  ],
+  "deploy-b3b4-backup.ts": [
+    "worklog.md"
+  ],
+  "seed-p2-07-regression.ts": [
+    "worklog.md"
+  ],
+  "probe-nested.ts": [
+    "worklog.md"
+  ],
+  "mask-token.sh": [
+    "worklog.md"
+  ],
+  "fix-relay-public-url.py": [
+    "worklog.md"
+  ],
+  "p4-f2-e2e.py": [
+    "worklog.md"
+  ],
+  "pn057-owner-view-8lists.sh": [
+    "worklog.md"
+  ],
+  "pn058-reset-audit.py": [
+    "worklog.md"
+  ],
+  "verify-sync-mode-production.ts": [
+    "worklog.md"
+  ],
+  "pn054-probe.ts": [
+    "worklog.md"
+  ],
+  "audit-tenant-isolation.sh": [
+    "worklog.md"
+  ],
+  "hotfix-postreset-db-audit.ts": [
+    "worklog.md"
+  ],
+  "verify-b3-three-layer.ts": [
+    "worklog.md"
+  ],
+  "pn071-recover-escrow-keys.py": [
+    "worklog.md"
+  ],
+  "fetch-arm-spa-b4.sh": [
+    "worklog.md"
+  ],
+  "fix-pn033-fuse.py": [
+    "worklog.md"
+  ],
+  "p6519-restart-dev.py": [
+    "worklog.md"
+  ],
+  "witness-block1.ts": [
+    "worklog.md"
+  ],
+  "diagnose-connection.sh": [
+    "worklog.md"
+  ],
+  "p6525-probe.ts": [
+    "worklog.md"
+  ],
+  "verify-p1-02.ts": [
+    "worklog.md"
+  ],
+  "p3-visual-daemon.py": [
+    "worklog.md"
+  ],
+  "salvage-extract.py": [
+    "worklog.md"
+  ],
+  "restore-alt-url.py": [
+    "worklog.md"
+  ],
+  "audit-melketun-session.sh": [
+    "worklog.md"
+  ],
+  "sync-live-witness.ts": [
+    "worklog.md"
+  ],
+  "d0-env-db-audit.ts": [
+    "worklog.md"
+  ],
+  "pn056-trace-rebuild.py": [
+    "worklog.md"
+  ],
+  "p6514-launch-daemon.py": [
+    "worklog.md"
+  ]
+}

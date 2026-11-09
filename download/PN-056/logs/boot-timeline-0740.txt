@@ -1,0 +1,23 @@
+[BOOT] start.sh entered at 2026-11-09T07:40:27Z uptime=5.96s
+[BOOT] 2026-11-09T07:40:27Z start step="Project initialization check" uptime=5.97s
+[BOOT] 2026-11-09T07:40:52Z end   step="Project initialization check" duration=25s uptime=31.41s
+[BOOT] 2026-11-09T07:40:52Z start step="Extracting official skills to project" uptime=31.42s
+[BOOT] 2026-11-09T07:40:53Z end   step="Extracting official skills to project" duration=1s uptime=32.49s
+[BOOT] 2026-11-09T07:40:53Z start step="Rewriting lockfile registry" uptime=32.49s
+[BOOT] 2026-11-09T07:40:53Z end   step="Rewriting lockfile registry" duration=0s uptime=32.50s
+[BOOT] 2026-11-09T07:40:53Z start step="Setting permissions" uptime=32.50s
+[BOOT] 2026-11-09T07:40:53Z end   step="Setting permissions" duration=0s uptime=32.51s
+[BOOT] 2026-11-09T07:40:53Z start step="Restoring zcode state" uptime=32.51s
+[BOOT] 2026-11-09T07:40:54Z end   step="Restoring zcode state" duration=1s uptime=32.59s
+[BOOT] 2026-11-09T07:40:54Z start step="Loading z user profile" uptime=32.59s
+[BOOT] 2026-11-09T07:40:54Z end   step="Loading z user profile" duration=0s uptime=32.60s
+[BOOT] 2026-11-09T07:40:54Z start step="Git setup" uptime=32.60s
+[BOOT] 2026-11-09T07:40:54Z end   step="Git setup" duration=0s uptime=32.63s
+[BOOT] 2026-11-09T07:40:54Z start step="Z.ai config setup" uptime=32.63s
+[BOOT] 2026-11-09T07:40:54Z end   step="Z.ai config setup" duration=0s uptime=32.64s
+[BOOT] 2026-11-09T07:40:54Z start step="Starting ZAI service" uptime=32.64s
+[BOOT] 2026-11-09T07:40:54Z end   step="Starting ZAI service" duration=0s uptime=32.65s
+[BOOT] 2026-11-09T07:40:54Z start step="custom dev script" uptime=32.66s
+[BOOT] 2026-11-09T07:40:54Z start step="Waiting for ZAI service" uptime=32.66s
+[BOOT] 2026-11-09T07:41:03Z end   step="Waiting for ZAI service" duration=9s uptime=42.16s
+[BOOT] 2026-11-09T07:41:03Z start step="Starting Caddy server" uptime=42.16s

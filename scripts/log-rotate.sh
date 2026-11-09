@@ -35,3 +35,8 @@ for f in dev.log server.log download/pn005/ram-monitoring.log; do
     ls -t ${f}.*.gz 2>/dev/null | tail -n +$((KEEP + 1)) | while read -r old; do rm -f "$old"; done
   fi
 done
+
+# PN-053 (سبک‌سازی · گام ۲-۲): هرس زمانی — هر آرشیو لاگ (.gz) کهنه‌تر از ۷ روز
+# حذف می‌شود (مستقل از شمارش نسل — پوشش هر دو خطِ دفاعی). شاهدهای ثبت‌شده در
+# download/ هرگز لمس نمی‌شوند (خط قرمز DIR-PN053) — فقط الگوی ریشهٔ repo/*.log.*.gz.
+find . -maxdepth 1 -name "*.log.*.gz" -mtime +7 -type f -delete 2>/dev/null || true

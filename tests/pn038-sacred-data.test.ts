@@ -163,6 +163,7 @@ describe("PN-038/D — بکاپ مقدس Worker", () => {
     const j = jobs.find((x) => x.id === WORKER_JOB_IDS.sacredBackup);
     expect(j).toBeDefined();
     expect(j!.intervalMs).toBe(15 * 60_000);
-    expect(j!.firstRunDelayMs).toBeLessThan(60_000);
+    // PN-053 (استگر CPU): اولین اجرای مقدس ۱۲۰s پس از بوت — سقف آزمون ۱۸۰s
+    expect(j!.firstRunDelayMs).toBeLessThan(180_000);
   });
 });

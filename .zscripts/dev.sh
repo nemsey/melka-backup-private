@@ -1,154 +1,51 @@
 #!/bin/bash
+# ============================================================================
+# dev.sh — قلاب بوت کانتینر (PN-056 · DIR-PN056-AUTO-RESURRECT · دستور ۲)
+# ============================================================================
+# این فایل توسط /start.sh پلتفرم در «هر بوت کانتینر» اجرا می‌شود:
+#     sudo -u z bash /home/z/my-project/.zscripts/dev.sh        (پس‌زمینه)
+# شاهد زنده: /tmp/boot-timeline.log → step="custom dev script"
+# (بوت ۲۰۲۶-11-09T03:16:18Z · uptime=31.83s — شاهد کشف DIR-PN056)
+#
+# PN-056: جریان توسعهٔ پیشینِ قالبِ پلتفرم (bun install + db:push
+# --accept-data-loss + bun run dev روی :3000) برای این میزبانِ production
+# خطرناک بود: تداخل پورت با socket-master و دستکاری اسکیما روی دادهٔ زندهٔ
+# مقدس. طبق دستور شورا، این قلاب اکنون «دروازه‌بان رستاخیز اتوماتیک»
+# (boot-recovery.sh) را در نشستی جدا (setsid) اجرا می‌کند و خودش بی‌درنگ
+# خارج می‌شود — بوت کانتینر هرگز بلوکه نمی‌شود (بودجهٔ سلامت FC: 120s).
+#
+# زنجیرهٔ گیت‌ها (داخل boot-recovery.sh):
+#   سلامت (healthz 3100/3101) → بقا (نگهبان زنده؟ مداخله ممنوع)
+#   → ارادهٔ اپراتور (.prod-stop) → تک‌نمونه → قفل flock
+#   → setsid resurrect-ultimate.sh (صفر اتلاف · قانون ۱۱)
+#
+# بازیابی الگوی توسعهٔ قدیمی: git revert کامیت PN-056 (نسخهٔ قالبِ
+# پلتفرم در تاریخچهٔ گیت محفوظ است).
+# ============================================================================
+set -uo pipefail
 
-set -euo pipefail
-
-# 获取脚本所在目录（.zscripts）
-# 使用 $0 获取脚本路径（与 build.sh 保持一致）
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+LOG_DIR="$PROJECT_DIR/upload/.runtime/pn056"
 
-log_step_start() {
-	local step_name="$1"
-	echo "=========================================="
-	echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $step_name"
-	echo "=========================================="
-	export STEP_START_TIME
-	STEP_START_TIME=$(date +%s)
-}
+echo "[DEV] [$(date -u +%FT%TZ)] PN-056 boot hook — رستاخیز اتوماتیک production"
+mkdir -p "$LOG_DIR" 2>/dev/null || true
 
-log_step_end() {
-	local step_name="${1:-Unknown step}"
-	local end_time
-	end_time=$(date +%s)
-	local duration=$((end_time - STEP_START_TIME))
-	echo "=========================================="
-	echo "[$(date '+%Y-%m-%d %H:%M:%S')] Completed: $step_name"
-	echo "[LOG] Step: $step_name | Duration: ${duration}s"
-	echo "=========================================="
-	echo ""
-}
-
-start_mini_services() {
-	local mini_services_dir="$PROJECT_DIR/mini-services"
-	local started_count=0
-
-	log_step_start "Starting mini-services"
-	if [ ! -d "$mini_services_dir" ]; then
-		echo "Mini-services directory not found, skipping..."
-		log_step_end "Starting mini-services"
-		return 0
-	fi
-
-	echo "Found mini-services directory, scanning for sub-services..."
-
-	for service_dir in "$mini_services_dir"/*; do
-		if [ ! -d "$service_dir" ]; then
-			continue
-		fi
-
-		local service_name
-		service_name=$(basename "$service_dir")
-		echo "Checking service: $service_name"
-
-		if [ ! -f "$service_dir/package.json" ]; then
-			echo "[$service_name] No package.json found, skipping..."
-			continue
-		fi
-
-		if ! grep -q '"dev"' "$service_dir/package.json"; then
-			echo "[$service_name] No dev script found, skipping..."
-			continue
-		fi
-
-		echo "Starting $service_name in background..."
-		(
-			cd "$service_dir"
-			echo "[$service_name] Installing dependencies..."
-			bun install
-			echo "[$service_name] Running bun run dev..."
-			exec bun run dev
-		) >"$PROJECT_DIR/.zscripts/mini-service-${service_name}.log" 2>&1 &
-
-		local service_pid=$!
-		echo "[$service_name] Started in background (PID: $service_pid)"
-		echo "[$service_name] Log: $PROJECT_DIR/.zscripts/mini-service-${service_name}.log"
-		disown "$service_pid" 2>/dev/null || true
-		started_count=$((started_count + 1))
-	done
-
-	echo "Mini-services startup completed. Started $started_count service(s)."
-	log_step_end "Starting mini-services"
-}
-
-wait_for_service() {
-	local host="$1"
-	local port="$2"
-	local service_name="$3"
-	local max_attempts="${4:-60}"
-	local attempt=1
-
-	echo "Waiting for $service_name to be ready on $host:$port..."
-
-	while [ "$attempt" -le "$max_attempts" ]; do
-		if curl -s --connect-timeout 2 --max-time 5 "http://$host:$port" >/dev/null 2>&1; then
-			echo "$service_name is ready!"
-			return 0
-		fi
-
-		echo "Attempt $attempt/$max_attempts: $service_name not ready yet, waiting..."
-		sleep 1
-		attempt=$((attempt + 1))
-	done
-
-	echo "ERROR: $service_name failed to start within $max_attempts seconds"
-	return 1
-}
-
-cleanup() {
-	if [ -n "${DEV_PID:-}" ] && kill -0 "$DEV_PID" >/dev/null 2>&1; then
-		echo "Stopping Next.js dev server (PID: $DEV_PID)..."
-		kill "$DEV_PID" >/dev/null 2>&1 || true
-	fi
-}
-
-trap cleanup EXIT INT TERM
-
-cd "$PROJECT_DIR"
-
-if ! command -v bun >/dev/null 2>&1; then
-	echo "ERROR: bun is not installed or not in PATH"
-	exit 1
+if [ -f "$PROJECT_DIR/boot-recovery.sh" ]; then
+  # setsid: نشست جدا — مصون از کشته‌شدن گروه فرایند (درس قانون ۱۱-ب)؛
+  # boot-recovery خودش مسئول گیت‌ها/قفل‌هاست و لاگ شاهد خودش را می‌نویسد.
+  setsid nohup bash "$PROJECT_DIR/boot-recovery.sh" \
+    </dev/null >>"$LOG_DIR/boot-hook.log" 2>&1 &
+  disown 2>/dev/null || true
+  echo "[DEV] boot-recovery.sh در نشست جدا اجرا شد — شاهد: $LOG_DIR/boot-recovery.log"
+elif [ -f "$PROJECT_DIR/resurrect-ultimate.sh" ]; then
+  # افتادگی ایمن: دروازه‌بان غایب است (نابودی عجیب؟) — مستقیم رستاخیز
+  setsid nohup bash "$PROJECT_DIR/resurrect-ultimate.sh" \
+    </dev/null >>"$PROJECT_DIR/resurrect-daemon.log" 2>&1 &
+  disown 2>/dev/null || true
+  echo "[DEV] boot-recovery.sh غایب — مستقیم resurrect-ultimate.sh اجرا شد"
+else
+  echo "[DEV] ERROR: نه boot-recovery.sh یافت شد و نه resurrect-ultimate.sh — بوت دستی لازم است"
 fi
 
-log_step_start "bun install"
-echo "[BUN] Installing dependencies..."
-bun install
-log_step_end "bun install"
-
-log_step_start "bun run db:push"
-echo "[BUN] Setting up database..."
-bun run db:push
-log_step_end "bun run db:push"
-
-log_step_start "Starting Next.js dev server"
-echo "[BUN] Starting development server..."
-bun run dev &
-DEV_PID=$!
-log_step_end "Starting Next.js dev server"
-
-log_step_start "Waiting for Next.js dev server"
-wait_for_service "localhost" "3000" "Next.js dev server"
-log_step_end "Waiting for Next.js dev server"
-
-log_step_start "Health check"
-echo "[BUN] Performing health check..."
-curl -fsS localhost:3000 >/dev/null
-echo "[BUN] Health check passed"
-log_step_end "Health check"
-
-start_mini_services
-
-echo "Next.js dev server is running in background (PID: $DEV_PID)."
-echo "Use 'kill $DEV_PID' to stop it."
-disown "$DEV_PID" 2>/dev/null || true
-unset DEV_PID
+exit 0

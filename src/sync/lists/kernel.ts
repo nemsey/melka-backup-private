@@ -64,6 +64,17 @@ export const CHUNK_SIZE = 500;
 /** سقف همزمانی — عین حکم فرمان ۴ (۳ · خط قرمز ≤۵) */
 export const CONCURRENCY = 3;
 
+/** PN-053 (استگر CPU): همزمانی فعال — فرض ۳؛ نخستین چرخهٔ پس از بوت با ۱
+ *  اجرا می‌شود تا سرور با آرامش بالا بیاید (فرمان DIR-PN053 گام ۲-۳)؛
+ *  پس از پایان چرخهٔ نخست به مقدار عادی برمی‌گردد. سقف خط‌قرمز ≤۵ حفظ می‌شود. */
+let activeConcurrency = CONCURRENCY;
+export function setLcppConcurrency(n: number): void {
+  activeConcurrency = Math.min(Math.max(1, Math.floor(n)), 5);
+}
+export function getActiveConcurrency(): number {
+  return activeConcurrency;
+}
+
 // ───────────────────────── رابط ساختاری SQLite دو-درایوره ─────────────────────────
 
 /** کدک مقدار → بایند SQLite — سازگار با ذخیره‌سازی Prisma:
@@ -262,7 +273,8 @@ export async function runPool<T>(
   worker: (item: T, index: number) => Promise<void>,
   opts: { concurrency?: number; initialDelayMs?: number } = {}
 ): Promise<PoolStats> {
-  const limit = pLimit(Math.min(opts.concurrency ?? CONCURRENCY, 5));
+  // PN-053: پیش‌فرض = همزمانی فعال (نخستین چرخهٔ بوت = ۱ — استگر CPU)
+  const limit = pLimit(Math.min(opts.concurrency ?? activeConcurrency, 5));
   const stats: PoolStats = { processed: 0, failures: 0, delayMs: opts.initialDelayMs ?? 200 };
   const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 

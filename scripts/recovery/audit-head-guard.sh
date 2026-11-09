@@ -175,11 +175,25 @@ PYEOF
     return 5
   fi
 
-  # ۵) ری‌استارت — سرور سپس Worker (فرایندهای تازه کد تازه می‌بارند؛
-  #    نگهبان watchdog سرور را تا ~۱۵ ثانیه دوباره بالا می‌آورد و سرورِ
-  #    تازه Worker تازه spawn می‌کند — jobs رجیستری تازه بارگذاری می‌شود)
-  pkill -f "$REPO/.next/standalone/server.js" 2>/dev/null || true
-  sleep 3
+  # ۵) ری‌استارت — دو مسیر (درس حادثهٔ ۱۲:۰۶ ۲۰۲۶-۱۱-۰۸):
+  #    الف) معماری PN-054 (socket-master زنده) → دیپلوی رسمی بدون قطعی
+  #        (Blue/Green روی همان fd). مسیر pkill کهنه فرزند سرور را هرگز
+  #        نمی‌کشت — عنوان فرایند در معماری جدید «next-server» است نه
+  #        «standalone/server.js» → سرور کهنه + چانک‌های حذف‌شدهٔ بیلد تازه
+  #        → خطای ۵۰۰ چانک → کرش کلاینت موبایل.
+  #    ب) مسیر کهنه (socket-master غایب، مثلاً بوت اضطراری) → pkill؛
+  #        watchdog سرور را تا ~۱۵ ثانیه دوباره بالا می‌آورد.
+  if pgrep -f "pn054/socket-master.py" >/dev/null 2>&1; then
+    hist "{\"at\":\"$(now)\",\"action\":\"zdt-deploy\",\"head\":\"$head\"}"
+    if ! bash "$REPO/scripts/pn054/deploy-zero-dt.sh" >> "$BUILD_LOG" 2>&1; then
+      hist "{\"at\":\"$(now)\",\"action\":\"zdt-deploy\",\"outcome\":\"deploy-script-failed\",\"head\":\"$head\"}"
+    fi
+  else
+    pkill -f "$REPO/.next/standalone/server.js" 2>/dev/null || true
+    sleep 3
+  fi
+  # Worker همیشه ری‌استارت می‌شود — سوپروایزر سرورِ فعال دوباره spawn
+  # می‌کند (jobs رجیستری تازه بارگذاری می‌شود)
   pkill -f "scripts/runtime/worker.ts" 2>/dev/null || true
 
   # ۶) تأیید نهایی — poll تا BUILD زنده == HEAD

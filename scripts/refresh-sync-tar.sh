@@ -38,7 +38,14 @@ echo "اقلام: ${#ITEMS[@]}"
 T0=$(date +%s)
 # db/custom.db از فهرست اصلی حذف و نسخهٔ سازگار از stage الحاق می‌شود
 mapfile -t ITEMS < <(printf '%s\n' "${ITEMS[@]}" | grep -v '^db/custom.db$' || true)
-tar -cf "$TMP" "${ITEMS[@]}" 2>>"$PROJECT/.zscripts/sync-tar-warnings.log" || { echo "FAIL: tar خطا خورد"; exit 1; }
+# ترمیم PN-076: فهرست بالا فقط «db» (پوشه) را می‌دهد — tar بازگشتی custom.db زنده + wal/shm
+# را هم می‌برد (ناسازگار + «file changed as we read» وقتی Worker فعال است) و tarstage
+# جاماندهٔ چرخه‌های قبلی را نیز می‌بلعد (~۳۴۳MB). پس موارد زنده/گذرا صریحاً exclude می‌شوند؛
+# نسخهٔ سازگار VACUUM INTO پایین‌تر الحاق می‌شود (آخرین عضو = برندهٔ استخراج).
+tar -cf "$TMP" \
+  --exclude='db/custom.db' --exclude='db/custom.db-wal' --exclude='db/custom.db-shm' \
+  --exclude='.zscripts/tarstage' \
+  "${ITEMS[@]}" 2>>"$PROJECT/.zscripts/sync-tar-warnings.log" || { echo "FAIL: tar خطا خورد"; exit 1; }
 ( cd "$STAGE" && tar -rf "$TMP" db/custom.db ) 2>>"$PROJECT/.zscripts/sync-tar-warnings.log" || { echo "FAIL: الحاق DB ناموفق"; exit 1; }
 TSIZE=$(stat -c%s "$TMP")
 # سالم بودن آرشیو پیش از جابه‌جایی (تست سر-آرشیو)

@@ -1,0 +1,107 @@
+{
+  "directive": "DIR-PN056-AUTO-RESURRECT",
+  "step": "دستور ۱ — کاوش قلاب استارتاپ (Startup Hook Discovery)",
+  "generatedAt": "2026-11-09T05:45:00Z",
+  "investigator": "GLM 5.3 — جلسهٔ PN-056",
+  "verdict": {
+    "summary": "قلاب استارتاپ پیدا شد: /home/z/my-project/.zscripts/dev.sh — اجراشده توسط /start.sh (فرمان PID 1: tini) در هر بوت کانتینر، با sudo -u z در پس‌زمینه",
+    "evidence": "/tmp/boot-timeline.log → [BOOT] start step=\"custom dev script\" در 2026-11-09T03:16:18Z (uptime=31.83s) — شاهد زندهٔ بوت امروز",
+    "decision": "قلاب بازنویسی شد: به‌جای جریان dev پلتفرم (bun install + db:push + bun run dev)، boot-recovery.sh را با setsid در پس‌زمینه اجرا می‌کند (دستور ۲)"
+  },
+  "environment": {
+    "pid1": "/usr/bin/tini -- /start.sh",
+    "startShOwner": "root:root (فقط‌خواندنی برای کاربر z — محتوایش کامل بازرسی و مستند شد)",
+    "containerBootAt": "2026-11-09T03:15:52Z",
+    "uptimeSecondsAtDiscovery": 7845,
+    "harnessShell": {
+      "command": "su z -c /bin/bash --noprofile --norc",
+      "interactive": false,
+      "login": false,
+      "BASH_ENV": null,
+      "conclusion": "هارنس شل را با --noprofile --norc اجرا می‌کند — .bashrc/.profile هرگز توسط هارنس سورس نمی‌شوند؛ قلاب شل-محور در سطح GLM ممکن نیست"
+    },
+    "sandboxMode": "legacy (SANDBOX_MODE خالی — شاخهٔ کامل «مقداردهی اولیه پروژه» + dev.sh اجرا می‌شود)"
+  },
+  "candidates": [
+    {
+      "path": "/home/z/.bashrc",
+      "exists": false,
+      "note": "اصلاً وجود ندارد؛ حتی اگر می‌بود، هارنس با --noprofile --norc آن را نمی‌خواند و در بازسازی کانتینر لایهٔ تصویر جایگزین می‌شود",
+      "usableAsHook": false
+    },
+    { "path": "/home/z/.profile", "exists": false, "usableAsHook": false },
+    { "path": "/home/z/.bash_profile", "exists": false, "usableAsHook": false },
+    { "path": "/etc/rc.local", "exists": false, "usableAsHook": false },
+    { "path": "/entrypoint.sh", "exists": false, "usableAsHook": false },
+    {
+      "path": "/start.sh",
+      "exists": true,
+      "owner": "root",
+      "role": "بوت‌اسکریپت واقعی کانتینر (tini → set -e → restore پروژه → سرویس‌ها → exec caddy)",
+      "keyLines": "اگر USER_MODE نباشد و .zscripts/dev.sh موجود باشد → ( sudo -u z bash .zscripts/dev.sh ) &",
+      "writable": false,
+      "usableAsHook": "غیرمستقیم — از طریق فایلی که اجرا می‌کند (.zscripts/dev.sh)"
+    },
+    {
+      "path": "/home/z/my-project/.zscripts/dev.sh",
+      "exists": true,
+      "role": "قلاب طلایی — قالب رسمی «custom dev script» پلتفرم؛ در هر بوت اجرا می‌شود",
+      "persistence": {
+        "repoTar": "داخل my-project → در /home/sync/repo.tar (۱.۸GB) حمل می‌شود — شاهد: tar -xf repo.tar .zscripts/dev.sh → diff با نسخهٔ زنده = IDENTICAL",
+        "git": "ردیابی‌شده در مخزن (تاریخچه از survival snapshot های ۲۰۲۶-۱۰-۰۳/۰۶)",
+        "uploadMount": "my-project/upload نقطهٔ سوار‌شدهٔ پایدار است (mountpoint ✓) — جدا از فرایند restore"
+      },
+      "usableAsHook": true,
+      "selected": true
+    },
+    {
+      "path": "/home/z/my-project/.zscripts/{start,build,mini-services-*}.sh",
+      "note": "قالب‌های پلتفرم برای چرخه‌های build/start — در بوت خودکار اجرا نمی‌شوند (فقط dev.sh در /start.sh فراخوانی می‌شود)",
+      "usableAsHook": false
+    },
+    {
+      "path": "crontab / cron.d",
+      "exists": false,
+      "note": "هیچ daemon زمان‌بندی (cron/systemd/supervisor/pm2) در کانتینر اجرا نمی‌شود — ps تأیید شد",
+      "usableAsHook": false
+    },
+    {
+      "path": "/home/z/.zcode/",
+      "exists": true,
+      "note": "فقط AGENTS.md هارنس (ساخته‌شده در بوت ۰۳:۱۶) — مکانیزم اجرایی نیست",
+      "usableAsHook": false
+    }
+  ],
+  "harnessBootBehavior": {
+    "summary": "پلتفرم در هر بوت کانتینر: (۱) my-project را به‌جز مانت upload پاک و از /home/sync/repo.tar بازمی‌گرداند؛ (۲) skills رسمی را می‌چیند؛ (۳) lockfile رجیستری را بازنویسی می‌کند؛ (۴) پروفایل z را می‌بارد؛ (۵) git را راه می‌اندازد؛ (۶) سرویس کنترل ZAI (پورت 12600) و سپس caddy (پورت 81، foreground) را بالا می‌آورد؛ (۷) در پس‌زمینه .zscripts/dev.sh را اجرا می‌کند",
+    "budgetNote": "بررسی سلامت پلتفرم روی caddy:81 با بودجهٔ ۱۲۰ث انجام می‌شود — قلاب ما پس‌زمینه‌ای است و بوت را هرگز بلوکه نمی‌کند"
+  },
+  "hazards": [
+    {
+      "id": "H1",
+      "title": "جریان dev پیشین در بوت برای production خطرناک بود",
+      "detail": "dev.sh قالب پلتفرم در هر بوت اجرای «bun install + bun run db:push --accept-data-loss + bun run dev روی :3000» بود — تداخل پورت با socket-master و دستکاری اسکیما روی دادهٔ زندهٔ مقدس",
+      "witness": "بوت امروز 03:16:18Z این اسکریپت را اجرا کرد (boot-timeline)؛ شاهد محتوای قدیمی: git show HEAD~1:.zscripts/dev.sh",
+      "fix": "بازنویسی dev.sh در همین کامیت PN-056"
+    },
+    {
+      "id": "H2",
+      "title": "فایل‌های untracked در download/ در پنجرهٔ rebuild حذف می‌شوند",
+      "detail": "دایرکتوری download/PN-056 بین 05:26:31 و 05:27:05 (پنجرهٔ HEAD_GUARD_AUTOBUILD) حذف شد؛ AuditLog فاقد DISK_PRUNE در آن بازه است؛ الگوی هرس disk-guard (^pn\\d{2,3}$) به «PN-056» نمی‌خورد",
+      "fix": "قاعدهٔ عملیاتی: هر تحویلی در download/ باید بلافاصله کامیت شود (سنت PN-054/055 همین است)"
+    }
+  ],
+  "workerHeadGuardContext": {
+    "note": "چرخهٔ head-guard (~۱۰ دقیقه، تأخیر اولیهٔ ۹۰ث) داخل Worker اجرا می‌شود (src/core/runtime/jobs.ts) — پس از ریست، تا برگشتن Worker چرخه‌ها متوقف‌اند؛ رستاخیز خودش G3 را تضمین می‌کند",
+    "healthPorts": "پینگ‌پنگ Blue/Green روی 3100/3101 (socket-master.py · HEALTH_PORTS)"
+  },
+  "nextSteps": [
+    "دستور ۲ — boot-recovery.sh (پنج گیت: سلامت → بقا → ارادهٔ اپراتور → تک‌نمونه → قفل flock) + بازنویسی dev.sh + GLM-BOOT-PROTOCOL.md",
+    "دستور ۳ — آزمون پذیرش kill -9 با شاهد زمان/drift/داده"
+  ],
+  "evidenceFiles": [
+    "upload/.runtime/pn056/discovery-1-core.txt (PID1 · شل · home · .zscripts)",
+    "upload/.runtime/pn056/discovery-2-startsh.txt (/start.sh کامل · rc.local · git ops)",
+    "upload/.runtime/pn056/discovery-3-zscripts.txt (dev.sh قدیم · boot-timeline · repo.tar)"
+  ]
+}
