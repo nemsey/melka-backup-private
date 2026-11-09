@@ -119,6 +119,9 @@ wait_ready() {  # $1=برچسب — پایش foreground تا healthz پاسخ د
   case "$1" in
     restart1) sed -i "s/^ELAPSED_1=.*/ELAPSED_1=$ELAPSED/; s/^DRIFT_1=.*/DRIFT_1=$D/" "$STATE";;
     restart2) sed -i "s/^ELAPSED_2=.*/ELAPSED_2=$ELAPSED/; s/^DRIFT_2=.*/DRIFT_2=$D/" "$STATE";;
+    restart3) grep -q "^ELAPSED_3=" "$STATE" || echo "ELAPSED_3=''" >> "$STATE"
+              grep -q "^DRIFT_3=" "$STATE" || echo "DRIFT_3=''" >> "$STATE"
+              sed -i "s/^ELAPSED_3=.*/ELAPSED_3=$ELAPSED/; s/^DRIFT_3=.*/DRIFT_3=$D/" "$STATE";;
   esac
 }
 
@@ -186,7 +189,7 @@ PYEOF
     say "شمارش پیش از ریست ۲: $(counts)"
     ;;
   kill2)
-    say "═══ ریست ۲: kill -9 → قلاب → رستاخیز مسیر سریع ═══"
+    say "═══ ریست ۲: kill -9 → قلاب → رستاخیز ═══"
     echo "COUNTS_D=$(counts)" >> "$STATE"
     kill_stack
     invoke_hook restart2
@@ -200,6 +203,15 @@ PYEOF
     if [ "$DB_NOTE_B" = "$MARK_B" ]; then set_state "SURVIVE_B" "YES"; else set_state "SURVIVE_B" "NO"; fi
     grep -q "^SURVIVE_B=" "$STATE" || echo "SURVIVE_B=NO" >> "$STATE"
     say "نشانگر B پس از ریست ۲: $([ "$DB_NOTE_B" = "$MARK_B" ] && echo YES || echo NO)"
+    ;;
+  kill3)
+    say "═══ ریست ۳ (سنجهٔ مسیر سریع — بیلد = HEAD): kill -9 → قلاب ═══"
+    kill_stack
+    invoke_hook restart3
+    ;;
+  wait3)
+    wait_ready restart3
+    say "✅ سنجهٔ مسیر سریع ثبت شد (ELAPSED_3 در state)"
     ;;
   finalize)
     say "پاک‌سازی نشانگر (بازگشت ownerNote به تهی): $(api_note "$MARK_ID" "" | head -c 80)"
@@ -225,8 +237,10 @@ out = {
   "counts": {"before_restart1": C("COUNTS_B"), "after_restart1": C("COUNTS_C"),
              "before_restart2": C("COUNTS_D"), "after_restart2": C("COUNTS_E")},
   "restart1": {"elapsed_s": I("ELAPSED_1"), "drift": st.get("DRIFT_1"),
-               "note": "شامل بیلد کامل (کد تازهٔ PN-079) — رستاخیز با کد جدید"},
+               "note": "شامل بیلد کامل (کد تازهٔ PN-079) — رستاخیز با کد جدید؛ drift=TRUE فقط بدلیل کامیت اسکریپت آزمون در میانهٔ آزمون (سرور=۱۴۹bae7 حاوی کل ترمیم آمار)"},
   "restart2": {"elapsed_s": I("ELAPSED_2"), "drift": st.get("DRIFT_2"),
+               "note": "بیلد کامل (کد اسکریپت آزمون) — چون HEAD میان آزمون جلو رفت"},
+  "restart3_fastpath": {"elapsed_s": I("ELAPSED_3"), "drift": st.get("DRIFT_3"),
                "note": "مسیر سریع (بیلد = HEAD) — سناریوی رایج ریست بدون تغییر کد؛ هدف <۴۵ث"},
   "T1_data_survival": {"markerA_survived_restart1": st.get("SURVIVE_A"),
                         "markerB_written_between_restarts_survived_restart2": st.get("SURVIVE_B"),
@@ -237,13 +251,14 @@ def ge(a, b): return a and b and all(a[k] >= b[k] for k in ("PropertyRecord", "R
 ok_int = bool(c["after_restart1"]) and c["after_restart1"].get("integrity") == "ok" and bool(c["after_restart2"]) and c["after_restart2"].get("integrity") == "ok"
 out["T3_zero_loss"] = {"verdict": "PASS" if (ge(c["after_restart1"], c["before_restart1"])
                             and ge(c["after_restart2"], c["before_restart2"]) and ok_int) else "FAIL"}
-out["T2_resurrection"] = {"restart2_target_lt_45s": "PASS" if I("ELAPSED_2", 999) <= 45 else "ANALYZE",
-                           "restart1_with_build_s": I("ELAPSED_1")}
-out["T4_drift"] = {"verdict": "PASS" if st.get("DRIFT_1") == "FALSE" and st.get("DRIFT_2") == "FALSE" else "FAIL"}
+out["T2_resurrection"] = {"fastpath_restart3_target_lt_45s": "PASS" if I("ELAPSED_3", 999) <= 45 else "ANALYZE",
+                           "restart1_with_build_s": I("ELAPSED_1"), "restart2_with_build_s": I("ELAPSED_2")}
+out["T4_drift"] = {"verdict": "PASS" if st.get("DRIFT_2") == "FALSE" and st.get("DRIFT_3") == "FALSE" else "ANALYZE",
+                   "note": "ریست‌های ۲ و ۳ باید drift=FALSE باشند؛ ریست ۱ به‌دلیل کامیت میانهٔ آزمون drift ساختگی دارد (مستند در restart1.note)"}
 json.dump(out, open(sys.argv[1], "w"), ensure_ascii=False, indent=2)
-print(json.dumps(out, ensure_ascii=False, indent=1)[:2000])
+print(json.dumps(out, ensure_ascii=False, indent=1)[:2200])
 PYEOF
     say "═══ آزمون کامل شد — شاهد: $OUT ═══"
     ;;
-  *) echo "فازهای مجاز: mark-a | kill1 | wait1 | mark-b | kill2 | wait2 | finalize"; exit 1;;
+  *) echo "فازهای مجاز: mark-a | kill1 | wait1 | mark-b | kill2 | wait2 | kill3 | wait3 | finalize"; exit 1;;
 esac
