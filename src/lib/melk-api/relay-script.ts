@@ -20,6 +20,12 @@
  *     (LIST_TIMEOUT_MS) جا می‌شود؛ تلاش دوم تایم‌اوت (۵۰+۵+۵۰=۱۰۵ث) هم زیر
  *     سقف انتظار armCall می‌ماند — آیتم دیگر در «صفِ رهاشده» نمی‌سوزد.
  *
+ * نسل M+ — PN-080 (حکم مالک ۲۰۲۶-۱۱-۱۰ · «تایم ارسال و دریافت اطلاعات از
+ *   رله ترموکس را به حداکثر برسان» + بهینه‌سازی ثبت آگهی):
+ *   · Express lane ثبت آگهی — خانوادهٔ users/* + properties/create عین OTP
+ *     مقدم بر موج‌های سنگین اجرا و نتیجه‌شان بی‌درنگ جداگانه POST می‌شود؛
+ *     ثبت آگهیِ در صف هرگز پشت موج غنی‌سازی نمی‌ماند (مهلت همان ۵۰ث سنگین).
+ *
  * نسل L — PN-041-R (شورا-ن۰۶۸ · فاز ۲ · بند ۲.۱+۲.۲):
  *   · Long-Polling ۱۰۰ث — wait:20→100: سرور تا ۱۰۰ث معلق نگه می‌دارد؛
  *     درخواست‌ها ۴ برابر کم (~۳۴۵۶→~۸۶۰/روز) ⇒ باتری آرام‌تر · MIUI کمتر
@@ -133,11 +139,20 @@ LIGHT_TIMEOUT=15                    # مسیر تعاملی (OTP) — پاسخ �
 HEAVY_TIMEOUT=50                    # PN-068 — ۶۰ ← ۵۰: داخل بودجهٔ ۷۵ث سرور + تلاش دوم ۱۰۵ث
 TIMEOUT_RETRY_DELAY=5               # فاصلهٔ تلاش دوم برای خطای ۲۸ (تایم‌اوت)
 
-# آیا آیتم تعاملی است؟ (OTP/ورود — Express lane + مهلت کوتاه)
+# آیا آیتم تعاملی است؟ (OTP/ورود — مهلت کوتاه)
 # الگو عین relayPriorityForUrl سرور: /authentication/otp در مسیر URL
 is_interactive() {
   case "$1" in
     *"/authentication/otp"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# PN-080 — آیا آیتم «ثبت آگهی» است؟ (Express lane؛ مهلت همان سنگین ۵۰ث می‌ماند —
+# ثبت آگهی روی مبدأ می‌تواند بیش از ۱۵ث طول بکشد؛ عین اولویت ۵ سمت سرور)
+is_registration() {
+  case "$1" in
+    *"/properties/create"*|*"/users/create"*|*"/users/info/mobile-number"*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -674,15 +689,17 @@ while true; do
     ITEMS_JSON=\$(printf '%s' "$RESP" | jq -c '[.items[]]' 2>/dev/null)
   fi
 
-  # ── PN-036 فاز ۵ (اصلاحی): Express lane — جداسازی تعاملی (OTP) از سنگین ──
-  # پیامک/ورود هرگز پشت موجِ فهرست‌های سنگین گیر نمی‌کند: تعاملی‌ها مقدم اجرا
+  # ── PN-036 فاز ۵ (اصلاحی) + PN-080: Express lane — جداسازی تعاملی (OTP + ثبت آگهی) از سنگین ──
+  # پیامک/ورود و «ثبت آگهی» هرگز پشت موجِ فهرست‌های سنگین گیر نمی‌کنند: مقدم اجرا
   # و نتیجه‌شان «بی‌درنگ» جداگانه POST می‌شود؛ سپس بقیه در موج‌های عادی.
-  EXPRESS_JSON=\$(printf '%s' "\$ITEMS_JSON" | jq -c '[.[] | select((.url // "") | contains("/authentication/otp"))]' 2>/dev/null || echo "[]")
-  NORMAL_JSON=\$(printf '%s' "\$ITEMS_JSON" | jq -c '[.[] | select(((.url // "") | contains("/authentication/otp")) | not)]' 2>/dev/null || echo "[]")
+  # PN-080: الگوی test() جایگزین contains() — خانوادهٔ ثبت آگهی (users/* + properties/create)
+  # هم‌ردیف OTP در خط ویژه است (حکم مالک ۲۰۲۶-۱۱-۱۰: حداکثر تایم ارسال/دریافت ثبت).
+  EXPRESS_JSON=\$(printf '%s' "\$ITEMS_JSON" | jq -c '[.[] | select((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number"))]' 2>/dev/null || echo "[]")
+  NORMAL_JSON=\$(printf '%s' "\$ITEMS_JSON" | jq -c '[.[] | select(((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number")) | not)]' 2>/dev/null || echo "[]")
   EXPRESS_N=\$(printf '%s' "\$EXPRESS_JSON" | jq 'length' 2>/dev/null)
   [ -z "\$EXPRESS_N" ] && EXPRESS_N=0
   if [ "\$EXPRESS_N" -gt 0 ]; then
-    log "Express lane: \$EXPRESS_N آیتم تعاملی (OTP) — پیش از فهرست‌ها اجرا می‌شود"
+    log "Express lane: \$EXPRESS_N آیتم تعاملی (OTP/ثبت آگهی) — پیش از فهرست‌ها اجرا می‌شود"
     run_batch_set "\$EXPRESS_JSON" "express"
   fi
   NORMAL_N=\$(printf '%s' "\$NORMAL_JSON" | jq 'length' 2>/dev/null)

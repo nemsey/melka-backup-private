@@ -485,6 +485,18 @@ export function relayPriorityForUrl(url: string): number {
   try {
     const p = new URL(url).pathname;
     if (/\/authentication\/otp(\/|$)/i.test(p)) return RELAY_PRIORITY_INTERACTIVE;
+    // PN-080 (حکم مالک ۲۰۲۶-۱۱-۱۰ · «بهینه‌سازی ثبت آگهی در سامانه arm»):
+    // خانوادهٔ ثبت آگهی کنش تعاملی کاربر است — جستجو/ایجاد مالک (users/*) و
+    // ثبت نهایی (properties/create). پیش‌تر با اولویت ۰ پشت موج سینک/غنی‌سازی
+    // می‌ایستادند و مهلت ۱۱۰ثی armCall می‌سوخت. اکنون هم‌ردهٔ OTP (۵) — مقدم بر
+    // سینک اصلی (۲)، کاتالوگ (۱) و موج حجیم (۰).
+    if (
+      /\/properties\/create(\/|$)/i.test(p) ||
+      /\/users\/create(\/|$)/i.test(p) ||
+      /\/users\/info\/mobile-number(\/|$)/i.test(p)
+    ) {
+      return RELAY_PRIORITY_INTERACTIVE;
+    }
     // PN-059 — سینک اصلی شش‌خانوادهٔ CRM: مقدم بر موج غنی‌سازی انبوه
     if (
       /\/realtor-reports\//i.test(p) ||
