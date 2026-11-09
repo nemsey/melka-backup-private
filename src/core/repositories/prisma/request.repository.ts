@@ -25,8 +25,9 @@ import { requestNormColumns } from "@/lib/search-norm";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانهٔ نگاشت ارقام/حروف (رفع باگ ۴/۵)
 import { normalizeFilterInput } from "@/lib/normalize-input";
 
-/** P6525 — سقف اسکن فیلترهای نرمال‌شدهٔ JS (قانون فهرست: تمام ردیف‌ها؛ هم‌راستا با سقف ایمنی روت ۲۵٬۰۰۰) */
-const LIST_SCAN_CAP = 25_000;
+/** P6525 — سقف اسکن فیلترهای نرمال‌شدهٔ JS (قانون فهرست: تمام ردیف‌ها؛ هم‌راستا با سقف ایمنی روت ۴۰٬۰۰۰)
+ *  PN-079 — ارتقای ۲۵٬۰۰۰ → ۴۰٬۰۰۰ (عین property.repository — رفع KPI سقف‌خورده) */
+const LIST_SCAN_CAP = 40_000;
 
 /** P6521/M2 — تجزیهٔ امن areaNamesJson («["ولیعصر","خاوران"]»)؛ ورودی خراب = آرایهٔ خالی */
 function parseAreaNamesJson(json: string | null | undefined): string[] {
@@ -166,10 +167,10 @@ export class PrismaRequestRepository implements RequestRepository {
    * P6525 — قانون یکسان‌سازی (رفع باگ تاریخی ۴/۵ + هم‌ارزی ي/ی و ك/ک):
    * فیلترهای کد و نام کارشناس با نرمال‌سازی دوطرفه در JS اعمال می‌شوند
    * (نرمال هر دو سمت) ⇒ نتیجهٔ ارقام فارسی/عربی/لاتین و حروف همیشه یکسان است. */
-  async listArmCatalog(
-    filter: ArmRequestCatalogFilter,
-    limit: number
-  ): Promise<{ rows: ArmRequestCatalogRow[]; total: number }> {
+  /** PN-079 — سازندهٔ مشترک شرط WHERE کاتالوگ درخواست (منبع یگانه فهرست/شمارش)
+   *  عین منطق پیشین listArmCatalog — استخراج‌شده تا countArmCatalog همان فیلترها را
+   *  با COUNT واقعی SQL اعمال کند (رفع ریشه‌ای «KPI سقف‌خورده»). */
+  private buildArmCatalogWhere(filter: ArmRequestCatalogFilter): Prisma.RequestRecordWhereInput {
     // PN-059: tenant ملکتون حذف شد — همیشه تبریز (source='arm' + tenant).
     const where: Prisma.RequestRecordWhereInput =
       { tenantId: filter.tenantId ?? "melk-tabriz", source: "arm" };
@@ -252,20 +253,36 @@ export class PrismaRequestRepository implements RequestRepository {
     if (extraAnd.length > 0) where.AND = [...(Array.isArray(where.AND) ? where.AND : []), ...extraAnd];
 
     // P6525 — نرمال‌سازی ورودی فیلترهای کدی/متنی با منبع یگانه + P6530/گام ۲ (متقاضی/مناطق)
-    const codeNorm = normalizeFilterInput(filter.code);
     const realtorNorm = normalizeFilterInput(filter.realtorName);
     const customerNorm = normalizeFilterInput(filter.customerName);
-    const areaNorm = normalizeFilterInput(filter.areaName);
-    const lineNorm = normalizeFilterInput(filter.lineName);
     const sanadNorm = normalizeFilterInput(filter.sanad);
-    const constructNorm = normalizeFilterInput(filter.constructType);
-    const sideNorm = normalizeFilterInput(filter.side);
 
     // PN-027 · ۵-پ-۱ — فیلترهای متنی سنگین روی ستون‌های سایهٔ نرمال در سطح SQL
     // (هم‌ارز عینی JS قدیم: نام+موبایل با ␟ ترکیب شده‌اند — تطبیق کاذب بین‌مرزی ناممکن)
     if (customerNorm !== "") where.customerNameNorm = { contains: customerNorm };
     if (sanadNorm !== "") where.sanadNamesNorm = { contains: sanadNorm };
     if (realtorNorm !== "") where.actorNameNorm = { contains: realtorNorm };
+    return where;
+  }
+
+  /** PN-079 — شمارش حقیقی کاتالوگ درخواست با همان فیلترهای SQL (COUNT — بدون واکشی ردیف)
+   *  KPI «کل درخواست‌های ملک تبریز» از این عدد تغذیه می‌کند — هرگز سقف ردیف نمی‌خورد. */
+  async countArmCatalog(filter: ArmRequestCatalogFilter): Promise<number> {
+    return this.client.requestRecord.count({ where: this.buildArmCatalogWhere(filter) });
+  }
+
+  async listArmCatalog(
+    filter: ArmRequestCatalogFilter,
+    limit: number
+  ): Promise<{ rows: ArmRequestCatalogRow[]; total: number }> {
+    const where = this.buildArmCatalogWhere(filter);
+
+    // P6525 — نرمال‌سازی ورودی فیلترهای کدی/متنی با منبع یگانه + P6530/گام ۲ (متقاضی/مناطق)
+    const codeNorm = normalizeFilterInput(filter.code);
+    const areaNorm = normalizeFilterInput(filter.areaName);
+    const lineNorm = normalizeFilterInput(filter.lineName);
+    const constructNorm = normalizeFilterInput(filter.constructType);
+    const sideNorm = normalizeFilterInput(filter.side);
 
     // فیلترهای باقی‌مانده (JSON آرایه‌ای یا کد) همچنان در JS — فقط این‌ها اسکن کامل می‌خواهند
     const needsJsFilter = codeNorm !== "" || areaNorm !== "" || lineNorm !== "" || constructNorm !== "" || sideNorm !== "";

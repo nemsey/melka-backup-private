@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
     const clubScope = catalogUserScope(guard);
     const armListingRows = await getPropertyRecordRepository().listArmCatalog(
       { registrarNameNorm: clubScope.kind === "OWN" ? clubScope.nameNorm : undefined },
-      25000
+      40000
     );
     for (const row of armListingRows.rows) {
       if (row.ownerName || row.ownerMobile) {
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
     // درخواست‌دهندگان ARM (کاتالوگ — customerName + customerMobile)
     const armRequestRows = await getRequestRepository().listArmCatalog(
       { registrarNameNorm: clubScope.kind === "OWN" ? clubScope.nameNorm : undefined },
-      25000
+      40000
     );
     for (const r of armRequestRows.rows) {
       if (r.customerName || r.customerMobile) {
@@ -176,9 +176,9 @@ export async function GET(request: NextRequest) {
       summary,
       repeatMembers,
       branches,
-      // بند ح-۲ — فهرست مشتریان (تک‌صفحه‌ای؛ سقف ۲۵٬۰۰۰ عین کاتالوگ‌ها)
+      // بند ح-۲ — فهرست مشتریان (تک‌صفحه‌ای؛ سقف ۴۰٬۰۰۰ عین کاتالوگ‌ها — PN-079)
       customers: {
-        rows: customers.slice(0, 25000),
+        rows: customers.slice(0, 40000),
         total: directory.length,
         matched: customers.length,
         stats: dirStats,

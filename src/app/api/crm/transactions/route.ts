@@ -86,8 +86,9 @@ export async function GET(request: NextRequest) {
     // PN-059: tenant ملکتون حذف شد — همیشه 'melk-tabriz' (تک-tenant).
     const tenantId = tenantDbValue(sp.get("tenantId"));
 
-    // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت؛ سقف ۲۵٬۰۰۰ فقط گارد ایمنی سرور است (عین دو کاتالوگ ARM)
-    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
+    // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت؛ سقف فقط گارد ایمنی سرور است (عین دو کاتالوگ ARM)
+    // PN-079 — ارتقای ۲۵٬۰۰۰ → ۴۰٬۰۰۰ (هم‌راستا با دو کاتالوگ ARM)
+    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 40000, 1), 40000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
     const sortBy = (sp.get("sortBy") ?? "contractDate") as "contractDate" | "eventsCount" | "suggestedPropertyCount";
     const sortDir: "asc" | "desc" = sp.get("sortDir") === "asc" ? "asc" : "desc";

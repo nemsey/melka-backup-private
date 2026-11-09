@@ -29,6 +29,7 @@ import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { ownerLoginPath, resolveEntityAccess, catalogUserScope } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
 import { getPropertyRecordRepository, getIntegrationRepository, getExpertRepository } from "@/core/repositories";
+import type { ArmListingCatalogFilter } from "@/core/repositories";
 import { enrichArmListings } from "@/lib/melk-api/arm-catalog";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
 import { listingStateRawValues, parseListingStateFilter, rollupStatusCounts } from "@/lib/listing-status";
@@ -102,8 +103,11 @@ export async function GET(request: NextRequest) {
     // P6521/M1 + P6530 — فیلتر ده‌حالتهٔ چندانتخابی: کلیدهای canonical → مقادیر خام قانون‌مند
     const stateKeys = parseListingStateFilter(sp.get("states"));
     const statuses = stateKeys.length > 0 ? listingStateRawValues(stateKeys) : undefined;
-    // P6.5-10 — تک‌صفحه‌ای و بی‌نهایت: سقف سرور ۲۵٬۰۰۰ ردیف (کل کاتالوگ منبع ۱۱٬۴۵۶)
-    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
+    // P6.5-10 — تک‌صفحه‌ای و بی‌نهایت: سقف سرور فقط گارد ایمنی حافظه است (نه آمار)
+    // PN-079 — ارتقای ۲۵٬۰۰۰ → ۴۰٬۰۰۰: کاتالوک از ۲۵٬۰۰۰ عبور کرد و سقف کهنه KPI «کل»
+    // را به ۲۵٬۰۰۰ سنجاق کرده بود و ۳٬۶۶۸ ردیف قدیمی از فهرست حذف می‌کرد.
+    // آمار کل از countArmCatalog (COUNT واقعی SQL) تغذیه می‌شود — مستقل از این سقف.
+    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 40000, 1), 40000);
     // ===================== PN-002 گام ۱ — فیلتر ستون‌های تازه (تمام ستون‌ها) =====================
     const rentalType = sp.get("rentalType") === "rental" ? "rental" : sp.get("rentalType") === "sale" ? "sale" : undefined;
     const viewCountFrom = num(sp.get("viewCountFrom"));
@@ -143,19 +147,21 @@ export async function GET(request: NextRequest) {
     const access = resolveEntityAccess(guard, "property");
     // PN-049/گام ۲-الف — قانون حساب کاربری: مالک همه؛ کاربر فقط رکوردهای خودش
     const catalogScope = catalogUserScope(guard);
-    const { rows, total } = await repo.listArmCatalog(
-      {
-        tenantId,
-        code, realtorName, ownerName, priceFrom, priceTo, address, tradeTypes, statuses, activityFrom, activityTo,
-        // PN-002 گام ۱ — ستون‌های تازه
-        rentalType, viewCountFrom, viewCountTo, meterageFrom, meterageTo, roomsFrom, roomsTo,
-        addedToDivar, addedToInsta, lineName, stateName,
-        propertyTypes: propertyTypes.length > 0 ? propertyTypes : undefined,
-        // PN-049 — دامنهٔ حساب کاربری (مالک: undefined = صفر فیلتر)
-        registrarNameNorm: catalogScope.kind === "OWN" ? catalogScope.nameNorm : undefined,
-      },
-      limit
-    );
+    const catalogFilter: ArmListingCatalogFilter = {
+      tenantId,
+      code, realtorName, ownerName, priceFrom, priceTo, address, tradeTypes, statuses, activityFrom, activityTo,
+      // PN-002 گام ۱ — ستون‌های تازه
+      rentalType, viewCountFrom, viewCountTo, meterageFrom, meterageTo, roomsFrom, roomsTo,
+      addedToDivar, addedToInsta, lineName, stateName,
+      propertyTypes: propertyTypes.length > 0 ? propertyTypes : undefined,
+      // PN-049 — دامنهٔ حساب کاربری (مالک: undefined = صفر فیلتر)
+      registrarNameNorm: catalogScope.kind === "OWN" ? catalogScope.nameNorm : undefined,
+    };
+    const { rows, total } = await repo.listArmCatalog(catalogFilter, limit);
+    // PN-079 — شمارش حقیقی با همان فیلترهای SQL (بدون سقف ردیف): KPI «کل آگهی‌های ملک تبریز"
+    // از این عدد تغذیه می‌شود؛ پیش از این total = filtered.length بود که با رسیدن کاتالوگ
+    // به سقف، آمار را به ۲۵٬۰۰۰ سنجاق می‌کرد (شکایت مالک: «یک ماه است تغییر نمی‌کند»).
+    const trueTotal = await repo.countArmCatalog(catalogFilter);
 
     // ---- P6530/گام ۱ + P6547/گام یک-۵ — شعبهٔ کارشناس هر ردیف (زنجیرهٔ تفکیک: PM ← مالک ← کسب‌وکار) ----
     const [ownerMap, experts, pmBranchMap] = await Promise.all([
@@ -207,7 +213,8 @@ export async function GET(request: NextRequest) {
       {
         ok: true,
         rows: filtered,
-        total: filtered.length,
+        total: trueTotal,
+        rowsTotal: filtered.length,
         limit,
         enrichment: counts,
         statusCounts,
