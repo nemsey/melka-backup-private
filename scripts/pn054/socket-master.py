@@ -52,7 +52,11 @@ GREEN_HEALTH_TIMEOUT_S = 30          # حداکثر منتظر سلامت فرز
 NODE_BIN = "/usr/bin/node"
 PRELOAD = os.path.join(REPO, "scripts", "pn054", "listen-patch.cjs")
 SERVER_JS = os.path.join(REPO, ".next", "standalone", "server.js")
-HEAP_CAP_MB = int(os.environ.get("MELKA_HEAP_CAP_MB", "384"))  # دستور ۳
+# PN-054 ترمیم۴ (۲۰۲۶-۱۱-۰۹): ۳۸۴→۷۶۸ — ریشهٔ کرش‌لوپ کاتالوگ درخواست‌ها؛
+# پاسخ ۲۶k ردیف غنی‌شده به ~۴۰۵MB هیپ نیاز داشت و هر بار سرور را با
+# «Reached heap limit» می‌کشت (اپ: صفر + کاشی ایجنت ناقص). سقف cgroup=۴GB
+# و ~۳GB آزاد ⇒ ۷۶۸MB همچنان منضبط است (کف لازم ~۵۰۰MB + حاشیهٔ ۱.۵×).
+HEAP_CAP_MB = int(os.environ.get("MELKA_HEAP_CAP_MB", "768"))  # دستور ۳ (بازنگری ترمیم۴)
 
 
 def log(msg: str) -> None:

@@ -228,7 +228,8 @@ while true; do
   #     فقط تأخیر می‌بیند، نه خطا).
   #   • دیپلوی → scripts/pn054/deploy-zero-dt.sh (Blue/Green: سبز کنار آبی
   #     بالا می‌آید → health → SIGTERM آبی → drain درخواست‌های در حال پرواز).
-  #   • دستور ۳: سقف heap سرور = --max-old-space-size=384 (داخل socket-master)
+  #   • دستور ۳ (ترمیم۴): سقف heap سرور = --max-old-space-size=768 (داخل socket-master؛
+  #     ۳۸۴→۷۶۸ پس از کرش‌لوپ OOM کاتالوگ درخواست‌ها ۲۰۲۶-۱۱-۰۹)
   #     + مانیتور RAM هر ۵ دقیقه با هشدار در ۵۰۰MB.
   # خروج socket-master (مثلاً EADDRINUSE گذرا) → همین حلقه پس از ۱ ثانیه
   # دوباره تلاش می‌کند (گیت‌های بالا دوباره اجرا می‌شوند).
