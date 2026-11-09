@@ -195,6 +195,11 @@ export class PrismaTransactionRepository implements ScopedTransactionRepository 
       rawInfoJson: string | null;
       comisionOfContract: number | null;
       taxOfContract: number | null;
+      /** PN-081 — تماس‌های رفع‌شده از ARM برای کدهای غیرمنطبقه */
+      linkOwnerName: string | null;
+      linkOwnerMobile: string | null;
+      linkRequesterName: string | null;
+      linkRequesterMobile: string | null;
     }>
   > {
     if (txIds.length === 0) return [];

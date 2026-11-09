@@ -428,10 +428,14 @@ export async function resolveTransactionLinks(
     const requestId = typeof payload.request === "string" ? payload.request.trim() || null : null;
 
     // هر طرف فقط وقتی هدف است که کدش در رجیستری محلی نباشد
-    const propertyUnmatched =
-      Boolean(row.propertyCode) && !(await db.propertyRecord.findFirst({ where: { propertyCode: row.propertyCode }, select: { propertyCode: true } }));
-    const requestUnmatched =
-      Boolean(row.requestCode) && !(await db.requestRecord.findFirst({ where: { requestCode: row.requestCode }, select: { requestCode: true } }));
+    const propertyCode = row.propertyCode;
+    const requestCode = row.requestCode;
+    const propertyUnmatched = propertyCode
+      ? !(await db.propertyRecord.findFirst({ where: { propertyCode }, select: { propertyCode: true } }))
+      : false;
+    const requestUnmatched = requestCode
+      ? !(await db.requestRecord.findFirst({ where: { requestCode }, select: { requestCode: true } }))
+      : false;
 
     if (!propertyUnmatched && !requestUnmatched) {
       // وضعیت مرزی: در فاصلهٔ صف تا اجرا، رجیستری پر شده — حل‌شده
