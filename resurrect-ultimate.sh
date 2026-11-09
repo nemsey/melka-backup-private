@@ -458,9 +458,25 @@ fi
 # PN-042-D: Worker restart (پس از رستاخیز)
 pkill -f "scripts/runtime/worker" 2>/dev/null || true
 sleep 1
-nohup bun scripts/runtime/worker.ts > /tmp/worker-restart.log 2>&1 &
-sleep 2
-echo "✅ Worker restarted"
+# PN-055 (درس مانور ۴ · ۲۰۲۶-۱۱-۰۹ ۰۴:۴۴): مسیر سریع ممکن است زودتر از TTLِ قفلِ
+# runtimeِ کارگرِ کشته‌شده (۹۰ث = ۳ ضربان ۳۰ثانیه‌ای) به استارت برسد → کارگر
+# «runtime lock held» می‌بیند و بی‌صدا خارج می‌شود → کارهای پس‌زمینه می‌میرند.
+# درمان (صفر تغییر اپ): استارت + تأییدِ زنده‌بودنِ فرایند + تلاش مجدد تا انقضای
+# TTL کهنه (۶ تلاش × ~۲۹ث ≈ ۱۷۵ث سقف). قفل کهنه هرگز توسط ما پاک نمی‌شود (خط
+# قرمز دست‌کاری قفل app از شل) — فقط صبر صادقانه تا انقضای طبیعی.
+WORKER_OK=0
+for _wi in 1 2 3 4 5 6; do
+  nohup bun scripts/runtime/worker.ts > /tmp/worker-restart.log 2>&1 &
+  sleep 4
+  if pgrep -f "scripts/runtime/worker" >/dev/null 2>&1; then WORKER_OK=1; break; fi
+  echo "  ⏳ Worker با قفل runtimeِ کهنه رد شد (تلاش $_wi/۶) — انتظار انقضای TTL (۲۵ث)…"
+  sleep 25
+done
+if [ "$WORKER_OK" = "1" ]; then
+  echo "✅ Worker restarted (زنده‌بودن فرایند تأیید شد)"
+else
+  echo "⚠️ Worker پس از ۶ تلاش بالا نیامد (لاگ: /tmp/worker-restart.log) — supervisor وب آن را در چرخهٔ بعدی دوباره بالا می‌آورد"
+fi
 
 # ─── ۷) تأیید — پیام موفقیت فقط با شاهد زنده ───
 EXPECT=$(git rev-parse --short HEAD)
