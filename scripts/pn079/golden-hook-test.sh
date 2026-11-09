@@ -114,7 +114,8 @@ wait_ready() {  # $1=برچسب — پایش foreground تا healthz پاسخ د
           python3 -c 'import json,sys;print(json.load(sys.stdin).get("gitSha",""))' 2>/dev/null)
     [ -n "$VER" ] && break; sleep 2
   done
-  if [ "$VER" = "$HEAD_SHA" ]; then D="FALSE"; else D="TRUE"; fi
+  if [ -n "$VER" ] && [ "${HEAD_SHA:0:${#VER}}" = "$VER" ]; then D="FALSE"; else D="TRUE"; fi
+  # (درس PN-056: gitSha نسخهٔ زنده کوتاه است — مقایسهٔ پیشوندی کوتاه/کامل)
   say "drift=$D (سرور=${VER:0:12} · HEAD=${HEAD_SHA:0:12}) — $1"
   case "$1" in
     restart1) sed -i "s/^ELAPSED_1=.*/ELAPSED_1=$ELAPSED/; s/^DRIFT_1=.*/DRIFT_1=$D/" "$STATE";;
@@ -125,7 +126,10 @@ wait_ready() {  # $1=برچسب — پایش foreground تا healthz پاسخ د
   esac
 }
 
-set_state() { sed -i "s/^$1=.*/$2/" "$STATE"; }
+set_state() {  # PN-079: کلید باید در جایگزینی بماند (باگ نسخهٔ قبل: پیشوند حذف می‌شد)
+  grep -q "^$1=" "$STATE" || echo "$1=''" >> "$STATE"
+  sed -i "s/^$1=.*/$1=$2/" "$STATE"
+}
 
 case "${1:-}" in
   mark-a)
@@ -173,7 +177,6 @@ PYEOF
     say "شمارش پس از ریست ۱: $C"
     DB_NOTE_A=$(note_get "$MARK_ID")
     if [ "$DB_NOTE_A" = "$MARK_A" ]; then set_state "SURVIVE_A" "YES"; else set_state "SURVIVE_A" "NO"; fi
-    grep -q "^SURVIVE_A=" "$STATE" || echo "SURVIVE_A=NO" >> "$STATE"
     say "نشانگر A پس از ریست ۱: $([ "$DB_NOTE_A" = "$MARK_A" ] && echo YES || echo NO)"
     ;;
   mark-b)
@@ -201,7 +204,6 @@ PYEOF
     say "شمارش پس از ریست ۲: $C"
     DB_NOTE_B=$(note_get "$MARK_ID")
     if [ "$DB_NOTE_B" = "$MARK_B" ]; then set_state "SURVIVE_B" "YES"; else set_state "SURVIVE_B" "NO"; fi
-    grep -q "^SURVIVE_B=" "$STATE" || echo "SURVIVE_B=NO" >> "$STATE"
     say "نشانگر B پس از ریست ۲: $([ "$DB_NOTE_B" = "$MARK_B" ] && echo YES || echo NO)"
     ;;
   kill3)
