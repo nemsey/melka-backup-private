@@ -1,0 +1,80 @@
+{
+  "case": "PN-069 · ریشه‌یابی اختلاف شمارش آگهی‌ها (گزارش PN-031F: 28,665 ↔ اپ: 28,460)",
+  "generatedAt": "2026-11-09T09:08:03.846199",
+  "evidence": {
+    "db_truth": {
+      "PropertyRecord_total": 28665,
+      "RequestRecord_total": 26201,
+      "distinct_propertyCode": 28665,
+      "tenantId_melk_tabriz": 28665
+    },
+    "enrichment_math": {
+      "total": 28665,
+      "pending": 205,
+      "complete": 28460,
+      "note": "enrichment.complete = 28,460 ← عددی که اپ نمایش می‌دهد؛ total = 28,665 ← عدد گزارش PN-031F"
+    },
+    "pending_profile": {
+      "count": 205,
+      "sourceRunId": [
+        [
+          "p6546-melk-public-88bc95b3"
+        ]
+      ],
+      "status_values": [
+        [
+          "منتشر شده"
+        ]
+      ],
+      "createdAt_range": [
+        "2026-10-27T16:03:48.488000",
+        "2026-11-07T13:03:03.048000"
+      ],
+      "layer1_completeness": {
+        "title": 205,
+        "price": 180,
+        "areaName": 205,
+        "tradeTypeName": 205
+      }
+    },
+    "layer2_search": {
+      "LIVE": 0,
+      "CITADEL": 0,
+      "verdict": "دادهٔ لایهٔ ۲ برای این ۲۰۵ کد در هیچ لایه‌ای وجود ندارد — هرگز از ARM واکشی نشده (حذف/گم‌شدن رخ نداده)"
+    },
+    "relay": {
+      "last_device": "poco-f3-62bfc4",
+      "last_seen": "2026-11-09T07:19:27.244000",
+      "last_successful_relay_job": "2026-11-08T05:27:04.223000",
+      "queue_counts": {
+        "done": 8088,
+        "expired": 859
+      },
+      "online_window_ms": 240000,
+      "direct_egress_test": "arus-api/pm-api/melketabriz.com → HTTP 000 (timeout) — فایروال ملک‌تبریز ASN غیرایرانی را drop می‌کند (تشخیص PN-030)"
+    },
+    "relay_attempts_for_pending": {
+      "attempted": 37,
+      "never_attempted": 168,
+      "ttl_expired": 4,
+      "note": "armCall مهلت ۴۵ث دارد؛ RTT رله تا ~۱۰۰ث ← تایم‌اوت نرم ← رکورد علامت نمی‌خورد و در صف می‌ماند"
+    },
+    "daemon": {
+      "worker_pid": 6179,
+      "interval": "1 دقیقه",
+      "ENRICH_ROWS_PER_TICK": 120,
+      "state": "زنده و در حال تیک — ولی با رلهٔ آفلاین، relayFetch فوراً RelayOfflineError می‌دهد (بدون enqueue)"
+    },
+    "live_api_response": {
+      "kpi1_total_rows_capped": 25000,
+      "limit": 25000,
+      "enrichment": {
+        "total": 28665,
+        "pending": 205,
+        "complete": 28460
+      },
+      "statusCounts_total": 28665,
+      "note": "KPI «کل آگهی‌ها» = 25,000 (سقف سرور) · KPI «تکمیل‌شده» = 28,460 از 28,665 ← عدد گزارش‌شدهٔ کاربر"
+    }
+  }
+}
