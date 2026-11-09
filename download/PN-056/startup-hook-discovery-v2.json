@@ -1,0 +1,83 @@
+{
+  "directive": "DIR-PN056-AUTO-RESURRECT",
+  "document": "startup-hook-discovery (نسخهٔ ۲ — پس از حادثهٔ ریست 07:40)",
+  "generatedAt": "2026-11-09T08:35:00Z",
+  "investigator": "GLM 5.3 — جلسهٔ دوم PN-056",
+  "supersedes": "upload/.runtime/pn056/startup-hook-discovery.json (نسخهٔ ۱ · جلسهٔ اول · 05:41)",
+  "verdict": {
+    "summary": "قلاب طلایی = .zscripts/dev.sh (اجرا توسط /start.sh در هر بوت). در ریست 07:40 اجرا شد اما با نسخهٔ کهنهٔ خام از repo.tar (Nov 8 05:27) — نسخهٔ طلایی (be057c5/bbc5b10) فقط روی GitHub main بود و با ریست سختِ بدون prestop از درخت زنده حذف شد",
+    "decision": "سه‌لایه: (۱) رستاخیز رسمی → درخت = bbc5b10؛ (۲) آزمون پذیرش قلاب → 56s · drift=FALSE · صفر اتلاف؛ (۳) تازه‌سازی repo.tar با درخت طلایی → مقاوم‌سازی در برابر ریست سخت آینده"
+  },
+  "incident_2026_11_09_0740": {
+    "containerBoot": "2026-11-09T07:40:27Z",
+    "hookFired": {
+      "evidence": "/tmp/boot-timeline.log → [BOOT] 07:40:54 start step=\"custom dev script\" uptime=32.66s",
+      "butRanStaleVersion": ".zscripts/dev.sh mtime May 12 (قالب خام اسکفولد) — نه نسخهٔ PN-056",
+      "staleSource": "/home/sync/repo.tar (mtime Nov 8 05:27 · 26h کهنه · md5 eb1fd384…) — ریست 07:40 بدون prestop انجام شد و tar تازه نشد"
+    },
+    "scaffoldBootChain": [
+      "07:41 bun install (mtime bun.lock)",
+      "07:41:07 prisma db push --accept-data-loss روی DB زنده (mtime db/custom.db) — تخلف از قانون داده",
+      "07:41 dev-entry.sh → production mode → recovery-guard + escrow ✓ (dev-recovery.log)",
+      "07:42+ bun run build (cold — repo.tar بدون .next)",
+      "dev.sh: wait_for_service 60s → health-check ناموفق → set -e → trap kill DEV_PID (قتل درخت بوت)",
+      "~08:01-08:02 بیلد ِیتیم بدون نتیجه مرد (.next خالی · بدون server.js · بدون dev.log)",
+      "ساب‌پروسهٔ بوت زامبی شد (ps: [start.sh] <defunct> PID 898) — log_step_end هرگز ثبت نشد"
+    ],
+    "kernelOomRuledOut": "/sys/fs/cgroup/memory.events → oom_kill=0 · under_oom=0 (کل عمر کانتینر)",
+    "doctrineNoRetry": "dev-entry.sh سطرهای 56-62 — دکترین PN-042: صفر بازیابی خودکار در بوت",
+    "dataStaleness": {
+      "liveFromStaleTar": "P=28661 · R=26178",
+      "fortressPersistent": "P=28665 · R=26201",
+      "healedBy": "UNION پنج‌لایه در رستاخیز 08:23 (آینهٔ داغ → قلعه → چرخشی → مقدس) → P=28665 · R=26201"
+    }
+  },
+  "repoTarForensics": {
+    "path": "/home/sync/repo.tar",
+    "size": 1825392640,
+    "entries": 7845,
+    "includes": ["سورس کامل", ".git (با آبجکت‌های بزرگ تاریخچه)", "db/custom.db (560MB — وضعیت Nov 8)", "download/", ".zscripts/", ".env*", "docs/"],
+    "excludes": ["upload/ (مانت پایدار OSS)", "node_modules/", ".next/", "backups/", "skills/"],
+    "noPrefix": "مسیرها نسبت به ریشهٔ پروژه (بدون my-project/) — بازگشایی مستقیم در /home/z/my-project",
+    "verdict": "بذر بوت است — هر فایلی که باید از ریست سخت جان ببرد باید داخلش باشد؛ قلاب PN-056 در نسخهٔ Nov 8 نبود (چون هنوز ساخته نشده بود)"
+  },
+  "hookLandscape": {
+    "goldenHook": "/home/z/my-project/.zscripts/dev.sh — تنها فایلی که /start.sh در بوت اجرا می‌کند (sudo -u z · پس‌زمینه)",
+    "shellProfilesDead": "/home/z/.bashrc · .profile · .bash_profile همگی ناموجود؛ هارنس شل را با --noprofile --norc اجرا می‌کند",
+    "noSystemHooks": "/etc/rc.local · /entrypoint.sh · cron · systemd · supervisor — همه ناموجود",
+    "persistenceLayers": {
+      "githubMain": "منبع حقیقت کد — نجات‌بخش امروز (bbc5b10)",
+      "repoTar": "بذر بوت ریست سخت — نقطهٔ شکست امروز (کهنه بود)",
+      "uploadMount": "مانت OSS پایدار — شواهد و داده همیشه زنده می‌مانند (upload/.runtime/pn056/)"
+    }
+  },
+  "fix_layers_applied": {
+    "L1_resurrection": {
+      "at": "2026-11-09T08:23:40Z",
+      "result": "RESURRECTION COMPLETE — 137s · Version bbc5b10 · heapCapMB=768 · drift.match=true · P=28665"
+    },
+    "L2_acceptanceTest": {
+      "at": "2026-11-09T08:30:33Z",
+      "script": "scripts/pn056-acceptance-v2.sh",
+      "result": "سرور=56s · drift=FALSE · کارگر=26s · صفر اتلاف (P=28665 · R=26201 پیش=پس)",
+      "evidenceDir": "download/PN-056/logs/acceptance-v2/"
+    },
+    "L3_repoTarRefresh": {
+      "goal": "بازسازی repo.tar از درخت طلایی (قلاب + boot-recovery + پروتکل + .git تازه + اسنپ‌شات سازگار DB) — حتی ریست سختِ بدون prestop هم قلاب‌دار بوت می‌شود",
+      "method": "استیج hardlink + اسنپ‌شات سازگار sqlite (backup API) + همان الگوی exclude/include مشاهده‌شده در prestop",
+      "evidence": "download/PN-056/repo-tar-refresh.json"
+    }
+  },
+  "newLaws": [
+    "قانون قلابِ کهنه: اجرا شدن قلاب ≠ درست اجرا شدن — محتوای قلاب را بسنج نه فراخوانی‌اش را",
+    "قانون repo.tar: تغییر بقا-محرِز باید هم در GitHub main باشد هم در repo.tar — کامیت بدون تازه‌سازی tar = نصف بیمه",
+    "قانون مهلت قلاب: قلاب بوت هرگز فرزند کند خودش را نمی‌کشد — setsid + خروج فوری"
+  ],
+  "evidenceFiles": [
+    "download/PN-056/RESET-20261109-0740-ROOTCAUSE.md",
+    "download/PN-056/logs/boot-timeline-0740.txt",
+    "download/PN-056/logs/acceptance-v2/timeline.log",
+    "upload/.runtime/pn056/boot-recovery.log",
+    "resurrect-daemon.log"
+  ]
+}
