@@ -40,6 +40,8 @@ import {
   FileSpreadsheet,
   // PN-020/گام اول-ج — آیکون ستون شرایط پرداخت
   Banknote,
+  // PN-081 — هشدار توقف همگام‌سازی فهرست معاملات
+  AlertTriangle,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -493,6 +495,23 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
       {/* P6546/گام سوم + گام پنجم-الف-۳ — بخش بروزرسانی (از صفحه به همین‌جا منتقل شد:
           بعد از جداول/نمودارها و پوشش، قبل از فیلتر و فهرست) */}
       {updateSection}
+
+      {/* PN-081 — هشدار توقف همگام‌سازی: با وجود دادهٔ کش‌شده، کهنگی هرگز بی‌صدا نمی‌ماند.
+          ریشه: توکن ARM منقضی می‌شود و خطای زنده فقط وقتی دیده می‌شد که «هیچ» داده نباشد؛
+          فهرست یخ‌زده بدون توضیح نمایش داده می‌شد (شاهد: توقف ۲۰۲۶-۱۱-۰۹). */}
+      {data?.dataSource?.syncStalled ? (
+        <div
+          id="m3-sync-stalled"
+          className="rounded-lg border border-amber-300/70 bg-amber-50/70 dark:bg-amber-950/30 p-3 flex items-start gap-2.5"
+          role="alert"
+        >
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden />
+          <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+            <span className="font-bold">بروزرسانی فهرست معاملات متوقف است.</span>{" "}
+            آخرین همگام‌سازی موفق {data.dataSource.stalledHours ? `${faDigits(String(data.dataSource.stalledHours))} ساعت` : "چند ساعت"} پیش بوده است. برای ازسرگیری خودکار، یک‌بار با کد پرسنلی و پیامک وارد سامانه شوید — داده‌های فعلی از آخرین استخراج موفق نمایش داده می‌شود.
+          </p>
+        </div>
+      ) : null}
 
       {/* فیلترها — B.۱ (۰۱۷): بالای فهرست · موبایل جمع‌شونده · دسکتاپ همیشه باز
           BLOCK F (۰۱۸): پاک‌کردن در بالای کارت + اعمال خودکار debounce ۳۰۰ms + نشانگر جستجو */}

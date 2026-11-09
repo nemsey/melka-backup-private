@@ -13,6 +13,14 @@
  * 🔁 checkpoint: پس از هر ۵۰ معامله ذخیره (SyncCheckpoint id="tx-info-enrich")؛
  * ادامه از نقطهٔ قطع — هرگز از صفر (عین الگوی arm-catalog §ازسرگیری).
  * صفر بارگذاری کل دیتاست: فقط معاملات فاقد غنی‌سازی پردازش می‌شوند.
+ *
+ * PN-081 (دستور مالک ۱۴۰۵/۰۸/۲۰ — بهینه‌سازی استخراج فهرست معاملات):
+ *   · ترتیب صف جدیدترین‌اول — ریشهٔ «تاخیر بروزرسانی»: قدیمی‌ترین‌اول،
+ *     رکوردهای تازه را پشت انباشت نگه می‌داشت.
+ *   · جایگزین سهم سهام‌داران (shareholderList) وقتی مشاوران ثبت نشده‌اند —
+ *     نام‌ها از دفترچهٔ ExpertRecord محلی (بدون فراخوانی شبکه).
+ *   · resolveTransactionLinks — رفع گرهٔ تماس طرفین برای کدهای غیرمنطبقه.
+ *   · refreshTransactionsInfo — چرخهٔ تازگی: بازخوانی کهنه‌ترین صورت‌وضعیت‌ها.
  */
 
 import { randomUUID } from "node:crypto";
@@ -20,6 +28,7 @@ import { db } from "@/lib/db";
 import { MELK_ENDPOINTS } from "./endpoints";
 import { getMelkApiConfig } from "./config";
 import { armCall } from "./client";
+import { extractPersonInfo } from "./adapters";
 import type { MelkApiError } from "./types";
 
 // ==========================================================================
@@ -73,8 +82,16 @@ export interface TxInfoEnrichmentRow {
   taxOfContract: number | null;
 }
 
-/** نگاشت پاسخ خام trade-overviews/info → ردیف غنی‌سازی (خالص — قابل تست) */
-export function mapTxInfoPayload(txId: string, payload: unknown): TxInfoEnrichmentRow {
+/**
+ * نگاشت پاسخ خام trade-overviews/info → ردیف غنی‌سازی (خالص — قابل تست).
+ * PN-081: پارامتر اختیاری expertNameById — نگاشت شناسهٔ آبجکت ARM → نام کارشناس
+ * (از ExpertRecord محلی) برای رفع نام «shareholderList» وقتی مشاوران ثبت نشده‌اند.
+ */
+export function mapTxInfoPayload(
+  txId: string,
+  payload: unknown,
+  expertNameById?: ReadonlyMap<string, string> | null
+): TxInfoEnrichmentRow {
   const d = (payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {}) as Record<string, unknown>;
   const str = (k: string): string | null => {
     const v = d[k];
@@ -128,6 +145,30 @@ export function mapTxInfoPayload(txId: string, payload: unknown): TxInfoEnrichme
         unitPercent: Number.isFinite(unit) ? unit : 0,
         confirmation: typeof r.confirmation === "string" ? r.confirmation : "wait",
         role,
+      });
+    }
+  }
+
+  // PN-081 — جایگزین سهم سهام‌داران: وقتی مشاوران (primary/secondary) در مبدأ ثبت
+  // نشده‌اند ولی «shareholderList» واحد دارد، همان توزیع سطح سهام‌داران عین منبع
+  // با نام‌های رفع‌شده از رجیستری کارشناسان محلی نمایش داده می‌شود.
+  // شاهد داده: هر ۷۴۱ ردیف دارای مشاور، هم‌زمان shareholderList هم دارند (نمای دوگانهٔ
+  // همان توزیع) → ادغام هرگز انجام نمی‌شود؛ فقط وقتی فهرست مشاوران خالی است.
+  // وضعیت تأیید در مبدأ مشخص نیست → «unknown» (در تجمیع، «در انتظار» شمرده می‌شود — صادقانه).
+  if (shares.length === 0 && expertNameById && expertNameById.size > 0) {
+    const shl = Array.isArray(d.shareholderList) ? (d.shareholderList as Record<string, unknown>[]) : [];
+    for (const s of shl) {
+      if (!s || typeof s !== "object") continue;
+      const shareholderId = typeof s.shareholder === "string" ? s.shareholder : null;
+      if (!shareholderId) continue;
+      const name = expertNameById.get(shareholderId);
+      if (!name) continue;
+      const unit = typeof s.shareholderUnit === "number" ? s.shareholderUnit : Number(s.shareholderUnit ?? 0);
+      shares.push({
+        name,
+        unitPercent: Number.isFinite(unit) ? unit : 0,
+        confirmation: "unknown",
+        role: "shareholder",
       });
     }
   }
@@ -220,10 +261,15 @@ export async function enrichTransactionsInfo(
   const cfg = getMelkApiConfig();
   const batchId = `p6514-${randomUUID().slice(0, 8)}`;
 
-  // صف معاملات فاقد غنی‌سازی — مرتب بر تاریخ (قدیمی→جدید؛ پایدار برای ازسرگیری)
+  // PN-081 — دفترچهٔ نام کارشناسان (شناسهٔ ARM → نام) برای رفع نام سهام‌داران
+  const expertNameById = await loadExpertNameById();
+
+  // صف معاملات فاقد غنی‌سازی — PN-081: جدیدترین‌اول (contractDate DESC).
+  // ریشهٔ «تاخیر بروزرسانی»: ترتیب قبلی قدیمی‌ترین‌اول بود و رکوردهای تازه پشت
+  // انباشت صف می‌ماندند؛ اکنون معاملهٔ جدید در نخستین تیک غنی می‌شود.
   const pending = await db.transactionRecord.findMany({
     where: { id: { notIn: (await db.transactionEnrichment.findMany({ select: { txId: true } })).map((e) => e.txId) } },
-    orderBy: { contractDate: "asc" },
+    orderBy: { contractDate: "desc" },
     select: { id: true },
   });
 
@@ -244,7 +290,7 @@ export async function enrichTransactionsInfo(
           timeoutMs: cfg.timeoutMs,
           maxRetries: 1,
         });
-        const row = mapTxInfoPayload(tx.id, res.data);
+        const row = mapTxInfoPayload(tx.id, res.data, expertNameById);
         await upsertEnrichment(row, JSON.stringify(res.data ?? {}), batchId);
         enriched += 1;
       } catch (e) {
@@ -294,4 +340,282 @@ export async function enrichTransactionsInfo(
 
 function finish(r: TxInfoSyncResult): TxInfoSyncResult {
   return r;
+}
+
+// ==========================================================================
+// PN-081 (دستور مالک ۱۴۰۵/۰۸/۲۰) — رفع گرهٔ کدهای غیرمنطبقه + چرخهٔ تازگی
+// ==========================================================================
+
+/** دفترچهٔ نام کارشناسان: شناسهٔ آبجکت ARM → نام (ExpertRecord محلی — بدون فراخوانی شبکه) */
+async function loadExpertNameById(): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  try {
+    const experts = await db.expertRecord.findMany({ select: { id: true, fullName: true } });
+    for (const e of experts) {
+      const name = e.fullName?.trim();
+      if (name) map.set(e.id, name);
+    }
+  } catch {
+    /* صرف‌نظر صادقانه — نگاشت خالی یعنی بدون جایگزین سهام‌داران */
+  }
+  return map;
+}
+
+/** شکل داخلی صف رفع گره (خروجی $queryRaw — نام‌ها عین ستون‌های SQL) */
+interface LinkCandidateRow {
+  id: string;
+  propertyCode: string | null;
+  requestCode: string | null;
+  rawInfoJson: string | null;
+}
+
+export interface TxLinkResolveResult {
+  candidates: number;
+  resolved: number;
+  notFound: number;
+  noIds: number;
+  failed: number;
+  durationMs: number;
+  lastError: string | null;
+}
+
+/**
+ * PN-081 — رفع گرهٔ تماس طرفین برای معامله‌هایی که کد ملک/درخواستشان در
+ * رجیستری محلی نیست (ریشهٔ خالی‌ماندن ستون‌های نام/موبایل مالک و درخواست‌دهنده):
+ * شناسهٔ آبجکت ملک/درخواست از پاسخ خام خود معامله (rawInfoJson) برداشته می‌شود و
+ * تماس مستقیماً از ARM رفع می‌شود:
+ *   · مالک:  properties/owner/{propertyId}      (عین فاز B کاشی آگهی)
+ *   · متقاضی: requests/applicant/{requestId}    (عین فاز B کاشی درخواست)
+ * linkResolvedAt نشانهٔ تلاش است — رکورد حذف‌شده در مبدأ هرگز بی‌پایان تلاش نمی‌شود.
+ */
+export async function resolveTransactionLinks(
+  armToken: string,
+  opts: { maxRows?: number; throttleMs?: number } = {}
+): Promise<TxLinkResolveResult> {
+  const { maxRows = 24, throttleMs = 300 } = opts;
+  const cfg = getMelkApiConfig();
+  const t0 = Date.now();
+  const result: TxLinkResolveResult = { candidates: 0, resolved: 0, notFound: 0, noIds: 0, failed: 0, durationMs: 0, lastError: null };
+
+  // صف: معامله‌های دارای غنی‌سازی که هنوز تلاش رفع گره نشده‌اند و کدشان در رجیستری نیست
+  const pending = (await db.$queryRaw`
+    SELECT t.id, t.propertyCode, t.requestCode, e.rawInfoJson
+    FROM TransactionRecord t
+    JOIN TransactionEnrichment e ON e.txId = t.id
+    WHERE e.linkResolvedAt IS NULL
+      AND e.rawInfoJson IS NOT NULL
+      AND (
+        (t.propertyCode IS NOT NULL AND t.propertyCode != '' AND NOT EXISTS (SELECT 1 FROM PropertyRecord p WHERE p.propertyCode = t.propertyCode))
+        OR (t.requestCode IS NOT NULL AND t.requestCode != '' AND NOT EXISTS (SELECT 1 FROM RequestRecord q WHERE q.requestCode = t.requestCode))
+      )
+    ORDER BY t.contractDate DESC
+    LIMIT ${maxRows}
+  `.catch(() => [] as LinkCandidateRow[])) as LinkCandidateRow[];
+
+  result.candidates = pending.length;
+
+  for (const row of pending) {
+    let payload: Record<string, unknown> = {};
+    try {
+      payload = JSON.parse(row.rawInfoJson ?? "{}") as Record<string, unknown>;
+    } catch {
+      payload = {};
+    }
+    const propertyId =
+      payload.property && typeof payload.property === "object"
+        ? String((payload.property as Record<string, unknown>)._id ?? "").trim() || null
+        : null;
+    const requestId = typeof payload.request === "string" ? payload.request.trim() || null : null;
+
+    // هر طرف فقط وقتی هدف است که کدش در رجیستری محلی نباشد
+    const propertyUnmatched =
+      Boolean(row.propertyCode) && !(await db.propertyRecord.findFirst({ where: { propertyCode: row.propertyCode }, select: { propertyCode: true } }));
+    const requestUnmatched =
+      Boolean(row.requestCode) && !(await db.requestRecord.findFirst({ where: { requestCode: row.requestCode }, select: { requestCode: true } }));
+
+    if (!propertyUnmatched && !requestUnmatched) {
+      // وضعیت مرزی: در فاصلهٔ صف تا اجرا، رجیستری پر شده — حل‌شده
+      await markLinkResolved(row.id, { linkStatus: "resolved" });
+      result.resolved += 1;
+      continue;
+    }
+
+    const patch: { linkOwnerName?: string; linkOwnerMobile?: string; linkRequesterName?: string; linkRequesterMobile?: string; linkStatus: string } = { linkStatus: "resolved" };
+    let okSides = 0;
+    let missingSides = 0;
+    let noIdSides = 0;
+
+    // ۱) مالک — properties/owner/{propertyId} (عین فاز B کاشی آگهی)
+    if (propertyUnmatched) {
+      if (propertyId) {
+        try {
+          const own = await armCall<unknown>({
+            path: MELK_ENDPOINTS.arm.propertyOwner(propertyId),
+            baseUrl: cfg.armApiBase,
+            token: armToken,
+            timeoutMs: cfg.timeoutMs,
+            maxRetries: 1,
+          });
+          const person = extractPersonInfo(own.data);
+          if (person?.fullName?.trim()) patch.linkOwnerName = person.fullName.trim();
+          if (person?.mobile?.trim()) patch.linkOwnerMobile = normalizeMobile(person.mobile) ?? person.mobile.trim();
+          if (patch.linkOwnerName || patch.linkOwnerMobile) okSides += 1;
+          else missingSides += 1;
+        } catch (e) {
+          const err = e as MelkApiError;
+          if (err?.code === "UNAUTHORIZED") {
+            result.lastError = "UNAUTHORIZED";
+            result.durationMs = Date.now() - t0;
+            return result;
+          }
+          if (err?.httpStatus === 404 || err?.code === "NOT_FOUND") missingSides += 1;
+          else {
+            result.failed += 1;
+            result.lastError = String(err?.message ?? e).slice(0, 160);
+          }
+        }
+      } else {
+        noIdSides += 1;
+      }
+    }
+
+    // ۲) درخواست‌دهنده — requests/applicant/{requestId} (عین فاز B کاشی درخواست)
+    if (requestUnmatched) {
+      if (requestId) {
+        try {
+          const app = await armCall<unknown>({
+            path: MELK_ENDPOINTS.arm.requestApplicant(requestId),
+            baseUrl: cfg.armApiBase,
+            token: armToken,
+            timeoutMs: cfg.timeoutMs,
+            maxRetries: 1,
+          });
+          const person = extractPersonInfo(app.data);
+          if (person?.fullName?.trim()) patch.linkRequesterName = person.fullName.trim();
+          if (person?.mobile?.trim()) patch.linkRequesterMobile = normalizeMobile(person.mobile) ?? person.mobile.trim();
+          if (patch.linkRequesterName || patch.linkRequesterMobile) okSides += 1;
+          else missingSides += 1;
+        } catch (e) {
+          const err = e as MelkApiError;
+          if (err?.code === "UNAUTHORIZED") {
+            result.lastError = "UNAUTHORIZED";
+            result.durationMs = Date.now() - t0;
+            return result;
+          }
+          if (err?.httpStatus === 404 || err?.code === "NOT_FOUND") missingSides += 1;
+          else {
+            result.failed += 1;
+            result.lastError = String(err?.message ?? e).slice(0, 160);
+          }
+        }
+      } else {
+        noIdSides += 1;
+      }
+    }
+
+    // وضعیت نهایی از برآیند طرفین
+    patch.linkStatus =
+      okSides === 0 && missingSides === 0
+        ? "no_ids"
+        : okSides === 0
+          ? "not_found"
+          : missingSides > 0 || noIdSides > 0
+            ? "partial"
+            : "resolved";
+
+    await markLinkResolved(row.id, patch);
+    if (patch.linkStatus === "no_ids") {
+      result.noIds += 1;
+      result.notFound += 1;
+    } else if (patch.linkStatus === "not_found") result.notFound += 1;
+    else result.resolved += 1;
+
+    if (throttleMs > 0) await new Promise((r) => setTimeout(r, throttleMs));
+  }
+
+  result.durationMs = Date.now() - t0;
+  return result;
+}
+
+async function markLinkResolved(
+  txId: string,
+  patch: { linkOwnerName?: string; linkOwnerMobile?: string; linkRequesterName?: string; linkRequesterMobile?: string; linkStatus: string }
+): Promise<void> {
+  await withWriteRetry(() =>
+    db.transactionEnrichment.update({
+      where: { txId },
+      data: {
+        ...(patch.linkOwnerName !== undefined ? { linkOwnerName: patch.linkOwnerName } : {}),
+        ...(patch.linkOwnerMobile !== undefined ? { linkOwnerMobile: patch.linkOwnerMobile } : {}),
+        ...(patch.linkRequesterName !== undefined ? { linkRequesterName: patch.linkRequesterName } : {}),
+        ...(patch.linkRequesterMobile !== undefined ? { linkRequesterMobile: patch.linkRequesterMobile } : {}),
+        linkStatus: patch.linkStatus,
+        linkResolvedAt: new Date(),
+      },
+    })
+  );
+}
+
+export interface TxInfoRefreshResult {
+  processed: number;
+  refreshed: number;
+  failed: number;
+  durationMs: number;
+  lastError: string | null;
+}
+
+/**
+ * PN-081 — چرخهٔ تازگی صورت‌وضعیت‌ها: بازخوانی دوره‌ای trade-overviews/info
+ * برای ردیف‌های «کهنه‌ترین‌همگام‌سازی‌شده» (syncedAt صعودی). ریشهٔ «تاخیر در
+ * بروزرسانی رکوردهای فاقد اطلاعات»: غنی‌سازی یک‌باره بود و هر به‌روزرسانیِ
+ * بعدی در ARM (تایید حق‌السهم، افزودن مشاور، تغییر مبلغ) هرگز نمی‌رسید.
+ * ردیف‌های NOT_FOUND_AT_SOURCE رد می‌شوند (در مبدأ نیستند).
+ */
+export async function refreshTransactionsInfo(
+  armToken: string,
+  opts: { maxRows?: number; throttleMs?: number } = {}
+): Promise<TxInfoRefreshResult> {
+  const { maxRows = 12, throttleMs = 400 } = opts;
+  const cfg = getMelkApiConfig();
+  const t0 = Date.now();
+  const result: TxInfoRefreshResult = { processed: 0, refreshed: 0, failed: 0, durationMs: 0, lastError: null };
+
+  const stale = await db.transactionEnrichment.findMany({
+    where: { status: { not: "NOT_FOUND_AT_SOURCE" } },
+    orderBy: { syncedAt: "asc" },
+    take: maxRows,
+    select: { txId: true },
+  });
+
+  const expertNameById = await loadExpertNameById();
+  const batchId = `pn081-refresh-${randomUUID().slice(0, 8)}`;
+
+  for (const { txId } of stale) {
+    result.processed += 1;
+    try {
+      const res = await armCall<unknown>({
+        path: MELK_ENDPOINTS.arm.tradeOverviewInfo(txId),
+        baseUrl: cfg.armApiBase,
+        token: armToken,
+        timeoutMs: cfg.timeoutMs,
+        maxRetries: 1,
+      });
+      const row = mapTxInfoPayload(txId, res.data, expertNameById);
+      await upsertEnrichment(row, JSON.stringify(res.data ?? {}), batchId);
+      result.refreshed += 1;
+    } catch (e) {
+      const err = e as MelkApiError;
+      if (err?.code === "UNAUTHORIZED") {
+        result.lastError = "UNAUTHORIZED";
+        result.durationMs = Date.now() - t0;
+        return result;
+      }
+      result.failed += 1;
+      result.lastError = String(err?.message ?? e).slice(0, 160);
+    }
+    if (throttleMs > 0) await new Promise((r) => setTimeout(r, throttleMs));
+  }
+
+  result.durationMs = Date.now() - t0;
+  return result;
 }

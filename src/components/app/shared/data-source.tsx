@@ -25,6 +25,10 @@ export interface DataSourceInfo {
   lastSyncedAt?: string | null;
   liveError?: string | null;
   syncAttempts?: number;
+  /** PN-081 — توقف همگام‌سازی: کهنگی دادهٔ کش‌شده دیگر بی‌صدا نمی‌ماند */
+  syncStalled?: boolean;
+  /** سن آخرین همگام‌سازی موفق بر حسب ساعت (وقتی syncStalled پر می‌شود) */
+  stalledHours?: number | null;
 }
 
 export interface DataSourceWarningProps {

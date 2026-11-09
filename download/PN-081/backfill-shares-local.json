@@ -1,0 +1,153 @@
+{
+  "directive": "PN-081 — بک‌فیل محلی سهم‌های سهام‌داران (بدون ARM)",
+  "dbPath": "/home/z/my-project/db/custom.db",
+  "batchId": "pn081-local-6af23bda",
+  "durationMs": 3,
+  "candidates": 91,
+  "filled": 10,
+  "skippedShareholdersWithoutLocalName": 0,
+  "emptySharesBefore": 91,
+  "emptySharesAfter": 81,
+  "totalEnrichments": 832,
+  "withSharesAfter": 751,
+  "samples": [
+    {
+      "txId": "6964ba039d84b78693b2c3ce",
+      "shares": [
+        {
+          "name": "هوشنگ احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "حسین احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "الیار حسامی",
+          "unitPercent": 5.0,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        }
+      ]
+    },
+    {
+      "txId": "69956ac1318ead3af372c168",
+      "shares": [
+        {
+          "name": "هوشنگ احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "حسین احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "الیار حسامی",
+          "unitPercent": 5.0,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        }
+      ]
+    },
+    {
+      "txId": "6a48b088a014ebfca04e3d94",
+      "shares": [
+        {
+          "name": "هوشنگ احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "حسین احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "الیار حسامی",
+          "unitPercent": 5.0,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        }
+      ]
+    },
+    {
+      "txId": "6aa50b5f03abef3d26e250d5",
+      "shares": [
+        {
+          "name": "هوشنگ احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "حسین احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "الیار حسامی",
+          "unitPercent": 5.0,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        }
+      ]
+    },
+    {
+      "txId": "6aa507fa03abef3d26e24d85",
+      "shares": [
+        {
+          "name": "هوشنگ احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "حسین احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "الیار حسامی",
+          "unitPercent": 5.0,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        }
+      ]
+    },
+    {
+      "txId": "6ab1529f609ed33e8fe057a7",
+      "shares": [
+        {
+          "name": "هوشنگ احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "حسین احمدی",
+          "unitPercent": 47.5,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        },
+        {
+          "name": "الیار حسامی",
+          "unitPercent": 5.0,
+          "confirmation": "unknown",
+          "role": "shareholder"
+        }
+      ]
+    }
+  ]
+}
