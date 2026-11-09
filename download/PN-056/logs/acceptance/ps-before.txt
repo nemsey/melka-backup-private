@@ -1,0 +1,5 @@
+16963     1     152 bash /home/z/my-project/scripts/prod-watchdog.sh
+16981 16963     151 bash /home/z/my-project/scripts/pn055/hot-mirror.sh
+17072 16963     150 python3 /home/z/my-project/scripts/pn054/socket-master.py
+17080 17072     150 next-server (v16.1.3)
+17179     1     122 bun scripts/runtime/worker.ts

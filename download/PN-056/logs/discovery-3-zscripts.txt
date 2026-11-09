@@ -1,0 +1,194 @@
+===== .zscripts/dev.sh =====
+#!/bin/bash
+
+set -euo pipefail
+
+# 获取脚本所在目录（.zscripts）
+# 使用 $0 获取脚本路径（与 build.sh 保持一致）
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+log_step_start() {
+	local step_name="$1"
+	echo "=========================================="
+	echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $step_name"
+	echo "=========================================="
+	export STEP_START_TIME
+	STEP_START_TIME=$(date +%s)
+}
+
+log_step_end() {
+	local step_name="${1:-Unknown step}"
+	local end_time
+	end_time=$(date +%s)
+	local duration=$((end_time - STEP_START_TIME))
+	echo "=========================================="
+	echo "[$(date '+%Y-%m-%d %H:%M:%S')] Completed: $step_name"
+	echo "[LOG] Step: $step_name | Duration: ${duration}s"
+	echo "=========================================="
+	echo ""
+}
+
+start_mini_services() {
+	local mini_services_dir="$PROJECT_DIR/mini-services"
+	local started_count=0
+
+	log_step_start "Starting mini-services"
+	if [ ! -d "$mini_services_dir" ]; then
+		echo "Mini-services directory not found, skipping..."
+		log_step_end "Starting mini-services"
+		return 0
+	fi
+
+	echo "Found mini-services directory, scanning for sub-services..."
+
+	for service_dir in "$mini_services_dir"/*; do
+		if [ ! -d "$service_dir" ]; then
+			continue
+		fi
+
+		local service_name
+		service_name=$(basename "$service_dir")
+		echo "Checking service: $service_name"
+
+		if [ ! -f "$service_dir/package.json" ]; then
+			echo "[$service_name] No package.json found, skipping..."
+			continue
+		fi
+
+		if ! grep -q '"dev"' "$service_dir/package.json"; then
+			echo "[$service_name] No dev script found, skipping..."
+			continue
+		fi
+
+		echo "Starting $service_name in background..."
+		(
+			cd "$service_dir"
+			echo "[$service_name] Installing dependencies..."
+			bun install
+			echo "[$service_name] Running bun run dev..."
+			exec bun run dev
+		) >"$PROJECT_DIR/.zscripts/mini-service-${service_name}.log" 2>&1 &
+
+		local service_pid=$!
+		echo "[$service_name] Started in background (PID: $service_pid)"
+		echo "[$service_name] Log: $PROJECT_DIR/.zscripts/mini-service-${service_name}.log"
+		disown "$service_pid" 2>/dev/null || true
+		started_count=$((started_count + 1))
+	done
+
+	echo "Mini-services startup completed. Started $started_count service(s)."
+	log_step_end "Starting mini-services"
+}
+
+wait_for_service() {
+	local host="$1"
+	local port="$2"
+	local service_name="$3"
+	local max_attempts="${4:-60}"
+	local attempt=1
+
+	echo "Waiting for $service_name to be ready on $host:$port..."
+
+	while [ "$attempt" -le "$max_attempts" ]; do
+		if curl -s --connect-timeout 2 --max-time 5 "http://$host:$port" >/dev/null 2>&1; then
+			echo "$service_name is ready!"
+			return 0
+		fi
+
+		echo "Attempt $attempt/$max_attempts: $service_name not ready yet, waiting..."
+		sleep 1
+		attempt=$((attempt + 1))
+	done
+
+	echo "ERROR: $service_name failed to start within $max_attempts seconds"
+	return 1
+}
+
+cleanup() {
+	if [ -n "${DEV_PID:-}" ] && kill -0 "$DEV_PID" >/dev/null 2>&1; then
+		echo "Stopping Next.js dev server (PID: $DEV_PID)..."
+		kill "$DEV_PID" >/dev/null 2>&1 || true
+	fi
+}
+
+trap cleanup EXIT INT TERM
+
+cd "$PROJECT_DIR"
+
+if ! command -v bun >/dev/null 2>&1; then
+	echo "ERROR: bun is not installed or not in PATH"
+	exit 1
+fi
+
+log_step_start "bun install"
+echo "[BUN] Installing dependencies..."
+bun install
+log_step_end "bun install"
+
+log_step_start "bun run db:push"
+echo "[BUN] Setting up database..."
+bun run db:push
+log_step_end "bun run db:push"
+
+log_step_start "Starting Next.js dev server"
+echo "[BUN] Starting development server..."
+bun run dev &
+DEV_PID=$!
+log_step_end "Starting Next.js dev server"
+
+log_step_start "Waiting for Next.js dev server"
+wait_for_service "localhost" "3000" "Next.js dev server"
+log_step_end "Waiting for Next.js dev server"
+
+log_step_start "Health check"
+echo "[BUN] Performing health check..."
+curl -fsS localhost:3000 >/dev/null
+echo "[BUN] Health check passed"
+log_step_end "Health check"
+
+start_mini_services
+
+echo "Next.js dev server is running in background (PID: $DEV_PID)."
+echo "Use 'kill $DEV_PID' to stop it."
+disown "$DEV_PID" 2>/dev/null || true
+unset DEV_PID
+
+===== sync-tar.md5 =====
+eb1fd3846b5002b949aa914e45660a04  /home/sync/repo.tar
+
+===== dev-recovery.log =====
+[escrow] RESTORED — منبع: db/.runtime/boot-secrets.json · کلیدهای اعمالی: MELK_TOKEN_KEY, MASTER_ACCESS_CODE, OWNER_PERSONNEL_CODES, MELK_SYNC_MODE, env.platform.json(rebuild) · همهٔ مکان‌ها تازه شد
+[escrow] OK — .env.local کامل؛ 3 مکان تازه‌سازی شد (refresh:db/.runtime/boot-secrets.json · refresh:upload/.runtime/boot-secrets.json · refresh:env.escrow.enc (رمزنگاری‌شدهٔ گیت))
+[escrow] OK — .env.local کامل؛ 3 مکان تازه‌سازی شد (refresh:db/.runtime/boot-secrets.json · refresh:upload/.runtime/boot-secrets.json · refresh:env.escrow.enc (رمزنگاری‌شدهٔ گیت))
+
+===== boot timeline (today) =====
+[BOOT] start.sh entered at 2026-11-09T03:15:52Z uptime=5.91s
+[BOOT] 2026-11-09T03:15:52Z start step="Project initialization check" uptime=5.92s
+[BOOT] 2026-11-09T03:16:17Z end   step="Project initialization check" duration=25s uptime=30.66s
+[BOOT] 2026-11-09T03:16:17Z start step="Extracting official skills to project" uptime=30.66s
+[BOOT] 2026-11-09T03:16:18Z end   step="Extracting official skills to project" duration=1s uptime=31.71s
+[BOOT] 2026-11-09T03:16:18Z start step="Rewriting lockfile registry" uptime=31.71s
+[BOOT] 2026-11-09T03:16:18Z end   step="Rewriting lockfile registry" duration=0s uptime=31.71s
+[BOOT] 2026-11-09T03:16:18Z start step="Setting permissions" uptime=31.72s
+[BOOT] 2026-11-09T03:16:18Z end   step="Setting permissions" duration=0s uptime=31.72s
+[BOOT] 2026-11-09T03:16:18Z start step="Restoring zcode state" uptime=31.72s
+[BOOT] 2026-11-09T03:16:18Z end   step="Restoring zcode state" duration=0s uptime=31.77s
+[BOOT] 2026-11-09T03:16:18Z start step="Loading z user profile" uptime=31.77s
+[BOOT] 2026-11-09T03:16:18Z end   step="Loading z user profile" duration=0s uptime=31.78s
+[BOOT] 2026-11-09T03:16:18Z start step="Git setup" uptime=31.78s
+[BOOT] 2026-11-09T03:16:18Z end   step="Git setup" duration=0s uptime=31.80s
+[BOOT] 2026-11-09T03:16:18Z start step="Z.ai config setup" uptime=31.81s
+[BOOT] 2026-11-09T03:16:18Z end   step="Z.ai config setup" duration=0s uptime=31.81s
+[BOOT] 2026-11-09T03:16:18Z start step="Starting ZAI service" uptime=31.81s
+[BOOT] 2026-11-09T03:16:18Z end   step="Starting ZAI service" duration=0s uptime=31.82s
+[BOOT] 2026-11-09T03:16:18Z start step="custom dev script" uptime=31.83s
+[BOOT] 2026-11-09T03:16:18Z start step="Waiting for ZAI service" uptime=31.83s
+[BOOT] 2026-11-09T03:16:26Z end   step="Waiting for ZAI service" duration=8s uptime=40.14s
+[BOOT] 2026-11-09T03:16:26Z start step="Starting Caddy server" uptime=40.17s
+
+===== SANDBOX_MODE =====
+
+===== git history of .zscripts =====
+4a4ff89 survival snapshot ee68a6c 2026-10-06T04:21:38Z — full tree minus >99MB files (db in survival packages)
+6b4f52a survival snapshot ab9ea31 2026-10-03T21:04:42Z — orphan root: full tree minus >99MB files (db in survival packages)
