@@ -118,6 +118,31 @@ heal_secret OWNER_PERSONNEL_CODES no
 
 echo "[watchdog] $(date '+%F %T') نگهبان سرور آغاز به کار کرد (PID $$)" >> "$LOG"
 
+# ═══ PN-055 — آینهٔ داغ صفر-اتلاف: باب‌سیت دیمن + فرودِ تمیز ═══
+# دیمن هر ۳۰ث اسنپ‌شات سازگار (backup API) می‌سازد؛ هر ~۶۰ث به منطقهٔ پایدار
+# می‌رود (upload/.data/mirror/) — پنجرهٔ اتلاف در پاک‌شدن ریشه ≤ ۶۰ث، در مرگِ
+# فرایندها = ۰ (WAL + نجات نفسِ آخر در رستاخیز). فرودِ تمیز: در توقفِ TERM،
+# یک چرخهٔ نهایی همگام (تا ۶۰ث) — SIGKILL را پوشش نمی‌دهد (صادقانه؛ چرخهٔ
+# ۳۰ثانیه‌ای پوشش‌دهندهٔ اصلی است — همان دکترینِ لایه‌ای PN-050).
+ensure_hot_mirror() {
+  pgrep -f "pn055/hot-mirror.sh" >/dev/null 2>&1 && return 0
+  [ -f /home/z/my-project/scripts/pn055/hot-mirror.sh ] || return 0
+  [ "${MELKA_MIRROR_DISABLED:-0}" = "1" ] && return 0
+  mkdir -p /home/z/my-project/db/.mirror
+  setsid nohup bash /home/z/my-project/scripts/pn055/hot-mirror.sh \
+    </dev/null >>/home/z/my-project/db/.mirror/hot-mirror.log 2>&1 &
+  echo "[hot-mirror] $(date '+%F %T') دیمن آینهٔ داغ spawn شد" >> "$LOG"
+}
+final_hot_mirror() {
+  # فرود تمیز — بهترین-تلاش: یک چرخهٔ نهایی همگام (قفل مشترک با دیمن)
+  if [ -f /home/z/my-project/scripts/pn055/hot-mirror.sh ]; then
+    timeout 60 bash /home/z/my-project/scripts/pn055/hot-mirror.sh --once \
+      >>/home/z/my-project/db/.mirror/hot-mirror.log 2>&1 || true
+  fi
+}
+trap 'final_hot_mirror' EXIT
+ensure_hot_mirror
+
 # ═══ PN-011 اولاً — لنگر تعیینی ریشهٔ مخزن ═══
 # درس زندهٔ دو-مرحله‌ای: خروجی file-tracing خودِ Next کل مخزن (package.json،
 # src/، .git، start.sh و…) را داخل .next/standalone کپی می‌کند؛ تشخیص ریشه از
@@ -125,6 +150,7 @@ echo "[watchdog] $(date '+%F %T') نگهبان سرور آغاز به کار ک�
 export MELKA_REPO_DIR="/home/z/my-project"
 
 while true; do
+  ensure_hot_mirror   # PN-055: دیمن آینه زنده بماند (باب‌سیت در هر دور)
   if [ -f "$STOP_FLAG" ]; then
     echo "[watchdog] $(date '+%F %T') فلگ توقف دیده شد — خروج" >> "$LOG"
     rm -f "$STOP_FLAG"

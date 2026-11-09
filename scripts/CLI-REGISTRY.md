@@ -6,7 +6,7 @@
 > قاعده: پیش از حذف هر اسکریپت، نامش را از این رجیستری حذف نکن مگر ابزارش
 > واقعاً بازنشسته شده باشد.
 
-آخرین بازنگری: ۱۴۰۵/۰۸/۱۷ (PN-054) — تعداد فایل‌های کد زنده در `scripts/`: **۱۱۲** (از ۲۴۲).
+آخرین بازنگری: ۱۴۰۵/۰۸/۱۸ (PN-055) — تعداد فایل‌های کد زنده در `scripts/`: **۱۱۵** (از ۲۴۲).
 
 ---
 
@@ -19,6 +19,9 @@
 | `scripts/start-prod-daemon.py` | double-fork یونیکس → دیمن مقاوم |
 | `scripts/prod-watchdog.sh` | نگهبان: رازها/گیت‌ها/DB → socket-master |
 | `scripts/pn054/socket-master.py` | نگهدار سوکت ۳۰۰۰ + فرزندان node + Blue/Green + مانیتور RAM |
+| `scripts/pn055/hot-mirror.sh` | **PN-055 آینهٔ داغ صفر-اتلاف** — دیمن ۳۰ث: backup API + گارد یکنوایی + پوش پایدار ۶۰ث |
+| `scripts/pn055/mirror_ops.py` | ابزار SQLite آینه: backup/counts/quickcheck/checkpoint/witness |
+| `scripts/pn055/simulate-zero-loss.sh` | شبیه‌سازی صفر-اتلاف (Sandbox — ۱۲ سنجه PASS/FAIL با فایل شاهد)
 | `scripts/pn054/listen-patch.cjs` | preload سرور: listen روی fd ارث‌برده + healthz |
 | `scripts/runtime/worker.ts` | ورودی فرایند Worker (کارهای پس‌زمینه) |
 | `scripts/resurrect-ultimate.sh` (ریشهٔ مخزن) | رستاخیز نهایی: کد از گیت‌هاب + UNION داده از لایه‌های پایدار |

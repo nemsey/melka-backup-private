@@ -126,3 +126,7 @@ backups/backup-*.db-journal
 
 # PN-054: قرنطینه خرابی (۶۱۵MB — فقط دیسک محلی، هرگز گیت)
 db/custom.db.CORRUPT-Q*
+
+# PN-055 — آینهٔ داغ و پرچم مسیر سریع (هرگز وارد گیت نشود)
+db/.mirror/
+.fastpath-failed

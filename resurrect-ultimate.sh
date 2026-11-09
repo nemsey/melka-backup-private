@@ -83,6 +83,15 @@ if [ "${MELKA_RESURRECT_CHILD:-}" != "1" ]; then
   echo "⚠️ [$(date -u +%FT%TZ)] جداسازی ناممکن (نه فایل، نه شبکه) — ادامهٔ درون‌خطی"
 fi
 
+# ─── قانون تک‌نمونه (PN-055 · پاسخ پرسش ۳): هرگز دو رستاخیز موازی ───
+# دو رستاخیز همزمان روی یک DB = هم‌نویسی هم‌زمان (ریشهٔ تاریخی خرابی B-Tree).
+# قفل سطح سیستم‌عامل flock — برنده کار می‌کند، بازنده بی‌صدا خارج می‌شود.
+exec 8>/tmp/melka-resurrect.lock
+if ! flock -n 8; then
+  echo "⏳ [$(date -u +%FT%TZ)] رستاخیز دیگری در حال اجراست — این نمونه خارج شد (تک‌نمونه · PN-055)"
+  exit 0
+fi
+
 cd "$REPO"
 echo "🚀 [$(date -u +%FT%TZ)] شروع رستاخیز نهایی از گیت‌هاب (PN-042)…"
 
@@ -142,6 +151,34 @@ UNION_SCRIPT="$REPO/scripts/pn050/merge_union.py"
 UNION_TIMEOUT_S="${MELKA_UNION_TIMEOUT_S:-240}"
 mkdir -p "$REPO/db" "$REPO/upload/.data"
 
+# ─── ۳-الف) نجات نفسِ آخر (PN-055 · پاسخ پرسش ۱): WAL → DB + اسنپ‌شات نجات ───
+# درس پنجرهٔ اتلاف: آخرین نوشته‌های commit-شده در WAL زنده‌اند؛ پیش از هر کار،
+# یک چک‌پوینت تلاشی + اسنپ‌شات سازگار (backup API خودش WAL را می‌خواند) در
+# لایهٔ پایدار → rescue-*.db. ارزش: بوت‌استرپِ تازه‌ترین حالت (حتی اگر ریشه پاک شود،
+# این فایل روی ossfs زنده است) + شاهد صورتحسابِ لحظهٔ مرگ.
+MIRROR_OPS="$REPO/scripts/pn055/mirror_ops.py"
+MIRROR_HOT="$REPO/upload/.data/mirror/custom-hot.db"
+RESCUE=""
+if is_sqlite "$LIVE" && [ -f "$MIRROR_OPS" ]; then
+  echo "  ⛑️ نجات نفس آخر: چک‌پوینت WAL…"
+  timeout 45 python3 "$MIRROR_OPS" checkpoint "$LIVE" 2>/dev/null \
+    && echo "  ✓ چک‌پوینت نجات کامل شد" \
+    || echo "  ⚠️ چک‌پوینت نجات ناموفق — backup خودش WAL را می‌خواند (ادامه)"
+  RESCUE="$REPO/upload/.data/rolling/rescue-$(date -u +%Y-%m-%dT%H-%M-%S).db"
+  if timeout 150 python3 "$MIRROR_OPS" backup "$LIVE" "${RESCUE}.tmp" 2>/dev/null \
+     && [ -s "${RESCUE}.tmp" ] \
+     && [ "$(python3 "$MIRROR_OPS" quickcheck "${RESCUE}.tmp" 2>/dev/null)" = "ok" ]; then
+    mv -f "${RESCUE}.tmp" "$RESCUE"
+    echo "  ✓ اسنپ‌شات نجات: rescue-$(basename "$RESCUE" | sed 's/rescue-//') ($(rowcount "$RESCUE") آگهی)"
+  else
+    rm -f "${RESCUE}.tmp" 2>/dev/null || true
+    RESCUE=""
+    echo "  ⚠️ اسنپ‌شات نجات ناتمام — skip صادقانه (زندهٔ سالم خودش مبناست)"
+  fi
+  # هرس خودمان: فقط ۲ اسنپ‌شات نجات تازه (Worker فقط live-* را هرس می‌کند)
+  ls -t "$REPO"/upload/.data/rolling/rescue-*.db 2>/dev/null | tail -n +3 | xargs -r rm -f
+fi
+
 # منابع UNION به‌ترتیب اولویت: قلعه (سنک ۵دقیقه‌ای) · جدیدترین چرخشی · تازه‌ترین مقدس · جدیدترین بقا
 R=""
 { R=$(ls -t "$REPO"/upload/.data/rolling/live-*.db 2>/dev/null | head -1 || true); } 2>/dev/null
@@ -181,6 +218,25 @@ union_one() {
 if is_sqlite "$LIVE"; then
   LC=$(rowcount "$LIVE")
   echo "  ✓ دیتابیس زندهٔ سالم ($LC آگهی) — صفر مداخله روی رکوردهای موجود (قانون بقا · PN-050)"
+  # PN-055: اسنپ‌شات نجات زیرمجموعهٔ خود زنده است (همین لحظه از آن ساخته شد) —
+  # UNION با آن صرفاً هزینه است؛ اما آینهٔ داغ ممکن است ردیف‌هایی داشته باشد که
+  # زندهٔ فعلی ندارد (اگر رستاخیز قبلی از لایهٔ کهن‌تر بوت شده بود) → دروازهٔ
+  # شمارش ارزان: فقط اگر آینه «پرتر» است UNION اجرا می‌شود (قانون بقا <۶۰ث).
+  if is_sqlite "$MIRROR_HOT"; then
+    MCOUNT=$(python3 "$MIRROR_OPS" counts "$MIRROR_HOT" 2>/dev/null || echo "-1 -1")
+    MPR=$(echo "$MCOUNT" | awk '{print $1}')
+    MRQ=$(echo "$MCOUNT" | awk '{print $2}')
+    LCNT=$(python3 "$MIRROR_OPS" counts "$LIVE" 2>/dev/null || echo "-1 -1")
+    LPR=$(echo "$LCNT" | awk '{print $1}')
+    LRQ=$(echo "$LCNT" | awk '{print $2}')
+    if [ "$MPR" != "-1" ] && { [ "${MPR:-0}" -gt "${LPR:-0}" ] || [ "${MRQ:-0}" -gt "${LRQ:-0}" ]; }; then
+      union_one "$MIRROR_HOT" "آینهٔ داغ" || true
+    else
+      echo "  ℹ️ آینهٔ داغ پرتر از زنده نیست ($MCOUNT در برابر $LCNT) — skip UNION (صرفه‌جویی زمان)"
+    fi
+  else
+    echo "  ℹ️ آینهٔ داغ ناموجود — skip"
+  fi
   # UNION افزودنی: هر لایه فقط «می‌افزاید» — رکورد موجود هرگز بازنویسی نمی‌شود
   if is_sqlite "$FORT"; then union_one "$FORT" "قلعه" || true; else echo "  ⚠️ قلعه نامعتبر/ناموجود — skip"; fi
   if [ -n "$R" ]; then union_one "$R" "چرخشی" || true; else echo "  ⚠️ چرخشی نامعتبر/ناموجود — skip"; fi
@@ -198,10 +254,14 @@ if ! is_sqlite "$LIVE"; then
     mv -f "$LIVE" "$LIVE.broken-$(date -u +%Y%m%dT%H%M%SZ)" 2>/dev/null || true
   fi
   SRC=""; SRCN=""
-  if is_sqlite "$FORT"; then SRC="$FORT"; SRCN="قلعهٔ پایدار"
-  elif [ -n "$R" ] && is_sqlite "$R"; then SRC="$R"; SRCN="چرخشی"
+  if [ -n "$RESCUE" ] && is_sqlite "$RESCUE" && [ "$(rowcount "$RESCUE")" -gt 0 ]; then SRC="$RESCUE"; SRCN="نجات نفس آخر (تازه‌ترین — شامل WAL لحظهٔ مرگ)"
+  elif is_sqlite "$MIRROR_HOT" && [ "$(rowcount "$MIRROR_HOT")" -gt 0 ]; then SRC="$MIRROR_HOT"; SRCN="آینهٔ داغ"
+  elif is_sqlite "$FORT" && [ "$(rowcount "$FORT")" -gt 0 ]; then SRC="$FORT"; SRCN="قلعهٔ پایدار"
+  elif [ -n "$R" ] && is_sqlite "$R" && [ "$(rowcount "$R")" -gt 0 ]; then SRC="$R"; SRCN="چرخشی"
   elif [ -n "$C" ]; then SRC="$C"; SRCN="مقدس"
   elif [ -n "$S" ]; then SRC="$S"; SRCN="بقا"
+  elif is_sqlite "$FORT"; then SRC="$FORT"; SRCN="قلعهٔ پایدار (تهی — آخرین امید)"
+  elif [ -n "$R" ] && is_sqlite "$R"; then SRC="$R"; SRCN="چرخشی (تهی — آخرین امید)"
   fi
   if [ -n "$SRC" ]; then
     echo "  ⚠️ دیتابیس زنده یافت نشد — بوت‌استرپ از $SRCN…"
@@ -218,6 +278,8 @@ if ! is_sqlite "$LIVE"; then
   fi
   # بوت‌استرپ موفق → UNION با بقیهٔ لایه‌ها (مبنای بوت‌استرپ حذف می‌شود — خودش در live است)
   if is_sqlite "$LIVE" && [ -n "$SRC" ]; then
+    { [ -n "$RESCUE" ] && [ "$SRC" != "$RESCUE" ] && is_sqlite "$RESCUE" && union_one "$RESCUE" "نجات"; } || true
+    { [ "$SRC" != "$MIRROR_HOT" ] && is_sqlite "$MIRROR_HOT" && union_one "$MIRROR_HOT" "آینهٔ داغ"; } || true
     { [ "$SRC" != "$FORT" ] && is_sqlite "$FORT" && union_one "$FORT" "قلعه"; } || true
     { [ -n "$R" ] && [ "$SRC" != "$R" ] && union_one "$R" "چرخشی"; } || true
     { [ -n "$C" ] && [ "$SRC" != "$C" ] && union_one "$C" "مقدس"; } || true
@@ -273,12 +335,41 @@ if [ -f scripts/pn012/escrow-manager.ts ]; then
 fi
 set -a; { [ -f .env.local ] && . ./.env.local; } || true; set +a
 
-# ─── ۵) نصب و بیلد ───
+# ─── ۵) نصب و بیلد — با مسیر سریع PN-055 (قانون بقا: زیر ۶۰ ثانیه) ───
 echo "— نصب وابستگی‌ها و بیلد…"
-bun install
-bunx prisma generate
-bunx prisma db push --accept-data-loss
-bun run build
+# مسیر سریع: اگر بیلدِ موجودِ روی دیسک دقیقاً از HEAD فعلی است (اثر انگشت main
+# و standalone) و قفل‌فایل/اسکیمای حاضر هم با همان بیلد هم‌راستاست، نصب/بیلد رد
+# می‌شود — سناریوی رایجِ ریستِ ساده (کد تغییر نکرده) ~۷۰ ثانیه صرفه‌جویی.
+# هر شکستِ تأیید پس از مسیر سریع → پرچم .fastpath-failed → اجرای بعدی بیلد کامل.
+# MELKA_RESURRECT_FORCE_BUILD=1 → اجبار بیلد کامل (اوراید اضطراری).
+HEAD_SHA_FP=$(git rev-parse --verify HEAD 2>/dev/null || echo "")
+FAST_OK=""
+if [ -z "${MELKA_RESURRECT_FORCE_BUILD:-}" ] && [ ! -f "$REPO/.fastpath-failed" ] \
+   && printf '%s' "$HEAD_SHA_FP" | grep -qE '^[0-9a-f]{40}$' \
+   && [ -s "$REPO/.next/fingerprint.json" ] \
+   && [ -s "$REPO/.next/standalone/.next/fingerprint.json" ] \
+   && [ -f "$REPO/.next/standalone/server.js" ] \
+   && [ -x "$REPO/node_modules/.bin/next" ]; then
+  FP_MAIN=$(jq -r '.gitSha // empty' "$REPO/.next/fingerprint.json" 2>/dev/null || echo "")
+  FP_STAND=$(jq -r '.gitSha // empty' "$REPO/.next/standalone/.next/fingerprint.json" 2>/dev/null || echo "")
+  FP_LOCK=$(jq -r '.lockfileSha256 // empty' "$REPO/.next/fingerprint.json" 2>/dev/null || echo "")
+  FP_SCHEMA=$(jq -r '.schemaSha256 // empty' "$REPO/.next/fingerprint.json" 2>/dev/null || echo "")
+  CUR_LOCK=$(sha256sum "$REPO/bun.lock" 2>/dev/null | awk '{print $1}')
+  CUR_SCHEMA=$(sha256sum "$REPO/prisma/schema.prisma" 2>/dev/null | awk '{print $1}')
+  if [ "$FP_MAIN" = "$HEAD_SHA_FP" ] && [ "$FP_STAND" = "$HEAD_SHA_FP" ] \
+     && [ -n "$CUR_LOCK" ] && [ "$FP_LOCK" = "$CUR_LOCK" ] \
+     && [ -n "$CUR_SCHEMA" ] && [ "$FP_SCHEMA" = "$CUR_SCHEMA" ]; then
+    FAST_OK=1
+  fi
+fi
+if [ -n "$FAST_OK" ]; then
+  echo "  ⚡ مسیر سریع (PN-055): بیلدِ موجود = HEAD $(git rev-parse --short HEAD) + قفل/اسکیما هم‌راستا — نصب/بیلد رد شد"
+else
+  bun install
+  bunx prisma generate
+  bunx prisma db push --accept-data-loss
+  bun run build
+fi
 
 # ─── ۵-ب) G3 — دروازهٔ سخت بیلد=HEAD (DIR-PN048-007 · موج صفر · D-0a) ───
 # درس رویداد ریست ۱۰:۲۱ امروز: درخت قدیمی + بیلد کهنه → سرور کد کهنه سرو می‌کرد.
@@ -290,6 +381,7 @@ BUILD_SHA=$(jq -r '.gitSha // empty' "$REPO/.next/fingerprint.json" 2>/dev/null 
 STANDALONE_BUILD_SHA=$(jq -r '.gitSha // empty' "$REPO/.next/standalone/.next/fingerprint.json" 2>/dev/null || echo "")
 if [ -z "$BUILD_SHA" ] || [ -z "$HEAD_SHA" ] || [ "$HEAD_SHA" != "$BUILD_SHA" ] || [ "$HEAD_SHA" != "$STANDALONE_BUILD_SHA" ]; then
   echo "❌ G3 GATE: بیلد ≠ HEAD — بیلد کهنه سرو/Worker استارت نمی‌شود (drift: HEAD=$HEAD_SHA · main-build=$BUILD_SHA · standalone=$STANDALONE_BUILD_SHA)"
+  touch "$REPO/.fastpath-failed" 2>/dev/null || true
   exit 1
 fi
 echo "  ✓ G3: بیلد = HEAD ($(git rev-parse --short HEAD)) — هم در main هم در standalone"
@@ -351,12 +443,15 @@ for i in $(seq 1 24); do
 done
 if [ -z "$VERSION" ]; then
   echo "❌ RESURRECTION FAILED — سرور پس از ۱۲۰ ثانیه پاسخ نداد. لاگ: server.log"
+  touch "$REPO/.fastpath-failed" 2>/dev/null || true
   exit 1
 fi
 if [ "${VERSION:0:${#EXPECT}}" != "$EXPECT" ]; then
   echo "❌ RESURRECTION FAILED — سرور $VERSION سرو می‌کند ولی HEAD=$EXPECT است (drift)."
+  touch "$REPO/.fastpath-failed" 2>/dev/null || true
   exit 1
 fi
+rm -f "$REPO/.fastpath-failed" 2>/dev/null || true
 trap - EXIT
 T1=$(date +%s)
 ROWCOUNT_FINAL=$(python3 -c "import sqlite3; print(sqlite3.connect('db/custom.db').execute('SELECT COUNT(*) FROM PropertyRecord').fetchone()[0])" 2>/dev/null || echo 0)
@@ -365,5 +460,19 @@ if [ "$ROWCOUNT_FINAL" -lt 1000 ]; then
   exit 1
 fi
 echo "✅ Data verified: $ROWCOUNT_FINAL PropertyRecord"
+
+# ─── PN-055 — شاهد آب‌بالا (قانون لینک): مقایسه با بیشینهٔ شمارش آینه ───
+# فقط هشدار + شاهد (نه توقف): پالایش عمدیِ مالک مشروع است؛ اما هر کاهش باید
+# در لاگ رستاخیز ثبت شود تا در صورتحساب دادهٔ مقدس دیده باشد.
+HW_FILE="$REPO/upload/.data/mirror/HIGHWATER.json"
+if [ -s "$HW_FILE" ]; then
+  HW=$(jq -r '.propertyCount // 0' "$HW_FILE" 2>/dev/null || echo 0)
+  HW_AT=$(jq -r '.updatedAt // "?"' "$HW_FILE" 2>/dev/null || echo "?")
+  if [ "$ROWCOUNT_FINAL" -lt "$HW" ] 2>/dev/null; then
+    echo "  ⚠️ شاهد آب‌بالا: PropertyRecord=$ROWCOUNT_FINAL < بیشینهٔ آینه=$HW ($HW_AT) — ثبت شد (پالایش عمدی؟ بررسی شود)"
+  else
+    echo "  ✓ شاهد آب‌بالا: $ROWCOUNT_FINAL ≥ بیشینهٔ آینه ($HW)"
+  fi
+fi
 echo "✅ RESURRECTION COMPLETE — Version: ${VERSION} — مدت: $((T1-T0)) ثانیه"
 echo "✅ رستاخیز کامل شد. منبع حقیقت: $RAW_URL"
