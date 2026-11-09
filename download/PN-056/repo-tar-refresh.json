@@ -1,12 +1,12 @@
 {
-  "at": "2026-11-09T08:38:44Z",
+  "at": "2026-11-09T11:03:44Z",
   "action": "repo.tar refresh (PN-056 گام ۲-ث)",
   "rootCause": "ریست سخت 07:40 بدون prestop → tar کهنه Nov 8 → قلاب طلایی حذف از درخت",
   "newTar": {
-    "sizeBytes": 2395637760,
-    "entries": 6788,
-    "md5": "85469d660edba93a5ff72a515536c3f7",
-    "dbSnapshotRows": 28665,
+    "sizeBytes": 2436065280,
+    "entries": 6905,
+    "md5": "7cc0fc66bd72d23d4c8fb69963a740db",
+    "dbSnapshotRows": 28668,
     "dbSnapshotMethod": "sqlite3 backup API (سازگار با سرور زنده)"
   },
   "verified": {
