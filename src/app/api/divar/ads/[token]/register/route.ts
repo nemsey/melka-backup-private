@@ -14,6 +14,14 @@
  *   priceEvaluation می‌فرستاد؛ قرارداد واقعی آرم «شناسه‌های خام» است
  *   (کشف باندل + عین crm-transfer). اکنون ثبت از همان مجری اثبات‌شدهٔ
  *   transferListingToCrm می‌گذرد — صفر بدنهٔ دست‌ساز.
+ *
+ * PN-082 (۲۰۲۶-۱۱-۱۰ · گزارش مالک: ثبت آگهی کاشی فایل‌یابی با خطا):
+ *   پنج شکست ۰۰:۴۷–۰۰:۵۴ تهران — توکن دسترسی آرم ۴۸ ساعته از ۱۹:۰۴
+ *   روز قبل منقضی شده بود و زنجیرهٔ تمدید هم مرده بود؛ خطای خام
+ *   («عدم احراز هویت!») تنها پس از پر کردن کل فرم ۵ گامی ظاهر می‌شد.
+ *   ترمیم: پیش‌پرواز نشست آرم در GET (خوانش محلی exp + تمدید خودکار
+ *   در صورت زنده‌بودن زنجیره) + غیرفعال‌سازی ثبت با پیام راهنمای
+ *   اقدام‌پذیر پیش از اتلاف وقت مالک + نگاشت خطای مرگ زنجیره به ۴۱۲.
  */
 
 import { NextRequest } from "next/server";
@@ -31,6 +39,8 @@ import {
 } from "@/lib/listing/types";
 import { transferListingToCrm, execWithArmToken } from "@/lib/listing/crm-transfer";
 import { DIVAR_REAL_ESTATE_CATEGORIES } from "@/lib/divar/config";
+import { ARM_RELOGIN_MESSAGE } from "@/lib/auth/arm-token-exp";
+import { assessArmSession } from "@/lib/auth/arm-session-check";
 
 function categoryFa(value: string): string {
   return DIVAR_REAL_ESTATE_CATEGORIES.find((c) => c.value === value)?.label ?? value;
@@ -123,15 +133,17 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ token: 
   if (!draft.step2_location.address) missing.push("آدرس ملک");
   if (!draft.step3_transaction.inputs["مساحت"]) missing.push("متراژ ملک");
 
+  // PN-082 — پیش‌پرواز نشست آرم: انقضای توکن همین‌جا آشکار/ترمیم می‌شود،
+  // نه در پایان پر کردن فرم ۵ گامی
+  const armSession = await assessArmSession(guard);
+
   return Response.json({
     ok: true,
     draft,
     missing,
     requirements: {
-      armToken: Boolean(guard.armTokens?.accessToken),
-      message: guard.armTokens?.accessToken
-        ? "توکن سامانه آرم موجود است — پس از تکمیل اطلاعات ناقص، ثبت نهایی انجام می‌شود."
-        : "برای ثبت در سامانه آرم باید با «کد پرسنلی + پیامک» وارد شوید (ورود مدیر محلی توکن آرم ندارد).",
+      armToken: armSession.ok,
+      message: armSession.message,
     },
     categoryLabel: categoryFa(ad.category),
     scores: { total: ad.totalScore, bucket: ad.bucket },
@@ -234,14 +246,18 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
     const result = await transferListingToCrm(guard, listing.id, "create", (fn) => execWithArmToken(guard, fn));
     if (!result.ok) {
       await audit("DIVAR_REGISTER_FAIL", guard.personnelCode, `token=${ad.token} ${(result.error ?? "").slice(0, 100)}`).catch(() => undefined);
+      // PN-082 — مرگ زنجیرهٔ نشست آرم: ۴۱۲ + پیام اقدام‌پذیر (ورود مجدد)،
+      // نه خطای خام سامانه («عدم احراز هویت!») که مالک را بی‌راهنما رها می‌کرد
+      const authChainDead = (result.error ?? "").includes(ARM_RELOGIN_MESSAGE.slice(0, 20));
       return Response.json(
         {
           ok: false,
           error: result.error ?? "ثبت در سامانه آرم ناموفق بود.",
           steps: result.steps,
           message: result.error ?? "ثبت در سامانه آرم ناموفق بود.",
+          ...(authChainDead ? { requiresRelogin: true } : {}),
         },
-        { status: (result.error ?? "").includes("کامل نیست") ? 400 : 502 }
+        { status: authChainDead ? 412 : (result.error ?? "").includes("کامل نیست") ? 400 : 502 }
       );
     }
 

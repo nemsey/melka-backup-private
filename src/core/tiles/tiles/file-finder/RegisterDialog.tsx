@@ -185,10 +185,19 @@ export function RegisterDialog({
 
         {draft && (
           <div className="space-y-4">
-            <Alert>
-              <CheckCircle2 className="w-4 h-4 text-primary" aria-hidden />
-              <AlertTitle className="text-xs">{draft.categoryLabel} — امتیاز {Math.round(draft.scores.total)}</AlertTitle>
-              <AlertDescription className="text-xs">{draft.requirements.message}</AlertDescription>
+            {/* PN-082 — هشدار اقدام‌پذیر پیش از پر کردن فرم وقتی نشست آرم مرده/غایب است */}
+            <Alert variant={draft.requirements.armToken ? "default" : "destructive"}>
+              {draft.requirements.armToken ? (
+                <CheckCircle2 className="w-4 h-4 text-primary" aria-hidden />
+              ) : (
+                <ShieldAlert className="w-4 h-4" aria-hidden />
+              )}
+              <AlertTitle className="text-xs">
+                {draft.requirements.armToken
+                  ? `${draft.categoryLabel} — امتیاز {Math.round(draft.scores.total)}`
+                  : "ثبت در سامانه آرم ممکن نیست"}
+              </AlertTitle>
+              <AlertDescription className="text-xs leading-5">{draft.requirements.message}</AlertDescription>
             </Alert>
 
             {/* گام ۱ — اطلاعات مالک */}
