@@ -73,7 +73,7 @@
     },
     {
       "check": "۳-مهر نسخهٔ عقب‌مانده",
-      "ok": true,
+      "ok": false,
       "detail": "marker: '.stale-' یافت نشد"
     },
     {
@@ -83,8 +83,8 @@
     },
     {
       "check": "۴-remote-origin-گیت‌هاب",
-      "ok": false,
-      "detail": "remote origin غایب"
+      "ok": true,
+      "detail": "https://github.com/nemsey/melka-backup-private.git"
     },
     {
       "check": "۵-حضور-در-گیت‌هاب-احرازشده",
@@ -168,7 +168,7 @@
     }
   ],
   "violations": [
-    "۴-remote-origin-گیت‌هاب: remote origin غایب",
+    "۳-مهر نسخهٔ عقب‌مانده: marker: '.stale-' یافت نشد",
     "۵-حضور-در-گیت‌هاب-احرازشده: raw با توکن پاسخ نداد (token-len=0 · body=0 بایت)"
   ],
   "pass": 31,

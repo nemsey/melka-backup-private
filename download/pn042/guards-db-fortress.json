@@ -4,7 +4,7 @@
     {
       "check": "۱-زندهٔ-محلی-موجود",
       "ok": true,
-      "detail": "db/custom.db (400535552 bytes)"
+      "detail": "db/custom.db (401567744 bytes)"
     },
     {
       "check": "۱-زندهٔ-محلی-سرآیند-sqlite",
@@ -19,7 +19,7 @@
     {
       "check": "۲-چرخشی-حداقل-یک-نسخه",
       "ok": true,
-      "detail": "rolling: 5 فایل live-*"
+      "detail": "rolling: 4 فایل live-*"
     },
     {
       "check": "۳-env-مسیر-زندهٔ-محلی",
@@ -84,7 +84,7 @@
     {
       "check": "ت-۱-قلعه-سلامت-کامل",
       "ok": true,
-      "detail": "{\"file\":\"/home/z/my-project/upload/.data/custom.db\",\"exists\":true,\"bytes\":399306752,\"header\":\"ok\",\"integrity\":\"ok\",\"coun"
+      "detail": "{\"file\":\"/home/z/my-project/upload/.data/custom.db\",\"exists\":true,\"bytes\":398733312,\"header\":\"ok\",\"integrity\":\"ok\",\"coun"
     },
     {
       "check": "ت-۲-مانیفست-چرخشی",

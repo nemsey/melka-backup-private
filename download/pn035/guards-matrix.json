@@ -1,8 +1,8 @@
 {
   "guard": "audit-relay-matrix.sh (PN-035 · شورا-ن۰۵۷ · گارد ۴۵)",
-  "guardsPass": 33,
-  "guardsFail": 0,
+  "guardsPass": 29,
+  "guardsFail": 4,
   "guardsTotal": 33,
-  "at": "2026-10-19T05:47:43Z",
+  "at": "2026-11-10T10:44:20Z",
   "phase": "PN-035 (شورا-ن۰۵۷)"
 }
