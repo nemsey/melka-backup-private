@@ -126,11 +126,11 @@ describe("P6530 §۶ — قانون فهرست در همهٔ فهرست‌ها",
     }
   });
 
-  test("۶-۴) روت‌های فهرست: پیش‌فرض و سقف ۲۵٬۰۰۰ (تمام ردیف‌ها — سقف = گارد ایمنی)", async () => {
+  test("۶-۴) روت‌های فهرست: پیش‌فرض و سقف ۴۰٬۰۰۰ (تمام ردیف‌ها — سقف = گارد ایمنی · PN-079)", async () => {
     for (const routeFile of ["arm-catalog/listings", "arm-catalog/requests", "transactions"]) {
       const s = readFileSync(`${SRC}/app/api/crm/${routeFile}/route.ts`, "utf8");
-      expect(s, `${routeFile}: پیش‌فرض ۲۵۰۰۰`).toContain("?? 25000");
-      expect(s, `${routeFile}: سقف ۲۵۰۰۰ (گارد ایمنی)`).toMatch(/,\s*25000\)/);
+      expect(s, `${routeFile}: پیش‌فرض ۴۰۰۰۰`).toContain("?? 40000");
+      expect(s, `${routeFile}: سقف ۴۰۰۰۰ (گارد ایمنی)`).toMatch(/,\s*40000\)/);
     }
   });
 

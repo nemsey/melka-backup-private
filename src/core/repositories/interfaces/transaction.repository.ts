@@ -84,8 +84,15 @@ export interface TransactionRepository {
       rawInfoJson: string | null;
       comisionOfContract: number | null;
       taxOfContract: number | null;
+      /** PN-081 — تماس‌های رفع‌شده از ARM برای کدهای غیرمنطبقه */
+      linkOwnerName: string | null;
+      linkOwnerMobile: string | null;
+      linkRequesterName: string | null;
+      linkRequesterMobile: string | null;
     }>
   >;
+  /** PN-081 — آخرین فعالیت کامل خط‌لولهٔ معاملات (نشانگر توقف) */
+  latestSyncActivityAt(): Promise<Date | null>;
   /** پاک‌سازی کامل (ریست کش CRM) */
   deleteAll(): Promise<void>;
 }

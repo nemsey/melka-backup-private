@@ -33,7 +33,7 @@ function num(v: string | null): number | undefined {
 }
 
 /**
- * ساخت xlsx از ستون‌ها + ردیف‌ها — PN-070: جریانی (stream.xlsx.WorkbookWriter)
+ * ساخت xlsx از ستون‌ها + ردیف‌ها — PN-079: جریانی (stream.xlsx.WorkbookWriter)
  * ------------------------------------------------------------------
  * ریشهٔ حادثه: نسخهٔ پیشین Workbook درون‌حافظه‌ای برای ۲۶٬۱۶۰ ردیف × ۳۳ ستون
  * بیش از ۱٫۷GB RAM خورد و کرنل پروسهٔ سرور را OOM-kill کرد (جعبهٔ ۴GB) —
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
           rentalType: sp.get("rentalType") === "rental" ? "rental" : sp.get("rentalType") === "sale" ? "sale" : undefined,
           registrarNameNorm: exportRegistrar,
         },
-        25000
+        40000
       );
       const branchOf = await branchResolver();
 
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       const areaName = normalizeFilterInput(sp.get("areaName")) || undefined;
       const { rows } = await repo.listArmCatalog(
         { tenantId, code, realtorName, customerName, areaName, priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")), registrarNameNorm: exportRegistrar },
-        25000
+        40000
       );
       const branchOf = await branchResolver();
 
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       filename = `melka-requests-${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else if (entity === "transactions") {
       const repo = getTransactionRepository();
-      const rows = (await repo.listWithSummary({ filter: { tenantId }, limit: 25000 })) as unknown as {
+      const rows = (await repo.listWithSummary({ filter: { tenantId }, limit: 40000 })) as unknown as {
         rows: Array<Record<string, unknown>>;
       };
       const txRows = (rows?.rows ?? []) as Array<Record<string, unknown>>;

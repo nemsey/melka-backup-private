@@ -107,7 +107,9 @@ export async function getCoverageReport(): Promise<CoverageReport> {
   const m1Total = await db.propertyRecord.count();
   const pmBranchRows = await db.expertProfile.findMany({ where: { branchTitle: { not: null } }, select: { fullName: true, branchTitle: true } });
   const pmBranchSet = new Set(pmBranchRows.map((r) => r.fullName));
-  const m1RealtorNames = await db.propertyRecord.findMany({ select: { ownerName: true }, take: 25000 });
+  // PN-079 — take ۲۵٬۰۰۰ → ۴۰٬۰۰۰: پوشش ستون شعبه از نمونهٔ سقف‌خور محاسبه می‌شد
+  // در حالی که مخرج (m1Total) شمارش حقیقی بود ← درصد ناهم‌خوان.
+  const m1RealtorNames = await db.propertyRecord.findMany({ select: { ownerName: true }, take: 40000 });
   const m1Filled: Record<string, number> = {};
   for (const c of M1_COLUMNS) {
     if (c.key === "__branch") {
@@ -118,7 +120,8 @@ export async function getCoverageReport(): Promise<CoverageReport> {
   }
   /* ── M2: درخواست‌ها ── */
   const m2Total = await db.requestRecord.count();
-  const m2ActorNames = await db.requestRecord.findMany({ select: { actorName: true }, take: 25000 });
+  // PN-079 — عین M1: نمونهٔ شعبه هم‌عرن سقف تازه (۴۰٬۰۰۰)
+  const m2ActorNames = await db.requestRecord.findMany({ select: { actorName: true }, take: 40000 });
   const m2Filled: Record<string, number> = {};
   for (const c of M2_COLUMNS) {
     if (c.key === "__branch") {

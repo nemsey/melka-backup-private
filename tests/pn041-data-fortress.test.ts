@@ -126,7 +126,8 @@ describe("PN-041/A — runRollingBackup", () => {
       const rolling = jobs.find((j) => j.id === WORKER_JOB_IDS.rollingBackup);
       expect(rolling).toBeDefined();
       expect(rolling!.intervalMs).toBe(5 * 60_000);
-      expect(rolling!.firstRunDelayMs).toBeLessThanOrEqual(30_000);
+      // PN-053 (استگر CPU): اولین اجرای چرخشی ۶۰s پس از بوت — سقف آزمون ۹۰s
+      expect(rolling!.firstRunDelayMs).toBeLessThanOrEqual(90_000);
     } finally {
       await db.$disconnect();
     }

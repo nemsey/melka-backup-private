@@ -46,6 +46,7 @@ export async function ensureDurabilityPragmas(client: PrismaClient, dbPath?: str
   let journalMode = 'unknown'
   if (wanted) {
     try {
+      // ENGINE: sqlite-only — پراگمای ژورنال، خاص SQLite (دکترین WAL محلی/FUSE=DELETE · PN-041-R)
       const rows = (await client.$queryRawUnsafe(`PRAGMA journal_mode=${wanted};`)) as Array<{ journal_mode?: string }>
       journalMode = String(rows?.[0]?.journal_mode ?? wanted).toLowerCase()
     } catch {
@@ -59,10 +60,11 @@ export async function ensureDurabilityPragmas(client: PrismaClient, dbPath?: str
   // و چون درایور گاهی ردیفِ خودِ SET را خالی برمی‌گرداند، مقدار با «خواندنِ بازگشتی»
   // جداگانه شاهد می‌شود (honest witness — هر عدد = شاهد + مخرج).
   try {
-    await client.$queryRawUnsafe('PRAGMA synchronous=FULL;')
-    await client.$queryRawUnsafe('PRAGMA wal_autocheckpoint=100;')
-    const syncRows = (await client.$queryRawUnsafe('PRAGMA synchronous;')) as Array<{ synchronous?: number | string }>
-    const walRows = (await client.$queryRawUnsafe('PRAGMA wal_autocheckpoint;')) as Array<{ wal_autocheckpoint?: number | string }>
+    // ENGINE: sqlite-only — پراگماهای دوام، خاص SQLite (synchronous/wal_autocheckpoint)
+    await client.$queryRawUnsafe('PRAGMA synchronous=FULL;') // ENGINE: sqlite-only
+    await client.$queryRawUnsafe('PRAGMA wal_autocheckpoint=100;') // ENGINE: sqlite-only
+    const syncRows = (await client.$queryRawUnsafe('PRAGMA synchronous;')) as Array<{ synchronous?: number | string }> // ENGINE: sqlite-only
+    const walRows = (await client.$queryRawUnsafe('PRAGMA wal_autocheckpoint;')) as Array<{ wal_autocheckpoint?: number | string }> // ENGINE: sqlite-only
     return {
       journalMode,
       synchronous: syncRows?.[0]?.synchronous,
@@ -81,6 +83,7 @@ export async function ensureDurabilityPragmas(client: PrismaClient, dbPath?: str
  */
 export async function checkpointWal(client: PrismaClient): Promise<{ busy: number; log: number; checkpointed: number } | null> {
   try {
+    // ENGINE: sqlite-only — checkpoint قفل WAL، خاص SQLite
     const rows = (await client.$queryRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE);')) as Array<{
       busy?: number
       log?: number

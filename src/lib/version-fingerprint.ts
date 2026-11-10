@@ -209,10 +209,21 @@ export function bakedFingerprintPath(): string {
 }
 
 export function readBakedFingerprint(): VersionFingerprint | null {
-  try {
-    return JSON.parse(readFileSync(bakedFingerprintPath(), "utf-8")) as VersionFingerprint;
-  } catch { return null; }
+  // PN-054 (درس حادثهٔ ۱۲:۰۶ ۲۰۲۶-۱۱-۰۸): اثر انگشت باید توصیفِ «فرایندِ در حال
+  // اجرا» باشد، نه فایلِ روی دیسک در لحظهٔ درخواست. خواندن هر-درخواستی باعث
+  // می‌شد سرورِ کهنه، پس از یک rebuild هم‌زمان، نسخهٔ تازه را «گزارش» کند —
+  // drift پنهان می‌شد و تأیید head-guard کاذباً VERIFIED می‌شد (سرور کهنه +
+  // چانک‌های حذف‌شده = کرش کلاینت). کش در نخستین بارگذاریٔ ماژول = عمر فرایند.
+  if (!_bakedFingerprintLoaded) {
+    _bakedFingerprintLoaded = true;
+    try {
+      _bakedFingerprint = JSON.parse(readFileSync(bakedFingerprintPath(), "utf-8")) as VersionFingerprint;
+    } catch { _bakedFingerprint = null; }
+  }
+  return _bakedFingerprint;
 }
+let _bakedFingerprint: VersionFingerprint | null = null;
+let _bakedFingerprintLoaded = false;
 
 /**
  * اثر انگشتی سرو‌شده — ترجیح: پخته‌شده (baked). نبود: محاسبهٔ زنده (صادقانه).

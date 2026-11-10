@@ -109,6 +109,12 @@ export interface TxInfoLookup {
   rawInfoJson?: string | null;
   comisionOfContract?: number | null;
   taxOfContract?: number | null;
+  /** PN-081 — تماس مالک رفع‌شده از ARM (properties/owner) برای کد ملک خارج از رجیستری آگهی */
+  linkOwnerName?: string | null;
+  linkOwnerMobile?: string | null;
+  /** PN-081 — تماس درخواست‌دهندهٔ رفع‌شده از ARM (requests/applicant) برای کد درخواست خارج از رجیستری */
+  linkRequesterName?: string | null;
+  linkRequesterMobile?: string | null;
 }
 
 /** P6.5-12 — کارگزاری مرتبط با ملک معامله (special-properties سامانه ARM) */
@@ -595,18 +601,26 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
     const infoSellerMobile = info?.sellerMobile?.trim() || null;
     const infoBuyerName = info?.buyerName?.trim() || null;
     const infoBuyerMobile = info?.buyerMobile?.trim() || null;
+    // PN-081 — تماس‌های رفع‌شده از ARM برای کدهای غیرمنطبقه (عین مبدأ؛ نه رجیستری)
+    const infoLinkOwnerName = info?.linkOwnerName?.trim() || null;
+    const infoLinkOwnerMobile = info?.linkOwnerMobile?.trim() || null;
+    const infoLinkRequesterName = info?.linkRequesterName?.trim() || null;
+    const infoLinkRequesterMobile = info?.linkRequesterMobile?.trim() || null;
 
     // P6.5-12 — نام واقعی مالک: فیلد propertyCustomer خود گزارش فقط «برچسب نقش» است
     // (فروشنده/موجر — شاهد داده: ۷۲۷/۷۲۷ = فروشنده)؛ اولویت: رجیستری آگهی‌ها >
-    // فروشندهٔ صورت‌وضعیت خود معامله (P6.5-14) > طرف فروشندهٔ قرارداد > برچسب نقش
+    // تماس رفع‌شده از ARM (PN-081) > فروشندهٔ صورت‌وضعیت خود معامله (P6.5-14) >
+    // طرف فروشندهٔ قرارداد > برچسب نقش
     const ownerName =
       owner?.ownerName?.trim() ||
+      infoLinkOwnerName ||
       infoSellerName ||
       (tx.propertyCode ? sellerNameByProperty.get(tx.propertyCode)?.trim() ?? null : null) ||
       tx.propertyCustomer?.trim() ||
       null;
     const ownerMobile =
       owner?.ownerMobile?.trim() ||
+      infoLinkOwnerMobile ||
       infoSellerMobile ||
       (tx.propertyCode ? sellerMobileByProperty.get(tx.propertyCode) ?? null : null);
 
@@ -622,16 +636,18 @@ export function enrichTransactionRows<R extends TxSourceRow>(rows: R[], ctx: Enr
       owner?.ownerMobile?.trim() ||
       null;
 
-    // P6.5-12 — نام واقعی درخواست‌دهنده: اولویت: کاتالوگ درخواست‌ها > خریدار صورت‌وضعیت
-    // خود معامله (P6.5-14) > طرف خریدار قرارداد > برچسب نقش
+    // P6.5-12 — نام واقعی درخواست‌دهنده: اولویت: کاتالوگ درخواست‌ها > تماس رفع‌شده از
+    // ARM (PN-081) > خریدار صورت‌وضعیت خود معامله (P6.5-14) > طرف خریدار قرارداد > برچسب نقش
     const requesterName =
       requester?.customerName?.trim() ||
+      infoLinkRequesterName ||
       infoBuyerName ||
       (tx.requestCode ? buyerNameByRequest.get(tx.requestCode) ?? null : null) ||
       tx.requestCustomer?.trim() ||
       null;
     const requesterMobile =
       requester?.customerMobile?.trim() ||
+      infoLinkRequesterMobile ||
       infoBuyerMobile ||
       (tx.requestCode ? buyerMobileByRequest.get(tx.requestCode) ?? null : null);
 

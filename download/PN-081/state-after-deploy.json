@@ -1,0 +1,14 @@
+{
+ "total_tx": 833,
+ "enrichments": 832,
+ "with_shares": 751,
+ "empty_shares": 81,
+ "tx_propertyCode_matched": 364,
+ "tx_propertyCode_unmatched": 469,
+ "tx_requestCode_matched": 295,
+ "tx_requestCode_unmatched": 538,
+ "link_columns_present": true,
+ "link_pending_backfill": 590,
+ "last_record_sync": "1794256637200",
+ "last_enrich_sync": "1794224483021"
+}

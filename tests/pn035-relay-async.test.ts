@@ -148,10 +148,14 @@ describe("PN-036 · K) اسکریپت نسل K — رفع jq ARG_MAX + batch س�
     expect(script).toContain("if [ $CURL_EXIT -eq 28 ]; then");
   });
 
-  test("K-4) Express lane — آیتم‌های OTP جدا از فهرست‌های سنگین و مقدم", () => {
-    expect(script).toContain('contains("/authentication/otp")');
+  test("K-4) Express lane — آیتم‌های OTP «و ثبت آگهی» جدا از فهرست‌های سنگین و مقدم (PN-080)", () => {
+    // PN-080 (حکم مالک ۲۰۲۶-۱۱-۱۰): خانوادهٔ ثبت آگهی هم‌ردیف OTP در خط ویژه —
+    // test() جایگزین contains() تا هر چهار مسیر با یک الگو پوشش داده شوند.
+    expect(script).toContain('test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number")');
     expect(script).toContain('run_batch_set "$EXPRESS_JSON" "express"');
     expect(script).toContain('run_batch_set "$NORMAL_JSON" "normal"');
+    expect(script).toContain("is_registration");
+    expect(script).toContain('log "Express lane: $EXPRESS_N آیتم تعاملی (OTP/ثبت آگهی) — پیش از فهرست‌ها اجرا می‌شود"');
   });
 
   test("K-5) لاگ زمان هر آیتم — روش + مسیر بدون کوئری + کد + مدت (فاز ۴.۱)", () => {

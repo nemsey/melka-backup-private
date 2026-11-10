@@ -28,6 +28,7 @@ import { requireTileAccessFor } from "@/lib/access/personnel-access";
 import { ownerLoginPath, resolveEntityAccess, catalogUserScope } from "@/lib/access/scope";
 import { witnessScopedRead } from "@/lib/audit";
 import { getRequestRepository, getIntegrationRepository, getExpertRepository } from "@/core/repositories";
+import type { ArmRequestCatalogFilter } from "@/core/repositories";
 import { enrichArmRequests } from "@/lib/melk-api/arm-catalog";
 import { execWithArmToken } from "@/lib/listing/crm-transfer";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانه (رفع باگ تاریخی ۴/۵ در این روت)
@@ -109,7 +110,8 @@ export async function GET(request: NextRequest) {
     const statusesExcluded = statusesIncludesOther
       ? allFiveRaws.filter((v) => !(statuses ?? []).includes(v))
       : undefined;
-    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
+    // PN-079 — ارتقای سقف ۲۵٬۰۰۰ → ۴۰٬۰۰۰ (عین listings) + آمار کل از countArmCatalog
+    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 40000, 1), 40000);
     // ===================== PN-002 گام ۲ — فیلتر ستون‌های تازه (تمام ستون‌ها) =====================
     const lineName = normalizeFilterInput(sp.get("lineName")) || undefined;
     const sanad = normalizeFilterInput(sp.get("sanad")) || undefined;
@@ -147,21 +149,21 @@ export async function GET(request: NextRequest) {
     const access = resolveEntityAccess(guard, "arm-request");
     // PN-049/گام ۲-الف — قانون حساب کاربری: مالک همه؛ کاربر فقط رکوردهای خودش
     const catalogScope = catalogUserScope(guard);
-    const { rows, total } = await repo.listArmCatalog(
-      {
-        tenantId,
-        code, realtorName, customerName, areaName, priceFrom, priceTo, tradeTypes, statuses, statusesIncludesOther, statusesExcluded, dateFrom, dateTo,
-        // PN-002 گام ۲ — ستون‌های تازه
-        lineName, sanad, constructType, side,
-        spaceFrom, spaceTo, roomsFrom, roomsTo, floorFrom, floorTo, buildYearFrom, buildYearTo,
-        urgentOnly, luxuryOnly, occasionOnly,
-        propertyTypes: propertyTypes.length > 0 ? propertyTypes : undefined,
-        buildingTypes: buildingTypes.length > 0 ? buildingTypes : undefined,
-        // PN-049 — دامنهٔ حساب کاربری (مالک: undefined = صفر فیلتر)
-        registrarNameNorm: catalogScope.kind === "OWN" ? catalogScope.nameNorm : undefined,
-      },
-      limit
-    );
+    const catalogFilter: ArmRequestCatalogFilter = {
+      tenantId,
+      code, realtorName, customerName, areaName, priceFrom, priceTo, tradeTypes, statuses, statusesIncludesOther, statusesExcluded, dateFrom, dateTo,
+      // PN-002 گام ۲ — ستون‌های تازه
+      lineName, sanad, constructType, side,
+      spaceFrom, spaceTo, roomsFrom, roomsTo, floorFrom, floorTo, buildYearFrom, buildYearTo,
+      urgentOnly, luxuryOnly, occasionOnly,
+      propertyTypes: propertyTypes.length > 0 ? propertyTypes : undefined,
+      buildingTypes: buildingTypes.length > 0 ? buildingTypes : undefined,
+      // PN-049 — دامنهٔ حساب کاربری (مالک: undefined = صفر فیلتر)
+      registrarNameNorm: catalogScope.kind === "OWN" ? catalogScope.nameNorm : undefined,
+    };
+    const { rows, total } = await repo.listArmCatalog(catalogFilter, limit);
+    // PN-079 — شمارش حقیقی با همان فیلترهای SQL (بدون سقف ردیف) برای KPI «کل درخواست‌های ملک تبریز»
+    const trueTotal = await repo.countArmCatalog(catalogFilter);
 
     // ---- P6530/گام ۲ + P6547/گام دوم — شعبهٔ کارشناس هر ردیف (زنجیرهٔ تفکیک: PM ← مالک ← کسب‌وکار) ----
     const [ownerMap, experts, pmBranchMap] = await Promise.all([
@@ -207,7 +209,8 @@ export async function GET(request: NextRequest) {
       {
         ok: true,
         rows: filtered,
-        total: filtered.length,
+        total: trueTotal,
+        rowsTotal: filtered.length,
         limit,
         enrichment: counts,
         statusCounts,

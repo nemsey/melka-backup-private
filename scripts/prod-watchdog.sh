@@ -118,6 +118,31 @@ heal_secret OWNER_PERSONNEL_CODES no
 
 echo "[watchdog] $(date '+%F %T') نگهبان سرور آغاز به کار کرد (PID $$)" >> "$LOG"
 
+# ═══ PN-055 — آینهٔ داغ صفر-اتلاف: باب‌سیت دیمن + فرودِ تمیز ═══
+# دیمن هر ۳۰ث اسنپ‌شات سازگار (backup API) می‌سازد؛ هر ~۶۰ث به منطقهٔ پایدار
+# می‌رود (upload/.data/mirror/) — پنجرهٔ اتلاف در پاک‌شدن ریشه ≤ ۶۰ث، در مرگِ
+# فرایندها = ۰ (WAL + نجات نفسِ آخر در رستاخیز). فرودِ تمیز: در توقفِ TERM،
+# یک چرخهٔ نهایی همگام (تا ۶۰ث) — SIGKILL را پوشش نمی‌دهد (صادقانه؛ چرخهٔ
+# ۳۰ثانیه‌ای پوشش‌دهندهٔ اصلی است — همان دکترینِ لایه‌ای PN-050).
+ensure_hot_mirror() {
+  pgrep -f "pn055/hot-mirror.sh" >/dev/null 2>&1 && return 0
+  [ -f /home/z/my-project/scripts/pn055/hot-mirror.sh ] || return 0
+  [ "${MELKA_MIRROR_DISABLED:-0}" = "1" ] && return 0
+  mkdir -p /home/z/my-project/db/.mirror
+  setsid nohup bash /home/z/my-project/scripts/pn055/hot-mirror.sh \
+    </dev/null >>/home/z/my-project/db/.mirror/hot-mirror.log 2>&1 &
+  echo "[hot-mirror] $(date '+%F %T') دیمن آینهٔ داغ spawn شد" >> "$LOG"
+}
+final_hot_mirror() {
+  # فرود تمیز — بهترین-تلاش: یک چرخهٔ نهایی همگام (قفل مشترک با دیمن)
+  if [ -f /home/z/my-project/scripts/pn055/hot-mirror.sh ]; then
+    timeout 60 bash /home/z/my-project/scripts/pn055/hot-mirror.sh --once \
+      >>/home/z/my-project/db/.mirror/hot-mirror.log 2>&1 || true
+  fi
+}
+trap 'final_hot_mirror' EXIT
+ensure_hot_mirror
+
 # ═══ PN-011 اولاً — لنگر تعیینی ریشهٔ مخزن ═══
 # درس زندهٔ دو-مرحله‌ای: خروجی file-tracing خودِ Next کل مخزن (package.json،
 # src/، .git، start.sh و…) را داخل .next/standalone کپی می‌کند؛ تشخیص ریشه از
@@ -125,6 +150,7 @@ echo "[watchdog] $(date '+%F %T') نگهبان سرور آغاز به کار ک�
 export MELKA_REPO_DIR="/home/z/my-project"
 
 while true; do
+  ensure_hot_mirror   # PN-055: دیمن آینه زنده بماند (باب‌سیت در هر دور)
   if [ -f "$STOP_FLAG" ]; then
     echo "[watchdog] $(date '+%F %T') فلگ توقف دیده شد — خروج" >> "$LOG"
     rm -f "$STOP_FLAG"
@@ -167,7 +193,8 @@ while true; do
         --root /home/z/my-project \
         --witness /home/z/my-project/upload/.runtime/chunk-audit.json --quiet >> "$LOG" 2>&1; then
       echo "[chunk-guard] $(date '+%F %T') بیلد ناقص (خطر chunk 404) — بازسازی می‌کنم" >> "$LOG"
-      (cd /home/z/my-project && bun run build) >> "$LOG" 2>&1
+      # PN-053: nice — rebuild هرگز با سرویس‌دهی سرور رقابت CPU نکند
+      (cd /home/z/my-project && nice -n 19 bun run build) >> "$LOG" 2>&1
       if ! bash /home/z/my-project/scripts/audit-chunk-integrity.sh \
           --root /home/z/my-project \
           --witness /home/z/my-project/upload/.runtime/chunk-audit.json >> "$LOG" 2>&1; then
@@ -187,7 +214,8 @@ while true; do
   if [ -x /home/z/my-project/scripts/pn048/build-head-gate.sh ]; then
     if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
       echo "[G3-gate] $(date '+%F %T') بیلد ≠ HEAD — بازسازی خوددرمانی آغاز" >> "$LOG"
-      (cd /home/z/my-project && bun run build) >> "$LOG" 2>&1
+      # PN-053: nice — rebuild پس‌زمینه با اولویت پایین CPU
+      (cd /home/z/my-project && nice -n 19 bun run build) >> "$LOG" 2>&1
       if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
         echo "[G3-gate] $(date '+%F %T') CRITICAL: بازسازی هم ناهمخوان — سرور بالا می‌آید اما کد کهنه است (رستاخیز رسمی لازم)" >> "$LOG"
       else
@@ -217,11 +245,24 @@ while true; do
   # PN-008/PN-041: حالت ژورنال مناسبِ مسیر پیش از اسپاون — ایدمپوتنت
   # (قلعه روی fuse/ossfs → DELETE · دیسک محلی → WAL — درس شکست WAL روی FUSE ۰۹:۰۱)
   DATABASE_URL="$LIVE_DB_URL" bun /home/z/my-project/scripts/pn008/ensure-wal.ts >/dev/null 2>&1 || true
-  PORT=3000 HOSTNAME=0.0.0.0 NODE_ENV=production \
-    DATABASE_URL="$LIVE_DB_URL" \
-    MELKA_REPO_DIR="/home/z/my-project" \
-    bun /home/z/my-project/.next/standalone/server.js >> "$LOG" 2>&1
+
+  # ═══ PN-054 (دستور ۱): ری‌استارت بدون قطعی — معماری socket-master ═══
+  # سوکت ۳۰۰۰ یک‌بار bind می‌شود و در socket-master می‌ماند؛ فرزندان سرور
+  # (node) روی fd ارث‌برده گوش می‌دهند (همان تکنیک PM2-cluster):
+  #   • کرش سرور → ری‌اسپاون با همان fd پس از ۱ ثانیه (خواب ۵→۱ ثانیه؛
+  #     صف backlog=511 هسته در وقفه اتصال‌های تازه را نگه می‌دارد → مشتری
+  #     فقط تأخیر می‌بیند، نه خطا).
+  #   • دیپلوی → scripts/pn054/deploy-zero-dt.sh (Blue/Green: سبز کنار آبی
+  #     بالا می‌آید → health → SIGTERM آبی → drain درخواست‌های در حال پرواز).
+  #   • دستور ۳ (ترمیم۴): سقف heap سرور = --max-old-space-size=768 (داخل socket-master؛
+  #     ۳۸۴→۷۶۸ پس از کرش‌لوپ OOM کاتالوگ درخواست‌ها ۲۰۲۶-۱۱-۰۹)
+  #     + مانیتور RAM هر ۵ دقیقه با هشدار در ۵۰۰MB.
+  # خروج socket-master (مثلاً EADDRINUSE گذرا) → همین حلقه پس از ۱ ثانیه
+  # دوباره تلاش می‌کند (گیت‌های بالا دوباره اجرا می‌شوند).
+  export DATABASE_URL="$LIVE_DB_URL"
+  export MELKA_REPO_DIR="/home/z/my-project"
+  python3 /home/z/my-project/scripts/pn054/socket-master.py >> "$LOG" 2>&1
   CODE=$?
-  echo "[watchdog] $(date '+%F %T') سرور با کد $CODE متوقف شد — ری‌استارت پس از ۵ ثانیه" >> "$LOG"
-  sleep 5
+  echo "[watchdog] $(date '+%F %T') socket-master با کد $CODE متوقف شد — تلاش مجدد پس از ۱ ثانیه" >> "$LOG"
+  sleep 1
 done

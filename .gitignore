@@ -122,3 +122,11 @@ db/custom.db.broken-*
 # PN-050 — بکاپ گرم محلی (۹۲۵MB) هرگز داخل گیت نمی‌رود (آینه سقف ۹۹MB)
 db/custom.db.pn050-pre-migration*
 backups/backup-*.db-journal
+.zscripts/tarstage/
+
+# PN-054: قرنطینه خرابی (۶۱۵MB — فقط دیسک محلی، هرگز گیت)
+db/custom.db.CORRUPT-Q*
+
+# PN-055 — آینهٔ داغ و پرچم مسیر سریع (هرگز وارد گیت نشود)
+db/.mirror/
+.fastpath-failed

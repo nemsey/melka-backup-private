@@ -38,6 +38,12 @@ restore_park() {
     if [ -e "$PARK/$key" ]; then
       mkdir -p "$(dirname "$orig")"
       rm -rf "$orig"            # نویسنده‌ها متوقف‌اند — نسخهٔ جامانده/کپیِ تکراری نیست
+      # PN-077-الف: اگر حذف مقصد شکست خورد (مثل FUSE «Directory not empty»)،
+      # هرگز mv نکن — وگرنه منبع داخل مقصد تودرتو می‌شود (حادثهٔ rolling ساعت ۰۵:۵۵).
+      if [ -e "$orig" ]; then
+        echo "[parking] هشدار: مقصد حذف‌نشده — $orig (تودرتویی متوقف؛ مانده در پارک)"
+        continue
+      fi
       mv -f "$PARK/$key" "$orig"
     fi
   done < "$PARK/manifest"
@@ -46,6 +52,16 @@ restore_park() {
 
 park_one() { # $1 = مسیر (فایل یا پوشه) — همیشه mv=rename، هرگز کپی
   [ -e "$1" ] || return 0
+  # PN-077-ب: upload روی ماونت جدا (ossfs) سوار است — mv بین‌دستگاهی = کپیِ آرام
+  # که حین بیلد ۱.۷GB+ دیسک ریشه می‌بلعد (ریشهٔ ENOSPC زنجیرهٔ ۲۰۲۶-۱۱-۰۸ ۰۶:۰۹).
+  # دادهٔ upload از تراسر مستثناست (next.config: ./upload/.data/** و…) — پارکش زائد است.
+  local src_dev park_dev
+  src_dev="$(stat -c %d "$1" 2>/dev/null || echo '?')"
+  park_dev="$(stat -c %d "$PARK" 2>/dev/null || echo '??')"
+  if [ "$src_dev" != "$park_dev" ]; then
+    echo "[parking] ردِ بین‌دستگاهی (ماونت جدا — پارک = کپی): $1"
+    return 0
+  fi
   local key
   key="$(printf '%s' "$1" | sed 's|/|__|g')"
   rm -rf "$PARK/$key"          # باگ v1: مقصد موجود = کپیِ آرام — پاک و rename
@@ -67,6 +83,7 @@ PARK_PATHS=(
   "upload/.mirror"
   "upload/dataset-backups"
   "backups"
+  "download"
   "upload/.data/corruption-incident-pn070"
   "upload/.data/corruption-incident-pn069"
 )

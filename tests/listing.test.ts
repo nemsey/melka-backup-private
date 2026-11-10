@@ -30,7 +30,7 @@ const completeInput = {
   address: "خیابان امام، کوچه ۳، پلاک ۷",
   postalCode: "۵۱۳۳۶۷۵۱۳۴",
   tradeTypeId: "614ed62da50555f0a54c1eca",
-  buildingTypeId: "614edc35a50555f0a54c1f1e",
+  buildingTypeId: "614edc35a50555f0a54c1f12", // PN-080 — شناسهٔ زندهٔ «مسکونی» (مهاجرت آرم)
   propertyTypeId: "614ee704a50555f0a54c227d",
   changeWith: ["notChangeable"],
   inputs: { مساحت: "۱۲۰", اتاق: "۲" },
@@ -196,7 +196,7 @@ describe("ساخت بدنه ثبت آرم (سریال‌سازی عین خود �
       address: "آدرس",
       tradeTypeId: "614ed62da50555f0a54c1eca",
       propertyTypeId: "614ee704a50555f0a54c227d",
-      buildingTypeId: "614edc35a50555f0a54c1f1e",
+      buildingTypeId: "614edc35a50555f0a54c1f12",
       changeWith: ["notChangeable"],
       inputs: { مساحت: "120" },
       images: ["https://img/1.jpg"],

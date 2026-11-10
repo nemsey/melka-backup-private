@@ -436,15 +436,22 @@ export async function execWithArmToken<T>(
   } catch (err) {
     const e = err as MelkApiError;
     if ((e.code === "UNAUTHORIZED" || e.code === "OTP_INVALID") && guard.armTokens.refreshToken) {
-      const { getMelkProvider } = await import("@/lib/melk-api/provider");
-      const refreshed = await getMelkProvider().refreshArmToken(guard.armTokens.refreshToken);
-      // P6.5-11 (بند ث): توکن تمدیدشده هم در نشست و هم در صندوقچهٔ ماندگار —
-      // زنجیرهٔ «اتصال ماندگار» در تمدیدها هرگز نمی‌شکند
-      const { vaultKeyForSession } = await import("@/lib/auth/arm-vault");
-      await updateSessionArmTokens(guard.sessionId, refreshed, {
-        ownerKey: vaultKeyForSession(guard.personnelCode, guard.role),
-      });
-      return fn(refreshed.accessToken);
+      try {
+        const { getMelkProvider } = await import("@/lib/melk-api/provider");
+        const refreshed = await getMelkProvider().refreshArmToken(guard.armTokens.refreshToken);
+        // P6.5-11 (بند ث): توکن تمدیدشده هم در نشست و هم در صندوقچهٔ ماندگار —
+        // زنجیرهٔ «اتصال ماندگار» در تمدیدها هرگز نمی‌شکند
+        const { vaultKeyForSession } = await import("@/lib/auth/arm-vault");
+        await updateSessionArmTokens(guard.sessionId, refreshed, {
+          ownerKey: vaultKeyForSession(guard.personnelCode, guard.role),
+        });
+        return fn(refreshed.accessToken);
+      } catch {
+        // PN-082 — زنجیرهٔ تمدید مرده است: خطای خام سامانه («عدم احراز هویت!»)
+        // مالک را بی‌راهنما رها می‌کرد؛ پیام اقدام‌پذیر جایگزین شد.
+        const { ARM_RELOGIN_MESSAGE } = await import("@/lib/auth/arm-token-exp");
+        throw new MelkApiError("UNAUTHORIZED", ARM_RELOGIN_MESSAGE, 401, false);
+      }
     }
     throw err;
   }

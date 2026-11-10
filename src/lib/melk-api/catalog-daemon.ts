@@ -28,7 +28,7 @@ import { logEvent } from "@/lib/logger";
 import { JobStateService, JOB_IDS } from "./job-state";
 import { emitEvent } from "@/lib/intelligence/blackboard";
 // P6546/گام پنجم-پ-۴ و گام ششم-۲ — پایدارساز بروزرسانی جامع
-import { enrichTransactionsInfo } from "./tx-info-enrichment";
+import { enrichTransactionsInfo, resolveTransactionLinks, refreshTransactionsInfo } from "./tx-info-enrichment";
 import { getPmSyncToken } from "./pm-acc-sync";
 import { syncExpertDeepInfo } from "@/lib/experts/profile-store";
 import { syncMelkPublicCatalog } from "./melk-public";
@@ -48,6 +48,10 @@ const ENRICH_ROWS_PER_TICK = 120;
 const COMPLETION_ROWS_PER_TICK = 240;
 /** P6546 — سقف ردیف غنی‌سازی صورت‌وضعیت معاملات در هر تیک (نکته ۵: ۱۰→۴۰) */
 const TX_INFO_ROWS_PER_TICK = 40;
+/** PN-081 — سقف ردیف رفع گرهٔ کدهای غیرمنطبقه (owner/applicant) در هر تیک */
+const TX_LINK_ROWS_PER_TICK = 12;
+/** PN-081 — سقف ردیف چرخهٔ تازگی صورت‌وضعیت‌ها (بازخوانی کهنه‌ترین‌ها) در هر تیک */
+const TX_INFO_REFRESH_ROWS_PER_TICK = 12;
 /** P6546 — سقف پرسنل PM (استخدام) در هر تیک (نکته ۵: ۵→۲۰) */
 const PM_INFO_ROWS_PER_TICK = 20;
 /** P6546 — هر چند تیک، یک چرخهٔ کامل سامانهٔ عمومی (نکته ۵: ۲۰→۱۰) */
@@ -74,6 +78,9 @@ export interface CatalogDaemonStatus {
     requestsEnriched: number;
     /** P6546 — برش‌های پایدارساز */
     txInfoEnriched?: number;
+    /** PN-081 — برش‌های رفع گره و تازگی فهرست معاملات */
+    txLinksResolved?: number;
+    txInfoRefreshed?: number;
     pmInfoEnriched?: number;
     melkPublicNewCodes?: number;
     /** P6547 — تعداد رجیستری‌های مرجع همگام‌شده در این تیک */
@@ -370,6 +377,21 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
           result.txInfoEnriched = tx.enriched;
         } catch {
           s.status.lastError = "TX_INFO_SLICE_FAILED"; // نرم — تیک بعدی ادامه می‌دهد
+        }
+        // PN-081 — برش رفع گرهٔ کدهای غیرمنطبقه: تماس مالک/متقاضی مستقیماً از ARM
+        // (properties/owner + requests/applicant با شناسهٔ آبجکت از خود معامله)
+        try {
+          const lk = await resolveTransactionLinks(armTokens.accessToken, { maxRows: TX_LINK_ROWS_PER_TICK, throttleMs: 300 });
+          result.txLinksResolved = lk.resolved;
+        } catch {
+          s.status.lastError = "TX_LINK_SLICE_FAILED"; // نرم — تیک بعدی ادامه می‌دهد
+        }
+        // PN-081 — برش تازگی: بازخوانی کهنه‌ترین صورت‌وضعیت‌ها (به‌روزرسانی‌های بعدی ARM می‌رسد)
+        try {
+          const rf = await refreshTransactionsInfo(armTokens.accessToken, { maxRows: TX_INFO_REFRESH_ROWS_PER_TICK, throttleMs: 400 });
+          result.txInfoRefreshed = rf.refreshed;
+        } catch {
+          s.status.lastError = "TX_INFO_REFRESH_SLICE_FAILED"; // نرم — تیک بعدی ادامه می‌دهد
         }
     }
     // PN-008 (ثانیاً) — برش عمق پروفایل کارشناسان PM (توکن ماندگار PM؛ مستقل از نشست)

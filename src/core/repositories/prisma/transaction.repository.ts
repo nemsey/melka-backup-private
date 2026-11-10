@@ -195,6 +195,11 @@ export class PrismaTransactionRepository implements ScopedTransactionRepository 
       rawInfoJson: string | null;
       comisionOfContract: number | null;
       taxOfContract: number | null;
+      /** PN-081 — تماس‌های رفع‌شده از ARM برای کدهای غیرمنطبقه */
+      linkOwnerName: string | null;
+      linkOwnerMobile: string | null;
+      linkRequesterName: string | null;
+      linkRequesterMobile: string | null;
     }>
   > {
     if (txIds.length === 0) return [];
@@ -206,8 +211,26 @@ export class PrismaTransactionRepository implements ScopedTransactionRepository 
         propertyAddress: true, status: true, documentDate: true, deliveryDate: true,
         // PN-020/گام اول-ج۱ — شرایط مالی قرارداد فی‌مابین طرفین
         rawInfoJson: true, comisionOfContract: true, taxOfContract: true,
+        // PN-081 — تماس‌های رفع‌شده از ARM برای کدهای غیرمنطبقه
+        linkOwnerName: true, linkOwnerMobile: true, linkRequesterName: true, linkRequesterMobile: true,
       },
     });
+  }
+
+  /** PN-081 — آخرین فعالیت کامل خط‌لولهٔ معاملات: کمینهٔ بیشینه‌های syncedAt
+   *  (ردیف فهرست و غنی‌سازی) — وقتی یکی از دو مسیر یخ زده باشد، همین سیگنال کهنه می‌شود. */
+  async latestSyncActivityAt(): Promise<Date | null> {
+    const rows = (await this.client.$queryRaw<{ m: Date | string | null }[]>`
+      SELECT MIN(m) AS m FROM (
+        SELECT MAX(syncedAt) AS m FROM TransactionRecord
+        UNION ALL
+        SELECT MAX(syncedAt) AS m FROM TransactionEnrichment
+      )
+    `).catch(() => [] as Array<{ m: Date | string | null }>);
+    const v = rows[0]?.m;
+    if (!v) return null;
+    const d = v instanceof Date ? v : new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d;
   }
 
   /**

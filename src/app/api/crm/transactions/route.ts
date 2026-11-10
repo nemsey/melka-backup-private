@@ -86,8 +86,9 @@ export async function GET(request: NextRequest) {
     // PN-059: tenant ملکتون حذف شد — همیشه 'melk-tabriz' (تک-tenant).
     const tenantId = tenantDbValue(sp.get("tenantId"));
 
-    // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت؛ سقف ۲۵٬۰۰۰ فقط گارد ایمنی سرور است (عین دو کاتالوگ ARM)
-    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 25000, 1), 25000);
+    // P6525 — قانون فهرست: تمام ردیف‌ها بدون محدودیت؛ سقف فقط گارد ایمنی سرور است (عین دو کاتالوگ ARM)
+    // PN-079 — ارتقای ۲۵٬۰۰۰ → ۴۰٬۰۰۰ (هم‌راستا با دو کاتالوگ ARM)
+    const limit = Math.min(Math.max(num(sp.get("limit")) ?? 40000, 1), 40000);
     const offset = Math.max(num(sp.get("offset")) ?? 0, 0);
     const sortBy = (sp.get("sortBy") ?? "contractDate") as "contractDate" | "eventsCount" | "suggestedPropertyCount";
     const sortDir: "asc" | "desc" = sp.get("sortDir") === "asc" ? "asc" : "desc";
@@ -255,6 +256,14 @@ export async function GET(request: NextRequest) {
 
     await witnessScopedRead(guard, "transaction", total, access.isOwnerRead, ownerLoginPath(guard));
 
+    // PN-081 — نشانگر توقف همگام‌سازی: با وجود دادهٔ کش‌شده، کهنگی هرگز پنهان نمی‌ماند.
+    // ریشه: خطای زنده فقط وقتی گزارش می‌شد که «هیچ» داده‌ای نبود؛ فهرست یخ‌زده بدون
+    // توضیح نمایش داده می‌شد (شاهد: توقف چندساعتهٔ غنی‌سازی ۲۰۲۶-۱۱-۰۹ بدون هشدار).
+    const SYNC_STALLED_AFTER_MS = 6 * 60 * 60 * 1000;
+    const txLastActivityAt = await getTransactionRepository().latestSyncActivityAt().catch(() => null);
+    const stalledHours = txLastActivityAt ? Math.floor((Date.now() - txLastActivityAt.getTime()) / 3_600_000) : null;
+    const syncStalled = summary.totalCount > 0 && txLastActivityAt !== null && Date.now() - txLastActivityAt.getTime() > SYNC_STALLED_AFTER_MS;
+
     // P6.5-15 — اگر فیلتر لایهٔ غنی‌سازی فعال است، شمارش منطبق واقعی همان ردیف‌های باقی‌مانده است
     // P6527 — فشردهٔ gzip وقتی کلاینت می‌پذیرد (بدون آن عین Response.json)
     return await compressedJson({
@@ -270,6 +279,9 @@ export async function GET(request: NextRequest) {
         cached: syncState.lastSuccessAt !== null,
         lastSuccessAt: syncState.lastSuccessAt,
         lastSyncedAt: syncState.lastSyncedAt,
+        // PN-081 — توقف همگام‌سازی: صادقانه حتی با وجود کش (ریشهٔ یخ‌زدگی بی‌هشدار)
+        syncStalled,
+        stalledHours,
         // P6546/گام سوم-۳ (رفع ریشه‌ای): خطای زنده فقط وقتی گزارش می‌شود که «هیچ» دادهٔ
         // کش‌شده‌ای برای نمایش نباشد؛ با وجود کش سالم، خطای قدیمی/گذرا هرگز فهرست را
         // با بنر «استخراج زنده در دسترس نیست» آلوده نمی‌کند.

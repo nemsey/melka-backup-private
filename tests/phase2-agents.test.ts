@@ -76,6 +76,8 @@ function makeTxRepo(rows: TransactionDTO[]): TransactionRepository {
     upsertBulk: async () => ({ created: 0, updated: 0, duplicates: 0, errors: 0 }),
     // P6.5-14 — غنی‌سازی معامله‌محور (خالی در تست‌های قدیمی)
     findInfoEnrichmentsByTxIds: async () => [],
+    // PN-081 — نشانگر توقف خط‌لولهٔ معاملات (خالی در تست‌های قدیمی)
+    latestSyncActivityAt: async () => null,
     deleteAll: async () => undefined,
   };
 }
