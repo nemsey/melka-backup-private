@@ -332,6 +332,7 @@ describe("PN-019/فاز۹ · Worker + API + گارد", () => {
     expect(ids).toContain("sacred-backup"); // PN-038/۱.۳ — بکاپ مقدس ۱۵دقیقه‌ای
     expect(ids).toContain("relay-health-check"); // PN-038/۴.۱ — پایش ۲۴ ساعتهٔ رله
     expect(ids).toContain("rolling-backup"); // PN-041/۲ — بکاپ چرخشی ۵دقیقه‌ای قلعه (شورا-ن۰۶۷)
-    expect(new Set(ids).size).toBe(24); // PN-041-R: ۲۲ کار یکتا · PN-051: +lcpp-cycle +lcpp-watch (DIR-PN051-SUPREME)
+    expect(ids).toContain("experts-cycle"); // PN-083 — چرخهٔ خودکار فهرست مشاوران (M4)
+    expect(new Set(ids).size).toBe(25); // PN-041-R: ۲۲ · PN-051: +lcpp-cycle +lcpp-watch · PN-083: +experts-cycle
   });
 });

@@ -207,12 +207,19 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   // PN-009 مرحله F — شمارندهٔ فیلترهای فعال (الگوی [فیلترها ۵] بند ۶.۱) + چیپ‌های PN-011
   const activeFilterCount = Object.values(applied).filter((v) => v !== "").length + Object.values(chips).reduce((s, a) => s + a.length, 0);
 
-  /** بروزرسانی فهرست — زنجیرهٔ سه‌مرحله‌ای PM با گزارش صادقانهٔ هر مرحله */
+  /** بروزرسانی فهرست — زنجیرهٔ سه‌مرحله‌ای PM با گزارش صادقانهٔ هر مرحله
+ *  PN-083: زیر قفل هماهنگ‌ساز update:m4 — اگر چرخهٔ خودکار/فوری زنده باشد،
+ *  پاسخ busy صادقانه برمی‌گردد (صفر اجرای موازی) */
   const doSync = useCallback(async () => {
     setSyncing(true);
     setSyncStage(null);
     try {
-      const res = await apiSync<{ ok: boolean; stage: SyncStage }>("/api/experts/sync", { method: "POST" });
+      const res = await apiSync<{ ok: boolean; stage?: SyncStage; busy?: boolean; message?: string }>("/api/experts/sync", { method: "POST" });
+      if (res.busy || !res.stage) {
+        toast({ title: "بروزرسانی مشاوران همین حالا در جریان است", description: res.message ?? "چرخهٔ در حال اجرا پس از پایان، تازه‌ترین داده را می‌آورد — این درخواست بی‌اثر ثبت نشد." });
+        await reload();
+        return;
+      }
       setSyncStage(res.stage);
       const s = res.stage;
       toast({

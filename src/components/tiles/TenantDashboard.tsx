@@ -19,7 +19,7 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { QueryProvider } from '@/components/app/QueryProvider'
-import { LcppSyncStatus } from '@/components/tiles/LcppSyncStatus'
+import { FourListsUpdateBar } from '@/components/tiles/FourListsUpdateBar'
 import { tileRegistry } from '@/core/tiles/tile-registry'
 import { useAppStore } from '@/lib/client/store'
 import type { TilePageProps } from '@/core/tiles/tile-contract'
@@ -146,9 +146,10 @@ export function TenantDashboard({ tenantId }: TenantDashboardProps) {
         </div>
       </div>
 
-      {/* PN-051 · فرمان ۴/۷ — نشانگر فاز A/B + بروزرسانی دستی (خط قرمز: هرگز صفحهٔ بی‌نشانگر) */}
+      {/* PN-083 · هماهنگ‌ساز چهار فهرست — نوار یکپارچهٔ M1-M4 + بروزرسانی دستی
+          (خط قرمز: هرگز صفحهٔ بی‌نشانگر؛ حالا همهٔ فهرست‌ها با تنظیمات هم‌حقیقت‌اند) */}
       <QueryProvider>
-        <LcppSyncStatus />
+        <FourListsUpdateBar />
       </QueryProvider>
 
       {!sessionReady ? (

@@ -27,6 +27,9 @@ import { execWithArmToken } from "@/lib/listing/crm-transfer";
 import { syncSpecialProperties } from "@/lib/melk-api/pm-acc-sync";
 import { JOB_IDS } from "@/lib/melk-api/job-state";
 import type { SessionContext } from "@/lib/auth/session";
+// PN-083 — هماهنگ‌ساز چهار فهرست: قفل بین‌فرایندی M3 + وضعیت یکپارچهٔ list-m3
+import { FOUR_LISTS, upsertFourListState } from "@/lib/melk-api/four-lists";
+import type { JobLockService } from "@/core/runtime/joblock";
 
 /** P2-03 — روت‌ها هرگز import مستقیم @/lib/db ندارند (الگوی db تنبل) */
 async function getDb(): Promise<{ db: import("@prisma/client").PrismaClient; jobs: import("@/lib/melk-api/job-state").JobStateService }> {
@@ -42,13 +45,31 @@ const g = globalThis as typeof globalThis & { __melkTxSync?: { running: boolean;
 if (!g.__melkTxSync) g.__melkTxSync = { running: false, startedAt: 0, stages: {} };
 const state = g.__melkTxSync;
 
-/** اجرای مراحل بروزرسانی معاملات در پس‌زمینه با پیشرفت پایدار */
-async function runTxSyncBackground(guard: SessionContext): Promise<void> {
-  const { jobs } = await getDb();
+/** اجرای مراحل بروزرسانی معاملات در پس‌زمینه با پیشرفت پایدار
+ *  PN-083: کل زنجیره زیر قفل بین‌فرایندی update:m3 + ثبت موازی وضعیت list-m3 */
+async function runTxSyncBackground(guard: SessionContext, lockSvc?: JobLockService): Promise<void> {
+  const { db, jobs } = await getDb();
   const stages: Record<string, unknown> = {};
+  /** تمدید اجارهٔ قفل M3 بین مراحل — PN-012: از‌دست‌رفتن اجاره = توقف صادقانه */
+  let leaseLost = false;
+  const heartbeat = lockSvc
+    ? setInterval(() => {
+        void lockSvc.renew(FOUR_LISTS.m3.lockId).then((ok) => {
+          if (!ok) leaseLost = true;
+        }, () => undefined);
+      }, 30_000)
+    : null;
+  const leaseAlive = async (): Promise<boolean> => {
+    if (leaseLost) return false;
+    if (!lockSvc) return true;
+    return lockSvc.renew(FOUR_LISTS.m3.lockId).catch(() => false);
+  };
+  const m3 = (patch: Parameters<typeof upsertFourListState>[2]) =>
+    upsertFourListState(db, "m3", patch).catch(() => undefined);
   try {
     // ---- مرحلهٔ ۱: همگام‌سازی اصلی (گزارش تطابق معاملات + کارشناسان + قراردادها) ----
     await jobs.upsert({ jobId: JOB_IDS.mainSync, jobKind: "sync", status: "running", detail: { stage: "main-sync", at: new Date().toISOString() } });
+    await m3({ status: "running", lastCompletedPage: 0, totalPages: 4, detail: { source: "manual", stage: "main-sync", at: new Date().toISOString() } });
     try {
       const { sync, newArmToken } = await syncWithRefresh(guard.armTokens!.accessToken!, guard.armTokens!.refreshToken);
       stages.main = `tx=${sync.transactions};ex=${sync.experts};ct=${sync.contracts}`;
@@ -65,6 +86,8 @@ async function runTxSyncBackground(guard: SessionContext): Promise<void> {
       stages.main = `error=${err instanceof MelkApiError ? err.message : String(err)}`.slice(0, 120);
     }
     await jobs.upsert({ jobId: JOB_IDS.mainSync, jobKind: "sync", status: "running", lastCompletedPage: 1, totalPages: 4, detail: { stage: "tx-info-enrichment", ...stages } });
+    await m3({ status: "running", lastCompletedPage: 1, totalPages: 4, detail: { source: "manual", stage: "tx-info-enrichment", ...stages } });
+    if (!(await leaseAlive())) throw new Error("lease-lost (update:m3) — توقف صادقانه برای صفر اجرای موازی");
 
     // ---- مرحلهٔ ۲: غنی‌سازی صورت‌وضعیت‌ها (نوع/مبلغ قرارداد + خریدار/فروشنده) ----
     try {
@@ -74,6 +97,8 @@ async function runTxSyncBackground(guard: SessionContext): Promise<void> {
       stages.txInfo = `error=${err instanceof MelkApiError ? err.message : String(err)}`.slice(0, 120);
     }
     await jobs.upsert({ jobId: JOB_IDS.mainSync, jobKind: "sync", status: "running", lastCompletedPage: 2, totalPages: 4, detail: { stage: "contracts", ...stages } });
+    await m3({ status: "running", lastCompletedPage: 2, totalPages: 4, detail: { source: "manual", stage: "contracts", ...stages } });
+    if (!(await leaseAlive())) throw new Error("lease-lost (update:m3) — توقف صادقانه برای صفر اجرای موازی");
 
     // ---- مرحلهٔ ۳: کارگزاری‌های صادره (زنجیرهٔ عین سامانه) ----
     try {
@@ -83,9 +108,11 @@ async function runTxSyncBackground(guard: SessionContext): Promise<void> {
       stages.agencies = `error=${err instanceof MelkApiError ? err.message : String(err)}`.slice(0, 120);
     }
     await jobs.upsert({ jobId: JOB_IDS.mainSync, jobKind: "sync", status: "running", lastCompletedPage: 3, totalPages: 4, detail: { stage: "finalizing", ...stages } });
+    await m3({ status: "running", lastCompletedPage: 3, totalPages: 4, detail: { source: "manual", stage: "finalizing", ...stages } });
 
     // ---- مرحلهٔ ۴: ثبت نهایی (پایان موفق — preflight سبز) ----
     await jobs.upsert({ jobId: JOB_IDS.mainSync, jobKind: "sync", status: "done", lastCompletedPage: 4, totalPages: 4, detail: { stage: "done", finishedAt: new Date().toISOString(), ...stages } });
+    await m3({ status: "done", lastCompletedPage: 4, totalPages: 4, detail: { source: "manual", stage: "done", finishedAt: new Date().toISOString(), ...stages } });
     await audit("TX_BACKGROUND_SYNC", guard.personnelCode, Object.entries(stages).map(([k, v]) => `${k}:${v}`).join(" | ")).catch(() => undefined);
   } catch (err) {
     await jobs
@@ -96,9 +123,16 @@ async function runTxSyncBackground(guard: SessionContext): Promise<void> {
         detail: { stage: "aborted", error: String((err as Error)?.message ?? err), ...stages },
       })
       .catch(() => undefined);
+    await upsertFourListState((await getDb()).db, "m3", {
+      status: "failed",
+      detail: { source: "manual", stage: "aborted", error: String((err as Error)?.message ?? err).slice(0, 150), ...stages },
+    }).catch(() => undefined);
   } finally {
     state.running = false;
     state.stages = stages;
+    // PN-083 — رهاسازی قفل بین‌فرایندی M3 (فقط دارندهٔ واقعی — بی‌صدا در شکست)
+    if (heartbeat) clearInterval(heartbeat);
+    if (lockSvc) await lockSvc.release(FOUR_LISTS.m3.lockId).catch(() => undefined);
   }
 }
 
@@ -138,15 +172,33 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  // PN-083 — قفل بین‌فرایندی update:m3: اگر چرخهٔ خودکار Worker (LCPP m9) یا
+  // بروزرسانی زندهٔ دیگری روی همین فهرست فعال است، صادقانه busy برگردان (صفر اجرای موازی)
+  const { db } = await getDb();
+  const { JobLockService } = await import("@/core/runtime/joblock");
+  const lockSvc = new JobLockService(db);
+  const acq = await lockSvc.acquire(FOUR_LISTS.m3.lockId, { metadata: { source: "manual", list: "m3", route: "/api/crm/transactions/sync" } });
+  if (!acq.acquired) {
+    const job = await new (await import("@/lib/melk-api/job-state")).JobStateService(db).get(JOB_IDS.listM3);
+    return Response.json({
+      ok: true,
+      busy: true,
+      running: true,
+      job,
+      message: "بروزرسانی فهرست معاملات همین حالا در پس‌زمینه (چرخهٔ خودکار یا بروزرسانی دیگر) در جریان است — پیشرفت همین‌جا نمایش داده می‌شود؛ این درخواست بی‌اثر ثبت نشد.",
+    });
+  }
+
   // شروع کار پس‌زمینه — پاسخ «فوری» (صفر مهلت ۹۰ ثانیه؛ ریشه‌یابی گام سوم)
   state.running = true;
   state.startedAt = Date.now();
   state.stages = {};
   const { jobs } = await getDb();
   await jobs.upsert({ jobId: JOB_IDS.mainSync, jobKind: "sync", status: "running", lastCompletedPage: 0, totalPages: 4, detail: { stage: "starting", at: new Date().toISOString() } });
+  await upsertFourListState(db, "m3", { status: "running", lastCompletedPage: 0, totalPages: 4, detail: { source: "manual", stage: "starting", at: new Date().toISOString() } }).catch(() => undefined);
 
-  // fire-and-forget — سرور ماندگار است و کار در پس‌زمینه پیش می‌رود
-  void runTxSyncBackground(guard).catch(() => undefined);
+  // fire-and-forget — سرور ماندگار است و کار در پس‌زمینه پیش می‌رود (با قفل در دست)
+  void runTxSyncBackground(guard, lockSvc).catch(() => undefined);
 
   return Response.json({
     ok: true,

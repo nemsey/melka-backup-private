@@ -325,11 +325,23 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     try {
       // P6546/گام پنجم-پ — لایهٔ فهرست: ≈۵٬۰۰۰ رکورد/کلیک (۱۰ صفحه×۵۰۰) · لایهٔ جزئیات: ≈۵۰۰ رکورد/کلیک
       // P6546/گام پنجم-پ-۳ — تاب‌آور: تا ۳ تلاش خودکار روی 502/504/مهلت (هر تلاش از checkpoint ادامه می‌یابد)
-      const res = await apiSync<{ lists: Array<{ fetched: number; totalAtSource: number; ok: boolean }>; enrich?: Array<{ enriched: number; remaining: number }> }>(
+      const res = await apiSync<{
+        lists: Array<{ fetched: number; totalAtSource: number; ok: boolean }>;
+        enrich?: Array<{ enriched: number; remaining: number }>;
+        /** PN-083 — هماهنگ‌ساز: اگر بروزرسانی همین فهرست در پس‌زمینه زنده باشد */
+        busy?: { listings?: { message: string }; requests?: { message: string } };
+      }>(
         "/api/crm/arm-catalog/sync",
         { method: "POST", body: { entity: "listings", mode: "both", maxRows: 500 } },
         (attempt) => toast({ title: `ادامهٔ بروزرسانی از نقطهٔ قطع (تلاش ${attempt + 1} از ۳)`, description: "سرور ملک تبریز لحظه‌ای کند بود؛ همان نقطهٔ قبلی ازسرگیری شد — هیچ داده‌ای از ابتدا شروع نمی‌شود." })
       );
+      // PN-083 — اجرای هم‌زمان ممنوع: اگر چرخهٔ خودکار/فوری همین فهرست را در دست دارد،
+      // صادقانه همین را بگو (صفر اجرای موازی روی سامانهٔ مبدأ)
+      if (res.busy?.listings) {
+        toast({ title: "بروزرسانی آگهی‌ها همین حالا در جریان است", description: res.busy.listings.message });
+        await load();
+        return;
+      }
       const list = res.lists?.[0];
       toast({
         title: "بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز انجام شد",

@@ -311,7 +311,7 @@ describe("PN-031-C · F) سازگاری ساختاری — روت تازه، ر�
     const manifest = JSON.parse(readFileSync(join(REPO, "download/pn012/api-versioning.json"), "utf8"));
     // PN-035 (ن۰۵۷): +۱ روت relay/job/[id] · PN-038 (ن۰۶۳): +۱ glm/probe +۱ relay/health
     // PN-039 (ن۰۶۴/گام ۴): +۱ owner-notes/[entity]/[id] — یادداشت مالک M1/M2
-    expect(manifest.totalRoutes).toBe(113); // PN-059: ۱۱۹ → ۱۱۳ (۶ روت ملکتون/تغییرات حذف شد) — بازتولید با مولد رسمی generate-v1-aliases
+    expect(manifest.totalRoutes).toBe(114); // PN-059: ۱۱۳ · PN-083: +۱ sync/four-lists (هماهنگ‌ساز چهار فهرست) → ۱۱۴
     // ن۰۶۳: بازتولید مانیفست با مولد رسمی (generate-v1-aliases) — نام فیلد: aliasOf
     const key = (r: { aliasOf?: string; original?: string }) => r.aliasOf ?? r.original ?? "";
     expect(manifest.routes.some((r: { aliasOf?: string; original?: string }) => key(r) === "/api/admin/relay/code-status")).toBe(true);
@@ -320,6 +320,8 @@ describe("PN-031-C · F) سازگاری ساختاری — روت تازه، ر�
     expect(manifest.routes.some((r: { aliasOf?: string; original?: string }) => key(r) === "/api/relay/health")).toBe(true);
     // PN-039 (ن۰۶۴/گام ۴) — یادداشت مالک M1/M2 با آینهٔ v1
     expect(manifest.routes.some((r: { aliasOf?: string; original?: string }) => key(r) === "/api/owner-notes/[entity]/[id]")).toBe(true);
+    // PN-083 — هماهنگ‌ساز چهار فهرست: آینهٔ v1 برای روت یکپارچه
+    expect(manifest.routes.some((r: { aliasOf?: string; original?: string }) => key(r) === "/api/sync/four-lists")).toBe(true);
     expect(manifest.routes.some((r: { v1: string }) => r.v1 === "/api/v1/admin/otp-burn")).toBe(false);
   });
 

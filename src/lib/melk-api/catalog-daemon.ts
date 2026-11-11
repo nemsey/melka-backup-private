@@ -26,6 +26,8 @@ import { sessionToArmTokens } from "@/lib/auth/session";
 import { logEvent } from "@/lib/logger";
 // P6545/گام۱ — افزودنی: وضعیت کار پایدار در DB (BLOCK 1.1) + رویدادهای فرصت (BLOCK 1.4)
 import { JobStateService, JOB_IDS } from "./job-state";
+// PN-083 — هماهنگ‌ساز چهار فهرست: احترام به قفل‌های update:mX + ثبت تازگی list-mX
+import { FOUR_LISTS, upsertFourListState } from "./four-lists";
 import { emitEvent } from "@/lib/intelligence/blackboard";
 // P6546/گام پنجم-پ-۴ و گام ششم-۲ — پایدارساز بروزرسانی جامع
 import { enrichTransactionsInfo, resolveTransactionLinks, refreshTransactionsInfo } from "./tx-info-enrichment";
@@ -225,6 +227,19 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
       // PN-002 گام ۳ — همگام‌سازی پیوستهٔ CRM (معاملات/کارشناسان/قراردادها/بازدیدها/عرضه-تقاضا)
       // هر CRM_SYNC_EVERY_N_TICKS تیک — ریشهٔ «بروزرسانی ناقص معاملات» که مالک گزارش کرد.
       if (s.status.ticks > 0 && s.status.ticks % CRM_SYNC_EVERY_N_TICKS === 0) {
+        // PN-083 — قفل هماهنگ‌ساز M3/M4 پیش از همگام‌سازی CRM (معاملات+کارشناسان):
+        // اگر بروزرسانی دستی/چرخهٔ LCPP همین فهرست‌ها را در دست دارد، این برش رد
+        // می‌شود (تیک بعدی همان‌جا ادامه می‌دهد — صفر اجرای موازی روی منبع).
+        const { JobLockService } = await import("@/core/runtime/joblock");
+        const lockSvc = new JobLockService(db);
+        const crmLockTtlMs = 300_000; // ۵ دقیقه — پوشش کامل زنجیره بدون ضربان؛ خودترمیم با انقضا
+        const acqM3 = await lockSvc.acquire(FOUR_LISTS.m3.lockId, { ttlMs: crmLockTtlMs, metadata: { source: "auto", pipeline: "catalog-daemon", part: "crm" } });
+        if (acqM3.acquired) {
+          const acqM4 = await lockSvc.acquire(FOUR_LISTS.m4.lockId, { ttlMs: crmLockTtlMs, metadata: { source: "auto", pipeline: "catalog-daemon", part: "crm" } });
+          if (!acqM4.acquired) {
+            await lockSvc.release(FOUR_LISTS.m3.lockId).catch(() => undefined);
+          }
+          if (acqM4.acquired) {
         try {
           const { syncWithRefresh } = await import("./sync");
           const vaultForRefresh = await getVaultArmTokens(db);
@@ -273,16 +288,38 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
               ...(sync.errorCode ? { error: sync.errorCode } : {}),
             },
           }).catch(() => {});
+          // PN-083 — ثبت تازگی یکپارچهٔ M3/M4 (همان حقیقتی که داشبورد/تنظیمات می‌خوانند)
+          const crmAt = new Date().toISOString();
+          await upsertFourListState(db, "m3", {
+            status: sync.ok ? "done" : "failed",
+            detail: { source: "auto", stage: "crm", finishedAt: crmAt, transactions: sync.transactions, contracts: sync.contracts, ...(sync.errorCode ? { error: sync.errorCode } : {}) },
+          }).catch(() => undefined);
+          await upsertFourListState(db, "m4", {
+            status: sync.ok ? "done" : "failed",
+            detail: { source: "auto", stage: "crm", finishedAt: crmAt, experts: sync.experts, ...(sync.errorCode ? { error: sync.errorCode } : {}) },
+          }).catch(() => undefined);
           if (!sync.ok) s.status.lastError = `CRM_SYNC_${sync.errorCode ?? "FAILED"}`;
         } catch (e) {
           s.status.lastError = (e as { code?: string })?.code ?? "CRM_SYNC_FAILED";
           await jobs.upsert({ jobId: "crm-sync", jobKind: "sync", status: "failed", detail: { error: s.status.lastError } }).catch(() => {});
+        } finally {
+          // PN-083 — رهاسازی قفل‌های M3/M4 در هر حال (فقط دارندهٔ واقعی)
+          await lockSvc.release(FOUR_LISTS.m3.lockId).catch(() => undefined);
+          await lockSvc.release(FOUR_LISTS.m4.lockId).catch(() => undefined);
         }
+          } // پایان قفل M4
+        } // پایان قفل M3
       }
         // برش محدود فهرست آگهی‌ها + درخواست‌ها (هر دو checkpointدار — ازسرگیری خودکار)
         // PN-039 (گام ۲) — تناوب ترتیب برش‌ها: تیک‌های فرد «درخواست‌ها» جلو می‌افتند
         // (ریشهٔ قحطی: درخواست‌ها همیشه پشت موج آگهی‌ها بودند و TTLخور می‌شدند)
         const runListingsSlice = async () => {
+          // PN-083 — احترام به قفل هماهنگ‌ساز M1: اگر بروزرسانی دستی یا چرخهٔ LCPP
+          // همین فهرست را در دست دارد، برش رد می‌شود (تیک بعدی از همان checkpoint)
+          const { JobLockService } = await import("@/core/runtime/joblock");
+          const lockSvc = new JobLockService(db);
+          const acq = await lockSvc.acquire(FOUR_LISTS.m1.lockId, { ttlMs: 300_000, metadata: { source: "auto", pipeline: "catalog-daemon", part: "listings" } });
+          if (!acq.acquired) return; // held — پرش صادقانه
           try {
             const lres = await syncArmListingsCatalog(armTokens.accessToken, { maxPages: PAGES_PER_TICK });
             result.listingsPages = lres.pages;
@@ -300,9 +337,16 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
             s.status.lastError = (e as { code?: string })?.code ?? "LISTINGS_SLICE_FAILED";
             s.consecutiveFails += 1;
             await jobs.upsert({ jobId: JOB_IDS.catalogListings, jobKind: "catalog", status: "failed", detail: { error: s.status.lastError } }).catch(() => {});
+          } finally {
+            await lockSvc.release(FOUR_LISTS.m1.lockId).catch(() => undefined);
           }
         };
         const runRequestsSlice = async () => {
+          // PN-083 — احترام به قفل هماهنگ‌ساز M2 (عین M1)
+          const { JobLockService } = await import("@/core/runtime/joblock");
+          const lockSvc = new JobLockService(db);
+          const acq = await lockSvc.acquire(FOUR_LISTS.m2.lockId, { ttlMs: 300_000, metadata: { source: "auto", pipeline: "catalog-daemon", part: "requests" } });
+          if (!acq.acquired) return; // held — پرش صادقانه
           try {
             const rres = await syncArmRequestsCatalog(armTokens.accessToken, { maxPages: PAGES_PER_TICK });
             result.requestsPages = rres.pages;
@@ -319,6 +363,8 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
             s.status.lastError = (e as { code?: string })?.code ?? "REQUESTS_SLICE_FAILED";
             s.consecutiveFails += 1;
             await jobs.upsert({ jobId: JOB_IDS.catalogRequests, jobKind: "catalog", status: "failed", detail: { error: s.status.lastError } }).catch(() => {});
+          } finally {
+            await lockSvc.release(FOUR_LISTS.m2.lockId).catch(() => undefined);
           }
         };
         if (s.status.ticks % 2 === 1) {
