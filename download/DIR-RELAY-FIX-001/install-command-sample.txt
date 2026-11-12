@@ -1,0 +1,10 @@
+script bytes: 31074
+--- install command ---
+if pkg install -y curl openssl-tool jq && \
+   curl --http1.1 -A "Mozilla/5.0 (Linux; Android 13; Poco F3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36" -fsSL "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai/api/mobile-relay/bootstrap?code=aabbccddeeff00112233445566778899aabbcc" -o ~/melka-relay.sh && \
+   chmod 700 ~/melka-relay.sh; then
+  bash ~/melka-relay.sh
+else
+  echo "خطا در نصب! لطفاً کد جدید بگیرید."
+  rm -f ~/melka-relay.sh
+fi
