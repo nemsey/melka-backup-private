@@ -720,7 +720,7 @@ describe("تنظیمات ایجنت فایل‌یابی", () => {
         DIVAR_DEFAULT_SETTINGS.weightLocation
     ).toBe(100);
     expect(DIVAR_DEFAULT_SETTINGS.huntThreshold).toBe(70);
-    expect(DIVAR_DEFAULT_SETTINGS.followThreshold).toBe(40);
+    expect(DIVAR_DEFAULT_SETTINGS.followThreshold).toBe(50); // PN-084 — هم‌راستایی با بندبندی کاشی تطبیق (۰٫۵)
     expect(DIVAR_DEFAULT_SETTINGS.autoScanMinutes).toBe(15);
   });
   test("clamp: مقادیر خارج از بازه اصلاح می‌شوند (عین منطق ذخیره)", async () => {

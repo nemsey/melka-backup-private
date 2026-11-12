@@ -87,9 +87,10 @@ export const DIVAR_DEFAULT_SETTINGS = {
   weightUnderprice: 20,
   weightOther: 20,
   weightLocation: 10,
-  /** آستانه‌های دسته‌بندی */
+  /** آستانه‌های دسته‌بندی — PN-084: پیگیری ۴۰→۵۰ برای هم‌راستایی کامل با بندبندی
+   *  سه‌گانهٔ کاشی تطبیق (شکار ۰٫۷ / پیگیری ۰٫۵ ↔ ۷۰ / ۵۰) — قابل تغییر از UI */
   huntThreshold: 70,
-  followThreshold: 40,
+  followThreshold: 50,
   /** فاصله اسکن خودکار (دقیقه) — ۰ = خاموش */
   autoScanMinutes: 15,
   /** مناطق انتخابی فیلتر مکان (عین سامانه آرم) — پیش‌فرض: ۱۷ منطقه مالک؛ خالی = همه تبریز */

@@ -91,7 +91,7 @@ async function gatherEvidence(ctx: AdvisoryContext): Promise<AdvisorEvidence> {
     attention,
     causal: causalRef ? { action: `hasImage+=1`, delta: Math.abs(causalRef.coefficient), n: causalRef.confidence > 0 ? 1 : 0 } : null,
     counterfactual,
-    simulation: { best: "کاهش ۱۰٪ قیمت", bestScore: 0.42 },
+    simulation: await gatherSimulation(ctx), // PN-084 — شبیه‌سازی داده‌محور (جایگزین ثابت ساختگی) — ممکن است null باشد
     memory: memory ? { accessCount: memory.accessCount, lastAccessedAt: memory.lastAccessedAt.toISOString() } : null,
     vision: visionEvidence,
     daysSinceLastContact: memory ? Math.floor((Date.now() - memory.lastAccessedAt.getTime()) / 86_400_000) : null,
@@ -249,13 +249,51 @@ async function countCategoryToday(ctx: AdvisoryContext, todayStart: number): Pro
 export { DECISION_LOCK_CONSTANTS, expiryFromNow };
 
 /**
+ * PN-084 — شبیه‌سازی صادقانهٔ موتور ۱۵: جایگزین ثابت ساختگی «کاهش ۱۰٪ قیمت».
+ * فقط با دادهٔ واقعی بازار محاسبه می‌شود (میانگین قیمت هر متر آگهی‌های منتشرشدهٔ
+ * هم‌منطقه، حداقل ۴ نمونه — عین قرارداد minMarketSample فایل‌یابی)؛
+ * بدون داده = null (شاهد غایب — نه ساختگی). برای بسترهای غیرملک نیز null.
+ */
+async function gatherSimulation(ctx: AdvisoryContext): Promise<AdvisorEvidence["simulation"]> {
+  if (ctx.kind !== "property") return null;
+  const row = await db.propertyRecord
+    .findFirst({ where: { propertyCode: ctx.id }, select: { pricePerMeter: true, areaName: true } })
+    .catch(() => null);
+  if (!row || !row.pricePerMeter || row.pricePerMeter <= 0 || !row.areaName) return null;
+  const agg = await db.propertyRecord
+    .aggregate({
+      where: { status: "منتشر شده", areaName: row.areaName, pricePerMeter: { gt: 0 } },
+      _count: true,
+      _avg: { pricePerMeter: true },
+    })
+    .catch(() => null);
+  const sample = agg?._count ?? 0;
+  const areaAvg = agg?._avg.pricePerMeter ?? null;
+  if (sample < 4 || !areaAvg || areaAvg <= 0) return null;
+  const gap = (row.pricePerMeter - areaAvg) / areaAvg;
+  if (gap > 0.05) {
+    return { best: `کاهش قیمت به میانگین منطقه (${Math.round(gap * 100)}٪ گران‌تر از بازار هم‌منطقه)`, bestScore: Math.min(0.75, Math.abs(gap) * 1.5) };
+  }
+  if (gap < -0.05) {
+    return { best: `قیمت ${Math.round(Math.abs(gap) * 100)}٪ زیر میانگین منطقه — زیرقیمت است`, bestScore: Math.min(0.6, Math.abs(gap) * 1.5) };
+  }
+  return { best: "قیمت هم‌راستای میانگین منطقه", bestScore: 0.3 };
+}
+
+/**
  * تقاضای هم‌منطقه — شمار متقاضیان زندهٔ هم‌منطقهٔ یک فایل (کاشی فایل‌یابی).
  * اینجا است تا روت‌ها import مستقیم DB نداشته باشند (گارد P2-03).
+ * PN-084 — شمارش واقعی (پایان سقف خاموش ۵۰تایی) + فقط تقاضای زنده (عین قرارداد موتور تطبیق).
  */
 export async function areaDemandFor(area: string): Promise<{ area: string; requestCount: number }> {
   if (!area || area.length < 2) return { area, requestCount: 0 };
-  const rows = await db.requestRecord
-    .findMany({ where: { areaNamesJson: { contains: `"${area}"` } }, select: { requestCode: true }, take: 50 })
-    .catch(() => [] as Array<{ requestCode: string }>);
-  return { area, requestCount: rows.length };
+  const requestCount = await db.requestRecord
+    .count({
+      where: {
+        areaNamesJson: { contains: `"${area}"` },
+        status: { in: ["سرنخ", "فرصت", "در انتظار تایید", "در انتظار معامله", "ready"] },
+      },
+    })
+    .catch(() => 0);
+  return { area, requestCount };
 }

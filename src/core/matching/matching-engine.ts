@@ -72,6 +72,8 @@ export interface RequestProfile {
   buildYearTo: number | null;
   /** فوریت درخواست (urgent فرم ARM — سیگنال تازگی انسانی) */
   urgent: boolean;
+  /** منبع متراژ حل‌شده — PN-084: structural (ستون spaceFrom/To) | inputs | title | none */
+  meterageSource?: "structural" | "inputs" | "title" | "none";
 }
 
 export type TradeIntent = "buy" | "rent" | "unknown";
@@ -137,6 +139,16 @@ export interface MatchResult {
   weightsSource?: "base" | "learned";
   /** تعداد بازخوردهای تغذیه‌کنندهٔ وزن‌های آموخته (۰ = پایه) */
   weightsFeedbackCount?: number;
+  /** PN-084 — پوشش صادقانهٔ ارزیابی: چند سطر فعال واقعاً بررسی شد (پایان سقف خاموش ۳۰۰۰تایی) */
+  coverage?: {
+    evaluated: number;
+    hardPassed: number;
+    activeTotal: number;
+    truncated: boolean;
+    limit: number;
+  };
+  /** PN-084 — پروفایل سیگنال عوامل در این ارزیابی: عامل «هموار» = مقدار ثابت در همهٔ کاندیداها (بدون قدرت تفکیک) */
+  signalProfile?: Array<{ factor: string; n: number; distinct: number; flat: boolean; min: number; max: number }>;
 }
 
 /* ───────────────────────── وزن‌ها (Tier-aware + شخصی‌سازی‌پذیر) ───────────────────────── */
@@ -269,6 +281,160 @@ export function dealTypeCompatible(listingTrade: string | null, intent: TradeInt
 /** وضعیت‌های فعال درخواست (تقاضای زنده) */
 export const ACTIVE_REQUEST_STATUSES = ["سرنخ", "فرصت", "در انتظار تایید", "در انتظار معامله", "ready"];
 
+/* ───────────────────────── PN-084 — مغز تطبیق: پوشش کامل + سیگنال‌های صادقانه ───────────────────────── */
+
+/** رواداری فیلتر سخت قیمت — باید عین همان ثابتِ score() بماند */
+export const PRICE_HARD_TOLERANCE = 0.1;
+
+/**
+ * PN-084 — پیش‌فیلتر SQL نوع معامله (جهت درخواست→آگهی).
+ * آینهٔ امن dealTypeCompatible: فقط وقتی فیلتر می‌کند که سیگنال هست؛ خروجی همیشه
+ * فوق‌مجموعهٔ بازماندگان فیلتر سخت JS است (JS دوباره همان را اعمال می‌کند).
+ */
+export function listingTradeFilterFor(
+  intent: TradeIntent,
+  requestTrade: string | null,
+): Array<{ tradeTypeName: { contains: string } }> | null {
+  if (intent === "buy") return [{ tradeTypeName: { contains: "فروش" } }];
+  if (intent === "rent") return [{ tradeTypeName: { contains: "رهن" } }, { tradeTypeName: { contains: "اجاره" } }];
+  if (requestTrade) {
+    if (requestTrade.includes("خرید") || requestTrade.includes("پیش") || requestTrade.includes("فروش")) return [{ tradeTypeName: { contains: "فروش" } }];
+    if (requestTrade.includes("رهن") || requestTrade.includes("اجاره")) return [{ tradeTypeName: { contains: "رهن" } }, { tradeTypeName: { contains: "اجاره" } }];
+    if (requestTrade.includes("مشارکت")) return [{ tradeTypeName: { contains: "مشارکت" } }];
+  }
+  return null; // بدون هیچ سیگنال — سمت JS تصمیم می‌گیرد (عین dealTypeCompatible)
+}
+
+/**
+ * PN-084 — حل متراژ درخواست با اولویت دادهٔ ساختاری:
+ * ستون‌های spaceFrom/spaceTo (پوشش ~۹۹٫۸٪ در دادهٔ زنده) ← inputsJson (پوشش صفر) ← حدس عنوان.
+ * تابع خالص و تست‌پذیر — منبع یگانهٔ حقیقت برای موتور و تست‌ها.
+ */
+export function resolveRequestMeterage(r: {
+  spaceFrom?: number | null;
+  spaceTo?: number | null;
+  inputsJson?: string | null;
+  title?: string | null;
+}): { meterageFrom: number | null; meterageTo: number | null; source: "structural" | "inputs" | "title" | "none" } {
+  const parsed = parseRequestTitle(r.title ?? null);
+  const sFrom = typeof r.spaceFrom === "number" && r.spaceFrom > 0 ? r.spaceFrom : null;
+  const sTo = typeof r.spaceTo === "number" && r.spaceTo > 0 ? r.spaceTo : null;
+  if (sFrom != null || sTo != null) {
+    const a = sFrom ?? sTo ?? 0;
+    const b = sTo ?? sFrom ?? 0;
+    return { meterageFrom: Math.min(a, b), meterageTo: Math.max(a, b), source: "structural" };
+  }
+  let meterageFrom = parsed.meterageFrom;
+  let meterageTo = parsed.meterageTo;
+  let source: "inputs" | "title" | "none" = parsed.meterageFrom != null ? "title" : "none";
+  if (r.inputsJson) {
+    try {
+      const inputs = JSON.parse(r.inputsJson) as Record<string, unknown>;
+      const faToEn = (v: string) => v.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[,،]/g, "");
+      const from = inputs["متراژ از"] ?? inputs["متراژ"];
+      const to = inputs["متراژ تا"] ?? inputs["متراژ"];
+      const pf = typeof from === "string" ? Number(faToEn(from)) : typeof from === "number" ? from : null;
+      const pt = typeof to === "string" ? Number(faToEn(to)) : typeof to === "number" ? to : null;
+      if (pf !== null && Number.isFinite(pf) && pf > 0) meterageFrom = pf;
+      if (pt !== null && Number.isFinite(pt) && pt > 0) meterageTo = pt;
+      if (meterageFrom != null || meterageTo != null) source = "inputs";
+    } catch { /* لایهٔ خام */ }
+  }
+  if (meterageFrom != null && meterageTo != null && meterageTo < meterageFrom) [meterageFrom, meterageTo] = [meterageTo, meterageFrom];
+  return { meterageFrom, meterageTo, source: meterageFrom != null ? source : "none" };
+}
+
+/**
+ * PN-084 — تازگی تطبیقی: جای‌گاه صدکی آگهی در توزیع syncedAt آگهی‌های منتشرشده.
+ * ریشه: در دادهٔ زنده همهٔ آگهی‌ها بیش از ۳۰ روز قدیمی‌اند ← منحنی مطلق برای همه ۰٫۱ ثابت
+ * می‌داد (سیگنال مرده). نگاشت صدکی [۰٫۱ .. ۱] قدرت تفکیک را برمی‌گرداند و با بازگشت
+ * همگام‌سازی، خودکار با بازار تازه می‌شود. خروجی null = بدون دادهٔ corpus → فراخواننده
+ * به منحنی مطلق برمی‌گردد.
+ */
+export function freshnessFromQuantiles(
+  syncedAtMs: number | null,
+  quantiles: number[] | null,
+): { value: number; note: string } | null {
+  if (!quantiles || quantiles.length < 2) return null;
+  if (syncedAtMs == null || !Number.isFinite(syncedAtMs) || syncedAtMs <= 0) return null;
+  let below = 0;
+  for (const q of quantiles) if (syncedAtMs >= q) below++;
+  const pos = below / quantiles.length;
+  return { value: round2(0.1 + 0.9 * pos), note: `تازه‌تر از ${Math.round(pos * 100)}٪ آگهی‌های منتشرشده` };
+}
+
+/** PN-084 — پروفایل سیگنال: عامل هموار = مقدار ثابت در همهٔ کاندیداها (وزنش قدرت تفکیک ندارد) */
+export const MATCH_FACTOR_LABELS = [
+  "فاصله قیمت", "نزدیکی جغرافیایی", "تناسب متراژ", "تازگی آگهی", "سابقه کارشناس",
+  "تطابق نوع ملک", "تناسب اتاق", "تناسب طبقه", "تناسب سال ساخت",
+] as const;
+
+export function buildSignalProfile(
+  scored: Array<Pick<MatchCandidate, "reasons">>,
+): NonNullable<MatchResult["signalProfile"]> {
+  if (scored.length === 0) return [];
+  const out: NonNullable<MatchResult["signalProfile"]> = [];
+  for (const label of MATCH_FACTOR_LABELS) {
+    const vals = scored
+      .map((c) => c.reasons.find((r) => r.factor === label)?.value)
+      .filter((v): v is number => typeof v === "number");
+    if (vals.length === 0) continue;
+    const distinct = new Set(vals).size;
+    out.push({
+      factor: label,
+      n: vals.length,
+      distinct,
+      flat: distinct === 1 && scored.length > 1,
+      min: Math.min(...vals),
+      max: Math.max(...vals),
+    });
+  }
+  return out;
+}
+
+/** نرمال‌سازی نام منطقه برای مقایسهٔ مقاوم (فاصله/نیم‌فاصله/آأإ — بدون ادغام ارقام) */
+function normalizeAreaName(s: string): string {
+  return s.replace(/[\u200c\s]+/g, " ").replace(/[آأإ]/g, "ا").trim();
+}
+
+/** PN-084 — صدک‌های تازگی corpus منتشرشده (کش ۵ دقیقه‌ای؛ در تست هر بار تازه محاسبه می‌شود) */
+const FRESHNESS_CACHE_TTL_MS = 5 * 60 * 1000;
+let freshnessQuantilesCache: { at: number; qs: number[] | null } | null = null;
+
+async function getFreshnessQuantiles(db: PrismaClient): Promise<number[] | null> {
+  if (process.env.NODE_ENV !== "test" && freshnessQuantilesCache && Date.now() - freshnessQuantilesCache.at < FRESHNESS_CACHE_TTL_MS) {
+    return freshnessQuantilesCache.qs;
+  }
+  const rows = await db.propertyRecord
+    .findMany({ where: { status: "منتشر شده" }, select: { syncedAt: true }, take: 6000 })
+    .catch(() => [] as Array<{ syncedAt: Date | null }>);
+  const ts = rows
+    .map((r) => (r.syncedAt instanceof Date ? r.syncedAt.getTime() : Number.isFinite(Number(r.syncedAt)) ? Number(r.syncedAt) : null))
+    .filter((t): t is number => t != null && Number.isFinite(t) && t > 0);
+  let qs: number[] | null = null;
+  if (ts.length >= 20) {
+    ts.sort((a, b) => a - b);
+    qs = [0.1, 0.3, 0.5, 0.7, 0.9].map((p) => ts[Math.min(ts.length - 1, Math.floor(p * ts.length))]);
+  }
+  freshnessQuantilesCache = { at: Date.now(), qs };
+  return qs;
+}
+
+/** PN-084 — شمار معاملات کارشناسان از گراف (فقط حالت خالیِ پرهزینه کش می‌شود؛ در تست هر بار تازه) */
+const BROKER_CACHE_TTL_MS = 5 * 60 * 1000;
+let brokerEmptyCacheAt = 0;
+
+async function getBrokerTxCounts(db: PrismaClient): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (process.env.NODE_ENV !== "test" && brokerEmptyCacheAt && Date.now() - brokerEmptyCacheAt < BROKER_CACHE_TTL_MS) return map;
+  const edges = await db.graphEdge
+    .groupBy({ by: ["toRef"], _count: true, where: { graph: "transaction", edgeType: "brokered_by" } })
+    .catch(() => [] as Array<{ toRef: string; _count: number }>);
+  for (const row of edges) map.set(row.toRef, row._count);
+  if (map.size === 0) brokerEmptyCacheAt = Date.now(); // فقط حالت خالی (واقعیت دادهٔ زنده) کش می‌شود
+  return map;
+}
+
 /* ───────────────────────── موتور تطبیق ───────────────────────── */
 
 /** زمینهٔ تفکیک شعبه — PN-011 خامسا-۱: همان زنجیرهٔ M1/M2 (PM ← مالک ← کسب‌وکار) */
@@ -322,6 +488,7 @@ export class MatchingEngine {
     status: string; tradeTypeName: string | null; propertyTypeName: string | null;
     priceFrom: number | null; priceTo: number | null; areaNamesJson: string | null;
     inputsJson?: string | null;
+    spaceFrom?: number | null; spaceTo?: number | null;
     roomsFrom?: number | null; roomsTo?: number | null;
     floorFrom?: number | null; floorTo?: number | null;
     buildYearFrom?: number | null; buildYearTo?: number | null;
@@ -332,27 +499,15 @@ export class MatchingEngine {
     if (r.areaNamesJson) {
       try { const v = JSON.parse(r.areaNamesJson); if (Array.isArray(v)) areaNames = v.filter((x) => typeof x === "string"); } catch { /* لایهٔ خام */ }
     }
-    // PN-011 خامسا-۲ — متراژ از فرم پویای ARM (inputsJson): «متراژ از/تا» دقیق‌تر از حدس عنوان
-    let meterageFrom = parsed.meterageFrom;
-    let meterageTo = parsed.meterageTo;
-    if (r.inputsJson) {
-      try {
-        const inputs = JSON.parse(r.inputsJson) as Record<string, unknown>;
-        const faToEn = (v: string) => v.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[,،]/g, "");
-        const from = inputs["متراژ از"] ?? inputs["متراژ"];
-        const to = inputs["متراژ تا"] ?? inputs["متراژ"];
-        const pf = typeof from === "string" ? Number(faToEn(from)) : typeof from === "number" ? from : null;
-        const pt = typeof to === "string" ? Number(faToEn(to)) : typeof to === "number" ? to : null;
-        if (pf !== null && Number.isFinite(pf) && pf > 0) meterageFrom = pf;
-        if (pt !== null && Number.isFinite(pt) && pt > 0) meterageTo = pt;
-        if (meterageFrom != null && meterageTo != null && meterageTo < meterageFrom) [meterageFrom, meterageTo] = [meterageTo, meterageFrom];
-      } catch { /* لایهٔ خام */ }
-    }
+    // PN-084 — متراژ با اولویت دادهٔ ساختاری (spaceFrom/To پوشش ~۹۹٫۸٪) مقدم بر inputsJson و حدس عنوان
+    const meterage = resolveRequestMeterage({ spaceFrom: r.spaceFrom, spaceTo: r.spaceTo, inputsJson: r.inputsJson, title: r.title });
     return {
       id: r.id, requestCode: r.requestCode, title: r.title, customerName: r.customerName,
       status: r.status, tradeTypeName: r.tradeTypeName, propertyTypeName: r.propertyTypeName,
       priceFrom: r.priceFrom, priceTo: r.priceTo, areaNames,
-      meterageFrom, meterageTo,
+      meterageFrom: meterage.meterageFrom,
+      meterageTo: meterage.meterageTo,
+      meterageSource: meterage.source,
       tradeIntent: parsed.tradeIntent, wantedPropertyTypes: parsed.wantedPropertyTypes,
       // PN-028/رابعاً-د — ابعاد ساختاری فرم ARM (ستون‌های مستقیم؛ صفر حدس)
       roomsFrom: r.roomsFrom ?? null, roomsTo: r.roomsTo ?? null,
@@ -375,13 +530,32 @@ export class MatchingEngine {
       areaName: listing.areaName, lineName: listing.lineName,
       ownerCode: listing.ownerCode, status: listing.status, syncedAt: listing.syncedAt,
     };
-    // کاندیداها: درخواست‌های فعال
+    // کاندیداها: درخواست‌های فعال — PN-084: پیش‌فیلتر SQL پنجرهٔ قیمت (رواداری عین فیلتر سخت)
+    // + شمار صادقانهٔ کل فعال‌ها برای پوشش. فوق‌مجموعهٔ بازماندگان فیلتر سخت JS است.
+    const activeTotal = await this.db.requestRecord.count({ where: { status: { in: ACTIVE_REQUEST_STATUSES } } });
+    const limit = this.candidateLimit ?? 3000;
+    const priceWhere = listing.price != null && listing.price > 0
+      ? {
+          OR: [
+            { priceFrom: null },
+            { priceTo: null },
+            {
+              AND: [
+                { priceFrom: { lte: Math.ceil(listing.price / (1 - PRICE_HARD_TOLERANCE)) } },
+                { priceTo: { gte: Math.floor(listing.price / (1 + PRICE_HARD_TOLERANCE)) } },
+              ],
+            },
+          ],
+        }
+      : undefined;
     const rows = await this.db.requestRecord.findMany({
-      where: { status: { in: ACTIVE_REQUEST_STATUSES } },
-      select: { id: true, requestCode: true, title: true, customerName: true, customerMobile: true, status: true, tradeTypeName: true, propertyTypeName: true, priceFrom: true, priceTo: true, areaNamesJson: true, inputsJson: true, updatedAt: true, actorName: true, roomsFrom: true, roomsTo: true, floorFrom: true, floorTo: true, buildYearFrom: true, buildYearTo: true, urgent: true },
-      take: this.candidateLimit ?? 3000,
+      where: { status: { in: ACTIVE_REQUEST_STATUSES }, ...(priceWhere ?? {}) },
+      select: { id: true, requestCode: true, title: true, customerName: true, customerMobile: true, status: true, tradeTypeName: true, propertyTypeName: true, priceFrom: true, priceTo: true, areaNamesJson: true, inputsJson: true, updatedAt: true, actorName: true, roomsFrom: true, roomsTo: true, floorFrom: true, floorTo: true, buildYearFrom: true, buildYearTo: true, urgent: true, spaceFrom: true, spaceTo: true },
+      take: limit,
       orderBy: { updatedAt: "desc" },
     });
+    // PN-084 — تازگی تطبیقی: صدک‌های corpus منتشرشده برای این ارزیابی
+    this.freshnessQuantiles = await getFreshnessQuantiles(this.db);
     // سابقهٔ کارشناسِ آگهی — از گراف معاملات (یال brokered_by)
     const ownerTx = listing.ownerCode
       ? await this.db.graphEdge.count({ where: { graph: "transaction", edgeType: "brokered_by", toRef: listing.ownerCode } })
@@ -416,6 +590,8 @@ export class MatchingEngine {
       weightsUsed: this.weights,
       tier: this.tier,
       evaluatedAt: new Date().toISOString(),
+      coverage: { evaluated: rows.length, hardPassed: scored.length, activeTotal, truncated: rows.length >= limit, limit },
+      signalProfile: buildSignalProfile(scored),
       sourceInfo: {
         code: listing.propertyCode,
         title: listing.title ?? null,
@@ -443,23 +619,39 @@ export class MatchingEngine {
       status: r.status, tradeTypeName: r.tradeTypeName, propertyTypeName: r.propertyTypeName,
       priceFrom: r.priceFrom, priceTo: r.priceTo, areaNamesJson: r.areaNamesJson,
       inputsJson: r.inputsJson,
+      spaceFrom: r.spaceFrom, spaceTo: r.spaceTo,
       roomsFrom: r.roomsFrom, roomsTo: r.roomsTo,
       floorFrom: r.floorFrom, floorTo: r.floorTo,
       buildYearFrom: r.buildYearFrom, buildYearTo: r.buildYearTo,
       urgent: r.urgent,
     });
-    // کاندیداها: آگهی‌های منتشرشده
+    // کاندیداها: آگهی‌های منتشرشده — PN-084: پیش‌فیلتر SQL نوع معامله + پنجرهٔ قیمت
+    // (آینهٔ امن فیلترهای سخت JS — فوق‌مجموعه؛ JS همان را دوباره اعمال می‌کند)
+    const activeTotal = await this.db.propertyRecord.count({ where: { status: "منتشر شده" } });
+    const limit = this.candidateLimit ?? 3000;
+    const tradeFilter = listingTradeFilterFor(req.tradeIntent, req.tradeTypeName);
+    const priceWhere = req.priceFrom != null && req.priceTo != null && req.priceFrom > 0 && req.priceTo > 0
+      ? {
+          OR: [
+            { price: null },
+            {
+              AND: [
+                { price: { gte: Math.floor(req.priceFrom * (1 - PRICE_HARD_TOLERANCE)) - 1 } },
+                { price: { lte: Math.ceil(req.priceTo * (1 + PRICE_HARD_TOLERANCE)) + 1 } },
+              ],
+            },
+          ],
+        }
+      : undefined;
     const rows = await this.db.propertyRecord.findMany({
-      where: { status: "منتشر شده" },
+      where: { status: "منتشر شده", ...(tradeFilter ? { OR: tradeFilter } : {}), ...(priceWhere ?? {}) },
       select: { propertyCode: true, tradeTypeName: true, propertyTypeName: true, price: true, meterage: true, rooms: true, floor: true, buildYear: true, areaName: true, lineName: true, ownerCode: true, ownerName: true, ownerMobile: true, status: true, syncedAt: true, title: true },
-      take: this.candidateLimit ?? 3000,
+      take: limit,
       orderBy: { syncedAt: "desc" },
     });
-    // سابقهٔ کارشناسان — از گراف معاملات (یال‌های brokered_by)؛ منبع یگانهٔ دانش مشترک
-    // (P6.5-04-i: صفر فیلتر دامنهٔ دست‌نویس — شمارش از گراف، نه فیلتر مستقیم ستون دامنه)
-    const txByOwner = new Map<string, number>();
-    const brokerEdges = await this.db.graphEdge.groupBy({ by: ["toRef"], _count: true, where: { graph: "transaction", edgeType: "brokered_by" } });
-    for (const row of brokerEdges) txByOwner.set(row.toRef, row._count);
+    // PN-084 — تازگی تطبیقی + شمار کارشناسان (کش ماژولی)
+    this.freshnessQuantiles = await getFreshnessQuantiles(this.db);
+    const txByOwner = await getBrokerTxCounts(this.db);
 
     const scored: Array<MatchCandidate & { listingCode: string }> = [];
     for (const row of rows) {
@@ -498,6 +690,8 @@ export class MatchingEngine {
       weightsUsed: this.weights,
       tier: this.tier,
       evaluatedAt: new Date().toISOString(),
+      coverage: { evaluated: rows.length, hardPassed: scored.length, activeTotal, truncated: rows.length >= limit, limit },
+      signalProfile: buildSignalProfile(scored),
       sourceInfo: {
         code: r.requestCode ?? r.id,
         title: r.title ?? null,
@@ -527,8 +721,9 @@ export class MatchingEngine {
     }
 
     // فیلتر سخت ۳ — تلاقی منطقه (فقط وقتی مناطق درخواست معلوم است)
+    // PN-084: مقایسه با نرمال‌سازی مقاوم (فاصله/نیم‌فاصله/آأإ) — بدون ادغام ارقام
     if (req.areaNames.length > 0 && listing.areaName) {
-      const regionOk = req.areaNames.includes(listing.areaName);
+      const regionOk = req.areaNames.some((a) => normalizeAreaName(a) === normalizeAreaName(listing.areaName ?? ""));
       if (!regionOk) return { requestId: req.id, score: 0, hardPassed: false, reasons: [], hardFilterNotes: [`منطقهٔ ${listing.areaName} در مناطق درخواست نیست`], signalCoverage: 0 };
       hardFilterNotes.push(`تلاقی منطقه ✓ (${listing.areaName})`);
     }
@@ -575,10 +770,11 @@ export class MatchingEngine {
     }
     reasons.push({ factor: "فاصله قیمت", value: round2(priceDistance), weight: round2(this.weights.priceDistance), note: req.priceFrom != null ? `بازهٔ ${req.priceFrom}-${req.priceTo}` : "بدون بازهٔ قیمت (خنثی)" });
 
-    // ۲) نزدیکی جغرافیایی — همان منطقه ۱ · همان شهر ۰٫۵ · نامعلوم ۰٫۵
+    // ۲) نزدیکی جغرافیایی — پس از فیلتر سختِ منطقه: هم‌منطقه = ۱ · بی‌سیگنال = خنثی ۰٫۵
+    // PN-084: شاخهٔ ۰٫۳ (منطقهٔ متفاوت) پس از فیلتر سخت هرگز قابل‌دسترس نبود — حذف صادقانه
     let geo = 0.5;
-    if (req.areaNames.length > 0 && listing.areaName) { availableWeight.geo = true; geo = req.areaNames.includes(listing.areaName) ? 1 : 0.3; }
-    reasons.push({ factor: "نزدیکی جغرافیایی", value: round2(geo), weight: round2(this.weights.geoProximity), note: listing.areaName ?? "بدون منطقه" });
+    if (req.areaNames.length > 0 && listing.areaName) { availableWeight.geo = true; geo = 1; }
+    reasons.push({ factor: "نزدیکی جغرافیایی", value: round2(geo), weight: round2(this.weights.geoProximity), note: req.areaNames.length > 0 ? (listing.areaName ?? "بدون منطقه") : "بدون منطقهٔ درخواست (خنثی)" });
 
     // ۳) تناسب متراژ — داخل بازهٔ عنوان ۱؛ خارج بازه افت خطی؛ نامعلوم ۰٫۵
     let meterageFit = 0.5;
@@ -593,10 +789,21 @@ export class MatchingEngine {
     }
     reasons.push({ factor: "تناسب متراژ", value: round2(meterageFit), weight: round2(this.weights.meterageFit), note: req.meterageFrom != null ? `${req.meterageFrom}-${req.meterageTo} متر` : "بدون بازهٔ متراژ (خنثی)" });
 
-    // ۴) تازگی آگهی — < ۷ روز ۱ · افت تا ۳۰ روز · بعد ۰٫۱
-    const ageDays = (Date.now() - new Date(listing.syncedAt).getTime()) / 86400000;
-    const freshness = ageDays <= 7 ? 1 : ageDays >= 30 ? 0.1 : Math.max(0.1, 1 - (ageDays - 7) / 23);
-    reasons.push({ factor: "تازگی آگهی", value: round2(freshness), weight: round2(this.weights.freshness), note: `${Math.round(ageDays)} روز` });
+    // ۴) تازگی آگهی — PN-084: تطبیقی (صدک در corpus منتشرشده)؛ بدون corpus = منحنی مطلق
+    // ریشه: همهٔ آگهی‌های زنده بیش از ۳۰ روز قدیمی‌اند ← منحنی مطلق ۰٫۱ ثابت (سیگنال مرده)
+    let freshness = 0.1;
+    let freshnessNote = "بدون زمان همگام‌سازی";
+    const sTs = listing.syncedAt instanceof Date ? listing.syncedAt.getTime() : Number(listing.syncedAt);
+    const adaptive = freshnessFromQuantiles(Number.isFinite(sTs) ? sTs : null, this.freshnessQuantiles);
+    if (adaptive) {
+      freshness = adaptive.value;
+      freshnessNote = adaptive.note;
+    } else if (Number.isFinite(sTs) && sTs > 0) {
+      const ageDays = (Date.now() - sTs) / 86400000;
+      freshness = ageDays <= 7 ? 1 : ageDays >= 30 ? 0.1 : Math.max(0.1, 1 - (ageDays - 7) / 23);
+      freshnessNote = `${Math.round(ageDays)} روز`;
+    }
+    reasons.push({ factor: "تازگی آگهی", value: round2(freshness), weight: round2(this.weights.freshness), note: freshnessNote });
 
     // ۵) سابقهٔ کارشناس — تعداد معاملات ثبت‌شدهٔ کارشناسِ آگهی (نرمال تا ۱۰ معامله)
     // صداقت سیگنال: بدون کد کارشناس (ownerCode=null در کل دادهٔ فعلی) = خنثی ۰٫۵ نه صفر
@@ -665,6 +872,8 @@ export class MatchingEngine {
   }
 
   private candidateLimit?: number;
+  /** PN-084 — صدک‌های تازگی corpus (در آغاز هر ارزیابی تازه می‌شود) */
+  private freshnessQuantiles: number[] | null = null;
   setCandidateLimit(n: number | undefined) { this.candidateLimit = n; }
 }
 

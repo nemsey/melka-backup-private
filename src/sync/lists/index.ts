@@ -163,13 +163,15 @@ async function runOneList(
       }
       const fastOk = !("error" in out.fast);
       const deepOk = !("error" in out.deep);
+      // PN-084 — ترمیم تایپی باقیمانده از PN-083: narrow کردن union با "in" (tsc صفر خطا)
+      const fastWritten = fastOk ? ("written" in out.fast ? out.fast.written : 0) : 0;
       await upsertFourListState(db, listId, {
         status: fastOk ? "done" : "failed",
         lastCompletedPage: 2,
         totalPages: 2,
         detail: {
           source, stage: "done", finishedAt: new Date().toISOString(),
-          lastWritten: fastOk ? out.fast.written + (deepOk ? 0 : 0) : 0,
+          lastWritten: fastWritten,
           fast: out.fast, deep: out.deep,
         },
       }).catch(() => undefined);
@@ -182,7 +184,8 @@ async function runOneList(
     // قفل زندهٔ دیگری (معمولاً بروزرسانی دستی همان فهرست) — پرش صادقانه
     return { fast: { error: `lock-held (${lock.reason ?? "held"})` }, deep: { error: "lock-held" }, lockSkipped: true };
   }
-  return lock.result;
+  // PN-084 — ترمیم تایپی باقیمانده از PN-083: ran=true ولی result اختیاری — پشتیبان صادقانه
+  return lock.result ?? { fast: { error: "no-result" }, deep: { error: "no-result" }, lockSkipped: true };
 }
 
 async function runLcppCycleInner(db: PrismaClient): Promise<LcppCycleResult | null> {

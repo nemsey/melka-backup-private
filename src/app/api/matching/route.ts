@@ -38,6 +38,34 @@ async function getDb() {
 /** سقف خروجی کاشی جدید — برای بندبندی سه‌گانه */
 const TOPN_FOR_TILE = 20;
 
+/* ═══ PN-084 — پوشش کامل کاندیداها + کش‌های ۶۰ثانیه‌ای ورودی‌های تکرارشونده ═══ */
+
+/**
+ * سقف کاندیدای ارزیابی از env — پایان سقف خاموش ۳۰۰۰تایی:
+ * در دادهٔ زنده ۲۳٬۹۷۱ درخواست فعال بود و فقط ۳٬۰۰۰ تازه‌ترین ارزیابی می‌شد (۸۷٪ کور).
+ * پیش‌فرض ۱۲٬۰۰۰ با پیش‌فیلتر SQL قیمت/نوع — عملاً پوشش کامل فعال‌ها.
+ */
+export function candidateLimitFromEnv(): number {
+  const n = Number(process.env.MELK_MATCH_CANDIDATE_LIMIT ?? "12000");
+  if (!Number.isFinite(n)) return 12000;
+  return Math.min(30000, Math.max(3000, Math.floor(n)));
+}
+
+/** کش کوچک درون‌فرایندی (در تست همیشه تازه — قطعیت تست‌ها) */
+function makeCache<T>(ttlMs = 60_000) {
+  let cell: { at: number; v: T } | null = null;
+  return async (load: () => Promise<T>): Promise<T> => {
+    if (process.env.NODE_ENV !== "test" && cell && Date.now() - cell.at < ttlMs) return cell.v;
+    const v = await load();
+    cell = { at: Date.now(), v };
+    return v;
+  };
+}
+
+const learnedWeightsCache = makeCache<Awaited<ReturnType<typeof computeLearnedMatchWeights>>>(60_000);
+const rejectionLessonsCache = makeCache<Awaited<ReturnType<typeof loadRejectionLessons>>>(60_000);
+const matchContextCache = makeCache<MatchContext>(60_000);
+
 /**
  * PN-011 خامسا-۱ — زمینهٔ تفکیک شعبه: همان زنجیرهٔ روت‌های M1/M2 (کد مشترک، نه کپی).
  * بهترین-تلاش: اگر نقشه‌ها خوانده نشوند، شعبه «تعیین نشده» می‌ماند و تطبیق ادامه می‌یابد.
@@ -75,11 +103,11 @@ export async function GET(request: NextRequest) {
       return Response.json({ ok: false, message: "listingCode یا requestId الزامی است" }, { status: 400 });
     }
 
-    // PN-011 خامسا-۲ — وزن‌های آموخته از بازخوردهای پذیرش/رد (بدون داده = پایه)
-    const learned = await computeLearnedMatchWeights(db).catch(() => null);
+    // PN-011 خامسا-۲ — وزن‌های آموخته از بازخوردهای پذیرش/رد (بدون داده = پایه) — کش ۶۰ث PN-084
+    const learned = await learnedWeightsCache(() => computeLearnedMatchWeights(db).catch(() => null));
 
-    // ═══ PN-028/رابعاً-ج — درس‌های رد: جفت‌های ردشده + تقویت وزن از دلایل رد ═══
-    const lessons = await loadRejectionLessons(db);
+    // ═══ PN-028/رابعاً-ج — درس‌های رد: جفت‌های ردشده + تقویت وزن از دلایل رد — کش ۶۰ث PN-084 ═══
+    const lessons = await rejectionLessonsCache(() => loadRejectionLessons(db));
     const effectiveWeights = applyRejectionLessonBoosts(learned ? learned.weights : BASE_MATCH_WEIGHTS, lessons.reasonCounts);
 
     const engine = new MatchingEngine({
@@ -88,10 +116,11 @@ export async function GET(request: NextRequest) {
       weights: effectiveWeights,
       topN: TOPN_FOR_TILE,
       rejectedPairs: lessons.rejectedPairs,
+      candidateLimit: candidateLimitFromEnv(), // PN-084 — پایان سقف خاموش ۳۰۰۰تایی
     });
 
-    // PN-011 خامسا-۱ — زمینهٔ شعبه (همان زنجیرهٔ M1/M2)
-    const ctx = await buildMatchContext(db);
+    // PN-011 خامسا-۱ — زمینهٔ شعبه (همان زنجیرهٔ M1/M2) — کش ۶۰ث PN-084
+    const ctx = await matchContextCache(() => buildMatchContext(db));
 
     const result = listingCode
       ? await engine.matchListingToRequests(listingCode, ctx)

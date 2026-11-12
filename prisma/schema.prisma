@@ -675,6 +675,8 @@ model PropertyRecord {
   // PN-050 (دستور ۲) — ایندکس‌های provenance
   @@index([lastSyncedAt])
   @@index([lastModifiedAt])
+  // PN-084 — مسیر داغ موتور تطبیق: پرس‌وجوی کاندیداها (status + syncedAt — پوشش کامل)
+  @@index([status, syncedAt])
   // PN-027 · ۵-پ-۲ — ایندکس ستون‌های نرمال (پیشوند/دقیق؛ contains روی سطح SQLite می‌ماند)
   @@index([realtorNameNorm])
   @@index([ownerSearchNorm])
@@ -1485,6 +1487,8 @@ model RequestRecord {
   actorNameNorm    String?
 
   @@index([status])
+  // PN-084 — مسیر داغ موتور تطبیق: پرس‌وجوی کاندیداها (status + updatedAt — پوشش کامل)
+  @@index([status, updatedAt])
   @@index([source])
   @@index([customerMobile])
   @@index([createdAt])
