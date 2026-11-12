@@ -1,0 +1,153 @@
+{
+  "pn": "PN-083",
+  "title": "هماهنگ‌ساز فراجامع بروزرسانی چهار فهرست داشبورد ملک تبریز",
+  "commit": "a0721c8",
+  "pushed": "origin/main c3c81af..a0721c8",
+  "buildId": "a0721c8-20261111-2343",
+  "verifiedAt": "2026-11-12T00:04:38.682826",
+  "liveE2E": {
+    "endpointGet": "GET /api/sync/four-lists → 200 (با نشست مالک) · 401 (بدون نشست)",
+    "endpointV1Mirror": "GET /api/v1/sync/four-lists → 401 (آینهٔ زنده)",
+    "forceFlow": "POST {list:all} → پذیرش M1/M2/M3 + M4 → مصرف پرچم LCPP توسط نگهبان ≤۶۰ث → چرخهٔ کامل فاز A/B زیر قفل",
+    "unifiedStates": {
+      "list-m1-arm-listings": {
+        "status": "failed",
+        "page": "2/2",
+        "progressPct": 100.0,
+        "updatedAt": "2026-11-11T23:57:46.505000",
+        "detail": {
+          "source": "forced",
+          "stage": "done",
+          "finishedAt": "2026-11-11T23:57:46.504Z",
+          "lastWritten": 0,
+          "fast": {
+            "error": "ارتباط با سامانه ملک تبریز برقرار نشد."
+          },
+          "deep": {
+            "candidates": 48,
+            "enriched": 0
+          }
+        }
+      },
+      "list-m2-arm-requests": {
+        "status": "failed",
+        "page": "2/2",
+        "progressPct": 100.0,
+        "updatedAt": "2026-11-11T23:57:47.410000",
+        "detail": {
+          "source": "forced",
+          "stage": "done",
+          "finishedAt": "2026-11-11T23:57:47.409Z",
+          "lastWritten": 0,
+          "fast": {
+            "error": "ارتباط با سامانه ملک تبریز برقرار نشد."
+          },
+          "deep": {
+            "candidates": 0,
+            "enriched": 0
+          }
+        }
+      },
+      "list-m3-transactions": {
+        "status": "failed",
+        "page": "2/2",
+        "progressPct": 100.0,
+        "updatedAt": "2026-11-11T23:57:56.609000",
+        "detail": {
+          "source": "forced",
+          "stage": "done",
+          "finishedAt": "2026-11-11T23:57:56.608Z",
+          "lastWritten": 0,
+          "fast": {
+            "error": "ارتباط با سامانه ملک تبریز برقرار نشد."
+          },
+          "deep": {
+            "candidates": 9,
+            "enriched": 0
+          }
+        }
+      },
+      "list-m4-experts": {
+        "status": "failed",
+        "page": "3/3",
+        "progressPct": 100.0,
+        "updatedAt": "2026-11-11T23:55:19.340000",
+        "detail": {
+          "source": "auto",
+          "stage": "done",
+          "finishedAt": "2026-11-11T23:55:19.340Z",
+          "registryRows": 0,
+          "deepEnriched": 0,
+          "counts": {
+            "sale": 201,
+            "rent": 64
+          },
+          "error": "ارتباط با سامانه ملک تبریز برقرار نشد."
+        }
+      }
+    },
+    "liveLocks": [
+      {
+        "jobId": "runtime:worker",
+        "holder": "worker:16136:mwcrutsv-k3lwo6",
+        "expiresAt": "2026-11-12T00:06:01.377000"
+      },
+      {
+        "jobId": "job:catalog-cycle",
+        "holder": "worker:16136:mwcrutsv-k3lwo6",
+        "expiresAt": "2026-11-12T00:05:57.215000"
+      },
+      {
+        "jobId": "update:m1",
+        "holder": "inst:16136:mwcrutsv-k3lwo6",
+        "expiresAt": "2026-11-12T00:09:38.159000"
+      }
+    ],
+    "rowCounts": {
+      "m1": 28782,
+      "m2": 26219,
+      "m3": 842,
+      "m4": 143
+    },
+    "note": "هر چهار فهرست خطای اتصال بالادستی را صادقانه ثبت کردند («ارتباط با سامانه ملک تبریز برقرار نشد») — همان قطعی شناخته‌شدهٔ محیط (APIهای عمومی از sandbox هم HTTP 000 می‌دهند؛ ریشهٔ مشکل ترموکس). مکانیزم هماهنگ‌ساز کامل و درست کار کرد: قفل، وضعیت، فاز، منبع، چرخهٔ بعدی."
+  },
+  "tests": {
+    "pn083New": "11/11 pass",
+    "fullSuite": "3016+ pass · 13 fail",
+    "baselineComparison": "diff خالی — ۱۳ خطای باقی‌مانده عیناً در baseline بدون تغییرات هم هست (از پیش موجود، وابسته به fixture/محیط)",
+    "updatedTestFiles": [
+      "pn010-migration (۲ تست شمارش)",
+      "pn019-phase8",
+      "pn019-phase9",
+      "pn020-phase10-11",
+      "pn031c (مانیفست ۱۱۴)"
+    ]
+  },
+  "filesChanged": {
+    "new": [
+      "src/lib/melk-api/four-lists.ts",
+      "src/app/api/sync/four-lists/route.ts",
+      "src/app/api/v1/sync/four-lists/route.ts",
+      "src/components/tiles/FourListsUpdateBar.tsx",
+      "tests/pn083-four-lists.test.ts",
+      "scripts/pn083-verify.sh"
+    ],
+    "modified": [
+      "src/lib/melk-api/job-state.ts (JOB_IDS +listM1..M4)",
+      "src/sync/lists/index.ts (قفل+وضعیت هر فهرست)",
+      "src/core/runtime/jobs.ts (experts-cycle + lcpp-watch چهارجانبه)",
+      "src/lib/melk-api/catalog-daemon.ts (احترام به قفل m1/m2 + تازگی m3/m4)",
+      "api/crm/arm-catalog/sync (قفل m1/m2 + busy)",
+      "api/crm/transactions/sync (قفل m3 + list-m3)",
+      "api/experts/sync (مسیر مشترک m4)",
+      "TenantDashboard (نوار جدید)",
+      "ArmListingsPage/ArmRequestsPage/ExpertsPage (busy صادقانه)",
+      "OpportunityJobsSection (چهار فهرست + پایش زنده)",
+      "download/pn012/api-versioning.json (۱۱۴)"
+    ],
+    "removed": [
+      "src/components/tiles/LcppSyncStatus.tsx (جانشین: FourListsUpdateBar)"
+    ]
+  },
+  "workerJobs": "۲۵ کار — تازه: experts-cycle (MELK_EXPERTS_SYNC · MELK_EXPERTS_SYNC_INTERVAL_MINUTES پیش‌فرض ۳۰)"
+}
