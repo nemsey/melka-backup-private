@@ -1,17 +1,23 @@
 {
   "guard": "audit-mirror-sync",
   "workOrder": "PN-024/J4 — چک روزانهٔ همگامی آینه (در CI هر بیلد)",
-  "generatedAt": "2026-11-10T10:44:01.791960Z",
+  "generatedAt": "2026-11-12T10:40:52.423923Z",
   "checks": [
     {
       "check": "J4 همگامی آینه",
-      "ok": true,
-      "head": "d293179",
-      "mirror": "d293179",
+      "ok": false,
+      "head": "54904b4",
+      "mirror": "auto-mi",
       "remote": "auto-mirror (GitHub — private backup)"
     }
   ],
-  "notes": [],
-  "violations": [],
-  "pass": true
+  "notes": [
+    "fetch هشدار: fatal: 'auto-mirror' does not appear to be a git repository\nfatal: Could not read from remote repository.\n\nPlease make s",
+    "ahead= behind="
+  ],
+  "violations": [
+    "آینه واگراست: HEAD=54904b4 · mirror=auto-mi · جلوتر= · عقب‌تر= — rebase/هماهنگی فوری لازم",
+    "ریموت auto-mirror تنظیم نشده — آینهٔ GitHub ناشناخته"
+  ],
+  "pass": false
 }
