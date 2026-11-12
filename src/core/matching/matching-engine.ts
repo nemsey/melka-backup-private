@@ -467,6 +467,9 @@ export class MatchingEngine {
     this.db = opts.db;
     this.tier = opts.tier ?? 3;
     this.topN = opts.topN ?? TOP_N;
+    // PN-084 — سیم‌کشی گزینهٔ موجود candidateLimit (پیش‌تر در سازنده نادیده گرفته می‌شد
+    // و فقط setCandidateLimit کار می‌کرد — سقف همیشه ۳۰۰۰ می‌ماند)
+    this.candidateLimit = opts.candidateLimit;
     this.rejectedPairs = opts.rejectedPairs ?? new Set();
     const w = { ...BASE_MATCH_WEIGHTS };
     if (opts.weights) Object.assign(w, opts.weights);
