@@ -1,12 +1,12 @@
 {
   "guard": "audit-mirror-sync",
   "workOrder": "PN-024/J4 — چک روزانهٔ همگامی آینه (در CI هر بیلد)",
-  "generatedAt": "2026-11-12T10:40:52.423923Z",
+  "generatedAt": "2026-11-12T10:49:24.622063Z",
   "checks": [
     {
       "check": "J4 همگامی آینه",
       "ok": false,
-      "head": "54904b4",
+      "head": "6614668",
       "mirror": "auto-mi",
       "remote": "auto-mirror (GitHub — private backup)"
     }
@@ -16,7 +16,7 @@
     "ahead= behind="
   ],
   "violations": [
-    "آینه واگراست: HEAD=54904b4 · mirror=auto-mi · جلوتر= · عقب‌تر= — rebase/هماهنگی فوری لازم",
+    "آینه واگراست: HEAD=6614668 · mirror=auto-mi · جلوتر= · عقب‌تر= — rebase/هماهنگی فوری لازم",
     "ریموت auto-mirror تنظیم نشده — آینهٔ GitHub ناشناخته"
   ],
   "pass": false
