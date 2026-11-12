@@ -26,6 +26,17 @@
  *     مقدم بر موج‌های سنگین اجرا و نتیجه‌شان بی‌درنگ جداگانه POST می‌شود؛
  *     ثبت آگهیِ در صف هرگز پشت موج غنی‌سازی نمی‌ماند (مهلت همان ۵۰ث سنگین).
  *
+ * نسل M+2 — DIR-RELAY-FIX-001 (شورا · ۲۰۲۶-۱۱-۱۲ · P1 لازم‌الاجرا — «توقف
+ *   در ترموکس به دلیل خطاهای شبکه هرگز تکرار نشود»):
+ *   · دستور ۱ — بازیابی خودکار: خطای دروازه 502/503 → تلاش مجدد هر ۱۰ ثانیه
+ *     (نه نردمان ۳۰/۶۰/۱۲۰/۳۰۰ که رله را تا ۵ دقیقه بی‌کار و «مرده» می‌کرد)؛
+ *     خطای نهایی احراز 401/403 (unknown device / device revoked / forbidden)
+ *     → پیام شفاف «کد رله شما منقضی شده است…» + خروج ۱ تا مالک بداند چه کند.
+ *   · دستور ۳ — Wake-Lock خودکار در ابتدای کار + آزادسازی (wake-unlock) در هر
+ *     خروج با تلهٔ EXIT (طبیعی، خطا، انقضای کد).
+ *   · دستور ۲ (در buildInstallCommand پایین همین فایل): -f + پاکسازی و پیام
+ *     شفاف در شکست نصب؛ تایمر معکوس انقضا در UI (RelaySetupSection).
+ *
  * نسل L — PN-041-R (شورا-ن۰۶۸ · فاز ۲ · بند ۲.۱+۲.۲):
  *   · Long-Polling ۱۰۰ث — wait:20→100: سرور تا ۱۰۰ث معلق نگه می‌دارد؛
  *     درخواست‌ها ۴ برابر کم (~۳۴۵۶→~۸۶۰/روز) ⇒ باتری آرام‌تر · MIUI کمتر
@@ -104,6 +115,8 @@ export function buildRelayScript(cfg: RelayScriptConfig): string {
 # این فایل را اجرا نکنید مگر اینکه از طریق «راه‌اندازی رله» در
 # تنظیمات ملکا ساخته شده باشد — راز دستگاه داخلش است.
 # نسل M: حداکثر تیم ارسال/دریافت — موج‌های ۱۲ کارگر · batch=۲۴ · مهلت سنگین ۵۰ث
+# DIR-RELAY-FIX-001 (شورا · ۲۰۲۶-۱۱-۱۲): دروازه 502/503 → تلاش هر ۱۰ث ·
+#         پیام شفاف انقضای کد (401/403 نهایی) + exit 1 · Wake-Lock پابرجا + آزادسازی در خروج
 # نسل L: Long-Polling ۱۰۰ث (wait:100) — کاهش درخواست ۴ برابر (شورا-ن۰۶۸)
 # نسل K: رفع jq ARG_MAX (--rawfile + stdin) · مهلت تطبیقی
 #         (OTP ۱۵ث / سنگین ۵۰ث) · تلاش دوم تایم‌اوت · Express lane OTP ·
@@ -121,6 +134,7 @@ UA="${BROWSER_UA}"
 RELAY_DEBUG="\$HOME/relay-debug.log"
 DEBUG_MAX=524288   # 512KB — چرخش لاگ دیباگ
 RETRY_DELAYS=(30 60 120 300 300)   # نردمان شبکه: ۳۰ث · ۱د · ۲د · ۵د · ۵د
+GATEWAY_RETRY_DELAY=10             # DIR-RELAY-FIX-001 (دستور ۱): دروازه 502/503 → تلاش مجدد هر ۱۰ث
 ALT_FAIL_THRESHOLD=3               # سوئیچ به مسیر جایگزین پس از ۳ خطای پیاپی
 PRIMARY_RECHECK_LOOPS=30           # هر ۳۰ چرخه، مسیر اصلی دوباره آزموده می‌شود
 
@@ -191,6 +205,9 @@ URLS=("$SERVER_URL")
 URL_COUNT=\${#URLS[@]}
 URL_IDX=0
 NET_FAILS=0
+GATEWAY_RETRY_STREAK=0   # DIR-RELAY-FIX-001: 502/503های پیاپی (تلاش همیشه هر ۱۰ث)
+AUTH_403_STREAK=0        # DIR-RELAY-FIX-001: 403های غیرJSON پیاپی (دروازه/WAF)
+LAST_HTTP_CODE=0         # DIR-RELAY-FIX-001: کد وضعیت HTTP آخرین تماس امضاشده
 cur_url() { printf '%s' "\${URLS[$URL_IDX]}"; }
 
 # ── PN-031-I: سقف نرخ — حداکثر ۵ تماس سرور در ۶۰ ثانیه ──
@@ -220,8 +237,22 @@ rate_gate() {
   REQ_TIMES+=("$now")
 }
 
-# بقا در پس‌زمینه (MIUI) — بدون خطا اگر نبود
-command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock 2>/dev/null && log "قفل بیداری فعال شد (شارژر توصیه می‌شود)"
+# DIR-RELAY-FIX-001 (دستور ۳ · شورا): Wake-Lock خودکار — در ابتدای کار قفل بیداری
+# گرفته می‌شود تا اگر کاربر ترموکس را باز نگه داشته، سیستم‌عامل اندروید (MIUI)
+# پروسه را نکشد؛ در «هر» خروج (طبیعی، خطا، انقضای کد) با تلهٔ EXIT آزاد می‌شود.
+if command -v termux-wake-lock >/dev/null 2>&1; then
+    termux-wake-lock
+    log "🔒 Wake Lock فعال شد تا سیستم‌عامل اسکریپت را نکشد."
+fi
+relay_exit() {
+  # DIR-RELAY-FIX-001 (دستور ۳): آزادسازی Wake-Lock در هر خروج
+  if command -v termux-wake-unlock >/dev/null 2>&1; then
+      termux-wake-unlock 2>/dev/null
+      log "🔓 Wake Lock آزاد شد."
+  fi
+  return 0
+}
+trap relay_exit EXIT
 
 sha256hex() { openssl dgst -sha256 -hex | sed 's/^.*= //'; }
 hmac_hex() { openssl dgst -sha256 -hmac "$DEVICE_SECRET" -hex | sed 's/^.*= //'; }
@@ -265,7 +296,7 @@ signed_curl() {
   # MELKA_CURL_TIMEOUT (محیط، اختیاری): مهلت curl — پیش‌فرض ۳۵ث؛ روت poll
   # نسل L آن را ۱۱۰ می‌گذارد (سرور تا ۱۰۰ث معلق نگه می‌دارد + حاشیهٔ ۱۰ث)
   local path="$1" body="$2"; shift 2
-  local ts digest sig timeout_s
+  local ts digest sig timeout_s raw rc
   timeout_s="\${MELKA_CURL_TIMEOUT:-35}"
   ts=\$(( \$(date +%s%3N) + CLOCK_OFFSET ))
   digest=\$(printf '%s' "$body" | sha256hex)
@@ -276,13 +307,21 @@ signed_curl() {
     return 9
   fi
   rate_gate
-  curl --http1.1 -A "$UA" -sS -v --max-time "$timeout_s" "\$(cur_url)$path" "$@" \\
+  # DIR-RELAY-FIX-001 (دستور ۱): کد وضعیت HTTP با -w به انتهای خروجی می‌چسبد؛
+  # خط آخر جدا و در LAST_HTTP_CODE می‌نشیند — بدنه عیناً روی stdout می‌ماند
+  # (بدون تغییر قرارداد فراخواننده‌ها: stdout = بدنه، کد خروج = کد curl).
+  raw=\$(curl --http1.1 -A "$UA" -sS -v --max-time "$timeout_s" "\$(cur_url)$path" "$@" \\
     -H "X-Melka-Relay-Device: $DEVICE_ID" \\
     -H "X-Melka-Timestamp: $ts" \\
     -H "X-Melka-Signature: $sig" \\
-    2> >(sed -u 's/^\\(> *X-Melka-Signature: \\).*/\\1<redacted>/; s/^\\(< *X-Melka-Signature: \\).*/\\1<redacted>/' >> "$RELAY_DEBUG" 2>/dev/null)
-  local rc=$?
+    -w '\\n%{http_code}' \\
+    2> >(sed -u 's/^\\(> *X-Melka-Signature: \\).*/\\1<redacted>/; s/^\\(< *X-Melka-Signature: \\).*/\\1<redacted>/' >> "$RELAY_DEBUG" 2>/dev/null))
+  rc=$?
   debug_rotate
+  LAST_HTTP_CODE="\${raw##*\$'\\n'}"
+  LAST_HTTP_CODE="\${LAST_HTTP_CODE//[!0-9]/}"
+  [ -z "$LAST_HTTP_CODE" ] && LAST_HTTP_CODE=0
+  printf '%s' "\${raw%\$'\\n'*}"
   return $rc
 }
 
@@ -586,7 +625,7 @@ SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0; BATCHES=0
 log "رلهٔ ملکا آغاز شد (نسل M · PN-068 · تیم حداکثری ۱۲ کارگر) — دستگاه: $DEVICE_ID (در حال اتصال…)"
 log "مسیر اصلی: $SERVER_URL"
 [ "$URL_COUNT" -gt 1 ] && log "مسیر جایگزین: $ALT_SERVER_URL (سوئیچ خودکار پس از $ALT_FAIL_THRESHOLD خطای پیاپی)"
-log "حمل‌ونقل: HTTP/1.1 · UA بروزری · نردبان ۳۰/۶۰/۱۲۰/۳۰۰/۳۰۰ · سقف ۵ در دقیقه"
+log "حمل‌ونقل: HTTP/1.1 · UA بروزری · نردبان ۳۰/۶۰/۱۲۰/۳۰۰/۳۰۰ · دروازه 502/503: هر \$GATEWAY_RETRY_DELAYث (DIR-RELAY-FIX-001) · سقف ۵ در دقیقه"
 log "نسل M: دسته batch=$BATCH · موج‌های $MAX_WORKERS کارگر · Express lane (OTP مقدم) · مهلت OTP=$LIGHT_TIMEOUTث / سنگین=$HEAVY_TIMEOUTث · تلاش دوم تایم‌اوت · رفع jq ARG_MAX (--rawfile + stdin)"
 log "لاگ دیباگ: ~/relay-debug.log (هدرها؛ مقدار امضا حذف می‌شود)"
 log "احراز: X-Melka-Relay-Device + X-Melka-Timestamp + X-Melka-Signature"
@@ -616,8 +655,14 @@ while true; do
   BODY="{\\"wait\\":100,\\"batch\\":$BATCH}"
   RESP=""; CURL_EXIT=0
   # نسل L: Long-Polling ۱۰۰ث — مهلت curl ۱۱۰ (سرور ۱۰۰ + حاشیه)
-  RESP=\$(MELKA_CURL_TIMEOUT=110 signed_curl "/api/mobile-relay/poll" "$BODY" \\
-    -X POST -H "Content-Type: application/json" --data-binary "$BODY") || CURL_EXIT=$?
+  # DIR-RELAY-FIX-001: خروجی به فایل موقت ریدایرکت می‌شود (نه $()) — در غیر این
+  # صورت signed_curl داخل subshellِ جای‌گذاری فرمان اجرا می‌شود و LAST_HTTP_CODE
+  # هرگز به حلقهٔ اصلی نمی‌رسد (stdout منتقل می‌شود؛ متغیر نه — درس تست دودویی).
+  RESP_F=\$(mktemp)
+  MELKA_CURL_TIMEOUT=110 signed_curl "/api/mobile-relay/poll" "$BODY" \\
+    -X POST -H "Content-Type: application/json" --data-binary "$BODY" > "$RESP_F" || CURL_EXIT=$?
+  RESP=\$(cat "$RESP_F")
+  rm -f "$RESP_F"
 
   if [ $CURL_EXIT -ne 0 ]; then
     NET_FAILS=\$((NET_FAILS+1))
@@ -632,9 +677,44 @@ while true; do
     sleep "\$delay"; continue
   fi
 
+  # ── DIR-RELAY-FIX-001 (دستور ۱ · شورا): بازیابی خودکار خطای دروازه ──
+  # 502/503 = قطعی موقت (سرور در راه‌اندازی / پروکسی) → تلاش مجدد هر ۱۰ ثانیه؛
+  # نه نردمان ۳۰/۶۰/۱۲۰/۳۰۰ که رله را تا ۵ دقیقه بی‌کار و «متوقف» می‌کرد.
+  if [ "\$LAST_HTTP_CODE" = "502" ] || [ "\$LAST_HTTP_CODE" = "503" ]; then
+    NET_FAILS=\$((NET_FAILS+1))
+    GATEWAY_RETRY_STREAK=\$((GATEWAY_RETRY_STREAK+1))
+    log "دروازهٔ سرور خطای \$LAST_HTTP_CODE داد (قطعی موقت) — هر \$GATEWAY_RETRY_DELAY ثانیه دوباره تلاش می‌کنم (پیاپی: \$GATEWAY_RETRY_STREAK)"
+    if [ "$URL_COUNT" -gt 1 ] && [ "\$NET_FAILS" -ge "$ALT_FAIL_THRESHOLD" ] && [ "\$(( NET_FAILS % ALT_FAIL_THRESHOLD ))" -eq 0 ]; then
+      URL_IDX=\$(( (URL_IDX + 1) % URL_COUNT ))
+      log "سوئیچ به مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) — تلاش بعدی از آنجا"
+    fi
+    sleep "\$GATEWAY_RETRY_DELAY"; continue
+  fi
+
+  # 401 = احراز رد شد (کد/دستگاه منقضی یا باطل) → پیام شفاف + خروج ۱ (دستور ۱)
+  if [ "\$LAST_HTTP_CODE" = "401" ]; then
+    log "⛔ کد رله شما منقضی شده است. لطفاً از داشبورد کد جدید بگیرید. (HTTP 401)"
+    exit 1
+  fi
+
+  # 403ِ بدون قرارداد JSON سرور (دروازه/WAF): یک بار گذرا تحمل؛ دو بار پیاپی =
+  # کد تازه لازم — پیام شفاف + خروج ۱. (403ِ همراه JSON سرور در شاخهٔ قرارداد
+  # پایین دقیق‌تر handle می‌شود: stale → همگام‌سازی ساعت؛ نهایی‌ها → خروج)
+  if [ "\$LAST_HTTP_CODE" = "403" ] && ! printf '%s' "$RESP" | jq -e 'has("ok")' >/dev/null 2>&1; then
+    AUTH_403_STREAK=\$((AUTH_403_STREAK+1))
+    if [ "\$AUTH_403_STREAK" -ge 2 ]; then
+      log "⛔ کد رله شما منقضی شده است. لطفاً از داشبورد کد جدید بگیرید. (HTTP 403 ×\$AUTH_403_STREAK)"
+      exit 1
+    fi
+    log "خطای 403 از دروازه (تلاش \$AUTH_403_STREAK از ۲) — \$GATEWAY_RETRY_DELAY ثانیه دیگر دوباره"
+    sleep "\$GATEWAY_RETRY_DELAY"; continue
+  fi
+
   # خالی (204/شبکه) — ادامهٔ poll (سرور تا ۱۰۰ث معلق نگه داشت (نسل L · شورا-ن۰۶۸) — «۱ ثانیه» فاصلهٔ تنفس)
   if [ -z "$RESP" ]; then
     NET_FAILS=0
+    GATEWAY_RETRY_STREAK=0
+    AUTH_403_STREAK=0
     if [ "$CONNECT_OK" -eq 0 ]; then
       CONNECT_OK=1
       log "✓ اتصال تأیید شد — رلهٔ ملکا فعال است (مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ))"
@@ -647,6 +727,16 @@ while true; do
     ERRMSG=\$(printf '%s' "$RESP" | jq -r '.error // empty' 2>/dev/null)
     MISSING=\$(printf '%s' "$RESP" | jq -r 'if (.missing // []) | length > 0 then (.missing | join("، ")) else empty end' 2>/dev/null)
     if [ -n "$ERRMSG" ]; then
+      # DIR-RELAY-FIX-001 (دستور ۱): خطاهای «نهایی» کد/دستگاه — پیام شفاف + خروج ۱.
+      # (unknown device = دستگاه پاک‌شده/کد سوخته · device revoked = ابطال مالک ·
+      #  forbidden = راز ناهمخوان — هر سه فقط با کد تازه از داشبورد حل می‌شوند.
+      #  stale request و missing auth headers نهایی نیستند: همگام‌سازی ساعت/۳۰ث — دست‌نخورده)
+      case "\$ERRMSG" in
+        "unknown device"|"device revoked"|"forbidden")
+          log "⛔ کد رله شما منقضی شده است. لطفاً از داشبورد کد جدید بگیرید. (سرور: \$ERRMSG)"
+          exit 1
+          ;;
+      esac
       # پاسخ JSON معتبر از سرور خودمان (قرارداد خطای احراز) — سرور در دسترس است؛
       # رفتار پیشین: ۳۰ث صبر، بدون چرخش مسیر
       NET_FAILS=0
@@ -682,6 +772,8 @@ while true; do
 
   # ── پاسخ موفق — استخراج دسته (items[]) با سازگاری عقبه (request تک‌آیتمی) ──
   NET_FAILS=0
+  GATEWAY_RETRY_STREAK=0
+  AUTH_403_STREAK=0
   N_ITEMS=\$(printf '%s' "$RESP" | jq '.items | length' 2>/dev/null)
   if [ -z "$N_ITEMS" ] || [ "\$N_ITEMS" = "0" ] || [ "\$N_ITEMS" = "null" ]; then
     ITEMS_JSON=\$(printf '%s' "$RESP" | jq -c '[.request] // []' 2>/dev/null)
@@ -723,5 +815,21 @@ export function buildInstallCommand(serverUrl: string, enrollCode: string): stri
   // PN-031-I: همان حمل‌ونقل بقا — http1.1 + UA بروزری برای دانلود bootstrap
   // PN-034 (شورا-ن۰۵۵): openssl-tool — بستهٔ CLI واقعی Termux؛ مسیر اثبات‌شدهٔ مالک
   // (PN-031-I/J: pkg install -y openssl-tool → پیست همین دستور → Enter → اتصال ✓)
-  return `pkg install -y curl openssl-tool jq && curl --http1.1 -A "${BROWSER_UA}" -fsSL "${url}/api/mobile-relay/bootstrap?code=${code}" -o ~/melka-relay.sh && chmod 600 ~/melka-relay.sh && bash ~/melka-relay.sh`;
+  // DIR-RELAY-FIX-001 (دستور ۲ · شورا ۲۰۲۶-۱۱-۱۲): curl -f → شکست دانلود روی HTTP
+  // 403 (کد منقضی «در همان لحظهٔ اول») شاخهٔ پاکسازی را فعال می‌کند: پیام شفاف +
+  // حذف فایل ناقص/قبلی. دو انحراف آگاهانه از قالب خام شورا (مستند در ورک‌لاگ):
+  //   ۱) «openssl» در Termux فقط کتابخانه است؛ بستهٔ CLI همان openssl-tool است
+  //      (نصبِ openssl دستور openssl نمی‌دهد → اسکریپت اصلاً بالا نمی‌آمد).
+  //   ۲) فاز نصب از فاز اجرا جدا شد (if/then/else): در قالب خام «bash … || cleanup»
+  //      توقفِ عمدی رله با Ctrl+C هم اسکریپتِ سالم را پاک می‌کرد. پاکسازی فقط
+  //      برای شکست نصب (pkg/curl/chmod) — پیام و پاکسازی عین متن شورا.
+  //   chmod 600 ← 700 (قالب شورا) — bash فایل را می‌خواند؛ اجرا هم مجاز است.
+  return `if pkg install -y curl openssl-tool jq && \\
+   curl --http1.1 -A "${BROWSER_UA}" -fsSL "${url}/api/mobile-relay/bootstrap?code=${code}" -o ~/melka-relay.sh && \\
+   chmod 700 ~/melka-relay.sh; then
+  bash ~/melka-relay.sh
+else
+  echo "خطا در نصب! لطفاً کد جدید بگیرید."
+  rm -f ~/melka-relay.sh
+fi`;
 }

@@ -17,6 +17,12 @@
  *   ۷) آمار عبور ۲۴ ساعت (OWNER)
  *   ۸) راهنمای ۳ خطی مسیر اثبات‌شدهٔ نصب
  *
+ * DIR-RELAY-FIX-001 (دستور ۲ · شورا ۲۰۲۶-۱۱-۱۲ · P1):
+ *   · تایمر معکوس زندهٔ انقضای کد نصب (MM:SS · هر ثانیه) — سبز >۵د · زرد ۱-۵د ·
+ *     قرمز <۱د؛ پس از انقضا هشدار + بازگشت دکمهٔ «تولید کد نصب» تازه.
+ *   · دستور نصب سمت سرور (buildInstallCommand) هم‌زمان ارتقا یافت: curl -f +
+ *     پاکسازی فایل و پیام شفاف در شکست نصب (جلوگیری از 403 در لحظهٔ اول).
+ *
  * درس ماندگار جلسهٔ ۰۵۴: «پاکسازی بیش از حد، به اندازهٔ ناکافی بد است.»
  */
 
@@ -26,7 +32,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Smartphone, Activity, Copy, ShieldCheck, KeyRound, Wifi, Timer, HeartPulse, Database, Gauge } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
-import { faDateTime, faNumber } from "@/lib/format";
+import { faDateTime, faNumber, faDigits } from "@/lib/format";
 import { useAppStore } from "@/lib/client/store";
 import { MiuiWakeLockGuide } from "./MiuiWakeLockGuide";
 
@@ -86,6 +92,8 @@ export function RelaySetupSection() {
   const [testing, setTesting] = useState(false);
   const [test, setTest] = useState<TestResult | null>(null);
   const [probing, setProbing] = useState(false);
+  /** DIR-RELAY-FIX-001 (دستور ۲): تیک زمان برای تایمر معکوس انقضای کد نصب */
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
 
   /** سنجهٔ ۱ — وضعیت ۳ لایه از /api/relay/health (هر نشست فعال · بدون نقش مالک) */
   const loadHealth = useCallback(async () => {
@@ -119,8 +127,23 @@ export function RelaySetupSection() {
     if (role === "OWNER") void loadStatus();
   }, [role, loadStatus]);
 
+  /** DIR-RELAY-FIX-001 (دستور ۲ · شورا): تایمر معکوس انقضای کد نصب — هر ثانیه */
+  useEffect(() => {
+    if (!enroll) return;
+    setNowMs(Date.now());
+    const t = setInterval(() => setNowMs(Date.now()), 1_000);
+    return () => clearInterval(t);
+  }, [enroll]);
+
   const onlineCount = status?.devices.filter((d) => d.online).length ?? 0;
   const relayAlive = health ? health.verdict !== "red" : onlineCount > 0;
+
+  // DIR-RELAY-FIX-001 (دستور ۲): شمارش معکوس اعتبار کد نصب (۳۰ دقیقه)
+  const enrollExpiresMs = enroll ? new Date(enroll.enrollExpires).getTime() : 0;
+  const secondsLeft = enroll ? Math.max(0, Math.floor((enrollExpiresMs - nowMs) / 1000)) : 0;
+  const enrollActive = !!enroll && secondsLeft > 0;
+  const countdownMm = faDigits(String(Math.floor(secondsLeft / 60)).padStart(2, "0"));
+  const countdownSs = faDigits(String(secondsLeft % 60).padStart(2, "0"));
 
   /** سنجهٔ ۲ — تولید کد نصب تازه (OWNER) */
   const startEnroll = async () => {
@@ -275,12 +298,18 @@ export function RelaySetupSection() {
       {/* سنجهٔ ۲ — تولید کد نصب + دستور (OWNER — درس ۰۵۴: دکمه حذف نشود)
           PN-047/گام دوم-۲ (دستور مالک ۱۴۰۵/۰۷/۲۹): بخش QR کد نصب حذف شد —
           مسیر اثبات‌شدهٔ نصب همان کپی/پیست دستور در Termux است. */}
-      {isOwner && !enroll ? (
+      {isOwner && !enrollActive ? (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            اگر رله آفلاین است یا گوشی ری‌استارت شده: کد نصب تازه بگیرید، در Termux پیست کنید و Enter بزنید —
-            مسیر سه‌گامی پیش‌روی شما (همان مسیر موفق PN-031-I).
-          </p>
+          {enroll ? (
+            <p className="text-xs leading-relaxed font-bold text-red-600 dark:text-red-400">
+              ⏰ کد نصب قبلی منقضی شد (پنجرهٔ ۳۰ دقیقه‌ای بسته شد) — دکمهٔ زیر کد تازه صادر می‌کند.
+            </p>
+          ) : (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              اگر رله آفلاین است یا گوشی ری‌استارت شده: کد نصب تازه بگیرید، در Termux پیست کنید و Enter بزنید —
+              مسیر سه‌گامی پیش‌روی شما (همان مسیر موفق PN-031-I).
+            </p>
+          )}
           <Button size="sm" className="gap-2" onClick={() => void startEnroll()} disabled={enrolling}>
             {enrolling ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <KeyRound className="w-4 h-4" aria-hidden />}
             تولید کد نصب
@@ -288,31 +317,37 @@ export function RelaySetupSection() {
         </div>
       ) : null}
 
-      {isOwner && enroll ? (
+      {isOwner && enrollActive && enroll ? (
         <div className="rounded-lg border border-primary/40 bg-primary/5 p-4 space-y-3">
           <p className="text-sm font-bold flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-teal-600" aria-hidden />
             کد نصب صادر شد: {enroll.label}{" "}
             <span className="font-mono text-[10px] text-muted-foreground" dir="ltr">({enroll.deviceId})</span>
           </p>
-          {/* PN-047/گام دوم-۲ (دستور مالک ۱۴۰۵/۰۷/۲۹): بخش QR کد نصب حذف شد —
-              مسیر اثبات‌شدهٔ نصب = کپی/پیست دستور در Termux (درس ۰۵۴: دکمهٔ تولید حفظ) */}
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground leading-relaxed">
+          {/* DIR-RELAY-FIX-001 (دستور ۲ · شورا): تایمر معکوس زندهٔ انقضای کد نصب */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant={secondsLeft > 300 ? "default" : secondsLeft > 60 ? "outline" : "destructive"}
+              className="gap-1 font-mono"
+            >
+              <Timer className="w-3 h-3" aria-hidden />
+              انقضای کد نصب: {countdownMm}:{countdownSs}
+            </Badge>
+            <span className="text-[10px] text-muted-foreground" dir="rtl">
               اعتبار تا <b>{faDateTime(enroll.enrollExpires)}</b> — تا{" "}
               <b>{faNumber(enroll.maxAttempts ?? 3)} بار</b> قابل استفاده (کد بخشنده). اگر تلاش اول خطا داد،
               همان کد را دوباره پیست کنید.
-            </p>
-            <div className="rounded-md bg-card border p-2">
-              <p className="text-[10px] text-muted-foreground mb-1">دستور نصب — کپی و در Termux پیست کنید:</p>
-              <code className="text-[11px] font-mono break-all leading-relaxed block" dir="ltr">
-                {enroll.installCommand}
-              </code>
-            </div>
-            <Button size="sm" variant="outline" className="gap-2" onClick={() => void copyCommand()}>
-              <Copy className="w-3.5 h-3.5" aria-hidden /> کپی دستور نصب
-            </Button>
+            </span>
           </div>
+          <div className="rounded-md bg-card border p-2">
+            <p className="text-[10px] text-muted-foreground mb-1">دستور نصب — کپی و در Termux پیست کنید:</p>
+            <code className="text-[11px] font-mono break-all leading-relaxed block" dir="ltr">
+              {enroll.installCommand}
+            </code>
+          </div>
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => void copyCommand()}>
+            <Copy className="w-3.5 h-3.5" aria-hidden /> کپی دستور نصب
+          </Button>
         </div>
       ) : null}
 
