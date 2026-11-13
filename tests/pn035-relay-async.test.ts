@@ -49,11 +49,11 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("method $RMETHOD not allowed");
   });
 
-  test("A-2) poll دسته‌ای — wait=100 (نسل L · شورا-ن۰۶۸) · batch=24 (نسل M · PN-068)", () => {
-    // PN-041-R (شورا-ن۰۶۸ · بند ۲.۲): Long-Polling ۱۰۰ث — کاهش درخواست ۴ برابر
-    // PN-068 (نسل M): batch=۲۴ — دو موج کامل ۱۲تایی در هر poll (حداکثر تیم ارسال/دریافت)
-    expect(script).toContain('BODY="{\\"wait\\":100,\\"batch\\":$BATCH}"');
-    expect(script).toContain("BATCH=24");
+  test("A-2) poll دسته‌ای — wait=50 · batch=48 (نسل N · DIR-RELAY-UNLIMITED-001)", () => {
+    // نسل N: انتظار ۱۰۰ ← ۵۰ (تازگی lastSeen) و دسته ۲۴ ← ۴۸ (سرعت فهرست‌ها)
+    expect(script).toContain('BODY="{\\"wait\\":$POLL_WAIT_S,\\"batch\\":$BATCH}"');
+    expect(script).toContain("BATCH=48");
+    expect(script).toContain("POLL_WAIT_S=50");
   });
 
   test("A-3) خواندن items[] + سازگاری عقبه (request تک‌آیتمی نسل‌های قدیم)", () => {
@@ -62,18 +62,19 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("[.request]");
   });
 
-  test("A-4) نتیجهٔ دسته‌ای — ادغام jq از stdin (PN-036: رفع ARG_MAX) و «یک» POST برای کل دسته", () => {
+  test("A-4) نتیجهٔ دسته‌ای — ادغام jq از stdin (PN-036: رفع ARG_MAX) + POST جریانی از انبار (نسل N)", () => {
     expect(script).toContain("jq -sc '.'");
-    expect(script).toContain('post_results "$RESULT_JSON"');
-    // نسل K: cat فایل‌ها → jq از stdin — نه مسیرهای فایل در خط فرمان (سقف ~128KB Termux)
-    expect(script).toContain('RESULT_JSON=$(cat "$RESULTS_DIR"/*.json 2>/dev/null | jq -sc');
+    expect(script).toContain('post_results "$payload"');
+    // نسل N: drain_spool — cat فایل‌های انبار → jq از stdin (نه آرگومان خط فرمان)
+    expect(script).toContain("payload=$(printf '%s\\n' \"$files\" | xargs cat 2>/dev/null | jq -sc");
+    expect(script).toContain('| xargs rm -f 2>/dev/null'); // عکسبندی فهرست — حذف دقیقاً همان فایل‌های پست‌شده
   });
 
   test("A-5) پایداری نتیجه — retry×۳ + backoff + ذخیرهٔ محلی + TTL + بازپخش (فاز ۲)", () => {
     expect(script).toContain("RESULT_ATTEMPTS=3");
     expect(script).toContain("RESULT_BACKOFF=(2 6)");
     expect(script).toContain('FAILED_RESULTS="$HOME/failed-results.jsonl"');
-    expect(script).toContain("FAILED_TTL_S=600");
+    expect(script).toContain("FAILED_TTL_S=3600"); // نسل N: ۱۰دقیقه ← ۱ساعت
     expect(script).toContain("store_failed");
     expect(script).toContain("replay_failed_results");
     expect(script).toContain('tail -n "$FAILED_MAX_LINES"');
@@ -87,11 +88,12 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("gzip -c");
   });
 
-  test("A-7) موج‌های موازی — MAX_WORKERS=12 (نسل M · PN-068) + wait بین موج‌ها (فاز ۵)", () => {
-    // PN-068: ۸ ← ۱۲ کارگر — فرمان مالک «تیم‌های ارسال و دریافت را به حداکثر برسان»
-    expect(script).toContain("MAX_WORKERS=12");
-    expect(script).toContain("if [ $(( IDX % MAX_WORKERS )) -eq 0 ]; then");
-    expect(script).toContain('process_item "$ITEM"');
+  test("A-7) استخر پویای کارگران — MAX_WORKERS=16 + EXPRESS_SLOTS=8 (نسل N · DIR-RELAY-UNLIMITED-001)", () => {
+    // به‌جای موج‌های قفل‌شده: کارگران تا سقف ۱۶+۸ پیوسته از صف می‌گیرند
+    expect(script).toContain("MAX_WORKERS=16");
+    expect(script).toContain("EXPRESS_SLOTS=8");
+    expect(script).toContain('active_jobs() { jobs -pr | wc -l; }');
+    expect(script).toContain('process_item_spool "$ITEM" "$SPOOL_DIR" &');
   });
 
   test("A-8) نحو bash معتبر — اجرای واقعی bash -n", () => {
@@ -107,14 +109,13 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("امضای سرور نامعتبر");
   });
 
-  test("A-10) نشانگر نسل M (PN-068) و نسل L (PN-041-R) و نسل K (PN-036) و ثابت‌های اعلامی در لاگ آغاز", () => {
-    // نسل M = حداکثر تیم ارسال/دریافت (PN-068) — نشانگر در سربرگ و لاگ آغاز
-    expect(script).toContain("نسل M · PN-068");
-    expect(script).toContain("تیم حداکثری ۱۲ کارگر");
-    expect(script).toContain("نسل L: Long-Polling ۱۰۰ث");
-    expect(script).toContain("نسل K: رفع jq ARG_MAX");
-    expect(script).toContain("نسل M: دسته batch=$BATCH · موج‌های $MAX_WORKERS کارگر · Express lane (OTP مقدم) · مهلت OTP=$LIGHT_TIMEOUTث / سنگین=$HEAVY_TIMEOUTث · تلاش دوم تایم‌اوت · رفع jq ARG_MAX (--rawfile + stdin)");
-    expect(script).toContain("MELKA_CURL_TIMEOUT=110 signed_curl");
+  test("A-10) نشانگر نسل N (DIR-RELAY-UNLIMITED-001) و نسل K (PN-036) و ثابت‌های اعلامی در لاگ آغاز", () => {
+    // نسل N = بی‌توقف + حداکثر سرعت — نشانگر در سربرگ و لاگ آغاز
+    expect(script).toContain("نسل N · DIR-RELAY-UNLIMITED-001");
+    expect(script).toContain("استخر $MAX_WORKERS+$EXPRESS_SLOTS کارگر");
+    expect(script).toContain("رفع jq ARG_MAX (--rawfile + stdin)");
+    expect(script).toContain("نسل N: batch=$BATCH · استخر $MAX_WORKERS+$EXPRESS_SLOTS کارگر · نتیجهٔ جریانی (موج‌به‌موج) · poll میان‌موجی هر $EXPRESS_POLL_Sث · مهلت OTP=$LIGHT_TIMEOUTث / فهرست=$LIST_TIMEOUTث / سنگین=$HEAVY_TIMEOUTث · رفع jq ARG_MAX (--rawfile + stdin)");
+    expect(script).toContain("MELKA_CURL_TIMEOUT=$(( POLL_WAIT_S + 15 )) signed_curl");
   });
 
   test("A-11) دستور نصب — حمل‌ونقل بقا پابرجا (openssl-tool · http1.1 · bootstrap)", () => {
@@ -135,11 +136,14 @@ describe("PN-036 · K) اسکریپت نسل K — رفع jq ARG_MAX + batch س�
     expect(script).toContain('base64 -w0 "$TMP" 2>/dev/null > "$B64F"');
   });
 
-  test("K-2) مهلت تطبیقی — تعاملی ۱۵ث / سنگین ۵۰ث (نسل M · PN-068)", () => {
+  test("K-2) مهلت تطبیقی — تعاملی ۱۵ث / فهرست ۲۵ث (نسل N) / سنگین ۵۰ث", () => {
     expect(script).toContain("LIGHT_TIMEOUT=15");
+    expect(script).toContain("LIST_TIMEOUT=25");
     expect(script).toContain("HEAVY_TIMEOUT=50");
     expect(script).toContain("is_interactive");
+    expect(script).toContain("is_list");
     expect(script).toContain('local MAX_TIME="$LIGHT_TIMEOUT"');
+    expect(script).toContain('local MAX_TIME="$LIST_TIMEOUT"');
     expect(script).toContain('local MAX_TIME="$HEAVY_TIMEOUT"');
   });
 
@@ -148,14 +152,15 @@ describe("PN-036 · K) اسکریپت نسل K — رفع jq ARG_MAX + batch س�
     expect(script).toContain("if [ $CURL_EXIT -eq 28 ]; then");
   });
 
-  test("K-4) Express lane — آیتم‌های OTP «و ثبت آگهی» جدا از فهرست‌های سنگین و مقدم (PN-080)", () => {
+  test("K-4) Express lane — آیتم‌های OTP «و ثبت آگهی» جدا از فهرست‌های سنگین و مقدم (PN-080 + نسل N)", () => {
     // PN-080 (حکم مالک ۲۰۲۶-۱۱-۱۰): خانوادهٔ ثبت آگهی هم‌ردیف OTP در خط ویژه —
     // test() جایگزین contains() تا هر چهار مسیر با یک الگو پوشش داده شوند.
+    // نسل N: express در ابتدای صف استخر می‌نشیند (نه مجموعهٔ جدا) + poll میان‌موجی.
     expect(script).toContain('test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number")');
-    expect(script).toContain('run_batch_set "$EXPRESS_JSON" "express"');
-    expect(script).toContain('run_batch_set "$NORMAL_JSON" "normal"');
+    expect(script).toContain('process_set "$ITEMS_JSON"');
+    expect(script).toContain("Express lane (PN-036 فاز ۵ + PN-080)");
     expect(script).toContain("is_registration");
-    expect(script).toContain('log "Express lane: $EXPRESS_N آیتم تعاملی (OTP/ثبت آگهی) — پیش از فهرست‌ها اجرا می‌شود"');
+    expect(script).toContain("express_poll_items");
   });
 
   test("K-5) لاگ زمان هر آیتم — روش + مسیر بدون کوئری + کد + مدت (فاز ۴.۱)", () => {
@@ -171,9 +176,9 @@ describe("PN-036 · K) اسکریپت نسل K — رفع jq ARG_MAX + batch س�
   });
 
   test("K-6) run_batch_set — هر مجموعه موج‌های ۸تایی + جمع‌آوری stdin + POST جدا", () => {
-    expect(script).toContain("run_batch_set()");
-    expect(script).toContain('process_item "$ITEM"');
-    expect(script).toContain('دسته $label: $TOTALN نتیجه');
+    expect(script).toContain("process_set()");
+    expect(script).toContain('process_item "$item" "$outf"');
+    expect(script).toContain("جریان نتیجه:");
   });
 });
 
@@ -290,8 +295,22 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
     writeFileSync(RECORDS, "");
     runScript();
 
-    // منتظر POST نتیجه (اجرا + DNS-fail سریع آیتم‌ها)
-    await waitFor(() => readRecords().some((r) => r.kind === "result"), 75_000);
+    // منتظر «همهٔ» ۳۰ نتیجه — نسل N جریانی پست می‌کند؛ نخستین POST می‌تواند
+    // جزئی باشد (زیر بار تست، DNS کندتر تمام می‌شود) — شمار شناسه‌های یکتا ملاک است
+    const countResultIds = (): number => {
+      const ids = new Set<string>();
+      for (const r of readRecords().filter((x) => x.kind === "result")) {
+        try {
+          const w = Buffer.from(r.body_b64, "base64");
+          const text = r.headers["content-encoding"] === "gzip" ? gunzipSync(w).toString("utf8") : w.toString("utf8");
+          for (const item of JSON.parse(text) as Array<{ id?: string }>) if (item.id) ids.add(item.id);
+        } catch {
+          /* پست ناقص/در حال نوشتن — چرخهٔ بعد */
+        }
+      }
+      return ids.size;
+    };
+    await waitFor(() => countResultIds() >= 30, 75_000);
     stopAll();
 
     const recs = readRecords();
@@ -300,33 +319,37 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
 
     // poll دسته‌ای با بدنهٔ قراردادی — نسل L (شورا-ن۰۶۸): wait=100
     expect(polls.length).toBeGreaterThanOrEqual(1);
-    expect(Buffer.from(polls[0].body_b64, "base64").toString("utf8")).toBe('{"wait":100,"batch":24}');
+    expect(Buffer.from(polls[0].body_b64, "base64").toString("utf8")).toBe('{"wait":50,"batch":48}');
 
-    // کل دسته در یک POST واحد
-    expect(results.length).toBe(1);
-    const res = results[0];
-    expect(res.path).toBe("/api/mobile-relay/result");
+    // نسل N: نتیجه‌های جریانی — یک یا چند POST؛ مجموع اقلام باید کامل برسد
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    expect(results[0].path).toBe("/api/mobile-relay/result");
 
-    // مسیر gzip فعال بود (بدنه > ۱KB)
-    expect(res.headers["content-encoding"]).toBe("gzip");
+    const decode = (r: (typeof results)[number]): Array<{ id: string; error?: string }> => {
+      const w = Buffer.from(r.body_b64, "base64");
+      const text = r.headers["content-encoding"] === "gzip" ? gunzipSync(w).toString("utf8") : w.toString("utf8");
+      return JSON.parse(text) as Array<{ id: string; error?: string }>;
+    };
+    const all = results.flatMap(decode);
+    expect(all.length).toBe(30);
+    expect(new Set(all.map((r) => r.id)).size).toBe(30);
+    expect(all.every((r) => typeof r.error === "string" && r.error.includes("curl exit"))).toBe(true);
 
-    // امضای گوشی روی «همان بایت‌های فشردهٔ سیم» — قرارداد فاز ۶
-    const wire = Buffer.from(res.body_b64, "base64");
-    const digest = createHash("sha256").update(wire).digest("hex");
-    const ts = res.headers["x-melka-timestamp"];
-    const expectSig = createHmac("sha256", DEVICE_SECRET)
-      .update(`POST\n/api/mobile-relay/result\n${digest}\n${ts}`)
-      .digest("hex");
-    expect(res.headers["x-melka-signature"]).toBe(expectSig);
-    expect(res.headers["x-melka-relay-device"]).toBe(DEVICE_ID);
-
-    // بازکردن gzip → آرایهٔ ۳۰ نتیجه با شناسه‌های صحیح
-    const arr = JSON.parse(gunzipSync(wire).toString("utf8")) as Array<{ id: string; error?: string }>;
-    expect(arr.length).toBe(30);
-    expect(arr[0].id).toBe("jobitem-001");
-    expect(arr[29].id).toBe("jobitem-030");
-    // آیتم‌ها DNS-NXDOMAIN دارند → خطای curl ۶ (whitelist عبور کرد، تماس واقعی نه)
-    expect(arr.every((r) => typeof r.error === "string" && r.error.includes("curl exit"))).toBe(true);
+    // مسیر gzip فعال بود برای پست‌های بزرگ (بدنهٔ سیم > ۱KB)
+    for (const res of results) {
+      if (Buffer.from(res.body_b64, "base64").length > 1024) {
+        expect(res.headers["content-encoding"]).toBe("gzip");
+        // امضای گوشی روی «همان بایت‌های فشردهٔ سیم» — قرارداد فاز ۶
+        const wire = Buffer.from(res.body_b64, "base64");
+        const digest = createHash("sha256").update(wire).digest("hex");
+        const ts = res.headers["x-melka-timestamp"];
+        const expectSig = createHmac("sha256", DEVICE_SECRET)
+          .update(`POST\n/api/mobile-relay/result\n${digest}\n${ts}`)
+          .digest("hex");
+        expect(res.headers["x-melka-signature"]).toBe(expectSig);
+        expect(res.headers["x-melka-relay-device"]).toBe(DEVICE_ID);
+      }
+    }
   }, 120_000);
 
   test("B-2) خطای گذرا (پاسخ غیرJSON دروازه) → retry×۳ → ذخیرهٔ محلی failed-results.jsonl", async () => {

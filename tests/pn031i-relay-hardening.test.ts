@@ -52,9 +52,10 @@ describe("PN-031-I · الف) لایهٔ ۱ — حمل‌ونقل مقاوم د�
   });
 
   test("الف-۴: سقف نرخ — حداکثر ۵ تماس در پنجرهٔ ۶۰ثانیه‌ای", () => {
-    expect(script).toContain("-ge 5 ]");
+    expect(script).toContain('-ge "$RATE_MAX" ]');
+    expect(script).toContain("RATE_MAX=20");
     expect(script).toContain("60 - (now - oldest) + 1");
-    expect(script).toContain("سقف نرخ (۵ در دقیقه)");
+    expect(script).toContain('سقف نرخ ($RATE_MAX در دقیقه)');
   });
 
   test("الف-۵: لاگ دیباگ با redact امضا + چرخش اندازه", () => {

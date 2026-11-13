@@ -284,8 +284,8 @@ describe("PN-031-C · F) سازگاری ساختاری — روت تازه، ر�
 
   test("F-3) روت enroll — پاسخ حاوی maxAttempts=3 و یادداشت کد بخشنده", () => {
     const src = readFileSync(join(REPO, "src/app/api/admin/relay/enroll/route.ts"), "utf8");
-    expect(src).toContain("maxAttempts: 3");
-    expect(src).toContain("کد تا ۳ بار قابل استفاده است");
+    expect(src).toContain("maxAttempts: dev.maxAttempts");
+    expect(src).toContain("کد تا ۳۰ روز و ۹۹ بار دانلود قابل استفاده است");
   });
 
   test("F-4) UI تنظیمات — ساده‌شدهٔ ن۰۵۴: فهرست دستگاه/کد بخشنده حذف؛ صفر راز", () => {

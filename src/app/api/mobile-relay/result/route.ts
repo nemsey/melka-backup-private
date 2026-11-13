@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         const r = await completeRelayRequest({
           id,
           deviceId: auth.device!.deviceId,
-          error: "response too large (>5MB)",
+          error: `response too large (>${Math.round(RELAY_MAX_RESULT_BYTES / 1024 / 1024)}MB)`,
         });
         results.push({ id, ok: r.ok, status: r.status, error: r.ok ? undefined : r.error });
         if (r.ok) anyOk = true;

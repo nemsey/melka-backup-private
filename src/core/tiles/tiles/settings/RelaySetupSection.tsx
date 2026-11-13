@@ -23,6 +23,12 @@
  *   · دستور نصب سمت سرور (buildInstallCommand) هم‌زمان ارتقا یافت: curl -f +
  *     پاکسازی فایل و پیام شفاف در شکست نصب (جلوگیری از 403 در لحظهٔ اول).
  *
+ *  * DIR-RELAY-UNLIMITED-001 (دستور مالک ۲۰۲۶-۱۱-۱۴ · «بدون محدودیت زمانی/حجمی»):
+ *   · اعتبار کد نصب ۳۰ دقیقه ← ۳۰ روز (RELAY_ENROLL_TTL_HOURS) و تا ۹۹ دانلود —
+ *     شمارش معکوس چندروزه (روز/ساعت زیر ۱ روز، MM:SS زیر ۱ ساعت).
+ *   · نشان‌های حمل‌ونقل نسل N: batch=۴۸ · استخر ۱۶+۸ کارگر · سقف نرخ ۲۰/دقیقه ·
+ *     نتیجهٔ جریانی موج‌به‌موج · بدون محدودیت حجم (تا ۱۶MB هر نتیجه).
+ *
  * درس ماندگار جلسهٔ ۰۵۴: «پاکسازی بیش از حد، به اندازهٔ ناکافی بد است.»
  */
 
@@ -142,8 +148,17 @@ export function RelaySetupSection() {
   const enrollExpiresMs = enroll ? new Date(enroll.enrollExpires).getTime() : 0;
   const secondsLeft = enroll ? Math.max(0, Math.floor((enrollExpiresMs - nowMs) / 1000)) : 0;
   const enrollActive = !!enroll && secondsLeft > 0;
+  const daysLeft = Math.floor(secondsLeft / 86400);
+  const hoursLeft = Math.floor((secondsLeft % 86400) / 3600);
   const countdownMm = faDigits(String(Math.floor(secondsLeft / 60)).padStart(2, "0"));
   const countdownSs = faDigits(String(secondsLeft % 60).padStart(2, "0"));
+  // DIR-RELAY-UNLIMITED-001: چندروزه — «X روز و Y ساعت»؛ زیر ۱ روز فقط ساعت؛ زیر ۱ ساعت MM:SS
+  const countdownLabel =
+    secondsLeft >= 86400
+      ? `${faNumber(daysLeft)} روز و ${faNumber(hoursLeft)} ساعت`
+      : secondsLeft >= 3600
+        ? `${faNumber(hoursLeft)} ساعت`
+        : `${countdownMm}:${countdownSs}`;
 
   /** سنجهٔ ۲ — تولید کد نصب تازه (OWNER) */
   const startEnroll = async () => {
@@ -266,16 +281,16 @@ export function RelaySetupSection() {
       {/* سنجهٔ ۴ — Timeout تطبیقی + Long-Polling (بند ۲.۲+۲.۴) */}
       <div className="flex flex-wrap gap-1.5" aria-label="پیکربندی حمل‌ونقل رله">
         <Badge variant="outline" className="gap-1 text-[10px] font-normal">
-          <Timer className="w-3 h-3" aria-hidden /> Poll طولانی: ۱۰۰ ثانیه
+          <Timer className="w-3 h-3" aria-hidden /> Poll طولانی: ۵۰ ثانیه
         </Badge>
         <Badge variant="outline" className="gap-1 text-[10px] font-normal">
-          سبک (ورود): ۲۰ث
+          دسته: ۴۸ آیتم · استخر ۱۶+۸ کارگر موازی
         </Badge>
         <Badge variant="outline" className="gap-1 text-[10px] font-normal">
-          سنگین (فهرست‌ها): ۱۵۰ث
+          نتیجهٔ جریانی موج‌به‌موج (poll میان‌موجی ۵ث)
         </Badge>
         <Badge variant="outline" className="gap-1 text-[10px] font-normal">
-          ~۸۶۰ درخواست/روز (قبلاً ۳۴۵۶)
+          بدون محدودیت حجم/تعداد (تا ۱۶MB هر نتیجه)
         </Badge>
       </div>
 
@@ -302,12 +317,12 @@ export function RelaySetupSection() {
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
           {enroll ? (
             <p className="text-xs leading-relaxed font-bold text-red-600 dark:text-red-400">
-              ⏰ کد نصب قبلی منقضی شد (پنجرهٔ ۳۰ دقیقه‌ای بسته شد) — دکمهٔ زیر کد تازه صادر می‌کند.
+              ⏰ کد نصب قبلی منقضی شد (پنجرهٔ اعتبار ۳۰ روزه بسته شد) — دکمهٔ زیر کد تازه صادر می‌کند.
             </p>
           ) : (
             <p className="text-xs leading-relaxed text-muted-foreground">
               اگر رله آفلاین است یا گوشی ری‌استارت شده: کد نصب تازه بگیرید، در Termux پیست کنید و Enter بزنید —
-              مسیر سه‌گامی پیش‌روی شما (همان مسیر موفق PN-031-I).
+              مسیر سه‌گامی پیش‌روی شما (همان مسیر موفق PN-031-I). کد تا ۳۰ روز و ۹۹ بار دانلود معتبر است.
             </p>
           )}
           <Button size="sm" className="gap-2" onClick={() => void startEnroll()} disabled={enrolling}>
@@ -327,15 +342,15 @@ export function RelaySetupSection() {
           {/* DIR-RELAY-FIX-001 (دستور ۲ · شورا): تایمر معکوس زندهٔ انقضای کد نصب */}
           <div className="flex flex-wrap items-center gap-2">
             <Badge
-              variant={secondsLeft > 300 ? "default" : secondsLeft > 60 ? "outline" : "destructive"}
+              variant={secondsLeft > 3600 ? "default" : secondsLeft > 300 ? "outline" : "destructive"}
               className="gap-1 font-mono"
             >
               <Timer className="w-3 h-3" aria-hidden />
-              انقضای کد نصب: {countdownMm}:{countdownSs}
+              انقضای کد نصب: {countdownLabel}
             </Badge>
             <span className="text-[10px] text-muted-foreground" dir="rtl">
               اعتبار تا <b>{faDateTime(enroll.enrollExpires)}</b> — تا{" "}
-              <b>{faNumber(enroll.maxAttempts ?? 3)} بار</b> قابل استفاده (کد بخشنده). اگر تلاش اول خطا داد،
+              <b>{faNumber(enroll.maxAttempts ?? 99)} بار</b> دانلود (کد بخشنده). اگر تلاش اول خطا داد،
               همان کد را دوباره پیست کنید.
             </span>
           </div>

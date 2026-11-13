@@ -58,7 +58,7 @@ describe("PN-041-R · B) Long-Polling ۱۰۰ث", () => {
   test("B-3 فاصلهٔ داخلی تطبیقی (۷۰۰ms تعاملی → ۳ث)", () => {
     const src = read("src/app/api/mobile-relay/poll/route.ts");
     expect(src).toContain("POLL_INTERVAL_FAST_MS = 700");
-    expect(src).toContain("POLL_INTERVAL_SLOW_MS = 3_000");
+    expect(src).toContain("POLL_INTERVAL_SLOW_MS = 2_000");
     expect(src).toContain("INTERACTIVE_WINDOW_MS = 15_000");
   });
 });
@@ -98,18 +98,18 @@ describe("PN-041-R · C) فیوز — مستثنی‌سازی رله", () => {
 describe("PN-041-R · D) اسکریپت رلهٔ نسل L", () => {
   test("D-1 نسل L در سربرگ", () => {
     const src = read("src/lib/melk-api/relay-script.ts");
-    expect(src).toContain("نسل L = PN-041-R");
+    expect(src).toContain("نسل N = DIR-RELAY-UNLIMITED-001");
   });
 
   test("D-2 wait:100 در بدنهٔ poll", () => {
     const src = read("src/lib/melk-api/relay-script.ts");
-    expect(src).toContain('BODY="{\\\\"wait\\\\":100,\\\\"batch\\\\":$BATCH}"');
+    expect(src).toContain('BODY="{\\\\"wait\\\\":$POLL_WAIT_S,\\\\"batch\\\\":$BATCH}"');
   });
 
   test("D-3 مهلت curl پارامتری + poll با ۱۱۰ث", () => {
     const src = read("src/lib/melk-api/relay-script.ts");
     expect(src).toContain('timeout_s="\\${MELKA_CURL_TIMEOUT:-35}"');
-    expect(src).toContain("MELKA_CURL_TIMEOUT=110 signed_curl");
+    expect(src).toContain("MELKA_CURL_TIMEOUT=\\$(( POLL_WAIT_S + 15 )) signed_curl");
   });
 
   test("D-4 wake-lock پابرجا (دلیل قطعی ۱)", () => {
@@ -127,7 +127,7 @@ describe("PN-041-R · D) اسکریپت رلهٔ نسل L", () => {
     });
     expect(script).toContain('SERVER_URL="https://example.invalid"');
     expect(script).toContain('ALT_SERVER_URL="https://alt.example.invalid"');
-    expect(script).toContain('\\"wait\\":100');
+    expect(script).toContain('\\"wait\\":$POLL_WAIT_S');
     expect(script).toContain("termux-wake-lock");
     // اسکریپتِ تولیدی بس‌پذیر است (bash -n) — نوشتن در tmp و بررسی نحوی
     const tmp = join(ROOT, "upload/.runtime/pn041r-gen-script.sh");
@@ -214,9 +214,9 @@ describe("PN-041-R · G) UI تنظیمات رله — ۸ سنجه", () => {
 
   test("G-4 سنجهٔ ۴: نمایش Timeout تطبیقی + Long-Polling", () => {
     const src = read(section);
-    expect(src).toContain("Poll طولانی: ۱۰۰ ثانیه");
-    expect(src).toContain("سبک (ورود): ۲۰ث");
-    expect(src).toContain("سنگین (فهرست‌ها): ۱۵۰ث");
+    expect(src).toContain("Poll طولانی: ۵۰ ثانیه");
+    expect(src).toContain("دسته: ۴۸ آیتم · استخر ۱۶+۸ کارگر موازی");
+    expect(src).toContain("بدون محدودیت حجم/تعداد (تا ۱۶MB هر نتیجه)");
   });
 
   test("G-5 سنجهٔ ۵: تست اتصال بدون نقش مالک", () => {

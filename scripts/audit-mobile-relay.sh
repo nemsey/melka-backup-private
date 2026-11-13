@@ -102,7 +102,7 @@ rg -q 'reason: "used"' src/lib/melk-api/relay.ts && rg -q 'reason: "expired"' sr
 #   · مسیر جایگزین واکِر /relay/* با سوئیچ خودکار + ثبت کلید در escrow
 rg -q -- '--http1.1 -A "\$UA" -sS -v --max-time "\$timeout_s"' src/lib/melk-api/relay-script.ts && ok "قانون I: http1.1 + UA روی poll/result" || fail "http1.1/UA در signed_curl غایب"
 rg -q 'RETRY_DELAYS=\(30 60 120 300 300\)' src/lib/melk-api/relay-script.ts && ok "قانون I: نردبان retry پله‌ای" || fail "نردبان retry غایب"
-rg -q '\-ge 5 \]' src/lib/melk-api/relay-script.ts && ok "قانون I: سقف نرخ ۵/دقیقه" || fail "سقف نرخ غایب"
+rg -q 'RATE_MAX=20' src/lib/melk-api/relay-script.ts && rg -q '\-ge "\$RATE_MAX" \]' src/lib/melk-api/relay-script.ts && ok "قانون I: سقف نرخ ۲۰/دقیقه (نسل N)" || fail "سقف نرخ غایب"
 rg -q 'relay-debug\.log' src/lib/melk-api/relay-script.ts && rg -q 'redacted' src/lib/melk-api/relay-script.ts && ok "قانون I: لاگ دیباگ با redact امضا" || fail "لاگ دیباگ/redact غایب"
 rg -q 'version_ping' src/lib/melk-api/relay-script.ts && ok "قانون I: نبض نسخه (سلف-پینگ بیرونی)" || fail "نبض نسخه غایب"
 rg -q 'ALT_FAIL_THRESHOLD=3' src/lib/melk-api/relay-script.ts && ok "قانون I: سوئیچ مسیر جایگزین پس از ۳ خطا" || fail "آستانهٔ سوئیچ غایب"
