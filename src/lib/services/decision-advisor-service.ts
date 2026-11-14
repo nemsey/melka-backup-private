@@ -9,6 +9,7 @@
  */
 
 import { db } from "@/lib/db";
+import { tehranDateKey } from "@/lib/jalali";
 import { decide, type AdvisorEvidence, type DecisionAdvice } from "@/core/intelligence/decision-advisor";
 import {
   evaluateLock,
@@ -110,7 +111,7 @@ async function gatherAttention(ctx: AdvisoryContext): Promise<{ score: number; r
   const score = Math.min(1, views / 200);
   const hasImage = (row.imageCount ?? 0) > 0;
   const reason = hasImage
-    ? `${views} بازدید ثبت‌شده و عکس دارد — تازگی ${row.updatedAt?.toISOString().slice(0, 10) ?? "—"}`
+    ? `${views} بازدید ثبت‌شده و عکس دارد — تازگی ${row.updatedAt ? tehranDateKey(row.updatedAt) : "—"}`
     : `${views} بازدید ولی بدون عکس — فرصت بهبود`;
   return { score, reason };
 }

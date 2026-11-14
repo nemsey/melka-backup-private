@@ -54,7 +54,7 @@ import {
   Legend,
 } from "recharts";
 import { KpiCard, useTileData, TileCoverageTable, ExcelImportButton, FilterChip, type DataSourceInfo } from "@/components/app/shared";
-import { api, apiBlob, downloadBlob } from "@/lib/client/api";
+import { api, downloadExcelByTicket } from "@/lib/client/api";
 // PN-002 گام ۶-۲ — اعلان‌های خروجی اکسل
 import { useToast } from "@/hooks/use-toast";
 import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/core/agent/analyzers";
@@ -682,10 +682,10 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
               size="sm"
               className="gap-1.5 h-7 text-[11px]"
               onClick={() => {
-                apiBlob("/api/crm/export/transactions")
-                  .then((blob) => {
-                    downloadBlob(blob, `melka-transactions-${new Date().toISOString().slice(0, 10)}.xlsx`);
-                    toast({ title: "خروجی اکسل آماده شد", description: "کل فهرست معاملات دانلود شد." });
+                // DIR-EXCEL-FIX-001 — دانلود بومی مرورگر (بلیت امضاشده) — درمان شکست Blob در موبایل
+                downloadExcelByTicket("transactions", new URLSearchParams())
+                  .then(() => {
+                    toast({ title: "دانلود اکسل آغاز شد", description: "کل فهرست معاملات در حال دانلود است — پیشرفت را در نوار دانلود مرورگر ببینید." });
                   })
                   .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
               }}

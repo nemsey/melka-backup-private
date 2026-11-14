@@ -67,7 +67,8 @@ function chipState(l: FourListUi): { cls: string; text: string } {
 function faTime(iso: string | null): string {
   if (!iso) return '—'
   try {
-    return new Date(iso).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })
+    // DIR-TZ-001 — ساعت به وقت تهران، مستقل از TZ سرور/مرورگر
+    return new Date(iso).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tehran' })
   } catch {
     return '—'
   }

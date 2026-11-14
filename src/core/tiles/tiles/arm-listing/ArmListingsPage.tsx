@@ -51,7 +51,7 @@ import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterC
 // PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: پنجره‌ای به دادهٔ خام (modal + فایل کامل هر کد)
 import { InfoButton } from "@/components/info/InfoButton";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
+import { api, apiSync, downloadExcelByTicket, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
@@ -882,10 +882,10 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                   if (filters.realtorName) p.set("realtorName", filters.realtorName);
                   if (filters.ownerName) p.set("ownerName", filters.ownerName);
                   if (filters.address) p.set("address", filters.address);
-                  apiBlob(`/api/crm/export/listings?${p.toString()}`)
-                    .then((blob) => {
-                      downloadBlob(blob, `melka-listings-${new Date().toISOString().slice(0, 10)}.xlsx`);
-                      toast({ title: "خروجی اکسل آماده شد", description: "کل فهرست آگهی‌ها (با فیلترهای فعال) دانلود شد." });
+                  // DIR-EXCEL-FIX-001 — دانلود بومی مرورگر (بلیت امضاشده) — درمان شکست Blob در موبایل
+                  downloadExcelByTicket("listings", p)
+                    .then(() => {
+                      toast({ title: "دانلود اکسل آغاز شد", description: "کل فهرست آگهی‌ها (با فیلترهای فعال) در حال دانلود است — پیشرفت را در نوار دانلود مرورگر ببینید." });
                     })
                     .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
                 }}
