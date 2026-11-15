@@ -18,18 +18,15 @@ import "@/core/tiles/tiles/experts";
 // به‌طور کامل حذف شدند (دستور مالک: حذف تمام آثار در همهٔ بخش‌ها و اسناد).
 // داده‌های استخراج‌شدهٔ آن‌ها در پایگاه ماندگار است (قانون دادهٔ مقدس).
 // PN-038/فاز ۲ (شورا-ن۰۶۳): بازطراحی UI — کوچک‌سازی و متمرکزسازی.
-// کاشی‌های M6 (شاخص بازار) و M7 (پوشش داده) از رجیستری حذف شدند؛
-// کانتینر «داشبورد مدیریتی» حذف شد و M1-M5 + M8 به ریشهٔ هوم رفتند؛
-// کاشی‌های قدیمی «آگهی ملکا» و «درخواست ملکا» از هوم حذف شدند.
-// PN-043/فاز ۲ (شورا-ن۰۸۷): یکپارچه‌سازی داشبوردها —
-// کاشی‌های M1-M4 به ظرف tenant-dashboards رفتند و درون «داشبورد ملک تبریز»
-// (wrapper مشترک) رندر می‌شوند.
-// ترتیب هوم: فایل یابی ← تطبیق ← مغز ← تنظیمات ← داشبورد ملک تبریز.
-// روت مستقیم کاشی‌های M1-M4 (رجیستری + lazyPage) دست‌نخورده باقی می‌ماند.
-// دادهٔ همهٔ کاشی‌های حذف/ادغام‌شده در پایگاه ماندگار است (قانون دادهٔ مقدس).
-// PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): کاشی «داشبورد ملکتون» به‌کلی حذف شد —
-// به‌همراه همهٔ داده‌های tenant ملکتون (حکم صریح مالک؛ شاهد در AuditLog).
-import "@/core/tiles/tiles/file-finder";
+// PN-043/فاز ۲ (شورا-ن۰۸۷): M1-M4 به ظرف tenant-dashboards رفتند (wrapper مشترک).
+// PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): کاشی «داشبورد ملکتون» حذف شد.
+// PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵ ساعت ۰۷:۴۵ تهران) — انحلال ظرف و هفت‌تایی‌شدن هوم:
+//   · کاشی «داشبورد ملک تبریز» (wrapper) حذف شد؛ M1-M4 به ریشهٔ هوم صعود کردند.
+//   · کاشی «فایل‌یابی» به حکم صریح مالک حذف شد — دادهٔ دیوار/فرصت‌ها و
+//     خط‌لولهٔ اسکن در پایگاه و Worker ماندگارند (قانون دادهٔ مقدس).
+//   · ترتیب هفت‌تایی هوم: آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← مغز ملکا ← تنظیمات.
+//   · گام ۲: در هر چهار کاشی M1-M4 قاب «بروزرسانی چهار فهرست» + «نوار لینک به
+//     کاشی‌های دیگر» (M1-M4 + تطبیق) حفظ شد (FourListsTileChrome).
 // P6.5-12 (بند ب مرحلهٔ قبل): کاشی «مشتریان ملک تبریز» حذف شد —
 // دادهٔ مشتریان و ماژول‌های تحلیلی در پایگاه/کتابخانه ماندگارند (قانون دادهٔ مقدس)
 import "@/core/tiles/tiles/arm-listing";
@@ -38,12 +35,10 @@ import "@/core/tiles/tiles/arm-request";
 import "@/core/tiles/tiles/smart-matching";
 import "@/core/tiles/tiles/learning-tier";
 import "@/core/tiles/tiles/settings";
-// PN-043/فاز ۲+۳ (شورا-ن۰۸۷) — داشبورد tenant (wrapper مشترک M1-M4)
-import "@/core/tiles/tiles/tenant-dashboard-tabriz";
 
 export { transactionsContractsTile } from "@/core/tiles/tiles/transactions-contracts";
 export { expertsTile } from "@/core/tiles/tiles/experts";
-export { fileFinderTile } from "@/core/tiles/tiles/file-finder";
+// PN-086/گام ۱: fileFinderTile حذف شد (حذف نما — داده/خط‌لولهٔ دیوار مقدس و ماندگار)
 // P6.5-12: customerClubTile حذف شد (حذف نما — داده ماندگار)
 export { armListingTile } from "@/core/tiles/tiles/arm-listing";
 export { armRequestTile } from "@/core/tiles/tiles/arm-request";
@@ -51,5 +46,4 @@ export { armRequestTile } from "@/core/tiles/tiles/arm-request";
 export { smartMatchingTile } from "@/core/tiles/tiles/smart-matching";
 export { learningTierTile } from "@/core/tiles/tiles/learning-tier";
 export { settingsTile } from "@/core/tiles/tiles/settings";
-// PN-043/فاز ۲+۳ (شورا-ن۰۸۷) — داشبورد tenant
-export { tenantDashboardTabrizTile } from "@/core/tiles/tiles/tenant-dashboard-tabriz";
+// PN-086/گام ۱: tenantDashboardTabrizTile حذف شد — ظرف منحل؛ M1-M4 اکنون ریشه‌اند

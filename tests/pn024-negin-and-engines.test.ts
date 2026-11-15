@@ -117,10 +117,9 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
     }
   });
 
-  test("N14 اعمال: هر ۷ صفحهٔ کاشی data-negin دارد (PN-038 — تنظیمات data-negin ندارد)", () => {
+  test("N14 اعمال: هر ۶ صفحهٔ کاشی data-negin دارد (PN-086 — فایل‌یابی حذف شد؛ تنظیمات data-negin ندارد)", () => {
     const pages = [
-      // PN-038/فاز ۲: M6/M7 حذف شدند؛ کاشی‌های ریشهٔ فعال (فایل یابی…تنظیمات)
-      "file-finder/FileFinderPage.tsx",
+      // PN-086/گام ۱: فایل‌یابی حذف شد؛ کاشی‌های ریشهٔ فعال (آگهی…مغز ملکا)
       "arm-listing/ArmListingsPage.tsx", "arm-request/ArmRequestsPage.tsx", "transactions-contracts/TransactionsContractsPage.tsx",
       "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx", "learning-tier/LearningTierPage.tsx",
     ];
@@ -130,11 +129,10 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
     }
   });
 
-  test("N15 اعمال: مقدار data-negin هر صفحه در فهرست گوهرها معتبر است (PN-038: ۷ صفحه)", () => {
+  test("N15 اعمال: مقدار data-negin هر صفحه در فهرست گوهرها معتبر است (PN-086: ۶ صفحه)", () => {
     const validGems = new Set(NEGIN_GEMS.map((g) => g.id));
     const pages = [
-      // PN-038/فاز ۲: M6/M7 حذف شدند؛ کاشی‌های ریشهٔ فعال (فایل یابی…تنظیمات)
-      "file-finder/FileFinderPage.tsx",
+      // PN-086/گام ۱: فایل‌یابی حذف شد؛ کاشی‌های ریشهٔ فعال (آگهی…مغز ملکا)
       "arm-listing/ArmListingsPage.tsx", "arm-request/ArmRequestsPage.tsx", "transactions-contracts/TransactionsContractsPage.tsx",
       "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx", "learning-tier/LearningTierPage.tsx",
     ];
@@ -146,7 +144,7 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
       expect(validGems.has(m![1]!)).toBe(true);
       seen.add(m![1]!);
     }
-    expect(seen.size).toBe(7); // PN-038: هفت گوهر یکتا (M6/M7 حذف؛ تنظیمات data-negin ندارد)
+    expect(seen.size).toBe(6); // PN-086: شش گوهر یکتا (فایل‌یابی حذف؛ تنظیمات data-negin ندارد)
   });
 
   test("N16 قاعدهٔ مروارید: متن ۷۰۰ تیره است (رنگ روشن ⇒ متن تیره اجباری)", () => {

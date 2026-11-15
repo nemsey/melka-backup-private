@@ -19,14 +19,13 @@ export { isOwnerPersonnelCode };
 
 /** کاشی‌های قابل مدیریت — تنظیمات همیشه در دسترس استثنا شده است */
 export const MANAGEABLE_TILES: Array<{ id: string; title: string }> = [
-  // PN-038/فاز ۲: هشت کاشی هوم — نام‌های کوتاه (M6/M7/ظرف حذف شدند)
-  { id: "file-finder", title: "فایل یابی" },
+  // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): هفت کاشی هوم — فایل‌یابی حذف شد
   { id: "arm-listings", title: "آگهی" },
   { id: "arm-requests", title: "درخواست" },
   { id: "transactions-contracts", title: "معاملات" },
   { id: "experts", title: "کارشناسان" },
   { id: "smart-matching", title: "تطبیق" },
-  { id: "learning-tier", title: "مغز" },
+  { id: "learning-tier", title: "مغز ملکا" },
 ];
 
 export type AccessLevel = "full" | "limited" | "none";
