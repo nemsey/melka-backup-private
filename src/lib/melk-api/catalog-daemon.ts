@@ -22,7 +22,7 @@
 
 import type { PrismaClient } from "@prisma/client";
 import { syncArmListingsCatalog, syncArmRequestsCatalog, enrichArmListings, enrichArmRequests } from "./arm-catalog";
-import { sessionToArmTokens } from "@/lib/auth/session";
+import { resolveBestArmToken } from "./arm-token-resolver";
 import { logEvent } from "@/lib/logger";
 // P6545/گام۱ — افزودنی: وضعیت کار پایدار در DB (BLOCK 1.1) + رویدادهای فرصت (BLOCK 1.4)
 import { JobStateService, JOB_IDS } from "./job-state";
@@ -205,23 +205,11 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
       return { ...s.status };
     }
     // نشست زندهٔ دارای توکن ARM (اخیرترین) — و در نبودش، خزانهٔ ماندگار (PN-002 گام ۳)
-    const live = await db.session.findFirst({
-      where: { revoked: false, expiresAt: { gt: new Date() }, armTokenEnc: { not: null } },
-      orderBy: { lastSeenAt: "desc" },
-    });
-    let armAccessToken: string | null = null;
-    let crmSyncSource: "vault" | "session" = "vault";
-    if (live) {
-      const armTokens = sessionToArmTokens(live);
-      if (armTokens?.accessToken) {
-        armAccessToken = armTokens.accessToken;
-        crmSyncSource = "session";
-      }
-    }
-    if (!armAccessToken) {
-      const vault = await getVaultArmTokens(db);
-      if (vault?.accessToken) armAccessToken = vault.accessToken;
-    }
+    // DIR-MISSING-REQ-001 (ریشهٔ B): حل‌کنندهٔ هوشمند — تازه‌ترین توکنِ دارای exp آینده؛
+    // ریشهٔ 401های صبح ۱۴۰۵/۰۸/۲۵: آخرین نشستِ دیده‌شده جسد کهنهٔ خزانه را حمل می‌کرد.
+    const resolvedToken = await resolveBestArmToken(db).catch(() => null);
+    let armAccessToken: string | null = resolvedToken?.token ?? null;
+    let crmSyncSource: "vault" | "session" = resolvedToken?.source === "session" ? "session" : "vault";
     if (armAccessToken) {
       const armTokens = { accessToken: armAccessToken } as { accessToken: string; refreshToken?: string };
       // PN-002 گام ۳ — همگام‌سازی پیوستهٔ CRM (معاملات/کارشناسان/قراردادها/بازدیدها/عرضه-تقاضا)

@@ -1,0 +1,20 @@
+{
+  "at": "2026-11-15T06:53:49.045Z",
+  "pagesBudget": 100,
+  "ok": false,
+  "pages": 17,
+  "fetched": 850,
+  "created": 0,
+  "updated": 850,
+  "totalAtSource": 21554,
+  "durationMs": 418256,
+  "checkpoint": {
+    "page": 17,
+    "totalPages": 432,
+    "phase": "in-progress"
+  },
+  "countBefore": 26272,
+  "countAfter": 26272,
+  "growth": 0,
+  "wallMs": 418359
+}

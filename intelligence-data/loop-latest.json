@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-11-14T19:07:53.626Z",
+  "ranAt": "2026-11-15T05:57:57.362Z",
   "tileId": "arm-listing",
   "predictions": 1024,
   "positiveOutcomes": 512,
@@ -10,7 +10,7 @@
     "windowDays": 3650,
     "sampleSize": 1024,
     "verdict": "ABOVE_BASELINE",
-    "computedAt": "2026-11-14T19:07:53.626Z",
+    "computedAt": "2026-11-15T05:57:57.362Z",
     "unresolvablePairs": 0,
     "target": "probability",
     "brierScore": 0.2379,

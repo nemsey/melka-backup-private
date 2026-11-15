@@ -48,28 +48,17 @@ export interface LcppCycleResult {
   errors: string[];
 }
 
-/** توکن ARM — نشست زنده → خزانهٔ ماندگار (عین catalog-daemon) */
+/** توکن ARM — حل‌کنندهٔ هوشمند DIR-MISSING-REQ-001 (ریشهٔ B):
+ *  تازه‌ترین توکنِ دارای exp آینده از میان نشست‌های زنده و خزانه —
+ *  ریشهٔ 401های ۰۵:۳۵ امروز: resolver قدیمی «آخرین نشستِ دیده‌شده» را برمی‌داشت
+ *  و پس از master-login با توکنِ کهنهٔ به‌ارث‌رسیده از خزانه، همهٔ چرخه‌ها مردند. */
 async function resolveArmToken(db: PrismaClient): Promise<string | null> {
   try {
-    const live = await db.session.findFirst({
-      where: { revoked: false, expiresAt: { gt: new Date() }, armTokenEnc: { not: null } },
-      orderBy: { lastSeenAt: "desc" },
-    });
-    if (live) {
-      const { sessionToArmTokens } = await import("@/lib/auth/session");
-      const tokens = sessionToArmTokens(live);
-      if (tokens?.accessToken) return tokens.accessToken;
-    }
-    const vault = await db.armConnection.findFirst({ orderBy: { lastRefreshedAt: "desc" } });
-    if (vault?.tokenEnc) {
-      const { decryptSecret } = await import("@/lib/auth/crypto");
-      const token = decryptSecret(vault.tokenEnc);
-      if (token) return token;
-    }
+    const { resolveArmTokenString } = await import("@/lib/melk-api/arm-token-resolver");
+    return await resolveArmTokenString(db);
   } catch {
-    /* صرف‌نظر صادقانه */
+    return null;
   }
-  return null;
 }
 
 // قفل درون‌فرایندی overlap (عین الگوی catalog-daemon)
