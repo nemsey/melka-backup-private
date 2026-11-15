@@ -11,6 +11,8 @@ import { defineTile } from "@/core/tiles/tile-contract";
 // P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
 import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
+// PN-086/گام ۲ (دستور مالک ۱۴۰۵/۰۸/۲۵): قاب بروزرسانی چهار فهرست + نوار لینک کاشی‌ها
+import { withFourListsChrome } from "@/components/tiles/FourListsTileChrome";
 import { ClipboardList } from "lucide-react";
 
 export const armRequestTile = defineTile({
@@ -22,9 +24,8 @@ export const armRequestTile = defineTile({
     "همهٔ درخواست‌های ثبت‌شده در «سامانه مدیریت آگهی و درخواست» (آرم) ملک تبریز در یک لیست تک‌صفحه‌ای و بی‌نهایت: کد درخواست، نام و نام خانوادگی کارشناس ثبت‌کننده، نام و نام خانوادگی درخواست‌دهنده و شماره تماس او. فیلتر بر اساس کد درخواست و نام کارشناس؛ استخراج و بروزرسانی مستقیم از خود سامانه (فهرست کامل + غنی‌سازی زنجیره‌ای نام کامل و موبایل درخواست‌دهنده) و ایجنت هوشمند یادگیرندهٔ مولتی‌بینش با تحلیل حجم، کارشناسان پرثبت، ترکیب وضعیت‌ها، پوشش اطلاعات و تازگی ثبت.",
   icon: ClipboardList,
   accent: "m2",
-  component: lazyPage(() => import("./ArmRequestsPage")),
-  order: 3, // M2 — ترتیب درون ظرف tenant-dashboards: درخواست دومِ داشبورد (PN-043/فاز ۲)
-  container: "tenant-dashboards", // PN-043/فاز ۲ (شورا-ن۰۸۷): از هوم ریشه به داشبوردهای tenant — wrapper، نه تکرار
+  component: withFourListsChrome("requests", "arm-requests")(lazyPage(() => import("./ArmRequestsPage"))),
+  order: 2, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): درخواست دوم هوم — M1-M4 از ظرف tenant-dashboards به ریشهٔ هوم صعود کردند
   agent: {
     tileId: "arm-requests",
     insightDomains: ["VOLUME", "TOP_EXPERTS", "COMPOSITION", "COVERAGE", "FRESHNESS"],

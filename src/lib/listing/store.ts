@@ -22,24 +22,67 @@ export function fileTypeLabel(values: string[]): string[] {
   return values.map((v) => FILE_TYPES.find((t) => t.value === v)?.label ?? v);
 }
 
-/** نگاشت دسته دیوار → نوع معامله/کاربری/ملک آرم (همان نگاشت ثبت آگهی فایل‌یابی) */
+/** نگاشت دسته دیوار → نوع معامله/کاربری/ملک آرم (همان نگاشت ثبت آگهی فایل‌یابی)
+ *  PN-080 (۲۰۲۶-۱۱-۱۰ · راستی‌آزمایی زندهٔ رله با trade/building/property-types/list):
+ *  آرم شناسه‌های مرجع را مهاجرت داده بود — همهٔ ردیف‌ها با شناسه‌های زنده بازنویسی
+ *  شدند (شاهد: download/PN-080/api-health-probe.json + id-drift-audit.json). */
 export const DIVAR_CATEGORY_TO_ARM: Record<string, { tradeType: string; tradeTypeName: string; propertyType: string; propertyTypeName: string; buildingType: string; buildingTypeName: string }> = {
-  "apartment-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614ee704a50555f0a54c227d", propertyTypeName: "آپارتمان", buildingType: "614edc35a50555f0a54c1f1e", buildingTypeName: "مسکونی" },
-  "house-villa-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614ee750a50555f0a54c228e", propertyTypeName: "خانه،حیاط،ویلایی", buildingType: "614edc58a50555f0a54c1f42", buildingTypeName: "باغ و ویلا" },
-  "plot-old": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614ee798a50555f0a54c22a5", propertyTypeName: "زمین یا ملک کلنگی", buildingType: "614edc35a50555f0a54c1f1e", buildingTypeName: "مسکونی" },
-  "presell": { tradeType: "614ed63aa50555f0a54c1ed2", tradeTypeName: "پیش فروش", propertyType: "614ee704a50555f0a54c227d", propertyTypeName: "آپارتمان", buildingType: "614edc35a50555f0a54c1f1e", buildingTypeName: "مسکونی" },
-  "office-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614f3e3aa50555f0a54c2ae7", propertyTypeName: "دفترکار", buildingType: "614edc66a50555f0a54c1f56", buildingTypeName: "تجاری-خدماتی" },
-  "shop-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614f3e31a50555f0a54c2acf", propertyTypeName: "مغازه", buildingType: "614edc66a50555f0a54c1f56", buildingTypeName: "تجاری-خدماتی" },
-  "commercial-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614f1eeea50555f0a54c260e", propertyTypeName: "ساختمان", buildingType: "614edc66a50555f0a54c1f56", buildingTypeName: "تجاری-خدماتی" },
-  "industry-agriculture-business-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614f8450a50555f0a54c3bbf", propertyTypeName: "زمین", buildingType: "61d6b43e3b9c7375c9f48d8f", buildingTypeName: "مزروعی-کشاورزی" },
-  "apartment-rent": { tradeType: "614ed649a50555f0a54c1edb", tradeTypeName: "رهن و اجاره", propertyType: "614ee704a50555f0a54c227d", propertyTypeName: "آپارتمان", buildingType: "614edc35a50555f0a54c1f1e", buildingTypeName: "مسکونی" },
-  "house-villa-rent": { tradeType: "614ed649a50555f0a54c1edb", tradeTypeName: "رهن و اجاره", propertyType: "614ee750a50555f0a54c228e", propertyTypeName: "خانه،حیاط،ویلایی", buildingType: "614edc58a50555f0a54c1f42", buildingTypeName: "باغ و ویلا" },
-  "office-rent": { tradeType: "614ed649a50555f0a54c1edb", tradeTypeName: "رهن و اجاره", propertyType: "614f3e3aa50555f0a54c2ae7", propertyTypeName: "دفترکار", buildingType: "614edc66a50555f0a54c1f56", buildingTypeName: "تجاری-خدماتی" },
-  "shop-rent": { tradeType: "614ed649a50555f0a54c1edb", tradeTypeName: "رهن و اجاره", propertyType: "614f3e31a50555f0a54c2acf", propertyTypeName: "مغازه", buildingType: "614edc66a50555f0a54c1f56", buildingTypeName: "تجاری-خدماتی" },
-  "commercial-rent": { tradeType: "614ed649a50555f0a54c1edb", tradeTypeName: "رهن و اجاره", propertyType: "614f1eeea50555f0a54c260e", propertyTypeName: "ساختمان", buildingType: "614edc66a50555f0a54c1f56", buildingTypeName: "تجاری-خدماتی" },
+  "apartment-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614ee704a50555f0a54c227d", propertyTypeName: "آپارتمان", buildingType: "614edc35a50555f0a54c1f12", buildingTypeName: "مسکونی" },
+  "house-villa-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614ee750a50555f0a54c228e", propertyTypeName: "خانه،حیاط،ویلایی", buildingType: "614edc35a50555f0a54c1f12", buildingTypeName: "مسکونی" },
+  "plot-old": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614ee798a50555f0a54c22a5", propertyTypeName: "زمین یا ملک کلنگی", buildingType: "614edc35a50555f0a54c1f12", buildingTypeName: "مسکونی" },
+  "presell": { tradeType: "614ed63aa50555f0a54c1ed3", tradeTypeName: "پیش فروش", propertyType: "614ee704a50555f0a54c227d", propertyTypeName: "آپارتمان", buildingType: "614edc35a50555f0a54c1f12", buildingTypeName: "مسکونی" },
+  "office-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614f3e3aa50555f0a54c2ae7", propertyTypeName: "دفترکار", buildingType: "614edc66a50555f0a54c1f2d", buildingTypeName: "تجاری-خدماتی" },
+  "shop-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614f3e31a50555f0a54c2acf", propertyTypeName: "مغازه", buildingType: "614edc66a50555f0a54c1f2d", buildingTypeName: "تجاری-خدماتی" },
+  "commercial-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614f5239a50555f0a54c2eea", propertyTypeName: "ساختمان", buildingType: "614edc66a50555f0a54c1f2d", buildingTypeName: "تجاری-خدماتی" },
+  "industry-agriculture-business-sell": { tradeType: "614ed62da50555f0a54c1eca", tradeTypeName: "فروش", propertyType: "614f8462a50555f0a54c3bd7", propertyTypeName: "زمین", buildingType: "61d6b43e3b9c7375c9f48d2a", buildingTypeName: "مزروعی-کشاورزی" },
+  "apartment-rent": { tradeType: "614ed649a50555f0a54c1edc", tradeTypeName: "رهن و اجاره", propertyType: "614ee704a50555f0a54c227d", propertyTypeName: "آپارتمان", buildingType: "614edc35a50555f0a54c1f12", buildingTypeName: "مسکونی" },
+  "house-villa-rent": { tradeType: "614ed649a50555f0a54c1edc", tradeTypeName: "رهن و اجاره", propertyType: "614ee750a50555f0a54c228e", propertyTypeName: "خانه،حیاط،ویلایی", buildingType: "614edc35a50555f0a54c1f12", buildingTypeName: "مسکونی" },
+  "office-rent": { tradeType: "614ed649a50555f0a54c1edc", tradeTypeName: "رهن و اجاره", propertyType: "614f3e3aa50555f0a54c2ae7", propertyTypeName: "دفترکار", buildingType: "614edc66a50555f0a54c1f2d", buildingTypeName: "تجاری-خدماتی" },
+  "shop-rent": { tradeType: "614ed649a50555f0a54c1edc", tradeTypeName: "رهن و اجاره", propertyType: "614f3e31a50555f0a54c2acf", propertyTypeName: "مغازه", buildingType: "614edc66a50555f0a54c1f2d", buildingTypeName: "تجاری-خدماتی" },
+  "commercial-rent": { tradeType: "614ed649a50555f0a54c1edc", tradeTypeName: "رهن و اجاره", propertyType: "614f5239a50555f0a54c2eea", propertyTypeName: "ساختمان", buildingType: "614edc66a50555f0a54c1f2d", buildingTypeName: "تجاری-خدماتی" },
 };
 
 // ===================== درون‌ریزی خودکار از فایل‌یابی (بخش «ب») =====================
+
+/**
+ * PN-080 — اعمال ورودی‌های کاربر از پنجرهٔ «ثبت آگهی» کاشی فایل‌یابی روی فایل آگهی.
+ * آخرین ویرایش کاربر مقدم است (نام/موبایل مالک، کد پستی، آدرس، محله، قیمت فایل،
+ * جدیت، وضعیت فایل، توضیحات). در لایهٔ lib می‌ماند — قانون مرز مخزن (روت‌ها بدون db.*).
+ */
+export async function applyDivarRegisterInputs(
+  listingId: string,
+  input: {
+    ownerName: string;
+    ownerMobile: string;
+    postalCode: string;
+    address: string;
+    lineId: string;
+    priceEvaluation: string;
+    userSeriousness: string;
+    fileType: string[];
+    description: string;
+  }
+): Promise<void> {
+  const line = findLine(input.lineId);
+  await db.listingRecord.update({
+    where: { id: listingId },
+    data: {
+      customerName: input.ownerName.trim(),
+      customerMobile: input.ownerMobile,
+      postalCode: input.postalCode || null,
+      address: input.address.trim(),
+      lineId: input.lineId,
+      lineName: line?.n ?? null,
+      areaId: line?.areaId ?? null,
+      areaName: line?.areaName ?? null,
+      priceEvaluation: input.priceEvaluation,
+      userSeriousness: input.userSeriousness,
+      fileTypeJson: JSON.stringify(input.fileType),
+      fileFinding: "divar",
+      description: input.description.slice(0, 2000),
+    },
+  });
+}
 
 /**
  * درون‌ریزی آگهی دیوارِ تأییدشده (status=registered) به فایل آگهی.

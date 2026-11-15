@@ -1,0 +1,30 @@
+{
+  "case": "PN-069 · ترمیم نهایی",
+  "resolvedAt": "2026-11-09T10:11:05.940672",
+  "final_counts": {
+    "PropertyRecord_total": 28666,
+    "enrichment_pending": 0,
+    "enrichment_complete": 28666,
+    "RequestRecord_total": 26203,
+    "original_205": {
+      "present": 205,
+      "with_owner_data": 197,
+      "missing_at_source": 8
+    },
+    "relay_last": {
+      "device": "poco-f3-a4b1bf",
+      "lastSeen": "2026-11-09T10:10:57.214000",
+      "served": 1201
+    }
+  },
+  "live_api_after_fix": {
+    "enrichment": {
+      "total": 28666,
+      "pending": 0,
+      "complete": 28666
+    },
+    "statusCounts_total": 28666,
+    "kpi1_rows_capped_at_25000": 25000
+  },
+  "verdict": "اختلاف ۲۰۵تایی کاملاً رفع شد: pending=0 · complete=total · KPI اپ اکنون ۲۸٬۶۶۶ از ۲۸٬۶۶۶ (۱۰۰٪) را نشان می‌دهد. ادعای PN-031F (۲۸٬۶۶۵ در زمان گزارش) صادق بود و هیچ داده‌ای گم نشده بود."
+}

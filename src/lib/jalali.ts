@@ -6,8 +6,59 @@
  * سرور یا کلاینت ندارد و در هر دو محیط قابل استفاده است.
  *
  * الگوریتم تبدیل: روش استاندارد جلالی↔میلادی (کیک‌جبر دوطرفه).
- * مبنای زمانی: زمان محلی کاربر برای نمایش، و UTC برای ISO.
+ * مبنای زمانی — DIR-TZ-001 (دستور مالک ۱۴۰۵/۰۸/۲۴ ۲۲:۵۰ تهران):
+ *   «هماهنگی ساعت به وقت تهران با ساعت سرور به وقت چین» — تمام نمایش تاریخ و
+ *   ساعت روی ساعت تهران (UTC+3:30) لنگر می‌شود، مستقل از TZ ماشین. سرور در
+ *   چین/UTC است و بدون این لنگر، تاریخ‌های سمت سرور (همگام‌سازی ARM، خروجی
+ *   اکسل، مهرهای متنی) ۴٫۵ تا ۸ ساعت کج می‌شد و مرز روز جلالی می‌لغزید.
+ *   مرورگر کاربر تهران هم عین همین نتیجه را می‌بیند (رفتار تغییر نمی‌کند).
  */
+
+// ===================== زمان تهران (تک‌منبع حقیقت — DIR-TZ-001) =====================
+
+/** آفست ثابت تهران — UTC+3:30 (ایران از ۱۴۰۱ ساعت تابستانی ندارد) */
+export const TEHRAN_UTC_OFFSET_MINUTES = 210;
+
+/** اجزای تقویمی به وقت دیوارِ تهران */
+export interface TehranParts {
+  y: number;
+  m: number;
+  d: number;
+  hh: number;
+  mm: number;
+  ss: number;
+  /** ۰ = شنبه … ۶ = جمعه */
+  weekday: number;
+}
+
+/**
+ * اجزای تقویمی به وقت تهران از هر Date — مستقل از TZ سرور.
+ * ترفند: به UTC اضافهٔ آفست و خواندن با getUTC* = دیوارِ تهران.
+ */
+export function tehranParts(d: Date): TehranParts {
+  const t = new Date(d.getTime() + TEHRAN_UTC_OFFSET_MINUTES * 60_000);
+  return {
+    y: t.getUTCFullYear(),
+    m: t.getUTCMonth() + 1,
+    d: t.getUTCDate(),
+    hh: t.getUTCHours(),
+    mm: t.getUTCMinutes(),
+    ss: t.getUTCSeconds(),
+    weekday: (t.getUTCDay() + 1) % 7,
+  };
+}
+
+/** کلید تاریخ تهران «YYYY-MM-DD» — نام فایل اکسل، ستون تاریخ، سقف‌های روزانه */
+export function tehranDateKey(d: Date): string {
+  const p = tehranParts(d);
+  return `${p.y}-${String(p.m).padStart(2, "0")}-${String(p.d).padStart(2, "0")}`;
+}
+
+/** «YYYY-MM-DD HH:MM» به وقت تهران — مهرهای متنی سرور (تشخیص/تازگی) */
+export function tehranDateTimeKey(d: Date): string {
+  const p = tehranParts(d);
+  return `${tehranDateKey(d)} ${String(p.hh).padStart(2, "0")}:${String(p.mm).padStart(2, "0")}`;
+}
 
 // ===================== نام‌ها =====================
 
@@ -135,12 +186,11 @@ export interface JalaliDate {
   weekday: number;
 }
 
-/** تبدیل Date به JalaliDate (بر پایه زمان محلی) */
+/** تبدیل Date به JalaliDate — لنگر: ساعت تهران (DIR-TZ-001؛ سرور چین/UTC همسانِ کاربر تهران) */
 export function dateToJalali(d: Date): JalaliDate {
-  const [jy, jm, jd] = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
-  // getDay(): ۰=یکشنبه…۶=شنبه → نگاشت به ۰=شنبه…۶=جمعه
-  const weekday = (d.getDay() + 1) % 7;
-  return { jy, jm, jd, weekday };
+  const p = tehranParts(d);
+  const [jy, jm, jd] = gregorianToJalali(p.y, p.m, p.d);
+  return { jy, jm, jd, weekday: p.weekday };
 }
 
 /** ساخت Date میلادی از مختصات جلالی (بدون ساعت — زمان محلی) */
@@ -192,23 +242,26 @@ export function formatJalaliShort(j: JalaliDate): string {
   return faDigits(`${j.jy}/${pad2(j.jm)}/${pad2(j.jd)}`);
 }
 
-/** جلالی کوتاه با ساعت: «۱۴۰۵/۰۶/۲۱ — ۱۴:۳۰» */
+/** جلالی کوتاه با ساعت: «۱۴۰۵/۰۶/۲۱ — ۱۴:۳۰» — ساعت به وقت تهران */
 export function formatJalaliShortDateTime(d: Date): string {
   const j = dateToJalali(d);
-  return `${formatJalaliShort(j)} — ${faDigits(pad2(d.getHours()))}:${faDigits(pad2(d.getMinutes()))}`;
+  const p = tehranParts(d);
+  return `${formatJalaliShort(j)} — ${faDigits(pad2(p.hh))}:${faDigits(pad2(p.mm))}`;
 }
 
-/** جلالی خوانا + ساعت: «۲۱ شهریور ۱۴۰۵ — ساعت ۱۴:۳۰» */
+/** جلالی خوانا + ساعت: «۲۱ شهریور ۱۴۰۵ — ساعت ۱۴:۳۰» — ساعت به وقت تهران */
 export function formatJalaliLongDateTime(d: Date): string {
   const j = dateToJalali(d);
-  return `${formatJalaliLong(j)} — ساعت ${faDigits(pad2(d.getHours()))}:${faDigits(pad2(d.getMinutes()))}`;
+  const p = tehranParts(d);
+  return `${formatJalaliLong(j)} — ساعت ${faDigits(pad2(p.hh))}:${faDigits(pad2(p.mm))}`;
 }
 
-/** ISO/Date → رشته جلالی «YYYY/MM/DD» برای پارامترهای API سامانه ملک تبریز */
+/** ISO/Date → رشته جلالی «YYYY/MM/DD» برای پارامترهای API سامانه ملک تبریز — مرز روز به وقت تهران */
 export function isoToJalaliString(iso: string | Date): string {
   const d = typeof iso === "string" ? new Date(iso) : iso;
   if (Number.isNaN(d.getTime())) return "";
-  const [jy, jm, jd] = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  const p = tehranParts(d);
+  const [jy, jm, jd] = gregorianToJalali(p.y, p.m, p.d);
   return `${jy}/${pad2(jm)}/${pad2(jd)}`;
 }
 

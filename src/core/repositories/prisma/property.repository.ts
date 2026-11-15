@@ -20,8 +20,10 @@ import { propertyNormColumns } from "@/lib/search-norm";
 // P6525 — قانون یکسان‌سازی ورودی: منبع یگانهٔ نگاشت ارقام/حروف (رفع باگ ۴/۵)
 import { normalizeFilterInput } from "@/lib/normalize-input";
 
-/** P6525 — سقف اسکن فیلترهای نرمال‌شدهٔ JS (قانون فهرست: تمام ردیف‌ها؛ هم‌راستا با سقف ایمنی روت ۲۵٬۰۰۰) */
-const LIST_SCAN_CAP = 25_000;
+/** P6525 — سقف اسکن فیلترهای نرمال‌شدهٔ JS (قانون فهرست: تمام ردیف‌ها؛ هم‌راستا با سقف ایمنی روت ۴۰٬۰۰۰)
+ *  PN-079 — ارتقای ۲۵٬۰۰۰ → ۴۰٬۰۰۰: کاتالوگ از ۲۵٬۰۰۰ عبور کرد (۲۸٬۶۶۸) و سقف کهنه
+ *  آمار KPI را به ۲۵٬۰۰۰ سنجاق کرده بود و ردیف‌های قدیمی‌تر از فهرست حذف می‌کرد. */
+const LIST_SCAN_CAP = 40_000;
 
 function toPropertyData(p: PropertyBulkInput): Record<string, unknown> {
   return {
@@ -112,16 +114,10 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
 
   // ===================== P6.5-10 — خواندن‌های کاتالوگ آگهی‌های ملک تبریز =====================
 
-  /** کاتالوگ تک‌صفحه‌ای — فیلتر کدآگهی/نام کارشناس (contains) + وضعیت‌های خام شش‌حالته (P6521/M1)؛ جدیدترین فعالیت اول
-   *
-   * P6525 — قانون یکسان‌سازی (رفع باگ تاریخی ۴/۵ + هم‌ارزی ي/ی و ك/ک):
-   * فیلترهای کد و نام کارشناس به‌جای contains خام SQL، با نرمال‌سازی دوطرفه در JS
-   * اعمال می‌شوند (نرمال هر دو سمت: ورودی و رکورد) ⇒ نتیجهٔ ارقام فارسی/عربی/لاتین
-   * و حروف عربی/فارسی همیشه یکسان است. statuses در SQL می‌ماند (مقادیر خام دقیق). */
-  async listArmCatalog(
-    filter: ArmListingCatalogFilter,
-    limit: number
-  ): Promise<{ rows: ArmListingCatalogRow[]; total: number }> {
+  /** PN-079 — سازندهٔ مشترک شرط WHERE کاتالوگ (منبع یگانه برای فهرست و شمارش)
+   *  عین منطق پیشین listArmCatalog — استخراج‌شده تا countArmCatalog همان فیلترها را
+   *  با COUNT واقعی SQL اعمال کند (رفع ریشه‌ای «KPI سقف‌خورده»). */
+  private buildArmCatalogWhere(filter: ArmListingCatalogFilter): Prisma.PropertyRecordWhereInput {
     const where: Prisma.PropertyRecordWhereInput = {};
     // PN-044/فاز ۴ (شورا-ن۰۸۸) — جداسازی tenant: پیش‌فرض 'melk-tabriz' (تمام دادهٔ
     // فعلی همین است — صفر شکستن) ⇒ دادهٔ ملکتون هرگز به کاشی‌های تبریز نشت نمی‌کند.
@@ -175,18 +171,41 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     if (filter.propertyTypes && filter.propertyTypes.length > 0) where.propertyTypeName = { in: filter.propertyTypes };
 
     // P6525 — نرمال‌سازی ورودی فیلترهای کدی/متنی با منبع یگانه
-    const codeNorm = normalizeFilterInput(filter.code);
     const realtorNorm = normalizeFilterInput(filter.realtorName);
     const ownerNorm = normalizeFilterInput(filter.ownerName);
     const addrNorm = normalizeFilterInput(filter.address);
-    const lineNorm = normalizeFilterInput(filter.lineName);
-    const stateNorm = normalizeFilterInput(filter.stateName);
 
     // PN-027 · ۵-پ-۲ — فیلترهای متنی سنگین روی ستون‌های سایهٔ نرمال در سطح SQL
     // (هم‌ارز عینی JS قدیم: مالک = rawOwnerName+موبایل · آدرس = آدرس+محله+خط با ␟)
     if (realtorNorm !== "") where.realtorNameNorm = { contains: realtorNorm };
     if (ownerNorm !== "") where.ownerSearchNorm = { contains: ownerNorm };
     if (addrNorm !== "") where.addressSearchNorm = { contains: addrNorm };
+    return where;
+  }
+
+  /** PN-079 — شمارش حقیقی کاتالوگ با همان فیلترهای SQL (COUNT — بدون واکشی ردیف)
+   *  KPI «کل آگهی‌های ملک تبریز» از این عدد تغذیه می‌کند — هرگز سقف ردیف نمی‌خورد. */
+  async countArmCatalog(filter: ArmListingCatalogFilter): Promise<number> {
+    return this.client.propertyRecord.count({ where: this.buildArmCatalogWhere(filter) });
+  }
+
+  /** کاتالوگ تک‌صفحه‌ای — فیلتر کدآگهی/نام کارشناس (contains) + وضعیت‌های خام شش‌حالته (P6521/M1)؛ جدیدترین فعالیت اول
+   *
+   * P6525 — قانون یکسان‌سازی (رفع باگ تاریخی ۴/۵ + هم‌ارزی ي/ی و ك/ک):
+   * فیلترهای کد و نام کارشناس به‌جای contains خام SQL، با نرمال‌سازی دوطرفه در JS
+   * اعمال می‌شوند (نرمال هر دو سمت: ورودی و رکورد) ⇒ نتیجهٔ ارقام فارسی/عربی/لاتین
+   * و حروف عربی/فارسی همیشه یکسان است. statuses در SQL می‌ماند (مقادیر خام دقیق).
+   * PN-079 — total برگشتی = شمارش ردیف‌های واکشی‌شده (سقف‌خور)؛ شمارش حقیقی ← countArmCatalog. */
+  async listArmCatalog(
+    filter: ArmListingCatalogFilter,
+    limit: number
+  ): Promise<{ rows: ArmListingCatalogRow[]; total: number }> {
+    const where = this.buildArmCatalogWhere(filter);
+
+    // P6525 — نرمال‌سازی ورودی فیلترهای کدی/متنی با منبع یگانه
+    const codeNorm = normalizeFilterInput(filter.code);
+    const lineNorm = normalizeFilterInput(filter.lineName);
+    const stateNorm = normalizeFilterInput(filter.stateName);
 
     // فیلترهای باقی‌مانده (کد · خط · استان) همچنان در JS — فقط این‌ها اسکن کامل می‌خواهند
     const needsJsFilter = codeNorm !== "" || lineNorm !== "" || stateNorm !== "";

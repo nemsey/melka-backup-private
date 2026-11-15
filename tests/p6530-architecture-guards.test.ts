@@ -42,7 +42,7 @@ async function callRoute(routeModule: string, query: string): Promise<{ status: 
 }
 
 /* ==========================================================================
- * §۰ — معماری: نام‌ها و ترتیب کاشی‌ها (هوم ۵ + داشبورد M1-M4)
+ * §۰ — معماری: نام‌ها و ترتیب کاشی‌ها (هوم هفت‌تایی PN-086 — M1-M4 ریشه شدند)
  * ========================================================================== */
 
 describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
@@ -50,12 +50,12 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
     await import("@/core/tiles/bootstrap");
   });
 
-  test("۰-۱) صفحه هوم — دقیقاً پنج کاشی با نام‌ها و ترتیب الزامی مالک", async () => {
+  test("۰-۱) صفحه هوم — دقیقاً هفت کاشی با نام‌ها و ترتیب الزامی مالک (PN-086/گام ۱)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const roots = tileRegistry.listRoot("OWNER");
     expect(roots.map((t) => t.title)).toEqual([
-      "فایل یابی", "تطبیق", "مغز", "تنظیمات", "داشبورد ملک تبریز",
-    ]); // PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): پنج کاشی ریشه — داشبورد ملکتون حذف شد
+      "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "مغز ملکا", "تنظیمات",
+    ]); // PN-086 (دستور مالک ۱۴۰۵/۰۸/۲۵): هفت کاشی ریشه — فایل‌یابی و ظرف داشبورد ملک تبریز حذف شدند
   });
 
   test("۰-۲) نمای مشاور همان ترتیب هوم را دارد (تنظیمات/داشبورد عمومی‌اند)", async () => {
@@ -63,20 +63,20 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
     const ownerRoots = tileRegistry.listRoot("OWNER").map((t) => t.title);
     const consultantRoots = tileRegistry.listRoot("CONSULTANT").map((t) => t.title);
     // PN-038: کاشی‌های فقط-مالک (تطبیق/مغز) برای مشاور حذف می‌شوند
-    expect(consultantRoots).toEqual(ownerRoots.filter((t) => t !== "تطبیق" && t !== "مغز"));
+    expect(consultantRoots).toEqual(ownerRoots.filter((t) => t !== "تطبیق" && t !== "مغز ملکا"));
   });
 
-  // PN-043/فاز ۲ (شورا-ن۰۸۷): داشبوردهای tenant — M1-M4 درون ظرف مشترک tenant-dashboards
-  test("۰-۳) ظرف tenant-dashboards — چهار کاشی M1-M4 درون داشبوردهای tenant (wrapper)", async () => {
+  // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): ظرف tenant-dashboards منحل — M1-M4 ریشهٔ هوم‌اند
+  test("۰-۳) هفت ریشه به ترتیب ۱ تا ۷؛ هیچ ظرفی زنده نیست (PN-086)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    // PN-043: M1-M4 با container="tenant-dashboards" — رندر مشترک درون دو داشبورد (wrapper، نه تکرار)
-    const children = tileRegistry.listChildren("tenant-dashboards", "OWNER");
-    expect(children.map((t) => t.title)).toEqual(["آگهی", "درخواست", "معاملات", "کارشناسان"]);
+    expect(tileRegistry.listChildren("tenant-dashboards", "OWNER")).toEqual([]); // PN-086: ظرف منحل
     const roots = tileRegistry.listRoot("OWNER");
     expect(roots.map((t) => t.id)).toEqual([
-      "file-finder", "smart-matching", "learning-tier", "settings", "tenant-dashboard-tabriz",
+      "arm-listings", "arm-requests", "transactions-contracts", "experts",
+      "smart-matching", "learning-tier", "settings",
     ]);
-    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5]);
+    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    for (const t of roots) expect(t.container).toBeUndefined();
   });
 
   test("۰-۴) کاشی‌های M5/M6/M7 در رجیستری فعال ثبت نشده‌اند (حذف نما — فاز ۷/۸/۹)", async () => {
@@ -126,11 +126,11 @@ describe("P6530 §۶ — قانون فهرست در همهٔ فهرست‌ها",
     }
   });
 
-  test("۶-۴) روت‌های فهرست: پیش‌فرض و سقف ۲۵٬۰۰۰ (تمام ردیف‌ها — سقف = گارد ایمنی)", async () => {
+  test("۶-۴) روت‌های فهرست: پیش‌فرض و سقف ۴۰٬۰۰۰ (تمام ردیف‌ها — سقف = گارد ایمنی · PN-079)", async () => {
     for (const routeFile of ["arm-catalog/listings", "arm-catalog/requests", "transactions"]) {
       const s = readFileSync(`${SRC}/app/api/crm/${routeFile}/route.ts`, "utf8");
-      expect(s, `${routeFile}: پیش‌فرض ۲۵۰۰۰`).toContain("?? 25000");
-      expect(s, `${routeFile}: سقف ۲۵۰۰۰ (گارد ایمنی)`).toMatch(/,\s*25000\)/);
+      expect(s, `${routeFile}: پیش‌فرض ۴۰۰۰۰`).toContain("?? 40000");
+      expect(s, `${routeFile}: سقف ۴۰۰۰۰ (گارد ایمنی)`).toMatch(/,\s*40000\)/);
     }
   });
 

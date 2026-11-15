@@ -1,24 +1,29 @@
 "use client";
 
 /**
- * BottomNav — ناوبری پایین ۵آیتمی (قانون ظاهر فاخر ۰۳۵-B — بخش ج/۳)
+ * BottomNav — ناوبری پایین «دسترسی سریع به کاشی‌ها» (قانون ظاهر فاخر ۰۳۵-B — بخش ج/۳)
  * ------------------------------------------------------------------
- * • ۵ آیتم: فایل‌یابی · آگهی (ملک تبریز) · درخواست (ملک تبریز) · معاملات · تنظیمات (PN-069)
- * • فقط موبایل (md:hidden) — دسکتاپ از کاشی‌های هوم استفاده می‌کند.
- * • رنگ فعال = رنگ اختصاصی همان بخش (نظام رنگ ۱۳گانه) · Ripple + Haptic.
- * • Safe-area (نوار iOS) · اندازهٔ تاچ ≥ ۴۴px · ARIA (nav + aria-current).
+ * PN-086/گام ۳ (دستور مالک ۱۴۰۵/۰۸/۲۵ ساعت ۰۷:۴۵ تهران) — شش آیتم به ترتیب الزامی:
+ *   آگهی · درخواست · معاملات · کارشناسان · تطبیق · تنظیمات
+ * («فایل‌یابی» حذف شد — گام ۱؛ M1-M4 اکنون مستقیم از هوم و نوار پایین باز می‌شوند)
+ * · فقط موبایل (md:hidden) — دسکتاپ از کاشی‌های هوم استفاده می‌کند.
+ * · رنگ فعال = رنگ اختصاصی همان بخش (نظام رنگ ۱۳گانه) · Ripple + Haptic.
+ * · مرز دسترسی عین هوم (PN-008 BLOCK 7): کاشی فقط-مالک (تطبیق) برای
+ *   مشاورِ فاقد دسترس پنهان می‌شود — ستون‌ها با شمارِ آیتم‌های مرئی سازگار می‌مانند.
+ * · Safe-area (نوار iOS) · اندازهٔ تاچ ≥ ۴۴px · ARIA (nav + aria-current).
  */
 
-import { FileSearch, Building2, ClipboardList, FileCheck2, Settings2 } from "lucide-react";
+import { Building2, ClipboardList, FileCheck2, Settings2, Sparkles, Users } from "lucide-react";
 import { useAppStore } from "@/lib/client/store";
 import { haptic } from "@/lib/haptics";
 import type { LucideIcon } from "lucide-react";
 
 const ITEMS: { id: string; label: string; icon: LucideIcon; activeClass: string }[] = [
-  { id: "file-finder", label: "فایل‌یابی", icon: FileSearch, activeClass: "text-sec-finder-700" },
   { id: "arm-listings", label: "آگهی", icon: Building2, activeClass: "text-sec-m1-700" },
   { id: "arm-requests", label: "درخواست", icon: ClipboardList, activeClass: "text-sec-m2-700" },
   { id: "transactions-contracts", label: "معاملات", icon: FileCheck2, activeClass: "text-sec-m3-700" },
+  { id: "experts", label: "کارشناسان", icon: Users, activeClass: "text-sec-m4-700" },
+  { id: "smart-matching", label: "تطبیق", icon: Sparkles, activeClass: "text-sec-m5-700" },
   { id: "settings", label: "تنظیمات", icon: Settings2, activeClass: "text-sec-settings-700" },
 ];
 
@@ -26,16 +31,27 @@ export function BottomNav() {
   const activeTileId = useAppStore((s) => s.activeTileId);
   const stage = useAppStore((s) => s.stage);
   const openTile = useAppStore((s) => s.openTile);
+  const userRole = useAppStore((s) => s.user?.role ?? "CONSULTANT");
+  const tileAccess = useAppStore((s) => s.tileAccess);
 
   if (stage !== "home" && stage !== "tile") return null;
+
+  // همان فرمول دسترسی هوم (PN-008 BLOCK 7) — مرز دسترسی کاشی‌ها حفظ می‌شود
+  const allowed = (id: string) =>
+    userRole === "OWNER" || !tileAccess || tileAccess.tiles.includes(id) || id === "settings";
+  const visible = ITEMS.filter((it) => allowed(it.id));
+  if (visible.length === 0) return null;
 
   return (
     <nav
       aria-label="ناوبری اصلی اپلیکیشن"
       className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="grid grid-cols-5 h-16 max-w-lg mx-auto">
-        {ITEMS.map(({ id, label, icon: Icon, activeClass }) => {
+      <ul
+        className="grid h-16 max-w-lg mx-auto"
+        style={{ gridTemplateColumns: `repeat(${visible.length}, minmax(0, 1fr))` }}
+      >
+        {visible.map(({ id, label, icon: Icon, activeClass }) => {
           const active = activeTileId === id;
           return (
             <li key={label} className="flex">

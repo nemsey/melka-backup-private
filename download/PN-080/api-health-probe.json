@@ -1,0 +1,261 @@
+{
+  "ok": true,
+  "at": "2026-11-09T20:34:21.759Z",
+  "via": "relay-mobile-production-path",
+  "results": [
+    {
+      "label": "ARM apm ریشه",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/",
+      "httpStatus": 404,
+      "ms": 75895,
+      "bodyHead": "{\"statusCode\":404,\"status\":false,\"data\":{\"error\":\"PageNotFoundError\",\"stack\":null},\"message\":\"صفحه مورد نظر یافت نشد\"}",
+      "parsed": {
+        "keys": [
+          "error",
+          "stack"
+        ]
+      }
+    },
+    {
+      "label": "PM ریشه",
+      "method": "GET",
+      "url": "https://pm-api.melketabriz.ir/api/",
+      "httpStatus": 404,
+      "ms": 75895,
+      "bodyHead": "{\"statusCode\":404,\"status\":false,\"data\":{\"error\":\"PageNotFoundError\",\"stack\":\"Error: صفحه مورد نظر یافت نشد\\n    at pageNotFoundError (/home/node/app/dist/middlewares/errors.middleware.js:19:11)\\n    at newFn (/home/node",
+      "parsed": {
+        "keys": [
+          "error",
+          "stack"
+        ]
+      }
+    },
+    {
+      "label": "GAP ریشه",
+      "method": "GET",
+      "url": "https://gap-api.melketabriz.ir/api/",
+      "httpStatus": 404,
+      "ms": 75896,
+      "bodyHead": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "عمومی apu ریشه",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apu/",
+      "httpStatus": 404,
+      "ms": 75896,
+      "bodyHead": "{\"statusCode\":404,\"status\":false,\"data\":{\"error\":\"PageNotFoundError\",\"stack\":null},\"message\":\"صفحه مورد نظر یافت نشد\"}",
+      "parsed": {
+        "keys": [
+          "error",
+          "stack"
+        ]
+      }
+    },
+    {
+      "label": "ARM public enums",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/public/statics/enums-persian",
+      "httpStatus": 200,
+      "ms": 75895,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"AD_STATUS_TYPES_FA\":[{\"label\":\"آگهی\",\"value\":\"property-advertisement\"},{\"label\":\"درخواست\",\"value\":\"property-request\"}],\"FORM_HTML_INPUT_TYPE_ENUM_FA\":[{\"label\":\"دکمه\",\"value\":\"but",
+      "parsed": {
+        "keys": [
+          "AD_STATUS_TYPES_FA",
+          "FORM_HTML_INPUT_TYPE_ENUM_FA",
+          "FORM_INPUT_TYPE_ENUM_FA",
+          "VISIT_STATUS_ENUM",
+          "PROPERTY_COMPLAINT_STATUS",
+          "PROPERTY_CHANGEABLE_WITH",
+          "REQUEST_EVENT_FEEDBACK_TYPE_ENUM",
+          "EDUCATION_GRADES_ENUM",
+          "JOB_APPLICATION_REQUEST_ROLES_ENUM",
+          "JOB_APPLICATION_REQUEST_STATUS_ENUM",
+          "MARITAL_STATUS_ENUM",
+          "JOB_APPLICATION_REQUEST_EMPLOYMENT_TYPE"
+        ]
+      }
+    },
+    {
+      "label": "PM portalInfo",
+      "method": "GET",
+      "url": "https://pm-api.melketabriz.ir/api/public/portalInfo",
+      "httpStatus": 200,
+      "ms": 75895,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"portalTelephoneNumber\":{\"cityCode\":\"041\",\"phone\":\"4101\"},\"platformsBaseUrl\":{\"ps\":{\"version\":\"3.5.0\"},\"armPmMobile\":{\"version\":\"1.2.2\"}},\"slogan\":\"مشاور املاکی به وُسعت شهر\",\"port",
+      "parsed": {
+        "keys": [
+          "portalTelephoneNumber",
+          "platformsBaseUrl",
+          "slogan",
+          "portalName",
+          "version"
+        ]
+      }
+    },
+    {
+      "label": "عمومی apu فهرست آگهی",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apu/properties/list?page=1&limit=1",
+      "httpStatus": 200,
+      "ms": 75895,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"_id\":\"6aec8f810dde0e4aa3f21af4\",\"listOfRealtors\":[{\"_id\":\"618a4ed7d2c16f3a6706b414\",\"voipInfo\":[{\"extentionNumber\":\"1017\",\"id\":null}],\"role\":{\"_id\":\"6867aeb33cd797341267e",
+      "parsed": {
+        "count": 1,
+        "first": {
+          "_id": "6aec8f810dde0e4aa3f21af4",
+          "name": "فروش آپارتمان مسکونی 73 متری"
+        }
+      }
+    },
+    {
+      "label": "ARM countries",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/countries/list",
+      "httpStatus": 200,
+      "ms": 75895,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"flag\":{\"icon\":\"media/flags/IR.svg\",\"name\":\"iran, islamic republic of\"},\"_id\":\"614ed19700cace6eac4f9ded\",\"name\":\"ایران\"}],\"count\":1,\"totalPages\":1,\"page\":1,\"limit\":9007199",
+      "parsed": {
+        "count": 1,
+        "first": {
+          "_id": "614ed19700cace6eac4f9ded",
+          "name": "ایران"
+        }
+      }
+    },
+    {
+      "label": "ARM states",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/states/list?country=614ed19700cace6eac4f9ded",
+      "httpStatus": 200,
+      "ms": 75894,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"_id\":\"614ed19700cace6eac4f9df0\",\"name\":\"آذربایجان شرقی\"}],\"count\":1,\"totalPages\":1,\"page\":1,\"limit\":9007199254740991},\"message\":\"\"}",
+      "parsed": {
+        "count": 1,
+        "first": {
+          "_id": "614ed19700cace6eac4f9df0",
+          "name": "آذربایجان شرقی"
+        }
+      }
+    },
+    {
+      "label": "ARM cities",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/cities/list?state=614ed19700cace6eac4f9df0",
+      "httpStatus": 200,
+      "ms": 75894,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"_id\":\"615380ae74c41783fc52cfe6\",\"name\":\"آذرشهر\"},{\"_id\":\"6153811a74c41783fc52d0ea\",\"name\":\"اسکو\"},{\"_id\":\"6153809674c41783fc52cfb2\",\"name\":\"اهر\"},{\"_id\":\"614f7cc0a50555f0",
+      "parsed": {
+        "count": 25,
+        "first": {
+          "_id": "615380ae74c41783fc52cfe6",
+          "name": "آذرشهر"
+        }
+      }
+    },
+    {
+      "label": "ARM areas",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/areas/list",
+      "httpStatus": 200,
+      "ms": 75897,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"_id\":\"6158168f6cd8d114dcd010fd\",\"__v\":0,\"name\":\"17 شهریور جدید\",\"city\":\"614ed19700cace6eac4f9df2\",\"country\":\"614ed19700cace6eac4f9ded\",\"state\":\"614ed19700cace6eac4f9df0\",",
+      "parsed": {
+        "count": 145,
+        "first": {
+          "_id": "6158168f6cd8d114dcd010fd",
+          "name": "17 شهریور جدید"
+        }
+      }
+    },
+    {
+      "label": "ARM trade-types",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/trade-types/list",
+      "httpStatus": 200,
+      "ms": 75894,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"_id\":\"614ed62da50555f0a54c1eca\",\"name\":\"فروش\",\"nameRequest\":\"خرید\",\"level\":1,\"mainPrices\":[\"67c40b6f019a7e1caa609fd3\"],\"icon\":\"icon-mortgage\",\"isRental\":false},{\"_id\":\"61",
+      "parsed": {
+        "count": 4,
+        "first": {
+          "_id": "614ed62da50555f0a54c1eca",
+          "name": "فروش"
+        }
+      }
+    },
+    {
+      "label": "ARM building-types",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/building-types/list",
+      "httpStatus": 200,
+      "ms": 75894,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"_id\":\"614edc35a50555f0a54c1f12\",\"name\":\"مسکونی\",\"level\":1,\"tradeTypes\":[\"614ed62da50555f0a54c1eca\",\"614ed63aa50555f0a54c1ed3\",\"614ed649a50555f0a54c1edc\",\"614ed790a50555f0",
+      "parsed": {
+        "count": 7,
+        "first": {
+          "_id": "614edc35a50555f0a54c1f12",
+          "name": "مسکونی"
+        }
+      }
+    },
+    {
+      "label": "ARM property-types",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/property-types/list",
+      "httpStatus": 200,
+      "ms": 75895,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"_id\":\"614ee704a50555f0a54c227d\",\"name\":\"آپارتمان\",\"buildingType\":{\"_id\":\"614edc35a50555f0a54c1f12\",\"name\":\"مسکونی\"},\"mainSpace\":\"67c40b6f019a7e1caa609ed5\"},{\"_id\":\"614f52",
+      "parsed": {
+        "count": 32,
+        "first": {
+          "_id": "614ee704a50555f0a54c227d",
+          "name": "آپارتمان"
+        }
+      }
+    },
+    {
+      "label": "ARM user-seriousness",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/user-seriousness/list",
+      "httpStatus": 200,
+      "ms": 75894,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"_id\":\"61a7536b0927675c45489a59\",\"name\":\"خیلی زیاد\",\"__v\":0},{\"_id\":\"61a753650927675c45489a4f\",\"name\":\"زیاد \",\"__v\":0},{\"_id\":\"61a7535f0927675c45489a3b\",\"name\":\"متوسط\",\"__",
+      "parsed": {
+        "count": 4,
+        "first": {
+          "_id": "61a7536b0927675c45489a59",
+          "name": "خیلی زیاد"
+        }
+      }
+    },
+    {
+      "label": "ARM price-evaluation",
+      "method": "GET",
+      "url": "https://arus-api.melketabriz.ir/api/apm/property-price-evaluation/list",
+      "httpStatus": 200,
+      "ms": 75895,
+      "bodyHead": "{\"statusCode\":200,\"status\":true,\"data\":{\"list\":[{\"_id\":\"61a7daad15a8b67e5ef93799\",\"name\":\"بسیار بالاتر از قیمت کارشناسی\",\"level\":1,\"__v\":0},{\"_id\":\"61a7dad215a8b67e5ef937a3\",\"name\":\"نسبتا بالاتر از قیمت کارشناسی\",\"level\"",
+      "parsed": {
+        "count": 4,
+        "first": {
+          "_id": "61a7daad15a8b67e5ef93799",
+          "name": "بسیار بالاتر از قیمت کارشناسی"
+        }
+      }
+    },
+    {
+      "label": "ARM properties/create (بدون توکن)",
+      "method": "POST",
+      "url": "https://arus-api.melketabriz.ir/api/apm/properties/create",
+      "httpStatus": 401,
+      "ms": 75894,
+      "bodyHead": "{\"statusCode\":401,\"status\":false,\"data\":{\"error\":\"UnAuthorizedError\"},\"message\":\"عدم احراز هویت! لطفا مجددا لاگین بفرمایید.\"}",
+      "parsed": {
+        "keys": [
+          "error"
+        ]
+      }
+    }
+  ]
+}

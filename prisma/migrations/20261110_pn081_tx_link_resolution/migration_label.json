@@ -1,0 +1,8 @@
+{
+  "directive": "PN-081 (بهینه‌سازی استخراج رکوردهای فهرست معاملات)",
+  "name": "tx_link_resolution",
+  "createdAt": "2026-11-10T00:00:00Z",
+  "note": "افزودنی-تنها — ۶ ستون + ۱ ایندکس روی TransactionEnrichment (لایهٔ غنی‌سازی؛ دادهٔ مقدس TransactionRecord دست‌نخورده). اعمال رسمی پروژه از مسیر prisma db push است (سنت db push، بدون migrations table)؛ این پوشه شاهد SQL مهاجرت برای ممیزی است.",
+  "warmBackup": "db/custom.db.pn081-pre-migration",
+  "warmBackupSha256": "4842b034611e108dc3878cddacf47b57460a0b1cb0de149e1745d5bdf867da21"
+}

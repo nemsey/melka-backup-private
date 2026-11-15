@@ -12,6 +12,7 @@ import { normalizeFilterInput } from "@/lib/normalize-input";
 import { tenantDbValue } from "@/lib/tenants";
 import { listExpertProfiles, type ExpertProfileFilter, type ExpertProfileRow } from "@/lib/experts/profile-store";
 import { faJalaliShort } from "@/lib/format";
+import { tehranDateKey } from "@/lib/jalali";
 
 function num(v: string | null): number | undefined {
   if (v === null || v.trim() === "") return undefined;
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
     return new Response(new Uint8Array(out), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="melka-experts-${new Date().toISOString().slice(0, 10)}.xlsx"`,
+        "Content-Disposition": `attachment; filename="melka-experts-${tehranDateKey(new Date())}.xlsx"`,
       },
     });
   } catch (err) {

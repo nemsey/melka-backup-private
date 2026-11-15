@@ -40,6 +40,8 @@ import {
   FileSpreadsheet,
   // PN-020/گام اول-ج — آیکون ستون شرایط پرداخت
   Banknote,
+  // PN-081 — هشدار توقف همگام‌سازی فهرست معاملات
+  AlertTriangle,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -52,7 +54,7 @@ import {
   Legend,
 } from "recharts";
 import { KpiCard, useTileData, TileCoverageTable, ExcelImportButton, FilterChip, type DataSourceInfo } from "@/components/app/shared";
-import { api, apiBlob, downloadBlob } from "@/lib/client/api";
+import { api, downloadExcelByTicket } from "@/lib/client/api";
 // PN-002 گام ۶-۲ — اعلان‌های خروجی اکسل
 import { useToast } from "@/hooks/use-toast";
 import { categorizeTxType, txTypeMonthlySeries, topExpertsByTxType } from "@/core/agent/analyzers";
@@ -494,6 +496,23 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
           بعد از جداول/نمودارها و پوشش، قبل از فیلتر و فهرست) */}
       {updateSection}
 
+      {/* PN-081 — هشدار توقف همگام‌سازی: با وجود دادهٔ کش‌شده، کهنگی هرگز بی‌صدا نمی‌ماند.
+          ریشه: توکن ARM منقضی می‌شود و خطای زنده فقط وقتی دیده می‌شد که «هیچ» داده نباشد؛
+          فهرست یخ‌زده بدون توضیح نمایش داده می‌شد (شاهد: توقف ۲۰۲۶-۱۱-۰۹). */}
+      {data?.dataSource?.syncStalled ? (
+        <div
+          id="m3-sync-stalled"
+          className="rounded-lg border border-amber-300/70 bg-amber-50/70 dark:bg-amber-950/30 p-3 flex items-start gap-2.5"
+          role="alert"
+        >
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden />
+          <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+            <span className="font-bold">بروزرسانی فهرست معاملات متوقف است.</span>{" "}
+            آخرین همگام‌سازی موفق {data.dataSource.stalledHours ? `${faDigits(String(data.dataSource.stalledHours))} ساعت` : "چند ساعت"} پیش بوده است. برای ازسرگیری خودکار، یک‌بار با کد پرسنلی و پیامک وارد سامانه شوید — داده‌های فعلی از آخرین استخراج موفق نمایش داده می‌شود.
+          </p>
+        </div>
+      ) : null}
+
       {/* فیلترها — B.۱ (۰۱۷): بالای فهرست · موبایل جمع‌شونده · دسکتاپ همیشه باز
           BLOCK F (۰۱۸): پاک‌کردن در بالای کارت + اعمال خودکار debounce ۳۰۰ms + نشانگر جستجو */}
       <Card id="m3-filters-card">
@@ -663,10 +682,10 @@ export function TransactionsTab({ sortBy, showCharts, updateSection, syncDoneSig
               size="sm"
               className="gap-1.5 h-7 text-[11px]"
               onClick={() => {
-                apiBlob("/api/crm/export/transactions")
-                  .then((blob) => {
-                    downloadBlob(blob, `melka-transactions-${new Date().toISOString().slice(0, 10)}.xlsx`);
-                    toast({ title: "خروجی اکسل آماده شد", description: "کل فهرست معاملات دانلود شد." });
+                // DIR-EXCEL-FIX-001 — دانلود بومی مرورگر (بلیت امضاشده) — درمان شکست Blob در موبایل
+                downloadExcelByTicket("transactions", new URLSearchParams())
+                  .then(() => {
+                    toast({ title: "دانلود اکسل آغاز شد", description: "کل فهرست معاملات در حال دانلود است — پیشرفت را در نوار دانلود مرورگر ببینید." });
                   })
                   .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
               }}

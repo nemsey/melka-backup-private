@@ -675,6 +675,8 @@ model PropertyRecord {
   // PN-050 (دستور ۲) — ایندکس‌های provenance
   @@index([lastSyncedAt])
   @@index([lastModifiedAt])
+  // PN-084 — مسیر داغ موتور تطبیق: پرس‌وجوی کاندیداها (status + syncedAt — پوشش کامل)
+  @@index([status, syncedAt])
   // PN-027 · ۵-پ-۲ — ایندکس ستون‌های نرمال (پیشوند/دقیق؛ contains روی سطح SQLite می‌ماند)
   @@index([realtorNameNorm])
   @@index([ownerSearchNorm])
@@ -1041,8 +1043,26 @@ model TransactionEnrichment {
   /// شناسهٔ دستهٔ غنی‌سازی (P6.5-14)
   extractionBatchId  String?
 
+  // ── PN-081 (دستور مالک ۱۴۰۵/۰۸/۲۰) — رفع گرهٔ کدهای غیرمنطبقه ──
+  // برای معامله‌هایی که کد ملک/درخواستشان در رجیستری آگهی/درخواست نیست
+  // (خارج از properties/list و requests/list آرم)، تماس طرفین مستقیماً از
+  // خود ARM رفع می‌شود: properties/owner/{propertyId} + requests/applicant/{requestId}
+  /// نام مالک رفع‌شده از ARM (کد ملک)
+  linkOwnerName       String?
+  /// موبایل مالک رفع‌شده از ARM
+  linkOwnerMobile     String?
+  /// نام درخواست‌دهندهٔ رفع‌شده از ARM (کد درخواست)
+  linkRequesterName   String?
+  /// موبایل درخواست‌دهندهٔ رفع‌شده از ARM
+  linkRequesterMobile String?
+  /// وضعیت رفع گره: resolved | not_found | no_ids | partial | pending
+  linkStatus          String?
+  /// زمان آخرین تلاش رفع گره — جلوگیری از تلاش بی‌پایان برای رکورد حذف‌شده در مبدأ
+  linkResolvedAt      DateTime?
+
   @@index([contractType])
   @@index([extractionBatchId])
+  @@index([linkResolvedAt])
 }
 
 /// PN-008 (ثانیاً) — پروفایل کارشناس از سامانهٔ PM (منبع یگانهٔ فهرست تازهٔ کارشناسان).
@@ -1467,6 +1487,8 @@ model RequestRecord {
   actorNameNorm    String?
 
   @@index([status])
+  // PN-084 — مسیر داغ موتور تطبیق: پرس‌وجوی کاندیداها (status + updatedAt — پوشش کامل)
+  @@index([status, updatedAt])
   @@index([source])
   @@index([customerMobile])
   @@index([createdAt])

@@ -20,7 +20,7 @@ export const settingsTile = defineTile({
   icon: Settings,
   accent: "settings",
   component: lazyPage(() => import("./SettingsPage")),
-  order: 4, // PN-043/فاز ۲ (شورا-ن۰۸۷) — ترتیب جدید هوم: تنظیمات چهارم
+  order: 7, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵) — ترتیب هفت‌تایی هوم: تنظیمات هفتم
   agent: null,
   settings: [],
 });

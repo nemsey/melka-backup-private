@@ -334,27 +334,29 @@ describe("PN-030 · E) پیکربندی env + ترتیب کاشی‌های دا�
     expect(typeof env._comment).toBe("string");
   });
 
-  test("E-3 → PN-038/۲.۵: ترتیب هشت کاشی هوم — فایل یابی، آگهی، درخواست، معاملات، کارشناسان، تطبیق، مغز، تنظیمات", async () => {
+  test("E-3 → PN-086/گام ۱: ترتیب هفت کاشی هوم — آگهی، درخواست، معاملات، کارشناسان، تطبیق، مغز ملکا، تنظیمات", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    // M6/M7 حذف شدند؛ ظرف حذف شد — هشت کاشی همه در ریشهٔ هوم‌اند
+    // M6/M7 حذف شدند؛ ظرف حذف شد؛ PN-086: فایل‌یابی و ظرف داشبورد ملک تبریز نیز حذف شدند
     expect(tileRegistry.get("market-index")).toBeUndefined();
     expect(tileRegistry.get("data-coverage")).toBeUndefined();
-    // PN-043/فاز ۲ (شورا-ن۰۸۷): M1-M4 درون ظرف tenant-dashboards — شش کاشی ریشه
-    expect(tileRegistry.listChildren("tenant-dashboards", "OWNER").map((t) => t.id)).toEqual([
-      "arm-listings", "arm-requests", "transactions-contracts", "experts",
-    ]);
+    expect(tileRegistry.get("file-finder")).toBeUndefined();
+    expect(tileRegistry.get("tenant-dashboard-tabriz")).toBeUndefined();
+    // PN-086: ظرف tenant-dashboards منحل شد — M1-M4 ریشهٔ هوم‌اند
+    expect(tileRegistry.listChildren("tenant-dashboards", "OWNER")).toEqual([]);
     const ids = tileRegistry.listRoot("OWNER").map((t) => t.id);
     expect(ids).toEqual([
-      "file-finder",              // ۱ فایل یابی
-      "smart-matching",           // ۲ تطبیق
-      "learning-tier",            // ۳ مغز
-      "settings",                 // ۴ تنظیمات
-      "tenant-dashboard-tabriz",  // ۵ داشبورد ملک تبریز
+      "arm-listings",            // ۱ آگهی
+      "arm-requests",            // ۲ درخواست
+      "transactions-contracts",  // ۳ معاملات
+      "experts",                 // ۴ کارشناسان
+      "smart-matching",          // ۵ تطبیق
+      "learning-tier",           // ۶ مغز ملکا
+      "settings",                // ۷ تنظیمات
     ]);
     // ترتیب عددی هم عین فهرست مالک است
-    expect(tileRegistry.get("smart-matching")!.order).toBe(2); // PN-043: تطبیق دوم
-    expect(tileRegistry.get("learning-tier")!.order).toBe(3);  // PN-043: مغز سوم
-    expect(tileRegistry.get("settings")!.order).toBe(4);       // PN-043: تنظیمات چهارم
+    expect(tileRegistry.get("smart-matching")!.order).toBe(5); // PN-086: تطبیق پنجم
+    expect(tileRegistry.get("learning-tier")!.order).toBe(6);  // PN-086: مغز ملکا ششم
+    expect(tileRegistry.get("settings")!.order).toBe(7);       // PN-086: تنظیمات هفتم
   });
 
   test("E-4) پروژهٔ Worker آمادهٔ دیپلوی است (wrangler.toml + deploy.sh + README)", () => {

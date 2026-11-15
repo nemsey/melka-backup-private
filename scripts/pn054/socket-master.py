@@ -54,9 +54,13 @@ PRELOAD = os.path.join(REPO, "scripts", "pn054", "listen-patch.cjs")
 SERVER_JS = os.path.join(REPO, ".next", "standalone", "server.js")
 # PN-054 ترمیم۴ (۲۰۲۶-۱۱-۰۹): ۳۸۴→۷۶۸ — ریشهٔ کرش‌لوپ کاتالوگ درخواست‌ها؛
 # پاسخ ۲۶k ردیف غنی‌شده به ~۴۰۵MB هیپ نیاز داشت و هر بار سرور را با
-# «Reached heap limit» می‌کشت (اپ: صفر + کاشی ایجنت ناقص). سقف cgroup=۴GB
-# و ~۳GB آزاد ⇒ ۷۶۸MB همچنان منضبط است (کف لازم ~۵۰۰MB + حاشیهٔ ۱.۵×).
-HEAP_CAP_MB = int(os.environ.get("MELKA_HEAP_CAP_MB", "768"))  # دستور ۳ (بازنگری ترمیم۴)
+# «Reached heap limit» می‌کشت (اپ: صفر + کاشی ایجنت ناقص).
+# PN-079 (۲۰۲۶-۱۱-۰۹): ۷۶۸→۱۰۲۴ — پس از ترمیم آمار، کل کاتالوگ (P=28,668 ·
+# R=26,203) به‌طور کامل سرو می‌شود؛ در آزمون فشار (۴ فراخوانی سنگین پیاپی:
+# listings+requests+transactions+club) RSS سرور به ۷۶۲MB رسید — فقط ۶MB زیر
+# کپ کهن. سنگین‌ترین درخواست واحد ~۴۰۵MB است؛ ۱۰۲۴MB حاشیهٔ ~۲.۵× می‌دهد.
+# سقف cgroup=۴GB و ~۲.۷GB آزاد ⇒ ۱۰۲۴MB همچنان منضبط است.
+HEAP_CAP_MB = int(os.environ.get("MELKA_HEAP_CAP_MB", "1024"))  # دستور ۳ (بازنگری PN-079)
 
 
 def log(msg: str) -> None:

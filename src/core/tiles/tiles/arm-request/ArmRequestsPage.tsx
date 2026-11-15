@@ -51,7 +51,7 @@ import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterC
 import { InfoButton } from "@/components/info/InfoButton";
 // PN-011 ثالثاً — شعبه چندانتخابی چیپی؛ Select تک‌انتخابی حذف شد
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, apiSync, apiBlob, downloadBlob, ApiClientError } from "@/lib/client/api";
+import { api, apiSync, downloadExcelByTicket, ApiClientError } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
@@ -336,11 +336,23 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, on
     try {
       // P6546/گام پنجم-پ — لایهٔ فهرست: ۵۰ صفحه/کلیک · لایهٔ جزئیات: ≈۵۰۰ رکورد/کلیک
       // P6546/گام پنجم-پ-۳ — تاب‌آور: تا ۳ تلاش خودکار روی 502/504/مهلت (هر تلاش از checkpoint ادامه می‌یابد)
-      const res = await apiSync<{ lists: Array<{ fetched: number; totalAtSource: number; ok: boolean }>; enrich?: Array<{ enriched: number; remaining: number }> }>(
+      const res = await apiSync<{
+        lists: Array<{ fetched: number; totalAtSource: number; ok: boolean }>;
+        enrich?: Array<{ enriched: number; remaining: number }>;
+        /** PN-083 — هماهنگ‌ساز: اگر بروزرسانی همین فهرست در پس‌زمینه زنده باشد */
+        busy?: { listings?: { message: string }; requests?: { message: string } };
+      }>(
         "/api/crm/arm-catalog/sync",
         { method: "POST", body: { entity: "requests", mode: "both", maxRows: 500 } },
         (attempt) => toast({ title: `ادامهٔ بروزرسانی از نقطهٔ قطع (تلاش ${attempt + 1} از ۳)`, description: "سرور ملک تبریز لحظه‌ای کند بود؛ همان نقطهٔ قبلی ازسرگیری شد — هیچ داده‌ای از ابتدا شروع نمی‌شود." })
       );
+      // PN-083 — اجرای هم‌زمان ممنوع: اگر چرخهٔ خودکار/فوری همین فهرست را در دست دارد،
+      // صادقانه همین را بگو (صفر اجرای موازی روی سامانهٔ مبدأ)
+      if (res.busy?.requests) {
+        toast({ title: "بروزرسانی درخواست‌ها همین حالا در جریان است", description: res.busy.requests.message });
+        await load();
+        return;
+      }
       const list = res.lists?.[0];
       toast({
         title: "بروزرسانی درخواست‌ها از سامانه‌های ملک تبریز انجام شد",
@@ -881,10 +893,10 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, on
                   if (applied.realtorName) p.set("realtorName", applied.realtorName);
                   if (applied.customerName) p.set("customerName", applied.customerName);
                   if (applied.areaName) p.set("areaName", applied.areaName);
-                  apiBlob(`/api/crm/export/requests?${p.toString()}`)
-                    .then((blob) => {
-                      downloadBlob(blob, `melka-requests-${new Date().toISOString().slice(0, 10)}.xlsx`);
-                      toast({ title: "خروجی اکسل آماده شد", description: "کل فهرست درخواست‌ها (با فیلترهای فعال) دانلود شد." });
+                  // DIR-EXCEL-FIX-001 — دانلود بومی مرورگر (بلیت امضاشده) — درمان شکست Blob در موبایل
+                  downloadExcelByTicket("requests", p)
+                    .then(() => {
+                      toast({ title: "دانلود اکسل آغاز شد", description: "کل فهرست درخواست‌ها (با فیلترهای فعال) در حال دانلود است — پیشرفت را در نوار دانلود مرورگر ببینید." });
                     })
                     .catch((e) => toast({ title: "خروجی اکسل ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" }));
                 }}

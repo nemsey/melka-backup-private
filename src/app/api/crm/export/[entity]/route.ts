@@ -14,8 +14,10 @@ import { NextRequest } from "next/server";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { tenantDbValue } from "@/lib/tenants";
-import { catalogUserScope } from "@/lib/access/scope";
+import { catalogUserScope, type AccessSession } from "@/lib/access/scope";
 import { normalizeFilterInput } from "@/lib/normalize-input";
+import { verifyExportTicket } from "@/lib/export-ticket";
+import { tehranDateKey } from "@/lib/jalali";
 import {
   getPropertyRecordRepository,
   getRequestRepository,
@@ -33,7 +35,7 @@ function num(v: string | null): number | undefined {
 }
 
 /**
- * ساخت xlsx از ستون‌ها + ردیف‌ها — PN-070: جریانی (stream.xlsx.WorkbookWriter)
+ * ساخت xlsx از ستون‌ها + ردیف‌ها — PN-079: جریانی (stream.xlsx.WorkbookWriter)
  * ------------------------------------------------------------------
  * ریشهٔ حادثه: نسخهٔ پیشین Workbook درون‌حافظه‌ای برای ۲۶٬۱۶۰ ردیف × ۳۳ ستون
  * بیش از ۱٫۷GB RAM خورد و کرنل پروسهٔ سرور را OOM-kill کرد (جعبهٔ ۴GB) —
@@ -93,18 +95,46 @@ async function branchResolver() {
 }
 
 export async function GET(request: NextRequest, ctx: { params: Promise<{ entity: string }> }) {
-  const guard = await requireSessionAsync(request);
-  if (guard instanceof MelkApiError) return errorResponse(guard);
-
   const { entity } = await ctx.params;
   const sp = request.nextUrl.searchParams;
+
+  // ─── DIR-EXCEL-FIX-001 — دو مسیر احراز هویت ───
+  // ۱) بلیت امضاشدهٔ ۱۸۰ثانیه‌ای (دانلود بومی مرورگر/WebView موبایل — بدون Blob)
+  // ۲) Bearer کلاسیک (تست/اسکریپت — همان رفتار پیشین)
+  // در هر دو مسیر دامنه از نقش/نامِ «همان نشست» حل می‌شود — قانون حساب
+  // کاربری PN-049 عیناً برقرار است؛ بلیت فقط فیلترهای فهرست را حمل می‌کند.
+  let session: AccessSession;
+  const ticketParam = sp.get("ticket");
+  if (ticketParam) {
+    const payload = verifyExportTicket(ticketParam, entity);
+    if (!payload) {
+      return errorResponse(
+        new MelkApiError(
+          "UNAUTHORIZED",
+          "بلیت دانلود نامعتبر یا منقضی است — دوباره دکمهٔ «اکسل کل فهرست» را بزنید.",
+          401,
+          false
+        )
+      );
+    }
+    session = { personnelCode: "export-ticket", role: payload.r, accessScope: payload.s || null, displayName: payload.n };
+    // فیلترهای بلیت به‌عنوان کوئری معتبر در نظر گرفته می‌شوند (امضاشده)
+    for (const [k, v] of new URLSearchParams(payload.q)) sp.set(k, v);
+  } else {
+    const guard = await requireSessionAsync(request);
+    if (guard instanceof MelkApiError) return errorResponse(guard);
+    session = guard;
+  }
+
   // PN-049/گام ۲-الف — قانون حساب کاربری: خروجی اکسل هم عین فهرست دامنه می‌گیرد —
   // کاربر غیر-مالک فقط رکوردهای خودش را خروجی می‌گیرد؛ مالک همه را.
-  const exportScope = catalogUserScope(guard);
+  const exportScope = catalogUserScope(session);
   const exportRegistrar = exportScope.kind === "OWN" ? exportScope.nameNorm : undefined;
   // PN-059: tenant ملکتون حذف شد — همیشه 'melk-tabriz' (تک-tenant).
   const tenantId = tenantDbValue(sp.get("tenantId"));
   const tenantLabel = "ملک تبریز";
+  // DIR-TZ-001 — تاریخ «امروز» به وقت تهران (سرور چین/UTC است؛ کاربر تهران)
+  const todayKey = tehranDateKey(new Date());
 
   try {
     let buffer: Buffer;
@@ -124,7 +154,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
           rentalType: sp.get("rentalType") === "rental" ? "rental" : sp.get("rentalType") === "sale" ? "sale" : undefined,
           registrarNameNorm: exportRegistrar,
         },
-        25000
+        40000
       );
       const branchOf = await branchResolver();
 
@@ -150,11 +180,11 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
           r.viewCount, r.imageCount, r.addedToDivar === true ? "بله" : r.addedToDivar === false ? "خیر" : "",
           r.addedToInsta === true ? "بله" : r.addedToInsta === false ? "خیر" : "",
           r.isReposted === true ? "بله" : "",
-          r.status ?? "", r.statusDate ? r.statusDate.toISOString().slice(0, 10) : "",
-          r.updatedAt ? r.updatedAt.toISOString().slice(0, 10) : "",
+          r.status ?? "", r.statusDate ? tehranDateKey(r.statusDate) : "",
+          r.updatedAt ? tehranDateKey(r.updatedAt) : "",
         ])
       );
-      filename = `melka-listings-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      filename = `melka-listings-${todayKey}.xlsx`;
     } else if (entity === "requests") {
       const repo = getRequestRepository();
       const code = normalizeFilterInput(sp.get("code")) || undefined;
@@ -163,7 +193,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
       const areaName = normalizeFilterInput(sp.get("areaName")) || undefined;
       const { rows } = await repo.listArmCatalog(
         { tenantId, code, realtorName, customerName, areaName, priceFrom: num(sp.get("priceFrom")), priceTo: num(sp.get("priceTo")), registrarNameNorm: exportRegistrar },
-        25000
+        40000
       );
       const branchOf = await branchResolver();
 
@@ -190,13 +220,13 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
           r.sideNames ?? "", r.areaNames.join("، "), r.lineNames.join("، "), r.paymentMethodName ?? "",
           r.seriousnessName ?? "", r.urgent === true ? "فوری" : "", r.luxury === true ? "لوکس" : "",
           r.occasion === true ? "فرصت" : "", r.changeWithNames ?? "", r.status ?? "",
-          r.createdAt ? r.createdAt.toISOString().slice(0, 10) : "",
+          r.createdAt ? tehranDateKey(r.createdAt) : "",
         ])
       );
-      filename = `melka-requests-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      filename = `melka-requests-${todayKey}.xlsx`;
     } else if (entity === "transactions") {
       const repo = getTransactionRepository();
-      const rows = (await repo.listWithSummary({ filter: { tenantId }, limit: 25000 })) as unknown as {
+      const rows = (await repo.listWithSummary({ filter: { tenantId }, limit: 40000 })) as unknown as {
         rows: Array<Record<string, unknown>>;
       };
       const txRows = (rows?.rows ?? []) as Array<Record<string, unknown>>;
@@ -229,7 +259,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
           typeof r.eventsCount === "number" ? r.eventsCount : null,
         ])
       );
-      filename = `melka-transactions-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      filename = `melka-transactions-${todayKey}.xlsx`;
     } else if (entity === "experts") {
       const repo = getExpertRepository();
       // PN-044/فاز ۴ — findAll بدون فیلتر tenant می‌بود؛ اکنون tenant همین خروجی
@@ -249,10 +279,10 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ entity:
           r.personnelCode && !r.personnelCode.startsWith("بدون-کد-") ? r.personnelCode : "-",
           r.fullName ?? "", r.mobile ?? "", r.role ?? "", r.businessTitle ?? "",
           listingCount.get(r.fullName ?? "") ?? 0, r.active === false ? "غیرفعال" : "فعال",
-          r.createdAt ? new Date(r.createdAt).toISOString().slice(0, 10) : "",
+          r.createdAt ? tehranDateKey(new Date(r.createdAt)) : "",
         ])
       );
-      filename = `melka-experts-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      filename = `melka-experts-${todayKey}.xlsx`;
     } else {
       return errorResponse(new MelkApiError("NOT_FOUND", "موجودیت پشتیبانی‌نشده.", 404, false));
     }

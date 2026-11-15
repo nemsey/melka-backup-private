@@ -556,6 +556,39 @@ export function hasEnoughCoverage(existingCount: number, totalAtSource: number):
   return existingCount >= Math.floor(totalAtSource * 0.9);
 }
 
+/**
+ * DIR-MISSING-REQ-001 (ریشهٔ A — تلهٔ بستن زودهنگام چرخه) — تصمیم نهایی بستن چرخه.
+ * ---------------------------------------------------------------------------
+ * زمینه (شاهد زندهٔ ۱۴۰۵/۰۸/۲۵): منبع درخواست‌ها ۴۳۲ صفحه دارد؛ چرخهٔ هر تیک فقط
+ * ۱۲ صفحه (بودجه) می‌رود و چون شمار «کل» رکوردهای DB (دادهٔ مقدسِ انباشته) همیشه
+ * ≥ ۹۰٪ شمارش منبع است، گارد پوشش چرخه را در همان صفحهٔ ۱۲ «کامل» جا می‌زد ⇒
+ * هر تیک از صفحهٔ ۱ شروع می‌شد و صفحه‌های ۱۳..۴۳۲ (حدود ۲۰٫۹۵۴ ردیف) هرگز
+ * دیده نمی‌شدند — کورگاه ساختاری برای هر ردیفی که از پنجرهٔ ۶۰۰تایی جدیدترین‌ها
+ * بیرون برود (مثلاً در پنجرهٔ مرگ توکن).
+ *
+ * قانون تازه: علامت complete فقط وقتی مجاز است که چرخه به «پایان واقعی» منبع
+ * رسیده باشد (صفحهٔ آخرِ اعلامی خود منبع) — بودجهٔ تمام‌شده به‌تنهایی کافی نیست؛
+ * چرخهٔ ناتمام in-progress می‌ماند و تیک بعدی از همان صفحه ادامه می‌دهد (عین
+ * طراحی اصلی checkpoint). گارد پوشش ۹۰٪ صرفاً پاس محافظ برای «پایانِ معیوب»
+ * باقی می‌ماند (شاهد P6530: بسته‌شدن نادرست در صفحهٔ ۱۲۱ از ۴۰۸).
+ */
+export function shouldMarkCycleComplete(opts: {
+  /** آخرین صفحهٔ کاملِ ذخیره‌شدهٔ این چرخه */
+  lastCompletedPage: number;
+  /** سقف بودجهٔ این اجرا (min(totalPages, startPage+budget-1)) */
+  endPage: number;
+  /** بزرگ‌ترین totalPages واقعی که منبع در این اجرا اعلام کرده (۰ = ناشناخته) */
+  trueTotalPages: number;
+  /** گارد پوشش P6530 (DB ≥ ۹۰٪ منبع) */
+  coverageOk: boolean;
+}): boolean {
+  // پایان واقعی ناشناخته — عین رفتار پیشین: تکیه بر گارد پوشش
+  if (opts.trueTotalPages <= 0) return opts.coverageOk;
+  // رسیدن به پایان واقعی: یا صفحهٔ آخرِ منبع کامل شده، یا از آن گذشته‌ایم (منبع کوچک شده)
+  const reachedTrueEnd = Math.max(opts.lastCompletedPage, opts.endPage) >= opts.trueTotalPages;
+  return reachedTrueEnd && opts.coverageOk;
+}
+
 /** ذخیرهٔ امن checkpoint پس از هر صفحهٔ کامل (داده نوشته شد ⇒ حالا جلو می‌رویم) */
 async function advanceCheckpoint(
   entity: "listings" | "requests",
@@ -670,6 +703,8 @@ export async function syncArmListingsCatalog(
   let lastCompleted = cycle.lastCompletedPage;
   let savedTotalAtSource = savedCp?.totalAtSource ?? 0;
   let reachedEndPage = 1;
+  // DIR-MISSING-REQ-001 (ریشهٔ A) — بزرگ‌ترین totalPages واقعی دیده‌شده در این اجرا
+  let trueTotalPages = Math.max(savedCp?.totalPages ?? 0, 0);
 
   // ═══ PN-028/خامساً-الف — گذر سرِ تازه (Fresh-Head pass) ═══
   // شاهد داده: فهرست ARM «جدیدترین‌اول» است (صعود کدآگهی با extractedA در نخستین
@@ -697,6 +732,8 @@ export async function syncArmListingsCatalog(
         out.totalAtSource = head.total;
         savedTotalAtSource = savedTotalAtSource || head.total;
       }
+      // DIR-MISSING-REQ-001 — پیگیری پایان واقعی در گذر سرِ تازه هم
+      if (head.totalPages > trueTotalPages) trueTotalPages = head.totalPages;
     } catch {
       // گذر سرِ تازه بهترین-تلاش است — شکستش هرگز چرخهٔ اصلی را متوقف نمی‌کند
     }
@@ -729,6 +766,7 @@ export async function syncArmListingsCatalog(
         const { rows, total, totalPages: tp } = r;
         out.totalAtSource = total;
         savedTotalAtSource = savedTotalAtSource || total;
+        if (tp > trueTotalPages) trueTotalPages = tp; // DIR-MISSING-REQ-001
         if (endPage === 0) endPage = Math.min(tp, cycle.startPage + pagesBudget - 1);
         else endPage = Math.min(endPage, cycle.startPage + pagesBudget - 1);
         out.pages = p;
@@ -754,18 +792,28 @@ export async function syncArmListingsCatalog(
     // علامت complete فقط با پوشش ≥ ۹۰٪ شمارش منبع — پاسخ معیوبِ «پایان زودرس» هرگز
     // چرخهٔ ناقص را کامل جا نمی‌زند (شاهد: چرخهٔ درخواست‌ها در صفحهٔ ۱۲۱ از ۴۰۸)
     const finalCp = await integration.getSyncCheckpoint("listings");
+    let cycleComplete = false;
     if (finalCp && finalCp.lastCompletedPage >= endPage) {
       const coverage = await repo.countEnrichment().then((c) => c.total).catch(() => 0);
-      if (hasEnoughCoverage(coverage, out.totalAtSource || savedTotalAtSource)) {
-        await advanceCheckpoint("listings", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource }, "complete");
-      } else {
-        // پوشش ناکافی — چرخه باز می‌ماند تا دفعهٔ بعد از همان‌جا ادامه یابد
-        await advanceCheckpoint("listings", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource || savedTotalAtSource }, "in-progress");
-      }
+      // DIR-MISSING-REQ-001 (ریشهٔ A) — بودجهٔ تمام‌شده به‌تنهایی چرخه را کامل نمی‌کند؛
+      // فقط رسیدن به آخرین صفحهٔ واقعی منبع + گارد پوشش P6530 (≥۹۰٪)
+      cycleComplete = shouldMarkCycleComplete({
+        lastCompletedPage: finalCp.lastCompletedPage,
+        endPage,
+        trueTotalPages,
+        coverageOk: hasEnoughCoverage(coverage, out.totalAtSource || savedTotalAtSource),
+      });
+      await advanceCheckpoint("listings", {
+        cycleId: cycle.cycleId,
+        pageSize,
+        lastCompletedPage: finalCp.lastCompletedPage,
+        totalPages: Math.max(endPage, trueTotalPages),
+        totalAtSource: out.totalAtSource || savedTotalAtSource,
+      }, cycleComplete ? "complete" : "in-progress");
     }
     reachedEndPage = endPage;
     out.ok = true;
-    out.checkpoint = checkpointView(lastCompleted, endPage, lastCompleted >= endPage ? "complete" : "in-progress", out.totalAtSource, savedTotalAtSource);
+    out.checkpoint = checkpointView(lastCompleted, Math.max(endPage, trueTotalPages), cycleComplete ? "complete" : "in-progress", out.totalAtSource, savedTotalAtSource);
   } catch (err) {
     out.errorCode = (err as { code?: string })?.code ?? "UNKNOWN";
     // خطا = دادهٔ تا اینجا محفوظ؛ checkpoint روی آخرین صفحهٔ کامل ایستاده — دفع بعد از همان‌جا ادامه
@@ -803,6 +851,8 @@ export async function syncArmRequestsCatalog(
   let lastCompleted = cycle.lastCompletedPage;
   let savedTotalAtSource = savedCp?.totalAtSource ?? 0;
   let reachedEndPage = 1;
+  // DIR-MISSING-REQ-001 (ریشهٔ A) — بزرگ‌ترین totalPages واقعی دیده‌شده در این اجرا
+  let trueTotalPages = Math.max(savedCp?.totalPages ?? 0, 0);
 
   // ═══ PN-028/خامساً-الف — گذر سرِ تازه (Fresh-Head pass) — عین آگهی‌ها ═══
   // فهرست درخواست‌های ARM نیز «جدیدترین‌اول» است؛ رکوردهای امروز در صفحهٔ ۱.
@@ -829,6 +879,8 @@ export async function syncArmRequestsCatalog(
         out.totalAtSource = head.total;
         savedTotalAtSource = savedTotalAtSource || head.total;
       }
+      // DIR-MISSING-REQ-001 — پیگیری پایان واقعی در گذر سرِ تازه هم
+      if (head.totalPages > trueTotalPages) trueTotalPages = head.totalPages;
     } catch {
       // گذر سرِ تازه بهترین-تلاش است — شکستش هرگز چرخهٔ اصلی را متوقف نمی‌کند
     }
@@ -861,6 +913,7 @@ export async function syncArmRequestsCatalog(
         const { rows, total, totalPages: tp } = r;
         out.totalAtSource = total;
         savedTotalAtSource = savedTotalAtSource || total;
+        if (tp > trueTotalPages) trueTotalPages = tp; // DIR-MISSING-REQ-001
         if (endPage === 0) endPage = Math.min(tp, startPage + pagesBudget - 1);
         else endPage = Math.min(endPage, startPage + pagesBudget - 1);
         out.pages = p;
@@ -883,19 +936,28 @@ export async function syncArmRequestsCatalog(
       await sleep(catalogRateMs());
     }
     const finalCp = await integration.getSyncCheckpoint("requests");
+    let cycleComplete = false;
     if (finalCp && finalCp.lastCompletedPage >= endPage) {
-      // P6530/گام ۲ (نکتهٔ بسیار مهم ۳) — گارد پوشش: ۷٬۳۹۸ رکورد در برابر ۲۰٬۳۹۲ منبع
-      // یعنی چرخه ناقص است؛ علامت complete ممنوع تا پوشش ≥ ۹۰٪ برسد
       const coverage = await repo.countArmSource().catch(() => 0);
-      if (hasEnoughCoverage(coverage, out.totalAtSource || savedTotalAtSource)) {
-        await advanceCheckpoint("requests", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource }, "complete");
-      } else {
-        await advanceCheckpoint("requests", { cycleId: cycle.cycleId, pageSize, lastCompletedPage: finalCp.lastCompletedPage, totalPages: endPage, totalAtSource: out.totalAtSource || savedTotalAtSource }, "in-progress");
-      }
+      // DIR-MISSING-REQ-001 (ریشهٔ A) — بودجهٔ تمام‌شده به‌تنهایی چرخه را کامل نمی‌کند؛
+      // فقط رسیدن به آخرین صفحهٔ واقعی منبع + گارد پوشش P6530 (≥۹۰٪)
+      cycleComplete = shouldMarkCycleComplete({
+        lastCompletedPage: finalCp.lastCompletedPage,
+        endPage,
+        trueTotalPages,
+        coverageOk: hasEnoughCoverage(coverage, out.totalAtSource || savedTotalAtSource),
+      });
+      await advanceCheckpoint("requests", {
+        cycleId: cycle.cycleId,
+        pageSize,
+        lastCompletedPage: finalCp.lastCompletedPage,
+        totalPages: Math.max(endPage, trueTotalPages),
+        totalAtSource: out.totalAtSource || savedTotalAtSource,
+      }, cycleComplete ? "complete" : "in-progress");
     }
     reachedEndPage = endPage;
     out.ok = true;
-    out.checkpoint = checkpointView(lastCompleted, endPage, lastCompleted >= endPage ? "complete" : "in-progress", out.totalAtSource, savedTotalAtSource);
+    out.checkpoint = checkpointView(lastCompleted, Math.max(endPage, trueTotalPages), cycleComplete ? "complete" : "in-progress", out.totalAtSource, savedTotalAtSource);
   } catch (err) {
     out.errorCode = (err as { code?: string })?.code ?? "UNKNOWN";
     out.checkpoint = checkpointView(lastCompleted, Math.max(reachedEndPage, lastCompleted), "in-progress", out.totalAtSource, savedTotalAtSource);

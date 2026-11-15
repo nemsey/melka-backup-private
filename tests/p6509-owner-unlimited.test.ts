@@ -242,9 +242,9 @@ describe("P6.5-09 بند ۴ — لیست‌های بدون صفحه‌بندی (
 
   test("E5) تاریخچه استخراج و دیوار: سقف سرور ۱۰۰۰ و درخواست کامل", () => {
     // P6530/گام ۵ — کاشی استخراج (M7) و روت lookup حذف شدند
-    expect(read("src/core/tiles/tiles/file-finder/FileFinderPage.tsx")).toContain("limit=1000");
+    // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵) — کاشی فایل‌یابی حذف شد (حذف نما):
+    // گارد فایل UI جایگزین شد — سقف ۱۰۰۰ همچنان در روت دیوار برقرار است.
     expect(read("src/app/api/divar/ads/route.ts")).toContain(", 1000)");
-    expect(read("src/core/tiles/tiles/file-finder/FileFinderPage.tsx")).not.toContain("scanLogs.slice(0, 5)");
   });
 
   test("E6) کارشناسان: سقف سرور ۵۰۰۰ و درخواست کامل (تک‌صفحه‌ای) — P6.5-11: کاشی بازدیدها حذف شد", () => {

@@ -13,6 +13,7 @@
 import { existsSync, statSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { db } from "@/lib/db";
+import { tehranDateTimeKey } from "@/lib/jalali";
 
 export const DIAGNOSIS_INTERVAL_H = Number(process.env.MELK_DIAGNOSIS_INTERVAL_H ?? 6);
 /** نگه‌داری گزارش‌ها — عین قاعدهٔ حاکمیت تصمیم‌ها (GOV-DECISION) */
@@ -339,7 +340,7 @@ export async function checkEngine(): Promise<DiagnosticCheckResult[]> {
     const staleMs = 24 * 3_600_000; // کار ۱دقیقه‌ای نباید >۲۴ ساعت بی‌مهر بماند
     const ok = catalog ? Date.now() - catalog.updatedAt.getTime() < staleMs : false;
     out.push(result("DIAG-ENGINE-005", "engine", "کارهای Worker زنده", ok, catalog?.updatedAt.toISOString() ?? null, "مهر کار کاتالوگ < ۲۴ ساعت",
-      `کار پایدارساز بروزرسانی زنده است (آخرین مهر ${catalog?.updatedAt.toISOString().slice(0, 16) ?? "—"}).`,
+      `کار پایدارساز بروزرسانی زنده است (آخرین مهر ${catalog ? tehranDateTimeKey(catalog.updatedAt) : "—"}).`,
       "کار پایدارساز بروزرسانی بیش از ۲۴ ساعت مهر نخورده — Worker ممکن است مرده باشد."));
   } catch {
     out.push(result("DIAG-ENGINE-005", "engine", "کارهای Worker زنده", false, null, "مهر < ۲۴ ساعت", "", "سنجش Worker شکست خورد."));

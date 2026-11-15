@@ -37,7 +37,8 @@ export const POLL_MAX_WAIT_S = 100;
 /** پنجرهٔ تعاملی: ۱۵ث نخست با ۷۰۰ms (جلا شدن لحظه‌ای OTP) */
 const INTERACTIVE_WINDOW_MS = 15_000;
 const POLL_INTERVAL_FAST_MS = 700;
-const POLL_INTERVAL_SLOW_MS = 3_000;
+/** DIR-RELAY-UNLIMITED-001 (۲۰۲۶-۱۱-۱۴): ۳۰۰۰ ← ۲۰۰۰ — برداشت سریع‌تر آیتم‌های تازه در نیمهٔ دوم انتظار (فهرست‌ها با بودجهٔ ۳۰ث بالادستی). */
+const POLL_INTERVAL_SLOW_MS = 2_000;
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();

@@ -123,24 +123,27 @@ describe("۰۳۵-B/ج — اجزای ظاهری اجبارشده", () => {
     const home = read("src/components/app/DashboardHome.tsx");
     expect(home).toContain("<footer");
   });
-  test("۳. ناوبری پایین ۵ آیتم با ARIA + رنگ بخش + safe-area", () => {
+  test("۳. ناوبری پایین ۶ آیتم با ARIA + رنگ بخش + safe-area (PN-086/گام ۳)", () => {
     const nav = read("src/components/app/BottomNav.tsx");
-    expect((nav.match(/label: "/g) ?? []).length).toBe(5);
+    expect((nav.match(/label: "/g) ?? []).length).toBe(6);
     expect(nav).toContain('aria-label="ناوبری اصلی اپلیکیشن"');
     expect(nav).toContain("aria-current");
     expect(nav).toContain("env(safe-area-inset-bottom)");
     expect(nav).toContain("min-h-11"); // تاچ ≥۴۴px
     expect(nav).toContain("md:hidden");
   });
-  test("۳-ب. PN-069 — ترکیب ۵ آیتم ناوبری پایین: فایل‌یابی · آگهی (ملک تبریز) · درخواست (ملک تبریز) · معاملات · تنظیمات", () => {
+  test("۳-ب. PN-086/گام ۳ — ترکیب ۶ آیتم ناوبری پایین: آگهی · درخواست · معاملات · کارشناسان · تطبیق · تنظیمات", () => {
     const nav = read("src/components/app/BottomNav.tsx");
-    // پنج آیتم الزامی مالک — آدرس هر دکمه = کاشی مربوطه (آگهی/درخواست = ملک تبریز)
-    expect(nav).toContain('id: "file-finder", label: "فایل‌یابی"');
+    // شش آیتم الزامی مالک (دستور ۱۴۰۵/۰۸/۲۵) — آدرس هر دکمه = کاشی مربوطه
     expect(nav).toContain('id: "arm-listings", label: "آگهی"');
     expect(nav).toContain('id: "arm-requests", label: "درخواست"');
     expect(nav).toContain('id: "transactions-contracts", label: "معاملات"');
+    expect(nav).toContain('id: "experts", label: "کارشناسان"');
+    expect(nav).toContain('id: "smart-matching", label: "تطبیق"');
     expect(nav).toContain('id: "settings", label: "تنظیمات"');
-    // آیتم‌های حذف‌شده به دستور مالک (هوم + آگهی/درخواست ملکا) نباید برگردند
+    // آیتم‌های حذف‌شده به دستور مالک نباید برگردند (PN-086: فایل‌یابی حذف شد)
+    expect(nav).not.toContain('id: "file-finder"');
+    expect(nav).not.toContain('label: "فایل‌یابی"');
     expect(nav).not.toContain('label: "هوم"');
     expect(nav).not.toContain('label: "آگهی ملکا"');
     expect(nav).not.toContain('label: "درخواست ملکا"');

@@ -428,6 +428,8 @@ export interface PropertyRecordRepository {
   upsertBulk(rows: PropertyBulkInput[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
   /** P6.5-10 — کاتالوگ تک‌صفحه‌ای با فیلتر کدآگهی/نام کارشناس (جدیدترین اول) */
   listArmCatalog(filter: ArmListingCatalogFilter, limit: number): Promise<{ rows: ArmListingCatalogRow[]; total: number }>;
+  /** PN-079 — شمارش حقیقی کاتالوگ با همان فیلترهای SQL (COUNT — بدون واکشی ردیف؛ بدون سقف) */
+  countArmCatalog(filter: ArmListingCatalogFilter): Promise<number>;
   /** P6521/M1 — توزیع وضعیت‌های خام (status × count) برای بینش شش‌حالته
    *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz' (سازگار عقبه) */
   statusBreakdown(tenantId?: string): Promise<Array<{ status: string | null; count: number }>>;

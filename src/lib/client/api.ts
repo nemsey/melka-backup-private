@@ -210,6 +210,38 @@ export function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+// ===================== DIR-EXCEL-FIX-001 — دانلود بومی اکسل =====================
+
+/** موجودیت‌های خروجی اکسل — عین سرور (src/lib/export-ticket.ts) */
+export type ExcelExportEntity = "listings" | "requests" | "transactions" | "experts";
+
+/**
+ * دانلود اکسل با «ناوبری بومی» مرورگر از طریق بلیت امضاشدهٔ ۱۸۰ثانیه‌ای.
+ * ---------------------------------------------------------------------
+ * ریشهٔ حادثهٔ ۱۴۰۵/۰۸/۲۴ ۲۲:۵۰ تهران: الگوی fetch→Blob→createObjectURL در
+ * WebViewهای موبایل/مرورگرهای درون‌برنامه‌ای بی‌صدا شکست می‌خورد و فایل
+ * ۲۲MB در حافظهٔ گوشی امر نامطمئن است (شاهد سرور: صفر درخواست export از
+ * مرورگر، در حالی که curl همان مسیر را 200 در ۱۱ث می‌گرفت).
+ *
+ * جریان تازه: درخواست سبکِ JSON با Bearer → بلیت → ناوبری بومی به URL؛
+ * مرورگر خودش دانلود می‌کند (پیشرفت، ادامهٔ خودکار، صفر حافظهٔ JS) و
+ * Content-Disposition: attachment نام فایل را تعیین می‌کند.
+ */
+export async function downloadExcelByTicket(entity: ExcelExportEntity, params: URLSearchParams): Promise<void> {
+  const t = await api<{ ok: true; url: string }>("/api/crm/export/ticket", {
+    method: "POST",
+    body: { entity, params: Object.fromEntries(params.entries()) },
+    timeoutMs: 20_000,
+  });
+  if (!t?.url) throw new ApiClientError("UNKNOWN", "بلیت دانلود دریافت نشد.", 0);
+  const a = document.createElement("a");
+  a.href = t.url;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 /**
  * PN-003 گام ۴-۲ — بارگذاری فایل (multipart/form-data) به سرور
  * برای «آپلود اطلاعات کل فهرست به صورت فایل اکسل» (ایمپورت).

@@ -132,7 +132,10 @@ export async function fastPass(
   const writer = opts.writer ?? (await createBulkWriter());
   const ownsWriter = !opts.writer;
   const pageSize = Math.min(opts.pageSize ?? 50, 100);
-  const maxPages = opts.maxPages ?? 10;
+  // PN-081 — ۱۰→۴۰: منبع ~۸۳۳ رکورد = ۱۷ صفحه بود و صفحات ۱۱ به بعد هرگز
+  // برداشته نمی‌شدند → به‌روزرسانی رکوردهای قدیمی‌تر هرگز دیده نمی‌شد.
+  // Delta هش صفحات بی‌تغییر را ارزان نگه می‌دارد (صفر نوشتن DB).
+  const maxPages = opts.maxPages ?? 40;
   const delta = openDelta(LIST_ID);
   const result: FastPassResult = { fetched: 0, written: 0, skippedUnchangedPages: 0, totalAtSource: 0, durationMs: 0 };
 
@@ -219,6 +222,12 @@ export async function deepPass(
 
   try {
     const batchId = `m9-deep-${Date.now().toString(36)}`;
+    // PN-081 — دفترچهٔ نام کارشناسان برای جایگزین سهم سهام‌داران (عین tx-info-enrichment)
+    const expertRows = writer.rawAll<{ id: string; fullName: string | null }>(
+      "SELECT id, fullName FROM ExpertRecord WHERE fullName IS NOT NULL AND fullName != ''",
+      []
+    );
+    const expertNameById = new Map<string, string>(expertRows.map((r) => [r.id, r.fullName as string]));
     await runPool(pending, async (txId) => {
       try {
         const info = await armCall<unknown>({
@@ -228,7 +237,7 @@ export async function deepPass(
           timeoutMs: 30_000,
           maxRetries: 1,
         });
-        const mapped = mapTxInfoPayload(txId, info.data);
+        const mapped = mapTxInfoPayload(txId, info.data, expertNameById);
         const patch: Record<string, unknown> = {
           ...mapped,
           rawInfoJson: JSON.stringify(info.data ?? null).slice(0, 500_000),

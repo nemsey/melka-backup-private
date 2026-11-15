@@ -328,12 +328,23 @@ if [ -n "$MASTER_ESCROW" ]; then
 import hashlib, json, sqlite3, sys
 escrow, live = sys.argv[1], sys.argv[2]
 code = (json.load(open(escrow)).get("MASTER_ACCESS_CODE") or "").strip()
-if code:
+PUBLIC_TEST_CODE = "0" * 8  # PN-INIT-SEC — عین SEC-1 (HOTFIX-01): کد تستی عمومی هرگز کد واقعی نیست
+con = sqlite3.connect(live, timeout=30)
+row = con.execute("SELECT masterCodeHash FROM AppMeta WHERE id='singleton'").fetchone()
+cur = ((row[0] if row else "") or "").strip()
+if code and code != PUBLIC_TEST_CODE:
     h = hashlib.sha256(code.encode("utf-8")).hexdigest()
-    con = sqlite3.connect(live, timeout=30)
     con.execute("UPDATE AppMeta SET masterCodeHash=? WHERE id='singleton'", (h,))
-    con.commit(); con.close()
+    con.commit()
     print("  ✓ هش کدمستر در AppMeta همگام شد (پایان سیگنال «تخریب» کاذب)")
+elif code == PUBLIC_TEST_CODE and not cur:
+    h = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    con.execute("UPDATE AppMeta SET masterCodeHash=? WHERE id='singleton'", (h,))
+    con.commit()
+    print("  ✓ هش کدمستر در DB تازه نشست (کد تستی — تنها گزینه؛ جلوگیری از حلقهٔ بازیابی PN-066)")
+elif code == PUBLIC_TEST_CODE and cur:
+    print("  ✓ هش واقعی مالک حفظ شد — کد تستی عمومی آن را بازنویسی نمی‌کند (SEC-1 · PN-INIT-SEC)")
+con.close()
 PYSYNC
 else
   echo "  ⚠️ escrow کدمستر یافت نشد — بوت سرور هش را همگام می‌کند (PN-066 ۱-ت)"

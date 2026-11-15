@@ -7,6 +7,8 @@ import { defineTile } from "@/core/tiles/tile-contract";
 // P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
 import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
+// PN-086/گام ۲ (دستور مالک ۱۴۰۵/۰۸/۲۵): قاب بروزرسانی چهار فهرست + نوار لینک کاشی‌ها
+import { withFourListsChrome } from "@/components/tiles/FourListsTileChrome";
 import { Users } from "lucide-react";
 
 export const expertsTile = defineTile({
@@ -18,9 +20,8 @@ export const expertsTile = defineTile({
     "عین «فهرست کاربران» خود سامانه: نام، موبایل، نقش، کسب‌وکار، ثبت‌کننده، تاریخ ثبت (هجری شمسی) و وضعیت — به‌علاوه «تعاملات مشاوران با یکدیگر» و درجه همکاری هر مشاور.",
   icon: Users,
   accent: "m4",
-  component: lazyPage(() => import("./ExpertsPage")),
-  order: 5, // M4 — ترتیب درون ظرف tenant-dashboards: کارشناسان چهارمِ داشبورد (PN-043/فاز ۲)
-  container: "tenant-dashboards", // PN-043/فاز ۲ (شورا-ن۰۸۷): از هوم ریشه به داشبوردهای tenant — wrapper، نه تکرار
+  component: withFourListsChrome("experts", "experts")(lazyPage(() => import("./ExpertsPage"))),
+  order: 4, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): کارشناسان چهارم هوم — M1-M4 از ظرف tenant-dashboards به ریشهٔ هوم صعود کردند
   agent: {
     tileId: "experts",
     insightDomains: ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK"],

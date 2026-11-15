@@ -31,6 +31,8 @@ export interface RequestRepository {
   upsertArmBulk(rows: ArmRequestBulkRow[], opts: BulkUpsertOptions): Promise<BulkWriteStats>;
   /** P6.5-10 — کاتالوگ تک‌صفحه‌ای درخواست‌های ARM با فیلتر کد/نام کارشناس (جدیدترین اول) */
   listArmCatalog(filter: ArmRequestCatalogFilter, limit: number): Promise<{ rows: ArmRequestCatalogRow[]; total: number }>;
+  /** PN-079 — شمارش حقیقی کاتالوگ درخواست با همان فیلترهای SQL (COUNT — بدون واکشی ردیف؛ بدون سقف) */
+  countArmCatalog(filter: ArmRequestCatalogFilter): Promise<number>;
   /** P6530/گام ۲ (بند ۳) — توزیع وضعیت‌های خام درخواست‌های ARM برای بینش شش‌حالته
    *  PN-046/گام اول-۱ — tenant-scoped: پیش‌فرض 'melk-tabriz' (سازگار عقبه) */
   statusBreakdownArm(tenantId?: string): Promise<Array<{ status: string | null; count: number }>>;

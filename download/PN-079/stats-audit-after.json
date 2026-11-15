@@ -1,0 +1,162 @@
+{
+  "generatedAt": "2026-11-09T10:57:39.390829",
+  "sections": {
+    "listings_tile": {
+      "api_ms": 3577,
+      "kpi_total_shows": 28668,
+      "rows_returned": 28668,
+      "limit_field": 40000,
+      "enrichment": {
+        "total": 28668,
+        "pending": 0,
+        "complete": 28668
+      },
+      "statusCounts_total": 28668,
+      "lastUpdate": {
+        "phase": "in-progress",
+        "lastCompletedPage": 5,
+        "totalPages": 237,
+        "totalAtSource": 11803,
+        "updatedAt": "2026-11-09T10:19:46.954Z",
+        "completedAt": null
+      },
+      "vs_truth": {
+        "kpi_gap": 0,
+        "rows_gap": 0,
+        "enrichment_gap": 0
+      },
+      "verdict_kpi": "OK"
+    },
+    "requests_tile": {
+      "api_ms": 11554,
+      "kpi_total_shows": 26203,
+      "rows_returned": 26203,
+      "enrichment": {
+        "total": 26203,
+        "pending": 0,
+        "complete": 26203
+      },
+      "statusCounts_total": 26203,
+      "lastUpdate": {
+        "phase": "complete",
+        "lastCompletedPage": 12,
+        "totalPages": 12,
+        "totalAtSource": 21460,
+        "updatedAt": "2026-11-08T05:26:55.285Z",
+        "completedAt": "2026-11-08T05:26:55.285Z"
+      },
+      "vs_truth": {
+        "kpi_gap": 0,
+        "rows_gap": 0
+      },
+      "verdict_kpi": "OK"
+    },
+    "transactions_tile": {
+      "api_ms": 1731,
+      "total_shows": 832,
+      "rows_returned": 832,
+      "vs_truth_gap": 0,
+      "verdict": "OK"
+    },
+    "customer_club": {
+      "api_ms": 9154,
+      "total_shows": 17213,
+      "rows_returned": 17213,
+      "rows_capped_at": null,
+      "stats": {
+        "total": 17213,
+        "withMobile": 17209,
+        "buyers": 2,
+        "sellers": 2,
+        "owners": 9743,
+        "requesters": 11507
+      }
+    },
+    "update_section": {
+      "listings_checkpoint": {
+        "phase": "in-progress",
+        "page": 5,
+        "pages": 237,
+        "totalAtSource": 11803,
+        "updatedAt": "2026-11-09T10:19:46.954000",
+        "completedAt": null
+      },
+      "requests_checkpoint": {
+        "phase": "complete",
+        "page": 12,
+        "pages": 12,
+        "totalAtSource": 21460,
+        "updatedAt": "2026-11-08T05:26:55.285000",
+        "completedAt": "2026-11-08T05:26:55.285000"
+      },
+      "note": "totalAtSource = شمار منبع ARM در شروع چرخه (متجمع محلی همیشه ≥ منبع چون اسکن عمومی + چرخه‌های متعدد)"
+    }
+  },
+  "db_truth": {
+    "PropertyRecord": 28668,
+    "P_enrichment": {
+      "total": 28668,
+      "pending": 0,
+      "complete": 28668
+    },
+    "P_statusSum": 28668,
+    "RequestRecord": 26203,
+    "R_enrichment": {
+      "total": 26203,
+      "pending": 0,
+      "complete": 26203
+    },
+    "R_statusSum": 26203,
+    "TransactionRecord": 832,
+    "checkpoints": {
+      "listings": {
+        "phase": "in-progress",
+        "page": 5,
+        "pages": 237,
+        "totalAtSource": 11803,
+        "updatedAt": "2026-11-09T10:19:46.954000",
+        "completedAt": null
+      },
+      "requests": {
+        "phase": "complete",
+        "page": 12,
+        "pages": 12,
+        "totalAtSource": 21460,
+        "updatedAt": "2026-11-08T05:26:55.285000",
+        "completedAt": "2026-11-08T05:26:55.285000"
+      },
+      "main-sync:transactions": {
+        "phase": "complete",
+        "page": 9,
+        "pages": 9,
+        "totalAtSource": 832,
+        "updatedAt": "2026-11-09T10:44:53.979000",
+        "completedAt": "2026-11-09T10:44:53.978000"
+      },
+      "main-sync:experts": {
+        "phase": "in-progress",
+        "page": 1,
+        "pages": 4,
+        "totalAtSource": 306,
+        "updatedAt": "2026-11-09T10:46:06.599000",
+        "completedAt": null
+      },
+      "main-sync:visits": {
+        "phase": "complete",
+        "page": 1,
+        "pages": 1,
+        "totalAtSource": 2,
+        "updatedAt": "2026-11-08T04:31:46.668000",
+        "completedAt": "2026-11-08T04:31:46.667000"
+      },
+      "main-sync:supply-demand": {
+        "phase": "complete",
+        "page": 1,
+        "pages": 1,
+        "totalAtSource": 5,
+        "updatedAt": "2026-11-08T04:31:53.917000",
+        "completedAt": "2026-11-08T04:31:53.916000"
+      }
+    }
+  }
+}

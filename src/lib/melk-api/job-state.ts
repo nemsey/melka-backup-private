@@ -46,6 +46,17 @@ export const JOB_IDS = {
   mainSync: "main-sync",
   /** PN-002 گام ۳ — همگام‌سازی پیوستهٔ CRM با توکن خزانه (معاملات/کارشناسان/قراردادها) */
   crmSync: "crm-sync",
+  /**
+   * PN-083 — وضعیت یکپارچهٔ چهار فهرست داشبورد ملک تبریز (منبع یگانهٔ UI):
+   * هر چهار مسیر بروزرسانی (چرخهٔ خودکار Worker · دکمهٔ دستی هر فهرست ·
+   * بروزرسانی دستی جامع · پایدارساز کاتالوگ) همین ردیف‌ها را می‌نویسند تا
+   * سه سطح UI (نوار داشبورد · بخش بروزرسانی هر فهرست · کارهای پس‌زمینهٔ تنظیمات)
+   * همیشه یک حقیقت را نشان دهند.
+   */
+  listM1: "list-m1-arm-listings",
+  listM2: "list-m2-arm-requests",
+  listM3: "list-m3-transactions",
+  listM4: "list-m4-experts",
 } as const;
 
 export class JobStateService {
