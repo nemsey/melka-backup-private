@@ -42,16 +42,16 @@ import { useAppStore } from "@/lib/client/store";
 import { EmptyState, ErrorState } from "@/components/app/shared/list-states";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, RotateCcw, Search, Home, Users, Phone, MapPin, RefreshCw, Hash, CheckCircle2, Clock,
+  Loader2, RotateCcw, Search, Home, Users, Phone, MapPin, Hash, CheckCircle2, Clock,
   Landmark, Building2, PieChart, Banknote, Tag, History, Network, Filter, Ruler, BedDouble, Layers,
   CalendarDays, TrendingUp, Award, MapPinned, Globe, FileSpreadsheet, Eye, ExternalLink,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
-import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup, OwnerNoteCell } from "@/components/app/shared";
+import { KpiCard, TopRankingTable, TileCoverageTable, ExcelImportButton, FilterChip, FilterGroup, OwnerNoteCell, AreaLineFilter, type AreaLineSelection } from "@/components/app/shared";
 // PN-045/فاز ۳ (شورا-ن۰۸۹) — ستون «اطلاعات»: پنجره‌ای به دادهٔ خام (modal + فایل کامل هر کد)
 import { InfoButton } from "@/components/info/InfoButton";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, apiSync, downloadExcelByTicket, ApiClientError } from "@/lib/client/api";
+import { api, downloadExcelByTicket } from "@/lib/client/api";
 import { faDigits } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
@@ -191,6 +191,8 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
   const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   /** PN-039 (گام ۶) — نوع‌های ملک انتخاب‌شدهٔ فیلتر چندانتخابی (چیپ) */
   const [selectedPropertyTypes, setSelectedPropertyTypes] = useState<string[]>([]);
+  /** DIR-MULTI-AREA-001 — فیلتر چندمنطقه/چندمحله (عین رجیستری آرم — اعمال خودکار) */
+  const [areaLine, setAreaLine] = useState<AreaLineSelection>({ areas: [], lines: [] });
   const [filtersOpen, setFiltersOpen] = useState(
     // قانون ۰۳۵-B/ت-۵: آکاردئون در موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
@@ -198,7 +200,6 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
   const [data, setData] = useState<ListingsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const autoSliceCount = useRef(0);
   const autoSliceBusy = useRef(false);
@@ -224,6 +225,9 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     for (const b of selectedBranches) params.append("branch", b);
     // PN-039 (گام ۶) — نوع ملک چندانتخابی (چیپ)
     for (const t of selectedPropertyTypes) params.append("propertyType", t);
+    // DIR-MULTI-AREA-001 — مناطق/محله‌های چندانتخابی (اعمال خودکار؛ اجتماع OR سمت سرور)
+    for (const a of areaLine.areas) params.append("area", a);
+    for (const l of areaLine.lines) params.append("line", l);
     try {
       const res = await api<ListingsResponse>(`/api/crm/arm-catalog/listings?${params.toString()}`);
       setData(res);
@@ -234,7 +238,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     } finally {
       setLoading(false);
     }
-  }, [applied, selectedStates, selectedTrades, selectedBranches, selectedPropertyTypes]);
+  }, [applied, selectedStates, selectedTrades, selectedBranches, selectedPropertyTypes, areaLine]);
 
   useEffect(() => {
     setLoading(true);
@@ -320,63 +324,39 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
     return Array.from(set).sort((a, b) => a.localeCompare(b, "fa"));
   }, [data, selectedPropertyTypes]);
 
-  const doSync = useCallback(async () => {
-    setSyncing(true);
-    try {
-      // P6546/گام پنجم-پ — لایهٔ فهرست: ≈۵٬۰۰۰ رکورد/کلیک (۱۰ صفحه×۵۰۰) · لایهٔ جزئیات: ≈۵۰۰ رکورد/کلیک
-      // P6546/گام پنجم-پ-۳ — تاب‌آور: تا ۳ تلاش خودکار روی 502/504/مهلت (هر تلاش از checkpoint ادامه می‌یابد)
-      const res = await apiSync<{
-        lists: Array<{ fetched: number; totalAtSource: number; ok: boolean }>;
-        enrich?: Array<{ enriched: number; remaining: number }>;
-        /** PN-083 — هماهنگ‌ساز: اگر بروزرسانی همین فهرست در پس‌زمینه زنده باشد */
-        busy?: { listings?: { message: string }; requests?: { message: string } };
-      }>(
-        "/api/crm/arm-catalog/sync",
-        { method: "POST", body: { entity: "listings", mode: "both", maxRows: 500 } },
-        (attempt) => toast({ title: `ادامهٔ بروزرسانی از نقطهٔ قطع (تلاش ${attempt + 1} از ۳)`, description: "سرور ملک تبریز لحظه‌ای کند بود؛ همان نقطهٔ قبلی ازسرگیری شد — هیچ داده‌ای از ابتدا شروع نمی‌شود." })
-      );
-      // PN-083 — اجرای هم‌زمان ممنوع: اگر چرخهٔ خودکار/فوری همین فهرست را در دست دارد،
-      // صادقانه همین را بگو (صفر اجرای موازی روی سامانهٔ مبدأ)
-      if (res.busy?.listings) {
-        toast({ title: "بروزرسانی آگهی‌ها همین حالا در جریان است", description: res.busy.listings.message });
-        await load();
-        return;
-      }
-      const list = res.lists?.[0];
-      toast({
-        title: "بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز انجام شد",
-        description: list
-          ? `${faNumber(list.fetched)} آگهی از مجموع ${faNumber(list.totalAtSource)} آگهی سامانه ARM در این برش (حدود ۵،۰۰۰ رکورد) خوانده شد و برش تکمیل جزئیات (حدود ۵۰۰ رکورد: مالک، آدرس، متراژ، اتاق، طبقه، سال ساخت، نوع ملک) هم اجرا شد. ادامهٔ بروزرسانی از همان صفحه‌ای که تمام شده بود، ازسر گرفته می‌شود.`
-          : "بروزرسانی اجرا شد.",
-      });
-      await load();
-    } catch (err) {
-      const e = err as ApiClientError;
-      toast({ title: "بروزرسانی ناموفق", description: e.message, variant: "destructive" });
-    } finally {
-      setSyncing(false);
-    }
-  }, [toast, load]);
+  /** DIR-SUPER-UPDATE-001 — گوش دادن به رویداد بخش فوق پیشرفته: پس از پایان هر
+   *  اجرای برشی همین فهرست (m1)، دادهٔ صفحه بدون دخالت کاربر تازه می‌شود.
+   *  منطق اجرا در SuperListUpdate بالای همین کاشی است — صفحه فقط «فهرست» است. */
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<{ list?: string }>).detail?.list === "m1") void load();
+    };
+    window.addEventListener("melk:super-update", handler);
+    return () => window.removeEventListener("melk:super-update", handler);
+  }, [load]);
 
 
   const rows = data?.rows ?? [];
   const enrichment = data?.enrichment ?? { total: 0, pending: 0, complete: 0 };
   const statusCounts = data?.statusCounts;
-  const lastUpdate = data?.lastUpdate ?? null;
   const coveragePct = enrichment.total > 0 ? Math.round((enrichment.complete / enrichment.total) * 100) : 0;
   const todayCount = rows.filter((r) => r.createdAt && Date.now() - new Date(r.createdAt).getTime() < 86400_000).length;
   const activeRealtors = new Set(rows.map((r) => r.realtorName).filter(Boolean)).size;
   const stateFilterActive = selectedStates.length > 0;
+  const areaLineActive = areaLine.areas.length > 0 || areaLine.lines.length > 0;
   const anyFilterActive =
     stateFilterActive ||
     selectedTrades.length > 0 ||
     selectedBranches.length > 0 ||
+    areaLineActive ||
     Object.values(applied).some((v) => v !== "");
   // PN-009 مرحله C — شمارندهٔ فیلترهای فعال برای سربرگ آکاردئون موبایل (الگوی [فیلترها ۵] دستور بند ۶.۱)
   const activeFilterCount =
     selectedStates.length +
     selectedTrades.length +
     selectedBranches.length +
+    areaLine.areas.length +
+    areaLine.lines.length +
     Object.values(applied).filter((v) => v !== "").length;
 
   // P6546/گام یک-۲ — بینش ۱۰ کارشناس پرآگهی (تجمیع زندهٔ فهرست)
@@ -496,68 +476,15 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
       {/* P6546/گام پنجم-الف-۲ — جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
       <TileCoverageTable tileKey="m1" accentClass="text-sec-m1-700" />
 
-      {/* بخش بروزرسانی آگهی (گام ۱ بند ۴) — تبریز: زنجیرهٔ ARM · ملکتون: همگام‌سازی از CRM (PN-046/گام اول-۱) */}
-      <Card className="border-sec-m1-200 bg-sec-m1-50">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Building2 className="w-5 h-5 text-sec-m1-700 shrink-0" aria-hidden />
-              <div className="min-w-0">
-                <p className="text-sm font-bold">{"بروزرسانی آگهی‌ها از سامانه‌های ملک تبریز"}</p>
-              </div>
-            </div>
-            {(
-            <Button onClick={() => void doSync()} disabled={syncing} className="gap-2 shrink-0 bg-sec-m1-500 hover:bg-sec-m1-500/90 text-sec-m1-fg">
-              {syncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
-              بروزرسانی از سامانه
-            </Button>
-            )}
-          </div>
-
-          {/* بند ۴.۲ — تاریخ و ساعت دقیق آخرین بروزرسانی + نقطهٔ ادامه */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs" id="arm-listing-last-update">
-            <div className="rounded-lg border bg-card p-2.5">
-              <p className="text-muted-foreground">آخرین بروزرسانی فهرست</p>
-              <p className="font-bold mt-0.5">
-                {lastUpdate?.completedAt || lastUpdate?.updatedAt
-                  ? faDateTime(lastUpdate.completedAt ?? lastUpdate.updatedAt)
-                  : "هنوز انجام نشده"}
-              </p>
-            </div>
-            <div className="rounded-lg border bg-card p-2.5">
-              <p className="text-muted-foreground">پوشش فهرست منبع (ARM)</p>
-              <p className="font-bold mt-0.5">
-                {lastUpdate
-                  ? `${faNumber(lastUpdate.lastCompletedPage)} از ${faNumber(Math.max(lastUpdate.totalPages, lastUpdate.lastCompletedPage))} صفحه — ${lastUpdate.phase === "complete" ? "چرخهٔ کامل" : "در ادامه از همین نقطه"}`
-                  : "—"}
-              </p>
-            </div>
-            <div className="rounded-lg border bg-card p-2.5">
-              <p className="text-muted-foreground">آگهی‌های منبع (ARM)</p>
-              <p className="font-bold mt-0.5 tabular-nums">{lastUpdate?.totalAtSource ? faNumber(lastUpdate.totalAtSource) : "—"}</p>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between text-xs mb-1.5">
-              <span className="text-muted-foreground">
-                {/* PN-003 گام ۴-۱ — توضیح متنی حذف شد؛ فقط وضعیت زندهٔ غنی‌سازی می‌ماند */}
-                {enriching && (
-                  <span className="inline-flex items-center gap-1 text-sec-m1-700">
-                    <Loader2 className="w-3 h-3 animate-spin" aria-hidden /> در حال تکمیل خودکار…
-                  </span>
-                )}
-              </span>
-              <span className="font-bold tabular-nums">
-                {faNumber(enrichment.complete)} / {faNumber(enrichment.total)} ({faNumber(coveragePct)}٪)
-              </span>
-            </div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow={coveragePct} aria-valuemin={0} aria-valuemax={100}>
-              <div className="h-full rounded-full bg-gradient-to-l from-sec-m1-700 to-sec-m1-500 transition-all duration-500" style={{ width: `${coveragePct}%` }} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* DIR-SUPER-UPDATE-001 (گام دوم — ادغام): بخش بروزرسانی آگهی به «بخش فوق
+          پیشرفته» بالای همین کاشی (اولین بخش) منتقل شد؛ اینجا فقط نشانگر زندهٔ
+          تکمیل خودکار برش‌های همین صفحه می‌ماند (غنی‌سازی خودکار ماندگار صفحه) */}
+      {enriching && (
+        <div className="flex items-center gap-1.5 rounded-lg border border-sec-m1-200 bg-sec-m1-50 px-3 py-2 text-xs text-sec-m1-700" role="status" data-testid="m1-auto-enrich-indicator">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />
+          در حال تکمیل خودکار اطلاعات ({faNumber(enrichment.complete)} / {faNumber(enrichment.total)} — {faNumber(coveragePct)}٪) — بروزرسانی فهرست از بخش فوق پیشرفته بالای کاشی
+        </div>
+      )}
 
       {/* فیلترها — تمام ستون‌های فهرست (گام ۱ بند ۲) */}
       <Card>
@@ -743,7 +670,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="arm-listing-address">آدرس ملک / منطقه</Label>
+                  <Label htmlFor="arm-listing-address">آدرس ملک / منطقه (متنی)</Label>
                   <Input
                     id="arm-listing-address"
                     value={filters.address}
@@ -754,6 +681,31 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                   />
                 </div>
                 </div>
+              </FilterGroup>
+              {/* DIR-MULTI-AREA-001 (گام اول دستور مالک) — فیلتر چندمنطقه/چندمحله از رجیستری آرم */}
+              <FilterGroup
+                label="مناطق و محله‌ها (چندانتخابی — عین رجیستری سامانه ملک تبریز)"
+                hint={areaLineActive ? `${faDigits(String(areaLine.areas.length))} منطقه و ${faDigits(String(areaLine.lines.length))} محله انتخاب شده — اعمال خودکار` : undefined}
+                action={
+                  areaLineActive ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 gap-1 px-2 text-[10px] text-muted-foreground"
+                      onClick={() => setAreaLine({ areas: [], lines: [] })}
+                      aria-label="پاک کردن فیلتر مناطق و محله‌ها"
+                    >
+                      <RotateCcw className="w-3 h-3" aria-hidden /> پاک کردن مناطق
+                    </Button>
+                  ) : undefined
+                }
+              >
+                <AreaLineFilter
+                  idPrefix="arm-listing"
+                  selection={areaLine}
+                  onChange={setAreaLine}
+                />
               </FilterGroup>
               {/* P6546/گام پنجم-ب-۲ — فیلد دوعاملی بازه‌ای روبروهم: قیمت: از … تا … */}
               <FilterGroup label="قیمت و بازهٔ فعالیت">
@@ -816,6 +768,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                       setSelectedStates([]);
                       setSelectedTrades([]);
                       setSelectedBranches([]);
+                      setAreaLine({ areas: [], lines: [] });
                     }}
                     className="gap-2"
                     aria-label="پاک کردن فیلترها"
@@ -849,7 +802,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
               hasFilters={Boolean(
                 applied.code || applied.realtorName || applied.branch || applied.ownerName || applied.address ||
                 applied.priceFrom || applied.priceTo || applied.activityFrom || applied.activityTo ||
-                selectedStates.length > 0 || selectedTrades.length > 0
+                areaLineActive || selectedStates.length > 0 || selectedTrades.length > 0
               )}
               onClearFilters={() => {
                 setFilters(EMPTY_FILTERS);
@@ -857,6 +810,7 @@ export function ArmListingsPage({ settings, onSettingsChange: _osc, userRole, on
                 setSelectedStates([]);
                 setSelectedTrades([]);
                 setSelectedBranches([]);
+                setAreaLine({ areas: [], lines: [] });
               }}
             />
           </CardContent>

@@ -2,12 +2,16 @@
 
 /**
  * FourListsTileChrome — PN-086 · گام ۲ (دستور مالک ۱۴۰۵/۰۸/۲۵ ساعت ۰۷:۴۵ تهران)
+ * + DIR-SUPER-UPDATE-001 (گام دوم ۱۴۰۵/۰۸/۲۶): بخش «بروزرسانی فهرست فوق پیشرفته»
  * ---------------------------------------------------------------------------
  * پس از انحلال ظرف «داشبورد ملک تبریز» و صعود M1-M4 به ریشهٔ هوم (گام ۱)،
- * دو المانِ زندهٔ آن داشبورد به دستور مالک در «تمام کاشی‌های M1 تا M4» حفظ
- * می‌شوند:
- *   · بروزرسانی چهار فهرست — همان FourListsUpdateBar با همان منبع حقیقت
- *     GET /api/sync/four-lists (ادغام SyncJobState + فاز LCPP + قفل‌های زنده).
+ * المان‌های زندهٔ آن داشبورد به دستور مالک در «تمام کاشی‌های M1 تا M4» حفظ
+ * می‌شوند. در گام دوم امروز (ادغام بخش بروزرسانی فهرست چهارگانه با بخش
+ * بروزرسانی چهار فهرست، هماهنگ با کارهای پس‌زمینه) المان نخست جای خود را
+ * به بخش فوق پیشرفتهٔ یکپارچه (SuperListUpdate) داد — همچنان اولین بخش هر کاشی:
+ *   · بروزرسانی فهرست فوق پیشرفته — SuperListUpdate: نمای یکپارچهٔ چهار فهرست
+ *     (SyncJobState + فاز LCPP + قفل‌های زنده + غنی‌سازی + نقطهٔ ازسرگیری) +
+ *     سه مسیر اجرا + نوار کارهای پس‌زمینه — همه از همان منبع حقیقت واحد.
  *   · نوار لینک به کاشی‌های دیگر — M1 آگهی · M2 درخواست · M3 معاملات ·
  *     M4 کارشناسان + «تطبیق» (گام ۲/ثانیاً — به صراحت افزوده شد).
  * به‌علاوهٔ سربرگ هویت («M1 · آگهی ملک تبریز») — منبع یگانه: tenants.ts.
@@ -18,7 +22,7 @@
 
 import type { ComponentType } from 'react'
 import { QueryProvider } from '@/components/app/QueryProvider'
-import { FourListsUpdateBar } from '@/components/tiles/FourListsUpdateBar'
+import { SuperListUpdate } from '@/components/tiles/SuperListUpdate'
 import { useAppStore } from '@/lib/client/store'
 import { haptic } from '@/lib/haptics'
 import type { TilePageProps } from '@/core/tiles/tile-contract'
@@ -28,6 +32,14 @@ import {
   tileIdentityLabel,
   type TenantTileKind,
 } from '@/lib/tenants'
+
+/** نگاشت کاشی چهارگانه → شناسهٔ فهرست (منبع یکتای بخش فوق پیشرفته) */
+const LIST_OF: Partial<Record<TenantTileKind, 'm1' | 'm2' | 'm3' | 'm4'>> = {
+  listings: 'm1',
+  requests: 'm2',
+  transactions: 'm3',
+  experts: 'm4',
+}
 
 /** لینک‌های نوار — چهار فهرست + تطبیق (گام ۲/ثانیاً)؛ تطبیق=M5 (شمارهٔ سراسری — tenants.ts) */
 const LINKS: Array<{ tileId: string; code: string; label: string }> = [
@@ -103,19 +115,20 @@ function TileIdentityHeader({ tenantKind }: { tenantKind: TenantTileKind }) {
 }
 
 /**
- * قاب مشترک کاشی‌های M1-M4 (گام ۲): بروزرسانی چهار فهرست + نوار لینک +
- * سربرگ هویت بالای خودِ صفحه — بدون هیچ تغییری در منطق صفحه.
+ * قاب مشترک کاشی‌های M1-M4 (گام ۲ + DIR-SUPER-UPDATE-001): بخش بروزرسانی فوق
+ * پیشرفته + نوار لینک + سربرگ هویت بالای خودِ صفحه — بدون هیچ تغییری در منطق صفحه.
  */
 export function withFourListsChrome(
   tenantKind: TenantTileKind,
   tileId: string
 ): (Page: ComponentType<TilePageProps>) => ComponentType<TilePageProps> {
+  const listId = LIST_OF[tenantKind] ?? 'm1'
   return (Page: ComponentType<TilePageProps>) => {
     const Wrapped: ComponentType<TilePageProps> = (props) => (
       <div className="space-y-3">
-        {/* گام ۲/اولاً — بروزرسانی چهار فهرست (همان نوار زندهٔ PN-083) */}
+        {/* گام دوم (ادغام) — بروزرسانی فهرست فوق پیشرفته: اولین بخش هر کاشی */}
         <QueryProvider>
-          <FourListsUpdateBar />
+          <SuperListUpdate listId={listId} />
         </QueryProvider>
         {/* گام ۲/ثانیاً — نوار لینک به کاشی‌های دیگر (M1-M4 + تطبیق) */}
         <TileLinkBar currentTileId={tileId} />

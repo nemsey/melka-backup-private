@@ -283,9 +283,12 @@ export class PrismaRequestRepository implements RequestRepository {
     const lineNorm = normalizeFilterInput(filter.lineName);
     const constructNorm = normalizeFilterInput(filter.constructType);
     const sideNorm = normalizeFilterInput(filter.side);
+    // DIR-MULTI-AREA-001 — مجموعه‌های نرمال‌شدهٔ مناطق/محله‌های انتخابی (تطبیق دقیق با رجیستری آرم)
+    const areaSet = new Set((filter.areaNames ?? []).map(normalizeFilterInput).filter(Boolean));
+    const lineSet = new Set((filter.lineNames ?? []).map(normalizeFilterInput).filter(Boolean));
 
     // فیلترهای باقی‌مانده (JSON آرایه‌ای یا کد) همچنان در JS — فقط این‌ها اسکن کامل می‌خواهند
-    const needsJsFilter = codeNorm !== "" || areaNorm !== "" || lineNorm !== "" || constructNorm !== "" || sideNorm !== "";
+    const needsJsFilter = codeNorm !== "" || areaNorm !== "" || lineNorm !== "" || constructNorm !== "" || sideNorm !== "" || areaSet.size > 0 || lineSet.size > 0;
     const fetchTake = needsJsFilter ? LIST_SCAN_CAP : limit;
 
     const records = await this.client.requestRecord.findMany({
@@ -360,6 +363,16 @@ export class PrismaRequestRepository implements RequestRepository {
           if (lineNorm !== "") {
             const lines = parseAreaNamesJson(r.lineNamesJson).map((a) => normalizeFilterInput(a));
             if (!lines.some((a) => a.includes(lineNorm))) return false;
+          }
+          // DIR-MULTI-AREA-001 — اجتماع (OR): هر یک از مناطق یا محله‌های درخواست در انتخاب‌ها باشد
+          if (areaSet.size > 0 || lineSet.size > 0) {
+            const inArea = areaSet.size > 0
+              ? parseAreaNamesJson(r.areaNamesJson).some((a) => areaSet.has(normalizeFilterInput(a)))
+              : false;
+            const inLine = lineSet.size > 0
+              ? parseAreaNamesJson(r.lineNamesJson).some((l) => lineSet.has(normalizeFilterInput(l)))
+              : false;
+            if (!inArea && !inLine) return false;
           }
           if (constructNorm !== "" && !normalizeFilterInput(r.constructTypeNames).includes(constructNorm)) return false;
           if (sideNorm !== "" && !normalizeFilterInput(r.sideNames).includes(sideNorm)) return false;
