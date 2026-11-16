@@ -35,19 +35,19 @@ HELP=src/lib/client/relay-job.ts
 
 # ─── ۱) اسکریپت رله — نسل J (PN-035) + نسل K (PN-036) ───
 grep -q "GET|POST|PUT|DELETE|PATCH) ;;" "$RELAY_SCRIPT"; check "relay-script: پالایش روش (فاز ۱)" $?
-grep -Fq 'BODY="{\\"wait\\":100,\\"batch\\":$BATCH}"' "$RELAY_SCRIPT"; check "relay-script: poll دسته‌ای batch (فاز ۵ · نسل L ۱۰۰ث)" $?
+grep -Fq 'BODY="{\\"wait\\":$POLL_WAIT_S,\\"batch\\":$BATCH}"' "$RELAY_SCRIPT"; check "relay-script: poll دسته‌ای batch (فاز ۵ · نسل L ۱۰۰ث)" $?
 grep -q "\.items | length" "$RELAY_SCRIPT"; check "relay-script: خواندن items[] + سازگاری عقبه" $?
 grep -q "RESULT_ATTEMPTS=3" "$RELAY_SCRIPT"; check "relay-script: retry×۳ نتیجه (فاز ۲)" $?
 grep -q "failed-results.jsonl" "$RELAY_SCRIPT"; check "relay-script: ذخیرهٔ محلی + بازپخش (فاز ۲)" $?
 grep -q "GZIP_THRESHOLD=1024" "$RELAY_SCRIPT"; check "relay-script: gzip گزیده (فاز ۶)" $?
-grep -q "MAX_WORKERS=8" "$RELAY_SCRIPT"; check "relay-script: موج‌های کارگر موازی (فاز ۵)" $?
-grep -q "نسل L · PN-041-R" "$RELAY_SCRIPT"; check "relay-script: نشانگر نسل L (PN-041-R · شورا-ن۰۶۸)" $?
+grep -q "MAX_WORKERS=16" "$RELAY_SCRIPT"; check "relay-script: موج‌های کارگر موازی (فاز ۵)" $?
+grep -q "نسل N · DIR-RELAY-UNLIMITED-001" "$RELAY_SCRIPT"; check "relay-script: نشانگر نسل N (DIR-RELAY-UNLIMITED-001)" $?
 grep -q -- '--rawfile b64 "$B64F"' "$RELAY_SCRIPT"; check "relay-script: jq ARG_MAX — b64 از فایل (PN-036 فاز ۱)" $?
-grep -Fq 'RESULT_JSON=\$(cat "\$RESULTS_DIR"/*.json 2>/dev/null | jq -sc' "$RELAY_SCRIPT"; check "relay-script: ادغام stdin — بدون آرگومان فایل (PN-036 فاز ۱)" $?
-grep -q "BATCH=20" "$RELAY_SCRIPT"; check "relay-script: دستهٔ سبک batch=۲۰ (PN-036 فاز ۲)" $?
-grep -q "LIGHT_TIMEOUT=15" "$RELAY_SCRIPT" && grep -q "HEAVY_TIMEOUT=60" "$RELAY_SCRIPT"; check "relay-script: مهلت تطبیقی OTP/سنگین (PN-036 فاز ۲)" $?
+grep -q 'xargs cat 2>/dev/null | jq -sc' "$RELAY_SCRIPT" && grep -q 'xargs rm -f 2>/dev/null' "$RELAY_SCRIPT"; check "relay-script: ادغام stdin انبار نتیجه (نسل N)" $?
+grep -q "BATCH=48" "$RELAY_SCRIPT"; check "relay-script: دستهٔ سبک batch=۲۰ (PN-036 فاز ۲)" $?
+grep -q "LIGHT_TIMEOUT=15" "$RELAY_SCRIPT" && grep -q "LIST_TIMEOUT=25" "$RELAY_SCRIPT" && grep -q "HEAVY_TIMEOUT=50" "$RELAY_SCRIPT"; check "relay-script: مهلت تطبیقی OTP/فهرست/سنگین (نسل N)" $?
 grep -q 'TIMEOUT_RETRY_DELAY=5' "$RELAY_SCRIPT" && grep -q "CURL_EXIT -eq 28" "$RELAY_SCRIPT"; check "relay-script: تلاش دوم تایم‌اوت خطای ۲۸ (PN-036 فاز ۲.۳)" $?
-grep -Fq 'run_batch_set "\$EXPRESS_JSON" "express"' "$RELAY_SCRIPT"; check "relay-script: Express lane OTP مقدم (PN-036 فاز ۵)" $?
+grep -q "Express lane (PN-036 فاز ۵ + PN-080)" "$RELAY_SCRIPT"; check "relay-script: Express lane OTP/ثبت آگهی مقدم (نسل N)" $?
 grep -Fq '→ HTTP \$CODE در \${DUR}ث' "$RELAY_SCRIPT"; check "relay-script: لاگ زمان هر آیتم (PN-036 فاز ۴.۱)" $?
 
 # نحو bash — تولید واقعی + bash -n

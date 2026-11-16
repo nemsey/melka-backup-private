@@ -316,7 +316,7 @@ describe("PN-019/فاز۸ · Shadow Mode + Worker", () => {
 
   test("Worker پس از PN-031-B: ۲۰ کار (۱۶ قبلی + head-guard + sacred/relay + rolling PN-041)", async () => {
     const { WORKER_JOB_IDS } = await import("@/core/runtime/jobs");
-    expect(Object.keys(WORKER_JOB_IDS)).toHaveLength(24); // PN-041-R: ۲۲ · PN-051 (DIR-PN051-SUPREME): +lcpp-cycle +lcpp-watch
+    expect(Object.keys(WORKER_JOB_IDS)).toHaveLength(25); // PN-041-R: ۲۲ · PN-051: +lcpp-cycle +lcpp-watch · PN-083: +experts-cycle
     expect(WORKER_JOB_IDS.memoryConsolidation).toBe("memory-consolidation");
     expect(WORKER_JOB_IDS.ipLog).toBe("ip-log");
     expect(WORKER_JOB_IDS.headGuard).toBe("head-guard");
@@ -324,6 +324,7 @@ describe("PN-019/فاز۸ · Shadow Mode + Worker", () => {
     expect(WORKER_JOB_IDS.rollingBackup).toBe("rolling-backup"); // PN-041 · شورا-ن۰۶۷
     expect(WORKER_JOB_IDS.lcppCycle).toBe("lcpp-cycle"); // PN-051 — خط‌لوله فهرست‌های List-Centric
     expect(WORKER_JOB_IDS.lcppWatch).toBe("lcpp-watch"); // PN-051 · فرمان ۷ — بروزرسانی دستی ≤۶۰ث
+    expect(WORKER_JOB_IDS.expertsCycle).toBe("experts-cycle"); // PN-083 — چرخهٔ خودکار M4 مشاوران
   });
 
   test("shadowDecisionTick روی دادهٔ fixture: اجرا + جاروب", async () => {

@@ -21,7 +21,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const REPO = join(import.meta.dir, "..");
-const PUBLIC_URL = "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai";
+const PUBLIC_URL = "https://preview-chat-b027b5c8-a3c8-4e83-a098-abe6db918ec4.space-z.ai";
 
 const saved: Record<string, string | undefined> = {};
 function setEnv(key: string, value: string | undefined) {

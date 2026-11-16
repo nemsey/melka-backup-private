@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     const dev = await createRelayDevice(label, ctx.personnelCode);
 
-    await audit("RELAY_ENROLL_OWNER", ctx.personnelCode, `ثبت دستگاه رلهٔ «${label}» (${dev.deviceId}) — کد راه‌اندازی بخشندهٔ ۳تلاشی صادر شد`);
+    await audit("RELAY_ENROLL_OWNER", ctx.personnelCode, `ثبت دستگاه رلهٔ «${label}» (${dev.deviceId}) — کد راه‌اندازی با اعتبار ۳۰ روز و ${dev.maxAttempts} تلاش دانلود صادر شد`);
 
     return Response.json({
       ok: true,
@@ -54,10 +54,13 @@ export async function POST(request: NextRequest) {
       installCommand: buildInstallCommand(serverUrl, dev.enrollCode),
       bootstrapUrl: `${serverUrl}/api/mobile-relay/bootstrap?code=${dev.enrollCode}`,
       enrollExpires: dev.enrollExpires.toISOString(),
-      // PN-031-C (شورا-ن۰۴۰) — کد بخشنده: ۳ تلاش در پنجرهٔ ۳۰ دقیقه
-      maxAttempts: 3,
-      validityMinutes: 30,
-      note: "راز دستگاه فقط در اسکریپتِ دانلودشده می‌نشیند — این پاسخ حاوی راز نیست. کد تا ۳ بار قابل استفاده است؛ سوختن نهایی فقط پس از اتصال موفق گوشی (اولین Poll).",
+      // DIR-RELAY-UNLIMITED-001 (دستور مالک ۲۰۲۶-۱۱-۱۴ · «کدنصب هیچگونه محدودیت
+      // نداشته باشد"): کد بخشنده با پنجرهٔ ۳۰ روزه (RELAY_ENROLL_TTL_HOURS) و تا
+      // ۹۹ دانلود (RELAY_ENROLL_MAX_ATTEMPTS) — سوختن نهایی همچنان فقط با
+      // اولین Poll موفق گوشی (قرارداد PN-031-C دست‌نخورده).
+      maxAttempts: dev.maxAttempts,
+      validityMinutes: Math.round((dev.enrollExpires.getTime() - Date.now()) / 60_000),
+      note: "راز دستگاه فقط در اسکریپتِ دانلودشده می‌نشیند — این پاسخ حاوی راز نیست. کد تا ۳۰ روز و ۹۹ بار دانلود قابل استفاده است؛ سوختن نهایی فقط پس از اتصال موفق گوشی (اولین Poll).",
     });
   } catch (err) {
     if (err instanceof MelkApiError) return errorResponse(err);

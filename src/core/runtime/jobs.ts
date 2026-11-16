@@ -126,8 +126,9 @@ export const WORKER_JOB_IDS = {
   relayHealthCheck: "relay-health-check",
   dbHealthProbe: "db-health-probe", // PN-041-R · شورا-ن۰۶۸ — خوددرمانی DB قفل‌شده
   lcppCycle: "lcpp-cycle", // PN-051 — خط‌لوله فهرست‌های List-Centric (۳۰ دقیقه)
-  lcppWatch: "lcpp-watch", // PN-051 · فرمان ۷ — پاسخ ≤۶۰ث به «بروزرسانی دستی» مالک
+  lcppWatch: "lcpp-watch", // PN-051 · فرمان ۷ — پاسخ ≤۶۰ث به «بروزرسانی دستی» مالک · PN-083: پرچم مشاوران هم همین‌جا
   divarFileTtl: "divar-file-ttl", // PN-059 · رابع — TTL سه‌روزهٔ فایل‌های بی‌اقدام فایل‌یابی
+  expertsCycle: "experts-cycle", // PN-083 — چرخهٔ خودکار فهرست مشاوران (M4 · هماهنگ‌ساز چهار فهرست)
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -447,16 +448,53 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       },
     });
     // فرمان ۷ — «بروزرسانی دستی» مالک: پاسخ ≤۶۰ثانیه (پرچم → اجرای فوری چرخه)
+    // PN-083 — هماهنگ‌ساز چهار فهرست: این نگهبان حالا پرچم فوریِ «هر چهار فهرست» را
+    // برمی‌دارد — LCPP (M1/M2/M3) با پرچم قبلی و مشاوران (M4) با پرچم تازه
+    // (experts-force.flag) — هر دو زیر قفل update:mX و با ثبت وضعیت list-mX.
     jobs.push({
       id: WORKER_JOB_IDS.lcppWatch,
-      title: "نگهبان درخواست فوری LCPP (فرمان ۷)",
+      title: "نگهبان درخواست فوری چهار فهرست (فرمان ۷ · PN-083)",
       intervalMs: 60_000,
       firstRunDelayMs: 45_000,
       run: async (database) => {
         const { peekForceRefresh, runLcppCycle } = await import("@/sync/lists");
-        if (!peekForceRefresh()) return { idle: true } as unknown as Record<string, unknown>;
-        const result = await runLcppCycle(database);
-        return (result ?? { skipped: true }) as unknown as Record<string, unknown>;
+        const { peekExpertsForceRefresh, clearExpertsForceRefresh, runExpertsListUpdate } = await import("@/lib/melk-api/four-lists");
+        if (peekForceRefresh()) {
+          const result = await runLcppCycle(database);
+          return (result ?? { skipped: true }) as unknown as Record<string, unknown>;
+        }
+        if (peekExpertsForceRefresh()) {
+          clearExpertsForceRefresh();
+          const { getPmSyncToken } = await import("@/lib/melk-api/pm-acc-sync");
+          const out = await runExpertsListUpdate(database, { pmToken: await getPmSyncToken(), source: "forced" });
+          return out as unknown as Record<string, unknown>;
+        }
+        return { idle: true } as unknown as Record<string, unknown>;
+      },
+      toDomain: (result) => {
+        if (result && typeof result === "object") return result as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── PN-083 · هماهنگ‌ساز چهار فهرست — چرخهٔ خودکار فهرست مشاوران (M4) ──
+  // قرینهٔ LCPP برای فهرست چهارم: تا پیش از این تنها فهرستی بود که هیچ چرخهٔ
+  // خودکار نداشت (فقط دکمهٔ دستی سه‌مرحله‌ای). اکنون هر ۳۰ دقیقه (پیش‌فرض)
+  // با توکن خزانهٔ PM، زیر قفل update:m4 و با ثبت وضعیت list-m4 اجرا می‌شود.
+  // خاموشی: MELK_EXPERTS_SYNC=disabled
+  if (process.env.MELK_EXPERTS_SYNC !== "disabled") {
+    const expertsIntervalMinutes = envInt("MELK_EXPERTS_SYNC_INTERVAL_MINUTES", 30, 10);
+    jobs.push({
+      id: WORKER_JOB_IDS.expertsCycle,
+      title: "چرخهٔ خودکار فهرست مشاوران (M4 · PN-083)",
+      intervalMs: expertsIntervalMinutes * 60_000,
+      firstRunDelayMs: 3 * 60_000,
+      run: async (database) => {
+        const { runExpertsListUpdate } = await import("@/lib/melk-api/four-lists");
+        const { getPmSyncToken } = await import("@/lib/melk-api/pm-acc-sync");
+        const out = await runExpertsListUpdate(database, { pmToken: await getPmSyncToken(), source: "auto" });
+        return out as unknown as Record<string, unknown>;
       },
       toDomain: (result) => {
         if (result && typeof result === "object") return result as Record<string, unknown>;

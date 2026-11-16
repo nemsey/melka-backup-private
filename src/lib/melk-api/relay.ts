@@ -45,7 +45,15 @@ export const RELAY_TIMESTAMP_WINDOW_MS = 5 * 60 * 1000;
  *  به‌همراه پنجرهٔ احیای ۶۰ث (expiredRecently) مسیر برگشت را بدون قربانی باز
  *  نگه می‌دارد. سقف انتظار armCall (120s) دست‌نخورده — آیتم کندتر از آن به
  *  هرحال در فراخواننده خطا می‌خورد، نه در صف. */
-export const RELAY_ITEM_TTL_S = 180;
+export const RELAY_ITEM_TTL_S = 300;
+
+/** DIR-RELAY-UNLIMITED-001 (دستور مالک ۲۰۲۶-۱۱-۱۴ · «بدون محدودیت حجم و زمان» ·
+ *  نسل N گوشی): پنجرهٔ احیای نتیجهٔ دیرهنگام (ثانیه پس از TTL) ۶۰ ← ۱۲۰ —
+ *  گوشی نسل N نتیجه‌ها را «جریانی» (به‌ازای موج) برمی‌گرداند؛ نتیجه‌ای که
+ *  کمی بعد از TTL برسد دیگر از دست نمی‌رود — تا ۱۲۰ث فرصت احیا دارد.
+ *  TTL نیز ۱۸۰ ← ۳۰۰ شد: دستهٔ ۴۸تایی با ۱۶ کارگر و مهلت سنگین ۵۰ث در
+ *  بدترین حالت ~۲۰۰ث موج می‌خواهد. */
+export const RELAY_RESULT_GRACE_S = 120;
 
 /**
  * مهلت انتظار پیش‌فرض پاسخ رله — PN-036 (شورا-ن۰۵۸ · فاز ۴)
@@ -67,9 +75,9 @@ export const RELAY_WAIT_DEFAULT_MS = 110_000;
  */
 export const RELAY_ONLINE_WINDOW_MS = 240_000;
 /** سقف اندازهٔ بدنهٔ پاسخ گوشی (بایت — پایه) */
-export const RELAY_MAX_RESULT_BYTES = 5 * 1024 * 1024;
+export const RELAY_MAX_RESULT_BYTES = 16 * 1024 * 1024;
 /** PN-035 (فاز ۵) — سقف اندازهٔ دستهٔ هر poll (پاسخ ۴× سرور؛ کارگر موازی گوشی) */
-export const RELAY_MAX_BATCH = 100;
+export const RELAY_MAX_BATCH = 200;
 /** PN-035 (فاز ۵) — اولویت درخواست‌های تعاملی (OTP/ورود) — مقدم بر سینک حجیم */
 export const RELAY_PRIORITY_INTERACTIVE = 5;
 /** PN-039 (گام ۲) — اولویت صفحات کاتالوگ «درخواست‌ها» — پایان قحطی هفت‌روزه:
@@ -233,10 +241,20 @@ export async function createRelayDevice(label: string, enrolledBy: string): Prom
   secret: string;
   enrollCode: string;
   enrollExpires: Date;
+  maxAttempts: number;
 }> {
   const secret = freshDeviceSecret();
   const enrollCode = freshEnrollCode();
-  const enrollExpires = new Date(Date.now() + 30 * 60 * 1000); // ۳۰ دقیقه اعتبار
+  // DIR-RELAY-UNLIMITED-001 (دستور مالک ۲۰۲۶-۱۱-۱۴ · «کدنصب هیچگونه محدودیت
+  // نداشته باشد به خصوص محدودیت زمانی»): پنجرهٔ اعتبار ۳۰ دقیقه ← ۳۰ روز
+  // (پیش‌فرض؛ RELAY_ENROLL_TTL_HOURS قابل تنظیم) و سقف دانلود ۳ ← ۹۹.
+  // سوختن نهایی همچنان فقط با اولین Poll موفق گوشی (قرارداد PN-031-C).
+  // ۳۰ روز به‌جای «بی‌نهایت»: بهداشت امنیتی — کد یک‌بارمصرفِ بی‌انقضا اگر لو
+  // برود، ابطال مالک تنها راه بستنش می‌ماند؛ پنجرهٔ بلند اما محدود، هر نشت
+  // احتمالی را خودبه‌خود می‌بندد و برای مالک عملاً «بدون محدودیت» است.
+  const enrollTtlHours = Math.max(1, Number(process.env.RELAY_ENROLL_TTL_HOURS ?? "720") || 720);
+  const enrollExpires = new Date(Date.now() + enrollTtlHours * 3600 * 1000);
+  const maxAttempts = Math.max(3, Number(process.env.RELAY_ENROLL_MAX_ATTEMPTS ?? "99") || 99);
   await db.relayDevice.create({
     data: {
       deviceId: freshDeviceId(label),
@@ -244,12 +262,13 @@ export async function createRelayDevice(label: string, enrolledBy: string): Prom
       label: label.trim().slice(0, 60),
       enrollCode,
       enrollExpires,
+      maxAttempts,
       enrolledBy,
     },
   });
   // deviceId پس از create معلوم است — مجدداً می‌خوانیم (slug ممکن است کوتاه شده باشد)
   const device = await db.relayDevice.findFirst({ where: { enrollCode }, orderBy: { id: "desc" } });
-  return { deviceId: device?.deviceId ?? "", secret, enrollCode, enrollExpires };
+  return { deviceId: device?.deviceId ?? "", secret, enrollCode, enrollExpires, maxAttempts };
 }
 
 // ───────────────────────── کد راه‌اندازی بخشنده (PN-031-C · شورا-ن۰۴۰) ─────────────────────────
@@ -595,9 +614,9 @@ export async function completeRelayRequest(params: {
 }): Promise<{ ok: boolean; status: number; error?: string }> {
   const item = await db.relayQueue.findUnique({ where: { id: params.id } });
   if (!item) return { ok: false, status: 404, error: "no such request" };
-  // بخش‌بندی: آیتم expired تازه (کمتر از ۶۰ث بعد از TTL) با نتیجهٔ رسیده احیا می‌شود
+  // بخش‌بندی: آیتم expired تازه (کمتر از RELAY_RESULT_GRACE_S بعد از TTL) با نتیجهٔ رسیده احیا می‌شود
   const expiredRecently =
-    item.status === "expired" && item.enqueuedAt.getTime() > Date.now() - (RELAY_ITEM_TTL_S + 60) * 1000;
+    item.status === "expired" && item.enqueuedAt.getTime() > Date.now() - (RELAY_ITEM_TTL_S + RELAY_RESULT_GRACE_S) * 1000;
   if (item.status !== "dispatched" && !expiredRecently) {
     return { ok: false, status: 409, error: `state=${item.status}` };
   }

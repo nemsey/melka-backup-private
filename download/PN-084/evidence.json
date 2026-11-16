@@ -1,0 +1,54 @@
+{
+  "pn": "PN-084",
+  "title": "مغز ملکا در دو کاشی — پوشش کامل تطبیق + سیگنال‌های صادقانه + بقای فایل‌یابی",
+  "date": "2026-11-12",
+  "commits": ["02c76c1", "f787645"],
+  "pushedTo": "origin/main",
+  "buildId": "f787645-20261112-0209",
+  "driftMatch": true,
+  "tests": {
+    "new": { "file": "tests/pn084-matching-brain.test.ts", "pass": 20, "fail": 0 },
+    "fullSuite": { "pass": 3035, "fail": 13, "note": "13 = documented environmental baseline (origin outage network tests + G3 pre-build + data canaries); none in PN-084 scope" },
+    "tsc": "0 errors"
+  },
+  "e2eLive": {
+    "script": "scripts/pn084/e2e-verify.ts",
+    "direction1": {
+      "listingCode": "57437",
+      "ms": 298,
+      "coverage": { "evaluated": 4122, "hardPassed": 33, "activeTotal": 23971, "truncated": false, "limit": 12000 },
+      "before": { "evaluated": 3000, "activeTotal": 23971, "blindSpot": "87%" }
+    },
+    "direction2": {
+      "ms": 34,
+      "coverage": { "evaluated": 875, "hardPassed": 122, "activeTotal": 4572, "truncated": false }
+    },
+    "adaptiveFreshness": { "value": 1, "note": "تازه‌تر از ۱۰۰٪ آگهی‌های منتشرشده" },
+    "structuralMeterage": { "note": "70-200 متر", "source": "spaceFrom/spaceTo" },
+    "flatSignalsDetected": ["نزدیکی جغرافیایی=1", "تازگی آگهی=1", "سابقه کارشناس=0", "تطابق نوع ملک=1", "تناسب طبقه=0.5"]
+  },
+  "dataFacts": {
+    "activeRequests": 23971,
+    "publishedListings": 4572,
+    "spaceFromCoverage": 0.998,
+    "inputsJsonCoverage": 0.0,
+    "areaNamesJsonCoverage": 1.0,
+    "ownerCodeNullRatio": 0.83,
+    "brokeredEdges": 0,
+    "opportunityAlerts": 5787,
+    "listingsSyncedLast30d": 0
+  },
+  "changes": {
+    "matching": ["SQL price/trade prefilter (safe superset)", "candidateLimit constructor wiring (bug fix) + MELK_MATCH_CANDIDATE_LIMIT env", "structural meterage priority", "adaptive freshness quantiles (5min cache)", "coverage + signalProfile honest reporting + UI", "full-table SQL search + limit 12", "60s caches for weights/lessons/branch-context", "composite indexes (status,syncedAt)+(status,updatedAt)", "OpportunityAlert surfacing in tile", "dead geo 0.3 branch removed + robust area normalization"],
+    "fileFinder": ["TTL starvation guard (DIVAR_FILE_TTL_SKIPPED)", "follow threshold 40→50 aligned with M5"],
+    "brain16": ["fabricated simulation stub removed → real area-median computation or honest null", "areaDemandFor real count (no take-50 cap) + live-requests-only"],
+    "accompanying": ["PN-083 leftover TS errors in sync/lists fixed", "divar.test.ts threshold updated", ".env.example knobs documented"]
+  },
+  "sacredData": {
+    "before": { "PropertyRecord": 28782, "RequestRecord": 26219, "TransactionRecord": 842, "ExpertRecord": 314 },
+    "after": { "PropertyRecord": 28782, "RequestRecord": 26219, "TransactionRecord": 842, "ExpertRecord": 314 },
+    "integrity": "ok",
+    "migration": "additive CREATE INDEX IF NOT EXISTS x2, 0.17s, applied ad-hoc per established PN-INIT pattern (prod DB is not migration-tracked)"
+  },
+  "deployment": { "method": "socket-master Blue/Green", "swaps": 2, "downtime": "zero (~5s each)", "healthz": "ok RSS 140MB" }
+}

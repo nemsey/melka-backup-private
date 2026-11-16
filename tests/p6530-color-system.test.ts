@@ -197,13 +197,12 @@ describe("گام صفر — نظام رنگ ۱۳ بخش (قاعده ۶)", () => 
   test("§۶ اعمال در رجیستری: هر کاشی فعال رنگ بخش اختصاصی خودش را دارد", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     await import("@/core/tiles/bootstrap");
-    // PN-038/فاز ۲: هشت کاشی ریشهٔ هوم یک‌پارچه (M6/M7/ظرف/ملکا-قدیمی حذف)
+    // PN-086/گام ۱: هفت کاشی ریشهٔ هوم (فایل‌یابی حذف شد — حذف نما، داده مقدس)
     const expected: Record<string, string> = {
       "arm-listings": "m1",
       "arm-requests": "m2",
       "transactions-contracts": "m3",
       experts: "m4",
-      "file-finder": "finder",
       "smart-matching": "m5",
       "learning-tier": "m8",
       settings: "settings",

@@ -1,0 +1,252 @@
+{
+  "at": "2026-11-15T06:22:59.644Z",
+  "tokenFrom": "session:yvffvj",
+  "lookups": [
+    {
+      "code": "55646",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55647",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55648",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55649",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "54838",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "54839",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "54840",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "54841",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "54842",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "54843",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55610",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55611",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55612",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55613",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55614",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55615",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55616",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55617",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55579",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55580",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55581",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55582",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55583",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "53292",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "53293",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "53294",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "53295",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "53296",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "53297",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "53298",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55095",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55096",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55097",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    },
+    {
+      "code": "55098",
+      "rows": 0,
+      "count": 0,
+      "found": false
+    }
+  ],
+  "pages": {
+    "page13": {
+      "rows": 50,
+      "count": 21554,
+      "totalPages": 432,
+      "firstCodes": [
+        "54043",
+        "54042",
+        "54039",
+        "54037",
+        "54033",
+        "54032",
+        "54030",
+        "54029",
+        "54021",
+        "54019",
+        "54016",
+        "54013"
+      ],
+      "lastCode": "53886"
+    },
+    "page20": {
+      "rows": 50,
+      "count": 21554,
+      "totalPages": 432,
+      "firstCodes": [
+        "52942",
+        "52940",
+        "52937",
+        "52936",
+        "52935",
+        "52934",
+        "52929",
+        "52926",
+        "52924",
+        "52923",
+        "52920",
+        "52919"
+      ],
+      "lastCode": "52824"
+    }
+  }
+}

@@ -12,6 +12,8 @@ import { defineTile } from "@/core/tiles/tile-contract";
 // P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
 import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
+// PN-086/گام ۲ (دستور مالک ۱۴۰۵/۰۸/۲۵): قاب بروزرسانی چهار فهرست + نوار لینک کاشی‌ها
+import { withFourListsChrome } from "@/components/tiles/FourListsTileChrome";
 import { Building2 } from "lucide-react";
 
 export const armListingTile = defineTile({
@@ -23,9 +25,8 @@ export const armListingTile = defineTile({
     "همهٔ آگهی‌های ثبت‌شده در «سامانه مدیریت آگهی و درخواست» (آرم) ملک تبریز در یک لیست تک‌صفحه‌ای و بی‌نهایت: کد آگهی، نام و نام خانوادگی کارشناس مسؤول، نام و نام خانوادگی مالک ملک، شماره تماس مالک ملک و آدرس ملک. فیلتر بر اساس کد آگهی و نام کارشناس؛ استخراج و بروزرسانی مستقیم از خود سامانه (فهرست کامل + غنی‌سازی زنجیره‌ای اطلاعات تماس مالک و آدرس دقیق) و ایجنت هوشمند یادگیرندهٔ مولتی‌بینش با تحلیل حجم، کارشناسان پرآگهی، توزیع منطقه‌ای، پوشش اطلاعات و تازگی ثبت.",
   icon: Building2,
   accent: "m1",
-  component: lazyPage(() => import("./ArmListingsPage")),
-  order: 2, // M1 — ترتیب درون ظرف tenant-dashboards: آگهی اولِ داشبورد (PN-043/فاز ۲)
-  container: "tenant-dashboards", // PN-043/فاز ۲ (شورا-ن۰۸۷): از هوم ریشه به داشبوردهای tenant — wrapper، نه تکرار
+  component: withFourListsChrome("listings", "arm-listings")(lazyPage(() => import("./ArmListingsPage"))),
+  order: 1, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): آگهی اول هوم — M1-M4 از ظرف tenant-dashboards به ریشهٔ هوم صعود کردند
   agent: {
     tileId: "arm-listings",
     insightDomains: ["VOLUME", "TOP_EXPERTS", "REGION", "COVERAGE", "FRESHNESS", "VISIT_ATTENTION"],

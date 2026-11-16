@@ -20,11 +20,12 @@ log() { :; }
 REQ_TIMES=()
 now() { date +%s; }
 # شبیه‌سازی: ۵ مهر در همین لحظه → درخواست ششم باید مکث بگیرد
-T=$(now); REQ_TIMES=("$T" "$T" "$T" "$T" "$T")
+RATE_MAX=20
+T=$(now); REQ_TIMES=("$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T" "$T")
 SLEPT=0; sleep() { SLEPT=$((SLEPT+1)); echo "sleep-called:$1" >&2; }
 . /tmp/pn031i-rate-gate.fn
 rate_gate 2>/dev/null
-ck "rate_gate مکث گرفت (۵تماس/۶۰ث)" "$SLEPT" "1"
+ck "rate_gate مکث گرفت (۲۰تماس/۶۰ث · نسل N)" "$SLEPT" "1"
 ck "rate_gate پس از پاکسازی پنجره، مهر افزود" "$(( ${#REQ_TIMES[@]} >= 1 ? 1 : 0 ))" "1"
 
 # ── ۲) rate_gate: زیر سقف → بدون مکث ──

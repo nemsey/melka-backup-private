@@ -55,6 +55,9 @@ interface MatchResultEnriched {
   tier: number;
   weightsSource?: "base" | "learned";
   weightsFeedbackCount?: number;
+  /** PN-084 — پوشش صادقانهٔ ارزیابی + پروفایل سیگنال عوامل */
+  coverage?: { evaluated: number; hardPassed: number; activeTotal: number; truncated: boolean; limit: number };
+  signalProfile?: Array<{ factor: string; n: number; distinct: number; flat: boolean; min: number; max: number }>;
   sourceInfo?: {
     code: string;
     title: string | null;
@@ -73,6 +76,17 @@ interface SearchRow {
   priceFrom?: number | null;
   priceTo?: number | null;
   updatedAt: string | null;
+}
+
+/* PN-084 — فرصت‌های شناسایی‌شدهٔ ایجنت (OpportunityAlert — دارایی‌ای که تا امروز فقط نوشته می‌شد) */
+interface OpportunityAlertRow {
+  id: string;
+  direction: "listing_to_request" | "request_to_listing";
+  listingCode: string | null;
+  requestId: string | null;
+  matchScore: number;
+  status: string;
+  emittedAt: string;
 }
 
 /* ───────── نرمال‌سازی جست‌وجو — عین الگوریتم فایل‌یابی ───────── */
@@ -106,6 +120,8 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
   // PN-028/رابعاً-ج — دیالوگ رد با دلایل ساختاریافته
   const [rejectCandidate, setRejectCandidate] = useState<EnrichedCandidate | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // PN-084 — فرصت‌های شناسایی‌شدهٔ ایجنت (۵٬۷۸۷ ردیف در دادهٔ زنده — تا امروز فقط نوشته می‌شد)
+  const [alerts, setAlerts] = useState<OpportunityAlertRow[]>([]);
   const showScores = settings.showReasons !== false;
 
   /* ── جست‌وجوی هوشمند ورودی (debounce ۳۵۰ms — حداقل ۲ نویسه) ── */
@@ -134,6 +150,15 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
     };
   }, [query, tab]);
 
+  /* PN-084 — بارگذاری بهترین-تلاش فرصت‌های شناسایی‌شده (یک‌بار در باز شدن کاشی) */
+  useEffect(() => {
+    let alive = true;
+    api<{ ok: boolean; alerts: OpportunityAlertRow[] }>(`/api/opportunity-alerts?limit=8`)
+      .then((r) => { if (alive) setAlerts(r.alerts ?? []); })
+      .catch(() => { /* بهترین-تلاش */ });
+    return () => { alive = false; };
+  }, []);
+
   /** فیلتر سمت کلاینت روی نتایج سرور — همان الگوریتم نرمال‌سازی (دوباره‌فیلتری محلی) */
   const visibleSearchRows = useMemo(() => {
     const q = normFa(query.trim());
@@ -147,7 +172,8 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
     );
   }, [searchRows, query]);
 
-  const run = useCallback(async (code?: string) => {
+  const run = useCallback(async (code?: string, overrideTab?: "listing" | "request") => {
+    const effTab = overrideTab ?? tab;
     const q = (code ?? query).trim();
     if (!q) return;
     setSearchOpen(false);
@@ -155,7 +181,7 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
     setResult(null);
     setSummary(null);
     try {
-      const url = tab === "listing"
+      const url = effTab === "listing"
         ? `/api/matching?listingCode=${encodeURIComponent(q)}`
         : `/api/matching?requestId=${encodeURIComponent(q)}`;
       const res = await api<{ ok: boolean; result: MatchResultEnriched; summary: MatchSummary }>(url);
@@ -166,7 +192,7 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
       if (res.result.candidates.length === 0) {
         toast({
           title: "نتیجه‌ای یافت نشد",
-          description: tab === "listing"
+          description: effTab === "listing"
             ? "هیچ درخواست فعالی فیلترهای سخت را نگذراند یا کدملک موجود نیست."
             : "هیچ آگهی منتشرشده‌ای فیلترهای سخت را نگذراند یا کد درخواست موجود نیست.",
         });
@@ -219,6 +245,12 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
     const tileId = result.direction === "listing_to_request" ? "arm-listings" : "arm-requests";
     openTile(tileId, null, { code: result.sourceInfo.code }); // PN-038/فاز ۲
   }, [result, openTile]);
+
+  /** PN-084 — سیگنال‌های هموار این ارزیابی (مقدار ثابت — بدون قدرت تفکیک) */
+  const flatSignalNote = useMemo(() => {
+    const flats = (result?.signalProfile ?? []).filter((f) => f.flat);
+    return flats.map((f) => `${f.factor} (${faDigits(f.min)})`).join("، ");
+  }, [result]);
 
   const candidatesInBucket = useMemo(
     () => (result ? result.candidates.filter((c) => bucketOf(c.score) === bucket) : []),
@@ -361,6 +393,17 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
                 <Lightbulb className="size-3.5 inline text-sec-m5-500" aria-hidden /> {summary.headline}
               </p>
               <p className="text-[10px] text-muted-foreground">{summary.weightsHint} — {Object.entries(result.weightsUsed).map(([k, v]) => `${k} ${faDigits(Math.round(v * 100))}٪`).join(" · ")}</p>
+              {result.coverage ? (
+                <p className="text-[10px] text-muted-foreground" data-testid="m5-coverage">
+                  <Crosshair className="size-3 inline" aria-hidden /> پوشش ارزیابی: {faDigits(result.coverage.hardPassed)} پاس‌شده از {faDigits(result.coverage.evaluated)} بررسی‌شده از {faDigits(result.coverage.activeTotal)} سطر فعال
+                  {result.coverage.truncated ? ` — سقف ${faDigits(result.coverage.limit)} فعال (MELK_MATCH_CANDIDATE_LIMIT)` : " — پوشش کامل"}
+                </p>
+              ) : null}
+              {flatSignalNote ? (
+                <p className="text-[10px] text-muted-foreground" data-testid="m5-flat-signals">
+                  سیگنال‌های هموار این ارزیابی (بدون قدرت تفکیک): {flatSignalNote}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -429,6 +472,47 @@ export function SmartMatchingPage({ settings, onBack }: TilePageProps) {
             </Card>
           )}
         </>
+      ) : null}
+
+      {/* PN-084 — فرصت‌های شناسایی‌شدهٔ ایجنت: دارایی OpportunityAlert که تا امروز فقط نوشته می‌شد */}
+      {alerts.length > 0 ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-sm">
+              <Sparkles className="size-4 text-sec-m5-500" aria-hidden />
+              فرصت‌های شناسایی‌شدهٔ ایجنت
+              <Badge variant="outline" className="text-[10px]">{faDigits(alerts.length)} تازه‌ترین</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {alerts.map((a) => {
+              const fromListing = a.direction === "listing_to_request";
+              const code = fromListing ? (a.listingCode ?? "") : (a.requestId ?? "");
+              return (
+                <button
+                  key={a.id}
+                  className="w-full text-right p-2 rounded-lg border hover:bg-muted/50 flex items-center justify-between gap-2 text-xs"
+                  onClick={() => {
+                    const targetTab = fromListing ? "listing" : "request";
+                    setTab(targetTab);
+                    setQuery(code);
+                    void run(code, targetTab);
+                  }}
+                >
+                  <span className="min-w-0">
+                    <b className="text-foreground">امتیاز {faDigits(a.matchScore)}</b>
+                    <span className="ms-2 text-muted-foreground line-clamp-1 inline">
+                      {fromListing
+                        ? `ملک ${faDigits(a.listingCode ?? "—")} ← درخواست‌های برتر`
+                        : `درخواست ${faDigits((a.requestId ?? "—").slice(0, 10))}… ← آگهی‌های برتر`}
+                    </span>
+                  </span>
+                  <Badge variant="outline" className="text-[10px] shrink-0">اجرا</Badge>
+                </button>
+              );
+            })}
+          </CardContent>
+        </Card>
       ) : null}
 
       {/* پانل ایجنت — بینش‌ها و آمار یادگیری همین کاشی (عین فایل‌یابی) */}

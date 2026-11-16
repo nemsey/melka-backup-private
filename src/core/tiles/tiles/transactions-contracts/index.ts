@@ -16,6 +16,8 @@ import { defineTile } from "@/core/tiles/tile-contract";
 // P6549/۰۳۵-B-ح: بارگذاری تنبل صفحهٔ کاشی (چانک اولیه سبک می‌شود)
 import { lazyPage } from "@/core/tiles/lazy-page";
 import { tileRegistry } from "@/core/tiles/tile-registry";
+// PN-086/گام ۲ (دستور مالک ۱۴۰۵/۰۸/۲۵): قاب بروزرسانی چهار فهرست + نوار لینک کاشی‌ها
+import { withFourListsChrome } from "@/components/tiles/FourListsTileChrome";
 import { FileCheck2 } from "lucide-react";
 
 export const transactionsContractsTile = defineTile({
@@ -27,9 +29,8 @@ export const transactionsContractsTile = defineTile({
     "فهرست تک‌صفحه‌ای معاملات با ستون‌های کامل: کد ملک با نام و موبایل مالک، درخواست با نام و موبایل درخواست‌دهنده، نوع قرارداد، شماره هولوگرام، مبلغ قرارداد با جداکنندهٔ «،»، فایل قرارداد (سند PDF تولیدی از داده‌های واقعی سامانه‌های ملک تبریز) و تجمیع حق‌السهم مشاوران با درصد هر مشاور — شامل اطلاعات تمامی کارشناسان ملک تبریز با ایجنت هوشمند مولتی‌بینش.",
   icon: FileCheck2,
   accent: "m3",
-  component: lazyPage(() => import("./TransactionsContractsPage")),
-  order: 4, // M3 — ترتیب درون ظرف tenant-dashboards: معاملات سومِ داشبورد (PN-043/فاز ۲)
-  container: "tenant-dashboards", // PN-043/فاز ۲ (شورا-ن۰۸۷): از هوم ریشه به داشبوردهای tenant — wrapper، نه تکرار
+  component: withFourListsChrome("transactions", "transactions-contracts")(lazyPage(() => import("./TransactionsContractsPage"))),
+  order: 3, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): معاملات سوم هوم — M1-M4 از ظرف tenant-dashboards به ریشهٔ هوم صعود کردند
   agent: {
     tileId: "transactions-contracts",
     // P6526/پ — عین ایجنت واقعی (P6.5-14: INFO_COVERAGE جای CONTACT_COVERAGE نشست؛

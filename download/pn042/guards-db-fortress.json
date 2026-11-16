@@ -4,7 +4,7 @@
     {
       "check": "۱-زندهٔ-محلی-موجود",
       "ok": true,
-      "detail": "db/custom.db (401567744 bytes)"
+      "detail": "db/custom.db (403673088 bytes)"
     },
     {
       "check": "۱-زندهٔ-محلی-سرآیند-sqlite",
