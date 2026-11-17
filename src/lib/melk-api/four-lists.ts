@@ -273,6 +273,12 @@ export interface FourListUnified {
   nextCycleAt: string | null;
   /** شمار رکورد زندهٔ فهرست (کش ۳۰ ثانیه — پرس‌وجوی سنگین نه) */
   rows: number | null;
+  /** DIR-SUPER-UPDATE-001 (گام دوم) — پوشش غنی‌سازی لایهٔ ۲ (کش ۶۰ ثانیه):
+   *  فقط M1 (آگهی) و M2 (درخواست) غنی‌سازی زنجیره‌ای دارند؛ M3/M4 → null */
+  enrich: { total: number; complete: number; pending: number } | null;
+  /** DIR-SUPER-UPDATE-001 — نقطهٔ ازسرگیری (SyncCheckpoint) — فقط M1/M2؛
+   *  همان اطلاعاتی که بخش بروزرسانی داخل فهرست نشان می‌داد (صفحه/پوشش منبع) */
+  checkpoint: { phase: string; lastCompletedPage: number; totalPages: number; totalAtSource: number; updatedAt: string; completedAt: string | null } | null;
   /** قفل این لحظهٔ فهرست در دست چه کسی است (running بین‌فرایندی) */
   lockHeldBy: string | null;
   detail: Record<string, unknown> | null;
@@ -289,6 +295,40 @@ export interface FourListsUnifiedView {
 const rowsCache = new Map<FourListId, { at: number; rows: number }>();
 const ROWS_CACHE_MS = 30_000;
 
+/** DIR-SUPER-UPDATE-001 — کش پوشش غنی‌سازی (۶۰ث؛ عین الگوی کش تجمع M1/M2 در روت‌ها)
+ *  تا بخش فوق پیشرفته بدون فشار DB این شاخص حیاتی را نشان دهد */
+const enrichCache = new Map<FourListId, { at: number; value: { total: number; complete: number; pending: number } }>();
+const ENRICH_CACHE_MS = 60_000;
+
+/** پوشش غنی‌سازی لایهٔ ۲ — فقط M1/M2 معنا دارد (زنجیرهٔ ARM)؛ بقیه null */
+async function countEnrich(db: PrismaClient, listId: FourListId): Promise<{ total: number; complete: number; pending: number } | null> {
+  if (listId !== "m1" && listId !== "m2") return null;
+  const hit = enrichCache.get(listId);
+  if (hit && Date.now() - hit.at < ENRICH_CACHE_MS) return hit.value;
+  try {
+    let value: { total: number; complete: number; pending: number };
+    if (listId === "m1") {
+      // عین PropertyRepository.countEnrichment (منبع یگانه: extractedBatchId)
+      const [total, pending] = await Promise.all([
+        (db.propertyRecord as unknown as { count(args: unknown): Promise<number> }).count({ where: { tenantId: "melk-tabriz" } }),
+        (db.propertyRecord as unknown as { count(args: unknown): Promise<number> }).count({ where: { tenantId: "melk-tabriz", extractionBatchId: null } }),
+      ]);
+      value = { total, pending, complete: total - pending };
+    } else {
+      // عین RequestRepository.countArmEnrichment (source='arm')
+      const [total, pending] = await Promise.all([
+        (db.requestRecord as unknown as { count(args: unknown): Promise<number> }).count({ where: { source: "arm" } }),
+        (db.requestRecord as unknown as { count(args: unknown): Promise<number> }).count({ where: { source: "arm", extractionBatchId: null } }),
+      ]);
+      value = { total, pending, complete: total - pending };
+    }
+    enrichCache.set(listId, { at: Date.now(), value });
+    return value;
+  } catch {
+    return hit ? hit.value : null;
+  }
+}
+
 async function countRows(db: PrismaClient, listId: FourListId): Promise<number | null> {
   const hit = rowsCache.get(listId);
   if (hit && Date.now() - hit.at < ROWS_CACHE_MS) return hit.rows;
@@ -299,6 +339,34 @@ async function countRows(db: PrismaClient, listId: FourListId): Promise<number |
     return rows;
   } catch {
     return hit ? hit.rows : null;
+  }
+}
+
+/** DIR-SUPER-UPDATE-001 — نقطهٔ ازسرگیری (کش ۶۰ث) — فقط M1/M2 (همان نام‌های روت فهرست) */
+const checkpointCache = new Map<FourListId, { at: number; value: FourListUnified["checkpoint"] }>();
+const CHECKPOINT_CACHE_MS = 60_000;
+
+async function readCheckpoint(listId: FourListId): Promise<FourListUnified["checkpoint"]> {
+  if (listId !== "m1" && listId !== "m2") return null;
+  const hit = checkpointCache.get(listId);
+  if (hit && Date.now() - hit.at < CHECKPOINT_CACHE_MS) return hit.value;
+  try {
+    const { getIntegrationRepository } = await import("@/core/repositories");
+    const cp = await getIntegrationRepository().getSyncCheckpoint(listId === "m1" ? "listings" : "requests");
+    const value: FourListUnified["checkpoint"] = cp
+      ? {
+          phase: String(cp.phase ?? ""),
+          lastCompletedPage: cp.lastCompletedPage ?? 0,
+          totalPages: cp.totalPages ?? 0,
+          totalAtSource: cp.totalAtSource ?? 0,
+          updatedAt: cp.updatedAt instanceof Date ? cp.updatedAt.toISOString() : String(cp.updatedAt ?? ""),
+          completedAt: cp.completedAt instanceof Date ? cp.completedAt.toISOString() : cp.completedAt ?? null,
+        }
+      : null;
+    checkpointCache.set(listId, { at: Date.now(), value });
+    return value;
+  } catch {
+    return hit ? hit.value : null;
   }
 }
 
@@ -364,6 +432,8 @@ export async function readFourListsUnified(db: PrismaClient): Promise<FourListsU
       updatedAt: st?.updatedAt ?? null,
       nextCycleAt: nextCycleAt(id, def.lcppListId ? lcppRefISO() : (st?.updatedAt ?? null)),
       rows: await countRows(db, id),
+      enrich: await countEnrich(db, id),
+      checkpoint: await readCheckpoint(id),
       lockHeldBy,
       detail,
     };

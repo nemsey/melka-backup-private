@@ -206,9 +206,12 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
     const codeNorm = normalizeFilterInput(filter.code);
     const lineNorm = normalizeFilterInput(filter.lineName);
     const stateNorm = normalizeFilterInput(filter.stateName);
+    // DIR-MULTI-AREA-001 — مجموعه‌های نرمال‌شدهٔ مناطق/محله‌های انتخابی (تطبیق دقیق با رجیستری آرم)
+    const areaSet = new Set((filter.areaNames ?? []).map(normalizeFilterInput).filter(Boolean));
+    const lineSet = new Set((filter.lineNames ?? []).map(normalizeFilterInput).filter(Boolean));
 
-    // فیلترهای باقی‌مانده (کد · خط · استان) همچنان در JS — فقط این‌ها اسکن کامل می‌خواهند
-    const needsJsFilter = codeNorm !== "" || lineNorm !== "" || stateNorm !== "";
+    // فیلترهای باقی‌مانده (کد · خط · استان · چندمنطقه) همچنان در JS — فقط این‌ها اسکن کامل می‌خواهند
+    const needsJsFilter = codeNorm !== "" || lineNorm !== "" || stateNorm !== "" || areaSet.size > 0 || lineSet.size > 0;
     // با فیلتر JS، کل کاتالوگ اسکن می‌شود (قانون فهرست: تمام ردیف‌ها؛ سقف = گارد ایمنی سرور)
     const fetchTake = needsJsFilter ? LIST_SCAN_CAP : limit;
 
@@ -267,6 +270,12 @@ export class PrismaPropertyRecordRepository implements PropertyRecordRepository 
           if (codeNorm !== "" && !normalizeFilterInput(r.propertyCode).includes(codeNorm)) return false;
           if (lineNorm !== "" && !normalizeFilterInput(r.lineName).includes(lineNorm)) return false;
           if (stateNorm !== "" && !normalizeFilterInput(r.stateName).includes(stateNorm)) return false;
+          // DIR-MULTI-AREA-001 — اجتماع (OR): منطقهٔ آگهی یا محلهٔ آن در انتخاب‌ها باشد
+          if (areaSet.size > 0 || lineSet.size > 0) {
+            const inArea = areaSet.size > 0 && areaSet.has(normalizeFilterInput(r.areaName ?? ""));
+            const inLine = lineSet.size > 0 && lineSet.has(normalizeFilterInput(r.lineName ?? ""));
+            if (!inArea && !inLine) return false;
+          }
           return true;
         })
       : records;

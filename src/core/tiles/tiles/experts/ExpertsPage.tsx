@@ -20,7 +20,7 @@
  * رنگ بخش: فیروزه‌ای (sec-m4)
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,13 +32,13 @@ import { usePullToRefresh, PtrIndicator } from "@/hooks/use-pull-to-refresh";
 import { EmptyState } from "@/components/app/shared/list-states";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, RotateCcw, Search, Users, Network, Building2, Banknote, FileSignature, MapPin, Filter,
-  RefreshCw, CheckCircle2, IdCard, CalendarClock, BriefcaseBusiness, FileSpreadsheet, UserCheck, Phone,
+  RotateCcw, Search, Users, Network, Banknote, FileSignature, MapPin, Filter,
+  CheckCircle2, IdCard, CalendarClock, BriefcaseBusiness, FileSpreadsheet, UserCheck, Phone,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 import { KpiCard, TileCoverageTable, useTileData, FilterGroup, FilterChip, ExcelImportButton, type DataSourceInfo } from "@/components/app/shared";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
-import { api, apiSync, apiBlob, downloadBlob } from "@/lib/client/api";
+import { api, apiBlob, downloadBlob } from "@/lib/client/api";
 import { faNumber, faJalaliShort } from "@/lib/format";
 import { branchBadgeClass, valueSoftClass, valueSolidClass } from "@/lib/value-colors";
 import { faDigits } from "@/lib/jalali";
@@ -76,18 +76,6 @@ interface ExResponse {
   total: number;
   filterOptions: { branches: string[]; employmentTypes: Array<{ value: number; label: string }>; managers: string[]; roles: string[]; cities: string[] };
   dataSource: DataSourceInfo & { coverage?: Record<string, string> };
-}
-
-interface SyncStage {
-  registryRows: number;
-  registryError: string | null;
-  deepAttempted: number;
-  deepEnriched: number;
-  deepFailed: number;
-  deepRemaining: number;
-  counts: { sale: number; rent: number; attributedTx: number; contracts: number } | null;
-  countsError: string | null;
-  durationMs: number;
 }
 
 /** «-» — قاعدهٔ مالک: رکورد فاقد اطلاعات به صورت «-» درج گردد و لاغیر */
@@ -141,8 +129,6 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   const toggleChip = useCallback((k: keyof ChipFilters, v: string) => {
     setChips((prev) => ({ ...prev, [k]: prev[k].includes(v) ? prev[k].filter((x) => x !== v) : [...prev[k], v] }));
   }, []);
-  const [syncing, setSyncing] = useState(false);
-  const [syncStage, setSyncStage] = useState<SyncStage | null>(null);
   // PN-009 مرحله F — آکاردئون موبایل (پیش‌فرض بسته) · همیشه باز در دسکتاپ — الگوی مشترک M1/M2 (قانون ۶.۱)
   const [filtersOpen, setFiltersOpen] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
@@ -207,34 +193,16 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
   // PN-009 مرحله F — شمارندهٔ فیلترهای فعال (الگوی [فیلترها ۵] بند ۶.۱) + چیپ‌های PN-011
   const activeFilterCount = Object.values(applied).filter((v) => v !== "").length + Object.values(chips).reduce((s, a) => s + a.length, 0);
 
-  /** بروزرسانی فهرست — زنجیرهٔ سه‌مرحله‌ای PM با گزارش صادقانهٔ هر مرحله
- *  PN-083: زیر قفل هماهنگ‌ساز update:m4 — اگر چرخهٔ خودکار/فوری زنده باشد،
- *  پاسخ busy صادقانه برمی‌گردد (صفر اجرای موازی) */
-  const doSync = useCallback(async () => {
-    setSyncing(true);
-    setSyncStage(null);
-    try {
-      const res = await apiSync<{ ok: boolean; stage?: SyncStage; busy?: boolean; message?: string }>("/api/experts/sync", { method: "POST" });
-      if (res.busy || !res.stage) {
-        toast({ title: "بروزرسانی مشاوران همین حالا در جریان است", description: res.message ?? "چرخهٔ در حال اجرا پس از پایان، تازه‌ترین داده را می‌آورد — این درخواست بی‌اثر ثبت نشد." });
-        await reload();
-        return;
-      }
-      setSyncStage(res.stage);
-      const s = res.stage;
-      toast({
-        title: "بروزرسانی فهرست کارشناسان انجام شد",
-        description: s.registryError
-          ? `رجیستری PM خطا داد: ${s.registryError.slice(0, 90)}`
-          : `رجیستری: ${faNumber(s.registryRows)} نفر · عمق تازه: ${faNumber(s.deepEnriched)} نفر (باقی‌مانده: ${faNumber(s.deepRemaining)}) · شمارش: مبایعه ${faNumber(s.counts?.sale ?? 0)} / اجاره ${faNumber(s.counts?.rent ?? 0)}`,
-      });
-      await reload();
-    } catch (e) {
-      toast({ title: "بروزرسانی ناموفق", description: e instanceof Error ? e.message : "خطای نامشخص", variant: "destructive" });
-    } finally {
-      setSyncing(false);
-    }
-  }, [toast, reload]);
+  /** DIR-SUPER-UPDATE-001 — گوش دادن به رویداد بخش فوق پیشرفته: پس از پایان هر
+   *  اجرای برشی همین فهرست (m4)، فهرست بدون دخالت کاربر تازه می‌شود.
+   *  منطق اجرا (زنجیرهٔ سه‌مرحله‌ای PM) در SuperListUpdate بالای همین کاشی است. */
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<{ list?: string }>).detail?.list === "m4") void reload();
+    };
+    window.addEventListener("melk:super-update", handler);
+    return () => window.removeEventListener("melk:super-update", handler);
+  }, [reload]);
 
   const setF = (k: keyof Filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
   const applyFilters = () => setApplied(filters);
@@ -265,37 +233,10 @@ export function ExpertsPage({ settings, onSettingsChange: _osc, userRole: _role,
       {/* جدول پوشش اطلاعات فهرست (تمام ستون‌ها) */}
       <TileCoverageTable tileKey="m4" accentClass="text-sec-m4-700" />
 
-      {/* ─── بروزرسانی فهرست — تبریز: زنجیرهٔ سه‌مرحله‌ای PM · ملکتون: همگام‌سازی CRM (Worker ۶س — PN-047) ─── */}
-      {(
-      <Card className="border-sec-m4-200 bg-sec-m4-50" id="m4-update-section">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-start gap-2.5 min-w-0">
-              <Building2 className="w-5 h-5 shrink-0 mt-0.5 text-sec-m4-700" aria-hidden />
-              <div className="min-w-0">
-                <p className="text-sm font-bold">بروزرسانی فهرست کارشناسان از سامانهٔ پرسنلی ملک تبریز</p>
-              </div>
-            </div>
-            <Button onClick={() => void doSync()} disabled={syncing} className="gap-1.5 shrink-0 bg-sec-m4-500 hover:bg-sec-m4-500/90 text-sec-m4-fg">
-              {syncing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />}
-              {syncing ? "در حال بروزرسانی…" : "بروزرسانی فهرست"}
-            </Button>
-          </div>
-          {syncStage && (
-            <div className="rounded-md border border-sec-m4-200 bg-card p-3 text-xs space-y-1.5" data-testid="m4-sync-stage">
-              <div className="flex flex-wrap gap-x-4 gap-y-1">
-                <span>رجیستری PM: <b>{faNumber(syncStage.registryRows)} نفر</b>{syncStage.registryError ? <span className="text-destructive"> — خطا: {syncStage.registryError}</span> : null}</span>
-                <span>عمق تازه (استخدام/شعبه/آدرس): <b>{faNumber(syncStage.deepEnriched)}</b> از {faNumber(syncStage.deepAttempted)} — باقی‌مانده: <b>{faNumber(syncStage.deepRemaining)}</b></span>
-                <span>شمارش: مبایعه <b>{faNumber(syncStage.counts?.sale ?? 0)}</b> · اجاره <b>{faNumber(syncStage.counts?.rent ?? 0)}</b></span>
-                <span>مدت: <b>{faNumber(Math.round(syncStage.durationMs / 100) / 10)} ثانیه</b></span>
-              </div>
-              {syncStage.deepFailed > 0 && <p className="text-muted-foreground">{faNumber(syncStage.deepFailed)} ردیف در این برش پاسخ نداد — برش بعدی خودکار دوباره تلاش می‌کند.</p>}
-              {syncStage.countsError && <p className="text-destructive">خطای شمارش: {syncStage.countsError}</p>}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      )}
+      {/* DIR-SUPER-UPDATE-001 (گام دوم — ادغام): بخش بروزرسانی کارشناسان (زنجیرهٔ
+          سه‌مرحله‌ای PM + گزارش صادقانهٔ هر مرحله) به «بخش فوق پیشرفته» بالای همین
+          کاشی (اولین بخش) منتقل شد — گزارش مرحله‌ای در همان بخش و در توست نمایش
+          داده می‌شود؛ این صفحه فقط «فهرست» است. */}
       <Card className="border-sec-m4-200" id="m4-filter-section">
         <CardHeader className="py-4">
           <button

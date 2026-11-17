@@ -87,6 +87,10 @@ export async function GET(request: NextRequest) {
     // P6530/گام ۱ — فیلترهای تمام ستون‌ها
     const ownerName = normalizeFilterInput(sp.get("ownerName")) || undefined;
     const address = normalizeFilterInput(sp.get("address")) || undefined;
+    // DIR-MULTI-AREA-001 — فیلتر چندمنطقه/چندمحله (تکرارشونده: area=A&area=B&line=C)
+    // نام‌ها عین رجیستری آرم‌اند؛ سمت ریپازیتوری با نرمال‌سازی P6525 تطبیق دقیق می‌خورند
+    const areaNames = (sp.getAll("area") || []).map((a) => normalizeFilterInput(a)).filter(Boolean);
+    const lineNames = (sp.getAll("line") || []).map((l) => normalizeFilterInput(l)).filter(Boolean);
     const priceFrom = num(sp.get("priceFrom"));
     const priceTo = num(sp.get("priceTo"));
     const tradeTypes = (sp.getAll("tradeType") || [])
@@ -150,6 +154,9 @@ export async function GET(request: NextRequest) {
     const catalogFilter: ArmListingCatalogFilter = {
       tenantId,
       code, realtorName, ownerName, priceFrom, priceTo, address, tradeTypes, statuses, activityFrom, activityTo,
+      // DIR-MULTI-AREA-001 — چندمنطقه/چندمحله (اجتماع OR)
+      areaNames: areaNames.length > 0 ? areaNames : undefined,
+      lineNames: lineNames.length > 0 ? lineNames : undefined,
       // PN-002 گام ۱ — ستون‌های تازه
       rentalType, viewCountFrom, viewCountTo, meterageFrom, meterageTo, roomsFrom, roomsTo,
       addedToDivar, addedToInsta, lineName, stateName,

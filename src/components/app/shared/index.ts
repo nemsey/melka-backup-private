@@ -29,3 +29,5 @@ export { ExcelImportButton } from "./excel-import-button";
 export { FilterChip, type FilterChipProps } from "./FilterChip";
 export { OwnerNoteCell, type OwnerNoteCellProps } from "./OwnerNoteCell";
 export { FilterGroup, type FilterGroupProps } from "./FilterGroup";
+// DIR-MULTI-AREA-001 — فیلتر چندانتخابی مناطق و محله‌ها (عین رجیستری آرم)
+export { AreaLineFilter, type AreaLineSelection } from "./area-line-filter";

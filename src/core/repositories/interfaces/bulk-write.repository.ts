@@ -308,6 +308,11 @@ export interface ArmListingCatalogFilter {
   priceTo?: number;
   /** آدرس ملک / منطقه (contains نرمال‌شده روی address + areaName) */
   address?: string;
+  /** DIR-MULTI-AREA-001 — فیلتر چندمنطقه‌ای (چندانتخابی): نام مناطق عین رجیستری آرم؛
+   *  ردیف عبور می‌کند اگر areaName آن در این مجموعه باشد (یا یکی از lineNames). */
+  areaNames?: string[];
+  /** DIR-MULTI-AREA-001 — فیلتر چندمحله‌ای (چندانتخابی): نام محله‌ها عین رجیستری آرم */
+  lineNames?: string[];
   /** دسته‌بندی — مقادیر خام (فروش/پیش فروش/رهن و اجاره/مشارکت در ساخت) */
   tradeTypes?: string[];
   /** ده‌حالته: مقادیر خام وضعیت (خروجی listingStateRawValues) */
@@ -357,6 +362,9 @@ export interface ArmRequestCatalogFilter {
   priceTo?: number;
   /** مناطق (contains نرمال‌شده روی areaNames) */
   areaName?: string;
+  /** DIR-MULTI-AREA-001 — فیلتر چندمنطقه‌ای (چندانتخابی): نام مناطق عین رجیستری آرم؛
+   *  ردیف عبور می‌کند اگر هر یک از areaNames آن در این مجموعه باشد (یا lineNames). */
+  areaNames?: string[];
   /** دسته‌بندی — مقادیر خام (خرید/پیش خرید/رهن و اجاره/مشارکت در ساخت) */
   tradeTypes?: string[];
   /** شش‌حالتهٔ M2: مقادیر خام وضعیت */
@@ -399,6 +407,8 @@ export interface ArmRequestCatalogFilter {
   buildingTypes?: string[];
   /** محله (contains روی lineNames) */
   lineName?: string;
+  /** DIR-MULTI-AREA-001 — فیلتر چندمحله‌ای (چندانتخابی): نام محله‌ها عین رجیستری آرم */
+  lineNames?: string[];
   /** PN-049/گام ۲-الف (قانون حساب کاربری) — نام نرمال‌شدهٔ ثبت‌کننده:
    *  برای نشست‌های غیر-مالک، فهرست فقط به رکوردهای ثبت‌شده توسط خود کاربر محدود می‌شود
    *  (مطابقت دقیق با actorNameNorm)؛ مالک (کد مستر) هرگز فیلتر نمی‌خورد. */
