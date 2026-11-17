@@ -1,0 +1,204 @@
+{
+  "spec": {
+    "customerName": "رامین عباس نژاد",
+    "customerMobile": "09910756951",
+    "tradeTypeId": "614ed62da50555f0a54c1eca",
+    "buildingTypeId": "614edc35a50555f0a54c1f12",
+    "propertyTypeId": "614ee704a50555f0a54c227d",
+    "userPaymentMethod": "61a39bf0f06329efdeacbbef",
+    "userSeriousity": "61a753650927675c45489a4f",
+    "inputs": {
+      "space_from": 140,
+      "space_to": 180,
+      "totalPrice_from": 35000000000,
+      "totalPrice_to": 40000000000,
+      "floor_from": 2,
+      "floor_to": 8,
+      "room_whole_from": 2,
+      "room_whole_to": 3,
+      "floor_whole_from": 1,
+      "floor_whole_to": 8,
+      "unit_from": 1,
+      "unit_to": 2,
+      "year_from": 1395,
+      "year_to": 1405,
+      "side": [
+        "south"
+      ],
+      "construct_type": [
+        "personal"
+      ],
+      "sanad": [
+        "sixdong"
+      ],
+      "elevator": true,
+      "parking": true
+    },
+    "history": {
+      "actionTypeName": "ایجاد مشاور",
+      "actionTypeId": "6506dde8c772727517fed9b8",
+      "byName": "سید نعمت اله سیدی",
+      "byCode": "410031320",
+      "date": "1405/08/20",
+      "hour": "17:30"
+    }
+  },
+  "steps": [
+    {
+      "key": "token",
+      "at": "2026-11-17T04:46:42.802Z",
+      "data": {
+        "source": "session",
+        "expIso": "2026-11-19T04:46:36.000Z",
+        "valid": true
+      }
+    },
+    {
+      "key": "location",
+      "at": "2026-11-17T04:46:42.802Z",
+      "data": {
+        "areas": 130,
+        "lines": 926,
+        "city": "تبریز"
+      }
+    },
+    {
+      "key": "local-create",
+      "at": "2026-11-17T04:46:42.857Z",
+      "data": {
+        "id": "cmwk7n33q0001s4zsmg4djcd7",
+        "complete": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "opportunity-listener",
+      "at": "2026-11-17T04:46:43.255Z",
+      "data": {
+        "alerts": 0,
+        "topScore": null
+      }
+    },
+    {
+      "key": "arm-register",
+      "at": "2026-11-17T04:47:11.840Z",
+      "data": {
+        "ok": true,
+        "armRequestId": "6afbdc419e477125d0a9280d",
+        "customerId": "6afbdc39cd7665a573d0fbef",
+        "customerCreated": true,
+        "steps": [
+          {
+            "key": "validate",
+            "status": "done",
+            "title": "گام ۰ — اعتبارسنجی اطلاعات ۴ گامی",
+            "detail": "هر ۴ گام کامل است: اطلاعات مشتری، اطلاعات مکانی درخواست، جزییات درخواست و اطلاعات تکمیلی."
+          },
+          {
+            "key": "customer",
+            "status": "done",
+            "title": "گام ۱ — اطلاعات مشتری: ایجاد کاربر جدید در آرم",
+            "detail": "درخواست‌دهنده «رامین عباس نژاد» با شماره 9910756951 در سامانه آرم ایجاد شد (نام: رامین / نام‌خانوادگی: عباس نژاد)."
+          },
+          {
+            "key": "location",
+            "status": "done",
+            "title": "گام ۲ — اطلاعات مکانی درخواست",
+            "detail": "ایران ← آذربایجان شرقی ← تبریز ← 130 منطقه (17 شهریور جدید، 17 شهریور قدیم، 35 متری سینا  و…) ← 926 محله — شناسه‌های رسمی منطقه‌بندی آرم ارسال می‌شود (عین areaAndLine خود سامانه)."
+          },
+          {
+            "key": "details",
+            "status": "done",
+            "title": "گام ۳ — جزییات درخواست",
+            "detail": "نوع معامله «خرید»، نوع کاربری «مسکونی»، نوع ملک «آپارتمان»، فرم دسته‌بندی با 19 فیلد (متراژ/قیمت از-تا، امکانات…)."
+          },
+          {
+            "key": "supplementary",
+            "status": "done",
+            "title": "گام ۴ — اطلاعات تکمیلی درخواست",
+            "detail": "نحوه پرداخت (پول مشتری) «نقدی»، جدیت مشتری «زیاد» — عین گام ۴ خود سامانه."
+          },
+          {
+            "key": "submit",
+            "status": "done",
+            "title": "ثبت نهایی درخواست در سامانه آرم",
+            "detail": "درخواست با شناسه 6afbdc419e477125d0a9280d در سامانه آرم ثبت شد."
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "key": "arm-row",
+      "at": "2026-11-17T04:47:15.868Z",
+      "data": {
+        "armRequestId": "6afbdc419e477125d0a9280d",
+        "requestCode": "55920",
+        "title": "خرید آپارتمان مسکونی 140 الی 180 متری",
+        "relatedRealtor": "سید نعمت اله سیدی",
+        "relatedCustomer": "رامین عباس نژاد",
+        "createdAt": "2026-11-17T04:46:57.797Z",
+        "areaCount": 130,
+        "lineCount": 926
+      }
+    },
+    {
+      "key": "arm-history",
+      "at": "2026-11-17T04:47:21.897Z",
+      "data": {
+        "count": 2,
+        "entries": [
+          {
+            "action": "ایجاد مشاور",
+            "actionTypeId": "6506dde8c772727517fed9b8",
+            "realtor": "سید نعمت اله سیدی",
+            "date": "2026-11-17T04:46:57.788Z"
+          },
+          {
+            "action": "بررسی درخواست",
+            "actionTypeId": "653a2ade78d20135749ee59a",
+            "realtor": "سید نعمت اله سیدی",
+            "date": "2026-11-17T04:46:57.788Z"
+          }
+        ]
+      }
+    },
+    {
+      "key": "local-catalog-columns",
+      "at": "2026-11-17T04:47:21.901Z",
+      "data": {
+        "requestCode": "55920"
+      }
+    },
+    {
+      "key": "history-entry",
+      "at": "2026-11-17T04:47:21.905Z",
+      "data": {
+        "eventId": "cmwk7nx9q0008s4zs04xe3d63",
+        "اقدام": "ایجاد مشاور",
+        "توسط": "سید نعمت اله سیدی",
+        "تاریخ": "17:30|1405/08/20"
+      }
+    }
+  ],
+  "final": {
+    "id": "cmwk7n33q0001s4zsmg4djcd7",
+    "requestCode": "55920",
+    "armRequestId": "6afbdc419e477125d0a9280d",
+    "armRegisteredAt": "2026-11-17T04:47:11.836Z",
+    "source": "auto",
+    "status": "ready",
+    "customerName": "رامین عباس نژاد",
+    "customerMobile": "09910756951",
+    "actorName": "سید نعمت اله سیدی",
+    "title": "خرید آپارتمان مسکونی 140 الی 180 متری",
+    "events": [
+      {
+        "name": "ایجاد مشاور",
+        "date": "1405/08/20",
+        "hour": "17:30"
+      }
+    ]
+  },
+  "durationMs": 39448
+}

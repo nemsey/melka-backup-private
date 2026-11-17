@@ -1,0 +1,319 @@
+{
+  "count": 21583,
+  "totalPages": 7195,
+  "sampleKeys": [
+    "_id",
+    "createdByRealtor",
+    "status",
+    "customer",
+    "country",
+    "state",
+    "city",
+    "area",
+    "line",
+    "tradeType",
+    "buildingType",
+    "propertyType",
+    "businessId",
+    "urgent",
+    "changeable",
+    "luxury",
+    "ocasion",
+    "userPaymentMethod",
+    "userSeriousity",
+    "deposite",
+    "confirmSMS",
+    "inputs",
+    "isRental",
+    "changeWith",
+    "createdAt",
+    "updatedAt",
+    "title",
+    "code",
+    "totalPrice_from",
+    "totalPrice_to",
+    "relatedRealtor",
+    "relatedRealtorId",
+    "relatedCustomer",
+    "__v",
+    "adProcesses",
+    "customerPermission",
+    "editPermission",
+    "forwardPermission",
+    "processPermission",
+    "editExecutorPermission"
+  ],
+  "rows": [
+    {
+      "_id": "6afb53904ff81bffbe0cdc0c",
+      "code": 55918,
+      "relatedRealtor": "مهرداد مرادی",
+      "relatedCustomer": "نصرتی",
+      "createdAt": "2026-11-16T19:03:44.164Z",
+      "updatedAt": "2026-11-16T19:06:04.802Z",
+      "inputs": {
+        "space_from": 100,
+        "space_to": 200,
+        "totalPrice_from": 15000000000,
+        "totalPrice_to": 20000000000,
+        "floor_from": 1,
+        "floor_to": 10,
+        "room_whole_from": 1,
+        "room_whole_to": 2,
+        "floor_whole_from": 1,
+        "floor_whole_to": 10,
+        "unit_from": 1,
+        "unit_to": 4,
+        "side": [
+          "south",
+          "north"
+        ],
+        "construct_type": [
+          "personal",
+          "complex",
+          "tower"
+        ],
+        "sanad": [
+          "sixdong",
+          "dardasteegdam",
+          "key",
+          "contractical"
+        ],
+        "year_from": 1390,
+        "year_to": 1405
+      },
+      "areaCount": 1,
+      "lineCount": 39,
+      "areaFirst": [
+        {
+          "_id": "614f7fb1a50555f0a54c3aa6",
+          "name": "ولیعصر"
+        }
+      ],
+      "status": [
+        {
+          "actionType": "653a2ade78d20135749ee59a",
+          "currentStatus": {
+            "_id": "6ada6b9061989f79424c88b9",
+            "name": "نیاز سنجی",
+            "startColor": {
+              "r": 147,
+              "g": 197,
+              "b": 253,
+              "a": 1,
+              "_id": "6ada6b9061989f79424c88ba"
+            },
+            "endColor": {
+              "r": 96,
+              "g": 165,
+              "b": 250,
+              "a": 1,
+              "_id": "6ada6b9061989f79424c88bb"
+            }
+          },
+          "currentInbox": {
+            "_id": "6ada6ac62973cd4cf592395d",
+            "name": "سرنخ"
+          },
+          "customer": null,
+          "realtor": {
+            "_id": "694d4ffc6261f373a9c04c1f",
+            "fullName": "مهرداد مرادی"
+          },
+          "date": "2026-11-16T19:03:44.158Z",
+          "_id": "6afb53904ff81bffbe0cdc0e"
+        }
+      ],
+      "tradeType": "614ed62da50555f0a54c1eca",
+      "userPaymentMethod": "61a39bf0f06329efdeacbbef",
+      "userSeriousity": "61a753650927675c45489a4f"
+    },
+    {
+      "_id": "6afb4528e0e9535d108ca4d6",
+      "code": 55917,
+      "relatedRealtor": "فاطمه  سیفی زاده",
+      "relatedCustomer": "فخرایی",
+      "createdAt": "2026-11-16T18:02:16.429Z",
+      "updatedAt": "2026-11-16T18:05:36.367Z",
+      "inputs": {
+        "space_from": 90,
+        "space_to": 150,
+        "totalPrice_from": 13000000000,
+        "totalPrice_to": 15000000000,
+        "floor_from": 1,
+        "floor_to": 12,
+        "room_whole_from": 2,
+        "room_whole_to": 3,
+        "floor_whole_from": 1,
+        "floor_whole_to": 12,
+        "unit_from": 1,
+        "unit_to": 6,
+        "side": [
+          "north",
+          "south",
+          "west",
+          "east",
+          "north_west",
+          "north_east",
+          "south_west",
+          "south_east",
+          "north_south",
+          "east_west"
+        ],
+        "construct_type": [
+          "personal"
+        ],
+        "sanad": [
+          "sixdong"
+        ],
+        "elevator": true,
+        "parking": true,
+        "installation": true,
+        "year_from": 1385,
+        "year_to": 1405
+      },
+      "areaCount": 3,
+      "lineCount": 37,
+      "areaFirst": [
+        {
+          "_id": "614f7dd3a50555f0a54c3974",
+          "name": "ولیعصر جنوبی"
+        },
+        {
+          "_id": "614f7ceca50555f0a54c38c4",
+          "name": "یاغچیان"
+        }
+      ],
+      "status": [
+        {
+          "actionType": "6ada7161443f155953888bc0",
+          "currentStatus": {
+            "_id": "6ada70f4a7d95c4ee957949d",
+            "name": "هماهنگی بازدید",
+            "startColor": {
+              "r": 254,
+              "g": 215,
+              "b": 170,
+              "a": 1,
+              "_id": "6ada70f4a7d95c4ee957949e"
+            },
+            "endColor": {
+              "r": 253,
+              "g": 186,
+              "b": 116,
+              "a": 1,
+              "_id": "6ada70f4a7d95c4ee957949f"
+            }
+          },
+          "currentInbox": {
+            "_id": "6ada70bea7d95c4ee95793ee",
+            "name": "فرصت"
+          },
+          "customer": null,
+          "realtor": {
+            "_id": "6a43d6f63b24ede1441067d7",
+            "fullName": "فاطمه  سیفی زاده"
+          },
+          "date": "2026-11-16T18:05:35.569Z",
+          "_id": "6afb45efcd7665a573cb2e76"
+        }
+      ],
+      "tradeType": "614ed62da50555f0a54c1eca",
+      "userPaymentMethod": "61a39bf0f06329efdeacbbef",
+      "userSeriousity": "61a7536b0927675c45489a59"
+    },
+    {
+      "_id": "6afb38b04ff81bffbe0be5b2",
+      "code": 55914,
+      "relatedRealtor": "نیما رحیمی فر",
+      "relatedCustomer": "محمدپور",
+      "createdAt": "2026-11-16T17:09:04.349Z",
+      "updatedAt": "2026-11-16T17:10:43.875Z",
+      "inputs": {
+        "space_from": 80,
+        "space_to": 150,
+        "totalPrice_from": 18000000000,
+        "totalPrice_to": 25000000000,
+        "floor_from": 1,
+        "floor_to": 20,
+        "room_whole_from": 2,
+        "room_whole_to": 3,
+        "floor_whole_from": 1,
+        "floor_whole_to": 20,
+        "unit_from": 1,
+        "unit_to": 10,
+        "side": [
+          "east",
+          "west",
+          "south",
+          "north",
+          "north_west",
+          "north_east",
+          "three_corners",
+          "east_west",
+          "north_south",
+          "south_east",
+          "south_west"
+        ],
+        "construct_type": [
+          "personal",
+          "tower"
+        ],
+        "sanad": [
+          "sixdong",
+          "contractical",
+          "dardasteegdam"
+        ],
+        "elevator": true,
+        "parking": true,
+        "year_from": 1385,
+        "year_to": 1405
+      },
+      "areaCount": 1,
+      "lineCount": 39,
+      "areaFirst": [
+        {
+          "_id": "614f7fb1a50555f0a54c3aa6",
+          "name": "ولیعصر"
+        }
+      ],
+      "status": [
+        {
+          "actionType": "653a2ade78d20135749ee59a",
+          "currentStatus": {
+            "_id": "6ada6b9061989f79424c88b9",
+            "name": "نیاز سنجی",
+            "startColor": {
+              "r": 147,
+              "g": 197,
+              "b": 253,
+              "a": 1,
+              "_id": "6ada6b9061989f79424c88ba"
+            },
+            "endColor": {
+              "r": 96,
+              "g": 165,
+              "b": 250,
+              "a": 1,
+              "_id": "6ada6b9061989f79424c88bb"
+            }
+          },
+          "currentInbox": {
+            "_id": "6ada6ac62973cd4cf592395d",
+            "name": "سرنخ"
+          },
+          "customer": null,
+          "realtor": {
+            "_id": "6178f12b596ce43d24d62e0c",
+            "fullName": "نیما رحیمی فر"
+          },
+          "date": "2026-11-16T17:09:04.342Z",
+          "_id": "6afb38b04ff81bffbe0be5b4"
+        }
+      ],
+      "tradeType": "614ed62da50555f0a54c1eca",
+      "userPaymentMethod": "61a39bf0f06329efdeacbbef",
+      "userSeriousity": "61a753650927675c45489a4f"
+    }
+  ]
+}

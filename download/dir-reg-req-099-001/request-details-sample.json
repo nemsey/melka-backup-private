@@ -1,0 +1,76 @@
+{
+  "details": {
+    "details": [
+      {
+        "label": "نوع معامله",
+        "name": "tradeType",
+        "value": "فروش"
+      },
+      {
+        "label": "نوع کاربری",
+        "name": "buildingType",
+        "value": "مسکونی"
+      },
+      {
+        "label": "نوع ملک",
+        "name": "propertyType",
+        "value": "آپارتمان"
+      },
+      {
+        "label": "متراژ",
+        "name": "space",
+        "value": "100 تا 200",
+        "unit": "مترمربع"
+      },
+      {
+        "label": "قیمت کل",
+        "name": "totalPrice",
+        "value": "۱۵٬۰۰۰٬۰۰۰٬۰۰۰ تا ۲۰٬۰۰۰٬۰۰۰٬۰۰۰",
+        "unit": "تومان"
+      },
+      {
+        "label": "طبقه",
+        "name": "floor",
+        "value": "1 تا 10"
+      },
+      {
+        "label": "تعداد اتاق",
+        "name": "room_whole",
+        "value": "1 تا 2"
+      },
+      {
+        "label": "کل طبقات",
+        "name": "floor_whole",
+        "value": "1 تا 10",
+        "unit": "طبقه"
+      },
+      {
+        "label": "تعداد واحد در طبقه",
+        "name": "unit",
+        "value": "1 تا 4",
+        "unit": "واحد"
+      },
+      {
+        "label": "سال ساخت",
+        "name": "year",
+        "value": "1390 تا 1405"
+      },
+      {
+        "label": "موقعیت",
+        "name": "side",
+        "value": "جنوبی، شمالی"
+      },
+      {
+        "label": "نوع ساخت",
+        "name": "construct_type",
+        "value": "شخصی ساز، مجتمع، برج"
+      },
+      {
+        "label": "نوع سند",
+        "name": "sanad",
+        "value": "شش دانگ، در دست اقدام، سرقفلی، قراردادی"
+      }
+    ],
+    "options": []
+  }
+}

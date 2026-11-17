@@ -1,0 +1,775 @@
+{
+  "token": {
+    "source": "session",
+    "expMs": 1795001436000,
+    "expIso": "2026-11-18T11:30:36.000Z",
+    "validNow": true,
+    "vaultHealed": true,
+    "tokenPreview": "eyJhbGciOiJI…"
+  },
+  "relay": {
+    "mode": "mobile",
+    "active": true,
+    "devices": [
+      {
+        "deviceId": "poco-f3-c8661d",
+        "label": "Poco F3",
+        "online": true,
+        "lastSeenAt": "2026-11-17T04:27:41.980Z",
+        "servedCount": 31,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-7da406",
+        "label": "Poco F3",
+        "online": true,
+        "lastSeenAt": "2026-11-17T04:28:53.655Z",
+        "servedCount": 223,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-2d529f",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-17T04:23:20.753Z",
+        "servedCount": 2951,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-1115d8",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T15:30:46.508Z",
+        "servedCount": 239,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-83b709",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T15:34:13.148Z",
+        "servedCount": 810,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-11a69b",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T15:30:30.562Z",
+        "servedCount": 1482,
+        "errorCount": 1
+      },
+      {
+        "deviceId": "poco-f3-4dbd62",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T15:34:36.470Z",
+        "servedCount": 1397,
+        "errorCount": 1
+      },
+      {
+        "deviceId": "poco-f3-3470cd",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T10:37:11.498Z",
+        "servedCount": 56,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-7acef7",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T10:32:09.443Z",
+        "servedCount": 198,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-5a2b32",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T10:33:28.370Z",
+        "servedCount": 205,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-06c36c",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T10:29:47.589Z",
+        "servedCount": 225,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-5728b0",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T10:30:39.564Z",
+        "servedCount": 258,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-e1b151",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T10:32:51.504Z",
+        "servedCount": 242,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-21dacd",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T08:06:30.540Z",
+        "servedCount": 196,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-559608",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T08:07:59.273Z",
+        "servedCount": 268,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-d5c67c",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T08:10:32.165Z",
+        "servedCount": 1264,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-dbe729",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T06:51:20.423Z",
+        "servedCount": 1185,
+        "errorCount": 3
+      },
+      {
+        "deviceId": "poco-f3-7c8bb8",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-16T06:18:40.991Z",
+        "servedCount": 1267,
+        "errorCount": 0
+      },
+      {
+        "deviceId": "poco-f3-3a750d",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-15T16:54:09.530Z",
+        "servedCount": 302,
+        "errorCount": 1
+      },
+      {
+        "deviceId": "poco-f3-0156a8",
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-15T12:41:33.783Z",
+        "servedCount": 0,
+        "errorCount": 0
+      }
+    ],
+    "queue": {
+      "pending": 0,
+      "dispatched": 10,
+      "done24h": 3205,
+      "failed24h": 0,
+      "expired24h": 477
+    }
+  },
+  "form": {
+    "ok": true,
+    "name": "فروش / مسکونی / آپارتمان",
+    "inputCount": 34,
+    "fields": [
+      {
+        "nameFa": "متراژ",
+        "nameEn": "space",
+        "request": {
+          "inputType": "number",
+          "createName": "space",
+          "createNameFrom": "space_from",
+          "createNameTo": "space_to",
+          "createRange": true,
+          "unit": "مترمربع",
+          "options": []
+        }
+      },
+      {
+        "nameFa": "قیمت کل",
+        "nameEn": "totalPrice",
+        "request": {
+          "inputType": "number",
+          "createName": "totalPrice",
+          "createNameFrom": "totalPrice_from",
+          "createNameTo": "totalPrice_to",
+          "createRange": true,
+          "unit": "تومان",
+          "options": []
+        }
+      },
+      {
+        "nameFa": "طبقه",
+        "nameEn": "floor",
+        "request": {
+          "inputType": "number",
+          "createName": "floor",
+          "createNameFrom": "floor_from",
+          "createNameTo": "floor_to",
+          "createRange": true,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "تعداد اتاق",
+        "nameEn": "room_whole",
+        "request": {
+          "inputType": "number",
+          "createName": "room_whole",
+          "createNameFrom": "room_whole_from",
+          "createNameTo": "room_whole_to",
+          "createRange": true,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "کل طبقات",
+        "nameEn": "floor_whole",
+        "request": {
+          "inputType": "number",
+          "createName": "floor_whole",
+          "createNameFrom": "floor_whole_from",
+          "createNameTo": "floor_whole_to",
+          "createRange": true,
+          "unit": "طبقه",
+          "options": []
+        }
+      },
+      {
+        "nameFa": "تعداد واحد در طبقه",
+        "nameEn": "unit",
+        "request": {
+          "inputType": "number",
+          "createName": "unit",
+          "createNameFrom": "unit_from",
+          "createNameTo": "unit_to",
+          "createRange": true,
+          "unit": "واحد",
+          "options": []
+        }
+      },
+      {
+        "nameFa": "سال ساخت",
+        "nameEn": "year",
+        "request": {
+          "inputType": "dropdown",
+          "createName": "year",
+          "createNameFrom": "year_from",
+          "createNameTo": "year_to",
+          "createRange": false,
+          "options": [
+            {
+              "label": "حداکثر 1 سال",
+              "value": {
+                "year_from": "1404",
+                "year_to": "1405"
+              }
+            },
+            {
+              "label": "حداکثر 2 سال",
+              "value": {
+                "year_from": "1403",
+                "year_to": "1405"
+              }
+            },
+            {
+              "label": "حداکثر 5 سال",
+              "value": {
+                "year_from": "1400",
+                "year_to": "1405"
+              }
+            },
+            {
+              "label": "حداکثر 10 سال",
+              "value": {
+                "year_from": "1395",
+                "year_to": "1405"
+              }
+            },
+            {
+              "label": "حداکثر 15 سال",
+              "value": {
+                "year_from": "1390",
+                "year_to": "1405"
+              }
+            },
+            {
+              "label": "حداکثر 20 سال",
+              "value": {
+                "year_from": "1385",
+                "year_to": "1405"
+              }
+            },
+            {
+              "label": "حداکثر 30 سال",
+              "value": {
+                "year_from": "1375",
+                "year_to": "1405"
+              }
+            },
+            {
+              "label": "بیش از 30 سال",
+              "value": {
+                "year_from": "1345",
+                "year_to": "1374"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "nameFa": "موقعیت",
+        "nameEn": "side",
+        "request": {
+          "inputType": "multi_select_dropdown",
+          "createName": "side",
+          "createNameFrom": "side_from",
+          "createNameTo": "side_to",
+          "createRange": false,
+          "options": [
+            {
+              "label": "شمالی",
+              "value": "north"
+            },
+            {
+              "label": "جنوبی",
+              "value": "south"
+            },
+            {
+              "label": "غربی",
+              "value": "west"
+            },
+            {
+              "label": "شرقی",
+              "value": "east"
+            },
+            {
+              "label": "شمال-غربی(2 نبش)",
+              "value": "north_west"
+            },
+            {
+              "label": "شمال-شرقی(2 نبش)",
+              "value": "north_east"
+            },
+            {
+              "label": "جنوبی-غربی (2 نبش)",
+              "value": "south_west"
+            },
+            {
+              "label": "جنوبی-شرقی(2 نبش)",
+              "value": "south_east"
+            },
+            {
+              "label": "شمالی-جنوبی(2 کله)",
+              "value": "north_south"
+            },
+            {
+              "label": "غربی-شرقی(2 کله)",
+              "value": "east_west"
+            },
+            {
+              "label": "3 نبش یا 3 بر",
+              "value": "three_corners"
+            }
+          ]
+        }
+      },
+      {
+        "nameFa": "نوع ساخت",
+        "nameEn": "construct_type",
+        "request": {
+          "inputType": "multi_select_dropdown",
+          "createName": "construct_type",
+          "createNameFrom": "construct_type_from",
+          "createNameTo": "construct_type_to",
+          "createRange": false,
+          "options": [
+            {
+              "label": "مجتمع",
+              "value": "complex"
+            },
+            {
+              "label": "شخصی ساز",
+              "value": "personal"
+            },
+            {
+              "label": "برج",
+              "value": "tower"
+            }
+          ]
+        }
+      },
+      {
+        "nameFa": "نوع سند",
+        "nameEn": "sanad",
+        "request": {
+          "inputType": "multi_select_dropdown",
+          "createName": "sanad",
+          "createNameFrom": "sanad_from",
+          "createNameTo": "sanad_to",
+          "createRange": false,
+          "options": [
+            {
+              "label": "در دست اقدام",
+              "value": "dardasteegdam"
+            },
+            {
+              "label": "سرقفلی",
+              "value": "key"
+            },
+            {
+              "label": "شش دانگ",
+              "value": "sixdong"
+            },
+            {
+              "label": "قراردادی",
+              "value": "contractical"
+            },
+            {
+              "label": "قولنامه",
+              "value": "golname"
+            }
+          ]
+        }
+      },
+      {
+        "nameFa": "سطر بعدی",
+        "nameEn": "break",
+        "request": {
+          "inputType": "break",
+          "createName": "break",
+          "createNameFrom": "break_from",
+          "createNameTo": "break_to",
+          "options": []
+        }
+      },
+      {
+        "nameFa": "آسانسور",
+        "nameEn": "elevator",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "elevator",
+          "createNameFrom": "elevator_from",
+          "createNameTo": "elevator_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "پارکینگ",
+        "nameEn": "parking",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "parking",
+          "createNameFrom": "parking_from",
+          "createNameTo": "parking_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "پارکینگ اضافی",
+        "nameEn": "extraParking",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "extraParking",
+          "createNameFrom": "extraParking_from",
+          "createNameTo": "extraParking_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "انباری",
+        "nameEn": "warehouse",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "warehouse",
+          "createNameFrom": "warehouse_from",
+          "createNameTo": "warehouse_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "مستردار",
+        "nameEn": "masterRoom",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "masterRoom",
+          "createNameFrom": "masterRoom_from",
+          "createNameTo": "masterRoom_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "حیاط دار",
+        "nameEn": "balconi",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "balconi",
+          "createNameFrom": "balconi_from",
+          "createNameTo": "balconi_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "نصبیات",
+        "nameEn": "installation",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "installation",
+          "createNameFrom": "installation_from",
+          "createNameTo": "installation_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "دوبلکس",
+        "nameEn": "dublex",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "dublex",
+          "createNameFrom": "dublex_from",
+          "createNameTo": "dublex_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "بازسازی شده",
+        "nameEn": "reconstruct",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "reconstruct",
+          "createNameFrom": "reconstruct_from",
+          "createNameTo": "reconstruct_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "چشم انداز(ویو)",
+        "nameEn": "view",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "view",
+          "createNameFrom": "view_from",
+          "createNameTo": "view_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "نگهبانی",
+        "nameEn": "security",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "security",
+          "createNameFrom": "security_from",
+          "createNameTo": "security_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "لابی",
+        "nameEn": "lobby",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "lobby",
+          "createNameFrom": "lobby_from",
+          "createNameTo": "lobby_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "تالار و پذیرایی",
+        "nameEn": "hall",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "hall",
+          "createNameFrom": "hall_from",
+          "createNameTo": "hall_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "سالن ورزشی",
+        "nameEn": "gym",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "gym",
+          "createNameFrom": "gym_from",
+          "createNameTo": "gym_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "مهد کودک",
+        "nameEn": "kindergarten",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "kindergarten",
+          "createNameFrom": "kindergarten_from",
+          "createNameTo": "kindergarten_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "دوربین مداربسته",
+        "nameEn": "cctv",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "cctv",
+          "createNameFrom": "cctv_from",
+          "createNameTo": "cctv_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "استخر",
+        "nameEn": "pool",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "pool",
+          "createNameFrom": "pool_from",
+          "createNameTo": "pool_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "سونا",
+        "nameEn": "sauna",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "sauna",
+          "createNameFrom": "sauna_from",
+          "createNameTo": "sauna_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "جکوزی",
+        "nameEn": "jacuzzi",
+        "request": {
+          "inputType": "checkbox",
+          "createName": "jacuzzi",
+          "createNameFrom": "jacuzzi_from",
+          "createNameTo": "jacuzzi_to",
+          "createRange": false,
+          "options": []
+        }
+      },
+      {
+        "nameFa": "سطر بعدی",
+        "nameEn": "break",
+        "request": {
+          "inputType": "break",
+          "createName": "break",
+          "createNameFrom": "break_from",
+          "createNameTo": "break_to",
+          "options": []
+        }
+      },
+      {
+        "nameFa": "سطر بعدی",
+        "nameEn": "break",
+        "request": {
+          "inputType": "break",
+          "createName": "break",
+          "createNameFrom": "break_from",
+          "createNameTo": "break_to",
+          "options": []
+        }
+      },
+      {
+        "nameFa": "سطر بعدی",
+        "nameEn": "break",
+        "request": {
+          "inputType": "break",
+          "createName": "break",
+          "createNameFrom": "break_from",
+          "createNameTo": "break_to",
+          "options": []
+        }
+      },
+      {
+        "nameFa": "سطر بعدی",
+        "nameEn": "break",
+        "request": {
+          "inputType": "break",
+          "createName": "break",
+          "createNameFrom": "break_from",
+          "createNameTo": "break_to",
+          "options": []
+        }
+      }
+    ]
+  },
+  "eventTypes": {
+    "ok": true,
+    "count": 4,
+    "types": [
+      {
+        "id": "6155577174c41783fc52da06",
+        "name": "بازدید آگهی",
+        "needTime": true,
+        "needHour": true,
+        "needMessage": true,
+        "needProperty": true
+      },
+      {
+        "id": "615557ca74c41783fc52da54",
+        "name": "قرار معامله",
+        "needTime": true,
+        "needHour": true,
+        "needMessage": true,
+        "needProperty": true
+      },
+      {
+        "id": "6155579074c41783fc52da20",
+        "name": "مذاکره برای انتخاب",
+        "needTime": false,
+        "needHour": false,
+        "needMessage": false,
+        "needProperty": true
+      },
+      {
+        "id": "6155556774c41783fc52d8cf",
+        "name": "پیشنهاد آگهی",
+        "needTime": false,
+        "needHour": false,
+        "needMessage": false,
+        "needProperty": true
+      }
+    ]
+  },
+  "customerLookup": {
+    "found": false,
+    "error": "MelkApiError: کاربر مورد نظر یافت نشد، اطلاعات را تکمیل کنید"
+  }
+}
