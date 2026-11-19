@@ -1,0 +1,43 @@
+{
+ "steps": [
+  {
+   "key": "login",
+   "ok": true,
+   "detail": "لاگین تازه"
+  },
+  {
+   "key": "home-card",
+   "ok": true,
+   "detail": "کارت کاشی «تغییرات» روی هوم"
+  },
+  {
+   "key": "structure",
+   "ok": true,
+   "detail": "دو بخش تغییر/حذف ✓ · حذف بخش‌های قدیمی (ثبت جدید/ثبت رویداد) ✓"
+  },
+  {
+   "key": "listing-lookup",
+   "ok": true,
+   "detail": "لنگر ۱۴۰۵/۰۶/۰۲ ۱۸:۴۵ ✓ · مالک «هادی سیه رود» ✓ · ۴ رویداد ✓"
+  },
+  {
+   "key": "cascade-preview",
+   "ok": true,
+   "detail": "Δ +34 روز ✓ · هدف 18:45|1405/07/05 ✓ · جابه‌جایی رویداد ← 1405/09/26 ✓ (پیش‌نمایش — اعمال نشد)"
+  },
+  {
+   "key": "request-lookup",
+   "ok": true,
+   "detail": "تاریخچهٔ 55920 با تاریخ شاهکار ۱۷:۳۰|۱۴۰۵/۰۸/۲۰ ✓"
+  },
+  {
+   "key": "delete-tab",
+   "ok": true,
+   "detail": "نمایش آثار قابل حذف پیش از حذف ✓ (حذف واقعی انجام نشد)"
+  }
+ ],
+ "errors": [],
+ "consoleErrors": [],
+ "ok": true,
+ "consoleErrorCount": 0
+}

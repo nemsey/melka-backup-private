@@ -1,0 +1,580 @@
+{
+  "rev-history": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "rev-statuses": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "get-update": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "statuses-list": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "statuses-noauth": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "apu-bycode": {
+    "data": {
+      "_id": "6a8c602a73557ed181ad4cc4",
+      "inputs": {
+        "space": 180,
+        "totalPrice": 35500000000,
+        "floor": 6,
+        "room_whole": 2,
+        "floor_whole": 8,
+        "unit": 2,
+        "year": {
+          "label": 1390,
+          "value": 1390
+        },
+        "side": {
+          "label": "جنوبی",
+          "value": "south"
+        },
+        "construct_type": {
+          "label": "شخصی ساز",
+          "value": "personal"
+        },
+        "sanad": {
+          "label": "شش دانگ",
+          "value": "sixdong"
+        },
+        "elevator": true,
+        "parking": true,
+        "warehouse": true,
+        "masterRoom": true,
+        "installation": true,
+        "reconstruct": true,
+        "cctv": true
+      },
+      "details": [
+        {
+          "label": "کد آگهی",
+          "name": "code",
+          "value": "57810",
+          "isSpecial": true
+        },
+        {
+          "label": "متراژ",
+          "name": "space",
+          "value": 180,
+          "unit": "مترمربع",
+          "isSpecial": false
+        },
+        {
+          "label": "طبقه",
+          "name": "floor",
+          "value": 6,
+          "isSpecial": false
+        },
+        {
+          "label": "تعداد اتاق",
+          "name": "room_whole",
+          "value": 2,
+          "isSpecial": false
+        },
+        {
+          "label": "کل طبقات",
+          "name": "floor_whole",
+          "value": 8,
+          "unit": "طبقه",
+          "isSpecial": false
+        },
+        {
+          "label": "تعداد واحد در طبقه",
+          "name": "unit",
+          "value": 2,
+          "unit": "واحد",
+          "isSpecial": false
+        },
+        {
+          "label": "سال ساخت",
+          "name": "year",
+          "value": 1390,
+          "isSpecial": false
+        },
+        {
+          "label": "موقعیت",
+          "name": "side",
+          "value": "جنوبی"
+        },
+        {
+          "label": "نوع ساخت",
+          "name": "construct_type",
+          "value": "شخصی ساز"
+        },
+        {
+          "label": "نوع سند",
+          "name": "sanad",
+          "value": "شش دانگ"
+        },
+        {
+          "label": "معاوضه",
+          "name": "changeWith",
+          "value": "مایل نیستم"
+        }
+      ],
+      "options": [
+        {
+          "label": "آسانسور",
+          "name": "elevator",
+          "value": true,
+          "icon": "icon-home"
+        },
+        {
+          "label": "پارکینگ",
+          "name": "parking",
+          "value": true,
+          "icon": "icon-home"
+        },
+        {
+          "label": "انباری",
+          "name": "warehouse",
+          "value": true,
+          "icon": "icon-home"
+        },
+        {
+          "label": "مستردار",
+          "name": "masterRoom",
+          "value": true,
+          "icon": "icon-home"
+        },
+        {
+          "label": "نصبیات",
+          "name": "installation",
+          "value": true,
+          "icon": "icon-home"
+        },
+        {
+          "label": "بازسازی شده",
+          "name": "reconstruct",
+          "value": true,
+          "icon": "icon-home"
+        },
+        {
+          "label": "دوربین مداربسته",
+          "name": "cctv",
+          "value": true,
+          "icon": "icon-home"
+        }
+      ],
+      "portalTelephoneNumber": "041-4101",
+      "title": "فروش آپارتمان مسکونی 180 متری",
+      "tradeType": {
+        "_id": "614ed62da50555f0a54c1eca",
+        "name": "فروش"
+      },
+      "buildingType": {
+        "_id": "614edc35a50555f0a54c1f12",
+        "name": "مسکونی"
+      },
+      "propertyType": {
+        "_id": "614ee704a50555f0a54c227d",
+        "name": "آپارتمان"
+      },
+      "images": [
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-b7SR2p6U5fZ3-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-b7SR2p6U5fZ3-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-AFAxWRUymvsO-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-AFAxWRUymvsO-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QlBRzR5DLZAV-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QlBRzR5DLZAV-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-i6qLBmD1IhT6-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-i6qLBmD1IhT6-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-u36F7nu90WV3-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-u36F7nu90WV3-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-IG0M57q1lPhV-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-IG0M57q1lPhV-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-DINisJGHfXzy-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-DINisJGHfXzy-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QA2bwzci1dE1-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QA2bwzci1dE1-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-ADpNe2HzfwsD-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-ADpNe2HzfwsD-1.webp"
+        }
+      ],
+      "videos": [
+        {
+          "video": "video/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-VuAWDK2pQ2qF-1.mp4",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-VuAWDK2pQ2qF-1.png"
+        }
+      ],
+      "hasVideo": true,
+      "updatedAt": "2026-11-09T16:43:24.644Z",
+      "state": {
+        "_id": "614ed19700cace6eac4f9df0",
+        "name": "آذربایجان شرقی"
+      },
+      "city": {
+        "_id": "614ed19700cace6eac4f9df2",
+        "name": "تبریز"
+      },
+      "area": {
+        "_id": "614f7fb1a50555f0a54c3aa6",
+        "name": "ولیعصر"
+      },
+      "line": {
+        "_id": "6173f4e9664468c3a5fc2ec9",
+        "name": "کریم خان"
+      },
+      "totalPrice": 35500000000,
+      "changeable": false,
+      "urgent": true,
+      "ocasion": true,
+      "code": 57810,
+      "viewCount": 62,
+      "isLikedByUser": false,
+      "businessId": {
+        "_id": "6447c45e0bcf236f1e3e25bb",
+        "logo": "uploads/documents/business_41003/business_logo_14338391-3357-4fe0-a5f4-f773d1e86c44.webp",
+        "title": "ملک تبریز",
+        "code": 41003,
+        "branches": [
+          {
+            "_id": "6447c45e0bcf236f1e3e25bf",
+            "cityId": {
+              "_id": "614ed19700cace6eac4f9df2",
+              "name": "تبریز"
+            },
+            "address": "بلوار استاد شهریار (چایکنار)، جنب ورودی شهربازی باغلارباغی",
+            "phoneNumber": "0414101"
+          }
+        ]
+      },
+      "listOfRealtors": [
+        {
+          "activationStatus": {
+            "ps": true,
+            "acc": false,
+            "apm": true,
+            "chat": true
+          },
+          "_id": "6a2841ba02eb57f832ee46f8",
+          "code": 410031320,
+          "imageCover": "public/images/default_realtor_image.jpg",
+          "voipInfo": [
+            {
+              "extentionNumber": "1597",
+              "id": null
+            }
+          ],
+          "fullName": "سید نعمت اله سیدی",
+          "mobileNumber": "09148412583"
+        }
+      ],
+      "customerDescriptionList": [
+        ". محله ای دنج و اعیان نشین. ",
+        ". فول نصبیات و لوکس و واحد کامل بازسازی شده",
+        ". قبلاً سه خواب بوده که به دو خواب تبدیل شده و در صورت تمایل خریدار به سه خواب قابل تبدیل می‌باشد",
+        ". تک مستر دارای کلوزیگ",
+        ". طبقه ۶ دو واحده",
+        ". نورگیری عالی ",
+        ". فروشنده جدی ",
+        ". دارای ۶ مترمربع انباری اختصاصی",
+        ". کاملا بازسازی شده و شیک",
+        ". فیلم پس از بازسازی واحد بارگذاری شده است"
+      ],
+      "hidePrice": false,
+      "lastStatus": "معامله شده",
+      "isPublished": false,
+      "rateObj": {
+        "rate": 0,
+        "count": 0
+      },
+      "hasPriceChart": true,
+      "createdAt": "2026-08-24T15:15:54.624Z",
+      "changeWith": [
+        "notChangeable"
+      ],
+      "changeWithFA": [
+        {
+          "label": "مایل نیستم",
+          "value": "notChangeable"
+        }
+      ],
+      "isRental": false,
+      "breadCrump": [
+        {
+          "title": "آگهی ها",
+          "link": "/properties"
+        },
+        {
+          "title": "تبریز",
+          "link": "/properties/تبریز"
+        },
+        {
+          "title": "ولیعصر",
+          "link": "/properties/تبریز/ولیعصر"
+        },
+        {
+          "title": "فروش آپارتمان مسکونی 180 متری",
+          "link": "/properties/تبریز/ولیعصر/57810-فروش-آپارتمان-مسکونی-180-متری"
+        }
+      ]
+    },
+    "message": ""
+  },
+  "prop-statuses": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "reqevent-update-fake": {
+    "__error": {
+      "message": "آیتم مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "reqevent-info-fake": {
+    "__error": {
+      "message": "رویداد درخواست مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "reqevent-remove-fake": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-one-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-one-delete": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-force-delete": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-delete-many": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-bulk-delete": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-list-delete": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-one-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-one-delete": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-force-delete": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-delete-many": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-bulk-delete": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-list-delete": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-remove-one": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "req-info": {
+    "__error": {
+      "message": "شما به این درخواست دسترسی ندارید",
+      "httpStatus": 400
+    }
+  },
+  "req-history": {
+    "data": {
+      "list": [
+        {
+          "actionType": {
+            "_id": "6506dde8c772727517fed9b8",
+            "name": "ایجاد مشاور"
+          },
+          "currentStatus": "6ada6b9061989f79424c88b9",
+          "currentInbox": "6ada6ac62973cd4cf592395d",
+          "customer": null,
+          "realtor": {
+            "_id": "6815da867f4b2728d4ccb3e7",
+            "fullName": "حجت صایغی"
+          },
+          "outOfArea": false,
+          "date": "2026-11-19T14:48:56.054Z",
+          "_id": "6aff0c5823329197e300eec5"
+        },
+        {
+          "actionType": {
+            "_id": "653a2ade78d20135749ee59a",
+            "name": "بررسی درخواست"
+          },
+          "currentStatus": "6ada6b9061989f79424c88b9",
+          "currentInbox": "6ada6ac62973cd4cf592395d",
+          "customer": null,
+          "realtor": {
+            "_id": "6815da867f4b2728d4ccb3e7",
+            "fullName": "حجت صایغی"
+          },
+          "date": "2026-11-19T14:48:56.054Z",
+          "_id": "6aff0c5823329197e300eec6"
+        },
+        {
+          "actionType": {
+            "_id": "6ada6c5fa7d95c4ee957802e",
+            "name": "پیشنهاد دهی"
+          },
+          "currentStatus": "6ada6bbfa7d95c4ee9577e70",
+          "currentInbox": "6ada6ac62973cd4cf592395d",
+          "customer": null,
+          "realtor": {
+            "_id": "6815da867f4b2728d4ccb3e7",
+            "fullName": "حجت صایغی"
+          },
+          "date": "2026-11-19T14:50:59.960Z",
+          "_id": "6aff0cd45c71277c138d145b"
+        },
+        {
+          "actionType": {
+            "_id": "6ada6c8da7d95c4ee957811f",
+            "name": "بازخورد پیشنهادات"
+          },
+          "currentStatus": "6ada6bf42973cd4cf5924298",
+          "currentInbox": "6ada6ac62973cd4cf592395d",
+          "customer": null,
+          "realtor": {
+            "_id": "6815da867f4b2728d4ccb3e7",
+            "fullName": "حجت صایغی"
+          },
+          "date": "2026-11-19T14:51:06.508Z",
+          "_id": "6aff0cdab2eaaf7a673bbaf2"
+        },
+        {
+          "actionType": {
+            "_id": "6ada7161443f155953888bc0",
+            "name": "هماهنگی بازدید"
+          },
+          "currentStatus": "6ada70f4a7d95c4ee957949d",
+          "currentInbox": "6ada70bea7d95c4ee95793ee",
+          "customer": null,
+          "realtor": {
+            "_id": "6815da867f4b2728d4ccb3e7",
+            "fullName": "حجت صایغی"
+          },
+          "date": "2026-11-19T14:51:13.953Z",
+          "_id": "6aff0ce25c71277c138d15ca"
+        }
+      ]
+    },
+    "message": ""
+  },
+  "req-applicant": {
+    "data": {
+      "_id": "6aff0b6f23329197e300dbcb",
+      "userId": "6aff0b6f23329197e300dbc6",
+      "lastName": "نوسیری",
+      "businessId": "6447c45e0bcf236f1e3e25bb",
+      "isBanned": false,
+      "city": [
+        "614ed19700cace6eac4f9df2"
+      ],
+      "extraUserInfo": [],
+      "mobileNumber": 989147693505,
+      "creator": "6815da867f4b2728d4ccb3e7",
+      "photo": "public/images/default_user_image.jpg",
+      "platform": "apm",
+      "createdAt": "2026-11-19T14:45:03.174Z",
+      "updatedAt": "2026-11-19T14:45:03.174Z",
+      "fullName": "نوسیری",
+      "__v": 0
+    }
+  },
+  "swagger": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "swagger-json": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "docs": {
+    "__error": {
+      "message": "سرویس پشتیبان سامانه ملک تبریز موقتاً از دسترس خارج شده است. لطفاً چند دقیقه دیگر تلاش کنید.",
+      "httpStatus": 301
+    }
+  }
+}

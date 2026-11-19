@@ -1,0 +1,38 @@
+{
+  "del-properties-bare": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "del-requests-bare": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "get-properties-bare": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "put-properties-bare": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "del-prop-info-code": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "del-requestevents-bare": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  }
+}

@@ -1,0 +1,1286 @@
+{
+  "token": {
+    "source": "session",
+    "expIso": "2026-11-21T10:18:47.000Z"
+  },
+  "relay": {
+    "mode": "mobile",
+    "active": true,
+    "devices": [
+      {
+        "label": "Poco F3",
+        "online": true,
+        "lastSeenAt": "2026-11-19T14:31:22.405Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-18T23:00:25.738Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-18T23:01:56.071Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-18T23:01:18.114Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-18T04:03:59.507Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-18T04:05:11.289Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-18T04:04:45.465Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-18T04:04:52.931Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": null
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-18T04:06:05.112Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": null
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-18T03:58:54.578Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": null
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-17T08:55:39.503Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-17T08:50:28.088Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-17T06:47:09.771Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-17T06:45:46.654Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-17T06:45:12.069Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-17T06:47:37.193Z"
+      },
+      {
+        "label": "Poco F3",
+        "online": false,
+        "lastSeenAt": "2026-11-17T06:47:36.680Z"
+      }
+    ],
+    "queue": {
+      "pending": 0,
+      "dispatched": 8,
+      "done24h": 2588,
+      "failed24h": 0,
+      "expired24h": 269
+    }
+  },
+  "properties-list-p1": {
+    "data": {
+      "list": [
+        {
+          "_id": "6afeca7bb2eaaf7a67371972",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "653a2abf78d20135749ee595",
+              "currentStatus": {
+                "_id": "650ea8046b1dfc297633c862",
+                "name": "در انتظار تایید مشاور",
+                "endColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bf9"
+                },
+                "startColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bfa"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4e66b1dfc297633c833",
+                "name": "در انتظار تایید مشاور"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "67fe2339d50b4770eebe5205",
+                "fullName": "محمد حبیبی"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-19T10:07:55.312Z",
+              "_id": "6afeca7bb2eaaf7a67371974"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "614f7fb1a50555f0a54c3aa6",
+            "name": "ولیعصر"
+          },
+          "line": {
+            "_id": "6173f524664468c3a5fc2ef1",
+            "name": "ابن سینا"
+          },
+          "viewCount": 0,
+          "listOfReposts": [],
+          "images": [],
+          "videos": [],
+          "updatedAt": "2026-11-19T10:07:55.591Z",
+          "code": 61665,
+          "title": "فروش زمین یا ملک کلنگی مسکونی 330 متری",
+          "totalPrice": 420000000000,
+          "pricePerMeter": 1272727272,
+          "relatedRealtor": "محمد حبیبی",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/ولیعصر/61665-فروش-زمین-یا-ملک-کلنگی-مسکونی-330-متری-ملک-تبریز",
+          "isReposted": false
+        },
+        {
+          "_id": "6afebe4823329197e3facc38",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "653a2abf78d20135749ee595",
+              "currentStatus": {
+                "_id": "650ea8046b1dfc297633c862",
+                "name": "در انتظار تایید مشاور",
+                "endColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bf9"
+                },
+                "startColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bfa"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4e66b1dfc297633c833",
+                "name": "در انتظار تایید مشاور"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "671406ac994833e86066ef04",
+                "fullName": "پیج  تیم سی"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-19T09:15:52.692Z",
+              "_id": "6afebe4823329197e3facc3a"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "61628bcd21718aef96b7bc70",
+            "name": "فرشته شمالی"
+          },
+          "line": {
+            "_id": "61752fe2a9c752e973849286",
+            "name": "عماد"
+          },
+          "viewCount": 0,
+          "listOfReposts": [],
+          "images": [],
+          "videos": [],
+          "updatedAt": "2026-11-19T09:15:52.905Z",
+          "code": 61662,
+          "title": "فروش آپارتمان مسکونی 103 متری",
+          "totalPrice": 1,
+          "pricePerMeter": null,
+          "relatedRealtor": "پیج  تیم سی",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/فرشته-شمالی/61662-فروش-آپارتمان-مسکونی-103-متری-ملک-تبریز",
+          "isReposted": false
+        },
+        {
+          "_id": "6afdbd8c81afc9d8cd2f2bdf",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "6afbc257a0cb86dcf6fe712c",
+              "currentStatus": {
+                "_id": "6afbbecdbb81e38be760a6a6",
+                "name": "فروش فوری زیر قیمت | فایل طلایی🥇",
+                "startColor": {
+                  "r": 217,
+                  "g": 180,
+                  "b": 40,
+                  "a": 1,
+                  "_id": "6afbbecdbb81e38be760a6a7"
+                },
+                "endColor": {
+                  "r": 210,
+                  "g": 168,
+                  "b": 25,
+                  "a": 1,
+                  "_id": "6afbbecdbb81e38be760a6a8"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4f46b1dfc297633c838",
+                "name": "در انتظار تایید مدیر"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "67fe2339d50b4770eebe5205",
+                "fullName": "محمد حبیبی"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-18T15:30:18.751Z",
+              "_id": "6afdc48b5c71277c137c8b24"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "614f7eb2a50555f0a54c3a14",
+            "name": "خاوران"
+          },
+          "line": {
+            "_id": "69070f2f24f9ceef9a40b138",
+            "name": "جزیره بزرگ"
+          },
+          "viewCount": 0,
+          "listOfReposts": [],
+          "images": [
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-lCd6vQlPWj5a-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-lCd6vQlPWj5a-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-OMdOOl3iiNWD-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-OMdOOl3iiNWD-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-dfp1BG9JQxdG-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-dfp1BG9JQxdG-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-ARPYQYWmPhUC-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-ARPYQYWmPhUC-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-E1tRJ8aa2DSa-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-E1tRJ8aa2DSa-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-Jbo99WuzJlMS-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-Jbo99WuzJlMS-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-DHvuIs7ODN9a-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-خاوران-DHvuIs7ODN9a-1.webp"
+            }
+          ],
+          "videos": [],
+          "updatedAt": "2026-11-18T15:31:07.502Z",
+          "code": 61642,
+          "title": "فروش آپارتمان مسکونی 175 متری",
+          "totalPrice": 40000000000,
+          "pricePerMeter": 228571428,
+          "relatedRealtor": "محمد حبیبی",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/خاوران/61642-فروش-آپارتمان-مسکونی-175-متری-ملک-تبریز",
+          "isReposted": false
+        },
+        {
+          "_id": "6afcb1fdcd7665a573e7db58",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "653a2abf78d20135749ee595",
+              "currentStatus": {
+                "_id": "650ea8046b1dfc297633c862",
+                "name": "در انتظار تایید مشاور",
+                "endColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bf9"
+                },
+                "startColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bfa"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4e66b1dfc297633c833",
+                "name": "در انتظار تایید مشاور"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "694d4ffc6261f373a9c04c1f",
+                "fullName": "مهرداد مرادی"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-17T19:59:00.078Z",
+              "_id": "6afcb204cd7665a573e7e262"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "images": [
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-استانداری-jmSDFQbWDmQh-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-استانداری-jmSDFQbWDmQh-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-استانداری-ka6xvGv5X6LF-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-استانداری-ka6xvGv5X6LF-1.webp"
+            }
+          ],
+          "videos": [],
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "614f7f88a50555f0a54c3a5e",
+            "name": "استانداری"
+          },
+          "line": {
+            "_id": "61752d56a9c752e9738490e9",
+            "name": "ادیب"
+          },
+          "viewCount": 1,
+          "listOfReposts": [],
+          "updatedAt": "2026-11-17T20:03:12.150Z",
+          "code": 61612,
+          "title": "فروش آپارتمان مسکونی 115 متری",
+          "totalPrice": 14200000000,
+          "pricePerMeter": 123478260,
+          "relatedRealtor": "مهرداد مرادی",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/استانداری/61612-فروش-آپارتمان-مسکونی-115-متری-ملک-تبریز",
+          "isReposted": false
+        },
+        {
+          "_id": "6afcaf489e477125d0beddd2",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "653a2abf78d20135749ee595",
+              "currentStatus": {
+                "_id": "650ea8046b1dfc297633c862",
+                "name": "در انتظار تایید مشاور",
+                "endColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bf9"
+                },
+                "startColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bfa"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4e66b1dfc297633c833",
+                "name": "در انتظار تایید مشاور"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "694d4ffc6261f373a9c04c1f",
+                "fullName": "مهرداد مرادی"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-17T19:47:28.345Z",
+              "_id": "6afcaf50a0cb86dcf615efe2"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "images": [],
+          "videos": [],
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "614f7fd8a50555f0a54c3aee",
+            "name": "توانیر"
+          },
+          "line": {
+            "_id": "65834a0d5d436ec4e1f28cbd",
+            "name": "بلوار توانیر"
+          },
+          "viewCount": 1,
+          "listOfReposts": [],
+          "updatedAt": "2026-11-17T19:47:28.345Z",
+          "code": 61611,
+          "title": "فروش آپارتمان مسکونی 155 متری",
+          "totalPrice": 26800000000,
+          "pricePerMeter": 172903225,
+          "relatedRealtor": "مهرداد مرادی",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/توانیر/61611-فروش-آپارتمان-مسکونی-155-متری-ملک-تبریز",
+          "isReposted": false
+        },
+        {
+          "_id": "6afc78d89e477125d0bbb5aa",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "653a2abf78d20135749ee595",
+              "currentStatus": {
+                "_id": "650ea8046b1dfc297633c862",
+                "name": "در انتظار تایید مشاور",
+                "endColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bf9"
+                },
+                "startColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bfa"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4e66b1dfc297633c833",
+                "name": "در انتظار تایید مشاور"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "69ea1394cf69a39eb00fefd5",
+                "fullName": "حسین نصیری فرد"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-17T15:55:12.888Z",
+              "_id": "6afc78e1cd7665a573e4b630"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "images": [],
+          "videos": [],
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "614f7fb1a50555f0a54c3aa6",
+            "name": "ولیعصر"
+          },
+          "line": {
+            "_id": "6173f534664468c3a5fc2f43",
+            "name": "تختی"
+          },
+          "viewCount": 1,
+          "listOfReposts": [],
+          "updatedAt": "2026-11-17T16:01:40.955Z",
+          "code": 61604,
+          "title": "فروش آپارتمان مسکونی 150 متری",
+          "totalPrice": 52500000000,
+          "pricePerMeter": 350000000,
+          "relatedRealtor": "حسین نصیری فرد",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/ولیعصر/61604-فروش-آپارتمان-مسکونی-150-متری-ملک-تبریز",
+          "isReposted": false
+        },
+        {
+          "_id": "6afc7338bb81e38be7712904",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "653a2abf78d20135749ee595",
+              "currentStatus": {
+                "_id": "650ea8046b1dfc297633c862",
+                "name": "در انتظار تایید مشاور",
+                "endColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bf9"
+                },
+                "startColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bfa"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4e66b1dfc297633c833",
+                "name": "در انتظار تایید مشاور"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "618a4ed7d2c16f3a6706b414",
+                "fullName": "ناصر رحیمی فر"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-17T15:31:04.465Z",
+              "_id": "6afc7338bb81e38be7712906"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "614f7fb1a50555f0a54c3aa6",
+            "name": "ولیعصر"
+          },
+          "line": {
+            "_id": "6173f4d9664468c3a5fc2ebf",
+            "name": "اوحدی"
+          },
+          "viewCount": 0,
+          "listOfReposts": [],
+          "images": [],
+          "videos": [],
+          "updatedAt": "2026-11-17T15:31:04.483Z",
+          "code": 61602,
+          "title": "فروش آپارتمان مسکونی 108 متری",
+          "totalPrice": 22,
+          "pricePerMeter": null,
+          "relatedRealtor": "ناصر رحیمی فر",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/ولیعصر/61602-فروش-آپارتمان-مسکونی-108-متری-ملک-تبریز",
+          "isReposted": false
+        },
+        {
+          "_id": "6afc2a739e477125d0b26abc",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "653a2abf78d20135749ee595",
+              "currentStatus": {
+                "_id": "650ea8046b1dfc297633c862",
+                "name": "در انتظار تایید مشاور",
+                "endColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bf9"
+                },
+                "startColor": {
+                  "r": 174,
+                  "g": 213,
+                  "b": 129,
+                  "a": 1,
+                  "_id": "65113e4ac73e0ae71b6c3bfa"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4e66b1dfc297633c833",
+                "name": "در انتظار تایید مشاور"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "6874a8b5151b1689ecb3ba59",
+                "fullName": "میترا علیزاده"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-17T10:20:35.255Z",
+              "_id": "6afc2a739e477125d0b26abe"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "61628bcd21718aef96b7bc70",
+            "name": "فرشته شمالی"
+          },
+          "line": {
+            "_id": "61752ff3a9c752e973849290",
+            "name": "گل سرخ"
+          },
+          "viewCount": 0,
+          "listOfReposts": [],
+          "images": [],
+          "videos": [],
+          "updatedAt": "2026-11-17T10:20:35.284Z",
+          "code": 61587,
+          "title": "فروش آپارتمان مسکونی 123 متری",
+          "totalPrice": 19500000000,
+          "pricePerMeter": 158536585,
+          "relatedRealtor": "میترا علیزاده",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/فرشته-شمالی/61587-فروش-آپارتمان-مسکونی-123-متری-ملک-تبریز",
+          "isReposted": false
+        },
+        {
+          "_id": "6afb0ea0a0cb86dcf6f35dd0",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "651191693d04cc10fde59fa2",
+              "currentStatus": {
+                "_id": "650ea7f76b1dfc297633c85d",
+                "name": "منتشر شده",
+                "endColor": {
+                  "r": 77,
+                  "g": 208,
+                  "b": 225,
+                  "a": 1,
+                  "_id": "65113f0cc73e0ae71b6c3c38"
+                },
+                "startColor": {
+                  "r": 77,
+                  "g": 208,
+                  "b": 225,
+                  "a": 1,
+                  "_id": "65113f0cc73e0ae71b6c3c39"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4d96b1dfc297633c82e",
+                "name": "منتشر شده"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "617ad0a8e75fd384b1ba71db",
+                "fullName": "سعید زمانی"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-16T14:25:48.935Z",
+              "_id": "6afb126dcd7665a573c434ba"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "614f7fb1a50555f0a54c3aa6",
+            "name": "ولیعصر"
+          },
+          "line": {
+            "_id": "6173f534664468c3a5fc2f43",
+            "name": "تختی"
+          },
+          "viewCount": 6,
+          "listOfReposts": [],
+          "images": [
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-YVek2ujdqhSz-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-YVek2ujdqhSz-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-aX2v8TtP8tjH-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-aX2v8TtP8tjH-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-g0P7xS9OzZAK-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-g0P7xS9OzZAK-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-iWVYIJKMJszX-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-iWVYIJKMJszX-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QDYH4IN3cLFy-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QDYH4IN3cLFy-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-5DkaM1iRevPr-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-5DkaM1iRevPr-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-k9Wmw2y3qYL9-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-k9Wmw2y3qYL9-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-hpOHEGSFK2CT-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-hpOHEGSFK2CT-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-06f2sReOfXyM-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-06f2sReOfXyM-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-zG69U6KYM1oz-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-zG69U6KYM1oz-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-dA5vhCCFa2Wl-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-dA5vhCCFa2Wl-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-MDO3ntFRXzDC-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-MDO3ntFRXzDC-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-pnN1T1yP8ZzQ-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-pnN1T1yP8ZzQ-1.webp"
+            }
+          ],
+          "videos": [],
+          "updatedAt": "2026-11-19T08:12:57.574Z",
+          "code": 61563,
+          "title": "فروش آپارتمان مسکونی 147 متری",
+          "totalPrice": 38000000000,
+          "pricePerMeter": 258503401,
+          "relatedRealtor": "سعید زمانی",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/ولیعصر/61563-فروش-آپارتمان-مسکونی-147-متری-ملک-تبریز",
+          "isReposted": false
+        },
+        {
+          "_id": "6afb0e6a4ff81bffbe0575e8",
+          "isRental": false,
+          "businessId": {
+            "_id": "6447c45e0bcf236f1e3e25bb",
+            "title": "ملک تبریز"
+          },
+          "status": [
+            {
+              "actionType": "6afbc333cd7665a573d0c06e",
+              "currentStatus": {
+                "_id": "6afbbf959e477125d0a8d10e",
+                "name": "فرصت خرید مزیت رقابتی | فایل نقره ای 🥈",
+                "startColor": {
+                  "r": 164,
+                  "g": 175,
+                  "b": 187,
+                  "a": 1,
+                  "_id": "6afbbf959e477125d0a8d10f"
+                },
+                "endColor": {
+                  "r": 176,
+                  "g": 188,
+                  "b": 205,
+                  "a": 1,
+                  "_id": "6afbbf959e477125d0a8d110"
+                }
+              },
+              "currentInbox": {
+                "_id": "650ea4f46b1dfc297633c838",
+                "name": "در انتظار تایید مدیر"
+              },
+              "customer": null,
+              "realtor": {
+                "_id": "63d69dc0bbd1c8ce2f7c0b18",
+                "fullName": "سعید سواری"
+              },
+              "previousRealtor": null,
+              "date": "2026-11-18T07:25:13.308Z",
+              "_id": "6afd52dba0cb86dcf61bafaa"
+            }
+          ],
+          "addedToDivar": false,
+          "addedToInsta": false,
+          "isTarget": false,
+          "state": {
+            "_id": "614ed19700cace6eac4f9df0",
+            "name": "آذربایجان شرقی"
+          },
+          "city": {
+            "_id": "614ed19700cace6eac4f9df2",
+            "name": "تبریز"
+          },
+          "area": {
+            "_id": "614f7fd8a50555f0a54c3aee",
+            "name": "توانیر"
+          },
+          "line": {
+            "_id": "617530c7a9c752e9738492eb",
+            "name": "بعثت"
+          },
+          "viewCount": 1,
+          "listOfReposts": [],
+          "images": [
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-rxkjs5iLwlRl-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-rxkjs5iLwlRl-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-InH9LSS2Xt8r-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-InH9LSS2Xt8r-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-ESykuOUYwQ2Z-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-ESykuOUYwQ2Z-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-fdSI2sReOEhn-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-fdSI2sReOEhn-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-bMfgX19YfGFd-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-bMfgX19YfGFd-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-pyGMacghBrux-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-pyGMacghBrux-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-twhlLAntpiJZ-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-twhlLAntpiJZ-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-Ps65K5VKhDV7-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-Ps65K5VKhDV7-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-IkIbOMmVxXqY-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-IkIbOMmVxXqY-1.webp"
+            },
+            {
+              "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-z6P8nd2GJurW-1.webp",
+              "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-توانیر-z6P8nd2GJurW-1.webp"
+            }
+          ],
+          "videos": [],
+          "updatedAt": "2026-11-18T07:25:13.308Z",
+          "code": 61562,
+          "title": "فروش آپارتمان مسکونی 175 متری",
+          "totalPrice": 37000000000,
+          "pricePerMeter": 211428571,
+          "relatedRealtor": "سعید سواری",
+          "adProcesses": [],
+          "ownerPermission": false,
+          "editPermission": false,
+          "forwardPermission": false,
+          "processPermission": false,
+          "editExecutorPermission": false,
+          "listOfRealtorsPermission": false,
+          "link": "/properties/تبریز/توانیر/61562-فروش-آپارتمان-مسکونی-175-متری-ملک-تبریز",
+          "isReposted": false
+        }
+      ],
+      "count": 11875,
+      "totalPages": 1188,
+      "page": 1,
+      "limit": 10
+    },
+    "message": ""
+  },
+  "chosenProperty": {
+    "id": "6afeca7bb2eaaf7a67371972",
+    "code": "61665",
+    "title": "فروش زمین یا ملک کلنگی مسکونی 330 متری",
+    "relatedRealtor": "محمد حبیبی",
+    "status": [
+      {
+        "actionType": "653a2abf78d20135749ee595",
+        "currentStatus": {
+          "_id": "650ea8046b1dfc297633c862",
+          "name": "در انتظار تایید مشاور",
+          "endColor": {
+            "r": 174,
+            "g": 213,
+            "b": 129,
+            "a": 1,
+            "_id": "65113e4ac73e0ae71b6c3bf9"
+          },
+          "startColor": {
+            "r": 174,
+            "g": 213,
+            "b": 129,
+            "a": 1,
+            "_id": "65113e4ac73e0ae71b6c3bfa"
+          }
+        },
+        "currentInbox": {
+          "_id": "650ea4e66b1dfc297633c833",
+          "name": "در انتظار تایید مشاور"
+        },
+        "customer": null,
+        "realtor": {
+          "_id": "67fe2339d50b4770eebe5205",
+          "fullName": "محمد حبیبی"
+        },
+        "previousRealtor": null,
+        "date": "2026-11-19T10:07:55.312Z",
+        "_id": "6afeca7bb2eaaf7a67371974"
+      }
+    ]
+  },
+  "prop-history": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "prop-changes": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "prop-status": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "prop-events": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "prop-owner": {
+    "data": {
+      "_id": "6a1fecd9dd993e1f31c3e3f7",
+      "userId": "6a1fecd9dd993e1f31c3e3f2",
+      "lastName": "بدیعی",
+      "role": {
+        "_id": "614ef37aa50555f0a54c2355",
+        "name": "فروشنده "
+      },
+      "userCharacter": {
+        "_id": "61a754940927675c45489dbd",
+        "name": "اجتماعی"
+      },
+      "businessId": "6447c45e0bcf236f1e3e25bb",
+      "isBanned": false,
+      "city": [
+        "614ed19700cace6eac4f9df2"
+      ],
+      "extraUserInfo": [],
+      "mobileNumber": 989141159309,
+      "creator": "6805148061cf4e028dae6b0f",
+      "photo": "public/images/default_user_image.jpg",
+      "platform": "apm",
+      "referal": "friendReferral",
+      "createdAt": "2026-06-03T08:59:05.541Z",
+      "updatedAt": "2026-06-03T08:59:05.541Z",
+      "fullName": "بدیعی",
+      "__v": 0
+    },
+    "message": ""
+  },
+  "reqevents-by-property": {
+    "data": {
+      "list": [],
+      "count": 0,
+      "totalPages": 0,
+      "page": 1,
+      "limit": 9007199254740991
+    },
+    "message": ""
+  },
+  "reqevents-by-propertyCode": {
+    "__error": {
+      "message": "ارتباط با سامانه ملک تبریز برقرار نشد.",
+      "httpStatus": 0,
+      "code": "NETWORK_ERROR"
+    }
+  },
+  "visits-by-property": {
+    "data": {
+      "list": [],
+      "count": 0,
+      "totalPages": 0,
+      "page": 1,
+      "limit": 9007199254740991
+    },
+    "message": ""
+  },
+  "visits-by-code": {
+    "data": {
+      "list": [],
+      "count": 0,
+      "totalPages": 0,
+      "page": 1,
+      "limit": 9007199254740991
+    },
+    "message": ""
+  },
+  "baseline-missing-route": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "prop-history-fake": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "prop-delete-fake": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "prop-remove-fake": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "prop-delete-id-body-fake": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "req-delete-fake": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "req-remove-fake": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "req-delete-id-body-fake": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "user-update-fake": {
+    "__error": {
+      "message": "آیتم مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "user-info-fake": {
+    "__error": {
+      "message": "مشتری مورد نظر یافت نشد",
+      "httpStatus": 404,
+      "code": "OTP_INVALID"
+    }
+  },
+  "reqevent-delete-fake": {
+    "__error": {
+      "message": "رویداد درخواست مورد نظر نامعتبر است",
+      "httpStatus": 400,
+      "code": "OTP_INVALID"
+    }
+  }
+}

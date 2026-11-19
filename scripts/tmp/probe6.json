@@ -1,0 +1,221 @@
+{
+  "change-history": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "status-log": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "logs": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "historic-statuses": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "property-history": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "statuses-history": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "generic-history": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "generic-histories": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "generic-changes": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "process": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "info-status": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "details-history": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "status-changes-list": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "property-changes-list": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "property-logs-list": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "ad-process-list": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "prop-one": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "prop-show": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "prop-view": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "prop-full": {
+    "__error": {
+      "message": "ارتباط با سامانه ملک تبریز برقرار نشد.",
+      "httpStatus": 0
+    }
+  },
+  "my-req-info": {
+    "__error": {
+      "message": "ارتباط با سامانه ملک تبریز برقرار نشد.",
+      "httpStatus": 0
+    }
+  },
+  "my-req-history": {
+    "data": {
+      "list": [
+        {
+          "actionType": {
+            "_id": "6506dde8c772727517fed9b8",
+            "name": "ایجاد مشاور"
+          },
+          "currentStatus": "6ada6b9061989f79424c88b9",
+          "currentInbox": "6ada6ac62973cd4cf592395d",
+          "customer": null,
+          "realtor": {
+            "_id": "6a2841ba02eb57f832ee46f8",
+            "fullName": "سید نعمت اله سیدی"
+          },
+          "outOfArea": false,
+          "date": "2026-11-11T14:00:00.000Z",
+          "_id": "6afbdc419e477125d0a9280e"
+        },
+        {
+          "actionType": {
+            "_id": "653a2ade78d20135749ee59a",
+            "name": "بررسی درخواست"
+          },
+          "currentStatus": "6ada6b9061989f79424c88b9",
+          "currentInbox": "6ada6ac62973cd4cf592395d",
+          "customer": null,
+          "realtor": {
+            "_id": "6a2841ba02eb57f832ee46f8",
+            "fullName": "سید نعمت اله سیدی"
+          },
+          "outOfArea": false,
+          "date": "2026-11-11T14:00:00.000Z",
+          "_id": "6afbdc419e477125d0a9280f"
+        }
+      ]
+    },
+    "message": ""
+  },
+  "my-req-update-get": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-inactive": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-disable": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-deactivate": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-expire": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-inactive": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-disable": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-delete-put-body": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-delete-put-body": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  }
+}

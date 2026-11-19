@@ -1,0 +1,46 @@
+{
+  "req-history-with-propid": {
+    "__error": "MelkApiError: آگهی مورد نظر یافت نشد"
+  },
+  "special-props": {
+    "count": 0,
+    "first": null
+  },
+  "events-57810": {
+    "count": 4
+  },
+  "eventShape": {
+    "_id": "6af6da8bdea99c1b7d34f862",
+    "eventType": {
+      "_id": "6155577174c41783fc52da06",
+      "name": "بازدید آگهی"
+    },
+    "date": "2026-11-13T09:37:44.941Z",
+    "requestProperty": {
+      "_id": "6af6d834f57375c6ef864181",
+      "title": "خرید آپارتمان مسکونی 140 الی 180 متری",
+      "code": 55776
+    },
+    "property": {
+      "_id": "6a8c602a73557ed181ad4cc4",
+      "code": 57810,
+      "title": "فروش آپارتمان مسکونی 180 متری",
+      "hasVideo": false,
+      "hasImage": false,
+      "videoCount": 0,
+      "imageCount": 0
+    },
+    "realtor": {
+      "_id": "6a28409b02eb57f832ee43b4",
+      "fullName": "نرگس یاوری"
+    },
+    "hour": "2026-11-13T11:37:56.894Z",
+    "businessId": "6447c45e0bcf236f1e3e25bb",
+    "createdAt": "2026-11-13T09:38:19.074Z",
+    "updatedAt": "2026-11-13T09:38:19.074Z",
+    "dateTime": "2026-11-13T11:37:56.894Z",
+    "__v": 0,
+    "visitTime": "2026-11-13T11:37:56.894Z",
+    "id": "6af6da8bdea99c1b7d34f862"
+  }
+}

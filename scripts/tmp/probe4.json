@@ -1,0 +1,193 @@
+{
+  "rev-history": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "rev-changes": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "rev-statuses": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "rev-status": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "rev-log": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "rev-events": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "get-update": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "get-edit": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "statuses-list": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "processes-list": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "change-logs": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "property-status-histories": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "reqevent-update-fake": {
+    "__error": {
+      "message": "آیتم مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "reqevent-remove-fake": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "reqevent-info-fake": {
+    "__error": {
+      "message": "رویداد درخواست مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "event-types": {
+    "data": {
+      "list": [
+        {
+          "_id": "6155577174c41783fc52da06",
+          "name": "بازدید آگهی",
+          "level": 2,
+          "needMessage": true,
+          "needHour": true,
+          "needTime": true,
+          "needProperty": true,
+          "messageTemplate": [
+            {
+              "role": "realtor",
+              "templateCode": 78813,
+              "_id": "63663256f870012b1d71ad8f",
+              "id": "63663256f870012b1d71ad8f"
+            },
+            {
+              "role": "owner",
+              "templateCode": 78814,
+              "_id": "63663256f870012b1d71ad90",
+              "id": "63663256f870012b1d71ad90"
+            },
+            {
+              "role": "applicant",
+              "templateCode": 78814,
+              "_id": "63663256f870012b1d71ad91",
+              "id": "63663256f870012b1d71ad91"
+            }
+          ],
+          "updatedAt": "2023-10-01T13:42:14.271Z",
+          "__v": 0,
+          "createdAt": "2025-03-02T07:41:52.992Z"
+        },
+        {
+          "_id": "615557ca74c41783fc52da54",
+          "name": "قرار معامله",
+          "level": 4,
+          "needMessage": true,
+          "needHour": true,
+          "needTime": true,
+          "needProperty": true,
+          "messageTemplate": [
+            {
+              "role": "owner",
+              "templateCode": 78814,
+              "_id": "63b2a06cf3f60a2e57d0f3d2",
+              "id": "63b2a06cf3f60a2e57d0f3d2"
+            },
+            {
+              "role": "applicant",
+              "templateCode": 78814,
+              "_id": "63b2a06cf3f60a2e57d0f3d3",
+              "id": "63b2a06cf3f60a2e57d0f3d3"
+            },
+            {
+              "role": "realtor",
+              "templateCode": 78813,
+              "_id": "63b2a096f3f60a2e57d0f66a",
+              "id": "63b2a096f3f60a2e57d0f66a"
+            }
+          ],
+          "updatedAt": "2023-10-01T13:41:39.233Z",
+          "__v": 0,
+          "createdAt": "2025-03-02T07:41:52.992Z"
+        },
+        {
+          "_id": "6155579074c41783fc52da20",
+          "name": "مذاکره برای انتخاب",
+          "level": 3,
+          "needMessage": false,
+          "needHour": false,
+          "needTime": false,
+          "needProperty": true,
+          "__v": 0,
+          "messageTemplate": [],
+          "createdAt": "2025-03-02T07:41:52.992Z",
+          "updatedAt": "2025-03-02T07:41:52.992Z"
+        },
+        {
+          "_id": "6155556774c41783fc52d8cf",
+          "name": "پیشنهاد آگهی",
+          "level": 1,
+          "needMessage": false,
+          "needHour": false,
+          "needTime": false,
+          "needProperty": true,
+          "__v": 0,
+          "messageTemplate": [],
+          "createdAt": "2025-03-02T07:41:52.991Z",
+          "updatedAt": "2025-03-02T07:41:52.991Z"
+        }
+      ],
+      "count": 4,
+      "totalPages": 1,
+      "page": 1,
+      "limit": 9007199254740991
+    },
+    "message": ""
+  }
+}

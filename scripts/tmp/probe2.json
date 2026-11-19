@@ -1,0 +1,1070 @@
+{
+  "bycode-lookup": {
+    "data": {
+      "_id": "6a8c602a73557ed181ad4cc4",
+      "customer": {
+        "_id": "6a8c5cf373557ed181acfec1",
+        "userId": "6a8c5cf373557ed181acfebb",
+        "lastName": "هادی سیه رود",
+        "job": {
+          "_id": "616299d221718aef96b7dc9b",
+          "name": "آزاد"
+        },
+        "role": {
+          "_id": "614ef37aa50555f0a54c2355",
+          "name": "فروشنده "
+        },
+        "userCharacter": {
+          "_id": "61a754940927675c45489dbd",
+          "name": "اجتماعی"
+        },
+        "businessId": "6447c45e0bcf236f1e3e25bb",
+        "isBanned": false,
+        "city": [
+          "614ed19700cace6eac4f9df2"
+        ],
+        "extraUserInfo": [
+          "6a8c5cf373557ed181acfebb"
+        ],
+        "mobileNumber": 989147805009,
+        "creator": "6a2841ba02eb57f832ee46f8",
+        "photo": "public/images/default_user_image.jpg",
+        "platform": "apm",
+        "createdAt": "2026-08-24T15:02:11.299Z",
+        "updatedAt": "2026-11-14T07:29:10.044Z",
+        "fullName": "محمد حسین هادی سیه رود",
+        "__v": 1,
+        "firstName": "محمد حسین"
+      },
+      "listOfRealtors": [
+        {
+          "_id": "6a2841ba02eb57f832ee46f8",
+          "imageCover": "public/images/default_realtor_image.jpg",
+          "fullName": "سید نعمت اله سیدی",
+          "role": {
+            "_id": "64f0bc405f71ee55c5a3d7e2",
+            "title": "مشاور فروش"
+          }
+        }
+      ],
+      "createdByRealtor": "6a2841ba02eb57f832ee46f8",
+      "hidePrice": false,
+      "isRental": false,
+      "ensheeabat": [],
+      "petrolType": [],
+      "zoneType": [],
+      "customerDescription": ". محله ای دنج و اعیان نشین. \n. فول نصبیات و لوکس و واحد کامل بازسازی شده\n. قبلاً سه خواب بوده که به دو خواب تبدیل شده و در صورت تمایل خریدار به سه خواب قابل تبدیل می‌باشد\n. تک مستر دارای کلوزیگ\n. طبقه ۶ دو واحده\n. نورگیری عالی \n. فروشنده جدی \n. دارای ۶ مترمربع انباری اختصاصی\n. کاملا بازسازی شده و شیک\n. فیلم پس از بازسازی واحد بارگذاری شده است",
+      "address": "ولیعصر تختی ، کریمخان ، ۱۲ متری صدف پلاک ۵۱ ساختمان دنیز ط۶ واحدشرقی",
+      "tradeType": {
+        "_id": "614ed62da50555f0a54c1eca",
+        "name": "فروش"
+      },
+      "buildingType": {
+        "_id": "614edc35a50555f0a54c1f12",
+        "name": "مسکونی"
+      },
+      "propertyType": {
+        "_id": "614ee704a50555f0a54c227d",
+        "name": "آپارتمان"
+      },
+      "businessId": {
+        "_id": "6447c45e0bcf236f1e3e25bb",
+        "title": "ملک تبریز"
+      },
+      "location": {
+        "lat": 38.05373455516,
+        "lng": 46.35767607415308
+      },
+      "status": [
+        {
+          "actionType": "650eaa076b1dfc297633c891",
+          "currentStatus": {
+            "_id": "652e53d2ad34b7c3078d8ebb",
+            "name": "معامله شده",
+            "endColor": {
+              "r": 103,
+              "g": 58,
+              "b": 183,
+              "a": 1,
+              "_id": "64cf3e069836ad3fadcb68dd"
+            },
+            "startColor": {
+              "r": 49,
+              "g": 27,
+              "b": 146,
+              "a": 1,
+              "_id": "64cf3e069836ad3fadcb68dc"
+            }
+          },
+          "currentInbox": {
+            "_id": "652e4a0ead34b7c3078d8eb8",
+            "name": "معامله شده"
+          },
+          "customer": null,
+          "realtor": {
+            "_id": "656adcdd4d2c1f197b093d07",
+            "fullName": "الهه عبدالهی"
+          },
+          "previousRealtor": null,
+          "date": "2026-11-14T07:29:10.304Z",
+          "_id": "6af80dc620f75ef4dbb7199d"
+        }
+      ],
+      "confirmNote": [],
+      "confirmedByRealtor": "6a2841ba02eb57f832ee46f8",
+      "inProgressByRealtor": "6a2841ba02eb57f832ee46f8",
+      "special": false,
+      "fileType": [
+        "private"
+      ],
+      "sharedRealEstate": [],
+      "fileFinding": "divar",
+      "desirabilityLevel": {
+        "_id": "61a7d9eb15a8b67e5ef93767",
+        "name": "خوب"
+      },
+      "priceEvaluation": {
+        "_id": "61a7dae115a8b67e5ef937ad",
+        "name": "قیمت کارشناسی"
+      },
+      "addedToDivar": false,
+      "addedToInsta": false,
+      "isTarget": false,
+      "realtorDescription": [],
+      "imageCover": [],
+      "images": [
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-b7SR2p6U5fZ3-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-b7SR2p6U5fZ3-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-AFAxWRUymvsO-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-AFAxWRUymvsO-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QlBRzR5DLZAV-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QlBRzR5DLZAV-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-i6qLBmD1IhT6-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-i6qLBmD1IhT6-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-u36F7nu90WV3-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-u36F7nu90WV3-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-IG0M57q1lPhV-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-IG0M57q1lPhV-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-DINisJGHfXzy-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-DINisJGHfXzy-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QA2bwzci1dE1-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QA2bwzci1dE1-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-ADpNe2HzfwsD-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-ADpNe2HzfwsD-1.webp"
+        }
+      ],
+      "documents": [],
+      "videos": [
+        {
+          "video": "video/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-VuAWDK2pQ2qF-1.mp4",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-VuAWDK2pQ2qF-1.png"
+        }
+      ],
+      "country": {
+        "_id": "614ed19700cace6eac4f9ded",
+        "name": "ایران"
+      },
+      "state": {
+        "_id": "614ed19700cace6eac4f9df0",
+        "name": "آذربایجان شرقی"
+      },
+      "city": {
+        "_id": "614ed19700cace6eac4f9df2",
+        "name": "تبریز"
+      },
+      "area": {
+        "_id": "614f7fb1a50555f0a54c3aa6",
+        "name": "ولیعصر"
+      },
+      "line": {
+        "_id": "6173f4e9664468c3a5fc2ec9",
+        "name": "کریم خان"
+      },
+      "lineShow": false,
+      "userSeriousity": {
+        "_id": "61a753650927675c45489a4f",
+        "name": "زیاد "
+      },
+      "likes": 0,
+      "rateObj": {
+        "rate": 0,
+        "count": 0
+      },
+      "sellReason": {
+        "_id": "6513f4ddb58cb42930e43477",
+        "name": "سرمایه گذاری"
+      },
+      "confirmSMS": true,
+      "ladderingCount": 0,
+      "viewCount": 61,
+      "inputs": {
+        "space": 180,
+        "totalPrice": 35500000000,
+        "floor": 6,
+        "room_whole": 2,
+        "floor_whole": 8,
+        "unit": 2,
+        "year": {
+          "label": 1390,
+          "value": 1390
+        },
+        "side": {
+          "label": "جنوبی",
+          "value": "south"
+        },
+        "construct_type": {
+          "label": "شخصی ساز",
+          "value": "personal"
+        },
+        "sanad": {
+          "label": "شش دانگ",
+          "value": "sixdong"
+        },
+        "elevator": true,
+        "parking": true,
+        "warehouse": true,
+        "masterRoom": true,
+        "installation": true,
+        "reconstruct": true,
+        "cctv": true
+      },
+      "changeWith": [
+        "notChangeable"
+      ],
+      "platform": "apm",
+      "listOfReposts": [],
+      "realtorAddToDivar": [],
+      "realtorAddToInsta": [],
+      "itsMyTarget": [],
+      "createdAt": "2026-08-24T15:15:54.624Z",
+      "updatedAt": "2026-11-09T16:43:24.644Z",
+      "ladderings": [],
+      "externalProcessHistory": [],
+      "fullAddress": "ولیعصرتختی،کریمخان،۱۲متریصدفپلاک۵۱ساختماندنیزط۶واحدشرقی",
+      "code": 57810,
+      "title": "فروش آپارتمان مسکونی 180 متری",
+      "totalPrice": 35500000000,
+      "pricePerMeter": 197222222,
+      "space": 180,
+      "relatedRealtor": "سید نعمت اله سیدی",
+      "relatedRealtorId": "6a2841ba02eb57f832ee46f8",
+      "relatedCustomer": "اصبغی",
+      "changeable": false,
+      "addedToBale": true,
+      "addedToRubika": false,
+      "ocasion": true,
+      "urgent": true,
+      "adProcesses": [],
+      "ownerPermission": false,
+      "editPermission": false,
+      "forwardPermission": false,
+      "processPermission": false,
+      "editExecutorPermission": false,
+      "listOfRealtorsPermission": false,
+      "changeWithFa": [
+        {
+          "label": "مایل نیستم",
+          "value": "notChangeable"
+        }
+      ],
+      "link": "/properties/تبریز/ولیعصر/57810-فروش-آپارتمان-مسکونی-180-متری-ملک-تبریز"
+    },
+    "message": ""
+  },
+  "richProperty": {
+    "id": "6a8c602a73557ed181ad4cc4",
+    "code": "57810",
+    "title": "فروش آپارتمان مسکونی 180 متری",
+    "relatedRealtor": "سید نعمت اله سیدی",
+    "statusCount": 1,
+    "status": [
+      {
+        "_id": "6af80dc620f75ef4dbb7199d",
+        "actionType": "650eaa076b1dfc297633c891",
+        "actionName": null,
+        "currentStatus": "652e53d2ad34b7c3078d8ebb",
+        "currentStatusName": "معامله شده",
+        "currentInbox": "652e4a0ead34b7c3078d8eb8",
+        "inboxName": "معامله شده",
+        "realtor": "656adcdd4d2c1f197b093d07",
+        "realtorName": "الهه عبدالهی",
+        "customer": null,
+        "previousRealtor": null,
+        "date": "2026-11-14T07:29:10.304Z"
+      }
+    ]
+  },
+  "details-rich": {
+    "data": {
+      "details": [
+        {
+          "label": "کد آگهی",
+          "name": "code",
+          "value": "57810",
+          "isSpecial": true
+        },
+        {
+          "label": "متراژ",
+          "name": "space",
+          "value": 180,
+          "unit": "مترمربع",
+          "isSpecial": false
+        },
+        {
+          "label": "قیمت کل",
+          "name": "totalPrice",
+          "value": "۳۵٬۵۰۰٬۰۰۰٬۰۰۰ تومان",
+          "unit": "تومان",
+          "isSpecial": true
+        },
+        {
+          "label": "طبقه",
+          "name": "floor",
+          "value": 6,
+          "isSpecial": false
+        },
+        {
+          "label": "تعداد اتاق",
+          "name": "room_whole",
+          "value": 2,
+          "isSpecial": false
+        },
+        {
+          "label": "کل طبقات",
+          "name": "floor_whole",
+          "value": 8,
+          "unit": "طبقه",
+          "isSpecial": false
+        },
+        {
+          "label": "تعداد واحد در طبقه",
+          "name": "unit",
+          "value": 2,
+          "unit": "واحد",
+          "isSpecial": false
+        },
+        {
+          "label": "سال ساخت",
+          "name": "year",
+          "value": 1390,
+          "isSpecial": false
+        },
+        {
+          "label": "موقعیت",
+          "name": "side",
+          "value": "جنوبی"
+        },
+        {
+          "label": "نوع ساخت",
+          "name": "construct_type",
+          "value": "شخصی ساز"
+        },
+        {
+          "label": "نوع سند",
+          "name": "sanad",
+          "value": "شش دانگ"
+        },
+        {
+          "label": "معاوضه",
+          "name": "changeWith",
+          "value": "مایل نیستم"
+        }
+      ],
+      "address": "ولیعصر تختی ، کریمخان ، ۱۲ متری صدف پلاک ۵۱ ساختمان دنیز ط۶ واحدشرقی",
+      "propertyCategory": {
+        "tradeType": "فروش",
+        "buildingType": "مسکونی",
+        "propertyType": "آپارتمان"
+      },
+      "options": [
+        "آسانسور",
+        "پارکینگ",
+        "انباری",
+        "مستردار",
+        "نصبیات",
+        "بازسازی شده",
+        "دوربین مداربسته"
+      ]
+    },
+    "message": ""
+  },
+  "owner-rich": {
+    "data": {
+      "_id": "6a8c5cf373557ed181acfec1",
+      "userId": "6a8c5cf373557ed181acfebb",
+      "lastName": "هادی سیه رود",
+      "job": {
+        "_id": "616299d221718aef96b7dc9b",
+        "name": "آزاد"
+      },
+      "role": {
+        "_id": "614ef37aa50555f0a54c2355",
+        "name": "فروشنده "
+      },
+      "userCharacter": {
+        "_id": "61a754940927675c45489dbd",
+        "name": "اجتماعی"
+      },
+      "businessId": "6447c45e0bcf236f1e3e25bb",
+      "isBanned": false,
+      "city": [
+        "614ed19700cace6eac4f9df2"
+      ],
+      "extraUserInfo": [
+        {
+          "_id": "6a8c5cf373557ed181acfebb",
+          "infos": [
+            {
+              "_id": "6a8c5cf373557ed181acfec1",
+              "userId": "6a8c5cf373557ed181acfebb",
+              "lastName": "هادی سیه رود",
+              "job": "616299d221718aef96b7dc9b",
+              "role": "614ef37aa50555f0a54c2355",
+              "userCharacter": "61a754940927675c45489dbd",
+              "businessId": "6447c45e0bcf236f1e3e25bb",
+              "isBanned": false,
+              "city": [
+                "614ed19700cace6eac4f9df2"
+              ],
+              "extraUserInfo": [
+                "6a8c5cf373557ed181acfebb"
+              ],
+              "mobileNumber": 989147805009,
+              "creator": "6a2841ba02eb57f832ee46f8",
+              "photo": "public/images/default_user_image.jpg",
+              "platform": "apm",
+              "createdAt": "2026-08-24T15:02:11.299Z",
+              "updatedAt": "2026-11-14T07:29:10.044Z",
+              "fullName": "محمد حسین هادی سیه رود",
+              "__v": 1,
+              "firstName": "محمد حسین"
+            }
+          ],
+          "mobileNumber": 989147805009,
+          "gender": true,
+          "active": true,
+          "blocked": false,
+          "photo": "public/images/default_user_image.jpg",
+          "favoriteProperties": [],
+          "recentViewedProperties": [],
+          "failureLoginCount": 0,
+          "isBanned": false,
+          "welcomeMessage": true,
+          "platform": "apm",
+          "createdAt": "2026-08-24T15:02:11.122Z",
+          "updatedAt": "2026-08-24T15:02:11.931Z",
+          "__v": 1
+        }
+      ],
+      "mobileNumber": 989147805009,
+      "creator": "6a2841ba02eb57f832ee46f8",
+      "photo": "public/images/default_user_image.jpg",
+      "platform": "apm",
+      "createdAt": "2026-08-24T15:02:11.299Z",
+      "updatedAt": "2026-11-14T07:29:10.044Z",
+      "fullName": "محمد حسین هادی سیه رود",
+      "__v": 1,
+      "firstName": "محمد حسین"
+    },
+    "message": ""
+  },
+  "bycode-rich": {
+    "data": {
+      "_id": "6a8c602a73557ed181ad4cc4",
+      "customer": {
+        "_id": "6a8c5cf373557ed181acfec1",
+        "userId": "6a8c5cf373557ed181acfebb",
+        "lastName": "هادی سیه رود",
+        "job": {
+          "_id": "616299d221718aef96b7dc9b",
+          "name": "آزاد"
+        },
+        "role": {
+          "_id": "614ef37aa50555f0a54c2355",
+          "name": "فروشنده "
+        },
+        "userCharacter": {
+          "_id": "61a754940927675c45489dbd",
+          "name": "اجتماعی"
+        },
+        "businessId": "6447c45e0bcf236f1e3e25bb",
+        "isBanned": false,
+        "city": [
+          "614ed19700cace6eac4f9df2"
+        ],
+        "extraUserInfo": [
+          "6a8c5cf373557ed181acfebb"
+        ],
+        "mobileNumber": 989147805009,
+        "creator": "6a2841ba02eb57f832ee46f8",
+        "photo": "public/images/default_user_image.jpg",
+        "platform": "apm",
+        "createdAt": "2026-08-24T15:02:11.299Z",
+        "updatedAt": "2026-11-14T07:29:10.044Z",
+        "fullName": "محمد حسین هادی سیه رود",
+        "__v": 1,
+        "firstName": "محمد حسین"
+      },
+      "listOfRealtors": [
+        {
+          "_id": "6a2841ba02eb57f832ee46f8",
+          "imageCover": "public/images/default_realtor_image.jpg",
+          "fullName": "سید نعمت اله سیدی",
+          "role": {
+            "_id": "64f0bc405f71ee55c5a3d7e2",
+            "title": "مشاور فروش"
+          }
+        }
+      ],
+      "createdByRealtor": "6a2841ba02eb57f832ee46f8",
+      "hidePrice": false,
+      "isRental": false,
+      "ensheeabat": [],
+      "petrolType": [],
+      "zoneType": [],
+      "customerDescription": ". محله ای دنج و اعیان نشین. \n. فول نصبیات و لوکس و واحد کامل بازسازی شده\n. قبلاً سه خواب بوده که به دو خواب تبدیل شده و در صورت تمایل خریدار به سه خواب قابل تبدیل می‌باشد\n. تک مستر دارای کلوزیگ\n. طبقه ۶ دو واحده\n. نورگیری عالی \n. فروشنده جدی \n. دارای ۶ مترمربع انباری اختصاصی\n. کاملا بازسازی شده و شیک\n. فیلم پس از بازسازی واحد بارگذاری شده است",
+      "address": "ولیعصر تختی ، کریمخان ، ۱۲ متری صدف پلاک ۵۱ ساختمان دنیز ط۶ واحدشرقی",
+      "tradeType": {
+        "_id": "614ed62da50555f0a54c1eca",
+        "name": "فروش"
+      },
+      "buildingType": {
+        "_id": "614edc35a50555f0a54c1f12",
+        "name": "مسکونی"
+      },
+      "propertyType": {
+        "_id": "614ee704a50555f0a54c227d",
+        "name": "آپارتمان"
+      },
+      "businessId": {
+        "_id": "6447c45e0bcf236f1e3e25bb",
+        "title": "ملک تبریز"
+      },
+      "location": {
+        "lat": 38.05373455516,
+        "lng": 46.35767607415308
+      },
+      "status": [
+        {
+          "actionType": "650eaa076b1dfc297633c891",
+          "currentStatus": {
+            "_id": "652e53d2ad34b7c3078d8ebb",
+            "name": "معامله شده",
+            "endColor": {
+              "r": 103,
+              "g": 58,
+              "b": 183,
+              "a": 1,
+              "_id": "64cf3e069836ad3fadcb68dd"
+            },
+            "startColor": {
+              "r": 49,
+              "g": 27,
+              "b": 146,
+              "a": 1,
+              "_id": "64cf3e069836ad3fadcb68dc"
+            }
+          },
+          "currentInbox": {
+            "_id": "652e4a0ead34b7c3078d8eb8",
+            "name": "معامله شده"
+          },
+          "customer": null,
+          "realtor": {
+            "_id": "656adcdd4d2c1f197b093d07",
+            "fullName": "الهه عبدالهی"
+          },
+          "previousRealtor": null,
+          "date": "2026-11-14T07:29:10.304Z",
+          "_id": "6af80dc620f75ef4dbb7199d"
+        }
+      ],
+      "confirmNote": [],
+      "confirmedByRealtor": "6a2841ba02eb57f832ee46f8",
+      "inProgressByRealtor": "6a2841ba02eb57f832ee46f8",
+      "special": false,
+      "fileType": [
+        "private"
+      ],
+      "sharedRealEstate": [],
+      "fileFinding": "divar",
+      "desirabilityLevel": {
+        "_id": "61a7d9eb15a8b67e5ef93767",
+        "name": "خوب"
+      },
+      "priceEvaluation": {
+        "_id": "61a7dae115a8b67e5ef937ad",
+        "name": "قیمت کارشناسی"
+      },
+      "addedToDivar": false,
+      "addedToInsta": false,
+      "isTarget": false,
+      "realtorDescription": [],
+      "imageCover": [],
+      "images": [
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-b7SR2p6U5fZ3-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-b7SR2p6U5fZ3-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-AFAxWRUymvsO-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-AFAxWRUymvsO-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QlBRzR5DLZAV-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QlBRzR5DLZAV-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-i6qLBmD1IhT6-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-i6qLBmD1IhT6-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-u36F7nu90WV3-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-u36F7nu90WV3-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-IG0M57q1lPhV-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-IG0M57q1lPhV-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-DINisJGHfXzy-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-DINisJGHfXzy-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QA2bwzci1dE1-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-QA2bwzci1dE1-1.webp"
+        },
+        {
+          "image": "images/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-ADpNe2HzfwsD-1.webp",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-ADpNe2HzfwsD-1.webp"
+        }
+      ],
+      "documents": [],
+      "videos": [
+        {
+          "video": "video/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-VuAWDK2pQ2qF-1.mp4",
+          "thumbnail": "thumbnail/41003/melketabriz-ملک تبریز-فروش-مسکونی-آپارتمان-تبریز-ولیعصر-VuAWDK2pQ2qF-1.png"
+        }
+      ],
+      "country": {
+        "_id": "614ed19700cace6eac4f9ded",
+        "name": "ایران"
+      },
+      "state": {
+        "_id": "614ed19700cace6eac4f9df0",
+        "name": "آذربایجان شرقی"
+      },
+      "city": {
+        "_id": "614ed19700cace6eac4f9df2",
+        "name": "تبریز"
+      },
+      "area": {
+        "_id": "614f7fb1a50555f0a54c3aa6",
+        "name": "ولیعصر"
+      },
+      "line": {
+        "_id": "6173f4e9664468c3a5fc2ec9",
+        "name": "کریم خان"
+      },
+      "lineShow": false,
+      "userSeriousity": {
+        "_id": "61a753650927675c45489a4f",
+        "name": "زیاد "
+      },
+      "likes": 0,
+      "rateObj": {
+        "rate": 0,
+        "count": 0
+      },
+      "sellReason": {
+        "_id": "6513f4ddb58cb42930e43477",
+        "name": "سرمایه گذاری"
+      },
+      "confirmSMS": true,
+      "ladderingCount": 0,
+      "viewCount": 61,
+      "inputs": {
+        "space": 180,
+        "totalPrice": 35500000000,
+        "floor": 6,
+        "room_whole": 2,
+        "floor_whole": 8,
+        "unit": 2,
+        "year": {
+          "label": 1390,
+          "value": 1390
+        },
+        "side": {
+          "label": "جنوبی",
+          "value": "south"
+        },
+        "construct_type": {
+          "label": "شخصی ساز",
+          "value": "personal"
+        },
+        "sanad": {
+          "label": "شش دانگ",
+          "value": "sixdong"
+        },
+        "elevator": true,
+        "parking": true,
+        "warehouse": true,
+        "masterRoom": true,
+        "installation": true,
+        "reconstruct": true,
+        "cctv": true
+      },
+      "changeWith": [
+        "notChangeable"
+      ],
+      "platform": "apm",
+      "listOfReposts": [],
+      "realtorAddToDivar": [],
+      "realtorAddToInsta": [],
+      "itsMyTarget": [],
+      "createdAt": "2026-08-24T15:15:54.624Z",
+      "updatedAt": "2026-11-09T16:43:24.644Z",
+      "ladderings": [],
+      "externalProcessHistory": [],
+      "fullAddress": "ولیعصرتختی،کریمخان،۱۲متریصدفپلاک۵۱ساختماندنیزط۶واحدشرقی",
+      "code": 57810,
+      "title": "فروش آپارتمان مسکونی 180 متری",
+      "totalPrice": 35500000000,
+      "pricePerMeter": 197222222,
+      "space": 180,
+      "relatedRealtor": "سید نعمت اله سیدی",
+      "relatedRealtorId": "6a2841ba02eb57f832ee46f8",
+      "relatedCustomer": "اصبغی",
+      "changeable": false,
+      "addedToBale": true,
+      "addedToRubika": false,
+      "ocasion": true,
+      "urgent": true,
+      "adProcesses": [],
+      "ownerPermission": false,
+      "editPermission": false,
+      "forwardPermission": false,
+      "processPermission": false,
+      "editExecutorPermission": false,
+      "listOfRealtorsPermission": false,
+      "changeWithFa": [
+        {
+          "label": "مایل نیستم",
+          "value": "notChangeable"
+        }
+      ],
+      "link": "/properties/تبریز/ولیعصر/57810-فروش-آپارتمان-مسکونی-180-متری-ملک-تبریز"
+    },
+    "message": ""
+  },
+  "reqevents-rich": {
+    "data": {
+      "list": [
+        {
+          "_id": "6af6da8bdea99c1b7d34f862",
+          "eventType": {
+            "_id": "6155577174c41783fc52da06",
+            "name": "بازدید آگهی"
+          },
+          "date": "2026-11-13T09:37:44.941Z",
+          "requestProperty": {
+            "_id": "6af6d834f57375c6ef864181",
+            "title": "خرید آپارتمان مسکونی 140 الی 180 متری",
+            "code": 55776
+          },
+          "property": {
+            "_id": "6a8c602a73557ed181ad4cc4",
+            "code": 57810,
+            "title": "فروش آپارتمان مسکونی 180 متری",
+            "hasVideo": false,
+            "hasImage": false,
+            "videoCount": 0,
+            "imageCount": 0
+          },
+          "realtor": {
+            "_id": "6a28409b02eb57f832ee43b4",
+            "fullName": "نرگس یاوری"
+          },
+          "hour": "2026-11-13T11:37:56.894Z",
+          "businessId": "6447c45e0bcf236f1e3e25bb",
+          "createdAt": "2026-11-13T09:38:19.074Z",
+          "updatedAt": "2026-11-13T09:38:19.074Z",
+          "dateTime": "2026-11-13T11:37:56.894Z",
+          "__v": 0,
+          "visitTime": "2026-11-13T11:37:56.894Z",
+          "id": "6af6da8bdea99c1b7d34f862"
+        },
+        {
+          "_id": "6af6d963dea99c1b7d34af1e",
+          "eventType": {
+            "_id": "6155577174c41783fc52da06",
+            "name": "بازدید آگهی"
+          },
+          "date": "2026-11-13T09:32:31.909Z",
+          "requestProperty": {
+            "_id": "6af6d834f57375c6ef864181",
+            "title": "خرید آپارتمان مسکونی 140 الی 180 متری",
+            "code": 55776
+          },
+          "property": {
+            "_id": "6a8c602a73557ed181ad4cc4",
+            "code": 57810,
+            "title": "فروش آپارتمان مسکونی 180 متری",
+            "hasVideo": false,
+            "hasImage": false,
+            "videoCount": 0,
+            "imageCount": 0
+          },
+          "realtor": {
+            "_id": "6a28409b02eb57f832ee43b4",
+            "fullName": "نرگس یاوری"
+          },
+          "hour": "2026-11-13T10:32:40.377Z",
+          "businessId": "6447c45e0bcf236f1e3e25bb",
+          "createdAt": "2026-11-13T09:33:23.834Z",
+          "updatedAt": "2026-11-13T09:33:23.834Z",
+          "dateTime": "2026-11-13T10:32:40.377Z",
+          "__v": 0,
+          "visitTime": "2026-11-13T10:32:40.377Z",
+          "id": "6af6d963dea99c1b7d34af1e"
+        },
+        {
+          "_id": "6af342694b4e52fc239859af",
+          "eventType": {
+            "_id": "6155556774c41783fc52d8cf",
+            "name": "پیشنهاد آگهی"
+          },
+          "requestProperty": {
+            "_id": "6aeb49aed2272ad6b366d6f3",
+            "title": "خرید آپارتمان مسکونی 140 الی 150 متری",
+            "code": 55351
+          },
+          "property": {
+            "_id": "6a8c602a73557ed181ad4cc4",
+            "code": 57810,
+            "title": "فروش آپارتمان مسکونی 180 متری",
+            "hasVideo": false,
+            "hasImage": false,
+            "videoCount": 0,
+            "imageCount": 0
+          },
+          "realtor": {
+            "_id": "6805148061cf4e028dae6b0f",
+            "fullName": "اکرم بایراملو"
+          },
+          "businessId": "6447c45e0bcf236f1e3e25bb",
+          "createdAt": "2026-11-10T16:12:25.890Z",
+          "updatedAt": "2026-11-10T16:12:25.890Z",
+          "__v": 0,
+          "id": "6af342694b4e52fc239859af"
+        },
+        {
+          "_id": "6a9e8111d0b100acd747d678",
+          "eventType": {
+            "_id": "6155556774c41783fc52d8cf",
+            "name": "پیشنهاد آگهی"
+          },
+          "requestProperty": {
+            "_id": "6a9e7e97ca329079b2238322",
+            "title": "خرید آپارتمان مسکونی 130 الی 300 متری",
+            "code": 51723
+          },
+          "property": {
+            "_id": "6a8c602a73557ed181ad4cc4",
+            "code": 57810,
+            "title": "فروش آپارتمان مسکونی 180 متری",
+            "hasVideo": false,
+            "hasImage": false,
+            "videoCount": 0,
+            "imageCount": 0
+          },
+          "realtor": {
+            "_id": "618a4ed7d2c16f3a6706b414",
+            "fullName": "ناصر رحیمی فر"
+          },
+          "businessId": "6447c45e0bcf236f1e3e25bb",
+          "createdAt": "2026-09-07T09:17:05.057Z",
+          "updatedAt": "2026-09-07T09:17:05.057Z",
+          "__v": 0,
+          "id": "6a9e8111d0b100acd747d678"
+        }
+      ],
+      "count": 4,
+      "totalPages": 1,
+      "page": 1,
+      "limit": 9007199254740991
+    },
+    "message": ""
+  },
+  "visits-rich": {
+    "data": {
+      "list": [],
+      "count": 0,
+      "totalPages": 0,
+      "page": 1,
+      "limit": 9007199254740991
+    },
+    "message": ""
+  },
+  "p-info-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-list-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-delete-put": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-delete-post": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-cancel-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-archive-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-trash-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "p-update-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-info-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-list-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-delete-put": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-delete-post": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-cancel-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-archive-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "r-update-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "u-delete-del": {
+    "__error": {
+      "message": "آیتم مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "u-delete-post": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "u-remove-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "v-delete-del": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "u-update-body": {
+    "__error": {
+      "message": "آیتم مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "action-types": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "status-types": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "property-statuses": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  },
+  "inbox-list": {
+    "__error": {
+      "message": "صفحه مورد نظر یافت نشد",
+      "httpStatus": 404
+    }
+  }
+}

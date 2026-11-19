@@ -1,0 +1,68 @@
+{
+  "foundEvents": [
+    {
+      "_id": "6af5fe8e54672e8c05a274bb",
+      "eventType": "بازدید آگهی",
+      "date": "2026-11-12T00:00:00.000Z",
+      "hour": "2026-11-12T21:30:00.000",
+      "requestCode": 55772,
+      "property": {
+        "_id": "6af08dcfd81e2451d16c34d3",
+        "code": 61224,
+        "title": "فروش آپارتمان مسکونی 67 متری"
+      },
+      "realtor": "شهریار بابایان",
+      "keys": [
+        "_id",
+        "eventType",
+        "date",
+        "requestProperty",
+        "property",
+        "realtor",
+        "hour",
+        "businessId",
+        "createdAt",
+        "updatedAt",
+        "dateTime",
+        "__v",
+        "visitTime",
+        "id"
+      ]
+    },
+    {
+      "_id": "6af5fe33f57375c6ef7fa11a",
+      "eventType": "بازدید آگهی",
+      "date": "2026-11-12T00:00:00.000Z",
+      "hour": "2026-11-12T21:29:00.000",
+      "requestCode": 55772,
+      "property": {
+        "_id": "6af08dcfd81e2451d16c34d3",
+        "code": 61224,
+        "title": "فروش آپارتمان مسکونی 67 متری"
+      },
+      "realtor": "شهریار بابایان",
+      "keys": [
+        "_id",
+        "eventType",
+        "date",
+        "requestProperty",
+        "property",
+        "realtor",
+        "hour",
+        "businessId",
+        "createdAt",
+        "updatedAt",
+        "dateTime",
+        "__v",
+        "visitTime",
+        "id"
+      ]
+    }
+  ],
+  "targetProperty": {
+    "id": "6af08dcfd81e2451d16c34d3",
+    "code": "61224",
+    "title": "فروش آپارتمان مسکونی 67 متری"
+  },
+  "targetByCodeError": "MelkApiError: شما به این آگهی دسترسی ندارید"
+}

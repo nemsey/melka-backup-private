@@ -1,0 +1,40 @@
+{
+  "before": [
+    {
+      "_id": "6afbdc419e477125d0a9280e",
+      "action": "ایجاد مشاور",
+      "date": "2026-11-11T14:00:00.000Z"
+    },
+    {
+      "_id": "6afbdc419e477125d0a9280f",
+      "action": "بررسی درخواست",
+      "date": "2026-11-11T14:00:00.000Z"
+    }
+  ],
+  "afterPartial": [
+    {
+      "_id": "6afbdc419e477125d0a9280e",
+      "action": "ایجاد مشاور",
+      "date": "2026-11-11T14:00:00.000Z"
+    }
+  ],
+  "afterRestore": [
+    {
+      "_id": "6afbdc419e477125d0a9280e",
+      "action": "ایجاد مشاور",
+      "date": "2026-11-11T14:00:00.000Z"
+    },
+    {
+      "_id": "6afbdc419e477125d0a9280f",
+      "action": "بررسی درخواست",
+      "date": "2026-11-11T14:00:00.000Z"
+    }
+  ],
+  "verdict": {
+    "semantics": "REPLACE",
+    "beforeCount": 2,
+    "afterPartialCount": 1,
+    "afterRestoreCount": 2,
+    "restoredOk": true
+  }
+}
