@@ -1,7 +1,11 @@
 /**
- * مولد اسکریپت رلهٔ Termux — PN-031 (شورای ن۰۳۷) · نسل J=PN-035 · K=PN-036 · L=PN-041-R · M=PN-068 · M+=PN-080
- * نسل N = DIR-RELAY-UNLIMITED-001 (دستور مالک ۲۰۲۶-۱۱-۱۴: «افزایش سرعت بروزرسانی فهرست‌های چهارگانه
- * توسط ترموکس بدون توقف و بدون محدودیت حجم و زمان»)
+ * مولد اسکریپت رلهٔ Termux — PN-031 (شورای ن۰۳۷) · نسل J=PN-035 · K=PN-036 · L=PN-041-R · M=PN-068 · M+=PN-080 · N=DIR-RELAY-UNLIMITED-001
+ * نسل O = DIR-CHANGES-TILE-001 (دستور مالک ۲۰۲۶-۱۱-۱۹ · «کاشی تغییرات» — گام سوم):
+ *   آگاهی از «حالت تمام‌ظرفیت» — پرچم boost در پاسخ poll وقتی کاشی تغییرات
+ *   فعال است: poll میان‌موجی ۵ث ← ۲ث، بنر اختصاص ظرفیت، و مسیر اکسپرس برای
+ *   کنش‌های تغییر کدآگهی/کد درخواست (requests/create|update · request-events ·
+ *   properties/update) — «تمام ظرفیت ترموکس در اختیار کاشی تغییرات».
+ *   نسل‌های قدیمی فیلد boost را بی‌صدا نادیده می‌گیرند (سازگاری عقبه کامل).
  * ---------------------------------------------------------------------------
  * روت bootstrap این قالب را با پیکربندی دستگاه (SERVER_URL · DEVICE_ID ·
  * DEVICE_SECRET · ALT_SERVER_URL) پر می‌کند و به‌صورت text/x-shellscript تحویل می‌دهد.
@@ -55,13 +59,15 @@ export function buildRelayScript(cfg: RelayScriptConfig): string {
 
   return `#!/usr/bin/env bash
 # ============================================================
-# melka-relay — رلهٔ موبایل ملکا (نسل N · DIR-RELAY-UNLIMITED-001 · ۲۰۲۶-۱۱-۱۴)
+# melka-relay — رلهٔ موبایل ملکا (نسل O · DIR-CHANGES-TILE-001 · ۲۰۲۶-۱۱-۱۹)
 # روی گوشی مالک (Poco F3 · Termux · IP ایرانی) اجرا می‌شود.
 # این فایل را اجرا نکنید مگر اینکه از طریق «راه‌اندازی رله» در
 # تنظیمات ملکا ساخته شده باشد — راز دستگاه داخلش است.
 # نسل N: بی‌توقف (سرپرایز خود‌ریستار · خروج فقط با ابطال مالک یا Ctrl+C) ·
 #         استخر پویای ۱۶+۸ کارگر · نتیجهٔ جریانی موج‌به‌موج · poll میان‌موجی ·
 #         سقف نرخ ۲۰/دقیقه (نسل M: ۵) · batch=۴۸ (نسل M: ۲۴) · بدون محدودیت حجم
+# نسل O: حالت تمام‌ظرفیت کاشی تغییرات (boost) — poll میان‌موجی ۵ث ← ۲ث +
+#         مسیر اکسپرس کنش‌های تغییر کد + بنر اختصاص ظرفیت.
 # ============================================================
 set -u
 
@@ -88,6 +94,8 @@ POOL_SLOTS=\$(( MAX_WORKERS + EXPRESS_SLOTS ))
 RATE_MAX=20                         # نسل M: ۵ — گلوگاه سرعت اصلی؛ ۲۰/دقیقه با احترام به دروازه
 POLL_WAIT_S=50                      # انتظار long-poll وقتی صف خالی است
 EXPRESS_POLL_S=5                    # فاصلهٔ poll میان‌موجی (برداشت زندهٔ آیتم تازه حین اجرا)
+EXPRESS_POLL_S_BOOST=2              # نسل O: فاصلهٔ poll میان‌موجی در «حالت تمام‌ظرفیت» کاشی تغییرات
+BOOST_MODE=0                        # نسل O: ۱ = حالت تمام‌ظرفیت (پرچم boost سرور) · ۰ = عادی
 EXPRESS_POLL_BATCH=12               # اندازهٔ برداشت poll میان‌موجی
 FLUSH_MIN=48                        # فلش جریان نتیجه وقتی انبار پر شد…
 FLUSH_AGE_S=4                       # …یا قدیمی‌ترین نتیجهٔ ارسال‌نشده ۴ث شد
@@ -645,9 +653,11 @@ process_set() {
   local items_json="$1"
   local QUEUE SPOOL_DIR ITEM NOW BUSY
   QUEUE=\$(mktemp); SPOOL_DIR=\$(mktemp -d)
-  # Express lane (PN-036 فاز ۵ + PN-080): OTP/ثبت آگهی مقدم بر فهرست‌های سنگین
-  printf '%s' "$items_json" | jq -c '.[] | select((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number"))' >> "$QUEUE" 2>/dev/null
-  printf '%s' "$items_json" | jq -c '.[] | select(((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number")) | not)' >> "$QUEUE" 2>/dev/null
+  # Express lane (PN-036 فاز ۵ + PN-080 + نسل O DIR-CHANGES-TILE-001):
+  # OTP/ثبت مقدم بر فهرست‌های سنگین — کنش‌های «تغییرات کدآگهی/کد درخواست»
+  # (requests/create|update · request-events · properties/update) هم همیشه اکسپرس.
+  printf '%s' "$items_json" | jq -c '.[] | select((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number|/requests/create|/requests/update|/request-events/create|/properties/update"))' >> "$QUEUE" 2>/dev/null
+  printf '%s' "$items_json" | jq -c '.[] | select(((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number|/requests/create|/requests/update|/request-events/create|/properties/update")) | not)' >> "$QUEUE" 2>/dev/null
   LAST_FLUSH=\$(date +%s)
   LAST_EXPRESS=\$(date +%s)
   while :; do
@@ -665,7 +675,9 @@ process_set() {
     fi
     # poll میان‌موجی — فقط وقتی ظرفیت آزاد هست (آیتم برداشته سرگردان نمی‌شود)
     NOW=\$(date +%s)
-    if [ \$(( NOW - LAST_EXPRESS )) -ge "$EXPRESS_POLL_S" ] && [ "\$(active_jobs)" -lt "$POOL_SLOTS" ]; then
+    # نسل O: در حالت تمام‌ظرفیت (کاشی تغییرات) فاصلهٔ poll میان‌موجی ۵ث ← ۲ث
+    EP_NOW=\$(( BOOST_MODE == 1 ? EXPRESS_POLL_S_BOOST : EXPRESS_POLL_S ))
+    if [ \$(( NOW - LAST_EXPRESS )) -ge "\$EP_NOW" ] && [ "\$(active_jobs)" -lt "$POOL_SLOTS" ]; then
       LAST_EXPRESS=$NOW
       express_poll_items >> "$QUEUE" 2>/dev/null || true
     fi
@@ -859,6 +871,17 @@ relay_main() {
     AUTH_FAILS=0
     GATEWAY_BACKOFF=\$(( GATEWAY_BACKOFF / 2 ))
     [ "\$GATEWAY_BACKOFF" -lt "\$GATEWAY_RETRY_DELAY" ] && GATEWAY_BACKOFF=\$GATEWAY_RETRY_DELAY
+    # ── نسل O (DIR-CHANGES-TILE-001): پرچم boost — «حالت تمام‌ظرفیت» کاشی تغییرات ──
+    # سرور وقتی کاشی تغییرات فعال است boost=true برمی‌گرداند: poll میان‌موجی
+    # تندتر (۲ث) + بنر یک‌بارهٔ اختصاص ظرفیت؛ پایان حالت هم با همین پرچم اعلام می‌شود.
+    BOOST_SEEN=\$(printf '%s' "$RESP" | jq -r '.boost // false' 2>/dev/null)
+    if [ "\$BOOST_SEEN" = "true" ] && [ "\$BOOST_MODE" -eq 0 ]; then
+      BOOST_MODE=1
+      log "⚡ حالت تمام‌ظرفیت کاشی تغییرات فعال شد — تمام ظرفیت این گوشی به ایجاد/تغییر کدآگهی و کد درخواست اختصاص یافت (poll میان‌موجی ۲ث)"
+    elif [ "\$BOOST_SEEN" != "true" ] && [ "\$BOOST_MODE" -eq 1 ]; then
+      BOOST_MODE=0
+      log "حالت تمام‌ظرفیت کاشی تغییرات پایان یافت — بازگشت به سلوک عادی رله"
+    fi
     N_ITEMS=\$(printf '%s' "$RESP" | jq '.items | length' 2>/dev/null)
     if [ -z "$N_ITEMS" ] || [ "$N_ITEMS" = "0" ] || [ "$N_ITEMS" = "null" ]; then
       ITEMS_JSON=\$(printf '%s' "$RESP" | jq -c '[.request] // []' 2>/dev/null)
@@ -876,7 +899,7 @@ relay_main() {
 }
 
 SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0; BATCHES=0
-log "رلهٔ ملکا آغاز شد (نسل N · DIR-RELAY-UNLIMITED-001 · استخر \$MAX_WORKERS+\$EXPRESS_SLOTS کارگر · بی‌توقف) — دستگاه: $DEVICE_ID (در حال اتصال…)"
+log "رلهٔ ملکا آغاز شد (نسل O · DIR-CHANGES-TILE-001 · استخر \$MAX_WORKERS+\$EXPRESS_SLOTS کارگر · بی‌توقف · حالت تمام‌ظرفیت‌آگاه) — دستگاه: $DEVICE_ID (در حال اتصال…)"
 log "مسیر اصلی: $SERVER_URL"
 [ "$URL_COUNT" -gt 1 ] && log "مسیر جایگزین: $ALT_SERVER_URL (سوئیچ خودکار پس از $ALT_FAIL_THRESHOLD خطای پیاپی)"
 log "قانون بی‌توقف: خطاهای شبکه/دروازه/احراز هرگز رله را نمی‌کشند — تنها ابطال مالک (داشبورد) یا Ctrl+C."
@@ -923,7 +946,7 @@ export function buildInstallCommand(serverUrl: string, enrollCode: string): stri
   // PN-031-I: همان حمل‌ونقل بقا — http1.1 + UA بروزری برای دانلود bootstrap
   // PN-034 (شورا-ن۰۵۵): openssl-tool — بستهٔ CLI واقعی Termux؛ مسیر اثبات‌شدهٔ مالک
   // (PN-031-I/J: pkg install -y openssl-tool → پیست همین دستور → Enter → اتصال ✓)
-  return `# ── نصب رلهٔ ملکا (نسل N · بی‌توقف · بی‌محدودیت) ──
+  return `# ── نصب رلهٔ ملکا (نسل O · بی‌توقف · بی‌محدودیت · حالت تمام‌ظرفیت‌آگاه) ──
 if pkg install -y curl openssl-tool jq; then
   ok=0
   for i in 1 2 3; do

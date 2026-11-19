@@ -109,9 +109,12 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("امضای سرور نامعتبر");
   });
 
-  test("A-10) نشانگر نسل N (DIR-RELAY-UNLIMITED-001) و نسل K (PN-036) و ثابت‌های اعلامی در لاگ آغاز", () => {
-    // نسل N = بی‌توقف + حداکثر سرعت — نشانگر در سربرگ و لاگ آغاز
-    expect(script).toContain("نسل N · DIR-RELAY-UNLIMITED-001");
+  test("A-10) نشانگر نسل O (DIR-CHANGES-TILE-001) و نسل K (PN-036) و ثابت‌های اعلامی در لاگ آغاز", () => {
+    // نسل N = بی‌توقف + حداکثر سرعت · نسل O = حالت تمام‌ظرفیت کاشی تغییرات (DIR-CHANGES-TILE-001)
+    expect(script).toContain("نسل O · DIR-CHANGES-TILE-001");
+    expect(script).toContain("حالت تمام‌ظرفیت‌آگاه");
+    expect(script).toContain("EXPRESS_POLL_S_BOOST=2");
+    expect(script).toContain("BOOST_MODE=0");
     expect(script).toContain("استخر $MAX_WORKERS+$EXPRESS_SLOTS کارگر");
     expect(script).toContain("رفع jq ARG_MAX (--rawfile + stdin)");
     expect(script).toContain("نسل N: batch=$BATCH · استخر $MAX_WORKERS+$EXPRESS_SLOTS کارگر · نتیجهٔ جریانی (موج‌به‌موج) · poll میان‌موجی هر $EXPRESS_POLL_Sث · مهلت OTP=$LIGHT_TIMEOUTث / فهرست=$LIST_TIMEOUTث / سنگین=$HEAVY_TIMEOUTث · رفع jq ARG_MAX (--rawfile + stdin)");
@@ -152,13 +155,14 @@ describe("PN-036 · K) اسکریپت نسل K — رفع jq ARG_MAX + batch س�
     expect(script).toContain("if [ $CURL_EXIT -eq 28 ]; then");
   });
 
-  test("K-4) Express lane — آیتم‌های OTP «و ثبت آگهی» جدا از فهرست‌های سنگین و مقدم (PN-080 + نسل N)", () => {
+  test("K-4) Express lane — آیتم‌های OTP «و ثبت آگهی و تغییرات کد» جدا از فهرست‌های سنگین و مقدم (PN-080 + نسل O)", () => {
     // PN-080 (حکم مالک ۲۰۲۶-۱۱-۱۰): خانوادهٔ ثبت آگهی هم‌ردیف OTP در خط ویژه —
     // test() جایگزین contains() تا هر چهار مسیر با یک الگو پوشش داده شوند.
     // نسل N: express در ابتدای صف استخر می‌نشیند (نه مجموعهٔ جدا) + poll میان‌موجی.
-    expect(script).toContain('test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number")');
+    // نسل O (DIR-CHANGES-TILE-001): کنش‌های تغییر کد درخواست/کدآگهی هم اکسپرس شدند.
+    expect(script).toContain('test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number|/requests/create|/requests/update|/request-events/create|/properties/update")');
     expect(script).toContain('process_set "$ITEMS_JSON"');
-    expect(script).toContain("Express lane (PN-036 فاز ۵ + PN-080)");
+    expect(script).toContain("Express lane (PN-036 فاز ۵ + PN-080 + نسل O DIR-CHANGES-TILE-001)");
     expect(script).toContain("is_registration");
     expect(script).toContain("express_poll_items");
   });

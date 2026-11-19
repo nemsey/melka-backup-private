@@ -28,6 +28,7 @@
 
 import { NextRequest } from "next/server";
 import { verifyRelayRequestAuth, claimRelayBatch, markRelayEnrollCompleted, noteRelayPollSeen, RELAY_MAX_BATCH } from "@/lib/melk-api/relay";
+import { isChangesSessionActive } from "@/lib/changes/session";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -83,6 +84,16 @@ export async function POST(request: NextRequest) {
   while (true) {
     const items = await claimRelayBatch(auth.device!.deviceId, batch);
     if (items.length > 0) {
+      // DIR-CHANGES-TILE-001 (گام سوم · کدنصب نسل O): پرچم boost — «حالت
+      // تمام‌ظرفیت» کاشی تغییرات فعال است؛ اسکریپت نسل O با دیدنش poll
+      // میان‌موجی را تندتر می‌کند و بنر اختصاص ظرفیت چاپ می‌کند. نسل‌های قدیمی
+      // فیلد ناشناخته را بی‌صدا نادیده می‌گیرند (سازگاری عقبه).
+      let boost = false;
+      try {
+        boost = isChangesSessionActive();
+      } catch {
+        boost = false;
+      }
       return Response.json(
         {
           ok: true,
@@ -106,6 +117,7 @@ export async function POST(request: NextRequest) {
             sig: items[0].sig,
             ts: items[0].ts,
           },
+          boost,
         },
         { status: 200, headers: { "cache-control": "no-store" } }
       );

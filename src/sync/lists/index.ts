@@ -71,6 +71,15 @@ export function lcppCycleRunning(): boolean {
 export async function runLcppCycle(db: PrismaClient): Promise<LcppCycleResult | null> {
   if (process.env.MELK_LCPP === "disabled") return null;
   if (cycleLock) return null; // چرخهٔ قبلی زنده — رد بی‌صدا
+  // DIR-CHANGES-TILE-001 (گام سوم · دستور مالک): در «حالت تمام‌ظرفیت» کاشی
+  // تغییرات، بروزرسانی فهرست‌ها متوقف می‌شود — تمام ظرفیت ترموکس به کاشی.
+  // پرچم force حفظ می‌شود تا پس از پایان نشست، چرخهٔ فوری مالک اجرا شود.
+  try {
+    const { isChangesSessionActive } = await import("@/lib/changes/session");
+    if (isChangesSessionActive()) return null;
+  } catch {
+    /* ماژول نشست نبود — سلوک قبلی */
+  }
   cycleLock = true;
   // PN-053 (استگر CPU): نخستین چرخهٔ این فرایند با همزمانی ۱ — سرور با آرامش
   // بالا بیاید؛ چرخه‌های بعدی به مقدار عادی (۳) برمی‌گردند. فرمان DIR-PN053 گام ۲-۳.

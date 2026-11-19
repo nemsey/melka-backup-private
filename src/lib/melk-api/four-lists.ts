@@ -208,6 +208,20 @@ export async function runExpertsListUpdate(
   db: PrismaClient,
   opts: { pmToken: string | null; source: UpdateSource; deepRows?: number },
 ): Promise<ExpertsUpdateOutcome> {
+  // DIR-CHANGES-TILE-001 (گام سوم · دستور مالک): در «حالت تمام‌ظرفیت» کاشی
+  // تغییرات، بروزرسانی هر چهار فهرست — از جمله مشاوران (M4) — متوقف می‌شود.
+  try {
+    const { isChangesSessionActive } = await import("@/lib/changes/session");
+    if (isChangesSessionActive()) {
+      await upsertFourListState(db, "m4", {
+        status: "idle",
+        detail: { source: opts.source, stage: "changes-session-paused", at: new Date().toISOString(), note: "حالت تمام‌ظرفیت کاشی تغییرات فعال — چرخهٔ بعدی پس از پایان نشست اجرا می‌شود." },
+      }).catch(() => undefined);
+      return { ran: false, reason: "changes-session" };
+    }
+  } catch {
+    /* ماژول نشست نبود — سلوک قبلی */
+  }
   if (!opts.pmToken) {
     // بی‌توکن هم صادق باش: وضعیت ثبت می‌شود تا تنظیمات/داشبورد دلیل را بگویند
     await upsertFourListState(db, "m4", {

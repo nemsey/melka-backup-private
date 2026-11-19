@@ -33,6 +33,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { db } from "@/lib/db";
 import { isMelkTabrizHost } from "./proxy";
 import { audit } from "@/lib/auth/session";
+import { isChangesSessionActive } from "@/lib/changes/session";
 
 /** پنجرهٔ زمانی امضا (ضد replay) — عین TIMESTAMP_WINDOW_MS سمت Worker */
 export const RELAY_TIMESTAMP_WINDOW_MS = 5 * 60 * 1000;
@@ -80,6 +81,13 @@ export const RELAY_MAX_RESULT_BYTES = 16 * 1024 * 1024;
 export const RELAY_MAX_BATCH = 200;
 /** PN-035 (فاز ۵) — اولویت درخواست‌های تعاملی (OTP/ورود) — مقدم بر سینک حجیم */
 export const RELAY_PRIORITY_INTERACTIVE = 5;
+
+/**
+ * DIR-CHANGES-TILE-001 (گام سوم · دستور مالک ۲۰۲۶-۱۱-۱۹) — اولویت سقف:
+ * کاشی «تغییرات» (ایجاد/تغییر کدآگهی و کد درخواست طبق نظر مالک) مقدم بر
+ * OTP (۵) و سینک حجیم (۰-۲) جلا می‌شود — «تمام ظرفیت ترموکس در اختیار این کاشی».
+ */
+export const RELAY_PRIORITY_CHANGES = 10;
 /** PN-039 (گام ۲) — اولویت صفحات کاتالوگ «درخواست‌ها» — پایان قحطی هفت‌روزه:
  *  هر صفحهٔ requests/list ~۵ثانیه هزینهٔ مبدأ دارد؛ پشت موج آگهی‌ها/غنی‌سازی‌ها
  *  (اولویت ۰) در TTL ۱۲۰ث انقضا می‌خورد (۴۷۲ expired شاهد). اولویت ۱ = گوشی در
@@ -500,9 +508,35 @@ export async function enqueueRelayRequest(params: {
 /** PN-035 (فاز ۵) — آشکارساز اولویت: مسیرهای OTP/ورود (تعاملی) از هر سه سامانه
  *  PN-039 (گام ۲) — صفحات کاتالوگ درخواست‌ها (requests/list) با اولویت ۱:
  *  پایان قحطی صف — شاهد: ایستگاه requests از ۱۰ اکتبر راکد + ۴۷۲ expired. */
+/**
+ * آشکارساز اولویت — منبع یگانهٔ رتبه‌بندی صف.
+ * DIR-CHANGES-TILE-001 (گام سوم): در «حالت تمام‌ظرفیت» کاشی تغییرات،
+ * خانوادهٔ کنش‌های تغییرات (ایجاد/ویرایش/تاریخچه/رویداد/جستجوی کد) با
+ * اولویت سقف ۱۰ صف می‌شوند و claim فقط همین خانواده + تعاملی‌ها را
+ * برمی‌دارد — بقیه (سینک انبوه ۰-۲) تا پایان نشست صبر می‌کنند.
+ */
 export function relayPriorityForUrl(url: string): number {
   try {
     const p = new URL(url).pathname;
+    // DIR-CHANGES-TILE-001 — آیا «حالت تمام‌ظرفیت» فعال است؟ (خوانش فایل سبک)
+    let changesActive = false;
+    try {
+      changesActive = isChangesSessionActive();
+    } catch {
+      changesActive = false;
+    }
+    // خانوادهٔ «تغییرات کد درخواست + کدآگهی» — همیشه تعاملی (۵)؛ در نشست فعال ۱۰
+    const isChangesWrite =
+      /\/requests\/create(\/|$)/i.test(p) ||
+      /\/requests\/update\/[^/]+/i.test(p) ||
+      /\/request-events\/create(\/|$)/i.test(p) ||
+      /\/properties\/create(\/|$)/i.test(p) ||
+      /\/properties\/update\/[^/]+/i.test(p) ||
+      /\/properties\/info\/by-code\//i.test(p);
+    if (isChangesWrite) return changesActive ? RELAY_PRIORITY_CHANGES : RELAY_PRIORITY_INTERACTIVE;
+    if (changesActive && (/\/requests\/history\//i.test(p) || /\/requests\/details\//i.test(p) || /\/forms\/info\/category(\/|$)/i.test(p) || /\/request-event-types\/list(\/|$)/i.test(p))) {
+      return RELAY_PRIORITY_CHANGES;
+    }
     if (/\/authentication\/otp(\/|$)/i.test(p)) return RELAY_PRIORITY_INTERACTIVE;
     // PN-080 (حکم مالک ۲۰۲۶-۱۱-۱۰ · «بهینه‌سازی ثبت آگهی در سامانه arm»):
     // خانوادهٔ ثبت آگهی کنش تعاملی کاربر است — جستجو/ایجاد مالک (users/*) و
@@ -560,11 +594,21 @@ export async function claimRelayBatch(deviceId: string, limit: number): Promise<
   const claimed: RelayDispatchedItem[] = [];
   const device = await db.relayDevice.findUnique({ where: { deviceId } });
   if (!device) return claimed;
+  // DIR-CHANGES-TILE-001 (گام سوم · «تمام ظرفیت ترموکس در اختیار این کاشی»):
+  // در نشست فعال فقط آیتم‌های اولویت ≥ تعاملی (۵) جلا می‌شوند — کنش‌های کاشی
+  // تغییرات (۱۰) و OTP/ثبت (۵) مقدم‌اند؛ موج سینک/غنی‌سازی انبوه (۰-۲) صبر می‌کند.
+  let changesActive = false;
+  try {
+    changesActive = isChangesSessionActive();
+  } catch {
+    changesActive = false;
+  }
+  const claimableWhere = changesActive ? { status: "pending" as const, priority: { gte: RELAY_PRIORITY_INTERACTIVE } } : { status: "pending" as const };
   let scanAttempts = 0;
   while (claimed.length < want && scanAttempts < 3) {
     scanAttempts += 1;
     const nextItems = await db.relayQueue.findMany({
-      where: { status: "pending" },
+      where: claimableWhere,
       orderBy: [{ priority: "desc" }, { enqueuedAt: "asc" }],
       take: want,
     });

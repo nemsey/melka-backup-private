@@ -181,6 +181,23 @@ export async function catalogDaemonTick(db: PrismaClient): Promise<CatalogDaemon
     // تیک قبلی هنوز کار می‌کند — رد (هم‌پوشانی ممنوع)
     return { ...s.status };
   }
+  // DIR-CHANGES-TILE-001 (گام سوم · دستور مالک): در «حالت تمام‌ظرفیت» کاشی
+  // تغییرات، بروزرسانی فهرست‌ها (پایدارساز کاتالوگ هم) متوقف می‌شود.
+  try {
+    const { isChangesSessionActive } = await import("@/lib/changes/session");
+    if (isChangesSessionActive()) {
+      logEvent({
+        level: "info",
+        category: "sync",
+        operation: "catalog-daemon-changes-session-skip",
+        status: "ok",
+        detail: { message: "حالت تمام‌ظرفیت کاشی تغییرات فعال — تیک پایدارساز به تعویق افتاد" },
+      });
+      return { ...s.status };
+    }
+  } catch {
+    /* ماژول نشست نبود — سلوک قبلی */
+  }
   s.lock = true;
   s.status.running = true;
   s.status.lastTickAt = Date.now();

@@ -35,6 +35,10 @@ import "@/core/tiles/tiles/arm-request";
 import "@/core/tiles/tiles/smart-matching";
 import "@/core/tiles/tiles/learning-tier";
 import "@/core/tiles/tiles/settings";
+// DIR-CHANGES-TILE-001 (دستور مالک ۱۴۰۵/۰۸/۲۸) — کاشی «تغییرات»: ایجاد و انجام
+// تغییرات در کدآگهی و کد درخواست سامانه ARM طبق نظر مالک (شناخت ۰۹۹) +
+// حالت تمام‌ظرفیت ترموکس (گام سوم · کدنصب نسل O).
+import "@/core/tiles/tiles/changes";
 
 export { transactionsContractsTile } from "@/core/tiles/tiles/transactions-contracts";
 export { expertsTile } from "@/core/tiles/tiles/experts";
@@ -46,4 +50,6 @@ export { armRequestTile } from "@/core/tiles/tiles/arm-request";
 export { smartMatchingTile } from "@/core/tiles/tiles/smart-matching";
 export { learningTierTile } from "@/core/tiles/tiles/learning-tier";
 export { settingsTile } from "@/core/tiles/tiles/settings";
+// DIR-CHANGES-TILE-001 — صادرات کاشی «تغییرات»
+export { changesTile } from "@/core/tiles/tiles/changes";
 // PN-086/گام ۱: tenantDashboardTabrizTile حذف شد — ظرف منحل؛ M1-M4 اکنون ریشه‌اند
