@@ -929,12 +929,27 @@ export async function updateListingCode(spec: ListingUpdateSpec, actor: { code: 
   }
 }
 
-/* ═══════════════════ پشتیبانی UI: انواع رویداد زنده ═══════════════════ */
+/* ═══════════════════ پشتیبانی UI: انواع رویداد زنده (fail-soft) ═══════════════════ */
 
-/** فهرست انواع رویداد زنده از خود سامانه (برای انتخاب اقدام) */
-export async function fetchChangeEventTypes(): Promise<Array<{ id: string; name: string }>> {
-  const oe = await resolveOwnerExec();
-  const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestEventTypes);
-  const list = (res.data?.list ?? (Array.isArray(res.data) ? res.data : [])) as ArmRow[];
-  return list.map((t) => ({ id: String(t._id ?? t.id ?? ""), name: String(t.name ?? "") })).filter((t) => t.id && t.name);
+export interface EventTypesResult {
+  types: Array<{ id: string; name: string }>;
+  live: boolean;
+  error: string | null;
+}
+
+/**
+ * فهرست انواع رویداد زنده از خود سامانه — هرگز نمی‌شکند (fail-soft):
+ * اگر آرم/رله در دسترس نبود، فهرست خالی + خطای شفاف برمی‌گرداند؛ UI با
+ * پیش‌فرض تأییدشدهٔ ۰۹۹ («ایجاد مشاور») ادامه می‌دهد.
+ */
+export async function fetchChangeEventTypes(): Promise<EventTypesResult> {
+  try {
+    const oe = await resolveOwnerExec();
+    const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestEventTypes);
+    const list = (res.data?.list ?? (Array.isArray(res.data) ? res.data : [])) as ArmRow[];
+    const types = list.map((t) => ({ id: String(t._id ?? t.id ?? ""), name: String(t.name ?? "") })).filter((t) => t.id && t.name);
+    return { types, live: true, error: null };
+  } catch (e) {
+    return { types: [], live: false, error: (e as Error).message };
+  }
 }

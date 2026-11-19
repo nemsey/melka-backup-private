@@ -69,7 +69,10 @@ export async function POST(request: NextRequest) {
 
     return errorResponse(new MelkApiError("UNKNOWN", `action نامعتبر: ${action}`, 400, false));
   } catch (err) {
-    const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error)?.message ?? "خطای نامشخص", 502, false);
+    // نرمال‌سازی وضعیت — armCall گاهی httpStatus=0 (NETWORK_ERROR) می‌دهد که
+    // errorResponse آن را ۵۰۰ می‌کند؛ برای صداقت، ۵۰۲ با پیام شفاف جایگزین می‌شود.
+    const raw = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error)?.message ?? "خطای نامشخص", 502, false);
+    const e = raw.httpStatus >= 400 && raw.httpStatus < 600 ? raw : new MelkApiError(raw.code, raw.message, raw.code === "UNAUTHORIZED" ? 401 : 502, false);
     return errorResponse(e);
   }
 }
