@@ -9,9 +9,27 @@
 
 import os
 import signal
+import subprocess
 import sys
 
 STOP_FLAG = "/home/z/my-project/.prod-stop"
+
+# ─── DIR-DB-RECOVERY-001: گارد تک‌نمونهٔ نگهبان ───
+# درس حادثهٔ ۱۴۰۵/۰۸/۲۹ (ساعت ~۱۸:۳۳): بوت دوم در حالی که نگهبان اول زنده بود،
+# دو نگهبان همزمان → دو socket-master → حلقهٔ EADDRINUSE + فشار همزمان نوشتن
+# روی SQLite زنده (ریشهٔ مشارکت‌کننده در خرابی صفحه‌های RelayQueue/AuditLog).
+# اکنون: اگر نگهبانی زنده است، دیمن تازه هرگز spawn نمی‌شود (پاس صادقانه).
+try:
+    out = subprocess.run(
+        ["pgrep", "-f", "scripts/prod-watchdog.sh"],
+        capture_output=True, text=True, timeout=10,
+    )
+    alive = [p for p in out.stdout.split() if p and int(p) != os.getpid()]
+except Exception:
+    alive = []
+if alive:
+    print(f"نگهبان production از قبل زنده است (PID {' '.join(alive)}) — spawn تازه رد شد ✓")
+    sys.exit(0)
 
 # فلگ توقف قبلی را پاک کن (شروع تازه)
 try:
