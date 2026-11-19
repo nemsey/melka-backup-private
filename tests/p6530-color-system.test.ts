@@ -197,14 +197,16 @@ describe("گام صفر — نظام رنگ ۱۳ بخش (قاعده ۶)", () => 
   test("§۶ اعمال در رجیستری: هر کاشی فعال رنگ بخش اختصاصی خودش را دارد", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     await import("@/core/tiles/bootstrap");
-    // PN-086/گام ۱: هفت کاشی ریشهٔ هوم (فایل‌یابی حذف شد — حذف نما، داده مقدس)
+    // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰): هشت کاشی ریشهٔ هوم — فایل‌یابی بازسازی شد،
+    // مغز ملکا در تنظیمات ادغام و حذف شد (رنگ m8 او در بخش مغز ملکای تنظیمات زنده است)
     const expected: Record<string, string> = {
+      "file-finder": "finder",
       "arm-listings": "m1",
       "arm-requests": "m2",
       "transactions-contracts": "m3",
       experts: "m4",
       "smart-matching": "m5",
-      "learning-tier": "m8",
+      changes: "ai",
       settings: "settings",
     };
     for (const [tileId, sectionKey] of Object.entries(expected)) {

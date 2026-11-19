@@ -30,7 +30,7 @@ export const transactionsContractsTile = defineTile({
   icon: FileCheck2,
   accent: "m3",
   component: withFourListsChrome("transactions", "transactions-contracts")(lazyPage(() => import("./TransactionsContractsPage"))),
-  order: 3, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): معاملات سوم هوم — M1-M4 از ظرف tenant-dashboards به ریشهٔ هوم صعود کردند
+  order: 4, // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — ترتیب هشت‌تایی هوم: معاملات چهارم
   agent: {
     tileId: "transactions-contracts",
     // P6526/پ — عین ایجنت واقعی (P6.5-14: INFO_COVERAGE جای CONTACT_COVERAGE نشست؛

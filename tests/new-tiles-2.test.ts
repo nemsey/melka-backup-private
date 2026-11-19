@@ -324,16 +324,17 @@ describe("ثبت کاشی‌ها و ایجنت‌های جدید", () => {
     expect(tileRegistry.has("contracts")).toBe(false);
     expect(tileRegistry.has("finance-commission")).toBe(false);
 
-    // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): ترتیب هفت‌تایی هوم — آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← مغز ملکا ← تنظیمات
+    // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰): ترتیب هشت‌تایی هوم — فایل‌یابی ← آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← تغییرات ← تنظیمات
     const ids = tileRegistry.listRoot("OWNER").map((t) => t.id);
     expect(ids).toEqual([
-      "arm-listings", "arm-requests", "transactions-contracts", "experts",
-      "smart-matching", "learning-tier", "settings",
-    ]); // PN-086: هفت ریشه — M1-M4 از ظرف منحل‌شده به ریشهٔ هوم صعود کردند
+      "file-finder", "arm-listings", "arm-requests", "transactions-contracts", "experts",
+      "smart-matching", "changes", "settings",
+    ]); // DIR-FF-TILE-003: هشت ریشه — فایل‌یابی بازسازی شد، مغز ملکا در تنظیمات ادغام شد
     // PN-086: ظرف tenant-dashboards منحل شد — دیگر هیچ فرزندی ندارد
     expect(tileRegistry.listChildren("tenant-dashboards", "OWNER")).toEqual([]);
-    // فایل‌یابی و داشبورد ملک تبریز حذف شدند (حذف نما — داده مقدس)
-    expect(tileRegistry.has("file-finder")).toBe(false);
+    // فایل‌یابی بازسازی شد (حکم تازهٔ مالک)؛ مغز ملکا و داشبورد ملک تبریز حذف‌اند (حذف نما — داده مقدس)
+    expect(tileRegistry.has("file-finder")).toBe(true);
+    expect(tileRegistry.has("learning-tier")).toBe(false);
     expect(tileRegistry.has("tenant-dashboard-tabriz")).toBe(false);
     // M6/M7 و ظرف و کاشی‌های قدیمی ملکا حذف شدند (PN-038/۲.۱-۲.۳)
     expect(tileRegistry.has("market-index")).toBe(false);

@@ -22,34 +22,41 @@ import "@/core/tiles/tiles/experts";
 // PN-059 (دستور مالک ۱۴۰۵/۰۸/۱۱): کاشی «داشبورد ملکتون» حذف شد.
 // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵ ساعت ۰۷:۴۵ تهران) — انحلال ظرف و هفت‌تایی‌شدن هوم:
 //   · کاشی «داشبورد ملک تبریز» (wrapper) حذف شد؛ M1-M4 به ریشهٔ هوم صعود کردند.
-//   · کاشی «فایل‌یابی» به حکم صریح مالک حذف شد — دادهٔ دیوار/فرصت‌ها و
-//     خط‌لولهٔ اسکن در پایگاه و Worker ماندگارند (قانون دادهٔ مقدس).
 //   · ترتیب هفت‌تایی هوم: آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← مغز ملکا ← تنظیمات.
 //   · گام ۲: در هر چهار کاشی M1-M4 قاب «بروزرسانی چهار فهرست» + «نوار لینک به
 //     کاشی‌های دیگر» (M1-M4 + تطبیق) حفظ شد (FourListsTileChrome).
+// DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — بازسازی فایل‌یابی + ادغام مغز ملکا + هشت‌تایی‌شدن هوم:
+//   · کاشی «فایل‌یابی» با تمام جزییات و ظرفیت‌های مغز بازسازی شد (حکم تازه —
+//     جایگزین حکم حذف PN-086 برای این کاشی؛ داده/خط‌لولهٔ دیوار در هر دو حالت مقدس ماند).
+//   · کاشی «مغز ملکا» (learning-tier) با بخش مغز ملکا در تنظیمات ادغام و سپس حذف شد
+//     (حذف نما — داده‌های یادگیری/تختهٔ سیاه/ایجنت در پایگاه ماندگارند — قانون دادهٔ مقدس).
+//   · ترتیب هشت‌تایی هوم: فایل‌یابی ← آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← تغییرات ← تنظیمات.
 // P6.5-12 (بند ب مرحلهٔ قبل): کاشی «مشتریان ملک تبریز» حذف شد —
 // دادهٔ مشتریان و ماژول‌های تحلیلی در پایگاه/کتابخانه ماندگارند (قانون دادهٔ مقدس)
 import "@/core/tiles/tiles/arm-listing";
 import "@/core/tiles/tiles/arm-request";
 // P6545/گام۲ — چهار کاشی تازهٔ جلسه ۰۳۳ (BLOCK 2.5)
 import "@/core/tiles/tiles/smart-matching";
-import "@/core/tiles/tiles/learning-tier";
 import "@/core/tiles/tiles/settings";
-// DIR-CHANGES-TILE-001 (دستور مالک ۱۴۰۵/۰۸/۲۸) — کاشی «تغییرات»: ایجاد و انجام
+// DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — کاشی «تغییرات»: ایجاد و انجام
 // تغییرات در کدآگهی و کد درخواست سامانه ARM طبق نظر مالک (شناخت ۰۹۹) +
 // حالت تمام‌ظرفیت ترموکس (گام سوم · کدنصب نسل O).
 import "@/core/tiles/tiles/changes";
+// DIR-FF-TILE-003 — کاشی «فایل‌یابی»: بازسازی با تمام ظرفیت‌های مغز ملکا +
+// حالت تمام‌ظرفیت ترموکس هنگام ثبت آگهی در آرم (همانند کاشی تغییرات)
+import "@/core/tiles/tiles/file-finder";
 
 export { transactionsContractsTile } from "@/core/tiles/tiles/transactions-contracts";
 export { expertsTile } from "@/core/tiles/tiles/experts";
-// PN-086/گام ۱: fileFinderTile حذف شد (حذف نما — داده/خط‌لولهٔ دیوار مقدس و ماندگار)
-// P6.5-12: customerClubTile حذف شد (حذف نما — داده ماندگار)
 export { armListingTile } from "@/core/tiles/tiles/arm-listing";
 export { armRequestTile } from "@/core/tiles/tiles/arm-request";
 // P6545/گام۲ — صادرات چهار کاشی تازه
 export { smartMatchingTile } from "@/core/tiles/tiles/smart-matching";
-export { learningTierTile } from "@/core/tiles/tiles/learning-tier";
 export { settingsTile } from "@/core/tiles/tiles/settings";
 // DIR-CHANGES-TILE-001 — صادرات کاشی «تغییرات»
 export { changesTile } from "@/core/tiles/tiles/changes";
+// DIR-FF-TILE-003 — صادرات کاشی «فایل‌یابی» (بازسازی)
+export { fileFinderTile } from "@/core/tiles/tiles/file-finder";
+// DIR-FF-TILE-003/ثانیاً: مغز ملکا در تنظیمات ادغام و کاشی مستقل حذف شد
+// (learningTierTile حذف نما — داده‌های یادگیری/تختهٔ سیاه/ایجنت مقدس و ماندگار)
 // PN-086/گام ۱: tenantDashboardTabrizTile حذف شد — ظرف منحل؛ M1-M4 اکنون ریشه‌اند

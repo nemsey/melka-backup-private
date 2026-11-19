@@ -835,14 +835,15 @@ describe("PN-025 §کمربند — سرویس و API", () => {
  * ════════════════════════════════════════════════════════════════════ */
 
 describe("PN-025 §ادغام UI — سه کاشی حیاتی", () => {
-  test("U-۱ → PN-08۶: AdviceCard در کاشی‌های حیاتی مانده (فایل‌یابی حذف شد — تطبیق زنده)", () => {
+  test("U-۱ → DIR-FF-TILE-003: AdviceCard در کاشی‌های حیاتی (فایل‌یابی بازسازی شد + تطبیق زنده)", () => {
     const m5 = readFileSync(`${TILES}/smart-matching/SmartMatchingPage.tsx`, "utf8");
     expect(m5).toContain('from "@/components/app/shared/AdviceCard"');
     expect(m5).toMatch(/<AdviceCard/);
-    // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): کاشی فایل‌یابی حذف شد — ماژول فیزیکی هم نیست
-    // (حذف نما؛ داده/خط‌لولهٔ دیوار در DB و Worker مقدس و ماندگار)
-    expect(existsSync(`${TILES}/file-finder/FileFinderPage.tsx`)).toBe(false);
-    // M6 (market-index) با کاشی حذف شد — ماژول فیزیکی هم نیست (قانون دادهٔ مقدس: داده DB ماند)
+    // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰): کاشی فایل‌یابی بازسازی شد — مشورهٔ مغز زنده است
+    const ff = readFileSync(`${TILES}/file-finder/FileFinderPage.tsx`, "utf8");
+    expect(ff).toContain('from "@/components/app/shared/AdviceCard"');
+    expect(ff).toMatch(/<AdviceCard/);
+    // M6 (market-index) حذف ماند — ماژول فیزیکی نیست (قانون دادهٔ مقدس: داده DB ماند)
     expect(existsSync(`${TILES}/market-index/MarketIndexPage.tsx`)).toBe(false);
   });
 

@@ -587,20 +587,23 @@ describe("گام۲/M8 — یادگیری و Tier", () => {
     expect(v.intact).toBe(v.total);
   });
 
-  test("م-۸-۲۰ فایل کاشی M8 ثبت شده (اسکن منبع)", () => {
-    const idx = readFileSync(`${TILES_DIR}/learning-tier/index.ts`, "utf8");
-    expect(idx).toContain('id: "learning-tier"');
-    expect(idx).toContain('accent: "m8"');
-    expect(idx).toContain('minRole: "OWNER"');
+  test("م-۸-۲۰ کاشی M8 در بخش تنظیمات ادغام شد (اسکن منبع — DIR-FF-TILE-003/ثانیاً)", () => {
+    // کاشی learning-tier حذف نما شد؛ تمام محتوایش در BrainStatusSection تنظیمات زنده است
+    expect(existsSync(`${TILES_DIR}/learning-tier/index.ts`)).toBe(false);
+    const section = readFileSync(`${TILES_DIR}/settings/BrainStatusSection.tsx`, "utf8");
+    expect(section).toContain("Tier");
+    expect(section).toContain("مغز ملکا");
   });
 
-  test("م-۸-۲۱ صفحهٔ M8: Tier + Brier + تصمیم‌ها + تختهٔ سیاه + ۲۵ بررسی", () => {
-    const page = readFileSync(`${TILES_DIR}/learning-tier/LearningTierPage.tsx`, "utf8");
-    expect(page).toContain("Tier فعلی");
-    expect(page).toContain("بازکالیبراسیون");
-    expect(page).toContain("در انتظار شورا");
-    expect(page).toContain("تختهٔ سیاه");
-    expect(page).toContain("۲۵ بررسی خودتشخیصی");
+  test("م-۸-۲۱ بخش مغز ملکا در تنظیمات: Tier + Brier + تصمیم‌ها + تختهٔ سیاه + ۲۵ بررسی (ادغام کامل)", () => {
+    const section = readFileSync(`${TILES_DIR}/settings/BrainStatusSection.tsx`, "utf8");
+    expect(section).toContain("Tier فعلی");
+    expect(section).toContain("بازکالیبراسیون");
+    expect(section).toContain("در انتظار شورا");
+    expect(section).toContain("تختهٔ سیاه");
+    expect(section).toContain("۲۵ بررسی خودتشخیصی");
+    expect(section).toContain("blackboard");
+    expect(section).toContain("فرا-ذهن");
   });
 
   test("م-۸-۲۲ نمایشگر تختهٔ سیاه API موجود است", () => {
@@ -613,10 +616,11 @@ describe("گام۲/M8 — یادگیری و Tier", () => {
     expect(globals).toContain("--sec-m8-500: #0d9488");
   });
 
-  test("م-۸-۲۴ → PN-038: رجیستری bootstrap — هشت کاشی هوم (M6/M7/ظرف حذف)", async () => {
+  test("م-۸-۲۴ → PN-038 + DIR-FF-TILE-003: رجیستری bootstrap — هشت کاشی هوم (مغز ملکا ادغام شد)", async () => {
     const bootstrap = readFileSync("src/core/tiles/bootstrap.ts", "utf8");
     expect(bootstrap).toContain("smart-matching");
-    expect(bootstrap).toContain("learning-tier");
+    expect(bootstrap).toContain("file-finder");
+    expect(bootstrap).not.toContain('tiles/learning-tier'); // ماژول فیزیکی حذف نما شد (نظر در سند آزاد است)
     expect(bootstrap).not.toContain("market-index");
     expect(bootstrap).not.toContain("data-coverage");
     expect(bootstrap).not.toContain("management-dashboard");

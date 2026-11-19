@@ -22,6 +22,12 @@
  *   ترمیم: پیش‌پرواز نشست آرم در GET (خوانش محلی exp + تمدید خودکار
  *   در صورت زنده‌بودن زنجیره) + غیرفعال‌سازی ثبت با پیام راهنمای
  *   اقدام‌پذیر پیش از اتلاف وقت مالک + نگاشت خطای مرگ زنجیره به ۴۱۲.
+ *
+ * DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰ · اولاً-۲):
+ *   همانند کاشی تغییرات — «حالت تمام‌ظرفیت ترموکس» هنگام ثبت آگهی در
+ *   سامانه ARM خودکار فعال می‌شود: بروزرسانی چهار فهرست متوقف و تمام
+ *   ظرفیت رله با اولویت سقف (۱۰) به ثبت اختصاص می‌یابد
+ *   (ensureChangesSessionForOperation — گیت‌های سه‌گانه + اولویت رله).
  */
 
 import { NextRequest } from "next/server";
@@ -41,6 +47,9 @@ import { transferListingToCrm, execWithArmToken } from "@/lib/listing/crm-transf
 import { DIVAR_REAL_ESTATE_CATEGORIES } from "@/lib/divar/config";
 import { ARM_RELOGIN_MESSAGE } from "@/lib/auth/arm-token-exp";
 import { assessArmSession } from "@/lib/auth/arm-session-check";
+// DIR-FF-TILE-003 — حالت تمام‌ظرفیت ترموکس همانند کاشی تغییرات
+import { ensureChangesSessionForOperation } from "@/lib/changes/session";
+import { db } from "@/lib/db";
 
 function categoryFa(value: string): string {
   return DIVAR_REAL_ESTATE_CATEGORIES.find((c) => c.value === value)?.label ?? value;
@@ -228,6 +237,15 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
     return errorResponse(new MelkApiError("UNKNOWN", "آماده‌سازی فایل آگهی برای ثبت ناموفق بود.", 500, false));
   }
 
+  // ---------- DIR-FF-TILE-003: حالت تمام‌ظرفیت ترموکس (خودکار — همانند کاشی تغییرات) ----------
+  // پیش از اجرای ثبت: بروزرسانی فهرست‌ها متوقف و تمام ظرفیت رله با اولویت
+  // سقف به این عملیات اختصاص می‌یابد (اگر نشست فعال نباشد، خودکار آغاز می‌شود)
+  const fullCapacity = await ensureChangesSessionForOperation(
+    db,
+    { code: guard.personnelCode, name: guard.displayName ?? "" },
+    `ثبت آگهی فایل‌یابی (دیوار: ${ad.token.slice(0, 12)}…)`,
+  );
+
   // ورودی‌های کاربر روی فایل آگهی می‌نشیند (آخرین ویرایش کاربر مقدم است — لایهٔ lib)
   await applyDivarRegisterInputs(listing.id, {
     ownerName,
@@ -263,7 +281,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
 
     // ثبت موفق — وضعیت آگهی دیوار به registered تغییر می‌کند
     await getMarketRepository().setAdStatus(ad.token, "registered");
-    await audit("DIVAR_REGISTER", guard.personnelCode, `token=${ad.token} arm=${result.armPropertyId ?? "?"} listing=${listing.id}`);
+    await audit("DIVAR_REGISTER", guard.personnelCode, `token=${ad.token} arm=${result.armPropertyId ?? "?"} listing=${listing.id} fullCapacity=${fullCapacity.active ? "on" : "off"}${fullCapacity.autoStarted ? " (auto)" : ""}`).catch(() => undefined);
 
     return Response.json({
       ok: true,
@@ -275,6 +293,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
       customerCreated: result.customerCreated ?? false,
       listingId: listing.id,
       steps: result.steps,
+      fullCapacity: { active: fullCapacity.active, autoStarted: fullCapacity.autoStarted },
     });
   } catch (err) {
     const e = err instanceof MelkApiError ? err : new MelkApiError("UNKNOWN", (err as Error)?.message ?? "خطای ثبت در آرم", 502, false);

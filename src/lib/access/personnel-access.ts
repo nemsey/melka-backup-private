@@ -19,13 +19,14 @@ export { isOwnerPersonnelCode };
 
 /** کاشی‌های قابل مدیریت — تنظیمات همیشه در دسترس استثنا شده است */
 export const MANAGEABLE_TILES: Array<{ id: string; title: string }> = [
-  // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): هفت کاشی هوم — فایل‌یابی حذف شد
+  // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰): هشت کاشی هوم — فایل‌یابی بازسازی شد،
+  // مغز ملکا در تنظیمات ادغام و کاشی مستقلش حذف شد (تغییرات فقط-مالک است)
+  { id: "file-finder", title: "فایل یابی" },
   { id: "arm-listings", title: "آگهی" },
   { id: "arm-requests", title: "درخواست" },
   { id: "transactions-contracts", title: "معاملات" },
   { id: "experts", title: "کارشناسان" },
   { id: "smart-matching", title: "تطبیق" },
-  { id: "learning-tier", title: "مغز ملکا" },
 ];
 
 export type AccessLevel = "full" | "limited" | "none";

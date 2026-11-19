@@ -26,7 +26,7 @@ export const armListingTile = defineTile({
   icon: Building2,
   accent: "m1",
   component: withFourListsChrome("listings", "arm-listings")(lazyPage(() => import("./ArmListingsPage"))),
-  order: 1, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): آگهی اول هوم — M1-M4 از ظرف tenant-dashboards به ریشهٔ هوم صعود کردند
+  order: 2, // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — ترتیب هشت‌تایی هوم: آگهی دوم (پیش از این اول بود)
   agent: {
     tileId: "arm-listings",
     insightDomains: ["VOLUME", "TOP_EXPERTS", "REGION", "COVERAGE", "FRESHNESS", "VISIT_ATTENTION"],

@@ -42,7 +42,7 @@ async function callRoute(routeModule: string, query: string): Promise<{ status: 
 }
 
 /* ==========================================================================
- * §۰ — معماری: نام‌ها و ترتیب کاشی‌ها (هوم هفت‌تایی PN-086 — M1-M4 ریشه شدند)
+ * §۰ — معماری: نام‌ها و ترتیب کاشی‌ها (هوم هشت‌تایی DIR-FF-TILE-003 — فایل‌یابی بازسازی + مغز ملکا در تنظیمات ادغام)
  * ========================================================================== */
 
 describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
@@ -50,32 +50,32 @@ describe("P6530 §۰ — نام و ترتیب کاشی‌ها", () => {
     await import("@/core/tiles/bootstrap");
   });
 
-  test("۰-۱) صفحه هوم — دقیقاً هفت کاشی با نام‌ها و ترتیب الزامی مالک (PN-086/گام ۱)", async () => {
+  test("۰-۱) صفحه هوم — دقیقاً هشت کاشی با نام‌ها و ترتیب الزامی مالک (DIR-FF-TILE-003)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const roots = tileRegistry.listRoot("OWNER");
     expect(roots.map((t) => t.title)).toEqual([
-      "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "مغز ملکا", "تنظیمات",
-    ]); // PN-086 (دستور مالک ۱۴۰۵/۰۸/۲۵): هفت کاشی ریشه — فایل‌یابی و ظرف داشبورد ملک تبریز حذف شدند
+      "فایل یابی", "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "تغییرات", "تنظیمات",
+    ]); // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰): هشت کاشی ریشه — فایل‌یابی بازسازی شد، مغز ملکا در تنظیمات ادغام و حذف شد
   });
 
   test("۰-۲) نمای مشاور همان ترتیب هوم را دارد (تنظیمات/داشبورد عمومی‌اند)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const ownerRoots = tileRegistry.listRoot("OWNER").map((t) => t.title);
     const consultantRoots = tileRegistry.listRoot("CONSULTANT").map((t) => t.title);
-    // PN-038: کاشی‌های فقط-مالک (تطبیق/مغز) برای مشاور حذف می‌شوند
-    expect(consultantRoots).toEqual(ownerRoots.filter((t) => t !== "تطبیق" && t !== "مغز ملکا"));
+    // PN-038 + DIR-FF-TILE-003: کاشی‌های فقط-مالک (تطبیق/تغییرات) برای مشاور حذف می‌شوند
+    expect(consultantRoots).toEqual(ownerRoots.filter((t) => t !== "تطبیق" && t !== "تغییرات"));
   });
 
-  // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): ظرف tenant-dashboards منحل — M1-M4 ریشهٔ هوم‌اند
-  test("۰-۳) هفت ریشه به ترتیب ۱ تا ۷؛ هیچ ظرفی زنده نیست (PN-086)", async () => {
+  // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰): هشت ریشه به ترتیب ۱ تا ۸؛ مغز ملکا در تنظیمات ادغام شد
+  test("۰-۳) هشت ریشه به ترتیب ۱ تا ۸؛ هیچ ظرفی زنده نیست (DIR-FF-TILE-003)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     expect(tileRegistry.listChildren("tenant-dashboards", "OWNER")).toEqual([]); // PN-086: ظرف منحل
     const roots = tileRegistry.listRoot("OWNER");
     expect(roots.map((t) => t.id)).toEqual([
-      "arm-listings", "arm-requests", "transactions-contracts", "experts",
-      "smart-matching", "learning-tier", "settings",
+      "file-finder", "arm-listings", "arm-requests", "transactions-contracts", "experts",
+      "smart-matching", "changes", "settings",
     ]);
-    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     for (const t of roots) expect(t.container).toBeUndefined();
   });
 

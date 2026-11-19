@@ -86,7 +86,7 @@ describe("PN-016 · مدل دامنهٔ کاربران", () => {
   test("ماتریس پیش‌فرض: VIEWER فقط خواندن · GUEST هیچ", async () => {
     const { defaultPermissionsForRole } = await import("@/lib/users/user-model");
     const viewer = defaultPermissionsForRole("VIEWER");
-    expect(viewer.length).toBe(6); // PN-086: شش کاشی قابل‌مدیریت هوم (فایل‌یابی حذف شد)
+    expect(viewer.length).toBe(6); // DIR-FF-TILE-003: شش کاشی قابل‌مدیریت هوم (فایل‌یابی بازسازی شد، مغز ملکا در تنظیمات ادغام شد)
     expect(viewer.every((p) => p.canRead && !p.canWrite && !p.canDelete && !p.canExport && !p.canSync)).toBe(true);
     expect(defaultPermissionsForRole("GUEST")).toHaveLength(0);
   });
@@ -103,7 +103,7 @@ describe("PN-016 · مدل دامنهٔ کاربران", () => {
 
 /* ═══════ ۲) رجیستری User در resolveAllowedTiles ═══════ */
 describe("PN-016 · resolveAllowedTiles با رجیستری User", () => {
-  test("کاربر EXPERT → شش کاشی؛ بدون رکورد User → همان رفتار قدیمی none", async () => {
+  test("کاربر EXPERT → هر ۶ کاشی (full با بازگشت فایل‌یابی)؛ بدون رکورد User → همان رفتار قدیمی none", async () => {
     const u = await db.user.create({
       data: { personnelCode: "960010", fullName: "کارشناس تست", role: "EXPERT", isActive: true, createdBy: "test" },
     });
@@ -115,10 +115,13 @@ describe("PN-016 · resolveAllowedTiles با رجیستری User", () => {
 
     const { resolveAllowedTiles } = await import("@/lib/access/personnel-access");
     const r1 = await resolveAllowedTiles("CONSULTANT", "960010");
-    expect(r1.level).toBe("limited");
+    // DIR-FF-TILE-003: فایل‌یابی بازسازی شد و مغز ملکا در تنظیمات ادغام شد —
+    // ماتریس پیش‌فرض EXPERT هر ۶ کاشی قابل‌مدیریت را دارد → full
+    expect(r1.level).toBe("full");
     expect(r1.tiles).toContain("arm-listings");
+    expect(r1.tiles).toContain("file-finder");
     expect(r1.tiles).not.toContain("learning-tier");
-    expect(r1.tiles.length).toBe(5); // PN-086: شش قابل‌مدیریت − مغز ملکا = ۵
+    expect(r1.tiles.length).toBe(6); // DIR-FF-TILE-003: هر ۶ کاشی قابل‌مدیریت
 
     // بدون رکورد → رفتار قدیمی (PersonnelAccess خالی) = none
     const r2 = await resolveAllowedTiles("CONSULTANT", "960099");
@@ -272,7 +275,7 @@ describe("PN-016 · مرز روت‌های مدیریت کاربران", () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(Array.isArray(body.rows)).toBe(true);
-    expect(body.registry.length).toBe(6); // PN-086: ۶ کاشی (فایل‌یابی حذف شد)
+    expect(body.registry.length).toBe(6); // DIR-FF-TILE-003: ۶ کاشی (فایل‌یابی بازسازی + مغز ملکا ادغام در تنظیمات)
     expect(body.roles.map((r: { id: string }) => r.id)).toEqual(["OWNER", "MANAGER", "EXPERT", "VIEWER", "GUEST"]);
   });
 

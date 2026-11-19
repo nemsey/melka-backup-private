@@ -25,7 +25,7 @@ export const armRequestTile = defineTile({
   icon: ClipboardList,
   accent: "m2",
   component: withFourListsChrome("requests", "arm-requests")(lazyPage(() => import("./ArmRequestsPage"))),
-  order: 2, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): درخواست دوم هوم — M1-M4 از ظرف tenant-dashboards به ریشهٔ هوم صعود کردند
+  order: 3, // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — ترتیب هشت‌تایی هوم: درخواست سوم
   agent: {
     tileId: "arm-requests",
     insightDomains: ["VOLUME", "TOP_EXPERTS", "COMPOSITION", "COVERAGE", "FRESHNESS"],

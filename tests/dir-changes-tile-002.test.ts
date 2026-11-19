@@ -14,9 +14,11 @@
 
 import { beforeAll, afterAll, describe, expect, test } from "bun:test";
 
-process.env.NODE_ENV = process.env.NODE_ENV ?? "test";
-process.env.DATABASE_URL = process.env.DATABASE_URL ?? "file:/home/z/my-project/db/test.db";
-process.env.MELK_TOKEN_KEY = process.env.MELK_TOKEN_KEY ?? "test-only-key-not-a-real-secret";
+Object.assign(process.env, {
+  NODE_ENV: process.env.NODE_ENV ?? "test",
+  DATABASE_URL: process.env.DATABASE_URL ?? "file:/home/z/my-project/db/test.db",
+  MELK_TOKEN_KEY: process.env.MELK_TOKEN_KEY ?? "test-only-key-not-a-real-secret",
+});
 
 const { db } = await import("@/lib/db");
 const V = await import("@/lib/changes/variables");

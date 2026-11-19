@@ -263,14 +263,14 @@ describe("DIR-CHANGES-TILE-001 · ۵) اولویت رله — کاشی مقدم 
 /* ═══════════ ۶) کاشی در رجیستری ═══════════ */
 
 describe("DIR-CHANGES-TILE-001 · ۶) کاشی در رجیستری", () => {
-  test("۶-۱ ثبت شده با شناسهٔ پایدار + OWNER-only + ترتیب هشتم", async () => {
+  test("۶-۱ ثبت شده با شناسهٔ پایدار + OWNER-only + ترتیب هفتم (DIR-FF-TILE-003)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     await import("@/core/tiles/bootstrap");
     const t = tileRegistry.get(V.CHANGES_TILE_ID);
     expect(t).toBeDefined();
     expect(t!.id).toBe("changes");
     expect(t!.minRole).toBe("OWNER");
-    expect(t!.order).toBe(8);
+    expect(t!.order).toBe(7); // DIR-FF-TILE-003: هفت کاشی هشت‌تایی هوم (پیش از این هشتم بود)
     expect(t!.title).toBe("تغییرات");
     // برای مشاور پنهان است (minRole=OWNER)
     const consultantView = tileRegistry.listAll("CONSULTANT").find((x) => x.id === "changes");

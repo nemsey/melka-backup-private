@@ -28,7 +28,7 @@ export const changesTile = defineTile({
   icon: FilePen,
   accent: "ai",
   component: lazyPage(() => import("./ChangesPage")),
-  order: 8, // پس از هفت‌تایی هوم (PN-086) — کاشی تازه بدون جابه‌جایی ترتیب مصوب
+  order: 7, // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — ترتیب هشت‌تایی هوم: تغییرات هفتم
   minRole: "OWNER",
   agent: null,
   settings: [

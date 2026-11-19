@@ -12,6 +12,8 @@
  *   · کاشی «داشبورد ملک تبریز» حذف شد؛ M1-M4 به ریشهٔ هوم صعود کردند.
  *   · کاشی «فایل‌یابی» حذف شد (حذف نما — داده/خط‌لولهٔ دیوار مقدس).
  *   · ترتیب هفت‌تایی هوم: آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← مغز ملکا ← تنظیمات.
+ * DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — بازسازی فایل‌یابی (هشتم حذف PN-086 برای این کاشی) +
+ *   ادغام مغز ملکا در تنظیمات و حذف کاشی مستقل + هشت‌تایی‌شدن هوم.
  *   · گام ۲: قاب «بروزرسانی چهار فهرست» + «نوار لینک کاشی‌ها» در M1-M4 (FourListsTileChrome).
  * اجرا: bun test tests/management-dashboard.test.ts
  */
@@ -21,45 +23,48 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Home as DummyIcon } from "lucide-react";
 
-/** PN-086/گام ۱ — ترتیب الزامی هوم: هفت کاشی ریشه */
+/** DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — ترتیب الزامی هوم: هشت کاشی ریشه */
 const ROOT_EXPECTED = [
+  "file-finder",            // فایل‌یابی (بازسازی — تمام ظرفیت‌های مغز + تمام‌ظرفیت ترموکس)
   "arm-listings",            // آگهی (M1)
   "arm-requests",            // درخواست (M2)
   "transactions-contracts",  // معاملات (M3)
   "experts",                 // کارشناسان (M4)
   "smart-matching",          // تطبیق
-  "learning-tier",           // مغز ملکا
-  "settings",                // تنظیمات
+  "changes",                 // تغییرات
+  "settings",                // تنظیمات (مغز ملکا در آن ادغام شد — DIR-FF-TILE-003/ثانیاً)
 ];
 
-/** PN-086 — نام‌های کاشی‌ها (مغز ملکا = نام کامل به دستور صریح مالک) */
+/** DIR-FF-TILE-003 — نام‌های کاشی‌ها (مغز ملکا = بخش تنظیمات؛ کاشی مستقل حذف شد) */
 const TITLES_EXPECTED: Record<string, string> = {
+  "file-finder": "فایل یابی",
   "arm-listings": "آگهی",
   "arm-requests": "درخواست",
   "transactions-contracts": "معاملات",
   "experts": "کارشناسان",
   "smart-matching": "تطبیق",
-  "learning-tier": "مغز ملکا",
+  "changes": "تغییرات",
   "settings": "تنظیمات",
 };
 
-describe("معماری هوم یک‌پارچه (PN-038 + PN-086)", () => {
+describe("معماری هوم یک‌پارچه (PN-038 + PN-086 + DIR-FF-TILE-003)", () => {
   beforeAll(async () => {
     await import("@/core/tiles/bootstrap");
   });
 
-  test("PN-086/گام ۱ — هوم: هفت کاشی ریشه به ترتیب الزامی مالک (آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← مغز ملکا ← تنظیمات)", async () => {
+  test("DIR-FF-TILE-003 — هوم: هشت کاشی ریشه به ترتیب الزامی مالک (فایل‌یابی ← آگهی ← درخواست ← معاملات ← کارشناسان ← تطبیق ← تغییرات ← تنظیمات)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const root = tileRegistry.listRoot("OWNER").map((t) => t.id);
     expect(root).toEqual(ROOT_EXPECTED);
-    // نمای مشاور: کاشی‌های فقط-مالک (تطبیق/مغز ملکا) حذف می‌شوند — ترتیب باقی حفظ می‌شود
+    // نمای مشاور: کاشی‌های فقط-مالک (تطبیق/تغییرات) حذف می‌شوند — ترتیب باقی حفظ می‌شود
     const rootConsultant = tileRegistry.listRoot("CONSULTANT").map((t) => t.id);
-    expect(rootConsultant).toEqual(ROOT_EXPECTED.filter((id) => id !== "smart-matching" && id !== "learning-tier"));
+    expect(rootConsultant).toEqual(ROOT_EXPECTED.filter((id) => id !== "smart-matching" && id !== "changes"));
   });
 
-  test("PN-086/گام ۱ — کاشی «فایل‌یابی» و کاشی «داشبورد ملک تبریز» حذف شده‌اند (حذف نما — داده مقدس)", async () => {
+  test("DIR-FF-TILE-003 — کاشی «فایل‌یابی» بازسازی شد؛ کاشی مغز ملکا و داشبورد ملک تبریز حذف‌اند (ادغام در تنظیمات)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    expect(tileRegistry.get("file-finder")).toBeUndefined();
+    expect(tileRegistry.get("file-finder")).toBeDefined(); // بازسازی — حکم تازهٔ مالک
+    expect(tileRegistry.get("learning-tier")).toBeUndefined(); // ادغام در تنظیمات
     expect(tileRegistry.get("tenant-dashboard-tabriz")).toBeUndefined();
   });
 
@@ -71,14 +76,14 @@ describe("معماری هوم یک‌پارچه (PN-038 + PN-086)", () => {
     }
   });
 
-  test("PN-038/۲.۴ + PN-086 — نام‌های کاشی‌ها (مغز ملکا با نام کامل به دستور مالک)", async () => {
+  test("PN-038/۲.۴ + DIR-FF-TILE-003 — نام‌های کاشی‌ها (مغز ملکا در تنظیمات ادغام شد)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     for (const [id, title] of Object.entries(TITLES_EXPECTED)) {
       expect(tileRegistry.get(id)!.title).toBe(title);
     }
-    // هیچ کاشی ثبت‌شده‌ای پسوند قدیمی ندارد — تنها استثنای صریح مالک: «مغز ملکا»
+    // هیچ کاشی ثبت‌شده‌ای پسوند قدیمی ندارد (مغز ملکا دیگر کاشی نیست — بخش تنظیمات است)
     for (const t of tileRegistry.listAll("OWNER")) {
-      if (t.id !== "learning-tier") expect(t.title).not.toContain("ملکا");
+      expect(t.title).not.toContain("ملکا");
       expect(t.title).not.toContain("ملک تبریز");
     }
   });
@@ -112,16 +117,16 @@ describe("معماری هوم یک‌پارچه (PN-038 + PN-086)", () => {
     expect(tile.agent!.insightDomains).toContain("VISIT_STATUS");
   });
 
-  test("PN-086 — هیچ کاشی گم نشده: هفت ریشه = کل رجیستری", async () => {
+  test("PN-086 — هیچ کاشی گم نشده: هشت ریشه = کل رجیستری", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     const all = tileRegistry.listAll("OWNER").map((t) => t.id);
     expect(all.sort()).toEqual([...ROOT_EXPECTED].sort());
     expect(tileRegistry.size).toBe(ROOT_EXPECTED.length);
   });
 
-  test("PN-038 — کاشی‌های ماندگار ایجنت‌های خود را حفظ کرده‌اند (فایل‌یابی حذف شد)", async () => {
+  test("PN-038 — کاشی‌های ماندگار ایجنت‌های خود را حفظ کرده‌اند (فایل‌یابی بازسازی شد)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
-    for (const id of ["arm-listings", "arm-requests", "transactions-contracts", "experts", "smart-matching", "learning-tier"]) {
+    for (const id of ["file-finder", "arm-listings", "arm-requests", "transactions-contracts", "experts", "smart-matching"]) {
       const tile = tileRegistry.get(id)!;
       expect(tile.agent).not.toBeNull();
       expect(tile.agent!.tileId).toBe(id);
@@ -162,10 +167,14 @@ describe("معماری هوم یک‌پارچه (PN-038 + PN-086)", () => {
     }
   });
 
-  test("PN-086/گام ۱ — ماژول‌های فیزیکی فایل‌یابی و داشبورد ملک تبریز حذف شدند (دادهٔ DB مقدس می‌ماند)", async () => {
+  test("DIR-FF-TILE-003 — ماژول فیزیکی فایل‌یابی بازسازی شد؛ مغز ملکا/داشبورد حذف (دادهٔ DB مقدس می‌ماند)", async () => {
+    // بازسازی (حکم تازهٔ مالک ۱۴۰۵/۰۸/۳۰): ماژول‌های فیزیکی فایل‌یابی زنده‌اند
+    expect(existsSync(join(import.meta.dir, "..", "src/core/tiles/tiles/file-finder/index.ts"))).toBe(true);
+    expect(existsSync(join(import.meta.dir, "..", "src/core/tiles/tiles/file-finder/FileFinderPage.tsx"))).toBe(true);
+    // مغز ملکا حذف نما شد (ادغام در تنظیمات) — داشبورد ملک تبریز همچنان حذف
     for (const mod of [
-      "src/core/tiles/tiles/file-finder/index.ts",
-      "src/core/tiles/tiles/file-finder/FileFinderPage.tsx",
+      "src/core/tiles/tiles/learning-tier/index.ts",
+      "src/core/tiles/tiles/learning-tier/LearningTierPage.tsx",
       "src/core/tiles/tiles/tenant-dashboard-tabriz/index.ts",
       "src/components/tiles/TenantDashboard.tsx",
       "src/app/dashboard/tabriz/page.tsx",

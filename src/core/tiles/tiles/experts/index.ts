@@ -21,7 +21,7 @@ export const expertsTile = defineTile({
   icon: Users,
   accent: "m4",
   component: withFourListsChrome("experts", "experts")(lazyPage(() => import("./ExpertsPage"))),
-  order: 4, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵): کارشناسان چهارم هوم — M1-M4 از ظرف tenant-dashboards به ریشهٔ هوم صعود کردند
+  order: 5, // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — ترتیب هشت‌تایی هوم: کارشناسان پنجم
   agent: {
     tileId: "experts",
     insightDomains: ["COMPOSITION", "ACTIVITY", "GROWTH", "NETWORK", "RISK"],

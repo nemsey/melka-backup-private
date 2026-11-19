@@ -21,7 +21,7 @@ export const smartMatchingTile = defineTile({
   icon: Sparkles,
   accent: "m5",
   component: lazyPage(() => import("./SmartMatchingPage")),
-  order: 5, // PN-086/گام ۱ (دستور مالک ۱۴۰۵/۰۸/۲۵) — ترتیب هفت‌تایی هوم: تطبیق پنجم
+  order: 6, // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰) — ترتیب هشت‌تایی هوم: تطبیق ششم
   minRole: "OWNER",
   agent: {
     tileId: "smart-matching",

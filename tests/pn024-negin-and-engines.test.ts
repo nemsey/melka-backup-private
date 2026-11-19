@@ -117,11 +117,12 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
     }
   });
 
-  test("N14 اعمال: هر ۶ صفحهٔ کاشی data-negin دارد (PN-086 — فایل‌یابی حذف شد؛ تنظیمات data-negin ندارد)", () => {
+  test("N14 اعمال: هر ۶ صفحهٔ کاشیِ نگین‌دار data-negin دارد (DIR-FF-TILE-003 — فایل‌یابی بازسازی؛ تنظیمات/تغییرات data-negin ندارند)", () => {
     const pages = [
-      // PN-086/گام ۱: فایل‌یابی حذف شد؛ کاشی‌های ریشهٔ فعال (آگهی…مغز ملکا)
+      // DIR-FF-TILE-003: فایل‌یابی بازسازی شد؛ مغز ملکا در تنظیمات ادغام شد (نگین nili او در BrainStatusSection زنده است)
+      "file-finder/FileFinderPage.tsx",
       "arm-listing/ArmListingsPage.tsx", "arm-request/ArmRequestsPage.tsx", "transactions-contracts/TransactionsContractsPage.tsx",
-      "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx", "learning-tier/LearningTierPage.tsx",
+      "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx",
     ];
     for (const p of pages) {
       const src = readFileSync(join(ROOT, "src/core/tiles/tiles", p), "utf-8");
@@ -129,12 +130,13 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
     }
   });
 
-  test("N15 اعمال: مقدار data-negin هر صفحه در فهرست گوهرها معتبر است (PN-086: ۶ صفحه)", () => {
+  test("N15 اعمال: مقدار data-negin هر صفحه در فهرست گوهرها معتبر است (DIR-FF-TILE-003: ۶ صفحه نگین‌دار)", () => {
     const validGems = new Set(NEGIN_GEMS.map((g) => g.id));
     const pages = [
-      // PN-086/گام ۱: فایل‌یابی حذف شد؛ کاشی‌های ریشهٔ فعال (آگهی…مغز ملکا)
+      // DIR-FF-TILE-003: فایل‌یابی بازسازی شد (yaghut-kamani)؛ مغز ملکا در تنظیمات ادغام شد (نگین nili در BrainStatusSection)
+      "file-finder/FileFinderPage.tsx",
       "arm-listing/ArmListingsPage.tsx", "arm-request/ArmRequestsPage.tsx", "transactions-contracts/TransactionsContractsPage.tsx",
-      "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx", "learning-tier/LearningTierPage.tsx",
+      "experts/ExpertsPage.tsx", "smart-matching/SmartMatchingPage.tsx",
     ];
     const seen = new Set<string>();
     for (const p of pages) {
@@ -144,7 +146,7 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
       expect(validGems.has(m![1]!)).toBe(true);
       seen.add(m![1]!);
     }
-    expect(seen.size).toBe(6); // PN-086: شش گوهر یکتا (فایل‌یابی حذف؛ تنظیمات data-negin ندارد)
+    expect(seen.size).toBe(6); // DIR-FF-TILE-003: شش گوهر یکتا (تنظیمات/تغییرات data-negin ندارند)
   });
 
   test("N16 قاعدهٔ مروارید: متن ۷۰۰ تیره است (رنگ روشن ⇒ متن تیره اجباری)", () => {
@@ -177,7 +179,7 @@ describe("PN-024 · نگین — سیستم طراحی گوهرین", () => {
 
   test("N19 قانون ۷: اعمال فقط className — صفحات تغییر منطقی ندارند (نمونهٔ byte-check)", () => {
     // هر صفحه دقیقاً یک میلهٔ نگین دارد (نه بیشتر — حداقل‌ترین تغییر)
-    const src = readFileSync(join(ROOT, "src/core/tiles/tiles/learning-tier/LearningTierPage.tsx"), "utf-8");
+    const src = readFileSync(join(ROOT, "src/core/tiles/tiles/file-finder/FileFinderPage.tsx"), "utf-8");
     expect((src.match(/negin-bar/g) ?? []).length).toBe(1);
   });
 
