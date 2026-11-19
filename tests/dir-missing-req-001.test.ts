@@ -16,10 +16,12 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
-// env آزمون — عین package.json test script
-process.env.NODE_ENV = process.env.NODE_ENV ?? "test";
-process.env.DATABASE_URL = process.env.DATABASE_URL ?? "file:/home/z/my-project/db/test.db";
-process.env.MELK_TOKEN_KEY = process.env.MELK_TOKEN_KEY ?? "test-only-key-not-a-real-secret";
+// env آزمون — عین package.json test script (Object.assign: سازگار با bun-types که NODE_ENV را readonly می‌بیند)
+Object.assign(process.env, {
+  NODE_ENV: process.env.NODE_ENV ?? "test",
+  DATABASE_URL: process.env.DATABASE_URL ?? "file:/home/z/my-project/db/test.db",
+  MELK_TOKEN_KEY: process.env.MELK_TOKEN_KEY ?? "test-only-key-not-a-real-secret",
+});
 
 import { shouldMarkCycleComplete, hasEnoughCoverage } from "@/lib/melk-api/arm-catalog";
 import { resolveBestArmToken, invalidateArmTokenResolverCache } from "@/lib/melk-api/arm-token-resolver";

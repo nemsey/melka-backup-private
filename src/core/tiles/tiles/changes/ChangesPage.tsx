@@ -1,15 +1,12 @@
 "use client";
 
 /**
- * کاشی «تغییرات» — صفحهٔ اصلی (DIR-CHANGES-TILE-001 · دستور مالک ۱۴۰۵/۰۸/۲۸)
+ * کاشی «تغییرات» — صفحهٔ اصلی (DIR-CHANGES-TILE-002 · دستور مالک ۱۴۰۵/۰۸/۲۹)
  * ---------------------------------------------------------------------------
- * ساختار:
+ * ساختار تازه (فقط همین‌ها — سایر بخش‌ها حذف شد):
  *   ۰) حالت تمام‌ظرفیت (گام سوم): شروع/پایان + وضعیت رلهٔ ترموکس + صف اولویت‌ها
- *   ۱) قابلیت ۱ — ایجاد و تغییر کدآگهی
- *   ۲) قابلیت ۲ — ایجاد و تغییر کد درخواست
- *
- * هر دو قابلیت با شناخت کامل گام اول (گزارش ۰۹۹) ساخته شده‌اند؛ متغیرهای
- * موردنیاز هر دو در variables.ts پیش‌بینی و ایجاد شده است.
+ *   ۱) کدآگهی — تغییر در کد · حذف کد
+ *   ۲) کددرخواست — تغییر در کد · حذف کد
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -97,9 +94,9 @@ export function ChangesPage({ userRole }: TilePageProps) {
       {/* ── سربرگ ── */}
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
-          <h2 className="text-lg font-bold">تغییرات — ایجاد و انجام تغییرات در کدآگهی و کد درخواست</h2>
+          <h2 className="text-lg font-bold">تغییرات — تغییر در کد و حذف کد (کدآگهی و کددرخواست)</h2>
           <p className="text-xs text-muted-foreground mt-1 leading-5">
-            صاحب‌اختیار مالک در سامانه ARM ملک تبریز — با شناخت کامل گزارش ۰۹۹ (ثبت ۵۵۹۲۰ + شاهکار اصلاح تاریخ تاریخچه ۱۷:۳۰|۱۴۰۵/۰۸/۲۰).
+            صاحب‌اختیار مالک در سامانه ARM ملک تبریز — تغییر اطلاعات مالک آگهی، تغییر تاریخ «ایجاد مشاور» با آبشار اتوماتیک تاریخچه‌ها، و حذف کامل کدها با پاکسازی کامل آثار — با شناخت کامل گزارش‌های dir-reg-req-099-001 و DIR-CHANGES-TILE-001.
             {userRole !== "OWNER" ? " — این کاشی فقط برای مالک فعال است." : ""}
           </p>
         </div>
@@ -171,16 +168,16 @@ export function ChangesPage({ userRole }: TilePageProps) {
         </CardContent>
       </Card>
 
-      {/* ── دو قابلیت ── */}
-      <Tabs defaultValue="request">
+      {/* ── دو بخش کاشی ── */}
+      <Tabs defaultValue="listing">
         <TabsList className="grid w-full grid-cols-2 h-auto">
           <TabsTrigger value="listing" className="gap-1.5 text-xs py-2">
             <Building2 className="h-4 w-4" />
-            قابلیت ۱ — کدآگهی
+            ۱. کدآگهی — تغییر · حذف
           </TabsTrigger>
           <TabsTrigger value="request" className="gap-1.5 text-xs py-2">
             <ClipboardList className="h-4 w-4" />
-            قابلیت ۲ — کد درخواست
+            ۲. کددرخواست — تغییر · حذف
           </TabsTrigger>
         </TabsList>
         <TabsContent value="listing" className="mt-3">

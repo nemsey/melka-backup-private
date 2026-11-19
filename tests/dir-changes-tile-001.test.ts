@@ -97,10 +97,19 @@ describe("DIR-CHANGES-TILE-001 · ۲) دو قابلیت — شرح و مسیره
     expect(V.ARM_PATHS.requestCreate).toBe("requests/create");
     expect(V.ARM_PATHS.requestUpdate("X")).toBe("requests/update/X");
     expect(V.ARM_PATHS.requestHistory("X")).toBe("requests/history/X");
+    expect(V.ARM_PATHS.requestInfo("X")).toBe("requests/info/X");
     expect(V.ARM_PATHS.requestEventCreate).toBe("request-events/create");
-    expect(V.ARM_PATHS.propertyCreate).toBe("properties/create");
+    expect(V.ARM_PATHS.requestEventUpdate("X")).toBe("request-events/update/X");
+    expect(V.ARM_PATHS.requestEventDelete("X")).toBe("request-events/delete/X");
     expect(V.ARM_PATHS.propertyUpdate("X")).toBe("properties/update/X");
     expect(V.ARM_PATHS.propertyByCode(55920)).toBe("properties/info/by-code/55920");
+    expect(V.ARM_PATHS.propertyOwner("X")).toBe("properties/owner/X");
+    expect(V.ARM_PATHS.customerUpdate("X")).toBe("users/update/X");
+    expect(V.ARM_PATHS.customerDelete("X")).toBe("users/delete/X");
+    // واریانت‌های کشف ۰۰۲ — تاریخچهٔ کامل آگهی و حذف
+    expect(V.ARM_PATHS.propertyHistoryVariants("X")[0]).toBe("properties/history/X");
+    expect(V.ARM_PATHS.propertyDeleteVariants("X")[0].path).toBe("properties/delete/X");
+    expect(V.ARM_PATHS.requestDeleteVariants("X")[0].path).toBe("requests/delete/X");
   });
 });
 

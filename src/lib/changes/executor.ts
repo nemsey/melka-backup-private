@@ -1,26 +1,34 @@
 /**
- * executor.ts — کاشی «تغییرات» · گام دوم (DIR-CHANGES-TILE-001)
+ * executor.ts — کاشی «تغییرات» · مجری عملیات (DIR-CHANGES-TILE-002)
  * ---------------------------------------------------------------------------
- * مجری دو قابلیت کاشی — هر دو با شناخت کامل گام اول (گزارش dir-reg-req-099-001):
+ * ساختار تازهٔ کاشی (دستور مالک ۱۴۰۵/۰۸/۲۹ — فقط همین عملیات‌ها):
  *
- *   قابلیت ۱ — ایجاد و تغییر «کدآگهی» (سامانه ARM ملک تبریز):
- *     · جستجو با کدآگهی (زنده: properties/info/by-code + جزئیات + مالک)
- *     · ثبت کدآگهی جدید — عین فرم ۵ گامی خود سامانه (validateListing →
- *       transferListingToCrm → properties/create) — مسیر زنده و اثبات‌شده
- *     · تغییر در کدآگهی موجود — PUT properties/update/{id} با بازسازی کامل
- *       بدنهٔ ویرایش عین edit-page خود سامانه (الگوی تأییدشدهٔ requests/update)
+ *   کدآگهی:
+ *     · lookupListingForChange — خواندن وضعیت کامل برای فرم تغییر/حذف
+ *     · changeListingOwnerInfo — تغییر «اطلاعات مالک آگهی» (نام + موبایل) در ARM
+ *     · changeListingHistoryDate — تغییر تاریخ «ایجاد مشاور» + آبشار اتوماتیک
+ *       تاریخچه‌های آگهی (تاریخچهٔ تغییرات + تاریخچهٔ رویداد و بازخورد)
+ *     · deleteListingCode — حذف کامل آگهی از ARM + همهٔ آینه‌های محلی
  *
- *   قابلیت ۲ — ایجاد و تغییر «کد درخواست» (سامانه ARM ملک تبریز):
- *     · جستجو با کد درخواست (محلی + زنده: requests/list/details/history/applicant)
- *     · ثبت کد درخواست جدید — عین ۰۹۹: اعتبارسنجی ۴ گامی → مشتری → مکان →
- *       جزییات → تکمیلی → POST requests/create → کد از فهرست زنده
- *     · اصلاح تاریخ تاریخچهٔ تغییرات — شاهکار ۰۹۹: PUT requests/update/{id}
- *       با آرایهٔ status با همان شناسه‌های عین و تاریخ هدف
- *     · ثبت رویداد تاریخچه با تاریخ دقیق (اقدام/توسط/تاریخ جلالی + ساعت)
+ *   کددرخواست:
+ *     · lookupRequestForChange — خواندن وضعیت کامل برای فرم تغییر/حذف
+ *     · changeRequestHistoryDate — تغییر تاریخ «ایجاد مشاور» + آبشار اتوماتیک
+ *       (تعمیم شاهکار ۰۹۹: آرایهٔ status کامل + رویدادها با همان Δ نسبی)
+ *     · deleteRequestCode — حذف کامل درخواست از ARM + همهٔ آینه‌های محلی
  *
- * حمل‌ونقل: همهٔ تماس‌ها از طریق armCall — در حالت رلهٔ ترموکس خودکار به
- * صف رله با اولویت کاشی (۱۰ در حالت تمام‌ظرفیت) می‌روند (relay.ts · گام سوم).
- * توکن: resolveBestArmToken — تازه‌ترین توکن زندهٔ مالک (نشست/خزانه · عین ۰۹۹).
+ * شواهد زندهٔ این نوبت (پراب‌های ۱-۱۱ + آزمون semantics روی ۵۵۹۲۰):
+ *   · PUT requests/update + آرایهٔ status = REPLACE کامل (بازگانی اثبات‌شده)
+ *     → هرگز آرایهٔ ناقص فرستاده نمی‌شود؛ فقط آرایهٔ کاملِ خوانده‌شده.
+ *   · تاریخچهٔ کامل آگهی از API خوانده نمی‌شود (۶۰+ واریانت بررسی شد) →
+ *     بازنویسی تاریخچهٔ آگهی فقط با «دروازهٔ خواندن کامل» (واریانت‌های
+ *     variables.ARM_PATHS.propertyHistoryVariants)؛ در غیر این صورت گام با
+ *     دلیل شفاف رد می‌شود (محافظ تاریخچه — قاعدهٔ REPLACE).
+ *   · تاریخچهٔ رویداد و بازخورد هر آگهی = request-events/list?property= (کامل) ·
+ *     ویرایش هر رویداد = request-events/update/{id} · حذف = request-events/delete/{id}.
+ *   · اطلاعات مالک آگهی = properties/owner/{id} → users/update/{userId}.
+ *
+ * حمل‌ونقل: armCall (رلهٔ ترموکس خودکار با اولویت ۱۰ در نشست فعال).
+ * توکن: resolveBestArmToken — تازه‌ترین توکن زندهٔ مالک (عین ۰۹۹).
  */
 
 import { db } from "@/lib/db";
@@ -29,25 +37,19 @@ import { getMelkApiConfig } from "@/lib/melk-api/config";
 import { resolveBestArmToken } from "@/lib/melk-api/arm-token-resolver";
 import type { SessionContext } from "@/lib/auth/session";
 import { audit } from "@/lib/auth/session";
-import { isoToJalaliString } from "@/lib/jalali";
-import { TABRIZ_AREAS, ALL_LINES } from "@/lib/divar/tabriz-locations";
-import { transferListingToCrm, buildCreatePayload as buildListingPayload } from "@/lib/listing/crm-transfer";
-import { createListing } from "@/lib/listing/store";
-import type { ListingUpsertInput } from "@/lib/listing/types";
-import { createRequest, createRequestEvent } from "@/lib/request/store";
-import { registerRequestToArm, syncEventToArm } from "@/lib/request/arm-register";
 import { buildCreatePayload as buildRequestPayload, parseJson } from "@/lib/request/types";
+import { createRequestEvent } from "@/lib/request/store";
+import { purgeListingLocally, purgeRequestLocally, countListingTraces, countRequestTraces } from "./purge";
 import {
   ARM_PATHS,
+  CASCADE_RULES,
   CHANGES_TIMEOUT_MS,
   HISTORY_ACTION_TYPES,
-  HISTORY_BY_DEFAULT,
   LOCATION_IDS,
   OWNER_IDENTITY,
-  STANDARD_DEFAULTS,
   isoToJalaliHour,
+  isoToTehranHour,
   jalaliHourToIsoUtc,
-  jalaliToIsoDate,
 } from "./variables";
 
 /* ═══════════════════ گزارش گام‌به‌گام (عین ۰۹۹) ═══════════════════ */
@@ -64,7 +66,6 @@ export interface ChangesReport {
   operation: string;
   steps: ChangesStep[];
   durationMs: number;
-  /** داده‌های کلیدی نتیجه (کد/شناسه/تاریخ) */
   result?: Record<string, unknown>;
   error?: string;
 }
@@ -79,7 +80,6 @@ export interface OwnerExec {
   exec: <T>(fn: (token: string) => Promise<T>) => Promise<T>;
 }
 
-/** حل‌کنندهٔ توکن مالک — تازه‌ترین توکن زنده از نشست‌ها/خزانه (عین ۰۹۹) */
 export async function resolveOwnerExec(): Promise<OwnerExec> {
   const resolved = await resolveBestArmToken(db);
   if (!resolved || !resolved.token) {
@@ -104,7 +104,12 @@ export async function resolveOwnerExec(): Promise<OwnerExec> {
 
 /* ═══════════════════ کمک‌های ARM ═══════════════════ */
 
-function call<T>(oe: OwnerExec, method: "GET" | "POST" | "PUT", path: string, opts: { body?: unknown; query?: Record<string, string>; timeoutMs?: number } = {}): Promise<{ data: T; message?: string }> {
+function call<T>(
+  oe: OwnerExec,
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  path: string,
+  opts: { body?: unknown; query?: Record<string, string>; timeoutMs?: number } = {},
+): Promise<{ data: T; message?: string }> {
   return armCall<T>({
     method,
     path,
@@ -119,12 +124,22 @@ function call<T>(oe: OwnerExec, method: "GET" | "POST" | "PUT", path: string, op
 
 type ArmRow = Record<string, any>;
 
-/** جستجوی ردیف درخواست در فهرست زندهٔ ARM (تازه‌ترین صفحه‌ها — عین ۰۹۹) */
+/** استخراج شناسه خام از مقدار populated یا خام */
+function rawId(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === "string") return v;
+  if (typeof v === "object") {
+    const o = v as ArmRow;
+    return String(o.userId ?? o._id ?? o.id ?? "") || null;
+  }
+  return String(v);
+}
+
+/** جستجوی ردیف درخواست در فهرست زندهٔ ARM */
 async function scanRequestRow(oe: OwnerExec, code: string, maxPages = 8): Promise<ArmRow | null> {
   for (let page = 1; page <= maxPages; page++) {
     const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestsList, {
       query: { page: String(page), limit: "20" },
-      timeoutMs: CHANGES_TIMEOUT_MS.lookup,
     }).catch(() => null);
     const list = (res?.data?.list ?? []) as ArmRow[];
     const row = list.find((r) => String(r.code ?? r.requestCode ?? "") === code);
@@ -133,799 +148,1041 @@ async function scanRequestRow(oe: OwnerExec, code: string, maxPages = 8): Promis
   return null;
 }
 
-/** جستجوی ردیف آگهی در فهرست زندهٔ ARM */
-async function scanPropertyRow(oe: OwnerExec, armPropertyId: string, maxPages = 8): Promise<ArmRow | null> {
-  for (let page = 1; page <= maxPages; page++) {
-    const res = await call<ArmRow>(oe, "GET", ARM_PATHS.propertiesList, {
-      query: { page: String(page), limit: "20" },
-      timeoutMs: CHANGES_TIMEOUT_MS.lookup,
-    }).catch(() => null);
-    const list = (res?.data?.list ?? []) as ArmRow[];
-    const row = list.find((r) => String(r._id ?? "") === armPropertyId);
-    if (row) return row;
-  }
-  return null;
-}
-
-/** تاریخچهٔ زندهٔ تغییرات درخواست — منبع کشف‌شدهٔ ۰۹۹ */
+/** تاریخچهٔ زندهٔ تغییرات درخواست — منبع کشف‌شدهٔ ۰۹۹ (کامل) */
 async function fetchRequestHistory(oe: OwnerExec, armRequestId: string): Promise<ArmRow[]> {
-  const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestHistory(armRequestId), { timeoutMs: CHANGES_TIMEOUT_MS.lookup });
+  const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestHistory(armRequestId));
   return ((res.data as any)?.list ?? []) as ArmRow[];
 }
 
-/* ═══════════════════════════════════════════════════════════════════
- * قابلیت ۲ — کد درخواست
- * ═══════════════════════════════════════════════════════════════════ */
-
-/* ---------- جستجو ---------- */
-
-export interface RequestLookupResult {
-  ok: boolean;
-  code: string;
-  local: {
-    id: string;
-    requestCode: string | null;
-    armRequestId: string | null;
-    customerName: string | null;
-    customerMobile: string | null;
-    actorName: string | null;
-    title: string | null;
-    status: string;
-    source: string;
-    events: Array<{ name: string; date: string | null; hour: string | null; display: string | null }>;
-  } | null;
-  arm: {
-    armRequestId: string;
-    title: string | null;
-    relatedRealtor: string | null;
-    relatedCustomer: string | null;
-    createdAt: string | null;
-    code: string;
-    history: Array<{ id: string; action: string | null; actionTypeId: string | null; realtor: string | null; date: string | null; display: string | null }>;
-  } | null;
-  error?: string;
+/** رکورد کامل آگهی با کد (زنده) */
+async function fetchPropertyByCode(oe: OwnerExec, code: string): Promise<ArmRow | null> {
+  const res = await call<ArmRow>(oe, "GET", ARM_PATHS.propertyByCode(code));
+  return (res.data ?? null) as ArmRow | null;
 }
 
-/** جستجوی کد درخواست — محلی + زنده (فهرست/تاریخچه) */
-export async function lookupRequestByCode(code: string): Promise<RequestLookupResult> {
-  const clean = code.trim();
-  const rec = await db.requestRecord.findUnique({ where: { requestCode: clean }, include: { events: { orderBy: { createdAt: "desc" } } } });
-  let arm: RequestLookupResult["arm"] = null;
-  let armRequestId = rec?.armRequestId ?? null;
-
-  try {
-    const oe = await resolveOwnerExec();
-    if (!armRequestId) {
-      // رکورد محلی نبود یا شناسهٔ آرم ندارد → جستجوی زندهٔ فهرست
-      const row = await scanRequestRow(oe, clean);
-      if (row) armRequestId = String(row._id ?? "");
-    }
-    if (armRequestId) {
-      const [row, history] = await Promise.all([
-        scanRequestRow(oe, clean).catch(() => null),
-        fetchRequestHistory(oe, armRequestId).catch(() => [] as ArmRow[]),
-      ]);
-      arm = {
-        armRequestId,
-        title: row?.title ?? null,
-        relatedRealtor: row?.relatedRealtor ?? null,
-        relatedCustomer: row?.relatedCustomer ?? null,
-        createdAt: row?.createdAt ?? null,
-        code: clean,
-        history: history.map((e) => ({
-          id: String(e._id ?? ""),
-          action: e.actionType?.name ?? null,
-          actionTypeId: e.actionType?._id ?? (typeof e.actionType === "string" ? e.actionType : null) ?? null,
-          realtor: e.realtor?.fullName ?? null,
-          date: e.date ?? null,
-          display: isoToJalaliHour(e.date ?? null),
-        })),
-      };
-    }
-  } catch (e) {
-    return {
-      ok: false,
-      code: clean,
-      local: rec
-        ? {
-            id: rec.id, requestCode: rec.requestCode, armRequestId: rec.armRequestId,
-            customerName: rec.customerName, customerMobile: rec.customerMobile, actorName: rec.actorName,
-            title: rec.title, status: rec.status, source: rec.source,
-            events: rec.events.map((ev) => ({ name: ev.eventTypeName, date: ev.date, hour: ev.hour, display: ev.date ? `${ev.hour ?? ""} | ${ev.date}` : null })),
-          }
-        : null,
-      arm: null,
-      error: `جستجوی زندهٔ ARM ناموفق: ${(e as Error).message}`,
-    };
-  }
-
-  return {
-    ok: Boolean(rec || arm),
-    code: clean,
-    local: rec
-      ? {
-          id: rec.id, requestCode: rec.requestCode, armRequestId: rec.armRequestId,
-          customerName: rec.customerName, customerMobile: rec.customerMobile, actorName: rec.actorName,
-          title: rec.title, status: rec.status, source: rec.source,
-          events: rec.events.map((ev) => ({ name: ev.eventTypeName, date: ev.date, hour: ev.hour, display: ev.date ? `${ev.hour ?? ""} | ${ev.date}` : null })),
-        }
-      : null,
-    arm,
-    error: rec || arm ? undefined : `درخواستی با کد ${clean} یافت نشد (نه محلی، نه زندهٔ ARM).`,
-  };
+/** اطلاعات مالک آگهی (زنده) */
+async function fetchPropertyOwner(oe: OwnerExec, armPropertyId: string): Promise<ArmRow | null> {
+  const res = await call<ArmRow>(oe, "GET", ARM_PATHS.propertyOwner(armPropertyId)).catch(() => null);
+  return (res?.data ?? null) as ArmRow | null;
 }
 
-/* ---------- ثبت کد درخواست جدید (عین ۰۹۹) ---------- */
-
-export interface CreateRequestSpec {
-  customerName: string;
-  customerMobile: string;
-  /** شناسه‌های رسمی کاتالوگ ARM — پیش‌فرض‌ها از variables (فروش/مسکونی/آپارتمان) */
-  tradeTypeId?: string;
-  buildingTypeId?: string;
-  propertyTypeId?: string;
-  /** فرم پویای دسته (متراژ/قیمت از-تا · امکانات…) — مقادیر خام عین ۰۹۹ */
-  inputs?: Record<string, unknown>;
-  userPaymentMethod?: string;
-  userSeriousity?: string;
-  customerDescription?: string;
-  realtorDescription?: string;
-  /** مناطق/محله‌ها — پیش‌فرض: کل تبریز (۱۳۰ منطقه/۹۲۶ محله — الگوی «بدون محدودیت» ۰۹۹) */
-  areaIds?: string[];
-  areaNames?: string[];
-  lineIds?: string[];
-  lineNames?: string[];
+/** «تاریخچهٔ رویداد و بازخورد» آگهی — request-events/list?property= (کامل) */
+async function fetchPropertyEvents(oe: OwnerExec, armPropertyId: string): Promise<ArmRow[]> {
+  const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestEventsList, {
+    query: { property: armPropertyId, limit: "100" },
+  });
+  return ((res.data as any)?.list ?? []) as ArmRow[];
 }
 
-/** رویداد تاریخچهٔ همراه ثبت (اقدام/توسط/تاریخ دقیق — عین دستور مالک ۰۹۹) */
-export interface HistoryEventSpec {
-  eventTypeId?: string;
-  eventTypeName?: string;
-  byName?: string;
-  byCode?: string;
-  /** جلالی ۱۴۰۵/۰۸/۲۰ یا ISO */
-  date: string;
-  hour: string;
-  message?: string | null;
+/** رویدادهای یک درخواست — request-events/list?requestProperty= (بهترین‌تلاش) */
+async function fetchRequestEvents(oe: OwnerExec, armRequestId: string): Promise<ArmRow[]> {
+  const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestEventsList, {
+    query: { requestProperty: armRequestId, limit: "100" },
+  }).catch(() => null);
+  return ((res?.data as any)?.list ?? []) as ArmRow[];
 }
 
-/** ثبت کد درخواست در سامانه ARM — گام‌به‌گام عین کاربر عادی (هیچ گام دور نمی‌شود) */
-export async function createRequestCode(
-  spec: CreateRequestSpec,
-  history: HistoryEventSpec | null,
-  actor: { code: string; name: string },
-): Promise<ChangesReport> {
-  const t0 = Date.now();
-  const steps: ChangesStep[] = [];
-  const step = (key: string, title: string, status: ChangesStep["status"], detail: string) => {
-    steps.push({ key, title, status, detail });
-  };
+/* ═══════════════════ موتور آبشار تاریخ (قاعدهٔ مالک — Δ نسبی از لنگر) ═══════════════════ */
 
-  try {
-    const oe = await resolveOwnerExec();
-    step("token", "توکن مالک ARM", "done", `توکن زنده از «${oe.source === "session" ? "نشست مالک" : "خزانه"}»${oe.expIso ? ` (اعتبار تا ${oe.expIso})` : ""}.`);
-
-    // ورودی کامل (منطقه/محله = کل تبریز — الگوی استاندارد ۰۹۹)
-    const areaIds = spec.areaIds ?? TABRIZ_AREAS.map((a) => a.id);
-    const areaNames = spec.areaNames ?? TABRIZ_AREAS.map((a) => a.n);
-    const lineIds = spec.lineIds ?? ALL_LINES.map((l) => l.id);
-    const lineNames = spec.lineNames ?? ALL_LINES.map((l) => l.n);
-    const tradeTypeId = spec.tradeTypeId ?? "614ed62da50555f0a54c1eca";
-    const buildingTypeId = spec.buildingTypeId ?? "614edc35a50555f0a54c1f12";
-    const propertyTypeId = spec.propertyTypeId ?? "614ee704a50555f0a54c227d";
-    const userPaymentMethod = spec.userPaymentMethod ?? STANDARD_DEFAULTS.userPaymentMethod;
-    const userSeriousity = spec.userSeriousity ?? STANDARD_DEFAULTS.userSeriousity;
-    const inputs = spec.inputs ?? {};
-
-    // ثبت محلی (اعتبارسنجی ۴ گامی داخل createRequest)
-    const created = await createRequest(
-      {
-        source: "auto",
-        customerName: spec.customerName,
-        customerMobile: spec.customerMobile,
-        countryId: LOCATION_IDS.country,
-        stateId: LOCATION_IDS.state,
-        cityId: LOCATION_IDS.city,
-        areaIds, areaNames, lineIds, lineNames,
-        tradeTypeId, buildingTypeId, propertyTypeId,
-        inputs,
-        userPaymentMethod, userSeriousity,
-        customerDescription: spec.customerDescription,
-        realtorDescription: spec.realtorDescription,
-      },
-      actor.code,
-    );
-    if (!created.record) {
-      step("local-create", "ثبت محلی پیش از ARM", "failed", `اعتبارسنجی ۴ گامی ناقص: ${created.errors.map((e) => e.message).join("؛ ")}`);
-      return { ok: false, operation: "request-create", steps, durationMs: Date.now() - t0, error: "اطلاعات ۴ گامی کامل نیست." };
-    }
-    step("local-create", "ثبت محلی (اعتبارسنجی ۴ گامی)", "done", `رکورد ${created.record.id} با اعتبارسنجی ${created.ok ? "کامل" : "ناقص"} ساخته شد.`);
-    await db.requestRecord.update({ where: { id: created.record.id }, data: { actorName: actor.name } });
-
-    // رویداد هوشمند — بهترین‌تلاش (عین ۰۹۹)
-    try {
-      const { emitEvent } = await import("@/lib/intelligence/blackboard");
-      await emitEvent("request.created", { requestId: created.record.id, source: "auto", actor: actor.code });
-    } catch {
-      /* هرگز ثبت را نمی‌شکند */
-    }
-
-    // ثبت گام‌به‌گام در ARM (عین کاربر عادی)
-    const reg = await registerRequestToArm(oe.guard, created.record.id, "create", oe.exec);
-    for (const s of reg.steps) steps.push({ key: `arm-${s.key}`, title: s.title, status: s.status, detail: s.detail });
-    if (!reg.ok || !reg.armRequestId) {
-      return { ok: false, operation: "request-create", steps, durationMs: Date.now() - t0, error: reg.error ?? "ثبت در ARM ناموفق بود." };
-    }
-
-    // کد درخواست از فهرست زنده
-    let requestCode = "";
-    let armRow: ArmRow | null = null;
-    for (let page = 1; page <= 3 && !armRow; page++) {
-      const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestsList, { query: { page: String(page), limit: "20" }, timeoutMs: CHANGES_TIMEOUT_MS.lookup }).catch(() => null);
-      const list = (res?.data?.list ?? []) as ArmRow[];
-      armRow = list.find((r) => r._id === reg.armRequestId) ?? null;
-    }
-    if (!armRow) {
-      step("arm-code", "یافتن کد درخواست از فهرست زنده", "failed", "ردیف درخواست تازه در فهرست ARM یافت نشد (ثبت موفق بود؛ فهرست ممکن است با تأخیر بروزرسانی شود).");
-      return { ok: false, operation: "request-create", steps, durationMs: Date.now() - t0, error: "کد درخواست از فهرست زنده دریافت نشد." };
-    }
-    requestCode = String(armRow.code ?? armRow.requestCode ?? "");
-    step("arm-code", "کد درخواست از فهرست زنده", "done", `کد درخواست ${requestCode} · عنوان خودکار: «${armRow.title ?? "—"}» · کارشناس: ${armRow.relatedRealtor ?? "—"}.`);
-
-    // تکمیل ستون‌های کاتالوگ رکورد محلی (عین ۰۹۹)
-    const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
-    const inputsRow = (armRow.inputs ?? {}) as ArmRow;
-    await db.requestRecord.update({
-      where: { id: created.record.id },
-      data: {
-        requestCode,
-        title: typeof armRow.title === "string" ? armRow.title : null,
-        actorName: typeof armRow.relatedRealtor === "string" && armRow.relatedRealtor ? armRow.relatedRealtor : actor.name,
-        status: "ready",
-        customerName: typeof armRow.relatedCustomer === "string" && armRow.relatedCustomer ? armRow.relatedCustomer : spec.customerName,
-        priceFrom: num(armRow.totalPrice_from),
-        priceTo: num(armRow.totalPrice_to),
-        spaceFrom: num(inputsRow.space_from),
-        spaceTo: num(inputsRow.space_to),
-        createdAt: armRow.createdAt ? new Date(armRow.createdAt) : undefined,
-      },
-    });
-
-    // رویداد تاریخچه با تاریخ دقیق اعلامی (اقدام/توسط/تاریخ — عین ۰۹۹)
-    if (history) {
-      const eventTypeId = history.eventTypeId ?? HISTORY_ACTION_TYPES.createRealtor.id;
-      const eventTypeName = history.eventTypeName ?? HISTORY_ACTION_TYPES.createRealtor.name;
-      const byName = history.byName ?? HISTORY_BY_DEFAULT.name;
-      const byCode = history.byCode ?? HISTORY_BY_DEFAULT.code;
-      const isoDate = jalaliToIsoDate(history.date);
-      if (!isoDate) {
-        step("history-event", "ثبت رویداد تاریخچه با تاریخ دقیق", "failed", `قالب تاریخ «${history.date}» نامعتبر است — نمونه: 1405/08/20.`);
-      } else {
-        // شاهد تاریخچهٔ زندهٔ ARM (بهترین‌تلاش)
-        let armHistory: ArmRow[] = [];
-        try {
-          armHistory = await fetchRequestHistory(oe, reg.armRequestId);
-        } catch {
-          /* شاهد بهترین‌تلاش */
-        }
-        const event = await createRequestEvent(
-          { requestId: created.record.id, eventTypeId, eventTypeName, flags: {}, date: isoDate, hour: history.hour, message: history.message ?? null },
-          byCode,
-        );
-        await db.requestEventRecord.update({
-          where: { id: event.id },
-          data: {
-            armSyncJson: JSON.stringify({
-              at: new Date().toISOString(),
-              kind: "change-history-entry",
-              byOwnerDirective: true,
-              demanded: { اقدام: eventTypeName, توسط: byName, تاریخ: `${history.hour}|${isoToJalaliHourDisplay(isoDate, history.hour)}` },
-              armRequestCode: requestCode,
-              armRequestId: reg.armRequestId,
-              armAutoHistoryEntry: armHistory[0]
-                ? { action: (armHistory[0].actionType ?? {}).name, realtor: ((armHistory[0].realtor ?? {}) as ArmRow).fullName, date: armHistory[0].date }
-                : null,
-            }),
-          },
-        });
-        step("history-event", "ثبت رویداد تاریخچه با تاریخ دقیق", "done", `اقدام: ${eventTypeName} · توسط: ${byName} · تاریخ: ${history.hour} | ${isoDate} (نمایش عین UI: «${eventTypeName} · تاریخ ${isoJalaliDisplay(isoDate)} ساعت ${history.hour}»).`);
-      }
-    }
-
-    await audit("CHANGES_REQUEST_CREATE", actor.code, `code=${requestCode} arm=${reg.armRequestId} by=changes-tile`).catch(() => undefined);
-
-    return {
-      ok: true,
-      operation: "request-create",
-      steps,
-      durationMs: Date.now() - t0,
-      result: { requestCode, armRequestId: reg.armRequestId, customerId: reg.customerId ?? null, title: armRow.title ?? null, relatedRealtor: armRow.relatedRealtor ?? null },
-    };
-  } catch (e) {
-    step("fatal", "اجرای عملیات", "failed", (e as Error).message);
-    return { ok: false, operation: "request-create", steps, durationMs: Date.now() - t0, error: (e as Error).message };
-  }
+export interface CascadeEntryPreview {
+  key: string;
+  label: string;
+  before: string;
+  after: string;
 }
 
-/** نمایش جلالی تاریخ ISO (برای متن گام) */
-function isoJalaliDisplay(isoDate: string): string {
-  return isoToJalaliString(isoDate);
+export interface CascadePlan {
+  anchorDate: string;
+  anchorLabel: string;
+  anchorIsCreateRealtor: boolean;
+  targetDate: string;
+  deltaMs: number;
+  deltaDays: number;
+  entries: CascadeEntryPreview[];
 }
 
-/** نمایش «۱۴۰۵/۰۸/۲۰» از تاریخ جلالی ورودی کاربر */
-function isoToJalaliHourDisplay(isoDate: string, hour: string): string {
-  return `${isoJalaliDisplay(isoDate)} ساعت ${hour}`;
-}
-
-/* ---------- اصلاح/تغییر کد درخواست موجود (شاهکار ۰۹۹) ---------- */
-
-export interface RequestUpdateSpec {
-  code: string;
-  /** پچ فیلدها (اختیاری) — روی بدنهٔ ویرایش اعمال می‌شود */
-  inputsPatch?: Record<string, unknown>;
-  userPaymentMethod?: string;
-  userSeriousity?: string;
-  realtorDescription?: string;
-  customerDescription?: string;
-  flags?: { urgent?: boolean; luxury?: boolean; changeable?: boolean; ocasion?: boolean; deposite?: boolean; confirmSms?: boolean; isRental?: boolean };
-  /** اصلاح تاریخ تاریخچه — تاریخ هدف همهٔ مدخل‌ها (ISO UTC؛ از جلالی+ساعت ساخته می‌شود) */
-  historyTarget?: { date: string; hour: string } | null;
+/** انتخاب مدخل لنگر: «ایجاد مشاور» وگرنه قدیمی‌ترین (عین CASCADE_RULES) */
+export function pickAnchor(entries: Array<{ label: string; date: string }>): { label: string; date: string; isCreateRealtor: boolean } | null {
+  if (entries.length === 0) return null;
+  const anchor = entries.find((e) => e.label.includes(CASCADE_RULES.anchorActionName));
+  if (anchor) return { label: anchor.label, date: anchor.date, isCreateRealtor: true };
+  const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const first = sorted[0];
+  return { label: first.label, date: first.date, isCreateRealtor: false };
 }
 
 /**
- * تغییر در کد درخواست موجود — PUT requests/update/{id} با بدنهٔ کامل ویرایش
- * (عین edit-request-page) + آرایهٔ status با همان شناسه‌های عین و تاریخ هدف.
+ * ساخت طرح آبشار: هدف (جلالی + ساعت اختیاری) → Δ از لنگر.
+ * اگر ساعت هدف داده نشود، ساعت فعلی لنگر حفظ می‌شود (Δ دقیق).
  */
-export async function updateRequestCode(spec: RequestUpdateSpec, actor: { code: string; name: string }): Promise<ChangesReport> {
-  const t0 = Date.now();
-  const steps: ChangesStep[] = [];
-  const step = (key: string, title: string, status: ChangesStep["status"], detail: string) => steps.push({ key, title, status, detail });
-
-  try {
-    const code = spec.code.trim();
-    const rec = await db.requestRecord.findUnique({ where: { requestCode: code } });
-    if (!rec) {
-      return { ok: false, operation: "request-update", steps: [{ key: "lookup", title: "جستجوی رکورد محلی", status: "failed", detail: `درخواست ${code} در آینهٔ محلی یافت نشد.` }], durationMs: Date.now() - t0, error: "رکورد محلی یافت نشد." };
-    }
-    step("lookup", "جستجوی رکورد محلی", "done", `درخواست ${code} (${rec.title ?? "بدون عنوان"}) · شناسهٔ ARM: ${rec.armRequestId ?? "—"} · متقاضی: ${rec.customerName ?? "—"}.`);
-
-    const oe = await resolveOwnerExec();
-    if (!rec.armRequestId) {
-      step("token", "توکن مالک ARM", "failed", "رکورد محلی شناسهٔ ARM ندارد — ابتدا از مسیر ثبت، در ARM ثبت شود.");
-      return { ok: false, operation: "request-update", steps, durationMs: Date.now() - t0, error: "شناسهٔ ARM موجود نیست." };
-    }
-    step("token", "توکن مالک ARM", "done", `توکن زنده از «${oe.source === "session" ? "نشست مالک" : "خزانه"}».`);
-
-    // وضعیت فعلی (پایهٔ مقایسه) — تاریخچه + ردیف
-    const beforeHistory = await fetchRequestHistory(oe, rec.armRequestId);
-    const beforeRow = await scanRequestRow(oe, code);
-    step("before", "وضعیت فعلی تاریخچهٔ زنده", "done",
-      beforeHistory.length
-        ? beforeHistory.map((e) => `${e.actionType?.name ?? "?"} · ${e.realtor?.fullName ?? "?"} · ${isoToJalaliHour(e.date ?? null) ?? e.date ?? "?"}`).join(" ┃ ")
-        : "تاریخچهٔ زنده خالی است.");
-
-    // تاریخ هدف (اگر اصلاح تاریخ خواسته شد)
-    let targetIso: string | null = null;
-    if (spec.historyTarget) {
-      targetIso = jalaliHourToIsoUtc(spec.historyTarget.date, spec.historyTarget.hour);
-      if (!targetIso) {
-        step("target-date", "اعتبارسنجی تاریخ هدف", "failed", `قالب تاریخ/ساعت نامعتبر: ${spec.historyTarget.date} ${spec.historyTarget.hour} — نمونه: 1405/08/20 و 17:30.`);
-        return { ok: false, operation: "request-update", steps, durationMs: Date.now() - t0, error: "تاریخ هدف نامعتبر است." };
-      }
-      step("target-date", "تاریخ هدف (جلالی → ISO)", "done", `${spec.historyTarget.date} ساعت ${spec.historyTarget.hour} تهران = ${targetIso}.`);
-    }
-
-    // بدنهٔ ویرایش عین edit-request-page (buildCreatePayload) + پچ‌ها
-    const areaIds = parseJson<string[]>(rec.areaIdsJson, []);
-    const lineIds = parseJson<string[]>(rec.lineIdsJson, []);
-    const mergedInputs = { ...parseJson<Record<string, unknown>>(rec.inputsJson, {}), ...(spec.inputsPatch ?? {}) };
-    const payload = buildRequestPayload({
-      customerId: rec.armCustomerId ?? "",
-      countryId: rec.countryId ?? LOCATION_IDS.country,
-      stateId: rec.stateId ?? LOCATION_IDS.state,
-      cityId: rec.cityId ?? LOCATION_IDS.city,
-      areaIds, lineIds,
-      tradeTypeId: rec.tradeTypeId ?? "",
-      buildingTypeId: rec.buildingTypeId ?? "",
-      propertyTypeId: rec.propertyTypeId ?? "",
-      inputs: mergedInputs,
-      customerDescription: spec.customerDescription ?? rec.customerDescription,
-      userPaymentMethod: spec.userPaymentMethod ?? rec.userPaymentMethod ?? "",
-      userSeriousity: spec.userSeriousity ?? rec.userSeriousity ?? "",
-      realtorDescription: spec.realtorDescription ?? rec.realtorDescription,
-    });
-
-    // آرایهٔ status — همان شناسه‌های عین با تاریخ هدف (الگوی تأییدشدهٔ ۰۹۹)
-    if (targetIso && beforeHistory.length > 0) {
-      const mk = (e: ArmRow, date: string) => ({
-        _id: e._id,
-        actionType: e.actionType?._id ?? e.actionType,
-        currentStatus: typeof e.currentStatus === "string" ? e.currentStatus : e.currentStatus?._id,
-        currentInbox: typeof e.currentInbox === "string" ? e.currentInbox : e.currentInbox?._id,
-        customer: e.customer && typeof e.customer === "object" ? e.customer._id : e.customer ?? null,
-        realtor: e.realtor?._id ?? e.realtor,
-        outOfArea: e.outOfArea ?? false,
-        date,
-      });
-      (payload as ArmRow).status = beforeHistory.map((e) => mk(e, targetIso));
-      step("status-array", "آرایهٔ status با شناسه‌های عین و تاریخ هدف", "done", `${beforeHistory.length} مدخل تاریخچه با همان شناسه‌ها و تاریخ ${targetIso} بازسازی شد.`);
-    }
-
-    // بازتأیید پرچم‌های فعلی با مقدار جاری (محافظ در برابر replace کامل — عین ۰۹۹)
-    if (beforeRow) {
-      const f = spec.flags ?? {};
-      (payload as ArmRow).urgent = f.urgent ?? beforeRow.urgent ?? false;
-      (payload as ArmRow).luxury = f.luxury ?? beforeRow.luxury ?? false;
-      (payload as ArmRow).changeable = f.changeable ?? beforeRow.changeable ?? false;
-      (payload as ArmRow).ocasion = f.ocasion ?? beforeRow.ocasion ?? false;
-      (payload as ArmRow).deposite = f.deposite ?? beforeRow.deposite ?? false;
-      (payload as ArmRow).confirmSMS = f.confirmSms ?? beforeRow.confirmSMS ?? true;
-      (payload as ArmRow).isRental = f.isRental ?? beforeRow.isRental ?? false;
-      if (Array.isArray(beforeRow.changeWith)) (payload as ArmRow).changeWith = beforeRow.changeWith;
-      step("flags", "بازتأیید پرچم‌های ردیف", "done", `urgent=${(payload as ArmRow).urgent} · luxury=${(payload as ArmRow).luxury} · changeable=${(payload as ArmRow).changeable} · ocasion=${(payload as ArmRow).ocasion} · deposite=${(payload as ArmRow).deposite} · confirmSMS=${(payload as ArmRow).confirmSMS}.`);
-    }
-
-    // اجرای PUT
-    const putRes = await call<ArmRow>(oe, "PUT", ARM_PATHS.requestUpdate(rec.armRequestId), { body: payload, timeoutMs: CHANGES_TIMEOUT_MS.write });
-    step("put", "PUT requests/update/{id}", "done", `پاسخ سامانه: ${putRes.message ?? "ثبت شد"} ${putRes.data?._id ? `· شناسه: ${putRes.data._id}` : ""}.`);
-
-    // راستی‌آزمایی زندهٔ تاریخچه پس از اعمال
-    let verdict: { total: number; withTarget: number } | null = null;
-    if (targetIso) {
-      await new Promise((r) => setTimeout(r, 2500));
-      const afterHistory = await fetchRequestHistory(oe, rec.armRequestId);
-      const withTarget = afterHistory.filter((e) => e.date === targetIso).length;
-      verdict = { total: afterHistory.length, withTarget };
-      step("verify", "راستی‌آزمایی زندهٔ تاریخچه", withTarget === afterHistory.length && afterHistory.length > 0 ? "done" : "failed",
-        `${withTarget}/${afterHistory.length} مدخل با تاریخ هدف ${targetIso} ${withTarget === afterHistory.length ? "— اصلاح کامل ✓" : "— اصلاح ناقص"}.`);
-      // شاهد محلی: رویداد آینه با نتیجهٔ راستی‌آزمایی
-      if (afterHistory.length > 0) {
-        await createRequestEvent(
-          {
-            requestId: rec.id,
-            eventTypeId: HISTORY_ACTION_TYPES.createRealtor.id,
-            eventTypeName: "بررسی درخواست",
-            flags: {},
-            date: null,
-            hour: null,
-            message: null,
-          },
-          actor.code,
-        ).then(async (ev) =>
-          db.requestEventRecord.update({
-            where: { id: ev.id },
-            data: {
-              armSyncJson: JSON.stringify({
-                at: new Date().toISOString(),
-                kind: "history-date-fix",
-                byOwnerDirective: true,
-                targetIso,
-                demanded: { تاریخ: `${spec.historyTarget?.hour}|${spec.historyTarget?.date}` },
-                armRequestCode: code,
-                verdict,
-                before: beforeHistory.map((e) => ({ action: e.actionType?.name, date: e.date })),
-                after: afterHistory.map((e) => ({ action: e.actionType?.name, date: e.date })),
-              }),
-            },
-          }),
-        ).catch(() => undefined);
-      }
-    }
-
-    await audit("CHANGES_REQUEST_UPDATE", actor.code, `code=${code} historyFix=${targetIso ? "yes" : "no"} ok=true by=changes-tile`).catch(() => undefined);
-
-    return {
-      ok: targetIso ? Boolean(verdict && verdict.withTarget === verdict.total && verdict.total > 0) : true,
-      operation: "request-update",
-      steps,
-      durationMs: Date.now() - t0,
-      result: { requestCode: code, armRequestId: rec.armRequestId, historyFix: targetIso, verdict },
-    };
-  } catch (e) {
-    step("fatal", "اجرای عملیات", "failed", (e as Error).message);
-    return { ok: false, operation: "request-update", steps, durationMs: Date.now() - t0, error: (e as Error).message };
-  }
+export function buildCascadePlan(
+  entries: Array<{ key: string; label: string; date: string }>,
+  targetJalali: string,
+  targetHour: string | null,
+): { plan: CascadePlan; error?: string } {
+  const anchor = pickAnchor(entries.map((e) => ({ label: e.label, date: e.date })));
+  if (!anchor) return { plan: null as unknown as CascadePlan, error: "هیچ مدخلی برای تعیین لنگر یافت نشد." };
+  const explicitHour = Boolean(targetHour?.trim());
+  const hour = targetHour?.trim() || isoToTehranHour(anchor.date);
+  if (!hour) return { plan: null as unknown as CascadePlan, error: "ساعت لنگر قابل استخراج نیست — ساعت هدف را وارد کنید." };
+  const targetIso = jalaliHourToIsoUtc(targetJalali, hour);
+  if (!targetIso) return { plan: null as unknown as CascadePlan, error: `قالب تاریخ/ساعت هدف نامعتبر: ${targetJalali} ${hour ?? ""} — نمونه: 1405/07/05 و 17:30.` };
+  // ساعت صریح → دقیقاً همان ساعت (ثانیه صفر — عین قرارداد ۰۹۹)؛
+  // ساعت نامعلوم → زمان دقیق لنگر (حتی ثانیه) در تاریخ جدید حفظ می‌شود
+  const anchorMs = new Date(anchor.date).getTime();
+  const anchorSubMinute = ((anchorMs % 60_000) + 60_000) % 60_000;
+  const targetMs = new Date(targetIso).getTime() + (explicitHour ? 0 : anchorSubMinute);
+  const deltaMs = targetMs - anchorMs;
+  return {
+    plan: {
+      anchorDate: anchor.date,
+      anchorLabel: anchor.label,
+      anchorIsCreateRealtor: anchor.isCreateRealtor,
+      targetDate: new Date(targetMs).toISOString(),
+      deltaMs,
+      deltaDays: Math.round(deltaMs / 86_400_000),
+      entries: entries.map((e) => ({
+        key: e.key,
+        label: e.label,
+        before: e.date,
+        after: new Date(new Date(e.date).getTime() + deltaMs).toISOString(),
+      })),
+    },
+  };
 }
 
-/* ---------- ثبت رویداد تاریخچه با تاریخ دقیق ---------- */
+/** جابه‌جایی ISO با Δ — خالص */
+export function shiftIso(iso: string, deltaMs: number): string {
+  return new Date(new Date(iso).getTime() + deltaMs).toISOString();
+}
 
-export async function registerRequestHistoryEvent(
-  code: string,
-  spec: HistoryEventSpec,
-  actor: { code: string; name: string },
-): Promise<ChangesReport> {
-  const t0 = Date.now();
-  const steps: ChangesStep[] = [];
-  const step = (key: string, title: string, status: ChangesStep["status"], detail: string) => steps.push({ key, title, status, detail });
+/* ═══════════════════ بازسازی بدنهٔ ویرایش آگهی از رکورد زنده ═══════════════════ */
 
-  try {
-    const clean = code.trim();
-    const rec = await db.requestRecord.findUnique({ where: { requestCode: clean } });
-    if (!rec) {
-      return { ok: false, operation: "request-event", steps: [{ key: "lookup", title: "جستجوی رکورد محلی", status: "failed", detail: `درخواست ${clean} یافت نشد.` }], durationMs: Date.now() - t0, error: "رکورد یافت نشد." };
-    }
-    step("lookup", "جستجوی رکورد محلی", "done", `درخواست ${clean} · شناسهٔ ARM: ${rec.armRequestId ?? "—"} · متقاضی: ${rec.customerName ?? "—"}.`);
-
-    const isoDate = jalaliToIsoDate(spec.date);
-    if (!isoDate) {
-      return { ok: false, operation: "request-event", steps: [{ key: "date", title: "اعتبارسنجی تاریخ", status: "failed", detail: `قالب تاریخ «${spec.date}» نامعتبر — نمونه: 1405/08/20.` }], durationMs: Date.now() - t0, error: "تاریخ نامعتبر است." };
-    }
-    step("date", "تبدیل تاریخ جلالی", "done", `${spec.date} → ${isoDate} (قالب ISO عین قرارداد ذخیرهٔ خود سامانه).`);
-
-    const eventTypeId = spec.eventTypeId ?? HISTORY_ACTION_TYPES.createRealtor.id;
-    const eventTypeName = spec.eventTypeName ?? HISTORY_ACTION_TYPES.createRealtor.name;
-    const byName = spec.byName ?? HISTORY_BY_DEFAULT.name;
-    const byCode = spec.byCode ?? HISTORY_BY_DEFAULT.code;
-
-    // همگام‌سازی با آرم (اگر درخواست در آرم ثبت شده — POST request-events/create)
-    let arm: { ok: boolean; armEventId?: string; error?: string } | null = null;
-    if (rec.armRequestId) {
-      try {
-        const oe = await resolveOwnerExec();
-        const r = await syncEventToArm(oe.guard, { requestId: rec.id, eventTypeId, date: isoDate, hour: spec.hour, propertyCode: null, message: spec.message ?? null }, oe.exec);
-        arm = { ok: r.ok, armEventId: r.armEventId, error: r.error };
-        step("arm-sync", "ثبت رویداد در خود سامانهٔ ARM", r.ok ? "done" : "failed", r.ok ? `رویداد در ARM ثبت شد${r.armEventId ? ` (شناسه: ${r.armEventId})` : ""}.` : `همگام‌سازی ARM ناموفق: ${r.error ?? "?"}`);
-      } catch (e) {
-        arm = { ok: false, error: (e as Error).message };
-        step("arm-sync", "ثبت رویداد در خود سامانهٔ ARM", "failed", (e as Error).message);
-      }
-    } else {
-      step("arm-sync", "ثبت رویداد در خود سامانهٔ ARM", "skipped", "درخواست هنوز در ARM ثبت نشده — رویداد فقط در آینهٔ محلی ثبت می‌شود.");
-    }
-
-    // ثبت محلی (همیشه) — عین قرارداد رویداد خود سامانه با تاریخ جلالی + ساعت
-    const event = await createRequestEvent(
-      { requestId: rec.id, eventTypeId, eventTypeName, flags: {}, date: isoDate, hour: spec.hour, message: spec.message ?? null },
-      byCode,
-    );
-    await db.requestEventRecord.update({
-      where: { id: event.id },
-      data: {
-        armEventId: arm?.armEventId ?? null,
-        armSyncedAt: arm?.ok ? new Date() : null,
-        armSyncJson: JSON.stringify({
-          at: new Date().toISOString(),
-          kind: "change-history-entry",
-          byOwnerDirective: true,
-          demanded: { اقدام: eventTypeName, توسط: byName, تاریخ: `${spec.hour}|${spec.date}` },
-          armRequestCode: clean,
-          arm: arm ? { ok: arm.ok, armEventId: arm.armEventId ?? null, error: arm.error ?? null } : null,
-        }),
-      },
-    }).catch(() => undefined);
-    step("local-event", "ثبت رویداد در تاریخچهٔ تغییرات (آینهٔ محلی)", "done", `اقدام: ${eventTypeName} · توسط: ${byName} · تاریخ: ${spec.hour} | ${isoDate} — نمایش عین UI: «${eventTypeName} · تاریخ ${isoJalaliDisplay(isoDate)} ساعت ${spec.hour}».`);
-
-    await audit("CHANGES_REQUEST_EVENT", actor.code, `code=${clean} type=${eventTypeName} date=${isoDate} hour=${spec.hour} arm=${arm ? (arm.ok ? "ok" : "fail") : "local"} by=changes-tile`).catch(() => undefined);
-
-    return { ok: true, operation: "request-event", steps, durationMs: Date.now() - t0, result: { requestCode: clean, eventId: event.id, armEventId: arm?.armEventId ?? null, اقدام: eventTypeName, توسط: byName, تاریخ: `${spec.hour} | ${isoDate}` } };
-  } catch (e) {
-    step("fatal", "اجرای عملیات", "failed", (e as Error).message);
-    return { ok: false, operation: "request-event", steps, durationMs: Date.now() - t0, error: (e as Error).message };
-  }
+/**
+ * نگاشت رکورد کامل آگهی (خروجی by-code) → بدنهٔ properties/update.
+ * عین سریال‌سازی خود سامانه: مقادیر populated → شناسه خام؛ فیلدهای اختیاری
+ * فقط هنگام داشتن مقدار (removeEmpty).
+ */
+export function buildPropertyUpdatePayload(row: ArmRow, statusOverride?: ArmRow[]): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    customer: rawId(row.customer) ?? "",
+    country: rawId(row.country) ?? LOCATION_IDS.country,
+    state: rawId(row.state) ?? LOCATION_IDS.state,
+    city: rawId(row.city) ?? LOCATION_IDS.city,
+    area: rawId(row.area) ?? "",
+    line: rawId(row.line) ?? "",
+    address: row.address ?? row.fullAddress ?? "",
+    tradeType: rawId(row.tradeType) ?? "",
+    propertyType: rawId(row.propertyType) ?? "",
+    buildingType: rawId(row.buildingType) ?? "",
+    changeWith: Array.isArray(row.changeWith) ? row.changeWith : [],
+    inputs: row.inputs ?? {},
+    priceEvaluation: row.priceEvaluation ?? "",
+    fileFinding: row.fileFinding ?? "",
+    fileType: Array.isArray(row.fileType) ? row.fileType : [],
+    userSeriousity: row.userSeriousity ?? "",
+    description: row.realtorDescription ?? row.description ?? "",
+  };
+  if (row.postal_code ?? row.postalCode) payload.postal_code = row.postal_code ?? row.postalCode;
+  if (row.desirabilityLevel) payload.desirabilityLevel = row.desirabilityLevel;
+  if (row.sellReason) payload.sellReason = row.sellReason;
+  if (row.location && typeof row.location === "object") payload.location = row.location;
+  if (Array.isArray(row.images) && row.images.length > 0) payload.images = row.images;
+  if (Array.isArray(row.videos) && row.videos.length > 0) payload.videos = row.videos;
+  if (row.isLuxury) payload.isLuxury = true;
+  if (row.isVacation) payload.isVacation = true;
+  if (row.urgent) payload.isUrgent = true;
+  if (row.confirmSMS != null) payload.notifyBySms = Boolean(row.confirmSMS);
+  // پرچم‌های ردیف — بازتأیید با مقدار جاری (محافظ replace کامل — عین ۰۹۹)
+  payload.urgent = Boolean(row.urgent);
+  payload.changeable = Boolean(row.changeable);
+  payload.ocasion = Boolean(row.ocasion);
+  payload.isRental = Boolean(row.isRental);
+  payload.confirmSMS = row.confirmSMS ?? true;
+  if (statusOverride) payload.status = statusOverride;
+  return payload;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * قابلیت ۱ — کدآگهی
+ * کدآگهی — خواندن وضعیت (فرم تغییر/حذف)
  * ═══════════════════════════════════════════════════════════════════ */
 
-/* ---------- جستجو ---------- */
-
-export interface ListingLookupResult {
+export interface ListingChangeLookup {
   ok: boolean;
   code: string;
   arm: {
     armPropertyId: string;
     title: string | null;
     relatedRealtor: string | null;
-    code: string;
+    createdAt: string | null;
+    /** آخرین مدخل وضعیت (زنده) */
+    latestStatus: { action: string | null; statusName: string | null; realtor: string | null; date: string | null; display: string | null } | null;
   } | null;
-  details: Array<{ label: string; value: string; unit?: string | null }> | null;
-  owner: { name: string | null; mobile: string | null } | null;
-  localListingId: string | null;
+  owner: { userId: string | null; customerId: string | null; fullName: string | null; mobile: string | null } | null;
+  /** تاریخچهٔ رویداد و بازخورد (کامل — request-events/list?property=) */
+  events: Array<{ id: string; type: string | null; requestCode: string | null; realtor: string | null; date: string | null; hour: string | null; display: string | null }>;
+  /** آثار محلی قابل حذف */
+  localTraces: {
+    propertyCatalog: number;
+    listingFiles: number;
+    linkedEvents: number;
+    visits: number;
+    specialProperties: number;
+    transactions: number;
+    contracts: number;
+    matchRejections: number;
+    opportunityAlerts: number;
+    graphNodes: number;
+    graphEdges: number;
+  } | null;
   error?: string;
 }
 
-/** جستجوی کدآگهی — زنده از خود سامانه (properties/info/by-code عین فرم رویداد) */
-export async function lookupListingByCode(code: string): Promise<ListingLookupResult> {
+export async function lookupListingForChange(code: string): Promise<ListingChangeLookup> {
   const clean = code.trim();
+  const empty: ListingChangeLookup = { ok: false, code: clean, arm: null, owner: null, events: [], localTraces: null };
   try {
     const oe = await resolveOwnerExec();
-    const res = await call<ArmRow>(oe, "GET", ARM_PATHS.propertyByCode(clean));
-    const data = res.data ?? {};
-    const armPropertyId = String(data._id ?? data.id ?? "");
-    if (!armPropertyId) {
-      return { ok: false, code: clean, arm: null, details: null, owner: null, localListingId: null, error: `آگهی با کد «${clean}» در سامانه آرم یافت نشد.` };
+    const row = await fetchPropertyByCode(oe, clean);
+    if (!row?._id) {
+      return { ...empty, error: `آگهی با کد «${clean}» در سامانه ARM یافت نشد (یا حساب شما به آن دسترسی ندارد).` };
     }
-
-    // جزئیات + مالک (بهترین‌تلاش — موازی)
-    const [detRes, ownRes] = await Promise.all([
-      call<ArmRow>(oe, "GET", ARM_PATHS.propertyDetails(armPropertyId)).catch(() => null),
-      call<ArmRow>(oe, "GET", ARM_PATHS.propertyOwner(armPropertyId)).catch(() => null),
+    const armPropertyId = String(row._id);
+    const [ownerRow, events] = await Promise.all([
+      fetchPropertyOwner(oe, armPropertyId).catch(() => null),
+      fetchPropertyEvents(oe, armPropertyId).catch(() => [] as ArmRow[]),
     ]);
-    const details = Array.isArray(detRes?.data?.details)
-      ? (detRes.data.details as Array<{ label?: string; value?: unknown; unit?: string | null }>).map((d) => ({ label: String(d.label ?? ""), value: String(d.value ?? ""), unit: d.unit ?? null }))
-      : null;
-    const ownerRow = ownRes?.data ?? {};
-    const owner = {
-      name: ownerRow.fullName ?? ([ownerRow.firstName, ownerRow.lastName].filter(Boolean).join(" ") || null),
-      mobile: ownerRow.mobileNumber ?? null,
-    };
-
-    const local = await db.listingRecord.findFirst({ where: { armPropertyId } });
-
+    const st = Array.isArray(row.status) ? (row.status[0] as ArmRow | undefined) : undefined;
+    const localTraces = await countListingTraces(clean, armPropertyId).catch(() => null);
     return {
       ok: true,
       code: clean,
-      arm: { armPropertyId, title: data.title ?? null, relatedRealtor: data.relatedRealtor ?? null, code: clean },
-      details,
-      owner: owner.name || owner.mobile ? owner : null,
-      localListingId: local?.id ?? null,
+      arm: {
+        armPropertyId,
+        title: row.title ?? null,
+        relatedRealtor: row.relatedRealtor ?? null,
+        createdAt: row.createdAt ?? null,
+        latestStatus: st
+          ? {
+              action: st.actionType?.name ?? null,
+              statusName: st.currentStatus?.name ?? null,
+              realtor: st.realtor?.fullName ?? null,
+              date: st.date ?? null,
+              display: isoToJalaliHour(st.date ?? null),
+            }
+          : null,
+      },
+      owner: ownerRow
+        ? {
+            userId: ownerRow.userId ?? ownerRow._id ?? null,
+            customerId: ownerRow._id ?? null,
+            fullName: ownerRow.fullName ?? ([ownerRow.firstName, ownerRow.lastName].filter(Boolean).join(" ") || null),
+            mobile: ownerRow.mobileNumber != null ? String(ownerRow.mobileNumber) : null,
+          }
+        : null,
+      events: events.map((e) => ({
+        id: String(e._id ?? ""),
+        type: e.eventType?.name ?? null,
+        requestCode: e.requestProperty?.code != null ? String(e.requestProperty.code) : null,
+        realtor: e.realtor?.fullName ?? null,
+        date: e.date ?? null,
+        hour: e.hour ?? null,
+        display: isoToJalaliHour(e.hour ?? e.date ?? null),
+      })),
+      localTraces,
     };
   } catch (e) {
-    return { ok: false, code: clean, arm: null, details: null, owner: null, localListingId: null, error: (e as Error).message };
+    return { ...empty, error: (e as Error).message };
   }
 }
 
-/* ---------- ثبت کدآگهی جدید (۵ گامی — مسیر زندهٔ اثبات‌شده) ---------- */
+/* ═══════════════════ کدآگهی — تغییر «اطلاعات مالک آگهی» ═══════════════════ */
 
-export interface CreateListingSpec extends ListingUpsertInput {}
-
-export async function createListingCode(spec: CreateListingSpec, actor: { code: string; name: string }): Promise<ChangesReport> {
-  const t0 = Date.now();
-  const steps: ChangesStep[] = [];
-  const step = (key: string, title: string, status: ChangesStep["status"], detail: string) => steps.push({ key, title, status, detail });
-
-  try {
-    // ثبت فایل محلی (اعتبارسنجی ۵ گامی داخل createListing)
-    const created = await createListing({ ...spec, source: undefined } as ListingUpsertInput, actor.code);
-    if (!created.record) {
-      step("local-create", "ثبت فایل آگهی (اعتبارسنجی ۵ گامی)", "failed", `خطا در ساخت رکورد محلی.`);
-      return { ok: false, operation: "listing-create", steps, durationMs: Date.now() - t0, error: "خطای ساخت رکورد محلی." };
-    }
-    step("local-create", "ثبت فایل آگهی (اعتبارسنجی ۵ گامی)", created.ok ? "done" : "failed",
-      created.ok ? `فایل ${created.record.id} با اعتبارسنجی کامل ساخته شد.` : `اعتبارسنجی ناقص: ${created.errors.map((e) => e.message).join("؛ ")}`);
-    if (!created.ok) {
-      return { ok: false, operation: "listing-create", steps, durationMs: Date.now() - t0, error: "اطلاعات ۵ گامی کامل نیست." };
-    }
-
-    // انتقال به سامانه ARM (۵ گام عین کاربر عادی)
-    const oe = await resolveOwnerExec();
-    step("token", "توکن مالک ARM", "done", `توکن زنده از «${oe.source === "session" ? "نشست مالک" : "خزانه"}»${oe.expIso ? ` (اعتبار تا ${oe.expIso})` : ""}.`);
-    const tr = await transferListingToCrm(oe.guard, created.record.id, "create", oe.exec);
-    for (const s of tr.steps) steps.push({ key: `arm-${s.key}`, title: s.title, status: s.status, detail: s.detail });
-    if (!tr.ok || !tr.armPropertyId) {
-      return { ok: false, operation: "listing-create", steps, durationMs: Date.now() - t0, error: tr.error ?? "ثبت در ARM ناموفق بود." };
-    }
-
-    // کدآگهی از فهرست زنده
-    let propertyCode = "";
-    const row = await scanPropertyRow(oe, tr.armPropertyId, 6);
-    if (row) propertyCode = String(row.code ?? row.propertyCode ?? "");
-    step("arm-code", "کدآگهی از فهرست زنده", propertyCode ? "done" : "failed",
-      propertyCode ? `کدآگهی ${propertyCode} · عنوان: «${row?.title ?? "—"}» · کارشناس: ${row?.relatedRealtor ?? "—"}.` : "ردیف آگهی تازه در فهرست زنده یافت نشد (ثبت موفق بود؛ فهرست با تأخیر بروزرسانی می‌شود).");
-
-    await audit("CHANGES_LISTING_CREATE", actor.code, `code=${propertyCode} arm=${tr.armPropertyId} by=changes-tile`).catch(() => undefined);
-
-    return {
-      ok: Boolean(propertyCode),
-      operation: "listing-create",
-      steps,
-      durationMs: Date.now() - t0,
-      result: { propertyCode, armPropertyId: tr.armPropertyId, customerId: tr.customerId ?? null, title: row?.title ?? null },
-    };
-  } catch (e) {
-    step("fatal", "اجرای عملیات", "failed", (e as Error).message);
-    return { ok: false, operation: "listing-create", steps, durationMs: Date.now() - t0, error: (e as Error).message };
-  }
-}
-
-/* ---------- تغییر در کدآگهی موجود ---------- */
-
-export interface ListingUpdateSpec {
+export interface ListingOwnerChangeSpec {
   code: string;
-  /** پچ فیلدها — روی فایل محلی پیوندخورده اعمال و دوباره به ARM فرستاده می‌شود */
-  inputsPatch?: Record<string, string>;
-  userSeriousness?: string;
-  priceEvaluation?: string;
-  description?: string;
-  flags?: { isLuxury?: boolean; isVacation?: boolean; isUrgent?: boolean; notifyBySms?: boolean };
+  /** نام و نام خانوادگی جدید مالک (خالی = بدون تغییر) */
+  newFullName?: string | null;
+  /** موبایل جدید مالک (خالی = بدون تغییر) — ۱۱ رقم با ۰۹ یا بین‌المللی 98… */
+  newMobile?: string | null;
 }
 
-/** تغییر در کدآگهی — PUT properties/update/{id} با بازسازی بدنهٔ عین edit-page خود سامانه */
-export async function updateListingCode(spec: ListingUpdateSpec, actor: { code: string; name: string }): Promise<ChangesReport> {
+/** نرمال‌سازی موبایل به قالب ARM (بدون صفر ابتدایی — عین toArmMobile خود سامانه) */
+function toArmMobile(mobile: string): string {
+  const digits = mobile.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/\D/g, "");
+  if (digits.startsWith("98")) return digits.slice(2);
+  return digits.startsWith("0") ? digits.slice(1) : digits;
+}
+
+function splitName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
+
+export async function changeListingOwnerInfo(spec: ListingOwnerChangeSpec, actor: { code: string; name: string }): Promise<ChangesReport> {
   const t0 = Date.now();
   const steps: ChangesStep[] = [];
   const step = (key: string, title: string, status: ChangesStep["status"], detail: string) => steps.push({ key, title, status, detail });
 
   try {
     const clean = spec.code.trim();
-    // شناسایی آگهی با کد (زنده)
-    const lookup = await lookupListingByCode(clean);
-    if (!lookup.ok || !lookup.arm) {
-      step("lookup", "جستجوی کدآگهی در خود سامانه", "failed", lookup.error ?? "آگهی یافت نشد.");
-      return { ok: false, operation: "listing-update", steps, durationMs: Date.now() - t0, error: lookup.error ?? "آگهی یافت نشد." };
+    const newName = spec.newFullName?.trim() || null;
+    const newMobile = spec.newMobile?.trim() || null;
+    if (!newName && !newMobile) {
+      return { ok: false, operation: "listing-owner-change", steps: [{ key: "input", title: "اعتبارسنجی ورودی", status: "failed", detail: "حداقل یکی از نام یا موبایل جدید الزامی است." }], durationMs: Date.now() - t0, error: "ورودی خالی است." };
     }
-    step("lookup", "جستجوی کدآگهی در خود سامانه", "done", `کدآگهی ${clean} · شناسهٔ ARM: ${lookup.arm.armPropertyId} · عنوان: «${lookup.arm.title ?? "—"}».`);
-
-    // فایل محلی پیوندخورده (منبع بازسازی بدنهٔ کامل — عین الگوی ویرایش)
-    const local = lookup.localListingId ? await db.listingRecord.findUnique({ where: { id: lookup.localListingId } }) : null;
-    if (!local) {
-      step("local-link", "فایل آگهی پیوندخورده", "failed", "این کدآگهی فایل محلی پیوندخورده ندارد — بدنهٔ کامل ویرایش قابل بازسازی نیست. ابتدا از مسیر «ثبت کدآگهی جدید» یا فایل‌های کاشی آگهی نسبت به پیوند اقدام شود.");
-      return { ok: false, operation: "listing-update", steps, durationMs: Date.now() - t0, error: "فایل محلی پیوندخورده یافت نشد." };
+    if (newMobile && toArmMobile(newMobile).length !== 10) {
+      return { ok: false, operation: "listing-owner-change", steps: [{ key: "input", title: "اعتبارسنجی موبایل", status: "failed", detail: `موبایل «${newMobile}» معتبر نیست — نمونه: 09141159000.` }], durationMs: Date.now() - t0, error: "موبایل نامعتبر است." };
     }
-    step("local-link", "فایل آگهی پیوندخورده", "done", `فایل ${local.id} · مالک: ${local.customerName ?? "—"} · منطقه: ${local.areaName ?? "—"} / ${local.lineName ?? "—"}.`);
 
     const oe = await resolveOwnerExec();
     step("token", "توکن مالک ARM", "done", `توکن زنده از «${oe.source === "session" ? "نشست مالک" : "خزانه"}».`);
 
-    // اعمال پچ‌ها روی فایل محلی (updateListing اعتبارسنجی ۵ گامی را دوباره اجرا می‌کند)
-    const { updateListing } = await import("@/lib/listing/store");
-    const updated = await updateListing(local.id, {
-      inputs: { ...parseJson<Record<string, string>>(local.inputsJson, {}), ...(spec.inputsPatch ?? {}) } as Record<string, string>,
-      userSeriousness: spec.userSeriousness,
-      priceEvaluation: spec.priceEvaluation,
-      description: spec.description,
-      isLuxury: spec.flags?.isLuxury,
-      isVacation: spec.flags?.isVacation,
-      isUrgent: spec.flags?.isUrgent,
-      notifyBySms: spec.flags?.notifyBySms,
-    });
-    if (!updated) {
-      step("local-update", "اعمال تغییرات بر فایل محلی", "failed", "به‌روزرسانی فایل محلی ناموفق بود.");
-      return { ok: false, operation: "listing-update", steps, durationMs: Date.now() - t0, error: "به‌روزرسانی محلی ناموفق." };
+    const row = await fetchPropertyByCode(oe, clean);
+    if (!row?._id) {
+      step("lookup", "جستجوی کدآگهی در خود سامانه", "failed", `آگهی ${clean} یافت نشد.`);
+      return { ok: false, operation: "listing-owner-change", steps, durationMs: Date.now() - t0, error: "آگهی یافت نشد." };
     }
-    step("local-update", "اعمال تغییرات بر فایل محلی", "done", `پچ‌ها اعمال شد${Object.keys(spec.inputsPatch ?? {}).length ? ` (${Object.keys(spec.inputsPatch ?? {}).length} فیلد فرم)` : ""}${spec.flags ? " + پرچم‌ها" : ""}.`);
+    const armPropertyId = String(row._id);
+    step("lookup", "جستجوی کدآگهی در خود سامانه", "done", `کدآگهی ${clean} · شناسهٔ ARM: ${armPropertyId} · عنوان: «${row.title ?? "—"}».`);
 
-    // بازسازی بدنهٔ کامل ویرایش (عین سریال‌سازی خود سامانه) + PUT
-    const parseArr = (s: string | null): string[] => {
-      try { return s ? (JSON.parse(s) as string[]) : []; } catch { return []; }
-    };
-    const payload = buildListingPayload({
-      customerId: local.armCustomerId ?? "",
-      areaId: updated.areaId ?? "",
-      areaName: updated.areaName ?? "",
-      lineId: updated.lineId ?? "",
-      lineName: updated.lineName ?? "",
-      latitude: updated.latitude,
-      longitude: updated.longitude,
-      postalCode: updated.postalCode,
-      address: updated.address ?? "",
-      tradeTypeId: updated.tradeTypeId ?? "",
-      propertyTypeId: updated.propertyTypeId ?? "",
-      buildingTypeId: updated.buildingTypeId ?? "",
-      changeWith: parseArr(updated.changeWithJson),
-      inputs: parseJson<Record<string, string>>(updated.inputsJson, {}),
-      images: parseArr(updated.imagesJson),
-      videos: parseArr(updated.videosJson),
-      priceEvaluation: updated.priceEvaluation ?? "",
-      desirabilityLevel: updated.desirabilityLevel,
-      fileFinding: updated.fileFinding ?? "",
-      fileType: parseArr(updated.fileTypeJson),
-      userSeriousness: updated.userSeriousness ?? "",
-      sellReason: updated.sellReason,
-      description: updated.description,
-      isLuxury: updated.isLuxury,
-      isVacation: updated.isVacation,
-      isUrgent: updated.isUrgent,
-      notifyBySms: updated.notifyBySms,
-    });
+    const ownerBefore = await fetchPropertyOwner(oe, armPropertyId);
+    if (!ownerBefore) {
+      step("owner", "خواندن اطلاعات مالک آگهی", "failed", "اطلاعات مالک از ARM خوانده نشد.");
+      return { ok: false, operation: "listing-owner-change", steps, durationMs: Date.now() - t0, error: "اطلاعات مالک خوانده نشد." };
+    }
+    const beforeName = ownerBefore.fullName ?? ([ownerBefore.firstName, ownerBefore.lastName].filter(Boolean).join(" ") || "—");
+    const beforeMobile = ownerBefore.mobileNumber != null ? String(ownerBefore.mobileNumber) : "—";
+    const targetUserId = String(ownerBefore.userId ?? ownerBefore._id ?? "");
+    step("owner", "اطلاعات فعلی مالک آگهی", "done", `نام: «${beforeName}» · موبایل: ${beforeMobile} · شناسهٔ کاربر: ${targetUserId}.`);
 
-    const putRes = await call<ArmRow>(oe, "PUT", ARM_PATHS.propertyUpdate(lookup.arm.armPropertyId), { body: payload, timeoutMs: CHANGES_TIMEOUT_MS.write });
-    step("put", "PUT properties/update/{id}", "done", `پاسخ سامانه: ${putRes.message ?? "ثبت شد"}.`);
-    await db.listingRecord.update({
-      where: { id: updated.id },
+    // بدنهٔ ویرایش عین users/create خود سامانه (firstName/lastName/mobileNumber)
+    const finalName = newName ?? beforeName;
+    const finalMobile = newMobile ? toArmMobile(newMobile) : toArmMobile(beforeMobile);
+    const { firstName, lastName } = splitName(finalName);
+    const body = { firstName, lastName, mobileNumber: finalMobile };
+
+    let updated = false;
+    let usedId = targetUserId;
+    try {
+      await call(oe, "PUT", ARM_PATHS.customerUpdate(targetUserId), { body, timeoutMs: CHANGES_TIMEOUT_MS.write });
+      updated = true;
+    } catch (e) {
+      // جایگزین: شناسهٔ رکورد مشتری (_id) به‌جای userId — بهترین‌تلاش
+      const alt = String(ownerBefore._id ?? "");
+      if (alt && alt !== targetUserId) {
+        try {
+          await call(oe, "PUT", ARM_PATHS.customerUpdate(alt), { body, timeoutMs: CHANGES_TIMEOUT_MS.write });
+          updated = true;
+          usedId = alt;
+        } catch {
+          /* پایین خطا می‌رود */
+        }
+      }
+      if (!updated) throw e;
+    }
+    step("users-update", "تغییر اطلاعات مالک در خود سامانه (users/update)", "done", `شناسهٔ ${usedId} ← نام: «${finalName}» · موبایل: ${finalMobile}.`);
+
+    // راستی‌آزمایی زنده
+    const ownerAfter = await fetchPropertyOwner(oe, armPropertyId).catch(() => null);
+    const afterName = ownerAfter?.fullName ?? null;
+    const afterMobile = ownerAfter?.mobileNumber != null ? String(ownerAfter.mobileNumber) : null;
+    const nameOk = !newName || (afterName ?? "").includes(newName.split(/\s+/)[0]);
+    const mobileOk = !newMobile || afterMobile === finalMobile || afterMobile === `98${finalMobile}`;
+    step("verify", "راستی‌آزمایی زندهٔ اطلاعات مالک", nameOk && mobileOk ? "done" : "failed",
+      `پس از تغییر: نام «${afterName ?? "—"}» · موبایل ${afterMobile ?? "—"} ${nameOk && mobileOk ? "— مطابق خواسته ✓" : "— هنوز مقدار قبلی را برمی‌گرداند (ممکن است کش سرور تأخیر داشته باشد)"}.`);
+
+    // آینه‌های محلی
+    const localP = await db.propertyRecord.updateMany({
+      where: { propertyCode: clean },
       data: {
-        crmTransferredAt: new Date(),
-        crmTransferJson: JSON.stringify({ steps, mode: "update", at: new Date().toISOString(), by: "changes-tile", armPropertyId: lookup.arm.armPropertyId }),
+        rawOwnerName: finalName,
+        ownerMobile: `0${finalMobile}`,
+        ownerSearchNorm: `${finalName} ␟ 0${finalMobile}`,
       },
-    }).catch(() => undefined);
+    }).catch(() => null);
+    const localL = armPropertyId
+      ? await db.listingRecord.updateMany({ where: { armPropertyId }, data: { customerName: finalName, customerMobile: `0${finalMobile}` } }).catch(() => null)
+      : null;
+    step("local-mirror", "به‌روزرسانی آینه‌های محلی", (localP || localL) ? "done" : "skipped",
+      (localP || localL) ? `کاتالوگ M1: ${localP?.count ?? 0} ردیف · فایل آگهی: ${localL?.count ?? 0} ردیف به‌روزرسانی شد.` : "ردیف محلی متناظر یافت نشد.");
 
-    await audit("CHANGES_LISTING_UPDATE", actor.code, `code=${clean} arm=${lookup.arm.armPropertyId} ok=true by=changes-tile`).catch(() => undefined);
+    await audit("CHANGES_LISTING_OWNER", actor.code, `code=${clean} arm=${armPropertyId} name=${newName ? "changed" : "-"} mobile=${newMobile ? "changed" : "-"} ok=${nameOk && mobileOk} by=changes-tile`).catch(() => undefined);
 
-    return { ok: true, operation: "listing-update", steps, durationMs: Date.now() - t0, result: { propertyCode: clean, armPropertyId: lookup.arm.armPropertyId } };
+    return {
+      ok: nameOk && mobileOk,
+      operation: "listing-owner-change",
+      steps,
+      durationMs: Date.now() - t0,
+      result: { propertyCode: clean, armPropertyId, ownerName: afterName ?? finalName, ownerMobile: afterMobile ?? finalMobile, verdict: { nameOk, mobileOk } },
+    };
   } catch (e) {
     step("fatal", "اجرای عملیات", "failed", (e as Error).message);
-    return { ok: false, operation: "listing-update", steps, durationMs: Date.now() - t0, error: (e as Error).message };
+    return { ok: false, operation: "listing-owner-change", steps, durationMs: Date.now() - t0, error: (e as Error).message };
+  }
+}
+
+/* ═══════════════════ کدآگهی — تغییر تاریخ «ایجاد مشاور» + آبشار ═══════════════════ */
+
+export interface ListingDateChangeSpec {
+  code: string;
+  /** تاریخ هدف جلالی (۱۴۰۵/۰۷/۰۵) */
+  targetJalali: string;
+  /** ساعت هدف (۱۷:۳۰) — خالی = حفظ ساعت فعلی لنگر */
+  targetHour?: string | null;
+}
+
+export async function changeListingHistoryDate(spec: ListingDateChangeSpec, actor: { code: string; name: string }): Promise<ChangesReport> {
+  const t0 = Date.now();
+  const steps: ChangesStep[] = [];
+  const step = (key: string, title: string, status: ChangesStep["status"], detail: string) => steps.push({ key, title, status, detail });
+
+  try {
+    const clean = spec.code.trim();
+    const oe = await resolveOwnerExec();
+    step("token", "توکن مالک ARM", "done", `توکن زنده از «${oe.source === "session" ? "نشست مالک" : "خزانه"}».`);
+
+    const row = await fetchPropertyByCode(oe, clean);
+    if (!row?._id) {
+      step("lookup", "جستجوی کدآگهی", "failed", `آگهی ${clean} یافت نشد.`);
+      return { ok: false, operation: "listing-date-change", steps, durationMs: Date.now() - t0, error: "آگهی یافت نشد." };
+    }
+    const armPropertyId = String(row._id);
+    const createdAt = row.createdAt ? new Date(row.createdAt).toISOString() : null;
+    if (!createdAt) {
+      step("anchor", "تعیین لنگر (تاریخ ایجاد مشاور)", "failed", "تاریخ ایجاد آگهی از رکورد زنده خوانده نشد.");
+      return { ok: false, operation: "listing-date-change", steps, durationMs: Date.now() - t0, error: "لنگر تاریخ یافت نشد." };
+    }
+    step("lookup", "جستجوی کدآگهی", "done", `کدآگهی ${clean} · شناسهٔ ARM: ${armPropertyId} · ایجاد: ${isoToJalaliHour(createdAt)}.`);
+    step("anchor", "لنگر آبشار — «ایجاد مشاور»", "done", `تاریخ ایجاد مشاور = تاریخ ایجاد آگهی: ${isoToJalaliHour(createdAt)} (سند زنده: مدخل «ایجاد مشاور» تاریخچه عین createdAt است).`);
+
+    // طرح آبشار — مدخل‌های قابل مشاهده: تاریخ ایجاد + آخرین وضعیت + رویدادها
+    const [events, ownerRow] = await Promise.all([
+      fetchPropertyEvents(oe, armPropertyId).catch(() => [] as ArmRow[]),
+      fetchPropertyOwner(oe, armPropertyId).catch(() => null),
+    ]);
+    const visibleEntries = [
+      { key: "anchor", label: "ایجاد مشاور (تاریخ ایجاد آگهی)", date: createdAt },
+      ...(Array.isArray(row.status) ? (row.status as ArmRow[]).map((s, i) => ({ key: `status-${i}`, label: `وضعیت: ${s.actionType?.name ?? s.currentStatus?.name ?? "مدخل تاریخچه"}`, date: String(s.date ?? createdAt) })) : []),
+      ...events.map((e, i) => ({ key: `event-${i}`, label: `رویداد ${e.eventType?.name ?? ""} (${e.requestProperty?.code ?? "—"})`.trim(), date: String(e.hour ?? e.date ?? createdAt) })),
+    ];
+    const { plan, error: planErr } = buildCascadePlan(visibleEntries, spec.targetJalali, spec.targetHour ?? null);
+    if (!plan) {
+      step("plan", "ساخت طرح آبشار", "failed", planErr ?? "طرح آبشار ساخته نشد.");
+      return { ok: false, operation: "listing-date-change", steps, durationMs: Date.now() - t0, error: planErr };
+    }
+    step("plan", "طرح آبشار (Δ نسبی از لنگر — عین مثال مالک)", "done",
+      `هدف: ${isoToJalaliHour(plan.targetDate)} · جابه‌جایی: ${plan.deltaMs === 0 ? "بدون تغییر" : `${plan.deltaDays > 0 ? "+" : ""}${plan.deltaDays} روز`} روی ${visibleEntries.length} مدخل قابل‌مشاهده.`);
+
+    /* ── ۱) تاریخچهٔ تغییرات آگهی (آرایهٔ status) — با دروازهٔ خواندن کامل ── */
+    let historyRewritten = false;
+    let fullHistory: ArmRow[] | null = null;
+    let historySource: string | null = null;
+    for (const variant of ARM_PATHS.propertyHistoryVariants(armPropertyId)) {
+      const res = await call<ArmRow>(oe, "GET", variant).catch(() => null);
+      const list = (res?.data as any)?.list ?? (Array.isArray(res?.data) ? res.data : null);
+      if (Array.isArray(list) && list.length > 0) {
+        fullHistory = list as ArmRow[];
+        historySource = variant;
+        break;
+      }
+    }
+    if (fullHistory && historySource) {
+      // مسیر کامل عین ۰۹۹: بازسازی همهٔ مدخل‌ها با همان شناسه‌ها + تاریخ جابه‌جاشده
+      const shifted = fullHistory.map((e) => ({ ...e, date: shiftIso(String(e.date ?? createdAt), plan.deltaMs) }));
+      const payload = buildPropertyUpdatePayload(row, shifted);
+      await call(oe, "PUT", ARM_PATHS.propertyUpdate(armPropertyId), { body: payload, timeoutMs: CHANGES_TIMEOUT_MS.write });
+      historyRewritten = true;
+      step("history", "تغییر تاریخ تاریخچهٔ تغییرات آگهی (کامل)", "done", `${fullHistory.length} مدخل از «${historySource}» خوانده و با Δ ${plan.deltaDays > 0 ? "+" : ""}${plan.deltaDays} روز بازنویسی شد.`);
+    } else {
+      step("history", "تغییر تاریخ تاریخچهٔ تغییرات آگهی (کامل)", "skipped",
+        "API آرم امروز فهرست کامل مدخل‌های تاریخچهٔ آگهی را منتشر نمی‌کند (۶۰+ واریانت مسیر زنده بررسی شد) و بازنویسی آرایهٔ status بدون خواندن کامل، به‌علت semantics جایگزینی کامل (آزمون زندهٔ این نوبت روی requests/update)، بقیهٔ مدخل‌ها را نابود می‌کند — محافظ تاریخچه فعال شد. به‌محض فعال‌شدن مسیر تاریخچهٔ آگهی توسط آرم، این گام خودکار کامل می‌شود.");
+    }
+
+    /* ── ۲) آبشار تاریخچهٔ رویداد و بازخورد — کامل و زنده ── */
+    let eventsShifted = 0;
+    let eventsFailed = 0;
+    for (const e of events) {
+      const eid = String(e._id ?? "");
+      const newDate = e.date ? shiftIso(String(e.date), plan.deltaMs) : null;
+      const newHour = e.hour ? shiftIso(String(e.hour), plan.deltaMs) : null;
+      if (!eid || (!newDate && !newHour)) continue;
+      const body: Record<string, unknown> = {};
+      if (e.eventType) body.eventType = rawId(e.eventType) ?? undefined;
+      if (e.requestProperty) body.requestProperty = rawId(e.requestProperty) ?? undefined;
+      if (e.property) body.property = rawId(e.property) ?? undefined;
+      if (e.realtor) body.realtor = rawId(e.realtor) ?? undefined;
+      if (e.message != null) body.message = e.message;
+      if (newDate) body.date = newDate;
+      if (newHour) {
+        body.hour = newHour;
+        body.dateTime = newHour;
+        if (e.visitTime) body.visitTime = newHour;
+      }
+      try {
+        await call(oe, "PUT", ARM_PATHS.requestEventUpdate(eid), { body, timeoutMs: CHANGES_TIMEOUT_MS.write });
+        eventsShifted++;
+      } catch {
+        // جایگزین: حذف + ثبت دوباره با همان محتوا و تاریخ جدید (عقد قرارداد create اثبات‌شده)
+        try {
+          await call(oe, "DELETE", ARM_PATHS.requestEventDelete(eid), { timeoutMs: CHANGES_TIMEOUT_MS.write });
+          const re: Record<string, unknown> = { ...body };
+          await call(oe, "POST", ARM_PATHS.requestEventCreate, { body: re, timeoutMs: CHANGES_TIMEOUT_MS.write });
+          eventsShifted++;
+        } catch {
+          eventsFailed++;
+        }
+      }
+    }
+    step("events", "آبشار تاریخچهٔ رویداد و بازخورد", events.length === 0 ? "skipped" : eventsFailed === 0 ? "done" : "failed",
+      events.length === 0
+        ? "این آگهی رویداد/بازخورد ثبت‌شده ندارد (در صورت موجود بودن — عین فایل پیوست — همین‌جا آبشار می‌شد)."
+        : `${eventsShifted}/${events.length} رویداد با Δ ${plan.deltaDays > 0 ? "+" : ""}${plan.deltaDays} روز جابه‌جا شد${eventsFailed ? ` · ${eventsFailed} ناموفق` : ""}.`);
+
+    /* ── ۳) راستی‌آزمایی زنده ── */
+    const eventsAfter = await fetchPropertyEvents(oe, armPropertyId).catch(() => [] as ArmRow[]);
+    const eventsOk = events.length === 0 || eventsAfter.every((e) => {
+      const orig = events.find((o) => String(o._id) === String(e._id));
+      if (!orig) return true; // رویداد بازسازی‌شده (شناسهٔ جدید)
+      const expected = orig.hour ? shiftIso(String(orig.hour), plan.deltaMs) : orig.hour;
+      const expectedDate = orig.date ? shiftIso(String(orig.date), plan.deltaMs) : orig.date;
+      return (!expected || String(e.hour) === expected) && (!expectedDate || String(e.date) === expectedDate);
+    });
+    step("verify", "راستی‌آزمایی زندهٔ رویدادها", eventsOk ? "done" : "failed",
+      events.length === 0 ? "رویدادی برای راستی‌آزمایی نبود." : `${eventsAfter.length} رویداد زنده خوانده شد — تاریخ‌ها ${eventsOk ? "مطابق طرح آبشار ✓" : "هنوز مطابق نیستند"}.`);
+
+    /* ── ۴) آینهٔ محلی رویدادها ── */
+    const localEvents = await db.requestEventRecord.findMany({ where: { OR: [{ propertyCode: clean }, { armPropertyId }] } }).catch(() => []);
+    let localUpdated = 0;
+    for (const ev of localEvents) {
+      const match = events.find((o) => String(o._id) === ev.armEventId);
+      if (!match?.date) continue;
+      const shiftedDate = shiftIso(String(match.date), plan.deltaMs);
+      const tehran = new Date(new Date(shiftedDate).getTime() + 210 * 60_000);
+      const isoDate = tehran.toISOString().slice(0, 10);
+      const hour = `${String(tehran.getUTCHours()).padStart(2, "0")}:${String(tehran.getUTCMinutes()).padStart(2, "0")}`;
+      await db.requestEventRecord.update({ where: { id: ev.id }, data: { date: isoDate, hour } }).catch(() => undefined);
+      localUpdated++;
+    }
+    step("local-mirror", "آینهٔ محلی رویدادها", localEvents.length ? "done" : "skipped", localEvents.length ? `${localUpdated}/${localEvents.length} رویداد محلی به تاریخ جدید به‌روزرسانی شد.` : "رویداد محلی متناظر یافت نشد.");
+
+    await audit("CHANGES_LISTING_DATE", actor.code, `code=${clean} arm=${armPropertyId} target=${plan.targetDate} delta=${plan.deltaDays}d events=${eventsShifted}/${events.length} history=${historyRewritten} by=changes-tile`).catch(() => undefined);
+
+    const ok = (historyRewritten || events.length === 0 || eventsShifted > 0) && eventsOk;
+    return {
+      ok,
+      operation: "listing-date-change",
+      steps,
+      durationMs: Date.now() - t0,
+      result: {
+        propertyCode: clean,
+        armPropertyId,
+        anchor: isoToJalaliHour(plan.anchorDate),
+        target: isoToJalaliHour(plan.targetDate),
+        deltaDays: plan.deltaDays,
+        historyRewritten,
+        eventsShifted,
+        eventsTotal: events.length,
+        preview: plan.entries.map((p) => ({ label: p.label, before: isoToJalaliHour(p.before), after: isoToJalaliHour(p.after) })),
+      },
+    };
+  } catch (e) {
+    step("fatal", "اجرای عملیات", "failed", (e as Error).message);
+    return { ok: false, operation: "listing-date-change", steps, durationMs: Date.now() - t0, error: (e as Error).message };
+  }
+}
+
+/* ═══════════════════ کدآگهی — حذف کامل ═══════════════════ */
+
+export async function deleteListingCode(code: string, actor: { code: string; name: string }): Promise<ChangesReport> {
+  const t0 = Date.now();
+  const steps: ChangesStep[] = [];
+  const step = (key: string, title: string, status: ChangesStep["status"], detail: string) => steps.push({ key, title, status, detail });
+
+  try {
+    const clean = code.trim();
+    const oe = await resolveOwnerExec();
+    step("token", "توکن مالک ARM", "done", `توکن زنده از «${oe.source === "session" ? "نشست مالک" : "خزانه"}».`);
+
+    const row = await fetchPropertyByCode(oe, clean);
+    const armPropertyId = row?._id ? String(row._id) : null;
+    step("lookup", "شناسایی آگهی در خود سامانه", armPropertyId ? "done" : "failed",
+      armPropertyId ? `کدآگهی ${clean} · شناسهٔ ARM: ${armPropertyId} · عنوان: «${row?.title ?? "—"}».` : `آگهی ${clean} در ARM یافت نشد (شاید قبلاً حذف شده) — پاکسازی محلی ادامه می‌یابد.`);
+
+    /* ── ۱) حذف رویدادها/بازخوردهای آگهی از ARM (مسیر اثبات‌شده) ── */
+    let armEventsDeleted = 0;
+    if (armPropertyId) {
+      const events = await fetchPropertyEvents(oe, armPropertyId).catch(() => [] as ArmRow[]);
+      for (const e of events) {
+        const okDel = await call(oe, "DELETE", ARM_PATHS.requestEventDelete(String(e._id)), { timeoutMs: CHANGES_TIMEOUT_MS.write })
+          .then(() => true)
+          .catch(() => false);
+        if (okDel) armEventsDeleted++;
+      }
+      step("arm-events", "حذف تاریخچهٔ رویداد و بازخورد از ARM", events.length === 0 ? "skipped" : armEventsDeleted === events.length ? "done" : "failed",
+        events.length === 0 ? "رویدادی برای این آگهی ثبت نشده بود." : `${armEventsDeleted}/${events.length} رویداد از ARM حذف شد.`);
+    }
+
+    /* ── ۲) حذف خود آگهی از ARM — واریانت‌های کشف‌شده (امروز: شفاف گزارش می‌شود) ── */
+    let armDeleted = false;
+    if (armPropertyId) {
+      for (const variant of ARM_PATHS.propertyDeleteVariants(armPropertyId)) {
+        const okDel = await call(oe, variant.method, variant.path, { timeoutMs: CHANGES_TIMEOUT_MS.write })
+          .then(() => true)
+          .catch(() => false);
+        if (okDel) {
+          armDeleted = true;
+          break;
+        }
+      }
+      step("arm-delete", "حذف رکورد آگهی از ARM", armDeleted ? "done" : "skipped",
+        armDeleted
+          ? `آگهی ${clean} از ARM حذف شد.`
+          : "API آرم امروز مسیر حذف آگهی را به توکن مشاور exposure نمی‌دهد (۱۲+ واریانت زنده بررسی شد: delete/remove/bare/…). حذف رکورد ARM از پنل مدیریت آرم (arm.melketabriz.ir) انجام می‌شود؛ به‌محض فعال‌شدن مسیر، این گام خودکار انجام می‌شود.");
+    }
+
+    /* ── ۳) سامانهٔ عمومی ملک تبریز ── */
+    const publicGone = armPropertyId
+      ? await armCall({ method: "GET", path: ARM_PATHS.propertyByCode(clean), baseUrl: getMelkApiConfig().melkPublicApiBase, timeoutMs: CHANGES_TIMEOUT_MS.lookup, maxRetries: 0 })
+          .then(() => false)
+          .catch((e) => String((e as Error).message).includes("یافت نشد"))
+      : false;
+    step("public", "سامانهٔ عمومی ملک تبریز (melketabriz.com)", armDeleted || publicGone ? "done" : "skipped",
+      armDeleted || publicGone
+        ? `آگهی ${clean} از فهرست عمومی حذف/حذف‌شده است.`
+        : "سامانهٔ عمومی از همان پایگاه ARM می‌خواند — پس از حذف رکورد در ARM (گام قبل) به‌صورت خودکار حذف می‌شود؛ آینهٔ محلی آن در گام بعد پاک می‌شود.");
+
+    /* ── ۴) پاکسازی کامل آثار محلی ── */
+    const counts = await purgeListingLocally(clean, armPropertyId);
+    const totalLocal = Object.values(counts).reduce((a, b) => a + b, 0);
+    step("local-purge", "پاکسازی کامل آثار محلی (کاتالوگ · رویدادها · بازدیدها · کارگزاری‌ها · معاملات · قراردادها · گراف)", totalLocal > 0 ? "done" : "skipped",
+      totalLocal > 0
+        ? `${totalLocal} ردیف پاک شد — کاتالوگ M1: ${counts.propertyCatalog} · فایل آگهی: ${counts.listingFiles} · رویدادها: ${counts.linkedEvents} · بازدیدها: ${counts.visits} · کارگزاری: ${counts.specialProperties} · معاملات: ${counts.transactions} · قراردادها: ${counts.contracts} · رد تطبیق: ${counts.matchRejections} · هشدار فرصت: ${counts.opportunityAlerts} · گره گراف: ${counts.graphNodes} · یال گراف: ${counts.graphEdges}.`
+        : "اثری از این آگهی در آینه‌های محلی نبود.");
+
+    /* ── ۵) راستی‌آزمایی نهایی ── */
+    const tracesAfter = await countListingTraces(clean, armPropertyId);
+    const localClean = Object.values(tracesAfter).reduce((a, b) => a + b, 0) === 0;
+    step("verify", "راستی‌آزمایی «هیچ اثری باقی نماند»", localClean ? "done" : "failed", localClean ? "همهٔ آینه‌های محلی پاک شدند ✓ (پروفایل کارشناسان از همین آینه‌ها می‌خوانند)." : "برخی آثار محلی هنوز باقی‌اند — مجدداً اجرا کنید.");
+
+    await audit("CHANGES_LISTING_DELETE", actor.code, `code=${clean} arm=${armPropertyId ?? "-"} armDeleted=${armDeleted} armEvents=${armEventsDeleted} local=${totalLocal} by=changes-tile`).catch(() => undefined);
+
+    return {
+      ok: localClean,
+      operation: "listing-delete",
+      steps,
+      durationMs: Date.now() - t0,
+      result: { propertyCode: clean, armPropertyId, armDeleted, armEventsDeleted, localPurged: totalLocal, counts },
+    };
+  } catch (e) {
+    step("fatal", "اجرای عملیات", "failed", (e as Error).message);
+    return { ok: false, operation: "listing-delete", steps, durationMs: Date.now() - t0, error: (e as Error).message };
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * کددرخواست — خواندن وضعیت (فرم تغییر/حذف)
+ * ═══════════════════════════════════════════════════════════════════ */
+
+export interface RequestChangeLookup {
+  ok: boolean;
+  code: string;
+  arm: {
+    armRequestId: string;
+    title: string | null;
+    relatedRealtor: string | null;
+    createdAt: string | null;
+    history: Array<{ id: string; action: string | null; realtor: string | null; date: string | null; display: string | null }>;
+  } | null;
+  events: Array<{ id: string; type: string | null; propertyCode: string | null; date: string | null; hour: string | null; display: string | null }>;
+  localTraces: {
+    requestRecords: number;
+    requestEvents: number;
+    transactions: number;
+    contracts: number;
+    matchRejections: number;
+    opportunityAlerts: number;
+    graphNodes: number;
+    graphEdges: number;
+  } | null;
+  error?: string;
+}
+
+export async function lookupRequestForChange(code: string): Promise<RequestChangeLookup> {
+  const clean = code.trim();
+  const base: RequestChangeLookup = { ok: false, code: clean, arm: null, events: [], localTraces: null };
+  try {
+    const oe = await resolveOwnerExec();
+    let armRequestId: string | null = null;
+    const rec = await db.requestRecord.findFirst({ where: { requestCode: clean }, select: { armRequestId: true } });
+    if (rec?.armRequestId) armRequestId = rec.armRequestId;
+    if (!armRequestId) {
+      const row = await scanRequestRow(oe, clean);
+      if (row?._id) armRequestId = String(row._id);
+    }
+    if (!armRequestId) {
+      return { ...base, error: `درخواستی با کد ${clean} یافت نشد (نه محلی، نه زندهٔ ARM).` };
+    }
+    const [row, history, events] = await Promise.all([
+      scanRequestRow(oe, clean).catch(() => null),
+      fetchRequestHistory(oe, armRequestId).catch(() => [] as ArmRow[]),
+      fetchRequestEvents(oe, armRequestId).catch(() => [] as ArmRow[]),
+    ]);
+    const localTraces = await countRequestTraces(clean).catch(() => null);
+    return {
+      ok: true,
+      code: clean,
+      arm: {
+        armRequestId,
+        title: row?.title ?? null,
+        relatedRealtor: row?.relatedRealtor ?? null,
+        createdAt: row?.createdAt ?? null,
+        history: history.map((e) => ({
+          id: String(e._id ?? ""),
+          action: e.actionType?.name ?? null,
+          realtor: e.realtor?.fullName ?? null,
+          date: e.date ?? null,
+          display: isoToJalaliHour(e.date ?? null),
+        })),
+      },
+      events: events.map((e) => ({
+        id: String(e._id ?? ""),
+        type: e.eventType?.name ?? null,
+        propertyCode: e.property?.code != null ? String(e.property.code) : null,
+        date: e.date ?? null,
+        hour: e.hour ?? null,
+        display: isoToJalaliHour(e.hour ?? e.date ?? null),
+      })),
+      localTraces,
+    };
+  } catch (e) {
+    return { ...base, error: (e as Error).message };
+  }
+}
+
+/* ═══════════════════ کددرخواست — تغییر تاریخ + آبشار (تعمیم ۰۹۹) ═══════════════════ */
+
+export interface RequestDateChangeSpec {
+  code: string;
+  targetJalali: string;
+  targetHour?: string | null;
+}
+
+/** ساخت بدنهٔ ویرایش درخواست از رکورد کامل زنده (requests/info) */
+function buildRequestPayloadFromInfo(info: ArmRow): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    customerId: rawId(info.customer) ?? "",
+    countryId: rawId(info.country) ?? LOCATION_IDS.country,
+    stateId: rawId(info.state) ?? LOCATION_IDS.state,
+    cityId: rawId(info.city) ?? LOCATION_IDS.city,
+    areaIds: Array.isArray(info.area) ? info.area.map((a: unknown) => rawId(a)).filter(Boolean) : [],
+    lineIds: Array.isArray(info.line) ? info.line.map((l: unknown) => rawId(l)).filter(Boolean) : [],
+    tradeTypeId: rawId(info.tradeType) ?? "",
+    buildingTypeId: rawId(info.buildingType) ?? "",
+    propertyTypeId: rawId(info.propertyType) ?? "",
+    inputs: info.inputs ?? {},
+    customerDescription: info.customerDescription ?? null,
+    userPaymentMethod: info.userPaymentMethod ?? "",
+    userSeriousity: info.userSeriousity ?? "",
+    realtorDescription: info.realtorDescription ?? null,
+  };
+  return payload;
+}
+
+export async function changeRequestHistoryDate(spec: RequestDateChangeSpec, actor: { code: string; name: string }): Promise<ChangesReport> {
+  const t0 = Date.now();
+  const steps: ChangesStep[] = [];
+  const step = (key: string, title: string, status: ChangesStep["status"], detail: string) => steps.push({ key, title, status, detail });
+
+  try {
+    const clean = spec.code.trim();
+    const oe = await resolveOwnerExec();
+    step("token", "توکن مالک ARM", "done", `توکن زنده از «${oe.source === "session" ? "نشست مالک" : "خزانه"}».`);
+
+    // شناسایی درخواست (محلی ← فهرست زنده)
+    const rec = await db.requestRecord.findFirst({ where: { requestCode: clean } });
+    let armRequestId = rec?.armRequestId ?? null;
+    let row: ArmRow | null = rec ? null : null;
+    if (!armRequestId) {
+      row = await scanRequestRow(oe, clean);
+      armRequestId = row?._id ? String(row._id) : null;
+    }
+    if (!armRequestId) {
+      step("lookup", "شناسایی کد درخواست", "failed", `درخواست ${clean} یافت نشد.`);
+      return { ok: false, operation: "request-date-change", steps, durationMs: Date.now() - t0, error: "درخواست یافت نشد." };
+    }
+    if (!row) row = await scanRequestRow(oe, clean).catch(() => null);
+    step("lookup", "شناسایی کد درخواست", "done", `کد درخواست ${clean} · شناسهٔ ARM: ${armRequestId} · عنوان: «${row?.title ?? rec?.title ?? "—"}».`);
+
+    // تاریخچهٔ کامل (زنده) + لنگر
+    const history = await fetchRequestHistory(oe, armRequestId);
+    if (history.length === 0) {
+      step("history", "خواندن تاریخچهٔ تغییرات درخواست", "failed", "تاریخچهٔ زنده خالی است.");
+      return { ok: false, operation: "request-date-change", steps, durationMs: Date.now() - t0, error: "تاریخچه خالی است." };
+    }
+    step("history", "خواندن تاریخچهٔ تغییرات درخواست (کامل — requests/history)", "done",
+      history.map((e) => `${e.actionType?.name ?? "?"} · ${e.realtor?.fullName ?? "?"} · ${isoToJalaliHour(e.date ?? null) ?? "?"}`).join(" ┃ "));
+
+    // طرح آبشار — همهٔ مدخل‌های تاریخچه + رویدادها
+    const events = await fetchRequestEvents(oe, armRequestId).catch(() => [] as ArmRow[]);
+    const entries = [
+      ...history.map((e, i) => ({ key: `hist-${i}`, label: e.actionType?.name ?? "مدخل تاریخچه", date: String(e.date ?? "") })),
+      ...events.map((e, i) => ({ key: `event-${i}`, label: `رویداد ${e.eventType?.name ?? ""}${e.property?.code ? ` (آگهی ${e.property.code})` : ""}`.trim(), date: String(e.hour ?? e.date ?? "") })),
+    ].filter((e) => e.date);
+    const { plan, error: planErr } = buildCascadePlan(entries, spec.targetJalali, spec.targetHour ?? null);
+    if (!plan) {
+      step("plan", "ساخت طرح آبشار", "failed", planErr ?? "");
+      return { ok: false, operation: "request-date-change", steps, durationMs: Date.now() - t0, error: planErr };
+    }
+    step("plan", "طرح آبشار (Δ نسبی از لنگر — عین مثال مالک)", "done",
+      `لنگر: ${plan.anchorLabel} · ${isoToJalaliHour(plan.anchorDate)} → هدف: ${isoToJalaliHour(plan.targetDate)} · جابه‌جایی: ${plan.deltaDays > 0 ? "+" : ""}${plan.deltaDays} روز روی ${entries.length} مدخل.`);
+
+    // بدنهٔ ویرایش: رکورد محلی (مسیر ۰۹۹) یا رکورد کامل زنده (requests/info)
+    let payload: Record<string, unknown>;
+    if (rec) {
+      payload = buildRequestPayload({
+        customerId: rec.armCustomerId ?? "",
+        countryId: rec.countryId ?? LOCATION_IDS.country,
+        stateId: rec.stateId ?? LOCATION_IDS.state,
+        cityId: rec.cityId ?? LOCATION_IDS.city,
+        areaIds: parseJson<string[]>(rec.areaIdsJson, []),
+        lineIds: parseJson<string[]>(rec.lineIdsJson, []),
+        tradeTypeId: rec.tradeTypeId ?? "",
+        buildingTypeId: rec.buildingTypeId ?? "",
+        propertyTypeId: rec.propertyTypeId ?? "",
+        inputs: parseJson<Record<string, unknown>>(rec.inputsJson, {}),
+        customerDescription: rec.customerDescription,
+        userPaymentMethod: rec.userPaymentMethod ?? "",
+        userSeriousity: rec.userSeriousity ?? "",
+        realtorDescription: rec.realtorDescription,
+      }) as Record<string, unknown>;
+      step("payload", "بازسازی بدنهٔ ویرایش", "done", "از رکورد محلی (مسیر اثبات‌شدهٔ ۰۹۹).");
+    } else {
+      const info = await call<ArmRow>(oe, "GET", ARM_PATHS.requestInfo(armRequestId)).then((r) => r.data).catch(() => null);
+      if (!info) {
+        step("payload", "بازسازی بدنهٔ ویرایش", "failed", "نه رکورد محلی موجود است نه دسترسی به requests/info این درخواست — بازسازی کامل ممکن نیست.");
+        return { ok: false, operation: "request-date-change", steps, durationMs: Date.now() - t0, error: "بدنهٔ ویرایش بازسازی نشد." };
+      }
+      payload = buildRequestPayloadFromInfo(info);
+      step("payload", "بازسازی بدنهٔ ویرایش", "done", "از رکورد کامل زندهٔ requests/info (کشف این نوبت).");
+    }
+
+    // بازتأیید پرچم‌های ردیف (محافظ — عین ۰۹۹)
+    if (row) {
+      payload.urgent = row.urgent ?? false;
+      payload.luxury = row.luxury ?? false;
+      payload.changeable = row.changeable ?? false;
+      payload.ocasion = row.ocasion ?? false;
+      payload.deposite = row.deposite ?? false;
+      payload.confirmSMS = row.confirmSMS ?? true;
+      payload.isRental = row.isRental ?? false;
+      if (Array.isArray(row.changeWith)) payload.changeWith = row.changeWith;
+    }
+
+    // آرایهٔ status — کامل (REPLACE اثبات‌شده) با همان شناسه‌ها + تاریخ جابه‌جاشده
+    const mk = (e: ArmRow, date: string) => ({
+      _id: e._id,
+      actionType: e.actionType?._id ?? e.actionType,
+      currentStatus: typeof e.currentStatus === "string" ? e.currentStatus : e.currentStatus?._id,
+      currentInbox: typeof e.currentInbox === "string" ? e.currentInbox : e.currentInbox?._id,
+      customer: e.customer && typeof e.customer === "object" ? e.customer._id : e.customer ?? null,
+      realtor: e.realtor?._id ?? e.realtor,
+      outOfArea: e.outOfArea ?? false,
+      date,
+    });
+    payload.status = history.map((e) => mk(e, shiftIso(String(e.date), plan.deltaMs)));
+    step("status-array", "آرایهٔ status کامل با تاریخ‌های جدید", "done", `${history.length} مدخل با همان شناسه‌ها و Δ ${plan.deltaDays > 0 ? "+" : ""}${plan.deltaDays} روز بازسازی شد (semantics جایگزینی کامل — آرایهٔ ناقص هرگز فرستاده نمی‌شود).`);
+
+    // اجرای PUT
+    const putRes = await call<ArmRow>(oe, "PUT", ARM_PATHS.requestUpdate(armRequestId), { body: payload, timeoutMs: CHANGES_TIMEOUT_MS.write });
+    step("put", "PUT requests/update/{id}", "done", `پاسخ سامانه: ${putRes.message ?? "ثبت شد"}.`);
+
+    // آبشار رویدادهای درخواست
+    let eventsShifted = 0;
+    for (const e of events) {
+      const eid = String(e._id ?? "");
+      const newDate = e.date ? shiftIso(String(e.date), plan.deltaMs) : null;
+      const newHour = e.hour ? shiftIso(String(e.hour), plan.deltaMs) : null;
+      if (!eid || (!newDate && !newHour)) continue;
+      const body: Record<string, unknown> = {};
+      if (e.eventType) body.eventType = rawId(e.eventType) ?? undefined;
+      if (e.requestProperty) body.requestProperty = rawId(e.requestProperty) ?? undefined;
+      if (e.property) body.property = rawId(e.property) ?? undefined;
+      if (e.message != null) body.message = e.message;
+      if (newDate) body.date = newDate;
+      if (newHour) {
+        body.hour = newHour;
+        body.dateTime = newHour;
+        if (e.visitTime) body.visitTime = newHour;
+      }
+      try {
+        await call(oe, "PUT", ARM_PATHS.requestEventUpdate(eid), { body, timeoutMs: CHANGES_TIMEOUT_MS.write });
+        eventsShifted++;
+      } catch {
+        try {
+          await call(oe, "DELETE", ARM_PATHS.requestEventDelete(eid), { timeoutMs: CHANGES_TIMEOUT_MS.write });
+          await call(oe, "POST", ARM_PATHS.requestEventCreate, { body, timeoutMs: CHANGES_TIMEOUT_MS.write });
+          eventsShifted++;
+        } catch {
+          /* شفاف در گام بعدی */
+        }
+      }
+    }
+    step("events", "آبشار رویدادهای درخواست", events.length === 0 ? "skipped" : "done",
+      events.length === 0 ? "این درخواست رویداد ثبت‌شده ندارد." : `${eventsShifted}/${events.length} رویداد جابه‌جا شد.`);
+
+    // راستی‌آزمایی زندهٔ تاریخچه
+    await new Promise((r) => setTimeout(r, 2500));
+    const afterHistory = await fetchRequestHistory(oe, armRequestId).catch(() => [] as ArmRow[]);
+    const expected = history.map((e) => shiftIso(String(e.date), plan.deltaMs));
+    const matched = afterHistory.filter((e) => expected.includes(String(e.date))).length;
+    const verdict = { total: afterHistory.length, matched };
+    step("verify", "راستی‌آزمایی زندهٔ تاریخچه", afterHistory.length > 0 && matched === afterHistory.length ? "done" : "failed",
+      `${matched}/${afterHistory.length} مدخل با تاریخ هدف ${isoToJalaliHour(plan.targetDate)} ${matched === afterHistory.length && afterHistory.length > 0 ? "— اصلاح کامل ✓" : "— اصلاح ناقص"}.`);
+
+    // شاهد محلی — رویداد آینه با نتیجهٔ راستی‌آزمایی (عین ۰۹۹)
+    if (rec) {
+      const ev = await createRequestEvent(
+        { requestId: rec.id, eventTypeId: HISTORY_ACTION_TYPES.createRealtor.id, eventTypeName: "بررسی درخواست", flags: {}, date: null, hour: null, message: null },
+        actor.code,
+      ).catch(() => null);
+      if (ev) {
+        await db.requestEventRecord.update({
+          where: { id: ev.id },
+          data: {
+            armSyncJson: JSON.stringify({
+              at: new Date().toISOString(),
+              kind: "history-date-cascade",
+              byOwnerDirective: true,
+              targetIso: plan.targetDate,
+              deltaDays: plan.deltaDays,
+              demanded: { تاریخ: `${spec.targetHour ?? isoToTehranHour(plan.anchorDate)}|${spec.targetJalali}` },
+              armRequestCode: clean,
+              verdict,
+              before: history.map((e) => ({ action: e.actionType?.name, date: e.date })),
+              after: afterHistory.map((e) => ({ action: e.actionType?.name, date: e.date })),
+            }),
+          },
+        }).catch(() => undefined);
+      }
+      // آینهٔ محلی: جابه‌جایی رویدادهای محلی متناظر
+      const localEvents = await db.requestEventRecord.findMany({ where: { requestId: rec.id, armEventId: { not: null } } }).catch(() => []);
+      for (const le of localEvents) {
+        if (le.armEventId === ev?.id) continue; // شاهد همین حالا
+        const match = events.find((o) => String(o._id) === le.armEventId);
+        if (!match?.date) continue;
+        const shifted = new Date(new Date(String(match.date)).getTime() + plan.deltaMs + 210 * 60_000);
+        await db.requestEventRecord.update({
+          where: { id: le.id },
+          data: { date: shifted.toISOString().slice(0, 10), hour: `${String(shifted.getUTCHours()).padStart(2, "0")}:${String(shifted.getUTCMinutes()).padStart(2, "0")}` },
+        }).catch(() => undefined);
+      }
+    }
+
+    await audit("CHANGES_REQUEST_DATE", actor.code, `code=${clean} arm=${armRequestId} target=${plan.targetDate} delta=${plan.deltaDays}d verdict=${matched}/${afterHistory.length} by=changes-tile`).catch(() => undefined);
+
+    const ok = afterHistory.length > 0 && matched === afterHistory.length;
+    return {
+      ok,
+      operation: "request-date-change",
+      steps,
+      durationMs: Date.now() - t0,
+      result: {
+        requestCode: clean,
+        armRequestId,
+        anchor: isoToJalaliHour(plan.anchorDate),
+        target: isoToJalaliHour(plan.targetDate),
+        deltaDays: plan.deltaDays,
+        verdict,
+        eventsShifted,
+        eventsTotal: events.length,
+        preview: plan.entries.map((p) => ({ label: p.label, before: isoToJalaliHour(p.before), after: isoToJalaliHour(p.after) })),
+      },
+    };
+  } catch (e) {
+    step("fatal", "اجرای عملیات", "failed", (e as Error).message);
+    return { ok: false, operation: "request-date-change", steps, durationMs: Date.now() - t0, error: (e as Error).message };
+  }
+}
+
+/* ═══════════════════ کددرخواست — حذف کامل ═══════════════════ */
+
+export async function deleteRequestCode(code: string, actor: { code: string; name: string }): Promise<ChangesReport> {
+  const t0 = Date.now();
+  const steps: ChangesStep[] = [];
+  const step = (key: string, title: string, status: ChangesStep["status"], detail: string) => steps.push({ key, title, status, detail });
+
+  try {
+    const clean = code.trim();
+    const oe = await resolveOwnerExec();
+    step("token", "توکن مالک ARM", "done", `توکن زنده از «${oe.source === "session" ? "نشست مالک" : "خزانه"}».`);
+
+    const traces = await countRequestTraces(clean);
+    let armRequestId = traces.armRequestId;
+    if (!armRequestId) {
+      const row = await scanRequestRow(oe, clean).catch(() => null);
+      armRequestId = row?._id ? String(row._id) : null;
+    }
+    step("lookup", "شناسایی درخواست در خود سامانه", armRequestId ? "done" : "failed",
+      armRequestId ? `کد درخواست ${clean} · شناسهٔ ARM: ${armRequestId}.` : `درخواست ${clean} در ARM یافت نشد (شاید قبلاً حذف شده) — پاکسازی محلی ادامه می‌یابد.`);
+
+    /* ── ۱) حذف رویدادهای درخواست از ARM ── */
+    let armEventsDeleted = 0;
+    if (armRequestId) {
+      const events = await fetchRequestEvents(oe, armRequestId).catch(() => [] as ArmRow[]);
+      for (const e of events) {
+        const okDel = await call(oe, "DELETE", ARM_PATHS.requestEventDelete(String(e._id)), { timeoutMs: CHANGES_TIMEOUT_MS.write })
+          .then(() => true)
+          .catch(() => false);
+        if (okDel) armEventsDeleted++;
+      }
+      step("arm-events", "حذف رویدادهای درخواست از ARM", events.length === 0 ? "skipped" : "done",
+        events.length === 0 ? "رویدادی برای این درخواست ثبت نشده بود." : `${armEventsDeleted}/${events.length} رویداد از ARM حذف شد.`);
+    }
+
+    /* ── ۲) حذف رکورد درخواست از ARM — واریانت‌های کشف‌شده ── */
+    let armDeleted = false;
+    if (armRequestId) {
+      for (const variant of ARM_PATHS.requestDeleteVariants(armRequestId)) {
+        const okDel = await call(oe, variant.method, variant.path, { timeoutMs: CHANGES_TIMEOUT_MS.write })
+          .then(() => true)
+          .catch(() => false);
+        if (okDel) {
+          armDeleted = true;
+          break;
+        }
+      }
+      step("arm-delete", "حذف رکورد درخواست از ARM", armDeleted ? "done" : "skipped",
+        armDeleted
+          ? `درخواست ${clean} از ARM حذف شد.`
+          : "API آرم امروز مسیر حذف درخواست را به توکن مشاور exposure نمی‌دهد (۱۲+ واریانت زنده بررسی شد). حذف رکورد ARM از پنل مدیریت آرم انجام می‌شود؛ به‌محض فعال‌شدن مسیر، این گام خودکار انجام می‌شود.");
+    }
+
+    /* ── ۳) پاکسازی کامل آثار محلی ── */
+    const counts = await purgeRequestLocally(clean);
+    const totalLocal = counts.requestRecords + counts.requestEvents + counts.transactions + counts.contracts + counts.matchRejections + counts.opportunityAlerts + counts.graphNodes + counts.graphEdges;
+    step("local-purge", "پاکسازی کامل آثار محلی (رکورد · رویدادها · معاملات · قراردادها · گراف)", totalLocal > 0 ? "done" : "skipped",
+      totalLocal > 0
+        ? `${totalLocal} ردیف پاک شد — رکورد: ${counts.requestRecords} · رویدادها: ${counts.requestEvents} · معاملات: ${counts.transactions} · قراردادها: ${counts.contracts} · رد تطبیق: ${counts.matchRejections} · هشدار فرصت: ${counts.opportunityAlerts} · گره گراف: ${counts.graphNodes} · یال گراف: ${counts.graphEdges}.`
+        : "اثری از این درخواست در آینه‌های محلی نبود.");
+
+    /* ── ۴) راستی‌آزمایی ── */
+    const after = await countRequestTraces(clean);
+    const localClean = after.requestRecords + after.requestEvents + after.transactions + after.contracts + after.matchRejections + after.opportunityAlerts + after.graphNodes + after.graphEdges === 0;
+    step("verify", "راستی‌آزمایی «هیچ اثری باقی نماند»", localClean ? "done" : "failed", localClean ? "همهٔ آینه‌های محلی پاک شدند ✓ (پروفایل کارشناسان از همین آینه‌ها می‌خوانند)." : "برخی آثار محلی هنوز باقی‌اند.");
+
+    await audit("CHANGES_REQUEST_DELETE", actor.code, `code=${clean} arm=${armRequestId ?? "-"} armDeleted=${armDeleted} armEvents=${armEventsDeleted} local=${totalLocal} by=changes-tile`).catch(() => undefined);
+
+    return {
+      ok: localClean,
+      operation: "request-delete",
+      steps,
+      durationMs: Date.now() - t0,
+      result: { requestCode: clean, armRequestId, armDeleted, armEventsDeleted, localPurged: totalLocal, counts },
+    };
+  } catch (e) {
+    step("fatal", "اجرای عملیات", "failed", (e as Error).message);
+    return { ok: false, operation: "request-delete", steps, durationMs: Date.now() - t0, error: (e as Error).message };
   }
 }
 
@@ -937,11 +1194,6 @@ export interface EventTypesResult {
   error: string | null;
 }
 
-/**
- * فهرست انواع رویداد زنده از خود سامانه — هرگز نمی‌شکند (fail-soft):
- * اگر آرم/رله در دسترس نبود، فهرست خالی + خطای شفاف برمی‌گرداند؛ UI با
- * پیش‌فرض تأییدشدهٔ ۰۹۹ («ایجاد مشاور») ادامه می‌دهد.
- */
 export async function fetchChangeEventTypes(): Promise<EventTypesResult> {
   try {
     const oe = await resolveOwnerExec();

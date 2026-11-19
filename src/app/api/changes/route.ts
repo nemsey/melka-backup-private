@@ -86,16 +86,19 @@ export async function GET(request: NextRequest) {
       historyActionTypes: HISTORY_ACTION_TYPES,
       endpoints: {
         request: {
-          create: ARM_PATHS.requestCreate,
           update: "requests/update/{id}",
           history: "requests/history/{id}",
-          eventCreate: ARM_PATHS.requestEventCreate,
+          info: "requests/info/{id}",
+          eventUpdate: "request-events/update/{id}",
+          eventDelete: "request-events/delete/{id}",
+          eventsByProperty: "request-events/list?property={id}",
           list: ARM_PATHS.requestsList,
         },
         listing: {
-          create: ARM_PATHS.propertyCreate,
           update: "properties/update/{id}",
           byCode: "properties/info/by-code/{code}",
+          owner: "properties/owner/{id}",
+          userUpdate: "users/update/{id}",
           list: ARM_PATHS.propertiesList,
         },
       },

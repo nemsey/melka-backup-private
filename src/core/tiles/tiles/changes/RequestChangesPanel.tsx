@@ -1,16 +1,15 @@
 "use client";
 
 /**
- * RequestChangesPanel — قابلیت ۲: ایجاد و تغییر «کد درخواست» (DIR-CHANGES-TILE-001)
+ * RequestChangesPanel — بخش «کددرخواست»: تغییر در کد · حذف کد (DIR-CHANGES-TILE-002)
  * ------------------------------------------------------
- * چهار عملیات (هرچه مالک بخواهد):
- *   · جستجو با کد درخواست — محلی + زندهٔ ARM + تاریخچهٔ تغییرات
- *   · ثبت کد درخواست جدید — عین ۰۹۹ (۴ گامی) + رویداد تاریخچه با تاریخ دقیق
- *   · تغییر و اصلاح تاریخ — PUT requests/update + آرایهٔ status (شاهکار ۰۹۹)
- *   · ثبت رویداد تاریخچه — اقدام/توسط/تاریخ جلالی + ساعت دقیق
+ * فقط همین دو عملیات (دستور مالک ۱۴۰۵/۰۸/۲۹ — سایر بخش‌ها حذف شد):
+ *   · تغییر: تاریخ «ایجاد مشاور» در تاریخچهٔ تغییرات درخواست + آبشار اتوماتیک
+ *     سایر مدخل‌ها و رویدادها متناسب با تاریخ اعلامی مالک (تعمیم شاهکار ۰۹۹)
+ *   · حذف: حذف کامل از ARM + همهٔ آینه‌های محلی (هیچ اثری نماند)
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -18,12 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, FilePlus2, History, CalendarClock, Loader2 } from "lucide-react";
+import { Search, FilePen, Trash2, Loader2, CalendarClock } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { useToast } from "@/hooks/use-toast";
-import { TRADE_TYPES, BUILDING_TYPES, PROPERTY_TYPES, PAYMENT_METHODS } from "@/lib/request/types";
-import { USER_SERIOUSNESS } from "@/lib/listing/types";
+import { toLatinDigits } from "@/lib/listing/types";
+import { jalaliHourToIsoUtc, isoToJalaliHour, isoToTehranHour, CASCADE_RULES } from "@/lib/changes/variables";
 import { StepReport } from "./StepReport";
 import type { ChangesReport } from "@/lib/changes/executor";
 
@@ -31,43 +29,36 @@ interface LookupResult {
   ok: boolean;
   code: string;
   error?: string;
-  local: {
-    requestCode: string | null;
-    armRequestId: string | null;
-    customerName: string | null;
-    customerMobile: string | null;
-    actorName: string | null;
-    title: string | null;
-    status: string;
-    source: string;
-    events: Array<{ name: string; date: string | null; hour: string | null; display: string | null }>;
-  } | null;
   arm: {
     armRequestId: string;
     title: string | null;
     relatedRealtor: string | null;
-    relatedCustomer: string | null;
     createdAt: string | null;
     history: Array<{ id: string; action: string | null; realtor: string | null; date: string | null; display: string | null }>;
   } | null;
+  events: Array<{ id: string; type: string | null; propertyCode: string | null; date: string | null; hour: string | null; display: string | null }>;
+  localTraces: Record<string, number> | null;
 }
 
 export function RequestChangesPanel() {
   const { toast } = useToast();
+  const field = "grid gap-1.5";
+  const inputCls = "bg-background";
 
-  /* ── جستجو ── */
-  const [lookupCode, setLookupCode] = useState("");
+  /* ── جستجوی مشترک (درونیِ فرم تغییر) ── */
+  const [code, setCode] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
   const [lookup, setLookup] = useState<LookupResult | null>(null);
 
   const doLookup = async () => {
-    const code = lookupCode.trim();
-    if (!code) return;
+    const clean = code.trim();
+    if (!clean) return;
     setLookupBusy(true);
     setLookup(null);
     try {
-      const res = await api<LookupResult>("/api/changes/request", { method: "POST", body: { action: "lookup", code }, timeoutMs: 150_000 });
+      const res = await api<LookupResult>("/api/changes/request", { method: "POST", body: { action: "lookup", code: clean }, timeoutMs: 150_000 });
       setLookup(res);
+      if (!res.ok) toast({ title: "یافت نشد", description: res.error ?? "درخواست یافت نشد.", variant: "destructive" });
     } catch (err) {
       toast({ title: "جستجو ناموفق", description: (err as ApiClientError).message, variant: "destructive" });
     } finally {
@@ -75,462 +66,261 @@ export function RequestChangesPanel() {
     }
   };
 
-  /* ── ثبت جدید ── */
-  const [createForm, setCreateForm] = useState({
-    customerName: "",
-    customerMobile: "",
-    tradeTypeId: TRADE_TYPES[0].id,
-    buildingTypeId: BUILDING_TYPES[0].id,
-    propertyTypeId: PROPERTY_TYPES[BUILDING_TYPES[0].id]?.[0]?.id ?? "",
-    spaceFrom: "", spaceTo: "",
-    priceFrom: "", priceTo: "",
-    userPaymentMethod: PAYMENT_METHODS[0].id,
-    userSeriousity: "61a753650927675c45489a4f", // زیاد — استاندارد ۰۹۹
-    withHistory: true,
-    historyTypeName: "ایجاد مشاور",
-    historyBy: "سید نعمت اله سیدی",
-    historyDate: "",
-    historyHour: "17:30",
-  });
-  const [createBusy, setCreateBusy] = useState(false);
-  const [createReport, setCreateReport] = useState<ChangesReport | null>(null);
+  /* ── تغییر تاریخ + آبشار ── */
+  const [targetDate, setTargetDate] = useState("");
+  const [targetHour, setTargetHour] = useState("");
+  const [dateBusy, setDateBusy] = useState(false);
+  const [dateReport, setDateReport] = useState<ChangesReport | null>(null);
 
-  const propertyOptions = useMemo(() => PROPERTY_TYPES[createForm.buildingTypeId] ?? [], [createForm.buildingTypeId]);
+  /** پیش‌نمایش آبشار — همان قاعدهٔ سرور: لنگر «ایجاد مشاور» (وگرنه قدیمی‌ترین) + Δ نسبی */
+  const cascadePreview = useMemo(() => {
+    if (!lookup?.ok || !lookup.arm?.history?.length) return null;
+    const withDates = lookup.arm.history.filter((h) => h.date);
+    if (withDates.length === 0) return null;
+    const anchorEntry = withDates.find((h) => (h.action ?? "").includes(CASCADE_RULES.anchorActionName)) ?? [...withDates].sort((a, b) => new Date(String(a.date)).getTime() - new Date(String(b.date)).getTime())[0];
+    const anchorDate = String(anchorEntry.date);
+    const hour = targetHour.trim() || isoToTehranHour(anchorDate) || "";
+    const date = toLatinDigits(targetDate.trim());
+    const targetIso = jalaliHourToIsoUtc(date, hour);
+    if (!targetIso) return null;
+    const deltaMs = new Date(targetIso).getTime() - new Date(anchorDate).getTime();
+    const entries = [
+      ...withDates.map((e) => ({ label: `${e.action ?? "مدخل"}${e.realtor ? ` · ${e.realtor}` : ""}`, before: e.date! })),
+      ...lookup.events.map((e) => ({ label: `رویداد ${e.type ?? ""}${e.propertyCode ? ` (آگهی ${e.propertyCode})` : ""}`.trim(), before: e.hour ?? e.date ?? "" })),
+    ].filter((e) => e.before);
+    return {
+      anchorLabel: anchorEntry.action ?? "مدخل لنگر",
+      deltaDays: Math.round(deltaMs / 86_400_000),
+      targetDisplay: isoToJalaliHour(targetIso),
+      entries: entries.map((e) => ({ label: e.label, before: isoToJalaliHour(e.before) ?? e.before, after: isoToJalaliHour(new Date(new Date(e.before).getTime() + deltaMs).toISOString()) ?? "" })),
+    };
+  }, [lookup, targetDate, targetHour]);
 
-  useEffect(() => {
-    // همگام‌سازی نوع ملک با کاربری (عین فرم خود سامانه)
-    if (!(PROPERTY_TYPES[createForm.buildingTypeId] ?? []).some((p) => p.id === createForm.propertyTypeId)) {
-      setCreateForm((f) => ({ ...f, propertyTypeId: (PROPERTY_TYPES[f.buildingTypeId] ?? [])[0]?.id ?? "" }));
-    }
-  }, [createForm.buildingTypeId, createForm.propertyTypeId]);
-
-  const submitCreate = async () => {
-    setCreateBusy(true);
-    setCreateReport(null);
+  const submitDate = async () => {
+    if (!lookup?.ok) return;
+    setDateBusy(true);
+    setDateReport(null);
     try {
-      const inputs: Record<string, unknown> = {};
-      const nf = (v: string) => (v.trim() ? Number(v.replace(/\D/g, "")) : undefined);
-      const spaceFrom = nf(createForm.spaceFrom);
-      const spaceTo = nf(createForm.spaceTo);
-      const priceFrom = nf(createForm.priceFrom);
-      const priceTo = nf(createForm.priceTo);
-      if (spaceFrom !== undefined) inputs.space_from = spaceFrom;
-      if (spaceTo !== undefined) inputs.space_to = spaceTo;
-      if (priceFrom !== undefined) inputs.totalPrice_from = priceFrom;
-      if (priceTo !== undefined) inputs.totalPrice_to = priceTo;
-
-      const body: Record<string, unknown> = {
-        action: "create",
-        spec: {
-          customerName: createForm.customerName.trim(),
-          customerMobile: createForm.customerMobile.trim(),
-          tradeTypeId: createForm.tradeTypeId,
-          buildingTypeId: createForm.buildingTypeId,
-          propertyTypeId: createForm.propertyTypeId,
-          inputs,
-          userPaymentMethod: createForm.userPaymentMethod,
-          userSeriousity: createForm.userSeriousity,
-        },
-        history: createForm.withHistory && createForm.historyDate.trim()
-          ? { eventTypeName: createForm.historyTypeName.trim(), byName: createForm.historyBy.trim(), date: createForm.historyDate.trim(), hour: createForm.historyHour.trim() }
-          : null,
-      };
-      const res = await api<ChangesReport>("/api/changes/request", { method: "POST", body, timeoutMs: 300_000 });
-      setCreateReport(res);
-      toast({
-        title: res.ok ? "کد درخواست ثبت شد" : "ثبت ناموفق",
-        description: res.ok && res.result?.requestCode ? `کد درخواست: ${res.result.requestCode}` : res.error ?? "گزارش گام‌ها را ببینید.",
-        variant: res.ok ? undefined : "destructive",
-      });
-    } catch (err) {
-      toast({ title: "خطا", description: (err as ApiClientError).message, variant: "destructive" });
-    } finally {
-      setCreateBusy(false);
-    }
-  };
-
-  /* ── تغییر و اصلاح تاریخ ── */
-  const [fixForm, setFixForm] = useState({ code: "", date: "", hour: "17:30" });
-  const [fixBusy, setFixBusy] = useState(false);
-  const [fixReport, setFixReport] = useState<ChangesReport | null>(null);
-
-  const submitFix = async () => {
-    setFixBusy(true);
-    setFixReport(null);
-    try {
-      const res = await api<ChangesReport>("/api/changes/request", {
-        method: "POST",
-        body: { action: "update", spec: { code: fixForm.code.trim(), historyTarget: fixForm.date.trim() ? { date: fixForm.date.trim(), hour: fixForm.hour.trim() } : null } },
-        timeoutMs: 300_000,
-      });
-      setFixReport(res);
-      toast({
-        title: res.ok ? "تاریخ تاریخچه اصلاح شد" : "اصلاح ناموفق",
-        description: res.ok ? "همهٔ مدخل‌های تاریخچهٔ زندهٔ ARM با تاریخ هدف هم‌راستا شدند." : res.error ?? "گزارش گام‌ها را ببینید.",
-        variant: res.ok ? undefined : "destructive",
-      });
-    } catch (err) {
-      toast({ title: "خطا", description: (err as ApiClientError).message, variant: "destructive" });
-    } finally {
-      setFixBusy(false);
-    }
-  };
-
-  /* ── ثبت رویداد ── */
-  const [eventTypes, setEventTypes] = useState<Array<{ id: string; name: string }>>([]);
-  const [eventForm, setEventForm] = useState({ code: "", typeId: "", typeName: "ایجاد مشاور", by: "سید نعمت اله سیدی", date: "", hour: "17:30" });
-  const [eventBusy, setEventBusy] = useState(false);
-  const [eventReport, setEventReport] = useState<ChangesReport | null>(null);
-
-  useEffect(() => {
-    // انواع رویداد زنده — بهترین‌تلاش (پیش‌فرض ۰۹۹ همیشه موجود است)
-    api<{ ok: boolean; types: Array<{ id: string; name: string }> }>("/api/changes/request", { method: "POST", body: { action: "types" }, timeoutMs: 60_000 })
-      .then((r) => setEventTypes(r.types ?? []))
-      .catch(() => undefined);
-  }, []);
-
-  const submitEvent = async () => {
-    setEventBusy(true);
-    setEventReport(null);
-    try {
-      const chosen = eventTypes.find((t) => t.id === eventForm.typeId);
       const res = await api<ChangesReport>("/api/changes/request", {
         method: "POST",
         body: {
-          action: "event",
-          code: eventForm.code.trim(),
-          spec: {
-            eventTypeId: chosen?.id ?? undefined,
-            eventTypeName: chosen?.name ?? eventForm.typeName.trim(),
-            byName: eventForm.by.trim(),
-            date: eventForm.date.trim(),
-            hour: eventForm.hour.trim(),
-          },
+          action: "change-date",
+          spec: { code: lookup.code, targetJalali: toLatinDigits(targetDate.trim()), targetHour: targetHour.trim() || null },
         },
         timeoutMs: 300_000,
       });
-      setEventReport(res);
-      toast({
-        title: res.ok ? "رویداد تاریخچه ثبت شد" : "ثبت رویداد ناموفق",
-        description: res.ok ? `اقدام: ${chosen?.name ?? eventForm.typeName} · تاریخ: ${eventForm.hour} | ${eventForm.date}` : res.error ?? "گزارش گام‌ها را ببینید.",
-        variant: res.ok ? undefined : "destructive",
-      });
+      setDateReport(res);
+      toast({ title: res.ok ? "آبشار تاریخ اعمال شد" : "تغییر ناموفق", description: res.ok ? "همهٔ مدخل‌ها با همان Δ نسبی جابه‌جا و راستی‌آزمایی شدند." : res.error ?? "گزارش گام‌ها را ببینید.", variant: res.ok ? undefined : "destructive" });
+      if (res.ok) await doLookup();
     } catch (err) {
       toast({ title: "خطا", description: (err as ApiClientError).message, variant: "destructive" });
     } finally {
-      setEventBusy(false);
+      setDateBusy(false);
     }
   };
 
-  const field = "grid gap-1.5";
-  const inputCls = "bg-background";
+  /* ── حذف ── */
+  const [delCode, setDelCode] = useState("");
+  const [delLookup, setDelLookup] = useState<LookupResult | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
+  const [delConfirm, setDelConfirm] = useState("");
+  const [delReport, setDelReport] = useState<ChangesReport | null>(null);
+
+  const doDeleteLookup = async () => {
+    const clean = delCode.trim();
+    if (!clean) return;
+    setDelBusy(true);
+    setDelLookup(null);
+    setDelReport(null);
+    setDelConfirm("");
+    try {
+      const res = await api<LookupResult>("/api/changes/request", { method: "POST", body: { action: "lookup", code: clean }, timeoutMs: 150_000 });
+      setDelLookup(res);
+      if (!res.ok) toast({ title: "یافت نشد", description: res.error ?? "درخواست یافت نشد.", variant: "destructive" });
+    } catch (err) {
+      toast({ title: "جستجو ناموفق", description: (err as ApiClientError).message, variant: "destructive" });
+    } finally {
+      setDelBusy(false);
+    }
+  };
+
+  const submitDelete = async () => {
+    if (!delLookup?.ok) return;
+    setDelBusy(true);
+    setDelReport(null);
+    try {
+      const res = await api<ChangesReport>("/api/changes/request", {
+        method: "POST",
+        body: { action: "delete", code: delLookup.code },
+        timeoutMs: 300_000,
+      });
+      setDelReport(res);
+      toast({ title: res.ok ? "درخواست کاملاً حذف شد" : "حذف ناقص", description: res.ok ? "هیچ اثری در آینه‌ها باقی نماند." : res.error ?? "گزارش گام‌ها را ببینید.", variant: res.ok ? undefined : "destructive" });
+    } catch (err) {
+      toast({ title: "خطا", description: (err as ApiClientError).message, variant: "destructive" });
+    } finally {
+      setDelBusy(false);
+    }
+  };
+
+  const tracesTotal = useMemo(() => {
+    if (!delLookup?.localTraces) return 0;
+    return Object.values(delLookup.localTraces).reduce((a, b) => a + (b ?? 0), 0);
+  }, [delLookup]);
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="lookup">
-        <TabsList className="grid w-full grid-cols-4 h-auto">
-          <TabsTrigger value="lookup" className="gap-1 text-xs py-2"><Search className="h-3.5 w-3.5" /> جستجو</TabsTrigger>
-          <TabsTrigger value="create" className="gap-1 text-xs py-2"><FilePlus2 className="h-3.5 w-3.5" /> ثبت جدید</TabsTrigger>
-          <TabsTrigger value="fix" className="gap-1 text-xs py-2"><History className="h-3.5 w-3.5" /> اصلاح تاریخ</TabsTrigger>
-          <TabsTrigger value="event" className="gap-1 text-xs py-2"><CalendarClock className="h-3.5 w-3.5" /> ثبت رویداد</TabsTrigger>
+      <Tabs defaultValue="change">
+        <TabsList className="grid w-full grid-cols-2 h-auto">
+          <TabsTrigger value="change" className="gap-1 text-xs py-2"><FilePen className="h-3.5 w-3.5" /> تغییر در کد</TabsTrigger>
+          <TabsTrigger value="delete" className="gap-1 text-xs py-2"><Trash2 className="h-3.5 w-3.5" /> حذف کد</TabsTrigger>
         </TabsList>
 
-        {/* ── جستجو ── */}
-        <TabsContent value="lookup" className="space-y-3 mt-3">
+        {/* ═══════════ تغییر ═══════════ */}
+        <TabsContent value="change" className="space-y-3 mt-3">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">جستجوی کد درخواست (محلی + زندهٔ ARM)</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">شناسایی کد درخواست در خود سامانهٔ ARM</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex gap-2">
-                <Input dir="ltr" placeholder="مثلاً 55920" value={lookupCode} onChange={(e) => setLookupCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLookup()} className={inputCls} />
-                <Button onClick={doLookup} disabled={lookupBusy || !lookupCode.trim()} className="shrink-0 gap-1">
-                  {lookupBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} جستجو
+                <Input dir="ltr" placeholder="کد درخواست…" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLookup()} className={inputCls} />
+                <Button onClick={doLookup} disabled={lookupBusy || !code.trim()} className="shrink-0 gap-1">
+                  {lookupBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} خواندن وضعیت
                 </Button>
               </div>
-              {lookupBusy ? <Skeleton className="h-32 rounded-xl" /> : null}
+              {lookupBusy ? <Skeleton className="h-24 rounded-xl" /> : null}
               {lookup && !lookupBusy ? (
-                <div className="space-y-3 text-xs">
-                  {!lookup.ok && lookup.error ? <p className="text-red-600 font-medium">{lookup.error}</p> : null}
-                  {lookup.arm ? (
-                    <div className="rounded-xl border border-border bg-background/60 p-3 space-y-2">
-                      <div className="flex flex-wrap gap-2 items-center">
-                        <Badge variant="outline" className="font-mono" dir="ltr">کد {lookup.code}</Badge>
-                        <Badge className="bg-sky-600 hover:bg-sky-600">زندهٔ ARM</Badge>
-                        {lookup.arm.title ? <span className="text-muted-foreground">«{lookup.arm.title}»</span> : null}
-                      </div>
-                      <div className="text-muted-foreground space-y-0.5">
-                        <div>کارشناس: {lookup.arm.relatedRealtor ?? "—"} · متقاضی: {lookup.arm.relatedCustomer ?? "—"}</div>
-                        {lookup.arm.createdAt ? <div dir="ltr" className="text-[11px]">createdAt: {lookup.arm.createdAt}</div> : null}
-                      </div>
-                      <div>
-                        <div className="font-medium mb-1">تاریخچهٔ تغییرات درخواست (زنده — requests/history):</div>
-                        {lookup.arm.history.length ? (
-                          <ul className="space-y-1">
-                            {lookup.arm.history.map((h) => (
-                              <li key={h.id} className="flex flex-wrap items-center gap-1.5 rounded-lg bg-card p-1.5 border border-border/50">
-                                <span className="font-medium">{h.action ?? "؟"}</span>
-                                <span className="text-muted-foreground">· {h.realtor ?? "؟"} ·</span>
-                                <span className="font-mono text-[11px]" dir="ltr">{h.display ?? h.date ?? "؟"}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-muted-foreground">تاریخچه‌ای ثبت نشده است.</p>
-                        )}
-                      </div>
+                !lookup.ok ? (
+                  <p className="text-xs text-red-600 font-medium">{lookup.error}</p>
+                ) : (
+                  <div className="rounded-xl border border-border bg-background/60 p-3 space-y-2 text-xs">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Badge variant="outline" className="font-mono" dir="ltr">کد {lookup.code}</Badge>
+                      <Badge className="bg-sky-600 hover:bg-sky-600">زندهٔ ARM</Badge>
+                      {lookup.arm?.title ? <span className="text-muted-foreground">«{lookup.arm.title}»</span> : null}
                     </div>
-                  ) : null}
-                  {lookup.local ? (
-                    <div className="rounded-xl border border-border bg-background/60 p-3 space-y-1.5">
-                      <div className="flex flex-wrap gap-2 items-center">
-                        <Badge variant="secondary">آینهٔ محلی</Badge>
-                        <span className="text-muted-foreground">{lookup.local.title ?? "بدون عنوان"} · وضعیت {lookup.local.status} · منبع {lookup.local.source}</span>
-                      </div>
-                      <div className="text-muted-foreground">
-                        متقاضی: {lookup.local.customerName ?? "—"} · {lookup.local.customerMobile ?? "—"} · کارشناس: {lookup.local.actorName ?? "—"}
-                      </div>
-                      {lookup.local.events.length ? (
-                        <div>
-                          <div className="font-medium mb-1">رویدادهای محلی:</div>
-                          <ul className="space-y-1">
-                            {lookup.local.events.map((e, i) => (
-                              <li key={i} className="rounded-lg bg-card p-1.5 border border-border/50">
-                                {e.name} {e.display ? <span className="font-mono text-[11px]" dir="ltr">· {e.display}</span> : null}
-                              </li>
-                            ))}
-                          </ul>
+                    <div className="text-muted-foreground">کارشناس: {lookup.arm?.relatedRealtor ?? "—"}</div>
+                    <div className="font-medium mt-1">تاریخچهٔ تغییرات درخواست ({lookup.arm?.history.length ?? 0} مدخل — زنده):</div>
+                    <div className="space-y-1 max-h-40 overflow-auto pl-1">
+                      {(lookup.arm?.history ?? []).map((h, i) => (
+                        <div key={h.id || i} className="flex items-center justify-between gap-2 rounded-lg bg-card border border-border/50 px-2 py-1">
+                          <span className="font-medium truncate">{h.action ?? "—"}{h.realtor ? ` · ${h.realtor}` : ""}</span>
+                          <span className="text-muted-foreground font-mono shrink-0" dir="ltr">{h.display ?? h.date ?? "—"}</span>
                         </div>
-                      ) : null}
+                      ))}
                     </div>
-                  ) : null}
-                </div>
+                    {lookup.events.length ? (
+                      <div className="text-muted-foreground">رویدادهای درخواست: {lookup.events.length} رویداد (در آبشار مشارکت می‌کنند)</div>
+                    ) : null}
+                  </div>
+                )
               ) : null}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* ── ثبت جدید ── */}
-        <TabsContent value="create" className="space-y-3 mt-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">ثبت کد درخواست جدید در سامانه ARM — عین فرم ۴ گامی خود سامانه</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-xs text-muted-leading text-muted-foreground leading-5">
-                هیچ گامی دور زده نمی‌شود: اعتبارسنجی ۴ گامی ← جستجو/ایجاد مشتری ← مکان (پیش‌فرض: کل تبریز — ۱۳۰ منطقه/۹۲۶ محله) ← جزییات + فرم پویا ← تکمیلی ← POST requests/create ← کد درخواست از فهرست زنده. مقادیر اعلام‌نشده با استانداردترین‌های ۰۹۹ پر می‌شوند (نقدی · زیاد).
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className={field}>
-                  <Label className="text-xs">نام و نام خانوادگی درخواست‌دهنده *</Label>
-                  <Input value={createForm.customerName} onChange={(e) => setCreateForm((f) => ({ ...f, customerName: e.target.value }))} className={inputCls} placeholder="مثلاً رامین عباس نژاد" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">موبایل درخواست‌دهنده * (۱۱ رقم با ۰۹)</Label>
-                  <Input dir="ltr" value={createForm.customerMobile} onChange={(e) => setCreateForm((f) => ({ ...f, customerMobile: e.target.value }))} className={inputCls} placeholder="09910756951" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">نوع معامله</Label>
-                  <Select value={createForm.tradeTypeId} onValueChange={(v) => setCreateForm((f) => ({ ...f, tradeTypeId: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {TRADE_TYPES.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.nameRequest} ({t.name})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">نوع کاربری</Label>
-                  <Select value={createForm.buildingTypeId} onValueChange={(v) => setCreateForm((f) => ({ ...f, buildingTypeId: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {BUILDING_TYPES.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">نوع ملک</Label>
-                  <Select value={createForm.propertyTypeId} onValueChange={(v) => setCreateForm((f) => ({ ...f, propertyTypeId: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {propertyOptions.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">نحوهٔ پرداخت (پول مشتری)</Label>
-                  <Select value={createForm.userPaymentMethod} onValueChange={(v) => setCreateForm((f) => ({ ...f, userPaymentMethod: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PAYMENT_METHODS.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">جدیت مشتری</Label>
-                  <Select value={createForm.userSeriousity} onValueChange={(v) => setCreateForm((f) => ({ ...f, userSeriousity: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {USER_SERIOUSNESS.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+          {lookup?.ok ? (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-1.5"><CalendarClock className="h-4 w-4 text-amber-600" /> تغییر تاریخ «ایجاد مشاور» + آبشار اتوماتیک</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-muted-foreground leading-5">
+                  تاریخ مدخل «ایجاد مشاور» تاریخچهٔ تغییرات درخواست به تاریخ اعلامی مالک تغییر می‌کند و تاریخ سایر مدخل‌های تاریخچه و رویدادها با همان فاصلهٔ نسبی به‌صورت اتوماتیک جابه‌جا می‌شود (شاهکار ۰۹۹ — PUT با آرایهٔ status کامل — تعمیم‌یافته با Δ نسبی).
+                </p>
+                <div className="grid grid-cols-2 gap-3">
                   <div className={field}>
-                    <Label className="text-xs">متراژ از</Label>
-                    <Input dir="ltr" inputMode="numeric" value={createForm.spaceFrom} onChange={(e) => setCreateForm((f) => ({ ...f, spaceFrom: e.target.value }))} className={inputCls} placeholder="140" />
+                    <Label className="text-xs">تاریخ جدید «ایجاد مشاور» * (جلالی)</Label>
+                    <Input dir="ltr" placeholder="1405/08/20" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={inputCls} />
                   </div>
                   <div className={field}>
-                    <Label className="text-xs">متراژ تا</Label>
-                    <Input dir="ltr" inputMode="numeric" value={createForm.spaceTo} onChange={(e) => setCreateForm((f) => ({ ...f, spaceTo: e.target.value }))} className={inputCls} placeholder="180" />
+                    <Label className="text-xs">ساعت (خالی = حفظ ساعت فعلی لنگر)</Label>
+                    <Input dir="ltr" placeholder="17:30" value={targetHour} onChange={(e) => setTargetHour(e.target.value)} className={inputCls} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className={field}>
-                    <Label className="text-xs">قیمت کل از (تومان)</Label>
-                    <Input dir="ltr" inputMode="numeric" value={createForm.priceFrom} onChange={(e) => setCreateForm((f) => ({ ...f, priceFrom: e.target.value }))} className={inputCls} placeholder="35000000000" />
-                  </div>
-                  <div className={field}>
-                    <Label className="text-xs">قیمت کل تا (تومان)</Label>
-                    <Input dir="ltr" inputMode="numeric" value={createForm.priceTo} onChange={(e) => setCreateForm((f) => ({ ...f, priceTo: e.target.value }))} className={inputCls} placeholder="40000000000" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-dashed border-border p-3 space-y-2">
-                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                  <input type="checkbox" checked={createForm.withHistory} onChange={(e) => setCreateForm((f) => ({ ...f, withHistory: e.target.checked }))} className="h-4 w-4 accent-primary" />
-                  ثبت رویداد تاریخچه با تاریخ دقیق (عین دستور مالک ۰۹۹)
-                </label>
-                {createForm.withHistory ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className={field}>
-                      <Label className="text-xs">اقدام</Label>
-                      <Input value={createForm.historyTypeName} onChange={(e) => setCreateForm((f) => ({ ...f, historyTypeName: e.target.value }))} className={inputCls} placeholder="ایجاد مشاور" />
+                {cascadePreview ? (
+                  <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 space-y-2">
+                    <div className="text-xs font-medium">
+                      لنگر: {cascadePreview.anchorLabel} · جابه‌جایی {cascadePreview.deltaDays === 0 ? "صفر" : `${cascadePreview.deltaDays > 0 ? "+" : ""}${cascadePreview.deltaDays} روز`} · هدف: {cascadePreview.targetDisplay}
                     </div>
-                    <div className={field}>
-                      <Label className="text-xs">توسط</Label>
-                      <Input value={createForm.historyBy} onChange={(e) => setCreateForm((f) => ({ ...f, historyBy: e.target.value }))} className={inputCls} placeholder="سید نعمت اله سیدی" />
-                    </div>
-                    <div className={field}>
-                      <Label className="text-xs">تاریخ (جلالی)</Label>
-                      <Input dir="ltr" value={createForm.historyDate} onChange={(e) => setCreateForm((f) => ({ ...f, historyDate: e.target.value }))} className={inputCls} placeholder="1405/08/20" />
-                    </div>
-                    <div className={field}>
-                      <Label className="text-xs">ساعت</Label>
-                      <Input dir="ltr" value={createForm.historyHour} onChange={(e) => setCreateForm((f) => ({ ...f, historyHour: e.target.value }))} className={inputCls} placeholder="17:30" />
+                    <div className="space-y-1 max-h-44 overflow-auto pl-1">
+                      {cascadePreview.entries.map((e, i) => (
+                        <div key={i} className="flex items-center justify-between gap-2 rounded-lg bg-background/70 border border-border/50 px-2 py-1 text-[11px]">
+                          <span className="font-medium truncate">{e.label}</span>
+                          <span className="text-muted-foreground font-mono shrink-0" dir="ltr">{e.before} ← <span className="text-amber-700 font-semibold">{e.after}</span></span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ) : null}
-              </div>
-
-              <Button onClick={submitCreate} disabled={createBusy || !createForm.customerName.trim() || !createForm.customerMobile.trim()} className="w-full gap-1">
-                {createBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus2 className="h-4 w-4" />}
-                ثبت نهایی در سامانه ARM (گام‌به‌گام)
-              </Button>
-              {createBusy ? <p className="text-[11px] text-muted-foreground">در حال اجرای زنجیرهٔ ثبت از طریق ترموکس — ممکن است تا ~۲ دقیقه طول بکشد؛ صفحه را نبندید.</p> : null}
-              {createReport ? <StepReport report={createReport} /> : null}
-            </CardContent>
-          </Card>
+                <Button onClick={submitDate} disabled={dateBusy || !toLatinDigits(targetDate.trim())} className="w-full gap-1 bg-amber-600 hover:bg-amber-700">
+                  {dateBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
+                  اعمال تغییر تاریخ + آبشار اتوماتیک
+                </Button>
+                {dateBusy ? <p className="text-[11px] text-muted-foreground">در حال اجرای زنجیرهٔ آبشار از طریق ترموکس — تا ~۲ دقیقه؛ صفحه را نبندید.</p> : null}
+                {dateReport ? <StepReport report={dateReport} /> : null}
+              </CardContent>
+            </Card>
+          ) : null}
         </TabsContent>
 
-        {/* ── اصلاح تاریخ ── */}
-        <TabsContent value="fix" className="space-y-3 mt-3">
+        {/* ═══════════ حذف ═══════════ */}
+        <TabsContent value="delete" className="space-y-3 mt-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">اصلاح تاریخ تاریخچهٔ تغییرات درخواست — شاهکار ۰۹۹</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-1.5"><Trash2 className="h-4 w-4 text-red-600" /> حذف کامل کددرخواست</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-xs text-muted-foreground leading-5">
-                تاریخ همهٔ مدخل‌های «تاریخچه تغییرات درخواست» در خود سامانهٔ ARM با همان شناسه‌های عین (آرایهٔ status در PUT requests/update) به تاریخ هدف اصلاح می‌شود — عین اجرای موفق ۰۹۹ روی درخواست ۵۵۹۲۰ (۱۷:۳۰ | ۱۴۰۵/۰۸/۲۰ = 2026-11-11T14:00:00.000Z).
+                درخواست اعلامی مالک کاملاً از سامانه ARM حذف و همهٔ آینه‌های محلی (رکورد، رویدادها، معاملات، قراردادها، گراف هوشمند) پاکسازی می‌شود — هیچ اثری، حتی در پروفایل کارشناس ثبت‌کننده، باقی نمی‌ماند.
               </p>
-              <div className="grid grid-cols-3 gap-2">
-                <div className={field}>
-                  <Label className="text-xs">کد درخواست *</Label>
-                  <Input dir="ltr" value={fixForm.code} onChange={(e) => setFixForm((f) => ({ ...f, code: e.target.value }))} className={inputCls} placeholder="55920" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">تاریخ هدف (جلالی) *</Label>
-                  <Input dir="ltr" value={fixForm.date} onChange={(e) => setFixForm((f) => ({ ...f, date: e.target.value }))} className={inputCls} placeholder="1405/08/20" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">ساعت هدف</Label>
-                  <Input dir="ltr" value={fixForm.hour} onChange={(e) => setFixForm((f) => ({ ...f, hour: e.target.value }))} className={inputCls} placeholder="17:30" />
-                </div>
+              <div className="flex gap-2">
+                <Input dir="ltr" placeholder="کد درخواست…" value={delCode} onChange={(e) => setDelCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doDeleteLookup()} className={inputCls} />
+                <Button onClick={doDeleteLookup} disabled={delBusy || !delCode.trim()} variant="outline" className="shrink-0 gap-1">
+                  {delBusy && !delReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} بررسی آثار
+                </Button>
               </div>
-              <Button onClick={submitFix} disabled={fixBusy || !fixForm.code.trim() || !fixForm.date.trim()} className="w-full gap-1">
-                {fixBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <History className="h-4 w-4" />}
-                اصلاح تاریخ در خود سامانهٔ ARM + راستی‌آزمایی زنده
-              </Button>
-              {fixBusy ? <p className="text-[11px] text-muted-foreground">PUT + راستی‌آزمایی زندهٔ تاریخچه — از طریق ترموکس؛ تا ~۲ دقیقه.</p> : null}
-              {fixReport ? <StepReport report={fixReport} /> : null}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── ثبت رویداد ── */}
-        <TabsContent value="event" className="space-y-3 mt-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">ثبت رویداد تاریخچه با تاریخ دقیق (اقدام · توسط · تاریخ)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-xs text-muted-foreground leading-5">
-                رویداد هم در خود سامانهٔ ARM (request-events/create عین فرم رویداد) و هم در آینهٔ محلی با تاریخ جلالی + ساعت دقیق ثبت می‌شود.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className={field}>
-                  <Label className="text-xs">کد درخواست *</Label>
-                  <Input dir="ltr" value={eventForm.code} onChange={(e) => setEventForm((f) => ({ ...f, code: e.target.value }))} className={inputCls} placeholder="55920" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">اقدام (نوع رویداد)</Label>
-                  <Select
-                    value={eventForm.typeId || undefined}
-                    onValueChange={(v) => {
-                      const chosen = eventTypes.find((t) => t.id === v);
-                      setEventForm((f) => ({ ...f, typeId: v, typeName: chosen?.name ?? f.typeName }));
-                    }}
-                  >
-                    <SelectTrigger className={inputCls}><SelectValue placeholder={eventForm.typeName || "ایجاد مشاور"} /></SelectTrigger>
-                    <SelectContent>
-                      {(eventTypes.length ? eventTypes : [{ id: "", name: "ایجاد مشاور" }]).map((t) => (
-                        <SelectItem key={t.id || t.name} value={t.id || t.name}>{t.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">توسط</Label>
-                  <Input value={eventForm.by} onChange={(e) => setEventForm((f) => ({ ...f, by: e.target.value }))} className={inputCls} placeholder="سید نعمت اله سیدی" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className={field}>
-                    <Label className="text-xs">تاریخ (جلالی) *</Label>
-                    <Input dir="ltr" value={eventForm.date} onChange={(e) => setEventForm((f) => ({ ...f, date: e.target.value }))} className={inputCls} placeholder="1405/08/20" />
+              {delLookup?.ok ? (
+                <div className="rounded-xl border border-red-500/40 bg-red-500/5 p-3 space-y-2 text-xs">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <Badge variant="outline" className="font-mono" dir="ltr">کد {delLookup.code}</Badge>
+                    {delLookup.arm?.title ? <span className="text-muted-foreground">«{delLookup.arm.title}»</span> : null}
+                    <Badge variant="destructive">{tracesTotal} اثر محلی قابل حذف</Badge>
+                    {delLookup.events.length ? <Badge variant="destructive">{delLookup.events.length} رویداد ARM</Badge> : null}
                   </div>
+                  <div className="text-muted-foreground">این آثار پاک خواهند شد: {Object.entries(delLookup.localTraces ?? {}).filter(([, v]) => v > 0).map(([k, v]) => `${traceLabel(k)}: ${v}`).join(" · ") || "اثر محلی‌ای نبود"}.</div>
                   <div className={field}>
-                    <Label className="text-xs">ساعت *</Label>
-                    <Input dir="ltr" value={eventForm.hour} onChange={(e) => setEventForm((f) => ({ ...f, hour: e.target.value }))} className={inputCls} placeholder="17:30" />
+                    <Label className="text-xs font-medium text-red-700">برای تأیید حذف کامل، کد درخواست را دقیقاً بنویسید: {delLookup.code}</Label>
+                    <Input dir="ltr" value={delConfirm} onChange={(e) => setDelConfirm(e.target.value)} className={inputCls} />
                   </div>
+                  <Button onClick={submitDelete} disabled={delBusy || delConfirm.trim() !== delLookup.code} variant="destructive" className="w-full gap-1">
+                    {delBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    حذف کامل و پاکسازی
+                  </Button>
                 </div>
-              </div>
-              <Button onClick={submitEvent} disabled={eventBusy || !eventForm.code.trim() || !eventForm.date.trim()} className="w-full gap-1">
-                {eventBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
-                ثبت رویداد (ARM + آینهٔ محلی)
-              </Button>
-              {eventReport ? <StepReport report={eventReport} /> : null}
+              ) : delLookup && !delLookup.ok ? (
+                <p className="text-xs text-red-600 font-medium">{delLookup.error}</p>
+              ) : null}
+              {delReport ? <StepReport report={delReport} /> : null}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
+}
+
+function traceLabel(key: string): string {
+  const map: Record<string, string> = {
+    requestRecords: "رکورد درخواست",
+    requestEvents: "رویدادها",
+    linkedEvents: "رویدادها",
+    transactions: "معاملات",
+    contracts: "قراردادها",
+    matchRejections: "رد تطبیق",
+    opportunityAlerts: "هشدار فرصت",
+    graphNodes: "گره گراف",
+    graphEdges: "یال گراف",
+  };
+  return map[key] ?? key;
 }

@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * ListingChangesPanel — قابلیت ۱: ایجاد و تغییر «کدآگهی» (DIR-CHANGES-TILE-001)
+ * ListingChangesPanel — بخش «کدآگهی»: تغییر در کد · حذف کد (DIR-CHANGES-TILE-002)
  * ------------------------------------------------------
- * سه عملیات:
- *   · جستجو با کدآگهی — زنده از خود سامانه (properties/info/by-code عین فرم رویداد)
- *   · ثبت کدآگهی جدید — عین فرم ۵ گامی خود سامانه (مسیر زندهٔ اثبات‌شده)
- *   · تغییر در کدآگهی — PUT properties/update/{id} با بازسازی بدنهٔ کامل
+ * فقط همین دو عملیات (دستور مالک ۱۴۰۵/۰۸/۲۹ — سایر بخش‌ها حذف شد):
+ *   · تغییر: ۱) اطلاعات مالک آگهی (نام/نام‌خانوادگی + موبایل در خود سامانه ARM)
+ *            ۲) تاریخ «ایجاد مشاور» + آبشار اتوماتیک تاریخچه‌ها متناسب با تاریخ مالک
+ *   · حذف: حذف کامل از ARM + سامانهٔ عمومی + همهٔ آینه‌های محلی (هیچ اثری نماند)
  */
 
 import { useMemo, useState } from "react";
@@ -17,13 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, FilePlus2, FilePen, Loader2 } from "lucide-react";
+import { Search, FilePen, Trash2, Loader2, CalendarClock, UserCog } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { useToast } from "@/hooks/use-toast";
-import { TABRIZ_AREAS, linesOfArea } from "@/lib/divar/tabriz-locations";
-import { TRADE_TYPES, BUILDING_TYPES, PROPERTY_TYPES, CHANGEABLE_WITH, FILE_FINDINGS, FILE_TYPES, PRICE_EVALUATIONS, USER_SERIOUSNESS } from "@/lib/listing/types";
 import { toLatinDigits } from "@/lib/listing/types";
+import { jalaliHourToIsoUtc, isoToJalaliHour, isoToTehranHour } from "@/lib/changes/variables";
 import { StepReport } from "./StepReport";
 import type { ChangesReport } from "@/lib/changes/executor";
 
@@ -31,28 +29,37 @@ interface LookupResult {
   ok: boolean;
   code: string;
   error?: string;
-  arm: { armPropertyId: string; title: string | null; relatedRealtor: string | null; code: string } | null;
-  details: Array<{ label: string; value: string; unit?: string | null }> | null;
-  owner: { name: string | null; mobile: string | null } | null;
-  localListingId: string | null;
+  arm: {
+    armPropertyId: string;
+    title: string | null;
+    relatedRealtor: string | null;
+    createdAt: string | null;
+    latestStatus: { action: string | null; statusName: string | null; realtor: string | null; date: string | null; display: string | null } | null;
+  } | null;
+  owner: { userId: string | null; customerId: string | null; fullName: string | null; mobile: string | null } | null;
+  events: Array<{ id: string; type: string | null; requestCode: string | null; realtor: string | null; date: string | null; hour: string | null; display: string | null }>;
+  localTraces: Record<string, number> | null;
 }
 
 export function ListingChangesPanel() {
   const { toast } = useToast();
+  const field = "grid gap-1.5";
+  const inputCls = "bg-background";
 
-  /* ── جستجو ── */
-  const [lookupCode, setLookupCode] = useState("");
+  /* ── جستجوی مشترک (درونیِ فرم تغییر/حذف — بخش مستقل نیست) ── */
+  const [code, setCode] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
   const [lookup, setLookup] = useState<LookupResult | null>(null);
 
   const doLookup = async () => {
-    const code = lookupCode.trim();
-    if (!code) return;
+    const clean = code.trim();
+    if (!clean) return;
     setLookupBusy(true);
     setLookup(null);
     try {
-      const res = await api<LookupResult>("/api/changes/listing", { method: "POST", body: { action: "lookup", code }, timeoutMs: 150_000 });
+      const res = await api<LookupResult>("/api/changes/listing", { method: "POST", body: { action: "lookup", code: clean }, timeoutMs: 150_000 });
       setLookup(res);
+      if (!res.ok) toast({ title: "یافت نشد", description: res.error ?? "آگهی یافت نشد.", variant: "destructive" });
     } catch (err) {
       toast({ title: "جستجو ناموفق", description: (err as ApiClientError).message, variant: "destructive" });
     } finally {
@@ -60,437 +67,309 @@ export function ListingChangesPanel() {
     }
   };
 
-  /* ── ثبت جدید ── */
-  interface ListingCreateFormState {
-    customerName: string;
-    customerMobile: string;
-    areaId: string;
-    lineId: string;
-    address: string;
-    tradeTypeId: string;
-    buildingTypeId: string;
-    propertyTypeId: string;
-    meterage: string;
-    rooms: string;
-    floor: string;
-    buildYear: string;
-    price: string;
-    changeWith: string;
-    priceEvaluation: string;
-    fileFinding: string;
-    fileType: string;
-    userSeriousness: string;
-  }
-  const [createForm, setCreateForm] = useState<ListingCreateFormState>({
-    customerName: "",
-    customerMobile: "",
-    areaId: "",
-    lineId: "",
-    address: "",
-    tradeTypeId: TRADE_TYPES[0].id,
-    buildingTypeId: BUILDING_TYPES[0].id,
-    propertyTypeId: "",
-    meterage: "",
-    rooms: "",
-    floor: "",
-    buildYear: "",
-    price: "",
-    changeWith: "notChangeable",
-    priceEvaluation: PRICE_EVALUATIONS[2]?.id ?? "",
-    fileFinding: FILE_FINDINGS[0]?.value ?? "",
-    fileType: FILE_TYPES[0]?.value ?? "",
-    userSeriousness: "61a753650927675c45489a4f", // زیاد — استاندارد
-  });
-  const [createBusy, setCreateBusy] = useState(false);
-  const [createReport, setCreateReport] = useState<ChangesReport | null>(null);
+  /* ── ۱) تغییر اطلاعات مالک آگهی ── */
+  const [ownerName, setOwnerName] = useState("");
+  const [ownerMobile, setOwnerMobile] = useState("");
+  const [ownerBusy, setOwnerBusy] = useState(false);
+  const [ownerReport, setOwnerReport] = useState<ChangesReport | null>(null);
 
-  const lineOptions = useMemo(() => linesOfArea(createForm.areaId), [createForm.areaId]);
-  const propertyOptions = useMemo(() => PROPERTY_TYPES.filter((p) => p.id), []);
-
-  const submitCreate = async () => {
-    setCreateBusy(true);
-    setCreateReport(null);
+  const submitOwner = async () => {
+    if (!lookup?.ok) return;
+    setOwnerBusy(true);
+    setOwnerReport(null);
     try {
-      const inputs: Record<string, string> = { مساحت: toLatinDigits(createForm.meterage) };
-      const rooms = toLatinDigits(createForm.rooms).replace(/\D/g, "");
-      const floor = toLatinDigits(createForm.floor).replace(/[^\d-]/g, "");
-      const year = toLatinDigits(createForm.buildYear).replace(/\D/g, "");
-      const price = toLatinDigits(createForm.price).replace(/\D/g, "");
-      if (rooms) inputs["اتاق"] = rooms;
-      if (floor) inputs["طبقه"] = floor;
-      if (year) inputs["سال ساخت"] = year;
-      if (price) inputs["قیمت"] = price;
-
       const res = await api<ChangesReport>("/api/changes/listing", {
         method: "POST",
         body: {
-          action: "create",
-          spec: {
-            customerName: createForm.customerName.trim(),
-            customerMobile: createForm.customerMobile.trim(),
-            areaId: createForm.areaId,
-            lineId: createForm.lineId,
-            address: createForm.address.trim(),
-            tradeTypeId: createForm.tradeTypeId,
-            buildingTypeId: createForm.buildingTypeId,
-            propertyTypeId: createForm.propertyTypeId,
-            changeWith: [createForm.changeWith],
-            inputs,
-            priceEvaluation: createForm.priceEvaluation,
-            fileFinding: createForm.fileFinding,
-            fileType: [createForm.fileType],
-            userSeriousness: createForm.userSeriousness,
-          },
+          action: "change-owner",
+          spec: { code: lookup.code, newFullName: ownerName.trim() || null, newMobile: ownerMobile.trim() || null },
         },
         timeoutMs: 300_000,
       });
-      setCreateReport(res);
-      toast({
-        title: res.ok ? "کدآگهی ثبت شد" : "ثبت ناموفق",
-        description: res.ok && res.result?.propertyCode ? `کدآگهی: ${res.result.propertyCode}` : res.error ?? "گزارش گام‌ها را ببینید.",
-        variant: res.ok ? undefined : "destructive",
-      });
+      setOwnerReport(res);
+      toast({ title: res.ok ? "اطلاعات مالک آگهی تغییر کرد" : "تغییر ناموفق", description: res.ok ? "در خود سامانه ARM ثبت و راستی‌آزمایی شد." : res.error ?? "گزارش گام‌ها را ببینید.", variant: res.ok ? undefined : "destructive" });
+      if (res.ok) await doLookup();
     } catch (err) {
       toast({ title: "خطا", description: (err as ApiClientError).message, variant: "destructive" });
     } finally {
-      setCreateBusy(false);
+      setOwnerBusy(false);
     }
   };
 
-  /* ── تغییر ── */
-  interface ListingUpdateFormState {
-    code: string;
-    price: string;
-    userSeriousness: string;
-    priceEvaluation: string;
-    isUrgent: boolean;
-    isLuxury: boolean;
-  }
-  const [updateForm, setUpdateForm] = useState<ListingUpdateFormState>({
-    code: "",
-    price: "",
-    userSeriousness: "61a753650927675c45489a4f",
-    priceEvaluation: PRICE_EVALUATIONS[2]?.id ?? "",
-    isUrgent: false,
-    isLuxury: false,
-  });
-  const [updateBusy, setUpdateBusy] = useState(false);
-  const [updateReport, setUpdateReport] = useState<ChangesReport | null>(null);
+  /* ── ۲) تغییر تاریخ ایجاد مشاور + آبشار ── */
+  const [targetDate, setTargetDate] = useState("");
+  const [targetHour, setTargetHour] = useState("");
+  const [dateBusy, setDateBusy] = useState(false);
+  const [dateReport, setDateReport] = useState<ChangesReport | null>(null);
 
-  const submitUpdate = async () => {
-    setUpdateBusy(true);
-    setUpdateReport(null);
+  /** پیش‌نمایش آبشار — همان قاعدهٔ سرور: Δ نسبی از لنگر (ایجاد مشاور = تاریخ ایجاد) */
+  const cascadePreview = useMemo(() => {
+    if (!lookup?.ok || !lookup.arm?.createdAt) return null;
+    const anchor = lookup.arm.createdAt;
+    const hour = targetHour.trim() || isoToTehranHour(anchor) || "";
+    const date = toLatinDigits(targetDate.trim());
+    const targetIso = jalaliHourToIsoUtc(date, hour);
+    if (!targetIso) return null;
+    const deltaMs = new Date(targetIso).getTime() - new Date(anchor).getTime();
+    const entries = [
+      { label: "ایجاد مشاور (تاریخ ایجاد آگهی)", before: anchor },
+      ...(lookup.arm.latestStatus?.date ? [{ label: `آخرین وضعیت: ${lookup.arm.latestStatus.action ?? lookup.arm.latestStatus.statusName ?? ""}`.trim(), before: lookup.arm.latestStatus.date }] : []),
+      ...lookup.events.map((e) => ({ label: `رویداد ${e.type ?? ""} (${e.requestCode ?? "—"})`.trim(), before: e.hour ?? e.date ?? "" })),
+    ].filter((e) => e.before);
+    return {
+      deltaDays: Math.round(deltaMs / 86_400_000),
+      targetDisplay: isoToJalaliHour(targetIso),
+      entries: entries.map((e) => ({ label: e.label, before: isoToJalaliHour(e.before) ?? e.before, after: isoToJalaliHour(new Date(new Date(e.before).getTime() + deltaMs).toISOString()) ?? "" })),
+    };
+  }, [lookup, targetDate, targetHour]);
+
+  const submitDate = async () => {
+    if (!lookup?.ok) return;
+    setDateBusy(true);
+    setDateReport(null);
     try {
-      const inputsPatch: Record<string, string> = {};
-      const price = toLatinDigits(updateForm.price).replace(/\D/g, "");
-      if (price) inputsPatch["قیمت"] = price;
       const res = await api<ChangesReport>("/api/changes/listing", {
         method: "POST",
         body: {
-          action: "update",
-          spec: {
-            code: updateForm.code.trim(),
-            inputsPatch,
-            userSeriousness: updateForm.userSeriousness,
-            priceEvaluation: updateForm.priceEvaluation,
-            flags: { isUrgent: updateForm.isUrgent, isLuxury: updateForm.isLuxury },
-          },
+          action: "change-date",
+          spec: { code: lookup.code, targetJalali: toLatinDigits(targetDate.trim()), targetHour: targetHour.trim() || null },
         },
         timeoutMs: 300_000,
       });
-      setUpdateReport(res);
-      toast({
-        title: res.ok ? "تغییرات کدآگهی ثبت شد" : "تغییر ناموفق",
-        description: res.ok ? `PUT properties/update روی کد ${updateForm.code} انجام شد.` : res.error ?? "گزارش گام‌ها را ببینید.",
-        variant: res.ok ? undefined : "destructive",
-      });
+      setDateReport(res);
+      toast({ title: res.ok ? "آبشار تاریخ اعمال شد" : "تغییر ناموفق", description: res.ok ? "تاریخ‌ها متناسب با تاریخ اعلامی مالک جابه‌جا شدند." : res.error ?? "گزارش گام‌ها را ببینید.", variant: res.ok ? undefined : "destructive" });
+      if (res.ok) await doLookup();
     } catch (err) {
       toast({ title: "خطا", description: (err as ApiClientError).message, variant: "destructive" });
     } finally {
-      setUpdateBusy(false);
+      setDateBusy(false);
     }
   };
 
-  const field = "grid gap-1.5";
-  const inputCls = "bg-background";
+  /* ── حذف ── */
+  const [delCode, setDelCode] = useState("");
+  const [delLookup, setDelLookup] = useState<LookupResult | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
+  const [delConfirm, setDelConfirm] = useState("");
+  const [delReport, setDelReport] = useState<ChangesReport | null>(null);
+
+  const doDeleteLookup = async () => {
+    const clean = delCode.trim();
+    if (!clean) return;
+    setDelBusy(true);
+    setDelLookup(null);
+    setDelReport(null);
+    setDelConfirm("");
+    try {
+      const res = await api<LookupResult>("/api/changes/listing", { method: "POST", body: { action: "lookup", code: clean }, timeoutMs: 150_000 });
+      setDelLookup(res);
+      if (!res.ok) toast({ title: "یافت نشد", description: res.error ?? "آگهی یافت نشد.", variant: "destructive" });
+    } catch (err) {
+      toast({ title: "جستجو ناموفق", description: (err as ApiClientError).message, variant: "destructive" });
+    } finally {
+      setDelBusy(false);
+    }
+  };
+
+  const submitDelete = async () => {
+    if (!delLookup?.ok) return;
+    setDelBusy(true);
+    setDelReport(null);
+    try {
+      const res = await api<ChangesReport>("/api/changes/listing", {
+        method: "POST",
+        body: { action: "delete", code: delLookup.code },
+        timeoutMs: 300_000,
+      });
+      setDelReport(res);
+      toast({ title: res.ok ? "آگهی کاملاً حذف شد" : "حذف ناقص", description: res.ok ? "هیچ اثری در آینه‌ها باقی نماند." : res.error ?? "گزارش گام‌ها را ببینید.", variant: res.ok ? undefined : "destructive" });
+    } catch (err) {
+      toast({ title: "خطا", description: (err as ApiClientError).message, variant: "destructive" });
+    } finally {
+      setDelBusy(false);
+    }
+  };
+
+  const tracesTotal = useMemo(() => {
+    if (!delLookup?.localTraces) return 0;
+    return Object.values(delLookup.localTraces).reduce((a, b) => a + (b ?? 0), 0);
+  }, [delLookup]);
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="lookup">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
-          <TabsTrigger value="lookup" className="gap-1 text-xs py-2"><Search className="h-3.5 w-3.5" /> جستجو</TabsTrigger>
-          <TabsTrigger value="create" className="gap-1 text-xs py-2"><FilePlus2 className="h-3.5 w-3.5" /> ثبت جدید</TabsTrigger>
-          <TabsTrigger value="update" className="gap-1 text-xs py-2"><FilePen className="h-3.5 w-3.5" /> تغییر</TabsTrigger>
+      <Tabs defaultValue="change">
+        <TabsList className="grid w-full grid-cols-2 h-auto">
+          <TabsTrigger value="change" className="gap-1 text-xs py-2"><FilePen className="h-3.5 w-3.5" /> تغییر در کد</TabsTrigger>
+          <TabsTrigger value="delete" className="gap-1 text-xs py-2"><Trash2 className="h-3.5 w-3.5" /> حذف کد</TabsTrigger>
         </TabsList>
 
-        {/* ── جستجو ── */}
-        <TabsContent value="lookup" className="space-y-3 mt-3">
+        {/* ═══════════ تغییر ═══════════ */}
+        <TabsContent value="change" className="space-y-3 mt-3">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">جستجوی کدآگهی در خود سامانهٔ ARM</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">شناسایی کدآگهی در خود سامانهٔ ARM</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex gap-2">
-                <Input dir="ltr" placeholder="کدآگهی…" value={lookupCode} onChange={(e) => setLookupCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLookup()} className={inputCls} />
-                <Button onClick={doLookup} disabled={lookupBusy || !lookupCode.trim()} className="shrink-0 gap-1">
-                  {lookupBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} جستجو
+                <Input dir="ltr" placeholder="کدآگهی…" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doLookup()} className={inputCls} />
+                <Button onClick={doLookup} disabled={lookupBusy || !code.trim()} className="shrink-0 gap-1">
+                  {lookupBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} خواندن وضعیت
                 </Button>
               </div>
-              {lookupBusy ? <Skeleton className="h-28 rounded-xl" /> : null}
+              {lookupBusy ? <Skeleton className="h-24 rounded-xl" /> : null}
               {lookup && !lookupBusy ? (
-                <div className="space-y-3 text-xs">
-                  {!lookup.ok && lookup.error ? <p className="text-red-600 font-medium">{lookup.error}</p> : null}
-                  {lookup.arm ? (
-                    <div className="rounded-xl border border-border bg-background/60 p-3 space-y-2">
-                      <div className="flex flex-wrap gap-2 items-center">
-                        <Badge variant="outline" className="font-mono" dir="ltr">کد {lookup.code}</Badge>
-                        <Badge className="bg-sky-600 hover:bg-sky-600">زندهٔ ARM</Badge>
-                        {lookup.arm.title ? <span className="text-muted-foreground">«{lookup.arm.title}»</span> : null}
-                      </div>
-                      <div className="text-muted-foreground">کارشناس: {lookup.arm.relatedRealtor ?? "—"}</div>
-                      {lookup.owner ? <div className="text-muted-foreground">مالک: {lookup.owner.name ?? "—"} · {lookup.owner.mobile ?? "—"}</div> : null}
-                      {lookup.details?.length ? (
-                        <div className="grid grid-cols-2 gap-1">
-                          {lookup.details.slice(0, 12).map((d, i) => (
-                            <div key={i} className="rounded-lg bg-card p-1.5 border border-border/50">
-                              <span className="text-muted-foreground">{d.label}: </span>
-                              <span className="font-medium">{d.value}{d.unit ? ` ${d.unit}` : ""}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
+                !lookup.ok ? (
+                  <p className="text-xs text-red-600 font-medium">{lookup.error}</p>
+                ) : (
+                  <div className="rounded-xl border border-border bg-background/60 p-3 space-y-1.5 text-xs">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Badge variant="outline" className="font-mono" dir="ltr">کد {lookup.code}</Badge>
+                      <Badge className="bg-sky-600 hover:bg-sky-600">زندهٔ ARM</Badge>
+                      {lookup.arm?.title ? <span className="text-muted-foreground">«{lookup.arm.title}»</span> : null}
                     </div>
-                  ) : null}
-                </div>
+                    <div className="text-muted-foreground">کارشناس: {lookup.arm?.relatedRealtor ?? "—"} · ایجاد (لنگر «ایجاد مشاور»): {isoToJalaliHour(lookup.arm?.createdAt ?? null) ?? "—"}</div>
+                    {lookup.arm?.latestStatus ? <div className="text-muted-foreground">آخرین وضعیت: {lookup.arm.latestStatus.action ?? lookup.arm.latestStatus.statusName ?? "—"} · {lookup.arm.latestStatus.display ?? "—"}</div> : null}
+                    {lookup.owner ? <div className="text-muted-foreground">مالک فعلی: {lookup.owner.fullName ?? "—"} · <span dir="ltr">{lookup.owner.mobile ?? "—"}</span></div> : null}
+                    <div className="text-muted-foreground">تاریخچهٔ رویداد و بازخورد: {lookup.events.length ? `${lookup.events.length} رویداد` : "ندارد"}</div>
+                  </div>
+                )
               ) : null}
             </CardContent>
           </Card>
+
+          {lookup?.ok ? (
+            <>
+              {/* ۱. تغییر اطلاعات مالک آگهی */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-1.5"><UserCog className="h-4 w-4 text-sky-600" /> ۱. تغییر «اطلاعات مالک آگهی»</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs text-muted-foreground leading-5">
+                    نام و نام خانوادگی و شماره موبایل مالک در بخش «اطلاعات مالک آگهی» خود سامانهٔ ARM تغییر می‌کند (users/update — مسیر زندهٔ اثبات‌شده). خالی بگذارید = بدون تغییر.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className={field}>
+                      <Label className="text-xs">نام و نام خانوادگی جدید مالک</Label>
+                      <Input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputCls} placeholder={lookup.owner?.fullName ?? "نام فعلی مالک"} />
+                    </div>
+                    <div className={field}>
+                      <Label className="text-xs">شماره موبایل جدید مالک</Label>
+                      <Input dir="ltr" value={ownerMobile} onChange={(e) => setOwnerMobile(e.target.value)} className={inputCls} placeholder={lookup.owner?.mobile ?? "09xxxxxxxxx"} />
+                    </div>
+                  </div>
+                  <Button onClick={submitOwner} disabled={ownerBusy || (!ownerName.trim() && !ownerMobile.trim())} className="w-full gap-1">
+                    {ownerBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCog className="h-4 w-4" />}
+                    تغییر اطلاعات مالک در خود سامانهٔ ARM
+                  </Button>
+                  {ownerBusy ? <p className="text-[11px] text-muted-foreground">در حال اجرا از طریق ترموکس — صفحه را نبندید.</p> : null}
+                  {ownerReport ? <StepReport report={ownerReport} /> : null}
+                </CardContent>
+              </Card>
+
+              {/* ۲. تغییر تاریخ ایجاد مشاور + آبشار */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-1.5"><CalendarClock className="h-4 w-4 text-amber-600" /> ۲. تغییر تاریخ «ایجاد مشاور» + آبشار اتوماتیک</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs text-muted-foreground leading-5">
+                    تاریخ «ایجاد مشاور» به تاریخ اعلامی مالک تغییر می‌کند و تاریخ همهٔ مدخل‌های تاریخچه و تاریخچهٔ رویداد و بازخورد (در صورت موجود بودن) با همان فاصلهٔ نسبی به‌صورت اتوماتیک جابه‌جا می‌شود — عین مثال مالک: ایجاد مشاور ۱۴۰۵/۰۶/۰۲ ← ۱۴۰۵/۰۷/۰۵، انتشار آگهی ۱۴۰۵/۰۶/۰۳ ← ۱۴۰۵/۰۷/۰۶.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className={field}>
+                      <Label className="text-xs">تاریخ جدید «ایجاد مشاور» * (جلالی)</Label>
+                      <Input dir="ltr" placeholder="1405/07/05" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={inputCls} />
+                    </div>
+                    <div className={field}>
+                      <Label className="text-xs">ساعت (خالی = حفظ ساعت فعلی)</Label>
+                      <Input dir="ltr" placeholder={isoToTehranHour(lookup.arm?.createdAt ?? null) ?? "17:30"} value={targetHour} onChange={(e) => setTargetHour(e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                  {cascadePreview ? (
+                    <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 space-y-2">
+                      <div className="text-xs font-medium">پیش‌نمایش آبشار — جابه‌جایی {cascadePreview.deltaDays === 0 ? "صفر" : `${cascadePreview.deltaDays > 0 ? "+" : ""}${cascadePreview.deltaDays} روز`} · هدف: {cascadePreview.targetDisplay}</div>
+                      <div className="space-y-1 max-h-44 overflow-auto pl-1">
+                        {cascadePreview.entries.map((e, i) => (
+                          <div key={i} className="flex items-center justify-between gap-2 rounded-lg bg-background/70 border border-border/50 px-2 py-1 text-[11px]">
+                            <span className="font-medium truncate">{e.label}</span>
+                            <span className="text-muted-foreground font-mono shrink-0" dir="ltr">{e.before} ← <span className="text-amber-700 font-semibold">{e.after}</span></span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  <Button onClick={submitDate} disabled={dateBusy || !toLatinDigits(targetDate.trim())} className="w-full gap-1 bg-amber-600 hover:bg-amber-700">
+                    {dateBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
+                    اعمال تغییر تاریخ + آبشار اتوماتیک
+                  </Button>
+                  {dateBusy ? <p className="text-[11px] text-muted-foreground">در حال اجرای زنجیرهٔ آبشار از طریق ترموکس — تا ~۲ دقیقه؛ صفحه را نبندید.</p> : null}
+                  {dateReport ? <StepReport report={dateReport} /> : null}
+                </CardContent>
+              </Card>
+            </>
+          ) : null}
         </TabsContent>
 
-        {/* ── ثبت جدید ── */}
-        <TabsContent value="create" className="space-y-3 mt-3">
+        {/* ═══════════ حذف ═══════════ */}
+        <TabsContent value="delete" className="space-y-3 mt-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">ثبت کدآگهی جدید — عین فرم ۵ گامی خود سامانه</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className={field}>
-                  <Label className="text-xs">نام و نام خانوادگی مالک *</Label>
-                  <Input value={createForm.customerName} onChange={(e) => setCreateForm((f) => ({ ...f, customerName: e.target.value }))} className={inputCls} />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">موبایل مالک * (۱۱ رقم با ۰۹)</Label>
-                  <Input dir="ltr" value={createForm.customerMobile} onChange={(e) => setCreateForm((f) => ({ ...f, customerMobile: e.target.value }))} className={inputCls} placeholder="09xxxxxxxxx" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">منطقه *</Label>
-                  <Select value={createForm.areaId || undefined} onValueChange={(v) => setCreateForm((f) => ({ ...f, areaId: v, lineId: "" }))}>
-                    <SelectTrigger className={inputCls}><SelectValue placeholder="انتخاب منطقه (۱۳۰ منطقه)" /></SelectTrigger>
-                    <SelectContent>
-                      {TABRIZ_AREAS.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>{a.n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">محله *</Label>
-                  <Select value={createForm.lineId || undefined} onValueChange={(v) => setCreateForm((f) => ({ ...f, lineId: v }))} disabled={!createForm.areaId}>
-                    <SelectTrigger className={inputCls}><SelectValue placeholder={createForm.areaId ? "انتخاب محله" : "ابتدا منطقه"} /></SelectTrigger>
-                    <SelectContent>
-                      {lineOptions.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>{l.n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field + " col-span-2"}>
-                  <Label className="text-xs">آدرس ملک *</Label>
-                  <Input value={createForm.address} onChange={(e) => setCreateForm((f) => ({ ...f, address: e.target.value }))} className={inputCls} />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">نوع معامله</Label>
-                  <Select value={createForm.tradeTypeId} onValueChange={(v) => setCreateForm((f) => ({ ...f, tradeTypeId: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {TRADE_TYPES.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">نوع کاربری</Label>
-                  <Select value={createForm.buildingTypeId} onValueChange={(v) => setCreateForm((f) => ({ ...f, buildingTypeId: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {BUILDING_TYPES.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">نوع ملک *</Label>
-                  <Select value={createForm.propertyTypeId || undefined} onValueChange={(v) => setCreateForm((f) => ({ ...f, propertyTypeId: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue placeholder="انتخاب نوع ملک" /></SelectTrigger>
-                    <SelectContent>
-                      {propertyOptions.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">متراژ * (متر)</Label>
-                  <Input dir="ltr" inputMode="numeric" value={createForm.meterage} onChange={(e) => setCreateForm((f) => ({ ...f, meterage: e.target.value }))} className={inputCls} placeholder="120" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">اتاق</Label>
-                  <Input dir="ltr" value={createForm.rooms} onChange={(e) => setCreateForm((f) => ({ ...f, rooms: e.target.value }))} className={inputCls} placeholder="2" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">طبقه</Label>
-                  <Input dir="ltr" value={createForm.floor} onChange={(e) => setCreateForm((f) => ({ ...f, floor: e.target.value }))} className={inputCls} placeholder="3" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">سال ساخت</Label>
-                  <Input dir="ltr" value={createForm.buildYear} onChange={(e) => setCreateForm((f) => ({ ...f, buildYear: e.target.value }))} className={inputCls} placeholder="1400" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">قیمت (تومان)</Label>
-                  <Input dir="ltr" inputMode="numeric" value={createForm.price} onChange={(e) => setCreateForm((f) => ({ ...f, price: e.target.value }))} className={inputCls} placeholder="3500000000" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">معاوضه</Label>
-                  <Select value={createForm.changeWith} onValueChange={(v) => setCreateForm((f) => ({ ...f, changeWith: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {CHANGEABLE_WITH.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">قیمت فایل (نسبت با کارشناسی) *</Label>
-                  <Select value={createForm.priceEvaluation} onValueChange={(v) => setCreateForm((f) => ({ ...f, priceEvaluation: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PRICE_EVALUATIONS.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">نحوهٔ فایل‌یابی *</Label>
-                  <Select value={createForm.fileFinding} onValueChange={(v) => setCreateForm((f) => ({ ...f, fileFinding: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {FILE_FINDINGS.map((f) => (
-                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">نوع فایل *</Label>
-                  <Select value={createForm.fileType} onValueChange={(v) => setCreateForm((f) => ({ ...f, fileType: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {FILE_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">جدیت مشتری *</Label>
-                  <Select value={createForm.userSeriousness} onValueChange={(v) => setCreateForm((f) => ({ ...f, userSeriousness: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {USER_SERIOUSNESS.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button
-                onClick={submitCreate}
-                disabled={createBusy || !createForm.customerName.trim() || !createForm.customerMobile.trim() || !createForm.areaId || !createForm.lineId || !createForm.address.trim() || !createForm.propertyTypeId || !createForm.meterage.trim()}
-                className="w-full gap-1"
-              >
-                {createBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus2 className="h-4 w-4" />}
-                ثبت نهایی آگهی در سامانه ARM (۵ گام)
-              </Button>
-              {createBusy ? <p className="text-[11px] text-muted-foreground">در حال اجرای زنجیرهٔ ثبت از طریق ترموکس — تا ~۲ دقیقه؛ صفحه را نبندید.</p> : null}
-              {createReport ? <StepReport report={createReport} /> : null}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── تغییر ── */}
-        <TabsContent value="update" className="space-y-3 mt-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">تغییر در کدآگهی موجود (PUT properties/update)</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-1.5"><Trash2 className="h-4 w-4 text-red-600" /> حذف کامل کدآگهی</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-xs text-muted-foreground leading-5">
-                بدنهٔ کامل ویرایش از فایل آگهی پیوندخوردهٔ محلی بازسازی می‌شود (عین edit-page خود سامانه) و با پچ‌های شما دوباره به ARM فرستاده می‌شود. اگر کدآگهی فایل پیوندخورده نداشته باشد، ابتدا از مسیر ثبت یا کاشی آگهی پیوندش کنید.
+                آگهی اعلامی مالک کاملاً از سامانه ARM و سامانهٔ عمومی ملک تبریز حذف و همهٔ آینه‌های محلی (کاتالوگ، رویدادها، بازدیدها، کارگزاری‌ها، معاملات، قراردادها، گراف هوشمند) پاکسازی می‌شود — هیچ اثری، حتی در پروفایل کارشناس ثبت‌کننده، باقی نمی‌ماند.
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className={field}>
-                  <Label className="text-xs">کدآگهی *</Label>
-                  <Input dir="ltr" value={updateForm.code} onChange={(e) => setUpdateForm((f) => ({ ...f, code: e.target.value }))} className={inputCls} />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">قیمت جدید (تومان — خالی = بدون تغییر)</Label>
-                  <Input dir="ltr" inputMode="numeric" value={updateForm.price} onChange={(e) => setUpdateForm((f) => ({ ...f, price: e.target.value }))} className={inputCls} placeholder="3600000000" />
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">قیمت فایل (نسبت با کارشناسی)</Label>
-                  <Select value={updateForm.priceEvaluation} onValueChange={(v) => setUpdateForm((f) => ({ ...f, priceEvaluation: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PRICE_EVALUATIONS.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={field}>
-                  <Label className="text-xs">جدیت مشتری</Label>
-                  <Select value={updateForm.userSeriousness} onValueChange={(v) => setUpdateForm((f) => ({ ...f, userSeriousness: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {USER_SERIOUSNESS.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 flex gap-4 text-xs">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" checked={updateForm.isUrgent} onChange={(e) => setUpdateForm((f) => ({ ...f, isUrgent: e.target.checked }))} className="h-4 w-4 accent-primary" />
-                    فوری (urgent)
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" checked={updateForm.isLuxury} onChange={(e) => setUpdateForm((f) => ({ ...f, isLuxury: e.target.checked }))} className="h-4 w-4 accent-primary" />
-                    لوکس (luxury)
-                  </label>
-                </div>
+              <div className="flex gap-2">
+                <Input dir="ltr" placeholder="کدآگهی…" value={delCode} onChange={(e) => setDelCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doDeleteLookup()} className={inputCls} />
+                <Button onClick={doDeleteLookup} disabled={delBusy || !delCode.trim()} variant="outline" className="shrink-0 gap-1">
+                  {delBusy && !delReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} بررسی آثار
+                </Button>
               </div>
-              <Button onClick={submitUpdate} disabled={updateBusy || !updateForm.code.trim()} className="w-full gap-1">
-                {updateBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePen className="h-4 w-4" />}
-                اعمال تغییرات در خود سامانهٔ ARM
-              </Button>
-              {updateReport ? <StepReport report={updateReport} /> : null}
+              {delLookup?.ok ? (
+                <div className="rounded-xl border border-red-500/40 bg-red-500/5 p-3 space-y-2 text-xs">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <Badge variant="outline" className="font-mono" dir="ltr">کد {delLookup.code}</Badge>
+                    {delLookup.arm?.title ? <span className="text-muted-foreground">«{delLookup.arm.title}»</span> : null}
+                    <Badge variant="destructive">{tracesTotal} اثر محلی قابل حذف</Badge>
+                    {delLookup.events.length ? <Badge variant="destructive">{delLookup.events.length} رویداد ARM</Badge> : null}
+                  </div>
+                  <div className="text-muted-foreground">این آثار پاک خواهند شد: {Object.entries(delLookup.localTraces ?? {}).filter(([, v]) => v > 0).map(([k, v]) => `${traceLabel(k)}: ${v}`).join(" · ") || "اثر محلی‌ای نبود"}.</div>
+                  <div className={field}>
+                    <Label className="text-xs font-medium text-red-700">برای تأیید حذف کامل، کدآگهی را دقیقاً بنویسید: {delLookup.code}</Label>
+                    <Input dir="ltr" value={delConfirm} onChange={(e) => setDelConfirm(e.target.value)} className={inputCls} />
+                  </div>
+                  <Button onClick={submitDelete} disabled={delBusy || delConfirm.trim() !== delLookup.code} variant="destructive" className="w-full gap-1">
+                    {delBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    حذف کامل و پاکسازی
+                  </Button>
+                </div>
+              ) : delLookup && !delLookup.ok ? (
+                <p className="text-xs text-red-600 font-medium">{delLookup.error}</p>
+              ) : null}
+              {delReport ? <StepReport report={delReport} /> : null}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
+}
+
+function traceLabel(key: string): string {
+  const map: Record<string, string> = {
+    propertyCatalog: "کاتالوگ M1",
+    listingFiles: "فایل آگهی",
+    linkedEvents: "رویدادها",
+    visits: "بازدیدها",
+    specialProperties: "کارگزاری‌ها",
+    transactions: "معاملات",
+    contracts: "قراردادها",
+    matchRejections: "رد تطبیق",
+    opportunityAlerts: "هشدار فرصت",
+    graphNodes: "گره گراف",
+    graphEdges: "یال گراف",
+  };
+  return map[key] ?? key;
 }
