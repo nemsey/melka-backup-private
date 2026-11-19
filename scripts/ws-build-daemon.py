@@ -31,9 +31,56 @@ def kill_mirror_threats():
         pass
 
 
+def prepare_ws():
+    """منبع تازه از HEAD + وصلهٔ مسیر + env + گیتِ حداقلی.
+    (درس 20:50: git archive تازه وصلهٔ cd را بازمی‌گرداند → هر بار دوباره وصله می‌زنیم)"""
+    archive = subprocess.run(["git", "archive", "HEAD"], cwd=REPO,
+                             stdout=subprocess.PIPE, check=True).stdout
+    with subprocess.Popen(["tar", "-x", "-C", WS],
+                          stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL) as tar:
+        tar.stdin.write(archive)
+        tar.stdin.close()
+        tar.wait()
+    # وصلهٔ مسیر — بیلد همیشه در ws (نه my-project)
+    bp = f"{WS}/scripts/build-with-parking.sh"
+    try:
+        src = open(bp).read()
+        patched = src.replace("cd /home/z/my-project", f"cd {WS}")
+        if patched != src:
+            open(bp, "w").write(patched)
+            log("patched build-with-parking cd → ws")
+    except OSError as e:
+        log(f"WARN patch: {e}")
+    # env و پلتفرم
+    for f in (".env", ".env.local", "env.platform.json"):
+        try:
+            shutil.copy2(f"{REPO}/{f}", f"{WS}/{f}")
+        except FileNotFoundError:
+            pass
+    # گیت حداقلی برای fingerprint (rev-parse بدون آبجکت)
+    sha = subprocess.run(["git", "-C", REPO, "rev-parse", "HEAD"],
+                         capture_output=True, text=True, check=True).stdout.strip()
+    os.makedirs(f"{WS}/.git/objects", exist_ok=True)
+    os.makedirs(f"{WS}/.git/refs/heads", exist_ok=True)
+    open(f"{WS}/.git/HEAD", "w").write("ref: refs/heads/main\n")
+    open(f"{WS}/.git/refs/heads/main", "w").write(sha + "\n")
+    if not os.path.exists(f"{WS}/.git/config"):
+        open(f"{WS}/.git/config", "w").write(
+            "[core]\n\trepositoryformatversion = 0\n\tfilemode = true\n\tbare = false\n")
+    # node_modules: هاردلینک از فروشگاه اگر غایب/ناقص است
+    if not os.path.exists(f"{WS}/node_modules/.bin/next") and os.path.exists(f"{STORE}/node_modules/.bin/next"):
+        shutil.rmtree(f"{WS}/node_modules", ignore_errors=True)
+        subprocess.run(["cp", "-al", f"{STORE}/node_modules", f"{WS}/node_modules"],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        log("ws node_modules restored from store")
+    return sha
+
+
 def run():
     log("=== ws build daemon start ===")
     t0 = time.time()
+    prepare_ws()
     # بیلد در فضای کاری (امن از پاک‌شدن‌ها)
     r = subprocess.run(
         ["bun", "run", "build"],
