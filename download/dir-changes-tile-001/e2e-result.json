@@ -1,0 +1,44 @@
+{
+  "steps": [
+    {
+      "key": "login",
+      "ok": true,
+      "detail": "لاگین تازه"
+    },
+    {
+      "key": "home-card",
+      "ok": true,
+      "detail": "کارت کاشی «تغییرات» روی هوم دیده می‌شود"
+    },
+    {
+      "key": "full-capacity-card",
+      "ok": true,
+      "detail": "کارت حالت تمام‌ظرفیت بار شد"
+    },
+    {
+      "key": "two-capabilities",
+      "ok": true,
+      "detail": "هر دو قابلیت (تب‌ها) حاضرند"
+    },
+    {
+      "key": "screenshot-page",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "key": "lookup-55920",
+      "ok": true,
+      "detail": "جستجوی زندهٔ ۵۵۹۲۰ + تاریخچهٔ تغییرات نمایش داده شد"
+    },
+    {
+      "key": "listing-tab",
+      "ok": true,
+      "detail": "قابلیت ۱ (کدآگهی) باز شد"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [],
+  "consoleErrorCount": 0,
+  "consoleErrorSample": [],
+  "allPassed": true
+}
