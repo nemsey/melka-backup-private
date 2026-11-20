@@ -1,0 +1,24 @@
+{
+  "directive": "DIR-DESC-CLEANUP-001",
+  "date": "2026-11-20T13:55:00Z",
+  "source": "preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+  "buildId": "d730af3-20261120-1351",
+  "commits": ["35994ee", "d730af3"],
+  "checks": [
+    { "id": "load", "title": "بارگذاری اپ از لینک عمومی preview", "pass": true, "detail": "بدون client-side exception · عنوان: اکوسیستم هوشمند ملک ایران (ملکا)" },
+    { "id": "login", "title": "ورود مالک (سید نعمت اله سیدی · OWNER)", "pass": true, "detail": "داشبورد زنده · اتصال‌ها ۸ از ۹ · رله ترموکس برخط (۲۶۶ کار موفق در ۳۰ دقیقه)" },
+    { "id": "avali-ff", "title": "اولاً — کاشی فایل‌یابی: پاراگراف توضیحات حالت تمام‌ظرفیت حذف شد", "pass": true, "detail": "'هنگام ثبت هر آگهی...' و 'بروزرسانی چهار فهرست' صفر رخداد در DOM · کارت + چهار سنجه + کلیدهای «تمام ظرفیت»/«حالت عادی» پابرجا" },
+    { "id": "avali-ch", "title": "اولاً — کاشی تغییرات: پاراگراف توضیحات هم‌مضمون حذف شد", "pass": true, "detail": "'با فعال‌سازی: بروزرسانی...' صفر رخداد در DOM · کلیدها و سنجه‌ها پابرجا" },
+    { "id": "sanie", "title": "ثانیاً — نوار «دسترسی سریع» M1-M5 از کاشی آگهی حذف شد", "pass": true, "detail": "data-testid=tile-link-bar صفر · M5 صفر رخداد · سربرگ هویت M1 و بخش بروزرسانی فوق پیشرفته پابرجا" },
+    { "id": "salese", "title": "ثالثاً — کاشی تغییرات: توضیحات «صاحب‌اختیار مالک...» حذف شد", "pass": true, "detail": "صفحه: صفر رخداد 'صاحب‌اختیار' · tagline تازه نمایان: «تغییر در کد و حذف کد (کدآگهی و کددرخواست) سامانه ARM» · عنوان و دو تب پابرجا" },
+    { "id": "console", "title": "صفر خطای کنسول و صفحه", "pass": true, "detail": "console_errors=0 · page_errors=0 (پس از پیمایش چهار کاشی)" }
+  ],
+  "result": "7/7 PASS",
+  "screenshots": [
+    "01-file-finder-capacity.png",
+    "02-changes-tile.png",
+    "03-changes-tile-clean.png",
+    "04-arm-listings-no-linkbar.png",
+    "05-file-finder-clean.png"
+  ]
+}
