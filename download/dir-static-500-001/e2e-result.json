@@ -1,0 +1,51 @@
+{
+  "directive": "DIR-STATIC-500-001",
+  "viaEdge": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+  "steps": [
+    {
+      "key": "load-no-exception",
+      "ok": true,
+      "detail": "حجم صفحه 18985B"
+    },
+    {
+      "key": "owner-login",
+      "ok": true,
+      "detail": "ورود مدیر موفق"
+    },
+    {
+      "key": "home-eight-tiles",
+      "ok": true,
+      "detail": "8 کاشی: فایل یابی · آگهی · درخواست · معاملات · کارشناسان · تطبیق · تغییرات · تنظیمات"
+    },
+    {
+      "key": "brain-collapsed-default",
+      "ok": true,
+      "detail": "مغز ملکا در حالت پیش‌فرض بسته است"
+    },
+    {
+      "key": "brain-expand-on-click",
+      "ok": true,
+      "detail": "با کلیک باز شد و بارگذاری تنبلکار اجرا شد"
+    },
+    {
+      "key": "ff-capacity-buttons",
+      "ok": true,
+      "detail": "«تمام ظرفیت» در کاشی فایل‌یابی حاضر است"
+    },
+    {
+      "key": "changes-capacity-buttons",
+      "ok": true,
+      "detail": "«تمام ظرفیت» در کاشی تغییرات حاضر است"
+    },
+    {
+      "key": "mobile-bottom-nav",
+      "ok": true,
+      "detail": "6 آیتم از ۷ در نوار پایین"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "passCount": 8,
+  "failCount": 0,
+  "zeroConsoleErrors": true
+}
