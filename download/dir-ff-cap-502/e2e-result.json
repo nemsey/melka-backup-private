@@ -1,0 +1,90 @@
+{
+  "directive": "DIR-FF-CAP-502",
+  "date": "2026-11-20 (1405/08/30)",
+  "owner": "سید نعمت اله سیدی",
+  "build": {
+    "buildId": "a0c2e8e-20261120-0928",
+    "gitSha": "a0c2e8e",
+    "env": "production",
+    "buildFlow": "ws-build-daemon (فضای کاری فراپروژه /home/z/melka-build-ws از git archive HEAD · exit=0 در 55 ثانیه · جابه‌جایی اتمیک به فروشگاه)",
+    "deploy": "Blue/Green صفر‌قطعی (c744c86-20261120-0835 → a0c2e8e-20261120-0928 · فرزند سبز pid=16773 روی health:3101 در 09:30:00 · شاهد پیوستهٔ سلامت 9/9 نمونهٔ 200 از لبهٔ عمومی)"
+  },
+  "rootCause502": {
+    "symptom": "خطای ۵۰۲ سامانه arm هنگام فشردن کلید «شروع حالت تمام‌ظرفیت» در لینک preview",
+    "verdict": "خطا از خود مسیر نیست؛ از لبهٔ دروازهٔ preview در پنجره‌های بوت/بازیافت سندباکس می‌آید و کلاینت صفر تلاش مجدد داشت",
+    "evidence": [
+      "POST /api/changes/session مستقیم در سندباکس: 200 در ~50ms (scripts/dbg-502-session.sh)",
+      "همان POST از لینک عمومی preview: 200 در ~110-180ms (scripts/dbg-502-preview.sh)",
+      "شاهد boot-recovery.log: هر بوت/بازیافت سندباکس ~140-145 ثانیه تا READY طول می‌کشد (23:30:57 · 00:45:51 · 04:28:52) — در این پنجره‌ها هیچ مبدایی پشت دروازه نیست و پروکسی ۵۰۲ برمی‌گرداند",
+      "نگاشت پیام کلاینت: هر HTTP 502 به «سامانه ملک تبریز موقتاً پاسخ نمی‌دهد (خطای 502)» ترجمه می‌شود — همان چیزی که مالک می‌بیند",
+      "کد قبلی: تک‌فروش api() بدون هیچ تلاش مجدد برای عملیات idempotent"
+    ],
+    "secondaryRootCauseDiscovered": {
+      "issue": "دریفت بیلد + کرش کلاینت قبلی («Application error: a client-side exception»)",
+      "mechanism": "بیلدهای دستیِ درجا با معماری فروشگاه (melka-store) می‌جنگیدند: .next سیم‌لینک است؛ rm -rf و بیلد مستقیم، چانک‌های نو و کهنه را در فروشگاه مخلوط می‌کند + دو نمونهٔ ماژولی next (my-project/node_modules در برابر melka-store/node_modules) به InvariantError «workUnitAsyncStorage» در خروجی /_global-error می‌انجامید و بیلد می‌شکست",
+      "evidence": "melka-store/keeper.log: «re-linked wiped .next → store» در 09:18:48 و 09:21:10/11 دقیقاً هم‌زمان با بیلدهای شکست‌خوردهٔ دستی",
+      "fix": "مسیر رسمی ws-build-daemon (بیلد از git HEAD در فضای کاری مجزا + جابه‌جایی اتمیک) — اجرا شد و سبز شد؛ G3 (بیلد=HEAD) که قبل از این نوبت قرمز بود سبز شد"
+    },
+    "fix": {
+      "client": "هلپر مشترک src/lib/changes/capacity-client.ts — toggleCapacitySessionResilient: تا ۶ تلاش با وقفهٔ پلکانی ۳/۸/۱۵/۳۰/۴۵ ثانیه (~101s) روی خطاهای گذرای 502/504/5xx/تایم‌اوت/شبکه؛ ۴xx هرگز؛ نشانگر زندهٔ «تلاش مجدد خودکار n از N» با aria-live در هر دو کاشی؛ عملیات idempotent است (begin روی فعال = alreadyActive · end روی بسته = wasActive:false) پس صفر خطر دادهٔ تکراری",
+      "infrastructure": "بیلد تازه از HEAD + دیپلوی Blue/Green صفر‌قطعی — لبه اکنون buildId تازه با drift.match=True سرو می‌کند",
+      "verificationViaPreview": [
+        "/api/version از لبه: buildId=a0c2e8e-20261120-0928 · gitSha=a0c2e8e · drift.match=True",
+        "چانک‌های سرو‌شده از لینهٔ عمومی حاوی «تمام ظرفیت» و «حالت عادی»؛ برچسب قدیمی «شروع حالت تمام‌ظرفیت» غایب",
+        "POST begin از لبه: 200 در 180ms → نشست فعال (شروع: سید نعمت اله سیدی · ۳۰ دقیقه تا انقضای خودکار)",
+        "POST end از لبه: 200 در 133ms → بازگشت چرخه‌های عادی"
+      ]
+    }
+  },
+  "e2e": {
+    "viaEdge": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+    "browserErrors": 0,
+    "checks": [
+      { "id": 1, "name": "بارگذاری اپ از لینک preview بدون client-side exception", "pass": true },
+      { "id": 2, "name": "نشست مالک زنده (سید نعمت اله سیدی · OWNER)", "pass": true },
+      { "id": 3, "name": "اولاً — کارت «مغز ملکا — تمام ظرفیت‌ها در خدمت فایل‌یابی» پیش‌فرض بسته (expanded=false)", "pass": true },
+      { "id": 4, "name": "اولاً — بازشدن کارت: بارگذاری تنبلکار مغز (Tier · دیمن v2 زنده · Brier کالیبره ۰٫۲۳۷۶→۰٫۲۱۰۰ · موتورهای ۱۲-۱۵ · چهار تب · شورا ۲)", "pass": true },
+      { "id": 5, "name": "ثانیاً — کلیدهای «تمام ظرفیت»/«حالت عادی» در کاشی فایل‌یابی (نام‌های قدیمی حذف)", "pass": true },
+      { "id": 6, "name": "کلیک «تمام ظرفیت» (فایل‌یابی): فعال + ۳۰ دقیقه تا انقضای خودکار + شروع: سید نعمت اله سیدی", "pass": true },
+      { "id": 7, "name": "کلیک «حالت عادی» (فایل‌یابی): بازگشت به غیرفعال", "pass": true },
+      { "id": 8, "name": "ثانیاً — کلیدهای «تمام ظرفیت»/«حالت عادی» در کاشی تغییرات", "pass": true },
+      { "id": 9, "name": "کلیک «تمام ظرفیت» (تغییرات): فعال + اعلان «حالت تمام‌ظرفیت فعال شد»", "pass": true },
+      { "id": 10, "name": "کلیک «حالت عادی» (تغییرات): بازگشت به غیرفعال", "pass": true },
+      { "id": 11, "name": "راهنمای تلاش مجدد ۵۰۲ زیر کلیدها + صفر خطای کنسول/صفحه مرورگر", "pass": true }
+    ],
+    "passCount": "11/11"
+  },
+  "tests": {
+    "suite": "3175/3175 سبز · 353,401 ادعا · 151 فایل (صد درصد — از جمله دو شکست پیش‌موجود که در همین نوبت ریشه‌یابی و ترمیم شد)",
+    "newFile": "tests/dir-ff-cap-502.test.ts — ۱۷ مورد (ساختار تاشو/تغییر نام + رفتار تلاش مجدد با fetch ماک‌شده: 502→502→200، 502 همیشگی، 403 قطعی بدون تلاش مجدد، داوری خطا، وقفهٔ پلکانی ~۱۰۱ث)",
+    "preexistingFixed": [
+      "pn050/journal-replay «متا بدون PII» — تست ساعت‌حساس بود (زیررشتهٔ «09» در مهر زمانی ISO ساعت ۰۹ نقض کاذب می‌ساخت) → الگوی موبایل 09\\d{9}",
+      "G3 بیلد=HEAD — دریفت بیلد با جریان رسمی ws-build بسته شد"
+    ]
+  },
+  "laws": {
+    "tthbit_stability": "HEAD = origin/main = live gitSha = edge buildId = a0c2e8e (پنج‌واحدی · drift.match=True از خود لبه)",
+    "baqa_persistence": "دیپلوی Blue/Green صفر‌قطعی (فرزند سبز pid=16773 · health:3101 · 09:30:00) · شاهد پیوستهٔ سلامت ۹/۹ نمونهٔ 200 از لبهٔ عمومی حین جابه‌جایی · سرور + ورکر + نگهبان فروشگاه زنده",
+    "link": "لبهٔ عمومی HTTPS 200 با buildId تازه (a0c2e8e-20261120-0928) · چانک‌های سرو‌شده حاوی برچسب‌های تازه · POST begin/end زنده 200",
+    "sacredData": {
+      "g6Audit": "PASS (baseline 09:12:29 + postdeploy 09:36:48)",
+      "countsBaseline": { "P": 28954, "R": 26353, "T": 846, "ER": 317, "EP": 161, "User": 4 },
+      "countsPost": { "P": 28954, "R": 26353, "T": 846, "ER": 317, "EP": 161, "User": 4 },
+      "verdict": "صفر کاهش — عین (شش سنجه)"
+    },
+    "union": {
+      "live": { "P": 28954, "R": 26353, "T": 846, "ER": 317, "EP": 161, "User": 4, "GN": 145465 },
+      "fortress": { "P": 28954, "R": 26353, "T": 846, "ER": 317, "EP": 161, "User": 4, "GN": 145465 },
+      "rolling": { "P": 28954, "R": 26353, "T": 846, "ER": 317, "EP": 161, "User": 4, "GN": 145465 },
+      "sacred": { "P": 28954, "R": 26353, "T": 846, "ER": 317, "EP": 161, "User": 4, "GN": 145465 },
+      "verdict": "چهار لایه عین (هفت سنجه) · zero_decrease=PASS · PR_same_all_layers=PASS"
+    }
+  },
+  "screenshots": [
+    "ff-brain-collapsed-default.png",
+    "ff-brain-expanded.png",
+    "ff-capacity-active.png",
+    "changes-tile-buttons.png",
+    "changes-capacity-active.png"
+  ]
+}
