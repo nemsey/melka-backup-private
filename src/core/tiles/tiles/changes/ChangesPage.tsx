@@ -4,7 +4,8 @@
  * کاشی «تغییرات» — صفحهٔ اصلی (DIR-CHANGES-TILE-002 · دستور مالک ۱۴۰۵/۰۸/۲۹)
  * ---------------------------------------------------------------------------
  * ساختار تازه (فقط همین‌ها — سایر بخش‌ها حذف شد):
- *   ۰) حالت تمام‌ظرفیت (گام سوم): شروع/پایان + وضعیت رلهٔ ترموکس + صف اولویت‌ها
+ *   ۰) حالت تمام‌ظرفیت (گام سوم): کلیدهای «تمام ظرفیت»/«حالت عادی» (DIR-FF-CAP-502)
+ *      + وضعیت رلهٔ ترموکس + صف اولویت‌ها + تلاش مجدد خودکار روی ۵۰۲/۵۰۴ دروازه
  *   ۱) کدآگهی — تغییر در کد · حذف کد
  *   ۲) کددرخواست — تغییر در کد · حذف کد
  */
@@ -17,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Zap, ZapOff, RefreshCw, Building2, ClipboardList, Loader2, Smartphone, Cpu } from "lucide-react";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
+import { toggleCapacitySessionResilient, type CapacityAction } from "@/lib/changes/capacity-client";
+import { faNumber } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { RequestChangesPanel } from "./RequestChangesPanel";
 import { ListingChangesPanel } from "./ListingChangesPanel";
@@ -48,6 +51,8 @@ export function ChangesPage({ userRole }: TilePageProps) {
   const [status, setStatus] = useState<ChangesStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
+  // DIR-FF-CAP-502/ثالثاً — پیشرفت تلاش مجدد خودکار روی خطای گذرای ۵۰۲/۵۰۴ دروازه
+  const [capacityRetry, setCapacityRetry] = useState<{ attempt: number; total: number } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -67,13 +72,18 @@ export function ChangesPage({ userRole }: TilePageProps) {
     return () => clearInterval(t);
   }, [load]);
 
-  const toggleSession = async (action: "begin" | "end") => {
+  /**
+   * DIR-FF-CAP-502/ثالثاً — کلیدهای «تمام ظرفیت»/«حالت عادی» با تلاش مجدد پلکانی.
+   * ریشه‌یابی ۵۰۲: خود مسیر سالم است (200 در ~۵۰ms)؛ ۵۰۲ از لبهٔ preview در
+   * پنجره‌های بوت/بازیافت سندباکس (~۱۴۵ث) می‌آید. عملیات idempotent است پس تا
+   * ۶ تلاش (۳/۸/۱۵/۳۰/۴۵ث) خوددرمان می‌شود و مالک خطا نمی‌بیند.
+   */
+  const toggleSession = async (action: CapacityAction) => {
     setToggling(true);
+    setCapacityRetry(null);
     try {
-      const res = await api<{ ok: boolean; message: string }>("/api/changes/session", {
-        method: "POST",
-        body: { action },
-        timeoutMs: 30_000,
+      const res = await toggleCapacitySessionResilient(action, {
+        onProgress: (p) => setCapacityRetry({ attempt: p.attempt, total: p.total }),
       });
       toast({ title: action === "begin" ? "حالت تمام‌ظرفیت فعال شد" : "حالت تمام‌ظرفیت پایان یافت", description: res.message });
       await load();
@@ -81,6 +91,7 @@ export function ChangesPage({ userRole }: TilePageProps) {
       toast({ title: "خطا در تغییر حالت", description: (err as ApiClientError).message, variant: "destructive" });
     } finally {
       setToggling(false);
+      setCapacityRetry(null);
     }
   };
 
@@ -144,6 +155,12 @@ export function ChangesPage({ userRole }: TilePageProps) {
               شروع: {s.session.actorName}{s.session.note ? ` · ${s.session.note}` : ""}
             </div>
           ) : null}
+          {capacityRetry ? (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5" role="status" aria-live="polite">
+              <Loader2 className="w-3 h-3 animate-spin" aria-hidden />
+              خطای گذرای دروازه (۵۰۲/۵۰۴) — تلاش مجدد خودکار {faNumber(capacityRetry.attempt)} از {faNumber(capacityRetry.total)}… سرور در حال بازگشت است، کلید را آزاد نکنید.
+            </p>
+          ) : null}
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -152,7 +169,7 @@ export function ChangesPage({ userRole }: TilePageProps) {
               className="gap-1 bg-amber-600 hover:bg-amber-700"
             >
               {toggling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-              شروع حالت تمام‌ظرفیت
+              تمام ظرفیت
             </Button>
             <Button
               size="sm"
@@ -162,9 +179,12 @@ export function ChangesPage({ userRole }: TilePageProps) {
               className="gap-1"
             >
               <ZapOff className="h-3.5 w-3.5" />
-              پایان و بازگشت چرخه‌های عادی
+              حالت عادی
             </Button>
           </div>
+          <p className="text-[10px] text-muted-foreground">
+            در صورت قطعی گذرای دروازهٔ preview (خطای ۵۰۲)، کلیدها خودکار تا ۶ بار تلاش مجدد می‌کنند — عملیات ایمنِ تکرارپذیر است و داده‌ای تکراری نمی‌سازد.
+          </p>
         </CardContent>
       </Card>
 

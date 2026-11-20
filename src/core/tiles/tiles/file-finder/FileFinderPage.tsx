@@ -10,11 +10,13 @@
  *   · پنل ایجنت + مشورهٔ مغز برای برترین فایل سطل جاری (موتور ۱۶)
  *   · پنجره‌های چهار کلید: پل دیوار / جزییات / رد / ثبت
  * ثانیاً) تمام ظرفیت‌های مغز ملکا بدون هیچ محدودیتی:
- *   · کارت «مغز ملکا» — Tier + نوار پیشرفت + Brier/کالیبراسیون + سلامت ۲۵ بررسی
- *   · فرا-ذهن (موتورهای ۱۲-۱۵): توجه / علّیت / پادواقع / شبیه‌سازی
- *   · تختهٔ سیاه (رویدادهای بین‌کاشی) + تصمیم‌های در انتظار شورا
+ *   · کارت «مغز ملکا» — DIR-FF-CAP-502/اولاً: بازشونده با پیش‌فرض «بسته» +
+ *     بارگذاری تنبلکار در نخستین بازشدن؛ Tier + نوار پیشرفت + Brier/کالیبراسیون
+ *     + سلامت ۲۵ بررسی + فرا-ذهن (موتورهای ۱۲-۱۵) + تختهٔ سیاه + شورا
  * ثالثاً) حالت تمام‌ظرفیت ترموکس (همانند کاشی تغییرات):
- *   · کارت وضعیت نشست (شروع/پایان + شمارش معکوس + آمار رله/صف/اولویت)
+ *   · کارت وضعیت نشست (کلیدهای «تمام ظرفیت»/«حالت عادی» — DIR-FF-CAP-502/ثانیاً)
+ *   · DIR-FF-CAP-502/ثالثاً: تلاش مجدد خودکار پلکانی روی خطای گذرای ۵۰۲/۵۰۴
+ *     دروازهٔ preview (پنجرهٔ بوت سندباکس ~۱۴۵ث) — عملیات idempotent است
  *   · هر ثبت آگهی در ARM آن را خودکار فعال می‌کند (ensureChangesSessionForOperation)
  */
 
@@ -31,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -43,6 +46,7 @@ import { AgentPanel } from "@/components/app/AgentPanel";
 import { AdviceCard } from "@/components/app/shared/AdviceCard";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
+import { toggleCapacitySessionResilient, type CapacityAction } from "@/lib/changes/capacity-client";
 import { faNumber, faDateTime, faDigits } from "@/lib/format";
 import { AdCard, type DivarAdRow } from "./AdCard";
 import { AdDetailsDialog } from "./AdDetailsDialog";
@@ -215,9 +219,15 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   // حالت تمام‌ظرفیت — همان قرارداد کاشی تغییرات
   const [capacity, setCapacity] = useState<CapacityStatus | null>(null);
   const [togglingCapacity, setTogglingCapacity] = useState(false);
+  // DIR-FF-CAP-502/ثالثاً — پیشرفت تلاش مجدد خودکار روی خطای گذرای ۵۰۲/۵۰۴ دروازه
+  const [capacityRetry, setCapacityRetry] = useState<{ attempt: number; total: number } | null>(null);
   // مغز ملکا — تمام ظرفیت‌ها بدون محدودیت
+  // DIR-FF-CAP-502/اولاً — کارت مغز بازشونده است و پیش‌فرض «بسته»؛ دادهٔ مغز
+  // تنبلکار در نخستین بازشدن بارگذاری می‌شود (صفر فراخوانی اضافه در حالت بسته)
   const [brain, setBrain] = useState<BrainStatus | null>(null);
   const [board, setBoard] = useState<BlackboardEntryView[]>([]);
+  const [brainOpen, setBrainOpen] = useState(false);
+  const [brainLoadedOnce, setBrainLoadedOnce] = useState(false);
 
   const showScores = settings.showScoresInList !== false;
   const autoRefresh = settings.autoRefresh !== false;
@@ -283,8 +293,8 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     void loadSettings();
     void loadScanLogs();
     void loadCapacity();
-    void loadBrain();
-  }, [bucket, loadAds, loadSettings, loadScanLogs, loadCapacity, loadBrain]);
+    // مغز: تنبلکار — DIR-FF-CAP-502/اولاً (فقط با بازشدن کارت، loadBrain اجرا می‌شود)
+  }, [bucket, loadAds, loadSettings, loadScanLogs, loadCapacity]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -414,14 +424,36 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     void loadCapacity(); // نشست تمام‌ظرفیت خودکار فعال شده — وضعیت تازه
   }, [loadAds, bucket, loadCapacity]);
 
-  /** شروع/پایان دستی حالت تمام‌ظرفیت — همانند کاشی تغییرات */
-  const toggleCapacitySession = async (action: "begin" | "end") => {
+  /**
+   * DIR-FF-CAP-502/اولاً — باز/بسته کردن کارت مغز ملکا (پیش‌فرض بسته).
+   * در نخستین بازشدن، دادهٔ مغز بارگذاری می‌شود (تنبلکار)؛ «تازه‌سازی مغز»
+   * همیشه مجاز است حتی در حالت بسته (نتیجه در نشان‌های سربرگ دیده می‌شود).
+   */
+  const handleBrainOpenChange = useCallback(
+    (open: boolean) => {
+      setBrainOpen(open);
+      if (open && !brainLoadedOnce) {
+        setBrainLoadedOnce(true);
+        void loadBrain();
+      }
+    },
+    [brainLoadedOnce, loadBrain]
+  );
+
+  /**
+   * شروع/پایان دستی حالت تمام‌ظرفیت — همانند کاشی تغییرات.
+   * DIR-FF-CAP-502/ثالثاً — مقاوم در برابر خطای گذرای ۵۰۲/۵۰۴ دروازهٔ preview:
+   * عملیات idempotent است (begin روی فعال = alreadyActive؛ end روی بسته =
+   * wasActive:false) پس تا ۶ تلاش با وقفهٔ پلکانی خوددرمان می‌شود؛ پنجرهٔ بوت
+   * ~۱۴۵ثانیه‌ای سندباکس پوشش داده می‌شود و مالک به‌جای «خطای ۵۰۲ سامانه arm»
+   * «تلاش مجدد خودکار n از N» و سپس موفقیت می‌بیند.
+   */
+  const toggleCapacitySession = async (action: CapacityAction) => {
     setTogglingCapacity(true);
+    setCapacityRetry(null);
     try {
-      const res = await api<{ ok: boolean; message: string }>("/api/changes/session", {
-        method: "POST",
-        body: { action },
-        timeoutMs: 30_000,
+      const res = await toggleCapacitySessionResilient(action, {
+        onProgress: (p) => setCapacityRetry({ attempt: p.attempt, total: p.total }),
       });
       toast({
         title: action === "begin" ? "حالت تمام‌ظرفیت فعال شد" : "حالت تمام‌ظرفیت پایان یافت",
@@ -432,6 +464,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
       toast({ title: "خطا در تغییر حالت", description: (err as ApiClientError).message, variant: "destructive" });
     } finally {
       setTogglingCapacity(false);
+      setCapacityRetry(null);
     }
   };
 
@@ -547,6 +580,12 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
               شروع: {cs.session.actorName}{cs.session.note ? ` · ${cs.session.note}` : ""}
             </div>
           ) : null}
+          {capacityRetry ? (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5" role="status" aria-live="polite">
+              <Loader2 className="w-3 h-3 animate-spin" aria-hidden />
+              خطای گذرای دروازه (۵۰۲/۵۰۴) — تلاش مجدد خودکار {faNumber(capacityRetry.attempt)} از {faNumber(capacityRetry.total)}… سرور در حال بازگشت است، کلید را آزاد نکنید.
+            </p>
+          ) : null}
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -555,7 +594,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
               className="gap-1 bg-amber-600 hover:bg-amber-700"
             >
               {togglingCapacity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-              شروع حالت تمام‌ظرفیت
+              تمام ظرفیت
             </Button>
             <Button
               size="sm"
@@ -565,26 +604,40 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
               className="gap-1"
             >
               <ZapOff className="h-3.5 w-3.5" />
-              پایان و بازگشت چرخه‌های عادی
+              حالت عادی
             </Button>
           </div>
+          <p className="text-[10px] text-muted-foreground">
+            در صورت قطعی گذرای دروازهٔ preview (خطای ۵۰۲)، کلیدها خودکار تا ۶ بار تلاش مجدد می‌کنند — عملیات ایمنِ تکرارپذیر است و داده‌ای تکراری نمی‌سازد.
+          </p>
         </CardContent>
       </Card>
 
       {/* ═══ مغز ملکا — تمام ظرفیت‌ها بدون هیچ محدودیتی (DIR-FF-TILE-003) ═══ */}
+      {/* DIR-FF-CAP-502/اولاً — بازشونده با پیش‌فرض «بسته» + بارگذاری تنبلکار مغز در نخستین بازشدن */}
       <Card data-negin="nili">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
-            <Brain className="h-4 w-4 text-sec-m8-500" />
-            مغز ملکا — تمام ظرفیت‌ها در خدمت فایل‌یابی
-            {cycle && <Badge variant="outline" className="text-[10px]">Tier {faDigits(tier)} از ۴</Badge>}
-            {brain?.daemon?.alive && <Badge variant="outline" className="text-[10px]">دیمن v2 زنده — {faNumber(brain.daemon.runs)} اجرا</Badge>}
-            <Button variant="ghost" size="sm" className="gap-1 h-6 text-[11px] ml-auto" onClick={loadBrain}>
-              <RefreshCw className="size-3" /> تازه‌سازی مغز
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+        <Collapsible open={brainOpen} onOpenChange={handleBrainOpenChange}>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <CollapsibleTrigger className="flex-1 min-w-0 text-right rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={brainOpen ? "بستن بخش مغز ملکا" : "باز کردن بخش مغز ملکا"}>
+                <span className="text-sm font-bold flex items-center gap-2 flex-wrap">
+                  <Brain className="h-4 w-4 text-sec-m8-500" aria-hidden />
+                  مغز ملکا — تمام ظرفیت‌ها در خدمت فایل‌یابی
+                  {cycle && <Badge variant="outline" className="text-[10px]">Tier {faDigits(tier)} از ۴</Badge>}
+                  {brain?.daemon?.alive && <Badge variant="outline" className="text-[10px]">دیمن v2 زنده — {faNumber(brain.daemon.runs)} اجرا</Badge>}
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform duration-200 mr-auto ${brainOpen ? "" : "rotate-90"}`}
+                    aria-hidden
+                  />
+                </span>
+              </CollapsibleTrigger>
+              <Button variant="ghost" size="sm" className="gap-1 h-6 text-[11px] shrink-0" onClick={() => { setBrainLoadedOnce(true); void loadBrain(); }}>
+                <RefreshCw className="size-3" /> تازه‌سازی مغز
+              </Button>
+            </div>
+          </CardHeader>
+          <CollapsibleContent>
+          <CardContent className="space-y-3">
           {!brain ? (
             <div className="space-y-2">
               <Skeleton className="h-20 w-full rounded-xl" />
@@ -773,7 +826,9 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
           ) : (
             <p className="text-xs text-muted-foreground">چرخهٔ مغز هنوز اجرا نشده است.</p>
           )}
-        </CardContent>
+          </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
 
       {/* تنظیمات اختصاصی ایجنت */}

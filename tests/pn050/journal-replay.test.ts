@@ -125,7 +125,9 @@ describe("PN-050 · دستور ۵ — ژورنال اپلیکیشن (intent/comm
     const { readFileSync } = await import("node:fs");
     writeIntent("batch-pii", "generic", { listings: 10, requests: 5 });
     const raw = readFileSync(join(dir, "batch-pii.intent"), "utf8");
-    expect(raw).not.toContain("09"); // هیچ موبایل خامی
+    // DIR-FF-CAP-502: الگوی موبایل خام (۰۹+۹رقم) — نه زیررشتهٔ «09» خالی که
+    // در مهر زمانی ISO (ساعت/دقیقهٔ ۰۹) نقض کاذب می‌سازد و تست را ساعت‌حساس می‌کند
+    expect(raw).not.toMatch(/09\d{9}/); // هیچ موبایل خامی
     expect(raw).not.toContain("ownerMobile");
     expect(JSON.parse(raw).meta).toEqual({ listings: 10, requests: 5 });
   });
