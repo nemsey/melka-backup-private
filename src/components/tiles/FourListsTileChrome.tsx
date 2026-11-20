@@ -12,8 +12,8 @@
  *   · بروزرسانی فهرست فوق پیشرفته — SuperListUpdate: نمای یکپارچهٔ چهار فهرست
  *     (SyncJobState + فاز LCPP + قفل‌های زنده + غنی‌سازی + نقطهٔ ازسرگیری) +
  *     سه مسیر اجرا + نوار کارهای پس‌زمینه — همه از همان منبع حقیقت واحد.
- *   · نوار لینک به کاشی‌های دیگر — M1 آگهی · M2 درخواست · M3 معاملات ·
- *     M4 کارشناسان + «تطبیق» (گام ۲/ثانیاً — به صراحت افزوده شد).
+ *   · نوار «دسترسی سریع» M1-M5 (M1آگهی·M2درخواست·M3معاملات·M4کارشناسان·M5تطبیق)
+ *     به دستور مالک ۱۴۰۵/۰۸/۳۰ DIR-DESC-CLEANUP-001/ثانیاً به‌طور کامل حذف شد.
  * به‌علاوهٔ سربرگ هویت («M1 · آگهی ملک تبریز») — منبع یگانه: tenants.ts.
  *
  * قرارداد: این قاب فقط «قاب» است — منطق هیچ صفحه‌ای تغییر نمی‌کند؛
@@ -23,12 +23,9 @@
 import type { ComponentType } from 'react'
 import { QueryProvider } from '@/components/app/QueryProvider'
 import { SuperListUpdate } from '@/components/tiles/SuperListUpdate'
-import { useAppStore } from '@/lib/client/store'
-import { haptic } from '@/lib/haptics'
 import type { TilePageProps } from '@/core/tiles/tile-contract'
 import {
   TENANT_TILE_IDENTITY,
-  TILE_KIND_FA,
   tileIdentityLabel,
   type TenantTileKind,
 } from '@/lib/tenants'
@@ -39,63 +36,6 @@ const LIST_OF: Partial<Record<TenantTileKind, 'm1' | 'm2' | 'm3' | 'm4'>> = {
   requests: 'm2',
   transactions: 'm3',
   experts: 'm4',
-}
-
-/** لینک‌های نوار — چهار فهرست + تطبیق (گام ۲/ثانیاً)؛ تطبیق=M5 (شمارهٔ سراسری — tenants.ts) */
-const LINKS: Array<{ tileId: string; code: string; label: string }> = [
-  { tileId: 'arm-listings', code: 'M1', label: TILE_KIND_FA.listings },
-  { tileId: 'arm-requests', code: 'M2', label: TILE_KIND_FA.requests },
-  { tileId: 'transactions-contracts', code: 'M3', label: TILE_KIND_FA.transactions },
-  { tileId: 'experts', code: 'M4', label: TILE_KIND_FA.experts },
-  { tileId: 'smart-matching', code: 'M5', label: 'تطبیق' },
-]
-
-/** نوار لینک به کاشی‌های دیگر — لینکِ کاشیِ جاری خاموش؛ نادسترس‌ها پنهان */
-export function TileLinkBar({ currentTileId }: { currentTileId: string }) {
-  const openTile = useAppStore((s) => s.openTile)
-  const userRole = useAppStore((s) => s.user?.role ?? 'CONSULTANT')
-  const tileAccess = useAppStore((s) => s.tileAccess)
-  // همان فرمول دسترسی هوم (PN-008 BLOCK 7) — مرز دسترسی کاشی‌ها حفظ می‌شود
-  const allowed = (id: string) =>
-    userRole === 'OWNER' || !tileAccess || tileAccess.tiles.includes(id) || id === 'settings'
-  const links = LINKS.filter((l) => l.tileId === currentTileId || allowed(l.tileId))
-
-  return (
-    <nav
-      aria-label="لینک به کاشی‌های دیگر"
-      data-testid="tile-link-bar"
-      className="rounded-xl border border-border bg-card p-1.5 shadow-sm"
-    >
-      <ul className="grid gap-1" style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}>
-        {links.map(({ tileId, code, label }) => {
-          const active = tileId === currentTileId
-          return (
-            <li key={tileId} className="flex">
-              <button
-                type="button"
-                aria-current={active ? 'page' : undefined}
-                disabled={active}
-                onClick={() => {
-                  haptic('tap')
-                  openTile(tileId)
-                }}
-                className={`flex-1 min-h-11 flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
-                  active
-                    ? 'bg-primary/10 border border-primary/30 text-primary'
-                    : 'hover:bg-accent border border-transparent text-muted-foreground'
-                }`}
-              >
-                <span className="font-mono text-[10px] font-bold opacity-80" dir="ltr" data-tile-identity={code}>
-                  {code}
-                </span>
-                <span className="truncate">{label}</span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
-  )
 }
 
 /** سربرگ هویت — «M1 · آگهی ملک تبریز» (عین PN-047/گام اول-۱؛ منبع یگانه tenants.ts) */
@@ -115,8 +55,9 @@ function TileIdentityHeader({ tenantKind }: { tenantKind: TenantTileKind }) {
 }
 
 /**
- * قاب مشترک کاشی‌های M1-M4 (گام ۲ + DIR-SUPER-UPDATE-001): بخش بروزرسانی فوق
- * پیشرفته + نوار لینک + سربرگ هویت بالای خودِ صفحه — بدون هیچ تغییری در منطق صفحه.
+ * قاب مشترک کاشی‌های M1-M4 (گام ۲ + DIR-SUPER-UPDATE-001 + DIR-DESC-CLEANUP-001):
+ * بخش بروزرسانی فوق پیشرفته + سربرگ هویت بالای خودِ صفحه — بدون هیچ تغییری در منطق صفحه.
+ * نوار «دسترسی سریع» M1-M5 به دستور مالک (DIR-DESC-CLEANUP-001/ثانیاً) حذف شد.
  */
 export function withFourListsChrome(
   tenantKind: TenantTileKind,
@@ -130,8 +71,7 @@ export function withFourListsChrome(
         <QueryProvider>
           <SuperListUpdate listId={listId} />
         </QueryProvider>
-        {/* گام ۲/ثانیاً — نوار لینک به کاشی‌های دیگر (M1-M4 + تطبیق) */}
-        <TileLinkBar currentTileId={tileId} />
+        {/* DIR-DESC-CLEANUP-001/ثانیاً — نوار «دسترسی سریع» M1-M5 حذف شد */}
         <TileIdentityHeader tenantKind={tenantKind} />
         <Page {...props} />
       </div>

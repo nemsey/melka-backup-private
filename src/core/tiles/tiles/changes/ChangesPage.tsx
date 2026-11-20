@@ -106,10 +106,10 @@ export function ChangesPage({ userRole }: TilePageProps) {
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h2 className="text-lg font-bold">تغییرات — تغییر در کد و حذف کد (کدآگهی و کددرخواست)</h2>
-          <p className="text-xs text-muted-foreground mt-1 leading-5">
-            صاحب‌اختیار مالک در سامانه ARM ملک تبریز — تغییر اطلاعات مالک آگهی، تغییر تاریخ «ایجاد مشاور» با آبشار اتوماتیک تاریخچه‌ها، و حذف کامل کدها با پاکسازی کامل آثار — با شناخت کامل گزارش‌های dir-reg-req-099-001 و DIR-CHANGES-TILE-001.
-            {userRole !== "OWNER" ? " — این کاشی فقط برای مالک فعال است." : ""}
-          </p>
+          {/* DIR-DESC-CLEANUP-001/ثالثاً — توضیحات متنی سربرگ به دستور مالک حذف شد؛ فقط یادداشت نقش غیرمالک پابرجاست */}
+          {userRole !== "OWNER" ? (
+            <p className="text-xs text-muted-foreground mt-1 leading-5">این کاشی فقط برای مالک فعال است.</p>
+          ) : null}
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-1 shrink-0">
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> بروزرسانی وضعیت
@@ -126,9 +126,7 @@ export function ChangesPage({ userRole }: TilePageProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground leading-5">
-            با فعال‌سازی: بروزرسانی چهار فهرست (آگهی/درخواست/معاملات/مشاوران) متوقف می‌شود و تمام ظرفیت رلهٔ ترموکس به این کاشی اختصاص می‌یابد — آیتم‌های این کاشی با اولویت سقف (۱۰) مقدم بر OTP و سینک اجرا می‌شوند و کارهای انبوه صف صبر می‌کنند. هر عملیات ثبت/تغییر نیز این حالت را خودکار فعال می‌کند. انقضای خودکار: ۳۰ دقیقه.
-          </p>
+          {/* DIR-DESC-CLEANUP-001/اولاً — توضیحات متنی بخش به دستور مالک حذف شد (کارکرد پابرجا) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             <div className="rounded-lg border border-border bg-background/60 p-2 flex items-center gap-1.5">
               <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />

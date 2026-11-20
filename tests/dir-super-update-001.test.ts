@@ -190,12 +190,13 @@ describe("DIR-SUPER-UPDATE-001 · ۵) گاردهای معماری (ادغام س
   const m3 = readFileSync(`${ROOT}/src/core/tiles/tiles/transactions-contracts/TransactionsContractsPage.tsx`, "utf8");
   const m4 = readFileSync(`${ROOT}/src/core/tiles/tiles/experts/ExpertsPage.tsx`, "utf8");
 
-  test("۵-۱ بخش فوق پیشرفته «اولین بخش» هر کاشی است (پیش از نوار لینک)", () => {
+  test("۵-۱ بخش فوق پیشرفته «اولین بخش» هر کاشی است", () => {
     const first = chrome.indexOf("SuperListUpdate");
-    const link = chrome.indexOf("<TileLinkBar");
     expect(first).toBeGreaterThan(-1);
-    expect(link).toBeGreaterThan(first);
     expect(chrome).toContain("listId={listId}");
+    // DIR-DESC-CLEANUP-001/ثانیاً — نوار «دسترسی سریع» M1-M5 به دستور مالک حذف شد
+    expect(chrome).not.toContain("TileLinkBar");
+    expect(chrome).not.toContain('data-testid="tile-link-bar"');
   });
 
   test("۵-۲ نوار قدیمی چهار-فهرست حذف شد (ادغام — نه تکثیر)", () => {

@@ -551,9 +551,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground leading-5">
-            هنگام ثبت هر آگهی در سامانه ARM از این کاشی، این حالت به‌طور خودکار فعال می‌شود (همانند کاشی تغییرات): بروزرسانی چهار فهرست (آگهی/درخواست/معاملات/مشاوران) متوقف می‌شود و تمام ظرفیت رلهٔ ترموکس به ثبت اختصاص می‌یابد — آیتم‌های ثبت با اولویت سقف (۱۰) مقدم بر OTP و سینک اجرا می‌شوند. انقضای خودکار: ۳۰ دقیقه.
-          </p>
+          {/* DIR-DESC-CLEANUP-001/اولاً — توضیحات متنی بخش به دستور مالک حذف شد (کارکرد پابرجا) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             <div className="rounded-lg border border-border bg-background/60 p-2 flex items-center gap-1.5">
               <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
