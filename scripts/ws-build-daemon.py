@@ -102,7 +102,11 @@ def run():
     # DIR-STATIC-500-001: پرچم BUILD_RUNNING — کیپر و سایر نگهبانان حین بیلد
     # رسمی پروب/ترمیم را متوقف می‌کنند (پنجرهٔ جابه‌جایی طبیعی است، نه حادثه)
     os.makedirs(os.path.dirname(BUILD_FLAG), exist_ok=True)
-    open(BUILD_FLAG, "w").write(str(os.getpid()))
+    # DIR-STATIC-500-002: محتوای پرچم = timestamp (نه PID) — هم‌پروتکل با
+    # build-with-parking.sh (خط ۱۱۵: age = now - محتوا) و کیپر (mtime).
+    # با PID، قفل درون‌بیلد همیشه «stale» تشخیص داده می‌شد → بیلدهای موازی
+    # (همان مسابقهٔ ۱۵:۲۷ که دو بیلد پشت‌سرهم ساخت).
+    open(BUILD_FLAG, "w").write(str(int(time.time())))
     try:
         return _run_inner(t0)
     finally:
