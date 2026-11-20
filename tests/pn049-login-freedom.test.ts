@@ -136,9 +136,14 @@ describe("PN-049 · D) قانون حساب کاربری — کاربر فقط ر
     const listRoute = readFileSync("src/app/api/crm/arm-catalog/listings/route.ts", "utf8");
     const exportRoute = readFileSync("src/app/api/crm/export/[entity]/route.ts", "utf8");
     const clubRoute = readFileSync("src/app/api/crm/customer-club/route.ts", "utf8");
-    for (const src of [reqRoute, listRoute, exportRoute, clubRoute]) {
+    // DIR-EXCEL-FIX-001: روت خروجی دو مسیر احراز دارد (بلیت امضاشده + Bearer) و
+    // نشست را در متغیر `session` یکسان می‌گیرد — دامنه از همان نشست حل می‌شود.
+    for (const src of [reqRoute, listRoute, clubRoute]) {
       expect(src).toContain("catalogUserScope(guard)");
-      // الگوی سیم‌کشی: inline (list/club) یا متغیر پیش‌محاسبه (export)
+    }
+    expect(exportRoute).toContain("catalogUserScope(session)");
+    // الگوی سیم‌کشی: inline (list/club) یا متغیر پیش‌محاسبه (export)
+    for (const src of [reqRoute, listRoute, clubRoute, exportRoute]) {
       const wired =
         src.includes('registrarNameNorm: catalogScope.kind === "OWN" ? catalogScope.nameNorm : undefined') ||
         src.includes('registrarNameNorm: clubScope.kind === "OWN" ? clubScope.nameNorm : undefined') ||

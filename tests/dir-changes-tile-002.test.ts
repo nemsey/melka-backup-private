@@ -139,6 +139,20 @@ describe("DIR-CHANGES-TILE-002 · ۳) پاکسازی کامل — هیچ اثر�
   const R_CODE = "99002";
 
   beforeAll(async () => {
+    // دفاع ایزوله‌سازی: اگر اجرای قبلی (مثلاً کشته‌شده در میانه) آثار هم‌شناسه
+    // گذاشته باشد، پیش از ساخت پاک می‌شوند — beforeAll ایدمپوتنت (P2002 هرگز)
+    await db.propertyRecord.deleteMany({ where: { propertyCode: L_CODE } }).catch(() => undefined);
+    await db.listingRecord.deleteMany({ where: { armPropertyId: L_ARM } }).catch(() => undefined);
+    await db.requestRecord.deleteMany({ where: { requestCode: R_CODE } }).catch(() => undefined);
+    await db.requestEventRecord.deleteMany({ where: { OR: [{ propertyCode: L_CODE }, { armPropertyId: L_ARM }] } }).catch(() => undefined);
+    await db.visitRecord.deleteMany({ where: { propertyCode: L_CODE } }).catch(() => undefined);
+    await db.specialPropertyRecord.deleteMany({ where: { propertyCode: L_CODE } }).catch(() => undefined);
+    await db.transactionRecord.deleteMany({ where: { propertyCode: { in: [L_CODE, "99003"] } } }).catch(() => undefined);
+    await db.contractRecord.deleteMany({ where: { OR: [{ propertyCode: L_CODE }, { requestCode: R_CODE }] } }).catch(() => undefined);
+    await db.matchRejectionRecord.deleteMany({ where: { OR: [{ listingCode: L_CODE }, { requestCode: R_CODE }] } }).catch(() => undefined);
+    await db.opportunityAlert.deleteMany({ where: { OR: [{ listingCode: L_CODE }, { requestCode: R_CODE }] } }).catch(() => undefined);
+    await db.graphNode.deleteMany({ where: { refId: { in: [L_CODE, R_CODE] } } }).catch(() => undefined);
+    await db.graphEdge.deleteMany({ where: { OR: [{ fromRef: L_CODE }, { toRef: L_CODE }, { fromRef: R_CODE }, { toRef: R_CODE }] } }).catch(() => undefined);
     // ساخت آثار محلی یک کدآگهی و یک کددرخواست در همهٔ جدول‌های نقشه (رکوردهای مجزا برای هر طرف)
     await db.propertyRecord.create({ data: { id: "p1", propertyCode: L_CODE, title: "آگهی آزمون", ownerName: "کارشناس آزمون" } });
     await db.listingRecord.create({ data: { id: "l1", armPropertyId: L_ARM, actorCode: "x" } });

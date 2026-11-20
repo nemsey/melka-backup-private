@@ -54,21 +54,10 @@ import {
 
 /* ═══════════════════ گزارش گام‌به‌گام (عین ۰۹۹) ═══════════════════ */
 
-export interface ChangesStep {
-  key: string;
-  title: string;
-  status: "pending" | "done" | "failed" | "skipped";
-  detail: string;
-}
-
-export interface ChangesReport {
-  ok: boolean;
-  operation: string;
-  steps: ChangesStep[];
-  durationMs: number;
-  result?: Record<string, unknown>;
-  error?: string;
-}
+// DIR-FF-TILE-003 — انواع مشترک در ./types تفکیک شدند (گارد P1-03):
+// UI فقط از "./types" type-import می‌کند؛ اینجا برای سازگاری روت‌ها re-export می‌شوند.
+export type { ChangesStep, ChangesReport } from "./types";
+import type { ChangesStep, ChangesReport } from "./types";
 
 /* ═══════════════════ توکن مالک + گارد اجرا (عین ۰۹۹) ═══════════════════ */
 

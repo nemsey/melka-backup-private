@@ -15,7 +15,7 @@
  * می‌شوند (الگوی request-agent.intelligent.test.ts؛ mock پیش از import زنجیره).
  */
 
-import { describe, expect, test, mock } from "bun:test";
+import { describe, expect, test, mock, afterAll } from "bun:test";
 import { MelkApiError } from "../src/lib/melk-api/types"; // ماژول خالص — پیش از mock ها بی‌خطر است
 
 // ---------- نمونهٔ JWT واقعی حادثه (exp=1794238476 → ۱۴۰۵/۰۸/۱۸ ۱۹:۰۴ تهران) ----------
@@ -34,39 +34,65 @@ const { armTokenExpiresAtMs, isArmTokenLikelyValid, ARM_RELOGIN_MESSAGE } = awai
 );
 
 // ---------- خنثی‌سازی provider و نشست (پیش از بارگذاری زنجیرهٔ وابسته) ----------
+// درس تمام‌مجموعه (DIR-FF-TILE-003): mock.module در Bun ماندگار است و در اجرای
+// یکپارچهٔ «bun test tests/» فایل‌های بعدی هم همین ماژول را می‌گیرند — پس mock
+// «ثبت‌کننده + واگذارنده» است: رفتار واقعی حفظ می‌شود و فقط فراخوانی‌ها ثبت
+// می‌شوند (صفر نشت رفتار به فایل‌های بعدی مانند phase65-arm-connection).
+// نکتهٔ Bun: مرجع تابع واقعی باید «پیش از mock» در متغیر گرفته شود — پس از
+// mock، namespace import زنده به نسخهٔ mock شده بازسیمی می‌شود (بازگشت نامحدود!).
 const refreshCalls: string[] = [];
 let refreshBehavior: "ok" | "dead" | "relay" = "ok";
-const realProvider = await import("@/lib/melk-api/provider");
+// Snapshot صادرات واقعی پیش از mock (object ساده — بازسیمی زندهٔ namespace بی‌اثر است)
+const realProviderExports = { ...(await import("@/lib/melk-api/provider")) };
+const realGetMelkProvider = realProviderExports.getMelkProvider;
 mock.module("@/lib/melk-api/provider", () => ({
-  ...realProvider,
-  getMelkProvider: () => ({
-    refreshArmToken: async (rt: string) => {
-      refreshCalls.push(rt);
-      if (refreshBehavior === "dead") {
-        const err = new Error("400") as Error & { code?: string };
-        err.code = "UNAUTHORIZED";
-        throw err;
-      }
-      if (refreshBehavior === "relay") {
-        const e = new Error("رلهٔ موبایل (Poco F3) متصل نیست — اسکریپت رله روی گوشی اجرا نیست.");
-        e.name = "RelayOfflineError";
-        throw e;
-      }
-      return {
-        accessToken: "NEW_ACCESS",
-        refreshToken: "NEW_REFRESH",
-        userType: "realtor",
-      };
-    },
-  }),
+  ...realProviderExports,
+  getMelkProvider: () =>
+    new Proxy(realGetMelkProvider(), {
+      get(target, prop, _receiver) {
+        if (prop === "refreshArmToken") {
+          return async (rt: string) => {
+            refreshCalls.push(rt);
+            if (refreshBehavior === "dead") {
+              const err = new Error("400") as Error & { code?: string };
+              err.code = "UNAUTHORIZED";
+              throw err;
+            }
+            if (refreshBehavior === "relay") {
+              const e = new Error("رلهٔ موبایل (Poco F3) متصل نیست — اسکریپت رله روی گوشی اجرا نیست.");
+              e.name = "RelayOfflineError";
+              throw e;
+            }
+            return {
+              accessToken: "NEW_ACCESS",
+              refreshToken: "NEW_REFRESH",
+              userType: "realtor",
+            };
+          };
+        }
+        const v = Reflect.get(target, prop, target);
+        return typeof v === "function" ? (v as (...a: unknown[]) => unknown).bind(target) : v;
+      },
+    }),
 }));
 
-const realSession = await import("@/lib/auth/session");
+// Snapshot صادرات واقعی پیش از mock — سایر صادرات (createSession/validateSession/…)
+// دست‌نخورده می‌مانند تا فایل‌های بعدی (در صورت ماندگاری mock) هیچ چیزی از دست ندهند
+const realSessionExports = { ...(await import("@/lib/auth/session")) };
+const realUpdateSessionArmTokens = realSessionExports.updateSessionArmTokens;
 const sessionUpdates: unknown[] = [];
 mock.module("@/lib/auth/session", () => ({
-  ...realSession,
+  ...realSessionExports,
   updateSessionArmTokens: async (sessionId: string, armTokens: unknown, vault?: unknown) => {
     sessionUpdates.push({ sessionId, armTokens, vault });
+    // واگذاری بهترین-تلاش به پیاده‌سازی واقعی: نشست‌های واقعی فایل‌های بعدی
+    // (مثل phase65-arm-connection) واقعی متصل می‌شوند؛ نشست ساختگیِ همین فایل
+    // (sess-test-1) در DB نیست و خطایش بی‌صدا بی‌اهمیت است (رفتار پیشین mock).
+    try {
+      return await realUpdateSessionArmTokens(sessionId, armTokens as never, vault as never);
+    } catch {
+      /* نشست ساختگی — همان no-op دوران mock قدیمی */
+    }
   },
 }));
 

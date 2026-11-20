@@ -7,7 +7,7 @@
  */
 
 import { CheckCircle2, XCircle, MinusCircle, Clock } from "lucide-react";
-import type { ChangesStep, ChangesReport } from "@/lib/changes/executor";
+import type { ChangesStep, ChangesReport } from "@/lib/changes/types";
 import { Badge } from "@/components/ui/badge";
 
 const STATUS_META: Record<ChangesStep["status"], { icon: typeof CheckCircle2; className: string; label: string }> = {

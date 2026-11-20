@@ -1,8 +1,8 @@
 {
   "schema": "melka-pn012-api-versioning",
-  "generatedAt": "2026-11-11T23:30:00+00:00",
+  "generatedAt": "2026-11-20T06:52:27.602Z",
   "policy": "v1 = مسیر نسخه‌دار (re-export سبک) · مسیر قدیمی = alias زنده · صفر تغییر رفتار",
-  "totalRoutes": 114,
+  "totalRoutes": 119,
   "created": 0,
   "routes": [
     {
@@ -178,6 +178,22 @@
       "v1": "/api/v1/auth/verify-otp"
     },
     {
+      "aliasOf": "/api/changes",
+      "v1": "/api/v1/changes"
+    },
+    {
+      "aliasOf": "/api/changes/listing",
+      "v1": "/api/v1/changes/listing"
+    },
+    {
+      "aliasOf": "/api/changes/request",
+      "v1": "/api/v1/changes/request"
+    },
+    {
+      "aliasOf": "/api/changes/session",
+      "v1": "/api/v1/changes/session"
+    },
+    {
       "aliasOf": "/api/connection/reset",
       "v1": "/api/v1/connection/reset"
     },
@@ -216,6 +232,10 @@
     {
       "aliasOf": "/api/crm/export/[entity]",
       "v1": "/api/v1/crm/export/[entity]"
+    },
+    {
+      "aliasOf": "/api/crm/export/ticket",
+      "v1": "/api/v1/crm/export/ticket"
     },
     {
       "aliasOf": "/api/crm/finance",

@@ -15,7 +15,6 @@ import { NextRequest } from "next/server";
 import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
 import { ensureChangesSessionForOperation } from "@/lib/changes/session";
-import { db } from "@/lib/db";
 import {
   lookupListingForChange,
   changeListingOwnerInfo,
@@ -51,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── نوشتاری: اطمینان از حالت تمام‌ظرفیت (گام سوم — خودکار) ──
-    const session = await ensureChangesSessionForOperation(db, actor, `کدآگهی: ${action}`);
+    const session = await ensureChangesSessionForOperation(actor, `کدآگهی: ${action}`);
 
     if (action === "change-owner") {
       const spec = body.spec as ListingOwnerChangeSpec | undefined;

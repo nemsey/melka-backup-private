@@ -10,8 +10,7 @@
 import { NextRequest } from "next/server";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
-import { db } from "@/lib/db";
-import { changesSessionView } from "@/lib/changes/session";
+import { changesSessionView, changesPriorityQueueSnapshot } from "@/lib/changes/session";
 import {
   ARM_PATHS,
   CAPABILITIES,
@@ -54,17 +53,8 @@ export async function GET(request: NextRequest) {
   }
 
   // شمارندهٔ آیتم‌های صف با اولویت کاشی (۱۰) — شاهد اختصاص ظرفیت
-  let priorityQueue: { changes: number; interactive: number; bulk: number } | null = null;
-  try {
-    const [changes, interactive, bulk] = await Promise.all([
-      db.relayQueue.count({ where: { status: "pending", priority: 10 } }),
-      db.relayQueue.count({ where: { status: "pending", priority: 5 } }),
-      db.relayQueue.count({ where: { status: "pending", priority: { lt: 5 } } }),
-    ]);
-    priorityQueue = { changes, interactive, bulk };
-  } catch {
-    /* شمارش بهترین-تلاش */
-  }
+  // DIR-FF-TILE-003 — خلوص روت‌ها (P2-03): شمارش در لایهٔ lib انجام می‌شود
+  const priorityQueue = await changesPriorityQueueSnapshot();
 
   return Response.json({
     ok: true,

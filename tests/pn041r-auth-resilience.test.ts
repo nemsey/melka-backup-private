@@ -96,9 +96,11 @@ describe("PN-041-R · C) فیوز — مستثنی‌سازی رله", () => {
 });
 
 describe("PN-041-R · D) اسکریپت رلهٔ نسل L", () => {
-  test("D-1 نسل L در سربرگ", () => {
+  test("D-1 نسل جاری (O) در سربرگ — کدنصب DIR-CHANGES-TILE-001", () => {
     const src = read("src/lib/melk-api/relay-script.ts");
-    expect(src).toContain("نسل N = DIR-RELAY-UNLIMITED-001");
+    // نسل جاری = O (حالت تمام‌ظرفیت کاشی تغییرات)؛ قابلیت‌های نسل N پابرجاست
+    expect(src).toContain("نسل O · DIR-CHANGES-TILE-001");
+    expect(src).toContain("نسل N: بی‌توقف");
   });
 
   test("D-2 wait:100 در بدنهٔ poll", () => {

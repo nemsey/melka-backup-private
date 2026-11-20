@@ -257,9 +257,13 @@ describe("PN-021 · ورود کارشناس پنهان", () => {
   test("resolveAllowedTiles: مجوزهای کارشناس پنهان عادی کار می‌کند", async () => {
     const { resolveAllowedTiles } = await import("@/lib/access/personnel-access");
     const r = await resolveAllowedTiles("CONSULTANT", "960140");
-    expect(r.level).toBe("limited");
+    // DIR-FF-TILE-003: ماتریس پیش‌فرض EXPERT = هر ۶ کاشی قابل‌مدیریت
+    // (فایل‌یابی بازسازی شد؛ مغز ملکا در تنظیمات ادغام شد) → سطح full —
+    // عین قرارداد PN-016 (تست «full با بازگشت فایل‌یابی»)
+    expect(r.level).toBe("full");
     expect(r.tiles).toContain("arm-listings");
     expect(r.tiles).toContain("smart-matching");
+    expect(r.tiles).toContain("file-finder");
   });
 });
 

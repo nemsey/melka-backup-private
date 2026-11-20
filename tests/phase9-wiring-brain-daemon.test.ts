@@ -301,12 +301,12 @@ describe("PHASE 9 §۱۰ — شفافیت مغز هوشمند", () => {
     expect(res.status).toBe(401);
   });
 
-  test("۱۰-۳) کارت «مغز هوشمند و یادگیر ملکا» در تنظیمات عمومی نصب است", async () => {
+  test("۱۰-۳) کارت «مغز ملکا» در تنظیمات عمومی نصب است (ادغام DIR-FF-TILE-003/ثانیاً — کاشی مستقل حذف شد)", async () => {
     await import("@/core/tiles/bootstrap");
     const source = readFileSync("src/core/tiles/tiles/settings/SettingsPage.tsx", "utf8");
     expect(source).toContain("BrainStatusSection");
     const card = readFileSync("src/core/tiles/tiles/settings/BrainStatusSection.tsx", "utf8");
-    expect(card).toContain("مغز هوشمند و یادگیر ملکا");
+    expect(card).toContain("مغز ملکا");
     expect(card).toContain("/api/intelligence/status");
   });
 
@@ -330,19 +330,19 @@ describe("PHASE 9 §۱۱ → PN-038 — هوم یک‌پارچه (گارد جه�
     await import("@/core/tiles/bootstrap");
   });
 
-  test("۱۱-۱ → PN-086/گام ۱: هوم = هفت کاشی ریشه به ترتیب الزامی مالک (M1-M4 ریشه شدند)", async () => {
+  test("۱۱-۱ → PN-086 → DIR-FF-TILE-003: هوم = هشت کاشی ریشه به ترتیب الزامی مالک (فایل‌یابی اول · مغز ملکا در تنظیمات ادغام شد)", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     expect(tileRegistry.listRoot("OWNER").map((t) => t.title)).toEqual([
-      "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "مغز ملکا", "تنظیمات",
-    ]); // PN-086 (دستور مالک ۱۴۰۵/۰۸/۲۵): فایل‌یابی و ظرف داشبورد ملک تبریز حذف شدند
+      "فایل یابی", "آگهی", "درخواست", "معاملات", "کارشناسان", "تطبیق", "تغییرات", "تنظیمات",
+    ]); // DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰): فایل‌یابی بازسازی و اول شد؛ مغز ملکا در تنظیمات ادغام و کاشی‌اش حذف شد
   });
 
-  test("۱۱-۲ → PN-086: ظرف tenant-dashboards منحل؛ M1-M4 ریشهٔ هوم با ترتیب ۱ تا ۷", async () => {
+  test("۱۱-۲ → PN-086 → DIR-FF-TILE-003: ظرف tenant-dashboards منحل؛ هشت ریشهٔ هوم با ترتیب ۱ تا ۸", async () => {
     const { tileRegistry } = await import("@/core/tiles/tile-registry");
     expect(tileRegistry.get("management-dashboard")).toBeUndefined();
     expect(tileRegistry.listChildren("tenant-dashboards", "OWNER")).toEqual([]); // PN-086: ظرف منحل
     const roots = tileRegistry.listRoot("OWNER");
-    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7]); // PN-086: هفت ریشه
+    expect(roots.map((t) => t.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]); // DIR-FF-TILE-003: هشت ریشه
   });
 
   test("۱۱-۳ → PN-03۸/۲.۲: ماژول صفحهٔ داشبورد مدیریتی فیزیکی حذف شد (داده DB مقدس)", () => {

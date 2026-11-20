@@ -1,37 +1,37 @@
 {
-  "version": "cal-v1-20261003",
+  "version": "cal-v2-20261120",
   "modelId": "arm-listing-v0",
-  "builtAt": "2026-10-06T06:33:51.172Z",
-  "fitSampleSize": 386,
+  "builtAt": "2026-11-20T06:37:15.997Z",
+  "fitSampleSize": 2728,
   "smoothing": 1,
   "segments": [
     {
       "lo": 0.2,
       "hi": 0.4,
       "from": 0.395,
-      "to": 0.2652,
-      "fitN": 262,
-      "fitPositives": 69
+      "to": 0.3342,
+      "fitN": 1578,
+      "fitPositives": 527
     },
     {
       "lo": 0.4,
       "hi": 0.6,
-      "from": 0.4957,
-      "to": 0.9921,
-      "fitN": 124,
-      "fitPositives": 124
+      "from": 0.4876,
+      "to": 0.7274,
+      "fitN": 1150,
+      "fitPositives": 837
     }
   ],
   "approval": {
-    "source": "شورای عالی ملکا — جلسه راهبردی ۰۳۳ (ملکا-شورا-۱۴۰۵-۰۳۳)",
-    "decision": "تصمیم ۱ — تأیید recalibrate با قید نظارتی (holdout طبقه‌ای + ۱۵ پیامد تازه)",
+    "source": "شورای عالی ملکا — جلسهٔ راهبردی ۰۳۳ (ملکا-شورا-۱۴۰۵-۰۳۳) · تصمیم ۱",
+    "decision": "اجرای recalibrate مصوب (نگاشت قطعه‌ای + لاپلاس + قید نظارتی holdout) — نوسازی cal-v2 بر پیامدهای واقعی تازه چون نگاشت cal-v1-20261003 (۳۸۶ جفت) کهنه شده بود و جهتش معکوس گشته بود",
     "approvedAt": "2026-10-03T00:00:00.000Z"
   },
   "verification": {
-    "holdoutSize": 386,
-    "freshOutcomesInRegion": 132,
-    "brierBefore": 0.2259,
-    "brierAfter": 0.1205,
+    "holdoutSize": 2728,
+    "freshOutcomesInRegion": 1131,
+    "brierBefore": 0.2373,
+    "brierAfter": 0.2078,
     "improved": true
   }
 }

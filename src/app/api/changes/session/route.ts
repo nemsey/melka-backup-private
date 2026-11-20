@@ -13,7 +13,6 @@
 import { NextRequest } from "next/server";
 import { errorResponse, requireRole } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
-import { db } from "@/lib/db";
 import { beginChangesSession, endChangesSession, changesSessionView } from "@/lib/changes/session";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +32,7 @@ export async function POST(request: NextRequest) {
   const actor = { code: guard.personnelCode, name: guard.displayName ?? "" };
 
   if (body.action === "begin") {
-    const res = await beginChangesSession(db, actor, body.note ?? "");
+    const res = await beginChangesSession(actor, body.note ?? "");
     return Response.json({
       ok: res.ok,
       alreadyActive: res.alreadyActive,
@@ -45,7 +44,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.action === "end") {
-    const res = await endChangesSession(db, actor);
+    const res = await endChangesSession(actor);
     return Response.json({
       ok: res.ok,
       wasActive: res.wasActive,

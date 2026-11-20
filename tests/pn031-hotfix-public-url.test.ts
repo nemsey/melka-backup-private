@@ -21,7 +21,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const REPO = join(import.meta.dir, "..");
-const PUBLIC_URL = "https://preview-chat-b027b5c8-a3c8-4e83-a098-abe6db918ec4.space-z.ai";
+// نشانی عمومی جاری — از env.platform.json خوانده می‌شود (پویا؛ هر چرخهٔ سندباکس
+// نشانی پیش‌نمایش تازه می‌گیرد — قید سخت: فقط دامنهٔ عمومی پیش‌نمایش پذیرفته است)
+const PUBLIC_URL =
+  (JSON.parse(readFileSync(join(REPO, "env.platform.json"), "utf8")) as Record<string, string>)
+    .MELK_PUBLIC_BASE_URL ?? "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai";
 
 const saved: Record<string, string | undefined> = {};
 function setEnv(key: string, value: string | undefined) {
@@ -137,7 +141,9 @@ describe("PN-031-HOTFIX · B) رگرسیون — روت‌ها از نقطهٔ �
 describe("PN-031-HOTFIX · C) ثبت env و بقای سه‌لایه", () => {
   test("C-1) env.platform.json کلید MELK_PUBLIC_BASE_URL را با URL عمومی دارد", () => {
     const raw = JSON.parse(readFileSync(join(REPO, "env.platform.json"), "utf8")) as Record<string, string>;
-    expect(raw.MELK_PUBLIC_BASE_URL).toBe(PUBLIC_URL);
+    // قید ساختاری (پویا در برابر چرخه‌های سندباکس): https + دامنهٔ عمومی پیش‌نمایش —
+    // هرگز نشانی داخلی (0.0.0.0/localhost) — درس اصلی جلسهٔ ۰۳۸
+    expect(raw.MELK_PUBLIC_BASE_URL).toMatch(/^https:\/\/preview-chat-[0-9a-f-]+\.space-z\.ai$/);
   });
 
   test("C-2) کلید در WATCHED_KEYS تست platform-env ثبت شده (درس نشت env)", () => {
@@ -166,7 +172,8 @@ describe("PN-031-HOTFIX · D) سازگاری دستور نصب و اسکریپت
     // PN-034 (ن۰۵۵): openssl-tool — مسیر اثبات‌شدهٔ مالک (PN-031-I/J)
     expect(cmd).toContain("--http1.1");
     expect(cmd).toContain('-A "Mozilla/5.0');
-    expect(cmd).toMatch(/^pkg install -y curl openssl-tool jq && curl --http1\.1 -A "Mozilla\/\d\.\d .+" -fsSL "/);
+    // DIR-CHANGES-TILE-001 (نسل O): بنر نصب + پوشش `if pkg install …; then` با سه تلاش
+    expect(cmd).toMatch(/^# ── نصب رلهٔ ملکا[^\n]*\nif pkg install -y curl openssl-tool jq; then/);
   });
 
   test("D-2) اسکریپت رله SERVER_URL عمومی می‌گیرد و مسیر poll عمومی است", async () => {

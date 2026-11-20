@@ -37,7 +37,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // تضمین: حتی اگر تستی شکست خورد، نشست باقی نماند (پاک‌سازی فایل مستقیم)
-  S.endChangesSession(db, ACTOR).catch(() => undefined);
+  await S.endChangesSession(ACTOR).catch(() => undefined);
   await db.auditLog.deleteMany({ where: { action: { startsWith: "CHANGES_SESSION" } } }).catch(() => undefined);
   await db.$disconnect();
   rmSync(RUNTIME_DIR, { recursive: true, force: true });
@@ -122,7 +122,7 @@ describe("DIR-CHANGES-TILE-001 · ۳) نشست تمام‌ظرفیت — چرخ�
   });
 
   test("۳-۲ begin → فعال + فایل نشست + شمارنده‌های صف + ممیزی", async () => {
-    const res = await S.beginChangesSession(db, ACTOR, "آزمون ۳-۲");
+    const res = await S.beginChangesSession(ACTOR, "آزمون ۳-۲");
     expect(res.ok).toBe(true);
     expect(res.alreadyActive).toBe(false);
     expect(res.session.actorName).toBe(V.OWNER_IDENTITY.fullName);
@@ -136,7 +136,7 @@ describe("DIR-CHANGES-TILE-001 · ۳) نشست تمام‌ظرفیت — چرخ�
   });
 
   test("۳-۳ begin تکراری → idempotent (همان نشست)", async () => {
-    const res = await S.beginChangesSession(db, ACTOR, "دوباره");
+    const res = await S.beginChangesSession(ACTOR, "دوباره");
     expect(res.alreadyActive).toBe(true);
   });
 
@@ -150,7 +150,7 @@ describe("DIR-CHANGES-TILE-001 · ۳) نشست تمام‌ظرفیت — چرخ�
   });
 
   test("۳-۵ end → غیرفعال + ممیزی پایان + شمارندهٔ بعد", async () => {
-    const res = await S.endChangesSession(db, ACTOR);
+    const res = await S.endChangesSession(ACTOR);
     expect(res.ok).toBe(true);
     expect(res.wasActive).toBe(true);
     expect(res.after).not.toBeNull();
@@ -161,17 +161,17 @@ describe("DIR-CHANGES-TILE-001 · ۳) نشست تمام‌ظرفیت — چرخ�
   });
 
   test("۳-۶ end بدون نشست → wasActive=false (بی‌خطر)", async () => {
-    const res = await S.endChangesSession(db, ACTOR);
+    const res = await S.endChangesSession(ACTOR);
     expect(res.wasActive).toBe(false);
   });
 
   test("۳-۷ ensureChangesSessionForOperation — خودکار برای هر عملیات نوشتاری", async () => {
     const before = S.isChangesSessionActive();
     expect(before).toBe(false);
-    const res = await S.ensureChangesSessionForOperation(db, ACTOR, "آزمون ۳-۷");
+    const res = await S.ensureChangesSessionForOperation(ACTOR, "آزمون ۳-۷");
     expect(res.active).toBe(true);
     expect(res.autoStarted).toBe(true);
-    await S.endChangesSession(db, ACTOR);
+    await S.endChangesSession(ACTOR);
   });
 });
 
@@ -179,10 +179,10 @@ describe("DIR-CHANGES-TILE-001 · ۳) نشست تمام‌ظرفیت — چرخ�
 
 describe("DIR-CHANGES-TILE-001 · ۴) گیت توقف بروزرسانی فهرست‌ها هنگام نشست فعال", () => {
   beforeAll(async () => {
-    await S.beginChangesSession(db, ACTOR, "آزمون گیت‌ها");
+    await S.beginChangesSession(ACTOR, "آزمون گیت‌ها");
   });
   afterAll(async () => {
-    await S.endChangesSession(db, ACTOR);
+    await S.endChangesSession(ACTOR);
   });
 
   test("۴-۱ runLcppCycle → null بی‌صدا (پیش از هر تماس شبکه — سریع)", async () => {
@@ -209,7 +209,7 @@ describe("DIR-CHANGES-TILE-001 · ۴) گیت توقف بروزرسانی فهر�
   });
 
   test("۴-۴ پس از پایان نشست، مسیر عادی برمی‌گردد (no-token — نه changes-session)", async () => {
-    await S.endChangesSession(db, ACTOR);
+    await S.endChangesSession(ACTOR);
     const { runExpertsListUpdate } = await import("@/lib/melk-api/four-lists");
     const out = await runExpertsListUpdate(db, { pmToken: null, source: "manual" });
     expect(out.reason).toBe("no-token");
@@ -238,7 +238,7 @@ describe("DIR-CHANGES-TILE-001 · ۵) اولویت رله — کاشی مقدم 
   });
 
   test("۵-۲ در حالت تمام‌ظرفیت: تغییرات ۱۰ (سقف)؛ انبوه همان پایین", async () => {
-    await S.beginChangesSession(db, ACTOR, "آزمون اولویت");
+    await S.beginChangesSession(ACTOR, "آزمون اولویت");
     try {
       for (const p of CHANGES_PATHS) {
         expect(relayPriorityForUrl(ARM(p))).toBe(RELAY_PRIORITY_CHANGES);
@@ -250,7 +250,7 @@ describe("DIR-CHANGES-TILE-001 · ۵) اولویت رله — کاشی مقدم 
       expect(relayPriorityForUrl(ARM("requests/list"))).toBe(1);
       expect(relayPriorityForUrl(ARM("properties/details/x"))).toBe(0);
     } finally {
-      await S.endChangesSession(db, ACTOR);
+      await S.endChangesSession(ACTOR);
     }
   });
 

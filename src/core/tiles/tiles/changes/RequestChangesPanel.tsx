@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { toLatinDigits } from "@/lib/listing/types";
 import { jalaliHourToIsoUtc, isoToJalaliHour, isoToTehranHour, CASCADE_RULES } from "@/lib/changes/variables";
 import { StepReport } from "./StepReport";
-import type { ChangesReport } from "@/lib/changes/executor";
+import type { ChangesReport } from "@/lib/changes/types";
 
 interface LookupResult {
   ok: boolean;

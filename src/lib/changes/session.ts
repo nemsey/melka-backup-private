@@ -24,6 +24,7 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db"; // DIR-FF-TILE-003 — خلوص روت‌ها (P2-03): اتصال در لایهٔ lib، نه در روت
 import { CHANGES_SESSION_FILE, CHANGES_SESSION_MAX_MS, OWNER_IDENTITY, type ChangesSessionFile } from "./variables";
 
 /** دایرکتوری اجرایی — عین kernel.ts/four-lists.ts (پرچم‌های force) */
@@ -78,17 +79,20 @@ async function queueCounts(db: PrismaClient): Promise<{ pending: number; dispatc
  * شروع حالت تمام‌ظرفیت — ONLY مالک.
  * فایل نشست می‌نویسد؛ چرخه‌های بعدی فهرست‌ها خودکار متوقف می‌شوند و
  * رله فقط آیتم‌های تعاملی/کاشی جلا می‌کند.
+ *
+ * DIR-FF-TILE-003 — امضای بدون-db (عین الگوی lib/request/store): اتصال db
+ * داخل لایهٔ lib برقرار می‌شود تا روت‌ها هرگز @/lib/db را import نکنند (P2-03).
  */
 export async function beginChangesSession(
-  db: PrismaClient,
   actor: { code: string; name: string },
   note = "",
+  dbClient: PrismaClient = db,
 ): Promise<{ ok: boolean; alreadyActive: boolean; session: ChangesSessionFile }> {
   const existing = readChangesSession();
   if (existing) {
     return { ok: true, alreadyActive: true, session: existing };
   }
-  const counts = await queueCounts(db);
+  const counts = await queueCounts(dbClient);
   const now = new Date();
   const session: ChangesSessionFile = {
     version: 1,
@@ -102,7 +106,7 @@ export async function beginChangesSession(
   mkdirSync(runtimeDir(), { recursive: true });
   writeFileSync(sessionPath(), JSON.stringify(session, null, 1), "utf8");
   // شاهد ممیزی — بهترین‌تلاش
-  await db.auditLog
+  await dbClient.auditLog
     .create({
       data: {
         action: "CHANGES_SESSION_BEGIN",
@@ -116,8 +120,8 @@ export async function beginChangesSession(
 
 /** پایان حالت تمام‌ظرفیت و بازگشت چرخه‌های عادی — ONLY مالک */
 export async function endChangesSession(
-  db: PrismaClient,
   actor?: { code: string; name: string },
+  dbClient: PrismaClient = db,
 ): Promise<{ ok: boolean; wasActive: boolean; after: { pending: number; dispatched: number } | null }> {
   const existing = readChangesSession();
   if (!existing) {
@@ -128,8 +132,8 @@ export async function endChangesSession(
   } catch {
     /* بهترین‌تلاش — انقضای خودکار به‌هرحال بسته است */
   }
-  const after = await queueCounts(db);
-  await db.auditLog
+  const after = await queueCounts(dbClient);
+  await dbClient.auditLog
     .create({
       data: {
         action: "CHANGES_SESSION_END",
@@ -149,12 +153,33 @@ export async function endChangesSession(
  * مالک دکمهٔ پایان را می‌زند یا انقضا می‌رسد.
  */
 export async function ensureChangesSessionForOperation(
-  db: PrismaClient,
   actor: { code: string; name: string },
   operation: string,
+  dbClient: PrismaClient = db,
 ): Promise<{ active: boolean; autoStarted: boolean }> {
   const existing = readChangesSession();
   if (existing) return { active: true, autoStarted: false };
-  await beginChangesSession(db, actor, `خودکار — ${operation}`);
+  await beginChangesSession(actor, `خودکار — ${operation}`, dbClient);
   return { active: true, autoStarted: true };
+}
+
+/**
+ * شمارندهٔ آیتم‌های صف با اولویت کاشی (۱۰) در برابر تعاملی (۵) و انبوه (<۵) —
+ * شاهد اختصاص ظرفیت (DIR-FF-TILE-003 · خلوص روت‌ها: اتصال db در همین لایه).
+ */
+export async function changesPriorityQueueSnapshot(): Promise<{
+  changes: number;
+  interactive: number;
+  bulk: number;
+} | null> {
+  try {
+    const [changes, interactive, bulk] = await Promise.all([
+      db.relayQueue.count({ where: { status: "pending", priority: 10 } }),
+      db.relayQueue.count({ where: { status: "pending", priority: 5 } }),
+      db.relayQueue.count({ where: { status: "pending", priority: { lt: 5 } } }),
+    ]);
+    return { changes, interactive, bulk };
+  } catch {
+    return null; /* شمارش بهترین-تلاش */
+  }
 }

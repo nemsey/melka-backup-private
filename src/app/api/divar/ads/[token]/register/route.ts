@@ -48,8 +48,8 @@ import { DIVAR_REAL_ESTATE_CATEGORIES } from "@/lib/divar/config";
 import { ARM_RELOGIN_MESSAGE } from "@/lib/auth/arm-token-exp";
 import { assessArmSession } from "@/lib/auth/arm-session-check";
 // DIR-FF-TILE-003 — حالت تمام‌ظرفیت ترموکس همانند کاشی تغییرات
+// (DIR-FF-TILE-003 · خلوص روت‌ها P2-03: اتصال db درون لایهٔ lib برقرار می‌شود)
 import { ensureChangesSessionForOperation } from "@/lib/changes/session";
-import { db } from "@/lib/db";
 
 function categoryFa(value: string): string {
   return DIVAR_REAL_ESTATE_CATEGORIES.find((c) => c.value === value)?.label ?? value;
@@ -241,7 +241,6 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ token:
   // پیش از اجرای ثبت: بروزرسانی فهرست‌ها متوقف و تمام ظرفیت رله با اولویت
   // سقف به این عملیات اختصاص می‌یابد (اگر نشست فعال نباشد، خودکار آغاز می‌شود)
   const fullCapacity = await ensureChangesSessionForOperation(
-    db,
     { code: guard.personnelCode, name: guard.displayName ?? "" },
     `ثبت آگهی فایل‌یابی (دیوار: ${ad.token.slice(0, 12)}…)`,
   );
