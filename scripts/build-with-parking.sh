@@ -19,6 +19,20 @@
 set -uo pipefail
 cd /home/z/my-project
 
+# ─── DIR-STATIC-500-001: گارد بیلد مخرب درجا (پیش از هر اقدام) ───
+# در توپولوژی فروشگاه، .next سیم‌لینک melka-store/next است و سرور زنده از
+# همان درخت سرو می‌کند؛ بیلد درجا از مسیر سیم‌لینک درخت را تخریب می‌کند
+# (حادثهٔ ۰۹:۴۷ ۲۰۲۶-۱۱-۲۰: همهٔ چانک‌ها ۵۰۰ → client-side exception).
+# مسیر رسمی: python3 scripts/ws-build-daemon.py (بیلد در WS + جابه‌جایی اتمیک).
+# REPO_ROOT از محل اسکریپت محاسبه می‌شود (نه رشتهٔ ثابت) تا وصلهٔ cd در
+# ws-build-daemon.py معنای گارد را در فضای کاری بیرونی تغییر ندهد.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ "$PWD" = "$REPO_ROOT" ] && [ -L "$PWD/.next" ] && [ "${MELKA_ALLOW_INPLACE_BUILD:-0}" != "1" ]; then
+  echo "[inplace-guard] بیلد درجا ممنوع: .next سیم‌لینک فروشگاه است و سرور زنده از آن سرو می‌کند."
+  echo "[inplace-guard] مسیر رسمی: python3 scripts/ws-build-daemon.py — فرار اضطراری مالک: MELKA_ALLOW_INPLACE_BUILD=1"
+  exit 1
+fi
+
 export PATH="$PWD/node_modules/.bin:$PATH"
 PARK=".build-parking"
 

@@ -174,11 +174,21 @@ fi
 [[ "$PERF_REDS" == PARTIAL-ONLY:* ]] && echo "  (پیک Build = PARTIAL مستند جلسهٔ ۰۰۶ — کف ابزار؛ هدف در فاز سخت‌افزار)"
 
 # ── ۷) Build ──
-pass "Build (production — با postbuild اثر انگشت)"
-bun run build > /tmp/pn007-ci-build.log 2>&1 || { echo "✗ گام ۷: build شکست"; tail -20 /tmp/pn007-ci-build.log; exit 1; }
-BUILD_TAIL=$(grep -E "✓ Compiled|Compiled successfully" /tmp/pn007-ci-build.log | head -1)
-echo "  $BUILD_TAIL"
-[[ -f .next/fingerprint.json ]] && echo "  .next/fingerprint.json نوشته شد ✓" || { echo "✗ گام ۷: postbuild اثر انگشت ننوشت"; exit 1; }
+if [ -L /home/z/my-project/.next ]; then
+  # DIR-STATIC-500-001: توپولوژی فروشگاه فعال است — بیلد درجا مخرب و ممنوع؛
+  # مسیر رسمی: بیلد در فضای کاری بیرونی + جابه‌جایی اتمیک (بدون ری‌استارت سرور)
+  pass "Build (production — مسیر رسمی فروشگاه؛ درجا ممنوع DIR-STATIC-500-001)"
+  python3 scripts/ws-build-daemon.py --foreground > /tmp/pn007-ci-build.log 2>&1 || { echo "✗ گام ۷: build رسمی شکست"; tail -20 /tmp/pn007-ci-build.log; exit 1; }
+  BUILD_TAIL=$(grep -E "Compiled successfully|SWAP DONE" /home/z/melka-store/ws-build.log | tail -1)
+  echo "  $BUILD_TAIL"
+  [[ -f /home/z/melka-store/next/fingerprint.json ]] && echo "  store/next/fingerprint.json نوشته شد ✓" || { echo "✗ گام ۷: postbuild اثر انگشت ننوشت"; exit 1; }
+else
+  pass "Build (production — با postbuild اثر انگشت)"
+  bun run build > /tmp/pn007-ci-build.log 2>&1 || { echo "✗ گام ۷: build شکست"; tail -20 /tmp/pn007-ci-build.log; exit 1; }
+  BUILD_TAIL=$(grep -E "✓ Compiled|Compiled successfully" /tmp/pn007-ci-build.log | head -1)
+  echo "  $BUILD_TAIL"
+  [[ -f .next/fingerprint.json ]] && echo "  .next/fingerprint.json نوشته شد ✓" || { echo "✗ گام ۷: postbuild اثر انگشت ننوشت"; exit 1; }
+fi
 
 # ── ۷-ب) یکپارچگی chunk بیلد تازه (PN-015/K1) ──
 # هر ارجاع /_next/static در مانیفست/HTML باید فایل روی دیسک داشته باشد —

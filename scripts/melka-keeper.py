@@ -20,7 +20,8 @@
 
 دیمن: double-fork → PPID=1 (الگوی prod-watchdog که از همهٔ موج‌ها زنده ماند).
 """
-import os, shutil, subprocess, sys, time, signal
+import os, re, shutil, subprocess, sys, time, signal
+import urllib.request
 
 REPO = "/home/z/my-project"
 STORE = "/home/z/melka-store"
@@ -32,6 +33,16 @@ NEXT_LINK = f"{REPO}/.next"
 NEXT_STORE = f"{STORE}/next"
 NM_REAL = f"{REPO}/node_modules"
 NM_STORE = f"{STORE}/node_modules"
+
+# ─── DIR-STATIC-500-001: پروب سلامت سرو‌دهی + خودترمیمی رسمی ───
+PROBE_URL = "http://127.0.0.1:3000"
+PROBE_INTERVAL = 5.0          # هر ~۵ ثانیه
+HEAL_LOCK = f"{STORE}/heal-deploy.lock"
+HEAL_COOLDOWN = 240.0         # حداقل فاصلهٔ دو ترمیم خودکار
+HEAL_TRIGGER_AFTER = 2         # دو پروب شکست‌خوردهٔ پیاپی (ضد لرزش)
+_next_probe_at = 0.0
+_probe_fails = 0
+_last_heal_at = 0.0
 
 STABLE_SECS = 10.0
 _state = {"next_mtime": None, "next_seen": 0.0, "nm_mtime": None, "nm_seen": 0.0}
@@ -129,6 +140,12 @@ def handle_next(is_building):
         return  # بیلد خودش .next واقعی می‌سازد
     complete = os.path.exists(f"{NEXT_LINK}/BUILD_ID") and os.path.exists(f"{NEXT_LINK}/fingerprint.json")
     if is_real_dir(NEXT_LINK) and complete and stable("next", NEXT_LINK):
+        # DIR-STATIC-500-001 — پارک امن: اگر سرور زنده از درخت فروشگاه سرو می‌کند،
+        # پارک (حذف درخت قدیمی) CWD سرور را می‌کشد → فقط با ری‌استارت همراه است؛
+        # کیپر هرگز بدون ترمیم رسمی پارک نمی‌کند — درخت واقعی را دست‌نخورده می‌گذارد.
+        if server_cwd_deleted() or any_server_cwd_in_store():
+            log("WARN: .next واقعی کامل اما سرور از درخت فروشگاه سرو می‌کند — پارک خودکار متوقف (ترمیم رسمی لازم: heal-deploy.sh)")
+            return
         # پارک: mv اتمیک + سیم‌لینک
         shutil.rmtree(NEXT_STORE + ".old", ignore_errors=True)
         try:
@@ -151,10 +168,140 @@ def handle_next(is_building):
             log(f"ERR relink .next: {e}")
 
 
+def server_cwd_deleted():
+    """آیا CWD سرور زنده حذف شده؟ (ریشهٔ حادثهٔ ۵۰۰ چانک‌های 2026-11-20)"""
+    try:
+        out = subprocess.run(["pgrep", "-f", "next-server"],
+                             capture_output=True, text=True, timeout=5).stdout.split()
+    except Exception:
+        return False
+    for pid in out:
+        try:
+            cwd = os.readlink(f"/proc/{pid}/cwd")
+            if "deleted" in cwd:
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def any_server_cwd_in_store():
+    """آیا سروری از درخت فروشگاه (melka-store/next) سرو می‌کند؟"""
+    try:
+        out = subprocess.run(["pgrep", "-f", "next-server"],
+                             capture_output=True, text=True, timeout=5).stdout.split()
+    except Exception:
+        return False
+    for pid in out:
+        try:
+            cwd = os.readlink(f"/proc/{pid}/cwd")
+            if NEXT_STORE in cwd:
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def http_get(path, timeout=4):
+    try:
+        with urllib.request.urlopen(PROBE_URL + path, timeout=timeout) as r:
+            return r.status, r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, ""
+    except Exception:
+        return 0, ""
+
+
+def serving_broken():
+    """تشخیص چندوجهی خرابی سرو‌دهی ایستا: CWD حذف‌شده / چانک غیر۲۰۰ / drift."""
+    # ۱) CWD حذف‌شده — قطعی‌ترین علامت
+    if server_cwd_deleted():
+        return True, "server-cwd-deleted"
+    # ۲) پروب چانک — همان چیزی که مرورگر تجربه می‌کند
+    code, html = http_get("/")
+    if code != 200:
+        return False, None  # سرور پایین/در بوت — دامنهٔ واچ‌داگ، نه کیپر
+    m = re.search(r"/_next/static/chunks/[^\"\\\\]+?\.js", html)
+    if not m:
+        return False, None   # صفحهٔ بدون ارجاع چانک (ورود؟) — تصمیم‌ناپذیر
+    ccode, _ = http_get(m.group(0))
+    if ccode != 200:
+        return True, f"chunk-{ccode}"
+    # ۳) drift: بیلدِ سرو‌شده ≠ بیلدِ دیسک (سرور از درخت کهنه/مهاجم سرو می‌کند)
+    try:
+        vcode, vbody = http_get("/api/version")
+        if vcode == 200:
+            m2 = re.search(r'"buildId"\s*:\s*"([^-]+)-', vbody)
+            disk_bid = open(f"{NEXT_STORE}/BUILD_ID").read().strip()
+            disk_sha = disk_bid.split("-")[0]
+            if m2 and m2.group(1) != disk_sha:
+                return True, f"drift-live={m2.group(1)}-disk={disk_sha}"
+    except OSError:
+        pass
+    return False, None
+
+
+def heal_in_progress():
+    """قفل ترمیم گرفته شده؟ (flock زنده توسط heal-deploy.sh)"""
+    try:
+        r = subprocess.run(["flock", "-n", HEAL_LOCK, "-c", "true"],
+                           capture_output=True, timeout=5)
+        return r.returncode != 0
+    except Exception:
+        return False
+
+
+def trigger_heal(reason):
+    """اجرای جدا شدهٔ ترمیم رسمی (بیلد رسمی + ری‌استارت + راستی‌آزمایی)."""
+    global _last_heal_at
+    _last_heal_at = time.time()
+    log(f"HEAL-TRIGGER: {reason} — اجرای scripts/heal-deploy.sh")
+    try:
+        subprocess.Popen(
+            ["setsid", "bash", f"{REPO}/scripts/heal-deploy.sh",
+             "--reason", f"keeper:{reason}"],
+            stdout=open(f"{STORE}/heal-deploy.log", "a"),
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+            cwd="/",
+        )
+    except Exception as e:
+        log(f"ERR trigger heal: {e}")
+
+
+def probe_serving():
+    """چرخهٔ پروب (هر PROBE_INTERVAL ثانیه) — با خنثی‌سازی حین بیلد/ترمیم."""
+    global _next_probe_at, _probe_fails
+    now = time.time()
+    if now < _next_probe_at:
+        return
+    _next_probe_at = now + PROBE_INTERVAL
+    if building():
+        _probe_fails = 0
+        return
+    if heal_in_progress():
+        _probe_fails = 0
+        return
+    if now - _last_heal_at < HEAL_COOLDOWN:
+        return
+    broken, reason = serving_broken()
+    if not broken:
+        if _probe_fails:
+            log(f"probe recovered after {_probe_fails} fail(s)")
+        _probe_fails = 0
+        return
+    _probe_fails += 1
+    log(f"probe FAIL {_probe_fails}/{HEAL_TRIGGER_AFTER}: {reason}")
+    if _probe_fails >= HEAL_TRIGGER_AFTER:
+        _probe_fails = 0
+        trigger_heal(reason)
+
+
 def cycle():
     b = building()
     handle_node_modules(b)
     handle_next(b)
+    probe_serving()
 
 
 def main_loop():

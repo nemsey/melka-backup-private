@@ -9,6 +9,7 @@ WS = "/home/z/melka-build-ws"
 STORE = "/home/z/melka-store"
 LOG = f"{STORE}/ws-build-daemon.log"
 REPO = "/home/z/my-project"
+BUILD_FLAG = f"{REPO}/upload/.runtime/BUILD_RUNNING"
 
 
 def log(m):
@@ -80,6 +81,20 @@ def prepare_ws():
 def run():
     log("=== ws build daemon start ===")
     t0 = time.time()
+    # DIR-STATIC-500-001: پرچم BUILD_RUNNING — کیپر و سایر نگهبانان حین بیلد
+    # رسمی پروب/ترمیم را متوقف می‌کنند (پنجرهٔ جابه‌جایی طبیعی است، نه حادثه)
+    os.makedirs(os.path.dirname(BUILD_FLAG), exist_ok=True)
+    open(BUILD_FLAG, "w").write(str(os.getpid()))
+    try:
+        return _run_inner(t0)
+    finally:
+        try:
+            os.remove(BUILD_FLAG)
+        except OSError:
+            pass
+
+
+def _run_inner(t0):
     prepare_ws()
     # بیلد در فضای کاری (امن از پاک‌شدن‌ها)
     r = subprocess.run(
@@ -183,4 +198,8 @@ def daemonize():
 
 
 if __name__ == "__main__":
+    # DIR-STATIC-500-001: --foreground برای فراخوانی همگام از نگهبان‌ها
+    # (heal-deploy / prod-watchdog) — بدون دوبار fork، خروجی همزمان.
+    if len(sys.argv) > 1 and sys.argv[1] == "--foreground":
+        sys.exit(main())
     daemonize()

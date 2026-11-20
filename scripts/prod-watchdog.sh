@@ -194,7 +194,11 @@ while true; do
         --witness /home/z/my-project/upload/.runtime/chunk-audit.json --quiet >> "$LOG" 2>&1; then
       echo "[chunk-guard] $(date '+%F %T') بیلد ناقص (خطر chunk 404) — بازسازی می‌کنم" >> "$LOG"
       # PN-053: nice — rebuild هرگز با سرویس‌دهی سرور رقابت CPU نکند
-      (cd /home/z/my-project && nice -n 19 bun run build) >> "$LOG" 2>&1
+      # DIR-STATIC-500-001: بیلد درجا ممنوع (گارد next.config/ts هم هست) —
+      # مسیر رسمی: بیلد در فضای کاری بیرونی + جابه‌جایی اتمیک (سواپ خودش
+      # سیم‌لینک my-project/.next را تازه می‌کند؛ اسپاونِ همین حلقه از درخت
+      # تازه بالا می‌آید)
+      nice -n 19 python3 /home/z/my-project/scripts/ws-build-daemon.py --foreground >> "$LOG" 2>&1
       if ! bash /home/z/my-project/scripts/audit-chunk-integrity.sh \
           --root /home/z/my-project \
           --witness /home/z/my-project/upload/.runtime/chunk-audit.json >> "$LOG" 2>&1; then
@@ -215,7 +219,11 @@ while true; do
     if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
       echo "[G3-gate] $(date '+%F %T') بیلد ≠ HEAD — بازسازی خوددرمانی آغاز" >> "$LOG"
       # PN-053: nice — rebuild پس‌زمینه با اولویت پایین CPU
-      (cd /home/z/my-project && nice -n 19 bun run build) >> "$LOG" 2>&1
+      # DIR-STATIC-500-001: بیلد درجا ممنوع (گارد next.config/ts هم هست) —
+      # مسیر رسمی: بیلد در فضای کاری بیرونی + جابه‌جایی اتمیک (سواپ خودش
+      # سیم‌لینک my-project/.next را تازه می‌کند؛ اسپاونِ همین حلقه از درخت
+      # تازه بالا می‌آید)
+      nice -n 19 python3 /home/z/my-project/scripts/ws-build-daemon.py --foreground >> "$LOG" 2>&1
       if ! bash /home/z/my-project/scripts/pn048/build-head-gate.sh --watchdog >> "$LOG" 2>&1; then
         echo "[G3-gate] $(date '+%F %T') CRITICAL: بازسازی هم ناهمخوان — سرور بالا می‌آید اما کد کهنه است (رستاخیز رسمی لازم)" >> "$LOG"
       else

@@ -1,5 +1,41 @@
 import type { NextConfig } from "next";
 import { execSync } from "child_process";
+import { lstatSync } from "fs";
+import { resolve } from "path";
+
+/* =============================================================================
+ * DIR-STATIC-500-001 — گارد بیلد مخربِ درجا (قانون تثبیت و بقا)
+ * -----------------------------------------------------------------------------
+ * حادثهٔ 2026-11-20 ساعت ۰۹:۴۷: عامل محیطی `next build` را درجا در my-project
+ * اجرا کرد؛ خروجی از مسیر سیم‌لینک .next (→ melka-store/next) روی درختِ زندهٔ
+ * سرور جابه‌جا/بازنویسی شد → CWD سرور (standalone) حذف شد → همهٔ چانک‌های
+ * ایستا ۵۰۰ شدند → «Application error: a client-side exception» برای همهٔ
+ * بازدیدکنندگان (SSR از حافظه زنده ماند و فریب‌دهنده بود).
+ * قانون: در توپولوژی فروشگاه (.next سیم‌لینک)، بیلد تولیدی فقط از مسیر رسمی
+ * scripts/ws-build-daemon.py مجاز است (بیلد در فضای کاری بیرونی + جابه‌جایی
+ * اتمیک + ری‌استارت). این گارد در نقطهٔ بارگذاری پیکربندی اجرا می‌شود و
+ * همهٔ مسیرهای بیلد (next build / bun run build / هر فراخوانی دیگر) را
+ * پیش از هرگونه تخریب می‌بندد. فرار اضطراری مالک: MELKA_ALLOW_INPLACE_BUILD=1
+ * ========================================================================== */
+function inplaceBuildGuard(): void {
+  if (process.env.MELKA_ALLOW_INPLACE_BUILD === "1") return;
+  let cwd = "";
+  let nextIsSymlink = false;
+  try {
+    cwd = process.cwd();
+    nextIsSymlink = lstatSync(".next").isSymbolicLink();
+  } catch {
+    return; // .next وجود ندارد → نخستین بیلد درجا؛ مخرب نیست
+  }
+  if (resolve(cwd) === "/home/z/my-project" && nextIsSymlink) {
+    throw new Error(
+      "[inplace-build-guard] بیلد درجا ممنوع: .next سیم‌لینک فروشگاه melka-store است و سرور زنده از همان درخت سرو می‌کند " +
+        "(ریشهٔ حادثهٔ ۵۰۰ چانک‌های 2026-11-20). مسیر رسمی: python3 scripts/ws-build-daemon.py — " +
+        "فرار اضطراری مالک: MELKA_ALLOW_INPLACE_BUILD=1",
+    );
+  }
+}
+inplaceBuildGuard();
 
 /* =============================================================================
  * P6519 — شاهد زندهٔ نسخه (BLOCK B دستور شورا: رفع دائمی لینک‌های کهنه)
