@@ -25,10 +25,9 @@ import { runOutcomeLoop, type OutcomeLoopSummary, type OutcomeLoopResult } from 
 // PN-010 — کانال وضعیت مشترک Worker (فقط fs/path — بدون چرخهٔ وابستگی)
 import { readWorkerStatus, isWorkerAlive } from "@/core/runtime/worker-status";
 
-/** دایرکتوری شاهدهای مغز — نسبت به cwd فعلی (تنبل؛ قابل‌ایزوله‌سازی در تست) */
-export function intelligenceDataDir(): string {
-  return join(process.cwd(), "intelligence-data");
-}
+/** دایرکتوری شاهدهای مغز — ریشهٔ ریپو مقدم بر cwd (DIR-FF-TILE-003 · data-dir.ts) */
+import { intelligenceDataDir } from "@/lib/intelligence/data-dir";
+export { intelligenceDataDir };
 function evidencePaths() {
   const dir = intelligenceDataDir();
   return {

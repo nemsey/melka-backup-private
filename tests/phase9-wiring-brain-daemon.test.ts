@@ -251,6 +251,11 @@ describe("PHASE 9 §۹ — دیمن v2", () => {
   test("۹-۲) شاهد ماندگار — نخستین اجرا فایل‌ها را می‌سازد؛ اجرای بعدی loop-latest را بازنویسی می‌کند", async () => {
     const dir = mkdtempSync(join(tmpdir(), "melk-brain-"));
     const cwd = process.cwd();
+    // DIR-FF-TILE-003 — ریشه‌یابی دادهٔ مغز اکنون با انکر MELKA_REPO_DIR است
+    // (ریشهٔ ریپو مقدم بر cwd — سرور standalone نیم‌کپی ندیده گرفته شود)؛
+    // ایزوله‌سازی این تست نیز با همان انکر رسمی اعلام می‌شود.
+    const savedRepoDir = process.env.MELKA_REPO_DIR;
+    process.env.MELKA_REPO_DIR = dir;
     try {
       process.chdir(dir); // intelligence-data/ این‌جا ساخته می‌شود (ایزوله از ریپو)
       const { ensureBrainData } = await import("@/lib/intelligence/daemon");
@@ -270,6 +275,8 @@ describe("PHASE 9 §۹ — دیمن v2", () => {
       await db.$disconnect();
     } finally {
       process.chdir(cwd);
+      if (savedRepoDir === undefined) delete process.env.MELKA_REPO_DIR;
+      else process.env.MELKA_REPO_DIR = savedRepoDir;
       rmSync(dir, { recursive: true, force: true });
     }
   });

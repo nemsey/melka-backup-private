@@ -9,6 +9,7 @@
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { intelligenceDataDir } from "@/lib/intelligence/data-dir";
 import path from "node:path";
 
 export type BlackboardNamespace = "p7" | "p8" | "p9" | "p10" | "p11" | "daemon";
@@ -24,7 +25,8 @@ export interface BlackboardEntry<T = unknown> {
 }
 
 const TTL_DAYS = 30;
-const FILE = path.join(process.cwd(), "intelligence-data", "blackboard.jsonl");
+// DIR-FF-TILE-003 — ریشهٔ ریپو مقدم بر cwd (عین data-dir.ts — سرور standalone)
+const FILE = path.join(intelligenceDataDir(), "blackboard.jsonl");
 
 function md5(s: string): string {
   return createHash("md5").update(s).digest("hex");

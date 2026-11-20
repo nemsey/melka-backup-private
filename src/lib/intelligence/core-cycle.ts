@@ -38,6 +38,7 @@ import {
   type BlackboardEntry,
   type IntelligenceEvent,
 } from "@/lib/intelligence/blackboard";
+import { intelligenceDataDir } from "@/lib/intelligence/data-dir";
 import type {
   DecisionRecord,
   EvaluationReport,
@@ -47,7 +48,7 @@ import type {
   RepairProposal,
 } from "@/core/intelligence/contracts-p7-p11";
 
-const DATA_DIR = path.join(process.cwd(), "intelligence-data");
+const DATA_DIR = intelligenceDataDir(); // DIR-FF-TILE-003 — ریشهٔ ریپو مقدم بر cwd (نقشهٔ کالیبراسیون در standalone نیست)
 
 async function loadJsonl<T>(file: string): Promise<T[]> {
   const p = path.join(DATA_DIR, file);

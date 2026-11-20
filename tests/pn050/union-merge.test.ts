@@ -21,6 +21,9 @@ import { Database } from "bun:sqlite";
 
 const REPO = "/home/z/my-project";
 const MERGE = join(REPO, "scripts/pn050/merge_union.py");
+// DIR-FF-TILE-003 — پدرِ artifacts ممکن است در چرخهٔ پلتفرم پاک شود (untracked)؛
+// ساخت بازگشتی = تست بارپذیر در چک‌اوت تازه
+mkdirSync(join(REPO, "scripts/pn050/test-artifacts"), { recursive: true });
 const TMP = mkdtempSync(join(REPO, "scripts/pn050/test-artifacts/union-"));
 
 // ساخت DB سنتزی با ستون‌های لازم (ایده‌نتپروپشن‌کننده — همان محدودیت‌های طرح واقعی)

@@ -16,6 +16,9 @@ import { mkdtempSync, rmSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const REPO = "/home/z/my-project";
+// DIR-FF-TILE-003 — پدرِ artifacts ممکن است در چرخهٔ پلتفرم پاک شود (untracked)؛
+// ساخت بازگشتی = تست بارپذیر در چک‌اوت تازه
+mkdirSync(join(REPO, "scripts/pn050/test-artifacts"), { recursive: true });
 const TMP_ROOT = mkdtempSync(join(REPO, "scripts/pn050/test-artifacts/journal-"));
 
 /** dir ژورنال ایزوله برای هر تست */
