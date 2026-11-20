@@ -52,6 +52,20 @@ GREEN_HEALTH_TIMEOUT_S = 30          # حداکثر منتظر سلامت فرز
 NODE_BIN = "/usr/bin/node"
 PRELOAD = os.path.join(REPO, "scripts", "pn054", "listen-patch.cjs")
 SERVER_JS = os.path.join(REPO, ".next", "standalone", "server.js")
+
+# ─── DIR-STATIC-500-002: پایش drift ساختار (زیرساختِ همگرایی خودکار) ───
+# درس حادثهٔ 2026-11-20 14:00: هر سواپ درخت فروشگاه بدون ری‌استارت = مرگ
+# سرو‌دهی (چانک حاوی BUILD_ID در هر بیلد هش تازه می‌گیرد چون timestamp
+# داخل باندل پخته می‌شود). اسپان‌کنندهٔ جدید از درخت تازه بالا می‌آید اما
+# هیچ عاملی ری‌استارت را تضمین نمی‌کرد. اکنون خودِ socket-master هر
+# DRIFT_CHECK_S ثانیه هویت درخت فرزند (healthz v2: buildId/treeAlive) را
+# با BUILD_ID دیسک می‌سنجد و در اختلاف پایدار، خودکار Blue/Green می‌کند —
+# مستقل از کیپر/heal/واچ‌داگ؛ همگرایی تضمینی ≤ ~۴۰ث پس از هر سواپ.
+DRIFT_CHECK_S = 15          # هر ۱۵ ثانیه
+DRIFT_CONFIRM_N = 2         # دو پروب پیاپی (ضد لرزش سواپ/بوت)
+BUILD_FLAG_PATH = os.path.join(REPO, "upload", ".runtime", "BUILD_RUNNING")
+BUILD_FLAG_GRACE_S = 1500   # هم‌عمر پرچم بیلد رسمی (هم‌رأی کیپر)
+DISK_BID_PATH = os.path.join(REPO, ".next", "BUILD_ID")
 # PN-054 ترمیم۴ (۲۰۲۶-۱۱-۰۹): ۳۸۴→۷۶۸ — ریشهٔ کرش‌لوپ کاتالوگ درخواست‌ها؛
 # پاسخ ۲۶k ردیف غنی‌شده به ~۴۰۵MB هیپ نیاز داشت و هر بار سرور را با
 # «Reached heap limit» می‌کشت (اپ: صفر + کاشی ایجنت ناقص).
@@ -101,6 +115,8 @@ class SocketMaster:
         self.next_green_port = HEALTH_PORTS[1]
         self.stopping = False
         self.ram_checks = 0
+        self._drift_fails = 0
+        self._last_drift_check = 0.0
 
     # ─────────────────────────── سوکت اصلی ───────────────────────────
     def bind_master_socket(self) -> None:
@@ -240,6 +256,58 @@ class SocketMaster:
         elif hourly:
             log(f"📊 RAM سرور {rss}MB (heap {info.get('heapUsedMB')}MB) — عادی")
 
+    # ─────────────────────────── پایش drift (DIR-STATIC-500-002) ───────────────────────────
+    @staticmethod
+    def disk_build_id() -> str | None:
+        """BUILD_ID دیسک (از مسیر سیم‌لینک my-project/.next → فروشگاه)."""
+        try:
+            with open(DISK_BID_PATH) as f:
+                bid = f.read().strip()
+            return bid or None
+        except OSError:
+            return None
+
+    @staticmethod
+    def build_flag_active() -> bool:
+        """بیلد رسمی در جریان است؟ (پرچم تازه = پنجرهٔ طبیعی سواپ — ساکت باش)"""
+        try:
+            age = time.time() - os.stat(BUILD_FLAG_PATH).st_mtime
+            return 0 <= age < BUILD_FLAG_GRACE_S
+        except OSError:
+            return False
+
+    def drift_monitor_tick(self) -> None:
+        """یک پروب drift: هویت فرزند (healthz v2) در برابر دیسک.
+        فقط اختلاف «قطعی» (هر دو معلوم و نابرابر، یا درخت فرزند مرده)
+        شمرده می‌شود؛ ناشناخته‌ها (healthz قدیمی بدون buildId) نادیده —
+        تا با فرزندانِ پریلودِ کهنه حلقهٔ ری‌استارت ساخته نشود."""
+        if not self.child or self.child.poll() is not None:
+            self._drift_fails = 0
+            return
+        if self.build_flag_active():
+            self._drift_fails = 0
+            return
+        disk = self.disk_build_id()
+        if disk is None:
+            return  # دیسک در لحظهٔ سواپ/بوت — تصمیم‌ناپذیر
+        info = self.child_healthy(self.child_role_port)
+        if info is None or info.get("pid") != self.child.pid:
+            return  # healthz در دسترس نیست یا مال فرزند دیگر است
+        if "buildId" not in info:
+            return  # فرزند با پریلود قدیمی (بدون healthz v2) — رادار خاموش
+        live_bid = info.get("buildId")
+        tree_alive = info.get("treeAlive", True)
+        if (live_bid is not None and live_bid != disk) or tree_alive is False:
+            self._drift_fails += 1
+            log(f"⚠️ drift {self._drift_fails}/{DRIFT_CONFIRM_N}: "
+                f"live={live_bid} treeAlive={tree_alive} disk={disk}")
+            if self._drift_fails >= DRIFT_CONFIRM_N:
+                self._drift_fails = 0
+                log("🔄 drift پایدار — Blue/Green خودکار برای همگرایی با دیسک (DIR-STATIC-500-002)")
+                self.blue_green()
+        else:
+            self._drift_fails = 0
+
     # ─────────────────────────── حلقهٔ اصلی ───────────────────────────
     def read_cmd(self) -> dict | None:
         try:
@@ -293,6 +361,11 @@ class SocketMaster:
             if time.monotonic() - last_ram_check > RAM_CHECK_INTERVAL:
                 last_ram_check = time.monotonic()
                 self.ram_monitor_tick()
+
+            # پایش drift هر ۱۵ ثانیه (DIR-STATIC-500-002 — همگرایی خودکار)
+            if time.monotonic() - self._last_drift_check > DRIFT_CHECK_S:
+                self._last_drift_check = time.monotonic()
+                self.drift_monitor_tick()
 
             time.sleep(0.5)
         return 0

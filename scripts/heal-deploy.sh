@@ -32,6 +32,9 @@ if ! flock -n 9; then
   exit 0
 fi
 log "=== آغاز ترمیم رسمی (reason=$REASON pid=$$) ==="
+# DIR-STATIC-500-002: مبنای تازگی — از همین لحظه، نه پنجرهٔ مطلق ۶۰ث
+# (حادثهٔ ۱۴:۰۰: نشانگر کهنهٔ دیپلوی قبلی «ری‌استارت انجام شد» را جعل می‌کرد)
+HEAL_T0=$(date +%s)
 
 # ─── گام ۱: بیلد رسمی از HEAD در فضای کاری بیرونی + جابه‌جایی اتمیک ───
 # (پرچم BUILD_RUNNING توسط خود دیمن ست/پاک می‌شود — کیپر حین بیلد ساکت است)
@@ -52,6 +55,8 @@ fi
 log "بیلد رسمی سواپ شد: BUILD_ID=$BID (= HEAD $HEAD_SHA)"
 
 # ─── گام ۳: ری‌استارت صفر‌قطعی از طریق socket-master (pn054) ───
+# (ws-build-daemon خودش نیز ری‌استارت+راستی‌آزمایی می‌کند — این بلوک لایهٔ
+# دوم برای مسیرهایی است که مستقیم سواپ می‌کنند)
 date +%s > "$RUNTIME/pn054-cmd.marker"
 echo '{"cmd":"restart"}' > "$RUNTIME/pn054-cmd"
 DEPLOY_OK=0
@@ -59,8 +64,7 @@ for i in $(seq 1 75); do
   sleep 1
   if [ -f "$RUNTIME/pn054-deploy-done" ]; then
     DONE_AT=$(stat -c %Y "$RUNTIME/pn054-deploy-done")
-    NOW=$(date +%s)
-    if [ $((NOW - DONE_AT)) -lt 60 ]; then DEPLOY_OK=1; break; fi
+    if [ "$DONE_AT" -gt "$HEAL_T0" ]; then DEPLOY_OK=1; break; fi
   fi
 done
 if [ $DEPLOY_OK -ne 1 ]; then

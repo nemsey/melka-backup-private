@@ -34,7 +34,25 @@ def kill_mirror_threats():
 
 def prepare_ws():
     """منبع تازه از HEAD + وصلهٔ مسیر + env + گیتِ حداقلی.
-    (درس 20:50: git archive تازه وصلهٔ cd را بازمی‌گرداند → هر بار دوباره وصله می‌زنیم)"""
+    (درس 20:50: git archive تازه وصلهٔ cd را بازمی‌گرداند → هر بار دوباره وصله می‌زنیم)
+    (درس DIR-STATIC-500-002 14:00: فضای کاری هرگز «تمیز فرض» نمی‌شود — هر
+     پسماندی از اجراهای قبلی (به‌ویژه سیم‌لینک/دایرکتوری WS/.next که گارد پوسته
+     بیلد رسمی را برای همیشه می‌بندد) پیش از بیلد پاک می‌شود.)"""
+    # ── پاکسازی پسماند فرا-مهم: WS/.next از هر نوعی (سیم‌لینک/دایرکتوری/فایل) ──
+    # حادثهٔ 2026-11-20 14:03-14:40: سیم‌لینک یتیم WS/.next → store/next باعث شد
+    # گارد پوسته build-with-parking.sh هر بیلد رسمی را در همان ۲ ثانیهٔ اول
+    # ببندد («بیلد درجا ممنوع») → کیپر ۱۰ بار ترمیم → ۱۰ شکست → اپ مرده ماند.
+    try:
+        if os.path.islink(f"{WS}/.next"):
+            os.unlink(f"{WS}/.next")
+            log("sanitized WS: removed stale .next symlink (DIR-STATIC-500-002)")
+        elif os.path.exists(f"{WS}/.next"):
+            shutil.rmtree(f"{WS}/.next", ignore_errors=True)
+            log("sanitized WS: removed stale .next tree (DIR-STATIC-500-002)")
+    except OSError as e:
+        log(f"ERR sanitize WS/.next: {e}")
+    # پسماند پارک بیلدهای کشته‌شده
+    shutil.rmtree(f"{WS}/.build-parking", ignore_errors=True)
     archive = subprocess.run(["git", "archive", "HEAD"], cwd=REPO,
                              stdout=subprocess.PIPE, check=True).stdout
     with subprocess.Popen(["tar", "-x", "-C", WS],
@@ -120,11 +138,16 @@ def _run_inner(t0):
         return 1
 
     # جابه‌جایی به فروشگاه (mv هم‌فایل‌سیستم = آنی)
-    shutil.rmtree(f"{STORE}/next.old", ignore_errors=True)
+    # DIR-STATIC-500-002: next.old دیگر بلافاصله حذف نمی‌شود — درختِ کهنه ممکن
+    # است هنوز CWD سرورِ زنده باشد (سواپ پیش از ری‌استارت). حذف فقط پس از
+    # راستی‌آزمایی ری‌استارت موفق (پایین). اگر ترمیم ناتمام بمیرد، دور بعدی
+    # همین ابتدای سواپ پسماند را می‌پاکد.
+    shutil.rmtree(f"{STORE}/next.older", ignore_errors=True)
+    if os.path.exists(f"{STORE}/next.old"):
+        os.rename(f"{STORE}/next.old", f"{STORE}/next.older")
     if os.path.exists(f"{STORE}/next"):
         os.rename(f"{STORE}/next", f"{STORE}/next.old")
     os.rename(f"{WS}/.next", f"{STORE}/next")
-    shutil.rmtree(f"{STORE}/next.old", ignore_errors=True)
 
     # سیم‌لینک my-project/.next (اگر کیپر زنده باشد خودش هم می‌سازد)
     try:
@@ -151,8 +174,58 @@ def _run_inner(t0):
     except Exception as e:
         log(f"WARN nm sync: {e}")
 
-    log(f"=== SWAP DONE buildId={bid} ===")
+    log(f"=== SWAP DONE buildId={bid} (next.old محفوظ تا راستی‌آزمایی) ===")
+    restart_and_verify(bid)
+    # پاکسازی پسماندها فقط پس از ری‌استارتِ راستی‌آزمایی‌شده
+    shutil.rmtree(f"{STORE}/next.old", ignore_errors=True)
+    shutil.rmtree(f"{STORE}/next.older", ignore_errors=True)
+    log(f"=== HEARTBEAT-VERIFIED buildId={bid} — next.old/older پاک شد ===")
     return 0
+
+
+def restart_and_verify(bid: str, timeout_s: int = 90) -> bool:
+    """DIR-STATIC-500-002: سواپ بدون ری‌استارت = مرگ سرو‌دهی (چانک BUILD_ID-hash
+    هر بیلد عوض می‌شود چون timestamp داخل باندل پخته می‌شود). این دیمن اکنون
+    خودش ری‌استارت Blue/Green را تضمین می‌کند و تا همگرایی live==disk صبر
+    می‌کند — وابسته به هیچ عاملی از بیرون نیست."""
+    import urllib.request
+    RUNTIME = f"{REPO}/upload/.runtime"
+    t0 = time.time()
+    try:
+        with open(f"{RUNTIME}/pn054-cmd", "w") as f:
+            f.write('{"cmd":"restart"}')
+        log("restart cmd sent to socket-master (pn054)")
+    except OSError as e:
+        log(f"ERR send restart cmd: {e}")
+        return False
+    # انتظار برای deploy-done تازه (mtime > t0) — نه نشانگر کهنه
+    deadline = t0 + timeout_s
+    deployed = False
+    while time.time() < deadline:
+        try:
+            if os.path.getmtime(f"{RUNTIME}/pn054-deploy-done") > t0:
+                deployed = True
+                break
+        except OSError:
+            pass
+        time.sleep(1.0)
+    if not deployed:
+        log(f"WARN: deploy-done تازه در {timeout_s}s نیامد — socket-master ممکن است پایین باشد")
+    # راستی‌آزمایی نهایی: buildId زنده == دیسک
+    for _ in range(30):
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:3000/api/version", timeout=5) as r:
+                import json as _json
+                live = _json.loads(r.read().decode()).get("buildId", "")
+            if live == bid:
+                log(f"RESTART-VERIFIED: live buildId == {bid}")
+                return True
+            log(f"drift transient: live={live} disk={bid} — انتظار…")
+        except Exception:
+            pass
+        time.sleep(2.0)
+    log(f"FAIL: live buildId پس از ری‌استارت همگرا نشد (disk={bid}) — next.old محفوظ می‌ماند")
+    return False
 
 
 def main():

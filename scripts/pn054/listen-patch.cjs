@@ -43,11 +43,32 @@ if (LISTEN_FD > 0) {
 }
 
 // ─── ۲) Health listener سبک روی loopback ───
+// DIR-STATIC-500-002: /healthz علاوه بر سنجه‌های حافظه، هویت درخت سرو‌شده را
+// هم گزارش می‌کند (هر بار از دیسک خوانده می‌شود، نه کش بوت):
+//   buildId  — BUILD_ID درختی که این فرزند از آن سرو می‌کند (cwd پس از
+//              process.chdir(__dirname) در standalone است)
+//   treeAlive— آیا درختِ CWD هنوز روی دیسک زنده است؟ (حادثهٔ ۱۴:۰۰: سواپ
+//              درختِ زنده را next.old+rmtree کرد — سرور تا مرگ بعدی از حافظه
+//              جواب می‌داد؛ این سنجه آن حالت را در لحظه آشکار می‌کند)
+const { readFileSync } = require('fs');
+const { join } = require('path');
+
+function readTreeIdentity() {
+  try {
+    const p = join(process.cwd(), '.next', 'BUILD_ID');
+    const bid = readFileSync(p, 'utf8').trim();
+    return { buildId: bid || null, treeAlive: true };
+  } catch {
+    return { buildId: null, treeAlive: false };
+  }
+}
+
 if (HEALTH_PORT > 0) {
   try {
     const hs = http.createServer((req, res) => {
       if (req.url && req.url.includes('/healthz')) {
         const mu = process.memoryUsage();
+        const tree = readTreeIdentity();
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(JSON.stringify({
           ok: true,
@@ -57,6 +78,8 @@ if (HEALTH_PORT > 0) {
           heapUsedMB: Math.round(mu.heapUsed / 1048576),
           heapCapMB: Number(process.env.MELKA_HEAP_CAP_MB || 0),
           uptimeSec: Math.round(process.uptime()),
+          buildId: tree.buildId,
+          treeAlive: tree.treeAlive,
           ts: new Date().toISOString(),
         }));
         return;
