@@ -19,6 +19,9 @@ import { resolve } from "path";
  * ========================================================================== */
 function inplaceBuildGuard(): void {
   if (process.env.MELKA_ALLOW_INPLACE_BUILD === "1") return;
+  // محیط تست فقط پیکربندی را «بارگذاری» می‌کند (تست‌های P6519-A) — بیلد نمی‌شود؛
+  // گارد مخصوص بیلد است، نه import. (NODE_ENV=test فقط از اسکریپت تست می‌آید)
+  if (process.env.NODE_ENV === "test") return;
   let cwd = "";
   let nextIsSymlink = false;
   try {

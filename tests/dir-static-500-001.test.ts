@@ -68,6 +68,9 @@ describe("DIR-STATIC-500-001 · لایهٔ ۱ — گارد بیلد درجا د�
         cwd: ROOT,
         timeout: 30_000,
         stdio: ["ignore", "pipe", "pipe"],
+        // محیط فرزند باید شبیه بیلد واقعی باشد (نه NODE_ENV=test که گارد را
+        // برای بارگذاریِ صرف پیکربندی خنثی می‌کند — درس نخستین اجرای کامل)
+        env: { ...process.env, NODE_ENV: "production" },
       }).toString();
     } catch (e) {
       out = String((e as { stderr?: Buffer })?.stderr ?? "") + String((e as { stdout?: Buffer })?.stdout ?? "");
