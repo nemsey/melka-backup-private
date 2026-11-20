@@ -21,6 +21,8 @@ const ROOT = "/home/z/my-project";
 const FF = readFileSync(`${ROOT}/src/core/tiles/tiles/file-finder/FileFinderPage.tsx`, "utf8");
 const CH = readFileSync(`${ROOT}/src/core/tiles/tiles/changes/ChangesPage.tsx`, "utf8");
 const CHROME = readFileSync(`${ROOT}/src/components/tiles/FourListsTileChrome.tsx`, "utf8");
+const FF_REG = readFileSync(`${ROOT}/src/core/tiles/tiles/file-finder/index.ts`, "utf8");
+const CH_REG = readFileSync(`${ROOT}/src/core/tiles/tiles/changes/index.ts`, "utf8");
 
 /* ═══════════ اولاً — حذف توضیحات حالت تمام‌ظرفیت ترموکس (هر دو کاشی) ═══════════ */
 
@@ -103,6 +105,31 @@ describe("DIR-DESC-CLEANUP-001 · ثالثاً — توضیحات سربرگ ک�
 
   test("۳-۳ یادداشت نقشِ غیرمالک حفظ شد (مرز دسترسی — کارکردی، نه توضیحی)", () => {
     expect(CH).toContain("این کاشی فقط برای مالک فعال است.");
+  });
+
+  test("۳-۴ tagline کاشی تغییرات (نمایان در TileShell بالای کاشی + کارت هوم) نیز پاک شد — همان مضمون، صفر باقی‌مانده", () => {
+    // فقط رشته‌های رندرشونده (tagline/description) — کامنت‌های مهندسی فایل خارج از UIاند
+    const taglineValue = CH_REG.slice(CH_REG.indexOf("tagline:"), CH_REG.indexOf("description:")).replace(/\s+/g, " ");
+    const descValue = CH_REG.slice(CH_REG.indexOf("description:"), CH_REG.indexOf("icon:")).replace(/\s+/g, " ");
+    for (const v of [taglineValue, descValue]) {
+      expect(v).not.toContain("صاحب‌اختیار");
+      expect(v).not.toContain("آبشار اتوماتیک تاریخچه‌ها");
+      expect(v).not.toContain("پاکسازی همهٔ آثار");
+      expect(v).not.toContain("dir-reg-req-099-001");
+    }
+    // هویت کاشی پابرجا
+    expect(CH_REG).toContain("title: \"تغییرات\"");
+    expect(taglineValue).toContain("تغییر در کد و حذف کد (کدآگهی و کددرخواست) سامانه ARM");
+  });
+
+  test("۳-۵ description رجیستری هر دو کاشی از جملهٔ تمام‌ظرفیتِ هم‌مضمون اولاً پاک شد", () => {
+    expect(CH_REG).not.toContain("بروزرسانی چهار فهرست متوقف");
+    expect(CH_REG).not.toContain("حالت تمام‌ظرفیت» را فعال می‌کند");
+    expect(FF_REG).not.toContain("«حالت تمام‌ظرفیت ترموکس» خودکار فعال می‌شود");
+    expect(FF_REG).not.toContain("بروزرسانی فهرست‌ها متوقف و تمام ظرفیت رله با اولویت سقف");
+    // توصیف کارکرد اصلی شکار پابرجاست (فقط جملهٔ تمام‌ظرفیت حذف شد)
+    expect(FF_REG).toContain("سه پنجره تقسیم می‌شوند");
+    expect(FF_REG).toContain("آگهی‌های ردشده هرگز آرشیو نمی‌شوند");
   });
 });
 
