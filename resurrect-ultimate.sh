@@ -120,16 +120,40 @@ fi
 cd "$REPO"
 echo "🚀 [$(date -u +%FT%TZ)] شروع رستاخیز نهایی از گیت‌هاب (PN-042)…"
 
+# ─── پیش‌پرواز دیسک (DIR-PN080-001 · درس شب ۲۰۲۶-۱۱-۲۰): ───
+# rootfs پُر = ENOSPC در bun install/bیلد → سقوط زنجیره‌ای. حاکم دیسک
+# پیش از هر کار سنگین، فضای لازم را آزاد می‌کند (ایدمپوتنت · بی‌خطر).
+if [ -x "$REPO/scripts/disk-governor.sh" ]; then
+  bash "$REPO/scripts/disk-governor.sh" --enforce 2>/dev/null || true
+fi
+
 # قانون ۱۱: در هر شکستِ میانی، سرو از بیلد موجود ادامه می‌یابد
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "❌ [$(date -u +%FT%TZ)] رستاخیز ناکام ماند (rc=$rc) — سرو از بیلد موجود (قانون ۱۱)…"; rm -f "$REPO/.prod-stop"; bash "$REPO/scripts/start-prod.sh" >/dev/null 2>&1 || true; fi' EXIT
 
 # ─── ۱) توقف فرایندهای قدیمی (درس OOM: بیلد هم‌زمان با سرور = مرگ) ───
 touch .prod-stop 2>/dev/null || true     # فلگ توقف تمیز نگهبان
 pkill -f "standalone/server.js"     2>/dev/null || true
+# DIR-PN080-001 (درس شب ۲۰۲۶-۱۱-۲۰): Next.js پس از بوت process.title را
+# بازنویسی می‌کند → cmdline از «node …/standalone/server.js» به
+# «next-server (v16.1.3)» تبدیل می‌شود → pkill -f دیگر نمی‌بیندش → سرور
+# کهنه تا ابد پورت ۳۰۰۰ را نگه می‌دارد → سواپ بدون ری‌استارت → drift →
+# client-side exception. درمان: الگوی تغییرعنوان‌آگاه + کشتن بر اساس پورت.
+pkill -f "next-server \\(v"          2>/dev/null || true
+pkill -f "^next-server "            2>/dev/null || true
+# کشتن بر اساس پورت (نهایی‌ترین شاهد مالکیت): صاحبِ :۳۰۰۰ و :۳۱۰۰
+for _port in 3000 3100 3101; do
+  for _pid in $(ss -tlnp 2>/dev/null | awk -v p=":${_port}\$" '$4 ~ p' | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do
+    [ -n "$_pid" ] && [ "$_pid" != "$$" ] && kill -TERM "$_pid" 2>/dev/null || true
+  done
+done
 pkill -f "prod-watchdog.sh"         2>/dev/null || true
 pkill -f "pn054/socket-master.py"   2>/dev/null || true   # PN-054: نگهدار سوکت (خاموشی تمیز با drain)
 pkill -f "scripts/runtime/worker.ts" 2>/dev/null || true
 sleep 2
+# اطمینان نهایی: اگر باز هم کسی روی ۳۰۰۰ نشسته، SIGKILL (درس شب ۲۰۲۶-۱۱-۲۰)
+for _pid in $(ss -tlnp 2>/dev/null | awk -v p=':3000$' '$4 ~ p' | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do
+  kill -KILL "$_pid" 2>/dev/null || true
+done
 
 # ─── ۲) دریافت کد از گیت‌هاب — main منبع حقیقت ───
 echo "— دریافت کد از گیت‌هاب…"

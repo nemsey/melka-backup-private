@@ -179,12 +179,44 @@ def _run_inner(t0):
         log(f"WARN nm sync: {e}")
 
     log(f"=== SWAP DONE buildId={bid} (next.old محفوظ تا راستی‌آزمایی) ===")
-    restart_and_verify(bid)
-    # پاکسازی پسماندها فقط پس از ری‌استارتِ راستی‌آزمایی‌شده
-    shutil.rmtree(f"{STORE}/next.old", ignore_errors=True)
-    shutil.rmtree(f"{STORE}/next.older", ignore_errors=True)
-    log(f"=== HEARTBEAT-VERIFIED buildId={bid} — next.old/older پاک شد ===")
-    return 0
+    verified = restart_and_verify(bid)
+    # DIR-PN080-001 (درس شب ۲۰۲۶-۱۱-۲۰): نتیجهٔ راستی‌آزمایی محترم شمرده می‌شود —
+    # اگر همگرا نشد، next.old (آخرین بیلد سالمِ سرو‌شده) برای بازگشت سریع
+    # محفوظ می‌ماند؛ چرخهٔ بعدی دیمن دوباره می‌سازد و تلاش می‌کند.
+    if verified:
+        shutil.rmtree(f"{STORE}/next.old", ignore_errors=True)
+        shutil.rmtree(f"{STORE}/next.older", ignore_errors=True)
+        log(f"=== HEARTBEAT-VERIFIED buildId={bid} — next.old/older پاک شد ===")
+    else:
+        log(f"=== VERIFY-FAILED buildId={bid} — next.old محفوظ ماند (چرخهٔ بعد دوباره تلاش می‌کند) ===")
+    return 0 if verified else 1
+
+
+def revive_stack_if_dead():
+    """DIR-PN080-001 (درس شب ۲۰۲۶-۱۱-۲۰): اگر deploy-done نیامد، ریشه معمولاً
+    socket-master/watchdog مرده یا سرور تغییرعنوان‌یافتهٔ کهنه است که پورت
+    ۳۰۰۰ را گروگان گرفته. درمان: کشتن سرور کهنه (الگوی تغییرعنوان‌آگاه) +
+    زنده‌سازی زنجیرهٔ نگهبان → socket-master → سرور تازه از درخت تازه."""
+    import subprocess as _sp
+    try:
+        # ۱) سرورهای کهنهٔ تغییرعنوان‌یافته (cmdline = "next-server (v16.1.3)") —
+    #    pkill -f "standalone/server.js" آن‌ها را نمی‌بیند (ریشهٔ drift امشب)
+        _sp.run(["pkill", "-f", "next-server \\(v"], capture_output=True, timeout=10)
+        _sp.run(["pkill", "-f", "standalone/server.js"], capture_output=True, timeout=10)
+        # ۲) نگهبان زنده است؟ (خودش socket-master را در حلقه‌اش احیا می‌کند)
+        r = _sp.run(["pgrep", "-f", "scripts/prod-watchdog.sh"], capture_output=True, text=True, timeout=10)
+        watchdog_alive = bool(r.stdout.strip())
+        if not watchdog_alive:
+            log("revive: نگهبان production مرده — استارت دوباره (start-prod-daemon)")
+            _sp.Popen(["setsid", "python3", f"{REPO}/scripts/start-prod-daemon.py"],
+                      stdout=_sp.DEVNULL, stderr=_sp.DEVNULL, start_new_session=True, cwd="/")
+        else:
+            log("revive: نگهبان زنده است — کشتن سرور کهنه کافی است (socket-master دوباره اسپاون می‌کند)")
+        # ۳) socket-master مرده اما نگهبان زنده؟ حلقهٔ نگهبان تا ۱ث بعد تلاش می‌کند — کافی است.
+        return True
+    except Exception as e:
+        log(f"revive ERR: {e}")
+        return False
 
 
 def restart_and_verify(bid: str, timeout_s: int = 90) -> bool:
@@ -214,7 +246,18 @@ def restart_and_verify(bid: str, timeout_s: int = 90) -> bool:
             pass
         time.sleep(1.0)
     if not deployed:
-        log(f"WARN: deploy-done تازه در {timeout_s}s نیامد — socket-master ممکن است پایین باشد")
+        log(f"WARN: deploy-done تازه در {timeout_s}s نیامد — احیای زنجیرهٔ نگهبان (DIR-PN080)")
+        revive_stack_if_dead()
+        # پس از احیا، پنجرهٔ دومی برای deploy-done
+        deadline2 = time.time() + 60
+        while time.time() < deadline2:
+            try:
+                if os.path.getmtime(f"{RUNTIME}/pn054-deploy-done") > t0:
+                    deployed = True
+                    break
+            except OSError:
+                pass
+            time.sleep(1.0)
     # راستی‌آزمایی نهایی: buildId زنده == دیسک
     for _ in range(30):
         try:

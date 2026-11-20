@@ -102,6 +102,14 @@ if [ ! -f "$RESURRECT" ]; then
 fi
 
 note "همهٔ گیت‌ها سبز — اسپاون رستاخیز در نشست جدا (setsid)…"
+
+# ─── DIR-PN080-001: پیش‌پرواز دیسک پیش از رستاخیز ───
+# درس شب ۲۰۲۶-۱۱-۲۰: rootfs پُر (بکاپ‌های لوکال انباشته) → ENOSPC در
+# bun install رستاخیز → سقوط زنجیره‌ای. حاکم دیسک فضا را آزاد می‌کند
+# (ایدمپوتنت · دادهٔ مقدس: حذفِ هر لایه فقط با اثبات لایهٔ پایدارِ جدیدتر).
+if [ -x "$REPO/scripts/disk-governor.sh" ]; then
+  bash "$REPO/scripts/disk-governor.sh" --enforce 2>>"$LOG" || true
+fi
 RES_LOG="$LOG_DIR/resurrect-$(date -u +%Y%m%dT%H%M%S).log"
 setsid nohup bash "$RESURRECT" </dev/null >>"$RES_LOG" 2>&1 &
 RPID=$!

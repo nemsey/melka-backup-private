@@ -23,6 +23,38 @@
 import os, re, shutil, subprocess, sys, time, signal
 import urllib.request
 
+# ─── DIR-PN080-001: حاکم دیسک + پس‌رفت نمایی (درس شب ۲۰۲۶-۱۱-۲۰) ───
+# ریشه: cp_al روی ENOSPC شکست خورد و کیپر هر ۰.۳ث دوباره تلاش کرد (حلقهٔ
+# مرگ). درمان: پس از هر شکست، وقفهٔ نمایی + فراخوان حاکم دیسک.
+_nm_fail_streak = 0          # زنجیرهٔ شکست‌های متوالی بازسازی node_modules
+_nm_next_attempt_at = 0.0    # نخستین زمان مجاز تلاش بعدی
+_governor_next_at = 0.0      # چرخهٔ سبک حاکم دیسک (هر ۶۰ث)
+GOVERNOR_INTERVAL = 60.0
+
+
+def disk_governor_cycle():
+    """چرخهٔ سبک حاکم دیسک — check؛ اگر نیازمند بود enforce."""
+    global _governor_next_at
+    now = time.time()
+    if now < _governor_next_at:
+        return
+    _governor_next_at = now + GOVERNOR_INTERVAL
+    governor = f"{REPO}/scripts/disk-governor.sh"
+    try:
+        r = subprocess.run(["bash", governor, "--check"], capture_output=True, timeout=30)
+        if r.returncode != 0:
+            log("governor: نیازمند پاکسازی — enforce")
+            subprocess.Popen(["setsid", "bash", governor, "--enforce"],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             start_new_session=True, cwd="/")
+    except Exception as e:
+        log(f"governor ERR: {e}")
+
+
+def nm_restore_backoff():
+    """آیا فعلاً نباید بازسازی node_modules را تلاش کرد؟ (پس‌رفت نمایی)"""
+    return time.time() < _nm_next_attempt_at
+
 REPO = "/home/z/my-project"
 STORE = "/home/z/melka-store"
 LOG = f"{STORE}/keeper.log"
@@ -99,7 +131,25 @@ def cp_al(src, dst):
     os.rename(tmp, dst)
 
 
+def nm_restore_failed_with_backoff(e):
+    """DIR-PN080-001: شکست بازسازی — پس‌رفت نمایی + تحریک حاکم دیسک.
+    ۰.۳ث حلقهٔ مرگِ ENOSPC شب ۲۰۲۶-۱۱-۲۰ → ۵ث → ۱۵ث → ۶۰ث → ۱۲۰ث (سقف)."""
+    global _nm_fail_streak, _nm_next_attempt_at
+    _nm_fail_streak += 1
+    delays = [5, 15, 60, 120]
+    delay = delays[min(_nm_fail_streak - 1, len(delays) - 1)]
+    _nm_next_attempt_at = time.time() + delay
+    log(f"ERR restore nm (streak={_nm_fail_streak}): {e} — تلاش بعدی تا {delay}ث دیگر؛ تحریک حاکم دیسک")
+    try:
+        subprocess.Popen(["setsid", "bash", f"{REPO}/scripts/disk-governor.sh", "--enforce"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True, cwd="/")
+    except Exception:
+        pass
+
+
 def handle_node_modules(is_building):
+    global _nm_fail_streak, _nm_next_attempt_at
     # ۱) سیم‌لینک ممنوع (درس Turbopack) — با هاردلینک جایگزین کن
     if os.path.islink(NM_REAL):
         try:
@@ -107,13 +157,19 @@ def handle_node_modules(is_building):
             log("removed forbidden node_modules symlink")
         except OSError as e:
             log(f"ERR unlink nm symlink: {e}")
-    # ۲) غایب → بازسازی از فروشگاه با هاردلینک
+    # ۲) غایب → بازسازی از فروشگاه با هاردلینک — با پس‌رفت نمایی (DIR-PN080)
     if not os.path.exists(NM_REAL) and is_real_dir(NM_STORE):
+        if nm_restore_backoff():
+            return  # در پنجرهٔ پس‌رفت — بی‌صدا صبر می‌کنیم (نه حلقهٔ مرگ)
         try:
             cp_al(NM_STORE, NM_REAL)
+            if _nm_fail_streak:
+                log(f"بازسازی nm پس از {_nm_fail_streak} شکست موفق شد — زنجیره صفر شد")
+            _nm_fail_streak = 0
+            _nm_next_attempt_at = 0.0
             log("restored node_modules via hardlink tree from store")
         except Exception as e:
-            log(f"ERR restore nm: {e}")
+            nm_restore_failed_with_backoff(e)
             return
     # ۳) حین بیلد: فروشگاه را دست نمی‌زنیم
     if is_building:
@@ -302,6 +358,7 @@ def cycle():
     handle_node_modules(b)
     handle_next(b)
     probe_serving()
+    disk_governor_cycle()  # DIR-PN080-001: چرخهٔ سبک حاکم دیسک
 
 
 def main_loop():

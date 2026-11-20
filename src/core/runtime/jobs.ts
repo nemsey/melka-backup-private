@@ -129,6 +129,7 @@ export const WORKER_JOB_IDS = {
   lcppWatch: "lcpp-watch", // PN-051 · فرمان ۷ — پاسخ ≤۶۰ث به «بروزرسانی دستی» مالک · PN-083: پرچم مشاوران هم همین‌جا
   divarFileTtl: "divar-file-ttl", // PN-059 · رابع — TTL سه‌روزهٔ فایل‌های بی‌اقدام فایل‌یابی
   expertsCycle: "experts-cycle", // PN-083 — چرخهٔ خودکار فهرست مشاوران (M4 · هماهنگ‌ساز چهار فهرست)
+  relayQueueJanitor: "relay-queue-janitor", // DIR-PN080-001 — مهار بادکنک RelayQueue (ریشهٔ حادثهٔ شب ۲۰۲۶-۱۱-۲۰)
 } as const;
 
 /** فاصله‌ها از همان env های قبلی دیمن‌ها خوانده می‌شوند — سلوک حفظ می‌شود */
@@ -203,6 +204,43 @@ export async function runBackupRotation(db: PrismaClient, options?: { keep?: num
   // PN-078 · آزادسازی رم: بکاپ چرخشی ۶ساعته نیز فایل سرد است — cache رها شود
   await dropBackupFileCache(target);
   return { created: target, kept, pruned, integrity };
+}
+
+/**
+ * جانیتور صف رله (DIR-PN080-001 · مهار بادکنک RelayQueue):
+ * ریشه‌یابی شب ۲۰۲۶-۱۱-۲۰ — ۱۷٬۵۷۸ ردیفِ done/failed/expired با responseBody
+ * کامل (۶۹۲MB = ۶۷٪ دیتابیس) هرگز پاک نمی‌شد → DB=۱GB → هر اسنپ‌شات مقدس
+ * ~۱GB → پنج بکاپ لوکال روی rootfs ۹.۹GB → دیسک ۱۰۰٪ → ENOSPC همه‌جا →
+ * سقوط زنجیره‌ای (ossfs → کیپر → رستاخیز → سرو کهنه).
+ * درمان (هر ۳۰ دقیقه):
+ *   ۱) ردیف‌های تکمیل‌شدهٔ >۲ ساعت → responseBody/body/headersJson = NULL
+ *      (نتیجه پس از مصرف در waitRelayResponse دیگر لازم نیست؛ متادیتا می‌ماند)
+ *   ۲) ردیف‌های تکمیل‌شدهٔ >۲۴ ساعت → حذف کامل (آمار done24h تا ۲۴ ساعت دقیق می‌ماند)
+ * دادهٔ مقدس: جداول رکورد (آگهی/درخواست/معامله/مشاور) هرگز لمس نمی‌شوند.
+ */
+export async function runRelayQueueJanitor(db: PrismaClient): Promise<{ nulled: number; deleted: number; rowsLeft: number }> {
+  const CUTOFF_PAYLOAD_MS = 2 * 60 * 60_000;   // >۲ ساعت → بدون payload
+  const CUTOFF_DELETE_MS = 24 * 60 * 60_000;   // >۲۴ ساعت → حذف کامل
+  const doneStatuses = ["done", "failed", "expired"] as const;
+  // ۱) حذف کامل ردیف‌های قدیمی
+  const del = await db.relayQueue.deleteMany({
+    where: { status: { in: [...doneStatuses] }, enqueuedAt: { lt: new Date(Date.now() - CUTOFF_DELETE_MS) } },
+  });
+  // ۲) تخلیهٔ payload ردیف‌های میانی (۲ تا ۲۴ ساعت)
+  const upd = await db.relayQueue.updateMany({
+    where: {
+      status: { in: [...doneStatuses] },
+      enqueuedAt: { lt: new Date(Date.now() - CUTOFF_PAYLOAD_MS) },
+      OR: [{ responseBody: { not: null } }, { body: { not: null } }, { headersJson: { not: null } }],
+    },
+    data: { responseBody: null, body: null, headersJson: null },
+  });
+  const rowsLeft = await db.relayQueue.count();
+  const detail = { nulled: upd.count, deleted: del.count, rowsLeft, at: new Date().toISOString() };
+  await db.auditLog.create({
+    data: { action: "RELAY_QUEUE_JANITOR", actor: "worker:relay-queue-janitor", detail: JSON.stringify(detail) },
+  }).catch(() => undefined);
+  return { nulled: upd.count, deleted: del.count, rowsLeft };
 }
 
 /**
@@ -610,6 +648,24 @@ export function buildWorkerJobs(db: PrismaClient): WorkerJobDef[] {
       // شوک CPU/IO استارتاپ نرم شود (پنجرهٔ ریسک نخستین چرخه ~۶۰s — داخل دکترین ۵دقیقه‌ای)
       firstRunDelayMs: 60_000,
       run: async (database) => runRollingBackup(database),
+      toDomain: (r) => {
+        if (r && typeof r === "object") return r as Record<string, unknown>;
+        return {};
+      },
+    });
+  }
+
+  // ── Relay Queue Janitor → Worker (DIR-PN080-001: مهار بادکنک RelayQueue) ──
+  // درس شب ۲۰۲۶-۱۱-۲۰: ۱۷٬۵۷۸ ردیف تکمیل‌شده با responseBody کامل (۶۹۲MB =
+  // ۶۷٪ DB) → هر اسنپ‌شات ~۱GB → دیسک/سهمیه پر → سقوط زنجیره‌ای قلاب طلایی.
+  // هر ۳۰ دقیقه: payload ردیف‌های >۲ ساعت → NULL · ردیف‌های >۲۴ ساعت → حذف.
+  if (process.env.MELK_RELAY_JANITOR !== "disabled") {
+    jobs.push({
+      id: WORKER_JOB_IDS.relayQueueJanitor,
+      title: "جانیتور صف رله — مهار بادکنک RelayQueue (DIR-PN080-001)",
+      intervalMs: envInt("MELK_RELAY_JANITOR_INTERVAL_MINUTES", 30, 10) * 60_000,
+      firstRunDelayMs: 90_000,
+      run: async (database) => runRelayQueueJanitor(database),
       toDomain: (r) => {
         if (r && typeof r === "object") return r as Record<string, unknown>;
         return {};
