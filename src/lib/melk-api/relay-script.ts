@@ -6,6 +6,18 @@
  *   کنش‌های تغییر کدآگهی/کد درخواست (requests/create|update · request-events ·
  *   properties/update) — «تمام ظرفیت ترموکس در اختیار کاشی تغییرات».
  *   نسل‌های قدیمی فیلد boost را بی‌صدا نادیده می‌گیرند (سازگاری عقبه کامل).
+ * نسل P = DIR-RELAY-ARMFENCE-001 (دستور مالک ۲۰۲۶-۱۱-۲۱ · «کدنصب فوق پیشرفته» — گام سوم):
+ *   ریشه‌یابی اسکرین‌شات ترموکس مالک: در حالت تمام‌ظرفیت (فایل‌یابی/تغییرات)
+ *   نرخ ارسال به ARM تا ۳۰۰/دقیقه بالا می‌رفت و WAF اراون‌کلود با ۴۰۳ + بن
+ *   تشدیدی (۱۰←۲۰←۴۰←۸۰←۱۲۰ث) و کدهای ۴۲۰/۴۲۳ IP گوشی را می‌بست → آیتم‌ها
+ *   fail → سرور به کاشی‌ها ۵۰۲ می‌داد → «توقف عملکرد ترموکس».
+ *   درمان (حاکم تطبیقی ARM — سه اهرم):
+ *     ۱) سقف نرخ ARM: ۶۰/دقیقه عادی · ۱۲۰ در تمام‌ظرفیت — نردمان نرخ سمت سرور جدا است.
+ *     ۲) همزمانی تطبیقی: ARM_CONC ۶←۱۶ سالم · سقوط به ۲ روی ۴۰۳/۴۲۰/۴۲۳/۴۰۲.
+ *     ۳) قطع هوشمند بن: Retry-After سرور یا برآورد دوبرابرشونده (۲۰ث ← سقف ۱۸۰ث)
+ *        — حین قطع poll جدیدی برداشته نمی‌شود (آیتم نابالغ نمی‌سوزد) و پس از
+ *        قطع، نرخ/همزمانی آرام بازمی‌گردد (AIMD نزولی سریع · صعودی تدریجی).
+ *   همهٔ خطاها (۲۸/۴۰۲/۴۰۳/۴۲۰/۴۲۳/5xx/شبکه) = توقف/کاهش موقت، هرگز خروج.
  * ---------------------------------------------------------------------------
  * روت bootstrap این قالب را با پیکربندی دستگاه (SERVER_URL · DEVICE_ID ·
  * DEVICE_SECRET · ALT_SERVER_URL) پر می‌کند و به‌صورت text/x-shellscript تحویل می‌دهد.
@@ -122,6 +134,122 @@ AUTH_GUIDE_EVERY=5                  # هر ۵ تلاش، راهنمای «کد �
 CLOCK_RESYNC_S=900                  # همگام‌سازی دورهٔ ساعت با سرور (هر ۱۵ دقیقه)
 SUPERVISOR_DELAY=10                 # مکث سرپرایز پیش از راه‌اندازی مجدد
 EXIT_REVOKED=10                     # تنها کد خروج عمدی (ابطال مالک از داشبورد)
+
+# ── نسل P (DIR-RELAY-ARMFENCE-001): حاکم تطبیقی ARM — پالایهٔ WAF/بن/سهمیه ──
+# درس اسکرین‌شات مالک: نرخ ۳۰۰/دقیقه در تمام‌ظرفیت → WAF ۴۰۳ + بن تشدیدی
+# (۱۰←۲۰←۴۰←۸۰←۱۲۰ث) + ۴۲۰/۴۲۳ → آیتم‌ها fail → ۵۰۲ کاشی‌ها. سه اهرم:
+ARM_RATE_MAX=60                     # سقف تماس ARM در دقیقه — حالت عادی
+ARM_RATE_MAX_BOOST=120              # سقف تماس ARM در دقیقه — حالت تمام‌ظرفیت
+ARM_RATE_MIN=15                     # کف نرخ ARM پس از تشدید بن
+ARM_RATE_CURRENT=60                 # نرخ جاری (تطبیقی — با سلامت بازمی‌گردد)
+ARM_CONC=6                          # همزمانی جاری ARM (تطبیقی: شروع محافظه‌کار)
+ARM_CONC_MAX=16                     # سقف همزمانی ARM در سلامت کامل
+ARM_CONC_MIN=2                      # کف همزمانی (حتی در جنگ با WAF دوتایی می‌ماند)
+ARM_WAF_COOLDOWN_UNTIL=0            # زمان پایان قطع فعلی ARM (epoch ثانیه)
+ARM_WAF_BAN_BASE=20                 # برآورد نخستین بن (ث) وقتی سرور مدت نداد
+ARM_WAF_BAN_MAX=180                 # سقف قطع ARM (زیر TTL صف ۳۰۰ث — آیتم نابالغ نمی‌سوزد)
+ARM_WAF_STREAK=0                    # بن‌های پیاپی (برآورد تشدیدی ۲^n)
+ARM_402_QUOTA_BASE=30               # برآورد قطع سهمیهٔ ۴۰۲ (پرداخت/سهمیه ARM)
+ARM_HEALTHY_STREAK=0                # پاسخ‌های سالم پیاپی — بازگشت تدریجی نرخ/همزمانی
+ARM_REQ_TIMES=()                    # پنجرهٔ نرخ سمت ARM (جدا از پنجرهٔ سرور)
+
+# ── نسل P: چرخهٔ نرخ سمت ARM (جدا از rate_gate سرور) ──
+arm_rate_gate() {
+  # \$1 = URL آیتم — تعاملی (OTP) معاف است: پاسخ چندثانیه‌ای، بی‌کم‌وکاست
+  [ -n "\${1:-}" ] && is_interactive "\$1" && return 0
+  local now t keep oldest wait_s
+  now=\$(date +%s)
+  keep=()
+  for t in \${ARM_REQ_TIMES[@]+"\${ARM_REQ_TIMES[@]}"}; do
+    [ \$(( now - t )) -lt 60 ] && keep+=("$t")
+  done
+  ARM_REQ_TIMES=("\${keep[@]+"\${keep[@]}"}")
+  if [ "\${#ARM_REQ_TIMES[@]}" -ge "\$ARM_RATE_CURRENT" ]; then
+    oldest="\${ARM_REQ_TIMES[0]}"
+    wait_s=\$(( 60 - (now - oldest) + 1 ))
+    if [ "$wait_s" -gt 0 ]; then
+      sleep "$wait_s"
+    fi
+    now=\$(date +%s)
+    keep=()
+    for t in \${ARM_REQ_TIMES[@]+"\${ARM_REQ_TIMES[@]}"}; do
+      [ \$(( now - t )) -lt 60 ] && keep+=("$t")
+    done
+    ARM_REQ_TIMES=("\${keep[@]+"\${keep[@]}"}")
+  fi
+  ARM_REQ_TIMES+=("$now")
+}
+
+# ── نسل P: آیا ARM در قطع بن است؟ (خروجی: ثانیهٔ باقی‌ماندهٔ قطع) ──
+arm_cooldown_left() {
+  local now left
+  now=\$(date +%s)
+  left=\$(( ARM_WAF_COOLDOWN_UNTIL - now ))
+  [ "$left" -lt 0 ] && left=0
+  printf '%s' "$left"
+}
+
+# ── نسل P: ضربهٔ WAF — ۴۰۳/۴۲۰/۴۲۳ (بن/قفل) یا ۴۰۲ (سهمیه) از ARM ──
+# تشدید دوبرابرشونده: هر بن پیاپی قطع را دوبرابر می‌کند (تا سقف) — عین نردمان
+# بن‌های واقعی اراون‌کلود در اسکرین‌شات مالک (۱۰←۲۰←۴۰←۸۰←۱۲۰ث).
+# اولین پاسخ سالم پس از قطع، تشدید را نصف می‌کند (بازگشت آرام).
+arm_waf_hit() {
+  # $1 = کد (403/420/423/402) · $2 = Retry-After سرور (ثانیه · ۰ = نداد)
+  local code="$1" ra="\${2:-0}" left
+  # در قطع فعال: تشدید نکن — ۴۰۳های درحال‌پروازِ همان موج پژواکند، نه بن تازه؛
+  # فقط کف همزمانی/نرخ که در همین ضربه اعمال شده کافی است (ضد تشدید کاذب).
+  left="\$(arm_cooldown_left)"
+  [ "\$left" -gt 0 ] && return 0
+  ARM_WAF_STREAK=\$((ARM_WAF_STREAK+1))
+  local ban=\$(( ARM_WAF_BAN_BASE * 2 ** (ARM_WAF_STREAK - 1) ))
+  [ "$ban" -gt "$ARM_WAF_BAN_MAX" ] && ban=$ARM_WAF_BAN_MAX
+  if [ "\$ra" -gt 0 ] && [ "\$ra" -gt "\$ban" ]; then ban="\$ra"; fi
+  [ "$code" = "402" ] && [ "$ban" -gt "\$ARM_402_QUOTA_BASE" ] && ban=\$ARM_402_QUOTA_BASE
+  ARM_WAF_COOLDOWN_UNTIL=\$(( \$(date +%s) + ban ))
+  # نزول سریع (AIMD نزولی): نرخ نصف + همزمانی سقوط به کف
+  ARM_RATE_CURRENT=\$(( ARM_RATE_CURRENT / 2 ))
+  [ "\$ARM_RATE_CURRENT" -lt "\$ARM_RATE_MIN" ] && ARM_RATE_CURRENT=\$ARM_RATE_MIN
+  ARM_CONC=\$ARM_CONC_MIN
+  ARM_HEALTHY_STREAK=0
+  left="$(arm_cooldown_left)"
+  if [ "$code" = "402" ]; then
+    log "🛑 ARM سهمیه/پرداخت را رد کرد (402) — قطع \$banث + نرخ ← \$ARM_RATE_CURRENT/دقیقه (پیاپی: \$ARM_WAF_STREAK · بدون توقف)"
+  else
+    log "🛑 WAF اراون‌کلود IP را بست (\$code · پیاپی: \$ARM_WAF_STREAK) — قطع \$banث + نرخ ← \$ARM_RATE_CURRENT/دقیقه + همزمانی ← \$ARM_CONC (بدون توقف)"
+  fi
+}
+
+# ── نسل P: پاسخ سالم ARM — بازگشت تدریجی (AIMD صعودی) ──
+arm_healthy() {
+  ARM_HEALTHY_STREAK=\$((ARM_HEALTHY_STREAK+1))
+  # هر ۱۰ پاسخ سالم پیاپی: تشدید بن نصف + نرخ +۱۵ + همزمانی +۱ (تا سقفها)
+  if [ "\$(( ARM_HEALTHY_STREAK % 10 ))" -eq 0 ]; then
+    [ "\$ARM_WAF_STREAK" -gt 0 ] && ARM_WAF_STREAK=\$(( ARM_WAF_STREAK / 2 ))
+    ARM_RATE_CURRENT=\$(( ARM_RATE_CURRENT + 15 ))
+    local cap=\$ARM_RATE_MAX
+    [ "\$BOOST_MODE" -eq 1 ] && cap=\$ARM_RATE_MAX_BOOST
+    [ "\$ARM_RATE_CURRENT" -gt "\$cap" ] && ARM_RATE_CURRENT=\$cap
+    ARM_CONC=\$(( ARM_CONC + 1 ))
+    [ "\$ARM_CONC" -gt "\$ARM_CONC_MAX" ] && ARM_CONC=\$ARM_CONC_MAX
+  fi
+}
+
+# ── نسل P: انتظار تا پایان قطع بن — پیش از برداشتن کار جدید ──
+# حین قطع poll جدیدی زده نمی‌شود (آیتمِ نابالغ از صف برداشته نمی‌شود تا TTL
+# نسوزد)؛ هر ۳۰ث یک ضربان تا مالک بداند رله زنده است و فقط منتظر WAF است.
+arm_wait_cooldown() {
+  local left="$(arm_cooldown_left)" waited=0
+  [ "$left" -eq 0 ] && return 0
+  log "⏳ انتظار \$left ثانیه تا پایان بن ARM — آیتم جدید برداشته نمی‌شود (رله زنده است · بدون توقف)"
+  while [ "$(arm_cooldown_left)" -gt 0 ]; do
+    sleep 2
+    waited=\$((waited+2))
+    if [ "\$(( waited % 30 ))" -eq 0 ]; then
+      log "⏳ بن ARM: \$(arm_cooldown_left) ثانیه مانده — رله زنده است (نرخ بازیابی: \$ARM_RATE_CURRENT/دقیقه)"
+    fi
+  done
+  log "✓ بن ARM پایان یافت — از سر گیری با نرخ \$ARM_RATE_CURRENT/دقیقه و همزمانی \$ARM_CONC"
+}
 
 # آیا آیتم تعاملی است؟ (OTP/ورود — مهلت کوتاه)
 # الگو عین relayPriorityForUrl سرور: /authentication/otp در مسیر URL
@@ -534,6 +662,10 @@ process_item() {
   # مسیر برای لاگ زمان (بدون کوئری — صفر لاگ محتوا؛ هیچ توکنی در URL نیست)
   RPATH=\${RURL%%\\?*}
 
+  # ── نسل P (DIR-RELAY-ARMFENCE-001): گیت نرخ ARM — در والد (process_set) ──
+  # اجرا می‌شود، نه اینجا: کارگرها fork هستند و متغیرهای حاکم در فرزند
+  # از بین می‌روند (درس معماری bash). اینجا فقط اجرای خود درخواست است.
+
   local ARGS=(-sS --max-time "$MAX_TIME" -D "$HDR" -o "$TMP" -w '%{http_code}' -X "$RMETHOD")
   [ -n "$AUTH" ] && ARGS+=(-H "Authorization: $AUTH")
   [ -n "$CT" ] && ARGS+=(-H "Content-Type: $CT")
@@ -562,7 +694,24 @@ process_item() {
     log "⚔ \$RMETHOD \${RPATH#https://} → خطای curl \$CURL_EXIT پس از \${DUR}ث"
     jq -nc --arg id "$RID" --arg err "curl exit \$CURL_EXIT" '{id:\$id,error:\$err}' > "$outf"
   else
-    log "✓ \$RMETHOD \${RPATH#https://} → HTTP \$CODE در \${DUR}ث"
+    # ── نسل P: پالایهٔ WAF/سهمیهٔ ARM — ۴۰۳/۴۲۰/۴۲۳ (بن اراون‌کلود) و ۴۰۲ ──
+    # درس اسکرین‌شات مالک: بدون این پالایه آیتم بعدی بی‌درنگ شلیک می‌شد و بن
+    # تشدید می‌شد (۱۰←۲۰←۴۰←۸۰←۱۲۰ث). اکنون: قطع کل ARM + نصف نرخ + سقوط
+    # همزمانی؛ آیتم با دلیل شفاف رد می‌شود (سرور TTL خودش را می‌بَرد).
+    case "\$CODE" in
+      403|420|423|402)
+        RA=\$(awk 'tolower(\$1)=="retry-after:"{sub(/\\r\$/,"");print \$2;exit}' "$HDR" 2>/dev/null)
+        case "\${RA:-}" in ""|*[!0-9]*) RA=0 ;; esac
+        # نسل P: فایل نشان برای والد — کارگر fork است و متغیرهای حاکم اینجا از بین
+        # می‌روند؛ والد (process_set) در چرخهٔ خود نشان را می‌خواند و arm_waf_hit
+        # را در زمینهٔ خودش اجرا می‌کند (قطع/نصف نرخ/سقوط همزمانی معتبر می‌ماند).
+        printf '%s\\n' "\$CODE \$RA" > "\$(dirname "\$outf")/.waf-strike" 2>/dev/null || true
+        jq -nc --arg id "$RID" --arg err "arm waf \$CODE (ban \${RA}s)" '{id:\$id,error:\$err}' > "$outf"
+        rm -f "$TMP" "$HDR" "$B64F"
+        return 0
+        ;;
+    esac
+    log "✓ \$RMETHOD \${RPATH#https://} → HTTP \$CODE در \${DUR}ث (پاسخ سالم — شمارش در drain والد)"
     CTYPE=\$(awk 'tolower($1)=="content-type:"{sub(/\\r\$/,"");print $2;exit}' "$HDR")
     [ -z "$CTYPE" ] && CTYPE=\$(awk 'tolower($1)=="content-type:"{sub(/\\r\$/,"");\$1="";sub(/^ /,"");print;exit}' "$HDR")
     # PN-036 فاز ۱ — رفع ARG_MAX: بدنهٔ base64 در فایل می‌نشیند و jq آن را
@@ -620,6 +769,11 @@ drain_spool() {
     ERRORS=\$(( ERRORS + \${errn:-0} ))
     BATCHES=\$((BATCHES+1))
     log "جریان نتیجه: \${totaln:-0} مورد → \${errn:-0} خطا (مجموع: \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته)"
+    # نسل P: پاسخ‌های سالم ARM در والد شمرده می‌شوند — فرزندان state ندارند؛
+    # بازگشت تدریجی نرخ/همزمانی (هر ۱۰ سالم: +۱۵ نرخ · +۱ همزمانی)
+    OKN=\$(printf '%s' "$payload" | jq '[.[] | select((.httpStatus // 0) >= 200 and (.httpStatus // 0) < 300)] | length' 2>/dev/null)
+    _ok_i=0
+    while [ "\$_ok_i" -lt "\${OKN:-0}" ]; do arm_healthy; _ok_i=\$((_ok_i+1)); done
   fi
   # حذف دقیقاً همان فایل‌هایی که در payload بودند — نه یک بایت بیشتر
   printf '%s\\n' "\$files" | xargs rm -f 2>/dev/null
@@ -643,6 +797,18 @@ express_poll_items() {
   return 0
 }
 
+# ── نسل P: مصرف نشان ضربهٔ WAF — در والد (state معتبر) ──
+consume_waf_marker() {
+  # \$1 = پوشهٔ انبار
+  local m="\${1:-}/.waf-strike" wcode wra
+  [ -f "\$m" ] || return 0
+  # read با rc=1 هم متغیرها را پر می‌کند (EOF بدون newline) — شکست rc مرگبار نیست
+  read -r wcode wra < "\$m" 2>/dev/null || true
+  rm -f "\$m"
+  [ -n "\$wcode" ] || return 0
+  arm_waf_hit "\$wcode" "\${wra:-0}"
+}
+
 # ── نسل N: استخر پویای کارگران — قلب سرعت ──
 # به‌جای «موج‌های قفل‌شده + انتظار برای کل دسته»: کارگران تا سقف POOL_SLOTS
 # (۱۶+۸) پیوسته از صف می‌گیرند؛ هر جای آزاد فوراً پر می‌شود؛ express (OTP/
@@ -661,15 +827,30 @@ process_set() {
   LAST_FLUSH=\$(date +%s)
   LAST_EXPRESS=\$(date +%s)
   while :; do
-    # پر کردن ظرفیت استخر از صف
-    while [ -s "$QUEUE" ] && [ "\$(active_jobs)" -lt "$POOL_SLOTS" ]; do
+    # ── نسل P (DIR-RELAY-ARMFENCE-001): گیت قطع بن WAF ──
+    # حین بن: شروع آیتم تازه ممنوع (درحال‌پروازها تمام می‌شوند، نتیجه‌ها
+    # تخلیه می‌شوند، poll جدیدی آیتم نمی‌کشد تا TTL صف نسوزد)؛ پژواک‌های
+    # ۴۰۳ِ درحال‌پرواز تشدید نمی‌کنند (arm_waf_hit خودش گارد دارد).
+    if [ "\$(arm_cooldown_left)" -gt 0 ]; then
+      drain_spool "$SPOOL_DIR"
+      consume_waf_marker "$SPOOL_DIR"
+      sleep 3
+      continue
+    fi
+    # ── نسل P: همزمانی تطبیقی — سقف استخر = ARM_CONC (نه ۲۴ ثابت؛ درس بن) ──
+    while [ -s "$QUEUE" ] && [ "\$(active_jobs)" -lt "$ARM_CONC" ]; do
       ITEM=\$(head -n 1 "$QUEUE")
       sed -i '1d' "$QUEUE" 2>/dev/null
       [ -z "$ITEM" ] && continue
+      # نسل P: گیت نرخ ARM در والد — کارگران fork هستند؛ اینجا زنجیرهٔ نرخ
+      # واحد و معتبر است (جدا از گیت سرور؛ تعاملی/OTP معاف).
+      IURL=\$(printf '%s' "$ITEM" | jq -r '.url // empty' 2>/dev/null)
+      arm_rate_gate "$IURL"
       process_item_spool "$ITEM" "$SPOOL_DIR" &
     done
     BUSY=\$(active_jobs)
     drain_spool "$SPOOL_DIR"
+    consume_waf_marker "$SPOOL_DIR"
     if [ "$BUSY" -eq 0 ] && [ ! -s "$QUEUE" ]; then
       break
     fi
@@ -677,7 +858,7 @@ process_set() {
     NOW=\$(date +%s)
     # نسل O: در حالت تمام‌ظرفیت (کاشی تغییرات) فاصلهٔ poll میان‌موجی ۵ث ← ۲ث
     EP_NOW=\$(( BOOST_MODE == 1 ? EXPRESS_POLL_S_BOOST : EXPRESS_POLL_S ))
-    if [ \$(( NOW - LAST_EXPRESS )) -ge "\$EP_NOW" ] && [ "\$(active_jobs)" -lt "$POOL_SLOTS" ]; then
+    if [ \$(( NOW - LAST_EXPRESS )) -ge "\$EP_NOW" ] && [ "\$(active_jobs)" -lt "$ARM_CONC" ]; then
       LAST_EXPRESS=$NOW
       express_poll_items >> "$QUEUE" 2>/dev/null || true
     fi
@@ -731,8 +912,15 @@ relay_main() {
 
     # ضربان قلب — هر ۱۰ چرخه مالک می‌بیند رله زنده است
     if [ \$((LOOPS % 10)) -eq 0 ]; then
-      log "زنده — چرخهٔ \$LOOPS · مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) · \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته"
+      log "زنده — چرخهٔ \$LOOPS · مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) · \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته · حاکم ARM: نرخ \$ARM_RATE_CURRENT/دقیقه · همزمانی \$ARM_CONC · بن‌های پیاپی \$ARM_WAF_STREAK"
     fi
+
+    # ── نسل P (DIR-RELAY-ARMFENCE-001): حین قطع بن ARM، poll نزن ──
+    # poll = برداشتن آیتم جدید از صف سرور؛ اگر نتوانیم اجرایش کنیم، TTL ۳۰۰ث
+    # سرور می‌سوزدش و کاشی ۵۰۲ می‌گیرد. پس تا پایان بن صبر می‌کنیم (با ضربان)
+    # — سپس با نرخ/همزمانی بازیابی‌شده ادامه می‌دهیم. سرور در همین حین از
+    # مسیر مستقیم (سرور خودش) هر چه تواند می‌کند — صف رله فقط مسیر تقویتی است.
+    arm_wait_cooldown
 
     # ── فاز ۵: poll دسته‌ای — تا \$BATCH آیتم در هر تماس ──
     BODY="{\\"wait\\":$POLL_WAIT_S,\\"batch\\":$BATCH}"
@@ -930,14 +1118,19 @@ done
 `;
 }
 
-/** دستور نصب پیشرفتهٔ نسل N که مالک در Termux پیست می‌کند
- *  DIR-RELAY-UNLIMITED-001 (دستور ۳ مالک: «کدنصب بسیار پیشرفته… تمام محدودیت‌ها
- *  و مشکلات و موانع در آن پیش‌بینی و رفع شده باشد»):
- *    ۱) نصب وابستگی‌ها با پیام خطای مستقل و راهنمای تلاش دوباره
- *    ۲) دانلود bootstrap با تا ۳ تلاش و ۵ث فاصله (شبکهٔ لرزان موبایل)
- *    ۳) وارسی سلامت فایل (shebang + حداقل حجم) — فایل ناقص/خطای HTML اجرا نمی‌شود
- *    ۴) اجرا با دستور کار چندساعته (راهنمای باتری MIUI چاپ می‌شود)
- *    ۵) شکست نصب → پیام شفاف + پاکسازی فایل ناقص (عین DIR-RELAY-FIX-001)
+/** دستور نصب فوق پیشرفتهٔ نسل P که مالک در Termux پیست می‌کند
+ *  DIR-RELAY-ARMFENCE-001 (دستور مالک ۲۰۲۶-۱۱-۲۱ · «کدنصب فوق پیشرفته… ریست سرور و
+ *  کدخطاهای ۵۰۲/۴۰۳/۴۰۲/۲۸ و غیره موجب توقف نشود»):
+ *    ۱) نصب وابستگی‌ها با ۲ تلاش + پیام خطای مستقل و راهنمای تلاش دوباره
+ *    ۲) دانلود bootstrap با تا ۱۲ تلاش و فاصلهٔ صعودی (۵←۳۰ث) — پنجرهٔ کل
+ *       ~۳.۵ دقیقه؛ رستاخیز کامل سرور (~۱۵۰ث) را پوشش می‌دهد → «ریست سرور»
+ *       دیگر نصب را نمی‌شکند (کد ثبت هم معتبر می‌ماند — کد تازه لازم نیست)
+ *    ۳) تشخیص وضعیت HTTP: 502/503/429 = «سرور در حال ریست/رستاخیز — صبر» ·
+ *       403/404 = «کد منقضی/نامعتبر» با پیام تمایز‌یافته (توقف زودهنگام بی‌مورد ممنوع)
+ *    ۴) وارسی سلامت فایل (shebang + حداقل حجم + غیر-HTML) — فایل ناقص اجرا نمی‌شود
+ *    ۵) تعویض تمیز: نمونهٔ قدیمیِ در حال اجرا (در صورت وجود) با اطلاع متوقف می‌شود
+ *    ۶) شکست نهایی → پیام شفاف «همین دستور را دوباره بزنید» (نه «کد جدید» —
+ *       کد فقط با ابطال از داشبورد می‌میرد؛ درس درس‌آموخته)
  */
 export function buildInstallCommand(serverUrl: string, enrollCode: string): string {
   const safe = (s: string) => s.replace(/[^A-Za-z0-9:\/._-]/g, "");
@@ -945,24 +1138,54 @@ export function buildInstallCommand(serverUrl: string, enrollCode: string): stri
   const code = safe(enrollCode);
   // PN-031-I: همان حمل‌ونقل بقا — http1.1 + UA بروزری برای دانلود bootstrap
   // PN-034 (شورا-ن۰۵۵): openssl-tool — بستهٔ CLI واقعی Termux؛ مسیر اثبات‌شدهٔ مالک
-  // (PN-031-I/J: pkg install -y openssl-tool → پیست همین دستور → Enter → اتصال ✓)
-  return `# ── نصب رلهٔ ملکا (نسل O · بی‌توقف · بی‌محدودیت · حالت تمام‌ظرفیت‌آگاه) ──
-if pkg install -y curl openssl-tool jq; then
-  ok=0
-  for i in 1 2 3; do
-    if curl --http1.1 -A "${BROWSER_UA}" -fsSL "${url}/api/mobile-relay/bootstrap?code=${code}" -o ~/melka-relay.sh; then ok=1; break; fi
-    echo "تلاش دانلود \$i از ۳ ناموفق — ۵ ثانیه دیگر…"
-    sleep 5
-  done
-  if [ "\$ok" = "1" ] && head -n 1 ~/melka-relay.sh | grep -q '^#!' && [ "\$(wc -c < ~/melka-relay.sh)" -gt 4000 ]; then
-    chmod 700 ~/melka-relay.sh
-    echo "نصب موفق ✓ — رله آغاز می‌شود. برای ساعت‌ها کار بی‌وقفه: اندروید → برنامه‌ها → Termux → باتری → «بدون محدودیت»."
-    bash ~/melka-relay.sh
-  else
-    echo "خطا در نصب! لطفاً کد جدید بگیرید."
-    rm -f ~/melka-relay.sh
-  fi
-else
+  return `# ── نصب رلهٔ ملکا (نسل P · فوق پیشرفته · مقاوم به ریست سرور و خطاها) ──
+echo "نصب رلهٔ ملکا آغاز شد (نسل P · DIR-RELAY-ARMFENCE-001)…"
+deps_ok=0
+for i in 1 2; do
+  if pkg install -y curl openssl-tool jq; then deps_ok=1; break; fi
+  echo "نصب وابستگی‌ها (تلاش \$i از ۲) ناموفق — ۵ ثانیه دیگر…"
+  sleep 5
+done
+if [ "\$deps_ok" != "1" ]; then
   echo "خطا در نصب وابستگی‌ها! Termux را ببندید، دوباره باز کنید و همین دستور را دوباره بزنید."
+  exit 1
+fi
+ok=0; last_code=0
+waits=(5 5 10 10 15 20 25 30 30 30 30)
+for i in \$(seq 1 12); do
+  hdr=\$(mktemp)
+  body_tmp=\$(mktemp)
+  code_http=\$(curl --http1.1 -A "${BROWSER_UA}" -sS --max-time 30 -D "\$hdr" -o "\$body_tmp" -w '%{http_code}' "${url}/api/mobile-relay/bootstrap?code=${code}" 2>/dev/null)
+  rc=\$?
+  if [ "\$rc" -eq 0 ] && [ "\$code_http" = "200" ]; then
+    mv -f "\$body_tmp" ~/melka-relay.sh; rm -f "\$hdr"; ok=1; break
+  fi
+  rm -f "\$body_tmp" "\$hdr"; last_code="\$code_http"
+  w=\${waits[\$(( i < 11 ? i - 1 : 10 ))]:-30}
+  if [ "\$rc" -eq 28 ]; then
+    echo "تلاش \$i از ۱۲: تایم‌اوت (خطای ۲۸) — سرور شلوغ/شبکه ضعیف · \$w ثانیه دیگر…"
+  elif [ "\$code_http" = "502" ] || [ "\$code_http" = "503" ] || [ "\$code_http" = "429" ]; then
+    echo "تلاش \$i از ۱۲: سرور در حال ریست/رستاخیز است (HTTP \$code_http) — خودش برمی‌گردد · \$w ثانیه دیگر صبر می‌کنم…"
+  elif [ "\$code_http" = "403" ] || [ "\$code_http" = "404" ]; then
+    echo "کد ثبت رد شد (HTTP \$code_http) — اگر همین پیام تکرار شد از «راه‌اندازی رله» در تنظیمات ملکا کد تازه بگیرید. \$w ثانیه دیگر دوباره می‌کوشم (گاهی گذراست)…"
+  else
+    echo "تلاش \$i از ۱۲ ناموفق (کد \$code_http · خطای curl \$rc) — \$w ثانیه دیگر…"
+  fi
+  sleep "\$w"
+done
+if [ "\$ok" = "1" ] && head -n 1 ~/melka-relay.sh | grep -q '^#!' && [ "\$(wc -c < ~/melka-relay.sh)" -gt 4000 ] && ! grep -q '<html' ~/melka-relay.sh 2>/dev/null; then
+  chmod 700 ~/melka-relay.sh
+  if pgrep -f melka-relay.sh >/dev/null 2>&1; then
+    echo "نمونهٔ قدیمی رله در حال اجراست — برای تعویض تمیز متوقفش می‌کنم…"
+    pkill -f melka-relay.sh 2>/dev/null
+    sleep 2
+  fi
+  echo "نصب موفق ✓ (نسل P — حاکم تطبیقی ARM فعال: مقاوم به ۴۰۳/۴۲۰/۴۲۳/۴۰۲/۲۸/۵۰۲ و ریست سرور)."
+  echo "برای ساعت‌ها کار بی‌وقفه: اندروید → برنامه‌ها → Termux → باتری → «بدون محدودیت» + قفل در Recentها."
+  bash ~/melka-relay.sh
+else
+  echo "نصب کامل نشد (آخرین وضعیت: HTTP \$last_code). سرور احتمالاً هنوز در حال رستاخیز است —"
+  echo "چند لحظه بعد همین دستور را یک بار دیگر پیست کنید (کد ثبت همین می‌ماند — کد تازه فقط اگر از داشبورد ابطال شده باشد لازم است)."
+  rm -f ~/melka-relay.sh
 fi`;
 }
