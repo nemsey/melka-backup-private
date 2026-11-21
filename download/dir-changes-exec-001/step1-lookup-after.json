@@ -1,0 +1,37 @@
+{
+    "ok": true,
+    "code": "54402",
+    "arm": {
+        "armPropertyId": "6a3261ddc034cf27f2afdee5",
+        "title": "\u0641\u0631\u0648\u0634 \u0622\u067e\u0627\u0631\u062a\u0645\u0627\u0646 \u0645\u0633\u06a9\u0648\u0646\u06cc 185 \u0645\u062a\u0631\u06cc",
+        "relatedRealtor": "\u0633\u06cc\u062f \u0646\u0639\u0645\u062a \u0627\u0644\u0647 \u0633\u06cc\u062f\u06cc",
+        "createdAt": "2026-06-17T08:59:09.926Z",
+        "latestStatus": {
+            "action": null,
+            "statusName": "\u0641\u0631\u0635\u062a \u062e\u0631\u06cc\u062f \u0645\u0632\u06cc\u062a \u0631\u0642\u0627\u0628\u062a\u06cc | \u0641\u0627\u06cc\u0644 \u0646\u0642\u0631\u0647 \u0627\u06cc \ud83e\udd48",
+            "realtor": "\u0633\u06cc\u062f \u0646\u0639\u0645\u062a \u0627\u0644\u0647 \u0633\u06cc\u062f\u06cc",
+            "date": "2026-11-21T08:11:32.091Z",
+            "display": "11:41 | 1405/08/30"
+        }
+    },
+    "owner": {
+        "userId": "63f9e3080dc08b8ec186fb42",
+        "customerId": "67c40bf04450822bfc10a50a",
+        "fullName": "\u062c\u0628\u0627\u0631\u06cc",
+        "mobile": "989143265736"
+    },
+    "events": [],
+    "localTraces": {
+        "propertyCatalog": 1,
+        "listingFiles": 0,
+        "linkedEvents": 0,
+        "visits": 0,
+        "specialProperties": 0,
+        "transactions": 0,
+        "contracts": 0,
+        "matchRejections": 0,
+        "opportunityAlerts": 0,
+        "graphNodes": 2,
+        "graphEdges": 3
+    }
+}
