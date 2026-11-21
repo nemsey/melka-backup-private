@@ -14,6 +14,8 @@ import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import { mostVisitedProperties } from "./analyzers";
 import { buildCoverageInsight, type CoverageColumnInput } from "./coverage-insight";
 import { faNumber } from "@/lib/format";
+// DIR-TODAY-DROP-001 — مرزِ «امروز» = نیمه‌شب تقویمی تهران (تک‌منبع حقیقت)
+import { tehranDayStartMs } from "@/lib/jalali";
 
 /** وابستگی‌های تزریق‌پذیر ایجنت کاتالوگ آگهی‌های ARM */
 export interface ArmListingAgentDeps {
@@ -159,20 +161,24 @@ export class ArmListingAgent extends BaseLearningAgent {
       if (covCard) cards.push(covCard);
     }
 
-    // ---- FRESHNESS: تازگی ثبت آگهی‌ها ----
+    // ---- FRESHNESS: تازگی جریان ثبت آگهی‌ها ----
+    // DIR-TODAY-DROP-001 — «آگهی امروز» با مرزِ نیمه‌شب تقویمی تهران محاسبه می‌شود
+    // (پنجرهٔ غلتان ۲۴ساعته رکوردهای بعدازظهر دیروز را ظرف روز حذف می‌کرد و عدد
+    // «کم می‌شد» — شاهد مالک: ۶۸←۳۴؛ «هفته» همچنان غلتان ۷روزه است و برچسبش هم همین است).
     const now = Date.now();
     const dayMs = 86400_000;
-    const today = rows.filter((r) => r.createdAt && now - r.createdAt.getTime() < dayMs).length;
+    const todayStart = tehranDayStartMs();
+    const today = rows.filter((r) => r.createdAt && r.createdAt.getTime() >= todayStart).length;
     const week = rows.filter((r) => r.createdAt && now - r.createdAt.getTime() < 7 * dayMs).length;
     cards.push({
       key: "al-freshness",
       domain: "FRESHNESS",
-      title: "تازگی جریان ثبت آگهی",
-      body: `در ۲۴ ساعت گذشته ${faNumber(today)} آگهی جدید و در هفت روز گذشته ${faNumber(week)} آگهی در سامانه ARM ثبت شده است. با هر بار «بروزرسانی از سامانه»، فهرست تازه و آگهی‌های جدید با کد و کارشناس مسؤول به کاتالوگ اضافه می‌شوند؛ غنی‌سازی تماس مالک جدیدترین‌ها هم خودکار در اولویت است.`,
+      title: "تازگی جریان ثبت آگهی‌ها",
+      body: `امروز ${faNumber(today)} آگهی دارای جریان ثبت/فعالیت و در هفت روز گذشته ${faNumber(week)} آگهی در سامانه ARM ثبت شده است. با هر بار «بروزرسانی از سامانه»، فهرست تازه و آگهی‌های جدید با کد و کارشناس مسؤول به کاتالوگ اضافه می‌شوند؛ غنی‌سازی تماس مالک جدیدترین‌ها هم خودکار در اولویت است.`,
       severity: "info",
       metrics: [
-        { label: "آگهی امروز", value: faNumber(today) },
-        { label: "آگهی هفته", value: faNumber(week) },
+        { label: "آگهی امروز (از نیمه‌شب)", value: faNumber(today) },
+        { label: "آگهی هفت روز گذشته", value: faNumber(week) },
       ],
     });
 

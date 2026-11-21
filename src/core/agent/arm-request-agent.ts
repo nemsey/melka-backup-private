@@ -11,6 +11,8 @@ import { getRequestRepository, type RequestRepository } from "@/core/repositorie
 import { BaseLearningAgent, type InsightCard } from "./base-agent";
 import { buildCoverageInsight, type CoverageColumnInput } from "./coverage-insight";
 import { faNumber } from "@/lib/format";
+// DIR-TODAY-DROP-001 — مرزِ «امروز» = نیمه‌شب تقویمی تهران (تک‌منبع حقیقت)
+import { tehranDayStartMs } from "@/lib/jalali";
 
 /** وابستگی‌های تزریق‌پذیر ایجنت کاتالوگ درخواست‌های ARM */
 export interface ArmRequestAgentDeps {
@@ -132,20 +134,23 @@ export class ArmRequestAgent extends BaseLearningAgent {
       if (covCard) cards.push(covCard);
     }
 
-    // ---- FRESHNESS: تازگی ثبت درخواست‌ها ----
+    // ---- FRESHNESS: تازگی جریان ثبت درخواست‌ها ----
+    // DIR-TODAY-DROP-001 — «درخواست امروز» با مرزِ نیمه‌شب تقویمی تهران (پنجرهٔ غلتان
+    // ۲۴ساعتهٔ قدیم باعث «کم‌شدنِ امروز» می‌شد؛ درخواست‌ها createdAt واقعی ARM دارند).
     const now = Date.now();
     const dayMs = 86400_000;
-    const today = rows.filter((r) => r.createdAt && now - r.createdAt.getTime() < dayMs).length;
+    const todayStart = tehranDayStartMs();
+    const today = rows.filter((r) => r.createdAt && r.createdAt.getTime() >= todayStart).length;
     const week = rows.filter((r) => r.createdAt && now - r.createdAt.getTime() < 7 * dayMs).length;
     cards.push({
       key: "ar-freshness",
       domain: "FRESHNESS",
       title: "تازگی جریان ثبت درخواست",
-      body: `در ۲۴ ساعت گذشته ${faNumber(today)} درخواست جدید و در هفت روز گذشته ${faNumber(week)} درخواست در سامانه ARM ثبت شده است. جریان ورودی تقاضا، آینه‌های بازار خرید و اجارهٔ تبریز است؛ با «بروزرسانی از سامانه» جدیدترین‌ها با کد و کارشناس ثبت‌کننده به کاتالوگ اضافه می‌شوند و غنی‌سازی تماس آن‌ها خودکار در اولویت است.`,
+      body: `امروز ${faNumber(today)} درخواست جدید و در هفت روز گذشته ${faNumber(week)} درخواست در سامانه ARM ثبت شده است. جریان ورودی تقاضا، آینه‌های بازار خرید و اجارهٔ تبریز است؛ با «بروزرسانی از سامانه» جدیدترین‌ها با کد و کارشناس ثبت‌کننده به کاتالوگ اضافه می‌شوند و غنی‌سازی تماس آن‌ها خودکار در اولویت است.`,
       severity: "info",
       metrics: [
-        { label: "درخواست امروز", value: faNumber(today) },
-        { label: "درخواست هفته", value: faNumber(week) },
+        { label: "درخواست امروز (از نیمه‌شب)", value: faNumber(today) },
+        { label: "درخواست هفت روز گذشته", value: faNumber(week) },
       ],
     });
 

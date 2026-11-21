@@ -52,7 +52,7 @@ import { InfoButton } from "@/components/info/InfoButton";
 // PN-011 ثالثاً — شعبه چندانتخابی چیپی؛ Select تک‌انتخابی حذف شد
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, downloadExcelByTicket } from "@/lib/client/api";
-import { faDigits } from "@/lib/jalali";
+import { faDigits, tehranDayStartMs } from "@/lib/jalali";
 import { faDateTime, faNumber, faAmountFull, formatPriceInput, parsePriceInput } from "@/lib/format";
 // P6547/گام پنجم-ب — نظام رنگ متمایز هر مقدار + هارمونی فیلتر↔فهرست
 import { valueSoftClass, valueSolidClass, branchBadgeClass, requestStateBadgeClass } from "@/lib/value-colors";
@@ -351,7 +351,11 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, on
   const enrichment = data?.enrichment ?? { total: 0, pending: 0, complete: 0 };
   const statusCounts = data?.statusCounts;
   const coveragePct = enrichment.total > 0 ? Math.round((enrichment.complete / enrichment.total) * 100) : 0;
-  const todayCount = rows.filter((r) => r.createdAt && Date.now() - new Date(r.createdAt).getTime() < 86400_000).length;
+  // DIR-TODAY-DROP-001 — «درخواست امروز» = درخواست‌های ثبت‌شده از نیمه‌شب تقویمی تهران.
+  // (درخواست‌ها createdAt واقعی منبع ARM را دارند — برخلاف آگهی که لایهٔ ۱ فقط updatedAt می‌دهد؛
+  // اینجا مرزِ روز است که عوض شد: پنجرهٔ غلتان ۲۴ساعته باعث «کم‌شدنِ امروز» می‌شد.)
+  const todayStartMs = tehranDayStartMs();
+  const todayCount = rows.filter((r) => r.createdAt && new Date(r.createdAt).getTime() >= todayStartMs).length;
   const activeRealtors = new Set(rows.map((r) => r.actorName).filter(Boolean)).size;
   const stateFilterActive = selectedStates.length > 0;
   const areaLineActive = areaLine.areas.length > 0 || areaLine.lines.length > 0;
@@ -423,7 +427,7 @@ export function ArmRequestsPage({ settings, onSettingsChange: _osc, userRole, on
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard label={"کل درخواست‌های ملک تبریز"} value={loading ? undefined : faNumber(data?.total ?? 0)} icon={ClipboardList} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
         <KpiCard label={"اطلاعات متقاضی و مناطق تکمیل‌شده"} value={loading ? undefined : `${faNumber(coveragePct)}٪`} sub={loading ? undefined : `${faNumber(enrichment.complete)} از ${faNumber(enrichment.total)}`} icon={Phone} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
-        <KpiCard label="درخواست امروز" value={loading ? undefined : faNumber(todayCount)} icon={CalendarDays} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
+        <KpiCard label="درخواست امروز" value={loading ? undefined : faNumber(todayCount)} sub={loading ? undefined : "از نیمه‌شب تهران"} icon={CalendarDays} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
         <KpiCard label={"کارشناسان ثبت‌کننده"} value={loading ? undefined : faNumber(activeRealtors)} icon={Network} iconWrapperClassName="bg-sec-m2-50" iconColorClassName="text-sec-m2-700" />
       </div>
 
