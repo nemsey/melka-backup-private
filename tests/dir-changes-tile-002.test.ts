@@ -311,3 +311,24 @@ describe("DIR-CHANGES-TILE-002 · ۶) نمایش تاریخ عین UI خود س�
     expect(V.isoToJalaliHour("2026-11-11T14:00:00.000Z")).toBe("17:30 | 1405/08/20");
   });
 });
+
+/* ═══════════ ۷) قرارداد موبایل users/update (درس زندهٔ DIR-CHANGES-EXEC-001) ═══════════ */
+
+describe("DIR-CHANGES-TILE-002 · ۷) قرارداد موبایل — users/update فقط قالب 98… را ماندگار می‌کند", () => {
+  // شاهد زندهٔ 54402: PUT با "9144018677" → 201 «با موفقیت ویرایش شد» اما موبایل
+  // کهنه ماند؛ PUT با 989144018677 (عدد یا رشته) → همان لحظه در users/info ماند.
+  test("۷-۱ هر سه قالب ورودی → قالب بین‌المللی کامل 98…", () => {
+    expect(E.toArmMobileInternational("09144018677")).toBe("989144018677");
+    expect(E.toArmMobileInternational("9144018677")).toBe("989144018677");
+    expect(E.toArmMobileInternational("989144018677")).toBe("989144018677");
+  });
+
+  test("۷-۲ ارقام فارسی هم نرمال می‌شوند", () => {
+    expect(E.toArmMobileInternational("۰۹۱۴۴۰۱۸۶۷۷")).toBe("989144018677");
+  });
+
+  test("۷-۳ ورودی بی‌رقم → دست‌نخورده برمی‌گردد (بدون ساخت شمارهٔ جعلی)", () => {
+    expect(E.toArmMobileInternational("—")).toBe("—");
+    expect(E.toArmMobileInternational("")).toBe("");
+  });
+});

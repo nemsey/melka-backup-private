@@ -402,6 +402,15 @@ function toArmMobile(mobile: string): string {
   return digits.startsWith("0") ? digits.slice(1) : digits;
 }
 
+/** قالب بین‌المللی کامل ARM (98…) — درس زندهٔ DIR-CHANGES-EXEC-001:
+ *  users/update فقط این قالب را ماندگار می‌کند؛ فرم کوتاه ۱۰رقمی با 201 پذیرفته
+ *  می‌شود اما بی‌صدا اعمال نمی‌شود (شاهد 54402: نام ماند، موبایل نماند تا قالب
+ *  98… آزموده شد). users/create هر دو قالب را نرمال می‌کند — update نه. */
+export function toArmMobileInternational(mobile: string): string {
+  const short = toArmMobile(mobile);
+  return short ? `98${short}` : mobile;
+}
+
 function splitName(fullName: string): { firstName: string; lastName: string } {
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return { firstName: parts[0], lastName: "" };
@@ -446,10 +455,13 @@ export async function changeListingOwnerInfo(spec: ListingOwnerChangeSpec, actor
     step("owner", "اطلاعات فعلی مالک آگهی", "done", `نام: «${beforeName}» · موبایل: ${beforeMobile} · شناسهٔ کاربر: ${targetUserId}.`);
 
     // بدنهٔ ویرایش عین users/create خود سامانه (firstName/lastName/mobileNumber)
+    // DIR-CHANGES-EXEC-001 — mobileNumber همیشه با قالب بین‌مللی کامل 98… فرستاده
+    // می‌شود (قرارداد زندهٔ اثبات‌شده — بالا)؛ آینهٔ محلی با قالب محلی ۰۹… جداگانه.
     const finalName = newName ?? beforeName;
-    const finalMobile = newMobile ? toArmMobile(newMobile) : toArmMobile(beforeMobile);
+    const finalMobileShort = toArmMobile(newMobile ?? beforeMobile);
+    const finalMobileArm = finalMobileShort ? `98${finalMobileShort}` : String(newMobile ?? beforeMobile);
     const { firstName, lastName } = splitName(finalName);
-    const body = { firstName, lastName, mobileNumber: finalMobile };
+    const body = { firstName, lastName, mobileNumber: finalMobileArm };
 
     let updated = false;
     let usedId = targetUserId;
@@ -470,28 +482,40 @@ export async function changeListingOwnerInfo(spec: ListingOwnerChangeSpec, actor
       }
       if (!updated) throw e;
     }
-    step("users-update", "تغییر اطلاعات مالک در خود سامانه (users/update)", "done", `شناسهٔ ${usedId} ← نام: «${finalName}» · موبایل: ${finalMobile}.`);
+    step("users-update", "تغییر اطلاعات مالک در خود سامانه (users/update)", "done", `شناسهٔ ${usedId} ← نام: «${finalName}» · موبایل: ${finalMobileArm}.`);
 
-    // راستی‌آزمایی زنده
-    const ownerAfter = await fetchPropertyOwner(oe, armPropertyId).catch(() => null);
-    const afterName = ownerAfter?.fullName ?? null;
-    const afterMobile = ownerAfter?.mobileNumber != null ? String(ownerAfter.mobileNumber) : null;
-    const nameOk = !newName || (afterName ?? "").includes(newName.split(/\s+/)[0]);
-    const mobileOk = !newMobile || afterMobile === finalMobile || afterMobile === `98${finalMobile}`;
-    step("verify", "راستی‌آزمایی زندهٔ اطلاعات مالک", nameOk && mobileOk ? "done" : "failed",
-      `پس از تغییر: نام «${afterName ?? "—"}» · موبایل ${afterMobile ?? "—"} ${nameOk && mobileOk ? "— مطابق خواسته ✓" : "— هنوز مقدار قبلی را برمی‌گرداند (ممکن است کش سرور تأخیر داشته باشد)"}.`);
+    // راستی‌آزمایی زنده — از رکورد مرجع (users/info/{id}) نه نمای لگ‌دار «مالک آگهی»
+    // (DIR-CHANGES-EXEC-001: properties/owner پس از نوشتن چند دقیقه مقدار کهنه
+    // برمی‌گرداند؛ رکورد کاربر مرجع است و by-code هم تازه‌تر است)
+    const userAfter = await (async () => {
+      try {
+        const r = await call<ArmRow>(oe, "GET", ARM_PATHS.customerInfo(usedId));
+        return (r.data ?? null) as ArmRow | null;
+      } catch {
+        return null;
+      }
+    })();
+    const ownerView = await fetchPropertyOwner(oe, armPropertyId).catch(() => null);
+    const afterName = userAfter?.fullName ?? ownerView?.fullName ?? null;
+    const afterMobile = userAfter?.mobileNumber != null ? String(userAfter.mobileNumber)
+      : ownerView?.mobileNumber != null ? String(ownerView.mobileNumber) : null;
+    const nameOk = !newName || (afterName ?? "") === finalName || (afterName ?? "").includes(newName.split(/\s+/)[0]);
+    const mobileOk = !newMobile || afterMobile === finalMobileArm || afterMobile === finalMobileShort;
+    step("verify", "راستی‌آزمایی زندهٔ اطلاعات مالک (رکورد مرجع users/info)", nameOk && mobileOk ? "done" : "failed",
+      `پس از تغییر: نام «${afterName ?? "—"}» · موبایل ${afterMobile ?? "—"} ${nameOk && mobileOk ? "— مطابق خواسته ✓" : "— نمای «مالک آگهی» ممکن است با تأخیر تازه شود؛ رکورد مرجع مرجع است"}.`);
 
-    // آینه‌های محلی
+    // آینه‌های محلی — قالب محلی ۰۹…
+    const localMobile = finalMobileShort ? `0${finalMobileShort}` : String(newMobile ?? beforeMobile);
     const localP = await db.propertyRecord.updateMany({
       where: { propertyCode: clean },
       data: {
         rawOwnerName: finalName,
-        ownerMobile: `0${finalMobile}`,
-        ownerSearchNorm: `${finalName} ␟ 0${finalMobile}`,
+        ownerMobile: localMobile,
+        ownerSearchNorm: `${finalName} ␟ ${localMobile}`,
       },
     }).catch(() => null);
     const localL = armPropertyId
-      ? await db.listingRecord.updateMany({ where: { armPropertyId }, data: { customerName: finalName, customerMobile: `0${finalMobile}` } }).catch(() => null)
+      ? await db.listingRecord.updateMany({ where: { armPropertyId }, data: { customerName: finalName, customerMobile: localMobile } }).catch(() => null)
       : null;
     step("local-mirror", "به‌روزرسانی آینه‌های محلی", (localP || localL) ? "done" : "skipped",
       (localP || localL) ? `کاتالوگ M1: ${localP?.count ?? 0} ردیف · فایل آگهی: ${localL?.count ?? 0} ردیف به‌روزرسانی شد.` : "ردیف محلی متناظر یافت نشد.");
@@ -503,7 +527,7 @@ export async function changeListingOwnerInfo(spec: ListingOwnerChangeSpec, actor
       operation: "listing-owner-change",
       steps,
       durationMs: Date.now() - t0,
-      result: { propertyCode: clean, armPropertyId, ownerName: afterName ?? finalName, ownerMobile: afterMobile ?? finalMobile, verdict: { nameOk, mobileOk } },
+      result: { propertyCode: clean, armPropertyId, ownerName: afterName ?? finalName, ownerMobile: afterMobile ?? finalMobileArm, verdict: { nameOk, mobileOk } },
     };
   } catch (e) {
     step("fatal", "اجرای عملیات", "failed", (e as Error).message);
