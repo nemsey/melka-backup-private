@@ -1,0 +1,45 @@
+{
+  "directive": "DIR-TODAY-DROP-001",
+  "viaEdge": "https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai",
+  "steps": [
+    {
+      "key": "load-no-exception",
+      "ok": true,
+      "detail": "صفحه از لبه بار شد"
+    },
+    {
+      "key": "owner-login",
+      "ok": true,
+      "detail": "ورود مدیر موفق"
+    },
+    {
+      "key": "m1-kpi-today",
+      "ok": true,
+      "detail": "نمایش: ۱۰ (از نیمه‌شب تهران) · DB: 10←10 (مرز نیمه‌شب)"
+    },
+    {
+      "key": "m1-kpi-sub-label",
+      "ok": true,
+      "detail": "زیرنویس: «از نیمه‌شب تهران»"
+    },
+    {
+      "key": "m1-agent-freshness-label",
+      "ok": true,
+      "detail": "برچسب‌های تازهٔ کارت تازگی حاضرند"
+    },
+    {
+      "key": "m2-kpi-today",
+      "ok": true,
+      "detail": "نمایش: ۰ (از نیمه‌شب تهران) · DB: 0←0"
+    },
+    {
+      "key": "m2-kpi-sub-label",
+      "ok": true,
+      "detail": "زیرنویس: «از نیمه‌شب تهران»"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}
