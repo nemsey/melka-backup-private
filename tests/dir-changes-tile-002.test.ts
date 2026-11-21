@@ -150,7 +150,10 @@ describe("DIR-CHANGES-TILE-002 · ۳) پاکسازی کامل — هیچ اثر�
     await db.transactionRecord.deleteMany({ where: { propertyCode: { in: [L_CODE, "99003"] } } }).catch(() => undefined);
     await db.contractRecord.deleteMany({ where: { OR: [{ propertyCode: L_CODE }, { requestCode: R_CODE }] } }).catch(() => undefined);
     await db.matchRejectionRecord.deleteMany({ where: { OR: [{ listingCode: L_CODE }, { requestCode: R_CODE }] } }).catch(() => undefined);
-    await db.opportunityAlert.deleteMany({ where: { OR: [{ listingCode: L_CODE }, { requestCode: R_CODE }] } }).catch(() => undefined);
+    // DIR-CHANGES-EXEC-001 — اصلاح تایپی ایزوله‌سازی: OpportunityAlert کلیدش
+    // requestId است (عین purge.ts) نه requestCode؛ خطای tsc پنهانِ .catch
+    const isoReqIds = (await db.requestRecord.findMany({ where: { requestCode: R_CODE }, select: { id: true } }).catch(() => [] as Array<{ id: string }>)).map((r) => r.id);
+    await db.opportunityAlert.deleteMany({ where: { OR: [{ listingCode: L_CODE }, ...(isoReqIds.length ? [{ requestId: { in: isoReqIds } }] : [])] } }).catch(() => undefined);
     await db.graphNode.deleteMany({ where: { refId: { in: [L_CODE, R_CODE] } } }).catch(() => undefined);
     await db.graphEdge.deleteMany({ where: { OR: [{ fromRef: L_CODE }, { toRef: L_CODE }, { fromRef: R_CODE }, { toRef: R_CODE }] } }).catch(() => undefined);
     // ساخت آثار محلی یک کدآگهی و یک کددرخواست در همهٔ جدول‌های نقشه (رکوردهای مجزا برای هر طرف)

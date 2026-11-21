@@ -821,9 +821,11 @@ process_set() {
   QUEUE=\$(mktemp); SPOOL_DIR=\$(mktemp -d)
   # Express lane (PN-036 فاز ۵ + PN-080 + نسل O DIR-CHANGES-TILE-001):
   # OTP/ثبت مقدم بر فهرست‌های سنگین — کنش‌های «تغییرات کدآگهی/کد درخواست»
-  # (requests/create|update · request-events · properties/update) هم همیشه اکسپرس.
-  printf '%s' "$items_json" | jq -c '.[] | select((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number|/requests/create|/requests/update|/request-events/create|/properties/update"))' >> "$QUEUE" 2>/dev/null
-  printf '%s' "$items_json" | jq -c '.[] | select(((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number|/requests/create|/requests/update|/request-events/create|/properties/update")) | not)' >> "$QUEUE" 2>/dev/null
+  # همیشه اکسپرس. DIR-CHANGES-EXEC-001: خانواده‌های TILE-002 (properties/owner ·
+  # users/update|info|delete · request-events/update|delete|list · requests/info)
+  # هم‌ردهٔ اکسپرس — عین relayPriorityForUrl سرور (هم‌راستایی دو سمت).
+  printf '%s' "$items_json" | jq -c '.[] | select((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number|/users/update/|/users/info/|/users/delete/|/requests/create|/requests/update/|/requests/info/|/request-events/create|/request-events/update/|/request-events/delete/|/request-events/list|/properties/update/|/properties/info/by-code/|/properties/owner/"))' >> "$QUEUE" 2>/dev/null
+  printf '%s' "$items_json" | jq -c '.[] | select(((.url // "") | test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number|/users/update/|/users/info/|/users/delete/|/requests/create|/requests/update/|/requests/info/|/request-events/create|/request-events/update/|/request-events/delete/|/request-events/list|/properties/update/|/properties/info/by-code/|/properties/owner/")) | not)' >> "$QUEUE" 2>/dev/null
   LAST_FLUSH=\$(date +%s)
   LAST_EXPRESS=\$(date +%s)
   while :; do

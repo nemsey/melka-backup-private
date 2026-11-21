@@ -246,9 +246,13 @@ describe("DIR-CHANGES-TILE-001 · ۵) اولویت رله — کاشی مقدم 
       // خواندن تاریخچه/جزئیات برای راستی‌آزمایی هم ۱۰
       expect(relayPriorityForUrl(ARM("requests/history/abc"))).toBe(RELAY_PRIORITY_CHANGES);
       expect(relayPriorityForUrl(ARM("request-event-types/list"))).toBe(RELAY_PRIORITY_CHANGES);
-      // انبوه همچنان کم‌اولویت — فقط انتظار
-      expect(relayPriorityForUrl(ARM("requests/list"))).toBe(1);
+      // DIR-CHANGES-EXEC-001 — در نشست، requests/list = جستجوی کد کاشی تغییرات
+      // (scanRequestRow · TILE-002) یا بازخوانی تعاملی M2 — سقف ۱۰ (قرارداد
+      // به‌روزشد؛ تولیدکنندگان انبوه در گیت‌های سه‌گانه رد می‌شوند و صف نمی‌سازند)
+      expect(relayPriorityForUrl(ARM("requests/list"))).toBe(RELAY_PRIORITY_CHANGES);
+      // انبوه غیرکاشی همچنان کم‌اولویت — فقط انتظار
       expect(relayPriorityForUrl(ARM("properties/details/x"))).toBe(0);
+      expect(relayPriorityForUrl(ARM("trade-overviews/info/x"))).toBe(2);
     } finally {
       await S.endChangesSession(ACTOR);
     }
@@ -257,6 +261,37 @@ describe("DIR-CHANGES-TILE-001 · ۵) اولویت رله — کاشی مقدم 
   test("۵-۳ RELAY_PRIORITY_CHANGES = ۱۰ (سقف قرارداد صف)", () => {
     expect(RELAY_PRIORITY_CHANGES).toBe(10);
     expect(RELAY_PRIORITY_CHANGES).toBeGreaterThan(RELAY_PRIORITY_INTERACTIVE);
+  });
+
+  // DIR-CHANGES-EXEC-001 — گارد رگرسیون حادثهٔ ۱۴۰۵/۰۸/۳۱: خانواده‌های TILE-002
+  // که در ثبت‌نام اولویت جا مانده بودند و در نشست تمام‌ظرفیت TTL می‌سوختند
+  // (شاهد زنده: «مالک آگهی ۵۴۴۰۲ خوانده نشد» — properties/owner با اولویت ۰).
+  const TILE2_PATHS = [
+    "properties/owner/6a3261ddc034cf27f2afdee5",
+    "users/update/63f9e3080dc08b8ec186fb42",
+    "users/info/63f9e3080dc08b8ec186fb42",
+    "users/delete/63f9e3080dc08b8ec186fb42",
+    "request-events/update/abc123",
+    "request-events/delete/abc123",
+    "request-events/list",
+    "requests/info/6afbdc419e477125d0a9280d",
+  ];
+
+  test("۵-۴ خانواده‌های TILE-002 در حالت عادی: تعاملی (۵) — نه ۰", () => {
+    for (const p of TILE2_PATHS) {
+      expect(relayPriorityForUrl(ARM(p))).toBe(RELAY_PRIORITY_INTERACTIVE);
+    }
+  });
+
+  test("۵-۵ خانواده‌های TILE-002 در نشست تمام‌ظرفیت: سقف (۱۰) — هرگز گم نمی‌شوند", async () => {
+    await S.beginChangesSession(ACTOR, "آزمون اولویت TILE-002");
+    try {
+      for (const p of TILE2_PATHS) {
+        expect(relayPriorityForUrl(ARM(p))).toBe(RELAY_PRIORITY_CHANGES);
+      }
+    } finally {
+      await S.endChangesSession(ACTOR);
+    }
   });
 });
 
@@ -301,14 +336,22 @@ describe("DIR-CHANGES-TILE-001 · ۷) کدنصب نسل O — آگاهی از ح
     expect(script).toContain("EP_NOW=$(( BOOST_MODE == 1 ? EXPRESS_POLL_S_BOOST : EXPRESS_POLL_S ))");
   });
 
-  test("۷-۴ لاین اکسپرس شامل کنش‌های تغییر کد درخواست/کدآگهی", () => {
-    expect(script).toContain("/requests/create|/requests/update|/request-events/create|/properties/update");
+  test("۷-۴ لاین اکسپرس شامل کنش‌های تغییر کد درخواست/کدآگهی + خانواده‌های TILE-002", () => {
+    // DIR-CHANGES-EXEC-001 — الگوی اکسپرس سرور+گوشی هم‌راستا شد و خانواده‌های
+    // TILE-002 (owner · users · request-events · requests/info · by-code) اضافه شدند
+    expect(script).toContain("/requests/create|/requests/update/|/requests/info/");
+    expect(script).toContain("/request-events/create|/request-events/update/|/request-events/delete/|/request-events/list");
+    expect(script).toContain("/properties/update/|/properties/info/by-code/|/properties/owner/");
+    expect(script).toContain("/users/create|/users/info/mobile-number|/users/update/|/users/info/|/users/delete/");
   });
 
-  test("۷-۵ دستور نصب نسل O پابرجا (حمل‌ونقل بقا)", () => {
+  test("۷-۵ دستور نصب پابرجا (حمل‌ونقل بقا — نسل P · DIR-RELAY-ARMFENCE-001)", () => {
+    // DIR-CHANGES-EXEC-001: نسل از O به P رفت (حاکم تطبیقی ARM) — قرارداد بقا
+    // (نصب+حمل‌ونقل+۱۲ تلاش) پابرجاست؛ فقط نشانگر نسل به‌روز شد (درس PN-065).
     const cmd = buildInstallCommand("https://x.example", "CODE123");
-    expect(cmd).toContain("نسل O");
+    expect(cmd).toContain("نسل P");
     expect(cmd).toContain("pkg install -y curl openssl-tool jq");
     expect(cmd).toContain("/api/mobile-relay/bootstrap?code=CODE123");
+    expect(cmd).toContain("مقاوم به ۴۰۳/۴۲۰/۴۲۳/۴۰۲/۲۸/۵۰۲ و ریست سرور");
   });
 });

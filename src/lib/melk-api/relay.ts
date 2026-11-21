@@ -526,17 +526,36 @@ export function relayPriorityForUrl(url: string): number {
       changesActive = false;
     }
     // خانوادهٔ «تغییرات کد درخواست + کدآگهی» — همیشه تعاملی (۵)؛ در نشست فعال ۱۰
+    // DIR-CHANGES-EXEC-001: خانواده‌های TILE-002 که در ثبت‌نام اولویت جا مانده بودند
+    // ثبت شدند — properties/owner · users/(update|info|delete) · request-events/
+    // (update|delete|list) · requests/info. پیش از این ثبت، هر عملیات نوشتاری
+    // TILE-002 نشست تمام‌ظرفیت را خودکار فعال می‌کرد و همین خانواده‌ها با اولویت ۰
+    // پشت گیت claim (≥۵) TTL می‌سوختند (شاهد زندهٔ ۱۴۰۵/۰۸/۳۱: «مالک آگهی ۵۴۴۰۲
+    // خوانده نشد» پس از ۲۲۵ث — properties/owner با اولویت ۰ هرگز جلا نشد).
     const isChangesWrite =
       /\/requests\/create(\/|$)/i.test(p) ||
       /\/requests\/update\/[^/]+/i.test(p) ||
+      /\/requests\/info\/[^/]+/i.test(p) ||
       /\/request-events\/create(\/|$)/i.test(p) ||
+      /\/request-events\/update\/[^/]+/i.test(p) ||
+      /\/request-events\/delete\/[^/]+/i.test(p) ||
+      /\/request-events\/list(\/|$)/i.test(p) ||
       /\/properties\/create(\/|$)/i.test(p) ||
       /\/properties\/update\/[^/]+/i.test(p) ||
-      /\/properties\/info\/by-code\//i.test(p);
+      /\/properties\/info\/by-code\//i.test(p) ||
+      /\/properties\/owner\/[^/]+/i.test(p) ||
+      /\/users\/(update|info|delete)\/[^/]+/i.test(p);
     if (isChangesWrite) return changesActive ? RELAY_PRIORITY_CHANGES : RELAY_PRIORITY_INTERACTIVE;
     if (changesActive && (/\/requests\/history\//i.test(p) || /\/requests\/details\//i.test(p) || /\/forms\/info\/category(\/|$)/i.test(p) || /\/request-event-types\/list(\/|$)/i.test(p))) {
       return RELAY_PRIORITY_CHANGES;
     }
+    // DIR-CHANGES-EXEC-001 — در نشست فعال، requests/list = جستجوی کدِ کاشی تغییرات
+    // (scanRequestRow · TILE-002 — درخواست بدون رکورد محلی) یا بازخوانی تعاملی M2.
+    // تولیدکنندگان انبوه (LCPP/کاتالوگ/M4) در سه گیت نشست رد می‌شوند و آیتم
+    // نمی‌سازند — پس سقف ۱۰ در عمل فقط به همین دو مسیر تعاملی می‌رسد.
+    // (به‌روزرسانی قرارداد TILE-001: پیش از TILE-002، تغییرات هرگز requests/list
+    // نمی‌خواند — «requests/list = ۱ در نشست» برای دنیای پیش از scan معتبر بود.)
+    if (changesActive && /\/requests\/list(\/|$)/i.test(p)) return RELAY_PRIORITY_CHANGES;
     if (/\/authentication\/otp(\/|$)/i.test(p)) return RELAY_PRIORITY_INTERACTIVE;
     // PN-080 (حکم مالک ۲۰۲۶-۱۱-۱۰ · «بهینه‌سازی ثبت آگهی در سامانه arm»):
     // خانوادهٔ ثبت آگهی کنش تعاملی کاربر است — جستجو/ایجاد مالک (users/*) و
