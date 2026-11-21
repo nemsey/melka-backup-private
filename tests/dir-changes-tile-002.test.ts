@@ -332,3 +332,36 @@ describe("DIR-CHANGES-TILE-002 · ۷) قرارداد موبایل — users/upda
     expect(E.toArmMobileInternational("")).toBe("");
   });
 });
+
+/* ═══════════ ۸) جستجوی کد درخواست — فیلتر کدِ خود سامانه اول (درس زندهٔ گام دوم DIR-CHANGES-EXEC-001) ═══════════ */
+// شاهد زندهٔ 48968 (متقاضی «سید نعمت اله سیدی» · ثبت ۱۴۰۵/۰۳/۰۸): اسکن صفحاتی قدیمی
+// (۸ صفحه × ۲۰ = ۱۶۰ تازه‌ترین) هرگز به رکورد چندماهه نمی‌رسید؛ فیلتر کدِ خود سامانه
+// (requests/list?code= — همان فیلتر UI آرم) همان لحظه یافتش کرد.
+
+describe("DIR-CHANGES-TILE-002 · ۸) جستجوی کد — فیلتر کدِ خود سامانه اول، اسکن صفحاتی پشتیبان", () => {
+  const SRC = require("node:fs").readFileSync("src/lib/changes/executor.ts", "utf8");
+
+  test("۸-۱ scanRequestRow ابتدا فیلتر کد را می‌زند (هر دو قالب param)", () => {
+    const fn = SRC.slice(SRC.indexOf("async function scanRequestRow"));
+    const body = fn.slice(0, fn.indexOf("\n}", fn.indexOf("گام ۲")));
+    // گام ۱ (فیلتر کد) پیش از گام ۲ (اسکن صفحاتی)
+    expect(body.indexOf('for (const codeParam of ["code", "code[]"]')).toBeGreaterThan(-1);
+    expect(body.indexOf('for (const codeParam of ["code", "code[]"]')).toBeLessThan(body.indexOf("// گام ۲"));
+    // فیلتر روی همان مسیر requests_list با page=1
+    expect(body).toContain("[codeParam]: code");
+  });
+
+  test("۸-۲ اسکن صفحه‌به‌صفحه به‌عنوان پشتیبان باقی است (کدهای دیده‌نشدنی توسط فیلتر)", () => {
+    const fn = SRC.slice(SRC.indexOf("async function scanRequestRow"));
+    const body = fn.slice(0, fn.indexOf("\n}", fn.indexOf("گام ۲")));
+    expect(body).toContain("// گام ۲ — پشتیبان");
+    expect(body).toContain("maxPages");
+  });
+
+  test("۸-۳ پس‌پرکردن armRequestId رکورد محلی پس از یافتن زنده (lookup + change-date)", () => {
+    const lookups = SRC.split("پس‌پرکردن").length - 1 + SRC.split("پرکردن شناسهٔ ARM").length - 1;
+    expect(SRC).toContain('data: { armRequestId }');
+    // هر دو مسیر: lookup و change-date پس از scan ذخیره می‌کنند
+    expect(SRC.match(/db\.requestRecord\.update\(\{ where: \{ id: rec\.id \}, data: \{ armRequestId \}/g)?.length).toBeGreaterThanOrEqual(2);
+  });
+});

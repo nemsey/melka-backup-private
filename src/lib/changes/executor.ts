@@ -124,8 +124,27 @@ function rawId(v: unknown): string | null {
   return String(v);
 }
 
-/** جستجوی ردیف درخواست در فهرست زندهٔ ARM */
+/**
+ * جستجوی ردیف درخواست در فهرست زندهٔ ARM.
+ *
+ * DIR-CHANGES-EXEC-001 (گام دوم · ۱۴۰۵/۰۸/۳۱): جستجو ابتدا با «فیلتر کدِ خود سامانه»
+ * (requests/list?code= — همان فیلتر UI آرم، هر دو قالب param) انجام می‌شود —
+ * لحظه‌ای و مستقل از سن رکورد. جستجوی صفحه‌به‌صفحهٔ قدیمی فقط برای کدهایی که
+ * فیلتر نمی‌بیند، به‌عنوان پشتیبان مانده (رفع ریشهٔ «درخواست‌های قدیمی پیدا نمی‌شوند»:
+ * اسکن ۸ صفحه × ۲۰ = ۱۶۰ تازه‌ترین، هرگز به رکوردهای چندماهه نمی‌رسید — شاهد زنده:
+ * 48968 متقاضی «سید نعمت اله سیدی» با فیلتر کد فوری یافت شد اما با اسکن صفحاتی هرگز).
+ */
 async function scanRequestRow(oe: OwnerExec, code: string, maxPages = 8): Promise<ArmRow | null> {
+  // گام ۱ — فیلتر کدِ خود سامانه (هر دو قالب param عین provider.lookupRequestByCode)
+  for (const codeParam of ["code", "code[]"] as const) {
+    const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestsList, {
+      query: { page: "1", limit: "25", [codeParam]: code },
+    }).catch(() => null);
+    const list = (res?.data?.list ?? []) as ArmRow[];
+    const row = list.find((r) => String(r.code ?? r.requestCode ?? "").trim() === code);
+    if (row) return row;
+  }
+  // گام ۲ — پشتیبان: اسکن صفحه‌به‌صفحهٔ تازه‌ها (مسیر قدیمی)
   for (let page = 1; page <= maxPages; page++) {
     const res = await call<ArmRow>(oe, "GET", ARM_PATHS.requestsList, {
       query: { page: String(page), limit: "20" },
@@ -827,11 +846,18 @@ export async function lookupRequestForChange(code: string): Promise<RequestChang
   try {
     const oe = await resolveOwnerExec();
     let armRequestId: string | null = null;
-    const rec = await db.requestRecord.findFirst({ where: { requestCode: clean }, select: { armRequestId: true } });
+    const rec = await db.requestRecord.findFirst({ where: { requestCode: clean }, select: { id: true, armRequestId: true } });
     if (rec?.armRequestId) armRequestId = rec.armRequestId;
     if (!armRequestId) {
       const row = await scanRequestRow(oe, clean);
-      if (row?._id) armRequestId = String(row._id);
+      if (row?._id) {
+        armRequestId = String(row._id);
+        // DIR-CHANGES-EXEC-001 — پرکردن شناسهٔ ARMِ رکورد محلی (پیش از این: اسکن کد قدیمی
+        // می‌توانست ردیف را پیدا کند اما شناسه هرگز ذخیره نمی‌شد ⇒ هر بار جستجوی مجدد)
+        if (rec?.id) {
+          await db.requestRecord.update({ where: { id: rec.id }, data: { armRequestId } }).catch(() => undefined);
+        }
+      }
     }
     if (!armRequestId) {
       return { ...base, error: `درخواستی با کد ${clean} یافت نشد (نه محلی، نه زندهٔ ARM).` };
@@ -912,13 +938,17 @@ export async function changeRequestHistoryDate(spec: RequestDateChangeSpec, acto
     const oe = await resolveOwnerExec();
     step("token", "توکن مالک ARM", "done", `توکن زنده از «${oe.source === "session" ? "نشست مالک" : "خزانه"}».`);
 
-    // شناسایی درخواست (محلی ← فهرست زنده)
+    // شناسایی درخواست (محلی ← فیلتر کد زنده)
     const rec = await db.requestRecord.findFirst({ where: { requestCode: clean } });
     let armRequestId = rec?.armRequestId ?? null;
     let row: ArmRow | null = rec ? null : null;
     if (!armRequestId) {
       row = await scanRequestRow(oe, clean);
       armRequestId = row?._id ? String(row._id) : null;
+      // DIR-CHANGES-EXEC-001 — ذخیرهٔ شناسهٔ ARM در رکورد محلی (پس‌پرکردن)
+      if (armRequestId && rec?.id) {
+        await db.requestRecord.update({ where: { id: rec.id }, data: { armRequestId } }).catch(() => undefined);
+      }
     }
     if (!armRequestId) {
       step("lookup", "شناسایی کد درخواست", "failed", `درخواست ${clean} یافت نشد.`);
