@@ -907,25 +907,28 @@ export interface RequestDateChangeSpec {
   targetHour?: string | null;
 }
 
-/** ساخت بدنهٔ ویرایش درخواست از رکورد کامل زنده (requests/info) */
+/**
+ * ساخت بدنهٔ ویرایش درخواست از رکورد کامل زنده (ردیف فهرست یا requests/info).
+ * DIR-CHANGES-EXEC-001 (گام دوم): خروجی با کلیدهای رسمی PUT (customer/country/area/…)
+ * ساخته می‌شود — مسیر قدیمی کلیدهای ورودی (customerId/countryId/…) را خام می‌فرستاد.
+ */
 function buildRequestPayloadFromInfo(info: ArmRow): Record<string, unknown> {
-  const payload: Record<string, unknown> = {
+  return buildRequestPayload({
     customerId: rawId(info.customer) ?? "",
     countryId: rawId(info.country) ?? LOCATION_IDS.country,
     stateId: rawId(info.state) ?? LOCATION_IDS.state,
     cityId: rawId(info.city) ?? LOCATION_IDS.city,
-    areaIds: Array.isArray(info.area) ? info.area.map((a: unknown) => rawId(a)).filter(Boolean) : [],
-    lineIds: Array.isArray(info.line) ? info.line.map((l: unknown) => rawId(l)).filter(Boolean) : [],
+    areaIds: Array.isArray(info.area) ? info.area.map((a: unknown) => rawId(a)).filter((x): x is string => Boolean(x)) : [],
+    lineIds: Array.isArray(info.line) ? info.line.map((l: unknown) => rawId(l)).filter((x): x is string => Boolean(x)) : [],
     tradeTypeId: rawId(info.tradeType) ?? "",
     buildingTypeId: rawId(info.buildingType) ?? "",
     propertyTypeId: rawId(info.propertyType) ?? "",
-    inputs: info.inputs ?? {},
-    customerDescription: info.customerDescription ?? null,
-    userPaymentMethod: info.userPaymentMethod ?? "",
-    userSeriousity: info.userSeriousity ?? "",
-    realtorDescription: info.realtorDescription ?? null,
-  };
-  return payload;
+    inputs: (info.inputs as Record<string, unknown>) ?? {},
+    customerDescription: (info.customerDescription as string | null) ?? null,
+    userPaymentMethod: rawId(info.userPaymentMethod) ?? "",
+    userSeriousity: rawId(info.userSeriousity) ?? "",
+    realtorDescription: (info.realtorDescription as string | null) ?? null,
+  }) as Record<string, unknown>;
 }
 
 export async function changeRequestHistoryDate(spec: RequestDateChangeSpec, actor: { code: string; name: string }): Promise<ChangesReport> {
@@ -980,34 +983,57 @@ export async function changeRequestHistoryDate(spec: RequestDateChangeSpec, acto
     step("plan", "طرح آبشار (Δ نسبی از لنگر — عین مثال مالک)", "done",
       `لنگر: ${plan.anchorLabel} · ${isoToJalaliHour(plan.anchorDate)} → هدف: ${isoToJalaliHour(plan.targetDate)} · جابه‌جایی: ${plan.deltaDays > 0 ? "+" : ""}${plan.deltaDays} روز روی ${entries.length} مدخل.`);
 
-    // بدنهٔ ویرایش: رکورد محلی (مسیر ۰۹۹) یا رکورد کامل زنده (requests/info)
+    // بدنهٔ ویرایش — اولویت‌بندی داده‌محور (درس زندهٔ 48968: رکوردهای آینه‌ای کاتالوگ
+    // همهٔ شناسه‌ها را NULL دارند ⇒ PUT با customer="" توسط ARM رد می‌شود
+    // (InvalidDataError) و PUT با آرایه‌های خالی، دادهٔ زنده را پاک می‌کرد):
+    //   ۱) رکورد محلیِ کامل (مسیر اثبات‌شدهٔ ۰۹۹ — ثبت‌های تازه)
+    //   ۲) ردیف کامل زندهٔ فهرست (فیلتر کد — معتبر برای درخواست‌های قدیمی)
+    //   ۳) requests/info (در صورت دسترسی)
     let payload: Record<string, unknown>;
-    if (rec) {
+    const recComplete = Boolean(rec?.armCustomerId && rec?.tradeTypeId && rec?.propertyTypeId);
+    if (rec && recComplete) {
+      const localAreas = parseJson<string[]>(rec.areaIdsJson, []);
+      const localLines = parseJson<string[]>(rec.lineIdsJson, []);
       payload = buildRequestPayload({
         customerId: rec.armCustomerId ?? "",
-        countryId: rec.countryId ?? LOCATION_IDS.country,
-        stateId: rec.stateId ?? LOCATION_IDS.state,
-        cityId: rec.cityId ?? LOCATION_IDS.city,
-        areaIds: parseJson<string[]>(rec.areaIdsJson, []),
-        lineIds: parseJson<string[]>(rec.lineIdsJson, []),
-        tradeTypeId: rec.tradeTypeId ?? "",
-        buildingTypeId: rec.buildingTypeId ?? "",
-        propertyTypeId: rec.propertyTypeId ?? "",
+        countryId: rec.countryId ?? rawId(row?.country) ?? LOCATION_IDS.country,
+        stateId: rec.stateId ?? rawId(row?.state) ?? LOCATION_IDS.state,
+        cityId: rec.cityId ?? rawId(row?.city) ?? LOCATION_IDS.city,
+        areaIds: localAreas.length > 0
+          ? localAreas
+          : Array.isArray(row?.area) ? row.area.map((a: unknown) => rawId(a)).filter((x): x is string => Boolean(x)) : [],
+        lineIds: localLines.length > 0
+          ? localLines
+          : Array.isArray(row?.line) ? row.line.map((l: unknown) => rawId(l)).filter((x): x is string => Boolean(x)) : [],
+        tradeTypeId: rec.tradeTypeId ?? rawId(row?.tradeType) ?? "",
+        buildingTypeId: rec.buildingTypeId ?? rawId(row?.buildingType) ?? "",
+        propertyTypeId: rec.propertyTypeId ?? rawId(row?.propertyType) ?? "",
         inputs: parseJson<Record<string, unknown>>(rec.inputsJson, {}),
         customerDescription: rec.customerDescription,
-        userPaymentMethod: rec.userPaymentMethod ?? "",
-        userSeriousity: rec.userSeriousity ?? "",
+        userPaymentMethod: rec.userPaymentMethod ?? rawId(row?.userPaymentMethod) ?? "",
+        userSeriousity: rec.userSeriousity ?? rawId(row?.userSeriousity) ?? "",
         realtorDescription: rec.realtorDescription,
       }) as Record<string, unknown>;
-      step("payload", "بازسازی بدنهٔ ویرایش", "done", "از رکورد محلی (مسیر اثبات‌شدهٔ ۰۹۹).");
+      step("payload", "بازسازی بدنهٔ ویرایش", "done", "از رکورد محلی کامل (مسیر اثبات‌شدهٔ ۰۹۹).");
+    } else if (row) {
+      payload = buildRequestPayloadFromInfo(row);
+      step("payload", "بازسازی بدنهٔ ویرایش", "done", rec
+        ? "از ردیف کامل زندهٔ فهرست (رکورد محلی فقط-آینه‌ای بود — شناسه‌هایش NULL؛ درس 48968)."
+        : "از ردیف کامل زندهٔ فهرست (requests/list?code=).");
     } else {
       const info = await call<ArmRow>(oe, "GET", ARM_PATHS.requestInfo(armRequestId)).then((r) => r.data).catch(() => null);
       if (!info) {
-        step("payload", "بازسازی بدنهٔ ویرایش", "failed", "نه رکورد محلی موجود است نه دسترسی به requests/info این درخواست — بازسازی کامل ممکن نیست.");
+        step("payload", "بازسازی بدنهٔ ویرایش", "failed", "هیچ منبع کامل برای بازسازی بدنه در دسترس نیست (نه رکورد محلی کامل، نه ردیف زنده، نه requests/info).");
         return { ok: false, operation: "request-date-change", steps, durationMs: Date.now() - t0, error: "بدنهٔ ویرایش بازسازی نشد." };
       }
       payload = buildRequestPayloadFromInfo(info);
-      step("payload", "بازسازی بدنهٔ ویرایش", "done", "از رکورد کامل زندهٔ requests/info (کشف این نوبت).");
+      step("payload", "بازسازی بدنهٔ ویرایش", "done", "از رکورد کامل زندهٔ requests/info.");
+    }
+    // گارد دادهٔ مقدس: بدون شناسهٔ مشتری هرگز PUT نمی‌فرستیم — ARM چنین بدنه‌ای را
+    // با InvalidDataError رد می‌کند (شاهد زندهٔ 48968) و پذیرشِ آن معنایش پاک‌شدن داده بود.
+    if (!payload.customer || String(payload.customer).trim() === "") {
+      step("payload-guard", "گارد شناسهٔ مشتری", "failed", "شناسهٔ مشتری (customer) خالی است — PUT فرستاده نشد تا دادهٔ زنده در امان بماند.");
+      return { ok: false, operation: "request-date-change", steps, durationMs: Date.now() - t0, error: "شناسهٔ مشتری برای ویرایش موجود نبود — عملیات متوقف شد (حفاظت دادهٔ مقدس)." };
     }
 
     // بازتأیید پرچم‌های ردیف (محافظ — عین ۰۹۹)

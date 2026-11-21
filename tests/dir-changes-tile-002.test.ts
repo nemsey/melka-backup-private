@@ -364,4 +364,24 @@ describe("DIR-CHANGES-TILE-002 · ۸) جستجوی کد — فیلتر کدِ خ
     // هر دو مسیر: lookup و change-date پس از scan ذخیره می‌کنند
     expect(SRC.match(/db\.requestRecord\.update\(\{ where: \{ id: rec\.id \}, data: \{ armRequestId \}/g)?.length).toBeGreaterThanOrEqual(2);
   });
+
+  test("۸-۴ بدنهٔ ویرایش از ردیف زنده با کلیدهای رسمی PUT (customer/country/area/…)", () => {
+    // درس 48968: PUT با customer="" → ARM InvalidDataError؛ مسیر قدیمی info کلیدهای
+    // ورودی (customerId/…) را خام می‌فرستاد — حالا از buildRequestPayload عبور می‌کند.
+    const fn = SRC.slice(SRC.indexOf("function buildRequestPayloadFromInfo"));
+    const body = fn.slice(0, fn.indexOf("\n}", fn.indexOf("return buildRequestPayload")));
+    expect(body).toContain("return buildRequestPayload({");
+    expect(body).not.toMatch(/payload: Record<string, unknown> = \{\s*\n\s*customerId:/);
+  });
+
+  test("۸-۵ گارد دادهٔ مقدس — PUT با شناسهٔ مشتری خالی هرگز فرستاده نمی‌شود", () => {
+    expect(SRC).toContain('if (!payload.customer || String(payload.customer).trim() === "")');
+    expect(SRC).toContain("payload-guard");
+  });
+
+  test("۸-۶ اولویت منبع بدنه: رکورد محلی کامل → ردیف زنده → requests/info", () => {
+    expect(SRC).toContain("const recComplete = Boolean(rec?.armCustomerId && rec?.tradeTypeId && rec?.propertyTypeId)");
+    expect(SRC.indexOf("rec && recComplete")).toBeLessThan(SRC.indexOf("} else if (row) {"));
+  });
 });
+
