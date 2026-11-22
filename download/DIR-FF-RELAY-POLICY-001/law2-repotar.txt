@@ -1,0 +1,10 @@
+[2026-11-22T05:11:39Z] شروع تازه‌سازی repo.tar
+  فضا: 3436MB آزاد · فایل‌های طلایی حاضر ✓
+  استیج: 54 مدخل سطح-بالا (hardlink)
+  اسنپ‌شات سازگار DB: 3.3s
+  اسنپ‌شات: P=29015 رکورد
+  54 مدخل سطح-بالا: .env .env.example .env.local .git .github .gitignore .zscripts AGENTS.md BUILD-INFO.txt Caddyfile GLM-BOOT-PROTOCOL.md MANIFEST.md5 MELKA-SKELETON-COMPLETE-v1.0.md README.md boot-recovery.sh bun.lock bunfig.toml capacitor.config.ts components.json db docs download env.escrow.enc env.escrow.meta.json env.platform.json env.platform.json.example eslint.config.mjs intelligence-data melka-proxy melka-relay-android next.config.ts package-lock.json package.json postcss.config.mjs prisma public resurrect-daemon.log resurrect-launch.out resurrect-ultimate.downloaded.sh resurrect-ultimate.sh scripts server.log server.log.20261122T031306Z.gz server.log.20261122T034314Z.gz server.log.20261122T041316Z.gz src start.sh tailwind.config.ts tests tool-results tsconfig.json tsconfig.scripts.json tsconfig.tsbuildinfo worklog.md
+  repo.tar.new: 2987683840 بایت
+  راستی‌آزمایی: مدخل=3754 · قلاب=1 · بوت-ریکاوری=1 · رستاخیز=1 · پروتکل=1 · DB=1
+  شاهد JSON ثبت شد
+[2026-11-22T05:13:48Z] ✅ تازه‌سازی repo.tar کامل شد — md5=a4a64561701bfd30e50f9082c31af441

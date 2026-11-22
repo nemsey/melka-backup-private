@@ -1,0 +1,9 @@
+[data-sacred] ۱) مسیرهای سینک scoured — صفر کد حذف (به‌جز مستثنای relay-jobs)
+[data-sacred] ۲) sync-mode همیشه incremental ✓
+[data-sacred] ۳) sweepFamilyStale فقط گزارش می‌دهد (sacredNoDelete) ✓
+[data-sacred] ۴) clearCrmCacheTables حالت sacred-keep ✓
+[data-sacred] ۵) scripts/recovery-034/restore.sh ← گارد مقدس متصل ✓
+[data-sacred] ۵) scripts/pn005c/recovery-guard.sh ← گارد مقدس متصل ✓
+[data-sacred] ۵) scripts/p6549-recovery.sh ← گارد مقدس متصل ✓
+[data-sacred] ۶) کار sacred-backup در رجیستری Worker ✓
+[data-sacred] PASS — قانون دادهٔ مقدس برقرار (شورا-ن۰۶۳ / PN-038)

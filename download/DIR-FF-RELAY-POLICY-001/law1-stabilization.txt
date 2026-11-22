@@ -1,0 +1,6 @@
+=== قانون تثبیت — همگرایی پنج‌واحدی (2026-11-22T05:08:40Z) ===
+HEAD:        35071b75bbb82ff0c6dbc9f5d64eae3525547804
+origin/main: 35071b75bbb82ff0c6dbc9f5d64eae3525547804
+BUILD(disk): 35071b7-20261122-0501
+fingerprint: 35071b75bbb82ff0c6dbc9f5d64eae3525547804
+live:        35071b7-20261122-0501

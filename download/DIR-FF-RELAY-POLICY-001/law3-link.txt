@@ -1,0 +1,8 @@
+=== قانون لینک — لبهٔ عمومی (2026-11-22T05:08:50Z) ===
+home: HTTP 200
+edge buildId: 35071b7-20261122-0501
+--- چانک‌های نمونه از HTML ---
+chunk /_next/static/chunks/2c172ef35a72fd8d.js → HTTP 200
+chunk /_next/static/chunks/2e9c5333df59f348.js → HTTP 200
+chunk /_next/static/chunks/2ead7285718d57a6.js → HTTP 200
+css  → HTTP 200

@@ -1,0 +1,12 @@
+=== شمارش‌های زنده (2026-11-22T05:09:08Z) ===
+PropertyRecord       (P   ): 29,015
+RequestRecord        (R   ): 26,368
+TransactionRecord    (T   ): 848
+ExpertRecord         (ER  ): 317
+ExpertProfile        (EP  ): 161
+User                 (User): 4
+GraphNode            (GN  ): 145,475
+PRAGMA quick_check: ok
+Traceback (most recent call last):
+  File "<stdin>", line 11, in <module>
+sqlite3.OperationalError: no such column: code

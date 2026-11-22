@@ -1,0 +1,8 @@
+  print(f"[{name}] {counts_str} integrity={layer.get('integrity')} mtime={datetime.datetime.utcfromtimestamp(os.path.getmtime(layer['path'])).strftime('%H:%M:%SZ') if os.path.exists(layer['path']) else '?'}")
+[live] P=29015 R=26368 T=848 ER=317 EP=161 User=4 GN=145475 integrity=None mtime=05:41:07Z
+[fortress] P=29015 R=26368 T=848 ER=317 EP=161 User=4 GN=145475 integrity=None mtime=04:48:55Z
+[rolling] P=29015 R=26368 T=848 ER=317 EP=161 User=4 GN=145475 integrity=None mtime=05:40:28Z
+[sacred] P=29015 R=26368 T=848 ER=317 EP=161 User=4 GN=145475 integrity=None mtime=05:40:11Z
+
+VERDICT label=DIR-FF-RELAY-POLICY-001-FINAL: counts_only=(integrity deferred to G6 sacred-integrity.sh) zero_decrease=PASS PR_same_all_layers=PASS
+appended → upload/.runtime/union-snapshots.jsonl

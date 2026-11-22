@@ -1,0 +1,9 @@
+/home/z/my-project/scripts/union-snapshot.py:76: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+  print(f"[{name}] {counts_str} integrity={layer.get('integrity')} mtime={datetime.datetime.utcfromtimestamp(os.path.getmtime(layer['path'])).strftime('%H:%M:%SZ') if os.path.exists(layer['path']) else '?'}")
+[live] P=29015 R=26368 T=848 ER=317 EP=161 User=4 GN=145475 integrity=None mtime=05:06:00Z
+[fortress] P=29015 R=26368 T=848 ER=317 EP=161 User=4 GN=145475 integrity=None mtime=04:48:55Z
+[rolling] P=29015 R=26368 T=848 ER=317 EP=161 User=4 GN=145475 integrity=None mtime=05:06:08Z
+[sacred] P=29015 R=26368 T=848 ER=317 EP=161 User=4 GN=145475 integrity=None mtime=04:59:07Z
+
+VERDICT label=DIR-FF-RELAY-POLICY-001: counts_only=(integrity deferred to G6 sacred-integrity.sh) zero_decrease=PASS PR_same_all_layers=PASS
+appended → upload/.runtime/union-snapshots.jsonl

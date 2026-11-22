@@ -1,0 +1,22 @@
+=== قانون بقا — زنجیرهٔ فرایندها (2026-11-22T05:14:13Z) ===
+  1969     bash /home/z/my-project/scripts/prod-watchdog.sh
+  25881    python3 /home/z/my-project/scripts/pn054/socket-master.py
+  25890    next-server (v16.1.3)
+  26055    python3 scripts/melka-keeper.py
+  26606    bash /home/z/my-project/scripts/pn055/hot-mirror.sh
+
+=== بوت‌ریکاوری (شاهد دیروز) ===
+[boot-recovery 2026-11-21T14:29:41Z] همهٔ گیت‌ها سبز — اسپاون رستاخیز در نشست جدا (setsid)…
+[boot-recovery 2026-11-21T14:31:53Z] READY — سرور آماده شد پس از 131 ثانیه (شاهد زمان بوتِ خودکار)
+
+=== زنجیرهٔ خوددرمانی امروز (شاهد زندهٔ قلاب) ===
+server.log:[watchdog] 2026-11-22 05:01:26 socket-master با کد 0 متوقف شد — تلاش مجدد پس از ۱ ثانیه
+server.log:[chunk-guard] 2026-11-22 05:01:28 بیلد ناقص (خطر chunk 404) — بازسازی می‌کنم
+/home/z/melka-store/ws-build-daemon.log:04:36:32 === ws build daemon start ===
+/home/z/melka-store/ws-build-daemon.log:05:01:28 === ws build daemon start ===
+/home/z/melka-store/ws-build-daemon.log:05:02:28 === SWAP DONE buildId=35071b7-20261122-0501 (next.old محفوظ تا راستی‌آزمایی) ===
+/home/z/melka-store/ws-build-daemon.log:05:05:59 === VERIFY-FAILED buildId=35071b7-20261122-0501 — next.old محفوظ ماند (چرخهٔ بعد دوباره تلاش می‌کند) ===
+/home/z/melka-store/keeper.log:2026-11-22T05:08:07 === keeper v2 live pid=26055 ===
+
+=== همگرایی نهایی ===
+HEAD=35071b7 · live=35071b7-20261122-0501

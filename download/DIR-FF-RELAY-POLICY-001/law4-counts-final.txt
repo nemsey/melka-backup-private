@@ -1,0 +1,10 @@
+=== شمارش‌های نهایی پس از شفا (05:41:10Z) ===
+PropertyRecord      : 29,015
+RequestRecord       : 26,368
+TransactionRecord   : 848
+ExpertRecord        : 317
+ExpertProfile       : 161
+User                : 4
+GraphNode           : 145,475
+quick_check: ok
+شاهد 55920: 1 رکورد
