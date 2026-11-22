@@ -1,0 +1,35 @@
+{
+  "takenAtMs": 1795321983824,
+  "relayQueue": {
+    "dispatched": 9,
+    "done": 10944,
+    "expired": 1220,
+    "failed": 675
+  },
+  "relayEnqueuedDuringScanWindow": {
+    "total": 20,
+    "divarHost": 0,
+    "melkTabrizHost": 20,
+    "bySource": {
+      "armCall": 20
+    },
+    "sample": [
+      "https://arus-api.melketabriz.ir/api/apm/requests/applicant/657dc244d5096c757b4ebe65",
+      "https://arus-api.melketabriz.ir/api/apm/requests/applicant/657d4a4192f5ee16b80f60b8",
+      "https://arus-api.melketabriz.ir/api/apm/requests/applicant/657d63c5a2ffc8b75638f449",
+      "https://arus-api.melketabriz.ir/api/apm/requests/applicant/66276200f1bb7f195823bc67",
+      "https://arus-api.melketabriz.ir/api/apm/requests/applicant/657d465792f5ee16b80e2342"
+    ]
+  },
+  "relayHeartbeat": {
+    "deviceId": "poco-f3-21e508",
+    "label": "Poco F3",
+    "lastSeenAt": 1795321984676,
+    "servedCount": 3755
+  },
+  "relayQueueAllTime": {
+    "total": 12848,
+    "nonMelkTabrizHost": 0
+  },
+  "changesSessionActive": false
+}

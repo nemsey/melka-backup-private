@@ -1,0 +1,20 @@
+{
+  "takenAtMs": 1795321788778,
+  "relayQueue": {
+    "dispatched": 1,
+    "done": 10932,
+    "expired": 1220,
+    "failed": 675
+  },
+  "relayHeartbeat": {
+    "deviceId": "poco-f3-21e508",
+    "label": "Poco F3",
+    "lastSeenAt": 1795321746877,
+    "servedCount": 3739
+  },
+  "relayQueueAllTime": {
+    "total": 12828,
+    "nonMelkTabrizHost": 0
+  },
+  "changesSessionActive": false
+}
