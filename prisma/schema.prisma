@@ -435,11 +435,17 @@ model DivarAd {
   /// پل به صفحه برند کسب‌وکار در دیوار (divar.ir/pro/…)
   publisherBrandUrl String?
 
+  /// DIR-FF-WATCH-001 — ارجاع فایل به بخش «تحت نظر» (دستور مالک ۱۴۰۵/۰۹/۰۳):
+  /// لحظهٔ ارجاع فایل کشف‌شده به پنجرهٔ تحت نظر؛ null = ارجاع نشده.
+  /// فایل ارجاع‌شده از پنجره‌های شکار/پیگیری/بررسی خارج و فقط در «تحت نظر» نمایش داده می‌شود.
+  watchedAt         DateTime?
+
   @@index([bucket, totalScore])
   @@index([status, publishedAt])
   @@index([category])
   @@index([matchedLineId])
   @@index([totalScore])
+  @@index([status, watchedAt])
 }
 
 /// سیگنال یادگیری از رد آگهی — فقط افزودنی؛ خود آگهی هرگز آرشیو نمی‌شود

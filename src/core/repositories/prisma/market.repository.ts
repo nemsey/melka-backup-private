@@ -171,19 +171,26 @@ export class PrismaMarketRepository implements MarketRepository {
   async listAdsWithBucketCounts(options: AdWindowOptions): Promise<{ rows: AdWindowRow[]; bucketCounts: BucketCount }> {
     const { filter, limit, offset } = options;
 
+    // DIR-FF-WATCH-001 — پنجرهٔ «تحت نظر»: فایل‌های ارجاع‌شده (watchedAt != null)؛
+    // سه پنجرهٔ امتیازی فقط فایل‌های ارجاع‌نشده را می‌بینند (ارجاع = جابه‌جایی فایل به تحت نظر).
+    const isWatch = filter.bucket === "watch";
+
     // عین منطق where روت divar/ads
     const whereBase: Prisma.DivarAdWhereInput = { status: "active" };
     if (filter.allowedLineIds) whereBase.matchedLineId = { in: filter.allowedLineIds };
 
-    const where: Prisma.DivarAdWhereInput = { ...whereBase };
-    if (filter.bucket && filter.bucket !== "all") where.bucket = filter.bucket;
+    const where: Prisma.DivarAdWhereInput = {
+      ...whereBase,
+      ...(isWatch ? { watchedAt: { not: null } } : { watchedAt: null }),
+    };
+    if (!isWatch && filter.bucket && filter.bucket !== "all") where.bucket = filter.bucket;
     if (filter.category) where.category = filter.category;
     if (filter.lineId) where.matchedLineId = filter.lineId;
 
-    const [rows, counts] = await Promise.all([
+    const [rows, counts, watchCount] = await Promise.all([
       this.client.divarAd.findMany({
         where,
-        orderBy: { totalScore: "desc" },
+        orderBy: isWatch ? { watchedAt: "desc" } : { totalScore: "desc" },
         take: limit,
         skip: offset,
         select: {
@@ -192,13 +199,14 @@ export class PrismaMarketRepository implements MarketRepository {
           locationText: true, matchedAreaName: true, matchedLineName: true,
           personalScore: true, underpriceScore: true, otherScore: true, locationScore: true, totalScore: true, bucket: true,
           publisherType: true, publisherName: true,
-          imagesJson: true,
+          imagesJson: true, watchedAt: true,
         },
       }),
-      this.client.divarAd.groupBy({ by: ["bucket"], where: whereBase, _count: { _all: true } }),
+      this.client.divarAd.groupBy({ by: ["bucket"], where: { ...whereBase, watchedAt: null }, _count: { _all: true } }),
+      this.client.divarAd.count({ where: { ...whereBase, watchedAt: { not: null } } }),
     ]);
 
-    const bucketCounts: BucketCount = { hunt: 0, follow: 0, review: 0 };
+    const bucketCounts: BucketCount = { hunt: 0, follow: 0, review: 0, watch: watchCount };
     for (const g of counts) {
       if (g.bucket in bucketCounts) bucketCounts[g.bucket as keyof BucketCount] = g._count._all;
     }
@@ -219,6 +227,14 @@ export class PrismaMarketRepository implements MarketRepository {
 
   async deleteAdByToken(token: string): Promise<void> {
     await this.client.divarAd.delete({ where: { token } });
+  }
+
+  async markAdWatched(token: string): Promise<boolean> {
+    const res = await this.client.divarAd.updateMany({
+      where: { token, status: "active" },
+      data: { watchedAt: new Date() },
+    });
+    return res.count === 1;
   }
 
   // ---------- آمار قیمت بازار ----------

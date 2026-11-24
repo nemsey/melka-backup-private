@@ -4,11 +4,11 @@
  * کاشی «فایل‌یابی از دیوار» — صفحه اصلی (بازسازی DIR-FF-TILE-003 · دستور مالک ۱۴۰۵/۰۸/۳۰)
  * ------------------------------------------------------
  * اولاً) تمام جزییات بخش‌های مختلف کاشی:
- *   · شاخص‌ها و پنجره‌های سه‌گانه: شکار / پیگیری / بررسی
+ *   · شاخص‌ها و پنجره‌های چهارگانه: شکار / پیگیری / بررسی / تحت نظر (DIR-FF-WATCH-001)
  *   · تنظیمات اختصاصی ایجنت (وزن‌ها، آستانه‌ها، فیلتر زمان، دسته‌ها، فیلتر مکان، اسکن خودکار)
  *   · دکمه اسکن دیوار + خودکار دوره‌ای + گزارش اسکن‌های اخیر
  *   · پنل ایجنت + مشورهٔ مغز برای برترین فایل سطل جاری (موتور ۱۶)
- *   · پنجره‌های چهار کلید: پل دیوار / جزییات / رد / ثبت
+ *   · پنجره‌های پنج کلید: پل دیوار / جزییات / رد / ثبت / ارجاع به تحت نظر (DIR-FF-WATCH-001)
  * ثانیاً) تمام ظرفیت‌های مغز ملکا بدون هیچ محدودیتی:
  *   · کارت «مغز ملکا» — DIR-FF-CAP-502/اولاً: بازشونده با پیش‌فرض «بسته» +
  *     بارگذاری تنبلکار در نخستین بازشدن؛ Tier + نوار پیشرفت + Brier/کالیبراسیون
@@ -44,7 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RefreshCw, Settings2, Crosshair, History, Info, ListFilter, Sparkles, Gauge,
   MapPin, ChevronDown, ChevronLeft, Search, Brain, Cpu, Zap, ZapOff, Smartphone,
-  ClipboardCheck, Clock, Layers, Gem, Radar, Workflow, GitCompareArrows, FlaskConical,
+  ClipboardCheck, Clock, Layers, Gem, Radar, Workflow, GitCompareArrows, FlaskConical, Eye,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
 // PN-025/مرحلهٔ ۸ — کارت مشورهٔ موتور ۱۶ روی کاشی فایل‌یابی
@@ -61,7 +61,7 @@ import { RegisterDialog } from "./RegisterDialog";
 interface AdsResponse {
   ok: boolean;
   rows: DivarAdRow[];
-  bucketCounts: { hunt: number; follow: number; review: number };
+  bucketCounts: { hunt: number; follow: number; review: number; watch: number };
   thresholds: { hunt: number; follow: number };
   weights: { personal: number; underprice: number; other: number; location: number };
   locationFilter: { active: boolean; areaCount: number; lineCount: number };
@@ -418,6 +418,24 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     return ids.size;
   }, [locData, selAreaIds, selLineIds]);
 
+  /** DIR-FF-WATCH-001 — کلید «ارجاع به تحت نظر»: فایل به پنجرهٔ تحت نظر ارجاع می‌شود */
+  const onWatch = useCallback(
+    async (ad: DivarAdRow) => {
+      setBusyAction(ad.token);
+      try {
+        const res = await api<{ ok: boolean; message: string; alreadyWatched?: boolean }>(`/api/divar/ads/${encodeURIComponent(ad.token)}/watch`, { method: "POST" });
+        toast({ title: res.alreadyWatched ? "فایل از قبل تحت نظر است" : "فایل به بخش «تحت نظر» ارجاع شد", description: res.message });
+        await loadAds(bucket);
+      } catch (err) {
+        const e = err as ApiClientError;
+        toast({ title: "ارجاع به تحت نظر ناموفق", description: e.message, variant: "destructive" });
+      } finally {
+        setBusyAction(null);
+      }
+    },
+    [toast, loadAds, bucket, setBusyAction]
+  );
+
   const onRejected = useCallback(() => {
     setBusyAction(null);
     void loadAds(bucket);
@@ -473,7 +491,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     }
   };
 
-  const counts = adsData?.bucketCounts ?? { hunt: 0, follow: 0, review: 0 };
+  const counts = adsData?.bucketCounts ?? { hunt: 0, follow: 0, review: 0, watch: 0 };
   const thresholds = adsData?.thresholds ?? { hunt: 70, follow: 40 };
   const lastScan = scanLogs[0];
 
@@ -523,12 +541,13 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
         </div>
       </div>
 
-      {/* شاخص‌ها */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* شاخص‌ها — DIR-FF-WATCH-001: دکمهٔ چهارم «تحت نظر» در همین کادر مادر (دستور مالک ۱۴۰۵/۰۹/۰۳) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
           { key: "hunt", label: "فایل‌های شکار", desc: `امتیاز بالای ${faNumber(thresholds.hunt)}`, icon: Sparkles, tone: "border-teal-500/50 bg-gradient-to-b from-teal-500/10 to-transparent", iconCls: "text-teal-600 dark:text-teal-400" },
           { key: "follow", label: "فایل‌های پیگیری", desc: `${faNumber(thresholds.follow)} تا ${faNumber(thresholds.hunt)}`, icon: Gauge, tone: "border-amber-500/50 bg-gradient-to-b from-amber-500/10 to-transparent", iconCls: "text-amber-600 dark:text-amber-400" },
           { key: "review", label: "فایل‌های بررسی", desc: `زیر ${faNumber(thresholds.follow)}`, icon: ListFilter, tone: "border-border bg-gradient-to-b from-muted/60 to-transparent", iconCls: "text-muted-foreground" },
+          { key: "watch", label: "فایل‌های تحت نظر", desc: "ارجاع‌شده برای پایش", icon: Eye, tone: "border-teal-600/50 bg-gradient-to-b from-teal-600/10 to-transparent", iconCls: "text-teal-700 dark:text-teal-400" },
         ].map((b) => (
           <button
             key={b.key}
@@ -1135,9 +1154,9 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
       {/* پنل ایجنت */}
       <AgentPanel tileId="file-finder" />
 
-      {/* پنجره‌های سه‌گانه */}
+      {/* پنجره‌های چهارگانه — DIR-FF-WATCH-001: تب چهارم «تحت نظر» (فایل‌های ارجاع‌شده) */}
       <Tabs value={bucket} onValueChange={setBucket}>
-        <TabsList className="w-full grid grid-cols-3 h-auto p-1">
+        <TabsList className="w-full grid grid-cols-4 h-auto p-1">
           <TabsTrigger value="hunt" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-600 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <Sparkles className="w-3.5 h-3.5" aria-hidden /> شکار ({faNumber(counts.hunt)})
           </TabsTrigger>
@@ -1147,9 +1166,12 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
           <TabsTrigger value="review" className="gap-1.5 text-xs py-1.5">
             <ListFilter className="w-3.5 h-3.5" aria-hidden /> بررسی ({faNumber(counts.review)})
           </TabsTrigger>
+          <TabsTrigger value="watch" className="gap-1.5 text-xs py-1.5 data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-700 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-sm">
+            <Eye className="w-3.5 h-3.5" aria-hidden /> تحت نظر ({faNumber(counts.watch)})
+          </TabsTrigger>
         </TabsList>
 
-        {["hunt", "follow", "review"].map((b) => (
+        {["hunt", "follow", "review", "watch"].map((b) => (
           <TabsContent key={b} value={b} className="mt-4">
             {loadingAds ? (
               <div className="space-y-3">
@@ -1160,16 +1182,20 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
             ) : rows.length === 0 ? (
               <Card>
                 <CardContent className="py-10 text-center space-y-2">
-                  <Crosshair className="w-10 h-10 mx-auto text-muted-foreground/40" aria-hidden />
-                  <p className="text-sm font-bold">فایلی در این پنجره نیست</p>
+                  {b === "watch" ? <Eye className="w-10 h-10 mx-auto text-muted-foreground/40" aria-hidden /> : <Crosshair className="w-10 h-10 mx-auto text-muted-foreground/40" aria-hidden />}
+                  <p className="text-sm font-bold">{b === "watch" ? "هنوز فایلی به «تحت نظر» ارجاع نشده است" : "فایلی در این پنجره نیست"}</p>
                   <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
-                    {scanLogs.length === 0
-                      ? "هنوز اسکنی اجرا نشده است — با دکمه «اسکن دیوار» نخستین جست‌وجوی آگهی‌های تبریز را اجرا کنید."
-                      : "اسکن قبلی فایلی در این بازه امتیازی نیافته است — اسکن تازه بزنید یا آستانه‌ها را در تنظیمات ایجنت تعدیل کنید."}
+                    {b === "watch"
+                      ? "با کلید «ارجاع به تحت نظر» روی هر فایل کشف‌شده، آن فایل به این پنجره برای پایش ارجاع می‌شود."
+                      : scanLogs.length === 0
+                        ? "هنوز اسکنی اجرا نشده است — با دکمه «اسکن دیوار» نخستین جست‌وجوی آگهی‌های تبریز را اجرا کنید."
+                        : "اسکن قبلی فایلی در این بازه امتیازی نیافته است — اسکن تازه بزنید یا آستانه‌ها را در تنظیمات ایجنت تعدیل کنید."}
                   </p>
-                  <Button size="sm" variant="outline" onClick={runScan} disabled={scanning} className="gap-1.5">
-                    {scanning ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />} اسکن تازه
-                  </Button>
+                  {b !== "watch" && (
+                    <Button size="sm" variant="outline" onClick={runScan} disabled={scanning} className="gap-1.5">
+                      {scanning ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <RefreshCw className="w-4 h-4" aria-hidden />} اسکن تازه
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -1187,6 +1213,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
                       setRejectAd(a);
                     }}
                     onRegister={(a) => setRegisterAd(a)}
+                    onWatch={onWatch}
                   />
                 ))}
               </div>

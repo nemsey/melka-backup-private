@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * کارت فایل (آگهی دیوار) — چهار کلید اختصاصی:
- * ۱. پل به دیوار  ۲. جزییات آگهی  ۳. رد آگهی  ۴. ثبت آگهی
+ * کارت فایل (آگهی دیوار) — پنج کلید اختصاصی (DIR-FF-WATCH-001):
+ * ۱. پل به دیوار  ۲. جزییات آگهی  ۳. رد آگهی  ۴. ثبت آگهی  ۵. ارجاع به تحت نظر
  * شمارة ردیف هر فایل در سربرگ کارت می‌آید (قانون مالک: هر فهرستی شماره‌دار است).
  */
 
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  ExternalLink, Info, XCircle, UploadCloud, MapPin, Ruler, BedDouble, Building2, TrendingDown, UserCheck, Loader2, Image as ImageIcon, Briefcase, ShieldCheck, Sparkles,
+  ExternalLink, Info, XCircle, UploadCloud, MapPin, Ruler, BedDouble, Building2, TrendingDown, UserCheck, Loader2, Image as ImageIcon, Briefcase, ShieldCheck, Sparkles, Eye,
 } from "lucide-react";
 import { faNumber, faDateTime } from "@/lib/format";
 import { formatToman } from "@/lib/divar/parse";
@@ -37,6 +37,8 @@ export interface DivarAdRow {
   locationScore: number;
   totalScore: number;
   bucket: string;
+  /** DIR-FF-WATCH-001 — لحظهٔ ارجاع به «تحت نظر» (null = ارجاع نشده) */
+  watchedAt: string | null;
   /** نوع آگهی‌دهنده — برچسب زیر نقشه دیوار (personal | agent | department | business | null=نامشخص) */
   publisherType: string | null;
   publisherName: string | null;
@@ -79,6 +81,11 @@ const BUCKET_STYLES: Record<string, { label: string; chip: string; ring: string 
     ring: "ring-2 ring-amber-500/40 border-amber-200/70 dark:border-amber-900/60",
   },
   review: { label: "بررسی", chip: "bg-muted text-muted-foreground border", ring: "" },
+  watch: {
+    label: "تحت نظر",
+    chip: "bg-gradient-to-l from-teal-700 to-teal-500 text-white shadow-sm shadow-teal-700/30",
+    ring: "ring-2 ring-teal-600/40 border-teal-300/70 dark:border-teal-800/60",
+  },
 };
 
 /** رنگ اختصاصی چهار معیار — پالت زمرد/کهربا/رز/فیروزه (بدون آبی/بنفش) */
@@ -133,6 +140,7 @@ export function AdCard({
   onDetails,
   onReject,
   onRegister,
+  onWatch,
 }: {
   ad: DivarAdRow;
   /** شمارة ردیف فایل در فهرست — یک‌مبنا، با ارقام فارسی نمایش داده می‌شود */
@@ -142,11 +150,14 @@ export function AdCard({
   onDetails: (ad: DivarAdRow) => void;
   onReject: (ad: DivarAdRow) => void;
   onRegister: (ad: DivarAdRow) => void;
+  /** DIR-FF-WATCH-001 — کلید «ارجاع به تحت نظر» (فایل‌های ارجاع‌نشده) */
+  onWatch: (ad: DivarAdRow) => void;
 }) {
   const bucketStyle = BUCKET_STYLES[ad.bucket] ?? BUCKET_STYLES.review;
   const publisherChip = ad.publisherType ? PUBLISHER_CHIPS[ad.publisherType] ?? null : null;
   const PublisherIcon = publisherChip?.icon;
   const busy = busyAction === ad.token;
+  const watched = Boolean(ad.watchedAt);
   return (
     <article className={`rounded-xl border bg-card p-4 space-y-3 shadow-sm shadow-black/5 ${bucketStyle.ring}`} aria-label={`فایل شمارة ${faNumber(index)} — ${ad.title}`}>
       <div className="flex items-start justify-between gap-3">
@@ -176,6 +187,14 @@ export function AdCard({
             {ad.bumpedAt && (
               <span className="text-[10px] text-amber-600 dark:text-amber-400" title="این آگهی نردبان شده — زمان واقعی انتشار در جزئیات بررسی می‌شود">
                 نردبان‌شده
+              </span>
+            )}
+            {ad.watchedAt && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-teal-600/10 border border-teal-600/30 px-2 h-6 text-[10px] font-bold text-teal-700 dark:text-teal-400"
+                title={`ارجاع به تحت نظر: ${faDateTime(ad.watchedAt)}`}
+              >
+                <Eye className="w-3 h-3" aria-hidden /> تحت نظر
               </span>
             )}
           </div>
@@ -243,7 +262,7 @@ export function AdCard({
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2">
         <Button variant="outline" size="sm" className="gap-1.5 hover:border-primary/50 hover:text-primary" asChild>
           <a
             href={`https://divar.ir/v/${encodeURIComponent(ad.title.replace(/\s+/g, "-").slice(0, 50))}/${ad.token}`}
@@ -263,6 +282,19 @@ export function AdCard({
         <Button size="sm" className="gap-1.5 bg-gradient-to-l from-teal-600 to-cyan-500 hover:from-teal-700 hover:to-cyan-600 shadow-sm shadow-teal-600/25" onClick={() => onRegister(ad)} disabled={busy} aria-label="ثبت آگهی در سامانه آرم">
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <UploadCloud className="w-3.5 h-3.5" aria-hidden />} ثبت آگهی
         </Button>
+        {!watched && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-teal-700 hover:text-teal-800 hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-950/40 border-teal-300 dark:border-teal-800"
+            onClick={() => onWatch(ad)}
+            disabled={busy}
+            aria-label="ارجاع فایل به بخش تحت نظر"
+            title="فایل به بخش «تحت نظر» ارجاع می‌شود و از پنجره‌های شکار/پیگیری/بررسی خارج می‌گردد"
+          >
+            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Eye className="w-3.5 h-3.5" aria-hidden />} ارجاع به تحت نظر
+          </Button>
+        )}
       </div>
     </article>
   );

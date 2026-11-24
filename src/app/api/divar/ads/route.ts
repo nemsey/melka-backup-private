@@ -1,9 +1,10 @@
 /**
- * /api/divar/ads — فهرست فایل‌ها بر اساس پنجره (شکار/پیگیری/بررسی)
- * GET ?bucket=hunt|follow|review|all&category=&line=&limit=&offset=
+ * /api/divar/ads — فهرست فایل‌ها بر اساس پنجره (شکار/پیگیری/بررسی/تحت نظر)
+ * GET ?bucket=hunt|follow|review|watch|all&category=&line=&limit=&offset=
  * اسکن خودکار فرصت‌طلبانه: اگر زمانش رسیده باشد در پس‌زمینه اجرا می‌شود.
  * فیلتر مکان (مناطق/محله‌های انتخابی مالک — منطبق با آرم) روی هر دو خروجی
  * ردیف‌ها و شمارنده‌ها اعمال می‌شود؛ آگهی‌های بیرون از انتخاب نمایش داده نمی‌شوند.
+ * DIR-FF-WATCH-001 — پنجرهٔ «watch»: فایل‌های ارجاع‌شده به بخش تحت نظر (watchedAt != null).
  */
 
 import { NextRequest } from "next/server";
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(Number(params.get("limit") ?? 60), 1), 1000);
   const offset = Math.max(Number(params.get("offset") ?? 0), 0);
 
-  const bucket = ["hunt", "follow", "review", "all"].includes(bucketParam) ? bucketParam : "all";
+  const bucket = ["hunt", "follow", "review", "watch", "all"].includes(bucketParam) ? bucketParam : "all";
 
   const settings = await loadDivarSettings();
   const allowedLineIds = allowedLineIdsForSelection(settings);

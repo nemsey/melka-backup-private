@@ -21,7 +21,7 @@ import type {
 
 /** فیلتر پنجره فایل‌یابی — عین پارامترهای روت divar/ads */
 export interface AdWindowFilter {
-  /** hunt | follow | review | all */
+  /** hunt | follow | review | watch | all — DIR-FF-WATCH-001: watch = پنجرهٔ «تحت نظر» (فایل‌های ارجاع‌شده) */
   bucket?: string;
   category?: string;
   /** محله خاص (تک مقدار) */
@@ -63,6 +63,8 @@ export interface AdWindowRow {
   publisherType: string | null;
   publisherName: string | null;
   imagesJson: string | null;
+  /** DIR-FF-WATCH-001 — لحظهٔ ارجاع به «تحت نظر» (null = ارجاع نشده) */
+  watchedAt: Date | null;
 }
 
 export interface MarketRepository {
@@ -97,6 +99,8 @@ export interface MarketRepository {
   setAdStatus(token: string, status: string): Promise<void>;
   /** حذف کامل رکورد آگهی (رد — هرگز آرشیو نمی‌شود) */
   deleteAdByToken(token: string): Promise<void>;
+  /** DIR-FF-WATCH-001 — ارجاع فایل به بخش «تحت نظر» (ثبت watchedAt=اکنون)؛ خروجی: رکورد فعال به‌روزرسانی شد یا نه */
+  markAdWatched(token: string): Promise<boolean>;
 
   // ---------- آمار قیمت بازار ----------
   /** آمار قیمت بازار برای فیلتر زیرقیمت (ایجنت فایل‌یابی) */

@@ -196,6 +196,8 @@ export interface DivarAdDTO {
   publisherName: string | null;
   publisherAdCount: number | null;
   publisherBrandUrl: string | null;
+  /** DIR-FF-WATCH-001 — لحظهٔ ارجاع به «تحت نظر» (null = ارجاع نشده) */
+  watchedAt: Date | null;
 }
 
 /** پیش‌نمایش امتیاز آگهی فعال — عین select ایجنت فایل‌یابی */
@@ -275,6 +277,8 @@ export interface BucketCount {
   hunt: number;
   follow: number;
   review: number;
+  /** DIR-FF-WATCH-001 — شمار فایل‌های ارجاع‌شده به پنجرهٔ «تحت نظر» (watchedAt != null) */
+  watch: number;
 }
 
 // ===================== درخواست‌ها (مدیریت مشتریان) =====================

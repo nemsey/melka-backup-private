@@ -312,7 +312,8 @@ describe("PN-031-C · F) سازگاری ساختاری — روت تازه، ر�
     // PN-035 (ن۰۵۷): +۱ روت relay/job/[id] · PN-038 (ن۰۶۳): +۱ glm/probe +۱ relay/health
     // PN-039 (ن۰۶۴/گام ۴): +۱ owner-notes/[entity]/[id] — یادداشت مالک M1/M2
     // DIR-FF-TILE-003: +۴ changes/* (کاشی تغییرات) +۱ crm/export/ticket → ۱۱۹
-    expect(manifest.totalRoutes).toBe(119); // PN-059: ۱۱۳ · PN-083: +۱ → ۱۱۴ · DIR-FF-TILE-003: +۵ → ۱۱۹
+    // DIR-FF-WATCH-001: +۱ divar/ads/[token]/watch (ارجاع به تحت نظر) → ۱۲۰
+    expect(manifest.totalRoutes).toBe(120); // PN-059: ۱۱۳ · PN-083: +۱ → ۱۱۴ · DIR-FF-TILE-003: +۵ → ۱۱۹ · DIR-FF-WATCH-001: +۱ → ۱۲۰
     // ن۰۶۳: بازتولید مانیفست با مولد رسمی (generate-v1-aliases) — نام فیلد: aliasOf
     const key = (r: { aliasOf?: string; original?: string }) => r.aliasOf ?? r.original ?? "";
     expect(manifest.routes.some((r: { aliasOf?: string; original?: string }) => key(r) === "/api/admin/relay/code-status")).toBe(true);
