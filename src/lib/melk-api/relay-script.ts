@@ -133,9 +133,11 @@ OFFLINE_DRAIN_MAX=100              # سقف بازپخش هر چرخه (بسته
 STEALTH=0                          # حالت مخفی‌کاری خاموش (سرور با فیلد stealth روشن می‌کند)
 STEALTH_RATE=20                    # سقف انسانی نرخ ARM در مخفی‌کاری (۲۰/دقیقه = هر ~۳ث)
 STEALTH_JITTER=20                  # جیتار ±۲۰٪ روی فاصلهٔ تماس‌ها (رفتار انسانی)
-LAST_MANIFEST=""                   # آخرین بنر مانیفست کار (تغییر = چاپ یک‌باره)
+LAST_MANIFEST=""                   # نسل Q: مانیفست کار — آخرین بنر «دستور کار جاری» (تغییر = چاپ یک‌باره)
 POST_SEEN=""                       # نسل Q: ACK — شناسه‌های نتیجه‌هایی که سرور حکمشان را داد
 POST_ACKED=""                      # نسل Q: ACK — شناسه‌های پذیرفته‌شده (ok=true)
+POST_REJ=""                       # نسل Q: ACK — شناسه‌های رد قطعی (ok=false)
+LAST_ARM_CALL_MS=0                 # نسل Q: زمان آخرین تماس ARM (گام انسانی مخفی‌کاری)
 
 # ── مهلت‌های تطبیقی (نسل K/M + کلاس تازهٔ «فهرست» در نسل N) ──
 LIGHT_TIMEOUT=15                    # مسیر تعاملی (OTP) — پاسخ چندثانیه‌ای
@@ -194,6 +196,23 @@ arm_rate_gate() {
     ARM_REQ_TIMES=("\${keep[@]+"\${keep[@]}"}")
   fi
   ARM_REQ_TIMES+=("$now")
+  # ── نسل Q (بخش ج-۴ · مخفی‌کاری): گام انسانی بین تماس‌های ARM ──
+  # سرور با فیلد stealth نرخ انسانی می‌گوید (مثلاً ۲۰/دقیقه = هر ~۳ث)؛ جیتار
+  # درصدی رفتار را از «ضربان ساعت» به «کاربر انسانی» می‌برد. در حالت
+  # تمام‌ظرفیت (BOOST) تسلیم می‌شود — ظرفیت مقدم است (طرح دستور مالک).
+  if [ "$STEALTH" -eq 1 ] && [ "$BOOST_MODE" -eq 0 ]; then
+    local gap j since sleep_s
+    gap=$(( 60000 / STEALTH_RATE ))
+    [ "$gap" -lt 1500 ] && gap=1500
+    j=$(( (RANDOM % (2 * STEALTH_JITTER + 1)) - STEALTH_JITTER ))
+    gap=$(( gap * (100 + j) / 100 ))
+    since=$(( $(date +%s%3N) - LAST_ARM_CALL_MS ))
+    if [ "$since" -lt "$gap" ]; then
+      sleep_s=$(awk -v r=$(( gap - since )) 'BEGIN { printf "%.2f", r / 1000 }')
+      sleep "$sleep_s"
+    fi
+    LAST_ARM_CALL_MS=$(date +%s%3N)
+  fi
 }
 
 # ── نسل P: آیا ARM در قطع بن است؟ (خروجی: ثانیهٔ باقی‌ماندهٔ قطع) ──
@@ -520,16 +539,27 @@ post_results() {
   #   0 = پذیرش سرور · 1 = شکست گذرا (ذخیره‌شده محلی) · 2 = رد قطعی سرور
   #   (نه retry و نه ذخیره — بازپخش در چرخه‌های بعد هم رخ نمی‌دهد)
   local payload="$1" nostore="\${2:-}" attempt=0 delay out rc
+  POST_SEEN=""; POST_ACKED=""; POST_REJ=""
   while [ $attempt -lt $RESULT_ATTEMPTS ]; do
     attempt=\$((attempt+1))
     out=""; rc=0
     out=\$(submit_batch_raw "$payload") || rc=$?
-    # ۱) پذیرش — سرور ok گفت
+    # ۱) پذیرش — سرور ok گفت؛ نسل Q (بخش ج-۳ · ACK ردیفی): حکم هر نتیجهٔ دسته
+    # در .results[] است — فقط ردیف‌های دیده‌شده از انبارها حذف می‌شوند (مانع
+    # سردرگمی ریست سرور). قرارداد قدیمی (بدون .results) = کل بسته حکم گرفت.
     if [ $rc -eq 0 ] && printf '%s' "$out" | jq -e '.ok == true' >/dev/null 2>&1; then
+      POST_SEEN=$(printf '%s' "$out" | jq -r '[.results[]?.id] | join(" ")' 2>/dev/null)
+      POST_ACKED=$(printf '%s' "$out" | jq -r '[.results[]? | select(.ok == true) | .id] | join(" ")' 2>/dev/null)
+      POST_REJ=$(printf '%s' "$out" | jq -r '[.results[]? | select(.ok != true) | .id] | join(" ")' 2>/dev/null)
       return 0
     fi
-    # ۲) رد قطعی سرور (پاسخ JSON با فیلد ok) — تلاش مجدد بی‌فایده است
+    # ۲) رد قطعی سرور (پاسخ JSON با فیلد ok) — تلاش مجدد بی‌فایده است؛
+    # نسل Q: حکم‌های ردیفی (.results[].ok=false) همین‌جا برمی‌گردند تا بازپخش
+    # فقط ردیف‌های بدون‌حکم را نگه دارد (بازپخش بی‌پایان ردشده ممنوع — PN-036).
     if [ $rc -eq 0 ] && printf '%s' "$out" | jq -e 'has("ok")' >/dev/null 2>&1; then
+      POST_SEEN=\$(printf '%s' "$out" | jq -r '[.results[]?.id] | join(" ")' 2>/dev/null)
+      POST_ACKED=\$(printf '%s' "$out" | jq -r '[.results[]? | select(.ok == true) | .id] | join(" ")' 2>/dev/null)
+      POST_REJ=\$(printf '%s' "$out" | jq -r '[.results[]? | select(.ok != true) | .id] | join(" ")' 2>/dev/null)
       log "سرور نتیجه را نپذیرفت: \$(printf '%s' "$out" | head -c 120)"
       return 2
     fi
@@ -543,7 +573,9 @@ post_results() {
   # شکست نهایی — ذخیرهٔ محلی + بازپخش در چرخه‌های بعد (مگر در حالت replay —
   # ردیف اصلی در فایل هست؛ ذخیرهٔ دوباره = دوبرابر شدن ردیف در هر بازپخش)
   if [ "$nostore" != "nostore" ]; then
-    store_failed "$payload"
+    # نسل Q (بخش ب-۳): اولویت صف آفلاین SQLite (بومی گوشی — offline-queue.db)؛
+    # نبود sqlite3 → پشتیبان jsonl عقبه (نسل‌های قبل) — هیچ نسل قدیمی عوض نمی‌شود.
+    offline_store "$payload" || store_failed "$payload"
   fi
   return 1
 }
@@ -595,6 +627,89 @@ replay_failed_results() {
   mv -f "$tmp" "$FAILED_RESULTS" 2>/dev/null || true
   [ $replayed -gt 0 ] && log "بازیابی \$replayed دستهٔ نتیجهٔ ذخیره‌شده ✓"
   [ $dropped -gt 0 ] && log "رد قطعی در بازپخش: \$dropped ردیف حذف شد (دیگر بازپخش نمی‌شود)"
+  return 0
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# نسل Q (DIR-SUPER-STRUCT-001 · بخش ب-۳): صف آفلاین SQLite — «ذخیره و ادامه»
+# قطع اینترنت (502/شبکه) دیگر کرش نیست: نتیجه‌ها در offline-queue.db درون
+# گوشی می‌مانند و به‌محض بازگشت اتصال، در بسته‌های ۱۰۰تایی بازپخش می‌شوند.
+# حذف فقط با حکم سرور (ACK ok=true یا رد قطعی ok=false) — «تا ملکا تاییدیه
+# ندهد، بستهٔ بعدی نمی‌رود» (بخش ج-۳ دستور). پشتیبان عقبه: failed-results.jsonl
+# نسل‌های قبل (نبود sqlite3) — دو مسیر هم‌زیست، هرگز جایگزینی.
+# ═══════════════════════════════════════════════════════════════════════════
+offline_db_ready() {
+  [ -n "$OFFLINE_DB" ] && need_cmd sqlite3
+}
+offline_init() {
+  sqlite3 "$OFFLINE_DB" 'CREATE TABLE IF NOT EXISTS pending (id TEXT PRIMARY KEY, payload TEXT NOT NULL, ts INTEGER NOT NULL)' >/dev/null 2>&1
+}
+# ذخیرهٔ یک دستهٔ نتیجه در صف آفلاین — هر ردیف با کلید id (تکرار = جایگزینی)
+offline_store() {
+  # $1 = رشتهٔ JSON آرایهٔ نتیجه‌ها
+  offline_db_ready && offline_init || return 1
+  local ts obj id idesc pesc
+  ts=\$(date +%s)
+  while IFS= read -r obj; do
+    [ -z "$obj" ] && continue
+    id=\$(printf '%s' "$obj" | jq -r '.id // empty' 2>/dev/null)
+    [ -z "$id" ] && continue
+    idesc=\$(printf '%s' "$id" | sed \"s/'/''/g\")
+    pesc=\$(printf '%s' "$obj" | sed \"s/'/''/g\")
+    sqlite3 "$OFFLINE_DB" "INSERT OR REPLACE INTO pending(id,payload,ts) VALUES('\$idesc','\$pesc',\$ts)" >/dev/null 2>&1 || return 1
+  done < <(printf '%s' "\$1" | jq -c '.[]' 2>/dev/null)
+  log "🥡 صف آفلاین: نتیجه‌های ارسال‌نشده درون گوشی ذخیره شد (بازپخش خودکار با بازگشت اتصال — بسته‌های \$OFFLINE_DRAIN_MAX تایی)"
+  return 0
+}
+# حذف ردیف‌هایی که سرور حکمشان را داد (ACK/رد قطعی) — شناسه‌ها از سمت سرورند
+offline_delete_ids() {
+  [ "\$#" -gt 0 ] || return 0
+  offline_db_ready && [ -f "\$OFFLINE_DB" ] || return 0
+  local ids="" id
+  for id in "\$@"; do
+    [ -z "\$id" ] && continue
+    ids+="'\$(printf '%s' "\$id" | sed \"s/'/''/g\")',"
+  done
+  [ -n "\$ids" ] || return 0
+  ids="\${ids%,}"
+  sqlite3 "\$OFFLINE_DB" "DELETE FROM pending WHERE id IN (\$ids)" >/dev/null 2>&1 || true
+}
+# بازپخش صف آفلاین — بسته‌های ۱۰۰تایی؛ فقط ردیف‌های دارای حکم حذف می‌شوند
+offline_replay() {
+  offline_db_ready && [ -f "\$OFFLINE_DB" ] || return 0
+  local now n rows payload rc batch_ids
+  now=\$(date +%s)
+  sqlite3 "\$OFFLINE_DB" "DELETE FROM pending WHERE ts < \$(( now - OFFLINE_TTL_S ))" >/dev/null 2>&1 || true
+  n=\$(sqlite3 "\$OFFLINE_DB" "SELECT COUNT(*) FROM pending" 2>/dev/null)
+  [ -z "\$n" ] || [ "\$n" = "0" ] && return 0
+  rows=\$(sqlite3 -separator \$'\\t' "\$OFFLINE_DB" "SELECT id, payload FROM pending ORDER BY ts LIMIT \$OFFLINE_DRAIN_MAX" 2>/dev/null)
+  [ -z "\$rows" ] && return 0
+  payload=\$(printf '%s\\n' "\$rows" | cut -f2- | jq -sc '.' 2>/dev/null)
+  batch_ids=\$(printf '%s\\n' "\$rows" | cut -f1)
+  [ -n "\$payload" ] && [ "\$payload" != "[]" ] || return 0
+  log "🥡 صف آفلاین: بازپخش تا \$OFFLINE_DRAIN_MAX ردیف (از \$n ذخیره‌شده — بسته‌بندی ۱۰۰تایی عین دستور مالک)"
+  post_results "\$payload" "nostore"
+  rc=\$?
+  if [ "\$rc" -eq 0 ]; then
+    if [ -n "\$POST_ACKED" ] || [ -n "\$POST_REJ" ]; then
+      # ACK ردیفی: حذف دقیقاً همان‌هایی که حکم گرفتند — باقی برای چرخهٔ بعد
+      offline_delete_ids \$POST_ACKED \$POST_REJ
+      log "🥡 صف آفلاین: ACK دریافت شد — ردیف‌های دیده‌شده حذف شدند (حکم‌دارها)"
+    else
+      # قرارداد قدیمی (بدون .results) — کل بسته پذیرفته شد
+      offline_delete_ids \$batch_ids
+      log "🥡 صف آفلاین: کل بسته پذیرفته شد (ACK قرارداد قدیمی)"
+    fi
+  elif [ "\$rc" -eq 2 ]; then
+    if [ -n "\$POST_REJ" ]; then
+      offline_delete_ids \$POST_REJ
+    else
+      offline_delete_ids \$batch_ids
+    fi
+    log "🥡 صف آفلاین: رد قطعی — ردیف‌های ردشده حذف شدند (بازپخش بی‌پایان ممنوع)"
+  else
+    log "🥡 صف آفلاین: اتصال هنوز برنگشته — ردیف‌ها برای چرخهٔ بعد می‌مانند (رله زنده است)"
+  fi
   return 0
 }
 
