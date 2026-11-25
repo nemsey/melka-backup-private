@@ -153,13 +153,20 @@ async function runOneList(
       }).catch(() => undefined);
 
       // ── فاز B — Deep-Pass ──
-      try {
-        const r = await deep(token);
-        out.deep = { candidates: r.candidates, enriched: r.enriched };
-      } catch (e) {
-        out.deep = { error: String((e as Error)?.message ?? e).slice(0, 150) };
-      }
+      // DIR-SUPER-STRUCT-001 — تیربندی آبشاری درون‌چرخه‌ای: لایهٔ غنی‌سازی (P1)
+      // شروع نمی‌شود مگر لایهٔ حیاتی (P0) همین چرخه سالم بنشیند. فاز A خطا خورد؟
+      // فاز B صادقانه معلق می‌ماند تا چرخهٔ بعدی — رکورد نابالغ غنی نمی‌شود.
       const fastOk = !("error" in out.fast);
+      if (!fastOk) {
+        out.deep = { error: "waterfall — فاز A (P0) ناقص؛ غنی‌سازی تا چرخهٔ سالم معلق" };
+      } else {
+        try {
+          const r = await deep(token);
+          out.deep = { candidates: r.candidates, enriched: r.enriched };
+        } catch (e) {
+          out.deep = { error: String((e as Error)?.message ?? e).slice(0, 150) };
+        }
+      }
       const deepOk = !("error" in out.deep);
       // PN-084 — ترمیم تایپی باقیمانده از PN-083: narrow کردن union با "in" (tsc صفر خطا)
       const fastWritten = fastOk ? ("written" in out.fast ? out.fast.written : 0) : 0;

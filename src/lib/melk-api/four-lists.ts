@@ -35,6 +35,8 @@ import type { PrismaClient } from "@prisma/client";
 import { withLock, type WithLockResult } from "@/core/runtime/joblock";
 import { JobStateService, JOB_IDS, type JobStateView, type SyncJobStatus } from "./job-state";
 import { readLcppStatus } from "@/sync/lists/kernel";
+import { stageCoverage } from "./sync-stage";
+import { relayConfigStatus, relayHeartbeatSummary, type RelayHeartbeatSummary } from "./relay";
 
 /* ═══════════════════════════ تعریف یکتای چهار فهرست ═══════════════════════════ */
 
@@ -295,12 +297,19 @@ export interface FourListUnified {
   checkpoint: { phase: string; lastCompletedPage: number; totalPages: number; totalAtSource: number; updatedAt: string; completedAt: string | null } | null;
   /** قفل این لحظهٔ فهرست در دست چه کسی است (running بین‌فرایندی) */
   lockHeldBy: string | null;
+  /** DIR-SUPER-STRUCT-001 (بخش الف · ۱) — پوشش برچسب اتمی هر رکورد
+   *  (P0_DONE/P1_DONE/ALL_DONE) — فقط M1/M2؛ M3/M4 → null */
+  stage: { p0: number; p1: number; all: number; unmarked: number; total: number; completePct: number } | null;
   detail: Record<string, unknown> | null;
 }
 
 export interface FourListsUnifiedView {
   running: boolean;
   lists: Record<FourListId, FourListUnified>;
+  /** DIR-SUPER-STRUCT-001 (بخش ج · ۱) — بستگی فهرست‌ها به رله:
+   *  ضربان قلب watchDog ترموکس (۳۰ث) + وضعیت silent/warning/alive —
+   *  سه+ ضربان غایب = هشدار «رلهٔ ترموکس قطع شده است» در داشبورد */
+  relay: { mode: string; active: boolean; heartbeat: RelayHeartbeatSummary } | null;
   /** وضعیت فایل LCPP عیناً (compat — /api/sync/lcpp همچنان برقرار است) */
   lcpp: ReturnType<typeof readLcppStatus>;
 }
@@ -449,9 +458,20 @@ export async function readFourListsUnified(db: PrismaClient): Promise<FourListsU
       enrich: await countEnrich(db, id),
       checkpoint: await readCheckpoint(id),
       lockHeldBy,
+      stage: id === "m1" || id === "m2" ? await stageCoverage(db, id).catch(() => null) : null,
       detail,
     };
   }
 
-  return { running: running || lcpp.running, lists, lcpp };
+  // DIR-SUPER-STRUCT-001 (بخش ج) — بستگی فهرست‌ها به رله (ضربان + مود):
+  // قطعی رله یعنی چرخه‌های آینده ARM معلق می‌مانند — داشبورد باید بگوید.
+  let relay: FourListsUnifiedView["relay"] = null;
+  try {
+    const cfg = relayConfigStatus();
+    relay = { mode: cfg.mode, active: cfg.active, heartbeat: await relayHeartbeatSummary() };
+  } catch {
+    relay = null;
+  }
+
+  return { running: running || lcpp.running, lists, relay, lcpp };
 }

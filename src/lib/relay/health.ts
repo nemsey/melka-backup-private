@@ -85,7 +85,7 @@ export async function computeRelayHealth(): Promise<RelayHealthReport> {
     const active = await db.relayDevice.findFirst({
       where: { revokedAt: null, lastSeenAt: { not: null } },
       orderBy: { lastSeenAt: "desc" },
-      select: { deviceId: true, lastSeenAt: true },
+      select: { deviceId: true, lastSeenAt: true, lastHeartbeatAt: true },
     });
     // نبض واقعی: جدیدترین فعالیت صف (تکمیل/دریافت کار) — lastSeenAt فقط در بوت
     // دستگاه تازه می‌شود (درس پایش: گوشی هر چرخه نتیجه می‌فرستد ولی ردیف دستگاه
@@ -107,12 +107,38 @@ export async function computeRelayHealth(): Promise<RelayHealthReport> {
     ];
     const lastSeen = Math.max(...candidates);
     const age = now - lastSeen;
-    const state: "green" | "yellow" | "red" = lastSeen === 0 ? "red" : age <= HEARTBEAT_WINDOW_MS ? "green" : age <= 6 * 60 * 60_000 ? "yellow" : "red";
+    // DIR-SUPER-STRUCT-001 (بخش ج · ۱) — دقت ضربان قلب ۳۰ث:
+    // watchDog ترموکس هر ۳۰ث lastHeartbeatAt را می‌زند؛ سه+ ضربان غایب (۹۰ث)
+    // و صف ساکت = «رله قطع شده است» (عین دستور مالک). نسل‌های قدیمی بدون
+    // watchDog با همان پنجرهٔ ۱۵ دقیقهٔ قبل قضاوت می‌شوند (سلوک عقبه).
+    let state: "green" | "yellow" | "red";
+    let detail: string;
+    if (active?.lastHeartbeatAt) {
+      const beatAge = now - active.lastHeartbeatAt.getTime();
+      const beatsMissed = Math.floor(beatAge / 30_000);
+      const dispatchFresh = (lastDispatch?.dispatchedAt?.getTime() ?? 0) > now - 90_000;
+      if (beatsMissed < 3) {
+        state = "green";
+        detail = `ضربان watchDog تازه است (${beatsMissed} ضربان غایب) — آخرین نبض ${agoFa(age)}`;
+      } else if (dispatchFresh) {
+        state = "yellow";
+        detail = `${beatsMissed}+ ضربان watchDog غایب اما صف فعال است — نسل قدیمی یا watchDog تنها مرده`;
+      } else {
+        state = "red";
+        detail = `رلهٔ ترموکس قطع شده است — ${beatsMissed}+ ضربان متوالی غایب (آخرین نبض ${agoFa(beatAge)})`;
+      }
+    } else if (lastSeen === 0) {
+      state = "red";
+      detail = "هیچ دستگاه فعالی دیده نشده است";
+    } else {
+      state = age <= HEARTBEAT_WINDOW_MS ? "green" : age <= 6 * 60 * 60_000 ? "yellow" : "red";
+      detail = `آخرین نبض ${agoFa(age)} (نسل قدیمی — بدون watchDog ضربان‌زن)`;
+    }
     layers.push({
       key: "heartbeat",
       label: "نبض گوشی رله",
       state,
-      detail: lastSeen === 0 ? "هیچ دستگاه فعالی دیده نشده است" : `آخرین نبض ${agoFa(age)}`,
+      detail,
       measuredAt: new Date().toISOString(),
     });
   } catch {

@@ -628,6 +628,10 @@ model PropertyRecord {
   extractedAt          DateTime? // زمان استخراج
   extractionBatchId    String? // شناسه دسته استخراج (= runId)
   normalizationVersion String? // نسخه موتور نرمال‌سازی
+  /// DIR-SUPER-STRUCT-001 — برچسب اتمی وضعیت سینک هر رکورد (P0_DONE | P1_DONE | ALL_DONE).
+  /// فاز A فهرست = P0_DONE · فاز B غنی‌سازی = ALL_DONE — نگه‌دارندهٔ SQL تک‌جهتی است
+  /// (تنزل نمی‌خورد) — پس از ریست سرور دقیقاً معلوم است هر رکورد در کدام مرحله مانده.
+  syncStage            String?
   syncedAt             DateTime  @default(now())
   createdAt            DateTime?
   updatedAt            DateTime  @updatedAt
@@ -1459,6 +1463,8 @@ model RequestRecord {
   extractedAt          DateTime?
   extractionBatchId    String?
   normalizationVersion String?
+  /// DIR-SUPER-STRUCT-001 — برچسب اتمی وضعیت سینک (P0_DONE | P1_DONE | ALL_DONE)
+  syncStage            String?
 
   // ===================== PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM =====================
   // (بهینه‌ترین گزینهٔ استخراج: inputs خود requests/list — ۱۰۰٪ پر، صفر API اضافه)
@@ -2105,6 +2111,9 @@ model RelayDevice {
   servedCount   Int       @default(0)
   errorCount    Int       @default(0)
   lastRoundtripMs Int?
+  /// DIR-SUPER-STRUCT-001 — آخرین ضربان قلب watchDog ترموکس (هر ۳۰ث).
+  /// سه ضربان متوالی غایب = هشدار «رله قطع شده است» در داشبورد.
+  lastHeartbeatAt DateTime?
 
   @@index([deviceId, lastSeenAt])
 }

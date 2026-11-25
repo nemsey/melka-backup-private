@@ -30,10 +30,13 @@
  */
 
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { db } from "@/lib/db";
 import { isMelkTabrizHost } from "./proxy";
 import { audit } from "@/lib/auth/session";
 import { isChangesSessionActive } from "@/lib/changes/session";
+import { readLcppStatus } from "@/sync/lists/kernel";
 
 /** پنجرهٔ زمانی امضا (ضد replay) — عین TIMESTAMP_WINDOW_MS سمت Worker */
 export const RELAY_TIMESTAMP_WINDOW_MS = 5 * 60 * 1000;
@@ -75,6 +78,14 @@ export const RELAY_WAIT_DEFAULT_MS = 110_000;
  * poll زنده هرگز >۴ دقیقه فاصله نمی‌اندازد).
  */
 export const RELAY_ONLINE_WINDOW_MS = 240_000;
+
+/* ── DIR-SUPER-STRUCT-001 (بخش ج · سیستم عصبی) ──────────────────────── */
+
+/** فاصلهٔ ضربان قلب watchDog ترموکس (۳۰ث — عین دستور مالک) */
+export const RELAY_HEARTBEAT_INTERVAL_MS = 30_000;
+/** سه ضربان متوالی غایب (۹۰ث بی‌ضربان) = هشدار «رله قطع شده است» */
+export const RELAY_HEARTBEAT_MISSED_WARN = 3;
+
 /** سقف اندازهٔ بدنهٔ پاسخ گوشی (بایت — پایه) */
 export const RELAY_MAX_RESULT_BYTES = 16 * 1024 * 1024;
 /** PN-035 (فاز ۵) — سقف اندازهٔ دستهٔ هر poll (پاسخ ۴× سرور؛ کارگر موازی گوشی) */
@@ -393,6 +404,205 @@ export async function noteRelayPollSeen(deviceId: string): Promise<void> {
     where: { deviceId, revokedAt: null },
     data: { lastSeenAt: new Date() },
   });
+}
+
+/* ═════════════ DIR-SUPER-STRUCT-001 (بخش ج · ۱) — ضربان قلب watchDog ═════════════ */
+
+/**
+ * ثبت ضربان قلب watchDog ترموکس — POST /api/mobile-relay/heartbeat (امضاشده).
+ * watchDog هر ۳۰ث یک پیام کوچک «من زنده‌ام (و رله زنده/درحال‌بازآید)» می‌فرستد؛
+ * سه ضربان متوالی غایب = هشدار قطعی در داشبورد. lastSeenAt هم تازه می‌شود تا
+ * پیش‌شرط صف‌گذاری armCall (anyRelayDeviceOnline) در سکون صف خاموش نماند.
+ * قانون صفر لاگ محتوا: فقط وضعیت بولی — هیچ بدنه/هدر/رازی ثبت نمی‌شود.
+ */
+export async function noteRelayHeartbeat(deviceId: string, alive: boolean): Promise<void> {
+  await db.relayDevice.updateMany({
+    where: { deviceId, revokedAt: null },
+    data: { lastHeartbeatAt: new Date(), lastSeenAt: new Date() },
+  });
+  if (!alive) {
+    await noteRelayReject(deviceId, "watchdog: relay process down").catch(() => undefined);
+  }
+}
+
+/** نمای سلامت ضربان — مصرف‌کننده: four-lists (داشبورد) + relayOverview (تنظیمات) */
+export interface RelayHeartbeatSummary {
+  status: "alive" | "warning" | "silent";
+  lastHeartbeatAt: string | null;
+  lastSeenAt: string | null;
+  /** ثانیه از آخرین ضربان */
+  sinceSec: number | null;
+  /** ضربان‌های متوالی غایب (بر پایهٔ فاصلهٔ ۳۰ث — عین دستور مالک) */
+  beatsMissed: number | null;
+  /** نسل قدیمی بدون watchDog؟ — سلوک عقبه: قضاوت با فعالیت صف */
+  legacy: boolean;
+}
+
+/**
+ * جمع‌بندی ضربان برای تازه‌ترین دستگاه غیرابطال‌شده — دو سیگنال تلفیق:
+ *   · ضربان watchDog (lastHeartbeatAt) — دقت ۳۰ث
+ *   · فعالیت صف (dispatchedAt) — پوشش نسل‌های قدیمی بدون watchDog
+ * حکم: alive · warning (ضربان کهنه اما صف فعال — نسل قدیمی یا watchDog تنها مرده)
+ * · silent (سه+ ضربان غایب و صف ساکت ≥۹۰ث = «رله قطع شده است»).
+ */
+export async function relayHeartbeatSummary(): Promise<RelayHeartbeatSummary> {
+  const device = await db.relayDevice.findFirst({
+    where: { revokedAt: null },
+    orderBy: [{ lastSeenAt: "desc" }],
+    select: { lastHeartbeatAt: true, lastSeenAt: true },
+  });
+  if (!device || !device.lastSeenAt) {
+    return { status: "silent", lastHeartbeatAt: device?.lastHeartbeatAt?.toISOString() ?? null, lastSeenAt: null, sinceSec: null, beatsMissed: null, legacy: false };
+  }
+  const now = Date.now();
+  const beatMs = device.lastHeartbeatAt ? now - device.lastHeartbeatAt.getTime() : null;
+  const sinceSec = beatMs !== null ? Math.max(0, Math.round(beatMs / 1000)) : null;
+  const beatsMissed = beatMs !== null ? Math.floor(beatMs / RELAY_HEARTBEAT_INTERVAL_MS) : null;
+  // فعالیت صف — سیگنال عقبه (نسل بدون watchDog زنده است اگر صف کار می‌کند)
+  let queueActive = false;
+  try {
+    const cutoff = new Date(now - RELAY_HEARTBEAT_MISSED_WARN * RELAY_HEARTBEAT_INTERVAL_MS);
+    const n = await db.relayQueue.count({ where: { dispatchedAt: { gte: cutoff } } });
+    queueActive = n > 0;
+  } catch {
+    queueActive = false;
+  }
+  const legacy = device.lastHeartbeatAt === null;
+  if (beatsMissed !== null && beatsMissed < RELAY_HEARTBEAT_MISSED_WARN) {
+    return { status: "alive", lastHeartbeatAt: device.lastHeartbeatAt?.toISOString() ?? null, lastSeenAt: device.lastSeenAt.toISOString(), sinceSec, beatsMissed, legacy };
+  }
+  if (beatsMissed !== null && beatsMissed >= RELAY_HEARTBEAT_MISSED_WARN && !queueActive) {
+    return { status: "silent", lastHeartbeatAt: device.lastHeartbeatAt?.toISOString() ?? null, lastSeenAt: device.lastSeenAt.toISOString(), sinceSec, beatsMissed, legacy };
+  }
+  // ضربان کهنه اما صف فعال (نسل قدیمی یا watchDog تنها مرده) — هشدار نرم
+  return { status: "warning", lastHeartbeatAt: device.lastHeartbeatAt?.toISOString() ?? null, lastSeenAt: device.lastSeenAt.toISOString(), sinceSec, beatsMissed, legacy };
+}
+
+/* ═════════════ DIR-SUPER-STRUCT-001 (بخش ج · ۲) — مانیفست کار ═════════════ */
+
+export interface RelayJobManifest {
+  /** آیا کار فهرست‌ها/تغییرات همین حالا جاری است؟ */
+  running: boolean;
+  /** نشست تمام‌ظرفیت کاشی تغییرات فعال است؟ (اولویت رله سقف ۱۰) */
+  changesSession: boolean;
+  /** فهرست جاری — m1|m2|m3 از فاز LCPP (نگاشت مستقیم کاشی) */
+  list: "m1" | "m2" | "m3" | null;
+  listLabel: string | null;
+  /** P0 = فاز A حیاتی · P1 = فاز B غنی‌سازی (زبان دستور مالک) */
+  phase: "P0" | "P1" | null;
+  progressPct: number;
+  fetched: number;
+  written: number;
+  /** توضیح فارسی یک‌خطی برای بنر ترموکس */
+  note: string | null;
+  /** شمار آیتم صف در انتظار/در پرواز (بستگی رله به مغز) */
+  queue: { pending: number; dispatched: number };
+}
+
+const MANIFEST_LIST_LABELS: Record<string, string> = {
+  "m1-arm-listings": "فهرست آگهی‌ها",
+  "m2-arm-requests": "فهرست درخواست‌ها",
+  "m9-transactions": "فهرست معاملات",
+};
+
+/**
+ * مانیفست کار جاری — «مغز به دست‌ها می‌گوید چه می‌کند»: در پاسخ poll به رله
+ * می‌رسد تا بنر «دستور کار جاری» را چاپ کند. اطلاعات‌اند صرفاً — دستورات
+ * اجرایی عین همیشه به‌صورت آیتم‌های امضاشدهٔ صف صادر می‌شوند (رله تصمیم‌گیر
+ * نیست؛ قانون صفر auto-execute پابرجا — «رله فقط منتقل می‌کند»).
+ */
+export async function relayJobManifest(): Promise<RelayJobManifest> {
+  const lcpp = readLcppStatus();
+  let changesSession = false;
+  try {
+    changesSession = isChangesSessionActive();
+  } catch {
+    changesSession = false;
+  }
+  let list: "m1" | "m2" | "m3" | null = null;
+  let phase: "P0" | "P1" | null = null;
+  let listLabel: string | null = null;
+  let progressPct = 0;
+  let fetched = 0;
+  let written = 0;
+  if (lcpp.running) {
+    for (const [id, st] of Object.entries(lcpp.lists)) {
+      if (st.phase === "fast-pass" || st.phase === "deep-pass") {
+        list = id === "m1-arm-listings" ? "m1" : id === "m2-arm-requests" ? "m2" : id === "m9-transactions" ? "m3" : null;
+        listLabel = MANIFEST_LIST_LABELS[id] ?? null;
+        phase = st.phase === "fast-pass" ? "P0" : "P1";
+        progressPct = st.progressPct ?? 0;
+        fetched = st.fetched ?? 0;
+        written = st.written ?? 0;
+        break;
+      }
+    }
+  }
+  let queue = { pending: 0, dispatched: 0 };
+  try {
+    const [pending, dispatched] = await Promise.all([
+      db.relayQueue.count({ where: { status: "pending" } }),
+      db.relayQueue.count({ where: { status: "dispatched" } }),
+    ]);
+    queue = { pending, dispatched };
+  } catch {
+    /* شمارش بهترین-تلاش */
+  }
+  const running = lcpp.running || changesSession;
+  const note = list && phase
+    ? `دستور کار جاری: ${listLabel} — لایهٔ ${phase === "P0" ? "حیاتی (P0)" : "غنی‌سازی (P1)"}${progressPct > 0 ? ` · ${progressPct}٪` : ""}`
+    : changesSession
+      ? "حالت تمام‌ظرفیت کاشی تغییرات — تمام ظرفیت ترموکس در اختیار تغییرات"
+      : running
+        ? "چرخهٔ فهرست‌ها جاری است"
+        : null;
+  return { running, changesSession, list, listLabel, phase, progressPct, fetched, written, note, queue };
+}
+
+/* ═════════════ DIR-SUPER-STRUCT-001 (بخش ج · ۴) — حالت مخفی‌کاری ═════════════ */
+
+export interface RelayStealthProfile {
+  enabled: boolean;
+  /** سقف تماس ARM در دقیقه — ۲۰ = «هر ~۳ ثانیه یک درخواست» عین مثال مالک */
+  ratePerMin: number;
+  /** جیتار درصدی بین تماس‌ها (رفتار انسانی — نه ضربان ساعت) */
+  jitterPct: number;
+  updatedAt: string | null;
+}
+
+export const RELAY_STEALTH_DEFAULT: RelayStealthProfile = { enabled: false, ratePerMin: 20, jitterPct: 20, updatedAt: null };
+
+function stealthPath(): string {
+  return join(process.env.MELK_LCPP_RUNTIME_DIR ?? join(process.env.MELKA_REPO_DIR ?? "/home/z/my-project", "upload", ".runtime"), "relay-stealth.json");
+}
+
+/** خواندن پروفایل مخفی‌کاری (فایل اجرایی — عین الگوی پرچم‌های force) */
+export function readRelayStealthProfile(): RelayStealthProfile {
+  try {
+    const raw = JSON.parse(readFileSync(stealthPath(), "utf8")) as Partial<RelayStealthProfile>;
+    return {
+      enabled: raw.enabled === true,
+      ratePerMin: Math.max(5, Math.min(60, Number(raw.ratePerMin) || RELAY_STEALTH_DEFAULT.ratePerMin)),
+      jitterPct: Math.max(0, Math.min(50, Number(raw.jitterPct) || RELAY_STEALTH_DEFAULT.jitterPct)),
+      updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : null,
+    };
+  } catch {
+    return { ...RELAY_STEALTH_DEFAULT };
+  }
+}
+
+/** نوشتن پروفایل مخفی‌کاری — فقط مالک (روت admin/relay/stealth) */
+export function writeRelayStealthProfile(patch: { enabled?: boolean; ratePerMin?: number; jitterPct?: number }): RelayStealthProfile {
+  const cur = readRelayStealthProfile();
+  const next: RelayStealthProfile = {
+    enabled: typeof patch.enabled === "boolean" ? patch.enabled : cur.enabled,
+    ratePerMin: patch.ratePerMin != null ? Math.max(5, Math.min(60, Math.floor(patch.ratePerMin))) : cur.ratePerMin,
+    jitterPct: patch.jitterPct != null ? Math.max(0, Math.min(50, Math.floor(patch.jitterPct))) : cur.jitterPct,
+    updatedAt: new Date().toISOString(),
+  };
+  mkdirSync(dirname(stealthPath()), { recursive: true });
+  writeFileSync(stealthPath(), JSON.stringify(next, null, 1), "utf8");
+  return next;
 }
 
 /**

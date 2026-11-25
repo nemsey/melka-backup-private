@@ -627,6 +627,8 @@ model PropertyRecord {
   extractedAt          DateTime? // زمان استخراج
   extractionBatchId    String? // شناسه دسته استخراج (= runId)
   normalizationVersion String? // نسخه موتور نرمال‌سازی
+  /// DIR-SUPER-STRUCT-001 — برچسب اتمی وضعیت سینک (P0_DONE | P1_DONE | ALL_DONE)
+  syncStage            String?
   syncedAt             DateTime  @default(now())
   createdAt            DateTime?
   updatedAt            DateTime  @updatedAt
@@ -1390,6 +1392,8 @@ model RequestRecord {
   extractedAt          DateTime?
   extractionBatchId    String?
   normalizationVersion String?
+  /// DIR-SUPER-STRUCT-001 — برچسب اتمی وضعیت سینک (P0_DONE | P1_DONE | ALL_DONE)
+  syncStage            String?
 
   // ===================== PN-002 گام ۲ — ستون‌های تازه از inputs خود ردیف فهرست ARM =====================
   // (بهینه‌ترین گزینهٔ استخراج: inputs خود requests/list — ۱۰۰٪ پر، صفر API اضافه)
@@ -1993,6 +1997,8 @@ model RelayDevice {
   servedCount   Int       @default(0)
   errorCount    Int       @default(0)
   lastRoundtripMs Int?
+  /// DIR-SUPER-STRUCT-001 — آخرین ضربان قلب watchDog ترموکس (هر ۳۰ث)
+  lastHeartbeatAt DateTime?
 
   @@index([deviceId, lastSeenAt])
 }

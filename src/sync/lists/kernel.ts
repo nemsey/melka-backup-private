@@ -13,6 +13,14 @@
  *                       صفر نوشتن DB
  *   ۴) LcppStatus     — وضعیت فاز A/B برای نشانگر UI (فرمان ۴ بند ۴)
  *
+ * DIR-SUPER-STRUCT-001 (بخش الف · برچسب اتمی + دلتای ردیفی):
+ *   · BulkTableSpec.stageColumn — SET تک‌جهتی/صعودی برای syncStage
+ *     (stageGuardSql) — برچسب هرگز تنزل نمی‌خورد (هم‌خانوادهٔ قانون ۰۴).
+ *   · diffRows — دلتای ردیفی: فقط ردیف‌های تازه/تغییرکرده برمی‌گرداند؛
+ *     رکورد بی‌تغییر = صفر نوشتن. مرجع مقایسه خود DB است — بدون ذخیره‌گاه
+ *     هش اضافه و بدون اتکا به modified_at منبع (که ARM منتشر نمی‌کند).
+ *   ۵) DeltaState (دو سطح) — هش صفحه (فرمان ۵) + دلتای ردیفی (این دستور):
+ *
  * ⊙ سازگاری درایور (ADR-051-03 · درس زندهٔ تست ۲۰۲۶-۱۰-۲۸):
  *   better-sqlite3 v13 در Bun v1.3.14 با NAPI FATAL می‌اشکند (شاهد bun.report)
  *   ولی در Node v24 سالم است؛ Worker ملکا روی Bun اجراست (1-web-1-worker).
@@ -30,6 +38,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import pLimit from "p-limit";
+import { stageGuardSql } from "@/lib/melk-api/sync-stage";
 
 // ───────────────────────── مسیرها (تنبل — قابل ایزوله در تست) ─────────────────────────
 
@@ -147,6 +156,9 @@ export interface BulkTableSpec {
   columns: readonly string[];
   /** ستون‌های متادیتای سینک که همروط بازنویسی می‌شوند */
   metaColumns?: readonly string[];
+  /** DIR-SUPER-STRUCT-001 — ستون برچسب اتمی (syncStage): SET تک‌جهتی/صعودی
+   *  (stageGuardSql) به‌جای coalesceExpr — برچسب هرگز تنزل نمی‌خورد */
+  stageColumn?: string;
 }
 
 export interface BulkUpsertResult {
@@ -188,7 +200,9 @@ export class SqlBulkWriter {
       const cols = [spec.naturalKey, ...spec.columns, ...(spec.metaColumns ?? [])]
         .filter((c, i, arr) => arr.indexOf(c) === i);
       const placeholders = cols.map(() => "?").join(", ");
-      const updates = spec.columns.map((c) => coalesceExpr(spec.table, c)).join(", ");
+      const updates = spec.columns
+        .map((c) => (spec.stageColumn === c ? stageGuardSql(spec.table, c) : coalesceExpr(spec.table, c)))
+        .join(", ");
       const sql =
         `INSERT INTO ${spec.table} (${cols.join(", ")}) VALUES (${placeholders}) ` +
         `ON CONFLICT(${spec.naturalKey}) DO UPDATE SET ${updates}`;
@@ -245,6 +259,59 @@ export class SqlBulkWriter {
   currentValues(spec: BulkTableSpec, key: string, columns: readonly string[]): Record<string, unknown> | null {
     const sql = `SELECT ${columns.join(", ")} FROM ${spec.table} WHERE ${spec.naturalKey} = ? LIMIT 1`;
     return (this.db.prepare(sql).get(key) as Record<string, unknown> | undefined) ?? null;
+  }
+
+  /**
+   * DIR-SUPER-STRUCT-001 — دلتای ردیفی (سینک دلتا):
+   * از میان ردیف‌های ورودی، فقط تازه/تغییرکرده‌ها را برمی‌گرداند.
+   * مرجع مقایسه = خود DB (خواندن انبوه با IN) — ردیفی که همهٔ ستون‌های
+   * داده‌اش (منهای stageColumn و metaColumns) عین مقدار فعلی است unchanged
+   * است و هیچ نوشتاری نمی‌خورد (هیچ syncedAt هم تازه نمی‌شود).
+   * شکست هر مرحله = بازگشت همهٔ ردیف‌ها (fail-safe به سلوک پیشین).
+   */
+  diffRows(
+    spec: BulkTableSpec,
+    rows: Array<Record<string, unknown>>
+  ): { changed: Array<Record<string, unknown>>; unchanged: number; failed: boolean } {
+    try {
+      if (rows.length === 0) return { changed: rows, unchanged: 0, failed: false };
+      const compareCols = spec.columns.filter((c) => c !== spec.stageColumn);
+      const changed: Array<Record<string, unknown>> = [];
+      let unchanged = 0;
+      for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+        const chunk = rows.slice(i, i + CHUNK_SIZE);
+        const keys = chunk.map((r) => String(r[spec.naturalKey] ?? "")).filter((k) => k !== "");
+        const keyToRow = new Map<string, Array<Record<string, unknown>>>();
+        for (const r of chunk) {
+          const k = String(r[spec.naturalKey] ?? "");
+          if (!k) { changed.push(r); continue; } // بی‌کلید — قابل مقایسه نیست، نوشته می‌شود
+          (keyToRow.get(k) ?? keyToRow.set(k, []).get(k)!).push(r);
+        }
+        if (keys.length === 0) continue;
+        const placeholders = keys.map(() => "?").join(", ");
+        const sql = `SELECT ${spec.naturalKey}, ${compareCols.join(", ")} FROM ${spec.table} WHERE ${spec.naturalKey} IN (${placeholders})`;
+        const current = this.db.prepare(sql).all(...keys) as Array<Record<string, unknown>>;
+        const currentByKey = new Map<string, Record<string, unknown>>();
+        for (const c of current) currentByKey.set(String(c[spec.naturalKey] ?? ""), c);
+        for (const [k, candidates] of keyToRow) {
+          const cur = currentByKey.get(k);
+          if (!cur) { changed.push(...candidates); continue; } // تازه — موجود نیست
+          for (const r of candidates) {
+            let same = true;
+            for (const col of compareCols) {
+              const have = sqlValue(cur[col] ?? null);
+              const want = sqlValue(r[col] ?? null);
+              if (have !== want && !(have == null && want == null)) { same = false; break; }
+            }
+            if (same) unchanged += 1;
+            else changed.push(r);
+          }
+        }
+      }
+      return { changed, unchanged, failed: false };
+    } catch {
+      return { changed: rows, unchanged: 0, failed: true };
+    }
   }
 
   /** پرس‌وجوی خام خواندنی (فقط SELECT — گارد ساختاری) */

@@ -11,6 +11,10 @@
  *        دسته‌بندی · بازهٔ قیمت · منطقه/محله — همه از خود ردیف فهرست (P6547)
  * فاز B: requests/applicant/{id} (موبایل متقاضی — ستون «متقاضی» حیاتی)
  *        + requests/details/{id} (منطقه‌های منتخب کامل)
+ *
+ * DIR-SUPER-STRUCT-001 (بخش الف): برچسب اتمی (فاز A=P0_DONE · فاز B=ALL_DONE ·
+ * نگه‌دارندهٔ تک‌جهتی SQL) + آبشار رکوردی (P1_DONE از candidates حذف) +
+ * دلتای ردیفی (فقط ردیف‌های تغییرکرده نوشته می‌شوند).
  */
 
 import { z } from "zod";
@@ -50,16 +54,20 @@ const LIST_SPEC: BulkTableSpec = {
     "armBranchTitle", "countryName", "stateName", "cityName", "platform", "customerDescription",
     // PN-027 — سایه‌های نرمال
     "customerNameNorm", "sanadNamesNorm", "actorNameNorm",
+    // DIR-SUPER-STRUCT-001 — برچسب اتمی: فاز A = P0_DONE (تک‌جهتی در SQL)
+    "syncStage",
   ],
   metaColumns: ["updatedAt", "extractedAt"],
+  stageColumn: "syncStage",
 };
 
 /** whitelist غنی‌سازی فاز B — ستون «متقاضی» حیاتی */
 const ENRICH_SPEC: BulkTableSpec = {
   table: "RequestRecord",
   naturalKey: "requestCode",
-  columns: ["customerMobile", "rawCustomerMobile", "areaNamesJson"],
+  columns: ["customerMobile", "rawCustomerMobile", "areaNamesJson", "syncStage"],
   metaColumns: ["extractionBatchId", "extractedAt", "updatedAt"],
+  stageColumn: "syncStage",
 };
 
 // ─── validate (Zod) ────────────────────────────────────────────────────────
@@ -172,6 +180,8 @@ export interface FastPassResult {
   validated: number;
   written: number;
   skippedUnchangedPages: number;
+  /** DIR-SUPER-STRUCT-001 — دلتای ردیفی: ردیف‌های بی‌تغییرِ صفحات تغییرکرده */
+  unchangedRows: number;
   totalPages: number;
   totalAtSource: number;
   durationMs: number;
@@ -188,7 +198,7 @@ export async function fastPass(
   const maxPages = opts.maxPages ?? 12;
   const delta = openDelta(LIST_ID);
   const result: FastPassResult = {
-    fetched: 0, validated: 0, written: 0, skippedUnchangedPages: 0,
+    fetched: 0, validated: 0, written: 0, skippedUnchangedPages: 0, unchangedRows: 0,
     totalPages: 0, totalAtSource: 0, durationMs: 0,
   };
 
@@ -213,22 +223,29 @@ export async function fastPass(
       for (const raw of fetched.rows) {
         const mapped = validateRow(mapArmRequestListRow(raw) as unknown as Record<string, unknown> | null);
         if (!mapped) continue;
-        batch.push({ ...toSqlRow(mapped), updatedAt: new Date() });
+        // DIR-SUPER-STRUCT-001 — برچسب اتمی فاز A (نگه‌دارندهٔ SQL تک‌جهتی است)
+        batch.push({ ...toSqlRow(mapped), syncStage: "P0_DONE", updatedAt: new Date() });
         result.validated += 1;
       }
     });
 
+    // DIR-SUPER-STRUCT-001 — دلتای ردیفی: فقط ردیف‌های تازه/تغییرکرده نوشته می‌شوند
     if (batch.length > 0) {
-      const upsert = writer.upsertBulk(LIST_SPEC, batch, (done, total) => {
-        updateListStatus(LIST_ID, {
-          phase: "fast-pass",
-          progressPct: 10 + Math.round((done / total) * 85),
-          fetched: result.fetched,
-          written: done,
-          skippedUnchanged: result.skippedUnchangedPages,
+      const diff = writer.diffRows(LIST_SPEC, batch);
+      result.unchangedRows = diff.unchanged;
+      const writeBatch = diff.changed;
+      if (writeBatch.length > 0) {
+        const upsert = writer.upsertBulk(LIST_SPEC, writeBatch, (done, total) => {
+          updateListStatus(LIST_ID, {
+            phase: "fast-pass",
+            progressPct: 10 + Math.round((done / total) * 85),
+            fetched: result.fetched,
+            written: done,
+            skippedUnchanged: result.skippedUnchangedPages,
+          });
         });
-      });
-      result.written = upsert.written;
+        result.written = upsert.written;
+      }
     }
     delta.commit(LIST_ID);
     result.durationMs = Date.now() - t0;
@@ -257,9 +274,16 @@ export async function deepPass(
   const ownsWriter = !opts.writer;
   const maxRows = Math.min(opts.maxRows ?? 120, 240);
   const repo = getRequestRepository();
-  const pending = await repo
+  const pendingAll = await repo
     .listPendingArmEnrichment(maxRows)
     .catch(() => [] as Array<{ id: string; naturalKey: string }>);
+  // DIR-SUPER-STRUCT-001 — آبشار رکوردی: P1_DONE (غنی‌شده بدون P0) حذف از candidates
+  const stageBlocked = new Set(
+    writer.rawAll<{ id: string; syncStage: string | null }>(
+      "SELECT id, syncStage FROM RequestRecord WHERE syncStage = 'P1_DONE'"
+    ).map((r) => r.id)
+  );
+  const pending = pendingAll.filter((row) => !stageBlocked.has(row.id));
   const result: DeepPassResult = { candidates: pending.length, enriched: 0, durationMs: 0, lastError: null };
 
   try {
@@ -304,6 +328,8 @@ export async function deepPass(
         patch.extractedAt = new Date();
         patch.updatedAt = new Date();
         patch.requestCode = row.naturalKey;
+        // DIR-SUPER-STRUCT-001 — برچسب اتمی فاز B: هر دو لایه (تک‌جهتی در SQL)
+        patch.syncStage = "ALL_DONE";
         writer.upsertBulk(ENRICH_SPEC, [patch]);
         result.enriched += 1;
       }

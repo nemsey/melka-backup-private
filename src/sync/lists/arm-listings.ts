@@ -15,6 +15,13 @@
  *   properties/details/{id} (آدرس دقیق + مشخصات کامل — detailsToPropertyExtras)
  *   عین دامنهٔ enrichArmListings اما نوشتار از مسیر خام kernel (خط قرمز Prisma-در-حلقه).
  *
+ * DIR-SUPER-STRUCT-001 (بخش الف — برچسب اتمی + آبشار + دلتا):
+ *   · برچسب اتمی: فاز A هر ردیف را «P0_DONE» می‌نویسد؛ فاز B پس از غنی‌سازی
+ *     «ALL_DONE» — تک‌جهتی با stageGuardSql (هرگز تنزل نمی‌خورد).
+ *   · آبشار رکوردی: candidates فاز B فقط رکوردهای بدون برچسب P1_DONE
+ *     (غنی‌سازی بدون P0) هستند — fetchStageMap + فیلتر.
+ *   · دلتای ردیفی: نوشتن فاز A فقط ردیف‌های تازه/تغییرکرده (writer.diffRows)
+ *
  * ستون‌های مقدس (ownerNote · provenance PN-050) در whitelist نیستند — SQL ساختاراً
  * قادر به لمسشان نیست. additive-only: صفر DELETE/REPLACE.
  */
@@ -55,8 +62,11 @@ const LIST_SPEC: BulkTableSpec = {
     "armBranchTitle", "stateName", "cityName", "publicUrl", "statusDate",
     // PN-027 — ستون‌های سایهٔ نرمال (منبع یگانه: propertyNormColumns)
     "realtorNameNorm", "ownerSearchNorm", "addressSearchNorm",
+    // DIR-SUPER-STRUCT-001 — برچسب اتمی: فاز A = P0_DONE (تک‌جهتی در SQL)
+    "syncStage",
   ],
   metaColumns: ["syncedAt"],
+  stageColumn: "syncStage",
 };
 
 /** whitelist ستون‌های غنی‌سازی فاز B — عین دامنهٔ enrichArmListings */
@@ -68,8 +78,11 @@ const ENRICH_SPEC: BulkTableSpec = {
     "meterage", "rooms", "floor", "buildYear",
     "propertyTypeId", "propertyTypeName", "tradeTypeId", "tradeTypeName",
     "description", "detailsJson",
+    // DIR-SUPER-STRUCT-001 — برچسب اتمی: فاز B = ALL_DONE (تک‌جهتی در SQL)
+    "syncStage",
   ],
   metaColumns: ["extractionBatchId", "extractedAt", "syncedAt"],
+  stageColumn: "syncStage",
 };
 
 // ─── validate (فرمان ۳ — Zod اختصاصی) ───────────────────────────────────────
@@ -129,6 +142,8 @@ export interface FastPassResult {
   validated: number;
   written: number;
   skippedUnchangedPages: number;
+  /** DIR-SUPER-STRUCT-001 — دلتای ردیفی: ردیف‌های بی‌تغییرِ صفحات تغییرکرده (صفر نوشتن) */
+  unchangedRows: number;
   totalPages: number;
   totalAtSource: number;
   durationMs: number;
@@ -149,7 +164,7 @@ export async function fastPass(
   const maxPages = opts.maxPages ?? 12; // برش هر چرخه — دیمن ۱دقیقه‌ای ادامه می‌دهد
   const delta = openDelta(LIST_ID);
   const result: FastPassResult = {
-    fetched: 0, validated: 0, written: 0, skippedUnchangedPages: 0,
+    fetched: 0, validated: 0, written: 0, skippedUnchangedPages: 0, unchangedRows: 0,
     totalPages: 0, totalAtSource: 0, durationMs: 0,
   };
 
@@ -178,6 +193,8 @@ export async function fastPass(
         if (!mapped) continue;
         // PN-027 — سایه‌های نرمال از ردیف فهرست (عین مسیر Prisma — هم‌ارزی قانون ۱)
         Object.assign(mapped, propertyNormColumns(mapped as { ownerName?: string | null; address?: string | null; areaName?: string | null; lineName?: string | null }));
+        // DIR-SUPER-STRUCT-001 — برچسب اتمی فاز A (نگه‌دارندهٔ SQL تک‌جهتی است)
+        mapped.syncStage = "P0_DONE";
         mapped.syncedAt = new Date();
         batch.push(mapped);
         result.validated += 1;
@@ -185,17 +202,24 @@ export async function fastPass(
     });
 
     // نوشتن انبوه — Chunkهای ۵۰۰ · Checkpoint عین قانون بقا ۲
+    // DIR-SUPER-STRUCT-001 — دلتای ردیفی: فقط ردیف‌های تازه/تغییرکرده نوشته
+    // می‌شوند (رکورد بی‌تغییر = صفر نوشتن و صفر تازه‌سازی syncedAt).
     if (batch.length > 0) {
-      const upsert: BulkUpsertResult = writer.upsertBulk(LIST_SPEC, batch, (done, total) => {
-        updateListStatus(LIST_ID, {
-          phase: "fast-pass",
-          progressPct: 10 + Math.round((done / total) * 85),
-          fetched: result.fetched,
-          written: done,
-          skippedUnchanged: result.skippedUnchangedPages,
+      const diff = writer.diffRows(LIST_SPEC, batch);
+      result.unchangedRows = diff.unchanged;
+      const writeBatch = diff.changed;
+      if (writeBatch.length > 0) {
+        const upsert: BulkUpsertResult = writer.upsertBulk(LIST_SPEC, writeBatch, (done, total) => {
+          updateListStatus(LIST_ID, {
+            phase: "fast-pass",
+            progressPct: 10 + Math.round((done / total) * 85),
+            fetched: result.fetched,
+            written: done,
+            skippedUnchanged: result.skippedUnchangedPages,
+          });
         });
-      });
-      result.written = upsert.written;
+        result.written = upsert.written;
+      }
     }
     if (pool.failures > 0) {
       delta.commit(LIST_ID); // صفحات موفق ثبت — تکرارِ فردا از صفحات شکست می‌گذرد
@@ -221,6 +245,9 @@ export interface DeepPassResult {
 /**
  * فاز B — تکمیل جزئیات رکوردهای در-انتظار (لایهٔ «مالک» حیاتی از arm_owner).
  * رکوردهای هدف: listPendingEnrichment مخزن (extractionBatchId IS NULL).
+ * DIR-SUPER-STRUCT-001 — تیربندی آبشاری رکوردی: رکوردی که برچسب P1_DONE
+ * دارد (غنی‌شده بدون لایهٔ حیاتی) از candidates حذف می‌شود — P1 هرگز قبل از
+ * P0 همان رکورد اجرا نمی‌شود.
  * نوشتار: kernel خام — یعنی غنی‌سازی هم هرگز Prisma-در-حلقه نیست (خط قرمز).
  */
 export async function deepPass(
@@ -233,7 +260,14 @@ export async function deepPass(
   const ownsWriter = !opts.writer;
   const maxRows = Math.min(opts.maxRows ?? 120, 240);
   const repo = getPropertyRecordRepository();
-  const pending = await repo.listPendingEnrichment(maxRows).catch(() => [] as Array<{ id: string; naturalKey: string }>);
+  const pendingAll = await repo.listPendingEnrichment(maxRows).catch(() => [] as Array<{ id: string; naturalKey: string }>);
+  // آبشار رکوردی — فیلتر P1_DONE (غنی‌سازی پیش از P0 ممنوع)
+  const stageBlocked = new Set(
+    writer.rawAll<{ id: string; syncStage: string | null }>(
+      "SELECT id, syncStage FROM PropertyRecord WHERE syncStage = 'P1_DONE'"
+    ).map((r) => r.id)
+  );
+  const pending = pendingAll.filter((row) => !stageBlocked.has(row.id));
   const result: DeepPassResult = { candidates: pending.length, enriched: 0, durationMs: 0, lastError: null };
 
   try {
@@ -278,6 +312,10 @@ export async function deepPass(
         patch.extractedAt = new Date();
         patch.syncedAt = new Date();
         patch.propertyCode = row.naturalKey;
+        // DIR-SUPER-STRUCT-001 — برچسب اتمی فاز B: هر دو لایه (نگه‌دارندهٔ SQL
+        // تک‌جهتی است — اگر رکوردی P0 ندارد، برچسب می‌ماند و بعدها فاز A
+        // همان رکورد را P0_DONE و حکم را صادر می‌کند)
+        patch.syncStage = "ALL_DONE";
         writer.upsertBulk(ENRICH_SPEC, [patch]);
         result.enriched += 1;
       }

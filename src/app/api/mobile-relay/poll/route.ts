@@ -27,7 +27,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { verifyRelayRequestAuth, claimRelayBatch, markRelayEnrollCompleted, noteRelayPollSeen, RELAY_MAX_BATCH } from "@/lib/melk-api/relay";
+import { verifyRelayRequestAuth, claimRelayBatch, markRelayEnrollCompleted, noteRelayPollSeen, RELAY_MAX_BATCH, relayJobManifest, readRelayStealthProfile } from "@/lib/melk-api/relay";
 import { isChangesSessionActive } from "@/lib/changes/session";
 
 export const dynamic = "force-dynamic";
@@ -94,6 +94,12 @@ export async function POST(request: NextRequest) {
       } catch {
         boost = false;
       }
+      // DIR-SUPER-STRUCT-001 (بخش ج · ۲ + ۴) — مانیفست کار و پروفایل مخفی‌کاری:
+      // «مغز به دست‌ها می‌گوید چه می‌کند» + «سرعت انسانی». هر دو صرفاً
+      // اطلاعات‌اند — دستور اجرایی همان آیتم‌های امضاشده است (رله تصمیم‌گیر نیست).
+      // نسل‌های قدیمی هر دو فیلد را بی‌صدا نادیده می‌گیرند.
+      const manifest = await relayJobManifest().catch(() => null);
+      const stealth = readRelayStealthProfile();
       return Response.json(
         {
           ok: true,
@@ -118,6 +124,8 @@ export async function POST(request: NextRequest) {
             ts: items[0].ts,
           },
           boost,
+          manifest,
+          stealth: { enabled: stealth.enabled, ratePerMin: stealth.ratePerMin, jitterPct: stealth.jitterPct },
         },
         { status: 200, headers: { "cache-control": "no-store" } }
       );
