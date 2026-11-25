@@ -13,16 +13,23 @@
  *   · کارت «مغز ملکا» — DIR-FF-CAP-502/اولاً: بازشونده با پیش‌فرض «بسته» +
  *     بارگذاری تنبلکار در نخستین بازشدن؛ Tier + نوار پیشرفت + Brier/کالیبراسیون
  *     + سلامت ۲۵ بررسی + فرا-ذهن (موتورهای ۱۲-۱۵) + تختهٔ سیاه + شورا
- * ثالثاً) حالت تمام‌ظرفیت ترموکس (همانند کاشی تغییرات):
- *   · کارت وضعیت نشست (کلیدهای «تمام ظرفیت»/«حالت عادی» — DIR-FF-CAP-502/ثانیاً)
+ * ثالثاً) حالت تمام‌ظرفیت ترموکس — DIR-FF-SUPER-001/گام سوم (دستور مالک):
+ *   · فعال‌سازی فقط و فقط خودکار هنگام «ثبت فایل کشف‌شده در سامانه ARM» (روت ثبت)
+ *   · کلید دستی آغاز حذف شد — این کاشی هرگز خودش آن را روشن نمی‌کند؛ کلید
+ *     «حالت عادی» (پایان زودهنگام) و کارت وضعیت زنده پابرجاست
  *   · DIR-FF-CAP-502/ثالثاً: تلاش مجدد خودکار پلکانی روی خطای گذرای ۵۰۲/۵۰۴
  *     دروازهٔ preview (پنجرهٔ بوت سندباکس ~۱۴۵ث) — عملیات idempotent است
- *   · هر ثبت آگهی در ARM آن را خودکار فعال می‌کند (ensureChangesSessionForOperation)
  * رابعاً) سیاست رلهٔ ترموکس (DIR-FF-RELAY-POLICY-001 · دستور مالک ۱۴۰۵/۰۹/۰۱):
  *   · اسکن دیوار به رلهٔ ترموکس نیازی ندارد — همیشه در «حالت عادی» و مستقیم
  *     از وب عمومی دیوار اجرا می‌شود (client.ts: fetch مستقیم · صفر صف رله)
  *   · رلهٔ ترموکس فقط و فقط هنگام ثبت فایل کشف‌شده در سامانه ARM به کار
  *     می‌رود (روت register: نشست تمام‌ظرفیت + اولویت رله ۱۰)
+ * پنجم) DIR-FF-SUPER-001 (دستور مالک — «فوق پیشرفته کردن فایل‌یابی»):
+ *   · اسکن چندوجهی و فراعمیق — کارِ اسکن در پس‌زمینهٔ سرور با پنج فاز زنده
+ *     (جست‌وجوی چنددسته‌ای → واکشی جزئیات با خطوط موازی → آمار بازار →
+ *     بازامتیازدهی → ثبت گزارش) و پیشرفت زنده در UI (نظارت ۲.۵ثانیه‌ای)
+ *   · POST اسکن فوری برمی‌گردد ⇒ مهلت ۲۰ثانیه‌ای مرورگر منتفی؛ اسکن بدون
+ *     واسطهٔ ترموکس/رله و مستقیم از دیوار اجرا می‌شود (گام دوم)
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -43,7 +50,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RefreshCw, Settings2, Crosshair, History, Info, ListFilter, Sparkles, Gauge,
-  MapPin, ChevronDown, ChevronLeft, Search, Brain, Cpu, Zap, ZapOff, Smartphone,
+  MapPin, ChevronDown, ChevronLeft, Search, Brain, Cpu, ZapOff, Smartphone,
   ClipboardCheck, Clock, Layers, Gem, Radar, Workflow, GitCompareArrows, FlaskConical, Eye,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
@@ -120,6 +127,31 @@ interface ScanLogRow {
   newAds: number;
   updatedAds: number;
   source: string;
+  error: string | null;
+}
+
+/** DIR-FF-SUPER-001 — کارِ اسکن پس‌زمینه (عین قرارداد GET/POST /api/divar/scan · فیلد job) */
+interface ScanJobView {
+  id: string;
+  status: "running" | "done" | "failed";
+  triggeredBy: "manual" | "auto";
+  startedAt: string;
+  updatedAt: string;
+  phase: string;
+  phaseLabel: string;
+  progress: {
+    scanned: number;
+    processed: number;
+    queueTotal: number;
+    fetched: number;
+    inWindow: number;
+    outOfArea: number;
+    autoRejected: number;
+    newAds: number;
+    updatedAds: number;
+  };
+  durationMs: number;
+  summary: { message: string; newAds: number; inWindow: number; durationMs: number } | null;
   error: string | null;
 }
 
@@ -212,10 +244,14 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [settingsData, setSettingsData] = useState<SettingsResponse | null>(null);
   const [scanLogs, setScanLogs] = useState<ScanLogRow[]>([]);
+  // DIR-FF-SUPER-001 — وضعیت کار اسکن پس‌زمینه (پنج فاز + شمارنده‌های زنده)
+  const [scanJob, setScanJob] = useState<ScanJobView | null>(null);
   const [detailsAd, setDetailsAd] = useState<DivarAdRow | null>(null);
   const [rejectAd, setRejectAd] = useState<DivarAdRow | null>(null);
   const [registerAd, setRegisterAd] = useState<DivarAdRow | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // DIR-FF-SUPER-001 — حلقهٔ نظارت اسکن پس از ترک کاشی متوقف می‌شود (بی‌نوشتن روی کامپوننت unmount)
+  const aliveRef = useRef(true);
   // فیلتر مکان — رجیستری ARM (بارگذاری تنبلکار روی نخستین تعامل)
   const [locData, setLocData] = useState<LocationsResponse | null>(null);
   const [locLoading, setLocLoading] = useState(false);
@@ -252,8 +288,10 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
 
   const loadScanLogs = useCallback(async () => {
     try {
-      const res = await api<{ ok: boolean; logs: ScanLogRow[] }>("/api/divar/scan");
+      const res = await api<{ ok: boolean; logs: ScanLogRow[]; job?: ScanJobView | null }>("/api/divar/scan");
       setScanLogs(res.logs ?? []);
+      // کارِ جاری (اسکن خودکار/دستی) از همان پاسخ خوانده می‌شود — بی‌فراخوانی اضافه
+      if (res.job) setScanJob(res.job);
     } catch {
       // بی‌صدا — لاگ جانبی است
     }
@@ -301,6 +339,14 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     // مغز: تنبلکار — DIR-FF-CAP-502/اولاً (فقط با بازشدن کارت، loadBrain اجرا می‌شود)
   }, [bucket, loadAds, loadSettings, loadScanLogs, loadCapacity]);
 
+  // DIR-FF-SUPER-001 — حلقهٔ نظارت اسکن فقط تا سکون کاشی زنده می‌ماند
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (!autoRefresh) return;
     refreshTimer.current = setInterval(() => {
@@ -315,11 +361,41 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     };
   }, [autoRefresh, bucket, loadAds, loadScanLogs, loadCapacity]);
 
+  /**
+   * DIR-FF-SUPER-001/گام اول+دوم — اسکن چندوجهی با کارِ پس‌زمینه:
+   * POST فوری کار را آغاز می‌کند (مستقیم از وب دیوار — بی‌رله) و سپس تا پایان
+   * با نظارت ۲.۵ثانیه‌ای پیشرفت زنده خوانده می‌شود ⇒ مهلت ۲۰ثانیه‌ای مرورگر
+   * منتفی و پیام گمراه‌کنندهٔ رله/ترموکس هرگز برای اسکن ظاهر نمی‌شود.
+   */
   const runScan = async () => {
     setScanning(true);
+    setScanJob(null);
     try {
-      const res = await api<{ ok: boolean; summary: { message: string; newAds: number; inWindow: number; durationMs: number } }>("/api/divar/scan", { method: "POST" });
-      toast({ title: "اسکن دیوار انجام شد", description: res.summary.message });
+      const res = await api<{ ok: boolean; started?: boolean; job?: ScanJobView | null }>("/api/divar/scan", { method: "POST" });
+      let job = res.job ?? null;
+      // نظارت زندهٔ کار پس‌زمینه — تا «انجام/خطا» یا ترک کاشی
+      while (aliveRef.current && job && job.status === "running") {
+        setScanJob(job);
+        await new Promise((r) => setTimeout(r, 2500));
+        if (!aliveRef.current) return;
+        try {
+          const st = await api<{ ok: boolean; job: ScanJobView | null }>("/api/divar/scan");
+          job = st.job ?? null;
+        } catch {
+          break; // نظارت بهترین‌تلاش — کار در سرور ادامه دارد؛ نتیجه در گزارش اسکن‌ها می‌نشیند
+        }
+      }
+      setScanJob(job);
+      if (job && job.status === "failed") {
+        toast({ title: "اسکن ناموفق", description: job.error ?? "خطای نامشخص در اسکن.", variant: "destructive" });
+      } else if (job && job.status === "done") {
+        toast({ title: "اسکن دیوار انجام شد", description: job.summary?.message ?? "اسکن کامل شد." });
+      } else {
+        toast({
+          title: "اسکن در پس‌زمینهٔ سرور ادامه دارد",
+          description: "نظارت زنده موقتاً قطع شد؛ اسکن در سرور اجرا می‌شود و نتیجهٔ کامل در «گزارش اسکن‌های اخیر» می‌نشیند.",
+        });
+      }
       await Promise.all([loadAds(bucket), loadScanLogs(), loadBrain()]);
     } catch (err) {
       const e = err as ApiClientError;
@@ -515,6 +591,20 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   const pq = capacity?.priorityQueue;
   const remainingMin = cs?.expiresInMs != null ? Math.max(0, Math.ceil(cs.expiresInMs / 60_000)) : null;
 
+  // ── DIR-FF-SUPER-001 — کار اسکن: مشتقات نمایش (پیشرفت پنج‌فازی) ──
+  const scanRunning = scanJob?.status === "running";
+  const scanProgressPct = useMemo(() => {
+    if (!scanJob) return 0;
+    if (scanJob.status !== "running") return 100;
+    if (scanJob.phase === "details" && scanJob.progress.queueTotal > 0) {
+      return Math.min(99, Math.round((scanJob.progress.processed / scanJob.progress.queueTotal) * 100));
+    }
+    if (scanJob.phase === "search") return 12;
+    if (scanJob.phase === "stats") return 80;
+    if (scanJob.phase === "rescore") return 92;
+    return 96; // finalize
+  }, [scanJob]);
+
   return (
     <div data-negin="yaghut-kamani" className="space-y-6" data-tile-page="file-finder">
       {/* نگین (PN-024) — میلهٔ گوهر yaghut-kamani */}
@@ -541,6 +631,32 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
         </div>
       </div>
 
+      {/* DIR-FF-SUPER-001 — پیشرفت زندهٔ کار اسکن پس‌زمینه (پنج فاز + شمارنده‌های لحظه‌ای) */}
+      {scanRunning && scanJob && (
+        <div className="rounded-xl border border-sec-finder-500/40 bg-sec-finder-500/5 p-3 space-y-2" role="status" aria-live="polite" data-scan-progress>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-xs font-bold">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />
+              {scanJob.phaseLabel}
+              {scanJob.triggeredBy === "auto" ? " (اسکن خودکار)" : ""}
+            </span>
+            <span className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3">
+              {scanJob.phase === "details" && scanJob.progress.queueTotal > 0 && (
+                <span>پردازش {faNumber(scanJob.progress.processed)} از {faNumber(scanJob.progress.queueTotal)}</span>
+              )}
+              <span>بررسی‌شده {faNumber(scanJob.progress.scanned)}</span>
+              <span>درون بازه {faNumber(scanJob.progress.inWindow)}</span>
+              <span>تازه {faNumber(scanJob.progress.newAds)}</span>
+              {scanJob.progress.autoRejected > 0 && <span>رد خودکار {faNumber(scanJob.progress.autoRejected)}</span>}
+            </span>
+          </div>
+          <Progress value={scanProgressPct} className="h-1.5" aria-label="پیشرفت اسکن فایل‌یابی" />
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            اسکن چندوجهی در پس‌زمینهٔ سرور و مستقیم از وب دیوار اجرا می‌شود — بی‌نیاز از رلهٔ ترموکس؛ این پنجره می‌تواند باز بماند.
+          </p>
+        </div>
+      )}
+
       {/* شاخص‌ها — DIR-FF-WATCH-001: دکمهٔ چهارم «تحت نظر» در همین کادر مادر (دستور مالک ۱۴۰۵/۰۹/۰۳) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
@@ -565,7 +681,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
         ))}
       </div>
 
-      {/* ═══ حالت تمام‌ظرفیت ترموکس (همانند کاشی تغییرات — DIR-FF-TILE-003) ═══ */}
+      {/* ═══ حالت تمام‌ظرفیت ترموکس — DIR-FF-SUPER-001/گام سوم: فعال‌سازی فقط خودکار در روت ثبت ARM ═══ */}
       <Card className={cs?.active ? "border-amber-400/60 shadow-md shadow-amber-500/10" : ""}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
@@ -608,16 +724,9 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
               خطای گذرای دروازه (۵۰۲/۵۰۴) — تلاش مجدد خودکار {faNumber(capacityRetry.attempt)} از {faNumber(capacityRetry.total)}… سرور در حال بازگشت است، کلید را آزاد نکنید.
             </p>
           ) : null}
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={() => toggleCapacitySession("begin")}
-              disabled={togglingCapacity || cs?.active}
-              className="gap-1 bg-amber-600 hover:bg-amber-700"
-            >
-              {togglingCapacity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-              تمام ظرفیت
-            </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* DIR-FF-SUPER-001/گام سوم — کلید دستی آغاز حذف شد: فعال‌سازی فقط و فقط
+                خودکار در روت «ثبت فایل کشف‌شده در سامانه ARM ملک تبریز» رخ می‌دهد. */}
             <Button
               size="sm"
               variant="outline"
@@ -625,12 +734,18 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
               disabled={togglingCapacity || !cs?.active}
               className="gap-1"
             >
-              <ZapOff className="h-3.5 w-3.5" />
+              {togglingCapacity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ZapOff className="h-3.5 w-3.5" />}
               حالت عادی
             </Button>
+            <Badge variant={cs?.active ? "default" : "secondary"} className="text-[10px] h-5 px-1.5">
+              {cs?.active ? "آغاز خودکار — هنگام ثبت فایل در ARM" : "آغاز خودکار — فقط هنگام ثبت فایل در ARM"}
+            </Badge>
           </div>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            فعال‌سازی این حالت خودکار است و فقط و فقط هنگام «ثبت فایل کشف‌شده در سامانه ARM ملک تبریز» رخ می‌دهد؛ اسکن دیوار همیشه در حالت عادی و مستقیم اجرا می‌شود. انقضای خودکار: ۳۰ دقیقه.
+          </p>
           <p className="text-[10px] text-muted-foreground">
-            در صورت قطعی گذرای دروازهٔ preview (خطای ۵۰۲)، کلیدها خودکار تا ۶ بار تلاش مجدد می‌کنند — عملیات ایمنِ تکرارپذیر است و داده‌ای تکراری نمی‌سازد.
+            در صورت قطعی گذرای دروازهٔ preview (خطای ۵۰۲)، کلید «حالت عادی» خودکار تا ۶ بار تلاش مجدد می‌کند — عملیات ایمنِ تکرارپذیر است و داده‌ای تکراری نمی‌سازد.
           </p>
         </CardContent>
       </Card>

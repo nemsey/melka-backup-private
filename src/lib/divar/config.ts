@@ -29,6 +29,10 @@ export const DIVAR_CONFIG = {
   timeoutMs: Number(env("DIVAR_TIMEOUT_MS", "20000")),
   /** حداکثر تلاش مجدد */
   maxRetries: Number(env("DIVAR_MAX_RETRIES", "2")),
+  /** DIR-FF-SUPER-001 — خطوط موازی جست‌وجو: چند زنجیرهٔ دسته همزمان پیش می‌رود (۱ تا ۸) */
+  scanCategoryLanes: Math.max(1, Math.min(8, Number(env("DIVAR_SCAN_CATEGORY_LANES", "3")))),
+  /** DIR-FF-SUPER-001 — خطوط موازی واکشی جزئیات (چندوجهی‌سازی سرعت اسکن عمیق؛ ۱ تا ۱۲) */
+  scanDetailLanes: Math.max(1, Math.min(12, Number(env("DIVAR_SCAN_DETAIL_LANES", "6")))),
 } as const;
 
 /** دسته‌های املاک دیوار (فاز اول: همه املاک تبریز) */
