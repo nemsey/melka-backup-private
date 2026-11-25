@@ -76,15 +76,20 @@ export function buildRelayScript(cfg: RelayScriptConfig): string {
 
   return `#!/usr/bin/env bash
 # ============================================================
-# melka-relay — رلهٔ موبایل ملکا (نسل O · DIR-CHANGES-TILE-001 · ۲۰۲۶-۱۱-۱۹)
+# melka-relay — رلهٔ موبایل ملکا (نسل Q · DIR-SUPER-STRUCT-001 · ۲۰۲۶-۱۱-۲۵)
 # روی گوشی مالک (Poco F3 · Termux · IP ایرانی) اجرا می‌شود.
 # این فایل را اجرا نکنید مگر اینکه از طریق «راه‌اندازی رله» در
 # تنظیمات ملکا ساخته شده باشد — راز دستگاه داخلش است.
 # نسل N: بی‌توقف (سرپرایز خود‌ریستار · خروج فقط با ابطال مالک یا Ctrl+C) ·
 #         استخر پویای ۱۶+۸ کارگر · نتیجهٔ جریانی موج‌به‌موج · poll میان‌موجی ·
 #         سقف نرخ ۲۰/دقیقه (نسل M: ۵) · batch=۴۸ (نسل M: ۲۴) · بدون محدودیت حجم
-# نسل O: حالت تمام‌ظرفیت کاشی تغییرات (boost) — poll میان‌موجی ۵ث ← ۲ث +
-#         مسیر اکسپرس کنش‌های تغییر کد + بنر اختصاص ظرفیت.
+# نسل O = DIR-CHANGES-TILE-001 (۲۰۲۶-۱۱-۱۹): حالت تمام‌ظرفیت کاشی تغییرات (boost) —
+#         poll میان‌موجی ۵ث ← ۲ث + مسیر اکسپرس کنش‌های تغییر کد + بنر اختصاص ظرفیت.
+# نسل P = DIR-RELAY-ARMFENCE-001 (۲۰۲۶-۱۱-۲۱): حاکم تطبیقی ARM — سقف نرخ ۶۰/۱۲۰ ·
+#         همزمانی ۲..۱۶ · قطع بن Retry-After/دوبرابرشونده تا ۱۸۰ث · AIMD.
+# نسل Q = DIR-SUPER-STRUCT-001 (۲۰۲۶-۱۱-۲۵): قلاب طلایی (هسته + نگهبان دو-سشنی
+#         tmux/nohup) · ضربان قلب ۳۰ث · مانیفست کار + مخفی‌کاری سرور-آگاه ·
+#         صف آفلاین SQLite + ACK ردیفی (بسته‌های ۱۰۰تایی).
 # ============================================================
 set -u
 
@@ -138,6 +143,11 @@ POST_SEEN=""                       # نسل Q: ACK — شناسه‌های نت�
 POST_ACKED=""                      # نسل Q: ACK — شناسه‌های پذیرفته‌شده (ok=true)
 POST_REJ=""                       # نسل Q: ACK — شناسه‌های رد قطعی (ok=false)
 LAST_ARM_CALL_MS=0                 # نسل Q: زمان آخرین تماس ARM (گام انسانی مخفی‌کاری)
+
+# ── نسل Q (DIR-SUPER-STRUCT-001 · بخش ب-۲): ارکستراتور دو-سشنی ──
+MELKA_HOME="\$HOME/melka-relay"      # پوشهٔ نصب: هسته + نگهبان + صف آفلاین + pid
+RELAY_PID_FILE="\$MELKA_HOME/relay.pid"  # pid هسته — نگهبان هر ۱۵ث آن را وارسی می‌کند
+WD_SPAWNED=0                         # ۱ = نگهبان مستقل راه افتاده (ضربان ۳۰ث از اوست)
 
 # ── مهلت‌های تطبیقی (نسل K/M + کلاس تازهٔ «فهرست» در نسل N) ──
 LIGHT_TIMEOUT=15                    # مسیر تعاملی (OTP) — پاسخ چندثانیه‌ای
@@ -1048,10 +1058,21 @@ relay_main() {
 
     # ── فاز ۲: بازپخش نتیجه‌های ارسال‌نشدهٔ تازه (اگر هست) ──
     replay_failed_results
+    # نسل Q (بخش ب-۳): بازپخش صف آفلاین SQLite — بسته‌های \$OFFLINE_DRAIN_MAX تایی؛
+    # ردیف فقط با حکم ACK سرور حذف می‌شود (تا ملکا تاییدیه ندهد، بستهٔ بعدی نمی‌رود).
+    offline_replay
 
     # ضربان قلب — هر ۱۰ چرخه مالک می‌بیند رله زنده است
     if [ \$((LOOPS % 10)) -eq 0 ]; then
       log "زنده — چرخهٔ \$LOOPS · مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) · \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته · حاکم ARM: نرخ \$ARM_RATE_CURRENT/دقیقه · همزمانی \$ARM_CONC · بن‌های پیاپی \$ARM_WAF_STREAK"
+    fi
+    # ── نسل Q (بخش ج-۱ · ضربان پشتیبان): اگر نگهبان مستقل راه نیفتاد (نه tmux و
+    # نه fork)، خود حلقهٔ اصلی هر چرخه (~≥۵۰ث) یک ضربان امضاشده می‌فرستد — سرور
+    # با پنجرهٔ سه-ضربان (۹۰ث) «زنده» قضاوت می‌کند؛ هزینه: ~۱ تماس در هر چرخه.
+    if [ "\$WD_SPAWNED" -ne 1 ]; then
+      BEAT_BODY="{\"alive\":true,\"restarts\":\$SUP_RESTARTS}"
+      signed_curl "/api/mobile-relay/heartbeat" "\$BEAT_BODY" \
+        -X POST -H "Content-Type: application/json" --data-binary "\$BEAT_BODY" >/dev/null 2>&1 || true
     fi
 
     # ── نسل P (DIR-RELAY-ARMFENCE-001): حین قطع بن ARM، poll نزن ──
@@ -1209,6 +1230,33 @@ relay_main() {
       BOOST_MODE=0
       log "حالت تمام‌ظرفیت کاشی تغییرات پایان یافت — بازگشت به سلوک عادی رله"
     fi
+    # ── نسل Q (بخش ج-۲ · مانیفست کار): مغز (فهرست‌ها) به دست‌ها می‌گوید در
+    # کدام لایه است — بنر «دستور کار جاری» فقط هنگام تغییر چاپ می‌شود (صرفاً
+    # اطلاعات؛ دستور اجرایی همیشه آیتم امضاشدهٔ صف است — رله تصمیم‌گیر نیست).
+    MNOTE=\$(printf '%s' "\$RESP" | jq -r '.manifest.note // empty' 2>/dev/null)
+    if [ -n "\$MNOTE" ] && [ "\$MNOTE" != "\$LAST_MANIFEST" ]; then
+      LAST_MANIFEST="\$MNOTE"
+      log "📋 \$MNOTE"
+    fi
+    # ── نسل Q (بخش ج-۴ · مخفی‌کاری): پروفایل سرور نرخ انسانی ARM را می‌گوید
+    # (مثلاً ۲۰/دقیقه = هر ~۳ث) + جیتار درصدی — ترافیک شبیه کاربر انسانی.
+    # در حالت تمام‌ظرفیت تسلیم می‌شود (ظرفیت مقدم است — طرح دستور مالک).
+    ST_EN=\$(printf '%s' "\$RESP" | jq -r '.stealth.enabled // false' 2>/dev/null)
+    if [ "\$ST_EN" = "true" ]; then
+      ST_RATE=\$(printf '%s' "\$RESP" | jq -r '.stealth.ratePerMin // 20' 2>/dev/null)
+      ST_JIT=\$(printf '%s' "\$RESP" | jq -r '.stealth.jitterPct // 20' 2>/dev/null)
+      case "\$ST_RATE" in ""|*[!0-9]*) ST_RATE=20 ;; esac
+      case "\$ST_JIT" in ""|*[!0-9]*) ST_JIT=20 ;; esac
+      if [ "\$STEALTH" -ne 1 ]; then
+        log "🕶 حالت مخفی‌کاری فعال شد (دستور سرور): نرخ ARM انسانی \$ST_RATE/دقیقه + جیتار ±\$ST_JIT٪ — در حالت تمام‌ظرفیت تسلیم می‌شود"
+      fi
+      STEALTH=1
+      STEALTH_RATE=\$ST_RATE
+      STEALTH_JITTER=\$ST_JIT
+    elif [ "\$STEALTH" -eq 1 ]; then
+      STEALTH=0
+      log "حالت مخفی‌کاری خاموش شد (سرور) — نرخ به حاکم تطبیقی ARM بازگشت"
+    fi
     N_ITEMS=\$(printf '%s' "$RESP" | jq '.items | length' 2>/dev/null)
     if [ -z "$N_ITEMS" ] || [ "$N_ITEMS" = "0" ] || [ "$N_ITEMS" = "null" ]; then
       ITEMS_JSON=\$(printf '%s' "$RESP" | jq -c '[.request] // []' 2>/dev/null)
@@ -1226,7 +1274,7 @@ relay_main() {
 }
 
 SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0; BATCHES=0
-log "رلهٔ ملکا آغاز شد (نسل O · DIR-CHANGES-TILE-001 · استخر \$MAX_WORKERS+\$EXPRESS_SLOTS کارگر · بی‌توقف · حالت تمام‌ظرفیت‌آگاه) — دستگاه: $DEVICE_ID (در حال اتصال…)"
+log "رلهٔ ملکا آغاز شد (نسل Q · DIR-SUPER-STRUCT-001 · قلاب طلایی: هسته + نگهبان دو-سشنی · صف آفلاین SQLite · ACK ردیفی · مانیفست و مخفی‌کاری سرور-آگاه · استخر \$MAX_WORKERS+\$EXPRESS_SLOTS کارگر · بی‌توقف · حالت تمام‌ظرفیت‌آگاه) — دستگاه: $DEVICE_ID (در حال اتصال…)"
 log "مسیر اصلی: $SERVER_URL"
 [ "$URL_COUNT" -gt 1 ] && log "مسیر جایگزین: $ALT_SERVER_URL (سوئیچ خودکار پس از $ALT_FAIL_THRESHOLD خطای پیاپی)"
 log "قانون بی‌توقف: خطاهای شبکه/دروازه/احراز هرگز رله را نمی‌کشند — تنها ابطال مالک (داشبورد) یا Ctrl+C."
@@ -1234,9 +1282,125 @@ log "برای ساعت‌ها کار بدون توقف: اندروید → تن�
 log "حمل‌ونقل: HTTP/1.1 · نردمان شبکه ۳۰/۶۰/۱۲۰/۳۰۰/۳۰۰ · دروازه 502/503/429/403: تاخیر تطبیقی \$GATEWAY_RETRY_DELAY تا \$GATEWAY_BACKOFF_MAXث (AIMD) · سقف \$RATE_MAX در دقیقه"
 log "نسل N: batch=\$BATCH · استخر \$MAX_WORKERS+\$EXPRESS_SLOTS کارگر · نتیجهٔ جریانی (موج‌به‌موج) · poll میان‌موجی هر \$EXPRESS_POLL_Sث · مهلت OTP=\$LIGHT_TIMEOUTث / فهرست=\$LIST_TIMEOUTث / سنگین=\$HEAVY_TIMEOUTث · رفع jq ARG_MAX (--rawfile + stdin)"
 log "لاگ دیباگ: ~/relay-debug.log (هدرها؛ مقدار امضا حذف می‌شود)"
+log "نسل Q: نگهبان \$MELKA_HOME/watchdog.sh · صف آفلاین \$OFFLINE_DB (نبود sqlite3 → failed-results.jsonl) · ضربان قلب هر ۳۰ث به /api/mobile-relay/heartbeat"
 log "احراز: X-Melka-Relay-Device + X-Melka-Timestamp + X-Melka-Signature"
 sync_clock && log "ساعت با سرور همگام شد ✓" || log "همگام‌سازی ساعت سرور ممکن نشد — ادامه با ساعت محلی"
 LAST_CLOCK_SYNC=\$(date +%s)
+
+# ═══════════ نسل Q (DIR-SUPER-STRUCT-001 · بخش ب-۲ + ج-۱): قلاب طلایی محلی ═══════════
+# هستهٔ رله خودش نگهبان را می‌سازد و در سشن مستقل (tmux melka-watchdog · پشتیبان
+# nohup) راه می‌اندازد — مالک هیچ پیچیدگی چندفایلی نمی‌بیند. دو پروسهٔ مستقل:
+# کرش یکی هرگز دیگری را نمی‌کشد؛ نگهبان هر ۱۵ث هسته را وارسی/بازآید می‌کند و
+# هر ۳۰ث ضربان قلب امضاشده به /api/mobile-relay/heartbeat می‌فرستد — سه ضربان
+# غایب = داشبورد ملکا هشدار «رلهٔ ترموکس قطع شده است» می‌دهد (عین دستور مالک).
+mkdir -p "\$MELKA_HOME" 2>/dev/null || true
+# خود-نصب (قلاب طلایی): اگر هسته از بیرونِ پوشهٔ نصب اجرا شد، همین نسخه را در
+# \$MELKA_HOME/core-relay.sh کپی می‌کند تا بازآید نگهبان همیشه مسیر پایدار داشته باشد.
+if [ -f "\$0" ] && [ "\$0" != "\$MELKA_HOME/core-relay.sh" ]; then
+  cp -f "\$0" "\$MELKA_HOME/core-relay.sh" 2>/dev/null || true
+fi
+printf '%s\\n' "\$\$" > "\$RELAY_PID_FILE" 2>/dev/null || true
+
+spawn_watchdog() {
+  umask 077
+  # پیکربندی مشترک — نگهبان از device.env می‌خواند (راز فقط در گوشی می‌ماند؛
+  # مقادیر از پیکربندی همین هسته در زمان نصب نوشته می‌شوند)
+  cat > "\$MELKA_HOME/device.env" <<ENV_EOF
+SERVER_URL='\$SERVER_URL'
+DEVICE_ID='\$DEVICE_ID'
+DEVICE_SECRET='\$DEVICE_SECRET'
+UA='\$UA'
+ENV_EOF
+  # نگهبان — heredoc نقل‌شده: هیچ جانشینی در زمان نوشتن؛ همهٔ متغیرها
+  # زمانِ اجرای خود نگهبان ارزیابی می‌شوند (نصب صفر-تزریق، تولید صادقانه)
+  cat > "\$MELKA_HOME/watchdog.sh" <<'WD_EOF'
+#!/usr/bin/env bash
+# watchdog.sh — نسل Q (DIR-SUPER-STRUCT-001 · بخش ب-۲/ج-۱) — تولید توسط هستهٔ رله
+# هر ۱۵ث: وارسی زنده‌بودن هسته (relay.pid) + بازآید خودکار · هر ۳۰ث: ضربان قلب
+# امضاشده به /api/mobile-relay/heartbeat. سشن مستقل: کرش هسته، نگهبان را نمی‌کشد.
+set -u
+WD_DIR="\$(cd "\$(dirname "\$0")" 2>/dev/null && pwd)"
+if [ -r "\$WD_DIR/device.env" ]; then . "\$WD_DIR/device.env" 2>/dev/null; else exit 0; fi
+if [ -z "\${SERVER_URL:-}" ] || [ -z "\${DEVICE_ID:-}" ] || [ -z "\${DEVICE_SECRET:-}" ]; then exit 0; fi
+RELAY_PID_FILE="\$WD_DIR/relay.pid"
+CORE_RELAY="\$WD_DIR/core-relay.sh"
+UA_W="\${UA:-Mozilla/5.0}"
+WD_RESTARTS=0
+WD_ITER=0
+CLOCK_OFFSET=0
+WD_LAST_SYNC=0
+log_w() { echo "[\$(date '+%H:%M:%S')] [نگهبان] \$*"; }
+sha256hex_w() { openssl dgst -sha256 -hex 2>/dev/null | sed 's/^.*= //'; }
+hmac_hex_w() { openssl dgst -sha256 -hmac "\$DEVICE_SECRET" -hex 2>/dev/null | sed 's/^.*= //'; }
+sync_clock_w() {
+  local now hdr t se
+  now=\$(date +%s)
+  [ \$(( now - WD_LAST_SYNC )) -lt 900 ] && return 0
+  WD_LAST_SYNC=\$now
+  hdr=\$(mktemp)
+  curl --http1.1 -A "\$UA_W" -sSI --max-time 12 -D "\$hdr" -o /dev/null "\$SERVER_URL/api/health" 2>/dev/null || { rm -f "\$hdr"; return 0; }
+  t=\$(awk 'tolower(\$1)=="date:"{\$1="";sub(/^ /,"");sub(/\\r\$/,"");print;exit}' "\$hdr")
+  rm -f "\$hdr"
+  [ -z "\$t" ] && return 0
+  se=\$(date -d "\$t" +%s 2>/dev/null) || return 0
+  CLOCK_OFFSET=\$(( (se - \$(date +%s)) * 1000 ))
+  return 0
+}
+wd_heartbeat() {
+  # \$1 = زنده‌بودن هستهٔ رله (true/false) — بدنهٔ کوچک؛ خرج شبکه ~صفر
+  local body ts digest sig
+  body="{\\"alive\\":\$1,\\"restarts\\":\$WD_RESTARTS}"
+  ts=\$(( \$(date +%s%3N) + CLOCK_OFFSET ))
+  digest=\$(printf '%s' "\$body" | sha256hex_w)
+  sig=\$(printf 'POST\\n/api/mobile-relay/heartbeat\\n%s\\n%s' "\$digest" "\$ts" | hmac_hex_w)
+  [ -z "\$ts" ] || [ -z "\$sig" ] && return 0
+  curl --http1.1 -A "\$UA_W" -sS --max-time 12 "\$SERVER_URL/api/mobile-relay/heartbeat" \\
+    -X POST -H "Content-Type: application/json" --data-binary "\$body" \\
+    -H "X-Melka-Relay-Device: \$DEVICE_ID" \\
+    -H "X-Melka-Timestamp: \$ts" \\
+    -H "X-Melka-Signature: \$sig" >/dev/null 2>&1 || true
+}
+log_w "نگهبان رلهٔ ملکا آغاز شد (نسل Q) — وارسی ۱۵ث · بازآید خودکار · ضربان قلب ۳۰ث"
+while true; do
+  WD_ITER=\$((WD_ITER+1))
+  sync_clock_w
+  RP=""
+  [ -r "\$RELAY_PID_FILE" ] && RP=\$(cat "\$RELAY_PID_FILE" 2>/dev/null)
+  ALIVE=false
+  [ -n "\$RP" ] && kill -0 "\$RP" 2>/dev/null && ALIVE=true
+  if [ "\$ALIVE" != "true" ] && [ -f "\$CORE_RELAY" ]; then
+    WD_RESTARTS=\$((WD_RESTARTS+1))
+    log_w "هستهٔ رله زنده نیست — بازآید خودکار شمارهٔ \$WD_RESTARTS …"
+    ( cd "\$WD_DIR" 2>/dev/null; setsid nohup bash "\$CORE_RELAY" >> "\$WD_DIR/relay-restarts.log" 2>&1 & ) >/dev/null 2>&1
+    sleep 5
+    continue
+  fi
+  # ضربان هر دو چرخه (۱۵ث × ۲ = ۳۰ث) — عین دستور مالک؛ پیام صرفاً «من زنده‌ام»
+  [ \$(( WD_ITER % 2 )) -eq 0 ] && wd_heartbeat "\$ALIVE"
+  sleep 15
+done
+WD_EOF
+  # تک‌نمونه: اگر نگهبان از قبل زنده است، دوباره نمی‌سازیم (بازآید هسته با
+  # pid و فایل‌ها همتا می‌شود؛ دوباره-spawn نگهبان ممنوع)
+  if pgrep -f "melka-relay/watchdog.sh" >/dev/null 2>&1; then
+    WD_SPAWNED=1
+    return 0
+  fi
+  chmod 700 "\$MELKA_HOME/watchdog.sh" 2>/dev/null || true
+  if command -v tmux >/dev/null 2>&1; then
+    tmux new-session -d -s melka-watchdog "bash '\$MELKA_HOME/watchdog.sh'" >/dev/null 2>&1 && WD_SPAWNED=1
+  fi
+  if [ "\$WD_SPAWNED" -ne 1 ]; then
+    ( setsid nohup bash "\$MELKA_HOME/watchdog.sh" >> "\$MELKA_HOME/watchdog.log" 2>&1 & ) >/dev/null 2>&1
+    WD_SPAWNED=1
+  fi
+}
+spawn_watchdog
+if [ "\$WD_SPAWNED" -eq 1 ]; then
+  log "🐶 نگهبان مستقل رله راه افتاد (نسل Q): وارسی ۱۵ث + بازآید خودکار + ضربان قلب ۳۰ث — دو سشن مستقل (tmux ls)"
+else
+  log "⚠️ نگهبان مستقل راه نیفتاد — حلقهٔ اصلی خودش ضربان پشتیبان می‌زند (نسل Q)"
+fi
 
 # ── نسل N: سرپرایز — هر شکست غیرمنتظرهٔ حلقهٔ اصلی، پس از ۱۰ث دوباره ──
 # تنها پایان عمدی: ابطال مالک (\$EXIT_REVOKED) یا سیگنال توقف (INT/TERM).
@@ -1257,18 +1421,25 @@ done
 `;
 }
 
-/** دستور نصب فوق پیشرفتهٔ نسل P که مالک در Termux پیست می‌کند
- *  DIR-RELAY-ARMFENCE-001 (دستور مالک ۲۰۲۶-۱۱-۲۱ · «کدنصب فوق پیشرفته… ریست سرور و
- *  کدخطاهای ۵۰۲/۴۰۳/۴۰۲/۲۸ و غیره موجب توقف نشود»):
- *    ۱) نصب وابستگی‌ها با ۲ تلاش + پیام خطای مستقل و راهنمای تلاش دوباره
+/** دستور نصب قلاب طلایی نسل Q که مالک در Termux پیست می‌کند
+ *  DIR-SUPER-STRUCT-001 (دستور مالک ۲۰۲۶-۱۱-۲۵ · بخش ب — «دست‌های اجرایی»):
+ *  «اسکریپت نصب یک فایل bootstrap ساده است که خودش فایل‌های core-relay و
+ *  watchdog را در پس‌زمینه دانلود و اجرا می‌کند» — پیاده‌سازی صادقانه با یک
+ *  دانلود: قلاب طلایی هسته را می‌گیرد؛ هستهٔ کامل (همین قالب) خودش نگهبان را
+ *  می‌سازد و در سشن جدا راه می‌اندازد → کد ثبت فقط یک بار مصرف می‌شود (۲/۳
+ *  باقی می‌ماند برای تلاش‌های نصب) و نبود شبکه در لحظهٔ دومین فایل، نصب را
+ *  نمی‌شکند (درس قلاب طلایی DIR-RELAY-ARMFENCE: زیرساخت قلاب طلایی باید زنده بماند).
+ *    ۱) نصب وابستگی‌ها با ۲ تلاش (sqlite/tmux اختیاری — سلوک عقبه: jsonl/nohup)
  *    ۲) دانلود bootstrap با تا ۱۲ تلاش و فاصلهٔ صعودی (۵←۳۰ث) — پنجرهٔ کل
  *       ~۳.۵ دقیقه؛ رستاخیز کامل سرور (~۱۵۰ث) را پوشش می‌دهد → «ریست سرور»
  *       دیگر نصب را نمی‌شکند (کد ثبت هم معتبر می‌ماند — کد تازه لازم نیست)
  *    ۳) تشخیص وضعیت HTTP: 502/503/429 = «سرور در حال ریست/رستاخیز — صبر» ·
  *       403/404 = «کد منقضی/نامعتبر» با پیام تمایز‌یافته (توقف زودهنگام بی‌مورد ممنوع)
  *    ۴) وارسی سلامت فایل (shebang + حداقل حجم + غیر-HTML) — فایل ناقص اجرا نمی‌شود
- *    ۵) تعویض تمیز: نمونهٔ قدیمیِ در حال اجرا (در صورت وجود) با اطلاع متوقف می‌شود
- *    ۶) شکست نهایی → پیام شفاف «همین دستور را دوباره بزنید» (نه «کد جدید» —
+ *    ۵) تعویض تمیز: نمونه‌های قدیمی (هسته/نگهبان/مسیر قدیمی ~/melka-relay.sh) با اطلاع متوقف می‌شوند
+ *    ۶) ارکستراتور tmux: دو سشن مجازی مستقل (melka-relay + melka-watchdog که
+ *       هسته خودش می‌سازد) — کرش یکی، دیگری زنده؛ بدون tmux → setsid nohup
+ *    ۷) شکست نهایی → پیام شفاف «همین دستور را دوباره بزنید» (نه «کد جدید» —
  *       کد فقط با ابطال از داشبورد می‌میرد؛ درس درس‌آموخته)
  */
 export function buildInstallCommand(serverUrl: string, enrollCode: string): string {
@@ -1277,18 +1448,29 @@ export function buildInstallCommand(serverUrl: string, enrollCode: string): stri
   const code = safe(enrollCode);
   // PN-031-I: همان حمل‌ونقل بقا — http1.1 + UA بروزری برای دانلود bootstrap
   // PN-034 (شورا-ن۰۵۵): openssl-tool — بستهٔ CLI واقعی Termux؛ مسیر اثبات‌شدهٔ مالک
-  return `# ── نصب رلهٔ ملکا (نسل P · فوق پیشرفته · مقاوم به ریست سرور و خطاها) ──
-echo "نصب رلهٔ ملکا آغاز شد (نسل P · DIR-RELAY-ARMFENCE-001)…"
+  return `# ── قلاب طلایی: نصب رلهٔ ملکا (نسل Q · DIR-SUPER-STRUCT-001) ──
+# یک فایل = کل نصب. این دستور خودش هستهٔ رله (core-relay) را می‌گیرد؛ هسته
+# خودش نگهبان (watchdog) را می‌سازد و هر دو در دو سشن مستقل (tmux) یا nohup
+# پس‌زمینه اجرا می‌شوند — مالک با پیچیدگی چندفایلی درگیر نمی‌شود.
+echo "نصب قلاب طلایی رلهٔ ملکا آغاز شد (نسل Q · DIR-SUPER-STRUCT-001)…"
 deps_ok=0
 for i in 1 2; do
-  if pkg install -y curl openssl-tool jq; then deps_ok=1; break; fi
+  if pkg install -y curl openssl-tool jq sqlite tmux; then deps_ok=1; break; fi
   echo "نصب وابستگی‌ها (تلاش \$i از ۲) ناموفق — ۵ ثانیه دیگر…"
   sleep 5
 done
 if [ "\$deps_ok" != "1" ]; then
+  # sqlite/tmux اختیاری‌اند (سلوک عقبه: صف jsonl + nohup) — پایه اجباری است
+  if pkg install -y curl openssl-tool jq; then
+    echo "نصب پایه انجام شد (بدون sqlite/tmux — سلوک عقبه: صف jsonl + nohup)"
+    deps_ok=1
+  fi
+fi
+if [ "\$deps_ok" != "1" ]; then
   echo "خطا در نصب وابستگی‌ها! Termux را ببندید، دوباره باز کنید و همین دستور را دوباره بزنید."
   exit 1
 fi
+mkdir -p "\$HOME/melka-relay"
 ok=0; last_code=0
 waits=(5 5 10 10 15 20 25 30 30 30 30)
 for i in \$(seq 1 12); do
@@ -1297,7 +1479,7 @@ for i in \$(seq 1 12); do
   code_http=\$(curl --http1.1 -A "${BROWSER_UA}" -sS --max-time 30 -D "\$hdr" -o "\$body_tmp" -w '%{http_code}' "${url}/api/mobile-relay/bootstrap?code=${code}" 2>/dev/null)
   rc=\$?
   if [ "\$rc" -eq 0 ] && [ "\$code_http" = "200" ]; then
-    mv -f "\$body_tmp" ~/melka-relay.sh; rm -f "\$hdr"; ok=1; break
+    mv -f "\$body_tmp" "\$HOME/melka-relay/core-relay.sh"; rm -f "\$hdr"; ok=1; break
   fi
   rm -f "\$body_tmp" "\$hdr"; last_code="\$code_http"
   w=\${waits[\$(( i < 11 ? i - 1 : 10 ))]:-30}
@@ -1312,19 +1494,33 @@ for i in \$(seq 1 12); do
   fi
   sleep "\$w"
 done
-if [ "\$ok" = "1" ] && head -n 1 ~/melka-relay.sh | grep -q '^#!' && [ "\$(wc -c < ~/melka-relay.sh)" -gt 4000 ] && ! grep -q '<html' ~/melka-relay.sh 2>/dev/null; then
-  chmod 700 ~/melka-relay.sh
-  if pgrep -f melka-relay.sh >/dev/null 2>&1; then
+if [ "\$ok" = "1" ] && head -n 1 "\$HOME/melka-relay/core-relay.sh" | grep -q '^#!' && [ "\$(wc -c < "\$HOME/melka-relay/core-relay.sh")" -gt 4000 ] && ! grep -q '<html' "\$HOME/melka-relay/core-relay.sh" 2>/dev/null; then
+  chmod 700 "\$HOME/melka-relay/core-relay.sh"
+  # تعویض تمیز: نمونه‌های قدیمی (هسته/نگهبان/مسیر قدیمی ~/melka-relay.sh) با اطلاع
+  if pgrep -f 'melka-relay/' >/dev/null 2>&1 || pgrep -f 'melka-relay.sh' >/dev/null 2>&1; then
     echo "نمونهٔ قدیمی رله در حال اجراست — برای تعویض تمیز متوقفش می‌کنم…"
+    pkill -f 'melka-relay/' 2>/dev/null
     pkill -f melka-relay.sh 2>/dev/null
     sleep 2
   fi
-  echo "نصب موفق ✓ (نسل P — حاکم تطبیقی ARM فعال: مقاوم به ۴۰۳/۴۲۰/۴۲۳/۴۰۲/۲۸/۵۰۲ و ریست سرور)."
+  command -v tmux >/dev/null 2>&1 && { tmux kill-session -t melka-relay 2>/dev/null || true; tmux kill-session -t melka-watchdog 2>/dev/null || true; }
+  # ارکستراتور دو-سشنی tmux: هسته در سشن melka-relay؛ هستهٔ کامل خودش نگهبان را
+  # در سشن melka-watchdog می‌سازد — هیچ‌کدام روی دیگری تداخل ندارد (عین دستور مالک:
+  # «اگر یکی کرش کرد، دیگری زنده می‌ماند»). بدون tmux → setsid nohup پس‌زمینه.
+  if command -v tmux >/dev/null 2>&1; then
+    tmux new-session -d -s melka-relay "bash \$HOME/melka-relay/core-relay.sh"
+    echo "نصب موفق ✓ (نسل Q · قلاب طلایی) — هستهٔ رله در سشن tmux «melka-relay» و نگهبان در سشن «melka-watchdog» راه افتاد."
+    echo "مقاوم به ۴۰۳/۴۲۰/۴۲۳/۴۰۲/۲۸/۵۰۲ و ریست سرور (میراث نسل P · حاکم تطبیقی ARM پابرجا)."
+    echo "مشاهده: tmux attach -t melka-relay (خروج بدون بستن: Ctrl+b سپس d) · لاگ نگهبان: ~/melka-relay/watchdog.log"
+  else
+    ( setsid nohup bash "\$HOME/melka-relay/core-relay.sh" >> "\$HOME/melka-relay/relay.log" 2>&1 & )
+    echo "نصب موفق ✓ (نسل Q · قلاب طلایی · بدون tmux → nohup) — هسته و نگهبان مستقل در پس‌زمینه راه افتادند."
+    echo "لاگ‌ها: ~/melka-relay/relay.log و ~/melka-relay/watchdog.log"
+  fi
   echo "برای ساعت‌ها کار بی‌وقفه: اندروید → برنامه‌ها → Termux → باتری → «بدون محدودیت» + قفل در Recentها."
-  bash ~/melka-relay.sh
 else
   echo "نصب کامل نشد (آخرین وضعیت: HTTP \$last_code). سرور احتمالاً هنوز در حال رستاخیز است —"
   echo "چند لحظه بعد همین دستور را یک بار دیگر پیست کنید (کد ثبت همین می‌ماند — کد تازه فقط اگر از داشبورد ابطال شده باشد لازم است)."
-  rm -f ~/melka-relay.sh
+  rm -f "\$HOME/melka-relay/core-relay.sh"
 fi`;
 }

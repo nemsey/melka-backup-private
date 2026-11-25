@@ -111,7 +111,9 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
 
   test("A-10) نشانگر نسل O (DIR-CHANGES-TILE-001) و نسل K (PN-036) و ثابت‌های اعلامی در لاگ آغاز", () => {
     // نسل N = بی‌توقف + حداکثر سرعت · نسل O = حالت تمام‌ظرفیت کاشی تغییرات (DIR-CHANGES-TILE-001)
-    expect(script).toContain("نسل O · DIR-CHANGES-TILE-001");
+    // DIR-SUPER-STRUCT-001 (نسل Q · نوسازی): سربرگ سند حالت «نسل O = DIR-CHANGES-TILE-001»
+    // را نگه می‌دارد و بنر آغاز نسل Q است — هر دو گاردها.
+    expect(script).toContain("نسل O = DIR-CHANGES-TILE-001");
     expect(script).toContain("حالت تمام‌ظرفیت‌آگاه");
     expect(script).toContain("EXPRESS_POLL_S_BOOST=2");
     expect(script).toContain("BOOST_MODE=0");
@@ -160,7 +162,9 @@ describe("PN-036 · K) اسکریپت نسل K — رفع jq ARG_MAX + batch س�
     // test() جایگزین contains() تا هر چهار مسیر با یک الگو پوشش داده شوند.
     // نسل N: express در ابتدای صف استخر می‌نشیند (نه مجموعهٔ جدا) + poll میان‌موجی.
     // نسل O (DIR-CHANGES-TILE-001): کنش‌های تغییر کد درخواست/کدآگهی هم اکسپرس شدند.
-    expect(script).toContain('test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number|/requests/create|/requests/update|/request-events/create|/properties/update")');
+    // DIR-CHANGES-EXEC-001: خانواده‌های TILE-002 به الگوی اکسپرس افزوده شدند (گارد
+    // نوسازی‌شده — گارد کهنه پس از EXEC-001 جا مانده بود و شکستش مستند شد).
+    expect(script).toContain('test("/authentication/otp|/properties/create|/users/create|/users/info/mobile-number|/users/update/|/users/info/|/users/delete/|/requests/create|/requests/update/|/requests/info/|/request-events/create|/request-events/update/|/request-events/delete/|/request-events/list|/properties/update/|/properties/info/by-code/|/properties/owner/")');
     expect(script).toContain('process_set "$ITEMS_JSON"');
     expect(script).toContain("Express lane (PN-036 فاز ۵ + PN-080 + نسل O DIR-CHANGES-TILE-001)");
     expect(script).toContain("is_registration");
@@ -271,7 +275,7 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
   beforeAll(() => {
     // زامبی‌های اجرای قبلی (اسکریپت/سرور آزمایشی) — منبع قطعی ناپایداری بین‌اجرایی
     try {
-      execSync(`pkill -f "pn035-b-test/relay-j.sh" 2>/dev/null; pkill -f "stub-relay-server.py.*pn035-b-test" 2>/dev/null; true`);
+      execSync(`pkill -f "pn035-b-test/relay-j.sh" 2>/dev/null; pkill -f "stub-relay-server.py.*pn035-b-test" 2>/dev/null; pkill -f "pn035-b-test/home/melka-relay/" 2>/dev/null; true`);
     } catch {
       /* pkill اگر کسی نبود کد ۱ می‌دهد — بی‌اهمیت */
     }
@@ -284,6 +288,13 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
 
   afterAll(() => {
     stopAll();
+    // DIR-SUPER-STRUCT-001 (نسل Q): نگهبان/هستهٔ مستقل (setsid) ذومبی می‌مانند اگر
+    // پاک نشوند — سرور آزمایشی مرده و تکرار اجراها را می‌آلودند (شاهد زندهٔ B-1)
+    try {
+      execSync(`pkill -f "pn035-b-test/home/melka-relay/" 2>/dev/null; true`);
+    } catch {
+      /* pkill اگر کسی نبود کد ۱ می‌دهد — بی‌اهمیت */
+    }
   });
 
   test("B-1) دستهٔ ۳۰ آیتم → «یک» POST نتیجه gzip با امضای صحیح روی بایت‌های فشرده", async () => {

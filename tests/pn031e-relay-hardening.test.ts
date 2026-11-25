@@ -176,9 +176,12 @@ describe("PN-031-E · E) پابرجایی قرارداد امنیتی (هیچ‌
       deviceSecret: "sec'$(id)'ret",
     });
     // خطوط انتساب باید الگوی امن را رعایت کنند — هیچ نقل‌قولی/سمی‌کولنی/دستوری باقی نمی‌ماند
+    // DIR-SUPER-STRUCT-001 (نسل Q · نوسازی گارد): خطوط انتسابِ پیکربندی فقط با
+    // گیومهٔ دوتایی شمرده می‌شوند — بدنهٔ heredocِ device.env (تک‌گیومه، مرجع به
+    // متغیرهای از-پیش-پاکسازده) مقدار تزریقی بیرونی ندارد و عمداً مستثناست.
     const assign = malicious
       .split("\n")
-      .filter((l) => /^(SERVER_URL|DEVICE_ID|DEVICE_SECRET)=/.test(l));
+      .filter((l) => /^(SERVER_URL|DEVICE_ID|DEVICE_SECRET)="/.test(l));
     expect(assign.length).toBe(3);
     for (const line of assign) {
       expect(line).toMatch(/^(SERVER_URL|DEVICE_ID|DEVICE_SECRET)="[A-Za-z0-9:\/._-]*"$/);

@@ -321,7 +321,11 @@ describe("DIR-CHANGES-TILE-001 · ۷) کدنصب نسل O — آگاهی از ح
   const script = buildRelayScript({ serverUrl: "https://x.example", deviceId: "dev-1", deviceSecret: "s".repeat(64) });
 
   test("۷-۱ نشانگر نسل O + ثابت‌های boost", () => {
-    expect(script).toContain("نسل O · DIR-CHANGES-TILE-001");
+    // DIR-SUPER-STRUCT-001 (نسل Q · نوسازی گارد): هویت اسکریپت به نسل Q رشد کرد؛
+    // میراث نسل O در سربرگ سند (نسل O = DIR-CHANGES-TILE-001) و کل مکانیک boost
+    // پابرجاست — گارد هر دو را می‌گیرد (رشد، نه جایگزینی).
+    expect(script).toContain("نسل Q · DIR-SUPER-STRUCT-001");
+    expect(script).toContain("نسل O = DIR-CHANGES-TILE-001");
     expect(script).toContain("EXPRESS_POLL_S_BOOST=2");
     expect(script).toContain("BOOST_MODE=0");
   });

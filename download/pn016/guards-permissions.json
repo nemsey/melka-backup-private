@@ -1,17 +1,17 @@
 {
  "task": "PN-016 — گارد audit-permission-boundary",
- "at": "2026-11-12T10:40:52.896957+00:00",
+ "at": "2026-11-25T05:51:02.184886+00:00",
  "checks": [
   {
    "check": "tileId در رجیستری + مالک مجاز",
-   "permissionRows": 18
+   "permissionRows": 24
   },
   {
    "check": "OWNER بدون سطر مجوز"
   },
   {
    "check": "یگانگی (user, tile)",
-   "unique": 18
+   "unique": 24
   },
   {
    "check": "GUEST بدون کاشی"
@@ -22,11 +22,18 @@
   },
   {
    "check": "واکاوی زندهٔ resolveAllowedTiles",
-   "probed": 4
+   "probed": 5
   }
  ],
- "users": 4,
- "permissionRows": 18,
- "violations": [],
- "verdict": "PASS"
+ "users": 5,
+ "permissionRows": 24,
+ "violations": [
+  "OWNER با سطر مجوز (باید عبور کند نه محدود شود): user=cmwumavpa00snn9cnoghhqi02",
+  "OWNER با سطر مجوز (باید عبور کند نه محدود شود): user=cmwumavpa00snn9cnoghhqi02",
+  "OWNER با سطر مجوز (باید عبور کند نه محدود شود): user=cmwumavpa00snn9cnoghhqi02",
+  "OWNER با سطر مجوز (باید عبور کند نه محدود شود): user=cmwumavpa00snn9cnoghhqi02",
+  "OWNER با سطر مجوز (باید عبور کند نه محدود شود): user=cmwumavpa00snn9cnoghhqi02",
+  "OWNER با سطر مجوز (باید عبور کند نه محدود شود): user=cmwumavpa00snn9cnoghhqi02"
+ ],
+ "verdict": "FAIL (6)"
 }

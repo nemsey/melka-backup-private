@@ -1,10 +1,10 @@
 {
  "task": "PN-016 — گارد audit-user-roles",
- "at": "2026-11-12T10:41:10.010614+00:00",
+ "at": "2026-11-25T05:51:01.949857+00:00",
  "checks": [
   {
    "check": "نقش معتبر + قانون مالک + شناسهٔ یکتا",
-   "users": 4
+   "users": 5
   },
   {
    "check": "یکتایی شناسه‌ها",
@@ -19,10 +19,10 @@
   },
   {
    "check": "نشست‌های OWNER زنده",
-   "count": 102
+   "count": 318
   }
  ],
- "totalUsers": 4,
+ "totalUsers": 5,
  "violations": [],
  "verdict": "PASS"
 }

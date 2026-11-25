@@ -421,7 +421,9 @@ export async function noteRelayHeartbeat(deviceId: string, alive: boolean): Prom
     data: { lastHeartbeatAt: new Date(), lastSeenAt: new Date() },
   });
   if (!alive) {
-    await noteRelayReject(deviceId, "watchdog: relay process down").catch(() => undefined);
+    // noteRelayReject خودش sync است (بهترین-تلاش audit درون آن void می‌شود) —
+    // در اینجا .catch ناممکن است چون خروجی void است (tsc صفر خطا).
+    noteRelayReject(deviceId, "watchdog: relay process down");
   }
 }
 

@@ -172,8 +172,13 @@ describe("PN-031-HOTFIX · D) سازگاری دستور نصب و اسکریپت
     // PN-034 (ن۰۵۵): openssl-tool — مسیر اثبات‌شدهٔ مالک (PN-031-I/J)
     expect(cmd).toContain("--http1.1");
     expect(cmd).toContain('-A "Mozilla/5.0');
-    // DIR-CHANGES-TILE-001 (نسل O): بنر نصب + پوشش `if pkg install …; then` با سه تلاش
-    expect(cmd).toMatch(/^# ── نصب رلهٔ ملکا[^\n]*\nif pkg install -y curl openssl-tool jq; then/);
+    // DIR-CHANGES-TILE-001 (نسل O) → DIR-SUPER-STRUCT-001 (نسل Q · نوسازی):
+    // قلاب طلایی — نصب چندخطی پس‌زمینه‌ای (دو تلاش وابستگی‌ها + پشتیبان پایه)؛
+    // حمل‌ونقل بقا (http1.1 + UA بروزری + bootstrap عمومی) عیناً پابرجاست.
+    expect(cmd).toMatch(/^# ── قلاب طلایی: نصب رلهٔ ملکا[^\n]*\n/);
+    expect(cmd).toContain("for i in 1 2; do");
+    expect(cmd).toContain("pkg install -y curl openssl-tool jq sqlite tmux");
+    expect(cmd).toContain("mkdir -p \"$HOME/melka-relay\"");
   });
 
   test("D-2) اسکریپت رله SERVER_URL عمومی می‌گیرد و مسیر poll عمومی است", async () => {

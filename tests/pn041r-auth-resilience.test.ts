@@ -96,10 +96,13 @@ describe("PN-041-R · C) فیوز — مستثنی‌سازی رله", () => {
 });
 
 describe("PN-041-R · D) اسکریپت رلهٔ نسل L", () => {
-  test("D-1 نسل جاری (O) در سربرگ — کدنصب DIR-CHANGES-TILE-001", () => {
+  test("D-1 نسل جاری (Q) در سربرگ — کدنصب DIR-SUPER-STRUCT-001 · میراث O/N پابرجا", () => {
     const src = read("src/lib/melk-api/relay-script.ts");
-    // نسل جاری = O (حالت تمام‌ظرفیت کاشی تغییرات)؛ قابلیت‌های نسل N پابرجاست
-    expect(src).toContain("نسل O · DIR-CHANGES-TILE-001");
+    // DIR-SUPER-STRUCT-001 (نسل Q · نوسازی گارد): هویت اسکریپت به نسل Q رشد کرد
+    // (قلاب طلایی + نگهبان + ضربان/مانیفست/مخفی‌کاری)؛ میراث نسل O در سربرگ سند
+    // و قابلیت‌های نسل N پابرجاست.
+    expect(src).toContain("نسل Q · DIR-SUPER-STRUCT-001");
+    expect(src).toContain("نسل O = DIR-CHANGES-TILE-001");
     expect(src).toContain("نسل N: بی‌توقف");
   });
 

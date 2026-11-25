@@ -52,6 +52,8 @@ interface FourListUi {
   nextCycleAt: string | null;
   rows: number | null;
   enrich: { total: number; complete: number; pending: number } | null;
+  /** DIR-SUPER-STRUCT-001 (بخش الف · ۱) — پوشش برچسب اتمی رکوردها (P0/P1/ALL_DONE)؛ فقط M1/M2 */
+  stage: { p0: number; p1: number; all: number; unmarked: number; total: number; completePct: number } | null;
   checkpoint: { phase: string; lastCompletedPage: number; totalPages: number; totalAtSource: number; updatedAt: string; completedAt: string | null } | null;
   lockHeldBy: string | null;
   detail: Record<string, unknown> | null;
@@ -61,6 +63,8 @@ interface FourListsViewUi {
   ok?: boolean;
   running: boolean;
   lists: Record<FourListId, FourListUi>;
+  /** DIR-SUPER-STRUCT-001 (بخش ج · ۱) — بستگی فهرست‌ها به رله: ضربان قلب watchDog ترموکس */
+  relay: { mode: string; active: boolean; heartbeat: { status: "alive" | "warning" | "silent"; sinceSec: number | null; beatsMissed: number | null; legacy: boolean } } | null;
 }
 
 interface JobView {
@@ -305,6 +309,10 @@ export function SuperListUpdate({ listId }: { listId: FourListId }) {
   const chip = chipState(current);
   const enrichPct = current.enrich && current.enrich.total > 0 ? Math.round((current.enrich.complete / current.enrich.total) * 100) : null;
   const jobById = new Map((jobs.data?.jobs ?? []).map((j) => [j.jobId, j]));
+  /* DIR-SUPER-STRUCT-001 (بخش ج · ۱) — ضربان قلب رله: زنده / هشدار / قطع */
+  const hb = view.relay?.heartbeat ?? null;
+  const hbFa = hb ? (hb.status === "alive" ? "رله زنده" : hb.status === "warning" ? "رله با هشدار" : "رله قطع شده است") : null;
+  const relayDown = hb?.status === "silent";
 
   return (
     <section
@@ -313,6 +321,36 @@ export function SuperListUpdate({ listId }: { listId: FourListId }) {
       data-super-list={listId}
       aria-label="بخش بروزرسانی فهرست فوق پیشرفته"
     >
+      {/* DIR-SUPER-STRUCT-001 (بخش ج · ۱) — هشدار قطعی رله: سه ضربان متوالی غایب */}
+      {hb && (
+        <div
+          className={`flex items-start gap-2 rounded-lg border px-2.5 py-2 text-[11px] leading-5 ${
+            relayDown
+              ? "border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+              : hb.status === "warning"
+                ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                : "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+          }`}
+          data-testid="relay-heartbeat-banner"
+          data-relay-heartbeat={hb.status}
+        >
+          {relayDown ? (
+            <span aria-hidden>⛔</span>
+          ) : hb.status === "warning" ? (
+            <span aria-hidden>⚠️</span>
+          ) : (
+            <span aria-hidden>📡</span>
+          )}
+          <span>
+            {relayDown
+              ? "رلهٔ ترموکس قطع شده است — سه ضربان متوالی غایب است؛ چرخه‌های آیندهٔ سامانه ARM معلق می‌مانند تا بازگشت رله (نگهبان خودکار بازآیدش می‌کند)."
+              : hb.status === "warning"
+                ? `ضربان قلب رله تازه نیست (${hb.beatsMissed ?? "—"}+ ضربان غایب) اما صف کار فعال است — نسل قدیمی رله یا نگهبان تنها زنده است.`
+                : `ضربان قلب رلهٔ ترموکس تازه است (نگهبان هر ۳۰ ثانیه می‌زند${hb.sinceSec != null ? ` — آخرین ${hb.sinceSec < 60 ? `${faDigits(String(hb.sinceSec))} ثانیه پیش` : `${faDigits(String(Math.round(hb.sinceSec / 60)))} دقیقه پیش`}` : ""}).`}
+          </span>
+        </div>
+      )}
+
       {/* سربرگ + سه مسیر اجرا */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -324,6 +362,21 @@ export function SuperListUpdate({ listId }: { listId: FourListId }) {
             className={`inline-flex h-2.5 w-2.5 rounded-full flex-none ${busy ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`}
             aria-hidden
           />
+          {hbFa && (
+            <span
+              className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold flex-none ${
+                relayDown
+                  ? "bg-rose-100 text-rose-800"
+                  : hb?.status === "warning"
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-emerald-100 text-emerald-800"
+              }`}
+              data-testid="relay-heartbeat-chip"
+              title={hb?.legacy ? "نسل قدیمی رله (بدون نگهبان) — قضاوت با فعالیت صف" : "ضربان قلب نگهبان ترموکس (۳۰ث)"}
+            >
+              {hbFa}
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {/* مسیر ۱ — بروزرسانی برشی همین فهرست (همان دکمهٔ قبلی داخل فهرست) */}
@@ -437,6 +490,29 @@ export function SuperListUpdate({ listId }: { listId: FourListId }) {
             <div className="h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow={enrichPct} aria-valuemin={0} aria-valuemax={100}>
               <div className={`h-full rounded-full bg-gradient-to-l ${accent.bar} transition-all duration-500`} style={{ width: `${enrichPct}%` }} />
             </div>
+          </div>
+        )}
+        {/* DIR-SUPER-STRUCT-001 (بخش الف · ۱/۲) — پوشش برچسب اتمی رکوردها:
+            لایهٔ حیاتی P0 (مالک/آدرس) → غنی‌سازی P1 → کامل؛ آبشار یعنی P1 تنها پس از
+            پوشش کامل P0 پیش می‌رود — نوار سه‌قطعه‌ای همین داستان را صادقانه نشان می‌دهد. */}
+        {current.stage && current.stage.total > 0 && (
+          <div data-testid={`super-update-stage-${listId}`}>
+            <div className="flex items-center justify-between text-[11px] mb-1">
+              <span className="text-muted-foreground">برچسب اتمی رکوردها (لایهٔ حیاتی P0 · غنی‌سازی P1 · کامل)</span>
+              <span className="font-bold tabular-nums">
+                {faDigits(String(current.stage.completePct))}٪ کامل · {faNumber(current.stage.all)} / {faNumber(current.stage.total)}
+              </span>
+            </div>
+            <div className="flex h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow={current.stage.completePct} aria-valuemin={0} aria-valuemax={100} data-testid={`stage-bar-${listId}`}>
+              <div className="h-full bg-emerald-500" style={{ width: `${(current.stage.all / current.stage.total) * 100}%` }} title={`کامل (ALL_DONE): ${current.stage.all}`} />
+              <div className="h-full bg-amber-500" style={{ width: `${(current.stage.p0 / current.stage.total) * 100}%` }} title={`حیاتی نوشته، در انتظار غنی‌سازی (P0_DONE): ${current.stage.p0}`} />
+              <div className="h-full bg-sky-500" style={{ width: `${(current.stage.p1 / current.stage.total) * 100}%` }} title={`غنی‌شده بدون لایهٔ حیاتی (P1_DONE): ${current.stage.p1}`} />
+              <div className="h-full bg-slate-400" style={{ width: `${(current.stage.unmarked / current.stage.total) * 100}%` }} title={`قدیمی/بی‌برچسب (پیش از برچسب‌گذاری اتمی): ${current.stage.unmarked}`} />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              P0: {faNumber(current.stage.p0)} · P1: {faNumber(current.stage.p1)} · کامل: {faNumber(current.stage.all)} · بی‌برچسب: {faNumber(current.stage.unmarked)}
+              {current.stage.p1 > 0 ? " — آبشار: غنی‌سازی همین رکوردها تا نوشتن لایهٔ حیاتی صبر می‌کند" : ""}
+            </p>
           </div>
         )}
         {current.detail?.error ? (

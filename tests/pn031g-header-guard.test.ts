@@ -243,10 +243,15 @@ describe("PN-031-G · D) قرارداد هدرها — سه نامِ قرارد�
     expect(script).not.toContain("X-Melka-Sig:");
     const headerLines = script.split("\n").filter((l) => l.trim().startsWith("-H \"X-Melka-"));
     // PN-035 (نسل J): دو تابع حمل‌ونقل (signed_curl + signed_curl_file) هر یک
-    // همان سه هدر قراردادی را می‌فرستند — مجموعهٔ متمایز خطوط دقیقاً ۳ است
-    // و هر خط یکی از همان سه نام است (هیچ نام چهارمی پیدانشده).
+    // همان سه هدر قراردادی را می‌فرستند. DIR-SUPER-STRUCT-001 (نسل Q): ضربان
+    // نگهبان (watchdog) هم همین سه نام را می‌فرستد — نوسازی گارد: نامِ متمایزِ
+    // هدرها همچنان دقیقاً همان سه نام قراردادی است (هیچ نام چهارمی پیدانشده).
     expect(headerLines.length).toBeGreaterThanOrEqual(3);
-    expect(new Set(headerLines).size).toBe(3);
+    const headerNames = new Set(headerLines.map((l) => l.match(/-H "(X-Melka-[A-Za-z-]+)/)?.[1] ?? ""));
+    expect(headerNames.size).toBe(3);
+    for (const name of headerNames) {
+      expect(["X-Melka-Relay-Device", "X-Melka-Timestamp", "X-Melka-Signature"]).toContain(name);
+    }
     for (const l of headerLines) {
       const name = l.match(/-H "(X-Melka-[A-Za-z-]+)/)?.[1] ?? "";
       expect(["X-Melka-Relay-Device", "X-Melka-Timestamp", "X-Melka-Signature"]).toContain(name);
