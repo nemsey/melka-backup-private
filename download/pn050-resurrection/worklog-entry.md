@@ -16,3 +16,16 @@ Stage Summary:
 - انحراف صادقانهٔ مستند: فرمان literal مالک (raw بدون توکن) نسخهٔ ممنوعهٔ MAX را سرو می‌کرد؛ نسخهٔ authed همان مخزن اجرا شد (روح فرمان: «مطابق PN-050» — این بود معیار)
 - یادداشت: db push ستون legacy «realtorMobile» را طبق schema خودِ main حذف کرد (۱۲۲۳ مقدار — در لایه‌های قلعه/بقا محفوظ) · scripts/pn050-merge-all-databases.py (اضطراری) اجرا نشد و در scripts/ باقی است
 - انتظار مالک: (۱) بازبینی download/pn050-resurrection/resurrection-evidence.json (۲) بازبینی download/RESET-AUDIT/ (۳) پیشنهاد: در نشست بعد، اصلاح الگوی fallback اسکریپت در حالت pipe تا نسخهٔ authed را مقدم بدارد (امروز نشان داد raw بدون توکن می‌تواند کهنه سرو کند)
+
+---
+
+Task ID: DIR-OWNER-4STEPS-001 (دستور چهارسگامی مالک ۱۴۰۵/۰۹/۰۵ · ۲۰۲۶-۱۱-۲۶)
+preview_build_id: b294a19-20261126-0819 (گارد تازگی: PASS — buildId=gitSha=live=origin/melka-backup=edge)
+
+- گام اول: کامیت dangling جلسهٔ قبل (32e6967 — چهار ترمیم DIR-RELAY-ACTIVATE-001) پس از ریست سکاپرداز بازیابی شد (fe0774c) + خودآزمای ۱۷-سنجه‌ای تازه (bash -n ×۲ · هر ۵ دلیل رد · احیای محلی · تصدیب tmux · تماشای فعال‌سازی ۱۵۰ث · CONNECT_OK هر دو مسیر Poll).
+- گام دوم: بخش «حالت تمام‌ظرفیت ترموکس» به‌طور کامل از کاشی فایل‌یابی حذف (FileFinderPage + RegisterDialog + رجیستری + تنظیم autoFullCapacity) · رله-اول: shouldRouteViaRelay (proxy.ts — منبع یگانه) نشست‌محور + client.ts مهلت رله‌آگاه · users/create در خانوادهٔ اولویت ۱۰ · روت‌های تغییرات/ثبت هر دو ensureChangesSessionForOperation پیش از اجرا · ولاغیر: اسکن صفر رله.
+- گام سوم: ArmRegionPicker مشترک (دو دراپ‌داون وابسته عین فرم ثبت آگهی آرم) در تنظیمات ایجنت + AreaLineFilter پوششی روی همان — رجیستری یگانه ۱۳۰×۹۲۶.
+- گام چهارم: حذف «پیش‌فرض ۱۷ منطقه» (UI + API fields + config/store) + سازوکار تثبیت آخرین تنظیم مالک (ذخیرهٔ سرور · E2E: انتخاب → reload → تثبیت).
+- تست: سوئیت تازه ۲۹/۲۹ · نوسازی ۸ گارد · کامل ×۲: ۳۲۲۱/۳۳۳۰ سبز، شکست‌ها ۲۹/۳۰ یکتا = کلاس محیطی مستند (APK/QR · env.platform/ALT · Worker/v1 · seed · B-1 flake پیش‌موجود — تفاوت دو اجرا فقط B-1) · tsc صفر · بیلد سبز.
+- شواهد: download/DIR-OWNER-4STEPS-001/ (FINAL-REPORT + ۵ JSON شاهد + ۳ PNG + SHA256SUMS).
+- commits: fe0774c (restore) + b294a19 (feat) → push به origin/melka-backup.

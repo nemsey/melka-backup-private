@@ -1,0 +1,12 @@
+{
+  "schema": "melka-dir-owner-4steps-001-registry-evidence",
+  "generatedAt": "2026-11-26T08:28:00+00:00",
+  "checks": {
+    "areas130": true,
+    "lines926": true,
+    "defaultsEmpty": true,
+    "lineHasAreaName": true,
+    "validateAcceptsRegistry": true,
+    "validateRejectsFake": true
+  }
+}

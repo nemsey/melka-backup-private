@@ -1,0 +1,79 @@
+{
+  "schema": "melka-dir-owner-4steps-001-relay-first-evidence",
+  "pass": 12,
+  "fail": 0,
+  "results": [
+    {
+      "name": "A بدون-نشست: ARM مسیر قبلی",
+      "pass": true,
+      "got": false,
+      "want": false
+    },
+    {
+      "name": "A بدون-نشست: دیوار مستقیم",
+      "pass": true,
+      "got": false,
+      "want": false
+    },
+    {
+      "name": "B نشست+رله-برخط: ARM → رله اولویت اول",
+      "pass": true,
+      "got": true,
+      "want": true
+    },
+    {
+      "name": "B نشست+رله-برخط: دیوار مستقیم (ولاغیر)",
+      "pass": true,
+      "got": false,
+      "want": false
+    },
+    {
+      "name": "C نشست+رله-آفلاین: مسیر قبلی صادقانه",
+      "pass": true,
+      "got": false,
+      "want": false
+    },
+    {
+      "name": "D سراسری-mobile: ARM → رله",
+      "pass": true,
+      "got": true,
+      "want": true
+    },
+    {
+      "name": "D سراسری-mobile: دیوار مستقیم",
+      "pass": true,
+      "got": false,
+      "want": false
+    },
+    {
+      "name": "E users/create بیرون نشست = تعاملی ۵",
+      "pass": true,
+      "got": 5,
+      "want": 5
+    },
+    {
+      "name": "E users/create در نشست = سقف ۱۰",
+      "pass": true,
+      "got": 10,
+      "want": 10
+    },
+    {
+      "name": "E properties/create در نشست = سقف ۱۰",
+      "pass": true,
+      "got": 10,
+      "want": 10
+    },
+    {
+      "name": "E users/info/mobile-number در نشست = سقف ۱۰",
+      "pass": true,
+      "got": 10,
+      "want": 10
+    },
+    {
+      "name": "E divar در نشست = ۰ (ولاغیر)",
+      "pass": true,
+      "got": 0,
+      "want": 0
+    }
+  ]
+}

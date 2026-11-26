@@ -1,0 +1,67 @@
+{
+ "ok": true,
+ "steps": [
+  {
+   "key": "login",
+   "ok": true,
+   "detail": "ورود با کد مدیر"
+  },
+  {
+   "key": "tile-open",
+   "ok": true,
+   "detail": "کاشی فایل‌یابی باز شد"
+  },
+  {
+   "key": "step2-capacity-removed",
+   "ok": true,
+   "detail": "بخش حذف شد (دستور مالک)"
+  },
+  {
+   "key": "step2-normal-mode-btn-removed",
+   "ok": true,
+   "detail": "کلید «حالت عادی» نیز حذف"
+  },
+  {
+   "key": "agent-settings-open",
+   "ok": true,
+   "detail": "آکاردئون تنظیمات باز شد"
+  },
+  {
+   "key": "step3-arm-picker",
+   "ok": true,
+   "detail": "دراپ‌داون عین فرم ثبت آگهی آرم"
+  },
+  {
+   "key": "step3-search-label",
+   "ok": true,
+   "detail": "برچسب بخش جستجو عین دستور"
+  },
+  {
+   "key": "step4-default17-removed",
+   "ok": true,
+   "detail": "دکمهٔ پیش‌فرض حذف شد"
+  },
+  {
+   "key": "step4-all-tabriz-btn",
+   "ok": true,
+   "detail": "کلید همه تبریز (پاک‌کردن) پابرجا"
+  },
+  {
+   "key": "step4-pick-area",
+   "ok": true,
+   "detail": "منطقه انتخاب و چیپ شد"
+  },
+  {
+   "key": "step4-persisted",
+   "ok": true,
+   "detail": "انتخاب مالک پس از reload تثبیت مانده"
+  },
+  {
+   "key": "cleanup-clear-filter",
+   "ok": true,
+   "detail": "فیلتر به همه تبریز بازگشت"
+  }
+ ],
+ "errors": [],
+ "consoleErrors": []
+}

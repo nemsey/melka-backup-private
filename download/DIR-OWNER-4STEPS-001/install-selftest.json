@@ -1,0 +1,76 @@
+{
+  "schema": "melka-dir-owner-4steps-001-install-selftest",
+  "installBytes": 8412,
+  "coreBytes": 64883,
+  "pass": [
+    {
+      "name": "bash -n install command",
+      "detail": ""
+    },
+    {
+      "name": "۸: watch_relay_activation (تماشای ۱۵۰ث)",
+      "detail": ""
+    },
+    {
+      "name": "۸: خواندن reason رد bootstrap",
+      "detail": ""
+    },
+    {
+      "name": "۸: پیام دلیل رد «used»",
+      "detail": ""
+    },
+    {
+      "name": "۸: پیام دلیل رد «limit»",
+      "detail": ""
+    },
+    {
+      "name": "۸: پیام دلیل رد «expired»",
+      "detail": ""
+    },
+    {
+      "name": "۸: پیام دلیل رد «invalid»",
+      "detail": ""
+    },
+    {
+      "name": "۸: پیام دلیل رد «revoked»",
+      "detail": ""
+    },
+    {
+      "name": "۹: احیای محلی کد used",
+      "detail": ""
+    },
+    {
+      "name": "۱۰: تصدیب tmux با has-session",
+      "detail": ""
+    },
+    {
+      "name": "۱۱: شاهد فعال‌سازی در خروجی نصب",
+      "detail": ""
+    },
+    {
+      "name": "سنجش revoked در تماشا",
+      "detail": ""
+    },
+    {
+      "name": "bootstrap URL embedded",
+      "detail": ""
+    },
+    {
+      "name": "bash -n core relay script",
+      "detail": ""
+    },
+    {
+      "name": "CONNECT_OK proof (نخستین Poll موفق)",
+      "detail": ""
+    },
+    {
+      "name": "نگهبان دو-سشنی (watchdog heredoc)",
+      "detail": ""
+    },
+    {
+      "name": "تلاش ۱۲تایی دانلود",
+      "detail": ""
+    }
+  ],
+  "fail": []
+}
