@@ -17,6 +17,10 @@
  *   · حالت مخفی‌کاری: فیلد stealth سرور نرخ ARM انسانی می‌گوید (مثلاً ۲۰/دقیقه
  *     = هر ~۳ث) + جیتار — تسلیم در حالت تمام‌ظرفیت (ظرفیت مقدم است).
  *   نسل‌های قدیمی فیلدهای manifest/stealth را بی‌صدا نادیده می‌گیرند (عقبه کامل).
+ * نسل R = DIR-RELAY-ULTRA-001 (دستور مالک ۲۰۲۶-۱۱-۲۶ · گام اول):
+ *   آمار زندهٔ دریافت/ارسال پیام — خط «📊 آمار» حداکثر هر ۳۰ث در همهٔ حالت‌ها
+ *   (شمارنده‌های تازهٔ MSG_RECV/MSG_SENT) + بقا در stats.json + ابزار status.sh
+ *   (مالک در هر لحظه بدون tmux آمار کامل می‌بیند) + راهنمای مشاهده در کدنصب.
  * ---------------------------------------------------------------------------
  * روت bootstrap این قالب را با پیکربندی دستگاه (SERVER_URL · DEVICE_ID ·
  * DEVICE_SECRET · ALT_SERVER_URL) پر می‌کند و به‌صورت text/x-shellscript تحویل می‌دهد.
@@ -90,6 +94,8 @@ export function buildRelayScript(cfg: RelayScriptConfig): string {
 # نسل Q = DIR-SUPER-STRUCT-001 (۲۰۲۶-۱۱-۲۵): قلاب طلایی (هسته + نگهبان دو-سشنی
 #         tmux/nohup) · ضربان قلب ۳۰ث · مانیفست کار + مخفی‌کاری سرور-آگاه ·
 #         صف آفلاین SQLite + ACK ردیفی (بسته‌های ۱۰۰تایی).
+# نسل R = DIR-RELAY-ULTRA-001 (۲۰۲۶-۱۱-۲۶): آمار زندهٔ دریافت/ارسال پیام — خط
+#         «📊 آمار» هر ≤۳۰ث در همهٔ حالت‌ها + بقا در stats.json + ابزار status.sh.
 # ============================================================
 set -u
 
@@ -143,10 +149,16 @@ POST_SEEN=""                       # نسل Q: ACK — شناسه‌های نت�
 POST_ACKED=""                      # نسل Q: ACK — شناسه‌های پذیرفته‌شده (ok=true)
 POST_REJ=""                       # نسل Q: ACK — شناسه‌های رد قطعی (ok=false)
 LAST_ARM_CALL_MS=0                 # نسل Q: زمان آخرین تماس ARM (گام انسانی مخفی‌کاری)
+# ── DIR-RELAY-ULTRA-001 (گام اول · رابعاً — «دستور نصب فوق پیشرفته»): آمار زنده ──
+MSG_RECV=0                          # شمار پیام‌های دریافتی از سرور (آیتم‌های صف رله)
+MSG_SENT=0                          # شمار درخواست‌های اجراشده به مقصد (نتیجه‌دار)
+STATS_EVERY_S=30                    # حداکثر فاصلهٔ چاپ خط «📊 آمار» (در همهٔ حالت‌ها)
+LAST_STATS=0                        # زمان آخرین چاپ آمار (throttle)
 
 # ── نسل Q (DIR-SUPER-STRUCT-001 · بخش ب-۲): ارکستراتور دو-سشنی ──
 MELKA_HOME="\$HOME/melka-relay"      # پوشهٔ نصب: هسته + نگهبان + صف آفلاین + pid
 RELAY_PID_FILE="\$MELKA_HOME/relay.pid"  # pid هسته — نگهبان هر ۱۵ث آن را وارسی می‌کند
+STATS_FILE="\$MELKA_HOME/stats.json"    # DIR-RELAY-ULTRA-001: بقا آمار برای status.sh
 WD_SPAWNED=0                         # ۱ = نگهبان مستقل راه افتاده (ضربان ۳۰ث از اوست)
 
 # ── مهلت‌های تطبیقی (نسل K/M + کلاس تازهٔ «فهرست» در نسل N) ──
@@ -322,6 +334,24 @@ is_list() {
 }
 
 log() { echo "[$(date '+%H:%M:%S')] \$*"; }
+
+# ── DIR-RELAY-ULTRA-001 (گام اول · ثالثاً+رابعاً): خط آمار زندهٔ دریافت/ارسال پیام ──
+# ریشهٔ شکایت مالک: «در ترموکس آمار دریافت و ارسال پیام نشان داده نمی‌شود» —
+# پیش‌تر تنها خط «زنده» هر ۱۰ چرخه (~۸ دقیقه در بیکاری) چاپ می‌شد و هیچ شمارندهٔ
+# پیام دریافتی/درخواست ارسالی وجود نداشت. اکنون: خط «📊 آمار» مستقل، حداکثر هر
+# \$STATS_EVERY_S ثانیه، در همهٔ حالت‌ها (بیکاری · موج اجرا · بن WAF · خطای شبکه)
+# + بقا در stats.json + ابزار status.sh برای مشاهدهٔ هر زمان بدون tmux.
+stats_line() {
+  local now up
+  now=\$(date +%s)
+  [ \$(( now - LAST_STATS )) -lt \$STATS_EVERY_S ] && return 0
+  LAST_STATS=\$now
+  up=\$(( now - RELAY_START_TS )); [ "\$up" -lt 0 ] && up=0
+  log "📊 آمار: دریافت \$MSG_RECV پیام · ارسال \$MSG_SENT درخواست · تحویل \$SERVED نتیجه · خطا \$ERRORS · \$BATCHES دسته · چرخه \$LOOPS · آنلاین \$(printf '%02d:%02d' \$(( up / 3600 )) \$(( (up % 3600) / 60 ))) · حاکم ARM: نرخ \$ARM_RATE_CURRENT/دقیقه · همزمانی \$ARM_CONC · مسیر \$( [ \$URL_IDX -eq 0 ] && echo اصلی || echo جایگزین )"
+  printf '{"ts":%s,"startTs":%s,"recv":%s,"sent":%s,"served":%s,"errors":%s,"batches":%s,"loops":%s,"rate":%s,"conc":%s,"boost":%s,"stealth":%s}\\n' \\
+    "\$now" "\$RELAY_START_TS" "\$MSG_RECV" "\$MSG_SENT" "\$SERVED" "\$ERRORS" "\$BATCHES" "\$LOOPS" "\$ARM_RATE_CURRENT" "\$ARM_CONC" "\$BOOST_MODE" "\$STEALTH" > "\$STATS_FILE.tmp" 2>/dev/null && mv -f "\$STATS_FILE.tmp" "\$STATS_FILE" 2>/dev/null || true
+  return 0
+}
 
 debug_rotate() {
   [ -f "$RELAY_DEBUG" ] || return 0
@@ -915,7 +945,8 @@ drain_spool() {
     SERVED=\$(( SERVED + \${totaln:-0} - \${errn:-0} ))
     ERRORS=\$(( ERRORS + \${errn:-0} ))
     BATCHES=\$((BATCHES+1))
-    log "جریان نتیجه: \${totaln:-0} مورد → \${errn:-0} خطا (مجموع: \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته)"
+    MSG_SENT=\$(( MSG_SENT + \${totaln:-0} ))
+    log "جریان نتیجه: \${totaln:-0} مورد → \${errn:-0} خطا (مجموع: دریافت \$MSG_RECV · ارسال \$MSG_SENT · تحویل \$SERVED · خطا \$ERRORS / \$BATCHES دسته)"
     # نسل P: پاسخ‌های سالم ARM در والد شمرده می‌شوند — فرزندان state ندارند؛
     # بازگشت تدریجی نرخ/همزمانی (هر ۱۰ سالم: +۱۵ نرخ · +۱ همزمانی)
     OKN=\$(printf '%s' "$payload" | jq '[.[] | select((.httpStatus // 0) >= 200 and (.httpStatus // 0) < 300)] | length' 2>/dev/null)
@@ -976,6 +1007,7 @@ process_set() {
   LAST_FLUSH=\$(date +%s)
   LAST_EXPRESS=\$(date +%s)
   while :; do
+    stats_line
     # ── نسل P (DIR-RELAY-ARMFENCE-001): گیت قطع بن WAF ──
     # حین بن: شروع آیتم تازه ممنوع (درحال‌پروازها تمام می‌شوند، نتیجه‌ها
     # تخلیه می‌شوند، poll جدیدی آیتم نمی‌کشد تا TTL صف نسوزد)؛ پژواک‌های
@@ -991,6 +1023,7 @@ process_set() {
       ITEM=\$(head -n 1 "$QUEUE")
       sed -i '1d' "$QUEUE" 2>/dev/null
       [ -z "$ITEM" ] && continue
+      MSG_RECV=\$((MSG_RECV+1))
       # نسل P: گیت نرخ ARM در والد — کارگران fork هستند؛ اینجا زنجیرهٔ نرخ
       # واحد و معتبر است (جدا از گیت سرور؛ تعاملی/OTP معاف).
       IURL=\$(printf '%s' "$ITEM" | jq -r '.url // empty' 2>/dev/null)
@@ -1043,6 +1076,7 @@ auth_delay() {
 relay_main() {
   while true; do
     LOOPS=\$((LOOPS+1))
+    stats_line
 
     # هر ۳۰ چرخه مسیر اصلی دوباره مقدم می‌شود (primary مقدم است — PN-031-I لایهٔ ۳)
     if [ "$URL_COUNT" -gt 1 ] && [ "\$(( LOOPS % PRIMARY_RECHECK_LOOPS ))" -eq 0 ] && [ "$URL_IDX" -ne 0 ]; then
@@ -1064,7 +1098,7 @@ relay_main() {
 
     # ضربان قلب — هر ۱۰ چرخه مالک می‌بیند رله زنده است
     if [ \$((LOOPS % 10)) -eq 0 ]; then
-      log "زنده — چرخهٔ \$LOOPS · مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) · \$SERVED موفق / \$ERRORS خطا / \$BATCHES دسته · حاکم ARM: نرخ \$ARM_RATE_CURRENT/دقیقه · همزمانی \$ARM_CONC · بن‌های پیاپی \$ARM_WAF_STREAK"
+      log "زنده — چرخهٔ \$LOOPS · مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) · دریافت \$MSG_RECV / ارسال \$MSG_SENT / تحویل \$SERVED · خطا \$ERRORS / \$BATCHES دسته · حاکم ARM: نرخ \$ARM_RATE_CURRENT/دقیقه · همزمانی \$ARM_CONC · بن‌های پیاپی \$ARM_WAF_STREAK"
     fi
     # ── نسل Q (بخش ج-۱ · ضربان پشتیبان): اگر نگهبان مستقل راه نیفتاد (نه tmux و
     # نه fork)، خود حلقهٔ اصلی هر چرخه (~≥۵۰ث) یک ضربان امضاشده می‌فرستد — سرور
@@ -1280,7 +1314,7 @@ relay_main() {
   done
 }
 
-SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0; BATCHES=0
+SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0; BATCHES=0; MSG_RECV=0; MSG_SENT=0; LAST_STATS=0; RELAY_START_TS=\$(date +%s)
 log "رلهٔ ملکا آغاز شد (نسل Q · DIR-SUPER-STRUCT-001 · قلاب طلایی: هسته + نگهبان دو-سشنی · صف آفلاین SQLite · ACK ردیفی · مانیفست و مخفی‌کاری سرور-آگاه · استخر \$MAX_WORKERS+\$EXPRESS_SLOTS کارگر · بی‌توقف · حالت تمام‌ظرفیت‌آگاه) — دستگاه: $DEVICE_ID (در حال اتصال…)"
 log "مسیر اصلی: $SERVER_URL"
 [ "$URL_COUNT" -gt 1 ] && log "مسیر جایگزین: $ALT_SERVER_URL (سوئیچ خودکار پس از $ALT_FAIL_THRESHOLD خطای پیاپی)"
@@ -1291,6 +1325,7 @@ log "نسل N: batch=\$BATCH · استخر \$MAX_WORKERS+\$EXPRESS_SLOTS کار�
 log "لاگ دیباگ: ~/relay-debug.log (هدرها؛ مقدار امضا حذف می‌شود)"
 log "نسل Q: نگهبان \$MELKA_HOME/watchdog.sh · صف آفلاین \$OFFLINE_DB (نبود sqlite3 → failed-results.jsonl) · ضربان قلب هر ۳۰ث به /api/mobile-relay/heartbeat"
 log "احراز: X-Melka-Relay-Device + X-Melka-Timestamp + X-Melka-Signature"
+log "نسل R (DIR-RELAY-ULTRA-001): خط «📊 آمار» حداکثر هر \$STATS_EVERY_S ثانیه چاپ می‌شود · مشاهدهٔ آمار هر زمان: bash \$MELKA_HOME/status.sh · بقا در \$STATS_FILE"
 sync_clock && log "ساعت با سرور همگام شد ✓" || log "همگام‌سازی ساعت سرور ممکن نشد — ادامه با ساعت محلی"
 LAST_CLOCK_SYNC=\$(date +%s)
 
@@ -1307,6 +1342,42 @@ if [ -f "\$0" ] && [ "\$0" != "\$MELKA_HOME/core-relay.sh" ]; then
   cp -f "\$0" "\$MELKA_HOME/core-relay.sh" 2>/dev/null || true
 fi
 printf '%s\\n' "\$\$" > "\$RELAY_PID_FILE" 2>/dev/null || true
+
+# ── DIR-RELAY-ULTRA-001 (گام اول · رابعاً): ابزار status.sh — آمار در هر لحظه ──
+# مالک بدون اتصال tmux با «bash ~/melka-relay/status.sh» آمار دریافت/ارسال +
+# آخرین خطوط رله را می‌بیند — پاسخ مستقیم به «آمار نشان داده نمی‌شود».
+cat > "\$MELKA_HOME/status.sh" <<'STATUS_EOF'
+#!/usr/bin/env bash
+# status.sh — DIR-RELAY-ULTRA-001 — نمایش آمار رلهٔ ملکا (هر زمان قابل اجرا)
+set -u
+D="\$(cd "\$(dirname "\$0")" 2>/dev/null && pwd)"
+[ -n "\$D" ] || D="\$HOME/melka-relay"
+echo "═══════ آمار رلهٔ ملکا (\$(date '+%H:%M:%S')) ═══════"
+if [ -r "\$D/stats.json" ]; then
+  if command -v jq >/dev/null 2>&1; then
+    jq -r '"پیام دریافتی از سرور: \\(.recv)\\nدرخواست ارسالی به آرم: \\(.sent)\\nنتیجهٔ تحویل‌شده به سرور: \\(.served)\\nخطا: \\(.errors)\\nدستهٔ نتیجه: \\(.batches)\\nچرخه: \\(.loops)\\nنرخ جاری ARM: \\(.rate)/دقیقه\\nهمزمانی ARM: \\(.conc)\\nآخرین به‌روزرسانی آمار: \\(.ts)"' "\$D/stats.json"
+  else
+    cat "\$D/stats.json"
+  fi
+else
+  echo "آمار هنوز ساخته نشده — رله در حال راه‌اندازی است؛ چند ثانیه دیگر دوباره بزنید."
+fi
+RP=""
+[ -r "\$D/relay.pid" ] && RP=\$(cat "\$D/relay.pid" 2>/dev/null)
+if [ -n "\$RP" ] && kill -0 "\$RP" 2>/dev/null; then
+  echo "وضعیت هستهٔ رله: زنده (pid \$RP)"
+else
+  echo "وضعیت هستهٔ رله: pid یافت نشد (نگهبان در حال بازآید است یا راه‌اندازی اولیه)"
+fi
+echo "──── آخرین ۱۲ خط رله ────"
+if command -v tmux >/dev/null 2>&1 && tmux has-session -t melka-relay 2>/dev/null; then
+  tmux capture-pane -p -t melka-relay -S -12 2>/dev/null | tail -n 12
+fi
+[ -f "\$D/relay.log" ] && tail -n 12 "\$D/relay.log" 2>/dev/null
+[ -f "\$D/relay-restarts.log" ] && tail -n 12 "\$D/relay-restarts.log" 2>/dev/null
+echo "──── نمای زنده: tmux attach -t melka-relay (خروج Ctrl+b سپس d) · لاگ: tail -f \$D/relay.log ────"
+STATUS_EOF
+chmod 700 "\$MELKA_HOME/status.sh" 2>/dev/null || true
 
 spawn_watchdog() {
   umask 077
@@ -1463,6 +1534,17 @@ done
  *   ۱۱) تماشای فعال‌سازی: تا ۱۵۰ث خروجی زندهٔ رله (tmux capture-pane / relay.log)
  *       بررسی می‌شود تا خط «✓ اتصال تأیید شد — رلهٔ ملکا فعال است» ظاهر شود —
  *       کدنصب خودش «رله فعال شد» را با شاهد چاپ می‌کند یا صادقانه علت را.
+ *
+ * DIR-RELAY-ULTRA-001 (دستور مالک ۲۰۲۶-۱۱-۲۶ · گام اول — «دستور نصب فوق پیشرفته»):
+ *   شناخت فراژرف تمام اجزا + ریشهٔ «آمار دریافت/ارسال پیام در ترموکس نمایش داده
+ *   نمی‌شود»: تنها خط وضعیت هر ~۸ دقیقه در بیکاری چاپ می‌شد و هیچ شمارندهٔ پیام
+ *   دریافتی/درخواست ارسالی وجود نداشت. رفع ریشه‌ای (هم‌زمان در هسته و کدنصب):
+ *   ۱۲) خط «📊 آمار» در هستهٔ رله: حداکثر هر ۳۰ث، در همهٔ حالت‌ها (بیکاری ·
+ *       موج اجرا · بن WAF · خطای شبکه) — شمارنده‌های تازهٔ MSG_RECV/MSG_SENT.
+ *   ۱۳) بقا آمار در stats.json + ابزار status.sh (bash ~/melka-relay/status.sh):
+ *       مالک در هر لحظه، بدون اتصال tmux، آمار کامل + آخرین خطوط رله را می‌بیند.
+ *   ۱۴) راهنمای مشاهدهٔ آمار پس از نصب موفق (print_stats_guide) + شاهد آمار در
+ *       تماشای فعال‌سازی (خط «📊 آمار» در خروجی نصب چاپ می‌شود).
  */
 export function buildInstallCommand(serverUrl: string, enrollCode: string): string {
   const safe = (s: string) => s.replace(/[^A-Za-z0-9:\/._-]/g, "");
@@ -1511,6 +1593,7 @@ watch_relay_activation() {
       echo "══════════════════════════════════════════"
       echo "✓✓ رلهٔ ترموکس فعال شد و به سرور ملکا متصل است — تأیید با نخستین Poll موفق."
       printf '%s\\n' "\$out" | grep "رلهٔ ملکا فعال است" | tail -n 1
+      printf '%s\\n' "\$out" | grep "📊 آمار" | tail -n 1 || true
       echo "══════════════════════════════════════════"
       return 0
     fi
@@ -1525,6 +1608,13 @@ watch_relay_activation() {
   echo "آخرین پیام‌های رله:"
   printf '%s\\n' "\$out" | tail -n 8
   return 1
+}
+
+# ── DIR-RELAY-ULTRA-001 (گام اول · رابعاً): راهنمای مشاهدهٔ آمار دریافت/ارسال ──
+print_stats_guide() {
+  echo "📊 آمار دریافت/ارسال پیام رله: در نشست رله، خط «📊 آمار» هر حداکثر ۳۰-۶۰ ثانیه چاپ می‌شود."
+  echo "مشاهدهٔ آمار در هر لحظه (بدون اتصال tmux): bash \$HOME/melka-relay/status.sh"
+  echo "نمای زندهٔ رله: tmux attach -t melka-relay (خروج: Ctrl+b سپس d) — یا: tail -f \$HOME/melka-relay/relay.log"
 }
 
 # ── تعویض تمیز + راه‌اندازی (tmux با تصدیب · عقبه nohup) — \$1=مسیر هسته ──
@@ -1546,14 +1636,18 @@ start_relay_core() {
     if tmux has-session -t melka-relay 2>/dev/null; then
       echo "هستهٔ رله در سشن tmux «melka-relay» راه افتاد ✓ (نگهبان مستقل در سشن «melka-watchdog» خودش ساخته می‌شود)."
       watch_relay_activation
-      return \$?
+      wrc=\$?
+      print_stats_guide
+      return \$wrc
     fi
     echo "tmux سشن را راه نینداخت — عقبهٔ nohup پس‌زمینه…"
   fi
   ( setsid nohup bash "\$core" >> "\$HOME/melka-relay/relay.log" 2>&1 & )
   echo "هستهٔ رله در پس‌زمینه (nohup) راه افتاد ✓ — لاگ: ~/melka-relay/relay.log"
   watch_relay_activation
-  return \$?
+  wrc=\$?
+  print_stats_guide
+  return \$wrc
 }
 
 # ── DIR-RELAY-ACTIVATE-001 (۸): دانلود با خواندن «دلیل رد» سرور ──
