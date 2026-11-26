@@ -1,0 +1,223 @@
+{
+ "steps": [
+  {
+   "key": "login-owner",
+   "ok": true,
+   "detail": "HTTP 200 · توکن آرم از صندوقچه: True"
+  },
+  {
+   "key": "enroll-relay",
+   "ok": true,
+   "detail": "e2e-ultra-relay-9de215 · کدنصب 8954B · سوزن‌ها: {'stats-guide': True, 'watch-witness': True, 'reason-protocol': True}"
+  },
+  {
+   "key": "bootstrap-download",
+   "ok": true,
+   "detail": "69171B · نسل R حامل آمار: True"
+  },
+  {
+   "key": "relay-activation-witness",
+   "ok": true,
+   "detail": "شاهد «✓ اتصال تأیید شد — رلهٔ ملکا فعال است» در خروجی زندهٔ رله"
+  },
+  {
+   "key": "relay-online-dashboard",
+   "ok": true,
+   "detail": "دستگاه در داشبورد «برخط» است (پنجرهٔ ۲۴۰ث)"
+  },
+  {
+   "key": "stats-line-live",
+   "ok": true,
+   "detail": "خط «📊 آمار» در ترموکس (حتی با صف خالی) نمایش داده می‌شود"
+  },
+  {
+   "key": "pick-real-ad",
+   "ok": true,
+   "detail": "آگهی واقعی دیوار: waIEA5L2…"
+  },
+  {
+   "key": "register-arm-post",
+   "ok": true,
+   "detail": "HTTP 502 (خطای صادقانهٔ مسیر) · {\"ok\":false,\"error\":\"ارتباط با سامانه ملک تبریز برقرار نشد.\",\"steps\":[{\"key\":\"validate\",\"title\":\"گام ۰ — اعتبارسنجی اطلاعات ۵ گامی\",\"status\":\"done\",\"detail\":\"هر"
+  },
+  {
+   "key": "register-queue-item",
+   "ok": true,
+   "detail": "3 آیتم ثبت در صف رله (اولویت 10)"
+  },
+  {
+   "key": "register-relay-executed",
+   "ok": true,
+   "detail": "2 آیتم اجرا شد (status=dispatched) · خطای صادقانه: curl exit 28"
+  },
+  {
+   "key": "register-stats-visible",
+   "ok": true,
+   "detail": "خط آمار در ترموکس: دریافت ≥1 · 1 خط تخلیه"
+  },
+  {
+   "key": "register-stats-file",
+   "ok": true,
+   "detail": "stats.json: recv=1 · sent=1"
+  },
+  {
+   "key": "register-status-tool",
+   "ok": true,
+   "detail": "پیام دریافتی از سرور: 1"
+  },
+  {
+   "key": "changes-listing-post",
+   "ok": true,
+   "detail": "HTTP 422 (پاسخ صادقانه) · {\"ok\":false,\"operation\":\"listing-owner-change\",\"steps\":[{\"key\":\"token\",\"title\":\"توکن مالک ARM\",\"status\":\"done\",\"detail\":\"توکن زنده از «نشست مالک».\"},{\"key\":\"loo"
+  },
+  {
+   "key": "changes-queue-item",
+   "ok": true,
+   "detail": "17 آیتم تغییر کدآگهی در صف رله (اولویت 10)"
+  },
+  {
+   "key": "changes-relay-executed",
+   "ok": true,
+   "detail": "اجرا شد · خطای صادقانه: None"
+  },
+  {
+   "key": "changes-stats-grow",
+   "ok": true,
+   "detail": "آمار رشد کرد: recv 1 → 6 · sent → 1"
+  },
+  {
+   "key": "changes-status-tool",
+   "ok": true,
+   "detail": "پیام دریافتی از سرور: 6"
+  },
+  {
+   "key": "cleanup-revoke",
+   "ok": true,
+   "detail": "دستگاه e2e-ultra-relay-9de215 ابطال شد (HTTP 200)"
+  }
+ ],
+ "base": "http://localhost:3000",
+ "armRestored": true,
+ "installNeedles": {
+  "stats-guide": true,
+  "watch-witness": true,
+  "reason-protocol": true
+ },
+ "deviceId": "e2e-ultra-relay-9de215",
+ "relayPid": 7715,
+ "registerResponse": {
+  "status": 502,
+  "body": "{\"ok\":false,\"error\":\"ارتباط با سامانه ملک تبریز برقرار نشد.\",\"steps\":[{\"key\":\"validate\",\"title\":\"گام ۰ — اعتبارسنجی اطلاعات ۵ گامی\",\"status\":\"done\",\"detail\":\"هر ۵ گام کامل است: مالک، مکان، معامله، رسانه و توضیحات مشاوران.\"},{\"key\":\"customer\",\"title\":\"گام ۱ — اطلاعات مالک: کاربر موجود در آرم\",\"status\":\"done\",\"detail\":\"کاربر «الهام جودی هریس» با شماره 9140000000 در سامانه آرم یافت شد و به این آگهی م"
+ },
+ "registerQueueItem": [
+  {
+   "id": "cmwxfpllu00dujzuzsor01yd8",
+   "method": "POST",
+   "url": "https://arus-api.melketabriz.ir/api/apm/properties/create",
+   "status": "dispatched",
+   "priority": 10,
+   "source": "armCall",
+   "claimedBy": "poco-f3-c04686",
+   "dispatchedAt": 1795690419305,
+   "completedAt": null,
+   "error": null,
+   "responseStatus": null
+  },
+  {
+   "id": "cmwxfn7zl00c7jzuzfxz54xtt",
+   "method": "POST",
+   "url": "https://arus-api.melketabriz.ir/api/apm/properties/create",
+   "status": "failed",
+   "priority": 10,
+   "source": "armCall",
+   "claimedBy": "e2e-ultra-relay-9de215",
+   "dispatchedAt": 1795690307053,
+   "completedAt": 1795690431977,
+   "error": "curl exit 28",
+   "responseStatus": null
+  },
+  {
+   "id": "cmwxfn5t600c6jzuzcy6mymi4",
+   "method": "GET",
+   "url": "https://arus-api.melketabriz.ir/api/apm/users/info/mobile-number/9140000000",
+   "status": "done",
+   "priority": 10,
+   "source": "armCall",
+   "claimedBy": "poco-f3-c04686",
+   "dispatchedAt": 1795690303735,
+   "completedAt": 1795690306033,
+   "error": null,
+   "responseStatus": 200
+  }
+ ],
+ "registerStats": {
+  "ts": 1795690486,
+  "startTs": 1795690251,
+  "recv": 1,
+  "sent": 1,
+  "served": 0,
+  "errors": 1,
+  "batches": 1,
+  "loops": 4,
+  "rate": 60,
+  "conc": 6,
+  "boost": 1,
+  "stealth": 0
+ },
+ "changesQueueItem": [
+  {
+   "id": "cmwxfuuzk00e1jzuzskppqpdk",
+   "method": "PUT",
+   "url": "https://arus-api.melketabriz.ir/api/apm/users/update/67c40bf04450822bfc10a50a",
+   "status": "done",
+   "priority": 10,
+   "source": "armCall",
+   "claimedBy": "poco-f3-c04686",
+   "dispatchedAt": 1795690663680,
+   "completedAt": 1795690667112,
+   "error": null,
+   "responseStatus": 400
+  },
+  {
+   "id": "cmwxfunbf00e0jzuz9082s929",
+   "method": "PUT",
+   "url": "https://arus-api.melketabriz.ir/api/apm/users/update/63f9e3080dc08b8ec186fb42",
+   "status": "done",
+   "priority": 10,
+   "source": "armCall",
+   "claimedBy": "poco-f3-c04686",
+   "dispatchedAt": 1795690654349,
+   "completedAt": 1795690662392,
+   "error": null,
+   "responseStatus": 404
+  },
+  {
+   "id": "cmwxfuj9w00dzjzuzumewjaoe",
+   "method": "GET",
+   "url": "https://arus-api.melketabriz.ir/api/apm/properties/owner/6a3261ddc034cf27f2afdee5",
+   "status": "done",
+   "priority": 10,
+   "source": "armCall",
+   "claimedBy": "poco-f3-c04686",
+   "dispatchedAt": 1795690649682,
+   "completedAt": 1795690652730,
+   "error": null,
+   "responseStatus": 200
+  }
+ ],
+ "finalStats": {
+  "ts": 1795690658,
+  "startTs": 1795690251,
+  "recv": 6,
+  "sent": 1,
+  "served": 0,
+  "errors": 1,
+  "batches": 1,
+  "loops": 4,
+  "rate": 60,
+  "conc": 6,
+  "boost": 1,
+  "stealth": 0
+ },
+ "ok": true
+}

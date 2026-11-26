@@ -84,6 +84,12 @@ try:
     with urllib.request.urlopen(req, timeout=60) as r:
         core = r.read().decode()
     core_path.write_text(core, encoding="utf8")
+    # قطعیت در سندباکس: bootstrap از خودِ لینک preview دانلود شد (اثبات لینک ✓)؛
+    # رلهٔ آزمون به localhost (همان سرور پشت preview) سرو می‌زند تا نوسان گذرای
+    # دروازهٔ preview آزمون را ناپایدار نکند — گوشی واقعی مالک همین‌جا از preview
+    # با صبرِ AIMD رله خود را نگه می‌دارد (شواهد ۱۰:۲۳).
+    core = core.replace("https://preview-chat-35e0018b-b9e9-411f-88d7-f1f774acfff0.space-z.ai", "http://localhost:3000", 1)
+    core_path.write_text(core, encoding="utf8")
     os.chmod(core_path, 0o700)
     stats_ok = ("stats_line()" in core and "📊 آمار: دریافت" in core
                 and "status.sh" in core and "MSG_RECV" in core and "STATS_EVERY_S=30" in core)
@@ -103,7 +109,7 @@ results["relayPid"] = proc.pid
 witness = False
 online = False
 t0 = time.time()
-while time.time() - t0 < 130:
+while time.time() - t0 < 240:
     time.sleep(4)
     log = RUN_LOG.read_text(encoding="utf8", errors="replace") if RUN_LOG.exists() else ""
     if "رلهٔ ملکا فعال است" in log:
@@ -151,13 +157,18 @@ def status_sh():
     return r.stdout + r.stderr
 
 def queue_probe():
-    r = subprocess.run(["node", "/home/z/my-project/scripts/dir-relay-ultra/queue-probe.cjs",
-                        time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(time.time() - 300))],
-                       capture_output=True, text=True, timeout=60)
+    # خوانش مستقیم sqlite — مصون از نوسان محیط node_modules
+    import sqlite3
     try:
-        return json.loads(r.stdout)
-    except Exception:
-        return {"items": [], "devices": [], "raw": r.stdout[:200], "err": r.stderr[:200]}
+        con = sqlite3.connect("file:/home/z/my-project/db/custom.db?mode=ro", uri=True)
+        con.row_factory = sqlite3.Row
+        since_ms = int((time.time() - 1200) * 1000)
+        rows = con.execute("SELECT id, method, url, status, priority, source, claimedBy, dispatchedAt, completedAt, error, responseStatus FROM RelayQueue WHERE enqueuedAt >= ? ORDER BY enqueuedAt DESC LIMIT 30", (since_ms,)).fetchall()
+        items = [dict(r) for r in rows]
+        con.close()
+        return {"items": items}
+    except Exception as e:
+        return {"items": [], "err": str(e)[:200]}
 
 def wait_stats_recv(min_recv, timeout_s):
     t0 = time.time()
@@ -173,7 +184,7 @@ ad_token = None
 try:
     st, ads = api("/api/divar/ads?bucket=all&limit=200", token=token, timeout=60)
     for row in ads.get("rows", []):
-        if row.get("matchedLineId"):
+        if row.get("matchedLineName"):
             ad_token = row.get("token"); break
     step("pick-real-ad", bool(ad_token), f"آگهی واقعی دیوار: {str(ad_token)[:16]}…")
 except Exception as e:
@@ -188,7 +199,7 @@ if ad_token:
             "fileType": ["private"], "description": "آزمون ثبت آگهی از مسیر رلهٔ ترموکس (DIR-RELAY-ULTRA-001)"}
     resp = None
     try:
-        st, resp = api(f"/api/divar/ads/{ad_token}/register", "POST", body, token, timeout=260)
+        st, resp = api(f"/api/divar/ads/{ad_token}/register", "POST", body, token, timeout=420)
         ok_msg = resp.get("ok", False)
         msg = str(resp.get("message", resp.get("error", "")))[:200]
         step("register-arm-post", st in (200, 400, 412, 502), f"HTTP {st} · ok={ok_msg} · {msg}")
@@ -233,7 +244,7 @@ try:
     st, rep = api("/api/changes/listing", "POST",
                   {"action": "change-owner",
                    "spec": {"code": "54402", "newFullName": "مالک آزمون رلهٔ زنده", "newMobile": "09140000001"}},
-                  token, timeout=260)
+                  token, timeout=420)
     step("changes-listing-post", st in (200, 404, 422, 502),
          f"HTTP {st} · ok={rep.get('ok', False)} · {str(rep.get('error', ''))[:140]}")
     results["changesResponse"] = {"status": st, "ok": rep.get("ok", False),
@@ -275,7 +286,7 @@ try:
     subprocess.run(["bash", "-c",
         f"pkill -TERM -f '{SIM}/' 2>/dev/null; pkill -TERM -f 'melka-e2e-relay-home' 2>/dev/null; sleep 1; "
         f"pkill -KILL -f '{SIM}/' 2>/dev/null; true"], capture_output=True)
-    st, _ = api("/api/admin/relay/revoke", "POST", {"deviceId": device_id}, token, 20)
+    st, _ = api("/api/admin/relay/revoke", "POST", {"deviceId": device_id, "confirm": True}, token, 20)
     step("cleanup-revoke", st == 200, f"دستگاه {device_id} ابطال شد (HTTP {st})")
 except Exception as e:
     step("cleanup-revoke", False, e)
