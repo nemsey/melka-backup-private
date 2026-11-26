@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# fake pkg shim for sandbox (mimics Termux with packages already installed)
+echo "fake-pkg: $* (already installed)"
+exit 0

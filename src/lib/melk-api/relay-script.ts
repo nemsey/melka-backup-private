@@ -1219,6 +1219,13 @@ relay_main() {
     AUTH_FAILS=0
     GATEWAY_BACKOFF=\$(( GATEWAY_BACKOFF / 2 ))
     [ "\$GATEWAY_BACKOFF" -lt "\$GATEWAY_RETRY_DELAY" ] && GATEWAY_BACKOFF=\$GATEWAY_RETRY_DELAY
+    # ── DIR-RELAY-ACTIVATE-001 (گام اول): نخستین Poll موفق (خالی یا پر — اعم از صف شلوغ)
+    # یعنی «رله فعال شد» — این خط یک‌بار چاپ می‌شود و کدنصب همان لحظه در ترموکس
+    # مالک تصدیب می‌گیرد (watch_relay_activation در دستور نصب همین عبارت را می‌جوید).
+    if [ "\$CONNECT_OK" -eq 0 ]; then
+      CONNECT_OK=1
+      log "✓ اتصال تأیید شد — رلهٔ ملکا فعال است (مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ))"
+    fi
     # ── نسل O (DIR-CHANGES-TILE-001): پرچم boost — «حالت تمام‌ظرفیت» کاشی تغییرات ──
     # سرور وقتی کاشی تغییرات فعال است boost=true برمی‌گرداند: poll میان‌موجی
     # تندتر (۲ث) + بنر یک‌بارهٔ اختصاص ظرفیت؛ پایان حالت هم با همین پرچم اعلام می‌شود.
@@ -1441,6 +1448,21 @@ done
  *       هسته خودش می‌سازد) — کرش یکی، دیگری زنده؛ بدون tmux → setsid nohup
  *    ۷) شکست نهایی → پیام شفاف «همین دستور را دوباره بزنید» (نه «کد جدید» —
  *       کد فقط با ابطال از داشبورد می‌میرد؛ درس درس‌آموخته)
+ *
+ * DIR-RELAY-ACTIVATE-001 (گام اول مالک ۲۰۲۶-۱۱-۲۶ · «کدنصب تولید شده، رلهٔ ترموکس را
+ * فعال نمی‌کند») — چهار ترمیم ریشه‌ای:
+ *    ۸) پاسخ ۴۰۳ روت bootstrap «قرارداد JSON» دارد (reason: used/limit/expired/
+ *       invalid/revoked) — کدنصب اکنون بدنهٔ پاسخ را می‌خواند و «کد سوخته» را
+ *       با پیام دقیق همان‌جا اعلام می‌کند؛ دیگر ۱۲ بار ~۴ دقیقه به‌خاطر یک رد
+ *       قطعی تلاش نمی‌کند (تنها خطاهای گذِرا retry می‌شوند).
+ *    ۹) reason=used (کد قبلاً نصب شده) + هستهٔ محلی موجود → «احیای محلی»:
+ *       بی‌نیاز از کد تازه، همان core-relay.sh روی گوشی (راز دستگاه درونش است)
+ *       با تعویض تمیز دوباره راه می‌افتد — مالک هرگز گیر «کد تازه بگیر» نمی‌شود.
+ *   ۱۰) تصدیب tmux: پس از tmux new-session با has-session وارسی می‌شود؛ شکست →
+ *       nohup (پیش‌تر خطای tmux بی‌صدا «نصب موفق» جعلی چاپ می‌کرد).
+ *   ۱۱) تماشای فعال‌سازی: تا ۱۵۰ث خروجی زندهٔ رله (tmux capture-pane / relay.log)
+ *       بررسی می‌شود تا خط «✓ اتصال تأیید شد — رلهٔ ملکا فعال است» ظاهر شود —
+ *       کدنصب خودش «رله فعال شد» را با شاهد چاپ می‌کند یا صادقانه علت را.
  */
 export function buildInstallCommand(serverUrl: string, enrollCode: string): string {
   const safe = (s: string) => s.replace(/[^A-Za-z0-9:\/._-]/g, "");
@@ -1448,11 +1470,11 @@ export function buildInstallCommand(serverUrl: string, enrollCode: string): stri
   const code = safe(enrollCode);
   // PN-031-I: همان حمل‌ونقل بقا — http1.1 + UA بروزری برای دانلود bootstrap
   // PN-034 (شورا-ن۰۵۵): openssl-tool — بستهٔ CLI واقعی Termux؛ مسیر اثبات‌شدهٔ مالک
-  return `# ── قلاب طلایی: نصب رلهٔ ملکا (نسل Q · DIR-SUPER-STRUCT-001) ──
-# یک فایل = کل نصب. این دستور خودش هستهٔ رله (core-relay) را می‌گیرد؛ هسته
-# خودش نگهبان (watchdog) را می‌سازد و هر دو در دو سشن مستقل (tmux) یا nohup
-# پس‌زمینه اجرا می‌شوند — مالک با پیچیدگی چندفایلی درگیر نمی‌شود.
-echo "نصب قلاب طلایی رلهٔ ملکا آغاز شد (نسل Q · DIR-SUPER-STRUCT-001)…"
+  return `# ── قلاب طلایی: نصب رلهٔ ملکا (نسل Q · DIR-SUPER-STRUCT-001 + DIR-RELAY-ACTIVATE-001) ──
+# یک فایل = کل نصب + تصدیب فعال‌سازی. این دستور خودش هستهٔ رله (core-relay) را
+# می‌گیرد؛ هسته خودش نگهبان (watchdog) را می‌سازد و هر دو در دو سشن مستقل (tmux)
+# یا nohup اجرا می‌شوند — و در پایان «فعال شدن واقعی رله» را با شاهد گزارش می‌کند.
+echo "نصب قلاب طلایی رلهٔ ملکا آغاز شد (نسل Q · DIR-SUPER-STRUCT-001 + تصدیب فعال‌سازی)…"
 deps_ok=0
 for i in 1 2; do
   if pkg install -y curl openssl-tool jq sqlite tmux; then deps_ok=1; break; fi
@@ -1471,7 +1493,71 @@ if [ "\$deps_ok" != "1" ]; then
   exit 1
 fi
 mkdir -p "\$HOME/melka-relay"
-ok=0; last_code=0
+
+# ── DIR-RELAY-ACTIVATE-001 (۸): تماشای فعال‌سازی — تا ۱۵۰ث خروجی زندهٔ رله ──
+# بررسی می‌شود تا نخستین Poll موفق («✓ اتصال تأیید شد — رلهٔ ملکا فعال است»)
+# ظاهر شود؛ کدنصب پایانش «رله فعال شد» با شاهد است، نه فقط «فایل اجرا شد».
+watch_relay_activation() {
+  local i out
+  echo "در حال تأیید اتصال رله به سرور ملکا (تا ۱۵۰ ثانیه)…"
+  for i in \$(seq 1 15); do
+    sleep 10
+    out=""
+    if command -v tmux >/dev/null 2>&1 && tmux has-session -t melka-relay 2>/dev/null; then
+      out=\$(tmux capture-pane -p -t melka-relay -S -80 2>/dev/null)
+    fi
+    [ -z "\$out" ] && out=\$(tail -n 80 "\$HOME/melka-relay/relay.log" 2>/dev/null)
+    if printf '%s' "\$out" | grep -q "رلهٔ ملکا فعال است"; then
+      echo "══════════════════════════════════════════"
+      echo "✓✓ رلهٔ ترموکس فعال شد و به سرور ملکا متصل است — تأیید با نخستین Poll موفق."
+      printf '%s\\n' "\$out" | grep "رلهٔ ملکا فعال است" | tail -n 1
+      echo "══════════════════════════════════════════"
+      return 0
+    fi
+    if printf '%s' "\$out" | grep -q "device revoked"; then
+      echo "⛔ سرور این دستگاه را باطل کرده است (device revoked) — از تنظیمات ملکا (بخش رلهٔ Termux) دستگاه تازه ثبت کنید."
+      return 1
+    fi
+    echo "… بررسی اتصال (تلاش \$i از ۱۵) — رله در پس‌زمینه در حال اتصال است…"
+  done
+  echo "⚠ در ۱۵۰ ثانیهٔ نخست اتصالِ رله تأیید نشد — رله زنده است و در پس‌زمینه خودش تلاش می‌کند (بدون توقف)."
+  echo "مشاهدهٔ زنده: tmux attach -t melka-relay (خروج: Ctrl+b سپس d) یا: tail -f ~/melka-relay/relay.log"
+  echo "آخرین پیام‌های رله:"
+  printf '%s\\n' "\$out" | tail -n 8
+  return 1
+}
+
+# ── تعویض تمیز + راه‌اندازی (tmux با تصدیب · عقبه nohup) — \$1=مسیر هسته ──
+start_relay_core() {
+  local core="\$1"
+  chmod 700 "\$core" 2>/dev/null || true
+  if pgrep -f 'melka-relay/' >/dev/null 2>&1 || pgrep -f 'melka-relay.sh' >/dev/null 2>&1; then
+    echo "نمونهٔ قدیمی رله در حال اجراست — برای تعویض تمیز متوقفش می‌کنم…"
+    pkill -f 'melka-relay/' 2>/dev/null
+    pkill -f melka-relay.sh 2>/dev/null
+    sleep 2
+  fi
+  command -v tmux >/dev/null 2>&1 && { tmux kill-session -t melka-relay 2>/dev/null || true; tmux kill-session -t melka-watchdog 2>/dev/null || true; }
+  # DIR-RELAY-ACTIVATE-001 (۱۰): tmux با has-session تصدیب می‌شود — شکست tmux
+  # دیگر هرگز «نصب موفق» جعلی چاپ نمی‌کند؛ عقبهٔ nohup خودش راه می‌افتد.
+  if command -v tmux >/dev/null 2>&1; then
+    tmux new-session -d -s melka-relay "bash \$core" 2>/dev/null
+    sleep 1
+    if tmux has-session -t melka-relay 2>/dev/null; then
+      echo "هستهٔ رله در سشن tmux «melka-relay» راه افتاد ✓ (نگهبان مستقل در سشن «melka-watchdog» خودش ساخته می‌شود)."
+      watch_relay_activation
+      return \$?
+    fi
+    echo "tmux سشن را راه نینداخت — عقبهٔ nohup پس‌زمینه…"
+  fi
+  ( setsid nohup bash "\$core" >> "\$HOME/melka-relay/relay.log" 2>&1 & )
+  echo "هستهٔ رله در پس‌زمینه (nohup) راه افتاد ✓ — لاگ: ~/melka-relay/relay.log"
+  watch_relay_activation
+  return \$?
+}
+
+# ── DIR-RELAY-ACTIVATE-001 (۸): دانلود با خواندن «دلیل رد» سرور ──
+ok=0; last_code=0; reject_reason=""
 waits=(5 5 10 10 15 20 25 30 30 30 30)
 for i in \$(seq 1 12); do
   hdr=\$(mktemp)
@@ -1481,6 +1567,15 @@ for i in \$(seq 1 12); do
   if [ "\$rc" -eq 0 ] && [ "\$code_http" = "200" ]; then
     mv -f "\$body_tmp" "\$HOME/melka-relay/core-relay.sh"; rm -f "\$hdr"; ok=1; break
   fi
+  # رد قطعی با قرارداد JSON سرور (reason) — همان‌جا اعلام؛ تلاش مجدد بی‌فایده است
+  if [ "\$rc" -eq 0 ] && { [ "\$code_http" = "403" ] || [ "\$code_http" = "404" ]; }; then
+    rj=\$(head -c 800 "\$body_tmp" | jq -r '.reason // empty' 2>/dev/null)
+    if [ -n "\$rj" ]; then
+      reject_reason="\$rj"
+      rm -f "\$body_tmp" "\$hdr"; last_code="\$code_http"
+      break
+    fi
+  fi
   rm -f "\$body_tmp" "\$hdr"; last_code="\$code_http"
   w=\${waits[\$(( i < 11 ? i - 1 : 10 ))]:-30}
   if [ "\$rc" -eq 28 ]; then
@@ -1488,35 +1583,55 @@ for i in \$(seq 1 12); do
   elif [ "\$code_http" = "502" ] || [ "\$code_http" = "503" ] || [ "\$code_http" = "429" ]; then
     echo "تلاش \$i از ۱۲: سرور در حال ریست/رستاخیز است (HTTP \$code_http) — خودش برمی‌گردد · \$w ثانیه دیگر صبر می‌کنم…"
   elif [ "\$code_http" = "403" ] || [ "\$code_http" = "404" ]; then
-    echo "کد ثبت رد شد (HTTP \$code_http) — اگر همین پیام تکرار شد از «راه‌اندازی رله» در تنظیمات ملکا کد تازه بگیرید. \$w ثانیه دیگر دوباره می‌کوشم (گاهی گذراست)…"
+    echo "تلاش \$i از ۱۲: رد HTTP \$code_http بدون قرارداد (گذرای WAF/دروازه) — \$w ثانیه دیگر دوباره می‌کوشم…"
   else
     echo "تلاش \$i از ۱۲ ناموفق (کد \$code_http · خطای curl \$rc) — \$w ثانیه دیگر…"
   fi
   sleep "\$w"
 done
+
+# ── رد قطعی با دلیل — پیام دقیق سرور + درمان (DIR-RELAY-ACTIVATE-001 · ۸+۹) ──
+if [ "\$ok" != "1" ] && [ -n "\$reject_reason" ]; then
+  case "\$reject_reason" in
+    used)
+      # کد قبلاً با موفقیت نصب شده و رله فعال است — اگر هستهٔ محلی هست، احیای محلی
+      if [ -f "\$HOME/melka-relay/core-relay.sh" ] && head -n 1 "\$HOME/melka-relay/core-relay.sh" | grep -q '^#!' && [ "\$(wc -c < "\$HOME/melka-relay/core-relay.sh")" -gt 4000 ]; then
+        echo "این کد قبلاً مصرف شده (رله از قبل فعال) — هستهٔ موجود روی همین گوشی را دوباره راه می‌اندازم (بی‌نیاز از کد تازه)…"
+        start_relay_core "\$HOME/melka-relay/core-relay.sh"
+        echo "برای ساعت‌ها کار بی‌وقفه: اندروید → برنامه‌ها → Termux → باتری → «بدون محدودیت» + قفل در Recentها."
+        exit 0
+      fi
+      echo "کد سوخته — این کد قبلاً با موفقیت برای راه‌اندازی همین گوشی استفاده شده."
+      echo "اگر رله کار نمی‌کند: Termux را ببندید و دوباره باز کنید، سپس همین دستور را دوباره بزنید؛ اگر باز نشد از «راه‌اندازی رله» در تنظیمات ملکا کد تازه بگیرید."
+      exit 1
+      ;;
+    limit)
+      echo "کد سوخته — سقف تلاش‌های دانلود برای این کد پر شده."
+      echo "درمان: از تنظیمات ملکا (بخش رلهٔ Termux) دکمهٔ تولید کد نصب را بزنید و دستور تازه را پیست کنید."
+      exit 1
+      ;;
+    expired)
+      echo "کد منقضی — پنجرهٔ اعتبار این کد گذشته است."
+      echo "درمان: از تنظیمات ملکا دکمهٔ راه‌اندازی رله را دوباره بزنید تا کد تازه صادر شود و همین دستورِ تازه را پیست کنید."
+      exit 1
+      ;;
+    invalid)
+      echo "کد نامعتبر — چنین کدی صادر نشده است (ناقص کپی شده یا غلط است)."
+      echo "درمان: دستور نصب را کامل از تنظیمات ملکا کپی کنید (دکمهٔ کپی دستور نصب)."
+      exit 1
+      ;;
+    revoked)
+      echo "کد باطل شده — دستگاه صاحب این کد از سمت مالک ابطال شده است."
+      echo "درمان: برای راه‌اندازی مجدد، دستگاه تازه‌ای از تنظیمات ملکا ثبت کنید."
+      exit 1
+      ;;
+  esac
+fi
+
 if [ "\$ok" = "1" ] && head -n 1 "\$HOME/melka-relay/core-relay.sh" | grep -q '^#!' && [ "\$(wc -c < "\$HOME/melka-relay/core-relay.sh")" -gt 4000 ] && ! grep -q '<html' "\$HOME/melka-relay/core-relay.sh" 2>/dev/null; then
-  chmod 700 "\$HOME/melka-relay/core-relay.sh"
-  # تعویض تمیز: نمونه‌های قدیمی (هسته/نگهبان/مسیر قدیمی ~/melka-relay.sh) با اطلاع
-  if pgrep -f 'melka-relay/' >/dev/null 2>&1 || pgrep -f 'melka-relay.sh' >/dev/null 2>&1; then
-    echo "نمونهٔ قدیمی رله در حال اجراست — برای تعویض تمیز متوقفش می‌کنم…"
-    pkill -f 'melka-relay/' 2>/dev/null
-    pkill -f melka-relay.sh 2>/dev/null
-    sleep 2
-  fi
-  command -v tmux >/dev/null 2>&1 && { tmux kill-session -t melka-relay 2>/dev/null || true; tmux kill-session -t melka-watchdog 2>/dev/null || true; }
-  # ارکستراتور دو-سشنی tmux: هسته در سشن melka-relay؛ هستهٔ کامل خودش نگهبان را
-  # در سشن melka-watchdog می‌سازد — هیچ‌کدام روی دیگری تداخل ندارد (عین دستور مالک:
-  # «اگر یکی کرش کرد، دیگری زنده می‌ماند»). بدون tmux → setsid nohup پس‌زمینه.
-  if command -v tmux >/dev/null 2>&1; then
-    tmux new-session -d -s melka-relay "bash \$HOME/melka-relay/core-relay.sh"
-    echo "نصب موفق ✓ (نسل Q · قلاب طلایی) — هستهٔ رله در سشن tmux «melka-relay» و نگهبان در سشن «melka-watchdog» راه افتاد."
-    echo "مقاوم به ۴۰۳/۴۲۰/۴۲۳/۴۰۲/۲۸/۵۰۲ و ریست سرور (میراث نسل P · حاکم تطبیقی ARM پابرجا)."
-    echo "مشاهده: tmux attach -t melka-relay (خروج بدون بستن: Ctrl+b سپس d) · لاگ نگهبان: ~/melka-relay/watchdog.log"
-  else
-    ( setsid nohup bash "\$HOME/melka-relay/core-relay.sh" >> "\$HOME/melka-relay/relay.log" 2>&1 & )
-    echo "نصب موفق ✓ (نسل Q · قلاب طلایی · بدون tmux → nohup) — هسته و نگهبان مستقل در پس‌زمینه راه افتادند."
-    echo "لاگ‌ها: ~/melka-relay/relay.log و ~/melka-relay/watchdog.log"
-  fi
+  echo "دانلود هستهٔ رله کامل شد ✓ — راه‌اندازی دو-سشنی (هسته + نگهبان)…"
+  start_relay_core "\$HOME/melka-relay/core-relay.sh"
+  echo "مقاوم به ۴۰۳/۴۲۰/۴۲۳/۴۰۲/۲۸/۵۰۲ و ریست سرور (میراث نسل P · حاکم تطبیقی ARM پابرجا)."
   echo "برای ساعت‌ها کار بی‌وقفه: اندروید → برنامه‌ها → Termux → باتری → «بدون محدودیت» + قفل در Recentها."
 else
   echo "نصب کامل نشد (آخرین وضعیت: HTTP \$last_code). سرور احتمالاً هنوز در حال رستاخیز است —"

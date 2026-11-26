@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Below is the transcription, top to bottom, exactly as rendered (RTL Persian text wraps oddly — reproduced as displayed):\n\n```\n# «توجب». «دستور ویرگول دارد شرک ویرا است».\nsetsid nohup میرمیم.\n  if command -v tmux >/dev/null 2>&1; then\n    tmux new-session -d -s melka-relay \"bash $HOME/mel\nka-relay/core-relay.sh\"\n    echo \"تمام شدن — بی‌درنگ بالا آمدن Q لسن) ✓ قوم پسن\"\n       نشس tmux «melka-relay» و نشس زیربخش «melka-watchd\nog» داد.\" \n    echo \"وقوم ب ۴۰۲/۴۲-/۴۳۳/۴-۲/۲۸/۵-۲ و روس شسورد\"\n(درل پسن P ۰ جکب‌ظت ARM اوجپأ).\"\n    echo \"مدشه: tmux attach -t melka-relay (خروج ودب\"\nزتش: Ctrl+b سپس d)  ·  نایبمگن گال: ~/melka-relay/watc\nhdog.log\"\n  else\n    ( setsid nohup bash \"$HOME/melka-relay/core-relay.\nsh\" >> \"$HOME/melka-relay/relay.log\" 2>&1 & )\n    echo \"تمام شدن ✓ (لسن Q ۰ بالا بی‌اطلاع · توجب tmux →\nnohup) — متس و نایبمگن رتقل د میرمیم داد.\"\n    echo \"گال‌ها: ~/melka-relay/relay.log و ~/melka-rel\nay/watchdog.log\"\n  fi\n  echo \"بی‌اطلاعت رد فقوی: بوردنی → برممی → T\nermux → بتیرت → «توجب حمودحت» + فد رد Recentها.\"\nelse\n  echo \"پسن کرنش دش (درحت وخن‌گه: HTTP $last_code). بر\"\nورد جتازال ثونه د رال رشتخص جسر —\"\n  echo \"نخل هطه دع دهن درتوسد ای رو درگه پتشین رک\"\nدی (دک تبن دهن نحمند — دک سال طق گز لا درویندا با\"\nلا دش بشال جزلا جسر).\"\n  rm -f \"$HOME/melka-relay/core-relay.sh\"\nfi\nپسن بالا بی‌اطلاع قار کامل أخص ژش (لسن Q ۰ DIR-SUPER-STR\nUCT-001)…\nHit:1 https://termux.net stable InRelease\nAll packages are up to date.\ncurl is already the newest version (8.21.0).\nopenssl-tool is already the newest version (1:3.6.3).\njq is already the newest version (1.8.2).\nsqlite is already the newest version (3.53.2).\ntmux is already the newest version (3.6b).\nSummary:\n  Upgrading: 0, Installing: 0, Removing: 0, Not Upgrad\ning: 0\nپسن قوم پسن (لسن Q ۰ بالا بی‌اطلاع) — متس رد نشس tmux\n«melka-relay» و نشس رد نایبمگن «melka-watchdog» داد.\nوقوم ب ۴۰۲/۴۲-/۴۳۳/۴-۲/۲۸/۵-۲ و روس شسورد (درحت پسن\nP ۰ جکب‌ظت ARM اوجپأ).\nمدشه: tmux attach -t melka-relay (خروج توجب پتش: Ct\nrl+b سپس d)  ·  نایبمگن گال: ~/melka-relay/watchdog.log\nبی‌اطلاعت رد فقوی: بوردنی → برممی → Termux →\nبتیرت → «توجب حمودحت» + فد رد Recentها.\n~ $\n```\n\n**Notes on the ERROR line:** The only error-related message is:\n```\n  echo \"پسن کرنش دش (درحت وخن‌گه: HTTP $last_code). ...\"\n```\ni.e. an HTTP `$last_code` failure branch that deletes `core-relay.sh` via `rm -f \"$HOME/melka-relay/core-relay.sh\"` — but in this run it did **not** execute (the success path ran instead).\n\n**Caveat:** Some Persian words are rendered with unusual/broken glyph sequences (the terminal font appears to mangle certain Persian ligatures), so I transcribed them glyph-for-glyph as displayed rather than correcting them. White highlight blocks on screen covered a few characters in the echo lines; those spots are transcribed as best visible.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1795675926,
+  "id": "20261126145134e08020a681f94421",
+  "model": "glm-5.3-flash",
+  "object": "chat.completion",
+  "request_id": "20261126145134e08020a681f94421",
+  "usage": {
+    "completion_tokens": 1081,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3444,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 4525
+  }
+}

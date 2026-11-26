@@ -1,0 +1,29 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "# Full transcription (top to bottom)\n\n**Status bar:**\n```\n85 | 4.5G | ᛒᛒ | VPN | A%. Giles | … >_ 1:42\n```\n\n**Terminal content:**\n\n```\n# «دترمائمم ممدنخ یرگش یتخرد هدرخ» hoo tmux → setsid nohup مینکی.\nif command -v tmux >/dev/null 2>&1; then\n   tmux new-session -d -s melka-relay \"bash $HOME/melka-relay/core-relay.sh\"\n   echo \"بهین مسو ✓ (لیسن Q هب الاب طاسر — هخسش ار ا رش tmux «melka-relay» و نایدش رد نیش «melka-watchdog» ات دنافا.\"\"\n   echo \"مسو روس تسیود و 2023/03/033/3-02/28/5-02 مرت همز ناگیا (لیسن P هجابت یکع ARM اجرا).\"\n   echo \"مزمدا: tmux attach -t melka-relay (خسرت نش زتنش: Ctrl+b سیپس d) هال نایمک: ~/melka-relay/watchdog.log\"\nelse\n   ( setsid nohup bash \"$HOME/melka-relay/core-relay.sh\" >> \"$HOME/melka-relay/relay.log\" 2>&1 & )\n   echo \"بهین مسو ✓ (لیسن Q هب الاب طاسر هود tmux → nohup) — هتسش و نایمک نرتلخ ار دینمکی ات دناکین.\"\n   echo \"الماک: ~/melka-relay/relay.log و ~/melka-relay/watchdog.log\"\nfi\necho \"ناش یاهتخا راب هقوپ: نارممی → ندومن → Termux → نارت → «نیود نحوستی» + یفخ ار Recents.\"\nelse\n  echo \"باش رک یرهن (تدرو تخع: HTTP $last_code). رو روختالا فنخ ار رال نتخنگا —\"\n  echo \"تخ لکع یعم هسن نتسود ات کی راد رگک یتنخ نک دی (یاد تنب هسن نمدنم — یاد ترف فکا رک ځا اشنودبا 15 لامخ نشا لزا نیم).\"\n  rm -f \"$HOME/melka-relay/core-relay.sh\"\nfi\nباش الاب طاسر کلام اک ځا نش (لیسن Q هب DIR-SUPER-STRUCT-001)...\nHit:1 https://termux.net stable InRelease\nAll packages are up to date.\ncurl is already the newest version (8.21.0).\nopenssl-tool is already the newest version (1:3.6.3).\njq is already the newest version (1.8.2).\nsqlite is already the newest version (3.53.2).\ntmux is already the newest version (3.6b).\nSummary:\n  Upgrading: 0, Installing: 0, Removing: 0, Not Upgrading: 0\nباش مسو ✓ (لیسن Q هب الاب طاسر — هتسش ار ا رش tmux «melka-relay» و نایمک رد نیش «melka-watchdog» ات دنافا.\nمسو روس تسیود و 2023/03/033/3-02/28/5-02 مرت همز (لیسن P هجابت یکع ARM اجرا).\nمزمدا: tmux attach -t melka-relay (خسرت نیود نتنش: Ctrl+b سیپس d) هال نایمک: ~/melka-relay/watchdog.log\nناش یاهتخا راب هقوپ: نارممی → ندومن → Termux → نارت → «نیود نحوستی» + یفخ ار Recents.\n~ $\n```\n\n**Navigation bar:** ◁ ○ □\n\n---\n\n⚠️ Note: The Persian strings are rendered with broken RTL character shaping in the screenshot (letters disconnected/reversed), so the Persian above is a character-level transcription as visually rendered, not proper Persian. The English/code lines are exact.",
+        "reasoning_content": "Transcribe the screenshot. Persian text is partially garbled but transcribe as visible.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1795675858,
+  "id": "20261126145030738cfae6ceef4bfd",
+  "model": "glm-5.3-flash",
+  "object": "chat.completion",
+  "request_id": "20261126145030738cfae6ceef4bfd",
+  "usage": {
+    "completion_tokens": 993,
+    "completion_tokens_details": {
+      "reasoning_tokens": 17
+    },
+    "prompt_tokens": 3443,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 4436
+  }
+}
