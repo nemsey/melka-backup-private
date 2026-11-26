@@ -58,6 +58,20 @@
  *   دروازه 502/503 → تلاش هر ۱۰ث (اکنون با AIMD تا ۱۲۰ث) · Wake-Lock خودکار با
  *   آزادسازی EXIT · پیام شفاف انقضای کد — عبارت راهنما حفظ شد اما «exit 1» آن
  *   به تلاش تطبیقی تبدیل شد (دستور مالک ۲۰۲۶-۱۴-۱۴ بر آن غلبه کرد: «بدون توقف»).
+
+ * نسل S = DIR-RELAY-ULTRA-002 (دستور مالک ۲۰۲۶-۱۱-۲۶ · پیگیری نسل R — «آمار در
+ *   ترموکس هر ~۳۰ث دیده نمی‌شود؛ status.sh آمار کامل نشان نمی‌دهد»): سه ریشه —
+ *   (۱) در مسیر tmux خروجی هسته فقط در پنجرهٔ tmux می‌ماند و relay.log هرگز
+ *   ساخته نمی‌شد (کانال مستندِ «tail -f relay.log» و بخش «آخرین خطوط رله» status.sh
+ *   مرده بود؛ هارنس نسل R خودش stdout را فایل می‌کرد و نقص را پنهان کرد)؛
+ *   (۲) کادنس آمار وابسته به چرخهٔ poll بود — بیکاری ~۵۱ث (wait=50) و خطای
+ *   شبکه/دروازه/احراز خواب ۳۰..۳۰۰ث سکوت — نقض «حداکثر هر ۳۰ث در همهٔ حالت‌ها»؛
+ *   (۳) status.sh زمان خام epoch می‌زد و حکم سلامت/تازگی نداشت — مالک
+ *   نمی‌توانست عملکرد صحیح رله را تشخیص دهد. درمان: tee همزمان به relay.log در
+ *   مسیر ترمینال + چرخش کپی-کوته‌سازی ۲۵۶KB + POLL_WAIT_S=25 (بیکاری ~۲۶ث) +
+ *   stats_sleep تکه‌ای (هیچ خواب بلندی آمار را خاموش نمی‌کند) + گارد BASHPID
+ *   (کارگران fork نسخهٔ کهنهٔ شمارنده‌ها را بازنویسی نمی‌کنند) + فیلدهای pid/
+ *   restarts در stats.json + status.sh با سن انسانی/حکم سلامت (فعال ✓ / کهنه ⚠).
  */
 
 export interface RelayScriptConfig {
@@ -96,6 +110,9 @@ export function buildRelayScript(cfg: RelayScriptConfig): string {
 #         صف آفلاین SQLite + ACK ردیفی (بسته‌های ۱۰۰تایی).
 # نسل R = DIR-RELAY-ULTRA-001 (۲۰۲۶-۱۱-۲۶): آمار زندهٔ دریافت/ارسال پیام — خط
 #         «📊 آمار» هر ≤۳۰ث در همهٔ حالت‌ها + بقا در stats.json + ابزار status.sh.
+# نسل S = DIR-RELAY-ULTRA-002 (۲۰۲۶-۱۱-۲۶): کانال آمار پایدار — نمای tmux
+#         همزمان در relay.log (tee) + کادنس ≤۳۰ث واقعی در همهٔ حالت‌ها
+#         (POLL_WAIT_S=25 + خواب تکه‌ای آماردار) + status.sh با حکم سلامت/تازگی.
 # ============================================================
 set -u
 
@@ -120,7 +137,7 @@ MAX_WORKERS=16                      # ۱۲ ← ۱۶ کارگر همزمان (Poc
 EXPRESS_SLOTS=8                     # ظرفیت اضافی برای آیتم‌های برداشتی poll میان‌موجی
 POOL_SLOTS=\$(( MAX_WORKERS + EXPRESS_SLOTS ))
 RATE_MAX=20                         # نسل M: ۵ — گلوگاه سرعت اصلی؛ ۲۰/دقیقه با احترام به دروازه
-POLL_WAIT_S=50                      # انتظار long-poll وقتی صف خالی است
+POLL_WAIT_S=25                      # نسل S: بیکاری هم کادنس آمار ~۲۶ث (≤۳۰ث) می‌ماند؛ poll تنها ~۲.۳/دقیقه — بسیارس زیر سقف ۲۰
 EXPRESS_POLL_S=5                    # فاصلهٔ poll میان‌موجی (برداشت زندهٔ آیتم تازه حین اجرا)
 EXPRESS_POLL_S_BOOST=2              # نسل O: فاصلهٔ poll میان‌موجی در «حالت تمام‌ظرفیت» کاشی تغییرات
 BOOST_MODE=0                        # نسل O: ۱ = حالت تمام‌ظرفیت (پرچم boost سرور) · ۰ = عادی
@@ -159,6 +176,8 @@ LAST_STATS=0                        # زمان آخرین چاپ آمار (throt
 MELKA_HOME="\$HOME/melka-relay"      # پوشهٔ نصب: هسته + نگهبان + صف آفلاین + pid
 RELAY_PID_FILE="\$MELKA_HOME/relay.pid"  # pid هسته — نگهبان هر ۱۵ث آن را وارسی می‌کند
 STATS_FILE="\$MELKA_HOME/stats.json"    # DIR-RELAY-ULTRA-001: بقا آمار برای status.sh
+RELAY_LOG="\$MELKA_HOME/relay.log"        # نسل S: کانال زندهٔ مالک — در مسیر tmux با tee نوشته می‌شود
+STATS_LOG_MAX=262144                 # نسل S: سقف relay.log (۲۵۶KB) — چرخش با نگه‌داشت نیمهٔ تازه
 WD_SPAWNED=0                         # ۱ = نگهبان مستقل راه افتاده (ضربان ۳۰ث از اوست)
 
 # ── مهلت‌های تطبیقی (نسل K/M + کلاس تازهٔ «فهرست» در نسل N) ──
@@ -208,7 +227,7 @@ arm_rate_gate() {
     oldest="\${ARM_REQ_TIMES[0]}"
     wait_s=\$(( 60 - (now - oldest) + 1 ))
     if [ "$wait_s" -gt 0 ]; then
-      sleep "$wait_s"
+      stats_sleep "$wait_s"
     fi
     now=\$(date +%s)
     keep=()
@@ -342,14 +361,50 @@ log() { echo "[$(date '+%H:%M:%S')] \$*"; }
 # \$STATS_EVERY_S ثانیه، در همهٔ حالت‌ها (بیکاری · موج اجرا · بن WAF · خطای شبکه)
 # + بقا در stats.json + ابزار status.sh برای مشاهدهٔ هر زمان بدون tmux.
 stats_line() {
+  # نسل S: فقط پوستهٔ اصلی می‌نویسد — کارگرانِ fork (BASHPID ≠ $$) نسخهٔ کهنهٔ
+  # شمارنده‌ها را روی stats.json بازنویسی نکنند؛ خواب تکه‌ای داخل کارگران هم بی‌ضرر است.
+  [ "\$BASHPID" != "\$\$" ] && return 0
   local now up
   now=\$(date +%s)
   [ \$(( now - LAST_STATS )) -lt \$STATS_EVERY_S ] && return 0
   LAST_STATS=\$now
   up=\$(( now - RELAY_START_TS )); [ "\$up" -lt 0 ] && up=0
   log "📊 آمار: دریافت \$MSG_RECV پیام · ارسال \$MSG_SENT درخواست · تحویل \$SERVED نتیجه · خطا \$ERRORS · \$BATCHES دسته · چرخه \$LOOPS · آنلاین \$(printf '%02d:%02d' \$(( up / 3600 )) \$(( (up % 3600) / 60 ))) · حاکم ARM: نرخ \$ARM_RATE_CURRENT/دقیقه · همزمانی \$ARM_CONC · مسیر \$( [ \$URL_IDX -eq 0 ] && echo اصلی || echo جایگزین )"
-  printf '{"ts":%s,"startTs":%s,"recv":%s,"sent":%s,"served":%s,"errors":%s,"batches":%s,"loops":%s,"rate":%s,"conc":%s,"boost":%s,"stealth":%s}\\n' \\
-    "\$now" "\$RELAY_START_TS" "\$MSG_RECV" "\$MSG_SENT" "\$SERVED" "\$ERRORS" "\$BATCHES" "\$LOOPS" "\$ARM_RATE_CURRENT" "\$ARM_CONC" "\$BOOST_MODE" "\$STEALTH" > "\$STATS_FILE.tmp" 2>/dev/null && mv -f "\$STATS_FILE.tmp" "\$STATS_FILE" 2>/dev/null || true
+  printf '{"ts":%s,"startTs":%s,"recv":%s,"sent":%s,"served":%s,"errors":%s,"batches":%s,"loops":%s,"rate":%s,"conc":%s,"boost":%s,"stealth":%s,"pid":%s,"restarts":%s}\\n' \\
+    "\$now" "\$RELAY_START_TS" "\$MSG_RECV" "\$MSG_SENT" "\$SERVED" "\$ERRORS" "\$BATCHES" "\$LOOPS" "\$ARM_RATE_CURRENT" "\$ARM_CONC" "\$BOOST_MODE" "\$STEALTH" "\$\$" "\${SUP_RESTARTS:-0}" > "\$STATS_FILE.tmp" 2>/dev/null && mv -f "\$STATS_FILE.tmp" "\$STATS_FILE" 2>/dev/null || true
+  # نسل S: pid/بازآید در بقا آمار (حکم سلامت status.sh) + چرخش relay.log
+  relay_log_rotate
+  return 0
+}
+
+# ── نسل S: چرخش relay.log — رشد بی‌کران مهار (بررسی سبک، هر خط آمار) ──
+# tee با O_APPEND می‌نویسد؛ «کپی-کوته‌سازی» (نه mv) یعنی tee پس از چرخش همان‌جا
+# ادامه می‌دهد — relay.log همیشه جریان زندهٔ رله است (نه فایل رهاشدهٔ قدیمی).
+# مقادیر با پیش‌فرض — تابع حتی در هارنس‌های آزمون بدون ثابت‌ها هم بی‌خطر است.
+relay_log_rotate() {
+  [ -f "\${RELAY_LOG:-}" ] || return 0
+  local sz
+  sz=\$(wc -c < "\$RELAY_LOG" 2>/dev/null || echo 0)
+  [ "\${sz:-0}" -lt "\${STATS_LOG_MAX:-262144}" ] && return 0
+  tail -c \$(( \${STATS_LOG_MAX:-262144} / 2 )) "\$RELAY_LOG" > "\$RELAY_LOG.rot" 2>/dev/null || return 0
+  cat "\$RELAY_LOG.rot" > "\$RELAY_LOG" 2>/dev/null || true
+  rm -f "\$RELAY_LOG.rot" 2>/dev/null || true
+}
+
+# ── نسل S: خواب تکه‌ای آماردار — هیچ خواب بلندی آمار را خاموش نمی‌کند ──
+# خطای شبکه/دروازه/احراز (خواب ۳۰..۳۰۰ث) اکنون در تکه‌های ≤۵ث می‌خوابد و
+# stats_line حداکثر هر \$STATS_EVERY_S ثانیه زنده می‌ماند — «در همهٔ حالت‌ها» صادق است.
+# (داخل کارگران fork، گارد BASHPID تضمین می‌کند شمارنده‌ها کهنه نوشته نشوند.)
+stats_sleep() {
+  local remain="\${1:-0}" slice
+  case "\$remain" in ""|*[!0-9]*) sleep "\${1:-0}" 2>/dev/null; return 0 ;; esac
+  [ "\$remain" -le 0 ] && return 0
+  while [ "\$remain" -gt 0 ]; do
+    slice=\$(( remain > 5 ? 5 : remain ))
+    sleep "\$slice"
+    stats_line
+    remain=\$(( remain - slice ))
+  done
   return 0
 }
 
@@ -415,7 +470,7 @@ rate_gate() {
     wait_s=\$(( 60 - (now - oldest) + 1 ))
     if [ "$wait_s" -gt 0 ]; then
       log "سقف نرخ (\$RATE_MAX در دقیقه) — \$wait_s ثانیه مکث برای احترام به دروازه"
-      sleep "$wait_s"
+      stats_sleep "$wait_s"
     fi
     now=\$(date +%s)
     keep=()
@@ -1069,7 +1124,7 @@ auth_delay() {
   else
     log "\$1 (تلاش \$AUTH_FAILS) — \$d ثانیه دیگر (بدون توقف)"
   fi
-  sleep "$d"
+  stats_sleep "$d"
 }
 
 # ── حلقهٔ اصلی (داخل تابع — سرپرایز نسل N دورش است) ──
@@ -1139,7 +1194,7 @@ relay_main() {
         URL_IDX=\$(( (URL_IDX + 1) % URL_COUNT ))
         log "سوئیچ به مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) — تلاش بعدی از آنجا"
       fi
-      sleep "\$delay"; continue
+      stats_sleep "\$delay"; continue
     fi
 
     # ── دروازهٔ موقتاً ناساز (502/503/429) — AIMD: مکث دوبرابر تا سقف، بازگشت نصف ──
@@ -1157,7 +1212,7 @@ relay_main() {
         URL_IDX=\$(( (URL_IDX + 1) % URL_COUNT ))
         log "سوئیچ به مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) — تلاش بعدی از آنجا"
       fi
-      sleep "\$delay"; continue
+      stats_sleep "\$delay"; continue
     fi
 
     # ── 401 — رد احراز؛ نسل N: هرگز خروج (قانون بی‌توقف) — تلاش تطبیقی ──
@@ -1180,7 +1235,7 @@ relay_main() {
         URL_IDX=\$(( (URL_IDX + 1) % URL_COUNT ))
         log "سوئیچ به مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) — تلاش بعدی از آنجا"
       fi
-      sleep "\$delay"; continue
+      stats_sleep "\$delay"; continue
     fi
 
     # خالی (204/شبکه) — ادامهٔ poll (سرور تا \$POLL_WAIT_S معلق نگه داشت — «۱ ثانیه» فاصلهٔ تنفس)
@@ -1237,14 +1292,14 @@ relay_main() {
           URL_IDX=\$(( (URL_IDX + 1) % URL_COUNT ))
           log "سوئیچ به مسیر \$( [ $URL_IDX -eq 0 ] && echo اصلی || echo جایگزین ) — تلاش بعدی از آنجا"
         fi
-        sleep "\$delay"; continue
+        stats_sleep "\$delay"; continue
       fi
       ST=\$(printf '%s' "$RESP" | jq -r '.serverTime // empty' 2>/dev/null)
       if [ -n "$ST" ] && [ "$ERRMSG" = "stale request" ]; then
         CLOCK_OFFSET=\$(( ST - \$(date +%s%3N) ))
         log "ساعت گوشی اصلاح شد (اختلاف \$(( CLOCK_OFFSET / 60000 )) دقیقه) — تلاش تازه"
       fi
-      sleep 30; continue
+      stats_sleep 30; continue
     fi
 
     # ── پاسخ موفق — استخراج دسته (items[]) با سازگاری عقبه (request تک‌آیتمی) ──
@@ -1314,6 +1369,17 @@ relay_main() {
   done
 }
 
+# ── نسل S: کانال relay.log — نمای tmux و فایل، همزمان ──
+# ریشهٔ شکایت: در مسیر tmux (مسیر اصلی گوشی) خروجی هسته فقط در پنجرهٔ tmux زنده
+# می‌ماند و relay.log هرگز ساخته نمی‌شد → «tail -f relay.log» و بخش «آخرین خطوط
+# رله» در status.sh همیشه خالی بود. اکنون وقتی خروجی ترمینال زنده است، همان
+# خروجی همزمان در relay.log نیز می‌رود (tee)؛ مسیرهای nohup و بازآید نگهبان مستقیم
+# به همین فایل می‌ریزند (تک‌نسخه) و چرخش ۲۵۶KB رشد را مهار می‌کند.
+mkdir -p "\$MELKA_HOME" 2>/dev/null || true
+if [ -t 1 ] && command -v tee >/dev/null 2>&1; then
+  exec > >(tee -a "\$RELAY_LOG") 2>&1
+fi
+
 SERVED=0; ERRORS=0; LOOPS=0; CONNECT_OK=0; BATCHES=0; MSG_RECV=0; MSG_SENT=0; LAST_STATS=0; RELAY_START_TS=\$(date +%s)
 log "رلهٔ ملکا آغاز شد (نسل Q · DIR-SUPER-STRUCT-001 · قلاب طلایی: هسته + نگهبان دو-سشنی · صف آفلاین SQLite · ACK ردیفی · مانیفست و مخفی‌کاری سرور-آگاه · استخر \$MAX_WORKERS+\$EXPRESS_SLOTS کارگر · بی‌توقف · حالت تمام‌ظرفیت‌آگاه) — دستگاه: $DEVICE_ID (در حال اتصال…)"
 log "مسیر اصلی: $SERVER_URL"
@@ -1326,6 +1392,7 @@ log "لاگ دیباگ: ~/relay-debug.log (هدرها؛ مقدار امضا حذ
 log "نسل Q: نگهبان \$MELKA_HOME/watchdog.sh · صف آفلاین \$OFFLINE_DB (نبود sqlite3 → failed-results.jsonl) · ضربان قلب هر ۳۰ث به /api/mobile-relay/heartbeat"
 log "احراز: X-Melka-Relay-Device + X-Melka-Timestamp + X-Melka-Signature"
 log "نسل R (DIR-RELAY-ULTRA-001): خط «📊 آمار» حداکثر هر \$STATS_EVERY_S ثانیه چاپ می‌شود · مشاهدهٔ آمار هر زمان: bash \$MELKA_HOME/status.sh · بقا در \$STATS_FILE"
+log "نسل S (DIR-RELAY-ULTRA-002): کادنس آمار \$STATS_EVERY_Sث در همهٔ حالت‌ها (خواب تکه‌ای) · نمای tmux همزمان در \$RELAY_LOG (tail -f) · status.sh با حکم سلامت (فعال ✓ / کهنه ⚠) و pid/بازآید"
 sync_clock && log "ساعت با سرور همگام شد ✓" || log "همگام‌سازی ساعت سرور ممکن نشد — ادامه با ساعت محلی"
 LAST_CLOCK_SYNC=\$(date +%s)
 
@@ -1348,34 +1415,56 @@ printf '%s\\n' "\$\$" > "\$RELAY_PID_FILE" 2>/dev/null || true
 # آخرین خطوط رله را می‌بیند — پاسخ مستقیم به «آمار نشان داده نمی‌شود».
 cat > "\$MELKA_HOME/status.sh" <<'STATUS_EOF'
 #!/usr/bin/env bash
-# status.sh — DIR-RELAY-ULTRA-001 — نمایش آمار رلهٔ ملکا (هر زمان قابل اجرا)
+# status.sh — DIR-RELAY-ULTRA-002 — نمایش آمار رلهٔ ملکا (هر زمان قابل اجرا)
+# نسل S: ساعت انسانی + سن آمار (ثانیه) + حکم سلامت (فعال ✓ / کهنه ⚠) + pid/بازآید
+# + آخرین خطوط از relay.log (که اکنون در مسیر tmux با tee زنده نوشته می‌شود).
 set -u
-D="\$(cd "\$(dirname "\$0")" 2>/dev/null && pwd)"
-[ -n "\$D" ] || D="\$HOME/melka-relay"
-echo "═══════ آمار رلهٔ ملکا (\$(date '+%H:%M:%S')) ═══════"
-if [ -r "\$D/stats.json" ]; then
+D="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+[ -n "$D" ] || D="$HOME/melka-relay"
+NOW=$(date +%s)
+echo "═══════ آمار رلهٔ ملکا ($(date '+%H:%M:%S')) ═══════"
+if [ -r "$D/stats.json" ]; then
   if command -v jq >/dev/null 2>&1; then
-    jq -r '"پیام دریافتی از سرور: \\(.recv)\\nدرخواست ارسالی به آرم: \\(.sent)\\nنتیجهٔ تحویل‌شده به سرور: \\(.served)\\nخطا: \\(.errors)\\nدستهٔ نتیجه: \\(.batches)\\nچرخه: \\(.loops)\\nنرخ جاری ARM: \\(.rate)/دقیقه\\nهمزمانی ARM: \\(.conc)\\nآخرین به‌روزرسانی آمار: \\(.ts)"' "\$D/stats.json"
+    TS=$(jq -r '.ts // 0' "$D/stats.json" 2>/dev/null)
+    case "$TS" in ""|*[!0-9]*) TS=0 ;; esac
+    AGE=$(( NOW - TS )); [ "$AGE" -lt 0 ] && AGE=0
+    jq -r '"پیام دریافتی از سرور: \\(.recv)\\nدرخواست ارسالی به آرم: \\(.sent)\\nنتیجهٔ تحویل‌شده به سرور: \\(.served)\\nخطا: \\(.errors)\\nدستهٔ نتیجه: \\(.batches)\\nچرخه: \\(.loops)\\nنرخ جاری ARM: \\(.rate)/دقیقه\\nهمزمانی ARM: \\(.conc)\\nبازآید پس از خرابی: \\(.restarts // 0)"' "$D/stats.json"
+    echo "آخرین به‌روزرسانی آمار: $(date -d @"$TS" '+%H:%M:%S' 2>/dev/null || echo "$TS") — $AGE ثانیه پیش"
+    if [ "$AGE" -le 90 ]; then
+      echo "وضعیت کلی: ✓ هستهٔ رله فعال و در حال کار است (آمار تازه است)"
+    else
+      echo "وضعیت کلی: ⚠ هشدار — آمار $AGE ثانیه کهنه است؛ رله یا متوقف است یا اندروید آن را خوابانده است. درمان: Termux را باز کنید و در Recentها قفل کنید + تنظیمات اندروید ← برنامه‌ها ← Termux ← باتری «بدون محدودیت»."
+    fi
   else
-    cat "\$D/stats.json"
+    cat "$D/stats.json"
   fi
 else
   echo "آمار هنوز ساخته نشده — رله در حال راه‌اندازی است؛ چند ثانیه دیگر دوباره بزنید."
 fi
 RP=""
-[ -r "\$D/relay.pid" ] && RP=\$(cat "\$D/relay.pid" 2>/dev/null)
-if [ -n "\$RP" ] && kill -0 "\$RP" 2>/dev/null; then
-  echo "وضعیت هستهٔ رله: زنده (pid \$RP)"
+[ -r "$D/relay.pid" ] && RP=$(cat "$D/relay.pid" 2>/dev/null)
+if [ -n "$RP" ] && kill -0 "$RP" 2>/dev/null; then
+  echo "وضعیت هستهٔ رله: زنده (pid $RP)"
 else
   echo "وضعیت هستهٔ رله: pid یافت نشد (نگهبان در حال بازآید است یا راه‌اندازی اولیه)"
 fi
-echo "──── آخرین ۱۲ خط رله ────"
 if command -v tmux >/dev/null 2>&1 && tmux has-session -t melka-relay 2>/dev/null; then
+  echo "سشن tmux رله: موجود (melka-relay — نمای زنده)"
+else
+  echo "سشن tmux رله: یافت نشد (مسیر nohup یا متوقف)"
+fi
+echo "──── آخرین ۱۲ خط رله (relay.log) ────"
+if [ -s "$D/relay.log" ]; then
+  tail -n 12 "$D/relay.log" 2>/dev/null
+else
+  echo "(relay.log هنوز ساخته نشده یا خالی است)"
+fi
+if command -v tmux >/dev/null 2>&1 && tmux has-session -t melka-relay 2>/dev/null; then
+  echo "──── آخرین ۱۲ خط از پنجرهٔ tmux ────"
   tmux capture-pane -p -t melka-relay -S -12 2>/dev/null | tail -n 12
 fi
-[ -f "\$D/relay.log" ] && tail -n 12 "\$D/relay.log" 2>/dev/null
-[ -f "\$D/relay-restarts.log" ] && tail -n 12 "\$D/relay-restarts.log" 2>/dev/null
-echo "──── نمای زنده: tmux attach -t melka-relay (خروج Ctrl+b سپس d) · لاگ: tail -f \$D/relay.log ────"
+[ -f "$D/relay-restarts.log" ] && tail -n 12 "$D/relay-restarts.log" 2>/dev/null
+echo "──── نمای زنده: tmux attach -t melka-relay (خروج Ctrl+b سپس d) · لاگ: tail -f $D/relay.log ────"
 STATUS_EOF
 chmod 700 "\$MELKA_HOME/status.sh" 2>/dev/null || true
 
@@ -1449,7 +1538,7 @@ while true; do
   if [ "\$ALIVE" != "true" ] && [ -f "\$CORE_RELAY" ]; then
     WD_RESTARTS=\$((WD_RESTARTS+1))
     log_w "هستهٔ رله زنده نیست — بازآید خودکار شمارهٔ \$WD_RESTARTS …"
-    ( cd "\$WD_DIR" 2>/dev/null; setsid nohup bash "\$CORE_RELAY" >> "\$WD_DIR/relay-restarts.log" 2>&1 & ) >/dev/null 2>&1
+    ( cd "\$WD_DIR" 2>/dev/null; setsid nohup bash "\$CORE_RELAY" >> "\$WD_DIR/relay.log" 2>&1 & ) >/dev/null 2>&1  # نسل S: همان کانال زندهٔ مالک
     sleep 5
     continue
   fi
@@ -1612,7 +1701,8 @@ watch_relay_activation() {
 
 # ── DIR-RELAY-ULTRA-001 (گام اول · رابعاً): راهنمای مشاهدهٔ آمار دریافت/ارسال ──
 print_stats_guide() {
-  echo "📊 آمار دریافت/ارسال پیام رله: در نشست رله، خط «📊 آمار» هر حداکثر ۳۰-۶۰ ثانیه چاپ می‌شود."
+  echo "📊 آمار دریافت/ارسال پیام رله: در نمای زنده (tmux attach یا tail -f relay.log) خط «📊 آمار» هر حداکثر ~۳۰ ثانیه چاپ می‌شود."
+  echo "راهنمای قضاوت فوری: bash $HOME/melka-relay/status.sh علاوه بر آمار کامل، حکم سلامت هم می‌دهد — «✓ فعال و آمار تازه» یا «⚠ کهنه» (کهنه = رله متوقف/خوابانده)."
   echo "مشاهدهٔ آمار در هر لحظه (بدون اتصال tmux): bash \$HOME/melka-relay/status.sh"
   echo "نمای زندهٔ رله: tmux attach -t melka-relay (خروج: Ctrl+b سپس d) — یا: tail -f \$HOME/melka-relay/relay.log"
 }

@@ -49,11 +49,11 @@ describe("PN-035 · A) اسکریپت نسل J — ساختار", () => {
     expect(script).toContain("method $RMETHOD not allowed");
   });
 
-  test("A-2) poll دسته‌ای — wait=50 · batch=48 (نسل N · DIR-RELAY-UNLIMITED-001)", () => {
+  test("A-2) poll دسته‌ای — wait=25 · batch=48 (نسل N · DIR-RELAY-UNLIMITED-001)", () => {
     // نسل N: انتظار ۱۰۰ ← ۵۰ (تازگی lastSeen) و دسته ۲۴ ← ۴۸ (سرعت فهرست‌ها)
     expect(script).toContain('BODY="{\\"wait\\":$POLL_WAIT_S,\\"batch\\":$BATCH}"');
     expect(script).toContain("BATCH=48");
-    expect(script).toContain("POLL_WAIT_S=50");
+    expect(script).toContain("POLL_WAIT_S=25"); // نسل S · DIR-RELAY-ULTRA-002: 50 → 25 — کادنس آمار بیکاری ≤۳۰ث);
   });
 
   test("A-3) خواندن items[] + سازگاری عقبه (request تک‌آیتمی نسل‌های قدیم)", () => {
