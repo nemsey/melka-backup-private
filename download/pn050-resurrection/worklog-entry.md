@@ -20,7 +20,7 @@ Stage Summary:
 ---
 
 Task ID: DIR-OWNER-4STEPS-001 (دستور چهارسگامی مالک ۱۴۰۵/۰۹/۰۵ · ۲۰۲۶-۱۱-۲۶)
-preview_build_id: b294a19-20261126-0819 (گارد تازگی: PASS — buildId=gitSha=live=origin/melka-backup=edge)
+preview_build_id: 206e92b-20261126-0832 (گارد تازگی نهایی: PASS — buildId=gitSha=live=edge · بیلد پایین‌دستی b294a19-20261126-0819 نیز ثبت شد — پس از کامیت مستندات 206e92b دوباره ساخته شد تا پنج‌واحدی برقرار بماند)
 
 - گام اول: کامیت dangling جلسهٔ قبل (32e6967 — چهار ترمیم DIR-RELAY-ACTIVATE-001) پس از ریست سکاپرداز بازیابی شد (fe0774c) + خودآزمای ۱۷-سنجه‌ای تازه (bash -n ×۲ · هر ۵ دلیل رد · احیای محلی · تصدیب tmux · تماشای فعال‌سازی ۱۵۰ث · CONNECT_OK هر دو مسیر Poll).
 - گام دوم: بخش «حالت تمام‌ظرفیت ترموکس» به‌طور کامل از کاشی فایل‌یابی حذف (FileFinderPage + RegisterDialog + رجیستری + تنظیم autoFullCapacity) · رله-اول: shouldRouteViaRelay (proxy.ts — منبع یگانه) نشست‌محور + client.ts مهلت رله‌آگاه · users/create در خانوادهٔ اولویت ۱۰ · روت‌های تغییرات/ثبت هر دو ensureChangesSessionForOperation پیش از اجرا · ولاغیر: اسکن صفر رله.
