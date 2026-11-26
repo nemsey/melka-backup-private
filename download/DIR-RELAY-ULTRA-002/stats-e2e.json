@@ -1,0 +1,130 @@
+{
+ "cases": [
+  {
+   "case": "A-blackhole",
+   "steps": [
+    {
+     "key": "A1-relay-alive-75s",
+     "ok": true,
+     "detail": "رله در کل ۷۵ث زنده ماند (exit=None)"
+    },
+    {
+     "key": "A2-stats-line-during-backoff",
+     "ok": true,
+     "detail": "6 خط «📊 آمار» در ۷۵ث حین خطای شبکه (شب‌تار 127.0.0.1:9)"
+    },
+    {
+     "key": "A3-max-gap-le-35s",
+     "ok": true,
+     "detail": "بیشترین فاصلهٔ خطوط آمار: 30ث (هدف ≤۳۵)"
+    },
+    {
+     "key": "A4-stats-json-fresh",
+     "ok": true,
+     "detail": "stats.json تازه (سن 3ث) — pid 5355 · restarts 0"
+    },
+    {
+     "key": "A5-status-verdict-active",
+     "ok": true,
+     "detail": "status.sh حتی در خطای شبکه حکم «فعال» می‌دهد (رله زنده است و تلاش می‌کند)"
+    }
+   ]
+  },
+  {
+   "case": "B-pty-tmux-path",
+   "steps": [
+    {
+     "key": "B1-relay-log-created-in-tty-path",
+     "ok": true,
+     "detail": "relay.log در مسیر ترمینال (tmux گوشی) ساخته شد — پیش از نسل S هرگز ساخته نمی‌شد"
+    },
+    {
+     "key": "B2-relay-log-live-growing",
+     "ok": true,
+     "detail": "relay.log رشد زنده: 3694 → 4119 بایت در ۱۰ث"
+    },
+    {
+     "key": "B3-stats-in-relay-log",
+     "ok": true,
+     "detail": "5 خط «📊 آمار» در relay.log"
+    },
+    {
+     "key": "B4-pty-and-log-identical-stream",
+     "ok": true,
+     "detail": "نمای tmux (PTY) و فایل relay.log همان جریان را دارند (tee)"
+    },
+    {
+     "key": "B5-cadence-le-35s",
+     "ok": true,
+     "detail": "بیشترین فاصله در relay.log: 30ث"
+    },
+    {
+     "key": "B6-status-last-lines-from-relay-log",
+     "ok": true,
+     "detail": "status.sh بخش «آخرین ۱۲ خط رله» را از relay.log پر می‌بیند (پیش از نسل S: همیشه خالی)"
+    },
+    {
+     "key": "B7-status-verdict",
+     "ok": true,
+     "detail": "حکم سلامت: فعال و آمار تازه"
+    },
+    {
+     "key": "B8-stats-json-fields",
+     "ok": true,
+     "detail": "stats.json: pid=8641 · restarts=0 · ts سن 20ث"
+    }
+   ]
+  },
+  {
+   "case": "C-live-server",
+   "steps": [
+    {
+     "key": "C1-login-owner",
+     "ok": true,
+     "detail": "HTTP 200"
+    },
+    {
+     "key": "C2-enroll-relay",
+     "ok": true,
+     "detail": "e2e-ultra2-stats-68801b"
+    },
+    {
+     "key": "C3-bootstrap-download",
+     "ok": true,
+     "detail": "73283B نسل S با tee/stats_sleep/25ث"
+    },
+    {
+     "key": "C4-activation-witness",
+     "ok": true,
+     "detail": "«✓ اتصال تأیید شد — رلهٔ ملکا فعال است»"
+    },
+    {
+     "key": "C5-online-dashboard",
+     "ok": true,
+     "detail": "دستگاه e2e-ultra2-stats-68801b برخط در داشبورد"
+    },
+    {
+     "key": "C6-idle-cadence-le-40s",
+     "ok": true,
+     "detail": "3 خط آمار در بیکاری (۸۰ث+) · بیشترین فاصله 30ث (POLL_WAIT_S=25 → ~۲۶ث)"
+    },
+    {
+     "key": "C7-stats-json",
+     "ok": true,
+     "detail": "stats.json: ts=1795696352 · loops=2"
+    },
+    {
+     "key": "C8-status-full",
+     "ok": true,
+     "detail": "status.sh روی سرور زنده: آمار کامل + حکم فعال"
+    },
+    {
+     "key": "C9-cleanup-revoke",
+     "ok": true,
+     "detail": "دستگاه e2e-ultra2-stats-68801b ابطال شد"
+    }
+   ]
+  }
+ ],
+ "ok": true
+}

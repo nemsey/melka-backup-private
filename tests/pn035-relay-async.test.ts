@@ -333,8 +333,9 @@ describe("PN-035 · B) اجرای واقعی اسکریپت نسل J در برا
     const results = recs.filter((r) => r.kind === "result");
 
     // poll دسته‌ای با بدنهٔ قراردادی — نسل L (شورا-ن۰۶۸): wait=100
+    // نسل S · DIR-RELAY-ULTRA-002: wait 50 → 25 — کادنس «📊 آمار» در بیکاری ≤۳۰ث
     expect(polls.length).toBeGreaterThanOrEqual(1);
-    expect(Buffer.from(polls[0].body_b64, "base64").toString("utf8")).toBe('{"wait":50,"batch":48}');
+    expect(Buffer.from(polls[0].body_b64, "base64").toString("utf8")).toBe('{"wait":25,"batch":48}');
 
     // نسل N: نتیجه‌های جریانی — یک یا چند POST؛ مجموع اقلام باید کامل برسد
     expect(results.length).toBeGreaterThanOrEqual(1);

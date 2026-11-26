@@ -119,7 +119,7 @@ while time.time() - t0 < 75:
 relay_log_path = simB / "melka-relay" / "relay.log"
 exists_early = relay_log_path.exists()
 size1 = relay_log_path.stat().st_size if exists_early else 0
-time.sleep(10)
+time.sleep(35)  # پنجرهٔ ≥۳۵ث: خط بعدی «📊 آمار» حتماً درون پنجره می‌افتد (کادنس ≤۳۰ث)
 size2 = relay_log_path.stat().st_size if relay_log_path.exists() else 0
 textB = "".join(logB_capture)
 textB_log = relay_log_path.read_text(encoding="utf8", errors="replace") if relay_log_path.exists() else ""
