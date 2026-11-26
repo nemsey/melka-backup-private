@@ -46,9 +46,10 @@ describe("DIR-FF-CAP-502 · اولاً — مغز ملکا بازشونده با
   });
 
   test("۱-۳ بارگذاری تنبلکار — loadBrain دیگر در افکت نصب (mount) صدا نمی‌شود؛ فقط در نخستین بازشدن", () => {
+    // DIR-OWNER-4STEPS-001: loadCapacity از افکت نصب حذف شد (بخش تمام‌ظرفیت کاشی حذف شد)
     const mountFx = FF.slice(
       FF.indexOf("useEffect(() => {"),
-      FF.indexOf("}, [bucket, loadAds, loadSettings, loadScanLogs, loadCapacity]);")
+      FF.indexOf("}, [bucket, loadAds, loadSettings, loadScanLogs]);")
     );
     expect(mountFx).not.toContain("loadBrain(");
     // و مهاجرت به handleBrainOpenChange — بارگذاری در نخستین بازشدن
@@ -81,8 +82,8 @@ describe("DIR-FF-CAP-502 · ثانیاً — کلیدهای «تمام ظرفی�
   // فقط و فقط «خودکار» هنگام ثبت فایل در سامانه ARM فعال می‌شود — کلید دستی
   // «تمام ظرفیت» از این کاشی حذف شد؛ کلید «حالت عادی» (پایان زودهنگام) پابرجاست.
   // کاشی تغییرات (بیرون از حوزهٔ این دستور) هر دو کلید را دارد.
-  test("۲-۱ کاشی فایل‌یابی: فقط «حالت عادی» — کلید دستی آغاز حذف شده است", () => {
-    expect(FF).toContain("حالت عادی\n");
+  test("۲-۱ کاشی فایل‌یابی: DIR-OWNER-4STEPS-001/گام دوم اولاً — کل بخش حذف (حتی «حالت عادی»)", () => {
+    expect(FF).not.toContain("حالت عادی\n");
     expect(FF).not.toContain("تمام ظرفیت\n");
     expect(FF).not.toContain('toggleCapacitySession("begin")');
   });
@@ -99,17 +100,18 @@ describe("DIR-FF-CAP-502 · ثانیاً — کلیدهای «تمام ظرفی�
     expect(CH).not.toContain("پایان و بازگشت چرخه‌های عادی");
   });
 
-  test("۲-۴ هر دو کاشی از هلپر مشترک استفاده می‌کنند (قانون لینک — یک منبع حقیقت)", () => {
-    expect(FF).toContain('from "@/lib/changes/capacity-client"');
+  test("۲-۴ کاشی تغییرات از هلپر مشترک استفاده می‌کند — DIR-OWNER-4STEPS-001/گام دوم اولاً: وابستگی کاشی فایل‌یابی به هلپر حذف شد", () => {
+    // بخش «حالت تمام‌ظرفیت ترموکس» به‌طور کامل از کاشی فایل‌یابی حذف شد (دستور مالک
+    // ۱۴۰۵/۰۹/۰۵) — کلاینت کاشی فایل‌یابی دیگر session/capacity-client را نمی‌شناسد.
+    expect(FF).not.toContain('from "@/lib/changes/capacity-client"');
     expect(CH).toContain('from "@/lib/changes/capacity-client"');
-    expect(FF).toContain("toggleCapacitySessionResilient(");
+    expect(FF).not.toContain("toggleCapacitySessionResilient(");
     expect(CH).toContain("toggleCapacitySessionResilient(");
   });
 
-  test("۲-۵ نشانگر پیشرفت تلاش مجدد در هر دو کاشی رندر می‌شود", () => {
-    expect(FF).toContain("تلاش مجدد خودکار");
+  test("۲-۵ نشانگر پیشرفت تلاش مجدد در کاشی تغییرات رندر می‌شود — فایل‌یابی: حذف کامل بخش (گام دوم مالک)", () => {
+    expect(FF).not.toContain("تلاش مجدد خودکار");
     expect(CH).toContain("تلاش مجدد خودکار");
-    expect(FF).toContain("aria-live=\"polite\"");
     expect(CH).toContain("aria-live=\"polite\"");
   });
 });

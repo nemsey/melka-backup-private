@@ -29,7 +29,8 @@
  *     را به «فقط API های ملک تبریز» محدود می‌کند.
  */
 
-import { relayModeActive, relayFetch } from "./relay";
+import { relayModeActive, relayFetch, anyRelayDeviceOnline } from "./relay";
+import { isChangesSessionActive } from "@/lib/changes/session";
 
 /** میزبانهای مجاز عبور — عین ALLOWED_HOSTS سمت Worker (دفاع دولایه) */
 export const MELK_PROXY_ALLOWED_HOSTS: readonly string[] = [
@@ -107,11 +108,31 @@ export async function buildSignatureMessage(
  *   · بدنهٔ غیررشته‌ای (جریان/بافر) → مستقیم (امضا ممکن نیست؛ خطای قرارداد لاگ می‌شود)
  *   · در بقیهٔ حالات → عبور از Worker با هدرهای X-Melka-*
  */
+/**
+ * DIR-OWNER-4STEPS-001 (گام دوم · دستور مالک ۱۴۰۵/۰۹/۰۵) — shouldRouteViaRelay:
+ * تصمیم «اولویت اول ارسال/دریافت پیام در رلهٔ ترموکس» — منبع یگانهٔ مسیریابی.
+ *   · حالت سراسری رله (MELK_ARM_RELAY_MODE=mobile) → همیشه رله (مثل قبل).
+ *   · نشست عملیاتی فعال (کاشی تغییرات: اعمال/حذف کدملک/کددرخواست · یا ثبت آگهیِ
+ *     کاشی فایل‌یابی — هر دو خودکار نشست را فعال می‌کنند) + دستگاه رله برخط →
+ *     رلهٔ ترموکس «اولویت اول» است، حتی اگر حالت سراسری خاموش باشد.
+ *   · نبودِ رلهٔ برخط → همان مسیر قبلی (Worker/مستقیم) صادقانه ادامه می‌یابد.
+ */
+export async function shouldRouteViaRelay(url: string): Promise<boolean> {
+  if (!isMelkTabrizHost(url)) return false; // فقط میزبان‌های ملک تبریز — دیوار/سرویس دیگر هرگز
+  if (relayModeActive()) return true;
+  try {
+    if (isChangesSessionActive() && (await anyRelayDeviceOnline())) return true;
+  } catch {
+    /* best-effort session/db read — previous path continues */
+  }
+  return false;
+}
+
 export async function proxyFetch(url: string, init: RequestInit): Promise<Response> {
   if (!isMelkTabrizHost(url)) return fetch(url, init);
   // PN-031 (شورا-ن۰۳۷): حالت رلهٔ موبایل — صف + گوشی ایرانی (اولویت بر Worker:
   // پس از کشف سد جغرافیایی، Worker کلودفلر هم بلاک است و رله تنها مسیر باز)
-  if (relayModeActive()) return relayFetch(url, init);
+  if (await shouldRouteViaRelay(url)) return relayFetch(url, init);
   const proxyUrl = process.env.MELK_ARM_PROXY_URL?.trim();
   if (!proxyUrl) return fetch(url, init);
   const secret = process.env.MELK_PROXY_SECRET?.trim();

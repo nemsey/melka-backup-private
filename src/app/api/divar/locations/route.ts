@@ -1,18 +1,15 @@
 /**
  * /api/divar/locations — منطقه‌بندی کامل تبریز (عین سامانه ARM) برای انتخابگر مکان
- * GET — ۱۳۰ منطقه با همه محله‌هایشان (شناسه + نام) + ۱۷ منطقه پیش‌فرض مالک
+ * GET — ۱۳۰ منطقه با همه محله‌هایشان (شناسه + نام) — همان رجیستری بخش مناطق
+ * ثبت آگهی جدید آرم (گام سوم مالک ۱۴۰۵/۰۹/۰۵). «پیش‌فرض ۱۷ منطقه» حذف شد
+ * (گام چهارم): تنظیم مالک از مسیر settings در پایگاه تثبیت می‌ماند.
  * فقط با نشست معتبر؛ تغییر تنظیمات از مسیر settings (مالک) انجام می‌شود.
  */
 
 import { NextRequest } from "next/server";
 import { errorResponse, requireSessionAsync } from "@/lib/auth/guard";
 import { MelkApiError } from "@/lib/melk-api/types";
-import {
-  TABRIZ_AREAS,
-  ALL_LINES,
-  DEFAULT_LOCATION_AREA_IDS,
-  DEFAULT_LOCATION_AREA_NAMES,
-} from "@/lib/divar/tabriz-locations";
+import { TABRIZ_AREAS, ALL_LINES } from "@/lib/divar/tabriz-locations";
 
 export async function GET(request: NextRequest) {
   const guard = await requireSessionAsync(request);
@@ -27,9 +24,5 @@ export async function GET(request: NextRequest) {
       name: a.n.trim(),
       lines: a.l.map((l) => ({ id: l.id, name: l.n.trim() })),
     })),
-    defaults: {
-      areaIds: DEFAULT_LOCATION_AREA_IDS,
-      areaNames: DEFAULT_LOCATION_AREA_NAMES,
-    },
   });
 }

@@ -3,8 +3,6 @@
  * همه نشانی‌ها با تست زنده واقعی تأیید شده‌اند.
  */
 
-import { DEFAULT_LOCATION_AREA_IDS } from "./tabriz-locations";
-
 function env(key: string, fallback: string): string {
   const v = process.env[key];
   return v && v.trim() ? v.trim() : fallback;
@@ -97,8 +95,12 @@ export const DIVAR_DEFAULT_SETTINGS = {
   followThreshold: 50,
   /** فاصله اسکن خودکار (دقیقه) — ۰ = خاموش */
   autoScanMinutes: 15,
-  /** مناطق انتخابی فیلتر مکان (عین سامانه آرم) — پیش‌فرض: ۱۷ منطقه مالک؛ خالی = همه تبریز */
-  areaIds: DEFAULT_LOCATION_AREA_IDS as string[],
+  /**
+   * فیلتر مکان (عین سامانه آرم) — DIR-OWNER-4STEPS-001 (گام چهارم مالک ۱۴۰۵/۰۹/۰۵):
+   * «پیش‌فرض ۱۷ منطقه» حذف شد. پیش‌فرض خاموش = همهٔ تبریز؛ نخستین (و هر) تنظیم مالک
+   * در پایگاه ذخیره و «تا تنظیم بعدی مالک» به‌عنوان تنظیم پیش‌فرض تثبیت می‌ماند.
+   */
+  areaIds: [] as string[],
   lineIds: [] as string[],
   /** حداکثر صفحه‌های اسکن در هر اجرا برای هر دسته
    *  R7 (فرمان مالک ۲۰۲۶-۱۱-۰۱ — «فایل‌های شخصی بیشتری استخراج گردد"): ۳ ← ۸.

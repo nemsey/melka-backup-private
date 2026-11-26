@@ -130,8 +130,12 @@ describe("DIR-SUPER-STRUCT-001 · بخش ب — نسل Q اسکریپت رله (
   });
 
   test("قلاب طلایی نصب: هسته در ~/melka-relay/core-relay.sh + سشن tmux melka-relay", () => {
+    // DIR-RELAY-ACTIVATE-001: راه‌اندازی به start_relay_core پارامتری شد (تصدیب has-session
+    // + عقبهٔ nohup) — هسته همچنان در همان مسیر نصب و در سشن melka-relay اجرا می‌شود.
     expect(install).toContain('"$HOME/melka-relay/core-relay.sh"');
-    expect(install).toContain('tmux new-session -d -s melka-relay "bash $HOME/melka-relay/core-relay.sh"');
+    expect(install).toContain('tmux new-session -d -s melka-relay "bash $core"');
+    expect(install).toContain('start_relay_core "$HOME/melka-relay/core-relay.sh"');
+    expect(install).toContain("if tmux has-session -t melka-relay");
     expect(install).toContain("tmux kill-session -t melka-relay");
     expect(install).toContain("tmux kill-session -t melka-watchdog");
     expect(install).toContain("mkdir -p \"$HOME/melka-relay\"");
@@ -149,7 +153,9 @@ describe("DIR-SUPER-STRUCT-001 · بخش ب — نسل Q اسکریپت رله (
     expect(install).toContain("seq 1 12");
     expect(install).toContain("502");
     expect(install).toContain("403");
-    expect(install).toContain("کد ثبت رد شد");
+    // DIR-RELAY-ACTIVATE-001: رد ۴۰۳/۴۰۴ با قرارداد JSON سرور تمایز می‌شود (reason)؛
+    // ردِ بدون‌قرارداد گذرای WAF/دروازه است و همان‌جا پیام مخصوص خودش را دارد.
+    expect(install).toContain("گذرای WAF/دروازه");
     expect(install).toContain("head -n 1");
     expect(install).toContain("grep -q '^#!'");
   });

@@ -17,10 +17,11 @@
 import { MelkApiError, type NestEnvelope } from "./types";
 // PN-030 (شورا-ن۰۳۵): نقطهٔ یگانهٔ خروج — همهٔ فراخوانی‌های ملک تبریز از proxyFetch می‌گذرند.
 // بدون MELK_ARM_PROXY_URL رفتار عین fetch مستقیم است (سازگاری کامل با PN-029).
-import { proxyFetch, isMelkTabrizHost } from "./proxy";
+import { proxyFetch, isMelkTabrizHost, shouldRouteViaRelay } from "./proxy";
 // PN-059 (دستور مالک ۲۰۲۶-۱۱-۰۲: «اتصال api ملک‌تبریز برقرار نمی‌شود» — رفع کامل):
 // فراخوانی رله‌ای زمان‌بندی صف دارد؛ مهلت ۲۵ث مستقیم، انتظار صف را می‌کشت.
 import { relayModeActive, RELAY_WAIT_DEFAULT_MS } from "./relay";
+import { isChangesSessionActive } from "@/lib/changes/session";
 import {
   breakerKeyFromBaseUrl,
   checkCircuit,
@@ -119,7 +120,10 @@ export async function armCall<T = unknown>(opts: HttpRequestOptions): Promise<Ar
   // RelayOfflineError → NETWORK_ERROR «ارتباط برقرار نشد» در سینک شش‌خانواده،
   // در حالی که رله زنده بود (شاهد: ۴٬۳۹۵ done در همان روز). درمان: مهلتِ مؤثر
   // فراخوانی رله‌ای = max(مهلت فراخوان، ۱۱۰ث) — عین وعدهٔ لایهٔ رله؛ TTL صف ۱۲۰ث است.
-  const relayRouted = relayModeActive() && isMelkTabrizHost(url);
+  // DIR-OWNER-4STEPS-001 (گام دوم): تصمیم مسیریابی از منبع یگانه (proxy.ts) —
+  // نشست عملیاتی فعال (تغییرات/ثبت آگهی) + رله برخط ⇒ رلهٔ ترموکس اولویت اول است
+  // (حتی با حالت سراسری خاموش) ⇒ مهلت انتظار صف رله اعمال می‌شود.
+  const relayRouted = (relayModeActive() || isChangesSessionActive()) && isMelkTabrizHost(url);
   const effectiveTimeoutMs = relayRouted ? Math.max(opts.timeoutMs, RELAY_WAIT_DEFAULT_MS) : opts.timeoutMs;
   let lastError: MelkApiError | null = null;
   let lastBodyText = "";

@@ -13,17 +13,17 @@
  *   · کارت «مغز ملکا» — DIR-FF-CAP-502/اولاً: بازشونده با پیش‌فرض «بسته» +
  *     بارگذاری تنبلکار در نخستین بازشدن؛ Tier + نوار پیشرفت + Brier/کالیبراسیون
  *     + سلامت ۲۵ بررسی + فرا-ذهن (موتورهای ۱۲-۱۵) + تختهٔ سیاه + شورا
- * ثالثاً) حالت تمام‌ظرفیت ترموکس — DIR-FF-SUPER-001/گام سوم (دستور مالک):
- *   · فعال‌سازی فقط و فقط خودکار هنگام «ثبت فایل کشف‌شده در سامانه ARM» (روت ثبت)
- *   · کلید دستی آغاز حذف شد — این کاشی هرگز خودش آن را روشن نمی‌کند؛ کلید
- *     «حالت عادی» (پایان زودهنگام) و کارت وضعیت زنده پابرجاست
- *   · DIR-FF-CAP-502/ثالثاً: تلاش مجدد خودکار پلکانی روی خطای گذرای ۵۰۲/۵۰۴
- *     دروازهٔ preview (پنجرهٔ بوت سندباکس ~۱۴۵ث) — عملیات idempotent است
- * رابعاً) سیاست رلهٔ ترموکس (DIR-FF-RELAY-POLICY-001 · دستور مالک ۱۴۰۵/۰۹/۰۱):
+ * ثالثاً) سیاست رلهٔ ترموکس (DIR-FF-RELAY-POLICY-001 · دستور مالک ۱۴۰۵/۰۹/۰۱):
  *   · اسکن دیوار به رلهٔ ترموکس نیازی ندارد — همیشه در «حالت عادی» و مستقیم
  *     از وب عمومی دیوار اجرا می‌شود (client.ts: fetch مستقیم · صفر صف رله)
  *   · رلهٔ ترموکس فقط و فقط هنگام ثبت فایل کشف‌شده در سامانه ARM به کار
- *     می‌رود (روت register: نشست تمام‌ظرفیت + اولویت رله ۱۰)
+ *     می‌رود (روت register: نشست تمام‌ظرفیت + اولویت رله)
+ * رابعاً) DIR-OWNER-4STEPS-001 (گام دوم مالک ۱۴۰۵/۰۹/۰۵): بخش
+ *   «حالت تمام‌ظرفیت ترموکس» به‌طور کامل از این کاشی حذف شد — سلوک
+ *   سرور (نشست خودکار هنگام ثبت + اولویت سقف رله) پابرجاست؛ کاشی فایل‌یابی
+ *   جز در لحظهٔ ثبت آگهی هیچ نیازی به رلهٔ ترموکس ندارد (دستور صریح مالک).
+ *   مناطق/محله‌های تنظیمات ایجنت دقیقاً همانند بخش مناطق ثبت آگهی آرم شد
+ *   (گام سوم) و دکمهٔ پیش‌فرضِ فهرست ۱۷منطقه‌ای حذف و آخرین انتخاب مالک تثبیت شد (گام چهارم).
  * پنجم) DIR-FF-SUPER-001 (دستور مالک — «فوق پیشرفته کردن فایل‌یابی»):
  *   · اسکن چندوجهی و فراعمیق — کارِ اسکن در پس‌زمینهٔ سرور با پنج فاز زنده
  *     (جست‌وجوی چنددسته‌ای → واکشی جزئیات با خطوط موازی → آمار بازار →
@@ -40,7 +40,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -50,7 +49,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, RefreshCw, Settings2, Crosshair, History, Info, ListFilter, Sparkles, Gauge,
-  MapPin, ChevronDown, ChevronLeft, Search, Brain, Cpu, ZapOff, Smartphone,
+  MapPin, ChevronDown, Brain,
   ClipboardCheck, Clock, Layers, Gem, Radar, Workflow, GitCompareArrows, FlaskConical, Eye,
 } from "lucide-react";
 import { AgentPanel } from "@/components/app/AgentPanel";
@@ -58,8 +57,8 @@ import { AgentPanel } from "@/components/app/AgentPanel";
 import { AdviceCard } from "@/components/app/shared/AdviceCard";
 import type { TilePageProps } from "@/core/tiles/tile-contract";
 import { api, ApiClientError } from "@/lib/client/api";
-import { toggleCapacitySessionResilient, type CapacityAction } from "@/lib/changes/capacity-client";
 import { faNumber, faDateTime, faDigits } from "@/lib/format";
+import { ArmRegionPicker } from "@/components/app/shared/arm-region-picker";
 import { AdCard, type DivarAdRow } from "./AdCard";
 import { AdDetailsDialog } from "./AdDetailsDialog";
 import { RejectDialog } from "./RejectDialog";
@@ -72,20 +71,6 @@ interface AdsResponse {
   thresholds: { hunt: number; follow: number };
   weights: { personal: number; underprice: number; other: number; location: number };
   locationFilter: { active: boolean; areaCount: number; lineCount: number };
-}
-
-interface LocationsArea {
-  id: string;
-  name: string;
-  lines: { id: string; name: string }[];
-}
-
-interface LocationsResponse {
-  ok: boolean;
-  totalAreas: number;
-  totalLines: number;
-  areas: LocationsArea[];
-  defaults: { areaIds: string[]; areaNames: string[] };
 }
 
 interface SettingsResponse {
@@ -111,7 +96,6 @@ interface SettingsResponse {
     timeWindows: { value: string; label: string }[];
     areas: { id: string; name: string; lineCount: number }[];
     totalLines: number;
-    locationDefaults: { areaIds: string[]; areaNames: string[] };
   };
 }
 
@@ -153,29 +137,6 @@ interface ScanJobView {
   durationMs: number;
   summary: { message: string; newAds: number; inWindow: number; durationMs: number } | null;
   error: string | null;
-}
-
-/** وضعیت نشست تمام‌ظرفیت — همان قرارداد کاشی تغییرات (/api/changes) */
-interface SessionView {
-  active: boolean;
-  session: { startedAt: string; actorName: string; note: string; expiresAt: string; actor: string; started: { queuePending: number; queueDispatched: number } } | null;
-  expiresInMs: number | null;
-  maxMs: number;
-}
-
-interface CapacityStatus {
-  ok: boolean;
-  session: SessionView;
-  relay: {
-    mode: string;
-    active: boolean;
-    relayModeActive: boolean;
-    online: boolean;
-    devices: Array<{ label: string; online: boolean; served: number; errors: number; lastRoundtripMs: number | null }>;
-    queue: { pending: number; dispatched: number; done24h: number; failed24h: number; expired24h: number };
-  };
-  priorityQueue: { changes: number; interactive: number; bulk: number } | null;
-  role: string;
 }
 
 /** وضعیت مغز ملکا — همان قرارداد کاشی یادگیری (/api/intelligence/status) */
@@ -225,16 +186,6 @@ const TIME_WINDOW_LABELS: Record<string, string> = {
 
 const TIER_MIN_OUTCOMES = [0, 10, 20, 50, 70];
 
-/** نرمال‌سازی جست‌وجوی فارسی (ارقام فارسی/عربی، آ ← ا، حذف فاصله/ZWNJ) */
-function normFa(s: string): string {
-  return s
-    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
-    .replace(/[آأإ]/g, "ا")
-    .replace(/[\u200c\s]/g, "")
-    .trim();
-}
-
 export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   const { toast } = useToast();
   const [bucket, setBucket] = useState<string>("hunt");
@@ -253,15 +204,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   // DIR-FF-SUPER-001 — حلقهٔ نظارت اسکن پس از ترک کاشی متوقف می‌شود (بی‌نوشتن روی کامپوننت unmount)
   const aliveRef = useRef(true);
   // فیلتر مکان — رجیستری ARM (بارگذاری تنبلکار روی نخستین تعامل)
-  const [locData, setLocData] = useState<LocationsResponse | null>(null);
-  const [locLoading, setLocLoading] = useState(false);
-  const [locQuery, setLocQuery] = useState("");
-  const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set());
-  // حالت تمام‌ظرفیت — همان قرارداد کاشی تغییرات
-  const [capacity, setCapacity] = useState<CapacityStatus | null>(null);
-  const [togglingCapacity, setTogglingCapacity] = useState(false);
-  // DIR-FF-CAP-502/ثالثاً — پیشرفت تلاش مجدد خودکار روی خطای گذرای ۵۰۲/۵۰۴ دروازه
-  const [capacityRetry, setCapacityRetry] = useState<{ attempt: number; total: number } | null>(null);
+  // فیلتر مکان — رجیستری آرم مستقیم از ArmRegionPicker (بدون فراخوانی API)
   // مغز ملکا — تمام ظرفیت‌ها بدون محدودیت
   // DIR-FF-CAP-502/اولاً — کارت مغز بازشونده است و پیش‌فرض «بسته»؛ دادهٔ مغز
   // تنبلکار در نخستین بازشدن بارگذاری می‌شود (صفر فراخوانی اضافه در حالت بسته)
@@ -306,16 +249,6 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     }
   }, []);
 
-  /** وضعیت حالت تمام‌ظرفیت — نبض ۱۵ثانیه‌ای (نشست/رله/صف) عین کاشی تغییرات */
-  const loadCapacity = useCallback(async () => {
-    try {
-      const res = await api<CapacityStatus>("/api/changes", { timeoutMs: 30_000 });
-      setCapacity(res);
-    } catch {
-      /* نمایش صادقانه در کارت وضعیت */
-    }
-  }, []);
-
   /** وضعیت مغز ملکا — Tier/فرا-ذهن/تختهٔ سیاه (تمام ظرفیت‌ها) */
   const loadBrain = useCallback(async () => {
     try {
@@ -335,9 +268,8 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     void loadAds(bucket);
     void loadSettings();
     void loadScanLogs();
-    void loadCapacity();
     // مغز: تنبلکار — DIR-FF-CAP-502/اولاً (فقط با بازشدن کارت، loadBrain اجرا می‌شود)
-  }, [bucket, loadAds, loadSettings, loadScanLogs, loadCapacity]);
+  }, [bucket, loadAds, loadSettings, loadScanLogs]);
 
   // DIR-FF-SUPER-001 — حلقهٔ نظارت اسکن فقط تا سکون کاشی زنده می‌ماند
   useEffect(() => {
@@ -352,14 +284,11 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     refreshTimer.current = setInterval(() => {
       void loadAds(bucket);
       void loadScanLogs();
-      void loadCapacity();
     }, 60000);
-    const capacityPulse = setInterval(() => void loadCapacity(), 15_000);
     return () => {
       if (refreshTimer.current) clearInterval(refreshTimer.current);
-      clearInterval(capacityPulse);
     };
-  }, [autoRefresh, bucket, loadAds, loadScanLogs, loadCapacity]);
+  }, [autoRefresh, bucket, loadAds, loadScanLogs]);
 
   /**
    * DIR-FF-SUPER-001/گام اول+دوم — اسکن چندوجهی با کارِ پس‌زمینه:
@@ -419,21 +348,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     }
   };
 
-  /** بارگذاری رجیستری مناطق/محله‌های آرم — فقط یک‌بار و در نخستین نیاز */
-  const ensureLocations = useCallback(async () => {
-    if (locData || locLoading) return;
-    setLocLoading(true);
-    try {
-      const res = await api<LocationsResponse>("/api/divar/locations");
-      setLocData(res);
-    } catch {
-      // بی‌صدا — دفعة بعد دوباره تلاش می‌شود
-    } finally {
-      setLocLoading(false);
-    }
-  }, [locData, locLoading]);
-
-  /** ذخیره انتخاب مکان + تازة‌سازی فهرست آگهی‌ها (فیلتر روی فهرست اثر دارد) */
+  /** ذخیره انتخاب مکان + تازه‌سازی فهرست آگهی‌ها (فیلتر روی فهرست اثر دارد) */
   const saveLocationPatch = useCallback(
     async (patch: { areaIds: string[]; lineIds: string[] }) => {
       await saveSettingsPatch(patch);
@@ -446,53 +361,9 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   const selLineIds = settingsData?.settings.lineIds ?? [];
   const locationFilterActive = selAreaIds.length > 0 || selLineIds.length > 0;
 
-  const toggleAreaSelected = (area: LocationsArea) => {
-    const on = !selAreaIds.includes(area.id);
-    const nextAreas = on ? [...selAreaIds, area.id] : selAreaIds.filter((x) => x !== area.id);
-    // با انتخاب کل منطقه، انتخاب‌های محله‌ای همان منطقه زائد می‌شوند
-    const areaLineIds = new Set(area.lines.map((l) => l.id));
-    const nextLines = on ? selLineIds.filter((id) => !areaLineIds.has(id)) : selLineIds;
-    void saveLocationPatch({ areaIds: nextAreas, lineIds: nextLines });
-  };
-
-  const toggleLineSelected = (line: { id: string }) => {
-    const on = !selLineIds.includes(line.id);
-    const nextLines = on ? [...selLineIds, line.id] : selLineIds.filter((x) => x !== line.id);
-    void saveLocationPatch({ areaIds: selAreaIds, lineIds: nextLines });
-  };
-
-  const resetDefaultLocations = () => {
-    const ids = settingsData?.meta.locationDefaults?.areaIds ?? locData?.defaults.areaIds ?? [];
-    if (ids.length) void saveLocationPatch({ areaIds: ids, lineIds: [] });
-  };
-
   const clearLocationFilter = () => {
     void saveLocationPatch({ areaIds: [], lineIds: [] });
   };
-
-  const q = normFa(locQuery.trim());
-  const visibleAreas = useMemo(() => {
-    if (!locData) return [];
-    if (!q) return locData.areas;
-    return locData.areas.filter(
-      (a) => normFa(a.name).includes(q) || a.lines.some((l) => normFa(l.name).includes(q))
-    );
-  }, [locData, q]);
-
-  const linesToShow = (area: LocationsArea) => {
-    if (!q || normFa(area.name).includes(q)) return area.lines;
-    return area.lines.filter((l) => normFa(l.name).includes(q));
-  };
-
-  const coveredLineCount = useMemo(() => {
-    if (!locData) return null;
-    const ids = new Set<string>();
-    for (const a of locData.areas) {
-      if (selAreaIds.includes(a.id)) for (const l of a.lines) ids.add(l.id);
-    }
-    for (const id of selLineIds) ids.add(id);
-    return ids.size;
-  }, [locData, selAreaIds, selLineIds]);
 
   /** DIR-FF-WATCH-001 — کلید «ارجاع به تحت نظر»: فایل به پنجرهٔ تحت نظر ارجاع می‌شود */
   const onWatch = useCallback(
@@ -520,8 +391,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
 
   const onRegistered = useCallback(() => {
     void loadAds(bucket);
-    void loadCapacity(); // نشست تمام‌ظرفیت خودکار فعال شده — وضعیت تازه
-  }, [loadAds, bucket, loadCapacity]);
+  }, [loadAds, bucket]);
 
   /**
    * DIR-FF-CAP-502/اولاً — باز/بسته کردن کارت مغز ملکا (پیش‌فرض بسته).
@@ -538,34 +408,6 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
     },
     [brainLoadedOnce, loadBrain]
   );
-
-  /**
-   * شروع/پایان دستی حالت تمام‌ظرفیت — همانند کاشی تغییرات.
-   * DIR-FF-CAP-502/ثالثاً — مقاوم در برابر خطای گذرای ۵۰۲/۵۰۴ دروازهٔ preview:
-   * عملیات idempotent است (begin روی فعال = alreadyActive؛ end روی بسته =
-   * wasActive:false) پس تا ۶ تلاش با وقفهٔ پلکانی خوددرمان می‌شود؛ پنجرهٔ بوت
-   * ~۱۴۵ثانیه‌ای سندباکس پوشش داده می‌شود و مالک به‌جای «خطای ۵۰۲ سامانه arm»
-   * «تلاش مجدد خودکار n از N» و سپس موفقیت می‌بیند.
-   */
-  const toggleCapacitySession = async (action: CapacityAction) => {
-    setTogglingCapacity(true);
-    setCapacityRetry(null);
-    try {
-      const res = await toggleCapacitySessionResilient(action, {
-        onProgress: (p) => setCapacityRetry({ attempt: p.attempt, total: p.total }),
-      });
-      toast({
-        title: action === "begin" ? "حالت تمام‌ظرفیت فعال شد" : "حالت تمام‌ظرفیت پایان یافت",
-        description: res.message,
-      });
-      await loadCapacity();
-    } catch (err) {
-      toast({ title: "خطا در تغییر حالت", description: (err as ApiClientError).message, variant: "destructive" });
-    } finally {
-      setTogglingCapacity(false);
-      setCapacityRetry(null);
-    }
-  };
 
   const counts = adsData?.bucketCounts ?? { hunt: 0, follow: 0, review: 0, watch: 0 };
   const thresholds = adsData?.thresholds ?? { hunt: 70, follow: 40 };
@@ -584,12 +426,6 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
   const warn = checks.filter((c) => c.status === "warn").length;
   const fail = checks.filter((c) => c.status === "fail").length;
   const metaMind = brain?.metaMind ?? null;
-
-  // ── حالت تمام‌ظرفیت: مشتقات نمایش ──
-  const cs = capacity?.session;
-  const relay = capacity?.relay;
-  const pq = capacity?.priorityQueue;
-  const remainingMin = cs?.expiresInMs != null ? Math.max(0, Math.ceil(cs.expiresInMs / 60_000)) : null;
 
   // ── DIR-FF-SUPER-001 — کار اسکن: مشتقات نمایش (پیشرفت پنج‌فازی) ──
   const scanRunning = scanJob?.status === "running";
@@ -681,74 +517,9 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
         ))}
       </div>
 
-      {/* ═══ حالت تمام‌ظرفیت ترموکس — DIR-FF-SUPER-001/گام سوم: فعال‌سازی فقط خودکار در روت ثبت ARM ═══ */}
-      <Card className={cs?.active ? "border-amber-400/60 shadow-md shadow-amber-500/10" : ""}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
-            <Cpu className="h-4 w-4 text-amber-600" />
-            حالت تمام‌ظرفیت ترموکس
-            {cs?.active ? <Badge className="bg-amber-500 hover:bg-amber-500">فعال{remainingMin != null ? ` · ${faNumber(remainingMin)} دقیقه تا انقضای خودکار` : ""}</Badge> : <Badge variant="secondary">غیرفعال</Badge>}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {/* DIR-DESC-CLEANUP-001/اولاً — توضیحات متنی بخش به دستور مالک حذف شد (کارکرد پابرجا) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-            <div className="rounded-lg border border-border bg-background/60 p-2 flex items-center gap-1.5">
-              <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-              <div>
-                <div className="text-muted-foreground text-[10px]">رلهٔ ترموکس</div>
-                <div className="font-medium">{relay ? (relay.online ? "برخط ✓" : "آفلاین") : "—"}</div>
-              </div>
-            </div>
-            <div className="rounded-lg border border-border bg-background/60 p-2">
-              <div className="text-muted-foreground text-[10px]">صف رله (در انتظار)</div>
-              <div className="font-medium font-mono" dir="ltr">{relay?.queue.pending ?? "—"} / {relay?.queue.dispatched ?? "—"} dispatched</div>
-            </div>
-            <div className="rounded-lg border border-border bg-background/60 p-2">
-              <div className="text-muted-foreground text-[10px]">اولویت سقف (۱۰)</div>
-              <div className="font-medium font-mono" dir="ltr">{pq?.changes ?? "—"} آیتم</div>
-            </div>
-            <div className="rounded-lg border border-border bg-background/60 p-2">
-              <div className="text-muted-foreground text-[10px]">انبوه معلق (۰-۴)</div>
-              <div className="font-medium font-mono" dir="ltr">{pq?.bulk ?? "—"}</div>
-            </div>
-          </div>
-          {cs?.active && cs.session ? (
-            <div className="text-[11px] text-muted-foreground">
-              شروع: {cs.session.actorName}{cs.session.note ? ` · ${cs.session.note}` : ""}
-            </div>
-          ) : null}
-          {capacityRetry ? (
-            <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5" role="status" aria-live="polite">
-              <Loader2 className="w-3 h-3 animate-spin" aria-hidden />
-              خطای گذرای دروازه (۵۰۲/۵۰۴) — تلاش مجدد خودکار {faNumber(capacityRetry.attempt)} از {faNumber(capacityRetry.total)}… سرور در حال بازگشت است، کلید را آزاد نکنید.
-            </p>
-          ) : null}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* DIR-FF-SUPER-001/گام سوم — کلید دستی آغاز حذف شد: فعال‌سازی فقط و فقط
-                خودکار در روت «ثبت فایل کشف‌شده در سامانه ARM ملک تبریز» رخ می‌دهد. */}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => toggleCapacitySession("end")}
-              disabled={togglingCapacity || !cs?.active}
-              className="gap-1"
-            >
-              {togglingCapacity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ZapOff className="h-3.5 w-3.5" />}
-              حالت عادی
-            </Button>
-            <Badge variant={cs?.active ? "default" : "secondary"} className="text-[10px] h-5 px-1.5">
-              {cs?.active ? "آغاز خودکار — هنگام ثبت فایل در ARM" : "آغاز خودکار — فقط هنگام ثبت فایل در ARM"}
-            </Badge>
-          </div>
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            فعال‌سازی این حالت خودکار است و فقط و فقط هنگام «ثبت فایل کشف‌شده در سامانه ARM ملک تبریز» رخ می‌دهد؛ اسکن دیوار همیشه در حالت عادی و مستقیم اجرا می‌شود. انقضای خودکار: ۳۰ دقیقه.
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            در صورت قطعی گذرای دروازهٔ preview (خطای ۵۰۲)، کلید «حالت عادی» خودکار تا ۶ بار تلاش مجدد می‌کند — عملیات ایمنِ تکرارپذیر است و داده‌ای تکراری نمی‌سازد.
-          </p>
-        </CardContent>
-      </Card>
+      {/* DIR-OWNER-4STEPS-001 (گام دوم · اولاً) — بخش «حالت تمام‌ظرفیت ترموکس» به‌طور کامل
+          حذف شد (دستور مالک). سلوک سرور در روت ثبت پابرجاست: نشست تمام‌ظرفیت خودکار +
+          اولویت سقف رله، دقیقاً همان‌جا که باید — در لحظهٔ ثبت آگهی در سامانه ARM. */}
 
       {/* ═══ مغز ملکا — تمام ظرفیت‌ها بدون هیچ محدودیتی (DIR-FF-TILE-003) ═══ */}
       {/* DIR-FF-CAP-502/اولاً — بازشونده با پیش‌فرض «بسته» + بارگذاری تنبلکار مغز در نخستین بازشدن */}
@@ -969,7 +740,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
       </Card>
 
       {/* تنظیمات اختصاصی ایجنت */}
-      <Accordion type="single" collapsible onValueChange={(v) => { if (v) void ensureLocations(); }}>
+      <Accordion type="single" collapsible>
         <AccordionItem value="agent-settings" className="border rounded-xl px-4">
           <AccordionTrigger className="text-sm font-bold py-3">
             <span className="flex items-center gap-2">
@@ -1020,7 +791,7 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Label className="text-xs font-bold flex items-center gap-1.5">
-                      <MapPin className="w-4 h-4 text-primary" aria-hidden /> فیلتر مکان — مناطق جست‌وجوی دیوار
+                      <MapPin className="w-4 h-4 text-primary" aria-hidden /> جستجوی مناطق و محله‌ها
                       <Badge variant={locationFilterActive ? "default" : "secondary"} className="text-[10px] h-5 px-1.5">
                         {locationFilterActive
                           ? `${faNumber(selAreaIds.length)} منطقه${selLineIds.length > 0 ? ` + ${faNumber(selLineIds.length)} محله` : ""}`
@@ -1028,9 +799,6 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
                       </Badge>
                     </Label>
                     <div className="flex gap-1.5">
-                      <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={resetDefaultLocations}>
-                        پیش‌فرض ۱۷ منطقه
-                      </Button>
                       <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={clearLocationFilter} disabled={!locationFilterActive}>
                         همه تبریز
                       </Button>
@@ -1038,113 +806,18 @@ export function FileFinderPage({ settings, onSettingsChange }: TilePageProps) {
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-5">
                     {locationFilterActive
-                      ? `اسکن فقط آگهی‌های مناطق انتخابی را نگه می‌دارد${coveredLineCount != null ? ` (${faNumber(coveredLineCount)} محله از ${faNumber(locData?.totalLines ?? 926)})` : ""}؛ آگهی بیرون از انتخاب یا بدون نشانه مکانی قابل اتکا، هرگز ذخیره نمی‌شود.`
+                      ? "اسکن فقط آگهی‌های مناطق/محله‌های انتخابی را نگه می‌دارد؛ آگهی بیرون از انتخاب یا بدون نشانه مکانی قابل اتکا، هرگز ذخیره نمی‌شود."
                       : "فیلتر مکان خاموش است — کل تبریز اسکن و ذخیره می‌شود. با انتخاب مناطق، جست‌وجو دقیقاً محدود می‌شود."}
-                    تطبیق منطقه‌ای عین فیلتر مکان سامانه آرم است (متنی + مختصات).
                   </p>
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
-                    <Input
-                      value={locQuery}
-                      onChange={(e) => {
-                        setLocQuery(e.target.value);
-                        if (e.target.value) void ensureLocations();
-                      }}
-                      onFocus={() => void ensureLocations()}
-                      placeholder="جست‌وجوی منطقه یا محله… (مثلاً ولیعصر)"
-                      className="text-xs pr-8"
-                      aria-label="جست‌وجوی منطقه یا محله"
-                    />
-                  </div>
-                  <div className="max-h-72 overflow-y-auto rounded-lg border divide-y">
-                    {locLoading && !locData ? (
-                      <div className="p-3 space-y-2">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Skeleton key={i} className="h-6 w-full" />
-                        ))}
-                      </div>
-                    ) : locData ? (
-                      visibleAreas.length === 0 ? (
-                        <p className="p-3 text-[11px] text-muted-foreground">منطقه/محله‌ای با این نام در رجیستری آرم یافت نشد.</p>
-                      ) : (
-                        visibleAreas.map((area) => {
-                          const areaOn = selAreaIds.includes(area.id);
-                          const lines = linesToShow(area);
-                          const areaSelectedLines = area.lines.filter((l) => selLineIds.includes(l.id)).length;
-                          const expanded = q.length > 0 || expandedAreas.has(area.id);
-                          return (
-                            <div key={area.id}>
-                              <div className="flex items-center gap-2 p-2 hover:bg-muted/50">
-                                <Checkbox
-                                  checked={areaOn}
-                                  onCheckedChange={() => toggleAreaSelected(area)}
-                                  aria-label={`انتخاب منطقة ${area.name}`}
-                                />
-                                <button
-                                  type="button"
-                                  className="flex-1 min-w-0 text-right"
-                                  onClick={() =>
-                                    setExpandedAreas((prev) => {
-                                      const next = new Set(prev);
-                                      if (next.has(area.id)) next.delete(area.id);
-                                      else next.add(area.id);
-                                      return next;
-                                    })
-                                  }
-                                >
-                                  <span className="text-xs font-medium truncate block">
-                                    {area.name}
-                                    <span className="text-[10px] text-muted-foreground font-normal"> ({faNumber(area.lines.length)} محله)</span>
-                                  </span>
-                                </button>
-                                {!areaOn && areaSelectedLines > 0 && (
-                                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5 shrink-0">{faNumber(areaSelectedLines)} محله</Badge>
-                                )}
-                                <button
-                                  type="button"
-                                  aria-label={expanded ? `بستن محله‌های ${area.name}` : `نمایش محله‌های ${area.name}`}
-                                  onClick={() =>
-                                    setExpandedAreas((prev) => {
-                                      const next = new Set(prev);
-                                      if (next.has(area.id)) next.delete(area.id);
-                                      else next.add(area.id);
-                                      return next;
-                                    })
-                                  }
-                                  className="text-muted-foreground shrink-0"
-                                >
-                                  {expanded ? <ChevronDown className="w-4 h-4" aria-hidden /> : <ChevronLeft className="w-4 h-4" aria-hidden />}
-                                </button>
-                              </div>
-                              {expanded && (
-                                <div className="pr-7 pb-2 space-y-1 border-r mx-3 mb-1">
-                                  {lines.map((line) => {
-                                    const lineOn = areaOn || selLineIds.includes(line.id);
-                                    return (
-                                      <label key={line.id} className="flex items-center gap-2 cursor-pointer" title={areaOn ? "کل منطقه انتخاب شده است" : undefined}>
-                                        <Checkbox
-                                          checked={lineOn}
-                                          disabled={areaOn}
-                                          onCheckedChange={() => toggleLineSelected(line)}
-                                          aria-label={`انتخاب محلة ${line.name}`}
-                                        />
-                                        <span className="text-[11px] text-muted-foreground">{line.name}</span>
-                                      </label>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      )
-                    ) : (
-                      <p className="p-3 text-[11px] text-muted-foreground flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5" aria-hidden />
-                        فهرست مناطق — با جست‌وجو یا کلیک بارگذاری می‌شود.
-                      </p>
-                    )}
-                  </div>
+                  {/* DIR-OWNER-4STEPS-001 (گام سوم) — عین بخش مناطق ثبت آگهی جدید سامانه ARM:
+                      دو دراپ‌داون وابسته (منطقه ← محله‌های همان منطقه) از رجیستری رسمی آرم.
+                      گام چهارم اولاً: دکمهٔ پیش‌فرضِ فهرست ۱۷منطقه‌ای حذف شد — آخرین تنظیم مالک
+                      تا تنظیم بعدیِ مالک به‌عنوان پیش‌فرض تثبیت می‌ماند (ذخیرهٔ سرور). */}
+                  <ArmRegionPicker
+                    idPrefix="file-finder-agent"
+                    selection={{ areaIds: selAreaIds, lineIds: selLineIds }}
+                    onChange={(next) => void saveLocationPatch(next)}
+                  />
                 </div>
 
                 <div className="space-y-2">

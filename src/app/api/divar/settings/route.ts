@@ -11,8 +11,6 @@ import { loadDivarSettings, saveDivarSettings } from "@/lib/divar/store";
 import {
   TABRIZ_AREAS,
   ALL_LINES,
-  DEFAULT_LOCATION_AREA_IDS,
-  DEFAULT_LOCATION_AREA_NAMES,
   validateLocationSelection,
 } from "@/lib/divar/tabriz-locations";
 import { DIVAR_REAL_ESTATE_CATEGORIES, DIVAR_TIME_WINDOWS } from "@/lib/divar/config";
@@ -30,10 +28,8 @@ export async function GET(request: NextRequest) {
       timeWindows: DIVAR_TIME_WINDOWS,
       areas: TABRIZ_AREAS.map((a) => ({ id: a.id, name: a.n, lineCount: a.l.length })),
       totalLines: ALL_LINES.length,
-      locationDefaults: {
-        areaIds: DEFAULT_LOCATION_AREA_IDS,
-        areaNames: DEFAULT_LOCATION_AREA_NAMES,
-      },
+      // DIR-OWNER-4STEPS-001 (گام چهارم): «پیش‌فرض ۱۷ منطقه» حذف شد — آخرین
+      // تنظیم مالک در خود settings (پایگاه) تثبیت است؛ فیلد پیش‌فرضِ جدا نیست.
     },
   });
 }

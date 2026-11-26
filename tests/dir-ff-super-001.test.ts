@@ -107,13 +107,13 @@ describe("DIR-FF-SUPER-001 · الف-۲ گام اول — موتور اسکن چ
 });
 
 describe("DIR-FF-SUPER-001 · الف-۳ گام سوم — تمام‌ظرفیت فقط هنگام ثبت فایل در ARM", () => {
-  test("۳-۱ کاشی فایل‌یابی: کلید دستی آغاز حذف شد — آغاز فقط خودکار در روت ثبت", () => {
+  test("۳-۱ کاشی فایل‌یابی: DIR-OWNER-4STEPS-001/گام دوم اولاً — کل بخش تمام‌ظرفیت حذف شد؛ آغاز فقط خودکار در روت ثبت", () => {
     expect(FF_PAGE).not.toContain("تمام ظرفیت\n");
     expect(FF_PAGE).not.toContain('toggleCapacitySession("begin")');
-    expect(FF_PAGE).toContain("حالت عادی\n");
-    // یادداشت سیاست در کارت
-    expect(FF_PAGE).toContain("آغاز خودکار — فقط هنگام ثبت فایل در ARM");
-    expect(FF_PAGE).toContain("ثبت فایل کشف‌شده در سامانه ARM ملک تبریز");
+    expect(FF_PAGE).not.toContain("حالت عادی\n");
+    // بخش نمایش حذف شد — یادداشت‌های کارت دیگر نیستند؛ سلوک سرور در روت ثبت پابرجاست
+    expect(FF_PAGE).not.toContain("آغاز خودکار — فقط هنگام ثبت فایل در ARM");
+    expect(FF_PAGE).toContain("DIR-OWNER-4STEPS-001");
   });
 
   test("۳-۲ روت ثبت: تنها نقطهٔ فعال‌سازی خودکار (پیش از انتقال به آرم)", () => {

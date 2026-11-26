@@ -5,7 +5,6 @@
 import { db } from "@/lib/db";
 import { encryptSecret, decryptSecret } from "@/lib/auth/crypto";
 import { DIVAR_DEFAULT_SETTINGS, type DivarSettings } from "./config";
-import { DEFAULT_LOCATION_AREA_IDS } from "./tabriz-locations";
 import { kenarTestKey, divarVerifyCode, type KenarPost } from "./client";
 
 // ===================== اتصال‌ها =====================
@@ -125,10 +124,12 @@ function cleanIds(arr: unknown): string[] {
 export async function loadDivarSettings(): Promise<DivarSettings> {
   const row = await db.divarSetting.findUnique({ where: { id: SETTINGS_ID } });
   if (!row) {
+    // DIR-OWNER-4STEPS-001 (گام چهارم): نخستین راه‌اندازی = «همه تبریز» (فیلتر خاموش)؛
+    // از این پس هر تنظیم مالک ذخیره و تا تنظیم بعدی تثبیت می‌ماند (ذخیرهٔ سرور).
     await db.divarSetting.create({
       data: { id: SETTINGS_ID, dataJson: JSON.stringify({ ...DIVAR_DEFAULT_SETTINGS, scoringV3Init: true }), locFilterInit: true },
     });
-    return { ...DIVAR_DEFAULT_SETTINGS, areaIds: [...DEFAULT_LOCATION_AREA_IDS], lineIds: [] };
+    return { ...DIVAR_DEFAULT_SETTINGS, areaIds: [], lineIds: [] };
   }
   let parsed: Partial<DivarSettings> = {};
   try {
@@ -136,14 +137,14 @@ export async function loadDivarSettings(): Promise<DivarSettings> {
   } catch {
     parsed = {};
   }
-  // مهاجرت یک‌بارة فیلتر مکان: نصب‌های پیشین (بدون انتخاب مکانی) ۱۷ منطقة پیش‌فرض مالک را می‌گیرند.
-  // پس از آن، «خالی» همیشه یعنی انتخاب آگاهانه «همه تبریز» و دیگر بازنمی‌گردد.
+  // مهاجرت یک‌بارة فیلتر مکان — DIR-OWNER-4STEPS-001 (گام چهارم): دیگر هیچ کاشتِ
+  // «پیش‌فرض ۱۷ منطقه» وجود ندارد (دستور مالک). این گام صرفاً پرچم راه‌اندازی را
+  // می‌نشاند و انتخاب صریحِ ذخیره‌شدهٔ مالک (یا خالی = همه تبریز) را دست‌نخورده
+  // نگه می‌دارد: آخرین تنظیم مالک تا تنظیم بعدی به‌عنوان پیش‌فرض تثبیت است.
   if (!row.locFilterInit) {
     const merged = { ...DIVAR_DEFAULT_SETTINGS, ...parsed };
-    if (!Array.isArray(parsed.areaIds) || parsed.areaIds.length === 0) {
-      merged.areaIds = [...DEFAULT_LOCATION_AREA_IDS];
-    }
-    if (!Array.isArray(parsed.lineIds)) merged.lineIds = [];
+    if (!Array.isArray(merged.areaIds)) merged.areaIds = [];
+    if (!Array.isArray(merged.lineIds)) merged.lineIds = [];
     await db.divarSetting
       .update({
         where: { id: SETTINGS_ID },
@@ -191,7 +192,8 @@ export async function loadDivarSettings(): Promise<DivarSettings> {
   const result: DivarSettings = {
     ...DIVAR_DEFAULT_SETTINGS,
     ...parsed,
-    areaIds: Array.isArray(parsed.areaIds) ? cleanIds(parsed.areaIds) : [...DEFAULT_LOCATION_AREA_IDS],
+    // گام چهارم: انتخاب مالک (خالی = همه تبریز) — بدون بازگشت به هیچ فهرست پیش‌فرضی
+    areaIds: Array.isArray(parsed.areaIds) ? cleanIds(parsed.areaIds) : [],
     lineIds: Array.isArray(parsed.lineIds) ? cleanIds(parsed.lineIds) : [],
   };
   return result;

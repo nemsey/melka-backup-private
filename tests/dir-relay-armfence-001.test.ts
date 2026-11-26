@@ -51,7 +51,9 @@ const install = buildInstallCommand("https://preview.example.space-z.ai", "ENROL
 check("install: 12-attempt bootstrap window", install.includes("seq 1 12") && install.includes("waits=(5 5 10 10 15 20 25 30 30 30 30)"));
 check("install: 502/503/429 restart-aware message", install.includes("سرور در حال ریست/رستاخیز است"));
 check("install: curl-28 timeout message", install.includes("تایم‌اوت (خطای ۲۸)"));
-check("install: 403/404 enroll-code message (non-fatal)", install.includes("کد ثبت رد شد"));
+// DIR-RELAY-ACTIVATE-001: رد ۴۰۳/۴۰۴ اکنون با قرارداد JSON سرور تمایز می‌شود (reason)؛
+// ردِ بدون‌قرارداد گذرای WAF/دروازه است و پیام مخصوص خودش را دارد.
+check("install: 403/404 reject differentiated (contract reason)", install.includes("گذرای WAF/دروازه") && install.includes("reject_reason="));
 check("install: old-instance clean swap", install.includes("pkill -f melka-relay.sh"));
 check("install: HTML guard on downloaded file", install.includes("'<html'"));
 check("install: deps retry ×2", install.includes("for i in 1 2"));

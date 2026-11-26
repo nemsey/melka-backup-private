@@ -738,6 +738,10 @@ export function relayPriorityForUrl(url: string): number {
       changesActive = false;
     }
     // خانوادهٔ «تغییرات کد درخواست + کدآگهی» — همیشه تعاملی (۵)؛ در نشست فعال ۱۰
+    // DIR-OWNER-4STEPS-001 (گام دوم مالک ۱۴۰۵/۰۹/۰۵): users/create (ایجاد مشتری ثبت آگهی)
+    // نیز عضو همین خانواده شد — در نشست فعالِ ثبت آگهیِ کاشی فایل‌یابی، زنجیرهٔ
+    // کامل ثبت (users/create + properties/create + users/info/mobile-number) اولویت
+    // سقف ۱۰ می‌گیرد: «اولویت اول ارسال و دریافت پیام در رلهٔ ترموکس».
     // DIR-CHANGES-EXEC-001: خانواده‌های TILE-002 که در ثبت‌نام اولویت جا مانده بودند
     // ثبت شدند — properties/owner · users/(update|info|delete) · request-events/
     // (update|delete|list) · requests/info. پیش از این ثبت، هر عملیات نوشتاری
@@ -756,7 +760,7 @@ export function relayPriorityForUrl(url: string): number {
       /\/properties\/update\/[^/]+/i.test(p) ||
       /\/properties\/info\/by-code\//i.test(p) ||
       /\/properties\/owner\/[^/]+/i.test(p) ||
-      /\/users\/(update|info|delete)\/[^/]+/i.test(p);
+      /\/users\/(update|info|create|delete)(\/|$|\/[^/]+)/i.test(p);
     if (isChangesWrite) return changesActive ? RELAY_PRIORITY_CHANGES : RELAY_PRIORITY_INTERACTIVE;
     if (changesActive && (/\/requests\/history\//i.test(p) || /\/requests\/details\//i.test(p) || /\/forms\/info\/category(\/|$)/i.test(p) || /\/request-event-types\/list(\/|$)/i.test(p))) {
       return RELAY_PRIORITY_CHANGES;

@@ -11,9 +11,12 @@
  *   · آدرس اجباری است (عین فرم آرم).
  *
  * DIR-FF-TILE-003 (دستور مالک ۱۴۰۵/۰۸/۳۰ · اولاً-۲):
- *   · حالت تمام‌ظرفیت ترموکس همانند کاشی تغییرات — هنگام ثبت آگهی در
- *     سامانه ARM خودکار فعال می‌شود (سمت سرور: ensureChangesSessionForOperation).
- *     این پنجره وضعیت نشست را زنده نشان می‌دهد (سبز = فعال).
+ *   · سمت سرور (روت register) هنگام ثبت، نشست تمام‌ظرفیت را خودکار فعال
+ *     می‌کند (ensureChangesSessionForOperation) — رلهٔ ترموکس اولویت اول
+ *     ارسال/دریافت پیام این عملیات است (DIR-OWNER-4STEPS-001 · گام دوم).
+ * DIR-OWNER-4STEPS-001 (گام دوم · ۱۴۰۵/۰۹/۰۵): بخش نمایش «حالت تمام‌ظرفیت
+ *   ترموکس» به‌طور کامل از کاشی فایل‌یابی حذف شد — کاشی جز در لحظهٔ ثبت
+ *   هیچ نیازی به رلهٔ ترموکس ندارد (دستور صریح مالک).
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -26,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UploadCloud, MapPin, User, FileText, ShieldAlert, CheckCircle2, Zap } from "lucide-react";
+import { Loader2, UploadCloud, MapPin, User, FileText, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/client/api";
 import { formatToman } from "@/lib/divar/parse";
 import type { DivarAdRow } from "./AdCard";
@@ -64,12 +67,6 @@ interface RegisterDraft {
   scores: { total: number; bucket: string };
 }
 
-interface CapacitySessionView {
-  active: boolean;
-  session: { startedAt: string; actorName: string; note: string; expiresAt: string } | null;
-  expiresInMs: number | null;
-}
-
 const optId = (o: OptionItem) => o.id ?? o.value ?? "";
 const optName = (o: OptionItem) => o.name ?? o.label ?? "";
 
@@ -89,8 +86,6 @@ export function RegisterDialog({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // وضعیت نشست تمام‌ظرفیت (همان قرارداد کاشی تغییرات)
-  const [capacity, setCapacity] = useState<CapacitySessionView | null>(null);
 
   const [ownerName, setOwnerName] = useState("");
   const [ownerMobile, setOwnerMobile] = useState("");
@@ -107,10 +102,6 @@ export function RegisterDialog({
     setLoading(true);
     setError(null);
     setConfirmed(false);
-    // وضعیت نشست تمام‌ظرفیت — پیش‌نمایش زنده برای مالک
-    api<{ ok: boolean; session: CapacitySessionView }>("/api/changes", { timeoutMs: 30_000 })
-      .then((res) => setCapacity(res.session))
-      .catch(() => setCapacity(null));
     api<RegisterDraft>(`/api/divar/ads/${ad.token}/register`)
       .then((res) => {
         setDraft(res);
@@ -152,7 +143,7 @@ export function RegisterDialog({
     }
     setSubmitting(true);
     try {
-      const res = await api<{ ok: boolean; message: string; fullCapacity?: { active: boolean; autoStarted: boolean } }>(`/api/divar/ads/${ad.token}/register`, {
+      const res = await api<{ ok: boolean; message: string }>(`/api/divar/ads/${ad.token}/register`, {
         method: "POST",
         body: {
           owner: { fullName: ownerName.trim(), mobileNumber: ownerMobile.replace(/\D/g, "") },
@@ -165,10 +156,7 @@ export function RegisterDialog({
           description,
         },
       });
-      const capacityNote = res.fullCapacity?.autoStarted
-        ? " — حالت تمام‌ظرفیت ترموکس خودکار فعال شد (بروزرسانی فهرست‌ها متوقف · اولویت سقف رله)."
-        : "";
-      toast({ title: "ثبت موفق", description: `${res.message}${capacityNote}` });
+      toast({ title: "ثبت موفق", description: res.message });
       onOpenChange(false);
       onRegistered();
     } catch (err) {
@@ -220,23 +208,8 @@ export function RegisterDialog({
               <AlertDescription className="text-xs leading-5">{draft.requirements.message}</AlertDescription>
             </Alert>
 
-            {/* DIR-FF-TILE-003 — وضعیت حالت تمام‌ظرفیت ترموکس (خودکار با ثبت فعال می‌شود) */}
-            <div className={`rounded-lg border p-3 flex items-start gap-2 ${capacity?.active ? "border-amber-400/60 bg-amber-500/5" : "border-border bg-muted/30"}`}>
-              <Zap className={`w-4 h-4 mt-0.5 shrink-0 ${capacity?.active ? "text-amber-500" : "text-muted-foreground"}`} aria-hidden />
-              <div className="min-w-0">
-                <p className="text-xs font-bold flex items-center gap-1.5 flex-wrap">
-                  حالت تمام‌ظرفیت ترموکس
-                  <Badge className={capacity?.active ? "bg-amber-500 hover:bg-amber-500 text-[10px]" : "bg-muted text-muted-foreground text-[10px]"}>
-                    {capacity?.active ? "فعال" : "خودکار با ثبت فعال می‌شود"}
-                  </Badge>
-                </p>
-                <p className="text-xs leading-5 mt-1">
-                  {capacity?.active
-                    ? `نشست فعال است${capacity.session?.actorName ? ` (شروع: ${capacity.session.actorName})` : ""} — بروزرسانی فهرست‌ها متوقف و تمام ظرفیت رله با اولویت سقف (۱۰) در اختیار ثبت است.`
-                    : "با ثبت نهایی، این حالت همانند کاشی تغییرات خودکار فعال می‌شود: بروزرسانی چهار فهرست متوقف و تمام ظرفیت رلهٔ ترموکس با اولویت سقف به ثبت این آگهی اختصاص می‌یابد (انقضای خودکار ۳۰ دقیقه)."}
-                </p>
-              </div>
-            </div>
+            {/* DIR-OWNER-4STEPS-001 (گام دوم · اولاً) — بلوک نمایش «حالت تمام‌ظرفیت
+                ترموکس» به‌طور کامل حذف شد (دستور مالک). سلوک سرور در روت ثبت پابرجاست. */}
 
             {/* گام ۱ — اطلاعات مالک */}
             <section className="rounded-xl border p-4 space-y-3">

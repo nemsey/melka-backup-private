@@ -743,7 +743,7 @@ describe("تنظیمات ایجنت فایل‌یابی", () => {
 // ۱۱) فیلتر مکان ایجنت — ۱۷ منطقه پیش‌فرض مالک + قرارداد فیلتر اسکن/فهرست
 // ==========================================================================
 
-describe("فیلتر مکان — ۱۷ منطقه پیش‌فرض مالک (منطبق با رجیستری آرم)", () => {
+describe("فیلتر مکان — رجیستری آرم + فهرست تاریخی ۱۷منطقه‌ای (منطبق با رجیستری آرم)", () => {
   test("هر ۱۷ نام منطقه به منطقه واقعی آرم حل می‌شود (هیچ نام گمشده نیست)", async () => {
     const { DEFAULT_LOCATION_AREA_NAMES, DEFAULT_LOCATION_AREA_IDS, resolveAreaIdsByNames } = await import(
       "@/lib/divar/tabriz-locations"
@@ -767,15 +767,14 @@ describe("فیلتر مکان — ۱۷ منطقه پیش‌فرض مالک (من
     expect(r.ids.length).toBe(4);
   });
 
-  test("پیش‌فرض تنظیمات: همان ۱۷ منطقه + پوشش محله‌ها ≥ ۱۵۰", async () => {
+  test("DIR-OWNER-4STEPS-001/گام چهارم — پیش‌فرض = خالی (همهٔ تبریز)؛ «پیش‌فرض ۱۷ منطقه» حذف شد", async () => {
     const { DIVAR_DEFAULT_SETTINGS } = await import("@/lib/divar/config");
-    const { DEFAULT_LOCATION_AREA_IDS, ALL_LINES, TABRIZ_AREAS } = await import("@/lib/divar/tabriz-locations");
-    expect(DIVAR_DEFAULT_SETTINGS.areaIds).toEqual(DEFAULT_LOCATION_AREA_IDS);
+    expect(DIVAR_DEFAULT_SETTINGS.areaIds).toEqual([]);
     expect(DIVAR_DEFAULT_SETTINGS.lineIds).toEqual([]);
-    const covered = ALL_LINES.filter((l) => DEFAULT_LOCATION_AREA_IDS.includes(l.areaId)).length;
-    expect(covered).toBeGreaterThanOrEqual(150);
-    expect(covered).toBeLessThanOrEqual(ALL_LINES.length);
-    expect(TABRIZ_AREAS.find((a) => a.id === DIVAR_DEFAULT_SETTINGS.areaIds[0])?.n).toBe("ولیعصر");
+    // فهرست تاریخی ۱۷منطقه‌ای همچنان حل می‌شود (سازگاری رجیستری) اما «پیش‌فرض» نیست
+    const { DEFAULT_LOCATION_AREA_IDS } = await import("@/lib/divar/tabriz-locations");
+    expect(DEFAULT_LOCATION_AREA_IDS.length).toBe(17);
+    expect(DIVAR_DEFAULT_SETTINGS.areaIds).not.toEqual(DEFAULT_LOCATION_AREA_IDS);
   });
 
   test("قرارداد فیلتر اسکن (locationAllowed): درون/بیرون/بدون تطبیق/فیلتر خاموش", async () => {
@@ -875,10 +874,9 @@ describe("فیلتر مکان — ۱۷ منطقه پیش‌فرض مالک (من
 });
 
 describe("فیلتر مکان — مهاجرت یک‌باره و ذخیره انتخاب (پایگاه)", () => {
-  test("نصب قدیمی بدون انتخاب مکانی → پس از نخستین بارگذاری، ۱۷ منطقه پیش‌فرض مالک فعال می‌شود", async () => {
+  test("DIR-OWNER-4STEPS-001/گام چهارم — نصب قدیمی بدون انتخاب مکانی → «همه تبریز» (بدون کاشت ۱۷ منطقه)", async () => {
     const { db } = await import("@/lib/db");
     const { loadDivarSettings } = await import("@/lib/divar/store");
-    const { DEFAULT_LOCATION_AREA_IDS } = await import("@/lib/divar/tabriz-locations");
     // شبیه‌سازی ردیف قدیمی: بدون انتخاب مکانی و بدون پرچم مهاجرت
     const oldJson = JSON.stringify({
       timeWindow: "24h",
@@ -901,11 +899,34 @@ describe("فیلتر مکان — مهاجرت یک‌باره و ذخیره ا�
       update: { dataJson: oldJson, locFilterInit: false },
     });
     const settings = await loadDivarSettings();
-    expect(settings.areaIds).toEqual(DEFAULT_LOCATION_AREA_IDS);
+    // گام چهارم: هیچ کاشت پیش‌فرض ۱۷منطقه‌ای رخ نمی‌دهد — انتخاب ذخیره‌شدهٔ مالک دست‌نخورده می‌ماند
+    expect(settings.areaIds).toEqual([]);
     expect(settings.lineIds).toEqual([]);
     // پرچم مهاجرت ثبت شد؟
     const row = await db.divarSetting.findUnique({ where: { id: "singleton" } });
     expect(row?.locFilterInit).toBe(true);
+  });
+
+  test("DIR-OWNER-4STEPS-001/گام چهارم — تثبیت: آخرین تنظیم مالک تا تنظیم بعدی بایست می‌ماند", async () => {
+    const { db } = await import("@/lib/db");
+    const { loadDivarSettings, saveDivarSettings } = await import("@/lib/divar/store");
+    const { TABRIZ_AREAS, ALL_LINES } = await import("@/lib/divar/tabriz-locations");
+    // مالک دو منطقه و یک محلهٔ تازه برمی‌گزیند
+    const picked = { areaIds: [TABRIZ_AREAS[0].id, TABRIZ_AREAS[1].id], lineIds: [ALL_LINES.find((l) => l.areaId === TABRIZ_AREAS[2].id)!.id] };
+    await saveDivarSettings(picked);
+    // سه بار «بارگذاری مجدد» — تنظیم مالک تثبیت است (هیچ بازگشتِ پیش‌فرضی نیست)
+    const s1 = await loadDivarSettings();
+    const s2 = await loadDivarSettings();
+    const s3 = await loadDivarSettings();
+    for (const s of [s1, s2, s3]) {
+      expect(s.areaIds).toEqual(picked.areaIds);
+      expect(s.lineIds).toEqual(picked.lineIds);
+    }
+    // تنظیم بعدی مالک همان لحظه جایگزین می‌شود (تنظیم بعدی مالک مقدم است)
+    await saveDivarSettings({ areaIds: [TABRIZ_AREAS[3].id], lineIds: [] });
+    const s4 = await loadDivarSettings();
+    expect(s4.areaIds).toEqual([TABRIZ_AREAS[3].id]);
+    expect(s4.lineIds).toEqual([]);
   });
 
   test("مهاجرت یک‌بارة قوانین نسخه ۳: نصب قدیمی (۵۰/۳۰/۲۰) → چهار وزن مالک ۵۰/۲۰/۲۰/۱۰", async () => {
@@ -996,8 +1017,7 @@ describe("فیلتر مکان — مهاجرت یک‌باره و ذخیره ا�
     await saveDivarSettings({ areaIds: ids });
     const settings = await loadDivarSettings();
     expect(settings.areaIds.length).toBe(2);
-    // بازگرداندن پیش‌فرض برای تست‌های بعدی
-    const { DEFAULT_LOCATION_AREA_IDS } = await import("@/lib/divar/tabriz-locations");
-    await saveDivarSettings({ areaIds: [...DEFAULT_LOCATION_AREA_IDS], lineIds: [] });
+    // بازگرداندن به حالت خنثی (همهٔ تبریز) برای تست‌های بعدی — گام چهارم: «پیش‌فرض ۱۷ منطقه» نیست
+    await saveDivarSettings({ areaIds: [], lineIds: [] });
   });
 });
